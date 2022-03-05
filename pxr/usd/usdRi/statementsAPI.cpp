@@ -138,7 +138,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/base/tf/envSetting.h"
 #include <string>
 
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -160,7 +159,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 static TfToken
-_MakeRiAttrNamespace(const string &nameSpace, const string &attrName)
+_MakeRiAttrNamespace(const std::string &nameSpace, const std::string &attrName)
 {
     return TfToken(_tokens->fullAttributeNamespace.GetString() + 
                    nameSpace + ":" + attrName);
@@ -169,8 +168,8 @@ _MakeRiAttrNamespace(const string &nameSpace, const string &attrName)
 UsdAttribute
 UsdRiStatementsAPI::CreateRiAttribute(
     const TfToken& name, 
-    const string &riType,
-    const string &nameSpace)
+    const std::string &riType,
+    const std::string &nameSpace)
 {
     TfToken fullName = _MakeRiAttrNamespace(nameSpace, name.GetString());
     SdfValueTypeName usdType = UsdRi_GetUsdType(riType);
@@ -182,7 +181,7 @@ UsdAttribute
 UsdRiStatementsAPI::CreateRiAttribute(
     const TfToken &name, 
     const TfType &tfType,
-    const string &nameSpace)
+    const std::string &nameSpace)
 {
     TfToken fullName = _MakeRiAttrNamespace(nameSpace, name.GetString());
     SdfValueTypeName usdType = SdfSchema::GetInstance().FindType(tfType);
@@ -207,7 +206,7 @@ UsdRiStatementsAPI::GetRiAttribute(
 
 std::vector<UsdProperty>
 UsdRiStatementsAPI::GetRiAttributes(
-    const string &nameSpace) const
+    const std::string &nameSpace) const
 {
     std::vector<UsdProperty> validProps;
 
@@ -225,7 +224,7 @@ UsdRiStatementsAPI::GetRiAttributes(
         const size_t numNewStylePrimvars = validProps.size();
         std::vector<UsdProperty> props = 
             GetPrim().GetPropertiesInNamespace(_tokens->fullAttributeNamespace);
-        std::vector<string> names;
+        std::vector<std::string> names;
         bool requestedNameSpace = (nameSpace != "");
         for (UsdProperty const& prop: props) {
             names = prop.SplitName();
@@ -258,7 +257,7 @@ UsdRiStatementsAPI::GetRiAttributes(
 
 TfToken UsdRiStatementsAPI::GetRiAttributeNameSpace(const UsdProperty &prop)
 {
-    const std::vector<string> names = prop.SplitName();
+    const std::vector<std::string> names = prop.SplitName();
     // Parse primvar encoding.
     if (TfStringStartsWith(prop.GetName(), _tokens->primvarAttrNamespace)) {
         if (names.size() >= 5) {
@@ -298,7 +297,7 @@ UsdRiStatementsAPI::IsRiAttribute(const UsdProperty &attr)
 std::string
 UsdRiStatementsAPI::MakeRiAttributePropertyName(const std::string &attrName)
 {
-    std::vector<string> names = TfStringTokenize(attrName, ":");
+    std::vector<std::string> names = TfStringTokenize(attrName, ":");
 
     // If this is an already-encoded name, return it unchanged.
     if (names.size() == 5 &&
@@ -323,13 +322,13 @@ UsdRiStatementsAPI::MakeRiAttributePropertyName(const std::string &attrName)
         names.insert(names.begin(), "user");
     }
 
-    string fullName =
+    std::string fullName =
         _tokens->primvarAttrNamespace.GetString() +
         names[0] + ":" + ( names.size() > 2 ?
                            TfStringJoin(names.begin() + 1, names.end(), "_")
                            : names[1]);
 
-    return SdfPath::IsValidNamespacedIdentifier(fullName) ? fullName : string();
+    return SdfPath::IsValidNamespacedIdentifier(fullName) ? fullName : std::string();
 }
 
 void

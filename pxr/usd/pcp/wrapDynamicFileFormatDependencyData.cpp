@@ -29,7 +29,6 @@
 
 #include <boost/python/class.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -37,10 +36,10 @@ void
 wrapDynamicFileFormatDependencyData()
 {
     using This = PcpDynamicFileFormatDependencyData;
-    class_<This>("DynamicFileFormatDependencyData", no_init)     
+    boost::python::class_<This>("DynamicFileFormatDependencyData", boost::python::no_init)     
         .def("GetRelevantFieldNames",
-             make_function(&This::GetRelevantFieldNames,
-                           return_value_policy< TfPySequenceToList >()))
+             boost::python::make_function(&This::GetRelevantFieldNames,
+                           boost::python::return_value_policy< TfPySequenceToList >()))
         .def("CanFieldChangeAffectFileFormatArguments", 
              &This::CanFieldChangeAffectFileFormatArguments)
         .def("IsEmpty", &This::IsEmpty)

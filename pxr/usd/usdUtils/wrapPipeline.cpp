@@ -32,31 +32,30 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include <boost/python/return_by_value.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapPipeline()
 {
-    def("GetAlphaAttributeNameForColor", UsdUtilsGetAlphaAttributeNameForColor, arg("colorAttrName"));
-    def("GetModelNameFromRootLayer", UsdUtilsGetModelNameFromRootLayer);
-    def("GetRegisteredVariantSets", 
+    boost::python::def("GetAlphaAttributeNameForColor", UsdUtilsGetAlphaAttributeNameForColor, boost::python::arg("colorAttrName"));
+    boost::python::def("GetModelNameFromRootLayer", UsdUtilsGetModelNameFromRootLayer);
+    boost::python::def("GetRegisteredVariantSets", 
             UsdUtilsGetRegisteredVariantSets, 
-            return_value_policy<TfPySequenceToList>());
-    def("GetPrimAtPathWithForwarding", UsdUtilsGetPrimAtPathWithForwarding, 
-        (arg("stage"), arg("path")));
-    def("UninstancePrimAtPath", UsdUtilsUninstancePrimAtPath, 
-        (arg("stage"), arg("path")));
-    def("GetPrimaryUVSetName", UsdUtilsGetPrimaryUVSetName,
-        return_value_policy<return_by_value>());
-    def("GetPrefName", UsdUtilsGetPrefName,
-        return_value_policy<return_by_value>());
-    def(
+            boost::python::return_value_policy<TfPySequenceToList>());
+    boost::python::def("GetPrimAtPathWithForwarding", UsdUtilsGetPrimAtPathWithForwarding, 
+        (boost::python::arg("stage"), boost::python::arg("path")));
+    boost::python::def("UninstancePrimAtPath", UsdUtilsUninstancePrimAtPath, 
+        (boost::python::arg("stage"), boost::python::arg("path")));
+    boost::python::def("GetPrimaryUVSetName", UsdUtilsGetPrimaryUVSetName,
+        boost::python::return_value_policy<boost::python::return_by_value>());
+    boost::python::def("GetPrefName", UsdUtilsGetPrefName,
+        boost::python::return_value_policy<boost::python::return_by_value>());
+    boost::python::def(
         "GetMaterialsScopeName",
         UsdUtilsGetMaterialsScopeName,
-        arg("forceDefault")=false);
-    def(
+        boost::python::arg("forceDefault")=false);
+    boost::python::def(
         "GetPrimaryCameraName",
         UsdUtilsGetPrimaryCameraName,
-        arg("forceDefault")=false);
+        boost::python::arg("forceDefault")=false);
 }

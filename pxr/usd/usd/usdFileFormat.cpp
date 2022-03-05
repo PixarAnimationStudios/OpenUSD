@@ -42,7 +42,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-using std::string;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(Usd_CrateData);
 
@@ -191,7 +190,7 @@ UsdUsdFileFormat::InitData(const FileFormatArguments& args) const
 }
 
 bool
-UsdUsdFileFormat::CanRead(const string& filePath) const
+UsdUsdFileFormat::CanRead(const std::string& filePath) const
 {
     auto asset = ArGetResolver().OpenAsset(ArResolvedPath(filePath));
     return asset &&
@@ -202,7 +201,7 @@ UsdUsdFileFormat::CanRead(const string& filePath) const
 bool
 UsdUsdFileFormat::Read(
     SdfLayer* layer,
-    const string& resolvedPath,
+    const std::string& resolvedPath,
     bool metadataOnly) const
 {
     TRACE_FUNCTION();

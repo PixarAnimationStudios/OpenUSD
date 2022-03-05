@@ -34,9 +34,7 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -47,7 +45,7 @@ static std::string __str__(UsdStageLoadRules const &self)
     return boost::lexical_cast<std::string>(self);
 }
 
-static string __repr__(UsdStageLoadRules const &self)
+static std::string __repr__(UsdStageLoadRules const &self)
 {
     return TF_PY_REPR_PREFIX + "StageLoadRules(" +
         TfPyRepr(self.GetRules()) + ")";
@@ -66,57 +64,57 @@ void wrapUsdStageLoadRules()
     TfPyContainerConversions::tuple_mapping_pair<
         std::pair<SdfPath, UsdStageLoadRules::Rule>>();
 
-    class_<UsdStageLoadRules> thisClass("StageLoadRules");
-    scope s = thisClass;
+    boost::python::class_<UsdStageLoadRules> thisClass("StageLoadRules");
+    boost::python::scope s = thisClass;
     TfPyWrapEnum<UsdStageLoadRules::Rule>();
     thisClass
-        .def(init<UsdStageLoadRules>())
+        .def(boost::python::init<UsdStageLoadRules>())
 
         .def("LoadAll", &UsdStageLoadRules::LoadAll).staticmethod("LoadAll")
         .def("LoadNone", &UsdStageLoadRules::LoadNone).staticmethod("LoadNone")
 
         .def("LoadWithDescendants",
-             &UsdStageLoadRules::LoadWithDescendants, arg("path"))
+             &UsdStageLoadRules::LoadWithDescendants, boost::python::arg("path"))
 
         .def("LoadWithoutDescendants",
-             &UsdStageLoadRules::LoadWithoutDescendants, arg("path"))
+             &UsdStageLoadRules::LoadWithoutDescendants, boost::python::arg("path"))
 
         .def("Unload",
-             &UsdStageLoadRules::Unload, arg("path"))
+             &UsdStageLoadRules::Unload, boost::python::arg("path"))
 
         .def("LoadAndUnload",
              &UsdStageLoadRules::LoadAndUnload,
-             (arg("loadSet"), arg("unloadSet"), arg("policy")))
+             (boost::python::arg("loadSet"), boost::python::arg("unloadSet"), boost::python::arg("policy")))
         
         .def("AddRule", &UsdStageLoadRules::AddRule,
-             (arg("path"), arg("rule")))
+             (boost::python::arg("path"), boost::python::arg("rule")))
 
         .def("SetRules",
              (void (UsdStageLoadRules::*)(
                  std::vector<std::pair<
                      SdfPath, UsdStageLoadRules::Rule>> const &))
-             &UsdStageLoadRules::SetRules, arg("rules"))
+             &UsdStageLoadRules::SetRules, boost::python::arg("rules"))
 
         .def("Minimize", &UsdStageLoadRules::Minimize)
 
-        .def("IsLoaded", &UsdStageLoadRules::IsLoaded, arg("path"))
+        .def("IsLoaded", &UsdStageLoadRules::IsLoaded, boost::python::arg("path"))
 
         .def("IsLoadedWithAllDescendants",
-             &UsdStageLoadRules::IsLoadedWithAllDescendants, arg("path"))
+             &UsdStageLoadRules::IsLoadedWithAllDescendants, boost::python::arg("path"))
 
         .def("IsLoadedWithNoDescendants",
-             &UsdStageLoadRules::IsLoadedWithNoDescendants, arg("path"))
+             &UsdStageLoadRules::IsLoadedWithNoDescendants, boost::python::arg("path"))
 
         .def("GetEffectiveRuleForPath",
-             &UsdStageLoadRules::GetEffectiveRuleForPath, arg("path"))
+             &UsdStageLoadRules::GetEffectiveRuleForPath, boost::python::arg("path"))
 
         .def("GetRules", &UsdStageLoadRules::GetRules,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
 
-        .def("swap", &UsdStageLoadRules::swap, arg("other"))
+        .def("swap", &UsdStageLoadRules::swap, boost::python::arg("other"))
 
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
 
         .def("__str__", __str__)
         .def("__repr__", __repr__)

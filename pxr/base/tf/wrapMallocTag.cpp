@@ -41,10 +41,7 @@
 #include <string>
 #include <vector>
 
-using std::string;
-using std::vector;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -53,14 +50,14 @@ namespace {
 static bool
 _Initialize()
 {
-    string reason;
+    std::string reason;
     return TfMallocTag::Initialize(&reason);
 }
 
 static bool
 _Initialize2(const std::string& captureTag)
 {
-    string reason;
+    std::string reason;
     bool result = TfMallocTag::Initialize(&reason);
     if (result) {
         TfMallocTag::SetCapturedMallocStacksMatchList(captureTag);
@@ -112,13 +109,13 @@ _GetCallStacks()
     return result;
 }
 
-static string
+static std::string
 _GetPrettyPrintString(TfMallocTag::CallTree const &self)
 {
     return self.GetPrettyPrintString();
 }
 
-static vector<TfMallocTag::CallTree::CallSite>
+static std::vector<TfMallocTag::CallTree::CallSite>
 _GetCallSites(TfMallocTag::CallTree const &self)
 {
     return self.callSites;
@@ -130,7 +127,7 @@ _GetRoot(TfMallocTag::CallTree const &self)
     return self.root;
 }
 
-static vector<TfMallocTag::CallTree::PathNode>
+static std::vector<TfMallocTag::CallTree::PathNode>
 _GetChildren(TfMallocTag::CallTree::PathNode const &self)
 {
     return self.children;
@@ -159,7 +156,7 @@ _LogReport(
     TfMallocTag::CallTree const &self,
     std::string const &rootName)
 {
-    string tmpFile;
+    std::string tmpFile;
     ArchMakeTmpFile(std::string("callSiteReport") +
         (rootName.empty() ? "" : "_") + rootName, &tmpFile);
 
@@ -173,7 +170,7 @@ void wrapMallocTag()
 {
     typedef TfMallocTag This;
     
-    scope mallocTag = class_<This>("MallocTag", no_init)
+    boost::python::scope mallocTag = boost::python::class_<This>("MallocTag", boost::python::no_init)
         .def("Initialize", _Initialize2)
         .def("Initialize", _Initialize).staticmethod("Initialize")
         .def("IsInitialized", This::IsInitialized).staticmethod("IsInitialized")
@@ -185,7 +182,7 @@ void wrapMallocTag()
              This::SetCapturedMallocStacksMatchList)
             .staticmethod("SetCapturedMallocStacksMatchList")
         .def("GetCallStacks", _GetCallStacks,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
             .staticmethod("GetCallStacks")
 
         .def("SetDebugMatchList", This::SetDebugMatchList)
@@ -193,29 +190,29 @@ void wrapMallocTag()
         ;
 
     {
-    scope callTree = class_<This::CallTree>("CallTree", no_init)
+    boost::python::scope callTree = boost::python::class_<This::CallTree>("CallTree", boost::python::no_init)
         .def("GetPrettyPrintString", _GetPrettyPrintString)
         .def("GetCallSites", _GetCallSites,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetRoot", _GetRoot)
         .def("Report", _Report,
-            (arg("rootName")=std::string()))
+            (boost::python::arg("rootName")=std::string()))
         .def("Report", _ReportToFile,
-             (arg("fileName"), arg("rootName")=std::string()))
+             (boost::python::arg("fileName"), boost::python::arg("rootName")=std::string()))
         .def("LogReport", _LogReport,
-             (arg("rootName")=std::string()))
+             (boost::python::arg("rootName")=std::string()))
         ;
 
-    class_<This::CallTree::PathNode>("PathNode", no_init)
+    boost::python::class_<This::CallTree::PathNode>("PathNode", boost::python::no_init)
         .def_readonly("nBytes", &This::CallTree::PathNode::nBytes)
         .def_readonly("nBytesDirect", &This::CallTree::PathNode::nBytesDirect)
         .def_readonly("nAllocations", &This::CallTree::PathNode::nAllocations)
         .def_readonly("siteName", &This::CallTree::PathNode::siteName)
         .def("GetChildren", _GetChildren,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         ;
 
-    class_<This::CallTree::CallSite>("CallSite", no_init)
+    boost::python::class_<This::CallTree::CallSite>("CallSite", boost::python::no_init)
         .def_readonly("name", &This::CallTree::CallSite::name)
         .def_readonly("nBytes", &This::CallTree::CallSite::nBytes)
         ;

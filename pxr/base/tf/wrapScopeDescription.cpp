@@ -36,10 +36,7 @@
 #include <memory>
 #include <string>
 
-using std::string;
-using std::vector;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -59,7 +56,7 @@ class Tf_PyScopeDescription
     // This is used to avoid new/delete on TfScopeDescription directly, which is
     // disallowed.
     struct _Holder {
-        explicit _Holder(string const &description)
+        explicit _Holder(std::string const &description)
             : _scopeDescription(description) {}
         TfScopeDescription _scopeDescription;
     };
@@ -67,7 +64,7 @@ class Tf_PyScopeDescription
 public:
 
     // Construct with a description string.
-    Tf_PyScopeDescription(string const &description) :
+    Tf_PyScopeDescription(std::string const &description) :
         _description(description) {}
 
     // Enter creates a description object, pushing onto the stack.
@@ -76,11 +73,11 @@ public:
     }
 
     // Exit destroys the scope description, popping from the stack.
-    void __exit__(object, object, object) {
+    void __exit__(boost::python::object, boost::python::object, boost::python::object) {
         _descriptionHolder.reset();
     }
 
-    void SetDescription(const string& description) {
+    void SetDescription(const std::string& description) {
         _description = description;
         if (_descriptionHolder) {
             _descriptionHolder->_scopeDescription.SetDescription(_description);
@@ -90,21 +87,21 @@ public:
 private:
 
     std::unique_ptr<_Holder> _descriptionHolder;
-    string _description;
+    std::string _description;
 };
 
 } // anonymous namespace 
 
 void wrapScopeDescription()
 {
-    def("GetCurrentScopeDescriptionStack",
+    boost::python::def("GetCurrentScopeDescriptionStack",
         TfGetCurrentScopeDescriptionStack,
-        return_value_policy<TfPySequenceToList>());
+        boost::python::return_value_policy<TfPySequenceToList>());
 
     typedef Tf_PyScopeDescription This;
     
-    class_<This, boost::noncopyable>("ScopeDescription", init<string>())
-        .def("__enter__", &This::__enter__, return_self<>())
+    boost::python::class_<This, boost::noncopyable>("ScopeDescription", boost::python::init<std::string>())
+        .def("__enter__", &This::__enter__, boost::python::return_self<>())
         .def("__exit__", &This::__exit__)
         .def("SetDescription", &This::SetDescription)
         ;

@@ -31,7 +31,6 @@
 #include "pxr/usd/ar/pyResolverContext.h"
 #include "pxr/base/tf/pyUtils.h"
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -58,17 +57,17 @@ wrapDefaultResolverContext()
 {
     using This = ArDefaultResolverContext;
 
-    class_<This>
-        ("DefaultResolverContext", no_init)
-        .def(init<>())
-        .def(init<const std::vector<std::string>&>(
-                arg("searchPaths")))
+    boost::python::class_<This>
+        ("DefaultResolverContext", boost::python::no_init)
+        .def(boost::python::init<>())
+        .def(boost::python::init<const std::vector<std::string>&>(
+                boost::python::arg("searchPaths")))
 
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
 
         .def("GetSearchPath", &This::GetSearchPath,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("__str__", &This::GetAsString)
         .def("__repr__", &_Repr)

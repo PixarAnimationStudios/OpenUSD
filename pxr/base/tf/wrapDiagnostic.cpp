@@ -26,7 +26,6 @@
 
 #include <boost/python/def.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -34,7 +33,7 @@ void wrapDiagnostic()
 {
     TfPyWrapEnum<TfDiagnosticType>();
 
-    def("InstallTerminateAndCrashHandlers",
+    boost::python::def("InstallTerminateAndCrashHandlers",
         TfInstallTerminateAndCrashHandlers);
 
 }

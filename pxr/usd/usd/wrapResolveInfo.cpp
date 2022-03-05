@@ -27,15 +27,13 @@
 
 #include <boost/python/class.hpp>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdResolveInfo()
 {
-    class_<UsdResolveInfo>("ResolveInfo")
+    boost::python::class_<UsdResolveInfo>("ResolveInfo")
         .def("GetSource", &UsdResolveInfo::GetSource)
         .def("GetNode", &UsdResolveInfo::GetNode)
         .def("ValueIsBlocked", &UsdResolveInfo::ValueIsBlocked)

@@ -40,9 +40,7 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -50,7 +48,7 @@ namespace {
 
 static const int _dimension = 3;
 
-static string _Repr(GfRange3f const &self) {
+static std::string _Repr(GfRange3f const &self) {
     return TF_PY_REPR_PREFIX + "Range3f(" +
         TfPyRepr(self.GetMin()) + ", " + TfPyRepr(self.GetMax()) + ")";
 }
@@ -73,15 +71,15 @@ static size_t __hash__(GfRange3f const &r) { return hash_value(r); }
 
 void wrapRange3f()
 {    
-    object getMin = make_function(&GfRange3f::GetMin,
-                                  return_value_policy<return_by_value>());
+    boost::python::object getMin = boost::python::make_function(&GfRange3f::GetMin,
+                                  boost::python::return_value_policy<boost::python::return_by_value>());
 
-    object getMax = make_function(&GfRange3f::GetMax,
-                                  return_value_policy<return_by_value>());
+    boost::python::object getMax = boost::python::make_function(&GfRange3f::GetMax,
+                                  boost::python::return_value_policy<boost::python::return_by_value>());
 
-    class_<GfRange3f>("Range3f", init<>())
-        .def(init<GfRange3f>())
-        .def(init<const GfVec3f &, const GfVec3f &>())
+    boost::python::class_<GfRange3f>("Range3f", boost::python::init<>())
+        .def(boost::python::init<GfRange3f>())
+        .def(boost::python::init<const GfVec3f &, const GfVec3f &>())
         
         .def(TfTypePythonClass())
 
@@ -112,32 +110,32 @@ void wrapRange3f()
         .staticmethod("GetUnion")
     
         .def("UnionWith", (const GfRange3f & (GfRange3f::*)(const GfVec3f &))
-             &GfRange3f::UnionWith, return_self<>())
+             &GfRange3f::UnionWith, boost::python::return_self<>())
         .def("UnionWith", (const GfRange3f & (GfRange3f::*)(const GfRange3f &))
-             &GfRange3f::UnionWith, return_self<>())
+             &GfRange3f::UnionWith, boost::python::return_self<>())
     
         .def("GetIntersection", &GfRange3f::GetIntersection)
         .staticmethod("GetIntersection")
     
         .def("IntersectWith", (const GfRange3f & (GfRange3f::*)(const GfRange3f &))
-             &GfRange3f::IntersectWith, return_self<>())
+             &GfRange3f::IntersectWith, boost::python::return_self<>())
     
         .def("GetDistanceSquared", &GfRange3f::GetDistanceSquared)
     
-        .def(str(self))
-        .def(self += self)
-        .def(self -= self)
-        .def(self *= double())
-        .def(self /= double())
-        .def(self + self)
-        .def(self - self)
-        .def(double() * self)
-        .def(self * double())
-        .def(self / double())
-        .def(self == GfRange3d())
-        .def(self != GfRange3d())
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self_ns::str(boost::python::self))
+        .def(boost::python::self += boost::python::self)
+        .def(boost::python::self -= boost::python::self)
+        .def(boost::python::self *= double())
+        .def(boost::python::self /= double())
+        .def(boost::python::self + boost::python::self)
+        .def(boost::python::self - boost::python::self)
+        .def(double() * boost::python::self)
+        .def(boost::python::self * double())
+        .def(boost::python::self / double())
+        .def(boost::python::self == GfRange3d())
+        .def(boost::python::self != GfRange3d())
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
     
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
@@ -154,7 +152,7 @@ void wrapRange3f()
         .def_readonly("unitCube", &GfRange3f::UnitCube)
         
         ;
-    to_python_converter<std::vector<GfRange3f>,
+    boost::python::to_python_converter<std::vector<GfRange3f>,
         TfPySequenceToPython<std::vector<GfRange3f> > >();
     
 }

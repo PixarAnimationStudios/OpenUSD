@@ -30,7 +30,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -50,10 +49,10 @@ void wrapOslParser()
 {
     typedef SdrOslParserPlugin This;
 
-    return_value_policy<copy_const_reference> copyRefPolicy;
+    boost::python::return_value_policy<boost::python::copy_const_reference> copyRefPolicy;
 
-    class_<This, boost::noncopyable>("OslParser")
-        .def("Parse", &_Parse, return_value_policy<manage_new_object>())
+    boost::python::class_<This, boost::noncopyable>("OslParser")
+        .def("Parse", &_Parse, boost::python::return_value_policy<boost::python::manage_new_object>())
         .def("GetDiscoveryTypes", &This::GetDiscoveryTypes, copyRefPolicy)
         .def("GetSourceType", &This::GetSourceType, copyRefPolicy)
         ;

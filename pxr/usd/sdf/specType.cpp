@@ -43,9 +43,6 @@
 #include <utility>
 #include <vector>
 
-using std::pair;
-using std::make_pair;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -74,7 +71,7 @@ struct Sdf_SpecTypeInfo
     // Cache of type_info -> TfType used during cast operations to avoid TfType
     // lookups.  This speeds up these operations, especially when run
     // concurrently since TfType has a global lock.
-    typedef vector<pair<std::type_info const *, TfType> > SpecTypeInfoToTfType;
+    typedef std::vector<std::pair<std::type_info const *, TfType> > SpecTypeInfoToTfType;
     SpecTypeInfoToTfType specTypeInfoToTfType;
 
     // Mapping from schema class to mapping from SdfSpecType to spec class.
@@ -108,7 +105,7 @@ struct Sdf_SpecTypeInfo
         const std::pair<SpecTypeToBitmask::iterator, bool> mapStatus =
             specTypeToBitmask.insert(std::make_pair(specTfType, 0));
         if (mapStatus.second) {
-            specTypeInfoToTfType.push_back(make_pair(&specCPPType, specTfType));
+            specTypeInfoToTfType.push_back(std::make_pair(&specCPPType, specTfType));
         }
 
         return mapStatus.first;
@@ -117,7 +114,7 @@ struct Sdf_SpecTypeInfo
     // Find the TfType corresponding to specCPPType.  This will look in the
     // specTypeInfoToTfType cache first to avoid hitting the TfType lock.
     inline TfType TfTypeFind(const std::type_info &specCPPtype) const {
-        typedef pair<const std::type_info *, TfType> Pair;
+        typedef std::pair<const std::type_info *, TfType> Pair;
         for (const auto& p : specTypeInfoToTfType) {
             if (p.first == &specCPPtype)
                 return p.second;

@@ -30,7 +30,6 @@
 #include <boost/python/class.hpp>
 #include <boost/python/scope.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -44,14 +43,14 @@ TF_INSTANTIATE_NOTICE_WRAPPER(PlugNotice::DidRegisterPlugins, PlugNotice::Base);
 void
 wrapNotice()
 {
-    scope noticeScope = class_<PlugNotice>("Notice", no_init);
+    boost::python::scope noticeScope = boost::python::class_<PlugNotice>("Notice", boost::python::no_init);
 
     TfPyNoticeWrapper<PlugNotice::Base, TfNotice>::Wrap()
         ;
 
     TfPyNoticeWrapper<PlugNotice::DidRegisterPlugins, PlugNotice::Base>::Wrap()
         .def("GetNewPlugins", 
-             make_function(&PlugNotice::DidRegisterPlugins::GetNewPlugins,
-                           return_value_policy<TfPySequenceToList>()))
+             boost::python::make_function(&PlugNotice::DidRegisterPlugins::GetNewPlugins,
+                           boost::python::return_value_policy<TfPySequenceToList>()))
         ;
 }

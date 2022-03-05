@@ -37,7 +37,6 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace boost::python;
 
 static void
 _DumpCoalescedDiagnosticsToStdout(UsdUtilsCoalescingDiagnosticDelegate& d)
@@ -98,23 +97,23 @@ void
 wrapCoalescingDiagnosticDelegate()
 {
      using SharedItem = UsdUtilsCoalescingDiagnosticDelegateSharedItem;
-     class_<SharedItem>("CoalescingDiagnosticDelegateSharedItem", no_init)
+     boost::python::class_<SharedItem>("CoalescingDiagnosticDelegateSharedItem", boost::python::no_init)
         .add_property("sourceLineNumber", &SharedItem::sourceLineNumber)
         .add_property("sourceFileName",   &SharedItem::sourceFileName)
         .add_property("sourceFunction",   &SharedItem::sourceFunction); 
 
      using UnsharedItem = UsdUtilsCoalescingDiagnosticDelegateUnsharedItem;
-     class_<UnsharedItem>("CoalescingDiagnosticDelegateUnsharedItem", no_init)
+     boost::python::class_<UnsharedItem>("CoalescingDiagnosticDelegateUnsharedItem", boost::python::no_init)
         .add_property("context",    &UnsharedItem::context)
         .add_property("commentary", &UnsharedItem::commentary); 
 
      using Item = UsdUtilsCoalescingDiagnosticDelegateItem;
-     class_<Item>("CoalescingDiagnosticDelegateItem", no_init)
+     boost::python::class_<Item>("CoalescingDiagnosticDelegateItem", boost::python::no_init)
         .add_property("sharedItem",   &Item::sharedItem)
         .add_property("unsharedItems", &_GetUnsharedItems);
 
      using This = UsdUtilsCoalescingDiagnosticDelegate;
-     class_<This, boost::noncopyable>("CoalescingDiagnosticDelegate")
+     boost::python::class_<This, boost::noncopyable>("CoalescingDiagnosticDelegate")
         .def("DumpCoalescedDiagnosticsToStdout", 
              &_DumpCoalescedDiagnosticsToStdout)
         .def("DumpUncoalescedDiagnostics", 

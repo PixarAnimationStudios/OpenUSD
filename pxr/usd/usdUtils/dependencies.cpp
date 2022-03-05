@@ -57,8 +57,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using std::vector;
-using std::string;
 
 namespace {
 
@@ -354,9 +352,9 @@ _FileAnalyzer::_ProcessProperties(const SdfPrimSpecHandle &primSpec)
     const VtValue propertyNames =
         primSpec->GetField(SdfChildrenKeys->PropertyChildren);
 
-    if (propertyNames.IsHolding<vector<TfToken>>()) {
+    if (propertyNames.IsHolding<std::vector<TfToken>>()) {
         for (const auto& name :
-                propertyNames.UncheckedGet<vector<TfToken>>()) {
+                propertyNames.UncheckedGet<std::vector<TfToken>>()) {
             // For every property
             // Build an SdfPath to the property
             const SdfPath path = primSpec->GetPath().AppendProperty(name);

@@ -37,9 +37,7 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -62,7 +60,7 @@ static GfQuaternion __itruediv__(GfQuaternion &self, double value)
 }
 #endif
 
-static string _Repr(GfQuaternion const &self) {
+static std::string _Repr(GfQuaternion const &self) {
     return TF_PY_REPR_PREFIX + "Quaternion(" + TfPyRepr(self.GetReal()) + ", " +
         TfPyRepr(self.GetImaginary()) + ")";
 }
@@ -75,16 +73,16 @@ void wrapQuaternion()
 {    
     typedef GfQuaternion This;
 
-    object getImaginary =
-        make_function(&This::GetImaginary,return_value_policy<return_by_value>());
+    boost::python::object getImaginary =
+        boost::python::make_function(&This::GetImaginary,boost::python::return_value_policy<boost::python::return_by_value>());
 
-    def( "Slerp", (GfQuaternion (*)(double, const GfQuaternion&, const GfQuaternion&))GfSlerp);
+    boost::python::def( "Slerp", (GfQuaternion (*)(double, const GfQuaternion&, const GfQuaternion&))GfSlerp);
     
-    class_<This> ( "Quaternion", "Quaternion class", init<>())
+    boost::python::class_<This> ( "Quaternion", "Quaternion class", boost::python::init<>())
 
-        .def(init<int>())
+        .def(boost::python::init<int>())
 
-        .def(init<double, const GfVec3d &>())
+        .def(boost::python::init<double, const GfVec3d &>())
 
         .def( TfTypePythonClass() )
 
@@ -101,22 +99,22 @@ void wrapQuaternion()
 
         .def("GetNormalized", &This::GetNormalized, GetNormalized_overloads())
         .def("Normalize", &This::Normalize,
-             Normalize_overloads()[return_self<>()])
+             Normalize_overloads()[boost::python::return_self<>()])
 
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
-        .def( self *= self )
-        .def( self *= double() )
-        .def( self /= double() )
-        .def( self += self )
-        .def( self -= self )
-        .def( self + self )
-        .def( self - self )
-        .def( self * self )
-        .def( self * double() )
-        .def( double() * self )
-        .def( self / double() )
+        .def( boost::python::self_ns::str(boost::python::self) )
+        .def( boost::python::self == boost::python::self )
+        .def( boost::python::self != boost::python::self )
+        .def( boost::python::self *= boost::python::self )
+        .def( boost::python::self *= double() )
+        .def( boost::python::self /= double() )
+        .def( boost::python::self += boost::python::self )
+        .def( boost::python::self -= boost::python::self )
+        .def( boost::python::self + boost::python::self )
+        .def( boost::python::self - boost::python::self )
+        .def( boost::python::self * boost::python::self )
+        .def( boost::python::self * double() )
+        .def( double() * boost::python::self )
+        .def( boost::python::self / double() )
 
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
@@ -129,7 +127,7 @@ void wrapQuaternion()
         .def("__hash__", __hash__)
 
         ;
-    to_python_converter<std::vector<This>,
+    boost::python::to_python_converter<std::vector<This>,
         TfPySequenceToPython<std::vector<This> > >();
     
 }

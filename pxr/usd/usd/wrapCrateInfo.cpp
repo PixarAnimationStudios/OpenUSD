@@ -29,34 +29,32 @@
 
 #include <boost/python.hpp>
 
-using std::string;
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdCrateInfo()
 {
-    scope thisClass = class_<UsdCrateInfo>("CrateInfo")
-        .def("Open", &UsdCrateInfo::Open, arg("fileName"))
+    boost::python::scope thisClass = boost::python::class_<UsdCrateInfo>("CrateInfo")
+        .def("Open", &UsdCrateInfo::Open, boost::python::arg("fileName"))
         .staticmethod("Open")
         .def("GetSummaryStats", &UsdCrateInfo::GetSummaryStats)
         .def("GetSections", &UsdCrateInfo::GetSections,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetFileVersion", &UsdCrateInfo::GetFileVersion)
         .def("GetSoftwareVersion", &UsdCrateInfo::GetSoftwareVersion)
-        .def(!self)
+        .def(!boost::python::self)
         ;
 
-    class_<UsdCrateInfo::Section>("Section")
-        .def(init<string, int64_t, int64_t>(
-                 (arg("name"), arg("start"), arg("size"))))
+    boost::python::class_<UsdCrateInfo::Section>("Section")
+        .def(boost::python::init<std::string, int64_t, int64_t>(
+                 (boost::python::arg("name"), boost::python::arg("start"), boost::python::arg("size"))))
         .def_readwrite("name", &UsdCrateInfo::Section::name)
         .def_readwrite("start", &UsdCrateInfo::Section::start)
         .def_readwrite("size", &UsdCrateInfo::Section::size)
         ;
 
     using SummaryStats = UsdCrateInfo::SummaryStats;
-    class_<SummaryStats>("SummaryStats")
+    boost::python::class_<SummaryStats>("SummaryStats")
         .def_readwrite("numSpecs", &SummaryStats::numSpecs)
         .def_readwrite("numUniquePaths", &SummaryStats::numUniquePaths)
         .def_readwrite("numUniqueTokens", &SummaryStats::numUniqueTokens)

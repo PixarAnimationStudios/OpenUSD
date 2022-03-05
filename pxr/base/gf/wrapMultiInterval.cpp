@@ -34,18 +34,16 @@
 #include <boost/python/operators.hpp>
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string
+static std::string
 _Repr(GfMultiInterval const &self)
 {
-    string r = TF_PY_REPR_PREFIX + "MultiInterval(";
+    std::string r = TF_PY_REPR_PREFIX + "MultiInterval(";
     if (!self.IsEmpty()) {
         r += "[";
         int count = 0;
@@ -67,10 +65,10 @@ void wrapMultiInterval()
 {    
     typedef GfMultiInterval This;
 
-    class_<This>( "MultiInterval", init<>() )
-        .def(init<const GfInterval &>())
-        .def(init<const GfMultiInterval &>())
-        .def(init<const std::vector<GfInterval> &>())
+    boost::python::class_<This>( "MultiInterval", boost::python::init<>() )
+        .def(boost::python::init<const GfInterval &>())
+        .def(boost::python::init<const GfMultiInterval &>())
+        .def(boost::python::init<const std::vector<GfInterval> &>())
         .def(TfTypePythonClass())
 
         .add_property("size", &This::GetSize)
@@ -116,16 +114,16 @@ void wrapMultiInterval()
         .staticmethod("GetFullInterval")
 
         // totally_ordered
-        .def(self == self)
-        .def(self != self)
-        .def(self < self)
-        .def(self <= self)
-        .def(self > self)
-        .def(self >= self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self < boost::python::self)
+        .def(boost::python::self <= boost::python::self)
+        .def(boost::python::self > boost::python::self)
+        .def(boost::python::self >= boost::python::self)
 
-        .def(str(self))
+        .def(boost::python::self_ns::str(boost::python::self))
         .def("__repr__", _Repr)
         .def("__hash__", &This::Hash)
-        .def("__iter__", iterator<This>())
+        .def("__iter__", boost::python::iterator<This>())
         ;
 }

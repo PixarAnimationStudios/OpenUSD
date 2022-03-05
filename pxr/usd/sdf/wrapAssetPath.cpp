@@ -36,7 +36,6 @@
 
 #include <sstream>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -86,29 +85,29 @@ void wrapAssetPath()
 {
     typedef SdfAssetPath This;
 
-    class_<This>("AssetPath", init<>())
-        .def(init<const std::string &>())
-        .def(init<const std::string &, const std::string &>())
+    boost::python::class_<This>("AssetPath", boost::python::init<>())
+        .def(boost::python::init<const std::string &>())
+        .def(boost::python::init<const std::string &, const std::string &>())
 
         .def("__repr__", _Repr)
         .def(TfPyBoolBuiltinFuncName, _Nonzero)
         .def("__hash__", _Hash)
 
-        .def( self == self )
-        .def( self != self )
+        .def( boost::python::self == boost::python::self )
+        .def( boost::python::self != boost::python::self )
 //        .def( str(self) )
         .def("__str__", _Str)
 
         .add_property("path", 
-                      make_function(&This::GetAssetPath,
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&This::GetAssetPath,
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
 
         .add_property("resolvedPath",
-                      make_function(&This::GetResolvedPath,
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&This::GetResolvedPath,
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
         ;
 
-    implicitly_convertible<std::string, This>();
+    boost::python::implicitly_convertible<std::string, This>();
 
     // Let python know about us, to enable assignment from python back to C++
     VtValueFromPython<SdfAssetPath>();

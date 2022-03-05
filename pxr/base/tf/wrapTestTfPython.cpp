@@ -59,9 +59,6 @@
 #include <string>
 #include <vector>
 
-using namespace boost::python;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -74,14 +71,14 @@ typedef TfRefPtr<class Tf_TestBase> Tf_TestBaseRefPtr;
 class Tf_TestBase : public TfRefBase, public TfWeakBase {
   public:
     virtual ~Tf_TestBase() {}
-    virtual string Virtual() const = 0;
+    virtual std::string Virtual() const = 0;
     virtual void Virtual2() const = 0;
-    virtual void Virtual3(string const &arg) = 0;
+    virtual void Virtual3(std::string const &arg) = 0;
 
-    virtual string Virtual4() const { return "cpp base"; }
+    virtual std::string Virtual4() const { return "cpp base"; }
 
-    string VirtualCaller() const { return UnwrappedVirtual(); }
-    virtual string UnwrappedVirtual() const = 0;
+    std::string VirtualCaller() const { return UnwrappedVirtual(); }
+    virtual std::string UnwrappedVirtual() const = 0;
   protected:
     Tf_TestBase() {}
 };
@@ -94,12 +91,12 @@ class Tf_TestDerived : public Tf_TestBase {
     // CODE_COVERAGE_OFF_GCOV_BUG  woot
     virtual ~Tf_TestDerived() {}
     // CODE_COVERAGE_ON_GCOV_BUG
-    virtual string Virtual() const { return "cpp derived"; }
+    virtual std::string Virtual() const { return "cpp derived"; }
     virtual void Virtual2() const {}
-    virtual void Virtual3(string const &arg) {
+    virtual void Virtual3(std::string const &arg) {
         printf("cpp derived v3! : %s\n", arg.c_str());
     }
-    virtual string UnwrappedVirtual() const { return "cpp derived"; }
+    virtual std::string UnwrappedVirtual() const { return "cpp derived"; }
 
     static Tf_TestDerivedRefPtr Factory() {
         return TfCreateRefPtr(new Tf_TestDerived());
@@ -112,7 +109,7 @@ class Tf_TestDerived : public Tf_TestBase {
 };
 
 
-static string TakesConstBase(Tf_TestBaseConstPtr base) {
+static std::string TakesConstBase(Tf_TestBaseConstPtr base) {
     return base->Virtual();
 }
 
@@ -128,14 +125,14 @@ static Tf_TestBaseRefPtr ReturnsBaseRefPtr(Tf_TestBasePtr base) {
     return base;
 }
 
-static tuple TakesBase(Tf_TestBasePtr base) {
+static boost::python::tuple TakesBase(Tf_TestBasePtr base) {
     base->Virtual3("hello from TakesConstBase");
     base->Virtual2();
     bool isDerived = TfDynamic_cast<Tf_TestDerivedPtr>(base);
     return boost::python::make_tuple(isDerived, base->Virtual());
 }
 
-static string TakesDerived(Tf_TestDerivedPtr derived) {
+static std::string TakesDerived(Tf_TestDerivedPtr derived) {
     derived->Virtual3("A call to virtual 3!");
     return derived->Virtual();
 }
@@ -153,26 +150,26 @@ TF_REGISTRY_FUNCTION(TfType)
 template <typename T = Tf_TestBase>
 struct polymorphic_Tf_TestBase : public T, public TfPyPolymorphic<T> {
     typedef polymorphic_Tf_TestBase This;
-    virtual string Virtual() const {
-        return this->template CallPureVirtual<string>("Virtual")();
+    virtual std::string Virtual() const {
+        return this->template CallPureVirtual<std::string>("Virtual")();
     }
     virtual void Virtual2() const {
         return this->template CallPureVirtual<void>("Virtual2")();
     }
-    virtual void Virtual3(string const &arg) {
+    virtual void Virtual3(std::string const &arg) {
         return this->template CallPureVirtual<void>("Virtual3")(arg);
     }
-    string default_Virtual4() const { return T::Virtual4(); }
-    virtual string Virtual4() const {
+    std::string default_Virtual4() const { return T::Virtual4(); }
+    virtual std::string Virtual4() const {
         return this->CallVirtual("Virtual4", &This::default_Virtual4)();
     }
-    virtual string UnwrappedVirtual() const {
-        return this->template CallPureVirtual<string>("UnwrappedVirtual")();
+    virtual std::string UnwrappedVirtual() const {
+        return this->template CallPureVirtual<std::string>("UnwrappedVirtual")();
     }
 
 };
 
-static string
+static std::string
 callVirtual(Tf_TestBase * base)
 {
     return base->VirtualCaller();
@@ -181,16 +178,16 @@ callVirtual(Tf_TestBase * base)
 template <typename T = Tf_TestDerived>
 struct polymorphic_Tf_TestDerived : public polymorphic_Tf_TestBase<T> {
     typedef polymorphic_Tf_TestDerived This;
-    string default_Virtual() const { return T::Virtual(); }
-    virtual string Virtual() const {
+    std::string default_Virtual() const { return T::Virtual(); }
+    virtual std::string Virtual() const {
         return this->CallVirtual("Virtual", &This::default_Virtual)();
     }
     void default_Virtual2() const { return T::Virtual2(); }
     virtual void Virtual2() const {
         return this->CallVirtual("Virtual2", &This::default_Virtual2)();
     }
-    void default_Virtual3(string const &arg) { return T::Virtual3(arg); }
-    virtual void Virtual3(string const &arg) {
+    void default_Virtual3(std::string const &arg) { return T::Virtual3(arg); }
+    virtual void Virtual3(std::string const &arg) {
         return this->CallVirtual("Virtual3", &This::default_Virtual3)(arg);
     }
 };
@@ -329,8 +326,8 @@ static void takesTestEnum2(Tf_Enum::TestEnum2 e) {
            (int)e, TfEnum::GetName(e).c_str());
 }
 
-static void registerInvalidEnum(object &obj) {
-    scope s = obj;
+static void registerInvalidEnum(boost::python::object &obj) {
+    boost::python::scope s = obj;
 
     // This should be used to produce a coding error. The _Alpha value will
     // conflict with the corresponding (sanitized) enum name that was already
@@ -347,29 +344,29 @@ static void callback(std::function<void ()> const &f) {
     f();
 }
 
-static string stringCallback(std::function<string ()> const &f) {
+static std::string stringCallback(std::function<std::string ()> const &f) {
     return f();
 }
 
-static string stringStringCallback(std::function<string (string)> const &f) {
+static std::string stringStringCallback(std::function<std::string (std::string)> const &f) {
     return f("c++ is calling...");
 }
 
-static string callUnboundInstance(std::function<string (string)> const &f,
-                                  string const &str) {
+static std::string callUnboundInstance(std::function<std::string (std::string)> const &f,
+                                  std::string const &str) {
     return f(str);
 }
 
-static TfStaticData<std::function<string ()> > _testCallback;
+static TfStaticData<std::function<std::string ()> > _testCallback;
 
-static void setTestCallback(std::function<string ()> const &func) {
+static void setTestCallback(std::function<std::string ()> const &func) {
     *_testCallback = func;
 }
 
-static string invokeTestCallback() {
+static std::string invokeTestCallback() {
     if (*_testCallback)
         return (*_testCallback)();
-    return string();
+    return std::string();
 }
 
 
@@ -389,11 +386,11 @@ public:
     virtual ~Tf_ClassWithClassMethod() {}
 };
 
-static tuple
-_TestClassMethod( object & pyClassObj, const object & callable )
+static boost::python::tuple
+_TestClassMethod( boost::python::object & pyClassObj, const boost::python::object & callable )
 {
     return boost::python::make_tuple(
-        pyClassObj, TfPyCall<object>(callable)() );
+        pyClassObj, TfPyCall<boost::python::object>(callable)() );
 }
 
 // ////////////////////////////////
@@ -436,13 +433,13 @@ class Tf_ClassWithVarArgInit : public TfRefBase, public TfWeakBase
 {
 public:
     bool allowExtraArgs;
-    tuple args;
-    dict kwargs;
+    boost::python::tuple args;
+    boost::python::dict kwargs;
 };
 
 static Tf_ClassWithVarArgInitRefPtr 
 _MakeClassWithVarArgInit(bool allowExtraArgs, 
-                         const tuple& args, const dict& kwargs)
+                         const boost::python::tuple& args, const boost::python::dict& kwargs)
 {
     // To Python consumer, this class has 3 explicit optional arguments, named 
     // 'a', 'b', and 'c'.
@@ -451,7 +448,7 @@ _MakeClassWithVarArgInit(bool allowExtraArgs,
         (TfPyArg("b", ""))
         (TfPyArg("c", ""));
 
-    const std::pair<tuple, dict> params = 
+    const std::pair<boost::python::tuple, boost::python::dict> params = 
         TfPyProcessOptionalArgs(args, kwargs, optionalArgs, allowExtraArgs);
 
     Tf_ClassWithVarArgInitRefPtr rval = 
@@ -467,12 +464,12 @@ _MakeClassWithVarArgInit(bool allowExtraArgs,
 ////////////////////////////////
 // Bytearray conversion
 
-static object
-_ConvertByteListToByteArray(const list& byteList)
+static boost::python::object
+_ConvertByteListToByteArray(const boost::python::list& byteList)
 {
     std::vector<char> inputList;
-    for (int i = 0; i < len(byteList); ++i) {
-        inputList.push_back(extract<char>(byteList[i]));
+    for (int i = 0; i < boost::python::len(byteList); ++i) {
+        inputList.push_back(boost::python::extract<char>(byteList[i]));
     }
 
     return TfPyCopyBufferToByteArray(inputList.data(), inputList.size());
@@ -487,79 +484,79 @@ void wrapTf_TestTfPython()
 //      def("f", f1, (arg("x")=3, arg("y")=4));
 //      def("f", f2, (arg("x")=5, arg("y")=6));
 
-    def("_ConvertByteListToByteArray", _ConvertByteListToByteArray);
+    boost::python::def("_ConvertByteListToByteArray", _ConvertByteListToByteArray);
 
-    def("_sendTfNoticeWithSender", sendTfNoticeWithSender);
+    boost::python::def("_sendTfNoticeWithSender", sendTfNoticeWithSender);
     
-    def("_callback", callback);
-    def("_stringCallback", stringCallback);
-    TfPyFunctionFromPython<string (string)>();
-    def("_stringStringCallback", stringStringCallback);
-    def("_setTestCallback", setTestCallback);
-    def("_invokeTestCallback", invokeTestCallback);
-    def("_callUnboundInstance", callUnboundInstance);
+    boost::python::def("_callback", callback);
+    boost::python::def("_stringCallback", stringCallback);
+    TfPyFunctionFromPython<std::string (std::string)>();
+    boost::python::def("_stringStringCallback", stringStringCallback);
+    boost::python::def("_setTestCallback", setTestCallback);
+    boost::python::def("_invokeTestCallback", invokeTestCallback);
+    boost::python::def("_callUnboundInstance", callUnboundInstance);
 
     TfPyWrapEnum<Tf_TestEnum>();
 
     {
-        scope enumScope = class_<Tf_Enum>("_Enum", no_init);
+        boost::python::scope enumScope = boost::python::class_<Tf_Enum>("_Enum", boost::python::no_init);
         TfPyWrapEnum<Tf_Enum::TestEnum2>();
         TfPyWrapEnum<Tf_Enum::TestScopedEnum>();
     }
 
     TfPyWrapEnum<Tf_TestScopedEnum>();
 
-    def("_takesTfEnum", takesTfEnum);
-    def("_returnsTfEnum", returnsTfEnum);
-    def("_takesTestEnum", takesTestEnum);
-    def("_takesTestEnum2", takesTestEnum2);
-    def("_registerInvalidEnum", registerInvalidEnum);
+    boost::python::def("_takesTfEnum", takesTfEnum);
+    boost::python::def("_returnsTfEnum", returnsTfEnum);
+    boost::python::def("_takesTestEnum", takesTestEnum);
+    boost::python::def("_takesTestEnum2", takesTestEnum2);
+    boost::python::def("_registerInvalidEnum", registerInvalidEnum);
 
     
-    def("_doErrors", doErrors);
+    boost::python::def("_doErrors", doErrors);
     
-    def("_mightRaise", mightRaise);
+    boost::python::def("_mightRaise", mightRaise);
 
-    def("_ThrowCppException", _ThrowCppException);
+    boost::python::def("_ThrowCppException", _ThrowCppException);
 
-    def("_TakesVecVecString", TakesVecVecString);
+    boost::python::def("_TakesVecVecString", TakesVecVecString);
     
-    class_<_TestStaticMethodError>("_TestStaticMethodError", no_init)
+    boost::python::class_<_TestStaticMethodError>("_TestStaticMethodError", boost::python::no_init)
         .def("Error", &_TestStaticMethodError::Error)
         .staticmethod("Error")
         ;
 
-    def("_TakesReference", TakesReference);
-    def("_TakesConstBase", TakesConstBase);
-    def("_ReturnsConstBase", ReturnsConstBase);
-    def("_TakesBase", TakesBase);
-    def("_ReturnsBase", ReturnsBase);
-    def("_ReturnsBaseRefPtr", ReturnsBaseRefPtr);
-    def("_TakesDerived", TakesDerived);
+    boost::python::def("_TakesReference", TakesReference);
+    boost::python::def("_TakesConstBase", TakesConstBase);
+    boost::python::def("_ReturnsConstBase", ReturnsConstBase);
+    boost::python::def("_TakesBase", TakesBase);
+    boost::python::def("_ReturnsBase", ReturnsBase);
+    boost::python::def("_ReturnsBaseRefPtr", ReturnsBaseRefPtr);
+    boost::python::def("_TakesDerived", TakesDerived);
     
-    def("_DerivedFactory", Tf_TestDerived::Factory,
-        return_value_policy<TfPyRefPtrFactory<> >());
+    boost::python::def("_DerivedFactory", Tf_TestDerived::Factory,
+        boost::python::return_value_policy<TfPyRefPtrFactory<> >());
 
-    def("_DerivedNullFactory", Tf_TestDerived::NullFactory,
-        return_value_policy<TfPyRefPtrFactory<> >());
+    boost::python::def("_DerivedNullFactory", Tf_TestDerived::NullFactory,
+        boost::python::return_value_policy<TfPyRefPtrFactory<> >());
     
-    class_<polymorphic_Tf_TestBase<>,
+    boost::python::class_<polymorphic_Tf_TestBase<>,
         TfWeakPtr<polymorphic_Tf_TestBase<> >, boost::noncopyable>
-        ("_TestBase", no_init)
+        ("_TestBase", boost::python::no_init)
         .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(__Ref_init__<polymorphic_Tf_TestBase<> >))
-        .def("Virtual", pure_virtual(&Tf_TestBase::Virtual))
-        .def("Virtual2", pure_virtual(&Tf_TestBase::Virtual2))
-        .def("Virtual3", pure_virtual(&Tf_TestBase::Virtual3))
+        .def("Virtual", boost::python::pure_virtual(&Tf_TestBase::Virtual))
+        .def("Virtual2", boost::python::pure_virtual(&Tf_TestBase::Virtual2))
+        .def("Virtual3", boost::python::pure_virtual(&Tf_TestBase::Virtual3))
         .def("Virtual4", &Tf_TestBase::Virtual4,
              &polymorphic_Tf_TestBase<>::default_Virtual4)
         .def("TestCallVirtual", &callVirtual)
         ;
  
-    class_<polymorphic_Tf_TestDerived<>,
+    boost::python::class_<polymorphic_Tf_TestDerived<>,
         TfWeakPtr<polymorphic_Tf_TestDerived<> >,
-        bases<Tf_TestBase>, boost::noncopyable>
-        ("_TestDerived", no_init)
+        boost::python::bases<Tf_TestBase>, boost::noncopyable>
+        ("_TestDerived", boost::python::no_init)
         .def(TfPyRefAndWeakPtr())
         .def("__init__",
              TfMakePyConstructor(__Ref_init__<polymorphic_Tf_TestDerived<> >))
@@ -571,13 +568,13 @@ void wrapTf_TestTfPython()
              &polymorphic_Tf_TestDerived<>::default_Virtual3)
         ;
 
-    class_<Tf_ClassWithClassMethod>("_ClassWithClassMethod", init<>() )
+    boost::python::class_<Tf_ClassWithClassMethod>("_ClassWithClassMethod", boost::python::init<>() )
         .def("Test", &_TestClassMethod)
         .def(TfPyClassMethod("Test"))
         ;
 
-    class_<Tf_ClassWithVarArgInit, Tf_ClassWithVarArgInitPtr>
-        ("_ClassWithVarArgInit", no_init)
+    boost::python::class_<Tf_ClassWithVarArgInit, Tf_ClassWithVarArgInitPtr>
+        ("_ClassWithVarArgInit", boost::python::no_init)
         .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructorWithVarArgs(&_MakeClassWithVarArgInit))
         .add_property("allowExtraArgs", 

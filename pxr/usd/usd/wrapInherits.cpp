@@ -28,24 +28,22 @@
 #include <boost/python/class.hpp>
 #include <boost/python/operators.hpp>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdInherits()
 {
-    class_<UsdInherits>("Inherits", no_init)
+    boost::python::class_<UsdInherits>("Inherits", boost::python::no_init)
         .def("AddInherit", &UsdInherits::AddInherit,
-             (arg("primPath"),
-              arg("position")=UsdListPositionBackOfPrependList))
-        .def("RemoveInherit", &UsdInherits::RemoveInherit, arg("primPath"))
+             (boost::python::arg("primPath"),
+              boost::python::arg("position")=UsdListPositionBackOfPrependList))
+        .def("RemoveInherit", &UsdInherits::RemoveInherit, boost::python::arg("primPath"))
         .def("ClearInherits", &UsdInherits::ClearInherits)
         .def("SetInherits", &UsdInherits::SetInherits)
         .def("GetAllDirectInherits", &UsdInherits::GetAllDirectInherits,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetPrim", (UsdPrim (UsdInherits::*)()) &UsdInherits::GetPrim)
-        .def(!self)
+        .def(!boost::python::self)
         ;
 }

@@ -32,9 +32,7 @@
 
 #include <vector>
 
-using std::vector;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -56,92 +54,92 @@ GetId(const UsdStageCache &self, const UsdStagePtr &stage) {
 
 void wrapUsdStageCache()
 {
-    scope s = class_<UsdStageCache>("StageCache")
-        .def(init<const UsdStageCache &>())
+    boost::python::scope s = boost::python::class_<UsdStageCache>("StageCache")
+        .def(boost::python::init<const UsdStageCache &>())
         .def("swap", &UsdStageCache::swap)
 
         .def("GetAllStages", &UsdStageCache::GetAllStages,
-             return_value_policy<TfPySequenceToList>()) 
+             boost::python::return_value_policy<TfPySequenceToList>()) 
         .def("Size", &UsdStageCache::Size)
         .def("IsEmpty", &UsdStageCache::IsEmpty)
 
         .def("Find", (UsdStageRefPtr
                       (UsdStageCache::*)(UsdStageCache::Id) const)
-             &UsdStageCache::Find, arg("id"))
+             &UsdStageCache::Find, boost::python::arg("id"))
 
         .def("FindOneMatching",
              (UsdStageRefPtr (UsdStageCache::*)(
                  const SdfLayerHandle &) const)
-             &UsdStageCache::FindOneMatching, (arg("rootLayer")))
+             &UsdStageCache::FindOneMatching, (boost::python::arg("rootLayer")))
         .def("FindOneMatching",
              (UsdStageRefPtr (UsdStageCache::*)(
                  const SdfLayerHandle &, const SdfLayerHandle &) const)
-             &UsdStageCache::FindOneMatching, (arg("rootLayer"),
-                                                arg("sessionLayer")))
+             &UsdStageCache::FindOneMatching, (boost::python::arg("rootLayer"),
+                                                boost::python::arg("sessionLayer")))
         .def("FindOneMatching",
              (UsdStageRefPtr (UsdStageCache::*)(
                  const SdfLayerHandle &, const ArResolverContext &) const)
-             &UsdStageCache::FindOneMatching, (arg("rootLayer"),
-                                                arg("pathResolverContext")))
+             &UsdStageCache::FindOneMatching, (boost::python::arg("rootLayer"),
+                                                boost::python::arg("pathResolverContext")))
         .def("FindOneMatching",
              (UsdStageRefPtr (UsdStageCache::*)(
                  const SdfLayerHandle &, const SdfLayerHandle &,
                  const ArResolverContext &) const)
-             &UsdStageCache::FindOneMatching, (arg("rootLayer"),
-                                                arg("sessionLayer"),
-                                                arg("pathResolverContext")))
+             &UsdStageCache::FindOneMatching, (boost::python::arg("rootLayer"),
+                                                boost::python::arg("sessionLayer"),
+                                                boost::python::arg("pathResolverContext")))
 
         .def("FindAllMatching",
-             (vector<UsdStageRefPtr> (UsdStageCache::*)(
+             (std::vector<UsdStageRefPtr> (UsdStageCache::*)(
                  const SdfLayerHandle &) const)
-             &UsdStageCache::FindAllMatching, (arg("rootLayer")),
-             return_value_policy<TfPySequenceToList>())
+             &UsdStageCache::FindAllMatching, (boost::python::arg("rootLayer")),
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("FindAllMatching",
-             (vector<UsdStageRefPtr> (UsdStageCache::*)(
+             (std::vector<UsdStageRefPtr> (UsdStageCache::*)(
                  const SdfLayerHandle &, const SdfLayerHandle &) const)
-             &UsdStageCache::FindAllMatching, (arg("rootLayer"),
-                                                arg("sessionLayer")),
-             return_value_policy<TfPySequenceToList>())
+             &UsdStageCache::FindAllMatching, (boost::python::arg("rootLayer"),
+                                                boost::python::arg("sessionLayer")),
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("FindAllMatching",
-             (vector<UsdStageRefPtr> (UsdStageCache::*)(
+             (std::vector<UsdStageRefPtr> (UsdStageCache::*)(
                  const SdfLayerHandle &, const ArResolverContext &) const)
-             &UsdStageCache::FindAllMatching, (arg("rootLayer"),
-                                                arg("pathResolverContext")),
-             return_value_policy<TfPySequenceToList>())
+             &UsdStageCache::FindAllMatching, (boost::python::arg("rootLayer"),
+                                                boost::python::arg("pathResolverContext")),
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("FindAllMatching",
-             (vector<UsdStageRefPtr> (UsdStageCache::*)(
+             (std::vector<UsdStageRefPtr> (UsdStageCache::*)(
                  const SdfLayerHandle &, const SdfLayerHandle &,
                  const ArResolverContext &) const)
-             &UsdStageCache::FindAllMatching, (arg("rootLayer"),
-                                                arg("sessionLayer"),
-                                                arg("pathResolverContext")),
-             return_value_policy<TfPySequenceToList>())
+             &UsdStageCache::FindAllMatching, (boost::python::arg("rootLayer"),
+                                                boost::python::arg("sessionLayer"),
+                                                boost::python::arg("pathResolverContext")),
+             boost::python::return_value_policy<TfPySequenceToList>())
 
-        .def("Contains", Contains, arg("stage"))
+        .def("Contains", Contains, boost::python::arg("stage"))
         .def("Contains", (bool (UsdStageCache::*)(UsdStageCache::Id) const)
-             &UsdStageCache::Contains, arg("id"))
-        .def("GetId", GetId, arg("stage"))
-        .def("Insert", &UsdStageCache::Insert, arg("stage"))
+             &UsdStageCache::Contains, boost::python::arg("id"))
+        .def("GetId", GetId, boost::python::arg("stage"))
+        .def("Insert", &UsdStageCache::Insert, boost::python::arg("stage"))
 
         .def("Erase", (bool (UsdStageCache::*)(UsdStageCache::Id))
-             &UsdStageCache::Erase, arg("id"))
+             &UsdStageCache::Erase, boost::python::arg("id"))
         .def("Erase", (bool (UsdStageCache::*)(const UsdStageRefPtr &))
-             &UsdStageCache::Erase, arg("stage"))
+             &UsdStageCache::Erase, boost::python::arg("stage"))
 
         .def("EraseAll", (size_t (UsdStageCache::*)(const SdfLayerHandle &))
-             &UsdStageCache::EraseAll, arg("rootLayer"))
+             &UsdStageCache::EraseAll, boost::python::arg("rootLayer"))
         .def("EraseAll", (size_t (UsdStageCache::*)(const SdfLayerHandle &,
                                                      const SdfLayerHandle &))
              &UsdStageCache::EraseAll,
-             (arg("rootLayer"), arg("sessionLayer")))
+             (boost::python::arg("rootLayer"), boost::python::arg("sessionLayer")))
         .def("EraseAll", (size_t (UsdStageCache::*)(
                               const SdfLayerHandle &,
                               const SdfLayerHandle &,
                               const ArResolverContext &))
              &UsdStageCache::EraseAll,
-             (arg("rootLayer"),
-              arg("sessionLayer"),
-              arg("pathResolverContext")))
+             (boost::python::arg("rootLayer"),
+              boost::python::arg("sessionLayer"),
+              boost::python::arg("pathResolverContext")))
 
         .def("Clear", &UsdStageCache::Clear)
 
@@ -149,21 +147,21 @@ void wrapUsdStageCache()
         .def("GetDebugName", &UsdStageCache::GetDebugName)
         ;
 
-    class_<UsdStageCache::Id>("Id")
-        .def("FromLongInt", &UsdStageCache::Id::FromLongInt, arg("val"))
+    boost::python::class_<UsdStageCache::Id>("Id")
+        .def("FromLongInt", &UsdStageCache::Id::FromLongInt, boost::python::arg("val"))
             .staticmethod("FromLongInt")
-        .def("FromString", &UsdStageCache::Id::FromString, arg("s"))
+        .def("FromString", &UsdStageCache::Id::FromString, boost::python::arg("s"))
             .staticmethod("FromString")
         .def("ToLongInt", &UsdStageCache::Id::ToLongInt)
         .def("ToString", &UsdStageCache::Id::ToString)
         .def("IsValid", &UsdStageCache::Id::IsValid)
-        .def(!self)
-        .def(self < self)
-        .def(self <= self)
-        .def(self > self)
-        .def(self >= self)
-        .def(self == self)
-        .def(self != self)
+        .def(!boost::python::self)
+        .def(boost::python::self < boost::python::self)
+        .def(boost::python::self <= boost::python::self)
+        .def(boost::python::self > boost::python::self)
+        .def(boost::python::self >= boost::python::self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
         .def("__hash__", __hash__)
         ;
 }

@@ -31,7 +31,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-using std::vector;
 
 TF_INSTANTIATE_DEFINED_STACKED(UsdStageCacheContext);
 
@@ -42,11 +41,11 @@ TF_REGISTRY_FUNCTION(TfEnum) {
 }
 
 /* static */
-vector<const UsdStageCache *>
+std::vector<const UsdStageCache *>
 UsdStageCacheContext::_GetReadOnlyCaches()
 {
     const Stack &stack = GetStack();
-    vector<const UsdStageCache *> caches;
+    std::vector<const UsdStageCache *> caches;
     caches.reserve(stack.size());
     for (auto ctxIter = stack.rbegin(); ctxIter != stack.rend(); ++ctxIter) {
         const auto& ctx = *ctxIter;
@@ -62,11 +61,11 @@ UsdStageCacheContext::_GetReadOnlyCaches()
 }
 
 /* static */
-vector<const UsdStageCache *>
+std::vector<const UsdStageCache *>
 UsdStageCacheContext::_GetReadableCaches()
 {
     const Stack &stack = GetStack();
-    vector<const UsdStageCache *> caches;
+    std::vector<const UsdStageCache *> caches;
     caches.reserve(stack.size());
     for (auto ctxIter = stack.rbegin(); ctxIter != stack.rend(); ++ctxIter) {
         const auto& ctx = *ctxIter;
@@ -87,7 +86,7 @@ std::vector<UsdStageCache *>
 UsdStageCacheContext::_GetWritableCaches()
 {
     const Stack &stack = GetStack();
-    vector<UsdStageCache *> caches;
+    std::vector<UsdStageCache *> caches;
     caches.reserve(stack.size());
     for (auto ctxIter = stack.rbegin(); ctxIter != stack.rend(); ++ctxIter) {
         const auto& ctx = *ctxIter;

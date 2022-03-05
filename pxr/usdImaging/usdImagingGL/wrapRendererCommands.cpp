@@ -30,7 +30,6 @@
 
 #include "pxr/imaging/hd/command.h"
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -43,13 +42,13 @@ wrapRendererCommands()
 {
     // Wrap the UsdImagingGLRendererCommandArgDescriptor struct.
     // Accessible as UsdImagingGL.RendererCommandArgDescriptor
-    class_<UsdImagingGLRendererCommandArgDescriptor>(
+    boost::python::class_<UsdImagingGLRendererCommandArgDescriptor>(
             "RendererCommandArgDescriptor",
-            "Renderer Command Argument Metadata", no_init)
+            "Renderer Command Argument Metadata", boost::python::no_init)
         .add_property("argName", 
-                make_getter(
+                boost::python::make_getter(
                     &UsdImagingGLRendererCommandArgDescriptor::argName,
-                    return_value_policy<return_by_value>()))
+                    boost::python::return_value_policy<boost::python::return_by_value>()))
 
         .def_readonly("defaultValue",
                   &UsdImagingGLRendererCommandArgDescriptor::defaultValue)
@@ -59,12 +58,12 @@ wrapRendererCommands()
 
     // Wrap the UsdImagingGLRendererCommandDescriptor struct.
     // Accessible as UsdImagingGL.RendererCommandDescriptor
-    class_<UsdImagingGLRendererCommandDescriptor>("RendererCommandDescriptor",
-            "Renderer Command Metadata", no_init)
+    boost::python::class_<UsdImagingGLRendererCommandDescriptor>("RendererCommandDescriptor",
+            "Renderer Command Metadata", boost::python::no_init)
         .add_property("commandName", 
-                make_getter(
+                boost::python::make_getter(
                     &UsdImagingGLRendererCommandDescriptor::commandName,
-                    return_value_policy<return_by_value>()))
+                    boost::python::return_value_policy<boost::python::return_by_value>()))
 
         .def_readonly("commandDescription",
                   &UsdImagingGLRendererCommandDescriptor::commandDescription)

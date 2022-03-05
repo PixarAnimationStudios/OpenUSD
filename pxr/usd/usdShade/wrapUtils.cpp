@@ -33,17 +33,16 @@
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static object 
+static boost::python::object 
 _GetBaseNameAndType(const TfToken &fullName)
 {
     const auto &result = UsdShadeUtils::GetBaseNameAndType(fullName);
-    return make_tuple(result.first, result.second);
+    return boost::python::make_tuple(result.first, result.second);
 }
 
 } // anonymous namespace 
@@ -57,7 +56,7 @@ void wrapUsdShadeUtils()
         const UsdShadeOutput &output, bool includeAuthoredValues) = 
             &UsdShadeUtils::GetValueProducingAttributes;
 
-    scope thisScope = class_<UsdShadeUtils>("Utils", no_init)
+    boost::python::scope thisScope = boost::python::class_<UsdShadeUtils>("Utils", boost::python::no_init)
         .def("GetPrefixForAttributeType", 
             UsdShadeUtils::GetPrefixForAttributeType)
         .staticmethod("GetPrefixForAttributeType")
@@ -72,9 +71,9 @@ void wrapUsdShadeUtils()
         .staticmethod("GetFullName")
 
         .def("GetValueProducingAttributes", GetValueProducingAttributes_Input,
-            (arg("input"), arg("shaderOutputsOnly")=false))
+            (boost::python::arg("input"), boost::python::arg("shaderOutputsOnly")=false))
         .def("GetValueProducingAttributes", GetValueProducingAttributes_Output,
-            (arg("output"), arg("shaderOutputsOnly")=false))
+            (boost::python::arg("output"), boost::python::arg("shaderOutputsOnly")=false))
         .staticmethod("GetValueProducingAttributes")
         ;
 

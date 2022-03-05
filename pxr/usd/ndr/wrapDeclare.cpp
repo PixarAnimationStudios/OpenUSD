@@ -31,7 +31,6 @@
 #include <boost/python/class.hpp>
 #include <boost/python/operators.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -63,11 +62,11 @@ wrapVersion()
 {
     typedef NdrVersion This;
 
-    class_<This>("Version", no_init)
-        .def(init<>())
-        .def(init<int>())
-        .def(init<int, int>())
-        .def(init<std::string>())
+    boost::python::class_<This>("Version", boost::python::no_init)
+        .def(boost::python::init<>())
+        .def(boost::python::init<int>())
+        .def(boost::python::init<int, int>())
+        .def(boost::python::init<std::string>())
         .def("GetMajor", &This::GetMajor)
         .def("GetMinor", &This::GetMinor)
         .def("IsDefault", &This::IsDefault)
@@ -76,13 +75,13 @@ wrapVersion()
         .def("__repr__", _Repr)
         .def("__str__", &This::GetString)
         .def("__hash__", &This::GetHash)
-        .def(!self)
-        .def(self == self)
-        .def(self != self)
-        .def(self < self)
-        .def(self <= self)
-        .def(self > self)
-        .def(self >= self)
+        .def(!boost::python::self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self < boost::python::self)
+        .def(boost::python::self <= boost::python::self)
+        .def(boost::python::self > boost::python::self)
+        .def(boost::python::self >= boost::python::self)
         ;
 }
 

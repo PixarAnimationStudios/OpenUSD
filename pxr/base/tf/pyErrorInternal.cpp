@@ -31,7 +31,6 @@
 #include <boost/python/handle.hpp>
 #include <boost/python/object.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,16 +40,16 @@ TF_REGISTRY_FUNCTION(TfEnum) {
 
 // Should probably use a better mechanism.
 
-static handle<> _ExceptionClass;
+static boost::python::handle<> _ExceptionClass;
 
-handle<> Tf_PyGetErrorExceptionClass()
+boost::python::handle<> Tf_PyGetErrorExceptionClass()
 {
     return _ExceptionClass;
 }
 
-void Tf_PySetErrorExceptionClass(object const &cls)
+void Tf_PySetErrorExceptionClass(boost::python::object const &cls)
 {
-    _ExceptionClass = handle<>(borrowed(cls.ptr()));
+    _ExceptionClass = boost::python::handle<>(boost::python::borrowed(cls.ptr()));
 }
 
 
@@ -58,9 +57,9 @@ TfPyExceptionState
 Tf_PyFetchPythonExceptionState() {
     PyObject *excType, *excValue, *excTrace;
     PyErr_Fetch(&excType, &excValue, &excTrace);
-    return TfPyExceptionState(handle<>(allow_null(excType)),
-                              handle<>(allow_null(excValue)),
-                              handle<>(allow_null(excTrace)));
+    return TfPyExceptionState(boost::python::handle<>(boost::python::allow_null(excType)),
+                              boost::python::handle<>(boost::python::allow_null(excValue)),
+                              boost::python::handle<>(boost::python::allow_null(excTrace)));
 }
 
 

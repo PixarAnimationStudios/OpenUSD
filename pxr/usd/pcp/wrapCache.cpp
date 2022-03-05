@@ -38,8 +38,6 @@
 #include <boost/python.hpp>
 #include <memory>
 
-using namespace boost::python;
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -80,9 +78,9 @@ _ComputePrimIndex( PcpCache& cache, const SdfPath & path )
     // by the first argument, the PcpCache, and shouldn't be destroyed
     // by Python.  The boost::ref() around the arguments ensure that
     // boost python will not make temporary copies of them.
-    object pyWrapPrimIndex =
-        make_function(_WrapPrimIndex, return_internal_reference<>());
-    object pyPrimIndex(pyWrapPrimIndex(boost::ref(cache),
+    boost::python::object pyWrapPrimIndex =
+        boost::python::make_function(_WrapPrimIndex, boost::python::return_internal_reference<>());
+    boost::python::object pyPrimIndex(pyWrapPrimIndex(boost::ref(cache),
                                        boost::ref(primIndex)));
 
     // Return the prim index and errors to python.
@@ -98,9 +96,9 @@ _FindPrimIndex( PcpCache& cache, const SdfPath & path )
         // by the first argument, the PcpCache, and shouldn't be destroyed
         // by Python.  The boost::ref() around the arguments ensure that
         // boost python will not make temporary copies of them.
-        object pyWrapPrimIndex =
-            make_function(_WrapPrimIndex, return_internal_reference<>());
-        object pyPrimIndex(pyWrapPrimIndex(boost::ref(cache),
+        boost::python::object pyWrapPrimIndex =
+            boost::python::make_function(_WrapPrimIndex, boost::python::return_internal_reference<>());
+        boost::python::object pyPrimIndex(pyWrapPrimIndex(boost::ref(cache),
                                            boost::ref(*primIndex)));
         return pyPrimIndex;
     }
@@ -112,7 +110,7 @@ _ComputePropertyIndex( PcpCache &cache, const SdfPath &path )
 {
     PcpErrorVector errors;
     const PcpPropertyIndex &result = cache.ComputePropertyIndex(path, &errors);
-    return_by_value::apply<PcpPropertyIndex>::type converter;
+    boost::python::apply<PcpPropertyIndex>::type converter;
     return boost::python::make_tuple(
         boost::python::object(boost::python::handle<>(converter(result))), 
         errors);
@@ -133,9 +131,9 @@ _FindPropertyIndex( PcpCache& cache, const SdfPath & path )
         // by the first argument, the PcpCache, and shouldn't be destroyed
         // by Python.  The boost::ref() around the arguments ensure that
         // boost python will not make temporary copies of them.
-        object pyWrapPropertyIndex =
-            make_function(_WrapPropertyIndex, return_internal_reference<>());
-        object pyPropertyIndex(pyWrapPropertyIndex(boost::ref(cache),
+        boost::python::object pyWrapPropertyIndex =
+            boost::python::make_function(_WrapPropertyIndex, boost::python::return_internal_reference<>());
+        boost::python::object pyPropertyIndex(pyWrapPropertyIndex(boost::ref(cache),
                                            boost::ref(*propIndex)));
         return pyPropertyIndex;
     }
@@ -175,7 +173,7 @@ _ComputeAttributeConnectionPaths( PcpCache &cache, const SdfPath & path,
 }
 
 static void
-_SetVariantFallbacks(PcpCache & cache, const dict& d)
+_SetVariantFallbacks(PcpCache & cache, const boost::python::dict& d)
 {
     PcpVariantFallbackMap fallbacks;
     if (PcpVariantFallbackMapFromPython(d, &fallbacks)) {
@@ -229,42 +227,42 @@ _Reload( PcpCache & cache )
 void 
 wrapCache()
 {
-    class_<PcpCache, boost::noncopyable> 
+    boost::python::class_<PcpCache, boost::noncopyable> 
         ("Cache", 
-         init<const PcpLayerStackIdentifier&,
+         boost::python::init<const PcpLayerStackIdentifier&,
               const std::string&, 
               bool>(
-              (arg("layerStackIdentifier"),
-               arg("fileFormatTarget") = std::string(),
-               arg("usd") = false)))
+              (boost::python::arg("layerStackIdentifier"),
+               boost::python::arg("fileFormatTarget") = std::string(),
+               boost::python::arg("usd") = false)))
 
         // Note: The following parameters are not wrapped as a properties
         // because setting them may require returning additional out-
         // parameters representing the resulting cache invalidation.
         .def("GetLayerStackIdentifier", &PcpCache::GetLayerStackIdentifier,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .def("SetVariantFallbacks", &_SetVariantFallbacks)
         .def("GetVariantFallbacks", &PcpCache::GetVariantFallbacks,
-             return_value_policy<TfPyMapToDictionary>())
+             boost::python::return_value_policy<TfPyMapToDictionary>())
         .def("GetUsedLayers", &PcpCache::GetUsedLayers,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetUsedLayersRevision", &PcpCache::GetUsedLayersRevision)
         .def("IsPayloadIncluded", &PcpCache::IsPayloadIncluded)
         .def("RequestPayloads", &_RequestPayloads)
         .def("RequestLayerMuting", &_RequestLayerMuting,
-             (args("layersToMute"),
-              args("layersToUnmute")))
+             (boost::python::args("layersToMute"),
+              boost::python::args("layersToUnmute")))
         .def("GetMutedLayers", &PcpCache::GetMutedLayers,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("IsLayerMuted", 
              (bool(PcpCache::*)(const std::string&) const)
                 &PcpCache::IsLayerMuted,
-             (args("layerIdentifier")))
+             (boost::python::args("layerIdentifier")))
 
         .add_property("layerStack", &PcpCache::GetLayerStack)
         .add_property("fileFormatTarget", 
-                      make_function(&PcpCache::GetFileFormatTarget,
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&PcpCache::GetFileFormatTarget,
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
 
         .def("ComputeLayerStack", &_ComputeLayerStack)
         .def("UsesLayerStack", &PcpCache::UsesLayerStack)
@@ -275,29 +273,29 @@ wrapCache()
 
         .def("ComputeRelationshipTargetPaths", 
              &_ComputeRelationshipTargetPaths,
-             (args("relPath"),
-              args("localOnly") = false,
-              args("stopProperty") = SdfSpecHandle(),
-              args("includeStopProperty") = false))
+             (boost::python::args("relPath"),
+              boost::python::args("localOnly") = false,
+              boost::python::args("stopProperty") = SdfSpecHandle(),
+              boost::python::args("includeStopProperty") = false))
         .def("ComputeAttributeConnectionPaths", 
              &_ComputeAttributeConnectionPaths,
-             (args("relPath"),
-              args("localOnly") = false,
-              args("stopProperty") = SdfSpecHandle(),
-              args("includeStopProperty") = false))
+             (boost::python::args("relPath"),
+              boost::python::args("localOnly") = false,
+              boost::python::args("stopProperty") = SdfSpecHandle(),
+              boost::python::args("includeStopProperty") = false))
 
         .def("FindSiteDependencies",
              &_FindSiteDependencies,
-             (args("siteLayerStack"),
-              args("sitePath"),
-              args("dependencyType") = PcpDependencyTypeAnyNonVirtual,
-              args("recurseOnSite") = false,
-              args("recurseOnIndex") = false,
-              args("filterForExistingCachesOnly") = false),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::args("siteLayerStack"),
+              boost::python::args("sitePath"),
+              boost::python::args("dependencyType") = PcpDependencyTypeAnyNonVirtual,
+              boost::python::args("recurseOnSite") = false,
+              boost::python::args("recurseOnIndex") = false,
+              boost::python::args("filterForExistingCachesOnly") = false),
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("FindAllLayerStacksUsingLayer",
              &PcpCache::FindAllLayerStacksUsingLayer,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("IsInvalidAssetPath", &PcpCache::IsInvalidAssetPath)
         .def("IsInvalidSublayerIdentifier", 
@@ -309,7 +307,7 @@ wrapCache()
              &PcpCache::IsPossibleDynamicFileFormatArgumentField)
         .def("GetDynamicFileFormatArgumentDependencyData", 
              &PcpCache::GetDynamicFileFormatArgumentDependencyData,
-             return_value_policy<reference_existing_object>())
+             boost::python::return_value_policy<boost::python::reference_existing_object>())
 
         .def("PrintStatistics", &PcpCache::PrintStatistics)
         .def("Reload", &_Reload)

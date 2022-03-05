@@ -34,17 +34,15 @@
 #include <boost/python/def.hpp>
 #include <boost/python/scope.hpp>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
 static void
-_Warn(string const &msg, string const& moduleName, string const& functionName,
-      string const& fileName, int lineNo)
+_Warn(std::string const &msg, std::string const& moduleName, std::string const& functionName,
+      std::string const& fileName, int lineNo)
 {
     TfDiagnosticMgr::
         WarningHelper(Tf_PythonCallContext(fileName.c_str(), moduleName.c_str(),
@@ -55,10 +53,10 @@ _Warn(string const &msg, string const& moduleName, string const& functionName,
         Post(msg);
 }
 
-static string
+static std::string
 TfWarning__repr__(TfWarning const &self)
 {
-    string ret = TfStringPrintf("Warning in '%s' at line %zu in file %s : '%s'",
+    std::string ret = TfStringPrintf("Warning in '%s' at line %zu in file %s : '%s'",
              self.GetSourceFunction().c_str(),
              self.GetSourceLineNumber(),
              self.GetSourceFileName().c_str(),
@@ -70,12 +68,12 @@ TfWarning__repr__(TfWarning const &self)
 } // anonymous namespace 
 
 void wrapWarning() {
-    def("_Warn", &_Warn);
+    boost::python::def("_Warn", &_Warn);
 
     typedef TfWarning This;
 
-    scope warningScope =
-        class_<This, bases<TfDiagnosticBase> >("Warning", no_init)
+    boost::python::scope warningScope =
+        boost::python::class_<This, boost::python::bases<TfDiagnosticBase> >("Warning", boost::python::no_init)
 
         .def("__repr__", TfWarning__repr__)
         ;

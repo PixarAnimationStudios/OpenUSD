@@ -43,12 +43,7 @@
 #include <utility>
 #include <vector>
 
-using std::make_pair;
-using std::pair;
-using std::string;
-using std::vector;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -57,13 +52,13 @@ namespace {
 typedef TfWeakPtr<PlugRegistry> PlugRegistryPtr;
 
 static PlugPluginPtrVector
-_RegisterPlugins(PlugRegistryPtr self, string path)
+_RegisterPlugins(PlugRegistryPtr self, std::string path)
 {
     return self->RegisterPlugins(path);
 }
 
 static PlugPluginPtrVector
-_RegisterPluginsList(PlugRegistryPtr self, vector<string> paths)
+_RegisterPluginsList(PlugRegistryPtr self, std::vector<std::string> paths)
 {
     return self->RegisterPlugins(paths);
 }
@@ -87,7 +82,7 @@ _GetAllDerivedTypes(TfType const &type)
 {
     std::set<TfType> types;
     PlugRegistry::GetAllDerivedTypes(type, &types);
-    return vector<TfType>(types.begin(), types.end());
+    return std::vector<TfType>(types.begin(), types.end());
 }
 
 // For testing -- load plugins in parallel.
@@ -121,10 +116,9 @@ struct SharedState : boost::noncopyable {
 };
 
 template <class Range>
-string PluginNames(Range const &range) {
-    using std::distance;
-    vector<string> names(distance(boost::begin(range), boost::end(range)));
-    transform(boost::begin(range), boost::end(range), names.begin(),
+std::string PluginNames(Range const &range) {
+    std::vector<std::string> names(distance(boost::range_adl_barrier::begin(range), boost::range_adl_barrier::end(range)));
+    transform(boost::range_adl_barrier::begin(range), boost::range_adl_barrier::end(range), names.begin(),
               [](PlugPluginPtr const &plug) { return plug->GetName(); });
     return TfStringJoin(names.begin(), names.end(), ", ");
 }
@@ -139,18 +133,18 @@ void _LoadPluginsConcurrently(PluginPredicateFn pred,
     PlugPluginPtrVector plugins = PlugRegistry::GetInstance().GetAllPlugins();
 
     // Remove all plugins which fail the predicate.
-    plugins.erase(partition(plugins.begin(), plugins.end(), pred),
+    plugins.erase(std::partition(plugins.begin(), plugins.end(), pred),
                   plugins.end());
 
     // Shuffle all already loaded plugins to the end.
     PlugPluginPtrVector::iterator alreadyLoaded =
-        partition(plugins.begin(), plugins.end(),
+        std::partition(plugins.begin(), plugins.end(),
                   [](PlugPluginPtr const &plug) { return !plug->IsLoaded(); });
 
     // Report any already loaded plugins as skipped.
     if (verbose && alreadyLoaded != plugins.end()) {
         printf("Skipping already-loaded plugins: %s\n",
-               PluginNames(make_pair(alreadyLoaded, plugins.end())).c_str());
+               PluginNames(std::make_pair(alreadyLoaded, plugins.end())).c_str());
     }
 
     // Trim the already loaded plugins from the vector.
@@ -203,21 +197,21 @@ void wrapRegistry()
 
     typedef PlugRegistry This;
 
-    class_<This, TfWeakPtr<This>, boost::noncopyable>
-        ("Registry", no_init)
+    boost::python::class_<This, TfWeakPtr<This>, boost::noncopyable>
+        ("Registry", boost::python::no_init)
         .def(TfPySingleton())
         .def("RegisterPlugins", &_RegisterPlugins,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
         .def("RegisterPlugins", &_RegisterPluginsList,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetStringFromPluginMetaData", &_GetStringFromPluginMetaData)
         .def("GetPluginWithName", &This::GetPluginWithName)
         .def("GetPluginForType", &_GetPluginForType)
         .def("GetAllPlugins", &This::GetAllPlugins,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("FindTypeByName", This::FindTypeByName,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("FindTypeByName")
 
         .def("FindDerivedTypeByName", (TfType (*)(TfType, std::string const &))
@@ -225,17 +219,17 @@ void wrapRegistry()
         .staticmethod("FindDerivedTypeByName")
 
         .def("GetDirectlyDerivedTypes", This::GetDirectlyDerivedTypes,
-             return_value_policy<TfPySequenceToTuple>())
+             boost::python::return_value_policy<TfPySequenceToTuple>())
         .staticmethod("GetDirectlyDerivedTypes")
 
         .def("GetAllDerivedTypes", _GetAllDerivedTypes,
-             return_value_policy<TfPySequenceToTuple>())
+             boost::python::return_value_policy<TfPySequenceToTuple>())
         .staticmethod("GetAllDerivedTypes")
 
         ;
 
     TfPyFunctionFromPython<PluginPredicateSig>();
-    def("_LoadPluginsConcurrently",
+    boost::python::def("_LoadPluginsConcurrently",
         _LoadPluginsConcurrently,
-        (arg("predicate"), arg("numThreads")=0, arg("verbose")=false));
+        (boost::python::arg("predicate"), boost::python::arg("numThreads")=0, boost::python::arg("verbose")=false));
 }

@@ -30,7 +30,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -38,7 +37,7 @@ struct TfTokenPairToPythonConverter
 {
     static PyObject* convert(const std::pair<TfToken, TfToken>& pair)
     {
-        return incref(make_tuple(pair.first, pair.second).ptr());
+        return boost::python::incref(boost::python::make_tuple(pair.first, pair.second).ptr());
     }
 };
 
@@ -47,9 +46,9 @@ struct TfTokenPairToPythonConverter
 struct SdrShaderPropertyConstPtrToPythonConverter
 {
     static PyObject* convert(SdrShaderPropertyConstPtr shaderProperty) {
-        object shaderPropertyObject(ptr(shaderProperty));
+        boost::python::object shaderPropertyObject(boost::python::ptr(shaderProperty));
 
-        return incref(shaderPropertyObject.ptr());
+        return boost::python::incref(shaderPropertyObject.ptr());
     }
 };
 
@@ -72,14 +71,14 @@ void wrapShaderProperty()
         SDR_PROPERTY_ROLE_TOKENS
     );
 
-    to_python_converter<NdrOption, TfTokenPairToPythonConverter>();
-    return_value_policy<copy_const_reference> copyRefPolicy;
+    boost::python::to_python_converter<NdrOption, TfTokenPairToPythonConverter>();
+    boost::python::return_value_policy<boost::python::copy_const_reference> copyRefPolicy;
 
-    to_python_converter<SdrShaderPropertyConstPtr,
+    boost::python::to_python_converter<SdrShaderPropertyConstPtr,
                         SdrShaderPropertyConstPtrToPythonConverter>();
 
-    class_<This, ThisPtr, bases<NdrProperty>,
-           boost::noncopyable>("ShaderProperty", no_init)
+    boost::python::class_<This, ThisPtr, boost::python::bases<NdrProperty>,
+           boost::noncopyable>("ShaderProperty", boost::python::no_init)
         .def("GetDefaultValueAsSdfType", &This::GetDefaultValueAsSdfType,
                 copyRefPolicy)
         .def("GetLabel", &This::GetLabel, copyRefPolicy)
@@ -87,9 +86,9 @@ void wrapShaderProperty()
         .def("GetPage", &This::GetPage, copyRefPolicy)
         .def("GetWidget", &This::GetWidget, copyRefPolicy)
         .def("GetHints", &This::GetHints,
-            return_value_policy<TfPyMapToDictionary>())
+            boost::python::return_value_policy<TfPyMapToDictionary>())
         .def("GetOptions", &This::GetOptions,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetImplementationName", &This::GetImplementationName)
         .def("GetVStructMemberOf", &This::GetVStructMemberOf, copyRefPolicy)
         .def("GetVStructMemberName", &This::GetVStructMemberName, copyRefPolicy)

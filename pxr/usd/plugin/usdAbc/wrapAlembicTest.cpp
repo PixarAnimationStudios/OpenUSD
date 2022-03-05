@@ -27,13 +27,12 @@
 
 #include "pxr/usd/plugin/usdAbc/alembicTest.h"
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdAbcAlembicTest()
 {
-    def("_TestAlembic", UsdAbc_TestAlembic, arg("pathname"));
-    def("_WriteAlembic", UsdAbc_WriteAlembic,
-        (arg("srcPathname"), arg("dstPathname")));
+    boost::python::def("_TestAlembic", UsdAbc_TestAlembic, boost::python::arg("pathname"));
+    boost::python::def("_WriteAlembic", UsdAbc_WriteAlembic,
+        (boost::python::arg("srcPathname"), boost::python::arg("dstPathname")));
 }

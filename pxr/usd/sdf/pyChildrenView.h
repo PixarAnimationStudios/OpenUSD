@@ -109,7 +109,6 @@ private:
 
     static void _Wrap()
     {
-        using namespace boost::python;
 
         std::string name = _GetName();
         
@@ -117,8 +116,8 @@ private:
         //       consistent with Python dicts (which iterate over keys).
         //       However, we're emulating TfPyKeyedVector, which iterates
         //       over values as a vector would.
-        scope thisScope =
-        class_<View>(name.c_str(), no_init)
+        boost::python::scope thisScope =
+        boost::python::class_<View>(name.c_str(), boost::python::no_init)
             .def("__repr__", &This::_GetRepr)
             .def("__len__", &View::size)
             .def("__getitem__", &This::_GetItemByKey)
@@ -142,24 +141,24 @@ private:
 #endif
             .def("index", &This::_FindIndexByKey)
             .def("index", &This::_FindIndexByValue)
-            .def(self == self)
-            .def(self != self)
+            .def(boost::python::self == boost::python::self)
+            .def(boost::python::self != boost::python::self)
             ;
 
-        class_<_Iterator<_ExtractItem> >
-            ((name + "_Iterator").c_str(), no_init)
+        boost::python::class_<_Iterator<_ExtractItem> >
+            ((name + "_Iterator").c_str(), boost::python::no_init)
             .def("__iter__", &This::template _Iterator<_ExtractItem>::GetCopy)
             .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractItem>::GetNext)
             ;
 
-        class_<_Iterator<_ExtractKey> >
-            ((name + "_KeyIterator").c_str(), no_init)
+        boost::python::class_<_Iterator<_ExtractKey> >
+            ((name + "_KeyIterator").c_str(), boost::python::no_init)
             .def("__iter__", &This::template _Iterator<_ExtractKey>::GetCopy)
             .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractKey>::GetNext)
             ;
 
-        class_<_Iterator<_ExtractValue> >
-            ((name + "_ValueIterator").c_str(), no_init)
+        boost::python::class_<_Iterator<_ExtractValue> >
+            ((name + "_ValueIterator").c_str(), boost::python::no_init)
             .def("__iter__", &This::template _Iterator<_ExtractValue>::GetCopy)
             .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractValue>::GetNext)
             ;

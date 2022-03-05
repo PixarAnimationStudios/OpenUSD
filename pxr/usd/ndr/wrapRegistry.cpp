@@ -31,7 +31,6 @@
 #include <boost/python/return_internal_reference.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -65,20 +64,20 @@ _ValidateProperty(
 }
 
 static void
-_SetExtraDiscoveryPlugins(NdrRegistry& self, const list& pylist)
+_SetExtraDiscoveryPlugins(NdrRegistry& self, const boost::python::list& pylist)
 {
     NdrDiscoveryPluginRefPtrVector plugins;
     std::vector<TfType> types;
 
-    for (int i = 0; i < len(pylist); ++i) {
-        extract<NdrDiscoveryPluginPtr> plugin(pylist[i]);
+    for (int i = 0; i < boost::python::len(pylist); ++i) {
+        boost::python::extract<NdrDiscoveryPluginPtr> plugin(pylist[i]);
         if (plugin.check()) {
             NdrDiscoveryPluginPtr pluginPtr = plugin;
             if (pluginPtr) {
                 plugins.push_back(pluginPtr);
             }
         } else {
-            types.push_back(extract<TfType>(pylist[i]));
+            types.push_back(boost::python::extract<TfType>(pylist[i]));
         }
     }
 
@@ -89,7 +88,7 @@ _SetExtraDiscoveryPlugins(NdrRegistry& self, const list& pylist)
 struct ConstNodePtrToPython {
     static PyObject* convert(NdrNodeConstPtr node)
     {
-        return incref(object(ptr(node)).ptr());
+        return boost::python::incref(boost::python::object(boost::python::ptr(node)).ptr());
     } 
 };
 
@@ -98,72 +97,72 @@ void wrapRegistry()
     typedef NdrRegistry This;
     typedef TfWeakPtr<NdrRegistry> ThisPtr;
 
-    class_<std::vector<NdrDiscoveryPlugin*>>("DiscoveryPluginList")
-        .def(vector_indexing_suite<std::vector<NdrDiscoveryPlugin*>>())
+    boost::python::class_<std::vector<NdrDiscoveryPlugin*>>("DiscoveryPluginList")
+        .def(boost::python::vector_indexing_suite<std::vector<NdrDiscoveryPlugin*>>())
         ;
 
-    class_<std::vector<NdrNodeConstPtr>>("NodeList")
-        .def(vector_indexing_suite<std::vector<NdrNodeConstPtr>>())
+    boost::python::class_<std::vector<NdrNodeConstPtr>>("NodeList")
+        .def(boost::python::vector_indexing_suite<std::vector<NdrNodeConstPtr>>())
         ;
 
     // We need this for NodeList to convert elements.
-    to_python_converter<NdrNodeConstPtr, ConstNodePtrToPython>();
+    boost::python::to_python_converter<NdrNodeConstPtr, ConstNodePtrToPython>();
 
-    class_<This, ThisPtr, boost::noncopyable>("Registry", no_init)
+    boost::python::class_<This, ThisPtr, boost::noncopyable>("Registry", boost::python::no_init)
         .def("SetExtraDiscoveryPlugins", &_SetExtraDiscoveryPlugins)
         .def("SetExtraParserPlugins", &This::SetExtraParserPlugins)
         .def("GetSearchURIs", &This::GetSearchURIs)
         .def("GetNodeIdentifiers", &This::GetNodeIdentifiers,
-            (args("family") = TfToken(),
-             args("filter") = NdrVersionFilterDefaultOnly))
+            (boost::python::args("family") = TfToken(),
+             boost::python::args("filter") = NdrVersionFilterDefaultOnly))
         .def("GetNodeNames", &This::GetNodeNames,
-            (args("family") = TfToken()))
+            (boost::python::args("family") = TfToken()))
         .def("GetNodeByIdentifier", &This::GetNodeByIdentifier,
-            (args("identifier"),
-             args("typePriority") = NdrTokenVec()),
-            return_internal_reference<>())
+            (boost::python::args("identifier"),
+             boost::python::args("typePriority") = NdrTokenVec()),
+            boost::python::return_internal_reference<>())
         .def("GetNodeByIdentifierAndType", &This::GetNodeByIdentifierAndType,
-            (args("identifier"),
-             args("nodeType")),
-            return_internal_reference<>())
+            (boost::python::args("identifier"),
+             boost::python::args("nodeType")),
+            boost::python::return_internal_reference<>())
         .def("GetNodeByName", &This::GetNodeByName,
-            (args("name"),
-             args("typePriority") = NdrTokenVec(),
-             args("filter") = NdrVersionFilterDefaultOnly),
-            return_internal_reference<>())
+            (boost::python::args("name"),
+             boost::python::args("typePriority") = NdrTokenVec(),
+             boost::python::args("filter") = NdrVersionFilterDefaultOnly),
+            boost::python::return_internal_reference<>())
         .def("GetNodeByNameAndType", &This::GetNodeByNameAndType,
-            (args("name"),
-             args("nodeType"),
-             args("filter") = NdrVersionFilterDefaultOnly),
-            return_internal_reference<>())
+            (boost::python::args("name"),
+             boost::python::args("nodeType"),
+             boost::python::args("filter") = NdrVersionFilterDefaultOnly),
+            boost::python::return_internal_reference<>())
 
         .def("GetNodeFromAsset", &This::GetNodeFromAsset,
-             (arg("asset"), 
-              arg("metadata")=NdrTokenMap(),
-              arg("subIdentifier")=TfToken(),
-              arg("sourceType")=TfToken()),
-             return_internal_reference<>())
+             (boost::python::arg("asset"), 
+              boost::python::arg("metadata")=NdrTokenMap(),
+              boost::python::arg("subIdentifier")=TfToken(),
+              boost::python::arg("sourceType")=TfToken()),
+             boost::python::return_internal_reference<>())
         .def("GetNodeFromSourceCode", &This::GetNodeFromSourceCode,
-             (arg("sourceCode"), 
-              arg("sourceType"),
-              arg("metadata")=NdrTokenMap()),
-             return_internal_reference<>())
+             (boost::python::arg("sourceCode"), 
+              boost::python::arg("sourceType"),
+              boost::python::arg("metadata")=NdrTokenMap()),
+             boost::python::return_internal_reference<>())
 
         .def("GetNodesByIdentifier", &This::GetNodesByIdentifier,
-            (args("identifier")))
+            (boost::python::args("identifier")))
         .def("GetNodesByName", &This::GetNodesByName,
-            (args("name"),
-             args("filter") = NdrVersionFilterDefaultOnly))
+            (boost::python::args("name"),
+             boost::python::args("filter") = NdrVersionFilterDefaultOnly))
         .def("GetNodesByFamily", &This::GetNodesByFamily,
-            (args("family") = TfToken(),
-             args("filter") = NdrVersionFilterDefaultOnly))
+            (boost::python::args("family") = TfToken(),
+             boost::python::args("filter") = NdrVersionFilterDefaultOnly))
         .def("GetAllNodeSourceTypes", &This::GetAllNodeSourceTypes)
         ;
 
     // We wrap this directly under Ndr rather than under the Registry class
     // because it's not really part of the Registry, but we want to expose this
     // for testing property correctness
-    def("_ValidateProperty", _ValidateProperty);
+    boost::python::def("_ValidateProperty", _ValidateProperty);
 
     Ndr_ValidatePropertyAnnotatedBool::Wrap<
         Ndr_ValidatePropertyAnnotatedBool>("_AnnotatedBool", "message");

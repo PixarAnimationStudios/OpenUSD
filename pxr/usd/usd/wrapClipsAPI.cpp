@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -64,28 +63,28 @@ void wrapUsdClipsAPI()
 {
     typedef UsdClipsAPI This;
 
-    class_<This, bases<UsdAPISchemaBase> >
+    boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
         cls("ClipsAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
 
         .def("__repr__", ::_Repr)
@@ -290,39 +289,39 @@ WRAP_CUSTOM {
     _class
         .def("GetClips", _GetClips)
         .def("SetClips", &UsdClipsAPI::SetClips,
-             arg("clips"))
+             boost::python::arg("clips"))
 
         .def("GetClipSets", _GetClipSets)
         .def("SetClipSets", &UsdClipsAPI::SetClipSets,
-             arg("clipSets"))
+             boost::python::arg("clipSets"))
 
         .def("GetClipAssetPaths", 
              (VtArray<SdfAssetPath>(*)(const UsdClipsAPI&))
                  (&_GetClipAssetPaths),
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetClipAssetPaths", 
              (VtArray<SdfAssetPath>(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipAssetPaths),
-             return_value_policy<TfPySequenceToList>(),
-             arg("clipSet"))
+             boost::python::return_value_policy<TfPySequenceToList>(),
+             boost::python::arg("clipSet"))
         .def("SetClipAssetPaths", 
              (void(*)(UsdClipsAPI&, TfPyObjWrapper))
                  (&_SetClipAssetPaths), 
-             arg("assetPaths"))
+             boost::python::arg("assetPaths"))
         .def("SetClipAssetPaths", 
              (void(*)(UsdClipsAPI&, TfPyObjWrapper, const std::string&))
                  (&_SetClipAssetPaths), 
-             (arg("assetPaths"), arg("clipSet")))
+             (boost::python::arg("assetPaths"), boost::python::arg("clipSet")))
 
         .def("ComputeClipAssetPaths",
             (VtArray<SdfAssetPath>(UsdClipsAPI::*)() const)
                 (&UsdClipsAPI::ComputeClipAssetPaths),
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("ComputeClipAssetPaths",
             (VtArray<SdfAssetPath>(UsdClipsAPI::*)(const std::string&) const)
                 (&UsdClipsAPI::ComputeClipAssetPaths),
-             arg("clipSet"),
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("clipSet"),
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("GetClipPrimPath", 
              (std::string(*)(const UsdClipsAPI&))
@@ -330,15 +329,15 @@ WRAP_CUSTOM {
         .def("GetClipPrimPath", 
              (std::string(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipPrimPath),
-             arg("clipSet"))
+             boost::python::arg("clipSet"))
         .def("SetClipPrimPath", 
              (bool(UsdClipsAPI::*)(const std::string&))
                  (&UsdClipsAPI::SetClipPrimPath), 
-             arg("primPath"))
+             boost::python::arg("primPath"))
         .def("SetClipPrimPath", 
              (bool(UsdClipsAPI::*)(const std::string&, const std::string&))
                  (&UsdClipsAPI::SetClipPrimPath), 
-             (arg("primPath"), arg("clipSet")))
+             (boost::python::arg("primPath"), boost::python::arg("clipSet")))
 
         .def("GetClipActive", 
              (TfPyObjWrapper(*)(const UsdClipsAPI&))
@@ -346,15 +345,15 @@ WRAP_CUSTOM {
         .def("GetClipActive", 
              (TfPyObjWrapper(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipActive),
-             arg("clipSet"))
+             boost::python::arg("clipSet"))
         .def("SetClipActive", 
              (void(*)(UsdClipsAPI&, TfPyObjWrapper))
                  (&_SetClipActive), 
-             arg("activeClips"))
+             boost::python::arg("activeClips"))
         .def("SetClipActive", 
              (void(*)(UsdClipsAPI&, TfPyObjWrapper, const std::string&))
                  (&_SetClipActive), 
-             (arg("activeClips"), arg("clipSet")))
+             (boost::python::arg("activeClips"), boost::python::arg("clipSet")))
 
         .def("GetClipTimes", 
              (TfPyObjWrapper(*)(const UsdClipsAPI&))
@@ -362,15 +361,15 @@ WRAP_CUSTOM {
         .def("GetClipTimes", 
              (TfPyObjWrapper(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipTimes),
-             arg("clipSet"))
+             boost::python::arg("clipSet"))
         .def("SetClipTimes", 
              (void(*)(UsdClipsAPI&, TfPyObjWrapper))
                  (&_SetClipTimes), 
-             arg("clipTimes"))
+             boost::python::arg("clipTimes"))
         .def("SetClipTimes", 
              (void(*)(UsdClipsAPI&, TfPyObjWrapper, const std::string&))
                  (&_SetClipTimes), 
-             (arg("clipTimes"), arg("clipSet")))
+             (boost::python::arg("clipTimes"), boost::python::arg("clipSet")))
 
         .def("GetClipManifestAssetPath", 
              (SdfAssetPath(*)(const UsdClipsAPI&))
@@ -378,32 +377,32 @@ WRAP_CUSTOM {
         .def("GetClipManifestAssetPath", 
              (SdfAssetPath(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipManifestAssetPath),
-             arg("clipSet"))
+             boost::python::arg("clipSet"))
         .def("SetClipManifestAssetPath", 
              (bool(UsdClipsAPI::*)(const SdfAssetPath&))
                  (&UsdClipsAPI::SetClipManifestAssetPath), 
-             arg("manifestAssetPath"))
+             boost::python::arg("manifestAssetPath"))
         .def("SetClipManifestAssetPath", 
              (bool(UsdClipsAPI::*)(const SdfAssetPath&, const std::string&))
                  (&UsdClipsAPI::SetClipManifestAssetPath), 
-             (arg("manifestAssetPath"), arg("clipSet")))
+             (boost::python::arg("manifestAssetPath"), boost::python::arg("clipSet")))
 
         .def("GenerateClipManifest", 
              (SdfLayerRefPtr(UsdClipsAPI::*)(bool) const)
                  (&UsdClipsAPI::GenerateClipManifest),
-             arg("writeBlocksForClipsWithMissingValues") = false,
-             return_value_policy<TfPyRefPtrFactory<> >())
+             boost::python::arg("writeBlocksForClipsWithMissingValues") = false,
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .def("GenerateClipManifest", 
              (SdfLayerRefPtr(UsdClipsAPI::*)(const std::string&, bool) const)
                  (&UsdClipsAPI::GenerateClipManifest),
-             (arg("clipSet"),
-              arg("writeBlocksForClipsWithMissingValues") = false),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("clipSet"),
+              boost::python::arg("writeBlocksForClipsWithMissingValues") = false),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
 
         .def("GenerateClipManifestFromLayers", 
              &UsdClipsAPI::GenerateClipManifestFromLayers,
-             (arg("clipLayers"), arg("clipPrimPath")),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("clipLayers"), boost::python::arg("clipPrimPath")),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .staticmethod("GenerateClipManifestFromLayers")
 
         .def("GetInterpolateMissingClipValues", 
@@ -412,15 +411,15 @@ WRAP_CUSTOM {
         .def("GetInterpolateMissingClipValues", 
              (bool(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetInterpolateMissingClipValues),
-             arg("clipSet"))
+             boost::python::arg("clipSet"))
         .def("SetInterpolateMissingClipValues", 
              (bool(UsdClipsAPI::*)(bool))
                  (&UsdClipsAPI::SetInterpolateMissingClipValues), 
-             arg("interpolate"))
+             boost::python::arg("interpolate"))
         .def("SetInterpolateMissingClipValues", 
              (bool(UsdClipsAPI::*)(bool, const std::string&))
                  (&UsdClipsAPI::SetInterpolateMissingClipValues), 
-             (arg("interpolate"), arg("clipSet")))
+             (boost::python::arg("interpolate"), boost::python::arg("clipSet")))
 
         .def("GetClipTemplateAssetPath", 
              (std::string(*)(const UsdClipsAPI&))
@@ -428,15 +427,15 @@ WRAP_CUSTOM {
         .def("GetClipTemplateAssetPath", 
              (std::string(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipTemplateAssetPath),
-             arg("clipSet"))
+             boost::python::arg("clipSet"))
         .def("SetClipTemplateAssetPath", 
              (void(*)(UsdClipsAPI&, TfPyObjWrapper))
                  (&_SetClipTemplateAssetPath), 
-             arg("clipTemplateAssetPath"))
+             boost::python::arg("clipTemplateAssetPath"))
         .def("SetClipTemplateAssetPath", 
              (void(*)(UsdClipsAPI&, TfPyObjWrapper, const std::string&))
                  (&_SetClipTemplateAssetPath), 
-             (arg("clipTemplateAssetPath"), arg("clipSet")))
+             (boost::python::arg("clipTemplateAssetPath"), boost::python::arg("clipSet")))
 
         .def("GetClipTemplateStride", 
              (double(*)(const UsdClipsAPI&))
@@ -444,15 +443,15 @@ WRAP_CUSTOM {
         .def("GetClipTemplateStride", 
              (double(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipTemplateStride),
-             arg("clipSet"))
+             boost::python::arg("clipSet"))
         .def("SetClipTemplateStride", 
              (bool(UsdClipsAPI::*)(double))
                  (&UsdClipsAPI::SetClipTemplateStride),
-             arg("clipTemplateStride"))
+             boost::python::arg("clipTemplateStride"))
         .def("SetClipTemplateStride", 
              (bool(UsdClipsAPI::*)(double, const std::string&))
                  (&UsdClipsAPI::SetClipTemplateStride),
-             (arg("clipTemplateStride"), arg("clipSet")))
+             (boost::python::arg("clipTemplateStride"), boost::python::arg("clipSet")))
 
         .def("GetClipTemplateActiveOffset", 
              (double(*)(const UsdClipsAPI&))
@@ -460,15 +459,15 @@ WRAP_CUSTOM {
         .def("GetClipTemplateActiveOffset", 
              (double(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipTemplateActiveOffset),
-             arg("clipSet"))
+             boost::python::arg("clipSet"))
         .def("SetClipTemplateActiveOffset", 
              (bool(UsdClipsAPI::*)(double))
                  (&UsdClipsAPI::SetClipTemplateActiveOffset),
-             arg("clipTemplateActiveOffset"))
+             boost::python::arg("clipTemplateActiveOffset"))
         .def("SetClipTemplateActiveOffset", 
              (bool(UsdClipsAPI::*)(double, const std::string&))
                  (&UsdClipsAPI::SetClipTemplateActiveOffset),
-             (arg("clipTemplateActiveOffset"), arg("clipSet")))
+             (boost::python::arg("clipTemplateActiveOffset"), boost::python::arg("clipSet")))
 
         .def("GetClipTemplateStartTime", 
              (double(*)(const UsdClipsAPI&))
@@ -476,15 +475,15 @@ WRAP_CUSTOM {
         .def("GetClipTemplateStartTime", 
              (double(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipTemplateStartTime),
-             arg("clipSet"))
+             boost::python::arg("clipSet"))
         .def("SetClipTemplateStartTime", 
              (bool(UsdClipsAPI::*)(double))
                  (&UsdClipsAPI::SetClipTemplateStartTime),
-             arg("clipTemplateStartTime"))
+             boost::python::arg("clipTemplateStartTime"))
         .def("SetClipTemplateStartTime", 
              (bool(UsdClipsAPI::*)(double, const std::string&))
                  (&UsdClipsAPI::SetClipTemplateStartTime),
-             (arg("clipTemplateStartTime"), arg("clipSet")))
+             (boost::python::arg("clipTemplateStartTime"), boost::python::arg("clipSet")))
 
         .def("GetClipTemplateEndTime", 
              (double(*)(const UsdClipsAPI&))
@@ -492,15 +491,15 @@ WRAP_CUSTOM {
         .def("GetClipTemplateEndTime", 
              (double(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipTemplateEndTime),
-             arg("clipSet"))
+             boost::python::arg("clipSet"))
         .def("SetClipTemplateEndTime", 
              (bool(UsdClipsAPI::*)(double))
                  (&UsdClipsAPI::SetClipTemplateEndTime),
-             arg("clipTemplateEndTime"))
+             boost::python::arg("clipTemplateEndTime"))
         .def("SetClipTemplateEndTime", 
              (bool(UsdClipsAPI::*)(double, const std::string&))
                  (&UsdClipsAPI::SetClipTemplateEndTime),
-             (arg("clipTemplateEndTime"), arg("clipSet")))
+             (boost::python::arg("clipTemplateEndTime"), boost::python::arg("clipSet")))
         ;
 }
 

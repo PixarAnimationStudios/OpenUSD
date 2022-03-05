@@ -32,7 +32,6 @@
 
 #include <limits>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -40,10 +39,10 @@ namespace {
 
 template <typename T>
 T
-_ConvertWithDefault(const object obj, const T& def)
+_ConvertWithDefault(const boost::python::object obj, const T& def)
 {
     if (!TfPyIsNone(obj)) {
-        return extract<T>(obj);
+        return boost::python::extract<T>(obj);
     } 
         
     return def;
@@ -53,10 +52,10 @@ bool
 _ConvertStitchClips(const SdfLayerHandle& resultLayer,
                     const std::vector<std::string>& clipLayerFiles,
                     const SdfPath& clipPath,
-                    const object pyStartFrame,
-                    const object pyEndFrame,
-                    const object pyInterpolateMissingClipValues,
-                    const object pyClipSet)
+                    const boost::python::object pyStartFrame,
+                    const boost::python::object pyEndFrame,
+                    const boost::python::object pyInterpolateMissingClipValues,
+                    const boost::python::object pyClipSet)
 {
     const auto clipSet 
         = _ConvertWithDefault(pyClipSet, UsdClipsAPISetNames->default_);
@@ -91,9 +90,9 @@ _ConvertStitchClipTemplate(const SdfLayerHandle& resultLayer,
                            const double startFrame,
                            const double endFrame,
                            const double stride,
-                           const object pyActiveOffset,
-                           const object pyInterpolateMissingClipValues,
-                           const object pyClipSet)
+                           const boost::python::object pyActiveOffset,
+                           const boost::python::object pyInterpolateMissingClipValues,
+                           const boost::python::object pyClipSet)
 {
     const auto clipSet 
         = _ConvertWithDefault(pyClipSet, UsdClipsAPISetNames->default_);
@@ -112,47 +111,47 @@ _ConvertStitchClipTemplate(const SdfLayerHandle& resultLayer,
 
 void wrapStitchClips()
 {
-    def("StitchClips",
+    boost::python::def("StitchClips",
         _ConvertStitchClips, 
-        (arg("resultLayer"), 
-         arg("clipLayerFiles"), 
-         arg("clipPath"), 
-         arg("startFrame")=object(),
-         arg("endFrame")=object(),
-         arg("interpolateMissingClipValues")=object(),
-         arg("clipSet")=object()));
+        (boost::python::arg("resultLayer"), 
+         boost::python::arg("clipLayerFiles"), 
+         boost::python::arg("clipPath"), 
+         boost::python::arg("startFrame")=boost::python::object(),
+         boost::python::arg("endFrame")=boost::python::object(),
+         boost::python::arg("interpolateMissingClipValues")=boost::python::object(),
+         boost::python::arg("clipSet")=boost::python::object()));
 
-    def("StitchClipsTopology",
+    boost::python::def("StitchClipsTopology",
         _ConvertStitchClipsTopology,
-        (arg("topologyLayer"),
-         arg("clipLayerFiles")));
+        (boost::python::arg("topologyLayer"),
+         boost::python::arg("clipLayerFiles")));
 
-    def("StitchClipsManifest",
+    boost::python::def("StitchClipsManifest",
         UsdUtilsStitchClipsManifest,
-        (arg("manifestLayer"), 
-         arg("topologyLayer"), 
-         arg("clipPath"),
-         arg("clipLayerFiles")));
+        (boost::python::arg("manifestLayer"), 
+         boost::python::arg("topologyLayer"), 
+         boost::python::arg("clipPath"),
+         boost::python::arg("clipLayerFiles")));
 
-    def("StitchClipsTemplate",
+    boost::python::def("StitchClipsTemplate",
         _ConvertStitchClipTemplate,
-        (arg("resultLayer"),
-         arg("topologyLayer"),
-         arg("manifestLayer"),
-         arg("clipPath"),
-         arg("templatePath"),
-         arg("startTimeCode"),
-         arg("endTimeCode"),
-         arg("stride"),
-         arg("activeOffset")=object(),
-         arg("interpolateMissingClipValues")=object(),
-         arg("clipSet")=object()));
+        (boost::python::arg("resultLayer"),
+         boost::python::arg("topologyLayer"),
+         boost::python::arg("manifestLayer"),
+         boost::python::arg("clipPath"),
+         boost::python::arg("templatePath"),
+         boost::python::arg("startTimeCode"),
+         boost::python::arg("endTimeCode"),
+         boost::python::arg("stride"),
+         boost::python::arg("activeOffset")=boost::python::object(),
+         boost::python::arg("interpolateMissingClipValues")=boost::python::object(),
+         boost::python::arg("clipSet")=boost::python::object()));
 
-    def("GenerateClipTopologyName",
+    boost::python::def("GenerateClipTopologyName",
         _ConvertGenerateClipTopologyName,
-        (arg("rootLayerName")));
+        (boost::python::arg("rootLayerName")));
 
-    def("GenerateClipManifestName",
+    boost::python::def("GenerateClipManifestName",
         UsdUtilsGenerateClipManifestName,
-        (arg("rootLayerName")));
+        (boost::python::arg("rootLayerName")));
 }

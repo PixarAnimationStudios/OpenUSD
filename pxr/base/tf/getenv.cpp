@@ -28,14 +28,13 @@
 #include <ctype.h>
 #include <string>
 
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-string
-TfGetenv(const string& envName, const string& defaultValue)
+std::string
+TfGetenv(const std::string& envName, const std::string& defaultValue)
 {
-    string value = ArchGetEnv(envName);
+    std::string value = ArchGetEnv(envName);
 
     if (value.empty())
         return defaultValue;
@@ -44,9 +43,9 @@ TfGetenv(const string& envName, const string& defaultValue)
 }
 
 int
-TfGetenvInt(const string& envName, int defaultValue)
+TfGetenvInt(const std::string& envName, int defaultValue)
 {
-    string value = ArchGetEnv(envName);
+    std::string value = ArchGetEnv(envName);
 
     if (value.empty())
         return defaultValue;
@@ -55,9 +54,9 @@ TfGetenvInt(const string& envName, int defaultValue)
 }
 
 bool
-TfGetenvBool(const string& envName, bool defaultValue)
+TfGetenvBool(const std::string& envName, bool defaultValue)
 {
-    string value = ArchGetEnv(envName);
+    std::string value = ArchGetEnv(envName);
 
     if (value.empty())
         return defaultValue;
@@ -73,9 +72,9 @@ TfGetenvBool(const string& envName, bool defaultValue)
 }
 
 double
-TfGetenvDouble(const string& envName, double defaultValue)
+TfGetenvDouble(const std::string& envName, double defaultValue)
 {
-    string value = ArchGetEnv(envName);
+    std::string value = ArchGetEnv(envName);
 
     if (value.empty())
         return defaultValue;

@@ -92,7 +92,7 @@ UsdPhysicsDriveAPI::IsSchemaPropertyBaseName(const TfToken &baseName)
             UsdPhysicsTokens->drive_MultipleApplyTemplate_PhysicsStiffness),
     };
 
-    return find(attrsAndRels.begin(), attrsAndRels.end(), baseName)
+    return std::find(attrsAndRels.begin(), attrsAndRels.end(), baseName)
             != attrsAndRels.end();
 }
 

@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -51,21 +50,21 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateSurfaceAttr(UsdShadeMaterial &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateSurfaceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDisplacementAttr(UsdShadeMaterial &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateDisplacementAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateVolumeAttr(UsdShadeMaterial &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateVolumeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
@@ -85,53 +84,53 @@ void wrapUsdShadeMaterial()
 {
     typedef UsdShadeMaterial This;
 
-    class_<This, bases<UsdShadeNodeGraph> >
+    boost::python::class_<This, boost::python::bases<UsdShadeNodeGraph> >
         cls("Material");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
+        .def("Define", &This::Define, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Define")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetSurfaceAttr",
              &This::GetSurfaceAttr)
         .def("CreateSurfaceAttr",
              &_CreateSurfaceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetDisplacementAttr",
              &This::GetDisplacementAttr)
         .def("CreateDisplacementAttr",
              &_CreateDisplacementAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetVolumeAttr",
              &This::GetVolumeAttr)
         .def("CreateVolumeAttr",
              &_CreateVolumeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;
@@ -174,7 +173,7 @@ _GetEditContextForVariant(const UsdShadeMaterial &self,
         self.GetEditContextForVariant(materialVariantName, layer));
 }
 
-static object
+static boost::python::object
 _WrapComputeSurfaceSource(const UsdShadeMaterial &self, 
                           const TfToken &renderContext) 
 {
@@ -185,7 +184,7 @@ _WrapComputeSurfaceSource(const UsdShadeMaterial &self,
     return boost::python::make_tuple (source, sourceName, sourceType);
 }
 
-static object
+static boost::python::object
 _WrapComputeDisplacementSource(const UsdShadeMaterial &self, 
                                const TfToken &renderContext) 
 {
@@ -196,7 +195,7 @@ _WrapComputeDisplacementSource(const UsdShadeMaterial &self,
     return boost::python::make_tuple (source, sourceName, sourceType);
 }
 
-static object
+static boost::python::object
 _WrapComputeVolumeSource(const UsdShadeMaterial &self, 
                          const TfToken &renderContext) 
 {
@@ -212,11 +211,11 @@ WRAP_CUSTOM {
         .def("GetMaterialVariant", &UsdShadeMaterial::GetMaterialVariant)
         .def("CreateMasterMaterialVariant",
              &UsdShadeMaterial::CreateMasterMaterialVariant,
-             (arg("masterPrim"), arg("materialPrims"),
-              arg("masterVariantSetName")=TfToken()))
+             (boost::python::arg("masterPrim"), boost::python::arg("materialPrims"),
+              boost::python::arg("masterVariantSetName")=TfToken()))
         .staticmethod("CreateMasterMaterialVariant")
         .def("GetEditContextForVariant", _GetEditContextForVariant,
-             (arg("materialVariantName"), arg("layer")=SdfLayerHandle()))
+             (boost::python::arg("materialVariantName"), boost::python::arg("layer")=SdfLayerHandle()))
 
         .def("GetBaseMaterialPath",
              &UsdShadeMaterial::GetBaseMaterialPath)
@@ -224,10 +223,10 @@ WRAP_CUSTOM {
               &UsdShadeMaterial::GetBaseMaterial)
         .def("SetBaseMaterialPath",
              &UsdShadeMaterial::SetBaseMaterialPath,
-             (arg("baseLookPath")))
+             (boost::python::arg("baseLookPath")))
          .def("SetBaseMaterial",
               &UsdShadeMaterial::SetBaseMaterial,
-              (arg("baseMaterial")))
+              (boost::python::arg("baseMaterial")))
         .def("ClearBaseMaterial",
              &UsdShadeMaterial::ClearBaseMaterial)
         .def("HasBaseMaterial",
@@ -235,36 +234,36 @@ WRAP_CUSTOM {
 
 
         .def("CreateSurfaceOutput", &UsdShadeMaterial::CreateSurfaceOutput, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (boost::python::arg("renderContext")=UsdShadeTokens->universalRenderContext))
         .def("GetSurfaceOutput", &UsdShadeMaterial::GetSurfaceOutput, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (boost::python::arg("renderContext")=UsdShadeTokens->universalRenderContext))
         .def("GetSurfaceOutputs", &UsdShadeMaterial::GetSurfaceOutputs)
         .def("ComputeSurfaceSource", &_WrapComputeSurfaceSource, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (boost::python::arg("renderContext")=UsdShadeTokens->universalRenderContext))
 
         .def("CreateDisplacementOutput", 
             &UsdShadeMaterial::CreateDisplacementOutput, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (boost::python::arg("renderContext")=UsdShadeTokens->universalRenderContext))
         .def("GetDisplacementOutput", 
             &UsdShadeMaterial::GetDisplacementOutput, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (boost::python::arg("renderContext")=UsdShadeTokens->universalRenderContext))
         .def("GetDisplacementOutputs",
             &UsdShadeMaterial::GetDisplacementOutputs)
         .def("ComputeDisplacementSource", &_WrapComputeDisplacementSource, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (boost::python::arg("renderContext")=UsdShadeTokens->universalRenderContext))
 
         .def("CreateVolumeOutput", &UsdShadeMaterial::CreateVolumeOutput, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (boost::python::arg("renderContext")=UsdShadeTokens->universalRenderContext))
         .def("GetVolumeOutput", &UsdShadeMaterial::GetVolumeOutput, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (boost::python::arg("renderContext")=UsdShadeTokens->universalRenderContext))
         .def("GetVolumeOutputs", &UsdShadeMaterial::GetVolumeOutputs)
         .def("ComputeVolumeSource", &_WrapComputeVolumeSource, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (boost::python::arg("renderContext")=UsdShadeTokens->universalRenderContext))
 
         ;
 
     TfPyRegisterStlSequencesFromPython<UsdShadeMaterial>();
-    to_python_converter<std::vector<UsdShadeMaterial>,
+    boost::python::to_python_converter<std::vector<UsdShadeMaterial>,
                         TfPySequenceToPython<std::vector<UsdShadeMaterial>>>();
 
 }

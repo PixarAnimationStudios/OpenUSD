@@ -33,7 +33,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -48,18 +47,18 @@ _WrapUsdUtilsCreateCollections(
 {
     // Create an stl vector with the required data from the python list.
     std::vector<std::pair<TfToken, SdfPathSet>> assignmentsVec;
-    size_t nPairs = len(assignments);
+    size_t nPairs = boost::python::len(assignments);
     assignmentsVec.resize(nPairs);
 
     for(size_t i = 0; i < nPairs; ++i) {
-        tuple pair = extract<tuple>(assignments[i]);
-        TfToken collName = extract<TfToken>(pair[0]);
-        list pathList = extract<list>(pair[1]);
+        boost::python::tuple pair = boost::python::extract<boost::python::tuple>(assignments[i]);
+        TfToken collName = boost::python::extract<TfToken>(pair[0]);
+        boost::python::list pathList = boost::python::extract<boost::python::list>(pair[1]);
 
         SdfPathSet includedPaths; 
-        size_t numPaths = len(pathList);
+        size_t numPaths = boost::python::len(pathList);
         for (size_t pathIdx = 0; pathIdx < numPaths ; ++pathIdx) {
-            SdfPath includedPath = extract<SdfPath>(pathList[pathIdx]);
+            SdfPath includedPath = boost::python::extract<SdfPath>(pathList[pathIdx]);
             includedPaths.insert(includedPath);
         }
         assignmentsVec[i] = std::make_pair(collName, includedPaths);
@@ -71,7 +70,7 @@ _WrapUsdUtilsCreateCollections(
 }
 
 static 
-object
+boost::python::object
 _WrapUsdUtilsComputeCollectionIncludesAndExcludes(
     const SdfPathSet &includedRootPaths, 
     const UsdStageWeakPtr &usdStage,
@@ -100,30 +99,30 @@ _WrapUsdUtilsComputeCollectionIncludesAndExcludes(
 
 void wrapAuthoring()
 {
-    def("CopyLayerMetadata", UsdUtilsCopyLayerMetadata, 
-        (arg("source"), arg("destination"), arg("skipSublayers") = false,
-         arg("bakeUnauthoredFallbacks") = false ));
+    boost::python::def("CopyLayerMetadata", UsdUtilsCopyLayerMetadata, 
+        (boost::python::arg("source"), boost::python::arg("destination"), boost::python::arg("skipSublayers") = false,
+         boost::python::arg("bakeUnauthoredFallbacks") = false ));
 
-    def("ComputeCollectionIncludesAndExcludes", 
+    boost::python::def("ComputeCollectionIncludesAndExcludes", 
         &_WrapUsdUtilsComputeCollectionIncludesAndExcludes,
-        (arg("includedRootPaths"), arg("usdStage"), 
-         arg("minInclusionRatio")=0.75, 
-         arg("maxNumExcludesBelowInclude")=5u,
-         arg("minIncludeExcludeCollectionSize")=3u,
-         arg("pathsToIgnore")=SdfPathVector()));
+        (boost::python::arg("includedRootPaths"), boost::python::arg("usdStage"), 
+         boost::python::arg("minInclusionRatio")=0.75, 
+         boost::python::arg("maxNumExcludesBelowInclude")=5u,
+         boost::python::arg("minIncludeExcludeCollectionSize")=3u,
+         boost::python::arg("pathsToIgnore")=SdfPathVector()));
 
-    def("AuthorCollection", UsdUtilsAuthorCollection, 
-        (arg("collectionName"), arg("usdPrim"), arg("pathsToInclude"), 
-         arg("pathsToExclude")=SdfPathSet()));
+    boost::python::def("AuthorCollection", UsdUtilsAuthorCollection, 
+        (boost::python::arg("collectionName"), boost::python::arg("usdPrim"), boost::python::arg("pathsToInclude"), 
+         boost::python::arg("pathsToExclude")=SdfPathSet()));
 
-    def ("CreateCollections", _WrapUsdUtilsCreateCollections,
+    boost::python::def ("CreateCollections", _WrapUsdUtilsCreateCollections,
         boost::python::return_value_policy<TfPySequenceToList>(),
-        (arg("assignments"), arg("usdPrim"), 
-         arg("minInclusionRatio")=0.75, 
-         arg("maxNumExcludesBelowInclude")=5u,
-         arg("minIncludeExcludeCollectionSize")=3u));
+        (boost::python::arg("assignments"), boost::python::arg("usdPrim"), 
+         boost::python::arg("minInclusionRatio")=0.75, 
+         boost::python::arg("maxNumExcludesBelowInclude")=5u,
+         boost::python::arg("minIncludeExcludeCollectionSize")=3u));
 
-    def("GetDirtyLayers", UsdUtilsGetDirtyLayers,
-        (arg("stage"), arg("includeClipLayers")=true),
-        return_value_policy<TfPySequenceToList>());
+    boost::python::def("GetDirtyLayers", UsdUtilsGetDirtyLayers,
+        (boost::python::arg("stage"), boost::python::arg("includeClipLayers")=true),
+        boost::python::return_value_policy<TfPySequenceToList>());
 }

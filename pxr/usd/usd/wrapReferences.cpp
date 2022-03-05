@@ -27,44 +27,42 @@
 #include <boost/python/class.hpp>
 #include <boost/python/operators.hpp>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdReferences()
 {
-    class_<UsdReferences>("References", no_init)
+    boost::python::class_<UsdReferences>("References", boost::python::no_init)
         .def("AddReference",
              (bool (UsdReferences::*)(const SdfReference &, UsdListPosition))
              &UsdReferences::AddReference,
-             (arg("ref"),
-              arg("position")=UsdListPositionBackOfPrependList))
+             (boost::python::arg("ref"),
+              boost::python::arg("position")=UsdListPositionBackOfPrependList))
         .def("AddReference",
-             (bool (UsdReferences::*)(const string &, const SdfPath &,
+             (bool (UsdReferences::*)(const std::string &, const SdfPath &,
                                       const SdfLayerOffset &, UsdListPosition))
              &UsdReferences::AddReference,
-             (arg("assetPath"), arg("primPath"),
-              arg("layerOffset")=SdfLayerOffset(),
-              arg("position")=UsdListPositionBackOfPrependList))
-        .def("AddReference",(bool (UsdReferences::*)(const string &,
+             (boost::python::arg("assetPath"), boost::python::arg("primPath"),
+              boost::python::arg("layerOffset")=SdfLayerOffset(),
+              boost::python::arg("position")=UsdListPositionBackOfPrependList))
+        .def("AddReference",(bool (UsdReferences::*)(const std::string &,
                                                      const SdfLayerOffset &,
                                                      UsdListPosition))
              &UsdReferences::AddReference,
-             (arg("assetPath"),
-              arg("layerOffset")=SdfLayerOffset(),
-              arg("position")=UsdListPositionBackOfPrependList))
+             (boost::python::arg("assetPath"),
+              boost::python::arg("layerOffset")=SdfLayerOffset(),
+              boost::python::arg("position")=UsdListPositionBackOfPrependList))
         .def("AddInternalReference",
              &UsdReferences::AddInternalReference, 
-             (arg("primPath"),
-              arg("layerOffset")=SdfLayerOffset(),
-              arg("position")=UsdListPositionBackOfPrependList))
+             (boost::python::arg("primPath"),
+              boost::python::arg("layerOffset")=SdfLayerOffset(),
+              boost::python::arg("position")=UsdListPositionBackOfPrependList))
 
-        .def("RemoveReference", &UsdReferences::RemoveReference, arg("ref"))
+        .def("RemoveReference", &UsdReferences::RemoveReference, boost::python::arg("ref"))
         .def("ClearReferences", &UsdReferences::ClearReferences)
         .def("SetReferences", &UsdReferences::SetReferences)
         .def("GetPrim", (UsdPrim (UsdReferences::*)()) &UsdReferences::GetPrim)
-        .def(!self)
+        .def(!boost::python::self)
         ;
 }

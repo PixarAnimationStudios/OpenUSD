@@ -30,23 +30,22 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyEnum.h"
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapRegisteredVariantSet()
 {
-    scope registeredVariantSet =
-        class_<UsdUtilsRegisteredVariantSet>(
+    boost::python::scope registeredVariantSet =
+        boost::python::class_<UsdUtilsRegisteredVariantSet>(
                         "RegisteredVariantSet", 
                         "Info for registered variant set",
-                        no_init)
+                        boost::python::no_init)
             .def_readonly("name", &UsdUtilsRegisteredVariantSet::name)
             .def_readonly("selectionExportPolicy", &UsdUtilsRegisteredVariantSet::selectionExportPolicy)
     ;
     
     typedef UsdUtilsRegisteredVariantSet::SelectionExportPolicy SelectionExportPolicy;
-    enum_<SelectionExportPolicy>("SelectionExportPolicy")
+    boost::python::enum_<SelectionExportPolicy>("SelectionExportPolicy")
         .value("IfAuthored", SelectionExportPolicy::IfAuthored)
         .value("Always", SelectionExportPolicy::Always)
         .value("Never", SelectionExportPolicy::Never)

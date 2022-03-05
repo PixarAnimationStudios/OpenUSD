@@ -31,7 +31,6 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace boost::python;
 
 static int 
 _GetMajorVersion() {
@@ -50,7 +49,7 @@ _GetPatchVersion() {
 
 static boost::python::tuple
 _GetVersion() {
-    return make_tuple(PXR_MAJOR_VERSION, 
+    return boost::python::make_tuple(PXR_MAJOR_VERSION, 
                       PXR_MINOR_VERSION,
                       PXR_PATCH_VERSION);
 }
@@ -69,12 +68,12 @@ _MakeVersionFuncDocstring(const std::string& section,
 
 void wrapVersion()
 {
-    def("GetMajorVersion", _GetMajorVersion,
+    boost::python::def("GetMajorVersion", _GetMajorVersion,
         _MakeVersionFuncDocstring("major", "int").c_str()); 
-    def("GetMinorVersion", _GetMinorVersion,
+    boost::python::def("GetMinorVersion", _GetMinorVersion,
         _MakeVersionFuncDocstring("minor", "int").c_str());
-    def("GetPatchVersion", _GetPatchVersion,
+    boost::python::def("GetPatchVersion", _GetPatchVersion,
         _MakeVersionFuncDocstring("patch", "int").c_str());
-    def("GetVersion", _GetVersion,
+    boost::python::def("GetVersion", _GetVersion,
         _MakeVersionFuncDocstring("complete", "tuple(int,int,int)").c_str());
 }

@@ -31,60 +31,58 @@
 
 #include <boost/python/class.hpp>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdProperty()
 {
-    class_<UsdProperty, bases<UsdObject> >("Property")
+    boost::python::class_<UsdProperty, boost::python::bases<UsdObject> >("Property")
         .def(Usd_ObjectSubclass())
         .def("GetBaseName", &UsdProperty::GetBaseName)
         .def("GetNamespace", &UsdProperty::GetNamespace)
         .def("SplitName", &UsdProperty::SplitName,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("GetDisplayGroup", &UsdProperty::GetDisplayGroup)
         .def("SetDisplayGroup", &UsdProperty::SetDisplayGroup,
-             arg("displayGroup"))
+             boost::python::arg("displayGroup"))
         .def("ClearDisplayGroup", &UsdProperty::ClearDisplayGroup)
         .def("HasAuthoredDisplayGroup", &UsdProperty::HasAuthoredDisplayGroup)
 
         .def("GetNestedDisplayGroups", &UsdProperty::GetNestedDisplayGroups,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("SetNestedDisplayGroups", &UsdProperty::SetNestedDisplayGroups,
-             arg("nestedGroups"))
+             boost::python::arg("nestedGroups"))
 
         .def("GetDisplayName", &UsdProperty::GetDisplayName)
-        .def("SetDisplayName", &UsdProperty::SetDisplayName, arg("name"))
+        .def("SetDisplayName", &UsdProperty::SetDisplayName, boost::python::arg("name"))
         .def("ClearDisplayName", &UsdProperty::ClearDisplayName)
         .def("HasAuthoredDisplayName", &UsdProperty::HasAuthoredDisplayName)
 
         .def("GetPropertyStack", &UsdProperty::GetPropertyStack,
-             arg("time"))
+             boost::python::arg("time"))
 
         .def("IsCustom", &UsdProperty::IsCustom)
-        .def("SetCustom", &UsdProperty::SetCustom, arg("isCustom"))
+        .def("SetCustom", &UsdProperty::SetCustom, boost::python::arg("isCustom"))
 
         .def("IsDefined", &UsdProperty::IsDefined)
         .def("IsAuthored", &UsdProperty::IsAuthored)
-        .def("IsAuthoredAt", &UsdProperty::IsAuthoredAt, arg("editTarget"))
+        .def("IsAuthoredAt", &UsdProperty::IsAuthoredAt, boost::python::arg("editTarget"))
 
         .def("FlattenTo", 
              (UsdProperty (UsdProperty::*)(const UsdPrim&) const)
                  &UsdProperty::FlattenTo,
-             (arg("parent")))
+             (boost::python::arg("parent")))
         .def("FlattenTo", 
              (UsdProperty (UsdProperty::*)(const UsdPrim&,const TfToken&) const)
                  &UsdProperty::FlattenTo,
-             (arg("parent"), arg("propName")))
+             (boost::python::arg("parent"), boost::python::arg("propName")))
         .def("FlattenTo", 
              (UsdProperty (UsdProperty::*)(const UsdProperty&) const)
                  &UsdProperty::FlattenTo,
-             (arg("property")))
+             (boost::python::arg("property")))
         ;
 
     TfPyRegisterStlSequencesFromPython<UsdProperty>();

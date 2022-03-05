@@ -54,9 +54,6 @@
 #include <utility>
 #include <vector>
 
-using std::pair;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -87,7 +84,7 @@ PlugPlugin::_GetPluginTypeDisplayName(_Type type)
 }
 
 template <class PluginMap>
-pair<PlugPluginPtr, bool>
+std::pair<PlugPluginPtr, bool>
 PlugPlugin::_NewPlugin(const Plug_RegistrationMetadata &metadata,
                        _Type pluginType,
                        const std::string& pluginCreationPath,
@@ -146,11 +143,11 @@ PlugPlugin::_NewPlugin(const Plug_RegistrationMetadata &metadata,
     // Add to allPluginsByName too.
     allPluginsByName[metadata.pluginName] = plugin;
 
-    return pair<PlugPluginPtr, bool>(plugin, true);
+    return std::pair<PlugPluginPtr, bool>(plugin, true);
 }
 
 
-pair<PlugPluginPtr, bool>
+std::pair<PlugPluginPtr, bool>
 PlugPlugin::_NewDynamicLibraryPlugin(const Plug_RegistrationMetadata& metadata)
 {
     return _NewPlugin(metadata, LibraryType, metadata.libraryPath,
@@ -158,7 +155,7 @@ PlugPlugin::_NewDynamicLibraryPlugin(const Plug_RegistrationMetadata& metadata)
 }
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-pair<PlugPluginPtr, bool>
+std::pair<PlugPluginPtr, bool>
 PlugPlugin::_NewPythonModulePlugin(const Plug_RegistrationMetadata& metadata)
 {
     return _NewPlugin(metadata, PythonType, metadata.pluginPath,
@@ -230,7 +227,7 @@ PlugPlugin::_Load()
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     if (IsPythonModule()) {
         TRACE_FUNCTION_SCOPE("python import");
-        string cmd = TfStringPrintf("import %s\n", _name.c_str());
+        std::string cmd = TfStringPrintf("import %s\n", _name.c_str());
         if (TfPyRunSimpleString(cmd) != 0) {
             TF_CODING_ERROR("Load of %s for %s failed",
                             _name.c_str(), _name.c_str());
@@ -248,7 +245,7 @@ PlugPlugin::_Load()
                                     _name.c_str());
         }
         else {
-            string dsoError;
+            std::string dsoError;
             {
                 TRACE_FUNCTION_SCOPE("dlopen");
                 _handle = TfDlopen(_path.c_str(), ARCH_LIBRARY_NOW, &dsoError);
@@ -286,7 +283,7 @@ PlugPlugin::_LoadWithDependents(_SeenPlugins *seenPlugins)
         // Load any dependencies.
         JsObject dependencies = GetDependencies();
         TF_FOR_ALL(i, dependencies) {
-            string baseTypeName = i->first;
+            std::string baseTypeName = i->first;
             TfType baseType = TfType::FindByName(baseTypeName);
 
             // Check that each base class type is defined.
@@ -297,16 +294,16 @@ PlugPlugin::_LoadWithDependents(_SeenPlugins *seenPlugins)
             }
 
             // Get dependencies, as typenames
-            typedef vector<string> TypeNames;
-            if (!i->second.IsArrayOf<string>()) {
+            typedef std::vector<std::string> TypeNames;
+            if (!i->second.IsArrayOf<std::string>()) {
                 TF_CODING_ERROR("Load failed: dependency list has wrong type");
                 return false;
             }
-            const TypeNames & dependents = i->second.GetArrayOf<string>();
+            const TypeNames & dependents = i->second.GetArrayOf<std::string>();
 
             // Load the dependencies for each base class.
             TF_FOR_ALL(j, dependents) {
-                const string & dependName = *j;
+                const std::string & dependName = *j;
                 TfType dependType = TfType::FindByName(dependName);
 
                 if (dependType.IsUnknown()) {
@@ -541,7 +538,7 @@ PlugPlugin::_DeclareAliases( TfType t, const JsObject & metadata )
             continue;
         }
 
-        const string& aliasName = aliasIt->second.GetString();
+        const std::string& aliasName = aliasIt->second.GetString();
         TfType aliasBase = TfType::Declare(aliasIt->first);
 
         t.AddAlias( aliasBase, aliasName );
@@ -573,11 +570,11 @@ PlugPlugin::_DeclareType(
     TfType::DefinitionCallback cb( &_DefineType );
 
     // Get the base types, declaring them if necessary.
-    vector<TfType> basesVec;
+    std::vector<TfType> basesVec;
     JsValue bases;
     TfMapLookup(typeDict,"bases",&bases);
-    if (bases.IsArrayOf<string>()) {
-        for (const auto& name : bases.GetArrayOf<string>()) {
+    if (bases.IsArrayOf<std::string>()) {
+        for (const auto& name : bases.GetArrayOf<std::string>()) {
             basesVec.push_back(TfType::Declare(name));
         }
     } else if (!bases.IsNull()) {

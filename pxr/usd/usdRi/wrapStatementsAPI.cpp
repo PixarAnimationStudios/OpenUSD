@@ -37,7 +37,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -83,34 +82,34 @@ void wrapUsdRiStatementsAPI()
     UsdRiStatementsAPI_CanApplyResult::Wrap<UsdRiStatementsAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
+    boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
         cls("StatementsAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
-        .def("Apply", &This::Apply, (arg("prim")))
+        .def("Apply", &This::Apply, (boost::python::arg("prim")))
         .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
 
         .def("__repr__", ::_Repr)
@@ -162,46 +161,46 @@ WRAP_CUSTOM {
              (UsdAttribute (UsdRiStatementsAPI::*)(
                  const TfToken &, const TfType &, const std::string &))
              &UsdRiStatementsAPI::CreateRiAttribute,
-             (arg("name"), arg("tfType"), arg("nameSpace")="user"))
+             (boost::python::arg("name"), boost::python::arg("tfType"), boost::python::arg("nameSpace")="user"))
         .def("CreateRiAttribute",
              (UsdAttribute (UsdRiStatementsAPI::*)(
                  const TfToken &, const std::string &, const std::string &))
              &UsdRiStatementsAPI::CreateRiAttribute,
-             (arg("name"), arg("riType"), arg("nameSpace")="user"))
+             (boost::python::arg("name"), boost::python::arg("riType"), boost::python::arg("nameSpace")="user"))
         .def("GetRiAttribute",
              &UsdRiStatementsAPI::GetRiAttribute,
-             (arg("name"), arg("nameSpace")="user"))
+             (boost::python::arg("name"), boost::python::arg("nameSpace")="user"))
         .def("GetRiAttributes", &UsdRiStatementsAPI::GetRiAttributes,
-             (arg("nameSpace")=""),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("nameSpace")=""),
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetRiAttributeName",
-             UsdRiStatementsAPI::GetRiAttributeName, (arg("prop")))
+             UsdRiStatementsAPI::GetRiAttributeName, (boost::python::arg("prop")))
         .staticmethod("GetRiAttributeName")
         .def("GetRiAttributeNameSpace",
-             &UsdRiStatementsAPI::GetRiAttributeNameSpace, (arg("prop")))
+             &UsdRiStatementsAPI::GetRiAttributeNameSpace, (boost::python::arg("prop")))
         .staticmethod("GetRiAttributeNameSpace")
-        .def("IsRiAttribute", &UsdRiStatementsAPI::IsRiAttribute, (arg("prop")))
+        .def("IsRiAttribute", &UsdRiStatementsAPI::IsRiAttribute, (boost::python::arg("prop")))
         .staticmethod("IsRiAttribute")
         .def("MakeRiAttributePropertyName",
-             &UsdRiStatementsAPI::MakeRiAttributePropertyName, (arg("attrName")))
+             &UsdRiStatementsAPI::MakeRiAttributePropertyName, (boost::python::arg("attrName")))
         .staticmethod("MakeRiAttributePropertyName")
         .def("SetCoordinateSystem", &UsdRiStatementsAPI::SetCoordinateSystem,
-             (arg("coordSysName")))
+             (boost::python::arg("coordSysName")))
         .def("GetCoordinateSystem", &UsdRiStatementsAPI::GetCoordinateSystem)
         .def("HasCoordinateSystem", &UsdRiStatementsAPI::HasCoordinateSystem)
 
         .def("SetScopedCoordinateSystem",
              &UsdRiStatementsAPI::SetScopedCoordinateSystem,
-             (arg("coordSysName")))
+             (boost::python::arg("coordSysName")))
         .def("GetScopedCoordinateSystem",
              &UsdRiStatementsAPI::GetScopedCoordinateSystem)
         .def("HasScopedCoordinateSystem",
              &UsdRiStatementsAPI::HasScopedCoordinateSystem)
 
         .def("GetModelCoordinateSystems", _GetModelCoordinateSystems,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetModelScopedCoordinateSystems", _GetModelScopedCoordinateSystems,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         ;
 }
 

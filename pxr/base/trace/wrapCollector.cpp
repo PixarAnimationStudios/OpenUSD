@@ -34,7 +34,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -86,7 +85,7 @@ void wrapCollector()
     using This = TraceCollector;
     using ThisPtr = TfWeakPtr<TraceCollector>;
 
-    class_<This, ThisPtr, boost::noncopyable>("Collector", no_init)
+    boost::python::class_<This, ThisPtr, boost::noncopyable>("Collector", boost::python::no_init)
         .def(TfPySingleton())
 
         .def("BeginEvent", BeginEventHelper)
@@ -96,7 +95,7 @@ void wrapCollector()
         .def("EndEventAtTime", EndEventAtTimeHelper)
 
         .def("GetLabel", &This::GetLabel,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         
         .def("Clear", &This::Clear)
 
@@ -106,7 +105,7 @@ void wrapCollector()
                       &This::SetPythonTracingEnabled)
         ;
     
-    def("GetElapsedSeconds", GetElapsedSeconds);
+    boost::python::def("GetElapsedSeconds", GetElapsedSeconds);
 };
 
 

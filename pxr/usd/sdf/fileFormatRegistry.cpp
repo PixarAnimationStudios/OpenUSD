@@ -35,8 +35,6 @@
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/staticTokens.h"
 
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -100,8 +98,8 @@ Sdf_FileFormatRegistry::FindById(
 
 SdfFileFormatConstPtr
 Sdf_FileFormatRegistry::FindByExtension(
-    const string& s,
-    const string& target)
+    const std::string& s,
+    const std::string& target)
 {
     TRACE_FUNCTION();
 
@@ -110,7 +108,7 @@ Sdf_FileFormatRegistry::FindByExtension(
         return TfNullPtr;
     }
 
-    string ext = SdfFileFormat::GetFileExtension(s);
+    std::string ext = SdfFileFormat::GetFileExtension(s);
     if (ext.empty()) {
         TF_CODING_ERROR("Unable to determine extension for '%s'", s.c_str());
         return TfNullPtr;
@@ -218,7 +216,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             continue;
         }
 
-        string formatId = aFormatId.GetString();
+        std::string formatId = aFormatId.GetString();
         if (formatId.empty()) {
             TF_CODING_ERROR("File format '%s' plugin meta data '%s' is empty",
                 formatType.GetTypeName().c_str(),
@@ -238,7 +236,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             continue;
         }
 
-        if (!aExtensions.IsArrayOf<string>()) {
+        if (!aExtensions.IsArrayOf<std::string>()) {
             TF_CODING_ERROR("Unexpected value type for key '%s' "
                 "in plugin meta data for file format type '%s'",
                 _PlugInfoKeyTokens->Extensions.GetText(),
@@ -246,7 +244,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             continue;
         }
 
-        const vector<string>& extensions = aExtensions.GetArrayOf<string>();
+        const std::vector<std::string>& extensions = aExtensions.GetArrayOf<std::string>();
         if (extensions.empty()) {
             TF_CODING_ERROR("File format '%s' plugin meta data '%s' is empty",
                 formatType.GetTypeName().c_str(),
@@ -289,7 +287,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             continue;
         }
 
-        const string target = aTarget.GetString();
+        const std::string target = aTarget.GetString();
         if (target.empty()) {
             TF_CODING_ERROR("File format '%s' plugin meta data '%s' is empty",
                 formatType.GetTypeName().c_str(),

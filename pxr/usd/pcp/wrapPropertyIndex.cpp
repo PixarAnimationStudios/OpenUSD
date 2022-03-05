@@ -32,7 +32,6 @@
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -60,12 +59,12 @@ wrapPropertyIndex()
 {
     typedef PcpPropertyIndex This;
 
-    class_<This>
-        ("PropertyIndex", "", no_init)
+    boost::python::class_<This>
+        ("PropertyIndex", "", boost::python::no_init)
         .add_property("propertyStack", _WrapPropertyStack)
         .add_property("localPropertyStack", _WrapLocalPropertyStack)
         .add_property("localErrors", 
-                      make_function(&This::GetLocalErrors,
-                                    return_value_policy<TfPySequenceToList>()))
+                      boost::python::make_function(&This::GetLocalErrors,
+                                    boost::python::return_value_policy<TfPySequenceToList>()))
         ;
 }

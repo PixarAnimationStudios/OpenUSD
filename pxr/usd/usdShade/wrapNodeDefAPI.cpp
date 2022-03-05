@@ -37,7 +37,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -52,14 +51,14 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateImplementationSourceAttr(UsdShadeNodeDefAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateImplementationSourceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateIdAttr(UsdShadeNodeDefAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateIdAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
@@ -97,49 +96,49 @@ void wrapUsdShadeNodeDefAPI()
     UsdShadeNodeDefAPI_CanApplyResult::Wrap<UsdShadeNodeDefAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
+    boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
         cls("NodeDefAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
-        .def("Apply", &This::Apply, (arg("prim")))
+        .def("Apply", &This::Apply, (boost::python::arg("prim")))
         .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetImplementationSourceAttr",
              &This::GetImplementationSourceAttr)
         .def("CreateImplementationSourceAttr",
              &_CreateImplementationSourceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetIdAttr",
              &This::GetIdAttr)
         .def("CreateIdAttr",
              &_CreateIdAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;
@@ -168,47 +167,47 @@ void wrapUsdShadeNodeDefAPI()
 
 namespace {
 
-static object 
+static boost::python::object 
 _WrapGetShaderId(const UsdShadeNodeDefAPI &shader)
 {
     TfToken id;
     if (shader.GetShaderId(&id)) {
-        return object(id);
+        return boost::python::object(id);
     }
-    return object();
+    return boost::python::object();
 }
 
-static object 
+static boost::python::object 
 _WrapGetSourceAsset(const UsdShadeNodeDefAPI &shader,
                     const TfToken &sourceType)
 {
     SdfAssetPath asset;
     if (shader.GetSourceAsset(&asset, sourceType)) {
-        return object(asset);
+        return boost::python::object(asset);
     }
-    return object();
+    return boost::python::object();
 }
 
-static object
+static boost::python::object
 _WrapGetSourceAssetSubIdentifier(const UsdShadeNodeDefAPI &shader,
                     const TfToken &sourceType)
 {
     TfToken subIdentifier;
     if (shader.GetSourceAssetSubIdentifier(&subIdentifier, sourceType)) {
-        return object(subIdentifier);
+        return boost::python::object(subIdentifier);
     }
-    return object();
+    return boost::python::object();
 }
 
-static object 
+static boost::python::object 
 _WrapGetSourceCode(const UsdShadeNodeDefAPI &shader,
                    const TfToken &sourceType)
 {
     std::string code;
     if (shader.GetSourceCode(&code, sourceType)) {
-        return object(code);
+        return boost::python::object(code);
     }
-    return object();
+    return boost::python::object();
 }
 
 WRAP_CUSTOM {
@@ -216,26 +215,26 @@ WRAP_CUSTOM {
         .def("GetImplementationSource", &UsdShadeNodeDefAPI::GetImplementationSource)
         .def("SetShaderId", &UsdShadeNodeDefAPI::SetShaderId)
         .def("SetSourceAsset", &UsdShadeNodeDefAPI::SetSourceAsset,
-            (arg("sourceAsset"), 
-             arg("sourceType")=UsdShadeTokens->universalSourceType))
+            (boost::python::arg("sourceAsset"), 
+             boost::python::arg("sourceType")=UsdShadeTokens->universalSourceType))
         .def("SetSourceAssetSubIdentifier",
             &UsdShadeNodeDefAPI::SetSourceAssetSubIdentifier,
-            (arg("subIdentifier"),
-             arg("sourceType")=UsdShadeTokens->universalSourceType))
+            (boost::python::arg("subIdentifier"),
+             boost::python::arg("sourceType")=UsdShadeTokens->universalSourceType))
         .def("SetSourceCode", &UsdShadeNodeDefAPI::SetSourceCode,
-            (arg("sourceCode"), 
-             arg("sourceType")=UsdShadeTokens->universalSourceType))
+            (boost::python::arg("sourceCode"), 
+             boost::python::arg("sourceType")=UsdShadeTokens->universalSourceType))
         .def("GetShaderId", _WrapGetShaderId)
         .def("GetSourceAsset", _WrapGetSourceAsset, 
-             arg("sourceType")=UsdShadeTokens->universalSourceType)
+             boost::python::arg("sourceType")=UsdShadeTokens->universalSourceType)
         .def("GetSourceAssetSubIdentifier", _WrapGetSourceAssetSubIdentifier,
-             arg("sourceType")=UsdShadeTokens->universalSourceType)
+             boost::python::arg("sourceType")=UsdShadeTokens->universalSourceType)
         .def("GetSourceCode", _WrapGetSourceCode, 
-             arg("sourceType")=UsdShadeTokens->universalSourceType)
+             boost::python::arg("sourceType")=UsdShadeTokens->universalSourceType)
         .def("GetShaderNodeForSourceType", 
              &UsdShadeNodeDefAPI::GetShaderNodeForSourceType,
-             (arg("sourceType")),
-             return_internal_reference<>())
+             (boost::python::arg("sourceType")),
+             boost::python::return_internal_reference<>())
         ;
 }
 

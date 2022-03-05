@@ -29,7 +29,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using namespace std;
 
 namespace {
 
@@ -38,14 +37,14 @@ namespace {
 //   s = "int Foo<A>::Bar<B, C>::Blah () [with A = int, B = float, C = bool]"
 // and i = the position of "Blah" in s, then:
 //   _GetStartOfName(s, i) --> the position of "Foo" in s.
-static string::size_type
-_GetStartOfName(const string& s, string::size_type i)
+static std::string::size_type
+_GetStartOfName(const std::string& s, std::string::size_type i)
 {
     // Skip backwards until we find the start of the function name.  We
     // do this by skipping over everything between matching '<' and '>'
     // and then searching for a space.
     i = s.find_last_of(" >", i);
-    while (i != string::npos && s[i] != ' ') {
+    while (i != std::string::npos && s[i] != ' ') {
         int nestingDepth = 1;
         while (nestingDepth && --i) {
             if (s[i] == '>') {
@@ -57,7 +56,7 @@ _GetStartOfName(const string& s, string::size_type i)
         }
         i = s.find_last_of(" >", i);
     }
-    return i == string::npos ? 0 : i + 1;
+    return i == std::string::npos ? 0 : i + 1;
 }
 
 /*
@@ -73,25 +72,25 @@ _GetStartOfName(const string& s, string::size_type i)
  * Note that this is full of heuristics that don't always work.
  * 
  */
-static string
-_GetFunctionName(const string& function, string prettyFunction)
+static std::string
+_GetFunctionName(const std::string& function, std::string prettyFunction)
 {
     // Prepend '::' to the function name so that we can search for it as a
     // member function in prettyFunction.
-    string memberFunction = "::";
+    std::string memberFunction = "::";
     memberFunction += function;
 
     // First search to see if function is a member function.  If it's not,
     // then we bail out early, returning function.
     std::string::size_type functionStart = prettyFunction.find(memberFunction);
-    if (functionStart == string::npos || functionStart == 0)
+    if (functionStart == std::string::npos || functionStart == 0)
         return function;
 
     // The +2 is because of the '::' we prepended.
     std::string::size_type functionEnd = functionStart + function.length() + 2;
 
     // Find the start of the function name.
-    string::size_type i = _GetStartOfName(prettyFunction, functionStart);
+    std::string::size_type i = _GetStartOfName(prettyFunction, functionStart);
 
     // Cut everything that's not part of the function name out
     return prettyFunction.substr(i, functionEnd - i);
@@ -103,11 +102,11 @@ _GetFunctionName(const string& function, string prettyFunction)
 // becomes:
 //   pair("int Foo<A,B>::Bar(float)", " A = int, B = float")
 // Note the leading space in the template list.
-static pair<string, string>
-_Split(const string& prettyFunction)
+static std::pair<std::string, std::string>
+_Split(const std::string& prettyFunction)
 {
     auto i = prettyFunction.find(" [with ");
-    if (i != string::npos) {
+    if (i != std::string::npos) {
         const auto n = prettyFunction.size();
         return std::make_pair(prettyFunction.substr(0, i),
                               prettyFunction.substr(i + 6, n - i - 7));
@@ -123,14 +122,14 @@ _Split(const string& prettyFunction)
 // becomes:
 //   "A": "int", "B": "float"
 // Note the leading space in the template list.
-static std::map<string, string>
+static std::map<std::string, std::string>
 _GetTemplateList(const std::string& templates)
 {
-    std::map<string, string> result;
+    std::map<std::string, std::string> result;
 
-    string::size_type typeEnd = templates.size();
-    string::size_type i = templates.rfind('=', typeEnd);
-    while (i != string::npos) {
+    std::string::size_type typeEnd = templates.size();
+    std::string::size_type i = templates.rfind('=', typeEnd);
+    while (i != std::string::npos) {
         auto typeStart = templates.find_first_not_of(" =", i);
         auto nameEnd   = templates.find_last_not_of(" =", i);
         auto nameStart = _GetStartOfName(templates, nameEnd);
@@ -143,10 +142,10 @@ _GetTemplateList(const std::string& templates)
     return result;
 }
 
-static string
-_FormatTemplateList(const std::map<string, string>& templates)
+static std::string
+_FormatTemplateList(const std::map<std::string, std::string>& templates)
 {
-    string result;
+    std::string result;
     if (!templates.empty()) {
         for (const auto& value: templates) {
             if (result.empty()) {
@@ -177,26 +176,26 @@ _FormatTemplateList(const std::map<string, string>& templates)
  * which is the result we expect.  (Ultimately this is only invoked on
  * Windows for the testArchFunction test.)
  */
-static string
-_GetNextIdentifier(const string& prettyFunction, string::size_type &pos)
+static std::string
+_GetNextIdentifier(const std::string& prettyFunction, std::string::size_type &pos)
 {
     // Skip '<' or leading space.
-    const string::size_type first = prettyFunction.find_first_not_of("< ", pos);
+    const std::string::size_type first = prettyFunction.find_first_not_of("< ", pos);
 
     // If we found nothing or '<' then this is probably operator< or <<.
-    if (first == string::npos || prettyFunction[first] == '<') {
-        pos = string::npos;
-        return string();
+    if (first == std::string::npos || prettyFunction[first] == '<') {
+        pos = std::string::npos;
+        return std::string();
     }
 
     // Find the next separator, which should be a ',', unless we are on
     // the last identifier, and then it should be a '>'.  Update pos to
     // be just before the next identifier.
     std::string::size_type last = prettyFunction.find_first_of(",>", first);
-    if(last == string::npos) {
-        pos = string::npos;
+    if(last == std::string::npos) {
+        pos = std::string::npos;
         last = prettyFunction.find('>', first);
-        if(last == string::npos)
+        if(last == std::string::npos)
             last = prettyFunction.size();
     }
     else if (prettyFunction[last] == ',') {
@@ -215,14 +214,14 @@ _GetNextIdentifier(const string& prettyFunction, string::size_type &pos)
 // prettyFunction.  For example, if "Foo<A, B>::Bar" is passed as
 // prettyFunction then only the 'A' and 'B' elements of templates
 // will be returned.
-static std::map<string, string>
-_FilterTemplateList(const string& prettyFunction,
-                    const std::map<string, string>& templates)
+static std::map<std::string, std::string>
+_FilterTemplateList(const std::string& prettyFunction,
+                    const std::map<std::string, std::string>& templates)
 {
-    std::map<string, string> result;
+    std::map<std::string, std::string> result;
 
-    string::size_type pos = prettyFunction.find("<");
-    while (pos != string::npos) {
+    std::string::size_type pos = prettyFunction.find("<");
+    while (pos != std::string::npos) {
         const auto identifier = _GetNextIdentifier(prettyFunction, pos);
         if (!identifier.empty()) {
             auto i = templates.find(identifier);
@@ -237,12 +236,12 @@ _FilterTemplateList(const string& prettyFunction,
 
 } // anonymous namespace
 
-string
-ArchGetPrettierFunctionName(const string &function,
-                            const string &prettyFunction)
+std::string
+ArchGetPrettierFunctionName(const std::string &function,
+                            const std::string &prettyFunction)
 {
     // Get the function signature and template list, respectively.
-    const pair<string, string> parts = _Split(prettyFunction);
+    const std::pair<std::string, std::string> parts = _Split(prettyFunction);
 
     // Get just the function name.
     const auto functionName = _GetFunctionName(function, parts.first);

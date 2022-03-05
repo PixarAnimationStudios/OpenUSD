@@ -46,8 +46,6 @@
 #include <utility>
 #include <vector>
 
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -853,8 +851,8 @@ struct Sdf_Stats {
     int numNodeRefs;
 
     // Histograms
-    vector<int> lengthTable;
-    vector<int> numChildrenTable;
+    std::vector<int> lengthTable;
+    std::vector<int> numChildrenTable;
     size_t typeTable[Sdf_PathNode::NumNodeTypes];
 };
 
@@ -862,7 +860,7 @@ template <class Table>
 static void
 _GatherChildrenFrom(Sdf_PathNode const *parent,
                     Table const &table,
-                    vector<Sdf_PathNodeConstRefPtr> *result)
+                    std::vector<Sdf_PathNodeConstRefPtr> *result)
 {
     for (size_t outerIndex = 0; outerIndex != NumNodeMaps; ++outerIndex) {
         auto &mapAndMutex = table._mapsAndMutexes[outerIndex];
@@ -875,11 +873,11 @@ _GatherChildrenFrom(Sdf_PathNode const *parent,
     }
 }
 
-static vector<Sdf_PathNodeConstRefPtr>
+static std::vector<Sdf_PathNodeConstRefPtr>
 _GetChildren(Sdf_PathNode const *pathNode)
 {
     // XXX: SLOW.  For path stats debugging only.
-    vector<Sdf_PathNodeConstRefPtr> children;
+    std::vector<Sdf_PathNodeConstRefPtr> children;
     _GatherChildrenFrom(pathNode, *_mapperNodes, &children);
     _GatherChildrenFrom(pathNode, *_targetNodes, &children);
     _GatherChildrenFrom(pathNode, *_mapperArgNodes, &children);

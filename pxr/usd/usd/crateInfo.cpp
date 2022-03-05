@@ -66,10 +66,10 @@ UsdCrateInfo::GetSummaryStats() const
     return stats;
 }
 
-vector<UsdCrateInfo::Section>
+std::vector<UsdCrateInfo::Section>
 UsdCrateInfo::GetSections() const
 {
-    vector<Section> result;
+    std::vector<Section> result;
     if (!*this) {
         TF_CODING_ERROR("Invalid UsdCrateInfo object");
     }

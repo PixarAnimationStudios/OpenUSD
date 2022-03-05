@@ -37,7 +37,6 @@
 #include <algorithm>
 #include <ostream>
 
-using namespace std;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -606,7 +605,7 @@ GfFrustum::ComputeAspectRatio() const
     return aspectRatio;
 }
 
-vector<GfVec3d>
+std::vector<GfVec3d>
 GfFrustum::ComputeCorners() const
 {
     const GfVec2d &winMin = _window.GetMin();
@@ -614,7 +613,7 @@ GfFrustum::ComputeCorners() const
     double near           = _nearFar.GetMin();
     double far            = _nearFar.GetMax();
 
-    vector<GfVec3d> corners;
+    std::vector<GfVec3d> corners;
     corners.reserve(8);
 
     if (_projectionType == Perspective) {
@@ -657,13 +656,13 @@ GfFrustum::ComputeCorners() const
     return corners;
 }
 
-vector<GfVec3d>
+std::vector<GfVec3d>
 GfFrustum::ComputeCornersAtDistance(double d) const
 {
     const GfVec2d &winMin = _window.GetMin();
     const GfVec2d &winMax = _window.GetMax();
 
-    vector<GfVec3d> corners;
+    std::vector<GfVec3d> corners;
     corners.reserve(4);
 
     if (_projectionType == Perspective) {

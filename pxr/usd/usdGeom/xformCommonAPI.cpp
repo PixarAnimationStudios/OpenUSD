@@ -120,7 +120,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include <map>
 
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -306,7 +305,7 @@ static_assert(!_IsRotateOpType(UsdGeomXformOp::TypeScale) &&
 
 static
 UsdGeomXformOp::Type
-_GetRotateOpType(const vector<UsdGeomXformOp>& ops)
+_GetRotateOpType(const std::vector<UsdGeomXformOp>& ops)
 {
     for (const UsdGeomXformOp& op : ops) {
         if (_IsRotateOpType(op.GetOpType())) {
@@ -385,8 +384,8 @@ UsdGeomXformCommonAPI::CanConvertOpTypeToRotationOrder(
 // common op types that the xformOps could possibly be reduced to by
 // accumulation.
 static
-vector<UsdGeomXformOp::Type>
-_GetCommonOpTypesForOpOrder(const vector<UsdGeomXformOp>& xformOps,
+std::vector<UsdGeomXformOp::Type>
+_GetCommonOpTypesForOpOrder(const std::vector<UsdGeomXformOp>& xformOps,
                             int* translateIndex,
                             int* translatePivotIndex,
                             int* rotateIndex,
@@ -410,7 +409,7 @@ _GetCommonOpTypesForOpOrder(const vector<UsdGeomXformOp>& xformOps,
         }
     }
 
-    vector<UsdGeomXformOp::Type> commonOpTypes;
+    std::vector<UsdGeomXformOp::Type> commonOpTypes;
     size_t currentIndex = 0;
 
     // The translate and translatePivot will always be present, and so will
@@ -545,13 +544,13 @@ UsdGeomXformCommonAPI::GetXformVectorsByAccumulation(
     // (invalid) if that op is not present.
     int translateIndex, translatePivotIndex, rotateIndex,
         translateIdentityIndex, scaleIndex, translatePivotInvertIndex;
-    vector<UsdGeomXformOp::Type> commonOpTypes =
+    std::vector<UsdGeomXformOp::Type> commonOpTypes =
         _GetCommonOpTypesForOpOrder(xformOps,
             &translateIndex, &translatePivotIndex, &rotateIndex,
             &translateIdentityIndex, &scaleIndex, &translatePivotInvertIndex);
 
     // Keep a set of matrices that we'll accumulate the xformOp transforms into.
-    vector<GfMatrix4d> commonOpMatrices(commonOpTypes.size(), GfMatrix4d(1.0));
+    std::vector<GfMatrix4d> commonOpMatrices(commonOpTypes.size(), GfMatrix4d(1.0));
 
     // Scan backwards through the xformOps and list of commonOpTypes
     // accumulating transforms as we go. We scan backwards so that we

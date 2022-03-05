@@ -29,7 +29,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -56,6 +55,6 @@ void wrapIntrospection()
     TF_PY_WRAP_PUBLIC_TOKENS("UsdStageStatsKeys", UsdUtilsUsdStageStatsKeys, 
                              USDUTILS_USDSTAGE_STATS);
 
-    def("ComputeUsdStageStats", _WrapUsdUtilsComputeUsdStageStats_1);
-    def("ComputeUsdStageStats", _WrapUsdUtilsComputeUsdStageStats_2);
+    boost::python::def("ComputeUsdStageStats", _WrapUsdUtilsComputeUsdStageStats_1);
+    boost::python::def("ComputeUsdStageStats", _WrapUsdUtilsComputeUsdStageStats_2);
 }

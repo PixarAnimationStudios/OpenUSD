@@ -31,7 +31,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -40,9 +39,9 @@ void wrapNode()
     typedef NdrNode This;
     typedef NdrNodePtr ThisPtr;
 
-    return_value_policy<copy_const_reference> copyRefPolicy;
+    boost::python::return_value_policy<boost::python::copy_const_reference> copyRefPolicy;
 
-    class_<This, ThisPtr, boost::noncopyable>("Node", no_init)
+    boost::python::class_<This, ThisPtr, boost::noncopyable>("Node", boost::python::no_init)
         .def("__repr__", &This::GetInfoString)
         .def(TfPyBoolBuiltinFuncName, &This::IsValid)
         .def("GetIdentifier", &This::GetIdentifier, copyRefPolicy)
@@ -55,12 +54,12 @@ void wrapNode()
         .def("GetResolvedImplementationURI", &This::GetResolvedImplementationURI, copyRefPolicy)
         .def("IsValid", &This::IsValid)
         .def("GetInfoString", &This::GetInfoString)
-        .def("GetInput", &This::GetInput, return_internal_reference<>())
+        .def("GetInput", &This::GetInput, boost::python::return_internal_reference<>())
         .def("GetInputNames", &This::GetInputNames, copyRefPolicy)
-        .def("GetOutput", &This::GetOutput, return_internal_reference<>())
+        .def("GetOutput", &This::GetOutput, boost::python::return_internal_reference<>())
         .def("GetOutputNames", &This::GetOutputNames, copyRefPolicy)
         .def("GetSourceCode", &This::GetSourceCode, copyRefPolicy)
         .def("GetMetadata", &This::GetMetadata,
-            return_value_policy<TfPyMapToDictionary>())
+            boost::python::return_value_policy<TfPyMapToDictionary>())
         ;
 }

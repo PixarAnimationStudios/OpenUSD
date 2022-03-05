@@ -31,7 +31,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -54,34 +53,34 @@ void wrapLayerStackIdentifier()
 {
     typedef PcpLayerStackIdentifier This;
 
-    class_<This>("LayerStackIdentifier")
-        .def(init<>())
-        .def(init<
+    boost::python::class_<This>("LayerStackIdentifier")
+        .def(boost::python::init<>())
+        .def(boost::python::init<
              const SdfLayerHandle &,
              const SdfLayerHandle &,
              const ArResolverContext & >
-             ((args("rootLayer"),
-               args("sessionLayer") = SdfLayerHandle(),
-               args("pathResolverContext") = ArResolverContext())))
+             ((boost::python::args("rootLayer"),
+               boost::python::args("sessionLayer") = SdfLayerHandle(),
+               boost::python::args("pathResolverContext") = ArResolverContext())))
 
         .add_property("sessionLayer", 
-                      make_getter(&This::sessionLayer, 
-                                  return_value_policy<return_by_value>()))
+                      boost::python::make_getter(&This::sessionLayer, 
+                                  boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("rootLayer", 
-                      make_getter(&This::rootLayer, 
-                                  return_value_policy<return_by_value>()))
+                      boost::python::make_getter(&This::rootLayer, 
+                                  boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("pathResolverContext", 
-                      make_getter(&This::pathResolverContext, 
-                                  return_value_policy<return_by_value>()))
+                      boost::python::make_getter(&This::pathResolverContext, 
+                                  boost::python::return_value_policy<boost::python::return_by_value>()))
 
         .def("__repr__", &_Repr)
         .def("__hash__", &This::GetHash)
-        .def(!self)
-        .def(self == self)
-        .def(self != self)
-        .def(self <  self)
-        .def(self <= self)
-        .def(self >  self)
-        .def(self >= self)
+        .def(!boost::python::self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self <  boost::python::self)
+        .def(boost::python::self <= boost::python::self)
+        .def(boost::python::self >  boost::python::self)
+        .def(boost::python::self >= boost::python::self)
         ;
 }

@@ -32,10 +32,6 @@
 #include <iostream>
 #include <signal.h>
 
-using std::cerr;
-using std::endl;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -74,7 +70,7 @@ _HandleErrors(const TfErrorMark &m, bool success)
     for (TfErrorMark::Iterator i = m.GetBegin(); i != m.GetEnd(); ++i)
     {
         ++rc;
-        cerr << "*** Error in " << i->GetSourceFileName()
+        std::cerr << "*** Error in " << i->GetSourceFileName()
              << "@line " << i->GetSourceLineNumber()
              << "\n    " << i->GetCommentary() << "\n";
     }
@@ -85,9 +81,9 @@ _HandleErrors(const TfErrorMark &m, bool success)
 void
 TfRegTest::_PrintTestNames()
 {
-    cerr << "Valid tests are:";
+    std::cerr << "Valid tests are:";
 
-    vector<string> names;
+    std::vector<std::string> names;
     names.reserve(_functionTable.size() + _functionTableWithArgs.size());
     
     for (_Hash::const_iterator hi = _functionTable.begin();
@@ -100,24 +96,24 @@ TfRegTest::_PrintTestNames()
         names.push_back(hi->first);
 
 
-    sort(names.begin(), names.end());
+    std::sort(names.begin(), names.end());
     for (const auto& name : names) {
-        cerr << "\n    " << name;
+        std::cerr << "\n    " << name;
     }
 
-    cerr << endl;
+    std::cerr << std::endl;
 }
 
 static void
-_Usage(const string &progName)
+_Usage(const std::string &progName)
 {
-    cerr << "Usage: " << progName << " testName [args]\n";
+    std::cerr << "Usage: " << progName << " testName [args]\n";
 }
 
 int
 TfRegTest::_Main(int argc, char *argv[])
 {
-    string progName(argv[0]);
+    std::string progName(argv[0]);
 
     if (argc < 2) {
         _Usage(progName);
@@ -129,8 +125,8 @@ TfRegTest::_Main(int argc, char *argv[])
 
     if (_functionTable.find(testName) != _functionTable.end()) {
         if (argc > 2) {
-            cerr << progName << ": test function '" << testName
-                 << "' takes no arguments." << endl;
+            std::cerr << progName << ": test function '" << testName
+                 << "' takes no arguments." << std::endl;
             return 2;
         }
         TfErrorMark m;
@@ -143,7 +139,7 @@ TfRegTest::_Main(int argc, char *argv[])
                 (*_functionTableWithArgs[testName])(argc-1, argv+1));
     }
     else {
-        cerr << progName << ": unknown test function " << testName << ".\n";
+        std::cerr << progName << ": unknown test function " << testName << ".\n";
         _PrintTestNames();
         return 3;
     }

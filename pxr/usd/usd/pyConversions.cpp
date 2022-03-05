@@ -56,13 +56,12 @@ UsdVtValueToPython(const VtValue &value)
 VtValue 
 UsdPythonToSdfType(TfPyObjWrapper pyVal, SdfValueTypeName const &targetType)
 {
-    using namespace boost::python;
 
     // Extract VtValue from python object.
     VtValue val;
     {
         TfPyLock lock;
-        val = extract<VtValue>(pyVal.Get())();
+        val = boost::python::extract<VtValue>(pyVal.Get())();
     }
 
     // Attempt to cast the value to what we want.  Get a default value for this
@@ -86,7 +85,6 @@ UsdPythonToMetadataValue(
     const TfToken &key, const TfToken &keyPath, 
     TfPyObjWrapper pyVal, VtValue *result)
 {
-    using namespace boost::python;
 
     SdfSchema const &schema = SdfSchema::GetInstance();
 
@@ -97,7 +95,7 @@ UsdPythonToMetadataValue(
         return false;
     }
 
-    VtValue value = extract<VtValue>(pyVal.Get())();
+    VtValue value = boost::python::extract<VtValue>(pyVal.Get())();
 
     // Empty values are always considered valid.
     if (value.IsEmpty()) {
@@ -140,11 +138,11 @@ UsdPythonToMetadataValue(
     // types from Python.
     if (!fallback.IsEmpty()) {
         if (fallback.IsHolding<TfTokenVector>()) {
-            value = extract<TfTokenVector>(pyVal.Get())();
+            value = boost::python::extract<TfTokenVector>(pyVal.Get())();
         }
         else if (fallback.IsHolding< std::vector<std::string> >()) {
-            extract<std::vector<std::string> > getVecString(pyVal.Get());
-            extract<VtStringArray> getStringArray(pyVal.Get());
+            boost::python::extract<std::vector<std::string> > getVecString(pyVal.Get());
+            boost::python::extract<VtStringArray> getStringArray(pyVal.Get());
             if (getVecString.check()) {
                 value = getVecString();
             } else if (getStringArray.check()) {
@@ -162,7 +160,7 @@ UsdPythonToMetadataValue(
     if (value.IsEmpty() ||
         (fallback.IsEmpty() &&
          (!fieldDef->IsValidValue(value) || !schema.IsValidValue(value)))) {
-        VtValue origValue = extract<VtValue>(pyVal.Get())();
+        VtValue origValue = boost::python::extract<VtValue>(pyVal.Get())();
         TfPyThrowValueError(
             TfStringPrintf(
                 "Invalid value '%s' (type '%s') for key '%s%s'.%s",

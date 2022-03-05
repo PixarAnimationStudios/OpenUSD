@@ -39,9 +39,6 @@
 
 #include <unordered_map>
 
-using std::map;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -125,27 +122,27 @@ TF_REGISTRY_FUNCTION(TfEnum)
 
 // Register all units with the TfEnum registry.
 struct _UnitsInfo {
-    map<string, map<int, double> *> _UnitsMap;
-    map<string, TfEnum> _DefaultUnitsMap;
-    map<string, TfEnum> _UnitCategoryToDefaultUnitMap;
-    map<string, string> _UnitTypeNameToUnitCategoryMap;
+    std::map<std::string, std::map<int, double> *> _UnitsMap;
+    std::map<std::string, TfEnum> _DefaultUnitsMap;
+    std::map<std::string, TfEnum> _UnitCategoryToDefaultUnitMap;
+    std::map<std::string, std::string> _UnitTypeNameToUnitCategoryMap;
     TfEnum _UnitIndicesTable[_SDF_UNIT_NUM_TYPES][_SDF_UNIT_MAX_UNITS];
-    string _UnitNameTable[_SDF_UNIT_NUM_TYPES][_SDF_UNIT_MAX_UNITS];
-    map<string, TfEnum> _UnitNameToUnitMap;
-    map<string, uint32_t> _UnitTypeIndicesTable;
+    std::string _UnitNameTable[_SDF_UNIT_NUM_TYPES][_SDF_UNIT_MAX_UNITS];
+    std::map<std::string, TfEnum> _UnitNameToUnitMap;
+    std::map<std::string, uint32_t> _UnitTypeIndicesTable;
 };
 
 static void _AddToUnitsMaps(_UnitsInfo &info,
                             const TfEnum &unit, 
-                            const string &unitName,
+                            const std::string &unitName,
                             double scale,
-                            const string &category)
+                            const std::string &category)
 {
     const char *enumTypeName = unit.GetType().name();
-    map<int, double> *scalesMap = info._UnitsMap[enumTypeName];
+    std::map<int, double> *scalesMap = info._UnitsMap[enumTypeName];
 
     if (!scalesMap) {
-        scalesMap = info._UnitsMap[enumTypeName] = new map<int, double>;
+        scalesMap = info._UnitsMap[enumTypeName] = new std::map<int, double>;
     }
     (*scalesMap)[unit.GetValueAsInt()] = scale;
     if (scale == 1.0) {
@@ -155,7 +152,7 @@ static void _AddToUnitsMaps(_UnitsInfo &info,
     }
 
     uint32_t typeIndex;
-    map<string, uint32_t>::iterator i =
+    std::map<std::string, uint32_t>::iterator i =
         info._UnitTypeIndicesTable.find(unit.GetType().name());
     if (i == info._UnitTypeIndicesTable.end()) {
         typeIndex = (uint32_t)info._UnitTypeIndicesTable.size();
@@ -233,7 +230,7 @@ SdfDefaultUnit( const TfEnum &unit )
 {
     static TfEnum empty;
     _UnitsInfo &info = _GetUnitsInfo();
-    map<string, TfEnum>::const_iterator it =
+    std::map<std::string, TfEnum>::const_iterator it =
         info._DefaultUnitsMap.find(unit.GetType().name());
 
     if ( it == info._DefaultUnitsMap.end() ) {
@@ -244,12 +241,12 @@ SdfDefaultUnit( const TfEnum &unit )
     return it->second;
 }
 
-const string &
+const std::string &
 SdfUnitCategory( const TfEnum &unit )
 {
-    static string empty;
+    static std::string empty;
     _UnitsInfo &info = _GetUnitsInfo();
-    map<string, string>::const_iterator it =
+    std::map<std::string, std::string>::const_iterator it =
         info._UnitTypeNameToUnitCategoryMap.find(unit.GetType().name());
 
     if (it == info._UnitTypeNameToUnitCategoryMap.end()) {
@@ -278,7 +275,7 @@ double SdfConvertUnit( const TfEnum &fromUnit, const TfEnum &toUnit )
                 TfEnum::GetFullName(toUnit).c_str());
         return 0.0;
     }
-    map<string, map<int, double> *>::const_iterator it =
+    std::map<std::string, std::map<int, double> *>::const_iterator it =
         info._UnitsMap.find(fromUnit.GetType().name());
 
     if ( it == info._UnitsMap.end() ) {
@@ -290,14 +287,14 @@ double SdfConvertUnit( const TfEnum &fromUnit, const TfEnum &toUnit )
         (*it->second)[toUnit.GetValueAsInt()];
 }
 
-const string &
+const std::string &
 SdfGetNameForUnit( const TfEnum &unit )
 {
     static std::string empty;
     _UnitsInfo &info = _GetUnitsInfo();
 
     // first check if this is a known type
-    map<string, uint32_t>::const_iterator it =
+    std::map<std::string, uint32_t>::const_iterator it =
         info._UnitTypeIndicesTable.find(unit.GetType().name());
     if (it == info._UnitTypeIndicesTable.end()) {
         TF_WARN("Unsupported unit '%s'.",
@@ -316,7 +313,7 @@ SdfGetUnitFromName( const std::string &name )
 {
     static TfEnum empty;
     _UnitsInfo &info = _GetUnitsInfo();
-    map<string, TfEnum>::const_iterator it = info._UnitNameToUnitMap.find(name);
+    std::map<std::string, TfEnum>::const_iterator it = info._UnitNameToUnitMap.find(name);
 
     if ( it == info._UnitNameToUnitMap.end() ) {
         TF_WARN("Unknown unit name '%s'.", name.c_str());
@@ -415,7 +412,7 @@ bool _ValueVectorToVtArray(VtValue *value,
     // any fail, add a message to errMsgs indicating the failed element.
     auto const &valVec = value->UncheckedGet<std::vector<VtValue>>();
     auto begin = valVec.begin(), end = valVec.end();
-    VtArray<T> result(distance(begin, end));
+    VtArray<T> result(std::distance(begin, end));
     
     bool allValid = true;
     for (T *e = result.data(); begin != end; ++begin) {

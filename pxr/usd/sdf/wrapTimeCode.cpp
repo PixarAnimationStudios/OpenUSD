@@ -36,7 +36,6 @@
 
 #include <sstream>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -76,8 +75,8 @@ void wrapTimeCode()
 {
     typedef SdfTimeCode This;
 
-    auto selfCls = class_<This>("TimeCode", init<>())
-        .def(init<double>())
+    auto selfCls = boost::python::class_<This>("TimeCode", boost::python::init<>())
+        .def(boost::python::init<double>())
 
         .def("GetValue", &This::GetValue)
 
@@ -87,27 +86,27 @@ void wrapTimeCode()
         .def("__hash__", &This::GetHash)
         .def("__float__", _Float)
 
-        .def( self == self )
-        .def( double() == self )
-        .def( self != self )
-        .def( double() != self )
-        .def( self < self )
-        .def( double() < self )
-        .def( self > self )
-        .def( double() > self )
-        .def( self <= self )
-        .def( double() <= self )
-        .def( self >= self )
-        .def( double() >= self )
+        .def( boost::python::self == boost::python::self )
+        .def( double() == boost::python::self )
+        .def( boost::python::self != boost::python::self )
+        .def( double() != boost::python::self )
+        .def( boost::python::self < boost::python::self )
+        .def( double() < boost::python::self )
+        .def( boost::python::self > boost::python::self )
+        .def( double() > boost::python::self )
+        .def( boost::python::self <= boost::python::self )
+        .def( double() <= boost::python::self )
+        .def( boost::python::self >= boost::python::self )
+        .def( double() >= boost::python::self )
 
-        .def( self * self )
-        .def( double() * self )
-        .def( self / self )
-        .def( double() / self )
-        .def( self + self )
-        .def( double() + self )
-        .def( self - self )
-        .def( double() - self )
+        .def( boost::python::self * boost::python::self )
+        .def( double() * boost::python::self )
+        .def( boost::python::self / boost::python::self )
+        .def( double() / boost::python::self )
+        .def( boost::python::self + boost::python::self )
+        .def( double() + boost::python::self )
+        .def( boost::python::self - boost::python::self )
+        .def( double() - boost::python::self )
         ;
 
 #if PY_MAJOR_VERSION == 2
@@ -116,7 +115,7 @@ void wrapTimeCode()
     selfCls.attr("__rtruediv__") = selfCls.attr("__rdiv__");
 #endif
 
-    implicitly_convertible<double, This>();
+    boost::python::implicitly_convertible<double, This>();
 
     // Let python know about us, to enable assignment from python back to C++
     VtValueFromPython<SdfTimeCode>();

@@ -26,14 +26,13 @@
 
 #include <boost/python/class.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
 static
-tuple
+boost::python::tuple
 _GetLocalTransformation(
         UsdGeomXformCache& self,
         const UsdPrim& prim)
@@ -41,11 +40,11 @@ _GetLocalTransformation(
     bool resetsXformStack;
     GfMatrix4d localXform = self.GetLocalTransformation(prim, &resetsXformStack);
 
-    return make_tuple(localXform, resetsXformStack);
+    return boost::python::make_tuple(localXform, resetsXformStack);
 }
 
 static
-tuple
+boost::python::tuple
 _ComputeRelativeTransform(UsdGeomXformCache& self,
                           const UsdPrim& prim,
                           const UsdPrim& ancestor)
@@ -54,7 +53,7 @@ _ComputeRelativeTransform(UsdGeomXformCache& self,
     GfMatrix4d xform =
         self.ComputeRelativeTransform(prim, ancestor, &resetXformStack);
     
-    return make_tuple(xform, resetXformStack);
+    return boost::python::make_tuple(xform, resetXformStack);
 }
 
 } // anonymous namespace 
@@ -63,21 +62,21 @@ void wrapUsdGeomXformCache()
 {
     typedef UsdGeomXformCache XformCache;
 
-    class_<XformCache>("XformCache")
-        .def(init<UsdTimeCode>(arg("time")))
+    boost::python::class_<XformCache>("XformCache")
+        .def(boost::python::init<UsdTimeCode>(boost::python::arg("time")))
         .def("GetLocalToWorldTransform",
-             &XformCache::GetLocalToWorldTransform, arg("prim"))
+             &XformCache::GetLocalToWorldTransform, boost::python::arg("prim"))
         .def("GetParentToWorldTransform",
-             &XformCache::GetParentToWorldTransform, arg("prim"))
+             &XformCache::GetParentToWorldTransform, boost::python::arg("prim"))
         .def("GetLocalTransformation",
-             &_GetLocalTransformation, arg("prim"))
+             &_GetLocalTransformation, boost::python::arg("prim"))
         .def("ComputeRelativeTransform",
-             &_ComputeRelativeTransform, (arg("prim"), arg("ancestor")))
+             &_ComputeRelativeTransform, (boost::python::arg("prim"), boost::python::arg("ancestor")))
         .def("Clear", &XformCache::Clear)
-        .def("SetTime", &XformCache::SetTime, arg("time"))
+        .def("SetTime", &XformCache::SetTime, boost::python::arg("time"))
         .def("GetTime", &XformCache::GetTime)
 
-        .def("Swap", &XformCache::Swap, arg("other"))
+        .def("Swap", &XformCache::Swap, boost::python::arg("other"))
         ;
 }
 

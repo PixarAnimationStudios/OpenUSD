@@ -30,14 +30,13 @@
 
 #include <boost/python/def.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
 static void
-_PrintStackTrace(object &obj, const std::string &reason)
+_PrintStackTrace(boost::python::object &obj, const std::string &reason)
 {
 #if PY_MAJOR_VERSION == 2
     if (PyFile_Check(obj.ptr())) {
@@ -49,7 +48,7 @@ _PrintStackTrace(object &obj, const std::string &reason)
     int fd = PyObject_AsFileDescriptor(obj.ptr());
     if (fd >= 0)
     {
-        FILE * file = expect_non_null(ArchFdOpen(fd, "w"));
+        FILE * file = boost::python::expect_non_null(ArchFdOpen(fd, "w"));
         if (file)
         {
             TfPrintStackTrace(file, reason);
@@ -68,18 +67,18 @@ _PrintStackTrace(object &obj, const std::string &reason)
 void
 wrapStackTrace()
 {
-    def("GetStackTrace", TfGetStackTrace,
+    boost::python::def("GetStackTrace", TfGetStackTrace,
         "GetStackTrace()\n\n"
         "Return both the C++ and the python stack as a string.");
     
-    def("PrintStackTrace", _PrintStackTrace,
+    boost::python::def("PrintStackTrace", _PrintStackTrace,
         "PrintStackTrace(file, str)\n\n"
         "Prints both the C++ and the python stack to the file provided.");
 
-    def("LogStackTrace", TfLogStackTrace,
-        (arg("reason"), arg("logToDb")=false));
+    boost::python::def("LogStackTrace", TfLogStackTrace,
+        (boost::python::arg("reason"), boost::python::arg("logToDb")=false));
 
-    def("GetAppLaunchTime", TfGetAppLaunchTime,
+    boost::python::def("GetAppLaunchTime", TfGetAppLaunchTime,
         "GetAppLaunchTime() -> int \n\n"
         "Return the time (in seconds since the epoch) at which "
         "the application was started.");

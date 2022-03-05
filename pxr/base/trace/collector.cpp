@@ -48,9 +48,6 @@
 #include <numeric>
 #include <utility>
 
-using std::string;
-using std::vector;
-using std::make_pair;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -268,7 +265,7 @@ TraceCollector::CreateCollection() {
 static inline TraceCollector::Key
 _MakePythonScopeKey(const TfPyTraceInfo& info)
 {
-    string keyString = TfStringPrintf("%s() (py) in %s:%d (%s)",
+    std::string keyString = TfStringPrintf("%s() (py) in %s:%d (%s)",
                                       info.funcName,
                                       TfGetBaseName(info.fileName).c_str(),
                                       info.funcLine,

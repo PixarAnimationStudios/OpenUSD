@@ -818,20 +818,19 @@ SdfCopySpec(
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath)
 {
-    namespace ph = std::placeholders;
 
     return SdfCopySpec(
         srcLayer, srcPath, dstLayer, dstPath,
         /* shouldCopyValueFn = */ std::bind(
             SdfShouldCopyValue,
             std::cref(srcPath), std::cref(dstPath),
-            ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, ph::_8, 
-            ph::_9),
+            std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, std::placeholders::_8, 
+            std::placeholders::_9),
         /* shouldCopyChildrenFn = */ std::bind(
             SdfShouldCopyChildren,
             std::cref(srcPath), std::cref(dstPath),
-            ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, ph::_8, 
-            ph::_9)
+            std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, std::placeholders::_8, 
+            std::placeholders::_9)
         );
 }
 

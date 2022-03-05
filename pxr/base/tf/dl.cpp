@@ -34,7 +34,6 @@
 #include <string>
 #include <stdlib.h>
 
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 

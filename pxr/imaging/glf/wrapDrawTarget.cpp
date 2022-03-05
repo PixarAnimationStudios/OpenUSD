@@ -32,7 +32,6 @@
 #include <boost/python/class.hpp>
 #include <boost/python/overloads.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -57,7 +56,7 @@ void wrapDrawTarget()
     typedef GlfDrawTarget This;
     typedef GlfDrawTargetPtr ThisPtr;
     
-    class_<This, ThisPtr, boost::noncopyable>("DrawTarget", no_init)
+    boost::python::class_<This, ThisPtr, boost::noncopyable>("DrawTarget", boost::python::no_init)
         .def(TfPyRefAndWeakPtr())
         .def("__init__",TfMakePyConstructor(&_NewDrawTarget))
         .def("__init__",TfMakePyConstructor(&_NewDrawTarget2))
@@ -66,10 +65,10 @@ void wrapDrawTarget()
         .def("Unbind", &This::Unbind)
         .def("WriteToFile", 
             &This::WriteToFile, (
-             arg("attachment"),
-             arg("filename"),
-             arg("viewMatrix") = GfMatrix4d(1),
-             arg("projectionMatrix") = GfMatrix4d(1)))
+             boost::python::arg("attachment"),
+             boost::python::arg("filename"),
+             boost::python::arg("viewMatrix") = GfMatrix4d(1),
+             boost::python::arg("projectionMatrix") = GfMatrix4d(1)))
         
         ;
 }

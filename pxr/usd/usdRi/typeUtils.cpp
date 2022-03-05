@@ -29,9 +29,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-using std::string;
 
-string 
+std::string 
 UsdRi_GetRiType(const SdfValueTypeName &usdType)
 {
     // TODO
@@ -39,7 +38,7 @@ UsdRi_GetRiType(const SdfValueTypeName &usdType)
 }
 
 SdfValueTypeName 
-UsdRi_GetUsdType(const string &riType)
+UsdRi_GetUsdType(const std::string &riType)
 {
     struct Entry { const char* riName; SdfValueTypeName usdType; };
     static Entry map[] = {
@@ -52,7 +51,7 @@ UsdRi_GetUsdType(const string &riType)
     static const size_t mapLen = sizeof(map)/sizeof(map[0]);
 
     for (size_t i = 0; i != mapLen; ++i) {
-        if (riType.find(map[i].riName) != string::npos)
+        if (riType.find(map[i].riName) != std::string::npos)
             return map[i].usdType;
     }
     // XXX -- Really?

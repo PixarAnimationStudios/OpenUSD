@@ -42,10 +42,6 @@
 #include <utility>
 #include <vector>
 
-using std::make_pair;
-using std::pair;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -67,8 +63,8 @@ operator==(
 
 bool
 Sdf_CanCreateNewLayerWithIdentifier(
-    const string& identifier,
-    string* whyNot)
+    const std::string& identifier,
+    std::string* whyNot)
 {
     if (identifier.empty()) {
         if (whyNot) {
@@ -100,7 +96,7 @@ Sdf_CanCreateNewLayerWithIdentifier(
 
 ArResolvedPath
 Sdf_ResolvePath(
-    const string& layerPath,
+    const std::string& layerPath,
     ArAssetInfo* assetInfo)
 {
     TRACE_FUNCTION();
@@ -127,7 +123,7 @@ Sdf_CanWriteLayerToPath(
 
 ArResolvedPath
 Sdf_ComputeFilePath(
-    const string& layerPath,
+    const std::string& layerPath,
     ArAssetInfo* assetInfo)
 {
     TRACE_FUNCTION();
@@ -164,10 +160,10 @@ Sdf_ComputeFilePath(
 
 Sdf_AssetInfo*
 Sdf_ComputeAssetInfoFromIdentifier(
-    const string& identifier,
-    const string& filePath,
+    const std::string& identifier,
+    const std::string& filePath,
     const ArAssetInfo& inResolveInfo,
-    const string& fileVersion)
+    const std::string& fileVersion)
 {
     // Allocate a new asset info object. The caller is responsible for
     // managing the returned object.
@@ -193,7 +189,7 @@ Sdf_ComputeAssetInfoFromIdentifier(
         assetInfo->identifier = identifier;
 #endif
 
-        string layerPath, arguments;
+        std::string layerPath, arguments;
         Sdf_SplitIdentifier(assetInfo->identifier, &layerPath, &arguments);
         if (filePath.empty()) {
             assetInfo->resolvedPath = 
@@ -234,9 +230,9 @@ Sdf_ComputeAssetInfoFromIdentifier(
     return assetInfo;
 }
 
-string
+std::string
 Sdf_ComputeAnonLayerIdentifier(
-    const string& identifierTemplate,
+    const std::string& identifierTemplate,
     const SdfLayer* layer)
 {
     TF_VERIFY(layer);
@@ -245,15 +241,15 @@ Sdf_ComputeAnonLayerIdentifier(
 
 bool
 Sdf_IsAnonLayerIdentifier(
-    const string& identifier)
+    const std::string& identifier)
 {
     return TfStringStartsWith(identifier,
         _Tokens->AnonLayerPrefix.GetString());
 }
 
-string
+std::string
 Sdf_GetAnonLayerDisplayName(
-    const string& identifier)
+    const std::string& identifier)
 {
     // We want to find the second occurence of ':', traversing from the left,
     // in our identifier which is of the form anon:0x4rfs23:displayName
@@ -270,31 +266,31 @@ Sdf_GetAnonLayerDisplayName(
     return identifier.substr(std::distance(identifier.begin(), snd) + 1);
 }
 
-string
+std::string
 Sdf_GetAnonLayerIdentifierTemplate(
-    const string& tag)
+    const std::string& tag)
 {
-    string idTag = tag.empty() ? tag : TfStringTrim(tag);
+    std::string idTag = tag.empty() ? tag : TfStringTrim(tag);
     return _Tokens->AnonLayerPrefix.GetString() + "%p" +
         (idTag.empty() ? idTag : ":" + idTag);
 }
 
-string
+std::string
 Sdf_CreateIdentifier(
-    const string& layerPath,
-    const string& arguments)
+    const std::string& layerPath,
+    const std::string& arguments)
 {
     return layerPath + arguments;
 }
 
 // XXX: May need to escape characters in the arguments map
 // when encoding arguments and unescape then when decoding?
-static string
+static std::string
 Sdf_EncodeArguments(
     const SdfLayer::FileFormatArguments& args)
 {
     const char* delimiter = _Tokens->ArgsDelimiter.GetText();
-    string argString;
+    std::string argString;
     for (const auto& entry : args) {
         argString += delimiter;
         argString += entry.first;
@@ -309,7 +305,7 @@ Sdf_EncodeArguments(
 
 static bool
 Sdf_DecodeArguments(
-    const string& argString,
+    const std::string& argString,
     SdfLayer::FileFormatArguments* args)
 {
     if (argString.empty() || argString.size() == _Tokens->ArgsDelimiter.size()) {
@@ -327,17 +323,17 @@ Sdf_DecodeArguments(
     size_t startIdx = _Tokens->ArgsDelimiter.size();
     while (startIdx < argStringLength) {
         const size_t eqIdx = argString.find('=', startIdx);
-        if (eqIdx == string::npos) {
+        if (eqIdx == std::string::npos) {
             TF_CODING_ERROR(
                 "Invalid file format arguments: %s", argString.c_str());
             return false;
         }
 
-        const string key = argString.substr(startIdx, eqIdx - startIdx);
+        const std::string key = argString.substr(startIdx, eqIdx - startIdx);
         startIdx = eqIdx + 1;
 
         const size_t sepIdx = argString.find('&', startIdx);
-        if (sepIdx == string::npos) {
+        if (sepIdx == std::string::npos) {
             tmpArgs[key] = argString.substr(startIdx);
             break;
         }
@@ -351,9 +347,9 @@ Sdf_DecodeArguments(
     return true;
 }
 
-string 
+std::string 
 Sdf_CreateIdentifier(
-    const string& layerPath,
+    const std::string& layerPath,
     const SdfLayer::FileFormatArguments& arguments)
 {
     return layerPath + Sdf_EncodeArguments(arguments);
@@ -361,27 +357,27 @@ Sdf_CreateIdentifier(
 
 bool
 Sdf_SplitIdentifier(
-    const string& identifier,
-    string* layerPath,
-    string* arguments)
+    const std::string& identifier,
+    std::string* layerPath,
+    std::string* arguments)
 {
     size_t argPos = identifier.find(_Tokens->ArgsDelimiter.GetString());
-    if (argPos == string::npos) {
+    if (argPos == std::string::npos) {
         argPos = identifier.size();
     }
     
-    *layerPath = string(identifier, 0, argPos);
-    *arguments = string(identifier, argPos, string::npos);
+    *layerPath = std::string(identifier, 0, argPos);
+    *arguments = std::string(identifier, argPos, std::string::npos);
     return true;
 }
 
 bool 
 Sdf_SplitIdentifier(
-    const string& identifier,
-    string* layerPath,
+    const std::string& identifier,
+    std::string* layerPath,
     SdfLayer::FileFormatArguments* args)
 {
-    string tmpLayerPath, tmpArgs;
+    std::string tmpLayerPath, tmpArgs;
     if (!Sdf_SplitIdentifier(identifier, &tmpLayerPath, &tmpArgs)) {
         return false;
     }
@@ -396,17 +392,17 @@ Sdf_SplitIdentifier(
 
 bool 
 Sdf_IdentifierContainsArguments(
-    const string& identifier)
+    const std::string& identifier)
 {
-    return identifier.find(_Tokens->ArgsDelimiter.GetString()) != string::npos;
+    return identifier.find(_Tokens->ArgsDelimiter.GetString()) != std::string::npos;
 }
 
-string 
+std::string 
 Sdf_GetLayerDisplayName(
-    const string& identifier)
+    const std::string& identifier)
 {
 
-    string layerPath, arguments;
+    std::string layerPath, arguments;
     Sdf_SplitIdentifier(identifier, &layerPath, &arguments);
 
     if (Sdf_IsAnonLayerIdentifier(layerPath)) {
@@ -429,13 +425,13 @@ Sdf_GetLayerDisplayName(
     return TfGetBaseName(layerPath);
 }
 
-string
+std::string
 Sdf_GetExtension(
-    const string& identifier)
+    const std::string& identifier)
 {
     // Split the identifier to get the layer asset path without
     // any file format arguments.
-    string assetPath;
+    std::string assetPath;
     std::string dummyArgs;
     Sdf_SplitIdentifier(identifier, &assetPath, &dummyArgs);
 
@@ -475,9 +471,9 @@ Sdf_IsPackageOrPackagedLayer(
     return fileFormat->IsPackage() || ArIsPackageRelativePath(identifier);
 }
 
-string 
+std::string 
 Sdf_CanonicalizeRealPath(
-    const string& realPath)
+    const std::string& realPath)
 {
     // Use the given realPath as-is if it's a relative path, otherwise
     // use TfAbsPath to compute a platform-dependent real path.
@@ -489,7 +485,7 @@ Sdf_CanonicalizeRealPath(
     // outer path; the packaged path has a specific format defined in
     // Ar that we don't want to modify.
     if (ArIsPackageRelativePath(realPath)) {
-        pair<string, string> packagePath = 
+        std::pair<std::string, std::string> packagePath = 
             ArSplitPackageRelativePathOuter(realPath);
         return TfIsRelativePath(packagePath.first) ?
             realPath : ArJoinPackageRelativePath(

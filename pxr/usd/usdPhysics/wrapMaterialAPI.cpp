@@ -37,7 +37,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -52,28 +51,28 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateDynamicFrictionAttr(UsdPhysicsMaterialAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateDynamicFrictionAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateStaticFrictionAttr(UsdPhysicsMaterialAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateStaticFrictionAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateRestitutionAttr(UsdPhysicsMaterialAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateRestitutionAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDensityAttr(UsdPhysicsMaterialAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateDensityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
@@ -111,63 +110,63 @@ void wrapUsdPhysicsMaterialAPI()
     UsdPhysicsMaterialAPI_CanApplyResult::Wrap<UsdPhysicsMaterialAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
+    boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
         cls("MaterialAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
-        .def("Apply", &This::Apply, (arg("prim")))
+        .def("Apply", &This::Apply, (boost::python::arg("prim")))
         .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetDynamicFrictionAttr",
              &This::GetDynamicFrictionAttr)
         .def("CreateDynamicFrictionAttr",
              &_CreateDynamicFrictionAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetStaticFrictionAttr",
              &This::GetStaticFrictionAttr)
         .def("CreateStaticFrictionAttr",
              &_CreateStaticFrictionAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetRestitutionAttr",
              &This::GetRestitutionAttr)
         .def("CreateRestitutionAttr",
              &_CreateRestitutionAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetDensityAttr",
              &This::GetDensityAttr)
         .def("CreateDensityAttr",
              &_CreateDensityAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;

@@ -31,7 +31,6 @@
 
 #include <sstream>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -58,14 +57,14 @@ void wrapSubdivTags()
 {
     using This = PxOsdSubdivTags;
 
-    class_<This>("SubdivTags", init<>())
-        .def(init<TfToken, TfToken, TfToken, TfToken,
+    boost::python::class_<This>("SubdivTags", boost::python::init<>())
+        .def(boost::python::init<TfToken, TfToken, TfToken, TfToken,
                   VtIntArray, VtIntArray, VtFloatArray,
                   VtIntArray, VtFloatArray>())
         .def("__repr__", &::_ReprSubdivTags)
-        .def(self == self)
-        .def(self != self)
-        .def(str(self))
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self_ns::str(boost::python::self))
 
         .def("GetVertexInterpolationRule", &This::GetVertexInterpolationRule)
         .def("SetVertexInterpolationRule", &This::SetVertexInterpolationRule)
@@ -78,19 +77,19 @@ void wrapSubdivTags()
         .def("GetTriangleSubdivision", &This::GetTriangleSubdivision)
         .def("SetTriangleSubdivision", &This::SetTriangleSubdivision)
         .def("GetCreaseIndices", &This::GetCreaseIndices,
-             return_value_policy<copy_const_reference>())
+             boost::python::return_value_policy<boost::python::copy_const_reference>())
         .def("SetCreaseIndices", &This::SetCreaseIndices)
         .def("GetCreaseLengths", &This::GetCreaseLengths,
-             return_value_policy<copy_const_reference>())
+             boost::python::return_value_policy<boost::python::copy_const_reference>())
         .def("SetCreaseLengths", &This::SetCreaseLengths)
         .def("GetCreaseWeights", &This::GetCreaseWeights,
-             return_value_policy<copy_const_reference>())
+             boost::python::return_value_policy<boost::python::copy_const_reference>())
         .def("SetCreaseWeights", &This::SetCreaseWeights)
         .def("GetCornerIndices", &This::GetCornerIndices,
-             return_value_policy<copy_const_reference>())
+             boost::python::return_value_policy<boost::python::copy_const_reference>())
         .def("SetCornerIndices", &This::SetCornerIndices)
         .def("GetCornerWeights", &This::GetCornerWeights,
-             return_value_policy<copy_const_reference>())
+             boost::python::return_value_policy<boost::python::copy_const_reference>())
         .def("SetCornerWeights", &This::SetCornerWeights)
         .def("ComputeHash", &This::ComputeHash)
     ;

@@ -31,13 +31,12 @@
 
 #include <string>
 
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TfDiagnosticBase::TfDiagnosticBase(
     TfEnum code, const char* codeString,
-    TfCallContext const &context, const string& commentary,
+    TfCallContext const &context, const std::string& commentary,
     TfDiagnosticInfo info, bool quiet)
     : _context(context)
 {
@@ -51,7 +50,7 @@ TfDiagnosticBase::TfDiagnosticBase(
         _codeString = TfSafeString(codeString);
 }
 
-string
+std::string
 TfDiagnosticBase::GetPrettyPrintString() const
 {
     return _commentary;

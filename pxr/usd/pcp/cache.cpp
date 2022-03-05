@@ -63,9 +63,6 @@
 #include <utility>
 #include <vector>
 
-using std::make_pair;
-using std::pair;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -1291,7 +1288,7 @@ struct PcpCache::_ParallelIndexer
     // Add an index to compute.
     void ComputeIndex(const PcpPrimIndex *parentIndex, const SdfPath &path) {
         TF_AXIOM(parentIndex || path == SdfPath::AbsoluteRootPath());
-        _toCompute.push_back(make_pair(parentIndex, path));
+        _toCompute.push_back(std::make_pair(parentIndex, path));
     }
 
   private:
@@ -1428,7 +1425,7 @@ struct PcpCache::_ParallelIndexer
     const ArResolverScopedCache* _parentCache;
     char const *_mallocTag1;
     char const *_mallocTag2;
-    vector<pair<const PcpPrimIndex *, SdfPath> > _toCompute;
+    std::vector<std::pair<const PcpPrimIndex *, SdfPath> > _toCompute;
 };
 
 void

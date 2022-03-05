@@ -102,12 +102,11 @@ class SdfSpec;
 
 namespace Sdf_PySpecDetail {
 
-namespace bp = boost::python;
 
-SDF_API bp::object _DummyInit(bp::tuple const & /* args */, bp::dict const & /* kw */);
+SDF_API boost::python::object _DummyInit(boost::python::tuple const & /* args */, boost::python::dict const & /* kw */);
 
 template <typename CTOR>
-struct NewVisitor : bp::def_visitor<NewVisitor<CTOR> > {
+struct NewVisitor : boost::python::def_visitor<NewVisitor<CTOR> > {
 public:
     NewVisitor(const std::string &doc = std::string()) : _doc(doc) {}
 
@@ -131,7 +130,7 @@ public:
         c.def("__new__", CTOR::template __new__<CLS>, _doc.c_str());
         c.staticmethod("__new__");
 
-        c.def("__init__", bp::raw_function(_DummyInit));
+        c.def("__init__", boost::python::raw_function(_DummyInit));
     }
 
     template <class CLS, class Options>
@@ -159,13 +158,13 @@ public:
              );
         c.staticmethod("__new__");
 
-        c.def("__init__", bp::raw_function(_DummyInit));
+        c.def("__init__", boost::python::raw_function(_DummyInit));
     }
 
 private:
     const std::string _doc;
 
-    friend class bp::def_visitor_access;
+    friend class boost::python::def_visitor_access;
 };
 
 template <typename SIG>
@@ -207,7 +206,7 @@ SdfMakePySpecConstructor(T *func, const std::string &doc = std::string())
 namespace Sdf_PySpecDetail {
 
 // Create the repr for a spec using Sdf.Find().
-SDF_API std::string _SpecRepr(const bp::object&, const SdfSpec*);
+SDF_API std::string _SpecRepr(const boost::python::object&, const SdfSpec*);
 
 // Registration for spec types to functions to create a holder with the spec
 // corresponding to the spec type.
@@ -221,10 +220,10 @@ struct _ConstHandleToPython {
     typedef SdfHandle<SpecType> Handle;
     typedef SdfHandle<const SpecType> ConstHandle;
     _ConstHandleToPython() {
-        bp::to_python_converter<ConstHandle, _ConstHandleToPython<SpecType> >();
+        boost::python::to_python_converter<ConstHandle, _ConstHandleToPython<SpecType> >();
     }
     static PyObject *convert(ConstHandle const &p) {
-        return bp::incref(bp::object(TfConst_cast<Handle>(p)).ptr());
+        return boost::python::incref(boost::python::object(TfConst_cast<Handle>(p)).ptr());
     }
 };
 
@@ -252,22 +251,22 @@ private:
     static PyObject* _Creator(const SdfSpec& spec)
     {
         Handle x(Sdf_CastAccess::CastSpec<SpecType,SdfSpec>(spec));
-        return bp::objects::make_ptr_instance<SpecType, Holder>::execute(x);
+        return boost::python::objects::make_ptr_instance<SpecType, Holder>::execute(x);
     }
 
     template <class T>
     static
-    bp::converter::to_python_function_t
-    _RegisterConverter(bp::converter::to_python_function_t f)
+    boost::python::converter::to_python_function_t
+    _RegisterConverter(boost::python::converter::to_python_function_t f)
     {
         // Replace the old converter, installed automatically when we
         // registered the class.  WBN if boost python let us do this
         // without playing games.
-        bp::converter::registration* r =
-            const_cast<bp::converter::registration*>(
-                bp::converter::registry::query(bp::type_id<T>()));
+        boost::python::converter::registration* r =
+            const_cast<boost::python::converter::registration*>(
+                boost::python::converter::registry::query(boost::python::type_id<T>()));
         if (r) {
-            bp::converter::to_python_function_t old = r->m_to_python;
+            boost::python::converter::to_python_function_t old = r->m_to_python;
             r->m_to_python = f;
             return old;
         }
@@ -287,10 +286,10 @@ private:
     }
 
 private:
-    static bp::converter::to_python_function_t _originalConverter;
+    static boost::python::converter::to_python_function_t _originalConverter;
 };
 template <class SpecType, class Held, class Holder>
-bp::converter::to_python_function_t
+boost::python::converter::to_python_function_t
 _HandleToPython<SpecType, Held, Holder>::_originalConverter = 0;
 
 template <class _SpecType>
@@ -300,8 +299,8 @@ struct _HandleFromPython {
 
     _HandleFromPython()
     {
-        bp::converter::registry::insert(&convertible, &construct,
-                                        bp::type_id<Handle>());
+        boost::python::converter::registry::insert(&convertible, &construct,
+                                        boost::python::type_id<Handle>());
     }
 
   private:
@@ -310,16 +309,16 @@ struct _HandleFromPython {
         if (p == Py_None)
             return p;
         void *result =
-            bp::converter::get_lvalue_from_python(p,
-                bp::converter::registered<SpecType>::converters);
+            boost::python::converter::get_lvalue_from_python(p,
+                boost::python::converter::registered<SpecType>::converters);
         return result;
     }
 
     static void construct(PyObject* source,
-                          bp::converter::rvalue_from_python_stage1_data* data)
+                          boost::python::converter::rvalue_from_python_stage1_data* data)
     {
         void* const storage =
-            ((bp::converter::rvalue_from_python_storage<Handle>*)
+            ((boost::python::converter::rvalue_from_python_storage<Handle>*)
                                data)->storage.bytes;
         // Deal with the "None" case.
         if (data->convertible == source)
@@ -333,7 +332,7 @@ struct _HandleFromPython {
 
 // Visitor for def().
 template <bool Abstract>
-struct SpecVisitor : bp::def_visitor<SpecVisitor<Abstract> > {
+struct SpecVisitor : boost::python::def_visitor<SpecVisitor<Abstract> > {
 
     template<typename CLS>
     struct _Helper {
@@ -343,9 +342,9 @@ struct SpecVisitor : bp::def_visitor<SpecVisitor<Abstract> > {
         typedef typename CLS::metadata::holder HolderType;
 
     public:
-        static std::string Repr(const bp::object& self)
+        static std::string Repr(const boost::python::object& self)
         {
-            const HeldType& held = bp::extract<const HeldType&>(self);
+            const HeldType& held = boost::python::extract<const HeldType&>(self);
             return _SpecRepr(self, get_pointer(held));
         }
 
@@ -481,20 +480,20 @@ struct NewCtor<R(Args...)> : CtorBase<R(Args...)> {
     NewCtor(Sig *func) { Base::SetFunc(func); }
 
     template <class CLS>
-    static bp::object __new__(bp::object &cls, Args... args) {
+    static boost::python::object __new__(boost::python::object &cls, Args... args) {
         typedef typename CLS::metadata::held_type HeldType;
         TfErrorMark m;
         HeldType specHandle(Base::_func(args...));
         if (TfPyConvertTfErrorsToPythonException(m))
-            bp::throw_error_already_set();
-        bp::object result = TfPyObject(specHandle);
+            boost::python::throw_error_already_set();
+        boost::python::object result = TfPyObject(specHandle);
         if (TfPyIsNone(result))
             TfPyThrowRuntimeError("could not construct " +
                                   ArchGetDemangled(typeid(HeldType)));
 
-        bp::detail::initialize_wrapper(result.ptr(), get_pointer(specHandle));
+        boost::python::detail::initialize_wrapper(result.ptr(), get_pointer(specHandle));
         // make the object have the right class.
-        bp::setattr(result, "__class__", cls);
+        boost::python::api::setattr(result, "__class__", cls);
 
         return result;
     }

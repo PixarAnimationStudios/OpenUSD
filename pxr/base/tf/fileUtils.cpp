@@ -58,9 +58,6 @@
 #include <ShlwAPI.h>
 #include <sys/utime.h>
 #endif
-using std::set;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -115,7 +112,7 @@ Tf_HasAttribute(
 #endif
 
 static bool
-Tf_Stat(string const& path, bool resolveSymlinks, ArchStatType* st = 0)
+Tf_Stat(std::string const& path, bool resolveSymlinks, ArchStatType* st = 0)
 {
     if (path.empty()) {
         return false;
@@ -140,7 +137,7 @@ Tf_Stat(string const& path, bool resolveSymlinks, ArchStatType* st = 0)
 }
 
 bool
-TfPathExists(string const& path, bool resolveSymlinks)
+TfPathExists(std::string const& path, bool resolveSymlinks)
 {
 #if defined(ARCH_OS_WINDOWS)
     return Tf_HasAttribute(path, resolveSymlinks, 0);
@@ -157,7 +154,7 @@ TfPathExists(string const& path, bool resolveSymlinks)
 }
 
 bool
-TfIsDir(string const& path, bool resolveSymlinks)
+TfIsDir(std::string const& path, bool resolveSymlinks)
 {
 #if defined (ARCH_OS_WINDOWS)
     // Report not a directory if path is a symlink and resolveSymlinks is
@@ -175,7 +172,7 @@ TfIsDir(string const& path, bool resolveSymlinks)
 }
 
 bool
-TfIsFile(string const& path, bool resolveSymlinks)
+TfIsFile(std::string const& path, bool resolveSymlinks)
 {
 #if defined (ARCH_OS_WINDOWS)
     // Report not a file if path is a symlink and resolveSymlinks is false.
@@ -192,7 +189,7 @@ TfIsFile(string const& path, bool resolveSymlinks)
 }
 
 bool
-TfIsLink(string const& path)
+TfIsLink(std::string const& path)
 {
 #if defined(ARCH_OS_WINDOWS)
     return Tf_HasAttribute(path, /* resolveSymlinks = */ false,
@@ -207,7 +204,7 @@ TfIsLink(string const& path)
 }
 
 bool
-TfIsWritable(string const& path)
+TfIsWritable(std::string const& path)
 {
 #if defined(ARCH_OS_LINUX)
     // faccessat accounts for mount read-only status. For maintaining legacy
@@ -224,7 +221,7 @@ TfIsWritable(string const& path)
 }
 
 bool
-TfIsDirEmpty(string const& path)
+TfIsDirEmpty(std::string const& path)
 {
     if (!TfIsDir(path))
         return false;
@@ -251,7 +248,7 @@ TfIsDirEmpty(string const& path)
 }
 
 bool
-TfSymlink(string const& src, string const& dst)
+TfSymlink(std::string const& src, std::string const& dst)
 {
 #if defined(ARCH_OS_WINDOWS)
     if (CreateSymbolicLinkW(ArchWindowsUtf8ToUtf16(dst).c_str(),
@@ -285,7 +282,7 @@ TfDeleteFile(std::string const& path)
 }
 
 bool
-TfMakeDir(string const& path, int mode)
+TfMakeDir(std::string const& path, int mode)
 {
 #if defined(ARCH_OS_WINDOWS)
     return CreateDirectoryW(
@@ -300,16 +297,16 @@ TfMakeDir(string const& path, int mode)
 }
 
 static bool
-Tf_MakeDirsRec(string const& path, int mode, bool existOk)
+Tf_MakeDirsRec(std::string const& path, int mode, bool existOk)
 {
 #if defined(ARCH_OS_WINDOWS)
     static const string pathsep = "\\/";
 #else
-    static const string pathsep = "/";
+    static const std::string pathsep = "/";
 #endif
 
-    const string head = TfStringTrimRight(TfGetPathName(path), pathsep.c_str());
-    const string tail = TfGetBaseName(path);
+    const std::string head = TfStringTrimRight(TfGetPathName(path), pathsep.c_str());
+    const std::string tail = TfGetBaseName(path);
 
     if (!head.empty() && !tail.empty() && !TfPathExists(head) && head != path) {
         if (!Tf_MakeDirsRec(head, mode, existOk)) {
@@ -334,7 +331,7 @@ Tf_MakeDirsRec(string const& path, int mode, bool existOk)
 }
 
 bool
-TfMakeDirs(string const& path, int mode, bool existOk)
+TfMakeDirs(std::string const& path, int mode, bool existOk)
 {
     return path.empty() ? false
         : Tf_MakeDirsRec(TfNormPath(path), mode, existOk);
@@ -342,11 +339,11 @@ TfMakeDirs(string const& path, int mode, bool existOk)
 
 bool
 TfReadDir(
-    const string& dirPath,
-    vector<string>* dirnames,
-    vector<string>* filenames,
-    vector<string>* symlinknames,
-    string *errMsg)
+    const std::string& dirPath,
+    std::vector<std::string>* dirnames,
+    std::vector<std::string>* filenames,
+    std::vector<std::string>* symlinknames,
+    std::string *errMsg)
 {
 #if defined(ARCH_OS_WINDOWS)
     wchar_t szPath[MAX_PATH];
@@ -458,18 +455,18 @@ TfReadDir(
 
 static void
 Tf_ReadDir(
-    const string& dirPath,
+    const std::string& dirPath,
     const TfWalkErrorHandler& onError,
-    vector<string>* dirnames,
-    vector<string>* filenames,
-    vector<string>* symlinknames)
+    std::vector<std::string>* dirnames,
+    std::vector<std::string>* filenames,
+    std::vector<std::string>* symlinknames)
 {
     if (!(TF_VERIFY(dirnames) &&
           TF_VERIFY(filenames) &&
           TF_VERIFY(symlinknames)))
         return;
 
-    string errMsg;
+    std::string errMsg;
     if (!TfReadDir(dirPath, dirnames, filenames, symlinknames, &errMsg))
         if (onError) {
             onError(dirPath, errMsg);
@@ -500,7 +497,7 @@ typedef TfHashSet<Tf_FileId, boost::hash<Tf_FileId> > Tf_FileIdSet;
 
 static bool
 Tf_WalkDirsRec(
-    const string& dirpath,
+    const std::string& dirpath,
     const TfWalkFunction& func,
     bool topDown,
     const TfWalkErrorHandler& onError,
@@ -510,7 +507,7 @@ Tf_WalkDirsRec(
     if (!TF_VERIFY(linkTargets))
         return false;
 
-    vector<string> dirnames, filenames, symlinknames;
+    std::vector<std::string> dirnames, filenames, symlinknames;
     Tf_ReadDir(dirpath, onError, &dirnames, &filenames, &symlinknames);
 
     // If we're following symbolic links, stat each symlink name returned by
@@ -521,7 +518,7 @@ Tf_WalkDirsRec(
     if (followLinks) {
         for (const auto& name : symlinknames) {
             ArchStatType st;
-            if (Tf_Stat(string(dirpath + "/" + name).c_str(),
+            if (Tf_Stat(std::string(dirpath + "/" + name).c_str(),
                     /* resolveSymlinks */ true, &st)) {
                 if (S_ISDIR(st.st_mode)) {
                     Tf_FileId fileId(st);
@@ -556,7 +553,7 @@ Tf_WalkDirsRec(
 
 void
 TfWalkDirs(
-    const string& top,
+    const std::string& top,
     TfWalkFunction func,
     bool topDown,
     TfWalkErrorHandler onError,
@@ -574,19 +571,19 @@ TfWalkDirs(
 }
 
 void
-TfWalkIgnoreErrorHandler(string const& path, string const& msg)
+TfWalkIgnoreErrorHandler(std::string const& path, std::string const& msg)
 {
 }
 
 static bool
-Tf_RmTree(string const& dirpath,
-          vector<string> *dirnames,
-          vector<string> const& filenames,
+Tf_RmTree(std::string const& dirpath,
+          std::vector<std::string> *dirnames,
+          std::vector<std::string> const& filenames,
           TfWalkErrorHandler onError)
 {
-    vector<string>::const_iterator it;
+    std::vector<std::string>::const_iterator it;
     for (it = filenames.begin(); it != filenames.end(); ++it) {
-        string path = dirpath + "/" + *it;
+        std::string path = dirpath + "/" + *it;
         if (ArchUnlinkFile(path.c_str()) != 0) {
             // CODE_COVERAGE_OFF this could happen if the file is removed by
             // another process before we get there, or a file exists but is
@@ -615,52 +612,50 @@ Tf_RmTree(string const& dirpath,
 }
 
 static void
-Tf_RmTreeRaiseErrors(string const& path, string const& msg)
+Tf_RmTreeRaiseErrors(std::string const& path, std::string const& msg)
 {
     TF_RUNTIME_ERROR("failed to remove '%s': %s", path.c_str(), msg.c_str());
 }
 
 void
-TfRmTree(string const& path, TfWalkErrorHandler onError)
+TfRmTree(std::string const& path, TfWalkErrorHandler onError)
 {
-    namespace ph = std::placeholders;
     TfWalkDirs(path,
-               std::bind(Tf_RmTree, ph::_1, ph::_2, ph::_3, onError),
+               std::bind(Tf_RmTree, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, onError),
                /* topDown */ false,
                onError ? onError : Tf_RmTreeRaiseErrors);
 }
 
 static bool
-Tf_ListDir(string const& dirpath,
-           vector<string> *dirnames,
-           vector<string> const& filenames,
-           vector<string> *paths,
+Tf_ListDir(std::string const& dirpath,
+           std::vector<std::string> *dirnames,
+           std::vector<std::string> const& filenames,
+           std::vector<std::string> *paths,
            bool recursive)
 {
-    for (vector<string>::const_iterator it = dirnames->begin();
+    for (std::vector<std::string>::const_iterator it = dirnames->begin();
          it != dirnames->end(); ++it) {
         paths->push_back(dirpath + "/" + *it + "/");
     }
 
-    for (vector<string>::const_iterator it = filenames.begin();
+    for (std::vector<std::string>::const_iterator it = filenames.begin();
          it != filenames.end(); ++it)
         paths->push_back(dirpath + "/" + *it);
 
     return recursive;
 }
 
-vector<string>
-TfListDir(string const& path, bool recursive)
+std::vector<std::string>
+TfListDir(std::string const& path, bool recursive)
 {
-    namespace ph = std::placeholders;
-    vector<string> result;
-    TfWalkDirs(path, std::bind(Tf_ListDir, ph::_1, ph::_2, ph::_3,
+    std::vector<std::string> result;
+    TfWalkDirs(path, std::bind(Tf_ListDir, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
                                &result, recursive));
     return result;
 }
 
 TF_API bool
-TfTouchFile(string const &fileName, bool create)
+TfTouchFile(std::string const &fileName, bool create)
 {
     if (create) {
 #if !defined(ARCH_OS_WINDOWS)

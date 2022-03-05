@@ -37,7 +37,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -52,14 +51,14 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateDisplayNameAttr(UsdUISceneGraphPrimAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateDisplayNameAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDisplayGroupAttr(UsdUISceneGraphPrimAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateDisplayGroupAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
@@ -97,49 +96,49 @@ void wrapUsdUISceneGraphPrimAPI()
     UsdUISceneGraphPrimAPI_CanApplyResult::Wrap<UsdUISceneGraphPrimAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
+    boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
         cls("SceneGraphPrimAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
-        .def("Apply", &This::Apply, (arg("prim")))
+        .def("Apply", &This::Apply, (boost::python::arg("prim")))
         .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetDisplayNameAttr",
              &This::GetDisplayNameAttr)
         .def("CreateDisplayNameAttr",
              &_CreateDisplayNameAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetDisplayGroupAttr",
              &This::GetDisplayGroupAttr)
         .def("CreateDisplayGroupAttr",
              &_CreateDisplayGroupAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;

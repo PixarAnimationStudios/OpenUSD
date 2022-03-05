@@ -33,9 +33,6 @@
 #include <utility>
 #include <vector>
 
-using std::make_pair;
-using std::pair;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 

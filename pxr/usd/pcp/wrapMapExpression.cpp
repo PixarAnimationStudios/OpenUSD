@@ -28,14 +28,12 @@
 
 #include <string>
 
-using namespace boost::python;
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string
+static std::string
 _Str(const PcpMapExpression& e)
 {
     return e.GetString();
@@ -48,32 +46,32 @@ wrapMapExpression()
 {
     typedef PcpMapExpression This;
 
-    class_<This>("MapExpression")
+    boost::python::class_<This>("MapExpression")
         .def("__str__", _Str)
 
         .def("Evaluate", &This::Evaluate,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .def("Identity", &This::Identity,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("Identity")
         .def("Constant", &This::Constant,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("Constant")
         .def("Inverse", &This::Inverse,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("Inverse")
         .def("AddRootIdentity", &This::AddRootIdentity,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .def("Compose", &This::Compose,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .def("MapSourceToTarget", &This::MapSourceToTarget,
-            (arg("path")))
+            (boost::python::arg("path")))
         .def("MapTargetToSource", &This::MapTargetToSource,
-            (arg("path")))
+            (boost::python::arg("path")))
 
         .add_property("timeOffset",
-            make_function(&This::GetTimeOffset,
-                          return_value_policy<return_by_value>()) )
+            boost::python::make_function(&This::GetTimeOffset,
+                          boost::python::return_value_policy<boost::python::return_by_value>()) )
         .add_property("isIdentity", &This::IsIdentity)
         .add_property("isNull", &This::IsNull)
         ;

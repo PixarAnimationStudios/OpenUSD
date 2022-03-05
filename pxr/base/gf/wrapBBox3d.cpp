@@ -35,15 +35,13 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-string _Repr(GfBBox3d const &self) {
+std::string _Repr(GfBBox3d const &self) {
     return TF_PY_REPR_PREFIX + "BBox3d(" + TfPyRepr(self.GetRange()) + ", " +
         TfPyRepr(self.GetMatrix()) + ")";
 }
@@ -54,46 +52,46 @@ void wrapBBox3d()
 {    
     typedef GfBBox3d This;
 
-    class_<This>( "BBox3d", "Arbitrarily oriented 3D bounding box", init<>() )
-        .def(init< const This & >())
-        .def(init< const GfRange3d & >())
-        .def(init< const GfRange3d &, const GfMatrix4d & >())
+    boost::python::class_<This>( "BBox3d", "Arbitrarily oriented 3D bounding box", boost::python::init<>() )
+        .def(boost::python::init< const This & >())
+        .def(boost::python::init< const GfRange3d & >())
+        .def(boost::python::init< const GfRange3d &, const GfMatrix4d & >())
 
         .def( TfTypePythonClass() )
 
-        .def("Set", &This::Set, return_self<>())
+        .def("Set", &This::Set, boost::python::return_self<>())
 
-        .add_property("box", make_function(&This::GetRange,
-                                           return_value_policy
-                                           <copy_const_reference>()),
+        .add_property("box", boost::python::make_function(&This::GetRange,
+                                           boost::python::return_value_policy
+                                           <boost::python::copy_const_reference>()),
                       &This::SetRange )
         
-        .add_property("matrix", make_function(&This::GetMatrix,
-                                              return_value_policy
-                                              <copy_const_reference>()),
+        .add_property("matrix", boost::python::make_function(&This::GetMatrix,
+                                              boost::python::return_value_policy
+                                              <boost::python::copy_const_reference>()),
                       &This::SetMatrix )
 
         // In 2x, GetBox is a scriptable method instead of using the
         // "box" property.
-        .def("GetBox", make_function(&This::GetRange,
-                                     return_value_policy
-                                     <copy_const_reference>()))
+        .def("GetBox", boost::python::make_function(&This::GetRange,
+                                     boost::python::return_value_policy
+                                     <boost::python::copy_const_reference>()))
 
         // But in 3x, GetBox was renamed to GetRange and was not
         // scriptable.  We'd like to use GetRange in code in the
         // future so we're going to make the same interface available
         // via script.
-        .def("GetRange", make_function(&This::GetRange,
-                                       return_value_policy
-                                       <copy_const_reference>()))
+        .def("GetRange", boost::python::make_function(&This::GetRange,
+                                       boost::python::return_value_policy
+                                       <boost::python::copy_const_reference>()))
 
         .def("GetInverseMatrix",
              &This::GetInverseMatrix,
-             return_value_policy<copy_const_reference>())
+             boost::python::return_value_policy<boost::python::copy_const_reference>())
         
-        .def("GetMatrix", make_function(&This::GetMatrix,
-                                        return_value_policy
-                                        <copy_const_reference>()))
+        .def("GetMatrix", boost::python::make_function(&This::GetMatrix,
+                                        boost::python::return_value_policy
+                                        <boost::python::copy_const_reference>()))
 
         .add_property("hasZeroAreaPrimitives",
                       &This::HasZeroAreaPrimitives,
@@ -103,15 +101,15 @@ void wrapBBox3d()
 
         .def("HasZeroAreaPrimitives", &This::HasZeroAreaPrimitives)
 
-        .def("Set", &This::Set, return_self<>())
+        .def("Set", &This::Set, boost::python::return_self<>())
 
         .def("SetHasZeroAreaPrimitives", &This::SetHasZeroAreaPrimitives)
 
-        .def("SetMatrix", &This::SetMatrix, return_self<>())
+        .def("SetMatrix", &This::SetMatrix, boost::python::return_self<>())
 
-        .def("SetRange", &This::SetRange, return_self<>())
+        .def("SetRange", &This::SetRange, boost::python::return_self<>())
 
-        .def("Transform", &This::Transform, return_self<>())
+        .def("Transform", &This::Transform, boost::python::return_self<>())
 
         // 2x defines ComputeAlignedBox
         .def("ComputeAlignedBox", &This::ComputeAlignedRange)
@@ -123,14 +121,14 @@ void wrapBBox3d()
         .def("Combine", &This::Combine)
         .staticmethod("Combine")
         
-        .def(str(self))
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self_ns::str(boost::python::self))
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
 
         .def("__repr__", _Repr)
         
         ;
-    to_python_converter<std::vector<This>,
+    boost::python::to_python_converter<std::vector<This>,
         TfPySequenceToPython<std::vector<This> > >();
     
 }

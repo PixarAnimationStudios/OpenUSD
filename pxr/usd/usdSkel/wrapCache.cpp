@@ -41,7 +41,6 @@
 #include <boost/python/extract.hpp>
 
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -78,12 +77,12 @@ void wrapUsdSkelCache()
 {
     using This = UsdSkelCache;
 
-    class_<This>("Cache", init<>())
+    boost::python::class_<This>("Cache", boost::python::init<>())
 
         .def("Clear", &This::Clear)
 
         .def("Populate", &This::Populate,
-             (arg("skelRoot"), arg("predicate")))
+             (boost::python::arg("skelRoot"), boost::python::arg("predicate")))
 
         .def("GetSkelQuery", &This::GetSkelQuery)
         
@@ -92,18 +91,18 @@ void wrapUsdSkelCache()
         .def("GetAnimQuery",
              (UsdSkelAnimQuery (UsdSkelCache::*)(const UsdPrim&) const)
              &This::GetAnimQuery,
-             (arg("prim")))
+             (boost::python::arg("prim")))
 
         .def("GetAnimQuery",
              (UsdSkelAnimQuery (UsdSkelCache::*)(const UsdSkelAnimation&) const)
              &This::GetAnimQuery,
-             (arg("anim")))
+             (boost::python::arg("anim")))
 
         .def("ComputeSkelBindings", &_ComputeSkelBindings,
-             return_value_policy<TfPySequenceToList>(),
-             (arg("skelRoot"), arg("predicate")))
+             boost::python::return_value_policy<TfPySequenceToList>(),
+             (boost::python::arg("skelRoot"), boost::python::arg("predicate")))
 
         .def("ComputeSkelBinding", &_ComputeSkelBinding,
-             (arg("skelRoot"), arg("skel"), arg("predicate")))
+             (boost::python::arg("skelRoot"), boost::python::arg("skel"), boost::python::arg("predicate")))
         ;
 }            

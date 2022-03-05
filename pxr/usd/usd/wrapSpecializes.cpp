@@ -27,24 +27,22 @@
 #include <boost/python/class.hpp>
 #include <boost/python/operators.hpp>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdSpecializes()
 {
-    class_<UsdSpecializes>("Specializes", no_init)
+    boost::python::class_<UsdSpecializes>("Specializes", boost::python::no_init)
         .def("AddSpecialize", &UsdSpecializes::AddSpecialize,
-             (arg("primPath"),
-              arg("position")=UsdListPositionBackOfPrependList))
+             (boost::python::arg("primPath"),
+              boost::python::arg("position")=UsdListPositionBackOfPrependList))
         .def("RemoveSpecialize", &UsdSpecializes::RemoveSpecialize,
-             arg("primPath"))
+             boost::python::arg("primPath"))
         .def("ClearSpecializes", &UsdSpecializes::ClearSpecializes)
         .def("SetSpecializes", &UsdSpecializes::SetSpecializes)
         .def("GetPrim", 
              (UsdPrim (UsdSpecializes::*)()) &UsdSpecializes::GetPrim)
-        .def(!self)
+        .def(!boost::python::self)
         ;
 }

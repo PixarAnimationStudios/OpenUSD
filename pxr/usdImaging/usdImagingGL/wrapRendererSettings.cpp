@@ -29,7 +29,6 @@
 
 #include "pxr/usdImaging/usdImagingGL/rendererSettings.h"
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -38,7 +37,7 @@ wrapRendererSettings()
 {
     // Wrap the UsdImagingGLRendererSetting::Type enum. Accessible as
     // UsdImagingGL.RendererSettingType.
-    enum_<UsdImagingGLRendererSetting::Type>("RendererSettingType")
+    boost::python::enum_<UsdImagingGLRendererSetting::Type>("RendererSettingType")
             .value("FLAG", UsdImagingGLRendererSetting::TYPE_FLAG)
             .value("INT", UsdImagingGLRendererSetting::TYPE_INT)
             .value("FLOAT", UsdImagingGLRendererSetting::TYPE_FLOAT)
@@ -48,13 +47,13 @@ wrapRendererSettings()
     // Wrap the UsdImagingGLRendererSetting struct.
     // Accessible as UsdImagingGL.RendererSetting
     typedef UsdImagingGLRendererSetting Setting;
-    class_<UsdImagingGLRendererSetting>("RendererSetting",
+    boost::python::class_<UsdImagingGLRendererSetting>("RendererSetting",
             "Renderer Setting Metadata")
-        .add_property("key", make_getter(&Setting::key,
-                return_value_policy<return_by_value>()))
+        .add_property("key", boost::python::make_getter(&Setting::key,
+                boost::python::return_value_policy<boost::python::return_by_value>()))
         .def_readonly("name", &Setting::name)
         .def_readonly("type", &Setting::type)
-        .add_property("defValue", make_getter(&Setting::defValue,
-                return_value_policy<return_by_value>()))
+        .add_property("defValue", boost::python::make_getter(&Setting::defValue,
+                boost::python::return_value_policy<boost::python::return_by_value>()))
         ;
 }

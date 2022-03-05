@@ -48,10 +48,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using std::string;
 
 TfAtomicOfstreamWrapper::TfAtomicOfstreamWrapper(
-    const string& filePath)
+    const std::string& filePath)
     : _filePath(filePath)
 {
     // Do Nothing.
@@ -64,7 +63,7 @@ TfAtomicOfstreamWrapper::~TfAtomicOfstreamWrapper()
 
 bool
 TfAtomicOfstreamWrapper::Open(
-    string* reason)
+    std::string* reason)
 {
     if (_stream.is_open()) {
         if (reason) {
@@ -105,7 +104,7 @@ TfAtomicOfstreamWrapper::Open(
 
 bool
 TfAtomicOfstreamWrapper::Commit(
-    string* reason)
+    std::string* reason)
 {
     if (!_stream.is_open()) {
         if (reason) {
@@ -124,7 +123,7 @@ TfAtomicOfstreamWrapper::Commit(
 
 bool
 TfAtomicOfstreamWrapper::Cancel(
-    string* reason)
+    std::string* reason)
 {
     if (!_stream.is_open()) {
         if (reason) {

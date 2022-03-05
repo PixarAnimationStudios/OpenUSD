@@ -47,11 +47,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Tf_PySingleton {
 
-namespace bp = boost::python;
 
 TF_API
-bp::object _DummyInit(bp::tuple const & /* args */,
-                      bp::dict const & /* kw */);
+boost::python::object _DummyInit(boost::python::tuple const & /* args */,
+                      boost::python::dict const & /* kw */);
 
 template <class T>
 TfWeakPtr<T> GetWeakPtr(T &t) {
@@ -70,19 +69,19 @@ TfWeakPtr<T> GetWeakPtr(TfWeakPtr<T> const &t) {
 }
    
 template <typename PtrType>
-PtrType _GetSingletonWeakPtr(bp::object const & /* classObj */) {
+PtrType _GetSingletonWeakPtr(boost::python::object const & /* classObj */) {
     typedef typename PtrType::DataType Singleton;
     return GetWeakPtr(Singleton::GetInstance());
 }
 
 TF_API
-std::string _Repr(bp::object const &self, std::string const &prefix);
+std::string _Repr(boost::python::object const &self, std::string const &prefix);
     
-struct Visitor : bp::def_visitor<Visitor> {
+struct Visitor : boost::python::def_visitor<Visitor> {
     explicit Visitor(std::string const &reprPrefix = std::string()) :
         _reprPrefix(reprPrefix) {}
     
-    friend class bp::def_visitor_access;
+    friend class boost::python::def_visitor_access;
     template <typename CLS>
     void visit(CLS &c) const {
         typedef typename CLS::metadata::held_type PtrType;
@@ -93,16 +92,16 @@ struct Visitor : bp::def_visitor<Visitor> {
         // Wrap __new__ to return a weak pointer to the singleton instance.
         c.def("__new__", _GetSingletonWeakPtr<PtrType>).staticmethod("__new__");
         // Make __init__ do nothing.
-        c.def("__init__", bp::raw_function(_DummyInit));
+        c.def("__init__", boost::python::raw_function(_DummyInit));
 
         // If they supplied a repr prefix, provide a repr implementation.
         if (!_reprPrefix.empty())
             c.def("__repr__",
-                  make_function(std::bind(
+                  boost::python::make_function(std::bind(
                                     _Repr, std::placeholders::_1, _reprPrefix),
-                                bp::default_call_policies(),
+                                boost::python::default_call_policies(),
                                 boost::mpl::vector2<std::string,
-                                                    bp::object const &>()));
+                                                    boost::python::object const &>()));
     }
 private:
     std::string _reprPrefix;

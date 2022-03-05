@@ -26,16 +26,15 @@
 #include <boost/python/def.hpp>
 #include <boost/python/class.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapDiagnostic()
 {    
-    def("RegisterDefaultDebugOutputMessageCallback",
+    boost::python::def("RegisterDefaultDebugOutputMessageCallback",
         &GlfRegisterDefaultDebugOutputMessageCallback);
 
-    class_<GlfGLQueryObject, boost::noncopyable>("GLQueryObject")
+    boost::python::class_<GlfGLQueryObject, boost::noncopyable>("GLQueryObject")
         .def("Begin", &GlfGLQueryObject::Begin)
         .def("BeginPrimitivesGenerated", &GlfGLQueryObject::BeginPrimitivesGenerated)
         .def("BeginTimeElapsed", &GlfGLQueryObject::BeginTimeElapsed)

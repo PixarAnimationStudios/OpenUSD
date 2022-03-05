@@ -35,9 +35,7 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -53,7 +51,7 @@ void SetAngleHelper( GfRotation &rotation, double angle )
     rotation.SetAxisAngle( rotation.GetAxis(), angle );
 }
 
-static tuple
+static boost::python::tuple
 _DecomposeRotation3(const GfMatrix4d &rot,
                     const GfVec3d &TwAxis,
                     const GfVec3d &FBAxis,
@@ -74,21 +72,21 @@ _DecomposeRotation3(const GfMatrix4d &rot,
                                   useHint,
                                   nullptr /* swShift */);
 
-    return make_tuple(angle[0], angle[1], angle[2]);
+    return boost::python::make_tuple(angle[0], angle[1], angle[2]);
 }
 
-static tuple
+static boost::python::tuple
 _DecomposeRotation(const GfMatrix4d &rot,
                     const GfVec3d &TwAxis,
                     const GfVec3d &FBAxis,
                     const GfVec3d &LRAxis,
                     double handedness,
-                    const object &thetaTwHint,
-                    const object &thetaFBHint,
-                    const object &thetaLRHint,
-                    const object &thetaSwHint,
+                    const boost::python::object &thetaTwHint,
+                    const boost::python::object &thetaFBHint,
+                    const boost::python::object &thetaLRHint,
+                    const boost::python::object &thetaSwHint,
                     bool useHint,
-                    const object & swShiftIn)
+                    const boost::python::object & swShiftIn)
 {
     double angle[4] = {
         thetaTwHint.ptr() != Py_None ? 
@@ -112,19 +110,19 @@ _DecomposeRotation(const GfMatrix4d &rot,
         useHint,
         swShiftIn.ptr() != Py_None ? &swShift : nullptr);
 
-    return make_tuple(angle[0], angle[1], angle[2], angle[3]);
+    return boost::python::make_tuple(angle[0], angle[1], angle[2], angle[3]);
 }
 
-static tuple
+static boost::python::tuple
 _MatchClosestEulerRotation(
     const double targetTw,
     const double targetFB,
     const double targetLR,
     const double targetSw,
-    const object &thetaTw,
-    const object &thetaFB,
-    const object &thetaLR,
-    const object &thetaSw)
+    const boost::python::object &thetaTw,
+    const boost::python::object &thetaFB,
+    const boost::python::object &thetaLR,
+    const boost::python::object &thetaSw)
 {
     double angle[4] = {
         thetaTw.ptr() != Py_None ?
@@ -144,10 +142,10 @@ _MatchClosestEulerRotation(
         thetaLR.ptr() != Py_None ? &(angle[2]) : nullptr,
         thetaSw.ptr() != Py_None ? &(angle[3]) : nullptr);
 
-    return make_tuple(angle[0], angle[1], angle[2], angle[3]);
+    return boost::python::make_tuple(angle[0], angle[1], angle[2], angle[3]);
 }
 
-static string _Repr(GfRotation const &self) {
+static std::string _Repr(GfRotation const &self) {
     return TF_PY_REPR_PREFIX + "Rotation(" + TfPyRepr(self.GetAxis()) + ", " +
         TfPyRepr(self.GetAngle()) + ")";
 }
@@ -170,29 +168,29 @@ void wrapRotation()
 {    
     typedef GfRotation This;
 
-    class_<This> ( "Rotation", "3-space rotation", init<>())
+    boost::python::class_<This> ( "Rotation", "3-space rotation", boost::python::init<>())
 
-        .def(init<const GfVec3d &, double>())
-        .def(init<const GfQuaternion &>())
-        .def(init<const GfQuatd &>())
-        .def(init<const GfVec3d &, const GfVec3d &>())
+        .def(boost::python::init<const GfVec3d &, double>())
+        .def(boost::python::init<const GfQuaternion &>())
+        .def(boost::python::init<const GfQuatd &>())
+        .def(boost::python::init<const GfVec3d &, const GfVec3d &>())
 
         .def( TfTypePythonClass() )
 
-        .def("SetAxisAngle", &This::SetAxisAngle, return_self<>(),
-             (args("axis"), args("angle")))
-        .def("SetQuat", &This::SetQuat, return_self<>(), (args("quat")))
-        .def("SetQuaternion", &This::SetQuaternion, return_self<>(),
-             (args("quaternion")))
-        .def("SetRotateInto", &This::SetRotateInto, return_self<>(),
-             (args("rotateFrom"), args("rotateTo")))
-        .def("SetIdentity", &This::SetIdentity, return_self<>())
+        .def("SetAxisAngle", &This::SetAxisAngle, boost::python::return_self<>(),
+             (boost::python::args("axis"), boost::python::args("angle")))
+        .def("SetQuat", &This::SetQuat, boost::python::return_self<>(), (boost::python::args("quat")))
+        .def("SetQuaternion", &This::SetQuaternion, boost::python::return_self<>(),
+             (boost::python::args("quaternion")))
+        .def("SetRotateInto", &This::SetRotateInto, boost::python::return_self<>(),
+             (boost::python::args("rotateFrom"), boost::python::args("rotateTo")))
+        .def("SetIdentity", &This::SetIdentity, boost::python::return_self<>())
 
-        .add_property("axis", make_function(&This::GetAxis, return_value_policy<copy_const_reference>()),
+        .add_property("axis", boost::python::make_function(&This::GetAxis, boost::python::return_value_policy<boost::python::copy_const_reference>()),
                       SetAxisHelper )
         .add_property("angle", &This::GetAngle, SetAngleHelper)
 
-        .def("GetAxis", &This::GetAxis, return_value_policy<copy_const_reference>())
+        .def("GetAxis", &This::GetAxis, boost::python::return_value_policy<boost::python::copy_const_reference>())
         .def("GetAngle", &This::GetAngle)
 
         .def("GetQuaternion", &This::GetQuaternion)
@@ -203,30 +201,30 @@ void wrapRotation()
         .def("Decompose", &This::Decompose)
 
         .def("DecomposeRotation3", _DecomposeRotation3,
-             (arg("rot"),
-              arg("twAxis"),
-              arg("fbAxis"),
-              arg("lrAxis"),
-              arg("handedness"),
-              arg("thetaTwHint") = 0.0,
-              arg("thetaFBHint") = 0.0,
-              arg("thetaLRHint") = 0.0,
-              arg("useHint") = false)
+             (boost::python::arg("rot"),
+              boost::python::arg("twAxis"),
+              boost::python::arg("fbAxis"),
+              boost::python::arg("lrAxis"),
+              boost::python::arg("handedness"),
+              boost::python::arg("thetaTwHint") = 0.0,
+              boost::python::arg("thetaFBHint") = 0.0,
+              boost::python::arg("thetaLRHint") = 0.0,
+              boost::python::arg("useHint") = false)
              )
         .staticmethod("DecomposeRotation3")
 
         .def("DecomposeRotation", _DecomposeRotation,
-             (arg("rot"),
-              arg("twAxis"),
-              arg("fbAxis"),
-              arg("lrAxis"),
-              arg("handedness"),
-              arg("thetaTwHint"),
-              arg("thetaFBHint"),
-              arg("thetaLRHint"),
-              arg("thetaSwHint") = object(),
-              arg("useHint") = false,
-              arg("swShift") = object())
+             (boost::python::arg("rot"),
+              boost::python::arg("twAxis"),
+              boost::python::arg("fbAxis"),
+              boost::python::arg("lrAxis"),
+              boost::python::arg("handedness"),
+              boost::python::arg("thetaTwHint"),
+              boost::python::arg("thetaFBHint"),
+              boost::python::arg("thetaLRHint"),
+              boost::python::arg("thetaSwHint") = boost::python::object(),
+              boost::python::arg("useHint") = false,
+              boost::python::arg("swShift") = boost::python::object())
              )
         .staticmethod("DecomposeRotation")
 
@@ -239,16 +237,16 @@ void wrapRotation()
         .def("TransformDir", (GfVec3f (This::*)( const GfVec3f & ) const)&This::TransformDir )
         .def("TransformDir", (GfVec3d (This::*)( const GfVec3d & ) const)&This::TransformDir )
 
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
-        .def( self *= self )
-        .def( self *= double() )
-        .def( self /= double() )
-        .def( self * self )
-        .def( self * double() )
-        .def( double() * self )
-        .def( self / double() )
+        .def( boost::python::self_ns::str(boost::python::self) )
+        .def( boost::python::self == boost::python::self )
+        .def( boost::python::self != boost::python::self )
+        .def( boost::python::self *= boost::python::self )
+        .def( boost::python::self *= double() )
+        .def( boost::python::self /= double() )
+        .def( boost::python::self * boost::python::self )
+        .def( boost::python::self * double() )
+        .def( double() * boost::python::self )
+        .def( boost::python::self / double() )
 
  #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
@@ -260,6 +258,6 @@ void wrapRotation()
        .def("__repr__", _Repr)
         
         ;
-    to_python_converter<std::vector<This>,
+    boost::python::to_python_converter<std::vector<This>,
         TfPySequenceToPython<std::vector<This> > >();
 }

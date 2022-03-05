@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -51,28 +50,28 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreatePointsAttr(UsdGeomPointBased &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreatePointsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Point3fArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateVelocitiesAttr(UsdGeomPointBased &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateVelocitiesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateAccelerationsAttr(UsdGeomPointBased &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateAccelerationsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateNormalsAttr(UsdGeomPointBased &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateNormalsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Normal3fArray), writeSparsely);
 }
@@ -92,57 +91,57 @@ void wrapUsdGeomPointBased()
 {
     typedef UsdGeomPointBased This;
 
-    class_<This, bases<UsdGeomGprim> >
+    boost::python::class_<This, boost::python::bases<UsdGeomGprim> >
         cls("PointBased");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetPointsAttr",
              &This::GetPointsAttr)
         .def("CreatePointsAttr",
              &_CreatePointsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetVelocitiesAttr",
              &This::GetVelocitiesAttr)
         .def("CreateVelocitiesAttr",
              &_CreateVelocitiesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetAccelerationsAttr",
              &This::GetAccelerationsAttr)
         .def("CreateAccelerationsAttr",
              &_CreateAccelerationsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetNormalsAttr",
              &This::GetNormalsAttr)
         .def("CreateNormalsAttr",
              &_CreateNormalsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;
@@ -171,7 +170,7 @@ void wrapUsdGeomPointBased()
 namespace {
 
 static TfPyObjWrapper 
-_ComputeExtent(object points) {
+_ComputeExtent(boost::python::object points) {
 
     // Convert from python objects to VtValue
     VtVec3fArray extent;
@@ -181,7 +180,7 @@ _ComputeExtent(object points) {
     // Check for proper conversion to VtVec3fArray
     if (!pointsAsVtValue.IsHolding<VtVec3fArray>()) {
         TF_CODING_ERROR("Improper value for 'points'");
-        return object();
+        return boost::python::object();
     }
 
     // Convert from VtValue to VtVec3fArray
@@ -189,7 +188,7 @@ _ComputeExtent(object points) {
     if (UsdGeomPointBased::ComputeExtent(pointsArray, &extent)) {
         return UsdVtValueToPython(VtValue(extent));
     } else {
-        return object();
+        return boost::python::object();
     }
 }
 
@@ -229,19 +228,19 @@ WRAP_CUSTOM {
              &UsdGeomPointBased::GetNormalsInterpolation)
         .def("SetNormalsInterpolation",
              &UsdGeomPointBased::SetNormalsInterpolation,
-             arg("interpolation"))
+             boost::python::arg("interpolation"))
 
         .def("ComputeExtent",
             &_ComputeExtent, 
-            (arg("points")))
+            (boost::python::arg("points")))
         .staticmethod("ComputeExtent")
 
         .def("ComputePointsAtTime",
              &_ComputePointsAtTime,
-             (arg("time"), arg("baseTime")))
+             (boost::python::arg("time"), boost::python::arg("baseTime")))
         .def("ComputePointsAtTimes",
              &_ComputePointsAtTimes,
-             (arg("times"), arg("baseTime")))
+             (boost::python::arg("times"), boost::python::arg("baseTime")))
 
         ;
 }

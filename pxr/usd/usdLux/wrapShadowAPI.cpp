@@ -37,7 +37,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -52,35 +51,35 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateShadowEnableAttr(UsdLuxShadowAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateShadowEnableAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateShadowColorAttr(UsdLuxShadowAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateShadowColorAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Color3f), writeSparsely);
 }
         
 static UsdAttribute
 _CreateShadowDistanceAttr(UsdLuxShadowAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateShadowDistanceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateShadowFalloffAttr(UsdLuxShadowAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateShadowFalloffAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateShadowFalloffGammaAttr(UsdLuxShadowAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateShadowFalloffGammaAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
@@ -118,70 +117,70 @@ void wrapUsdLuxShadowAPI()
     UsdLuxShadowAPI_CanApplyResult::Wrap<UsdLuxShadowAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
+    boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
         cls("ShadowAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
-        .def("Apply", &This::Apply, (arg("prim")))
+        .def("Apply", &This::Apply, (boost::python::arg("prim")))
         .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetShadowEnableAttr",
              &This::GetShadowEnableAttr)
         .def("CreateShadowEnableAttr",
              &_CreateShadowEnableAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetShadowColorAttr",
              &This::GetShadowColorAttr)
         .def("CreateShadowColorAttr",
              &_CreateShadowColorAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetShadowDistanceAttr",
              &This::GetShadowDistanceAttr)
         .def("CreateShadowDistanceAttr",
              &_CreateShadowDistanceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetShadowFalloffAttr",
              &This::GetShadowFalloffAttr)
         .def("CreateShadowFalloffAttr",
              &_CreateShadowFalloffAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetShadowFalloffGammaAttr",
              &This::GetShadowFalloffGammaAttr)
         .def("CreateShadowFalloffGammaAttr",
              &_CreateShadowFalloffGammaAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;
@@ -214,22 +213,22 @@ namespace {
 
 WRAP_CUSTOM {
     _class
-        .def(init<UsdShadeConnectableAPI>(arg("connectable")))
+        .def(boost::python::init<UsdShadeConnectableAPI>(boost::python::arg("connectable")))
         .def("ConnectableAPI", &UsdLuxShadowAPI::ConnectableAPI)
 
         .def("CreateOutput", &UsdLuxShadowAPI::CreateOutput,
-             (arg("name"), arg("type")))
-        .def("GetOutput", &UsdLuxShadowAPI::GetOutput, arg("name"))
+             (boost::python::arg("name"), boost::python::arg("type")))
+        .def("GetOutput", &UsdLuxShadowAPI::GetOutput, boost::python::arg("name"))
         .def("GetOutputs", &UsdLuxShadowAPI::GetOutputs,
-             (arg("onlyAuthored")=true),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("onlyAuthored")=true),
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("CreateInput", &UsdLuxShadowAPI::CreateInput,
-             (arg("name"), arg("type")))
-        .def("GetInput", &UsdLuxShadowAPI::GetInput, arg("name"))
+             (boost::python::arg("name"), boost::python::arg("type")))
+        .def("GetInput", &UsdLuxShadowAPI::GetInput, boost::python::arg("name"))
         .def("GetInputs", &UsdLuxShadowAPI::GetInputs,
-             (arg("onlyAuthored")=true),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("onlyAuthored")=true),
+             boost::python::return_value_policy<TfPySequenceToList>())
         ;
 }
 

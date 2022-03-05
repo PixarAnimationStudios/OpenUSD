@@ -63,5 +63,5 @@ PXR_NAMESPACE_CLOSE_SCOPE
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapEnvSetting() {
-    def("GetEnvSetting", &_GetEnvSettingByName);
+    boost::python::def("GetEnvSetting", &_GetEnvSettingByName);
 }

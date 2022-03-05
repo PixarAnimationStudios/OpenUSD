@@ -25,8 +25,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/anyWeakPtr.h"
 
-using std::string;
-using std::type_info;
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -37,7 +37,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -66,9 +65,9 @@ _WrapSetAllowedTokens(
 
 void wrapAttributeSpec()
 {
-    def("JustCreatePrimAttributeInLayer", SdfJustCreatePrimAttributeInLayer,
-        (arg("layer"), arg("attrPath"), arg("typeName"),
-         arg("variability")=SdfVariabilityVarying, arg("isCustom")=false));
+    boost::python::def("JustCreatePrimAttributeInLayer", SdfJustCreatePrimAttributeInLayer,
+        (boost::python::arg("layer"), boost::python::arg("attrPath"), boost::python::arg("typeName"),
+         boost::python::arg("variability")=SdfVariabilityVarying, boost::python::arg("isCustom")=false));
 
     typedef SdfAttributeSpec This;
     typedef SdfAttributeSpecHandle ThisHandle;
@@ -84,9 +83,9 @@ void wrapAttributeSpec()
                                   SdfVariability,
                                   bool) = &This::New;
                                 
-    class_<This, SdfHandle<This>, 
-           bases<SdfPropertySpec>, boost::noncopyable>
-        ("AttributeSpec", no_init)
+    boost::python::class_<This, SdfHandle<This>, 
+           boost::python::bases<SdfPropertySpec>, boost::noncopyable>
+        ("AttributeSpec", boost::python::no_init)
         
         .def(SdfPySpec())
         .def("__unused__",
@@ -101,11 +100,11 @@ void wrapAttributeSpec()
                 "declaresCustom : bool\n\n"
                 "Create a custom attribute spec that is an attribute of "
                 "ownerPrimSpec with the given name and type."),
-                (arg("ownerPrimSpec"),
-                 arg("name"),
-                 arg("typeName"),
-                 arg("variability") = SdfVariabilityVarying,
-                 arg("declaresCustom") = false))
+                (boost::python::arg("ownerPrimSpec"),
+                 boost::python::arg("name"),
+                 boost::python::arg("typeName"),
+                 boost::python::arg("variability") = SdfVariabilityVarying,
+                 boost::python::arg("declaresCustom") = false))
 
         // XXX valueType and typeName are actually implemented on PropertySpec,
         //     but are only exposed on AttributeSpec for some reason

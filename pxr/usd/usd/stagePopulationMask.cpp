@@ -159,7 +159,7 @@ UsdStagePopulationMask::Includes(SdfPath const &path) const
     
     // If this path is in _paths, or if this path prefixes elements of _paths,
     // or if an element _paths prefixes path, it's included.
-    auto iter = lower_bound(_paths.begin(), _paths.end(), path);
+    auto iter = std::lower_bound(_paths.begin(), _paths.end(), path);
 
     SdfPath const *prev = iter == _paths.begin() ? nullptr : &iter[-1];
     SdfPath const *cur = iter == _paths.end() ? nullptr : &iter[0];
@@ -180,7 +180,7 @@ _IncludesSubtree(std::vector<SdfPath> const& paths, SdfPath const& path)
 
     // If this path is in paths, or if an element in paths prefixes path, then
     // the subtree rooted at path is included.
-    auto iter = lower_bound(paths.begin(), paths.end(), path);
+    auto iter = std::lower_bound(paths.begin(), paths.end(), path);
 
     SdfPath const *prev = iter == paths.begin() ? nullptr : &iter[-1];
     SdfPath const *cur = iter == paths.end() ? nullptr : &iter[0];

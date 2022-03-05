@@ -35,7 +35,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 PXR_NAMESPACE_USING_DIRECTIVE
 using namespace TfPyContainerConversions;
 
@@ -80,8 +79,8 @@ void wrapFilesystemDiscoveryContext()
     typedef _Context This;
     typedef TfWeakPtr<_Context> ThisPtr;
 
-    class_<This, ThisPtr, bases<NdrDiscoveryPluginContext>, boost::noncopyable>(
-        "Context", no_init)
+    boost::python::class_<This, ThisPtr, boost::python::bases<NdrDiscoveryPluginContext>, boost::noncopyable>(
+        "Context", boost::python::no_init)
         .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(This::New))
         ;
@@ -94,19 +93,19 @@ void wrapFilesystemDiscovery()
     typedef _NdrFilesystemDiscoveryPlugin This;
     typedef _NdrFilesystemDiscoveryPluginPtr ThisPtr;
 
-    return_value_policy<copy_const_reference> copyRefPolicy;
+    boost::python::return_value_policy<boost::python::copy_const_reference> copyRefPolicy;
     from_python_sequence<std::vector<ThisPtr>, variable_capacity_policy>();
 
     TfPyFunctionFromPython<bool(NdrNodeDiscoveryResult&)>();
 
-    scope s =
-    class_<This, ThisPtr, bases<NdrDiscoveryPlugin>, boost::noncopyable>(
-        "_FilesystemDiscoveryPlugin", no_init)
+    boost::python::scope s =
+    boost::python::class_<This, ThisPtr, boost::python::bases<NdrDiscoveryPlugin>, boost::noncopyable>(
+        "_FilesystemDiscoveryPlugin", boost::python::no_init)
         .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(New))
         .def(TfMakePyConstructor(NewWithFilter))
         .def("DiscoverNodes", &This::DiscoverNodes,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetSearchURIs", &This::GetSearchURIs, copyRefPolicy)
         ;
 

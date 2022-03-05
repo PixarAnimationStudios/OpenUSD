@@ -28,19 +28,18 @@
 
 #include "pxr/usd/usdUtils/stitch.h"
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void 
 wrapStitch()
 {
-    def("StitchLayers", 
+    boost::python::def("StitchLayers", 
         (void(*)(const SdfLayerHandle&, const SdfLayerHandle&))
             &UsdUtilsStitchLayers,
-        (arg("strongLayer"), arg("weakLayer")));
-    def("StitchInfo", 
+        (boost::python::arg("strongLayer"), boost::python::arg("weakLayer")));
+    boost::python::def("StitchInfo", 
         (void(*)(const SdfSpecHandle&, const SdfSpecHandle&))
             &UsdUtilsStitchInfo, 
-        (arg("strongObj"), arg("weakObj")));
+        (boost::python::arg("strongObj"), boost::python::arg("weakObj")));
 }

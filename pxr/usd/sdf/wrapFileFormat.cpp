@@ -34,7 +34,6 @@
 #include <boost/python/class.hpp>
 #include <boost/python/scope.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -46,7 +45,7 @@ class Sdf_PyFileFormatFactory : public Sdf_FileFormatFactoryBase {
 public:
     typedef std::unique_ptr<Sdf_PyFileFormatFactory> Ptr;
 
-    static Ptr New(const object& classObject)
+    static Ptr New(const boost::python::object& classObject)
     {
         return Ptr(new Sdf_PyFileFormatFactory(classObject));
     }
@@ -57,7 +56,7 @@ public:
     }
 
 private:
-    Sdf_PyFileFormatFactory(const object& classObject) :
+    Sdf_PyFileFormatFactory(const boost::python::object& classObject) :
         _factory(classObject)
     {
         // Do nothing
@@ -71,10 +70,10 @@ private:
 // Helper function for registering a file format from Python.
 // Shamelessly stolen from Mf/wrapMapper.cpp and Mf/wrapExpression.cpp.
 void
-_RegisterFileFormat(object classObject)
+_RegisterFileFormat(boost::python::object classObject)
 {
     std::string typeName =
-        extract<std::string>( classObject.attr("__name__") );
+        boost::python::extract<std::string>( classObject.attr("__name__") );
 
     TfType fileFormatType = TfType_DefinePythonTypeAndBases(classObject);
 
@@ -102,26 +101,26 @@ void wrapFileFormat()
     typedef SdfFileFormat This;
     typedef SdfFileFormatPtr ThisPtr;
 
-    scope s = 
-        class_<This, ThisPtr, boost::noncopyable>("FileFormat", no_init)
+    boost::python::scope s = 
+        boost::python::class_<This, ThisPtr, boost::noncopyable>("FileFormat", boost::python::no_init)
 
         .def(TfPyRefAndWeakPtr())
 
         .add_property("formatId",
-            make_function(&This::GetFormatId,
-                return_value_policy<return_by_value>()))
+            boost::python::make_function(&This::GetFormatId,
+                boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("target",
-            make_function(&This::GetTarget,
-                return_value_policy<return_by_value>()))
+            boost::python::make_function(&This::GetTarget,
+                boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("fileCookie",
-            make_function(&This::GetFileCookie,
-                return_value_policy<return_by_value>()))
+            boost::python::make_function(&This::GetFileCookie,
+                boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("primaryFileExtension",
-            make_function(&This::GetPrimaryFileExtension,
-                return_value_policy<return_by_value>()))
+            boost::python::make_function(&This::GetPrimaryFileExtension,
+                boost::python::return_value_policy<boost::python::return_by_value>()))
 
         .def("GetFileExtensions", &This::GetFileExtensions,
-            return_value_policy<return_by_value>())
+            boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("IsSupportedExtension", &This::IsSupportedExtension)
 
@@ -133,7 +132,7 @@ void wrapFileFormat()
         .staticmethod("GetFileExtension")
 
         .def("FindAllFileFormatExtensions", &This::FindAllFileFormatExtensions,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("FindAllFileFormatExtensions")
 
         .def("FindById", &This::FindById)
@@ -142,14 +141,14 @@ void wrapFileFormat()
         .def("FindByExtension",
              (SdfFileFormatConstPtr(*)(const std::string&, const std::string&))
                 &This::FindByExtension,
-             ( arg("extension"),
-               arg("target") = std::string() ))
+             ( boost::python::arg("extension"),
+               boost::python::arg("target") = std::string() ))
         .def("FindByExtension",
              (SdfFileFormatConstPtr(*)
                 (const std::string&, const SdfFileFormat::FileFormatArguments&))
                 &This::FindByExtension,
-             ( arg("extension"),
-               arg("args") ))
+             ( boost::python::arg("extension"),
+               boost::python::arg("args") ))
         .staticmethod("FindByExtension")
 
         .def("RegisterFileFormat", &_RegisterFileFormat)

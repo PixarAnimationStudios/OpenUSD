@@ -70,15 +70,14 @@ struct TfPyAnnotatedBoolResult :
     static boost::python::class_<Derived>
     Wrap(char const *name, char const *annotationName) {
         typedef TfPyAnnotatedBoolResult<Annotation> This;
-        using namespace boost::python;
         TfPyLock lock;
-        return class_<Derived>(name, init<bool, Annotation>())
+        return boost::python::class_<Derived>(name, boost::python::init<bool, Annotation>())
             .def(TfPyBoolBuiltinFuncName, &Derived::GetValue)
             .def("__repr__", &Derived::GetRepr)
-            .def(self == bool())
-            .def(self != bool())
-            .def(bool() == self)
-            .def(bool() != self)
+            .def(boost::python::self == bool())
+            .def(boost::python::self != bool())
+            .def(bool() == boost::python::self)
+            .def(bool() != boost::python::self)
             // Use a helper function.  We'd like to def_readonly the
             // _annotation member but there are two problems with that.
             // First, we can't control the return_value_policy and if the

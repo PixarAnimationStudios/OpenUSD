@@ -30,8 +30,6 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stringUtils.h"
 
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -53,20 +51,20 @@ TfTemplateString::TfTemplateString()
 }
 
 
-TfTemplateString::TfTemplateString(const string& template_)
+TfTemplateString::TfTemplateString(const std::string& template_)
     : _data(new _Data)
 {
     _data->template_ = template_;
 }
 
-string
+std::string
 TfTemplateString::Substitute(const Mapping& mapping) const
 {
     _ParseTemplate();
     _EmitParseErrors();
     
-    vector<string> evalErrors;
-    string result = _Evaluate(mapping, &evalErrors);
+    std::vector<std::string> evalErrors;
+    std::string result = _Evaluate(mapping, &evalErrors);
 
     TF_FOR_ALL(it, evalErrors)
         TF_CODING_ERROR("%s", it->c_str());
@@ -74,7 +72,7 @@ TfTemplateString::Substitute(const Mapping& mapping) const
     return result;
 }
 
-string
+std::string
 TfTemplateString::SafeSubstitute(const Mapping& mapping) const
 {
     _ParseTemplate();
@@ -97,7 +95,7 @@ TfTemplateString::GetEmptyMapping() const
     if (IsValid()) {
         tbb::spin_mutex::scoped_lock lock(_data->mutex);
         TF_FOR_ALL(it, _data->placeholders)
-            mapping.insert(make_pair(it->name, std::string()));
+            mapping.insert(std::make_pair(it->name, std::string()));
     }
     return mapping;
 }
@@ -110,7 +108,7 @@ TfTemplateString::IsValid() const
     return _data->template_.empty() || _data->parseErrors.empty();
 }
 
-vector<string>
+std::vector<std::string>
 TfTemplateString::GetParseErrors() const
 {
     _ParseTemplate();
@@ -122,11 +120,11 @@ TfTemplateString::GetParseErrors() const
 // _FindNextPlaceHolder.
 bool
 TfTemplateString::
-_FindNextPlaceHolder(size_t* pos, vector<string>* errors) const
+_FindNextPlaceHolder(size_t* pos, std::vector<std::string>* errors) const
 {
     *pos = _data->template_.find(_Sigil, *pos);
 
-    if (*pos == string::npos)
+    if (*pos == std::string::npos)
         return false;
 
     size_t nextpos = *pos + 1;
@@ -142,9 +140,9 @@ _FindNextPlaceHolder(size_t* pos, vector<string>* errors) const
         // If the character after the sigil was the open quote character, look
         // for the matching close quote character.
         size_t endpos = _data->template_.find_first_not_of(
-            string(_IdentChars) + _OpenQuote, nextpos);
+            std::string(_IdentChars) + _OpenQuote, nextpos);
 
-        if (endpos == string::npos) {
+        if (endpos == std::string::npos) {
             _ERROR(errors, "Cannot find close quote for placeholder starting "
                 "at pos %zu", *pos);
             *pos = nextpos;
@@ -157,7 +155,7 @@ _FindNextPlaceHolder(size_t* pos, vector<string>* errors) const
         else {
             // len includes the sigil and quote characters.
             size_t len = endpos - *pos + 1;
-            string name = _data->template_.substr(nextpos + 1, len - 3);
+            std::string name = _data->template_.substr(nextpos + 1, len - 3);
             if (!name.empty()) {
                 _data->placeholders.push_back(_PlaceHolder(name, *pos, len));
             } else {
@@ -170,9 +168,9 @@ _FindNextPlaceHolder(size_t* pos, vector<string>* errors) const
         // Find the next character not valid within an identifier.
         size_t endpos =
             _data->template_.find_first_not_of(_IdentChars, nextpos);
-        size_t len = (endpos == string::npos ?
+        size_t len = (endpos == std::string::npos ?
                       _data->template_.length() : endpos) - *pos;
-        string name = _data->template_.substr(nextpos, len - 1);
+        std::string name = _data->template_.substr(nextpos, len - 1);
         if (!name.empty()) {
             _data->placeholders.push_back(_PlaceHolder(name, *pos, len));
         } else {
@@ -196,11 +194,11 @@ TfTemplateString::_ParseTemplate() const
     }
 }
 
-string
+std::string
 TfTemplateString::
-_Evaluate(const Mapping& mapping, vector<string>* errors) const
+_Evaluate(const Mapping& mapping, std::vector<std::string>* errors) const
 {
-    string result;
+    std::string result;
     size_t pos = 0;
 
     tbb::spin_mutex::scoped_lock lock(_data->mutex);

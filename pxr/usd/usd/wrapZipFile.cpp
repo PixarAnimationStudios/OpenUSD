@@ -33,35 +33,34 @@
 #include <boost/python/return_arg.hpp>
 #include <boost/python/return_value_policy.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-static object
+static boost::python::object
 _Open(const std::string& filePath)
 {
     UsdZipFile zipFile = UsdZipFile::Open(filePath);
-    return zipFile ? object(zipFile) : object();
+    return zipFile ? boost::python::object(zipFile) : boost::python::object();
 }
 
-static object
+static boost::python::object
 _GetFile(const UsdZipFile& zipFile, const std::string& filePath)
 {
     auto iter = zipFile.Find(filePath);
     if (iter == zipFile.end()) {
-        return object();
+        return boost::python::object();
     }
     return TfPyCopyBufferToByteArray(iter.GetFile(), iter.GetFileInfo().size);
 }
 
-static object
+static boost::python::object
 _GetFileInfo(const UsdZipFile& zipFile, const std::string& filePath)
 {
     auto iter = zipFile.Find(filePath);
     if (iter == zipFile.end()) {
-        return object();
+        return boost::python::object();
     }
-    return object(iter.GetFileInfo());
+    return boost::python::object(iter.GetFileInfo());
 }
 
 static std::vector<std::string>
@@ -86,7 +85,7 @@ _Enter(const UsdZipFileWriter&)
 }
 
 static void
-_Exit(UsdZipFileWriter& w, const object& exc_type, const object&, const object&)
+_Exit(UsdZipFileWriter& w, const boost::python::object& exc_type, const boost::python::object&, const boost::python::object&)
 {
     if (w) {
         if (TfPyIsNone(exc_type)) {
@@ -102,22 +101,22 @@ void
 wrapUsdZipFile()
 {
     {
-        scope s = class_<UsdZipFile>
-            ("ZipFile", no_init)
-            .def("Open", _Open, arg("filePath"))
+        boost::python::scope s = boost::python::class_<UsdZipFile>
+            ("ZipFile", boost::python::no_init)
+            .def("Open", _Open, boost::python::arg("filePath"))
             .staticmethod("Open")
             
             .def("GetFileNames", &_GetFileNames,
-                return_value_policy<TfPySequenceToList>())
+                boost::python::return_value_policy<TfPySequenceToList>())
 
-            .def("GetFile", &_GetFile, arg("path"))
-            .def("GetFileInfo", &_GetFileInfo, arg("path"))
+            .def("GetFile", &_GetFile, boost::python::arg("path"))
+            .def("GetFileInfo", &_GetFileInfo, boost::python::arg("path"))
 
             .def("DumpContents", &UsdZipFile::DumpContents)
             ;
 
-        class_<UsdZipFile::FileInfo>
-            ("FileInfo", no_init)
+        boost::python::class_<UsdZipFile::FileInfo>
+            ("FileInfo", boost::python::no_init)
             .def_readonly("dataOffset", &UsdZipFile::FileInfo::dataOffset)
             .def_readonly("size", &UsdZipFile::FileInfo::size)
             .def_readonly("uncompressedSize", 
@@ -129,21 +128,21 @@ wrapUsdZipFile()
             ;
     }
 
-    class_<UsdZipFileWriter, boost::noncopyable>
-        ("ZipFileWriter", no_init)
-        .def("CreateNew", &_CreateNew, arg("filePath"),
-            return_value_policy<manage_new_object>())
+    boost::python::class_<UsdZipFileWriter, boost::noncopyable>
+        ("ZipFileWriter", boost::python::no_init)
+        .def("CreateNew", &_CreateNew, boost::python::arg("filePath"),
+            boost::python::return_value_policy<boost::python::manage_new_object>())
         .staticmethod("CreateNew")
 
         .def("AddFile", &UsdZipFileWriter::AddFile, 
-            (arg("filePath"), 
-             arg("filePathInArchive") = std::string()))
+            (boost::python::arg("filePath"), 
+             boost::python::arg("filePathInArchive") = std::string()))
         .def("Save", &UsdZipFileWriter::Save)
         .def("Discard", &UsdZipFileWriter::Discard)
 
-        .def("__enter__", &_Enter, return_self<>())
+        .def("__enter__", &_Enter, boost::python::return_self<>())
         .def("__exit__", 
-            (void(*)(UsdZipFileWriter&, const object&, const object&, 
-                     const object&))&_Exit);
+            (void(*)(UsdZipFileWriter&, const boost::python::object&, const boost::python::object&, 
+                     const boost::python::object&))&_Exit);
         ;
 }

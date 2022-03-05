@@ -31,7 +31,6 @@
 #include <string>
 #include <string.h>
 
-using std::string;
 
 #if (ARCH_COMPILER_GCC_MAJOR == 3 && ARCH_COMPILER_GCC_MINOR >= 1) || \
     ARCH_COMPILER_GCC_MAJOR > 3 || defined(ARCH_COMPILER_CLANG)
@@ -48,7 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // name of the std::string type.  On some platforms this is complicated,
 // similar to basic_string<char, char_traits<chars>, allocator<char>>.
 // We use this to simplify demangled output.
-static string* _NewDemangledStringTypeName();
+static std::string* _NewDemangledStringTypeName();
 
 /*
  * The define below allows you to run both the old and new mangling schemes, 
@@ -71,15 +70,15 @@ static string* _NewDemangledStringTypeName();
  */
 
 static void
-_FixupStringNames(string* name)
+_FixupStringNames(std::string* name)
 {
-    static string* from = _NewDemangledStringTypeName();
-    static string* to = new string("string");
+    static std::string* from = _NewDemangledStringTypeName();
+    static std::string* to = new std::string("string");
 
     /* Replace occurrences of stringRttiName with "string" */
 
-    string::size_type pos = 0;
-    while ((pos = name->find(*from, pos)) != string::npos) {
+    std::string::size_type pos = 0;
+    while ((pos = name->find(*from, pos)) != std::string::npos) {
         name->replace(pos, from->size(), *to);
         pos += to->size();
 
@@ -89,14 +88,14 @@ _FixupStringNames(string* name)
         // gcc the type Foo<std::string> comes in as Foo<std::string>,
         // but on clang this comes in as Foo<std::__1::basic_string<...> >.
         // In both cases, we want to end the outer loop with Foo<std::string>.
-        string::size_type numSpaces = 0;
-        for (string::size_type i = pos, e = name->size();
+        std::string::size_type numSpaces = 0;
+        for (std::string::size_type i = pos, e = name->size();
              i != e && (*name)[i] == ' '; ++i, ++numSpaces) { }
         name->erase(pos, numSpaces);
     }
 
     pos = 0;
-    while ((pos = name->find("std::", pos)) != string::npos) {
+    while ((pos = name->find("std::", pos)) != std::string::npos) {
         name->erase(pos, 5);
     }
 
@@ -124,7 +123,7 @@ _FixupStringNames(string* name)
 #define ARCH_STRINGIZE(x) ARCH_STRINGIZE_EXPAND(x)
 
 static void
-_StripPxrInternalNamespace(string* name)
+_StripPxrInternalNamespace(std::string* name)
 {
     // Note that this assumes PXR_INTERNAL_NS to be non-empty
     constexpr const char nsQualifier[] = ARCH_STRINGIZE(PXR_INTERNAL_NS) "::";
@@ -147,13 +146,13 @@ _StripPxrInternalNamespace(string* name)
  * This routine doesn't work when you get to gcc3.4.
  */
 static bool
-_DemangleOld(string* mangledTypeName)
+_DemangleOld(std::string* mangledTypeName)
 {
     int status;
     if (char* realName =
         abi::__cxa_demangle(mangledTypeName->c_str(), NULL, NULL, &status))
     {
-        *mangledTypeName = string(realName);
+        *mangledTypeName = std::string(realName);
         free(realName);    
         _FixupStringNames(mangledTypeName);
         return true;
@@ -172,7 +171,7 @@ _DemangleOld(string* mangledTypeName)
  * using a version of gcc >= 3.1.
  */
 static bool
-_DemangleNewRaw(string* mangledTypeName)
+_DemangleNewRaw(std::string* mangledTypeName)
 {
     /*
      * The new gcc3.4 demangle, just like libiberty before it, doesn't like
@@ -180,7 +179,7 @@ _DemangleNewRaw(string* mangledTypeName)
      * should simply pump out an extra '*' at the end.
      */
 
-    string input("P");
+    std::string input("P");
     input += *mangledTypeName;
 
     int status;
@@ -190,7 +189,7 @@ _DemangleNewRaw(string* mangledTypeName)
             abi::__cxa_demangle(input.c_str(), NULL, NULL, &status)) {
         size_t len = strlen(realName);
         if (len > 1 && realName[len-1] == '*') {
-            *mangledTypeName = string(&realName[0], len-1);
+            *mangledTypeName = std::string(&realName[0], len-1);
             ok = true;
         }
 
@@ -201,7 +200,7 @@ _DemangleNewRaw(string* mangledTypeName)
 }
 
 static bool
-_DemangleNew(string* mangledTypeName)
+_DemangleNew(std::string* mangledTypeName)
 {
     if (_DemangleNewRaw(mangledTypeName)) {
         _FixupStringNames(mangledTypeName);
@@ -210,16 +209,16 @@ _DemangleNew(string* mangledTypeName)
     return false;
 }
 
-static string*
+static std::string*
 _NewDemangledStringTypeName()
 {
-    string* result = new string(typeid(string).name());
+    std::string* result = new std::string(typeid(std::string).name());
     _DemangleNewRaw(result);
     return result;
 }
 
 bool
-ArchDemangle(string* mangledTypeName)
+ArchDemangle(std::string* mangledTypeName)
 {
 #if defined(_PARANOID_CHECK_MODE)
     string copy = *mangledTypeName;
@@ -249,7 +248,7 @@ ArchDemangle(string* mangledTypeName)
 }
 
 void
-Arch_DemangleFunctionName(string* mangledFunctionName)
+Arch_DemangleFunctionName(std::string* mangledFunctionName)
 {
     if (mangledFunctionName->size() > 2 &&
         (*mangledFunctionName)[0] == '_' && (*mangledFunctionName)[1] == 'Z') {
@@ -285,25 +284,25 @@ Arch_DemangleFunctionName(string* mangledFunctionName)
 
 #endif // _AT_LEAST_GCC_THREE_ONE_OR_CLANG
 
-string
-ArchGetDemangled(const string& typeName)
+std::string
+ArchGetDemangled(const std::string& typeName)
 {
-    string r = typeName;
+    std::string r = typeName;
     if (ArchDemangle(&r))
         return r;
-    return string();
+    return std::string();
 }
 
-string
+std::string
 ArchGetDemangled(const char *typeName)
 {
     if (typeName) {
-        string r = typeName;
+        std::string r = typeName;
         if (ArchDemangle(&r)) {
             return r;
         }
     }
-    return string();
+    return std::string();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

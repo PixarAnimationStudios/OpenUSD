@@ -42,7 +42,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-using std::string;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(Usd_CrateData);
 

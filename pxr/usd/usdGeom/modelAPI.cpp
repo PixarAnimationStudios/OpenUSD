@@ -328,8 +328,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-using std::vector;
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -435,7 +433,7 @@ UsdGeomModelAPI::GetConstraintTarget(
 
 UsdGeomConstraintTarget 
 UsdGeomModelAPI::CreateConstraintTarget(
-    const string &constraintName) const
+    const std::string &constraintName) const
 {
     const TfToken &constraintAttrName = 
         UsdGeomConstraintTarget::GetConstraintAttrName(constraintName);
@@ -453,12 +451,12 @@ UsdGeomModelAPI::CreateConstraintTarget(
     return UsdGeomConstraintTarget(constraintAttr);
 }
 
-vector<UsdGeomConstraintTarget> 
+std::vector<UsdGeomConstraintTarget> 
 UsdGeomModelAPI::GetConstraintTargets() const
 {
-    vector<UsdGeomConstraintTarget> constraintTargets;
+    std::vector<UsdGeomConstraintTarget> constraintTargets;
 
-    const vector<UsdAttribute> &attributes = GetPrim().GetAttributes();
+    const std::vector<UsdAttribute> &attributes = GetPrim().GetAttributes();
     TF_FOR_ALL(attrIt, attributes) {
         UsdGeomConstraintTarget constraintTarget(*attrIt);
 

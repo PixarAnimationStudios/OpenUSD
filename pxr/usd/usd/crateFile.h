@@ -64,13 +64,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Usd_CrateFile {
 
-using std::make_pair;
-using std::map;
-using std::pair;
-using std::string;
-using std::unordered_map;
-using std::tuple;
-using std::vector;
 
 using ArAssetSharedPtr = std::shared_ptr<ArAsset>;
 #if AR_VERSION > 1
@@ -163,7 +156,7 @@ private:
 template <> struct _IsBitwiseReadWrite<ValueRep> : std::true_type {};
 
 struct TimeSamples {
-    typedef Usd_Shared<vector<double>> SharedTimes;
+    typedef Usd_Shared<std::vector<double>> SharedTimes;
 
     TimeSamples() : valueRep(0), valuesFileOffset(0) {}
 
@@ -180,7 +173,7 @@ struct TimeSamples {
 
     // Sample values, but only if we have any in-memory values.  Otherwise we
     // read from the file via valuesFileOffset.
-    vector<VtValue> values;
+    std::vector<VtValue> values;
 
     // Nonzero if we're looking at values in-file.
     int64_t valuesFileOffset;
@@ -468,7 +461,7 @@ private:
     struct _TableOfContents {
         _Section const *GetSection(_SectionName) const;
         int64_t GetMinimumSectionStart() const;
-        vector<_Section> sections;
+        std::vector<_Section> sections;
     };
 
 public:
@@ -630,8 +623,8 @@ public:
 
     ~CrateFile();
 
-    static bool CanRead(string const &assetPath);
-    static bool CanRead(string const &assetPath, ArAssetSharedPtr const &asset);
+    static bool CanRead(std::string const &assetPath);
+    static bool CanRead(std::string const &assetPath, ArAssetSharedPtr const &asset);
 
     static Version GetSoftwareVersion();
     static TfToken const &GetSoftwareVersionToken();
@@ -642,8 +635,8 @@ public:
     static std::unique_ptr<CrateFile> CreateNew();
 
     // Return nullptr on failure.
-    static std::unique_ptr<CrateFile> Open(string const &assetPath);
-    static std::unique_ptr<CrateFile> Open(string const &assetPath,
+    static std::unique_ptr<CrateFile> Open(std::string const &assetPath);
+    static std::unique_ptr<CrateFile> Open(std::string const &assetPath,
                                            ArAssetSharedPtr const &asset);
 
     // Helper for saving to a file.
@@ -681,11 +674,11 @@ public:
 
     // Return true if this CrateFile object wasn't populated from a file, or if
     // the given \p fileName is the file this object was populated from.
-    bool CanPackTo(string const &fileName) const;
+    bool CanPackTo(std::string const &fileName) const;
 
-    Packer StartPacking(string const &fileName);
+    Packer StartPacking(std::string const &fileName);
 
-    string const &GetAssetPath() const { return _assetPath; }
+    std::string const &GetAssetPath() const { return _assetPath; }
 
     inline Field const &
     GetField(FieldIndex i) const {
@@ -699,14 +692,14 @@ public:
 #endif
     }
 
-    inline vector<Field> const & GetFields() const { return _fields; }
+    inline std::vector<Field> const & GetFields() const { return _fields; }
 
-    inline vector<FieldIndex> const &
+    inline std::vector<FieldIndex> const &
     GetFieldSets() const { return _fieldSets; }
 
     inline size_t GetNumUniqueFieldSets() const {
         // Count field sets by counting terminators.
-        return count(_fieldSets.begin(), _fieldSets.end(), FieldIndex());
+        return std::count(_fieldSets.begin(), _fieldSets.end(), FieldIndex());
     }
 
     inline SdfPath const &
@@ -721,21 +714,21 @@ public:
 #endif
     }
 
-    inline vector<SdfPath> const &GetPaths() const { return _paths; }
+    inline std::vector<SdfPath> const &GetPaths() const { return _paths; }
 
-    inline vector<Spec> const &
+    inline std::vector<Spec> const &
     GetSpecs() const { return _specs; }
 
     // Get all structural data out in \p outSpecs, \p outFields,
     // \p outFieldSets, leave those data in this CrateFile empty.
     inline void RemoveStructuralData(
-        vector<Spec> &outSpecs,
-        vector<Field> &outFields,
-        vector<FieldIndex> &outFieldSets) {
+        std::vector<Spec> &outSpecs,
+        std::vector<Field> &outFields,
+        std::vector<FieldIndex> &outFieldSets) {
         // We swap through temporaries to ensure we leave our structs empty.
-        { vector<Spec> tmp; tmp.swap(_specs); outSpecs.swap(tmp); }
-        { vector<Field> tmp; tmp.swap(_fields); outFields.swap(tmp); }
-        { vector<FieldIndex> tmp; tmp.swap(_fieldSets); outFieldSets.swap(tmp); }
+        { std::vector<Spec> tmp; tmp.swap(_specs); outSpecs.swap(tmp); }
+        { std::vector<Field> tmp; tmp.swap(_fields); outFields.swap(tmp); }
+        { std::vector<FieldIndex> tmp; tmp.swap(_fieldSets); outFieldSets.swap(tmp); }
     }
 
     inline TfToken const &
@@ -750,7 +743,7 @@ public:
 #endif
     }
 
-    inline vector<TfToken> const &GetTokens() const { return _tokens; }
+    inline std::vector<TfToken> const &GetTokens() const { return _tokens; }
     
     inline std::string const &
     GetString(StringIndex i) const {
@@ -763,9 +756,9 @@ public:
         return GetToken(_strings[i.value]).GetString();
 #endif
     }
-    inline vector<TokenIndex> const &GetStrings() const { return _strings; }
+    inline std::vector<TokenIndex> const &GetStrings() const { return _strings; }
 
-    vector<tuple<string, int64_t, int64_t>> GetSectionsNameStartSize() const;
+    std::vector<std::tuple<std::string, int64_t, int64_t>> GetSectionsNameStartSize() const;
 
     inline VtValue GetTimeSampleValue(TimeSamples const &ts, size_t i) const {
         return ts.IsInMemory() ? ts.values[i] : _GetTimeSampleValueImpl(ts, i);
@@ -797,11 +790,11 @@ public:
 
 private:
     explicit CrateFile(bool useMmap);
-    CrateFile(string const &assetPath, string const &fileName,
+    CrateFile(std::string const &assetPath, std::string const &fileName,
               _FileMappingIPtr mapStart, ArAssetSharedPtr const &asset);
-    CrateFile(string const &assetPath, string const &fileName,
+    CrateFile(std::string const &assetPath, std::string const &fileName,
               _FileRange &&inputFile, ArAssetSharedPtr const &asset);
-    CrateFile(string const &assetPath, ArAssetSharedPtr const &asset);
+    CrateFile(std::string const &assetPath, ArAssetSharedPtr const &asset);
 
     CrateFile(CrateFile const &) = delete;
     CrateFile &operator=(CrateFile const &) = delete;
@@ -851,9 +844,9 @@ private:
     template <class Iter>
     Iter _BuildCompressedPathDataRecursive(
         size_t &curIndex, Iter cur, Iter end,
-        vector<uint32_t> &pathIndexes,
-        vector<int32_t> &elementTokenIndexes,
-        vector<int32_t> &jumps);
+        std::vector<uint32_t> &pathIndexes,
+        std::vector<int32_t> &elementTokenIndexes,
+        std::vector<int32_t> &jumps);
 
     inline void _WriteTokens(_Writer &w);
 
@@ -895,7 +888,7 @@ private:
     FieldIndex _AddField(const FieldValuePair &fv);
     TokenIndex _AddToken(const TfToken &token);
     TokenIndex _GetIndexForToken(const TfToken &token) const;
-    StringIndex _AddString(const string &str);
+    StringIndex _AddString(const std::string &str);
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -947,7 +940,7 @@ private:
     // in-memory data upon Save, for example.
 
     // An index into the path list, plus a range of fields.
-    vector<Spec> _specs;
+    std::vector<Spec> _specs;
 
     // Deferred specs we write separately at the end. This is for specs that
     // have fields that we may not know how to write until we've looked at other
@@ -956,9 +949,9 @@ private:
     struct _DeferredSpec {
         _DeferredSpec() = default;
         _DeferredSpec(PathIndex p, SdfSpecType t,
-                      vector<FieldIndex> &&of,
-                      vector<FieldValuePair> &&dof,
-                      vector<pair<TfToken, TimeSamples>> &&ts)
+                      std::vector<FieldIndex> &&of,
+                      std::vector<FieldValuePair> &&dof,
+                      std::vector<std::pair<TfToken, TimeSamples>> &&ts)
             : path(p)
             , specType(t)
             , ordinaryFields(std::move(of))
@@ -966,33 +959,33 @@ private:
             , timeSampleFields(std::move(ts)) {}
         PathIndex path;
         SdfSpecType specType;
-        vector<FieldIndex> ordinaryFields;
-        vector<FieldValuePair> deferredOrdinaryFields;
-        vector<pair<TfToken, TimeSamples>> timeSampleFields;
+        std::vector<FieldIndex> ordinaryFields;
+        std::vector<FieldValuePair> deferredOrdinaryFields;
+        std::vector<std::pair<TfToken, TimeSamples>> timeSampleFields;
     };
-    vector<_DeferredSpec> _deferredSpecs;
+    std::vector<_DeferredSpec> _deferredSpecs;
 
     // All unique fields.
-    vector<Field> _fields;
+    std::vector<Field> _fields;
 
     // A vector of groups of fields, invalid-index terminated.
-    vector<FieldIndex> _fieldSets;
+    std::vector<FieldIndex> _fieldSets;
 
     ////////////////////////////////////////////////////////////////////////
     // These tables must persist, since deferred values in the file may refer to
     // their contents by index.
 
     // All unique paths.
-    vector<SdfPath> _paths;
+    std::vector<SdfPath> _paths;
 
     // TfToken to token index.
-    vector<TfToken> _tokens;
+    std::vector<TfToken> _tokens;
 
     // std::string to string index.
-    vector<TokenIndex> _strings;
+    std::vector<TokenIndex> _strings;
 
     // ValueRep to vector<double> for deduplicating timesamples times in memory.
-    mutable unordered_map<
+    mutable std::unordered_map<
         ValueRep, TimeSamples::SharedTimes, _Hasher> _sharedTimes;
     mutable tbb::spin_rw_mutex _sharedTimesMutex;
 

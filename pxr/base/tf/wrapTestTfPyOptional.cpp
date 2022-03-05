@@ -34,9 +34,6 @@
 #include <string>
 #include <vector>
 
-using namespace boost::python;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -45,20 +42,20 @@ namespace {
 // ////////////////////////////////
 // // optional
 
-static tuple
+static boost::python::tuple
 _TakesOptional(
-    const boost::optional<string>& optString,
-    const boost::optional<vector<string> >& optStrvec)
+    const boost::optional<std::string>& optString,
+    const boost::optional<std::vector<std::string> >& optStrvec)
 {
-    object strObj;
+    boost::python::object strObj;
     if (optString) {
-        strObj = object(*optString);
+        strObj = boost::python::object(*optString);
     }
-    object vecObj;
+    boost::python::object vecObj;
     if (optStrvec) {
-        vecObj = object(TfPyCopySequenceToList(*optStrvec));
+        vecObj = boost::python::object(TfPyCopySequenceToList(*optStrvec));
     }
-    return make_tuple(strObj, vecObj);
+    return boost::python::make_tuple(strObj, vecObj);
 }
 
 template <typename T>
@@ -76,10 +73,10 @@ struct Tf_TestPyOptional { };
 
 void wrapTf_TestTfPyOptional()
 {
-    class_<Tf_TestPyOptional, boost::noncopyable>("Tf_TestPyOptional")
+    boost::python::class_<Tf_TestPyOptional, boost::noncopyable>("Tf_TestPyOptional")
         .def("TakesOptional", _TakesOptional,
-            ( arg("optString") = boost::optional<string>(),
-              arg("optStrvec") = boost::optional<vector<string> >() ))
+            ( boost::python::arg("optString") = boost::optional<std::string>(),
+              boost::python::arg("optStrvec") = boost::optional<std::vector<std::string> >() ))
         .staticmethod("TakesOptional")
 
         .def("TestOptionalStringVector", _TestOptional<std::vector<std::string> >)

@@ -34,7 +34,6 @@
 #include <boost/python/def.hpp>
 #include <boost/python/exception_translator.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -128,10 +127,10 @@ void wrapException()
     tfExceptionClass = PyErr_NewException(excClassName, NULL, NULL);
 
     // Expose the exception class to python.
-    scope().attr("CppException") = boost::python::handle<>(tfExceptionClass);
+    boost::python::scope().attr("CppException") = boost::python::handle<>(tfExceptionClass);
     
     // Register the exception translator with boost::python.
-    register_exception_translator<TfBaseException>(Translate);
+    boost::python::register_exception_translator<TfBaseException>(Translate);
 
     // Test support.
     boost::python::def("_ThrowTest", _ThrowTest);

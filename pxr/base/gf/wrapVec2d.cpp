@@ -54,9 +54,7 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -118,7 +116,7 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
         return -1;
     }
 
-    GfVec2d &vec = extract<GfVec2d &>(self);
+    GfVec2d &vec = boost::python::extract<GfVec2d &>(self);
 
     view->obj = self;
     view->buf = static_cast<void *>(vec.data());
@@ -168,8 +166,8 @@ static PyBufferProcs bufferProcs = {
 ////////////////////////////////////////////////////////////////////////
 
 
-static string __repr__(GfVec2d const &self) {
-    string elems;
+static std::string __repr__(GfVec2d const &self) {
+    std::string elems;
     for (size_t i = 0; i < self.dimension; ++i) 
         elems += (i ? ", " : "") + TfPyRepr(self[i]);
 
@@ -211,13 +209,13 @@ static double __getitem__(const GfVec2d &self, int index) {
 }
 
 // Implements __getitem__ for a slice
-static list __getslice__(const GfVec2d &self, slice indices) {
-    list result;
+static boost::python::list __getslice__(const GfVec2d &self, boost::python::slice indices) {
+    boost::python::list result;
 
     const double* begin = self.data();
     const double* end = begin + 2;
 
-    slice::range<const double*> bounds;
+    boost::python::slice::range<const double*> bounds;
     try {
         // This appears to be a typo in the boost headers.  The method
         // name should be "get_indices".
@@ -247,16 +245,16 @@ static void __setitem__(GfVec2d &self, int index, double value) {
 // Handles refcounting & extraction for PySequence_GetItem.
 static double _SequenceGetItem(PyObject *seq, Py_ssize_t i) {
     boost::python::handle<> h(PySequence_GetItem(seq, i));
-    return extract<double>(boost::python::object(h));
+    return boost::python::extract<double>(boost::python::object(h));
 }
 
 static bool _SequenceCheckItem(PyObject *seq, Py_ssize_t i) {
     boost::python::handle<> h(PySequence_GetItem(seq, i));
-    extract<double> e((boost::python::object(h)));
+    boost::python::extract<double> e((boost::python::object(h)));
     return e.check();
 }
 
-static void __setslice__(GfVec2d &self, slice indices, object values) {
+static void __setslice__(GfVec2d &self, boost::python::slice indices, boost::python::object values) {
     // Verify our arguments
     //
     PyObject* valuesObj = values.ptr();
@@ -270,7 +268,7 @@ static void __setslice__(GfVec2d &self, slice indices, object values) {
 
     Py_ssize_t sliceLength = -1;
 
-    slice::range<double*> bounds;
+    boost::python::slice::range<double*> bounds;
 
     // Convince g++ that we're not using uninitialized values.
     //
@@ -348,7 +346,7 @@ static V *__init__() {
 
 struct FromPythonTuple {
     FromPythonTuple() {
-        converter::registry::
+        boost::python::converter::registry::
             push_back(&_convertible, &_construct,
                       boost::python::type_id<GfVec2d>());
     }
@@ -373,10 +371,10 @@ struct FromPythonTuple {
         return 0;
     }
 
-    static void _construct(PyObject *obj_ptr, converter::
+    static void _construct(PyObject *obj_ptr, boost::python::converter::
                            rvalue_from_python_stage1_data *data) {
         typedef double Scalar;
-        void *storage = ((converter::rvalue_from_python_storage<GfVec2d>*)data)
+        void *storage = ((boost::python::converter::rvalue_from_python_storage<GfVec2d>*)data)
 	    ->storage.bytes;
         new (storage)
 	    GfVec2d(
@@ -406,26 +404,26 @@ void wrapVec2d()
     static const size_t _dimension = 2;
     static const bool _true = true;
     
-    def("Dot", (Scalar (*)( const Vec &, const Vec &))GfDot);
+    boost::python::def("Dot", (Scalar (*)( const Vec &, const Vec &))GfDot);
     
-    def("CompDiv", (Vec (*)(const Vec &v1, const Vec&v2))GfCompDiv);
-    def("CompMult", (Vec (*)(const Vec &v1, const Vec&v2))GfCompMult);
-    def("GetLength", (Scalar (*)(const Vec &v))GfGetLength);
-    def("GetNormalized", (Vec (*)(const Vec &v, Scalar eps))
+    boost::python::def("CompDiv", (Vec (*)(const Vec &v1, const Vec&v2))GfCompDiv);
+    boost::python::def("CompMult", (Vec (*)(const Vec &v1, const Vec&v2))GfCompMult);
+    boost::python::def("GetLength", (Scalar (*)(const Vec &v))GfGetLength);
+    boost::python::def("GetNormalized", (Vec (*)(const Vec &v, Scalar eps))
         GfGetNormalized, GetNormalized_overloads());
-    def("GetProjection", (Vec (*)(const Vec &a, const Vec &b))
+    boost::python::def("GetProjection", (Vec (*)(const Vec &a, const Vec &b))
         GfGetProjection);
-    def("GetComplement", (Vec (*)(const Vec &a, const Vec &b))
+    boost::python::def("GetComplement", (Vec (*)(const Vec &a, const Vec &b))
         GfGetComplement);
-    def("IsClose", (bool (*)(const Vec &v1, const Vec &v2, double))
+    boost::python::def("IsClose", (bool (*)(const Vec &v1, const Vec &v2, double))
         GfIsClose);
-    def("Normalize", NormalizeHelper, Normalize_overloads());
+    boost::python::def("Normalize", NormalizeHelper, Normalize_overloads());
         
 
  
-    class_<GfVec2d> cls("Vec2d", no_init);
+    boost::python::class_<GfVec2d> cls("Vec2d", boost::python::no_init);
     cls
-        .def("__init__", make_constructor(__init__<Vec>))
+        .def("__init__", boost::python::make_constructor(__init__<Vec>))
 
         // A tag indicating that this is a GfVec class, for internal use.
         .def_readonly("__isGfVec", _true)
@@ -433,13 +431,13 @@ void wrapVec2d()
         .def_pickle(PickleSuite())
 
         // Conversion from other vec types.
-        .def(init<GfVec2f>())
-        .def(init<GfVec2h>())
-        .def(init<GfVec2i>())
+        .def(boost::python::init<GfVec2f>())
+        .def(boost::python::init<GfVec2h>())
+        .def(boost::python::init<GfVec2i>())
         
-        .def(init<Vec>())
-        .def(init<Scalar>())
-        .def(init<Scalar, Scalar>())
+        .def(boost::python::init<Vec>())
+        .def(boost::python::init<Scalar>())
+        .def(boost::python::init<Scalar, Scalar>())
 
         .def(TfTypePythonClass())
 
@@ -453,27 +451,27 @@ void wrapVec2d()
         .def_readonly("dimension", _dimension)
         
         // Comparison to other vec types.
-        .def( self == GfVec2f() )
-        .def( self != GfVec2f() )
-        .def( self == GfVec2h() )
-        .def( self != GfVec2h() )
-        .def( self == GfVec2i() )
-        .def( self != GfVec2i() )
+        .def( boost::python::self == GfVec2f() )
+        .def( boost::python::self != GfVec2f() )
+        .def( boost::python::self == GfVec2h() )
+        .def( boost::python::self != GfVec2h() )
+        .def( boost::python::self == GfVec2i() )
+        .def( boost::python::self != GfVec2i() )
 
-        .def(self == self)
-        .def(self != self)
-        .def(self += self)
-        .def(self -= self)
-        .def(self *= double())
-        .def(self * double())
-        .def(double() * self)
-        .def(self /= double())
-        .def(self / double())
-        .def(-self)
-        .def(self + self)
-        .def(self - self)
-        .def(self * self)
-        .def(str(self))
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self += boost::python::self)
+        .def(boost::python::self -= boost::python::self)
+        .def(boost::python::self *= double())
+        .def(boost::python::self * double())
+        .def(double() * boost::python::self)
+        .def(boost::python::self /= double())
+        .def(boost::python::self / double())
+        .def(-boost::python::self)
+        .def(boost::python::self + boost::python::self)
+        .def(boost::python::self - boost::python::self)
+        .def(boost::python::self * boost::python::self)
+        .def(boost::python::self_ns::str(boost::python::self))
 
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
@@ -498,7 +496,7 @@ void wrapVec2d()
         .def("__repr__", __repr__)
         .def("__hash__", __hash__)
         ;
-    to_python_converter<std::vector<GfVec2d>,
+    boost::python::to_python_converter<std::vector<GfVec2d>,
         TfPySequenceToPython<std::vector<GfVec2d> > >();
 
     // Install buffer protocol: set the tp_as_buffer slot to point to a

@@ -38,7 +38,6 @@
 #include <boost/python/extract.hpp>
 
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -112,48 +111,48 @@ void wrapUsdSkelSkeletonQuery()
 {
     using This = UsdSkelSkeletonQuery;
 
-    class_<This>("SkeletonQuery", no_init)
+    boost::python::class_<This>("SkeletonQuery", boost::python::no_init)
 
-        .def(!self)
-        .def(self == self)
-        .def(self != self)
+        .def(!boost::python::self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
         
         .def("__str__", &This::GetDescription)
 
         .def("GetPrim", &This::GetPrim,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("GetSkeleton", &This::GetSkeleton,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("GetAnimQuery", &This::GetAnimQuery,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("GetTopology", &This::GetTopology,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("GetMapper", &This::GetMapper,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("GetJointOrder", &This::GetJointOrder)
         
         .def("GetJointWorldBindTransforms", &_GetJointWorldBindTransforms)
         
         .def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
-             (arg("time")=UsdTimeCode::Default(), arg("atRest")=false))
+             (boost::python::arg("time")=UsdTimeCode::Default(), boost::python::arg("atRest")=false))
         
         .def("ComputeJointSkelTransforms", &_ComputeJointSkelTransforms,
-             (arg("time")=UsdTimeCode::Default(), arg("atRest")=false))
+             (boost::python::arg("time")=UsdTimeCode::Default(), boost::python::arg("atRest")=false))
 
         .def("ComputeJointWorldTransforms", &_ComputeJointWorldTransforms,
-             (arg("time")=UsdTimeCode::Default(), arg("atRest")=false))
+             (boost::python::arg("time")=UsdTimeCode::Default(), boost::python::arg("atRest")=false))
 
         .def("ComputeSkinningTransforms", &_ComputeSkinningTransforms,
-             (arg("time")=UsdTimeCode::Default()))
+             (boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("ComputeJointRestRelativeTransforms",
              &_ComputeJointRestRelativeTransforms,
-             (arg("time")=UsdTimeCode::Default()))
+             (boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("HasBindPose", &This::HasBindPose)
 

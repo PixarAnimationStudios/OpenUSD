@@ -38,14 +38,12 @@
 #include "pxr/base/tf/staticData.h"
 #include <ostream>
 
-using namespace boost::multi_index;
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 // A simple layer repr, used for debug and error messages, that includes both
 // the identifier and the real path.
-static string
+static std::string
 Sdf_LayerDebugRepr(
     const SdfLayerHandle& layer)
 {
@@ -61,7 +59,7 @@ const Sdf_LayerRegistry::layer_identifier::result_type&
 Sdf_LayerRegistry::layer_identifier::operator()(
     const SdfLayerHandle& layer) const
 {
-    static string emptyString;
+    static std::string emptyString;
     return layer ? layer->GetIdentifier() : emptyString;
 }
 
@@ -73,9 +71,9 @@ Sdf_LayerRegistry::layer_repository_path::operator()(
         return std::string();
     }
 
-    const string repoPath = layer->GetRepositoryPath();
+    const std::string repoPath = layer->GetRepositoryPath();
     if (!repoPath.empty()) {
-        string layerPath, arguments;
+        std::string layerPath, arguments;
         TF_VERIFY(Sdf_SplitIdentifier(
                 layer->GetIdentifier(), &layerPath, &arguments));
         return Sdf_CreateIdentifier(repoPath, arguments);
@@ -98,9 +96,9 @@ Sdf_LayerRegistry::layer_real_path::operator()(
         return layer->GetIdentifier();
     }
 
-    const string realPath = layer->GetRealPath();
+    const std::string realPath = layer->GetRealPath();
     if (!realPath.empty()) {
-        string layerPath, arguments;
+        std::string layerPath, arguments;
         TF_VERIFY(Sdf_SplitIdentifier(
                 layer->GetIdentifier(), &layerPath, &arguments));
         return Sdf_CreateIdentifier(realPath, arguments);
@@ -170,8 +168,8 @@ Sdf_LayerRegistry::Erase(
 
 SdfLayerHandle
 Sdf_LayerRegistry::Find(
-    const string &inputLayerPath,
-    const string &resolvedPath) const
+    const std::string &inputLayerPath,
+    const std::string &resolvedPath) const
 {
     TRACE_FUNCTION();
 
@@ -202,12 +200,12 @@ Sdf_LayerRegistry::Find(
         if (!foundLayer && !isRelativePath)
             foundLayer = FindByIdentifier(layerPath);
 #else
-        const string& layerPath = inputLayerPath;
+        const std::string& layerPath = inputLayerPath;
 
         // If the layer path depends on context there may be multiple
         // layers with the same identifier but different resolved paths.
         // In this case we need to look up the layer by resolved path.
-        string assetPath, args;
+        std::string assetPath, args;
         Sdf_SplitIdentifier(inputLayerPath, &assetPath, &args);
         if (!resolver.IsContextDependentPath(assetPath)) {
             foundLayer = FindByIdentifier(layerPath);
@@ -242,7 +240,7 @@ Sdf_LayerRegistry::Find(
 
 SdfLayerHandle
 Sdf_LayerRegistry::FindByIdentifier(
-    const string& layerPath) const
+    const std::string& layerPath) const
 {
     TRACE_FUNCTION();
 
@@ -264,7 +262,7 @@ Sdf_LayerRegistry::FindByIdentifier(
 
 SdfLayerHandle
 Sdf_LayerRegistry::FindByRepositoryPath(
-    const string& layerPath) const
+    const std::string& layerPath) const
 {
     TRACE_FUNCTION();
 
@@ -289,8 +287,8 @@ Sdf_LayerRegistry::FindByRepositoryPath(
 
 SdfLayerHandle
 Sdf_LayerRegistry::FindByRealPath(
-    const string& layerPath,
-    const string& resolvedPath) const
+    const std::string& layerPath,
+    const std::string& resolvedPath) const
 {
     TRACE_FUNCTION();
 
@@ -299,7 +297,7 @@ Sdf_LayerRegistry::FindByRealPath(
     if (layerPath.empty())
         return foundLayer;
 
-    string searchPath, arguments;
+    std::string searchPath, arguments;
     if (!Sdf_SplitIdentifier(layerPath, &searchPath, &arguments))
         return foundLayer;
 

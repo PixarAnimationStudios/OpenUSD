@@ -740,7 +740,6 @@ static yyconst flex_int32_t yy_ec[256] =
 #define isatty(fd) ArchFileIsaTTY(fd)
 #endif
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

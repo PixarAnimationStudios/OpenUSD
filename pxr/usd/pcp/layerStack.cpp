@@ -42,8 +42,6 @@
 #include <map>
 #include <unordered_set>
 
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -859,10 +857,10 @@ PcpLayerStack::_BuildLayerStack(
         
     // Recurse over sublayers to build subtrees.
     Pcp_SublayerInfoVector sublayerInfo;
-    const vector<string> &sublayers = layer->GetSubLayerPaths();
+    const std::vector<std::string> &sublayers = layer->GetSubLayerPaths();
     const SdfLayerOffsetVector &sublayerOffsets = layer->GetSubLayerOffsets();
     for(size_t i=0, numSublayers = sublayers.size(); i<numSublayers; i++) {
-        string canonicalMutedPath;
+        std::string canonicalMutedPath;
         if (mutedLayers.IsLayerMuted(layer, sublayers[i], 
                                      &canonicalMutedPath)) {
             _mutedAssetPaths.insert(canonicalMutedPath);
@@ -880,7 +878,7 @@ PcpLayerStack::_BuildLayerStack(
         // This is equivalent to SdfLayer::FindOrOpenRelativeToLayer, but we
         // want to keep track of the final sublayer path after anchoring it
         // to the layer.
-        string sublayerPath = SdfComputeAssetPathRelativeToLayer(
+        std::string sublayerPath = SdfComputeAssetPathRelativeToLayer(
             layer, sublayers[i]);
         SdfLayerRefPtr sublayer = SdfLayer::FindOrOpen(sublayerPath, layerArgs);
 
@@ -893,7 +891,7 @@ PcpLayerStack::_BuildLayerStack(
             err->layer = layer;
             err->sublayerPath = sublayerPath;
             if (!m.IsClean()) {
-                vector<string> commentary;
+                std::vector<std::string> commentary;
                 for (auto const &err: m) {
                     commentary.push_back(err.GetCommentary());
                 }

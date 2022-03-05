@@ -36,7 +36,6 @@
 #include <set>
 #include <string>
 
-namespace bp = boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -51,18 +50,18 @@ namespace {
 struct Tf_TokenFromPythonString
 {
     Tf_TokenFromPythonString() {
-        bp::converter::registry::insert
-            (&convertible, &construct, bp::type_id<TfToken>());
+        boost::python::converter::registry::insert
+            (&convertible, &construct, boost::python::type_id<TfToken>());
     }
     static void *convertible(PyObject *obj) {
-        bp::extract<std::string> s(obj);
+        boost::python::extract<std::string> s(obj);
         return s.check() ? obj : 0;
     }
     static void construct(PyObject *src,
-                          bp::converter::rvalue_from_python_stage1_data *data) {
-        bp::extract<std::string> s(src);
+                          boost::python::converter::rvalue_from_python_stage1_data *data) {
+        boost::python::extract<std::string> s(src);
         void *storage =
-            ((bp::converter::
+            ((boost::python::converter::
               rvalue_from_python_storage<TfToken> *)data)->storage.bytes;
         new (storage) TfToken( s() );
         data->convertible = storage;
@@ -71,7 +70,7 @@ struct Tf_TokenFromPythonString
 
 struct Tf_TokenToPythonString {
     static PyObject* convert(TfToken const &val) {
-        return bp::incref(bp::str(val.GetString()).ptr());
+        return boost::python::incref(boost::python::str(val.GetString()).ptr());
     }
 };
 
@@ -92,9 +91,9 @@ void wrapToken()
         TfPySequenceToPython<std::vector<TfToken> > >();
 
     // Tokens are represented directly as Python strings in Python.
-    bp::to_python_converter<TfToken, Tf_TokenToPythonString>();
+    boost::python::to_python_converter<TfToken, Tf_TokenToPythonString>();
     Tf_TokenFromPythonString();
 
     // Stats.
-    bp::def("DumpTokenStats", TfDumpTokenStats);
+    boost::python::def("DumpTokenStats", TfDumpTokenStats);
 }

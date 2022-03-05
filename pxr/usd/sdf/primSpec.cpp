@@ -49,9 +49,6 @@
 #include <string>
 #include <vector>
 
-using std::pair;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -826,7 +823,7 @@ _FindOrCreateVariantSpec(SdfLayer *layer, const SdfPath &vsPath)
         return false;
     }
 
-    pair<string, string> varSel = vsPath.GetVariantSelection();
+    std::pair<std::string, std::string> varSel = vsPath.GetVariantSelection();
 
     // Try to find existing variant set.
     const SdfVariantSetsProxy &variantSets = primSpec->GetVariantSets();
@@ -879,7 +876,7 @@ _IsValidPath(const SdfPath& path)
         for (SdfPath p = path.MakeAbsolutePath(SdfPath::AbsoluteRootPath()); 
              p != SdfPath::AbsoluteRootPath(); p = p.GetParentPath()) {
             
-            const pair<string, string> varSel = p.GetVariantSelection();
+            const std::pair<std::string, std::string> varSel = p.GetVariantSelection();
             if (!varSel.first.empty() && varSel.second.empty()) {
                 return false;
             }

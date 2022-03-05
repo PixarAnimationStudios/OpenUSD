@@ -576,14 +576,13 @@ namespace {
         const SdfLayerHandle& strongLayer,
         const SdfLayerHandle& weakLayer)
     {
-        namespace ph = std::placeholders;
         UsdUtilsStitchValueFn ignoreTimeSamples = std::bind(
             [](const TfToken& field) {
                 if (field == SdfFieldKeys->TimeSamples) {
                     return UsdUtilsStitchValueStatus::NoStitchedValue;
                 }
                 return UsdUtilsStitchValueStatus::UseDefaultValue;
-            }, ph::_1);
+            }, std::placeholders::_1);
 
         UsdUtilsStitchLayers(strongLayer, weakLayer, ignoreTimeSamples);
     }

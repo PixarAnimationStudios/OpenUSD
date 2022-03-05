@@ -38,8 +38,6 @@
 #include <string>
 #include <vector>
 
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -63,7 +61,7 @@ TfErrorMark::_ReportErrors(TfDiagnosticMgr &mgr) const
 // To enable tracking stack traces for error marks when
 // TF_ERROR_MARK_TRACKING is enabled, change the 'false' to 'true' below.
 static const bool _enableTfErrorMarkStackTraces = false;
-using _ActiveMarkStacksMap = TfHashMap<TfErrorMark const *, vector<uintptr_t>, 
+using _ActiveMarkStacksMap = TfHashMap<TfErrorMark const *, std::vector<uintptr_t>, 
                                        TfHash>;
 static _ActiveMarkStacksMap &
 TfErrorMark_GetActiveMarkStacks() 
@@ -81,7 +79,7 @@ TfErrorMark::TfErrorMark()
 
     if (_enableTfErrorMarkStackTraces &&
         TfDebug::IsEnabled(TF_ERROR_MARK_TRACKING)) {
-        vector<uintptr_t> trace;
+        std::vector<uintptr_t> trace;
         trace.reserve(64);
         ArchGetStackFrames(trace.capacity(), &trace);
         tbb::spin_mutex::scoped_lock lock(_activeMarkStacksLock);
@@ -105,7 +103,7 @@ TfErrorMark::~TfErrorMark()
 void
 TfReportActiveErrorMarks()
 {
-    string msg;
+    std::string msg;
 
     if (!_enableTfErrorMarkStackTraces) {
         msg += "- Set _enableTfErrorMarkStackTraces and recompile "

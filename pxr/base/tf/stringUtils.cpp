@@ -51,33 +51,27 @@
 #include <Shlwapi.h>
 #endif
 
-using std::list;
-using std::make_pair;
-using std::pair;
-using std::set;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-string
+std::string
 TfVStringPrintf(const std::string& fmt, va_list ap)
 {
     return ArchVStringPrintf(fmt.c_str(), ap);
 }
 
-string
+std::string
 TfVStringPrintf(const char *fmt, va_list ap)
 {
     return ArchVStringPrintf(fmt, ap);
 }
 
-string
+std::string
 TfStringPrintf(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    string s = ArchVStringPrintf(fmt, ap);
+    std::string s = ArchVStringPrintf(fmt, ap);
     va_end(ap);
     return s;
 }
@@ -108,7 +102,7 @@ TfStringToDouble(const char *ptr)
 }
 
 double
-TfStringToDouble(const string& s)
+TfStringToDouble(const std::string& s)
 {
     return TfStringToDouble(s.c_str());
 }
@@ -237,20 +231,20 @@ TfStringEndsWith(const std::string &s, const TfToken& suffix)
 }
 
 bool
-TfStringContains(const string &s, const char *substring)
+TfStringContains(const std::string &s, const char *substring)
 {
-    return s.find(substring) != string::npos;
+    return s.find(substring) != std::string::npos;
 }
 bool
-TfStringContains(const string &s, const TfToken &substring)
+TfStringContains(const std::string &s, const TfToken &substring)
 {
     return TfStringContains(s, substring.GetText());
 }
 
-string
-TfStringToLower(const string &source)
+std::string
+TfStringToLower(const std::string &source)
 {
-    string lower;
+    std::string lower;
     size_t length = source.length();
     
     lower.reserve(length);
@@ -261,10 +255,10 @@ TfStringToLower(const string &source)
     return lower;
 }
 
-string
-TfStringToUpper(const string &source)
+std::string
+TfStringToUpper(const std::string &source)
 {
-    string upper;
+    std::string upper;
     size_t length = source.length();
     
     upper.reserve(length);
@@ -275,60 +269,60 @@ TfStringToUpper(const string &source)
     return upper;
 }
 
-string
-TfStringCapitalize(const string& source)
+std::string
+TfStringCapitalize(const std::string& source)
 {
     if (source.empty()) {
         return source;
     }
 
-    string result(source);
+    std::string result(source);
     result[0] = toupper(result[0]);
 
     return result;
 }
 
-string
-TfStringGetCommonPrefix(string a, string b)
+std::string
+TfStringGetCommonPrefix(std::string a, std::string b)
 {
     if (b.length() < a.length())
         b.swap(a);
 
-    std::pair<string::iterator, string::iterator> it =
+    std::pair<std::string::iterator, std::string::iterator> it =
         std::mismatch(a.begin(), a.end(), b.begin());
 
-    return string(a.begin(), it.first);
+    return std::string(a.begin(), it.first);
 }
 
-string
-TfStringGetSuffix(const string& name, char delimiter)
+std::string
+TfStringGetSuffix(const std::string& name, char delimiter)
 {
     size_t i = name.rfind(delimiter);
-    if (i == string::npos)
+    if (i == std::string::npos)
         return "";
     else
         return name.substr(i+1);
 }
 
-string
-TfStringGetBeforeSuffix(const string& name, char delimiter)
+std::string
+TfStringGetBeforeSuffix(const std::string& name, char delimiter)
 {
     size_t i = name.rfind(delimiter);
-    if (i == string::npos)
+    if (i == std::string::npos)
         return name;
     else
         return name.substr(0, i);
 }
 
-string
-TfGetBaseName(const string& fileName)
+std::string
+TfGetBaseName(const std::string& fileName)
 {
     if (fileName.empty())
         return fileName;
 #if defined(ARCH_OS_WINDOWS)
     const string::size_type i = fileName.find_last_of("\\/");
 #else
-    const string::size_type i = fileName.rfind("/");
+    const std::string::size_type i = fileName.rfind("/");
 #endif
     if (i == fileName.size() - 1)    // ends in directory delimiter
         return TfGetBaseName(fileName.substr(0, i));
@@ -351,80 +345,80 @@ TfGetBaseName(const string& fileName)
     return ArchWindowsUtf16ToUtf8(result);
 
 #else
-    if (i == string::npos)                      // no / in name
+    if (i == std::string::npos)                      // no / in name
         return fileName;
     else
         return fileName.substr(i+1);
 #endif
 }
 
-string
-TfGetPathName(const string& fileName)
+std::string
+TfGetPathName(const std::string& fileName)
 {
 #if defined(ARCH_OS_WINDOWS)
     size_t i = fileName.find_last_of("\\/:");
 #else
     size_t i = fileName.rfind("/");
 #endif
-    if (i == string::npos)                          // no / in name
+    if (i == std::string::npos)                          // no / in name
         return "";
     else
         return fileName.substr(0, i+1);
 }
 
-string
-TfStringTrimRight(const string& s, const char* trimChars)
+std::string
+TfStringTrimRight(const std::string& s, const char* trimChars)
 {
     return s.substr(0, s.find_last_not_of(trimChars) + 1);
 }
 
-string
-TfStringTrimLeft(const string &s, const char* trimChars)
+std::string
+TfStringTrimLeft(const std::string &s, const char* trimChars)
 {
-    string::size_type i = s.find_first_not_of(trimChars);
-    return (i == string::npos) ? string() : s.substr(i);
+    std::string::size_type i = s.find_first_not_of(trimChars);
+    return (i == std::string::npos) ? std::string() : s.substr(i);
 }
 
-string
-TfStringTrim(const string &s, const char* trimChars)
+std::string
+TfStringTrim(const std::string &s, const char* trimChars)
 {
-    string::size_type i = s.find_first_not_of(trimChars);
-    string tmp = (i == string::npos) ? string() : s.substr(i);
+    std::string::size_type i = s.find_first_not_of(trimChars);
+    std::string tmp = (i == std::string::npos) ? std::string() : s.substr(i);
     return tmp.substr( 0, tmp.find_last_not_of(trimChars) + 1);
 }
 
-string
-TfStringReplace(const string& source, const string& from, const string& to)
+std::string
+TfStringReplace(const std::string& source, const std::string& from, const std::string& to)
 {
     if (from.empty() || from == to) {
         return source;
     }
 
-    string result = source;
-    string::size_type pos = 0;
+    std::string result = source;
+    std::string::size_type pos = 0;
 
-    while ((pos = result.find(from, pos)) != string::npos) {
+    while ((pos = result.find(from, pos)) != std::string::npos) {
         result.replace(pos, from.size(), to);
         pos += to.size();
     }
     return result;
 }
 
-string
-TfStringJoin(const vector<string>& strings, const char* separator)
+std::string
+TfStringJoin(const std::vector<std::string>& strings, const char* separator)
 {
     return TfStringJoin(strings.begin(), strings.end(), separator);
 }
 
-string
-TfStringJoin(const set<string>& strings, const char* separator)
+std::string
+TfStringJoin(const std::set<std::string>& strings, const char* separator)
 {
     return TfStringJoin(strings.begin(), strings.end(), separator);
 }
 
 static inline
-void _TokenizeToSegments(string const &src, char const *delimiters,
-                         vector<pair<char const *, char const *> > &segments)
+void _TokenizeToSegments(std::string const &src, char const *delimiters,
+                         std::vector<std::pair<char const *, char const *> > &segments)
 {
     // Delimiter checking LUT.
     // NOTE: For some reason, calling memset here is faster than doing the
@@ -450,7 +444,7 @@ void _TokenizeToSegments(string const &src, char const *delimiters,
             continue;
         // have a token until the next delimiter.
         // push back a new segment, but we only know the begin point yet.
-        segments.push_back(make_pair(c, c));
+        segments.push_back(std::make_pair(c, c));
         for (++c; c != end; ++c)
             if (IS_DELIMITER(*c))
                 break;
@@ -461,10 +455,10 @@ void _TokenizeToSegments(string const &src, char const *delimiters,
 #undef IS_DELIMITER
 }
     
-vector<string>
-TfStringSplit(string const &src, string const &separator)
+std::vector<std::string>
+TfStringSplit(std::string const &src, std::string const &separator)
 {
-    vector<string> split;
+    std::vector<std::string> split;
 
     if (src.empty())
         return split;
@@ -478,7 +472,7 @@ TfStringSplit(string const &src, string const &separator)
 
     while (true) {
         pos = src.find(separator, from);
-        if (pos == string::npos)
+        if (pos == std::string::npos)
             break;
         split.push_back(src.substr(from, pos-from));
         from = pos + separator.size();
@@ -490,53 +484,53 @@ TfStringSplit(string const &src, string const &separator)
     return split;
 }
 
-vector<string>
-TfStringTokenize(string const &src, const char* delimiters)
+std::vector<std::string>
+TfStringTokenize(std::string const &src, const char* delimiters)
 {
-    vector<pair<char const *, char const *> > segments;
+    std::vector<std::pair<char const *, char const *> > segments;
     _TokenizeToSegments(src, delimiters, segments);
 
     // Construct strings into the result vector from the segments of src.
-    vector<string> ret(segments.size());
+    std::vector<std::string> ret(segments.size());
     for (size_t i = 0; i != segments.size(); ++i)
         ret[i].append(segments[i].first, segments[i].second);
     return ret;
 }
 
-set<string>
-TfStringTokenizeToSet(string const &src, const char* delimiters)
+std::set<std::string>
+TfStringTokenizeToSet(std::string const &src, const char* delimiters)
 {
-    vector<pair<char const *, char const *> > segments;
+    std::vector<std::pair<char const *, char const *> > segments;
     _TokenizeToSegments(src, delimiters, segments);
 
     // Construct strings from the segments and insert them into the result.
-    set<string> ret;
+    std::set<std::string> ret;
     for (size_t i = 0; i != segments.size(); ++i)
-        ret.insert(string(segments[i].first, segments[i].second));
+        ret.insert(std::string(segments[i].first, segments[i].second));
 
     return ret;
 }
 
 static size_t
-_FindFirstOfNotEscaped(const string &source, const char *toFind, size_t offset)
+_FindFirstOfNotEscaped(const std::string &source, const char *toFind, size_t offset)
 {
     size_t pos = source.find_first_of(toFind, offset);
 
-    while(pos != 0 && pos != string::npos && source[pos - 1] == '\\') {
+    while(pos != 0 && pos != std::string::npos && source[pos - 1] == '\\') {
         pos = source.find_first_of(toFind, pos + 1);
     }
 
     return pos;
 }
 
-vector<string>
-TfQuotedStringTokenize(const string &source, const char *delimiters, 
-                       string *errors)
+std::vector<std::string>
+TfQuotedStringTokenize(const std::string &source, const char *delimiters, 
+                       std::string *errors)
 {    
-    vector<string> resultVec;
+    std::vector<std::string> resultVec;
     size_t j, quoteIndex, delimIndex;
     const char *quotes = "\"\'`";
-    string token;
+    std::string token;
 
     if (strpbrk(delimiters, quotes) != NULL) {
         if (errors != NULL)
@@ -545,12 +539,12 @@ TfQuotedStringTokenize(const string &source, const char *delimiters,
         return resultVec;
     }
     
-    string quote;
+    std::string quote;
     for (size_t i = 0; i < source.length();) {
         // Eat leading delimiters.
         i = source.find_first_not_of(delimiters, i);
 
-        if (i == string::npos) {
+        if (i == std::string::npos) {
             // Nothing left but delimiters.
             break;  
         }
@@ -573,7 +567,7 @@ TfQuotedStringTokenize(const string &source, const char *delimiters,
             
             // If we've reached the end of the string, then we are
             // missing an end-quote.
-            if (j == string::npos) {
+            if (j == std::string::npos) {
                 if (errors != NULL) {
                     *errors = TfStringPrintf(
                         "String is missing an end-quote (\'%s\'): %s", 
@@ -592,7 +586,7 @@ TfQuotedStringTokenize(const string &source, const char *delimiters,
         }
 
         // Push token.
-        if (delimIndex == string::npos) 
+        if (delimIndex == std::string::npos) 
             token += source.substr(i);   
         else
             token += source.substr(i, delimIndex - i);
@@ -600,12 +594,12 @@ TfQuotedStringTokenize(const string &source, const char *delimiters,
         // If there are quote characters in 'token', we strip away any
         // preceding backslash before adding it to our results.     
         for(size_t q = 0; q < strlen(quotes); ++ q)
-            token = TfStringReplace(token, string("\\") + quotes[q], 
-                                    string() + quotes[q]);
+            token = TfStringReplace(token, std::string("\\") + quotes[q], 
+                                    std::string() + quotes[q]);
         
         resultVec.push_back(token);
         
-        if (delimIndex == string::npos) 
+        if (delimIndex == std::string::npos) 
             break;
         else {
             // Set up for next loop.
@@ -615,14 +609,14 @@ TfQuotedStringTokenize(const string &source, const char *delimiters,
     return resultVec;
 }
 
-vector<string> 
-TfMatchedStringTokenize(const string& source, 
+std::vector<std::string> 
+TfMatchedStringTokenize(const std::string& source, 
                         char openDelimiter, 
                         char closeDelimiter, 
                         char escapeCharacter,
-                        string *errors)
+                        std::string *errors)
 {
-    vector<string> resultVec;
+    std::vector<std::string> resultVec;
 
     if ((escapeCharacter == openDelimiter) || 
         (escapeCharacter == closeDelimiter)) {
@@ -634,7 +628,7 @@ TfMatchedStringTokenize(const string& source,
     // If a close delimiter appears before an open delimiter, and it's not
     // preceded by the escape character, we have mismatched delimiters.
     size_t closeIndex = source.find(closeDelimiter);
-    if ((closeIndex != string::npos) && 
+    if ((closeIndex != std::string::npos) && 
         ((closeIndex == 0) || (source[closeIndex - 1] != escapeCharacter)) &&
         (closeIndex < source.find(openDelimiter))) {
         if (errors != NULL) {
@@ -647,7 +641,7 @@ TfMatchedStringTokenize(const string& source,
 
     bool sameDelimiters = (openDelimiter == closeDelimiter);
 
-    string specialChars;
+    std::string specialChars;
     if (escapeCharacter != '\0')
         specialChars += escapeCharacter;
     
@@ -659,15 +653,15 @@ TfMatchedStringTokenize(const string& source,
     size_t openCount, closeCount;
     size_t sourceSize = source.size();
 
-    while((openIndex = source.find(openDelimiter, openIndex)) != string::npos) {
+    while((openIndex = source.find(openDelimiter, openIndex)) != std::string::npos) {
         openCount = 1;
         closeCount = 0;
         nextIndex = openIndex;
         
-        string token;
+        std::string token;
         while(closeCount != openCount) {
             nextIndex = source.find_first_of(specialChars, nextIndex + 1);
-            if(nextIndex == string::npos) {
+            if(nextIndex == std::string::npos) {
                 if (errors != NULL) {
                     *errors = TfStringPrintf(
                       "String has unmatched open delimiter ('%c', '%c'): %s", 
@@ -708,7 +702,7 @@ TfMatchedStringTokenize(const string& source,
     // If a close delimiter appears after our last token, we have mismatched 
     // delimiters.
     closeIndex = source.find(closeDelimiter, nextIndex + 1);
-    if ((closeIndex != string::npos) &&
+    if ((closeIndex != std::string::npos) &&
         (source[closeIndex - 1] != escapeCharacter)) {
         if (errors != NULL) {
             *errors = TfStringPrintf(
@@ -781,7 +775,7 @@ DictionaryLess(char const *l, char const *r)
 }
 
 bool
-TfDictionaryLessThan::operator()(const string& lhs, const string& rhs) const
+TfDictionaryLessThan::operator()(const std::string& lhs, const std::string& rhs) const
 {
     return DictionaryLess(lhs.c_str(), rhs.c_str());
 }
@@ -916,13 +910,13 @@ TfUnstringify(std::string const& s, bool*)
     return s;
 }
 
-string
-TfStringGlobToRegex(const string& s)
+std::string
+TfStringGlobToRegex(const std::string& s)
 {
     // Replace '.' by '\.', then '*' by '.*', and '?' by '.'
     // TODO: could handle {,,} and do (||), although these are not part of the
     // glob syntax.
-    string ret(s);
+    std::string ret(s);
     ret = TfStringReplace( ret, ".", "\\." );
     ret = TfStringReplace( ret, "*", ".*"  );
     ret = TfStringReplace( ret, "?", "."   );
@@ -1018,8 +1012,8 @@ TfEscapeString(const std::string &in)
     return std::string(out.get(), outp - out.get() - 1);
 }
 
-string 
-TfStringCatPaths( const string &prefix, const string &suffix )
+std::string 
+TfStringCatPaths( const std::string &prefix, const std::string &suffix )
 {
     return TfNormPath(prefix + "/" + suffix);
 }

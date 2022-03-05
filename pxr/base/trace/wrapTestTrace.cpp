@@ -34,7 +34,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -120,9 +119,9 @@ TestCreateEvents()
 
 void wrapTestTrace()
 {    
-    def("TestNesting", &::TestNesting);
-    def("TestAuto", &::TestAuto);
-    def("TestCreateEvents", &::TestCreateEvents);
-    def("GetTestEventName", &::TestEventName);
+    boost::python::def("TestNesting", &::TestNesting);
+    boost::python::def("TestAuto", &::TestAuto);
+    boost::python::def("TestCreateEvents", &::TestCreateEvents);
+    boost::python::def("GetTestEventName", &::TestEventName);
 }
 

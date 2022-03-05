@@ -31,8 +31,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -63,41 +61,41 @@ _GetLayerOffsets(const PcpLayerStack &layerStack)
 
 void wrapLayerStack()
 {
-    class_<PcpLayerStack, PcpLayerStackPtr, boost::noncopyable>
-        ("LayerStack", no_init)
+    boost::python::class_<PcpLayerStack, PcpLayerStackPtr, boost::noncopyable>
+        ("LayerStack", boost::python::no_init)
         .def(TfPyRefAndWeakPtr())
         .add_property("identifier", 
-                      make_function(&PcpLayerStack::GetIdentifier,
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&PcpLayerStack::GetIdentifier,
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("layers", 
-                      make_function(&_GetLayerStackLayers,
-                                    return_value_policy<TfPySequenceToList>()))
+                      boost::python::make_function(&_GetLayerStackLayers,
+                                    boost::python::return_value_policy<TfPySequenceToList>()))
         .add_property("layerOffsets",
-                      make_function(&_GetLayerOffsets,
-                                    return_value_policy<TfPySequenceToList>()))
+                      boost::python::make_function(&_GetLayerOffsets,
+                                    boost::python::return_value_policy<TfPySequenceToList>()))
         .add_property("layerTree", 
-                      make_function(&PcpLayerStack::GetLayerTree,
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&PcpLayerStack::GetLayerTree,
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("relocatesSourceToTarget",
-                      make_function(&PcpLayerStack::GetRelocatesSourceToTarget,
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&PcpLayerStack::GetRelocatesSourceToTarget,
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("relocatesTargetToSource",
-                      make_function(&PcpLayerStack::GetRelocatesTargetToSource,
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&PcpLayerStack::GetRelocatesTargetToSource,
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("incrementalRelocatesSourceToTarget",
-                      make_function(
+                      boost::python::make_function(
                           &PcpLayerStack::GetIncrementalRelocatesSourceToTarget,
-                          return_value_policy<return_by_value>()))
+                          boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("incrementalRelocatesTargetToSource",
-                      make_function(
+                      boost::python::make_function(
                           &PcpLayerStack::GetIncrementalRelocatesTargetToSource,
-                          return_value_policy<return_by_value>()))
+                          boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("localErrors", 
-                      make_function(&PcpLayerStack::GetLocalErrors,
-                                    return_value_policy<TfPySequenceToList>()))
+                      boost::python::make_function(&PcpLayerStack::GetLocalErrors,
+                                    boost::python::return_value_policy<TfPySequenceToList>()))
         .add_property("pathsToPrimsWithRelocates", 
-              make_function(&PcpLayerStack::GetPathsToPrimsWithRelocates,
-                            return_value_policy<TfPySequenceToList>()))
+              boost::python::make_function(&PcpLayerStack::GetPathsToPrimsWithRelocates,
+                            boost::python::return_value_policy<TfPySequenceToList>()))
         // TODO: repr, eq, etc.
         ;
 }

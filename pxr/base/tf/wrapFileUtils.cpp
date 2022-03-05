@@ -30,13 +30,11 @@
 
 #include <string>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapFileUtils() {
 
-    def("TouchFile", &TfTouchFile, (arg("fileName"), arg("create")=bool(false)));
+    boost::python::def("TouchFile", &TfTouchFile, (boost::python::arg("fileName"), boost::python::arg("create")=bool(false)));
 }

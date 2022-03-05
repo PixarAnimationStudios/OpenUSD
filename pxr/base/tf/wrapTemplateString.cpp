@@ -36,36 +36,34 @@
 
 #include <string>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string __repr__(TfTemplateString const &self)
+static std::string __repr__(TfTemplateString const &self)
 {
     return TF_PY_REPR_PREFIX + "TemplateString(" +
-        (self.GetTemplate().empty() ? string() : TfPyRepr(self.GetTemplate())) +
+        (self.GetTemplate().empty() ? std::string() : TfPyRepr(self.GetTemplate())) +
         ")";
 }
 
-static string _Substitute(TfTemplateString const &self, dict const &d)
+static std::string _Substitute(TfTemplateString const &self, boost::python::dict const &d)
 {
     TfTemplateString::Mapping m;
-    list items = d.items();
-    for (int i = 0; i < len(items); ++i)
-        m[extract<string>(items[i][0])] = extract<string>(items[i][1]);
+    boost::python::list items = d.items();
+    for (int i = 0; i < boost::python::len(items); ++i)
+        m[boost::python::extract<std::string>(items[i][0])] = boost::python::extract<std::string>(items[i][1]);
     return self.Substitute(m);
 }
 
-static string _SafeSubstitute(TfTemplateString const &self, dict const &d)
+static std::string _SafeSubstitute(TfTemplateString const &self, boost::python::dict const &d)
 {
     TfTemplateString::Mapping m;
-    list items = d.items();
-    for (int i = 0; i < len(items); ++i)
-        m[extract<string>(items[i][0])] = extract<string>(items[i][1]);
+    boost::python::list items = d.items();
+    for (int i = 0; i < boost::python::len(items); ++i)
+        m[boost::python::extract<std::string>(items[i][0])] = boost::python::extract<std::string>(items[i][1]);
     return self.SafeSubstitute(m);
 }
 
@@ -75,18 +73,18 @@ void wrapTemplateString()
 {
     typedef TfTemplateString This;
 
-    class_<This>("TemplateString")
-        .def(init<string>())
+    boost::python::class_<This>("TemplateString")
+        .def(boost::python::init<std::string>())
         .def("__repr__", __repr__)
         .add_property("template",
-                      make_function(&This::GetTemplate,
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&This::GetTemplate,
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
         .def("Substitute", _Substitute)
         .def("SafeSubstitute", _SafeSubstitute)
         .def("GetEmptyMapping", &This::GetEmptyMapping,
-             return_value_policy<TfPyMapToDictionary>())
+             boost::python::return_value_policy<TfPyMapToDictionary>())
         .def("GetParseErrors", &This::GetParseErrors,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .add_property("valid", &This::IsValid)
         ;
 }

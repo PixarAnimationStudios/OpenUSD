@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -51,14 +50,14 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateVisibilityAttr(UsdGeomImageable &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateVisibilityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreatePurposeAttr(UsdGeomImageable &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreatePurposeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
@@ -78,43 +77,43 @@ void wrapUsdGeomImageable()
 {
     typedef UsdGeomImageable This;
 
-    class_<This, bases<UsdTyped> >
+    boost::python::class_<This, boost::python::bases<UsdTyped> >
         cls("Imageable");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetVisibilityAttr",
              &This::GetVisibilityAttr)
         .def("CreateVisibilityAttr",
              &_CreateVisibilityAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetPurposeAttr",
              &This::GetPurposeAttr)
         .def("CreatePurposeAttr",
              &_CreatePurposeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         
         .def("GetProxyPrimRel",
@@ -185,30 +184,30 @@ WRAP_CUSTOM {
 
     _class
         .def("CreatePrimvar", &UsdGeomImageable::CreatePrimvar,
-             (arg("attrName"), arg("typeName"), arg("interpolation")=TfToken(),
-              arg("elementSize")=-1))
-        .def("GetPrimvar", &UsdGeomImageable::GetPrimvar, arg("name"))
+             (boost::python::arg("attrName"), boost::python::arg("typeName"), boost::python::arg("interpolation")=TfToken(),
+              boost::python::arg("elementSize")=-1))
+        .def("GetPrimvar", &UsdGeomImageable::GetPrimvar, boost::python::arg("name"))
         .def("GetPrimvars", &UsdGeomImageable::GetPrimvars,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetAuthoredPrimvars", &UsdGeomImageable::GetAuthoredPrimvars,
-             return_value_policy<TfPySequenceToList>())
-        .def("HasPrimvar", &UsdGeomImageable::HasPrimvar, arg("name"))
+             boost::python::return_value_policy<TfPySequenceToList>())
+        .def("HasPrimvar", &UsdGeomImageable::HasPrimvar, boost::python::arg("name"))
         .def("GetOrderedPurposeTokens",
              &UsdGeomImageable::GetOrderedPurposeTokens,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetOrderedPurposeTokens")
 
         .def("ComputeVisibility", 
              &UsdGeomImageable::ComputeVisibility,
-             arg("time")=UsdTimeCode::Default())
+             boost::python::arg("time")=UsdTimeCode::Default())
 
         .def("GetPurposeVisibilityAttr",
              &UsdGeomImageable::GetPurposeVisibilityAttr,
-             (arg("purpose") = UsdGeomTokens->default_))
+             (boost::python::arg("purpose") = UsdGeomTokens->default_))
         .def("ComputeEffectiveVisibility",
              &UsdGeomImageable::ComputeEffectiveVisibility,
-             (arg("purpose") = UsdGeomTokens->default_,
-              arg("time") = UsdTimeCode::Default()))
+             (boost::python::arg("purpose") = UsdGeomTokens->default_,
+              boost::python::arg("time") = UsdTimeCode::Default()))
 
         .def("ComputePurpose", 
              (TfToken (UsdGeomImageable::*)() const)
@@ -220,7 +219,7 @@ WRAP_CUSTOM {
              (UsdGeomImageable::PurposeInfo (UsdGeomImageable::*)(
                 const UsdGeomImageable::PurposeInfo &) const)
                 &UsdGeomImageable::ComputePurposeInfo,
-             arg("parentPurposeInfo"))
+             boost::python::arg("parentPurposeInfo"))
 
         .def("ComputeProxyPrim", &_ComputeProxyPrim,
             "Returns None if neither this prim nor any of its ancestors "
@@ -229,46 +228,46 @@ WRAP_CUSTOM {
         .def("SetProxyPrim", 
              (bool (UsdGeomImageable::*)(const UsdPrim &) const)
              &UsdGeomImageable::SetProxyPrim, 
-             arg("proxy"))
+             boost::python::arg("proxy"))
         .def("SetProxyPrim", 
              (bool (UsdGeomImageable::*)(const UsdSchemaBase &) const)
              &UsdGeomImageable::SetProxyPrim, 
-             arg("proxy"))
+             boost::python::arg("proxy"))
         .def("MakeVisible", &UsdGeomImageable::MakeVisible, 
-            arg("time")=UsdTimeCode::Default())
+            boost::python::arg("time")=UsdTimeCode::Default())
         .def("MakeInvisible", &UsdGeomImageable::MakeInvisible, 
-            arg("time")=UsdTimeCode::Default())
+            boost::python::arg("time")=UsdTimeCode::Default())
         .def("ComputeWorldBound", &UsdGeomImageable::ComputeWorldBound,
-             (arg("time"), arg("purpose1")=TfToken(), arg("purpose2")=TfToken(),
-              arg("purpose3")=TfToken(), arg("purpose4")=TfToken()))
+             (boost::python::arg("time"), boost::python::arg("purpose1")=TfToken(), boost::python::arg("purpose2")=TfToken(),
+              boost::python::arg("purpose3")=TfToken(), boost::python::arg("purpose4")=TfToken()))
         .def("ComputeLocalBound", &UsdGeomImageable::ComputeLocalBound,
-             (arg("time"), arg("purpose1")=TfToken(), arg("purpose2")=TfToken(),
-              arg("purpose3")=TfToken(), arg("purpose4")=TfToken()))
+             (boost::python::arg("time"), boost::python::arg("purpose1")=TfToken(), boost::python::arg("purpose2")=TfToken(),
+              boost::python::arg("purpose3")=TfToken(), boost::python::arg("purpose4")=TfToken()))
         .def("ComputeUntransformedBound",
              &UsdGeomImageable::ComputeUntransformedBound,
-             (arg("time"), arg("purpose1")=TfToken(), arg("purpose2")=TfToken(),
-              arg("purpose3")=TfToken(), arg("purpose4")=TfToken()))
+             (boost::python::arg("time"), boost::python::arg("purpose1")=TfToken(), boost::python::arg("purpose2")=TfToken(),
+              boost::python::arg("purpose3")=TfToken(), boost::python::arg("purpose4")=TfToken()))
         .def("ComputeLocalToWorldTransform",
-             &UsdGeomImageable::ComputeLocalToWorldTransform, (arg("time")))
+             &UsdGeomImageable::ComputeLocalToWorldTransform, (boost::python::arg("time")))
         .def("ComputeParentToWorldTransform",
-             &UsdGeomImageable::ComputeParentToWorldTransform, (arg("time")))
+             &UsdGeomImageable::ComputeParentToWorldTransform, (boost::python::arg("time")))
         ;
 
         {
-            scope s = _class;
-            class_<UsdGeomImageable::PurposeInfo>("PurposeInfo")
-                .def(init<>())
-                .def(init<const TfToken &, bool>())
+            boost::python::scope s = _class;
+            boost::python::class_<UsdGeomImageable::PurposeInfo>("PurposeInfo")
+                .def(boost::python::init<>())
+                .def(boost::python::init<const TfToken &, bool>())
                 .def("__nonzero__", &_Nonzero)
-                .def(self == self)
-                .def(self != self)
+                .def(boost::python::self == boost::python::self)
+                .def(boost::python::self != boost::python::self)
                 .add_property("purpose", &_GetPurpose, &_SetPurpose)
                 .def_readwrite("isInheritable",
                                &UsdGeomImageable::PurposeInfo::isInheritable)
                 .def("GetInheritablePurpose", 
-                     make_function(
+                     boost::python::make_function(
                          &UsdGeomImageable::PurposeInfo::GetInheritablePurpose,
-                         return_value_policy<return_by_value>()))
+                         boost::python::return_value_policy<boost::python::return_by_value>()))
             ;
         }
 }

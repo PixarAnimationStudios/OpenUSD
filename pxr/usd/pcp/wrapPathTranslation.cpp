@@ -30,7 +30,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -54,9 +53,9 @@ TranslatePathFromRootToNode(const PcpNodeRef& destNode,
 
 void wrapPathTranslation()
 {
-    def("TranslatePathFromNodeToRoot", TranslatePathFromNodeToRoot,
-        arg("sourceNode"), arg("pathInNodeNamespace"));
+    boost::python::def("TranslatePathFromNodeToRoot", TranslatePathFromNodeToRoot,
+        boost::python::arg("sourceNode"), boost::python::arg("pathInNodeNamespace"));
 
-    def("TranslatePathFromRootToNode", TranslatePathFromRootToNode,
-        arg("destNode"), arg("pathInRootNamespace"));
+    boost::python::def("TranslatePathFromRootToNode", TranslatePathFromRootToNode,
+        boost::python::arg("destNode"), boost::python::arg("pathInRootNamespace"));
 }

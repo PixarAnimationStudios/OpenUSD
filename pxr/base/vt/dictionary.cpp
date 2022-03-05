@@ -35,9 +35,6 @@
 #include <utility>
 #include <vector>
 
-using std::make_pair;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -65,13 +62,13 @@ VtDictionary& VtDictionary::operator=(VtDictionary const& other) {
     return *this;
 }
 
-VtValue& VtDictionary::operator[](const string& key) {
+VtValue& VtDictionary::operator[](const std::string& key) {
     TfAutoMallocTag2 tag("Vt", "VtDictionary::operator[]");
     _CreateDictIfNeeded();
     return (*_dictMap)[key];
 }
 
-VtDictionary::size_type VtDictionary::count(const string& key) const {
+VtDictionary::size_type VtDictionary::count(const std::string& key) const {
     return _dictMap ? _dictMap->count(key) : 0;
 }
 
@@ -79,7 +76,7 @@ VtDictionary::size_type VtDictionary::count(const char* key) const {
     return _dictMap ? _dictMap->count(key) : 0;
 }
     
-VtDictionary::size_type VtDictionary::erase(const string& key) {
+VtDictionary::size_type VtDictionary::erase(const std::string& key) {
     return _dictMap ? _dictMap->erase(key) : 0;
 }
 
@@ -99,7 +96,7 @@ void VtDictionary::clear() {
         _dictMap->clear();
 }
 
-VtDictionary::iterator VtDictionary::find(const string& key) {
+VtDictionary::iterator VtDictionary::find(const std::string& key) {
     return _dictMap ? iterator(_dictMap.get(), _dictMap->find(key))
         : iterator(); 
 }
@@ -109,7 +106,7 @@ VtDictionary::iterator VtDictionary::find(const char* key) {
         : iterator(); 
 }
 
-VtDictionary::const_iterator VtDictionary::find(const string& key) const {
+VtDictionary::const_iterator VtDictionary::find(const std::string& key) const {
     return _dictMap ? const_iterator(_dictMap.get(), _dictMap->find(key))
         : const_iterator(); 
 }
@@ -159,14 +156,14 @@ VtDictionary::insert(const value_type& obj) {
 }
 
 VtValue const *
-VtDictionary::GetValueAtPath(string const &keyPath,
+VtDictionary::GetValueAtPath(std::string const &keyPath,
                              char const *delimiters) const
 {
     return GetValueAtPath(TfStringSplit(keyPath, delimiters));
 }
 
 VtValue const *
-VtDictionary::GetValueAtPath(vector<string> const &keyElems) const
+VtDictionary::GetValueAtPath(std::vector<std::string> const &keyElems) const
 {
     // Search for keyElems in dictionary.  All elements but the last in
     // keyElems must identify sub-dictionaries.
@@ -174,13 +171,13 @@ VtDictionary::GetValueAtPath(vector<string> const &keyElems) const
         return NULL;
 
     // Walk up to the last element.
-    vector<string>::const_iterator
+    std::vector<std::string>::const_iterator
         start = keyElems.begin(), last = keyElems.end() - 1;
 
     // Descend dictionaries according to the key path elements.  If we fail
     // to find a dictionary element at any point, we can bail out.
     VtDictionary const *dict = this;
-    for (vector<string>::const_iterator i = start; i != last; ++i) {
+    for (std::vector<std::string>::const_iterator i = start; i != last; ++i) {
         const_iterator j = dict->find(*i);
         if (j == dict->end() || !j->second.IsHolding<VtDictionary>())
             return NULL;
@@ -194,13 +191,13 @@ VtDictionary::GetValueAtPath(vector<string> const &keyElems) const
 }
 
 void
-VtDictionary::_SetValueAtPathImpl(vector<string>::const_iterator curKeyElem,
-                                  vector<string>::const_iterator keyElemEnd,
+VtDictionary::_SetValueAtPathImpl(std::vector<std::string>::const_iterator curKeyElem,
+                                  std::vector<std::string>::const_iterator keyElemEnd,
                                   VtValue const &value)
 {
     // Look ahead to see if we're on the last path element.  If so, we can set
     // the final value in place and return.
-    vector<string>::const_iterator nextKeyElem = curKeyElem;
+    std::vector<std::string>::const_iterator nextKeyElem = curKeyElem;
     ++nextKeyElem;
     if (nextKeyElem == keyElemEnd) {
         (*this)[*curKeyElem] = value;
@@ -209,7 +206,7 @@ VtDictionary::_SetValueAtPathImpl(vector<string>::const_iterator curKeyElem,
 
     // Otherwise we'll create a new or modify an existing subdictionary at key
     // *curKeyElem.  Look up an existing value or insert a new dictionary.
-    iterator i = insert(make_pair(*curKeyElem, VtValue(VtDictionary()))).first;
+    iterator i = insert(std::make_pair(*curKeyElem, VtValue(VtDictionary()))).first;
 
     // Swap the value at curKeyElem with newDict.  In case a new dictionary was
     // inserted above, this is a noop swap.  In case the existing element is not
@@ -228,9 +225,9 @@ VtDictionary::_SetValueAtPathImpl(vector<string>::const_iterator curKeyElem,
 
 void
 VtDictionary::SetValueAtPath(
-    string const &keyPath, VtValue const &value, char const *delimiters)
+    std::string const &keyPath, VtValue const &value, char const *delimiters)
 {
-    vector<string> keyElems = TfStringSplit(keyPath, delimiters);
+    std::vector<std::string> keyElems = TfStringSplit(keyPath, delimiters);
     if (keyElems.empty())
         return;
     _SetValueAtPathImpl(keyElems.begin(), keyElems.end(), value);
@@ -238,7 +235,7 @@ VtDictionary::SetValueAtPath(
 
 void
 VtDictionary::SetValueAtPath(
-    vector<string> const &keyPath, VtValue const &value)
+    std::vector<std::string> const &keyPath, VtValue const &value)
 {
     if (keyPath.empty())
         return;
@@ -246,12 +243,12 @@ VtDictionary::SetValueAtPath(
 }
 
 void
-VtDictionary::_EraseValueAtPathImpl(vector<string>::const_iterator curKeyElem,
-                                    vector<string>::const_iterator keyElemEnd)
+VtDictionary::_EraseValueAtPathImpl(std::vector<std::string>::const_iterator curKeyElem,
+                                    std::vector<std::string>::const_iterator keyElemEnd)
 {
     // Look ahead to see if we're on the last path element.  If so we can kill
     // the element at this path and return.
-    vector<string>::const_iterator nextKeyElem = curKeyElem;
+    std::vector<std::string>::const_iterator nextKeyElem = curKeyElem;
     ++nextKeyElem;
     if (nextKeyElem == keyElemEnd) {
         erase(*curKeyElem);
@@ -276,9 +273,9 @@ VtDictionary::_EraseValueAtPathImpl(vector<string>::const_iterator curKeyElem,
 
 void
 VtDictionary::EraseValueAtPath(
-    string const &keyPath, char const *delimiters)
+    std::string const &keyPath, char const *delimiters)
 {
-    vector<string> keyElems = TfStringSplit(keyPath, delimiters);
+    std::vector<std::string> keyElems = TfStringSplit(keyPath, delimiters);
     if (keyElems.empty())
         return;
 
@@ -286,7 +283,7 @@ VtDictionary::EraseValueAtPath(
 }
 
 void
-VtDictionary::EraseValueAtPath(vector<string> const &keyPath)
+VtDictionary::EraseValueAtPath(std::vector<std::string> const &keyPath)
 {
     if (keyPath.empty())
         return;

@@ -56,12 +56,11 @@ public:
 
         boost::optional<V> operator()(SdfListOpType op, const V& value)
         {
-            using namespace boost::python;
 
             TfPyLock pyLock;
-            object result = _callback(_owner, value, op);
+            boost::python::object result = _callback(_owner, value, op);
             if (! TfPyIsNone(result)) {
-                extract<V> e(result);
+                boost::python::extract<V> e(result);
                 if (e.check()) {
                     return boost::optional<V>(e());
                 }
@@ -89,12 +88,11 @@ public:
 
         boost::optional<V> operator()(const V& value)
         {
-            using namespace boost::python;
 
             TfPyLock pyLock;
-            object result = _callback(value);
+            boost::python::object result = _callback(value);
             if (! TfPyIsNone(result)) {
-                extract<V> e(result);
+                boost::python::extract<V> e(result);
                 if (e.check()) {
                     return boost::optional<V>(e());
                 }
@@ -132,9 +130,8 @@ public:
 private:
     static void _Wrap()
     {
-        using namespace boost::python;
 
-        class_<Type>(_GetName().c_str(), no_init)
+        boost::python::class_<Type>(_GetName().c_str(), boost::python::no_init)
             .def("__str__", &This::_GetStr)
             .add_property("isExpired", &Type::IsExpired)
             .add_property("explicitItems",
@@ -156,21 +153,21 @@ private:
                 &Type::GetOrderedItems,
                 &This::_SetOrderedProxy)
             .def("GetAddedOrExplicitItems", &Type::GetAddedOrExplicitItems,
-                return_value_policy<TfPySequenceToTuple>())
+                boost::python::return_value_policy<TfPySequenceToTuple>())
             .add_property("isExplicit", &Type::IsExplicit)
             .add_property("isOrderedOnly", &Type::IsOrderedOnly)
             .def("ApplyEditsToList",
                 &This::_ApplyEditsToList,
-                return_value_policy<TfPySequenceToList>())
+                boost::python::return_value_policy<TfPySequenceToList>())
             .def("ApplyEditsToList",
                 &This::_ApplyEditsToList2,
-                return_value_policy<TfPySequenceToList>())
+                boost::python::return_value_policy<TfPySequenceToList>())
 
             .def("CopyItems", &Type::CopyItems)
             .def("ClearEdits", &Type::ClearEdits)
             .def("ClearEditsAndMakeExplicit", &Type::ClearEditsAndMakeExplicit)
             .def("ContainsItemEdit", &Type::ContainsItemEdit,
-                 (arg("item"), arg("onlyAddOrExplicit")=false))
+                 (boost::python::arg("item"), boost::python::arg("onlyAddOrExplicit")=false))
             .def("RemoveItemEdits", &Type::RemoveItemEdits)
             .def("ReplaceItemEdits", &Type::ReplaceItemEdits)
             .def("ModifyItemEdits", &This::_ModifyEdits)

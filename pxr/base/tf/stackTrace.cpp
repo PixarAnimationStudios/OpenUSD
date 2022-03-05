@@ -40,13 +40,11 @@
 #include <cstdio>
 #include <iostream>
 
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 void
-TfPrintStackTrace(FILE *file, const string &reason)
+TfPrintStackTrace(FILE *file, const std::string &reason)
 {
     std::ostringstream oss;
 
@@ -60,22 +58,22 @@ TfPrintStackTrace(FILE *file, const string &reason)
 }
 
 void
-TfPrintStackTrace(std::ostream &out, const string &reason)
+TfPrintStackTrace(std::ostream &out, const std::string &reason)
 {
     ArchPrintStackTrace(out, reason);
 #ifdef PXR_PYTHON_SUPPORT_ENABLED 
-    vector<string> trace = TfPyGetTraceback();
+    std::vector<std::string> trace = TfPyGetTraceback();
     TF_REVERSE_FOR_ALL(line, trace)
         out << *line;
     out << "=============================================================\n";
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 }
 
-string
+std::string
 TfGetStackTrace()
 {
     std::ostringstream oss;
-    TfPrintStackTrace(oss, string());
+    TfPrintStackTrace(oss, std::string());
     return oss.str();
 }
 
@@ -85,7 +83,7 @@ TfGetStackTrace()
 static int
 _MakeStackFile(std::string *fileName)
 {
-    string tmpFile;
+    std::string tmpFile;
     int fd = ArchMakeTmpFile(ArchStringPrintf("st_%s",
             ArchGetProgramNameForErrors()), &tmpFile);
 
@@ -98,7 +96,7 @@ _MakeStackFile(std::string *fileName)
 void
 TfLogStackTrace(const std::string &reason, bool logtodb)
 {
-    string tmpFile;
+    std::string tmpFile;
     int fd = _MakeStackFile(&tmpFile);
 
     if (fd != -1) {

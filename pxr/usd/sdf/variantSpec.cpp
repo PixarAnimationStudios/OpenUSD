@@ -35,7 +35,6 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/trace/trace.h"
 
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -137,8 +136,8 @@ SdfVariantSpecHandle
 SdfCreateVariantInLayer(
     const SdfLayerHandle &layer,
     const SdfPath &primPath,
-    const string &variantSetName,
-    const string &variantName )
+    const std::string &variantSetName,
+    const std::string &variantName )
 {
     SdfPath variantPath =
         primPath.AppendVariantSelection(variantSetName, variantName);

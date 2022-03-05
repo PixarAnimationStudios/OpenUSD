@@ -31,13 +31,12 @@
 #include <boost/python/make_constructor.hpp>
 #include <boost/python/def.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 static UsdUtilsSparseAttrValueWriter *
 __init__(const UsdAttribute &attr, 
-         const object &defaultValue)
+         const boost::python::object &defaultValue)
 {
     return new UsdUtilsSparseAttrValueWriter(attr, 
             UsdPythonToSdfType(defaultValue, attr.GetTypeName()));
@@ -46,7 +45,7 @@ __init__(const UsdAttribute &attr,
 static bool
 _WrapSetTimeSample(
     UsdUtilsSparseAttrValueWriter &vc, 
-    const object &value, 
+    const boost::python::object &value, 
     const UsdTimeCode time)
 {
     return vc.SetTimeSample(
@@ -58,7 +57,7 @@ static bool
 _WrapSetAttribute(
     UsdUtilsSparseValueWriter &vc, 
     const UsdAttribute & attr, 
-    const object &value,
+    const boost::python::object &value,
     const UsdTimeCode time) 
 {
     return vc.SetAttribute(attr,
@@ -75,18 +74,18 @@ _WrapGetSparseAttrValueWriters(
 
 void wrapSparseValueWriter()
 {
-    class_<UsdUtilsSparseAttrValueWriter>("SparseAttrValueWriter", 
-            no_init)
-        .def("__init__", make_constructor(__init__, default_call_policies(),
-             (arg("attr"), arg("defaultValue")=object())))
+    boost::python::class_<UsdUtilsSparseAttrValueWriter>("SparseAttrValueWriter", 
+            boost::python::no_init)
+        .def("__init__", boost::python::make_constructor(__init__, boost::python::default_call_policies(),
+             (boost::python::arg("attr"), boost::python::arg("defaultValue")=boost::python::object())))
 
         .def("SetTimeSample", _WrapSetTimeSample, 
-            (arg("value"), arg("time")))
+            (boost::python::arg("value"), boost::python::arg("time")))
     ;
 
-    class_<UsdUtilsSparseValueWriter>("SparseValueWriter", init<>())
+    boost::python::class_<UsdUtilsSparseValueWriter>("SparseValueWriter", boost::python::init<>())
         .def("SetAttribute", _WrapSetAttribute, 
-            (arg("attr"), arg("value"), arg("time")=UsdTimeCode::Default()))
+            (boost::python::arg("attr"), boost::python::arg("value"), boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("GetSparseAttrValueWriters", _WrapGetSparseAttrValueWriters)
     ;

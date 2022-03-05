@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -51,7 +50,7 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateExtentAttr(UsdGeomBoundable &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateExtentAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
 }
@@ -71,36 +70,36 @@ void wrapUsdGeomBoundable()
 {
     typedef UsdGeomBoundable This;
 
-    class_<This, bases<UsdGeomXformable> >
+    boost::python::class_<This, boost::python::bases<UsdGeomXformable> >
         cls("Boundable");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetExtentAttr",
              &This::GetExtentAttr)
         .def("CreateExtentAttr",
              &_CreateExtentAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;
@@ -129,7 +128,7 @@ void wrapUsdGeomBoundable()
 
 namespace {
 
-static object
+static boost::python::object
 _ComputeExtentFromPlugins(
     const UsdGeomBoundable &boundable,
     const UsdTimeCode &time)
@@ -138,12 +137,12 @@ _ComputeExtentFromPlugins(
     if (!UsdGeomBoundable::ComputeExtentFromPlugins(boundable,
                                                     time,
                                                     &extent)) {
-        return object();
+        return boost::python::object();
     }
-    return object(extent);
+    return boost::python::object(extent);
 }
 
-static object
+static boost::python::object
 _ComputeExtentFromPluginsWithTransform(
     const UsdGeomBoundable &boundable,
     const UsdTimeCode &time,
@@ -154,17 +153,17 @@ _ComputeExtentFromPluginsWithTransform(
                                                     time,
                                                     transform,
                                                     &extent)) {
-        return object();
+        return boost::python::object();
     }
-    return object(extent);
+    return boost::python::object(extent);
 }
 
 WRAP_CUSTOM {
     _class
         .def("ComputeExtentFromPlugins", &_ComputeExtentFromPlugins,
-             (arg("boundable"), arg("time")))
+             (boost::python::arg("boundable"), boost::python::arg("time")))
         .def("ComputeExtentFromPlugins", &_ComputeExtentFromPluginsWithTransform,
-             (arg("boundable"), arg("time"), arg("transform")))
+             (boost::python::arg("boundable"), boost::python::arg("time"), boost::python::arg("transform")))
         .staticmethod("ComputeExtentFromPlugins")
     ;
 }

@@ -110,7 +110,6 @@ struct TfMakePyPtr {
 
 namespace Tf_PyDefHelpers {
 
-using namespace boost::python;
 
 template <typename Ptr>
 struct _PtrInterface {
@@ -129,9 +128,9 @@ struct _PtrInterface {
 };
 
 template <typename PtrType>
-bool _IsPtrExpired(object const &self) {
+bool _IsPtrExpired(boost::python::object const &self) {
     try {
-        PtrType p = extract<PtrType>(self);
+        PtrType p = boost::python::extract<PtrType>(self);
         return !p;
     } catch (boost::python::error_already_set const &) {
         PyErr_Clear();
@@ -140,7 +139,7 @@ bool _IsPtrExpired(object const &self) {
 }
 
 template <typename PtrType>
-bool _IsPtrValid(object const &self) {
+bool _IsPtrValid(boost::python::object const &self) {
     return !_IsPtrExpired<PtrType>(self);
 }
 
@@ -170,21 +169,21 @@ template <class Ptr>
 struct _PtrFromPython {
     typedef typename _PtrInterface<Ptr>::Pointee Pointee;
     _PtrFromPython() {
-        converter::registry::insert(&convertible, &construct,
-                                    type_id<Ptr>());
+        boost::python::converter::registry::insert(&convertible, &construct,
+                                    boost::python::type_id<Ptr>());
     }
   private:
     static void *convertible(PyObject *p) {
         if (p == Py_None)
             return p;
-        void *result = converter::get_lvalue_from_python
-            (p, converter::registered<Pointee>::converters);
+        void *result = boost::python::converter::get_lvalue_from_python
+            (p, boost::python::converter::registered<Pointee>::converters);
         return result;
     }
 
-    static void construct(PyObject* source, converter::
+    static void construct(PyObject* source, boost::python::converter::
                           rvalue_from_python_stage1_data* data) {
-        void* const storage = ((converter::rvalue_from_python_storage<Ptr>*)
+        void* const storage = ((boost::python::converter::rvalue_from_python_storage<Ptr>*)
                                data)->storage.bytes;
         // Deal with the "None" case.
         if (data->convertible == source)
@@ -208,22 +207,22 @@ template <typename PtrType>
 struct _AnyWeakPtrFromPython {
 
     _AnyWeakPtrFromPython() {
-        converter::registry::insert(&convertible, &construct,
-                                    type_id<TfAnyWeakPtr>());
+        boost::python::converter::registry::insert(&convertible, &construct,
+                                    boost::python::type_id<TfAnyWeakPtr>());
     }
 
     static void *convertible(PyObject *p) {
         if (p == Py_None)
             return p;
-        void *result = converter::get_lvalue_from_python
-            (p, converter::registered
+        void *result = boost::python::converter::get_lvalue_from_python
+            (p, boost::python::converter::registered
              <typename _PtrInterface<PtrType>::Pointee>::converters);
         return result;
     }
     
-    static void construct(PyObject* source, converter::
+    static void construct(PyObject* source, boost::python::converter::
                           rvalue_from_python_stage1_data* data) {
-        void* const storage = ((converter::rvalue_from_python_storage
+        void* const storage = ((boost::python::converter::rvalue_from_python_storage
                                 <TfAnyWeakPtr>*)data)->storage.bytes;
         // Deal with the "None" case.
         if (data->convertible == source)
@@ -244,17 +243,17 @@ struct _ConstPtrToPython {
     typedef typename _PtrInterface<Ptr>::ConstPtr ConstPtr;
     typedef typename _PtrInterface<Ptr>::NonConstPtr NonConstPtr;
     _ConstPtrToPython() {
-        to_python_converter<ConstPtr, _ConstPtrToPython<Ptr> >();
+        boost::python::to_python_converter<ConstPtr, _ConstPtrToPython<Ptr> >();
     }
     static PyObject *convert(ConstPtr const &p) {
-        return incref(object(TfConst_cast<NonConstPtr>(p)).ptr());
+        return boost::python::incref(boost::python::object(TfConst_cast<NonConstPtr>(p)).ptr());
     }
 };
 
 template <typename Ptr>
 struct _PtrToPython {
     _PtrToPython() {
-        to_python_converter<Ptr, _PtrToPython<Ptr> >();
+        boost::python::to_python_converter<Ptr, _PtrToPython<Ptr> >();
     }
     static PyObject *convert(Ptr const &p) {
         std::pair<PyObject*, bool> ret = TfMakePyPtr<Ptr>::Execute(p);
@@ -268,11 +267,11 @@ struct _PtrToPython {
 template <typename SrcPtr, typename DstPtr>
 struct _ConvertPtrToPython {
     _ConvertPtrToPython() {
-        to_python_converter<SrcPtr, _ConvertPtrToPython<SrcPtr, DstPtr> >();
+        boost::python::to_python_converter<SrcPtr, _ConvertPtrToPython<SrcPtr, DstPtr> >();
     }
     static PyObject *convert(SrcPtr const &p) {
         DstPtr dst = p;
-        return incref(object(dst).ptr());
+        return boost::python::incref(boost::python::object(dst).ptr());
     }
 };
 
@@ -282,7 +281,7 @@ struct _PtrToPythonWrapper {
     // We store the original to-python converter for our use.  It's fine to be
     // static, as there's only one to-python converter for a type T, and there's
     // one instantiation of this template for each T.
-    static converter::to_python_function_t _originalConverter;
+    static boost::python::converter::to_python_function_t _originalConverter;
 
     // This signature has to match to_python_function_t
     static PyObject *Convert(void const *x) {
@@ -302,10 +301,10 @@ struct _PtrToPythonWrapper {
     }
 };
 template <typename T>
-converter::to_python_function_t
+boost::python::converter::to_python_function_t
 _PtrToPythonWrapper<T>::_originalConverter = 0;
 
-struct WeakPtr : def_visitor<WeakPtr> {
+struct WeakPtr : boost::python::def_visitor<WeakPtr> {
     friend class def_visitor_access;
 
     template <typename WrapperPtrType, typename Wrapper, typename T>
@@ -331,7 +330,7 @@ struct WeakPtr : def_visitor<WeakPtr> {
         _AnyWeakPtrFromPython<PtrType>();
 
         // From python, can always make a const pointer from a non-const one.
-        implicitly_convertible<PtrType,
+        boost::python::implicitly_convertible<PtrType,
             typename _PtrInterface<PtrType>::ConstPtr >();
 
         // Register a conversion that casts away constness when going to python.
@@ -345,8 +344,8 @@ struct WeakPtr : def_visitor<WeakPtr> {
         // for which boost python has already registered a to-python
         // conversion.  The unwrapped type is handled separately -- we don't
         // have to replace an existing converter, we can just register our own.
-        converter::registration *r = const_cast<converter::registration *>
-            (converter::registry::query(type_id<WrapperPtrType>()));
+        boost::python::converter::registration *r = const_cast<boost::python::converter::registration *>
+            (boost::python::converter::registry::query(boost::python::type_id<WrapperPtrType>()));
         if (r) {
             _PtrToPythonWrapper<WrapperPtrType>::
                 _originalConverter = r->m_to_python;
@@ -389,17 +388,17 @@ struct WeakPtr : def_visitor<WeakPtr> {
                       "Type must support TfWeakPtr.");
         // Register conversions
         _RegisterConversions<PtrType>
-            ((Type *)0, detail::unwrap_wrapper((Type *)0));
+            ((Type *)0, boost::python::detail::unwrap_wrapper((Type *)0));
 
         // Register a PyObjectFinder.
         Tf_RegisterPythonObjectFinder<Type, PtrType>();
         
         // Add weak ptr api.
-        _AddAPI<PtrType>(c, (Type *)0, detail::unwrap_wrapper((Type *)0));
+        _AddAPI<PtrType>(c, (Type *)0, boost::python::detail::unwrap_wrapper((Type *)0));
     }
 };
 
-struct RefAndWeakPtr : def_visitor<RefAndWeakPtr> {
+struct RefAndWeakPtr : boost::python::def_visitor<RefAndWeakPtr> {
     friend class def_visitor_access;
 
     template <typename CLS, typename Wrapper, typename T>
@@ -418,7 +417,7 @@ struct RefAndWeakPtr : def_visitor<RefAndWeakPtr> {
                       "Type must support TfRefPtr.");
         // Same as weak ptr plus ref conversions.
         WeakPtr().visit(c);
-        _AddAPI<CLS>((Type *)0, detail::unwrap_wrapper((Type *)0));
+        _AddAPI<CLS>((Type *)0, boost::python::detail::unwrap_wrapper((Type *)0));
     }
 };
 

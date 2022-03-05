@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -64,28 +63,28 @@ void wrapUsdGeomXformCommonAPI()
 {
     typedef UsdGeomXformCommonAPI This;
 
-    class_<This, bases<UsdAPISchemaBase> >
+    boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
         cls("XformCommonAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
 
         .def("__repr__", ::_Repr)
@@ -117,7 +116,7 @@ void wrapUsdGeomXformCommonAPI()
 
 namespace {
 
-static tuple 
+static boost::python::tuple 
 _GetXformVectors(
     UsdGeomXformCommonAPI self, 
     const UsdTimeCode &time)
@@ -129,11 +128,11 @@ _GetXformVectors(
     bool result = self.GetXformVectors(&translation, &rotation, &scale, 
                                        &pivot, &rotationOrder, time);
 
-    return result ? make_tuple(translation, rotation, scale, pivot, rotationOrder)
-                  : tuple();
+    return result ? boost::python::make_tuple(translation, rotation, scale, pivot, rotationOrder)
+                  : boost::python::tuple();
 }
 
-static tuple 
+static boost::python::tuple 
 _GetXformVectorsByAccumulation(
     UsdGeomXformCommonAPI self, 
     const UsdTimeCode &time)
@@ -145,11 +144,11 @@ _GetXformVectorsByAccumulation(
     bool result = self.GetXformVectorsByAccumulation(&translation, &rotation, &scale, 
                                                      &pivot, &rotationOrder, time);
 
-    return result ? make_tuple(translation, rotation, scale, pivot, rotationOrder)
-                  : tuple();
+    return result ? boost::python::make_tuple(translation, rotation, scale, pivot, rotationOrder)
+                  : boost::python::tuple();
 }
 
-static tuple
+static boost::python::tuple
 _CreateXformOps1(
     UsdGeomXformCommonAPI self,
     UsdGeomXformCommonAPI::RotationOrder rotOrder,
@@ -160,7 +159,7 @@ _CreateXformOps1(
 {
     UsdGeomXformCommonAPI::Ops ops = self.CreateXformOps(
         rotOrder, op1, op2, op3, op4);
-    return make_tuple(
+    return boost::python::make_tuple(
         ops.translateOp,
         ops.pivotOp,
         ops.rotateOp,
@@ -168,7 +167,7 @@ _CreateXformOps1(
         ops.inversePivotOp);
 }
 
-static tuple
+static boost::python::tuple
 _CreateXformOps2(
     UsdGeomXformCommonAPI self,
     UsdGeomXformCommonAPI::OpFlags op1,
@@ -177,7 +176,7 @@ _CreateXformOps2(
     UsdGeomXformCommonAPI::OpFlags op4)
 {
     UsdGeomXformCommonAPI::Ops ops = self.CreateXformOps(op1, op2, op3, op4);
-    return make_tuple(
+    return boost::python::make_tuple(
         ops.translateOp,
         ops.pivotOp,
         ops.rotateOp,
@@ -189,78 +188,78 @@ WRAP_CUSTOM {
     using This = UsdGeomXformCommonAPI;
 
     {
-        scope xformCommonAPIScope = _class;
+        boost::python::scope xformCommonAPIScope = _class;
         TfPyWrapEnum<This::RotationOrder>();
         TfPyWrapEnum<This::OpFlags>();
     }
 
     _class
         .def("SetXformVectors", &This::SetXformVectors,
-            (arg("translation"),
-             arg("rotation"),
-             arg("scale"),
-             arg("pivot"),
-             arg("rotationOrder"),
-             arg("time")))
+            (boost::python::arg("translation"),
+             boost::python::arg("rotation"),
+             boost::python::arg("scale"),
+             boost::python::arg("pivot"),
+             boost::python::arg("rotationOrder"),
+             boost::python::arg("time")))
 
         .def("GetXformVectors", &_GetXformVectors, 
-            arg("time"))
+            boost::python::arg("time"))
 
         .def("GetXformVectorsByAccumulation", &_GetXformVectorsByAccumulation, 
-            arg("time"))
+            boost::python::arg("time"))
 
         .def("SetTranslate", &This::SetTranslate,
-            (arg("translation"),
-             arg("time")=UsdTimeCode::Default()))
+            (boost::python::arg("translation"),
+             boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("SetPivot", &This::SetPivot,
-            (arg("pivot"),
-             arg("time")=UsdTimeCode::Default()))
+            (boost::python::arg("pivot"),
+             boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("SetRotate", &This::SetRotate,
-            (arg("rotation"),
-             arg("rotationOrder")=This::RotationOrderXYZ,
-             arg("time")=UsdTimeCode::Default()))
+            (boost::python::arg("rotation"),
+             boost::python::arg("rotationOrder")=This::RotationOrderXYZ,
+             boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("SetScale", &This::SetScale,
-            (arg("scale"),
-             arg("time")=UsdTimeCode::Default()))
+            (boost::python::arg("scale"),
+             boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("GetResetXformStack", &This::GetResetXformStack)
 
         .def("SetResetXformStack", &This::SetResetXformStack,
-            arg("resetXformStack"))
+            boost::python::arg("resetXformStack"))
 
         .def("CreateXformOps", _CreateXformOps1,
-            (arg("rotationOrder"),
-             arg("op1")=UsdGeomXformCommonAPI::OpNone,
-             arg("op2")=UsdGeomXformCommonAPI::OpNone,
-             arg("op3")=UsdGeomXformCommonAPI::OpNone,
-             arg("op4")=UsdGeomXformCommonAPI::OpNone))
+            (boost::python::arg("rotationOrder"),
+             boost::python::arg("op1")=UsdGeomXformCommonAPI::OpNone,
+             boost::python::arg("op2")=UsdGeomXformCommonAPI::OpNone,
+             boost::python::arg("op3")=UsdGeomXformCommonAPI::OpNone,
+             boost::python::arg("op4")=UsdGeomXformCommonAPI::OpNone))
 
         .def("CreateXformOps", _CreateXformOps2,
-            (arg("op1")=UsdGeomXformCommonAPI::OpNone,
-             arg("op2")=UsdGeomXformCommonAPI::OpNone,
-             arg("op3")=UsdGeomXformCommonAPI::OpNone,
-             arg("op4")=UsdGeomXformCommonAPI::OpNone))
+            (boost::python::arg("op1")=UsdGeomXformCommonAPI::OpNone,
+             boost::python::arg("op2")=UsdGeomXformCommonAPI::OpNone,
+             boost::python::arg("op3")=UsdGeomXformCommonAPI::OpNone,
+             boost::python::arg("op4")=UsdGeomXformCommonAPI::OpNone))
 
         .def("GetRotationTransform", &This::GetRotationTransform,
-            (arg("rotation"), arg("rotationOrder")))
+            (boost::python::arg("rotation"), boost::python::arg("rotationOrder")))
         .staticmethod("GetRotationTransform")
 
         .def("ConvertRotationOrderToOpType",
             &This::ConvertRotationOrderToOpType,
-            arg("rotationOrder"))
+            boost::python::arg("rotationOrder"))
         .staticmethod("ConvertRotationOrderToOpType")
 
         .def("ConvertOpTypeToRotationOrder",
             &This::ConvertOpTypeToRotationOrder,
-            arg("opType"))
+            boost::python::arg("opType"))
         .staticmethod("ConvertOpTypeToRotationOrder")
 
         .def("CanConvertOpTypeToRotationOrder",
             &This::CanConvertOpTypeToRotationOrder,
-            arg("opType"))
+            boost::python::arg("opType"))
         .staticmethod("CanConvertOpTypeToRotationOrder")
         ;
 }

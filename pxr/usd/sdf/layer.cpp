@@ -78,12 +78,7 @@
 #include <thread>
 #include <vector>
 
-using std::map;
-using std::set;
-using std::string;
-using std::vector;
 
-namespace ph = std::placeholders;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -95,7 +90,7 @@ TF_REGISTRY_FUNCTION(TfType)
 // Muted Layers stores the paths of layers that should be muted.  The stored
 // paths should be asset paths, when applicable, or identifiers if no asset
 // path exists for the desired layers.
-typedef set<string> _MutedLayers;
+typedef std::set<std::string> _MutedLayers;
 typedef std::map<std::string, SdfAbstractDataRefPtr> _MutedLayerDataMap;
 static TfStaticData<_MutedLayers> _mutedLayers;
 static TfStaticData<_MutedLayerDataMap> _mutedLayerData;
@@ -126,8 +121,8 @@ TF_DEFINE_ENV_SETTING(
 
 SdfLayer::SdfLayer(
     const SdfFileFormatConstPtr &fileFormat,
-    const string &identifier,
-    const string &realPath,
+    const std::string &identifier,
+    const std::string &realPath,
     const ArAssetInfo& assetInfo,
     const FileFormatArguments &args,
     bool validateAuthoring)
@@ -155,7 +150,7 @@ SdfLayer::SdfLayer(
     // template into which the layer address must be inserted. This ensures
     // that anonymous layers have unique identifiers, and can be referenced by
     // Sd object reprs.
-    string layerIdentifier = Sdf_IsAnonLayerIdentifier(identifier) ?
+    std::string layerIdentifier = Sdf_IsAnonLayerIdentifier(identifier) ?
         Sdf_ComputeAnonLayerIdentifier(identifier, this) : identifier;
 
     // Indicate that this layer's initialization is not yet complete before we
@@ -217,8 +212,8 @@ SdfLayer::GetFileFormatArguments() const
 SdfLayerRefPtr
 SdfLayer::_CreateNewWithFormat(
     const SdfFileFormatConstPtr &fileFormat,
-    const string& identifier,
-    const string& realPath,
+    const std::string& identifier,
+    const std::string& realPath,
     const ArAssetInfo& assetInfo,
     const FileFormatArguments& args)
 {
@@ -328,10 +323,10 @@ _ModificationTimesEqual(const VtDictionary& t1, const VtDictionary& t2)
 
 SdfLayerRefPtr
 SdfLayer::CreateAnonymous(
-    const string& tag, const FileFormatArguments& args)
+    const std::string& tag, const FileFormatArguments& args)
 {
     SdfFileFormatConstPtr fileFormat;
-    string suffix = TfStringGetSuffix(tag);
+    std::string suffix = TfStringGetSuffix(tag);
     if (!suffix.empty()) {
         fileFormat = SdfFileFormat::FindByExtension(suffix, args);
     }
@@ -350,7 +345,7 @@ SdfLayer::CreateAnonymous(
 
 SdfLayerRefPtr
 SdfLayer::CreateAnonymous(
-    const string &tag, const SdfFileFormatConstPtr &format,
+    const std::string &tag, const SdfFileFormatConstPtr &format,
     const FileFormatArguments &args)
 {
     if (!format) {
@@ -378,7 +373,7 @@ SdfLayer::_CreateAnonymousWithFormat(
     SdfLayerRefPtr layer =
         _CreateNewWithFormat(
             fileFormat, Sdf_GetAnonLayerIdentifierTemplate(tag), 
-            string(), ArAssetInfo(), args);
+            std::string(), ArAssetInfo(), args);
 
     // No layer initialization required, so initialization is complete.
     layer->_FinishInitialization(/* success = */ true);
@@ -393,20 +388,20 @@ SdfLayer::IsAnonymous() const
 }
 
 bool
-SdfLayer::IsAnonymousLayerIdentifier(const string& identifier)
+SdfLayer::IsAnonymousLayerIdentifier(const std::string& identifier)
 {
     return Sdf_IsAnonLayerIdentifier(identifier);
 }
 
-string
-SdfLayer::GetDisplayNameFromIdentifier(const string& identifier)
+std::string
+SdfLayer::GetDisplayNameFromIdentifier(const std::string& identifier)
 {
     return Sdf_GetLayerDisplayName(identifier);
 }
 
 SdfLayerRefPtr
 SdfLayer::CreateNew(
-    const string& identifier,
+    const std::string& identifier,
     const FileFormatArguments &args)
 {
     TF_DEBUG(SDF_LAYER).Msg(
@@ -419,7 +414,7 @@ SdfLayer::CreateNew(
 SdfLayerRefPtr
 SdfLayer::CreateNew(
     const SdfFileFormatConstPtr& fileFormat,
-    const string& identifier,
+    const std::string& identifier,
     const FileFormatArguments &args)
 {
     TF_DEBUG(SDF_LAYER).Msg(
@@ -433,10 +428,10 @@ SdfLayer::CreateNew(
 SdfLayerRefPtr
 SdfLayer::_CreateNew(
     SdfFileFormatConstPtr fileFormat,
-    const string& identifier,
+    const std::string& identifier,
     const FileFormatArguments &args)
 {
-    string whyNot;
+    std::string whyNot;
     if (!Sdf_CanCreateNewLayerWithIdentifier(identifier, &whyNot)) {
         TF_CODING_ERROR("Cannot create new layer '%s': %s",
             identifier.c_str(),
@@ -458,7 +453,7 @@ SdfLayer::_CreateNew(
     // Direct newly created layers to a local path.
     const string localPath = resolver.ComputeLocalPath(absIdentifier);
 #else
-    string absIdentifier, localPath;
+    std::string absIdentifier, localPath;
     {
         TfErrorMark m;
         absIdentifier = resolver.CreateIdentifierForNewAsset(identifier);
@@ -552,7 +547,7 @@ SdfLayer::_CreateNew(
 SdfLayerRefPtr
 SdfLayer::New(
     const SdfFileFormatConstPtr& fileFormat,
-    const string& identifier,
+    const std::string& identifier,
     const FileFormatArguments& args)
 {
     if (!fileFormat) {
@@ -580,7 +575,7 @@ SdfLayer::New(
     const string absIdentifier = ArGetResolver().IsRelativePath(identifier) ?
         TfAbsPath(identifier) : identifier;
 #else
-    const string absIdentifier = 
+    const std::string absIdentifier = 
         ArGetResolver().CreateIdentifierForNewAsset(identifier);
 #endif
 
@@ -682,15 +677,15 @@ struct SdfLayer::_FindOrOpenLayerInfo
     bool isAnonymous = false;
 
     // Path to the layer.
-    string layerPath;
+    std::string layerPath;
 
     // Resolved path for the layer. If the layer is an anonymous layer,
     // this will be the same as layerPath.
-    string resolvedLayerPath;
+    std::string resolvedLayerPath;
 
     // Identifier for the layer, combining both the layer path and
     // file format arguments.
-    string identifier;
+    std::string identifier;
 
     // Asset info from resolving the layer path.
     ArAssetInfo assetInfo;
@@ -698,7 +693,7 @@ struct SdfLayer::_FindOrOpenLayerInfo
 
 bool
 SdfLayer::_ComputeInfoToFindOrOpenLayer(
-    const string& identifier,
+    const std::string& identifier,
     const SdfLayer::FileFormatArguments& args,
     _FindOrOpenLayerInfo* info,
     bool computeAssetInfo)
@@ -709,7 +704,7 @@ SdfLayer::_ComputeInfoToFindOrOpenLayer(
         return false;
     }
 
-    string layerPath;
+    std::string layerPath;
     SdfLayer::FileFormatArguments layerArgs;
     if (!Sdf_SplitIdentifier(identifier, &layerPath, &layerArgs) ||
         layerPath.empty()) {
@@ -727,7 +722,7 @@ SdfLayer::_ComputeInfoToFindOrOpenLayer(
     // If we're trying to open an anonymous layer, do not try to compute the
     // real path for it.
     ArAssetInfo assetInfo;
-    string resolvedLayerPath = isAnonymous ? layerPath :
+    std::string resolvedLayerPath = isAnonymous ? layerPath :
         Sdf_ResolvePath(layerPath, computeAssetInfo ? &assetInfo : nullptr);
 
     // Merge explicitly-specified arguments over any arguments
@@ -757,8 +752,8 @@ SdfLayer::_ComputeInfoToFindOrOpenLayer(
 
 template <class ScopedLock>
 SdfLayerRefPtr
-SdfLayer::_TryToFindLayer(const string &identifier,
-                          const string &resolvedPath,
+SdfLayer::_TryToFindLayer(const std::string &identifier,
+                          const std::string &resolvedPath,
                           ScopedLock &lock,
                           bool retryAsWriter)
 {
@@ -809,7 +804,7 @@ SdfLayer::_TryToFindLayer(const string &identifier,
 
 /* static */
 SdfLayerRefPtr
-SdfLayer::FindOrOpen(const string &identifier,
+SdfLayer::FindOrOpen(const std::string &identifier,
                      const FileFormatArguments &args)
 {
     TRACE_FUNCTION();
@@ -873,7 +868,7 @@ SdfLayer::FindOrOpen(const string &identifier,
 SdfLayerRefPtr
 SdfLayer::FindOrOpenRelativeToLayer(
     const SdfLayerHandle &anchor,
-    const string &identifier,
+    const std::string &identifier,
     const FileFormatArguments &args)
 {
     TRACE_FUNCTION();
@@ -922,7 +917,7 @@ SdfLayer::OpenAsAnonymous(
         tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
         layer = _CreateNewWithFormat(
                 layerInfo.fileFormat, Sdf_GetAnonLayerIdentifierTemplate(tag),
-                string());
+                std::string());
         // From this point, we must call _FinishInitialization() on
         // either success or failure in order to unblock others
         // threads waiting for initialization to finish.
@@ -951,7 +946,7 @@ SdfLayer::_Reload(bool force)
 {
     TRACE_FUNCTION();
 
-    string identifier = GetIdentifier();
+    std::string identifier = GetIdentifier();
     if (identifier.empty()) {
         TF_CODING_ERROR("Can't reload a layer with no identifier");
         return _ReloadFailed;
@@ -1085,7 +1080,7 @@ SdfLayer::Reload(bool force)
 
 bool
 SdfLayer::ReloadLayers(
-    const set<SdfLayerHandle>& layers,
+    const std::set<SdfLayerHandle>& layers,
     bool force)
 {
     TF_DESCRIBE_SCOPE("Reloading %zu layer(s)", layers.size());
@@ -1107,9 +1102,9 @@ SdfLayer::ReloadLayers(
 }
 
 bool 
-SdfLayer::Import(const string &layerPath)
+SdfLayer::Import(const std::string &layerPath)
 {
-    string filePath = Sdf_ResolvePath(layerPath);
+    std::string filePath = Sdf_ResolvePath(layerPath);
     if (filePath.empty())
         return false;
 
@@ -1124,8 +1119,8 @@ SdfLayer::ImportFromString(const std::string &s)
 
 bool
 SdfLayer::_Read(
-    const string& identifier,
-    const string& resolvedPath,
+    const std::string& identifier,
+    const std::string& resolvedPath,
     bool metadataOnly)
 {
     TRACE_FUNCTION();
@@ -1158,7 +1153,7 @@ SdfLayer::_Read(
 
 /*static*/
 SdfLayerHandle
-SdfLayer::Find(const string &identifier,
+SdfLayer::Find(const std::string &identifier,
                const FileFormatArguments &args)
 {
     TRACE_FUNCTION();
@@ -1169,7 +1164,7 @@ SdfLayer::Find(const string &identifier,
 
 template <class ScopedLock>
 SdfLayerRefPtr
-SdfLayer::_Find(const string &identifier,
+SdfLayer::_Find(const std::string &identifier,
                 const FileFormatArguments &args,
                 ScopedLock& lock,
                 bool retryAsWriter)
@@ -1199,7 +1194,7 @@ SdfLayer::_Find(const string &identifier,
 SdfLayerHandle
 SdfLayer::FindRelativeToLayer(
     const SdfLayerHandle &anchor,
-    const string &identifier,
+    const std::string &identifier,
     const FileFormatArguments &args)
 {
     TRACE_FUNCTION();
@@ -1472,9 +1467,9 @@ template void SdfLayer::_PrimSetTimeSample(
 
 void
 SdfLayer::_InitializeFromIdentifier(
-    const string& identifier,
-    const string& realPath,
-    const string& fileVersion,
+    const std::string& identifier,
+    const std::string& realPath,
+    const std::string& fileVersion,
     const ArAssetInfo& assetInfo)
 {
     TRACE_FUNCTION();
@@ -1494,7 +1489,7 @@ SdfLayer::_InitializeFromIdentifier(
     // Swap the layer asset info with the newly computed information. This
     // must occur prior to updating the layer registry, as the new layer
     // information is used to recompute registry indices.
-    string oldIdentifier = _assetInfo->identifier;
+    std::string oldIdentifier = _assetInfo->identifier;
     ArResolvedPath oldResolvedPath = _assetInfo->resolvedPath;
     _assetInfo.swap(newInfo);
 
@@ -1594,15 +1589,15 @@ SdfLayer::ClearColorManagementSystem()
 }
 
 void
-SdfLayer::SetComment(const string &newVal)
+SdfLayer::SetComment(const std::string &newVal)
 {
     _SetValue(SdfFieldKeys->Comment, newVal);
 }
 
-string
+std::string
 SdfLayer::GetComment() const
 {
-    return _GetValue<string>(SdfFieldKeys->Comment);
+    return _GetValue<std::string>(SdfFieldKeys->Comment);
 }
 
 void
@@ -1632,15 +1627,15 @@ SdfLayer::HasDefaultPrim()
 }
 
 void
-SdfLayer::SetDocumentation(const string &newVal)
+SdfLayer::SetDocumentation(const std::string &newVal)
 {
     _SetValue(SdfFieldKeys->Documentation, newVal);
 }
 
-string
+std::string
 SdfLayer::GetDocumentation() const
 {
-    return _GetValue<string>(SdfFieldKeys->Documentation);
+    return _GetValue<std::string>(SdfFieldKeys->Documentation);
 }
 
 void 
@@ -1784,10 +1779,10 @@ SdfLayer::ClearFramePrecision()
         SdfPath::AbsoluteRootPath(), SdfFieldKeys->FramePrecision);
 }
 
-string
+std::string
 SdfLayer::GetOwner() const
 {
-    return _GetValue<string>(SdfFieldKeys->Owner);
+    return _GetValue<std::string>(SdfFieldKeys->Owner);
 }
 
 void
@@ -1808,10 +1803,10 @@ SdfLayer::ClearOwner()
     return EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->Owner);
 }
 
-string
+std::string
 SdfLayer::GetSessionOwner() const
 {
-    return _GetValue<string>(SdfFieldKeys->SessionOwner);
+    return _GetValue<std::string>(SdfFieldKeys->SessionOwner);
 }
 
 void
@@ -1908,7 +1903,7 @@ SdfLayer::GetRootPrimOrder() const
 }
 
 void
-SdfLayer::SetRootPrimOrder( const vector<TfToken>& names )
+SdfLayer::SetRootPrimOrder( const std::vector<TfToken>& names )
 {
     GetPseudoRoot()->SetNameChildrenOrder(names);
 }
@@ -1932,7 +1927,7 @@ SdfLayer::RemoveFromRootPrimOrderByIndex(int index)
 }
 
 void
-SdfLayer::ApplyRootPrimOrder( vector<TfToken>* vec ) const
+SdfLayer::ApplyRootPrimOrder( std::vector<TfToken>* vec ) const
 {
     GetPseudoRoot()->ApplyNameChildrenOrder(vec);
 }
@@ -1947,7 +1942,7 @@ SdfLayer::GetSubLayerPaths() const
 }
 
 void
-SdfLayer::SetSubLayerPaths(const vector<string>& newPaths)
+SdfLayer::SetSubLayerPaths(const std::vector<std::string>& newPaths)
 {
     GetSubLayerPaths() = newPaths;
 }
@@ -1959,7 +1954,7 @@ SdfLayer::GetNumSubLayerPaths() const
 }
 
 void
-SdfLayer::InsertSubLayerPath(const string& path, int index)
+SdfLayer::InsertSubLayerPath(const std::string& path, int index)
 {
     SdfSubLayerProxy proxy = GetSubLayerPaths();
 
@@ -2288,8 +2283,8 @@ SdfLayer::CanApply(
 
     static const bool fixBackpointers = true;
     if (!edits.Process(NULL,
-                       std::bind(&_HasObjectAtPath, _self, ph::_1),
-                       std::bind(&_CanEdit, _self, ph::_1, ph::_2),
+                       std::bind(&_HasObjectAtPath, _self, std::placeholders::_1),
+                       std::bind(&_CanEdit, _self, std::placeholders::_1, std::placeholders::_2),
                        details, !fixBackpointers)) {
         result = CombineError(result);
     }
@@ -2307,8 +2302,8 @@ SdfLayer::Apply(const SdfBatchNamespaceEdit& edits)
     static const bool fixBackpointers = true;
     SdfNamespaceEditVector final;
     if (!edits.Process(&final,
-                       std::bind(&_HasObjectAtPath, _self, ph::_1),
-                       std::bind(&_CanEdit, _self, ph::_1, ph::_2),
+                       std::bind(&_HasObjectAtPath, _self, std::placeholders::_1),
+                       std::bind(&_CanEdit, _self, std::placeholders::_1, std::placeholders::_2),
                        NULL, !fixBackpointers)) {
         return false;
     }
@@ -2445,8 +2440,8 @@ SdfLayer::_RemoveInertToRootmost(SdfPrimSpecHandle prim)
 
 bool
 SdfLayer::SplitIdentifier(
-    const string& identifier,
-    string* layerPath,
+    const std::string& identifier,
+    std::string* layerPath,
     FileFormatArguments* arguments)
 {
     return Sdf_SplitIdentifier(identifier, layerPath, arguments);
@@ -2454,34 +2449,34 @@ SdfLayer::SplitIdentifier(
 
 std::string 
 SdfLayer::CreateIdentifier(
-    const string& layerPath,
+    const std::string& layerPath,
     const FileFormatArguments& arguments)
 {
     return Sdf_CreateIdentifier(layerPath, arguments);
 }
 
-const string&
+const std::string&
 SdfLayer::GetIdentifier() const
 {
     return _assetInfo->identifier;
 }
 
 void
-SdfLayer::SetIdentifier(const string &identifier)
+SdfLayer::SetIdentifier(const std::string &identifier)
 {
     TRACE_FUNCTION();
     TF_DEBUG(SDF_LAYER).Msg(
         "SdfLayer::SetIdentifier('%s')\n",
         identifier.c_str());
 
-    string oldLayerPath;
+    std::string oldLayerPath;
     SdfLayer::FileFormatArguments oldArguments;
     if (!TF_VERIFY(Sdf_SplitIdentifier(
             GetIdentifier(), &oldLayerPath, &oldArguments))) {
         return;
     }
 
-    string newLayerPath;
+    std::string newLayerPath;
     SdfLayer::FileFormatArguments newArguments;
     if (!Sdf_SplitIdentifier(identifier, &newLayerPath, &newArguments)) {
         TF_CODING_ERROR("Invalid identifier '%s'", identifier.c_str());
@@ -2496,7 +2491,7 @@ SdfLayer::SetIdentifier(const string &identifier)
         return;
     }
 
-    string whyNot;
+    std::string whyNot;
     if (!Sdf_CanCreateNewLayerWithIdentifier(newLayerPath, &whyNot)) {
         TF_CODING_ERROR("Cannot change identifier to '%s': %s", 
             identifier.c_str(), whyNot.c_str());
@@ -2513,7 +2508,7 @@ SdfLayer::SetIdentifier(const string &identifier)
     // that was passed in. Since this may identifier may point to an asset
     // that doesn't exist yet, use CreateIdentifierForNewAsset.
     newLayerPath = ArGetResolver().CreateIdentifierForNewAsset(newLayerPath);
-    const string absIdentifier = 
+    const std::string absIdentifier = 
         Sdf_CreateIdentifier(newLayerPath, newArguments);
 #endif
     const ArResolvedPath oldResolvedPath = GetResolvedPath();
@@ -2635,7 +2630,7 @@ SdfLayer::UpdateAssetInfo()
 
 #endif // AR_VERSION
 
-string
+std::string
 SdfLayer::GetDisplayName() const
 {
     return GetDisplayNameFromIdentifier(GetIdentifier());
@@ -2647,16 +2642,16 @@ SdfLayer::GetResolvedPath() const
     return _assetInfo->resolvedPath;
 }
 
-const string&
+const std::string&
 SdfLayer::GetRealPath() const
 {
     return _assetInfo->resolvedPath.GetPathString();
 }
 
-string
+std::string
 SdfLayer::GetFileExtension() const
 {
-    string ext = Sdf_GetExtension(GetRealPath());
+    std::string ext = Sdf_GetExtension(GetRealPath());
 
     if (ext.empty())
         ext = GetFileFormat()->GetPrimaryFileExtension();
@@ -2664,13 +2659,13 @@ SdfLayer::GetFileExtension() const
     return ext;
 }
 
-const string&
+const std::string&
 SdfLayer::GetRepositoryPath() const
 {
     return _assetInfo->assetInfo.repoPath;
 }
 
-const string&
+const std::string&
 SdfLayer::GetVersion() const
 {
     return _assetInfo->assetInfo.version;
@@ -2682,7 +2677,7 @@ SdfLayer::GetAssetInfo() const
     return _assetInfo->assetInfo.resolverInfo;
 }
 
-const string&
+const std::string&
 SdfLayer::GetAssetName() const 
 {
     return _assetInfo->assetInfo.assetName;
@@ -2719,8 +2714,8 @@ SdfLayer::GetMetadata() const
     return result;
 }
 
-string
-SdfLayer::ComputeAbsolutePath(const string& assetPath) const
+std::string
+SdfLayer::ComputeAbsolutePath(const std::string& assetPath) const
 {
     if (assetPath.empty()
         || Sdf_IsAnonLayerIdentifier(assetPath)) {
@@ -2739,7 +2734,7 @@ SdfLayer::ComputeAbsolutePath(const string& assetPath) const
 #endif
 }
 
-string
+std::string
 SdfLayer::_GetMutedPath() const
 {
     return GetRepositoryPath().empty()
@@ -2747,7 +2742,7 @@ SdfLayer::_GetMutedPath() const
            : GetRepositoryPath();
 }
 
-set<string>
+std::set<std::string>
 SdfLayer::GetMutedLayers()
 {
     std::lock_guard<std::mutex> lock(*_mutedLayersMutex);
@@ -2782,7 +2777,7 @@ SdfLayer::IsMuted() const
 
     size_t curRev = _mutedLayersRevision;
     if (ARCH_UNLIKELY(_mutedLayersRevisionCache != curRev)) {
-        string mutedPath = _GetMutedPath();
+        std::string mutedPath = _GetMutedPath();
         std::lock_guard<std::mutex> lock(*_mutedLayersMutex);
         // Read again, since this is guaranteed to give us the current value
         // because we have the lock.  _mutedLayersRevision only changes with the
@@ -2796,7 +2791,7 @@ SdfLayer::IsMuted() const
 
 /*static*/
 bool
-SdfLayer::IsMuted(const string &path)
+SdfLayer::IsMuted(const std::string &path)
 {
     std::lock_guard<std::mutex> lock(*_mutedLayersMutex);
     return _mutedLayers->count(path);
@@ -2804,7 +2799,7 @@ SdfLayer::IsMuted(const string &path)
 
 /*static*/
 void
-SdfLayer::AddToMutedLayers(const string &path)
+SdfLayer::AddToMutedLayers(const std::string &path)
 {
     bool didChange = false;
     {
@@ -2862,7 +2857,7 @@ SdfLayer::AddToMutedLayers(const string &path)
 
 /*static*/
 void
-SdfLayer::RemoveFromMutedLayers(const string &path)
+SdfLayer::RemoveFromMutedLayers(const std::string &path)
 {
     bool didChange = false;
     {
@@ -3046,7 +3041,7 @@ SdfLayer::TransferContent(const SdfLayerHandle& layer)
 
 static void
 _GatherPrimCompositionDependencies(const SdfPrimSpecHandle &prim,
-                                   set<string> *assetReferences)
+                                   std::set<std::string> *assetReferences)
 {
     if (prim != prim->GetLayer()->GetPseudoRoot()) {
         // Prim references
@@ -3080,7 +3075,7 @@ _GatherPrimCompositionDependencies(const SdfPrimSpecHandle &prim,
     }
 }
 
-set<string>
+std::set<std::string>
 SdfLayer::GetExternalReferences() const
 {
     return GetCompositionAssetDependencies();
@@ -3088,18 +3083,18 @@ SdfLayer::GetExternalReferences() const
 
 bool
 SdfLayer::UpdateExternalReference(
-    const string &oldLayerPath,
-    const string &newLayerPath)
+    const std::string &oldLayerPath,
+    const std::string &newLayerPath)
 {
     return UpdateCompositionAssetDependency(oldLayerPath, newLayerPath);
 }
 
-set<string>
+std::set<std::string>
 SdfLayer::GetCompositionAssetDependencies() const
 {
     SdfSubLayerProxy subLayers = GetSubLayerPaths();
 
-    set<string> results(subLayers.begin(), subLayers.end());
+    std::set<std::string> results(subLayers.begin(), subLayers.end());
 
     _GatherPrimCompositionDependencies(GetPseudoRoot(), &results);
 
@@ -3108,8 +3103,8 @@ SdfLayer::GetCompositionAssetDependencies() const
 
 bool
 SdfLayer::UpdateCompositionAssetDependency(
-    const string &oldLayerPath,
-    const string &newLayerPath)
+    const std::string &oldLayerPath,
+    const std::string &newLayerPath)
 {
     if (oldLayerPath.empty())
         return false;
@@ -3146,8 +3141,8 @@ SdfLayer::GetExternalAssetDependencies() const
 template <class RefOrPayloadType>
 static boost::optional<RefOrPayloadType>
 _UpdateRefOrPayloadPath(
-    const string &oldLayerPath,
-    const string &newLayerPath,
+    const std::string &oldLayerPath,
+    const std::string &newLayerPath,
     const RefOrPayloadType &refOrPayload)
 {
     if (refOrPayload.GetAssetPath() == oldLayerPath) {
@@ -3166,20 +3161,20 @@ _UpdateRefOrPayloadPath(
 void
 SdfLayer::_UpdatePrimCompositionDependencyPaths(
     const SdfPrimSpecHandle &prim,
-    const string &oldLayerPath,
-    const string &newLayerPath)
+    const std::string &oldLayerPath,
+    const std::string &newLayerPath)
 {
     TF_AXIOM(!oldLayerPath.empty());
     
     // Prim references
     prim->GetReferenceList().ModifyItemEdits(std::bind(
         &_UpdateRefOrPayloadPath<SdfReference>, oldLayerPath, newLayerPath,
-        ph::_1));
+        std::placeholders::_1));
 
     // Prim payloads
     prim->GetPayloadList().ModifyItemEdits(std::bind(
         &_UpdateRefOrPayloadPath<SdfPayload>, oldLayerPath, newLayerPath, 
-        ph::_1));
+        std::placeholders::_1));
 
     // Prim variants
     SdfVariantSetsProxy variantSetMap = prim->GetVariantSets();
@@ -3211,7 +3206,7 @@ SdfLayer::DumpLayerInfo()
 }
 
 bool
-SdfLayer::WriteDataFile(const string &filename)
+SdfLayer::WriteDataFile(const std::string &filename)
 {
     std::ofstream file(filename.c_str());
     _data->WriteToStream(file);
@@ -3219,7 +3214,7 @@ SdfLayer::WriteDataFile(const string &filename)
 }
 
 /*static*/
-set<SdfLayerHandle>
+std::set<SdfLayerHandle>
 SdfLayer::GetLoadedLayers()
 {
     tbb::queuing_rw_mutex::scoped_lock
@@ -3302,7 +3297,7 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
     // on anonymous layer functionality. If the layer is anonymous,
     // pass the original assetPath to the reader, otherwise, pass the
     // resolved path of the layer.
-    const string readFilePath = 
+    const std::string readFilePath = 
         info.isAnonymous ? info.layerPath : info.resolvedLayerPath;
 
     if (!layer->IsMuted()) {
@@ -3369,13 +3364,13 @@ SdfLayer::GetSpecType(const SdfPath& path) const
     return _data->GetSpecType(path);
 }
 
-vector<TfToken>
+std::vector<TfToken>
 SdfLayer::ListFields(const SdfPath& path) const
 {
     return _ListFields(_schema, *get_pointer(_data), path);
 }
 
-vector<TfToken>
+std::vector<TfToken>
 SdfLayer::_ListFields(SdfSchemaBase const &schema,
                       SdfAbstractData const &data, const SdfPath& path)
 {
@@ -3383,7 +3378,7 @@ SdfLayer::_ListFields(SdfSchemaBase const &schema,
     // include all required fields too.
 
     // Collect the list from the data implemenation.
-    vector<TfToken> dataList = data.List(path);
+    std::vector<TfToken> dataList = data.List(path);
 
     // Determine spec type.  If unknown, return early.
     SdfSpecType specType = data.GetSpecType(path);
@@ -3392,7 +3387,7 @@ SdfLayer::_ListFields(SdfSchemaBase const &schema,
     }
 
     // Collect required fields.
-    vector<TfToken> const &req = schema.GetRequiredFields(specType);
+    std::vector<TfToken> const &req = schema.GetRequiredFields(specType);
 
     // Union them together, but retain order of dataList, since it influences
     // the output ordering in some file writers.
@@ -3961,7 +3956,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
         }
         // If there were unrecognized specTypes, issue an error.
         if (differentSchema) {
-            vector<string> specDescrs;
+            std::vector<std::string> specDescrs;
             for (int i = 0; i != SdfSpecTypeUnknown; ++i) {
                 if (unrecognizedSpecTypePaths[i].IsEmpty()) {
                     continue;
@@ -4059,7 +4054,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
 
         // If there were unrecognized fields, report an error.
         if (!updater.unrecognizedFields.empty()) {
-            vector<string> fieldDescrs;
+            std::vector<std::string> fieldDescrs;
             fieldDescrs.reserve(updater.unrecognizedFields.size());
             for (std::pair<TfToken, SdfPath> const &tokenPath:
                      updater.unrecognizedFields) {
@@ -4318,7 +4313,7 @@ SdfLayer::_PrimMoveSpec(const SdfPath& oldPath, const SdfPath& newPath,
     Sdf_ChangeManager::Get().DidMoveSpec(_self, oldPath, newPath);
 
     Traverse(oldPath, std::bind(_MoveSpecInternal, _data,
-                                &_idRegistry, ph::_1, oldPath, newPath));
+                                &_idRegistry, std::placeholders::_1, oldPath, newPath));
 }
 
 static bool
@@ -4480,7 +4475,7 @@ SdfLayer::_PrimDeleteSpec(const SdfPath &path, bool inert, bool useDelegate)
     Sdf_ChangeManager::Get().DidRemoveSpec(_self, path, inert);
 
     TraversalFunction eraseFunc = 
-        std::bind(&_EraseSpecAtPath, boost::get_pointer(_data), ph::_1);
+        std::bind(&_EraseSpecAtPath, boost::get_pointer(_data), std::placeholders::_1);
     Traverse(path, eraseFunc);
 }
 
@@ -4665,8 +4660,8 @@ SdfLayer::ExportToString( std::string *result ) const
 }
 
 bool 
-SdfLayer::_WriteToFile(const string & newFileName, 
-                       const string &comment, 
+SdfLayer::_WriteToFile(const std::string & newFileName, 
+                       const std::string &comment, 
                        SdfFileFormatConstPtr fileFormat,
                        const FileFormatArguments& args) const
 {
@@ -4686,7 +4681,7 @@ SdfLayer::_WriteToFile(const string & newFileName,
     // If a file format was explicitly provided, use that regardless of the 
     // file extension, else discover the file format from the file extension.
     if (!fileFormat) {
-        const string ext = Sdf_GetExtension(newFileName);
+        const std::string ext = Sdf_GetExtension(newFileName);
         if (!ext.empty()) 
             fileFormat = SdfFileFormat::FindByExtension(ext);
 
@@ -4755,7 +4750,7 @@ SdfLayer::_WriteToFile(const string & newFileName,
 }
 
 bool 
-SdfLayer::Export(const string& newFileName, const string& comment,
+SdfLayer::Export(const std::string& newFileName, const std::string& comment,
                  const FileFormatArguments& args) const
 {
     return _WriteToFile(

@@ -37,7 +37,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -52,14 +51,14 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateLowAttr(UsdPhysicsLimitAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateLowAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateHighAttr(UsdPhysicsLimitAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateHighAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
@@ -104,64 +103,64 @@ void wrapUsdPhysicsLimitAPI()
     UsdPhysicsLimitAPI_CanApplyResult::Wrap<UsdPhysicsLimitAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
+    boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
         cls("LimitAPI");
 
     cls
-        .def(init<UsdPrim, TfToken>())
-        .def(init<UsdSchemaBase const&, TfToken>())
+        .def(boost::python::init<UsdPrim, TfToken>())
+        .def(boost::python::init<UsdSchemaBase const&, TfToken>())
         .def(TfTypePythonClass())
 
         .def("Get",
             (UsdPhysicsLimitAPI(*)(const UsdStagePtr &stage, 
                                        const SdfPath &path))
                &This::Get,
-            (arg("stage"), arg("path")))
+            (boost::python::arg("stage"), boost::python::arg("path")))
         .def("Get",
             (UsdPhysicsLimitAPI(*)(const UsdPrim &prim,
                                        const TfToken &name))
                &This::Get,
-            (arg("prim"), arg("name")))
+            (boost::python::arg("prim"), boost::python::arg("name")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (arg("prim"), arg("name")))
+        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim"), boost::python::arg("name")))
         .staticmethod("CanApply")
 
-        .def("Apply", &This::Apply, (arg("prim"), arg("name")))
+        .def("Apply", &This::Apply, (boost::python::arg("prim"), boost::python::arg("name")))
         .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",
              (const TfTokenVector &(*)(bool))&This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetSchemaAttributeNames",
              (TfTokenVector(*)(bool, const TfToken &))
                 &This::GetSchemaAttributeNames,
-             arg("includeInherited"),
-             arg("instanceName"),
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited"),
+             boost::python::arg("instanceName"),
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetLowAttr",
              &This::GetLowAttr)
         .def("CreateLowAttr",
              &_CreateLowAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetHighAttr",
              &This::GetHighAttr)
         .def("CreateHighAttr",
              &_CreateHighAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         .def("IsPhysicsLimitAPIPath", _WrapIsPhysicsLimitAPIPath)
             .staticmethod("IsPhysicsLimitAPIPath")

@@ -32,19 +32,18 @@
 #include <boost/python/enum.hpp>
 
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdCommon()
 {
-    def("Describe", (std::string (*)(const UsdObject &)) UsdDescribe);
-    def("Describe", (std::string (*)(const UsdStageWeakPtr &)) UsdDescribe);
-    def("Describe", (std::string (*)(const UsdStageCache &)) UsdDescribe);
+    boost::python::def("Describe", (std::string (*)(const UsdObject &)) UsdDescribe);
+    boost::python::def("Describe", (std::string (*)(const UsdStageWeakPtr &)) UsdDescribe);
+    boost::python::def("Describe", (std::string (*)(const UsdStageCache &)) UsdDescribe);
 
     TfPyWrapEnum<UsdListPosition>();
     TfPyWrapEnum<UsdLoadPolicy>();
-    enum_<UsdSchemaKind>("SchemaKind")
+    boost::python::enum_<UsdSchemaKind>("SchemaKind")
         .value("Invalid", UsdSchemaKind::Invalid)
         .value("AbstractBase", UsdSchemaKind::AbstractBase)
         .value("AbstractTyped", UsdSchemaKind::AbstractTyped)

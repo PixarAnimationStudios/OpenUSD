@@ -29,16 +29,15 @@
 
 #include <boost/python/def.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdMtlxBackdoor()
 {
-    def("_TestString", UsdMtlx_TestString,
-        (arg("buffer"), arg("nodeGraphs") = false),
-        return_value_policy<TfPyRefPtrFactory<>>());
-    def("_TestFile", UsdMtlx_TestFile,
-        (arg("pathname"), arg("nodeGraphs") = false),
-        return_value_policy<TfPyRefPtrFactory<>>());
+    boost::python::def("_TestString", UsdMtlx_TestString,
+        (boost::python::arg("buffer"), boost::python::arg("nodeGraphs") = false),
+        boost::python::return_value_policy<TfPyRefPtrFactory<>>());
+    boost::python::def("_TestFile", UsdMtlx_TestFile,
+        (boost::python::arg("pathname"), boost::python::arg("nodeGraphs") = false),
+        boost::python::return_value_policy<TfPyRefPtrFactory<>>());
 }

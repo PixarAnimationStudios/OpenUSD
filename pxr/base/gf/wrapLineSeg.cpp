@@ -37,21 +37,19 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string _Repr(GfLineSeg const &self) {
+static std::string _Repr(GfLineSeg const &self) {
     return TF_PY_REPR_PREFIX + "LineSeg(" + TfPyRepr(self.GetPoint(0.0)) + ", " +
         TfPyRepr(self.GetPoint(1.0)) + ")";
 }
 
 
-static tuple
+static boost::python::tuple
 FindClosestPointsHelper1( const GfLine &l1, const GfLineSeg &l2 )
 {
     GfVec3d p1(0), p2(0);
@@ -60,7 +58,7 @@ FindClosestPointsHelper1( const GfLine &l1, const GfLineSeg &l2 )
     return boost::python::make_tuple( result, p1, p2, t1, t2 );
 }
 
-static tuple
+static boost::python::tuple
 FindClosestPointsHelper2( const GfLineSeg &l1, const GfLineSeg &l2 )
 {
     GfVec3d p1(0), p2(0);
@@ -69,7 +67,7 @@ FindClosestPointsHelper2( const GfLineSeg &l1, const GfLineSeg &l2 )
     return boost::python::make_tuple( result, p1, p2, t1, t2 );
 }
 
-static tuple
+static boost::python::tuple
 FindClosestPointHelper( const GfLineSeg &self, const GfVec3d &point )
 {
     double t;
@@ -83,7 +81,7 @@ void wrapLineSeg()
 {    
     typedef GfLineSeg This;
 
-    def("FindClosestPoints", FindClosestPointsHelper1, 
+    boost::python::def("FindClosestPoints", FindClosestPointsHelper1, 
         "FindClosestPoints( l1, s2 ) -> tuple< intersects = bool, "
         "p1 = GfVec3d, p2 = GfVec3d, t1 = double, t2 = double>"
         "\n\n"
@@ -96,7 +94,7 @@ void wrapLineSeg()
         "p1 and p2.  The parametric distance of each point on the "
         "line and line segment is returned in t1 and t2.\n"
         "----------------------------------------------------------------------");
-    def("FindClosestPoints", FindClosestPointsHelper2, 
+    boost::python::def("FindClosestPoints", FindClosestPointsHelper2, 
         "FindClosestPoints( s1, s2 ) -> tuple<result = bool,"
         "p1 = GfVec3d, p2 = GfVec3d, t1 = double, t2 = double>"
         "\n\n"
@@ -110,11 +108,11 @@ void wrapLineSeg()
         "line and line segment is returned in t1 and t2.\n"
         "----------------------------------------------------------------------");
     
-    object getDirection = make_function(&This::GetDirection,
-                                        return_value_policy<return_by_value>());
+    boost::python::object getDirection = boost::python::make_function(&This::GetDirection,
+                                        boost::python::return_value_policy<boost::python::return_by_value>());
 
-    class_<This>( "LineSeg", "Line segment class", init<>() )
-        .def(init< const GfVec3d &, const GfVec3d & >())
+    boost::python::class_<This>( "LineSeg", "Line segment class", boost::python::init<>() )
+        .def(boost::python::init< const GfVec3d &, const GfVec3d & >())
 
         .def( TfTypePythonClass() )
 
@@ -127,9 +125,9 @@ void wrapLineSeg()
 
         .def( "FindClosestPoint", FindClosestPointHelper )
 
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
+        .def( boost::python::self_ns::str(boost::python::self) )
+        .def( boost::python::self == boost::python::self )
+        .def( boost::python::self != boost::python::self )
 
         .def("__repr__", _Repr)
         ;

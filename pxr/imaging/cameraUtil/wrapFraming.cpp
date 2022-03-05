@@ -30,7 +30,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -61,27 +60,27 @@ wrapFraming()
 {
     using This = CameraUtilFraming;
 
-    class_<This>("Framing")
-        .def(init<>())
-        .def(init<const This &>())
-        .def(init<const GfRange2f&,
+    boost::python::class_<This>("Framing")
+        .def(boost::python::init<>())
+        .def(boost::python::init<const This &>())
+        .def(boost::python::init<const GfRange2f&,
                   const GfRect2i&,
                   float>(
-                      (args("displayWindow"),
-                       args("dataWindow"),
-                       args("pixelAspectRatio") = 1.0)))
-        .def(init<const GfRect2i>(
-                      ((args("dataWindow")))))
+                      (boost::python::args("displayWindow"),
+                       boost::python::args("dataWindow"),
+                       boost::python::args("pixelAspectRatio") = 1.0)))
+        .def(boost::python::init<const GfRect2i>(
+                      ((boost::python::args("dataWindow")))))
         .def("ApplyToProjectionMatrix",
              &This::ApplyToProjectionMatrix,
-             ((args("projectionMatrix"), args("windowPolicy"))))
+             ((boost::python::args("projectionMatrix"), boost::python::args("windowPolicy"))))
         .def("IsValid", &This::IsValid)
         .def_readwrite("displayWindow", &This::displayWindow)
         .def_readwrite("dataWindow", &This::dataWindow)
         .def_readwrite("pixelAspectRatio", &This::pixelAspectRatio)
 
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
 
         .def("__repr__", _Repr)
     ;

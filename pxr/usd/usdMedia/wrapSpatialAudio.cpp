@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -51,49 +50,49 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateFilePathAttr(UsdMediaSpatialAudio &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateFilePathAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
         
 static UsdAttribute
 _CreateAuralModeAttr(UsdMediaSpatialAudio &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateAuralModeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreatePlaybackModeAttr(UsdMediaSpatialAudio &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreatePlaybackModeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateStartTimeAttr(UsdMediaSpatialAudio &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateStartTimeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TimeCode), writeSparsely);
 }
         
 static UsdAttribute
 _CreateEndTimeAttr(UsdMediaSpatialAudio &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateEndTimeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TimeCode), writeSparsely);
 }
         
 static UsdAttribute
 _CreateMediaOffsetAttr(UsdMediaSpatialAudio &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateMediaOffsetAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
         
 static UsdAttribute
 _CreateGainAttr(UsdMediaSpatialAudio &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateGainAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
@@ -113,81 +112,81 @@ void wrapUsdMediaSpatialAudio()
 {
     typedef UsdMediaSpatialAudio This;
 
-    class_<This, bases<UsdGeomXformable> >
+    boost::python::class_<This, boost::python::bases<UsdGeomXformable> >
         cls("SpatialAudio");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
+        .def("Define", &This::Define, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Define")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetFilePathAttr",
              &This::GetFilePathAttr)
         .def("CreateFilePathAttr",
              &_CreateFilePathAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetAuralModeAttr",
              &This::GetAuralModeAttr)
         .def("CreateAuralModeAttr",
              &_CreateAuralModeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetPlaybackModeAttr",
              &This::GetPlaybackModeAttr)
         .def("CreatePlaybackModeAttr",
              &_CreatePlaybackModeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetStartTimeAttr",
              &This::GetStartTimeAttr)
         .def("CreateStartTimeAttr",
              &_CreateStartTimeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetEndTimeAttr",
              &This::GetEndTimeAttr)
         .def("CreateEndTimeAttr",
              &_CreateEndTimeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetMediaOffsetAttr",
              &This::GetMediaOffsetAttr)
         .def("CreateMediaOffsetAttr",
              &_CreateMediaOffsetAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetGainAttr",
              &This::GetGainAttr)
         .def("CreateGainAttr",
              &_CreateGainAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;

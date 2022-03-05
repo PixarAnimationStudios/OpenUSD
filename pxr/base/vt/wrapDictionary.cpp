@@ -44,7 +44,6 @@
 #include <boost/python/converter/rvalue_from_python_data.hpp>
 #include <boost/python/detail/api_placeholder.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -56,12 +55,12 @@ struct VtValueArrayToPython
     static PyObject* convert(const std::vector<VtValue> &v)
     {
         // TODO Use result converter. TfPySequenceToList.
-        list result;
+        boost::python::list result;
         TF_FOR_ALL(i, v) {
-            object o = TfPyObject(*i);
+            boost::python::object o = TfPyObject(*i);
             result.append(o);
         }
-        return incref(result.ptr());
+        return boost::python::incref(result.ptr());
     }
 };
 
@@ -73,17 +72,17 @@ struct VtDictionaryToPython
         TRACE_FUNCTION();
 
         // TODO Use result converter TfPyMapToDictionary??
-        dict result;
+        boost::python::dict result;
         TF_FOR_ALL(i, v) {
-            object o = TfPyObject(i->second);
+            boost::python::object o = TfPyObject(i->second);
             result.setdefault(i->first, o);
         }
-        return incref(result.ptr());
+        return boost::python::incref(result.ptr());
     }
 };
 
 static bool
-_CanVtValueFromPython(object pVal);
+_CanVtValueFromPython(boost::python::object pVal);
 
 // Converts a python object to a VtValue, with some special behavior.
 // If the python object is a dictionary, puts a VtDictionary in the
@@ -92,9 +91,9 @@ _CanVtValueFromPython(object pVal);
 // VtValue knows about, does that.  In each of these cases, returns true.
 //
 // Otherwise, returns false.
-static bool _VtValueFromPython(object pVal, VtValue *result) {
+static bool _VtValueFromPython(boost::python::object pVal, VtValue *result) {
     // Try to convert a nested dictionary into a VtDictionary.
-    extract<VtDictionary> valDictProxy(pVal);
+    boost::python::extract<VtDictionary> valDictProxy(pVal);
     if (valDictProxy.check()) {
         if (result) {
             VtDictionary dict = valDictProxy;
@@ -104,7 +103,7 @@ static bool _VtValueFromPython(object pVal, VtValue *result) {
     }
 
     // Try to convert a nested list into a vector.
-    extract<std::vector<VtValue> > valArrayProxy(pVal);
+    boost::python::extract<std::vector<VtValue> > valArrayProxy(pVal);
     if (valArrayProxy.check()) {
         if (result) {
             std::vector<VtValue> array = valArrayProxy;
@@ -114,7 +113,7 @@ static bool _VtValueFromPython(object pVal, VtValue *result) {
     }
 
     // Try to convert a value into a VtValue.
-    extract<VtValue> valProxy(pVal);
+    boost::python::extract<VtValue> valProxy(pVal);
     if (valProxy.check()) {
         VtValue v = valProxy();
         if (v.IsHolding<TfPyObjWrapper>()) {
@@ -131,24 +130,24 @@ static bool _VtValueFromPython(object pVal, VtValue *result) {
 // Converter from python dict to VtValueArray.
 struct _VtValueArrayFromPython {
     _VtValueArrayFromPython() {
-        converter::registry::insert(
-            &convertible, &construct, type_id<std::vector<VtValue> >());
+        boost::python::converter::registry::insert(
+            &convertible, &construct, boost::python::type_id<std::vector<VtValue> >());
     }
 
     // Returns p if p can convert to an array, NULL otherwise.
     // If result is non-NULL, does the conversion into *result.
     static PyObject *convert(PyObject *p, std::vector<VtValue> *result) {
-        extract<list> dProxy(p);
+        boost::python::extract<boost::python::list> dProxy(p);
         if (!dProxy.check()) {
             return NULL;
         }
-        list d = dProxy();
-        int numElts = len(d);
+        boost::python::list d = dProxy();
+        int numElts = boost::python::len(d);
 
         if (result)
             result->reserve(numElts);
         for (int i = 0; i < numElts; i++) {
-            object pVal = d[i];
+            boost::python::object pVal = d[i];
             if (result) {
                 result->push_back(VtValue());
                 if (!_VtValueFromPython(pVal, &result->back()))
@@ -164,12 +163,12 @@ struct _VtValueArrayFromPython {
         return convert(p, NULL);
     }
 
-    static void construct(PyObject* source, converter::
+    static void construct(PyObject* source, boost::python::converter::
                           rvalue_from_python_stage1_data* data) {
         TfAutoMallocTag2
             tag("Vt", "_VtValueArrayFromPython::construct");
         void* storage = (
-            (converter::rvalue_from_python_storage<std::vector<VtValue> >*)
+            (boost::python::converter::rvalue_from_python_storage<std::vector<VtValue> >*)
             data)->storage.bytes;
         new (storage) std::vector<VtValue>();
         data->convertible = storage;
@@ -180,8 +179,8 @@ struct _VtValueArrayFromPython {
 // Converter from python dict to VtDictionary.
 struct _VtDictionaryFromPython {
     _VtDictionaryFromPython() {
-        converter::registry::insert(
-            &convertible, &construct, type_id<VtDictionary>());
+        boost::python::converter::registry::insert(
+            &convertible, &construct, boost::python::type_id<VtDictionary>());
     }
 
     // Returns p if p can convert to a dictionary, NULL otherwise.
@@ -194,10 +193,10 @@ struct _VtDictionaryFromPython {
         Py_ssize_t pos = 0;
         PyObject *pyKey = NULL, *pyVal = NULL;
         while (PyDict_Next(p, &pos, &pyKey, &pyVal)) {
-            extract<std::string> keyProxy(pyKey);
+            boost::python::extract<std::string> keyProxy(pyKey);
             if (!keyProxy.check())
                 return NULL;
-            object pVal(handle<>(borrowed(pyVal)));
+            boost::python::object pVal(boost::python::handle<>(boost::python::borrowed(pyVal)));
             if (result) {
                 VtValue &val = (*result)[keyProxy()];
                 if (!_VtValueFromPython(pVal, &val))
@@ -214,13 +213,13 @@ struct _VtDictionaryFromPython {
         return convert(p, NULL);
     }
 
-    static void construct(PyObject* source, converter::
+    static void construct(PyObject* source, boost::python::converter::
                           rvalue_from_python_stage1_data* data) {
         TRACE_FUNCTION();
         TfAutoMallocTag2
             tag("Vt", "_VtDictionaryFromPython::construct");
         void* storage = (
-            (converter::rvalue_from_python_storage<VtDictionary>*)
+            (boost::python::converter::rvalue_from_python_storage<VtDictionary>*)
             data)->storage.bytes;
         new (storage) VtDictionary(0);
         data->convertible = storage;
@@ -231,18 +230,18 @@ struct _VtDictionaryFromPython {
 // Converter from python list to VtValue holding VtValueArray.
 struct _VtValueHoldingVtValueArrayFromPython {
     _VtValueHoldingVtValueArrayFromPython() {
-        converter::registry::insert(&_VtValueArrayFromPython::convertible,
-                                    &construct, type_id<VtValue>());
+        boost::python::converter::registry::insert(&_VtValueArrayFromPython::convertible,
+                                    &construct, boost::python::type_id<VtValue>());
     }
 
-    static void construct(PyObject* source, converter::
+    static void construct(PyObject* source, boost::python::converter::
                            rvalue_from_python_stage1_data* data) {
         TfAutoMallocTag2
             tag("Vt", "_VtValueHoldingVtValueArrayFromPython::construct");
         std::vector<VtValue> arr;
         _VtValueArrayFromPython::convert(source, &arr);
         void* storage = (
-            (converter::rvalue_from_python_storage<VtValue>*)
+            (boost::python::converter::rvalue_from_python_storage<VtValue>*)
             data)->storage.bytes;
         new (storage) VtValue();
         ((VtValue *)storage)->Swap(arr);
@@ -253,18 +252,18 @@ struct _VtValueHoldingVtValueArrayFromPython {
 // Converter from python dict to VtValue holding VtDictionary.
 struct _VtValueHoldingVtDictionaryFromPython {
     _VtValueHoldingVtDictionaryFromPython() {
-        converter::registry::insert(&_VtDictionaryFromPython::convertible,
-                                    &construct, type_id<VtValue>());
+        boost::python::converter::registry::insert(&_VtDictionaryFromPython::convertible,
+                                    &construct, boost::python::type_id<VtValue>());
     }
 
-    static void construct(PyObject* source, converter::
+    static void construct(PyObject* source, boost::python::converter::
                            rvalue_from_python_stage1_data* data) {
         TfAutoMallocTag2
             tag("Vt", "_VtValueHoldingVtDictionaryFromPython::construct");
         VtDictionary dictionary;
         _VtDictionaryFromPython::convert(source, &dictionary);
         void* storage = (
-            (converter::rvalue_from_python_storage<VtValue>*)
+            (boost::python::converter::rvalue_from_python_storage<VtValue>*)
             data)->storage.bytes;
         new (storage) VtValue();
         ((VtValue *)storage)->Swap(dictionary);
@@ -274,7 +273,7 @@ struct _VtValueHoldingVtDictionaryFromPython {
 
 
 static bool
-_CanVtValueFromPython(object pVal)
+_CanVtValueFromPython(boost::python::object pVal)
 {
     if (_VtDictionaryFromPython::convertible(pVal.ptr()))
         return true;
@@ -282,7 +281,7 @@ _CanVtValueFromPython(object pVal)
     if (_VtValueArrayFromPython::convertible(pVal.ptr()))
         return true;
 
-    extract<VtValue> e(pVal);
+    boost::python::extract<VtValue> e(pVal);
     return e.check() && !e().IsHolding<TfPyObjWrapper>();
 }
 
@@ -296,10 +295,10 @@ _ReturnDictionary(VtDictionary const &x) {
 
 void wrapDictionary()
 {
-    def("_ReturnDictionary", _ReturnDictionary);
+    boost::python::def("_ReturnDictionary", _ReturnDictionary);
 
-    to_python_converter<VtDictionary, VtDictionaryToPython>();
-    to_python_converter<std::vector<VtValue>, VtValueArrayToPython>();
+    boost::python::to_python_converter<VtDictionary, VtDictionaryToPython>();
+    boost::python::to_python_converter<std::vector<VtValue>, VtValueArrayToPython>();
     _VtValueArrayFromPython();
     _VtDictionaryFromPython();
     _VtValueHoldingVtValueArrayFromPython();

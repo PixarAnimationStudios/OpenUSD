@@ -33,7 +33,6 @@
 #include <boost/python/extract.hpp>
 
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -59,16 +58,16 @@ _GetNormalOffsets(const UsdSkelInbetweenShape& self)
 }
 
 
-object
+boost::python::object
 _GetWeight(const UsdSkelInbetweenShape& self)
 {
     float w = 0;
-    return self.GetWeight(&w) ? object(w) : object();
+    return self.GetWeight(&w) ? boost::python::object(w) : boost::python::object();
 }
 
 
 bool
-_SetOffsets(const UsdSkelInbetweenShape& self, const object& val)
+_SetOffsets(const UsdSkelInbetweenShape& self, const boost::python::object& val)
 {
     const VtValue vtVal =
         UsdPythonToSdfType(val, SdfValueTypeNames->Vector3fArray);
@@ -78,7 +77,7 @@ _SetOffsets(const UsdSkelInbetweenShape& self, const object& val)
 
 
 bool
-_SetNormalOffsets(const UsdSkelInbetweenShape& self, const object& val)
+_SetNormalOffsets(const UsdSkelInbetweenShape& self, const boost::python::object& val)
 {
     const VtValue vtVal =
         UsdPythonToSdfType(val, SdfValueTypeNames->Vector3fArray);
@@ -89,7 +88,7 @@ _SetNormalOffsets(const UsdSkelInbetweenShape& self, const object& val)
 
 UsdAttribute
 _CreateNormalOffsetsAttr(const UsdSkelInbetweenShape& self,
-                         const object& defaultValue)
+                         const boost::python::object& defaultValue)
 {
     return self.CreateNormalOffsetsAttr(
         UsdPythonToSdfType(defaultValue, SdfValueTypeNames->Vector3fArray));
@@ -103,30 +102,30 @@ void wrapUsdSkelInbetweenShape()
 {
     using This = UsdSkelInbetweenShape;
 
-    class_<This>("InbetweenShape")
+    boost::python::class_<This>("InbetweenShape")
 
-        .def(init<UsdAttribute>(arg("attr")))
-        .def(!self)
-        .def(self == self)
+        .def(boost::python::init<UsdAttribute>(boost::python::arg("attr")))
+        .def(!boost::python::self)
+        .def(boost::python::self == boost::python::self)
 
         .def("GetWeight", &_GetWeight)
-        .def("SetWeight", &This::SetWeight, arg("weight"))
+        .def("SetWeight", &This::SetWeight, boost::python::arg("weight"))
         .def("HasAuthoredWeight", &This::HasAuthoredWeight)
 
         .def("GetOffsets", &_GetOffsets)
-        .def("SetOffsets", &_SetOffsets, arg("offsets"))
+        .def("SetOffsets", &_SetOffsets, boost::python::arg("offsets"))
 
         .def("GetNormalOffsetsAttr", &This::GetNormalOffsetsAttr)
         .def("CreateNormalOffsetsAttr", &_CreateNormalOffsetsAttr)
 
         .def("GetNormalOffsets", &_GetNormalOffsets)
-        .def("SetNormalOffsets", &_SetNormalOffsets, arg("offsets"))
+        .def("SetNormalOffsets", &_SetNormalOffsets, boost::python::arg("offsets"))
 
-        .def("IsInbetween", &This::IsInbetween, arg("attr"))
+        .def("IsInbetween", &This::IsInbetween, boost::python::arg("attr"))
         .staticmethod("IsInbetween")
 
         .def("GetAttr", &This::GetAttr,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .def("IsDefined", &This::IsDefined)
         ;
 }            

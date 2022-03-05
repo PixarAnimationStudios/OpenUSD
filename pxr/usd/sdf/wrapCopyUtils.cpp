@@ -37,7 +37,6 @@
 
 #include <functional>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -55,10 +54,10 @@ _GetValueForField(
     // pyUtils.h?
     const VtValue& fallback = layer->GetSchema().GetFallback(field);
     if (fallback.IsHolding<TfTokenVector>()) {
-        return VtValue(extract<TfTokenVector>(obj)());
+        return VtValue(boost::python::extract<TfTokenVector>(obj)());
     }
 
-    VtValue v = extract<VtValue>(obj)();
+    VtValue v = boost::python::extract<VtValue>(obj)();
     if (!fallback.IsEmpty()) {
         v.CastToTypeOf(fallback);
     }
@@ -89,18 +88,18 @@ _ShouldCopyValue(
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
     boost::optional<VtValue>* value)
 {
-    object result = pyFunc(
+    boost::python::object result = pyFunc(
         specType, field, 
         srcLayer, srcPath, fieldInSrc, dstLayer, dstPath, fieldInDst);
 
     if (PyBool_Check(result.ptr())) {
-        return extract<bool>(result)();
+        return boost::python::extract<bool>(result)();
     }
 
-    extract<tuple> getTuple(result);
+    boost::python::extract<boost::python::tuple> getTuple(result);
     if (getTuple.check()) {
-        if (PyBool_Check(object(result[0]).ptr())) {
-            const bool status = extract<bool>(result[0])();
+        if (PyBool_Check(boost::python::object(result[0]).ptr())) {
+            const bool status = boost::python::extract<bool>(result[0])();
             *value = _GetValueForField(srcLayer, field, result[1]);
             return status;
         }
@@ -120,17 +119,17 @@ _ShouldCopyChildren(
     boost::optional<VtValue>* srcChildren, 
     boost::optional<VtValue>* dstChildren)
 {
-    object result = pyFunc(
+    boost::python::object result = pyFunc(
         field, srcLayer, srcPath, fieldInSrc, dstLayer, dstPath, fieldInDst);
 
     if (PyBool_Check(result.ptr())) {
-        return extract<bool>(result)();
+        return boost::python::extract<bool>(result)();
     }
 
-    extract<tuple> getTuple(result);
+    boost::python::extract<boost::python::tuple> getTuple(result);
     if (getTuple.check()) {
-        if (PyBool_Check(object(result[0]).ptr())) {
-            const bool status = extract<bool>(result[0])();
+        if (PyBool_Check(boost::python::object(result[0]).ptr())) {
+            const bool status = boost::python::extract<bool>(result[0])();
             *srcChildren = _GetValueForField(srcLayer, field, result[1]);
             *dstChildren = _GetValueForField(srcLayer, field, result[2]);
             return status;
@@ -149,18 +148,17 @@ Py_SdfCopySpec(
     const Py_SdfShouldCopyValueFn& shouldCopyValueFn,
     const Py_SdfShouldCopyChildrenFn& shouldCopyChildrenFn)
 {
-    namespace ph = std::placeholders;
 
     return SdfCopySpec(
         srcLayer, srcPath, dstLayer, dstPath,
         /* shouldCopyValueFn = */ std::bind(
             _ShouldCopyValue, std::cref(shouldCopyValueFn),
-            ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, ph::_8, 
-            ph::_9),
+            std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, std::placeholders::_8, 
+            std::placeholders::_9),
         /* shouldCopyChildrenFn = */ std::bind(
             _ShouldCopyChildren, std::cref(shouldCopyChildrenFn),
-            ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, ph::_8, 
-            ph::_9)
+            std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, std::placeholders::_8, 
+            std::placeholders::_9)
         );
 }
 
@@ -169,15 +167,15 @@ Py_SdfCopySpec(
 void
 wrapCopyUtils()
 {
-    def("CopySpec", 
+    boost::python::def("CopySpec", 
         (bool(*)(const SdfLayerHandle&, const SdfPath&, 
                  const SdfLayerHandle&, const SdfPath&))
         &SdfCopySpec,
-        (arg("srcLayer"), arg("srcPath"), arg("dstLayer"), arg("dstPath")));
+        (boost::python::arg("srcLayer"), boost::python::arg("srcPath"), boost::python::arg("dstLayer"), boost::python::arg("dstPath")));
 
     TfPyFunctionFromPython<Py_SdfShouldCopyChildrenSig>();
     TfPyFunctionFromPython<Py_SdfShouldCopyValueSig>();
-    def("CopySpec", &Py_SdfCopySpec,
-        (arg("srcLayer"), arg("srcPath"), arg("dstLayer"), arg("dstPath"),
-         arg("shouldCopyValueFn"), arg("shouldCopyChildrenFn")));
+    boost::python::def("CopySpec", &Py_SdfCopySpec,
+        (boost::python::arg("srcLayer"), boost::python::arg("srcPath"), boost::python::arg("dstLayer"), boost::python::arg("dstPath"),
+         boost::python::arg("shouldCopyValueFn"), boost::python::arg("shouldCopyChildrenFn")));
 }

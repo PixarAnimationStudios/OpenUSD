@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -64,28 +63,28 @@ void wrapUsdShadeConnectableAPI()
 {
     typedef UsdShadeConnectableAPI This;
 
-    class_<This, bases<UsdAPISchemaBase> >
+    boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
         cls("ConnectableAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
 
         .def("__repr__", ::_Repr)
@@ -119,7 +118,7 @@ namespace {
 
 #include <boost/python/tuple.hpp>
 
-static object
+static boost::python::object
 _GetConnectedSource(const UsdAttribute &shadingAttr)
 {
     UsdShadeConnectableAPI source;
@@ -130,11 +129,11 @@ _GetConnectedSource(const UsdAttribute &shadingAttr)
             &source, &sourceName, &sourceType)){
         return boost::python::make_tuple(source, sourceName, sourceType);
     } else {
-        return object();
+        return boost::python::object();
     }
 }
 
-static object
+static boost::python::object
 _GetConnectedSources(const UsdAttribute &shadingAttr)
 {
     SdfPathVector invalidSourcePaths;
@@ -242,26 +241,26 @@ WRAP_CUSTOM {
                 &UsdShadeConnectableAPI::RequiresEncapsulation)
 
         .def("CanConnect", CanConnect_Input,
-            (arg("input"), arg("source")))
+            (boost::python::arg("input"), boost::python::arg("source")))
         .def("CanConnect", CanConnect_Output,
-            (arg("output"), arg("source")=UsdAttribute()))
+            (boost::python::arg("output"), boost::python::arg("source")=UsdAttribute()))
         .staticmethod("CanConnect")
 
         .def("ConnectToSource", ConnectToSource_1, 
-            (arg("shadingAttr"), 
-             arg("source"), arg("sourceName"), 
-             arg("sourceType")=UsdShadeAttributeType::Output,
-             arg("typeName")=SdfValueTypeName()))
+            (boost::python::arg("shadingAttr"), 
+             boost::python::arg("source"), boost::python::arg("sourceName"), 
+             boost::python::arg("sourceType")=UsdShadeAttributeType::Output,
+             boost::python::arg("typeName")=SdfValueTypeName()))
         .def("ConnectToSource", ConnectToSource_2,
-            (arg("shadingAttr"), arg("sourcePath")))
+            (boost::python::arg("shadingAttr"), boost::python::arg("sourcePath")))
         .def("ConnectToSource", ConnectToSource_3,
-            (arg("shadingAttr"), arg("input")))
+            (boost::python::arg("shadingAttr"), boost::python::arg("input")))
         .def("ConnectToSource", ConnectToSource_4,
-            (arg("shadingAttr"), arg("output")))
+            (boost::python::arg("shadingAttr"), boost::python::arg("output")))
         .def("ConnectToSource", ConnectToSource_5,
-            (arg("shadingAttr"),
-             arg("source"),
-             arg("mod")=UsdShadeConnectionModification::Replace))
+            (boost::python::arg("shadingAttr"),
+             boost::python::arg("source"),
+             boost::python::arg("mod")=UsdShadeConnectionModification::Replace))
         .staticmethod("ConnectToSource")
 
         .def("SetConnectedSources",
@@ -269,70 +268,70 @@ WRAP_CUSTOM {
         .staticmethod("SetConnectedSources")
 
         .def("GetConnectedSource", _GetConnectedSource,
-            (arg("shadingAttr")))
+            (boost::python::arg("shadingAttr")))
             .staticmethod("GetConnectedSource")
 
         .def("GetConnectedSources", _GetConnectedSources,
-            (arg("shadingAttr")))
+            (boost::python::arg("shadingAttr")))
             .staticmethod("GetConnectedSources")
 
         .def("GetRawConnectedSourcePaths", _GetRawConnectedSourcePaths, 
-            (arg("shadingAttr")),
-            return_value_policy<TfPySequenceToList>())
+            (boost::python::arg("shadingAttr")),
+            boost::python::return_value_policy<TfPySequenceToList>())
             .staticmethod("GetRawConnectedSourcePaths")
 
         .def("HasConnectedSource", HasConnectedSource,
-            (arg("shadingAttr")))
+            (boost::python::arg("shadingAttr")))
             .staticmethod("HasConnectedSource")
 
         .def("IsSourceConnectionFromBaseMaterial",
                 IsSourceConnectionFromBaseMaterial,
-            (arg("shadingAttr")))
+            (boost::python::arg("shadingAttr")))
             .staticmethod("IsSourceConnectionFromBaseMaterial")
 
         .def("DisconnectSource", DisconnectSource,
-            (arg("shadingAttr"), arg("sourceAttr")=UsdAttribute()))
+            (boost::python::arg("shadingAttr"), boost::python::arg("sourceAttr")=UsdAttribute()))
             .staticmethod("DisconnectSource")
 
         .def("ClearSources", ClearSources,
-            (arg("shadingAttr")))
+            (boost::python::arg("shadingAttr")))
             .staticmethod("ClearSources")
 
         .def("ClearSource", ClearSource,
-            (arg("shadingAttr")))
+            (boost::python::arg("shadingAttr")))
             .staticmethod("ClearSource")
 
         .def("HasConnectableAPI", HasConnectableAPI,
-            (arg("schemaType")))
+            (boost::python::arg("schemaType")))
             .staticmethod("HasConnectableAPI")
 
         .def("CreateOutput", &UsdShadeConnectableAPI::CreateOutput,
-             (arg("name"), arg("type")))
-        .def("GetOutput", &UsdShadeConnectableAPI::GetOutput, arg("name"))
+             (boost::python::arg("name"), boost::python::arg("type")))
+        .def("GetOutput", &UsdShadeConnectableAPI::GetOutput, boost::python::arg("name"))
         .def("GetOutputs", &UsdShadeConnectableAPI::GetOutputs,
-             (arg("onlyAuthored") = true),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("onlyAuthored") = true),
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("CreateInput", &UsdShadeConnectableAPI::CreateInput,
-             (arg("name"), arg("type")))
-        .def("GetInput", &UsdShadeConnectableAPI::GetInput, arg("name"))
+             (boost::python::arg("name"), boost::python::arg("type")))
+        .def("GetInput", &UsdShadeConnectableAPI::GetInput, boost::python::arg("name"))
         .def("GetInputs", &UsdShadeConnectableAPI::GetInputs,
-             (arg("onlyAuthored") = true),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("onlyAuthored") = true),
+             boost::python::return_value_policy<TfPySequenceToList>())
 
     ;
 
-    class_<ConnectionSourceInfo>("ConnectionSourceInfo")
-        .def(init<UsdShadeConnectableAPI const &,
+    boost::python::class_<ConnectionSourceInfo>("ConnectionSourceInfo")
+        .def(boost::python::init<UsdShadeConnectableAPI const &,
                   TfToken const &,
                   UsdShadeAttributeType,
-                  SdfValueTypeName>((arg("source"),
-                                     arg("sourceName"),
-                                     arg("sourceType"),
-                                     arg("typeName")=SdfValueTypeName())))
-        .def(init<UsdShadeInput const &>(arg("input")))
-        .def(init<UsdShadeOutput const &>(arg("output")))
-        .def(init<UsdStagePtr const&, SdfPath const&>())
+                  SdfValueTypeName>((boost::python::arg("source"),
+                                     boost::python::arg("sourceName"),
+                                     boost::python::arg("sourceType"),
+                                     boost::python::arg("typeName")=SdfValueTypeName())))
+        .def(boost::python::init<UsdShadeInput const &>(boost::python::arg("input")))
+        .def(boost::python::init<UsdShadeOutput const &>(boost::python::arg("output")))
+        .def(boost::python::init<UsdStagePtr const&, SdfPath const&>())
 
         .def_readwrite("source", &ConnectionSourceInfo::source)
         .add_property("sourceName", &_GetSourceName, &_SetSourceName)
@@ -346,7 +345,7 @@ WRAP_CUSTOM {
         .def("__ne__", &ConnectionSourceInfo::operator!=)
     ;
 
-    to_python_converter<
+    boost::python::to_python_converter<
         std::vector<ConnectionSourceInfo>,
         TfPySequenceToPython<std::vector<ConnectionSourceInfo>>>();
     TfPyContainerConversions::from_python_sequence<

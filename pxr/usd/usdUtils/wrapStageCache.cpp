@@ -29,18 +29,15 @@
 
 #include "pxr/base/tf/pyResultConversions.h"
 
-using namespace std;
-using namespace boost::python;
-using namespace boost;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapStageCache()
 {
-    class_<UsdUtilsStageCache>("StageCache")
+    boost::python::class_<UsdUtilsStageCache>("StageCache")
 
         .def("Get", &UsdUtilsStageCache::Get,
-             return_value_policy<reference_existing_object>())
+             boost::python::return_value_policy<boost::python::reference_existing_object>())
         .staticmethod("Get")
 
         .def("GetSessionLayerForVariantSelections",

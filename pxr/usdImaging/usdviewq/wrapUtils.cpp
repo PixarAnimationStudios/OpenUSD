@@ -33,8 +33,6 @@
 
 #include <vector>
 
-using namespace boost::python;
-using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -43,7 +41,7 @@ namespace {
 // We return primInfo by unrolling it into a single tuple.  This allows
 // python clients to extract the information 40% faster than if we were
 // to wrap out UsdviewqUtils::PrimInfo directly.
-static tuple
+static boost::python::tuple
 _GetPrimInfo(UsdPrim const &prim, UsdTimeCode time)
 {
     UsdviewqUtils::PrimInfo info = UsdviewqUtils::GetPrimInfo(prim, time);
@@ -67,10 +65,10 @@ _GetPrimInfo(UsdPrim const &prim, UsdTimeCode time)
 void wrapUtils() {    
     typedef UsdviewqUtils This;
 
-    scope utilsScope = class_<This> ("Utils")
+    boost::python::scope utilsScope = boost::python::class_<This> ("Utils")
         .def("_GetAllPrimsOfType",
             This::_GetAllPrimsOfType,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
             .staticmethod("_GetAllPrimsOfType")
 
         .def("GetPrimInfo",

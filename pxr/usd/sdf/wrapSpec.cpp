@@ -34,7 +34,6 @@
 
 #include <boost/python/class.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -56,7 +55,7 @@ _WrapIsInertProperty(SdfSpec &self)
 
 static
 void
-_WrapSetInfo(SdfSpec &self, const TfToken &name, const object& pyObj)
+_WrapSetInfo(SdfSpec &self, const TfToken &name, const boost::python::object& pyObj)
 {
     VtValue fallback;
     if (!self.GetSchema().IsRegistered(name, &fallback)) {
@@ -66,22 +65,22 @@ _WrapSetInfo(SdfSpec &self, const TfToken &name, const object& pyObj)
 
     VtValue value;
     if (fallback.IsEmpty()) {
-        value = extract<VtValue>(pyObj)();
+        value = boost::python::extract<VtValue>(pyObj)();
     }
     else {
         // We have to handle a few things as special cases to disambiguate
         // types from Python.
         if (fallback.IsHolding<SdfPath>()) {
-            value = extract<SdfPath>(pyObj)();
+            value = boost::python::extract<SdfPath>(pyObj)();
         }
         else if (fallback.IsHolding<TfTokenVector>()) {
-            value = extract<TfTokenVector>(pyObj)();
+            value = boost::python::extract<TfTokenVector>(pyObj)();
         }
         else if (fallback.IsHolding<SdfVariantSelectionMap>()) {
-            value = extract<SdfVariantSelectionMap>(pyObj)();
+            value = boost::python::extract<SdfVariantSelectionMap>(pyObj)();
         }
         else {
-            value = extract<VtValue>(pyObj)();
+            value = boost::python::extract<VtValue>(pyObj)();
             value.CastToTypeOf(fallback);
         }
     }
@@ -112,7 +111,7 @@ void wrapSpec()
 {
     typedef SdfSpec This;
 
-    class_<This, SdfHandle<This>, boost::noncopyable>("Spec", no_init)
+    boost::python::class_<This, SdfHandle<This>, boost::noncopyable>("Spec", boost::python::no_init)
         .def(SdfPyAbstractSpec())
 
         .add_property("layer", &This::GetLayer,
@@ -123,9 +122,9 @@ void wrapSpec()
         .def("GetAsText", &_GetAsText)
 
         .def("ListInfoKeys", &This::ListInfoKeys,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetMetaDataInfoKeys", &This::GetMetaDataInfoKeys,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("GetMetaDataDisplayGroup", &This::GetMetaDataDisplayGroup)
 
@@ -164,7 +163,7 @@ void wrapSpec()
              "After calling this, HasInfo() will return false. "
              "To make HasInfo() return true, set a value for that scene "
              "spec info.",
-             (arg("key")))
+             (boost::python::arg("key")))
 
         .def("GetTypeForInfo", &This::GetTypeForInfo,
              "GetTypeForInfo(key)\n\n"
@@ -174,8 +173,8 @@ void wrapSpec()
              "Returns the type of value for the given key. ")
 
         .def("GetFallbackForInfo",
-              make_function(&This::GetFallbackForInfo,
-                  return_value_policy<return_by_value>()),
+              boost::python::make_function(&This::GetFallbackForInfo,
+                  boost::python::return_value_policy<boost::python::return_by_value>()),
              "GetFallbackForInfo(key)\n\n"
 
              "key : string\n\n"
@@ -192,7 +191,7 @@ void wrapSpec()
               "conditions.")
 
         .def("IsInert", &This::IsInert,
-             (arg("ignoreChildren") = false),
+             (boost::python::arg("ignoreChildren") = false),
              
              "Indicates whether this spec has any significant data. "
              "If ignoreChildren is true, child scenegraph objects will be "

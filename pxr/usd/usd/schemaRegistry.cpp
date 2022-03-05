@@ -56,9 +56,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using std::set;
-using std::string;
-using std::vector;
 
 TF_DEFINE_ENV_SETTING(
     USD_DISABLE_PRIM_DEFINITIONS_FOR_USDGENSCHEMA, false,
@@ -113,12 +110,12 @@ struct _TypeMapCache {
         auto _MapDerivedTypes = [this, &schemaBaseType](
             const TfType &baseType, bool isTyped) 
         {
-            set<TfType> types;
+            std::set<TfType> types;
             PlugRegistry::GetAllDerivedTypes(baseType, &types);
             for (const TfType &type : types) {
                 // The USD type name is the type's alias under UsdSchemaBase. 
                 // All schemas should have a type name alias.
-                const vector<string> aliases = schemaBaseType.GetAliases(type);
+                const std::vector<std::string> aliases = schemaBaseType.GetAliases(type);
                 if (aliases.size() == 1) {
                     TfToken typeName(aliases.front(), TfToken::Immortal);
                     nameToType.insert(std::make_pair(
@@ -553,7 +550,7 @@ static SdfLayerRefPtr
 _GetGeneratedSchema(const PlugPluginPtr &plugin)
 {
     // Look for generatedSchema in Resources.
-    const string fname = TfStringCatPaths(plugin->GetResourcePath(),
+    const std::string fname = TfStringCatPaths(plugin->GetResourcePath(),
                                           "generatedSchema.usda");
     SdfLayerRefPtr layer = SdfLayer::OpenAsAnonymous(fname);
 

@@ -44,7 +44,6 @@
 #include <boost/variant/variant.hpp>
 #include <mutex>
 
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -58,7 +57,7 @@ public:
     }
 
     Tf_EnvSettingRegistry() {
-        string fileName = TfGetenv("PIXAR_TF_ENV_SETTING_FILE", "");
+        std::string fileName = TfGetenv("PIXAR_TF_ENV_SETTING_FILE", "");
         if (FILE* fp = ArchOpenFile(fileName.c_str(), "r")) {
             char buffer[1024];
 
@@ -79,13 +78,13 @@ public:
 
             while (fgets(buffer, sizeof(buffer), fp)) {
                 ++lineNo;
-                string line = string(buffer);
+                std::string line = std::string(buffer);
                 if (line.back() != '\n') {
                     emitError("line too long; ignored");
                     continue;
                 }
 
-                string trimmed = TfStringTrim(line);
+                std::string trimmed = TfStringTrim(line);
                 if (trimmed.empty() || trimmed.front() == '#') {
                     continue;
                 }
@@ -96,8 +95,8 @@ public:
                     continue;
                 }
                     
-                string key = TfStringTrim(trimmed.substr(0, eqPos));
-                string value = TfStringTrim(trimmed.substr(eqPos+1));
+                std::string key = TfStringTrim(trimmed.substr(0, eqPos));
+                std::string value = TfStringTrim(trimmed.substr(eqPos+1));
                 if (key.empty()) {
                     emitError("empty key");
                     continue;
@@ -122,7 +121,7 @@ public:
     using VariantType = boost::variant<int, bool, std::string>;
 
     template <typename U>
-    bool Define(string const& varName,
+    bool Define(std::string const& varName,
                 U const& value,
                 std::atomic<U*>* cachedValue) {
 
@@ -136,7 +135,7 @@ public:
                 return _printAlerts;
             }
 
-            TfHashMap<string, VariantType, TfHash>::iterator it;
+            TfHashMap<std::string, VariantType, TfHash>::iterator it;
             std::tie(it, inserted) = _valuesByName.insert({varName, value});
 
             U* entryPointer = boost::get<U>(&(it->second));
@@ -156,14 +155,14 @@ public:
         }
     }
 
-    VariantType const *LookupByName(string const& name) const {
+    VariantType const *LookupByName(std::string const& name) const {
         std::lock_guard<std::mutex> lock(_lock);
         return TfMapLookupPtr(_valuesByName, name);
     }
 
 private:
     mutable std::mutex _lock;
-    TfHashMap<string, VariantType, TfHash> _valuesByName;
+    TfHashMap<std::string, VariantType, TfHash> _valuesByName;
     bool _printAlerts;
 };
 
@@ -175,20 +174,20 @@ static bool _Getenv(std::string const& name, bool def) {
 static int _Getenv(std::string const& name, int def) {
     return TfGetenvInt(name, def);
 }
-static string _Getenv(std::string const& name, const char *def) {
+static std::string _Getenv(std::string const& name, const char *def) {
     return TfGetenv(name, def);
 }
 
-static string _Str(bool value) {
+static std::string _Str(bool value) {
     return value ? "true" : "false";
 }
-static string _Str(int value) {
+static std::string _Str(int value) {
     return TfStringPrintf("%d", value);
 }
-static string _Str(const char *value) {
-    return string(value);
+static std::string _Str(const char *value) {
+    return std::string(value);
 }
-static string _Str(const std::string &value) {
+static std::string _Str(const std::string &value) {
     return value;
 }
 
@@ -208,12 +207,12 @@ void Tf_InitializeEnvSetting(TfEnvSetting<T> *setting)
                    setting->_value)) {
         // Setting was defined successfully and we should print alerts.
         if (setting->_default != value) {
-            string text = TfStringPrintf("#  %s is overridden to '%s'.  "
+            std::string text = TfStringPrintf("#  %s is overridden to '%s'.  "
                                          "Default is '%s'.  #",
                                          setting->_name,
                                          _Str(value).c_str(),
                                          _Str(setting->_default).c_str());
-            string line(text.length(), '#');
+            std::string line(text.length(), '#');
             fprintf(stderr, "%s\n%s\n%s\n",
                     line.c_str(), text.c_str(), line.c_str());
         }

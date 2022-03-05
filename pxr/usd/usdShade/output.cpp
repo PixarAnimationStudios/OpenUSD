@@ -38,8 +38,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-using std::vector;
-using std::string;
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,

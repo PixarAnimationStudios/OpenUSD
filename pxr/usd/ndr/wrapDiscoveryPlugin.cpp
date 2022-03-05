@@ -29,7 +29,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -38,9 +37,9 @@ static void wrapDiscoveryPluginContext()
     typedef NdrDiscoveryPluginContext This;
     typedef TfWeakPtr<NdrDiscoveryPluginContext> ThisPtr;
 
-    class_<This, ThisPtr, boost::noncopyable>("DiscoveryPluginContext", no_init)
+    boost::python::class_<This, ThisPtr, boost::noncopyable>("DiscoveryPluginContext", boost::python::no_init)
         .def(TfPyWeakPtr())
-        .def("GetSourceType", pure_virtual(&This::GetSourceType))
+        .def("GetSourceType", boost::python::pure_virtual(&This::GetSourceType))
         ;
 }
 
@@ -49,12 +48,12 @@ void wrapDiscoveryPlugin()
     typedef NdrDiscoveryPlugin This;
     typedef NdrDiscoveryPluginPtr ThisPtr;
 
-    return_value_policy<copy_const_reference> copyRefPolicy;
+    boost::python::return_value_policy<boost::python::copy_const_reference> copyRefPolicy;
 
-    class_<This, ThisPtr, boost::noncopyable>("DiscoveryPlugin", no_init)
+    boost::python::class_<This, ThisPtr, boost::noncopyable>("DiscoveryPlugin", boost::python::no_init)
         .def(TfPyWeakPtr())
-        .def("DiscoverNodes", pure_virtual(&This::DiscoverNodes))
-        .def("GetSearchURIs", pure_virtual(&This::GetSearchURIs), copyRefPolicy)
+        .def("DiscoverNodes", boost::python::pure_virtual(&This::DiscoverNodes))
+        .def("GetSearchURIs", boost::python::pure_virtual(&This::GetSearchURIs), copyRefPolicy)
         ;
 
     wrapDiscoveryPluginContext();

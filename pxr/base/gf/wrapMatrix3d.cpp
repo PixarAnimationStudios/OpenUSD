@@ -53,9 +53,6 @@
 #include <string>
 #include <vector>
 
-using namespace boost::python;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -117,7 +114,7 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
         return -1;
     }
 
-    GfMatrix3d &mat = extract<GfMatrix3d &>(self);
+    GfMatrix3d &mat = boost::python::extract<GfMatrix3d &>(self);
 
     view->obj = self;
     view->buf = static_cast<void *>(mat.GetArray());
@@ -167,7 +164,7 @@ static PyBufferProcs bufferProcs = {
 // End python buffer protocol support.
 ////////////////////////////////////////////////////////////////////////
 
-static string _Repr(GfMatrix3d const &self) {
+static std::string _Repr(GfMatrix3d const &self) {
     static char newline[] = ",\n            ";
     return TF_PY_REPR_PREFIX + "Matrix3d(" +
         TfPyRepr(self[0][0]) + ", " + TfPyRepr(self[0][1]) + ", " + TfPyRepr(self[0][2]) + newline +
@@ -196,11 +193,11 @@ static int __len__(GfMatrix3d const &self) {
     return 3;
 }
 
-static double __getitem__double(GfMatrix3d const &self, tuple index) {
+static double __getitem__double(GfMatrix3d const &self, boost::python::tuple index) {
     int i1=0, i2=0;
-    if (len(index) == 2) {
-        i1 = normalizeIndex(extract<int>(index[0]));
-        i2 = normalizeIndex(extract<int>(index[1]));
+    if (boost::python::len(index) == 2) {
+        i1 = normalizeIndex(boost::python::extract<int>(index[0]));
+        i2 = normalizeIndex(boost::python::extract<int>(index[1]));
     } else
         throwIndexErr("Index has incorrect size.");
 
@@ -211,11 +208,11 @@ static GfVec3d __getitem__vector(GfMatrix3d const &self, int index) {
     return GfVec3d(self[normalizeIndex(index)]);
 }
 
-static void __setitem__double(GfMatrix3d &self, tuple index, double value) {
+static void __setitem__double(GfMatrix3d &self, boost::python::tuple index, double value) {
     int i1=0, i2=0;
-    if (len(index) == 2) {
-        i1 = normalizeIndex(extract<int>(index[0]));
-        i2 = normalizeIndex(extract<int>(index[1]));
+    if (boost::python::len(index) == 2) {
+        i1 = normalizeIndex(boost::python::extract<int>(index[0]));
+        i2 = normalizeIndex(boost::python::extract<int>(index[1]));
     } else
         throwIndexErr("Index has incorrect size.");
 
@@ -284,7 +281,7 @@ static boost::python::tuple get_dimension()
     // It seems likely that this has to do with the order of
     // destruction of these objects when deinitializing, but we did
     // not dig deeply into this difference.
-    return make_tuple(3, 3);
+    return boost::python::make_tuple(3, 3);
 }
 
 } // anonymous namespace 
@@ -293,27 +290,27 @@ void wrapMatrix3d()
 {    
     typedef GfMatrix3d This;
 
-    def("IsClose", (bool (*)(const GfMatrix3d &m1, const GfMatrix3d &m2, double))
+    boost::python::def("IsClose", (bool (*)(const GfMatrix3d &m1, const GfMatrix3d &m2, double))
         GfIsClose);
     
-    class_<This> cls( "Matrix3d", no_init);
+    boost::python::class_<This> cls( "Matrix3d", boost::python::no_init);
     cls
         .def_pickle(GfMatrix3d_Pickle_Suite())
-	.def("__init__", make_constructor(__init__))
-        .def(init< const GfMatrix3d & >())
-        .def(init< const GfMatrix3f & >())
-        .def(init< int >())
-        .def(init< double >())
-        .def(init<
+	.def("__init__", boost::python::make_constructor(__init__))
+        .def(boost::python::init< const GfMatrix3d & >())
+        .def(boost::python::init< const GfMatrix3f & >())
+        .def(boost::python::init< int >())
+        .def(boost::python::init< double >())
+        .def(boost::python::init<
              double, double, double, 
              double, double, double, 
              double, double, double 
              >())
-        .def(init< const GfVec3d & >())
-        .def(init< const vector< vector<float> >& >())
-        .def(init< const vector< vector<double> >& >())
-        .def(init< const GfRotation& >())
-        .def(init< const GfQuatd& >())
+        .def(boost::python::init< const GfVec3d & >())
+        .def(boost::python::init< const std::vector< std::vector<float> >& >())
+        .def(boost::python::init< const std::vector< std::vector<double> >& >())
+        .def(boost::python::init< const GfRotation& >())
+        .def(boost::python::init< const GfQuatd& >())
 
         .def( TfTypePythonClass() )
 
@@ -330,17 +327,17 @@ void wrapMatrix3d()
         .def("Set", (This &(This::*)(double, double, double, 
                                      double, double, double, 
                                      double, double, double))&This::Set,
-             return_self<>())
+             boost::python::return_self<>())
         
-        .def("SetIdentity", &This::SetIdentity, return_self<>())
-        .def("SetZero", &This::SetZero, return_self<>())
+        .def("SetIdentity", &This::SetIdentity, boost::python::return_self<>())
+        .def("SetZero", &This::SetZero, boost::python::return_self<>())
 
         .def("SetDiagonal", 
              (This & (This::*)(double))&This::SetDiagonal, 
-             return_self<>())
+             boost::python::return_self<>())
         .def("SetDiagonal", 
              (This & (This::*)(const GfVec3d &))&This::SetDiagonal, 
-             return_self<>())
+             boost::python::return_self<>())
 
         .def("SetRow", &This::SetRow)
         .def("SetColumn", &This::SetColumn)
@@ -356,30 +353,30 @@ void wrapMatrix3d()
         .def("IsRightHanded", &This::IsRightHanded)
 
         .def("Orthonormalize", &This::Orthonormalize,
-             (arg("issueWarning") = true))
+             (boost::python::arg("issueWarning") = true))
         .def("GetOrthonormalized", &This::GetOrthonormalized,
-             (arg("issueWarning") = true))
+             (boost::python::arg("issueWarning") = true))
         
-        .def( str(self) )
-        .def( self == self )
-        .def( self == GfMatrix3f() )
-        .def( self != self )
-        .def( self != GfMatrix3f() )
-        .def( self *= self )
-        .def( self * self )
-        .def( self *= double() )
-        .def( self * double() )
-        .def( double() * self )
-        .def( self += self )
-        .def( self + self )
-        .def( self -= self )
-        .def( self - self )
-        .def( -self )
-        .def( self / self )
-        .def( self * GfVec3d() )
-        .def( GfVec3d() * self )
-        .def( self * GfVec3f() )
-        .def( GfVec3f() * self )
+        .def( boost::python::self_ns::str(boost::python::self) )
+        .def( boost::python::self == boost::python::self )
+        .def( boost::python::self == GfMatrix3f() )
+        .def( boost::python::self != boost::python::self )
+        .def( boost::python::self != GfMatrix3f() )
+        .def( boost::python::self *= boost::python::self )
+        .def( boost::python::self * boost::python::self )
+        .def( boost::python::self *= double() )
+        .def( boost::python::self * double() )
+        .def( double() * boost::python::self )
+        .def( boost::python::self += boost::python::self )
+        .def( boost::python::self + boost::python::self )
+        .def( boost::python::self -= boost::python::self )
+        .def( boost::python::self - boost::python::self )
+        .def( -boost::python::self )
+        .def( boost::python::self / boost::python::self )
+        .def( boost::python::self * GfVec3d() )
+        .def( GfVec3d() * boost::python::self )
+        .def( boost::python::self * GfVec3f() )
+        .def( GfVec3f() * boost::python::self )
 
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
@@ -387,21 +384,21 @@ void wrapMatrix3d()
         .def("__truediv__", __truediv__ )
 #endif
 
-        .def("SetScale", (This & (This::*)( const GfVec3d & ))&This::SetScale, return_self<>())
+        .def("SetScale", (This & (This::*)( const GfVec3d & ))&This::SetScale, boost::python::return_self<>())
         .def("SetRotate",
              (This & (This::*)( const GfQuatd & )) &This::SetRotate,
-             return_self<>())
+             boost::python::return_self<>())
         .def("SetRotate",
              (This & (This::*)( const GfRotation & )) &This::SetRotate,
-             return_self<>())
+             boost::python::return_self<>())
         .def("ExtractRotation", &This::ExtractRotation)
-        .def("SetScale", (This & (This::*)( double ))&This::SetScale, return_self<>())
+        .def("SetScale", (This & (This::*)( double ))&This::SetScale, boost::python::return_self<>())
 
         .def("__repr__", _Repr)
         .def("__hash__", __hash__)
 
         ;
-    to_python_converter<std::vector<This>,
+    boost::python::to_python_converter<std::vector<This>,
         TfPySequenceToPython<std::vector<This> > >();
     
     // Install buffer protocol: set the tp_as_buffer slot to point to a

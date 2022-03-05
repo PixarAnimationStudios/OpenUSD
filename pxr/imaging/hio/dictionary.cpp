@@ -31,7 +31,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-using namespace std;
 
 
 TF_DEBUG_CODES(
@@ -49,8 +48,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
 
 static VtDictionary
 _Hio_GetDictionaryFromJSON(
-    const string &input,
-    string *errorStr )
+    const std::string &input,
+    std::string *errorStr )
 {
     if (input.empty())
     {
@@ -113,9 +112,9 @@ _Hio_GetDictionaryFromJSON(
 
 VtDictionary
 Hio_GetDictionaryFromInput(
-    const string &input,
-    const string &filename,
-    string *errorStr )
+    const std::string &input,
+    const std::string &filename,
+    std::string *errorStr )
 {
     std::string jsError;
     VtDictionary ret = _Hio_GetDictionaryFromJSON(input, &jsError);

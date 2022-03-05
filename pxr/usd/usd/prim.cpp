@@ -818,7 +818,7 @@ UsdPrim::_GetPropertyNames(
 
     if (!names.empty()) {
         // Sort and uniquify the names.
-        sort(names.begin(), names.end(), TfDictionaryLessThan());
+        std::sort(names.begin(), names.end(), TfDictionaryLessThan());
         names.erase(std::unique(names.begin(), names.end()), names.end());
         if (applyOrder) {
             _ApplyOrdering(GetPropertyOrder(), &names);
@@ -1144,7 +1144,7 @@ private:
                                    SdfPath::FastLessThan());
             });
 
-        _result.erase(unique(_result.begin(), _result.end()), _result.end());
+        _result.erase(std::unique(_result.begin(), _result.end()), _result.end());
     }
 
     void _ConsumerTask() {

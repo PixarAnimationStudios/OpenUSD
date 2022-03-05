@@ -36,32 +36,31 @@
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/usdUtils/dependencies.h"
 
-namespace bp = boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static bp::tuple
+static boost::python::tuple
 _ExtractExternalReferences(
     const std::string& filePath)
 {
     std::vector<std::string> subLayers, references, payloads;
     UsdUtilsExtractExternalReferences(filePath,
         &subLayers, &references, &payloads);
-    return bp::make_tuple(subLayers, references, payloads);
+    return boost::python::make_tuple(subLayers, references, payloads);
 }
 
 // Helper for creating a python object holding a layer ref ptr.
-bp::object
+boost::python::object
 _LayerRefToObj(const SdfLayerRefPtr& layer)
 {
     using RefPtrFactory = Tf_MakePyConstructor::RefPtrFactory<>::
             apply<SdfLayerRefPtr>::type;
-    return bp::object(bp::handle<>(RefPtrFactory()(layer)));
+    return boost::python::object(boost::python::handle<>(RefPtrFactory()(layer)));
 }
 
-static bp::tuple
+static boost::python::tuple
 _ComputeAllDependencies(const SdfAssetPath &assetPath) 
 {
     std::vector<SdfLayerRefPtr> layers;
@@ -69,36 +68,36 @@ _ComputeAllDependencies(const SdfAssetPath &assetPath)
     
     UsdUtilsComputeAllDependencies(assetPath, &layers, &assets, 
                                    &unresolvedPaths);
-    bp::list layersList;
+    boost::python::list layersList;
     for (auto &l: layers) { 
         layersList.append(_LayerRefToObj(l)); 
     }
-    return bp::make_tuple(layersList, assets, unresolvedPaths);
+    return boost::python::make_tuple(layersList, assets, unresolvedPaths);
 }
 
 } // anonymous namespace 
 
 void wrapDependencies()
 {
-    bp::def("ExtractExternalReferences", _ExtractExternalReferences,
-            bp::arg("filePath"));
+    boost::python::def("ExtractExternalReferences", _ExtractExternalReferences,
+            boost::python::arg("filePath"));
 
-    bp::def("CreateNewUsdzPackage", UsdUtilsCreateNewUsdzPackage,
-            (bp::arg("assetPath"),
-             bp::arg("usdzFilePath"),
-             bp::arg("firstLayerName") = std::string()));
+    boost::python::def("CreateNewUsdzPackage", UsdUtilsCreateNewUsdzPackage,
+            (boost::python::arg("assetPath"),
+             boost::python::arg("usdzFilePath"),
+             boost::python::arg("firstLayerName") = std::string()));
 
-    bp::def("CreateNewARKitUsdzPackage", UsdUtilsCreateNewARKitUsdzPackage,
-            (bp::arg("assetPath"),
-             bp::arg("usdzFilePath"),
-             bp::arg("firstLayerName") = std::string()));
+    boost::python::def("CreateNewARKitUsdzPackage", UsdUtilsCreateNewARKitUsdzPackage,
+            (boost::python::arg("assetPath"),
+             boost::python::arg("usdzFilePath"),
+             boost::python::arg("firstLayerName") = std::string()));
 
-    bp::def("ComputeAllDependencies", _ComputeAllDependencies,
-            (bp::arg("assetPath")));
+    boost::python::def("ComputeAllDependencies", _ComputeAllDependencies,
+            (boost::python::arg("assetPath")));
 
     using Py_UsdUtilsModifyAssetPathFn = std::string(const std::string&);
     TfPyFunctionFromPython<Py_UsdUtilsModifyAssetPathFn>();
-    bp::def("ModifyAssetPaths", &UsdUtilsModifyAssetPaths,
-        (bp::arg("layer"), bp::arg("modifyFn")));
+    boost::python::def("ModifyAssetPaths", &UsdUtilsModifyAssetPaths,
+        (boost::python::arg("layer"), boost::python::arg("modifyFn")));
 
 }

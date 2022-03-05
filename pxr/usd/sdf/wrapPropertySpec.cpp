@@ -35,7 +35,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -81,7 +80,7 @@ void wrapPropertySpec()
     typedef SdfPropertySpec This;
 
     // Register python conversions for vector<SdfPropertySpecHandle>
-    to_python_converter<
+    boost::python::to_python_converter<
         SdfPropertySpecHandleVector,
         TfPySequenceToPython<SdfPropertySpecHandleVector> >();
 
@@ -90,7 +89,7 @@ void wrapPropertySpec()
         TfPyContainerConversions::variable_capacity_policy >();
 
     // Register python conversions for vector<SdfPropertySpecConstHandle>
-    to_python_converter<
+    boost::python::to_python_converter<
         SdfPropertySpecConstHandleVector,
         TfPySequenceToPython<SdfPropertySpecConstHandleVector> >();
 
@@ -98,14 +97,14 @@ void wrapPropertySpec()
         SdfPropertySpecConstHandleVector,
         TfPyContainerConversions::variable_capacity_policy >();
 
-    class_<This, SdfHandle<This>, 
-           bases<SdfSpec>, boost::noncopyable>
-        ("PropertySpec", no_init)
+    boost::python::class_<This, SdfHandle<This>, 
+           boost::python::bases<SdfSpec>, boost::noncopyable>
+        ("PropertySpec", boost::python::no_init)
         .def(SdfPyAbstractSpec())
 
         .add_property("name",
-            make_function(&This::GetName,
-                          return_value_policy<return_by_value>()),
+            boost::python::make_function(&This::GetName,
+                          boost::python::return_value_policy<boost::python::return_by_value>()),
             &_WrapSetName,
             "The name of the property.")
 

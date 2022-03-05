@@ -31,7 +31,6 @@
 #include <boost/python/operators.hpp>
 #include <boost/python/implicit.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -52,30 +51,30 @@ void wrapUsdGeomConstraintTarget()
 {
     typedef UsdGeomConstraintTarget ConstraintTarget;
 
-    class_<ConstraintTarget>("ConstraintTarget")
-        .def(init<UsdAttribute>(arg("attr")))
-        .def(!self)
+    boost::python::class_<ConstraintTarget>("ConstraintTarget")
+        .def(boost::python::init<UsdAttribute>(boost::python::arg("attr")))
+        .def(!boost::python::self)
 
         .def("GetAttr", &ConstraintTarget::GetAttr,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .def("IsDefined", &ConstraintTarget::IsDefined)
 
         .def("IsValid", &ConstraintTarget::IsValid)
 
-        .def("SetIdentifier", &ConstraintTarget::SetIdentifier, arg("identifier"))
+        .def("SetIdentifier", &ConstraintTarget::SetIdentifier, boost::python::arg("identifier"))
         .def("GetIdentifier", &ConstraintTarget::GetIdentifier,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
-        .def("Get", &ConstraintTarget::Get, (arg("time")=UsdTimeCode::Default()))
-        .def("Set", &ConstraintTarget::Set, (arg("value"), 
-            arg("time")=UsdTimeCode::Default()))
+        .def("Get", &ConstraintTarget::Get, (boost::python::arg("time")=UsdTimeCode::Default()))
+        .def("Set", &ConstraintTarget::Set, (boost::python::arg("value"), 
+            boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("GetConstraintAttrName", &ConstraintTarget::GetConstraintAttrName)
             .staticmethod("GetConstraintAttrName")
 
         .def("ComputeInWorldSpace", _ComputeInWorldSpace,
-             (arg("time")=UsdTimeCode::Default()))
+             (boost::python::arg("time")=UsdTimeCode::Default()))
         ;
 
-    implicitly_convertible<ConstraintTarget, UsdAttribute>();
+    boost::python::implicitly_convertible<ConstraintTarget, UsdAttribute>();
 }

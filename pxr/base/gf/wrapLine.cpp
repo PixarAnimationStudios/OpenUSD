@@ -36,21 +36,19 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string _Repr(GfLine const &self) {
+static std::string _Repr(GfLine const &self) {
     return TF_PY_REPR_PREFIX + "Line(" + TfPyRepr(self.GetPoint(0.0)) + ", " +
         TfPyRepr(self.GetDirection()) + ")";
 }
 
 
-static tuple
+static boost::python::tuple
 FindClosestPointsHelper( const GfLine &l1, const GfLine &l2 )
 {
     GfVec3d p1(0), p2(0);
@@ -59,7 +57,7 @@ FindClosestPointsHelper( const GfLine &l1, const GfLine &l2 )
     return boost::python::make_tuple( result, p1, p2, t1, t2 );
 }
 
-static tuple
+static boost::python::tuple
 FindClosestPointHelper( const GfLine &self, const GfVec3d &point )
 {
     double t;
@@ -79,7 +77,7 @@ void wrapLine()
 {    
     typedef GfLine This;
 
-    def("FindClosestPoints", FindClosestPointsHelper, 
+    boost::python::def("FindClosestPoints", FindClosestPointsHelper, 
         "FindClosestPoints( l1, l2 ) -> tuple<intersects = bool, p1 = GfVec3d, p2 = GfVec3d,"
         " t1 = double, t2 = double>\n"
         "\n"
@@ -93,29 +91,29 @@ void wrapLine()
         "in t1 and t2.\n"
         "----------------------------------------------------------------------" );
     
-    class_<This>( "Line", "Line class", init<>() )
-        .def(init< const GfVec3d &, const GfVec3d & >())
+    boost::python::class_<This>( "Line", "Line class", boost::python::init<>() )
+        .def(boost::python::init< const GfVec3d &, const GfVec3d & >())
 
         .def( TfTypePythonClass() )
 
-        .def("Set", &This::Set, return_self<>())
+        .def("Set", &This::Set, boost::python::return_self<>())
 
         .def("GetPoint", &This::GetPoint)
 
         .def("GetDirection", &This::GetDirection,
-             return_value_policy<copy_const_reference>())
+             boost::python::return_value_policy<boost::python::copy_const_reference>())
 
         .add_property( "direction",
-                       make_function(&This::GetDirection,
-                                     return_value_policy
-                                     <copy_const_reference>()),
+                       boost::python::make_function(&This::GetDirection,
+                                     boost::python::return_value_policy
+                                     <boost::python::copy_const_reference>()),
                        SetDirectionHelper )
 
         .def( "FindClosestPoint", FindClosestPointHelper )
 
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
+        .def( boost::python::self_ns::str(boost::python::self) )
+        .def( boost::python::self == boost::python::self )
+        .def( boost::python::self != boost::python::self )
 
         .def("__repr__", _Repr)
 

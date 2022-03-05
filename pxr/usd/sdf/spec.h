@@ -256,7 +256,7 @@ public:
 
     /// Hash.
     friend size_t hash_value(const SdfSpec &x) {
-        return hash_value(x._id);
+        return boost::hash_value(x._id);
     }
 
 private:

@@ -37,7 +37,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -52,35 +51,35 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateGeomBindTransformAttr(UsdSkelBindingAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateGeomBindTransformAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Matrix4d), writeSparsely);
 }
         
 static UsdAttribute
 _CreateJointsAttr(UsdSkelBindingAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateJointsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateJointIndicesAttr(UsdSkelBindingAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateJointIndicesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->IntArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateJointWeightsAttr(UsdSkelBindingAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateJointWeightsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateBlendShapesAttr(UsdSkelBindingAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateBlendShapesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
 }
@@ -118,70 +117,70 @@ void wrapUsdSkelBindingAPI()
     UsdSkelBindingAPI_CanApplyResult::Wrap<UsdSkelBindingAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
+    boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
         cls("BindingAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
-        .def("Apply", &This::Apply, (arg("prim")))
+        .def("Apply", &This::Apply, (boost::python::arg("prim")))
         .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetGeomBindTransformAttr",
              &This::GetGeomBindTransformAttr)
         .def("CreateGeomBindTransformAttr",
              &_CreateGeomBindTransformAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetJointsAttr",
              &This::GetJointsAttr)
         .def("CreateJointsAttr",
              &_CreateJointsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetJointIndicesAttr",
              &This::GetJointIndicesAttr)
         .def("CreateJointIndicesAttr",
              &_CreateJointIndicesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetJointWeightsAttr",
              &This::GetJointWeightsAttr)
         .def("CreateJointWeightsAttr",
              &_CreateJointWeightsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetBlendShapesAttr",
              &This::GetBlendShapesAttr)
         .def("CreateBlendShapesAttr",
              &_CreateBlendShapesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         
         .def("GetAnimationSourceRel",
@@ -226,23 +225,23 @@ void wrapUsdSkelBindingAPI()
 namespace {
 
 
-object
+boost::python::object
 _GetSkeleton(const UsdSkelBindingAPI& binding)
 {
     UsdSkelSkeleton skel;
-    return binding.GetSkeleton(&skel) ? object(skel) : object();
+    return binding.GetSkeleton(&skel) ? boost::python::object(skel) : boost::python::object();
 }
 
 
-object
+boost::python::object
 _GetAnimationSource(const UsdSkelBindingAPI& binding)
 {
     UsdPrim prim;
-    return binding.GetAnimationSource(&prim) ? object(prim) : object();
+    return binding.GetAnimationSource(&prim) ? boost::python::object(prim) : boost::python::object();
 }
 
 
-tuple
+boost::python::tuple
 _ValidateJointIndices(TfSpan<const int> jointIndices,
                       size_t numJoints)
 {
@@ -260,15 +259,15 @@ WRAP_CUSTOM {
         .def("GetJointIndicesPrimvar", &This::GetJointIndicesPrimvar)
 
         .def("CreateJointIndicesPrimvar", &This::CreateJointIndicesPrimvar,
-             (arg("constant"), arg("elementSize")=-1))
+             (boost::python::arg("constant"), boost::python::arg("elementSize")=-1))
 
         .def("GetJointWeightsPrimvar", &This::GetJointWeightsPrimvar)
 
         .def("CreateJointWeightsPrimvar", &This::CreateJointWeightsPrimvar,
-             (arg("constant"), arg("elementSize")=-1))
+             (boost::python::arg("constant"), boost::python::arg("elementSize")=-1))
 
         .def("SetRigidJointInfluence", &This::SetRigidJointInfluence,
-             (arg("jointIndex"), arg("weight")=1.0f))
+             (boost::python::arg("jointIndex"), boost::python::arg("weight")=1.0f))
 
         .def("GetSkeleton", &_GetSkeleton)
 
@@ -279,7 +278,7 @@ WRAP_CUSTOM {
         .def("GetInheritedAnimationSource", &This::GetInheritedAnimationSource)
 
         .def("ValidateJointIndices", &_ValidateJointIndices,
-             (arg("jointIndices"), arg("numJoints")))
+             (boost::python::arg("jointIndices"), boost::python::arg("numJoints")))
         .staticmethod("ValidateJointIndices")
         ;
 }

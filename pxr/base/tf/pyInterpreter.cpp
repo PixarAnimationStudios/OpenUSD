@@ -44,9 +44,7 @@
 #include "pxr/base/tf/pySafePython.h"
 #include <signal.h>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -166,14 +164,14 @@ TfPyRunSimpleString(const std::string & cmd)
 
 boost::python::handle<>
 TfPyRunString(const std::string &cmd , int start,
-              object const &globals, object const &locals)
+              boost::python::object const &globals, boost::python::object const &locals)
 {
     TfPyInitialize();
     TfPyLock pyLock;
     try {
-        handle<> mainModule(borrowed(PyImport_AddModule("__main__")));
-        handle<> 
-            defaultGlobalsHandle(borrowed(PyModule_GetDict(mainModule.get())));
+        boost::python::handle<> mainModule(boost::python::borrowed(PyImport_AddModule("__main__")));
+        boost::python::handle<> 
+            defaultGlobalsHandle(boost::python::borrowed(PyModule_GetDict(mainModule.get())));
 
         PyObject *pyGlobals =
             TfPyIsNone(globals) ? defaultGlobalsHandle.get() : globals.ptr();
@@ -182,30 +180,30 @@ TfPyRunString(const std::string &cmd , int start,
 
         // used passed-in objects for globals and locals, or default
         // to globals from main module if no locals/globals passed in.
-        return handle<>(PyRun_String(cmd.c_str(), start, pyGlobals, pyLocals));
-    } catch (error_already_set const &) {
+        return boost::python::handle<>(PyRun_String(cmd.c_str(), start, pyGlobals, pyLocals));
+    } catch (boost::python::error_already_set const &) {
         TfPyConvertPythonExceptionToTfErrors();
         PyErr_Clear();
     }
-    return handle<>();
+    return boost::python::handle<>();
 }
 
 boost::python::handle<>
 TfPyRunFile(const std::string &filename, int start,
-            object const &globals, object const &locals)
+            boost::python::object const &globals, boost::python::object const &locals)
 {
     FILE *f = ArchOpenFile(filename.c_str(), "r");
     if (!f) {
         TF_CODING_ERROR("Could not open file '%s'!", filename.c_str());
-        return handle<>();
+        return boost::python::handle<>();
     }
         
     TfPyInitialize();
     TfPyLock pyLock;
     try {
-        handle<> mainModule(borrowed(PyImport_AddModule("__main__")));
-        handle<>
-            defaultGlobalsHandle(borrowed(PyModule_GetDict(mainModule.get())));
+        boost::python::handle<> mainModule(boost::python::borrowed(PyImport_AddModule("__main__")));
+        boost::python::handle<>
+            defaultGlobalsHandle(boost::python::borrowed(PyModule_GetDict(mainModule.get())));
 
         // used passed-in objects for globals and locals, or default
         // to globals from main module if no locals/globals passed in.
@@ -214,13 +212,13 @@ TfPyRunFile(const std::string &filename, int start,
         PyObject *pyLocals =
             TfPyIsNone(locals) ? pyGlobals : locals.ptr();
         
-        return handle<>(PyRun_FileEx(f, filename.c_str(), start,
+        return boost::python::handle<>(PyRun_FileEx(f, filename.c_str(), start,
                                      pyGlobals, pyLocals, 1 /* close file */));
-    } catch (error_already_set const &) {
+    } catch (boost::python::error_already_set const &) {
         TfPyConvertPythonExceptionToTfErrors();
         PyErr_Clear();
     }
-    return handle<>();
+    return boost::python::handle<>();
 }
 
 std::string
@@ -243,15 +241,15 @@ TfPyGetModulePath(const std::string & moduleName)
     // Do the find_module.
     std::string cmd =
         TfStringPrintf("imp.find_module('%s')[1]\n", moduleName.c_str());
-    handle<> result = TfPyRunString(cmd, Py_eval_input);
+    boost::python::handle<> result = TfPyRunString(cmd, Py_eval_input);
     if (!result)
         return std::string();
 
     // XXX close file
 
     // Extract result string
-    extract<string> getString(result.get());
-    return getString.check() ? getString() : string();
+    boost::python::extract<std::string> getString(result.get());
+    return getString.check() ? getString() : std::string();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

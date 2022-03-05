@@ -41,7 +41,6 @@
 #include <string>
 
 
-using namespace boost::python;
 
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -109,7 +108,7 @@ private:
             PyErr_SetString(
                 PyExc_StopIteration,
                 "UsdUtilsTimeCodeRange at end");
-            throw_error_already_set();
+            boost::python::throw_error_already_set();
         }
     }
 
@@ -135,12 +134,12 @@ void wrapTimeCodeRange()
 {
     using This = UsdUtilsTimeCodeRange;
 
-    scope s = class_<This>("TimeCodeRange")
-        .def(init<UsdTimeCode>(arg("timeCode")))
-        .def(init<UsdTimeCode, UsdTimeCode>(
-            (arg("startTimeCode"), arg("endTimeCode"))))
-        .def(init<UsdTimeCode, UsdTimeCode, double>(
-            (arg("startTimeCode"), arg("endTimeCode"), arg("stride"))))
+    boost::python::scope s = boost::python::class_<This>("TimeCodeRange")
+        .def(boost::python::init<UsdTimeCode>(boost::python::arg("timeCode")))
+        .def(boost::python::init<UsdTimeCode, UsdTimeCode>(
+            (boost::python::arg("startTimeCode"), boost::python::arg("endTimeCode"))))
+        .def(boost::python::init<UsdTimeCode, UsdTimeCode, double>(
+            (boost::python::arg("startTimeCode"), boost::python::arg("endTimeCode"), boost::python::arg("stride"))))
         .def("CreateFromFrameSpec", &This::CreateFromFrameSpec)
             .staticmethod("CreateFromFrameSpec")
         .add_property("startTimeCode", &This::GetStartTimeCode)
@@ -151,12 +150,12 @@ void wrapTimeCodeRange()
         .def("empty", &This::empty)
         .def("IsValid", &This::IsValid)
 
-        .def(!self)
-        .def(self == self)
-        .def(self != self)
+        .def(!boost::python::self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
         .def("__repr__", _Repr)
         .def("__iter__", &UsdUtils_PyTimeCodeRangeIteratorCreate,
-            with_custodian_and_ward_postcall<0, 1>())
+            boost::python::with_custodian_and_ward_postcall<0, 1>())
         ;
 
     TF_PY_WRAP_PUBLIC_TOKENS(
@@ -164,10 +163,10 @@ void wrapTimeCodeRange()
         UsdUtilsTimeCodeRangeTokens,
         USDUTILS_TIME_CODE_RANGE_TOKENS);
 
-    class_<UsdUtils_PyTimeCodeRangeIterator>("_Iterator", no_init)
+    boost::python::class_<UsdUtils_PyTimeCodeRangeIterator>("_Iterator", boost::python::no_init)
         .def("__iter__", &UsdUtils_PyTimeCodeRangeIterator::iter,
-            return_self<>())
+            boost::python::return_self<>())
         .def(TfPyIteratorNextMethodName, &UsdUtils_PyTimeCodeRangeIterator::next,
-            return_value_policy<return_by_value>())
+            boost::python::return_value_policy<boost::python::return_by_value>())
         ;
 }

@@ -29,7 +29,6 @@
 
 #include <memory>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -69,7 +68,7 @@ wrapResolverScopedCache()
 {
     typedef _PyResolverScopedCache This;
 
-    class_<This, boost::noncopyable>
+    boost::python::class_<This, boost::noncopyable>
         ("ResolverScopedCache")
         .def("__enter__", &This::Enter)
         .def("__exit__", &This::Exit)

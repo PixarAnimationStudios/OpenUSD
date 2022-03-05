@@ -29,21 +29,20 @@
 #include <boost/python/class.hpp>
 #include <boost/python/stl_iterator.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-static object
+static boost::python::object
 _ComputePointInstanceWorldBounds(UsdGeomBBoxCache &self,
                                  const UsdGeomPointInstancer& instancer,
-                                 object instanceIds)
+                                 boost::python::object instanceIds)
 {
     boost::python::stl_input_iterator<int64_t> begin(instanceIds), end;
     std::vector<int64_t> ids(begin, end);
     std::vector<GfBBox3d> boxes(ids.size());
     if (!self.ComputePointInstanceWorldBounds(
             instancer, ids.data(), ids.size(), boxes.data())) {
-        return object();
+        return boost::python::object();
     }
     boost::python::list ret;
     for (auto const &elem: boxes)
@@ -51,10 +50,10 @@ _ComputePointInstanceWorldBounds(UsdGeomBBoxCache &self,
     return std::move(ret);
 }
 
-static object
+static boost::python::object
 _ComputePointInstanceRelativeBounds(UsdGeomBBoxCache &self,
                                     const UsdGeomPointInstancer& instancer,
-                                    object instanceIds,
+                                    boost::python::object instanceIds,
                                     UsdPrim relativeToAncestorPrim)
 {
     boost::python::stl_input_iterator<int64_t> begin(instanceIds), end;
@@ -63,7 +62,7 @@ _ComputePointInstanceRelativeBounds(UsdGeomBBoxCache &self,
     if (!self.ComputePointInstanceRelativeBounds(
             instancer, ids.data(), ids.size(), relativeToAncestorPrim,
             boxes.data())) {
-        return object();
+        return boost::python::object();
     }
     boost::python::list ret;
     for (auto const &elem: boxes)
@@ -71,17 +70,17 @@ _ComputePointInstanceRelativeBounds(UsdGeomBBoxCache &self,
     return std::move(ret);
 }
 
-static object
+static boost::python::object
 _ComputePointInstanceLocalBounds(UsdGeomBBoxCache &self,
                                  const UsdGeomPointInstancer& instancer,
-                                 object instanceIds)
+                                 boost::python::object instanceIds)
 {
     boost::python::stl_input_iterator<int64_t> begin(instanceIds), end;
     std::vector<int64_t> ids(begin, end);
     std::vector<GfBBox3d> boxes(ids.size());
     if (!self.ComputePointInstanceLocalBounds(
             instancer, ids.data(), ids.size(), boxes.data())) {
-        return object();
+        return boost::python::object();
     }
     boost::python::list ret;
     for (auto const &elem: boxes)
@@ -89,17 +88,17 @@ _ComputePointInstanceLocalBounds(UsdGeomBBoxCache &self,
     return std::move(ret);
 }
 
-static object
+static boost::python::object
 _ComputePointInstanceUntransformedBounds(UsdGeomBBoxCache &self,
                                          const UsdGeomPointInstancer& instancer,
-                                         object instanceIds)
+                                         boost::python::object instanceIds)
 {
     boost::python::stl_input_iterator<int64_t> begin(instanceIds), end;
     std::vector<int64_t> ids(begin, end);
     std::vector<GfBBox3d> boxes(ids.size());
     if (!self.ComputePointInstanceUntransformedBounds(
             instancer, ids.data(), ids.size(), boxes.data())) {
-        return object();
+        return boost::python::object();
     }
     boost::python::list ret;
     for (auto const &elem: boxes)
@@ -119,56 +118,56 @@ void wrapUsdGeomBBoxCache()
         const TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash> &) = 
         &BBoxCache::ComputeUntransformedBound;
 
-    class_<BBoxCache>(
+    boost::python::class_<BBoxCache>(
         "BBoxCache",
-        init<UsdTimeCode, TfTokenVector, optional<bool, bool> >(
-            (arg("time"), arg("includedPurposes"),
-             arg("useExtentsHint"), arg("ignoreVisibility"))))
-        .def("ComputeWorldBound", &BBoxCache::ComputeWorldBound, arg("prim"))
-        .def("ComputeLocalBound", &BBoxCache::ComputeLocalBound, arg("prim"))
+        boost::python::init<UsdTimeCode, TfTokenVector, boost::python::optional<bool, bool> >(
+            (boost::python::arg("time"), boost::python::arg("includedPurposes"),
+             boost::python::arg("useExtentsHint"), boost::python::arg("ignoreVisibility"))))
+        .def("ComputeWorldBound", &BBoxCache::ComputeWorldBound, boost::python::arg("prim"))
+        .def("ComputeLocalBound", &BBoxCache::ComputeLocalBound, boost::python::arg("prim"))
         .def("ComputeRelativeBound", &BBoxCache::ComputeRelativeBound, 
-            (arg("prim"), arg("relativeRootPrim")))
+            (boost::python::arg("prim"), boost::python::arg("relativeRootPrim")))
         .def("ComputeUntransformedBound", ComputeUntransformedBound_1, 
-            arg("prim"))
+            boost::python::arg("prim"))
         .def("ComputeUntransformedBound", ComputeUntransformedBound_2, 
-             (arg("prim"),
-              arg("pathsToSkip"),
-              arg("ctmOverrides")))
+             (boost::python::arg("prim"),
+              boost::python::arg("pathsToSkip"),
+              boost::python::arg("ctmOverrides")))
         .def("ComputePointInstanceWorldBounds",
              _ComputePointInstanceWorldBounds,
-             (arg("instancer"), arg("instanceIds")))
+             (boost::python::arg("instancer"), boost::python::arg("instanceIds")))
         .def("ComputePointInstanceWorldBound",
              &BBoxCache::ComputePointInstanceWorldBound,
-             (arg("instancer"), arg("instanceId")))
+             (boost::python::arg("instancer"), boost::python::arg("instanceId")))
         .def("ComputePointInstanceRelativeBounds",
              _ComputePointInstanceRelativeBounds,
-             (arg("instancer"), arg("instanceIds"),
-              arg("relativeToAncestorPrim")))
+             (boost::python::arg("instancer"), boost::python::arg("instanceIds"),
+              boost::python::arg("relativeToAncestorPrim")))
         .def("ComputePointInstanceRelativeBound",
              &BBoxCache::ComputePointInstanceRelativeBound,
-             (arg("instancer"), arg("instanceId"),
-              arg("relativeToAncestorPrim")))
+             (boost::python::arg("instancer"), boost::python::arg("instanceId"),
+              boost::python::arg("relativeToAncestorPrim")))
         .def("ComputePointInstanceLocalBounds",
              _ComputePointInstanceLocalBounds,
-             (arg("instancer"), arg("instanceIds")))
+             (boost::python::arg("instancer"), boost::python::arg("instanceIds")))
         .def("ComputePointInstanceLocalBound",
              &BBoxCache::ComputePointInstanceLocalBound,
-             (arg("instancer"), arg("instanceId")))
+             (boost::python::arg("instancer"), boost::python::arg("instanceId")))
         .def("ComputePointInstanceUntransformedBounds",
              _ComputePointInstanceUntransformedBounds,
-             (arg("instancer"), arg("instanceIds")))
+             (boost::python::arg("instancer"), boost::python::arg("instanceIds")))
         .def("ComputePointInstanceUntransformedBound",
              &BBoxCache::ComputePointInstanceUntransformedBound,
-             (arg("instancer"), arg("instanceId")))
+             (boost::python::arg("instancer"), boost::python::arg("instanceId")))
         
         .def("Clear", &BBoxCache::Clear)
         .def("SetIncludedPurposes", &BBoxCache::SetIncludedPurposes,
-             arg("includedPurposes"))
+             boost::python::arg("includedPurposes"))
         .def("GetIncludedPurposes", &BBoxCache::GetIncludedPurposes,
-             return_value_policy<TfPySequenceToList>())
-        .def("SetTime", &BBoxCache::SetTime, arg("time"))
+             boost::python::return_value_policy<TfPySequenceToList>())
+        .def("SetTime", &BBoxCache::SetTime, boost::python::arg("time"))
         .def("GetTime", &BBoxCache::GetTime)
-        .def("SetBaseTime", &BBoxCache::SetBaseTime, arg("time"))
+        .def("SetBaseTime", &BBoxCache::SetBaseTime, boost::python::arg("time"))
         .def("GetBaseTime", &BBoxCache::GetBaseTime)
         .def("HasBaseTime", &BBoxCache::HasBaseTime)
         .def("ClearBaseTime", &BBoxCache::ClearBaseTime)

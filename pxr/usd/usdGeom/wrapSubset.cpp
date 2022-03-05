@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -51,21 +50,21 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateElementTypeAttr(UsdGeomSubset &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateElementTypeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateIndicesAttr(UsdGeomSubset &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateIndicesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->IntArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateFamilyNameAttr(UsdGeomSubset &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateFamilyNameAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
@@ -85,53 +84,53 @@ void wrapUsdGeomSubset()
 {
     typedef UsdGeomSubset This;
 
-    class_<This, bases<UsdTyped> >
+    boost::python::class_<This, boost::python::bases<UsdTyped> >
         cls("Subset");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
+        .def("Define", &This::Define, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Define")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetElementTypeAttr",
              &This::GetElementTypeAttr)
         .def("CreateElementTypeAttr",
              &_CreateElementTypeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetIndicesAttr",
              &This::GetIndicesAttr)
         .def("CreateIndicesAttr",
              &_CreateIndicesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetFamilyNameAttr",
              &This::GetFamilyNameAttr)
         .def("CreateFamilyNameAttr",
              &_CreateFamilyNameAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;
@@ -162,7 +161,7 @@ void wrapUsdGeomSubset()
 
 namespace {
 
-static object
+static boost::python::object
 _WrapValidateFamily(const UsdGeomImageable &geom, 
                const TfToken &elementType,
                const TfToken &familyName)
@@ -173,7 +172,7 @@ _WrapValidateFamily(const UsdGeomImageable &geom,
     return boost::python::make_tuple(valid, reason);
 }
 
-static object
+static boost::python::object
 _WrapValidateSubsets(    const std::vector<UsdGeomSubset> &subsets,
     const size_t elementCount, const TfToken &familyType)
 {
@@ -193,61 +192,61 @@ WRAP_CUSTOM {
     TfPyContainerConversions::from_python_sequence<std::vector<This>,
         TfPyContainerConversions::variable_capacity_policy >();
 
-    scope s_enum = _class 
+    boost::python::scope s_enum = _class 
         ;
-    scope s = _class
+    boost::python::scope s = _class
         .def("CreateGeomSubset", &This::CreateGeomSubset,
-            (arg("geom"), arg("subsetName"), arg("elementType"), 
-             arg("indices"), arg("familyName")=TfToken(),
-             arg("familyType")=TfToken()))
+            (boost::python::arg("geom"), boost::python::arg("subsetName"), boost::python::arg("elementType"), 
+             boost::python::arg("indices"), boost::python::arg("familyName")=TfToken(),
+             boost::python::arg("familyType")=TfToken()))
             .staticmethod("CreateGeomSubset")
 
         .def("CreateUniqueGeomSubset", &This::CreateUniqueGeomSubset,
-            (arg("geom"), arg("subsetName"), arg("elementType"), 
-             arg("indices"), arg("familyName")=TfToken(),
-             arg("familyType")=TfToken()))
+            (boost::python::arg("geom"), boost::python::arg("subsetName"), boost::python::arg("elementType"), 
+             boost::python::arg("indices"), boost::python::arg("familyName")=TfToken(),
+             boost::python::arg("familyType")=TfToken()))
             .staticmethod("CreateUniqueGeomSubset")
 
         .def("GetAllGeomSubsets", &This::GetAllGeomSubsets,
-            arg("geom"),
-            return_value_policy<TfPySequenceToList>())
+            boost::python::arg("geom"),
+            boost::python::return_value_policy<TfPySequenceToList>())
             .staticmethod("GetAllGeomSubsets")
 
         .def("GetGeomSubsets", &This::GetGeomSubsets,
-            (arg("geom"), 
-             arg("elementType")=TfToken(), 
-             arg("familyName")=TfToken()),
-            return_value_policy<TfPySequenceToList>())
+            (boost::python::arg("geom"), 
+             boost::python::arg("elementType")=TfToken(), 
+             boost::python::arg("familyName")=TfToken()),
+            boost::python::return_value_policy<TfPySequenceToList>())
             .staticmethod("GetGeomSubsets")
 
         .def("GetAllGeomSubsetFamilyNames", &This::GetAllGeomSubsetFamilyNames,
-            (arg("geom")), 
-            return_value_policy<TfPySequenceToList>())
+            (boost::python::arg("geom")), 
+            boost::python::return_value_policy<TfPySequenceToList>())
             .staticmethod("GetAllGeomSubsetFamilyNames")
 
         .def("SetFamilyType", &This::SetFamilyType,
-            (arg("geom"), arg("familyName"), arg("familyType")))
+            (boost::python::arg("geom"), boost::python::arg("familyName"), boost::python::arg("familyType")))
             .staticmethod("SetFamilyType")
         
         .def("GetFamilyType", &This::GetFamilyType,
-            (arg("geom"), arg("familyName")))
+            (boost::python::arg("geom"), boost::python::arg("familyName")))
             .staticmethod("GetFamilyType")
 
         .def("GetUnassignedIndices", &This::GetUnassignedIndices,
-            (arg("subsets"), arg("elementCount"), 
-             arg("time")=UsdTimeCode::EarliestTime()))
+            (boost::python::arg("subsets"), boost::python::arg("elementCount"), 
+             boost::python::arg("time")=UsdTimeCode::EarliestTime()))
             .staticmethod("GetUnassignedIndices")
 
         .def("ValidateFamily", _WrapValidateFamily, 
-            (arg("geom"), 
-             arg("elementType")=TfToken(), 
-             arg("familyName")=TfToken()))
+            (boost::python::arg("geom"), 
+             boost::python::arg("elementType")=TfToken(), 
+             boost::python::arg("familyName")=TfToken()))
             .staticmethod("ValidateFamily")
 
         .def("ValidateSubsets", _WrapValidateSubsets, 
-            (arg("subsets"), 
-             arg("elementCount"),
-             arg("familyType")))
+            (boost::python::arg("subsets"), 
+             boost::python::arg("elementCount"),
+             boost::python::arg("familyType")))
             .staticmethod("ValidateSubsets")
 
         ;

@@ -79,39 +79,35 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Vt_WrapArray {
 
-using namespace boost::python;
 
-using std::unique_ptr;
-using std::vector;
-using std::string;
 
 template <typename T>
-object
-getitem_ellipsis(VtArray<T> const &self, object idx)
+boost::python::object
+getitem_ellipsis(VtArray<T> const &self, boost::python::object idx)
 {
-    object ellipsis = object(handle<>(borrowed(Py_Ellipsis)));
+    boost::python::object ellipsis = boost::python::object(boost::python::handle<>(boost::python::borrowed(Py_Ellipsis)));
     if (idx != ellipsis) {
         PyErr_SetString(PyExc_TypeError, "unsupported index type");
-        throw_error_already_set();
+        boost::python::throw_error_already_set();
     }
-    return object(self);
+    return boost::python::object(self);
 }
 
 template <typename T>
-object
+boost::python::object
 getitem_index(VtArray<T> const &self, int64_t idx)
 {
     static const bool throwError = true;
     idx = TfPyNormalizeIndex(idx, self.size(), throwError);
-    return object(self[idx]);
+    return boost::python::object(self[idx]);
 }
 
 template <typename T>
-object
-getitem_slice(VtArray<T> const &self, slice idx)
+boost::python::object
+getitem_slice(VtArray<T> const &self, boost::python::slice idx)
 {
     try {
-        slice::range<typename VtArray<T>::const_iterator> range =
+        boost::python::slice::range<typename VtArray<T>::const_iterator> range =
             idx.get_indices(self.begin(), self.end());
         const size_t setSize = 1 + (range.stop - range.start) / range.step;
         VtArray<T> result(setSize);
@@ -120,24 +116,24 @@ getitem_slice(VtArray<T> const &self, slice idx)
             result[i] = *range.start;
         }
         result[i] = *range.start;
-        return object(result);
+        return boost::python::object(result);
     }
     catch (std::invalid_argument) {
-        return object();
+        return boost::python::object();
     }
 }
 
 template <typename T, typename S>
 void
 setArraySlice(VtArray<T> &self, S value,
-              slice::range<T*>& range, size_t setSize, bool tile = false)
+              boost::python::slice::range<T*>& range, size_t setSize, bool tile = false)
 {
     // Check size.
-    const size_t length = len(value);
+    const size_t length = boost::python::len(value);
     if (length == 0)
         TfPyThrowValueError("No values with which to set array slice.");
     if (!tile && length < setSize) {
-        string msg = TfStringPrintf
+        std::string msg = TfStringPrintf
             ("Not enough values to set slice.  Expected %zu, got %zu.",
              setSize, length);
         TfPyThrowValueError(msg);
@@ -146,7 +142,7 @@ setArraySlice(VtArray<T> &self, S value,
     // Extract the values before setting any.  If we can extract the
     // whole vector at once then do that since it should be faster.
     std::vector<T> extracted;
-    extract<std::vector<T> > vectorExtraction(value);
+    boost::python::extract<std::vector<T> > vectorExtraction(value);
     if (vectorExtraction.check()) {
         std::vector<T> tmp = vectorExtraction();
         extracted.swap(tmp);
@@ -154,7 +150,7 @@ setArraySlice(VtArray<T> &self, S value,
     else {
         extracted.reserve(length);
         for (size_t i = 0; i != length; ++i) {
-            extracted.push_back(extract<T>(value[i]));
+            extracted.push_back(boost::python::extract<T>(value[i]));
         }
     }
 
@@ -172,10 +168,10 @@ setArraySlice(VtArray<T> &self, S value,
 
 template <typename T>
 void
-setArraySlice(VtArray<T> &self, slice idx, object value, bool tile = false)
+setArraySlice(VtArray<T> &self, boost::python::slice idx, boost::python::object value, bool tile = false)
 {
     // Get the range.
-    slice::range<T*> range;
+    boost::python::slice::range<T*> range;
     try {
         T* data = self.data();
         range = idx.get_indices(data, data + self.size());
@@ -193,13 +189,13 @@ setArraySlice(VtArray<T> &self, slice idx, object value, bool tile = false)
     // merely *convert* to a VtArray, so we check that we can extract a mutable
     // lvalue reference from the python object, which requires that there be a
     // real VtArray there.
-    if (extract< VtArray<T> &>(value).check()) {
-        const VtArray<T> val = extract< VtArray<T> >(value);
+    if (boost::python::extract< VtArray<T> &>(value).check()) {
+        const VtArray<T> val = boost::python::extract< VtArray<T> >(value);
         const size_t length = val.size();
         if (length == 0)
             TfPyThrowValueError("No values with which to set array slice.");
         if (!tile && length < setSize) {
-            string msg = TfStringPrintf
+            std::string msg = TfStringPrintf
                 ("Not enough values to set slice.  Expected %zu, got %zu.",
                  setSize, length);
             TfPyThrowValueError(msg);
@@ -212,66 +208,66 @@ setArraySlice(VtArray<T> &self, slice idx, object value, bool tile = false)
     }
 
     // Copy from scalar.
-    else if (extract<T>(value).check()) {
+    else if (boost::python::extract<T>(value).check()) {
         if (!tile) {
             // XXX -- We're allowing implicit tiling;  do we want to?
             //TfPyThrowValueError("can only assign an iterable.");
         }
 
         // Use scalar to fill entire slice.
-        const T val = extract<T>(value);
+        const T val = boost::python::extract<T>(value);
         for (size_t i = 0; i != setSize; range.start += range.step, ++i) {
             *range.start = val;
         }
     }
 
     // Copy from list.
-    else if (extract<list>(value).check()) {
-        setArraySlice(self, extract<list>(value)(), range, setSize, tile);
+    else if (boost::python::extract<boost::python::list>(value).check()) {
+        setArraySlice(self, boost::python::extract<boost::python::list>(value)(), range, setSize, tile);
     }
 
     // Copy from tuple.
-    else if (extract<tuple>(value).check()) {
-        setArraySlice(self, extract<tuple>(value)(), range, setSize, tile);
+    else if (boost::python::extract<boost::python::tuple>(value).check()) {
+        setArraySlice(self, boost::python::extract<boost::python::tuple>(value)(), range, setSize, tile);
     }
 
     // Copy from iterable.
     else {
-        setArraySlice(self, list(value), range, setSize, tile);
+        setArraySlice(self, boost::python::list(value), range, setSize, tile);
     }
 }
 
 
 template <typename T>
 void
-setitem_ellipsis(VtArray<T> &self, object idx, object value)
+setitem_ellipsis(VtArray<T> &self, boost::python::object idx, boost::python::object value)
 {
-    object ellipsis = object(handle<>(borrowed(Py_Ellipsis)));
+    boost::python::object ellipsis = boost::python::object(boost::python::handle<>(boost::python::borrowed(Py_Ellipsis)));
     if (idx != ellipsis) {
         PyErr_SetString(PyExc_TypeError, "unsupported index type");
-        throw_error_already_set();
+        boost::python::throw_error_already_set();
     }
-    setArraySlice(self, slice(0, self.size()), value);
+    setArraySlice(self, boost::python::slice(0, self.size()), value);
 }
 
 template <typename T>
 void
-setitem_index(VtArray<T> &self, int64_t idx, object value)
+setitem_index(VtArray<T> &self, int64_t idx, boost::python::object value)
 {
     static const bool tile = true;
-    setArraySlice(self, slice(idx, idx + 1), value, tile);
+    setArraySlice(self, boost::python::slice(idx, idx + 1), value, tile);
 }
 
 template <typename T>
 void
-setitem_slice(VtArray<T> &self, slice idx, object value)
+setitem_slice(VtArray<T> &self, boost::python::slice idx, boost::python::object value)
 {
     setArraySlice(self, idx, value);
 }
 
 
 template <class T>
-VT_API string GetVtArrayName();
+VT_API std::string GetVtArrayName();
 
 
 // To avoid overhead we stream out certain builtin types directly
@@ -350,7 +346,7 @@ Vt_ComputeEffectiveRankAndLastDimSize(
 }
 
 template <typename T>
-string __repr__(VtArray<T> const &self)
+std::string __repr__(VtArray<T> const &self)
 {
     if (self.empty())
         return TF_PY_REPR_PREFIX +
@@ -396,27 +392,27 @@ string __repr__(VtArray<T> const &self)
 }
 
 template <typename T>
-VtArray<T> *VtArray__init__(object const &values)
+VtArray<T> *VtArray__init__(boost::python::object const &values)
 {
     // Make an array.
-    unique_ptr<VtArray<T> > ret(new VtArray<T>(len(values)));
+    std::unique_ptr<VtArray<T> > ret(new VtArray<T>(boost::python::len(values)));
 
     // Set the values.  This is equivalent to saying 'ret[...] = values'
     // in python, except that we allow tiling here.
     static const bool tile = true;
-    setArraySlice(*ret, slice(0, ret->size()), values, tile);
+    setArraySlice(*ret, boost::python::slice(0, ret->size()), values, tile);
     return ret.release();
 }
 template <typename T>
-VtArray<T> *VtArray__init__2(size_t size, object const &values)
+VtArray<T> *VtArray__init__2(size_t size, boost::python::object const &values)
 {
     // Make the array.
-    unique_ptr<VtArray<T> > ret(new VtArray<T>(size));
+    std::unique_ptr<VtArray<T> > ret(new VtArray<T>(size));
 
     // Set the values.  This is equivalent to saying 'ret[...] = values'
     // in python, except that we allow tiling here.
     static const bool tile = true;
-    setArraySlice(*ret, slice(0, ret->size()), values, tile);
+    setArraySlice(*ret, boost::python::slice(0, ret->size()), values, tile);
 
     return ret.release();
 }
@@ -455,22 +451,22 @@ void VtWrapArray()
     typedef T This;
     typedef typename This::ElementType Type;
 
-    string name = GetVtArrayName<This>();
-    string typeStr = ArchGetDemangled(typeid(Type));
-    string docStr = TfStringPrintf("An array of type %s.", typeStr.c_str());
+    std::string name = GetVtArrayName<This>();
+    std::string typeStr = ArchGetDemangled(typeid(Type));
+    std::string docStr = TfStringPrintf("An array of type %s.", typeStr.c_str());
     
-    auto selfCls = class_<This>(name.c_str(), docStr.c_str(), no_init)
+    auto selfCls = boost::python::class_<This>(name.c_str(), docStr.c_str(), boost::python::no_init)
         .setattr("_isVtArray", true)
         .def(TfTypePythonClass())
-        .def(init<>())
-        .def("__init__", make_constructor(VtArray__init__<Type>),
+        .def(boost::python::init<>())
+        .def("__init__", boost::python::make_constructor(VtArray__init__<Type>),
             (const char *)
             "__init__(values)\n\n"
             "values: a sequence (tuple, list, or another VtArray with "
             "element type convertible to the new array's element type)\n\n"
             )
-        .def("__init__", make_constructor(VtArray__init__2<Type>))
-        .def(init<unsigned int>())
+        .def("__init__", boost::python::make_constructor(VtArray__init__2<Type>))
+        .def(boost::python::init<unsigned int>())
 
         .def("__getitem__", getitem_ellipsis<Type>)
         .def("__getitem__", getitem_slice<Type>)
@@ -480,14 +476,14 @@ void VtWrapArray()
         .def("__setitem__", setitem_index<Type>)
 
         .def("__len__", &This::size)
-        .def("__iter__", iterator<This>())
+        .def("__iter__", boost::python::iterator<This>())
 
         .def("__repr__", __repr__<Type>)
 
 //        .def(str(self))
         .def("__str__", _VtStr<T>)
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
 
 #ifdef NUMERIC_OPERATORS
 #define ADDITION_OPERATOR
@@ -540,7 +536,7 @@ void VtWrapArray()
 
 #define WRITE(z, n, data) BOOST_PP_COMMA_IF(n) data
 #define VtCat_DEF(z, n, unused) \
-    def("Cat",(VtArray<Type> (*)( BOOST_PP_REPEAT(n, WRITE, VtArray<Type> const &) ))VtCat<Type>);
+    boost::python::def("Cat",(VtArray<Type> (*)( BOOST_PP_REPEAT(n, WRITE, VtArray<Type> const &) ))VtCat<Type>);
     BOOST_PP_REPEAT_FROM_TO(1, VT_FUNCTIONS_MAX_ARGS, VtCat_DEF, ~)
 #undef VtCat_DEF
 
@@ -554,8 +550,8 @@ void VtWrapArray()
         variable_capacity_all_items_convertible_policy>();
 
     // Wrap implicit conversions from VtArray to TfSpan.
-    implicitly_convertible<This, TfSpan<Type> >();
-    implicitly_convertible<This, TfSpan<const Type> >();
+    boost::python::implicitly_convertible<This, TfSpan<Type> >();
+    boost::python::implicitly_convertible<This, TfSpan<const Type> >();
 }
 
 // wrapping for functions that work for base types that support comparisons
@@ -567,8 +563,8 @@ void VtWrapComparisonFunctions()
     typedef T This;
     typedef typename This::ElementType Type;
 
-    def("AnyTrue", VtAnyTrue<Type>);
-    def("AllTrue", VtAllTrue<Type>);
+    boost::python::def("AnyTrue", VtAnyTrue<Type>);
+    boost::python::def("AllTrue", VtAllTrue<Type>);
 
     VTOPERATOR_WRAPDECLARE_BOOL(Greater)
     VTOPERATOR_WRAPDECLARE_BOOL(Less)

@@ -275,7 +275,7 @@ _ComputeSampleDistance(const GfBBox3d &bbox)
     const GfMatrix4d &m = bbox.GetMatrix();
 
     // Take minimum of lengths of images of the x-, y-, and z-vector.
-    return sqrt(
+    return std::sqrt(
         std::min({ _SqrLengthThreeVector(m[0]),
                    _SqrLengthThreeVector(m[1]),
                    _SqrLengthThreeVector(m[2]) }));

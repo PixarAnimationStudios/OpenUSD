@@ -30,19 +30,18 @@
 #include <boost/python.hpp>
 
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
 void wrapUsdSkelBakeSkinning()
 {
-    def("BakeSkinning", ((bool (*)(const UsdSkelRoot&,
+    boost::python::def("BakeSkinning", ((bool (*)(const UsdSkelRoot&,
                                    const GfInterval&))&UsdSkelBakeSkinning),
-        (arg("root"), arg("interval")=GfInterval::GetFullInterval()));
+        (boost::python::arg("root"), boost::python::arg("interval")=GfInterval::GetFullInterval()));
 
-    def("BakeSkinning", ((bool (*)(const UsdPrimRange&,
+    boost::python::def("BakeSkinning", ((bool (*)(const UsdPrimRange&,
                                    const GfInterval&))&UsdSkelBakeSkinning),
-        (arg("range"), arg("interval")=GfInterval::GetFullInterval()));
+        (boost::python::arg("range"), boost::python::arg("interval")=GfInterval::GetFullInterval()));
 
 }

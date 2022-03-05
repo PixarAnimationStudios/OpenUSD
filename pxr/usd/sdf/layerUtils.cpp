@@ -35,7 +35,6 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/trace/trace.h"
 
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -44,10 +43,10 @@ namespace
 
 // Anchor the given relativePath to the same path as the layer 
 // specified by anchorLayerPath.
-string
-_AnchorRelativePath(const string& anchorLayerPath, const string& relativePath)
+std::string
+_AnchorRelativePath(const std::string& anchorLayerPath, const std::string& relativePath)
 {
-    const string anchorPath = TfGetPathName(anchorLayerPath);
+    const std::string anchorPath = TfGetPathName(anchorLayerPath);
     return anchorPath.empty() ? 
         relativePath : TfStringCatPaths(anchorPath, relativePath);
 }
@@ -55,10 +54,10 @@ _AnchorRelativePath(const string& anchorLayerPath, const string& relativePath)
 // Expand a (package path, packaged path) pair until the packaged path is
 // a non-package layer that is the root layer of the package layer specified
 // by the package path.
-std::pair<string, string>
-_ExpandPackagePath(const std::pair<string, string>& packageRelativePath)
+std::pair<std::string, std::string>
+_ExpandPackagePath(const std::pair<std::string, std::string>& packageRelativePath)
 {
-    std::pair<string, string> result = packageRelativePath;
+    std::pair<std::string, std::string> result = packageRelativePath;
     while (1) {
         if (result.second.empty()) {
             break;
@@ -78,19 +77,19 @@ _ExpandPackagePath(const std::pair<string, string>& packageRelativePath)
 
 } // end anonymous namespace
 
-string
+std::string
 SdfComputeAssetPathRelativeToLayer(
     const SdfLayerHandle& anchor,
-    const string& assetPath)
+    const std::string& assetPath)
 {
     if (!anchor) {
         TF_CODING_ERROR("Invalid anchor layer");
-        return string();
+        return std::string();
     }
 
     if (assetPath.empty()) {
         TF_CODING_ERROR("Layer path is empty");
-        return string();
+        return std::string();
     }
 
     TRACE_FUNCTION();
@@ -126,14 +125,14 @@ SdfComputeAssetPathRelativeToLayer(
         // XXX: The use of repository path or real path is the same as in
         // SdfLayer::ComputeAbsolutePath. This logic might want to move
         // somewhere common.
-        const string anchorPackagePath = anchor->GetRepositoryPath().empty() ? 
+        const std::string anchorPackagePath = anchor->GetRepositoryPath().empty() ? 
             anchor->GetRealPath() : anchor->GetRepositoryPath();
 
         // Split the anchoring layer's identifier, since we anchor the asset
         // path against the innermost packaged path. If the anchor layer
         // is a package, anchor against its root layer, which may be
         // nested in another package layer.
-        std::pair<string, string> packagePath;
+        std::pair<std::string, std::string> packagePath;
         if (anchor->GetFileFormat()->IsPackage()) {
             packagePath.first = anchorPackagePath;
             packagePath.second = anchor->GetFileFormat()->
@@ -145,11 +144,11 @@ SdfComputeAssetPathRelativeToLayer(
             packagePath = ArSplitPackageRelativePathInner(anchorPackagePath);
         }
 
-        const string normAssetPath = TfNormPath(assetPath);
+        const std::string normAssetPath = TfNormPath(assetPath);
         packagePath.second = _AnchorRelativePath(
             packagePath.second, normAssetPath);
 
-        string finalLayerPath = ArJoinPackageRelativePath(packagePath);
+        std::string finalLayerPath = ArJoinPackageRelativePath(packagePath);
 
         // If assetPath is not a search-relative path, we're done. Otherwise,
         // we need to search in the locations described above.

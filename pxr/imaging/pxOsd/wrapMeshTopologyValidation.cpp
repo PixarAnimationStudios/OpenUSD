@@ -37,7 +37,6 @@
 #include <sstream>
 #include <vector>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -79,17 +78,17 @@ wrapMeshTopologyValidation()
 {
     using This = PxOsdMeshTopologyValidation;
 
-    class_<This> cls("MeshTopologyValidation", init<>());
-    cls.def(!self);
+    boost::python::class_<This> cls("MeshTopologyValidation", boost::python::init<>());
+    cls.def(!boost::python::self);
     {
-        scope obj = cls;
+        boost::python::scope obj = cls;
         TfPyWrapEnum<This::Code, true>();
-        class_<This::Invalidation>("Invalidation", no_init)
+        boost::python::class_<This::Invalidation>("Invalidation", boost::python::no_init)
             .def("__init__", &::_InvalidationInit)
             .def_readwrite("code", &This::Invalidation::code)
             .def_readwrite("message", &This::Invalidation::message)
             .def("__repr__", &::_InvalidationRepr);
     }
     cls.def("__repr__", &::_ValidationRepr);
-    cls.def("__iter__", iterator<This>());
+    cls.def("__iter__", boost::python::iterator<This>());
 }

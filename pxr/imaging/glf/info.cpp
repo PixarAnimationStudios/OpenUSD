@@ -38,20 +38,17 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-using std::set;
-using std::string;
-using std::vector;
 
-static set<string>
+static std::set<std::string>
 Glf_BuildAvailableExtensions()
 {
     GlfSharedGLContextScopeHolder sharedContextScopeHolder;
 
-    set<string> availableExtensions;
+    std::set<std::string> availableExtensions;
 
     // Get the available extensions from OpenGL if we haven't yet.
     if (const char *extensions = (const char*) glGetString(GL_EXTENSIONS)) {
-        const vector<string> extensionsList = TfStringTokenize(extensions);
+        const std::vector<std::string> extensionsList = TfStringTokenize(extensions);
         for (std::string const& extension : extensionsList) {
             availableExtensions.insert(extension);
         }
@@ -60,12 +57,12 @@ Glf_BuildAvailableExtensions()
 }
 
 bool
-GlfHasExtensions(string const & queryExtensions)
+GlfHasExtensions(std::string const & queryExtensions)
 {
-    static set<string> availableExtensions = Glf_BuildAvailableExtensions();
+    static std::set<std::string> availableExtensions = Glf_BuildAvailableExtensions();
 
     // Tokenize the queried extensions.
-    const vector<string> extensionsList = TfStringTokenize(queryExtensions);
+    const std::vector<std::string> extensionsList = TfStringTokenize(queryExtensions);
 
     // Return false if any queried extension is not available.
     for (std::string const& extension : extensionsList) {

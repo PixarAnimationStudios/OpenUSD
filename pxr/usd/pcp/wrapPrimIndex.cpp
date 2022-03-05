@@ -28,7 +28,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -73,15 +72,15 @@ void wrapPrimIndex()
 {
     typedef PcpPrimIndex This;
 
-    class_<This>("PrimIndex", "", no_init)
+    boost::python::class_<This>("PrimIndex", "", boost::python::no_init)
         .add_property("primStack", 
-                      make_function(&_GetPrimStack,
-                                    return_value_policy<TfPySequenceToList>()))
+                      boost::python::make_function(&_GetPrimStack,
+                                    boost::python::return_value_policy<TfPySequenceToList>()))
         .add_property("rootNode", &This::GetRootNode)
         .add_property("hasAnyPayloads", &This::HasAnyPayloads)
         .add_property("localErrors", 
-                      make_function(&This::GetLocalErrors,
-                                    return_value_policy<TfPySequenceToList>()))
+                      boost::python::make_function(&This::GetLocalErrors,
+                                    boost::python::return_value_policy<TfPySequenceToList>()))
 
         .def("IsValid", &This::IsValid)
         .def("IsInstanceable", &This::IsInstanceable)
@@ -89,30 +88,30 @@ void wrapPrimIndex()
         .def("ComputePrimChildNames", &_ComputePrimChildNames)
         .def("ComputePrimPropertyNames",
             &_ComputePrimPropertyNames,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
         .def("ComposeAuthoredVariantSelections",
              &This::ComposeAuthoredVariantSelections,
-            return_value_policy<TfPyMapToDictionary>())
+            boost::python::return_value_policy<TfPyMapToDictionary>())
         .def("GetSelectionAppliedForVariantSet",
             &This::GetSelectionAppliedForVariantSet)
 
         .def("GetNodeProvidingSpec", 
             (PcpNodeRef (This::*) (const SdfPrimSpecHandle&) const)
                 (&This::GetNodeProvidingSpec),
-            args("primSpec"))
+            boost::python::args("primSpec"))
         .def("GetNodeProvidingSpec", 
             (PcpNodeRef (This::*) (const SdfLayerHandle&, const SdfPath&) const)
                 (&This::GetNodeProvidingSpec),
-            (args("layer"),
-             args("path")))
+            (boost::python::args("layer"),
+             boost::python::args("path")))
 
         .def("PrintStatistics", &This::PrintStatistics)
         .def("DumpToString", &This::DumpToString,
-             (args("includeInheritOriginInfo") = true,
-              args("includeMaps") = true))
+             (boost::python::args("includeInheritOriginInfo") = true,
+              boost::python::args("includeMaps") = true))
         .def("DumpToDotGraph", &This::DumpToDotGraph,
-             (args("filename"),
-              args("includeInheritOriginInfo") = true,
-              args("includeMaps") = false))
+             (boost::python::args("filename"),
+              boost::python::args("includeInheritOriginInfo") = true,
+              boost::python::args("includeMaps") = false))
         ;
 }

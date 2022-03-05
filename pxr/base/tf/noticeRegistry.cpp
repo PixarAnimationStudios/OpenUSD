@@ -34,9 +34,6 @@
 
 #include <typeinfo>
 
-using std::string;
-using std::vector;
-using std::type_info;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -68,11 +65,11 @@ Tf_NoticeRegistry::Tf_NoticeRegistry()
  * to TfSafeDynamic_cast.
  */
 void
-Tf_NoticeRegistry::_VerifyFailedCast(const type_info& toType,
+Tf_NoticeRegistry::_VerifyFailedCast(const std::type_info& toType,
                                      const TfNotice& notice,
                                      const TfNotice* castNotice)
 {
-    string typeName = ArchGetDemangled(typeid(notice));
+    std::string typeName = ArchGetDemangled(typeid(notice));
 
     if (castNotice) {
         {
@@ -225,7 +222,7 @@ Tf_NoticeRegistry::_Send(const TfNotice &n, const TfType & noticeType,
 
     size_t nSent = 0;
 
-    vector< TfNotice::WeakProbePtr > probeList;
+    std::vector< TfNotice::WeakProbePtr > probeList;
     bool doProbing = _doProbing;
     if (doProbing) {
         // Copy off a list of the probes.
@@ -333,8 +330,8 @@ void
 Tf_NoticeRegistry::_BadTypeFatalMsg(const TfType& t,
                                     const std::type_info& ti)
 {
-    const vector<TfType> &baseTypes = t.GetBaseTypes();
-    string msg;
+    const std::vector<TfType> &baseTypes = t.GetBaseTypes();
+    std::string msg;
             
     if (t.IsUnknown()) {
         msg = TfStringPrintf("Class %s (derived from TfNotice) is "

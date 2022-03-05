@@ -33,7 +33,6 @@
 
 #include <vector>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -103,30 +102,30 @@ wrapCamera()
 {
     typedef GfCamera This;
 
-    class_<This> c("Camera");
+    boost::python::class_<This> c("Camera");
 
-    scope s(c);
+    boost::python::scope s(c);
 
     TfPyWrapEnum<GfCamera::Projection>();
     TfPyWrapEnum<GfCamera::FOVDirection>();
 
-    c   .def(init<const This &>())
-        .def(init<const GfMatrix4d &, GfCamera::Projection,
+    c   .def(boost::python::init<const This &>())
+        .def(boost::python::init<const GfMatrix4d &, GfCamera::Projection,
                   float, float, float, float, float,
                   const GfRange1f &, const std::vector<GfVec4f> &,
                   float, float>
-             ((args("transform") = GfMatrix4d(1.0),
-               args("projection") = GfCamera::Perspective,
-               args("horizontalAperture") =
+             ((boost::python::args("transform") = GfMatrix4d(1.0),
+               boost::python::args("projection") = GfCamera::Perspective,
+               boost::python::args("horizontalAperture") =
                                           GfCamera::DEFAULT_HORIZONTAL_APERTURE,
-               args("verticalAperture") = GfCamera::DEFAULT_VERTICAL_APERTURE,
-               args("horizontalApertureOffset") = 0.0,
-               args("verticalApertureOffset") = 0.0,
-               args("focalLength") = 50.0,
-               args("clippingRange") = GfRange1f(1, 1000000),
-               args("clippingPlanes") = std::vector<GfVec4f>(),
-               args("fStop") = 0.0,
-               args("focusDistance") = 0.0)))
+               boost::python::args("verticalAperture") = GfCamera::DEFAULT_VERTICAL_APERTURE,
+               boost::python::args("horizontalApertureOffset") = 0.0,
+               boost::python::args("verticalApertureOffset") = 0.0,
+               boost::python::args("focalLength") = 50.0,
+               boost::python::args("clippingRange") = GfRange1f(1, 1000000),
+               boost::python::args("clippingPlanes") = std::vector<GfVec4f>(),
+               boost::python::args("fStop") = 0.0,
+               boost::python::args("focusDistance") = 0.0)))
         .add_property("transform",
                       &This::GetTransform,
                       &This::SetTransform)
@@ -172,20 +171,20 @@ wrapCamera()
                       &This::GetFieldOfView)
         .def("SetPerspectiveFromAspectRatioAndFieldOfView",
                       &This::SetPerspectiveFromAspectRatioAndFieldOfView,
-             ( arg("aspectRatio"),
-               arg("fieldOfView"),
-               arg("direction"),
-               arg("horizontalAperture") = This::DEFAULT_HORIZONTAL_APERTURE) )
+             ( boost::python::arg("aspectRatio"),
+               boost::python::arg("fieldOfView"),
+               boost::python::arg("direction"),
+               boost::python::arg("horizontalAperture") = This::DEFAULT_HORIZONTAL_APERTURE) )
         .def("SetOrthographicFromAspectRatioAndSize",
                       &This::SetOrthographicFromAspectRatioAndSize,
-             ( arg("aspectRatio"),
-               arg("orthographicSize"),
-               arg("direction")))
+             ( boost::python::arg("aspectRatio"),
+               boost::python::arg("orthographicSize"),
+               boost::python::arg("direction")))
         .def("SetFromViewAndProjectionMatrix",
                       &This::SetFromViewAndProjectionMatrix,
-             ( arg("viewMatrix"),
-               arg("projMatrix"),
-               arg("focalLength") = 50))
+             ( boost::python::arg("viewMatrix"),
+               boost::python::arg("projMatrix"),
+               boost::python::arg("focalLength") = 50))
         .setattr("APERTURE_UNIT",
             This::APERTURE_UNIT)
         .setattr("FOCAL_LENGTH_UNIT",
@@ -195,8 +194,8 @@ wrapCamera()
         .setattr("DEFAULT_VERTICAL_APERTURE",
             This::DEFAULT_VERTICAL_APERTURE)
 
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
 
         .def("__repr__", _Repr)
             ;

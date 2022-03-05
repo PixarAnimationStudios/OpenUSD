@@ -37,24 +37,23 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace boost::python;
 
 void wrapConditionalAbortDiagnosticDelegate()
 {
     using ErrorFilters = UsdUtilsConditionalAbortDiagnosticDelegateErrorFilters;
-    class_<ErrorFilters>("ConditionalAbortDiagnosticDelegateErrorFilters",
-            init<std::vector<std::string>, std::vector<std::string>>())
-        .def(init<>())
+    boost::python::class_<ErrorFilters>("ConditionalAbortDiagnosticDelegateErrorFilters",
+            boost::python::init<std::vector<std::string>, std::vector<std::string>>())
+        .def(boost::python::init<>())
         .def("GetCodePathFilters", &ErrorFilters::GetCodePathFilters, 
-                return_value_policy<TfPySequenceToList>())
+                boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetStringFilters", &ErrorFilters::GetStringFilters,
-                return_value_policy<TfPySequenceToList>())
+                boost::python::return_value_policy<TfPySequenceToList>())
         .def("SetStringFilters", &ErrorFilters::SetStringFilters,
-                args("stringFilters"))
+                boost::python::args("stringFilters"))
         .def("SetCodePathFilters", &ErrorFilters::SetCodePathFilters,
-                args("codePathFilters"));
+                boost::python::args("codePathFilters"));
 
     using This = UsdUtilsConditionalAbortDiagnosticDelegate;
-    class_<This, boost::noncopyable>("ConditionalAbortDiagnosticDelegate",
-            init<ErrorFilters, ErrorFilters>());
+    boost::python::class_<This, boost::noncopyable>("ConditionalAbortDiagnosticDelegate",
+            boost::python::init<ErrorFilters, ErrorFilters>());
 }

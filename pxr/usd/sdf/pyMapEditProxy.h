@@ -112,12 +112,11 @@ private:
 
     static void _Wrap()
     {
-        using namespace boost::python;
 
         std::string name = _GetName();
 
-        scope thisScope =
-        class_<Type>(name.c_str())
+        boost::python::scope thisScope =
+        boost::python::class_<Type>(name.c_str())
             .def("__repr__", &This::_GetRepr)
             .def("__str__", &This::_GetStr)
             .def("__len__", &Type::size)
@@ -150,24 +149,24 @@ private:
             .def("copy", &This::_Copy)
             .add_property("expired", &Type::IsExpired)
             .def(TfPyBoolBuiltinFuncName, &This::_NonZero)
-            .def(self == self)
-            .def(self != self)
+            .def(boost::python::self == boost::python::self)
+            .def(boost::python::self != boost::python::self)
             ;
 
-        class_<_Iterator<_ExtractItem> >
-            ((name + "_Iterator").c_str(), no_init)
+        boost::python::class_<_Iterator<_ExtractItem> >
+            ((name + "_Iterator").c_str(), boost::python::no_init)
             .def("__iter__", &This::template _Iterator<_ExtractItem>::GetCopy)
             .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractItem>::GetNext)
             ;
 
-        class_<_Iterator<_ExtractKey> >
-            ((name + "_KeyIterator").c_str(), no_init)
+        boost::python::class_<_Iterator<_ExtractKey> >
+            ((name + "_KeyIterator").c_str(), boost::python::no_init)
             .def("__iter__", &This::template _Iterator<_ExtractKey>::GetCopy)
             .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractKey>::GetNext)
             ;
 
-        class_<_Iterator<_ExtractValue> >
-            ((name + "_ValueIterator").c_str(), no_init)
+        boost::python::class_<_Iterator<_ExtractValue> >
+            ((name + "_ValueIterator").c_str(), boost::python::no_init)
             .def("__iter__", &This::template _Iterator<_ExtractValue>::GetCopy)
             .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractValue>::GetNext)
             ;
@@ -356,13 +355,12 @@ private:
 
     static void _UpdateList(Type& x, const boost::python::list& pairs)
     {
-        using namespace boost::python;
 
         std::vector<pair_type> values;
-        for (int i = 0, n = len(pairs); i != n; ++i) {
+        for (int i = 0, n = boost::python::len(pairs); i != n; ++i) {
             values.push_back(pair_type(
-                extract<key_type>(pairs[i][0])(),
-                extract<mapped_type>(pairs[i][1])()));
+                boost::python::extract<key_type>(pairs[i][0])(),
+                boost::python::extract<mapped_type>(pairs[i][1])()));
         }
         _Update(x, values);
     }

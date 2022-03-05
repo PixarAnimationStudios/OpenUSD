@@ -33,10 +33,7 @@
 #include <boost/python/slice.hpp>
 #include <boost/python/stl_iterator.hpp>
 
-using std::string;
-using std::vector;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -46,15 +43,15 @@ _ArgumentIsNamed(const std::string& name, const TfPyArg& arg)
     return arg.GetName() == name;
 }
 
-std::pair<tuple, dict>
+std::pair<boost::python::tuple, boost::python::dict>
 TfPyProcessOptionalArgs(
-    const tuple& args, const dict& kwargs, 
+    const boost::python::tuple& args, const boost::python::dict& kwargs, 
     const TfPyArgs& expectedArgs,
     bool allowExtraArgs)
 {
-    std::pair<tuple, dict> rval;
+    std::pair<boost::python::tuple, boost::python::dict> rval;
 
-    const unsigned int numArgs = static_cast<unsigned int>(len(args));
+    const unsigned int numArgs = static_cast<unsigned int>(boost::python::len(args));
     const unsigned int numExpectedArgs = static_cast<unsigned int>(expectedArgs.size());
 
     if (!allowExtraArgs) {
@@ -62,9 +59,9 @@ TfPyProcessOptionalArgs(
             TfPyThrowTypeError("Too many arguments for function");
         }
 
-        const list keys = kwargs.keys();
+        const boost::python::list keys = kwargs.keys();
 
-        typedef stl_input_iterator<string> KeyIterator;
+        typedef boost::python::stl_input_iterator<std::string> KeyIterator;
         for (KeyIterator it(keys), it_end; it != it_end; ++it) {
             if (std::find_if(expectedArgs.begin(), expectedArgs.end(),
                              std::bind(_ArgumentIsNamed, *it,
@@ -79,7 +76,7 @@ TfPyProcessOptionalArgs(
     rval.second = kwargs;
 
     for (unsigned int i = 0; i < std::min(numArgs, numExpectedArgs); ++i) {
-        const string& argName = expectedArgs[i].GetName();
+        const std::string& argName = expectedArgs[i].GetName();
         if (rval.second.has_key(argName)) {
             TfPyThrowTypeError(
                 TfStringPrintf("Multiple values for keyword argument '%s'",
@@ -90,7 +87,7 @@ TfPyProcessOptionalArgs(
     }
 
     if (numArgs > numExpectedArgs) {
-        rval.first = tuple(args[slice(numExpectedArgs, numArgs)]);
+        rval.first = boost::python::tuple(args[boost::python::slice(numExpectedArgs, numArgs)]);
     }
 
     return rval;
@@ -98,7 +95,7 @@ TfPyProcessOptionalArgs(
 
 static void
 _AddArgAndTypeDocStrings(
-    const TfPyArg& arg, vector<string>* argStrs, vector<string>* typeStrs)
+    const TfPyArg& arg, std::vector<std::string>* argStrs, std::vector<std::string>* typeStrs)
 {
     argStrs->push_back(arg.GetName());
     if (!arg.GetDefaultValueDoc().empty()) {
@@ -111,17 +108,17 @@ _AddArgAndTypeDocStrings(
                        arg.GetName().c_str(), arg.GetTypeDoc().c_str()));
 }
 
-string 
+std::string 
 TfPyCreateFunctionDocString(
-    const string& functionName,
+    const std::string& functionName,
     const TfPyArgs& requiredArgs,
     const TfPyArgs& optionalArgs,
-    const string& description)
+    const std::string& description)
 {
-    string rval = functionName + "(";
+    std::string rval = functionName + "(";
 
-    vector<string> argStrs;
-    vector<string> typeStrs;
+    std::vector<std::string> argStrs;
+    std::vector<std::string> typeStrs;
 
     for (size_t i = 0; i < requiredArgs.size(); ++i) {
         _AddArgAndTypeDocStrings(requiredArgs[i], &argStrs, &typeStrs);

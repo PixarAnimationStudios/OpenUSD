@@ -57,9 +57,8 @@ public:
 private:
     static void _Wrap()
     {
-        using namespace boost::python;
 
-        class_<Type>(_GetName().c_str(), no_init)
+        boost::python::class_<Type>(_GetName().c_str(), boost::python::no_init)
             .def("__str__", &This::_GetStr)
             .def("__len__", &Type::size)
             .def("__getitem__", &This::_GetItemIndex)
@@ -71,7 +70,7 @@ private:
             .def("__delitem__", &Type::Remove)
             .def("count", &Type::Count)
             .def("copy", &Type::operator value_vector_type,
-                 return_value_policy<TfPySequenceToList>())
+                 boost::python::return_value_policy<TfPySequenceToList>())
             .def("index", &This::_FindIndex)
             .def("clear", &Type::clear)
             .def("insert", &This::_Insert)
@@ -81,18 +80,18 @@ private:
             .def("ApplyList", &Type::ApplyList)
             .def("ApplyEditsToList", &This::_ApplyEditsToList)
             .add_property("expired", &This::_IsExpired)
-            .def(self == self)
-            .def(self != self)
-            .def(self <  self)
-            .def(self <= self)
-            .def(self >  self)
-            .def(self >= self)
-            .def(self == other<value_vector_type>())
-            .def(self != other<value_vector_type>())
-            .def(self <  other<value_vector_type>())
-            .def(self <= other<value_vector_type>())
-            .def(self >  other<value_vector_type>())
-            .def(self >= other<value_vector_type>())
+            .def(boost::python::self == boost::python::self)
+            .def(boost::python::self != boost::python::self)
+            .def(boost::python::self <  boost::python::self)
+            .def(boost::python::self <= boost::python::self)
+            .def(boost::python::self >  boost::python::self)
+            .def(boost::python::self >= boost::python::self)
+            .def(boost::python::self == boost::python::other<value_vector_type>())
+            .def(boost::python::self != boost::python::other<value_vector_type>())
+            .def(boost::python::self <  boost::python::other<value_vector_type>())
+            .def(boost::python::self <= boost::python::other<value_vector_type>())
+            .def(boost::python::self >  boost::python::other<value_vector_type>())
+            .def(boost::python::self >= boost::python::other<value_vector_type>())
             ;
     }
 
@@ -121,13 +120,12 @@ private:
     static boost::python::list _GetItemSlice(const Type& x,
                                              const boost::python::slice& index)
     {
-        using namespace boost::python;
 
-        list result;
+        boost::python::list result;
 
         if (x._Validate()) {
             try {
-                slice::range<typename Type::const_iterator> range =
+                boost::python::slice::range<typename Type::const_iterator> range =
                     index.get_indicies(x.begin(), x.end());
                 for (; range.start != range.stop; range.start += range.step) {
                     result.append(*range.start);
@@ -150,7 +148,6 @@ private:
     static void _SetItemSlice(Type& x, const boost::python::slice& index,
                               const value_vector_type& values)
     {
-        using namespace boost::python;
 
         if (! x._Validate()) {
             return;
@@ -159,7 +156,7 @@ private:
         // Get the range and the number of items in the slice.
         size_t start, step, count;
         try {
-            slice::range<typename Type::iterator> range =
+            boost::python::slice::range<typename Type::iterator> range =
                 index.get_indicies(x.begin(), x.end());
             start = range.start - x.begin();
             step  = range.step;
@@ -167,7 +164,7 @@ private:
         }
         catch (const std::invalid_argument&) {
             // Empty range.
-            extract<int> e(index.start());
+            boost::python::extract<int> e(index.start());
             start = e.check() ? TfPyNormalizeIndex(e(), x._GetSize(), true) : 0;
             step  = 0;
             count = 0;
@@ -205,12 +202,11 @@ private:
 
     static void _DelItemSlice(Type& x, const boost::python::slice& index)
     {
-        using namespace boost::python;
 
         if (x._Validate()) {
             try {
                 // Get the range and the number of items in the slice.
-                slice::range<typename Type::iterator> range =
+                boost::python::slice::range<typename Type::iterator> range =
                     index.get_indicies(x.begin(), x.end());
                 size_t start = range.start - x.begin();
                 size_t step  = range.step;

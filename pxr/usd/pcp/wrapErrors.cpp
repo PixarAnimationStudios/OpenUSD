@@ -31,7 +31,6 @@
 #include "pxr/base/tf/pyEnum.h"
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -54,143 +53,143 @@ wrapErrors()
     //       without holding the GIL.  That's impractical so we just
     //       ensure that we don't create error objects in Python.
 
-    class_<PcpErrorBase, boost::noncopyable, PcpErrorBasePtr>
-        ("ErrorBase", "", no_init)
+    boost::python::class_<PcpErrorBase, boost::noncopyable, PcpErrorBasePtr>
+        ("ErrorBase", "", boost::python::no_init)
         .add_property("errorType", _GetErrorType)
         .def("__str__", &PcpErrorBase::ToString)
         ;
 
-    class_<PcpErrorTargetPathBase, boost::noncopyable,
-        bases<PcpErrorBase>, PcpErrorTargetPathBasePtr >
-        ("ErrorTargetPathBase", "", no_init)
+    boost::python::class_<PcpErrorTargetPathBase, boost::noncopyable,
+        boost::python::bases<PcpErrorBase>, PcpErrorTargetPathBasePtr >
+        ("ErrorTargetPathBase", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorArcCycle, bases<PcpErrorBase>, PcpErrorArcCyclePtr >
-        ("ErrorArcCycle", "", no_init)
+    boost::python::class_<PcpErrorArcCycle, boost::python::bases<PcpErrorBase>, PcpErrorArcCyclePtr >
+        ("ErrorArcCycle", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorArcPermissionDenied, bases<PcpErrorBase>,
+    boost::python::class_<PcpErrorArcPermissionDenied, boost::python::bases<PcpErrorBase>,
         PcpErrorArcPermissionDeniedPtr>
-        ("ErrorArcPermissionDenied", "", no_init)
+        ("ErrorArcPermissionDenied", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorCapacityExceeded, bases<PcpErrorBase>,
+    boost::python::class_<PcpErrorCapacityExceeded, boost::python::bases<PcpErrorBase>,
         PcpErrorCapacityExceededPtr >
-        ("ErrorCapacityExceeded", "", no_init)
+        ("ErrorCapacityExceeded", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorInconsistentPropertyType, bases<PcpErrorBase>,
+    boost::python::class_<PcpErrorInconsistentPropertyType, boost::python::bases<PcpErrorBase>,
         PcpErrorInconsistentPropertyTypePtr>
-        ("ErrorInconsistentPropertyType", "", no_init)
+        ("ErrorInconsistentPropertyType", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorInconsistentAttributeType, bases<PcpErrorBase>,
+    boost::python::class_<PcpErrorInconsistentAttributeType, boost::python::bases<PcpErrorBase>,
         PcpErrorInconsistentAttributeTypePtr>
-        ("ErrorInconsistentAttributeType", "", no_init)
+        ("ErrorInconsistentAttributeType", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorInconsistentAttributeVariability, bases<PcpErrorBase>,
+    boost::python::class_<PcpErrorInconsistentAttributeVariability, boost::python::bases<PcpErrorBase>,
         PcpErrorInconsistentAttributeVariabilityPtr>
-        ("ErrorInconsistentAttributeVariability", "", no_init)
+        ("ErrorInconsistentAttributeVariability", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorInternalAssetPath, bases<PcpErrorBase>,
+    boost::python::class_<PcpErrorInternalAssetPath, boost::python::bases<PcpErrorBase>,
         PcpErrorInternalAssetPathPtr>
-        ("ErrorInternalAssetPath", "", no_init)
+        ("ErrorInternalAssetPath", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorInvalidPrimPath, bases<PcpErrorBase>,
+    boost::python::class_<PcpErrorInvalidPrimPath, boost::python::bases<PcpErrorBase>,
         PcpErrorInvalidPrimPathPtr>
-        ("ErrorInvalidPrimPath", "", no_init)
+        ("ErrorInvalidPrimPath", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorInvalidAssetPathBase, boost::noncopyable, 
-        bases<PcpErrorBase>, PcpErrorInvalidAssetPathBasePtr>
-        ("ErrorInvalidAssetPathBase", "", no_init)
+    boost::python::class_<PcpErrorInvalidAssetPathBase, boost::noncopyable, 
+        boost::python::bases<PcpErrorBase>, PcpErrorInvalidAssetPathBasePtr>
+        ("ErrorInvalidAssetPathBase", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorInvalidAssetPath, bases<PcpErrorInvalidAssetPathBase>,
+    boost::python::class_<PcpErrorInvalidAssetPath, boost::python::bases<PcpErrorInvalidAssetPathBase>,
         PcpErrorInvalidAssetPathPtr>
-        ("ErrorInvalidAssetPath", "", no_init)
+        ("ErrorInvalidAssetPath", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorMutedAssetPath, bases<PcpErrorInvalidAssetPathBase>,
+    boost::python::class_<PcpErrorMutedAssetPath, boost::python::bases<PcpErrorInvalidAssetPathBase>,
         PcpErrorMutedAssetPathPtr>
-        ("ErrorMutedAssetPath", "", no_init)
+        ("ErrorMutedAssetPath", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorInvalidInstanceTargetPath, bases<PcpErrorTargetPathBase>,
+    boost::python::class_<PcpErrorInvalidInstanceTargetPath, boost::python::bases<PcpErrorTargetPathBase>,
         PcpErrorInvalidInstanceTargetPathPtr>
-        ("ErrorInvalidInstanceTargetPath", "", no_init)
+        ("ErrorInvalidInstanceTargetPath", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorInvalidExternalTargetPath, bases<PcpErrorTargetPathBase>,
+    boost::python::class_<PcpErrorInvalidExternalTargetPath, boost::python::bases<PcpErrorTargetPathBase>,
         PcpErrorInvalidExternalTargetPathPtr>
-        ("ErrorInvalidExternalTargetPath", "", no_init)
+        ("ErrorInvalidExternalTargetPath", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorInvalidTargetPath, bases<PcpErrorTargetPathBase>,
+    boost::python::class_<PcpErrorInvalidTargetPath, boost::python::bases<PcpErrorTargetPathBase>,
         PcpErrorInvalidTargetPathPtr>
-        ("ErrorInvalidTargetPath", "", no_init)
+        ("ErrorInvalidTargetPath", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorInvalidSublayerOffset, bases<PcpErrorBase>,
+    boost::python::class_<PcpErrorInvalidSublayerOffset, boost::python::bases<PcpErrorBase>,
         PcpErrorInvalidSublayerOffsetPtr>
-        ("ErrorInvalidSublayerOffset", "", no_init)
+        ("ErrorInvalidSublayerOffset", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorInvalidReferenceOffset, bases<PcpErrorBase>,
+    boost::python::class_<PcpErrorInvalidReferenceOffset, boost::python::bases<PcpErrorBase>,
         PcpErrorInvalidReferenceOffsetPtr>
-        ("ErrorInvalidReferenceOffset", "", no_init)
+        ("ErrorInvalidReferenceOffset", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorInvalidSublayerOwnership, bases<PcpErrorBase>,
+    boost::python::class_<PcpErrorInvalidSublayerOwnership, boost::python::bases<PcpErrorBase>,
         PcpErrorInvalidSublayerOwnershipPtr>
-        ("ErrorInvalidSublayerOwnership", "", no_init)
+        ("ErrorInvalidSublayerOwnership", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorInvalidSublayerPath, bases<PcpErrorBase>,
+    boost::python::class_<PcpErrorInvalidSublayerPath, boost::python::bases<PcpErrorBase>,
            PcpErrorInvalidSublayerPathPtr>
-        ("ErrorInvalidSublayerPath", "", no_init)
+        ("ErrorInvalidSublayerPath", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorInvalidVariantSelection, bases<PcpErrorBase>,
+    boost::python::class_<PcpErrorInvalidVariantSelection, boost::python::bases<PcpErrorBase>,
            PcpErrorInvalidVariantSelectionPtr>
-        ("ErrorInvalidVariantSelection", "", no_init)
+        ("ErrorInvalidVariantSelection", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorOpinionAtRelocationSource, bases<PcpErrorBase>, 
+    boost::python::class_<PcpErrorOpinionAtRelocationSource, boost::python::bases<PcpErrorBase>, 
            PcpErrorOpinionAtRelocationSourcePtr>
-        ("ErrorOpinionAtRelocationSource", "", no_init)
+        ("ErrorOpinionAtRelocationSource", "", boost::python::no_init)
         ;
     
-    class_<PcpErrorPrimPermissionDenied, bases<PcpErrorBase>,
+    boost::python::class_<PcpErrorPrimPermissionDenied, boost::python::bases<PcpErrorBase>,
         PcpErrorPrimPermissionDeniedPtr>
-        ("ErrorPrimPermissionDenied", "", no_init)
+        ("ErrorPrimPermissionDenied", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorPropertyPermissionDenied, bases<PcpErrorBase>,
+    boost::python::class_<PcpErrorPropertyPermissionDenied, boost::python::bases<PcpErrorBase>,
         PcpErrorPropertyPermissionDeniedPtr>
-        ("ErrorPropertyPermissionDenied", "", no_init)
+        ("ErrorPropertyPermissionDenied", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorSublayerCycle, bases<PcpErrorBase>, 
+    boost::python::class_<PcpErrorSublayerCycle, boost::python::bases<PcpErrorBase>, 
            PcpErrorSublayerCyclePtr>
-        ("ErrorSublayerCycle", "", no_init)
+        ("ErrorSublayerCycle", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorTargetPermissionDenied, bases<PcpErrorTargetPathBase>,
+    boost::python::class_<PcpErrorTargetPermissionDenied, boost::python::bases<PcpErrorTargetPathBase>,
         PcpErrorTargetPermissionDeniedPtr>
-        ("ErrorTargetPermissionDenied", "", no_init)
+        ("ErrorTargetPermissionDenied", "", boost::python::no_init)
         ;
 
-    class_<PcpErrorUnresolvedPrimPath, bases<PcpErrorBase>,
+    boost::python::class_<PcpErrorUnresolvedPrimPath, boost::python::bases<PcpErrorBase>,
            PcpErrorUnresolvedPrimPathPtr>
-        ("ErrorUnresolvedPrimPath", "", no_init)
+        ("ErrorUnresolvedPrimPath", "", boost::python::no_init)
         ;
 
     // Register conversion for python list <-> vector<PcpErrorBasePtr>
-    to_python_converter< PcpErrorVector, 
+    boost::python::to_python_converter< PcpErrorVector, 
                          TfPySequenceToPython<PcpErrorVector> >();
     TfPyContainerConversions::from_python_sequence<
         PcpErrorVector,

@@ -2287,7 +2287,7 @@ _CopyGenericValue(const AlembicType& src)
 template <class AlembicTraits, class UsdType>
 static
 VtValue
-_CopyGenericValue(const shared_ptr<TypedArraySample<AlembicTraits> >& src)
+_CopyGenericValue(const std::shared_ptr<TypedArraySample<AlembicTraits> >& src)
 {
     typedef typename PODTraitsFromEnum<
         AlembicTraits::pod_enum>::value_type SrcType;

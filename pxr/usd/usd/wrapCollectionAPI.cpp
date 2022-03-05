@@ -37,7 +37,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -52,14 +51,14 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateExpansionRuleAttr(UsdCollectionAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateExpansionRuleAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateIncludeRootAttr(UsdCollectionAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateIncludeRootAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
@@ -104,64 +103,64 @@ void wrapUsdCollectionAPI()
     UsdCollectionAPI_CanApplyResult::Wrap<UsdCollectionAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
+    boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
         cls("CollectionAPI");
 
     cls
-        .def(init<UsdPrim, TfToken>())
-        .def(init<UsdSchemaBase const&, TfToken>())
+        .def(boost::python::init<UsdPrim, TfToken>())
+        .def(boost::python::init<UsdSchemaBase const&, TfToken>())
         .def(TfTypePythonClass())
 
         .def("Get",
             (UsdCollectionAPI(*)(const UsdStagePtr &stage, 
                                        const SdfPath &path))
                &This::Get,
-            (arg("stage"), arg("path")))
+            (boost::python::arg("stage"), boost::python::arg("path")))
         .def("Get",
             (UsdCollectionAPI(*)(const UsdPrim &prim,
                                        const TfToken &name))
                &This::Get,
-            (arg("prim"), arg("name")))
+            (boost::python::arg("prim"), boost::python::arg("name")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (arg("prim"), arg("name")))
+        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim"), boost::python::arg("name")))
         .staticmethod("CanApply")
 
-        .def("Apply", &This::Apply, (arg("prim"), arg("name")))
+        .def("Apply", &This::Apply, (boost::python::arg("prim"), boost::python::arg("name")))
         .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",
              (const TfTokenVector &(*)(bool))&This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetSchemaAttributeNames",
              (TfTokenVector(*)(bool, const TfToken &))
                 &This::GetSchemaAttributeNames,
-             arg("includeInherited"),
-             arg("instanceName"),
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited"),
+             boost::python::arg("instanceName"),
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetExpansionRuleAttr",
              &This::GetExpansionRuleAttr)
         .def("CreateExpansionRuleAttr",
              &_CreateExpansionRuleAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetIncludeRootAttr",
              &This::GetIncludeRootAttr)
         .def("CreateIncludeRootAttr",
              &_CreateIncludeRootAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         
         .def("GetIncludesRel",
@@ -206,7 +205,7 @@ void wrapUsdCollectionAPI()
 
 namespace {
 
-static object _WrapValidate(const UsdCollectionAPI &coll) {
+static boost::python::object _WrapValidate(const UsdCollectionAPI &coll) {
     std::string reason; 
     bool valid = coll.Validate(&reason);
     return boost::python::make_tuple(valid, reason);
@@ -214,7 +213,7 @@ static object _WrapValidate(const UsdCollectionAPI &coll) {
 
 WRAP_CUSTOM {
 
-    scope s_query = _class;
+    boost::python::scope s_query = _class;
 
     using MQuery = UsdCollectionMembershipQuery;
     using This = UsdCollectionAPI;
@@ -222,23 +221,23 @@ WRAP_CUSTOM {
     MQuery (This::*_ComputeMembershipQuery)() const = 
         &This::ComputeMembershipQuery;
 
-    scope collectionAPI = _class 
-        .def(init<UsdPrim, TfToken>())
+    boost::python::scope collectionAPI = _class 
+        .def(boost::python::init<UsdPrim, TfToken>())
 
         .def("GetCollection", 
              (UsdCollectionAPI(*)(const UsdPrim &prim, 
                                   const TfToken &name))
                 &This::GetCollection,
-             (arg("prim"), arg("name")))
+             (boost::python::arg("prim"), boost::python::arg("name")))
         .def("GetCollection", 
              (UsdCollectionAPI(*)(const UsdStagePtr &stage, 
                                   const SdfPath &collectionPath))
                 &This::GetCollection,
-             (arg("stage"), arg("collectionPath")))
+             (boost::python::arg("stage"), boost::python::arg("collectionPath")))
             .staticmethod("GetCollection")
 
         .def("GetAllCollections", &This::GetAllCollections, 
-             arg("prim"), return_value_policy<TfPySequenceToList>())
+             boost::python::arg("prim"), boost::python::return_value_policy<TfPySequenceToList>())
             .staticmethod("GetAllCollections")
 
         .def("GetName", &This::GetName)
@@ -246,36 +245,36 @@ WRAP_CUSTOM {
 
         .def("GetNamedCollectionPath", 
              &This::GetNamedCollectionPath,
-             (arg("prim"), arg("collectionName")))
+             (boost::python::arg("prim"), boost::python::arg("collectionName")))
             .staticmethod("GetNamedCollectionPath")
 
         .def("IsSchemaPropertyBaseName", &This::IsSchemaPropertyBaseName,
-            arg("baseName"))
+            boost::python::arg("baseName"))
             .staticmethod("IsSchemaPropertyBaseName")
 
         .def("ComputeMembershipQuery", _ComputeMembershipQuery)
 
         .def("HasNoIncludedPaths", &This::HasNoIncludedPaths)
 
-        .def("IncludePath", &This::IncludePath, arg("pathToInclude"))
-        .def("ExcludePath", &This::ExcludePath, arg("pathToExclude"))
+        .def("IncludePath", &This::IncludePath, boost::python::arg("pathToInclude"))
+        .def("ExcludePath", &This::ExcludePath, boost::python::arg("pathToExclude"))
 
         .def("Validate", &_WrapValidate)
 
         .def("ComputeIncludedObjects", &This::ComputeIncludedObjects, 
-             (arg("query"), arg("stage"), 
-              arg("predicate")=UsdPrimDefaultPredicate),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("query"), boost::python::arg("stage"), 
+              boost::python::arg("predicate")=UsdPrimDefaultPredicate),
+             boost::python::return_value_policy<TfPySequenceToList>())
              .staticmethod("ComputeIncludedObjects")
 
         .def("ComputeIncludedPaths", &This::ComputeIncludedPaths, 
-             (arg("query"), arg("stage"), 
-              arg("predicate")=UsdPrimDefaultPredicate),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("query"), boost::python::arg("stage"), 
+              boost::python::arg("predicate")=UsdPrimDefaultPredicate),
+             boost::python::return_value_policy<TfPySequenceToList>())
              .staticmethod("ComputeIncludedPaths")
 
         .def("CanContainPropertyName", 
-                This::CanContainPropertyName, arg("name"))
+                This::CanContainPropertyName, boost::python::arg("name"))
         .staticmethod("CanContainPropertyName")
 
         .def("ResetCollection", &This::ResetCollection)

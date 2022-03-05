@@ -32,10 +32,6 @@
 
 #include <cctype>
 
-using std::map;
-using std::ostream;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -84,7 +80,7 @@ _IsASCIIPrintable(unsigned char ch)
 
 // Append 'ch' to 'out' as an escaped 2-digit hex code (e.g. \x3f).
 static inline void
-_WriteHexEscape(unsigned char ch, string *out)
+_WriteHexEscape(unsigned char ch, std::string *out)
 {
     const char* hexdigit = "0123456789abcdef";
     char buf[] = "\\x__";
@@ -96,8 +92,8 @@ _WriteHexEscape(unsigned char ch, string *out)
 // Helper for creating string representation of an asset path.  Caller is
 // assumed to have validated \p assetPath (e.g. by having obtained it from an
 // SdfAssetPath, SdfReference, or SdfPayload).
-static string
-_StringFromAssetPath(const string& assetPath)
+static std::string
+_StringFromAssetPath(const std::string& assetPath)
 {
     // See Sdf_EvalAssetPath for the code that reads asset paths at parse time.
 
@@ -113,7 +109,7 @@ _StringFromAssetPath(const string& assetPath)
     const char delim = '@';
     bool useTripleDelim = assetPath.find(delim) != std::string::npos;
 
-    string s;
+    std::string s;
     s.reserve(assetPath.size() + (useTripleDelim ? 6 : 2));
     s.append(useTripleDelim ? 3 : 1, delim);
 
@@ -138,19 +134,19 @@ _StringFromAssetPath(const string& assetPath)
     return s;
 }
 
-static string
-_StringFromValue(const string& s)
+static std::string
+_StringFromValue(const std::string& s)
 {
     return Sdf_FileIOUtility::Quote(s);
 }
 
-static string
+static std::string
 _StringFromValue(const TfToken& s)
 {
     return Sdf_FileIOUtility::Quote(s);
 }
 
-static string
+static std::string
 _StringFromValue(const SdfAssetPath& assetPath)
 {
     return _StringFromAssetPath(assetPath.GetAssetPath());
@@ -159,7 +155,7 @@ _StringFromValue(const SdfAssetPath& assetPath)
 template <class T>
 static void
 _StringFromVtArray(
-    string *valueStr,
+    std::string *valueStr,
     const VtArray<T> &valArray)
 {
     valueStr->append("[");
@@ -179,7 +175,7 @@ _StringFromVtArray(
 // that can't use TfStringify, and arrays of those types.
 template <class T>
 static bool
-_StringFromVtValueHelper(string* valueStr, const VtValue& value)
+_StringFromVtValueHelper(std::string* valueStr, const VtValue& value)
 {
     if (value.IsHolding<T>()) {
         *valueStr = _StringFromValue(value.UncheckedGet<T>());
@@ -215,14 +211,14 @@ struct _ListOpWriter
 };
 
 template <>
-struct _ListOpWriter<string>
+struct _ListOpWriter<std::string>
 {
     static constexpr bool ItemPerLine = false;
-    static constexpr bool SingleItemRequiresBrackets(const string& s)
+    static constexpr bool SingleItemRequiresBrackets(const std::string& s)
     {
         return true;
     }
-    static void Write(Sdf_TextOutput& out, size_t indent, const string& s)
+    static void Write(Sdf_TextOutput& out, size_t indent, const std::string& s)
     {
         Sdf_FileIOUtility::WriteQuotedString(out, indent, s);
     }
@@ -333,8 +329,8 @@ template <class ListOpList>
 void
 _WriteListOpList(
     Sdf_TextOutput& out, size_t indent,
-    const string& name, const ListOpList& listOpList, 
-    const string& op = string())
+    const std::string& name, const ListOpList& listOpList, 
+    const std::string& op = std::string())
 {
     typedef _ListOpWriter<typename ListOpList::value_type> _Writer;
 
@@ -450,14 +446,14 @@ Sdf_FileIOUtility::CloseParensIfNeeded(
 
 void
 Sdf_FileIOUtility::WriteQuotedString(
-    Sdf_TextOutput &out, size_t indent, const string &str)
+    Sdf_TextOutput &out, size_t indent, const std::string &str)
 {
     Puts(out, indent, Quote(str));
 }
 
 void
 Sdf_FileIOUtility::WriteAssetPath(
-    Sdf_TextOutput &out, size_t indent, const string &assetPath) 
+    Sdf_TextOutput &out, size_t indent, const std::string &assetPath) 
 {
     Puts(out, indent, _StringFromAssetPath(assetPath));
 }
@@ -491,7 +487,7 @@ Sdf_FileIOUtility::WriteSdfPath(
 
 template <class StrType>
 static bool
-_WriteNameVector(Sdf_TextOutput &out, size_t indent, const vector<StrType> &vec)
+_WriteNameVector(Sdf_TextOutput &out, size_t indent, const std::vector<StrType> &vec)
 {
     size_t i, c = vec.size();
     if (c>1) {
@@ -511,14 +507,14 @@ _WriteNameVector(Sdf_TextOutput &out, size_t indent, const vector<StrType> &vec)
 
 bool
 Sdf_FileIOUtility::WriteNameVector(
-    Sdf_TextOutput &out, size_t indent, const vector<string> &vec)
+    Sdf_TextOutput &out, size_t indent, const std::vector<std::string> &vec)
 {
     return _WriteNameVector(out, indent, vec);
 }
 
 bool
 Sdf_FileIOUtility::WriteNameVector(
-    Sdf_TextOutput &out, size_t indent, const vector<TfToken> &vec)
+    Sdf_TextOutput &out, size_t indent, const std::vector<TfToken> &vec)
 {
     return _WriteNameVector(out, indent, vec);
 }
@@ -592,7 +588,7 @@ Sdf_FileIOUtility::_WriteDictionary(
             if (value.IsHolding<std::string>()) {
                 WriteQuotedString(out, multiLine ? indent+1 : 0, *(i->first));
                 Write(out, 0, ": ");
-                WriteQuotedString(out, 0, value.Get<string>());
+                WriteQuotedString(out, 0, value.Get<std::string>());
                 if (counter > 0) {
                     Puts(out, 0, ", ");
                 }
@@ -608,7 +604,7 @@ Sdf_FileIOUtility::_WriteDictionary(
             }
         } else {
             // Put quotes around the keyName if it is not a valid identifier
-            string keyName = *(i->first);
+            std::string keyName = *(i->first);
             if (!TfIsValidIdentifier(keyName)) {
                 keyName = "\"" + keyName + "\"";
             }
@@ -631,8 +627,8 @@ Sdf_FileIOUtility::_WriteDictionary(
 
                 // XXX: The logic here is very similar to that in
                 //      WriteDefaultValue. WBN to refactor.
-                string str;
-                if (_StringFromVtValueHelper<string>(&str, value) || 
+                std::string str;
+                if (_StringFromVtValueHelper<std::string>(&str, value) || 
                     _StringFromVtValueHelper<TfToken>(&str, value) ||
                     _StringFromVtValueHelper<SdfAssetPath>(&str, value)) {
                     Puts(out, 0, str);
@@ -743,23 +739,23 @@ Sdf_FileIOUtility::WriteLayerOffset(
     }
 }
 
-string
-Sdf_FileIOUtility::Quote(const string &str)
+std::string
+Sdf_FileIOUtility::Quote(const std::string &str)
 {
     const bool allowTripleQuotes = true;
 
-    string result;
+    std::string result;
 
     // Choose quotes, double quote preferred.
     char quote = '"';
-    if (str.find('"') != string::npos && str.find('\'') == string::npos) {
+    if (str.find('"') != std::string::npos && str.find('\'') == std::string::npos) {
         quote = '\'';
     }
 
     // Open quote.  Choose single or triple quotes.
     bool tripleQuotes = false;
     if (allowTripleQuotes) {
-        if (str.find('\n') != string::npos) {
+        if (str.find('\n') != std::string::npos) {
             tripleQuotes = true;
             result += quote;
             result += quote;
@@ -830,17 +826,17 @@ Sdf_FileIOUtility::Quote(const string &str)
     return result;
 }
 
-string 
+std::string 
 Sdf_FileIOUtility::Quote(const TfToken &token)
 {
     return Quote(token.GetString());
 }
 
-string
+std::string
 Sdf_FileIOUtility::StringFromVtValue(const VtValue &value)
 {
-    string s;
-    if (_StringFromVtValueHelper<string>(&s, value) || 
+    std::string s;
+    if (_StringFromVtValueHelper<std::string>(&s, value) || 
         _StringFromVtValueHelper<TfToken>(&s, value) ||
         _StringFromVtValueHelper<SdfAssetPath>(&s, value)) {
         return s;

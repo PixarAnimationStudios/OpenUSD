@@ -37,7 +37,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -52,70 +51,70 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateModelDrawModeAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateModelDrawModeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelApplyDrawModeAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateModelApplyDrawModeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelDrawModeColorAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateModelDrawModeColorAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelCardGeometryAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateModelCardGeometryAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelCardTextureXPosAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateModelCardTextureXPosAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelCardTextureYPosAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateModelCardTextureYPosAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelCardTextureZPosAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateModelCardTextureZPosAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelCardTextureXNegAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateModelCardTextureXNegAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelCardTextureYNegAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateModelCardTextureYNegAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelCardTextureZNegAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateModelCardTextureZNegAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
@@ -153,105 +152,105 @@ void wrapUsdGeomModelAPI()
     UsdGeomModelAPI_CanApplyResult::Wrap<UsdGeomModelAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
+    boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
         cls("ModelAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
-        .def("Apply", &This::Apply, (arg("prim")))
+        .def("Apply", &This::Apply, (boost::python::arg("prim")))
         .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetModelDrawModeAttr",
              &This::GetModelDrawModeAttr)
         .def("CreateModelDrawModeAttr",
              &_CreateModelDrawModeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetModelApplyDrawModeAttr",
              &This::GetModelApplyDrawModeAttr)
         .def("CreateModelApplyDrawModeAttr",
              &_CreateModelApplyDrawModeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetModelDrawModeColorAttr",
              &This::GetModelDrawModeColorAttr)
         .def("CreateModelDrawModeColorAttr",
              &_CreateModelDrawModeColorAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetModelCardGeometryAttr",
              &This::GetModelCardGeometryAttr)
         .def("CreateModelCardGeometryAttr",
              &_CreateModelCardGeometryAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetModelCardTextureXPosAttr",
              &This::GetModelCardTextureXPosAttr)
         .def("CreateModelCardTextureXPosAttr",
              &_CreateModelCardTextureXPosAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetModelCardTextureYPosAttr",
              &This::GetModelCardTextureYPosAttr)
         .def("CreateModelCardTextureYPosAttr",
              &_CreateModelCardTextureYPosAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetModelCardTextureZPosAttr",
              &This::GetModelCardTextureZPosAttr)
         .def("CreateModelCardTextureZPosAttr",
              &_CreateModelCardTextureZPosAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetModelCardTextureXNegAttr",
              &This::GetModelCardTextureXNegAttr)
         .def("CreateModelCardTextureXNegAttr",
              &_CreateModelCardTextureXNegAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetModelCardTextureYNegAttr",
              &This::GetModelCardTextureYNegAttr)
         .def("CreateModelCardTextureYNegAttr",
              &_CreateModelCardTextureYNegAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetModelCardTextureZNegAttr",
              &This::GetModelCardTextureZNegAttr)
         .def("CreateModelCardTextureZNegAttr",
              &_CreateModelCardTextureZNegAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;
@@ -280,17 +279,17 @@ void wrapUsdGeomModelAPI()
 
 namespace {
 
-static object
+static boost::python::object
 _GetExtentsHint(
         const UsdGeomModelAPI& self,
         const UsdTimeCode &time)
 {
     VtVec3fArray extents;
     if (!self.GetExtentsHint(&extents, time)) {
-        return object();
+        return boost::python::object();
     }
 
-    return object(extents);
+    return boost::python::object(extents);
 }
 
 static bool
@@ -312,22 +311,22 @@ _SetExtentsHint(
 WRAP_CUSTOM {
     _class
         .def("GetExtentsHint", &_GetExtentsHint,
-                (arg("time")=UsdTimeCode::Default()))
+                (boost::python::arg("time")=UsdTimeCode::Default()))
         .def("SetExtentsHint", &_SetExtentsHint,
-                (arg("extents"),
-                 arg("time")=UsdTimeCode::Default()))
+                (boost::python::arg("extents"),
+                 boost::python::arg("time")=UsdTimeCode::Default()))
         .def("ComputeExtentsHint", &UsdGeomModelAPI::ComputeExtentsHint,
-                (arg("bboxCache")))
+                (boost::python::arg("bboxCache")))
 
         .def("GetExtentsHintAttr", &UsdGeomModelAPI::GetExtentsHintAttr)
 
         .def("GetConstraintTarget", &UsdGeomModelAPI::GetConstraintTarget)
         .def("CreateConstraintTarget", &UsdGeomModelAPI::CreateConstraintTarget)
         .def("GetConstraintTargets", &UsdGeomModelAPI::GetConstraintTargets,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("ComputeModelDrawMode", &UsdGeomModelAPI::ComputeModelDrawMode,
-            (arg("parentDrawMode")=TfToken()))
+            (boost::python::arg("parentDrawMode")=TfToken()))
     ;
 }
 

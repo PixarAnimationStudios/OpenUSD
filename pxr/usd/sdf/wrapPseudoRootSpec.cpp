@@ -29,7 +29,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -38,9 +37,9 @@ wrapPseudoRootSpec()
 {
     typedef SdfPseudoRootSpec This;
 
-    class_<This, SdfHandle<This>, 
-           bases<SdfPrimSpec>, boost::noncopyable>
-        ("PseudoRootSpec", no_init)
+    boost::python::class_<This, SdfHandle<This>, 
+           boost::python::bases<SdfPrimSpec>, boost::noncopyable>
+        ("PseudoRootSpec", boost::python::no_init)
         .def(SdfPySpec())
         ;
 }

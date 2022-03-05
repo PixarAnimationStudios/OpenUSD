@@ -60,28 +60,27 @@ struct TfPyPolymorphic :
     Override GetOverride(char const *func) const {
         TfPyLock pyLock;
 
-        using namespace boost::python;
 
         // don't use boost::python::wrapper::get_override(), as it can return
         // the wrong result. instead, implement our own version which does
         // better
 
-        PyObject * m_self = detail::wrapper_base_::get_owner(*this);
+        PyObject * m_self = boost::python::detail::wrapper_base_::get_owner(*this);
         if (m_self) {
 
             // using pythons mro, get the attribute string that represents
             // the named function. this will return something valid if it exists
             // in this or any ancestor class
-            if (handle<> m = handle<>(
-                    allow_null(
+            if (boost::python::handle<> m = boost::python::handle<>(
+                    boost::python::allow_null(
                         PyObject_GetAttrString(
                             m_self, const_cast<char*>(func))))
             )
             {
                 // now get the typehandle to the class. we will use this to
                 // determine if this method exists on the derived class
-                type_handle typeHandle =
-                    objects::registered_class_object(
+                boost::python::type_handle typeHandle =
+                    boost::python::objects::registered_class_object(
                         typeid(Derived));
                 PyTypeObject* class_object = typeHandle.get();
 
@@ -94,8 +93,8 @@ struct TfPyPolymorphic :
                 )
                 {
                     // look for the method on the class object.
-                    handle<> borrowed_f(
-                        allow_null(
+                    boost::python::handle<> borrowed_f(
+                        boost::python::allow_null(
                             PyObject_GetAttrString(
                                 (PyObject *)class_object,
                                 const_cast<char*>(func))));
@@ -126,7 +125,7 @@ struct TfPyPolymorphic :
         }
         PyErr_Clear();  // Don't leave an exception if there's no override.
 
-        return Override(handle<>(detail::none()));
+        return Override(boost::python::handle<>(boost::python::detail::none()));
     }
     
     Override GetPureOverride(char const *func) const {

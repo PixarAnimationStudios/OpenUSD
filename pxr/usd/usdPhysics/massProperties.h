@@ -61,27 +61,27 @@ GfVec3f UsdPhysicsDiagonalize(const GfMatrix3f& m, GfQuatf& massFrame)
         GfMatrix3f axes(q);
         d = axes.GetTranspose() * m * axes;
 
-        float d0 = fabs(d[1][2]), d1 = fabs(d[0][2]), d2 = fabs(d[0][1]);
+        float d0 = std::fabs(d[1][2]), d1 = std::fabs(d[0][2]), d2 = std::fabs(d[0][1]);
         uint32_t a = uint32_t(d0 > d1 && d0 > d2 ? 0 : d1 > d2 ? 1 : 2); // rotation axis index, from largest
                                                                          // off-diagonal
                                                                          // element
 
         uint32_t a1 = UsdPhysicsGetNextIndex3(a), a2 = UsdPhysicsGetNextIndex3(a1);
-        if (d[a1][a2] == 0.0f || fabs(d[a1][a1] - d[a2][a2]) > 2e6 * fabs(2.0 * d[a1][a2]))
+        if (d[a1][a2] == 0.0f || std::fabs(d[a1][a1] - d[a2][a2]) > 2e6 * fabs(2.0 * d[a1][a2]))
             break;
 
         float w = (d[a1][a1] - d[a2][a2]) / (2.0f * d[a1][a2]); // cot(2 * phi), where phi is the rotation angle
-        float absw = fabs(w);
+        float absw = std::fabs(w);
 
         GfQuatf r;
         if (absw > 1000)
             r = UsdPhysicsIndexedRotation(a, 1 / (4 * w), 1.0f); // h will be very close to 1, so use small angle approx instead
         else
         {
-            float t = 1 / (absw + sqrt(w * w + 1)); // absolute value of tan phi
-            float h = 1 / sqrt(t * t + 1); // absolute value of cos phi
+            float t = 1 / (absw + std::sqrt(w * w + 1)); // absolute value of tan phi
+            float h = 1 / std::sqrt(t * t + 1); // absolute value of cos phi
 
-            r = UsdPhysicsIndexedRotation(a, sqrt((1 - h) / 2) * ((w >= 0.0f) ? 1.0f : -1.0f), sqrt((1 + h) / 2));
+            r = UsdPhysicsIndexedRotation(a, std::sqrt((1 - h) / 2) * ((w >= 0.0f) ? 1.0f : -1.0f), std::sqrt((1 + h) / 2));
         }
 
         q = (q * r).GetNormalized();

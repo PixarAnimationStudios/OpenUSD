@@ -30,7 +30,6 @@
 #include <boost/python/scope.hpp>
 #include <boost/python/class.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -47,13 +46,13 @@ TF_INSTANTIATE_NOTICE_WRAPPER(
 void
 wrapNotice()
 {
-    scope s = class_<ArNotice>("Notice", no_init);
+    boost::python::scope s = boost::python::class_<ArNotice>("Notice", boost::python::no_init);
     
     TfPyNoticeWrapper<ArNotice::ResolverNotice, TfNotice>::Wrap();
 
     TfPyNoticeWrapper<
         ArNotice::ResolverChanged, ArNotice::ResolverNotice>::Wrap()
         .def("AffectsContext", &ArNotice::ResolverChanged::AffectsContext,
-             args("context"))
+             boost::python::args("context"))
         ;
 }

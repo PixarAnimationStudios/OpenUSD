@@ -31,7 +31,6 @@
 
 #include <memory>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -48,7 +47,7 @@ public:
         _block.reset(new SdfChangeBlock);
     }
 
-    void Close(object, object, object)
+    void Close(boost::python::object, boost::python::object, boost::python::object)
     {
         if (!_enabled || !TF_VERIFY(_block)) {
             return;
@@ -69,8 +68,8 @@ wrapChangeBlock()
     // This allows SdfChangeBlocks to be used in an RAII fashion in Python 
     // with the 'with' statement.
     typedef Sdf_PythonChangeBlock This;
-    class_<This, boost::noncopyable>("ChangeBlock",
-                                     init<bool>(arg("enabled")=true))
+    boost::python::class_<This, boost::noncopyable>("ChangeBlock",
+                                     boost::python::init<bool>(boost::python::arg("enabled")=true))
         .def("__enter__", &This::Open)
         .def("__exit__", &This::Close)
         ;

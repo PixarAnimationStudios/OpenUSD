@@ -59,18 +59,13 @@
 #include <utility>
 #include <vector>
 
-using std::make_pair;
-using std::pair;
-using std::string;
-using std::unordered_map;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 using namespace Usd_CrateFile;
 
 static inline bool
-_GetBracketingTimes(const vector<double> &times,
+_GetBracketingTimes(const std::vector<double> &times,
                     const double time, double* tLower, double* tUpper)
 {
     if (times.empty()) {
@@ -83,7 +78,7 @@ _GetBracketingTimes(const vector<double> &times,
         // Time is at-or-after the last sample.
         *tLower = *tUpper = times.back();
     } else {
-        auto i = lower_bound(times.begin(), times.end(), time);
+        auto i = std::lower_bound(times.begin(), times.end(), time);
         if (*i == time) {
             // Time is exactly on a sample.
             *tLower = *tUpper = *i;
@@ -119,19 +114,19 @@ public:
         WorkMoveDestroyAsync(_data);
     }
 
-    string const &GetAssetPath() const { return _crateFile->GetAssetPath(); }
+    std::string const &GetAssetPath() const { return _crateFile->GetAssetPath(); }
 
-    bool CanIncrementalSave(string const &fileName) {
+    bool CanIncrementalSave(std::string const &fileName) {
         return _crateFile->CanPackTo(fileName);
     }
 
-    bool Save(string const &fileName) {
+    bool Save(std::string const &fileName) {
         TfAutoMallocTag tag("Usd_CrateDataImpl::Save");
 
         TF_DESCRIBE_SCOPE("Saving usd binary file @%s@", fileName.c_str());
         
         // Sort by path for better namespace-grouped data layout.
-        vector<SdfPath> sortedPaths;
+        std::vector<SdfPath> sortedPaths;
         sortedPaths.reserve(_data.size());
         for (auto const &p: _data) {
             sortedPaths.push_back(p.first);
@@ -173,7 +168,7 @@ public:
     }
 
     template <class ...Args>
-    bool Open(string const& assetPath, Args&&... args) {
+    bool Open(std::string const& assetPath, Args&&... args) {
         TfAutoMallocTag tag("Usd_CrateDataImpl::Open");
 
         TF_DESCRIBE_SCOPE("Opening usd binary asset @%s@", assetPath.c_str());
@@ -222,7 +217,6 @@ public:
         // any fields that may be set on them.  Their presence is determined by
         // whether or not they appear in their owning relationship's Added or
         // Explicit items.
-        using std::find;
         SdfPath parentPath = path.GetParentPath();
         SdfPath targetPath = path.GetTargetPath();
         VtValue listOpVal = _GetTargetOrConnectionListOpValue(parentPath);
@@ -231,17 +225,17 @@ public:
                 listOpVal.UncheckedGet<SdfPathListOp>();
             if (listOp.IsExplicit()) {
                 auto const &items = listOp.GetExplicitItems();
-                return find(
+                return std::find(
                     items.begin(), items.end(), targetPath) != items.end();
             } else {
                 auto const &added = listOp.GetAddedItems();
                 auto const &prepended = listOp.GetPrependedItems();
                 auto const &appended = listOp.GetAppendedItems();
-                return find(added.begin(),
+                return std::find(added.begin(),
                             added.end(), targetPath) != added.end() ||
-                    find(prepended.begin(),
+                    std::find(prepended.begin(),
                          prepended.end(), targetPath) != prepended.end() ||
-                    find(appended.begin(),
+                    std::find(appended.begin(),
                          appended.end(), targetPath) != appended.end();
             }
         }
@@ -346,10 +340,9 @@ public:
                         auto const &appended = listOp.GetAppendedItems();
                         specs.resize(
                             added.size() + prepended.size() + appended.size());
-                        using std::copy;
-                        copy(appended.begin(), appended.end(),
-                             copy(prepended.begin(), prepended.end(),
-                                  copy(added.begin(), added.end(),
+                        std::copy(appended.begin(), appended.end(),
+                             std::copy(prepended.begin(), prepended.end(),
+                                  std::copy(added.begin(), added.end(),
                                        specs.begin())));
                         std::sort(specs.begin(), specs.end());
                         specs.erase(std::unique(specs.begin(), specs.end()),
@@ -487,8 +480,8 @@ public:
         return typeid(void);
     }
 
-    inline vector<TfToken> List(const SdfPath& path) const {
-        vector<TfToken> names;
+    inline std::vector<TfToken> List(const SdfPath& path) const {
+        std::vector<TfToken> names;
         if (_SpecData const *specData = _GetSpecData(path)) {
             auto const &fields = specData->fields.Get();
             names.resize(fields.size());
@@ -639,7 +632,7 @@ public:
             if (fieldValue->IsHolding<TimeSamples>()) {
                 auto const &ts = fieldValue->UncheckedGet<TimeSamples>();
                 auto const &times = ts.times.Get();
-                auto iter = lower_bound(times.begin(), times.end(), time);
+                auto iter = std::lower_bound(times.begin(), times.end(), time);
                 if (iter == times.end() || *iter != time)
                     return false;
                 if (value) {
@@ -679,7 +672,7 @@ public:
         }
         
         // Insert or overwrite time into newTimes.
-        auto iter = lower_bound(newSamples.times.Get().begin(),
+        auto iter = std::lower_bound(newSamples.times.Get().begin(),
                                 newSamples.times.Get().end(), time);
         if (iter == newSamples.times.Get().end() || *iter != time) {
             auto index = iter - newSamples.times.Get().begin();
@@ -714,7 +707,7 @@ public:
         }
         
         // Insert or overwrite time into newTimes.
-        auto iter = lower_bound(newSamples.times.Get().begin(),
+        auto iter = std::lower_bound(newSamples.times.Get().begin(),
                                 newSamples.times.Get().end(), time);
         if (iter == newSamples.times.Get().end() || *iter != time)
             return;
@@ -748,9 +741,9 @@ private:
 
         // Pull all the data out of the crate file structure that we'll
         // consume.
-        vector<CrateFile::Spec> specs;
-        vector<CrateFile::Field> fields;
-        vector<Usd_CrateFile::FieldIndex> fieldSets;
+        std::vector<CrateFile::Spec> specs;
+        std::vector<CrateFile::Field> fields;
+        std::vector<Usd_CrateFile::FieldIndex> fieldSets;
         _crateFile->RemoveStructuralData(specs, fields, fieldSets);
                 
         // Remove any target specs, we do not store target specs in Usd, but old
@@ -758,7 +751,7 @@ private:
         // 0.1.0, so skip this step if the version is newer or equal to that.
         if (_crateFile->GetFileVersion() < CrateFile::Version(0, 1, 0)) {
             specs.erase(
-                remove_if(
+                std::remove_if(
                     specs.begin(), specs.end(),
                     [this](CrateFile::Spec const &spec) {
                         return _crateFile->GetPath(
@@ -788,14 +781,14 @@ private:
 
         // XXX robin_map ?
         typedef Usd_Shared<_FieldValuePairVector> SharedFieldValuePairVector;
-        unordered_map<
+        std::unordered_map<
             FieldSetIndex, SharedFieldValuePairVector, _Hasher> liveFieldSets;
 
         for (auto fsBegin = fieldSets.begin(),
-                 fsEnd = find(fsBegin, fieldSets.end(), FieldIndex());
+                 fsEnd = std::find(fsBegin, fieldSets.end(), FieldIndex());
              fsBegin != fieldSets.end();
              fsBegin = fsEnd + 1,
-                 fsEnd = find(fsBegin, fieldSets.end(), FieldIndex())) {
+                 fsEnd = std::find(fsBegin, fieldSets.end(), FieldIndex())) {
                     
             // Add this range to liveFieldSets.
             TfAutoMallocTag tag2("field data");
@@ -868,14 +861,14 @@ private:
         return empty;
     }
 
-    inline vector<double> _ListAllTimeSamples() const {
-        vector<double> allTimes, tmp; 
+    inline std::vector<double> _ListAllTimeSamples() const {
+        std::vector<double> allTimes, tmp; 
         for (auto const &p: _data) {
             tmp.swap(allTimes);
             allTimes.clear();
             auto const &times = _ListTimeSamplesForPath(p.first);
-            set_union(tmp.begin(), tmp.end(), times.begin(), times.end(),
-                      back_inserter(allTimes));
+            std::set_union(tmp.begin(), tmp.end(), times.begin(), times.end(),
+                      std::back_inserter(allTimes));
         }
         return allTimes;
     }
@@ -1076,21 +1069,21 @@ Usd_CrateData::GetSoftwareVersionToken()
 
 /* static */
 bool
-Usd_CrateData::CanRead(string const &assetPath)
+Usd_CrateData::CanRead(std::string const &assetPath)
 {
     return CrateFile::CanRead(assetPath);
 }
 
 /* static */
 bool
-Usd_CrateData::CanRead(string const &assetPath,
+Usd_CrateData::CanRead(std::string const &assetPath,
                        std::shared_ptr<ArAsset> const &asset)
 {
     return CrateFile::CanRead(assetPath, asset);
 }
 
 bool
-Usd_CrateData::Save(string const &fileName)
+Usd_CrateData::Save(std::string const &fileName)
 {
     if (fileName.empty()) {
         TF_CODING_ERROR("Tried to save to empty fileName");

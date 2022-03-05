@@ -34,14 +34,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(Tf_PyEnumRegistry);
 
-using std::string;
 
-using namespace boost::python;
 
 Tf_PyEnumRegistry::Tf_PyEnumRegistry()
 {
     // Register general conversions to and from python for TfEnum.
-    to_python_converter<TfEnum, _EnumToPython<TfEnum> >();
+    boost::python::to_python_converter<TfEnum, _EnumToPython<TfEnum> >();
 
     _EnumFromPython<TfEnum>();
     _EnumFromPython<int>();
@@ -55,24 +53,24 @@ Tf_PyEnumRegistry::~Tf_PyEnumRegistry()
 {
     // release our references on all the objects we own.
     TF_FOR_ALL(i, _objectsToEnums)
-        decref(i->first);
+        boost::python::decref(i->first);
 }
 // CODE_COVERAGE_ON
 
-string
-Tf_PyEnumRepr(object const &self) {
-    string moduleName = extract<string>(self.attr("__module__"));
-    string baseName = extract<string>(self.attr("_baseName"));
-    string name = extract<string>(self.attr("name"));
+std::string
+Tf_PyEnumRepr(boost::python::object const &self) {
+    std::string moduleName = boost::python::extract<std::string>(self.attr("__module__"));
+    std::string baseName = boost::python::extract<std::string>(self.attr("_baseName"));
+    std::string name = boost::python::extract<std::string>(self.attr("name"));
 
     return TfStringGetSuffix(moduleName) + "." +
-        (baseName.empty() ? string() : baseName + ".") +
+        (baseName.empty() ? std::string() : baseName + ".") +
         name;
 }
 
-string Tf_PyCleanEnumName(string name)
+std::string Tf_PyCleanEnumName(std::string name)
 {
-    string pkgName =
+    std::string pkgName =
         Tf_PyWrapContextManager::GetInstance().GetCurrentContext();
     if (TfStringStartsWith(name, pkgName) && name != pkgName) {
         name.erase(0, pkgName.size());
@@ -98,12 +96,12 @@ void Tf_PyEnumAddAttribute(boost::python::scope &s,
 
 void
 Tf_PyEnumRegistry::
-RegisterValue(TfEnum const &e, object const &obj)
+RegisterValue(TfEnum const &e, boost::python::object const &obj)
 {
     TfAutoMallocTag2 tag("Tf", "Tf_PyEnumRegistry::RegisterValue");
     
     // we take a reference to obj.
-    incref(obj.ptr());
+    boost::python::incref(obj.ptr());
 
     _enumsToObjects[e] = obj.ptr();
     _objectsToEnums[obj.ptr()] = e;

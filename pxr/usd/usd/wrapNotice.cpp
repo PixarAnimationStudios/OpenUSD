@@ -27,7 +27,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -61,11 +60,11 @@ _GetChangedInfoOnlyPaths(const UsdNotice::ObjectsChanged& n)
 
 void wrapUsdNotice()
 {
-    scope s = class_<UsdNotice>("Notice", no_init);
+    boost::python::scope s = boost::python::class_<UsdNotice>("Notice", boost::python::no_init);
 
     TfPyNoticeWrapper<UsdNotice::StageNotice, TfNotice>::Wrap()
         .def("GetStage", &UsdNotice::StageNotice::GetStage,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         ;
 
     TfPyNoticeWrapper<
@@ -78,19 +77,19 @@ void wrapUsdNotice()
             .def("ResyncedObject", &UsdNotice::ObjectsChanged::ResyncedObject)
             .def("ChangedInfoOnly", &UsdNotice::ObjectsChanged::ChangedInfoOnly)
             .def("GetResyncedPaths", &_GetResyncedPaths,
-                 return_value_policy<return_by_value>())
+                 boost::python::return_value_policy<boost::python::return_by_value>())
             .def("GetChangedInfoOnlyPaths", &_GetChangedInfoOnlyPaths,
-                 return_value_policy<return_by_value>())
+                 boost::python::return_value_policy<boost::python::return_by_value>())
             .def("GetChangedFields", 
                  (TfTokenVector (UsdNotice::ObjectsChanged::*)
                      (const UsdObject&) const)
                  &UsdNotice::ObjectsChanged::GetChangedFields,
-                 return_value_policy<return_by_value>())
+                 boost::python::return_value_policy<boost::python::return_by_value>())
             .def("GetChangedFields", 
                  (TfTokenVector (UsdNotice::ObjectsChanged::*)
                      (const SdfPath&) const)
                  &UsdNotice::ObjectsChanged::GetChangedFields,
-                 return_value_policy<return_by_value>())
+                 boost::python::return_value_policy<boost::python::return_by_value>())
             .def("HasChangedFields",
                  (bool (UsdNotice::ObjectsChanged::*)(const UsdObject&) const)
                  &UsdNotice::ObjectsChanged::HasChangedFields)
@@ -107,10 +106,10 @@ void wrapUsdNotice()
         UsdNotice::LayerMutingChanged, UsdNotice::StageNotice>::Wrap()
         .def("GetMutedLayers", 
              &UsdNotice::LayerMutingChanged::GetMutedLayers,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetUnmutedLayers", 
              &UsdNotice::LayerMutingChanged::GetUnmutedLayers,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         ;
 }
 

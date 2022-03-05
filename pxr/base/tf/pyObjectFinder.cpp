@@ -29,9 +29,7 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/typeInfoMap.h"
 
-using std::type_info;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -43,13 +41,13 @@ void Tf_RegisterPythonObjectFinderInternal(std::type_info const &type,
     _finders->Set(type, finder);
 }
 
-object Tf_FindPythonObject(void const *objPtr, std::type_info const &type) {
+boost::python::object Tf_FindPythonObject(void const *objPtr, std::type_info const &type) {
     Tf_PyObjectFinderBase const *finder = 0;
     if (Tf_PyObjectFinderBase const **x = _finders->Find(type))
         finder = *x;
     if (finder)
         return finder->Find(objPtr);
-    return object();
+    return boost::python::object();
 }
     
 

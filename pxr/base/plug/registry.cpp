@@ -47,9 +47,6 @@
 
 #include <functional>
 
-using std::pair;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -109,7 +106,7 @@ PlugRegistry::_RegisterPlugin(
 PlugPluginPtrVector
 PlugRegistry::RegisterPlugins(const std::string & pathToPlugInfo)
 {
-    return RegisterPlugins(vector<string>(1, pathToPlugInfo));
+    return RegisterPlugins(std::vector<std::string>(1, pathToPlugInfo));
 }
 
 PlugPluginPtrVector
@@ -178,17 +175,17 @@ PlugRegistry::GetAllPlugins() const
 }
 
 PlugPluginPtr
-PlugRegistry::GetPluginWithName(const string& name) const
+PlugRegistry::GetPluginWithName(const std::string& name) const
 {
     return PlugPlugin::_GetPluginWithName(name);
 }
 
 JsValue
-PlugRegistry::GetDataFromPluginMetaData(TfType type, const string &key) const
+PlugRegistry::GetDataFromPluginMetaData(TfType type, const std::string &key) const
 {
     JsValue result;
 
-    string typeName = type.GetTypeName();
+    std::string typeName = type.GetTypeName();
     PlugPluginPtr plugin = GetPluginForType(type);
     if (plugin) {
         JsObject dict = plugin->GetMetadataForType(type);
@@ -197,11 +194,11 @@ PlugRegistry::GetDataFromPluginMetaData(TfType type, const string &key) const
     return result;
 }
 
-string
-PlugRegistry::GetStringFromPluginMetaData(TfType type, const string &key) const
+std::string
+PlugRegistry::GetStringFromPluginMetaData(TfType type, const std::string &key) const
 {
     JsValue v = GetDataFromPluginMetaData(type, key);
-    return v.IsString() ? v.GetString() : string();
+    return v.IsString() ? v.GetString() : std::string();
 }
 
 TfType 

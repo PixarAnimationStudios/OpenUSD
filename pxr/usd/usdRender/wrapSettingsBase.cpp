@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -51,35 +50,35 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateResolutionAttr(UsdRenderSettingsBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateResolutionAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int2), writeSparsely);
 }
         
 static UsdAttribute
 _CreatePixelAspectRatioAttr(UsdRenderSettingsBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreatePixelAspectRatioAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateAspectRatioConformPolicyAttr(UsdRenderSettingsBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateAspectRatioConformPolicyAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDataWindowNDCAttr(UsdRenderSettingsBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateDataWindowNDCAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float4), writeSparsely);
 }
         
 static UsdAttribute
 _CreateInstantaneousShutterAttr(UsdRenderSettingsBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateInstantaneousShutterAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
@@ -99,64 +98,64 @@ void wrapUsdRenderSettingsBase()
 {
     typedef UsdRenderSettingsBase This;
 
-    class_<This, bases<UsdTyped> >
+    boost::python::class_<This, boost::python::bases<UsdTyped> >
         cls("SettingsBase");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetResolutionAttr",
              &This::GetResolutionAttr)
         .def("CreateResolutionAttr",
              &_CreateResolutionAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetPixelAspectRatioAttr",
              &This::GetPixelAspectRatioAttr)
         .def("CreatePixelAspectRatioAttr",
              &_CreatePixelAspectRatioAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetAspectRatioConformPolicyAttr",
              &This::GetAspectRatioConformPolicyAttr)
         .def("CreateAspectRatioConformPolicyAttr",
              &_CreateAspectRatioConformPolicyAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetDataWindowNDCAttr",
              &This::GetDataWindowNDCAttr)
         .def("CreateDataWindowNDCAttr",
              &_CreateDataWindowNDCAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetInstantaneousShutterAttr",
              &This::GetInstantaneousShutterAttr)
         .def("CreateInstantaneousShutterAttr",
              &_CreateInstantaneousShutterAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         
         .def("GetCameraRel",

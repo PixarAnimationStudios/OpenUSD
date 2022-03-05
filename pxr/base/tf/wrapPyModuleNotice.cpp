@@ -30,7 +30,6 @@
 #include <boost/python/return_by_value.hpp>
 #include <boost/python/return_value_policy.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -43,7 +42,7 @@ TF_INSTANTIATE_NOTICE_WRAPPER(TfPyModuleWasLoaded, TfNotice);
 void wrapPyModuleNotice() {
 
     TfPyNoticeWrapper<TfPyModuleWasLoaded, TfNotice>::Wrap("PyModuleWasLoaded")
-        .def("name", make_function(&TfPyModuleWasLoaded::GetName,
-                                   return_value_policy<return_by_value>()))
+        .def("name", boost::python::make_function(&TfPyModuleWasLoaded::GetName,
+                                   boost::python::return_value_policy<boost::python::return_by_value>()))
         ;
 }

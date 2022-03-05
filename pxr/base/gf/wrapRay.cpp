@@ -42,9 +42,7 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -60,32 +58,32 @@ SetDirectionHelper( GfRay &self, const GfVec3d &direction ) {
     self.SetPointAndDirection( self.GetStartPoint(), direction );
 }
 
-static tuple
+static boost::python::tuple
 FindClosestPointHelper( const GfRay &self, const GfVec3d &point ) {
     double rayDist;
     GfVec3d result = self.FindClosestPoint( point, &rayDist );
-    return make_tuple( result, rayDist );
+    return boost::python::make_tuple( result, rayDist );
 }
 
-static tuple
+static boost::python::tuple
 FindClosestPointsHelper1( const GfRay &l1, const GfLine &l2 )
 {
     GfVec3d p1(0), p2(0);
     double t1 = 0.0, t2 = 0.0;
     bool result = GfFindClosestPoints( l1, l2, &p1, &p2, &t1, &t2 );
-    return make_tuple( result, p1, p2, t1, t2 );
+    return boost::python::make_tuple( result, p1, p2, t1, t2 );
 }
 
-static tuple
+static boost::python::tuple
 FindClosestPointsHelper2( const GfRay &l1, const GfLineSeg &l2 )
 {
     GfVec3d p1(0), p2(0);
     double t1 = 0.0, t2 = 0.0;
     bool result = GfFindClosestPoints( l1, l2, &p1, &p2, &t1, &t2 );
-    return make_tuple( result, p1, p2, t1, t2 );
+    return boost::python::make_tuple( result, p1, p2, t1, t2 );
 }
 
-static tuple
+static boost::python::tuple
 IntersectHelper1( const GfRay &self, const GfVec3d &p0,
                   const GfVec3d &p1, const GfVec3d &p2 )
 {
@@ -94,43 +92,43 @@ IntersectHelper1( const GfRay &self, const GfVec3d &p0,
     bool frontFacing = false;
     bool result =
         self.Intersect( p0, p1, p2, &dist, &barycentricCoords, &frontFacing );
-    return make_tuple( result, dist, barycentricCoords, frontFacing );
+    return boost::python::make_tuple( result, dist, barycentricCoords, frontFacing );
 }
 
-static tuple
+static boost::python::tuple
 IntersectHelper2( const GfRay &self, const GfPlane &plane )
 {
     double dist = 0;
     bool frontFacing = false;
     bool result = self.Intersect( plane, &dist, &frontFacing );
-    return make_tuple( result, dist, frontFacing );
+    return boost::python::make_tuple( result, dist, frontFacing );
 }
 
-static tuple
+static boost::python::tuple
 IntersectHelper3( const GfRay &self, const GfRange3d &box )
 {
     double enterDist = 0, exitDist = 0;
     bool result = self.Intersect( box, &enterDist, &exitDist );
-    return make_tuple( result, enterDist, exitDist );
+    return boost::python::make_tuple( result, enterDist, exitDist );
 }
 
-static tuple
+static boost::python::tuple
 IntersectHelper4( const GfRay &self, const GfBBox3d &box )
 {
     double enterDist = 0, exitDist = 0;
     bool result = self.Intersect( box, &enterDist, &exitDist );
-    return make_tuple( result, enterDist, exitDist );
+    return boost::python::make_tuple( result, enterDist, exitDist );
 }
 
-static tuple
+static boost::python::tuple
 IntersectHelper5( const GfRay &self, const GfVec3d& center, double radius )
 {
     double enterDist = 0, exitDist = 0;
     bool result = self.Intersect( center, radius, &enterDist, &exitDist );
-    return make_tuple( result, enterDist, exitDist );
+    return boost::python::make_tuple( result, enterDist, exitDist );
 }
 
-static tuple
+static boost::python::tuple
 IntersectHelper6(const GfRay &self, 
                  const GfVec3d &origin, 
                  const GfVec3d &axis,
@@ -138,10 +136,10 @@ IntersectHelper6(const GfRay &self,
 {
     double enter = 0, exit = 0;
     bool result = self.Intersect(origin, axis, radius, &enter, &exit);
-    return make_tuple(result, enter, exit);
+    return boost::python::make_tuple(result, enter, exit);
 }
 
-static tuple
+static boost::python::tuple
 IntersectHelper7(const GfRay &self, 
                  const GfVec3d &origin, 
                  const GfVec3d &axis,
@@ -150,10 +148,10 @@ IntersectHelper7(const GfRay &self,
 {
     double enter = 0, exit = 0;
     bool result = self.Intersect(origin, axis, radius, height, &enter, &exit);
-    return make_tuple(result, enter, exit);
+    return boost::python::make_tuple(result, enter, exit);
 }
 
-static string _Repr(GfRay const &self) {
+static std::string _Repr(GfRay const &self) {
     return TF_PY_REPR_PREFIX + "Ray(" + TfPyRepr(self.GetStartPoint()) + ", " +
         TfPyRepr(self.GetDirection()) + ")";
 }
@@ -164,7 +162,7 @@ void wrapRay()
 {    
     typedef GfRay This;
 
-    def("FindClosestPoints", FindClosestPointsHelper1, 
+    boost::python::def("FindClosestPoints", FindClosestPointsHelper1, 
         "FindClosestPoints( r1, l2 ) -> tuple<intersects=bool, "
         "p1 = GfVec3d, p2 = GfVec3d, t1 = double, t2 = double>\n"
         "\n"
@@ -178,7 +176,7 @@ void wrapRay()
         "returned in t1 and t2.\n"
         "----------------------------------------------------------------------"
         );
-    def("FindClosestPoints", FindClosestPointsHelper2, 
+    boost::python::def("FindClosestPoints", FindClosestPointsHelper2, 
         "FindClosestPoints( r1, s2 ) -> tuple<intersects = bool, "
         "p1 = GfVec3d, p2 = GfVec3d, t1 = double, t2 = double>\n"
         "\n"
@@ -193,29 +191,29 @@ void wrapRay()
         "----------------------------------------------------------------------"
         );
 
-    class_<This>("Ray", "", init<>())
-        .def(init< const GfVec3d &, const GfVec3d & >())
+    boost::python::class_<This>("Ray", "", boost::python::init<>())
+        .def(boost::python::init< const GfVec3d &, const GfVec3d & >())
 
         .def(TfTypePythonClass())
 
         .def("SetPointAndDirection",
-             &This::SetPointAndDirection, return_self<>())
-        .def("SetEnds", &This::SetEnds, return_self<>())
+             &This::SetPointAndDirection, boost::python::return_self<>())
+        .def("SetEnds", &This::SetEnds, boost::python::return_self<>())
 
-        .add_property( "startPoint", make_function
+        .add_property( "startPoint", boost::python::make_function
                        (&This::GetStartPoint,
-                        return_value_policy<copy_const_reference>()),
+                        boost::python::return_value_policy<boost::python::copy_const_reference>()),
                        SetStartPointHelper )
-        .add_property( "direction", make_function
+        .add_property( "direction", boost::python::make_function
                        (&This::GetDirection,
-                        return_value_policy<copy_const_reference>()),
+                        boost::python::return_value_policy<boost::python::copy_const_reference>()),
                        SetDirectionHelper )
 
         .def("GetPoint", &This::GetPoint )
 
         .def("FindClosestPoint", FindClosestPointHelper)
 
-        .def("Transform", &This::Transform, return_self<>())
+        .def("Transform", &This::Transform, boost::python::return_self<>())
         
         .def("Intersect", IntersectHelper1,
              "Intersect( p0, p1, p2 ) -> tuple<intersects = bool, dist =\n"
@@ -306,9 +304,9 @@ void wrapRay()
               "----------------------------------------------------------------------"
             )
 
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
+        .def( boost::python::self_ns::str(boost::python::self) )
+        .def( boost::python::self == boost::python::self )
+        .def( boost::python::self != boost::python::self )
 
         .def("__repr__", _Repr)
 

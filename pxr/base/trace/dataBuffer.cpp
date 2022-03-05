@@ -32,7 +32,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 constexpr size_t _GetMaxAlign() {
     // Our version of GCC does not have std::max_align_t
-    using namespace std;
     return alignof(max_align_t);
 }
 

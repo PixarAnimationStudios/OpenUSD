@@ -32,7 +32,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -59,19 +58,19 @@ void wrapVariantSetSpec()
 {
     typedef SdfVariantSetSpec This;
 
-    to_python_converter<SdfVariantSetSpecHandleVector,
+    boost::python::to_python_converter<SdfVariantSetSpecHandleVector,
                         TfPySequenceToPython<SdfVariantSetSpecHandleVector> >();
 
-    class_<This, SdfHandle<This>, 
-           bases<SdfSpec>, boost::noncopyable>
-        ("VariantSetSpec", no_init)
+    boost::python::class_<This, SdfHandle<This>, 
+           boost::python::bases<SdfSpec>, boost::noncopyable>
+        ("VariantSetSpec", boost::python::no_init)
         .def(SdfPySpec())
         .def(SdfMakePySpecConstructor(&_NewUnderPrim))
         .def(SdfMakePySpecConstructor(&_NewUnderVariant))
 
         .add_property("name",
-            make_function(&This::GetName,
-                          return_value_policy<return_by_value>()),
+            boost::python::make_function(&This::GetName,
+                          boost::python::return_value_policy<boost::python::return_by_value>()),
             "The variant set's name.")
         .add_property("owner", &This::GetOwner,
             "The prim that this variant set belongs to.")
@@ -79,8 +78,8 @@ void wrapVariantSetSpec()
         .add_property("variants", &This::GetVariants,
             "The variants in this variant set as a dict.")
         .add_property("variantList",
-            make_function(&This::GetVariantList,
-                          return_value_policy<TfPySequenceToList>()),
+            boost::python::make_function(&This::GetVariantList,
+                          boost::python::return_value_policy<TfPySequenceToList>()),
             "The variants in this variant set as a list.")
         .def("RemoveVariant", &This::RemoveVariant)
 

@@ -43,7 +43,6 @@
 #include <boost/python.hpp>
 #include <boost/function.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -135,16 +134,16 @@ _SetAssetInfo(const SdfPrimSpec& self,
 }
 
 static void
-_SetRelocates(SdfPrimSpec& self, const dict &d)
+_SetRelocates(SdfPrimSpec& self, const boost::python::dict &d)
 {
     SdfRelocatesMap reloMap;
 
-    list keys = d.keys();
-    int numKeys = len(d);
+    boost::python::list keys = d.keys();
+    int numKeys = boost::python::len(d);
 
     for (int i = 0; i < numKeys; i++) {
-        SdfPath key = extract<SdfPath>(keys[i]);
-        SdfPath val = extract<SdfPath>(d[keys[i]]);
+        SdfPath key = boost::python::extract<SdfPath>(keys[i]);
+        SdfPath val = boost::python::extract<SdfPath>(d[keys[i]]);
 
         reloMap[key] = val;
     }
@@ -196,20 +195,20 @@ _ApplyPropertyOrder(
 
 void wrapPrimSpec()
 {
-    def("CreatePrimInLayer", SdfCreatePrimInLayer);
-    def("JustCreatePrimInLayer", SdfJustCreatePrimInLayer);
+    boost::python::def("CreatePrimInLayer", SdfCreatePrimInLayer);
+    boost::python::def("JustCreatePrimInLayer", SdfJustCreatePrimInLayer);
 
     typedef SdfPrimSpec This;
 
     // Register python conversions for vector<SdfPrimSpecHandle>
-    to_python_converter< SdfPrimSpecHandleVector,
+    boost::python::to_python_converter< SdfPrimSpecHandleVector,
                          TfPySequenceToPython<SdfPrimSpecHandleVector> >();
     TfPyContainerConversions::from_python_sequence<
         SdfPrimSpecHandleVector,
         TfPyContainerConversions::variable_capacity_policy >();
 
     // Register python conversions for vector<SdfPrimSpecConstHandle>
-    to_python_converter< SdfPrimSpecConstHandleVector,
+    boost::python::to_python_converter< SdfPrimSpecConstHandleVector,
                          TfPySequenceToPython<SdfPrimSpecConstHandleVector> >();
     TfPyContainerConversions::from_python_sequence<
         SdfPrimSpecConstHandleVector,
@@ -217,13 +216,13 @@ void wrapPrimSpec()
 
     // Register python coversions for SdfVariantSets
     typedef SdfVariantSetSpecHandleMap::value_type VSSHVT;
-    to_python_converter<VSSHVT,
+    boost::python::to_python_converter<VSSHVT,
                         TfPyContainerConversions::to_tuple<VSSHVT> >();
-    to_python_converter<SdfVariantSetSpecHandleMap,
+    boost::python::to_python_converter<SdfVariantSetSpecHandleMap,
                         TfPySequenceToPython<SdfVariantSetSpecHandleMap> >();
 
-    class_<This, SdfHandle<This>, bases<SdfSpec>, boost::noncopyable>
-        ("PrimSpec", no_init)
+    boost::python::class_<This, SdfHandle<This>, boost::python::bases<SdfSpec>, boost::noncopyable>
+        ("PrimSpec", boost::python::no_init)
         .def(SdfPySpec())
 
         .def(SdfMakePySpecConstructor(&_NewFromLayer))
@@ -232,8 +231,8 @@ void wrapPrimSpec()
         .def(SdfMakePySpecConstructor(&_NewTypelessPrim))
 
         .add_property("name",
-            make_function(&This::GetName,
-                          return_value_policy<return_by_value>()),
+            boost::python::make_function(&This::GetName,
+                          boost::python::return_value_policy<boost::python::return_by_value>()),
             &_WrapSetName,
             "The prim's name.")
 
@@ -514,9 +513,9 @@ void wrapPrimSpec()
         .def("CanSetName", &_WrapCanSetName)
 
         .def("ApplyNameChildrenOrder", &_ApplyNameChildrenOrder,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("ApplyPropertyOrder", &_ApplyPropertyOrder,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .setattr("ActiveKey", SdfFieldKeys->Active)
         .setattr("AnyTypeToken", SdfTokens->AnyTypeToken)

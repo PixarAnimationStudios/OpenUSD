@@ -45,15 +45,13 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string __repr__(GfQuath const &self) {
+static std::string __repr__(GfQuath const &self) {
     return TF_PY_REPR_PREFIX + "Quath(" +
         TfPyRepr(self.GetReal()) + ", " +
         TfPyRepr(self.GetImaginary()) + ")";
@@ -78,41 +76,41 @@ static GfQuath *__init__() { return new GfQuath(0); }
 
 void wrapQuath()
 {    
-    object getImaginary =
-        make_function(&GfQuath::GetImaginary,
-                      return_value_policy<return_by_value>());
+    boost::python::object getImaginary =
+        boost::python::make_function(&GfQuath::GetImaginary,
+                      boost::python::return_value_policy<boost::python::return_by_value>());
 
-    object setImaginaryVec =
-        make_function((void (GfQuath::*)(const GfVec3h &))
+    boost::python::object setImaginaryVec =
+        boost::python::make_function((void (GfQuath::*)(const GfVec3h &))
                       &GfQuath::SetImaginary);
 
-    object setImaginaryScl =
-        make_function((void (GfQuath::*)(GfHalf, GfHalf, GfHalf))
+    boost::python::object setImaginaryScl =
+        boost::python::make_function((void (GfQuath::*)(GfHalf, GfHalf, GfHalf))
                       &GfQuath::SetImaginary,
-                      default_call_policies(),
-                      (arg("i"), arg("j"), arg("k")));
+                      boost::python::default_call_policies(),
+                      (boost::python::arg("i"), boost::python::arg("j"), boost::python::arg("k")));
 
-    def("Slerp",
+    boost::python::def("Slerp",
         (GfQuath (*)(double, const GfQuath&, const GfQuath&))
         GfSlerp);
 
-    def("Dot",
+    boost::python::def("Dot",
         (GfHalf (*)(const GfQuath&, const GfQuath&))
         GfDot);
     
-    class_<GfQuath>("Quath", no_init)
-        .def("__init__", make_constructor(__init__))
+    boost::python::class_<GfQuath>("Quath", boost::python::no_init)
+        .def("__init__", boost::python::make_constructor(__init__))
                           
         .def(TfTypePythonClass())
 
-        .def(init<GfQuath>())
-        .def(init<GfHalf>(arg("real")))
-        .def(init<GfHalf, const GfVec3h &>(
-                 (arg("real"), arg("imaginary"))))
-        .def(init<GfHalf, GfHalf, GfHalf, GfHalf>(
-                 (arg("real"), arg("i"), arg("j"), arg("k"))))
-        .def(init<const GfQuatd & >())
-        .def(init<const GfQuatf & >())
+        .def(boost::python::init<GfQuath>())
+        .def(boost::python::init<GfHalf>(boost::python::arg("real")))
+        .def(boost::python::init<GfHalf, const GfVec3h &>(
+                 (boost::python::arg("real"), boost::python::arg("imaginary"))))
+        .def(boost::python::init<GfHalf, GfHalf, GfHalf, GfHalf>(
+                 (boost::python::arg("real"), boost::python::arg("i"), boost::python::arg("j"), boost::python::arg("k"))))
+        .def(boost::python::init<const GfQuatd & >())
+        .def(boost::python::init<const GfQuatf & >())
 
         .def("GetIdentity", &GfQuath::GetIdentity)
         .staticmethod("GetIdentity")
@@ -129,30 +127,30 @@ void wrapQuath()
         .def("GetLength", &GfQuath::GetLength)
 
         .def("GetNormalized", &GfQuath::GetNormalized,
-             (arg("eps")=GF_MIN_VECTOR_LENGTH))
+             (boost::python::arg("eps")=GF_MIN_VECTOR_LENGTH))
         .def("Normalize", &GfQuath::Normalize,
-             (arg("eps")=GF_MIN_VECTOR_LENGTH), return_self<>())
+             (boost::python::arg("eps")=GF_MIN_VECTOR_LENGTH), boost::python::return_self<>())
 
         .def("GetConjugate", &GfQuath::GetConjugate)
         .def("GetInverse", &GfQuath::GetInverse)
 
         .def("Transform", &GfQuath::Transform)
 
-        .def(str(self))
-        .def(-self)
-        .def(self == self)
-        .def(self != self)
-        .def(self *= self)
-        .def(self *= GfHalf())
-        .def(self /= GfHalf())
-        .def(self += self)
-        .def(self -= self)
-        .def(self + self)
-        .def(self - self)
-        .def(self * self)
-        .def(self * GfHalf())
-        .def(GfHalf() * self)
-        .def(self / GfHalf())
+        .def(boost::python::self_ns::str(boost::python::self))
+        .def(-boost::python::self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self *= boost::python::self)
+        .def(boost::python::self *= GfHalf())
+        .def(boost::python::self /= GfHalf())
+        .def(boost::python::self += boost::python::self)
+        .def(boost::python::self -= boost::python::self)
+        .def(boost::python::self + boost::python::self)
+        .def(boost::python::self - boost::python::self)
+        .def(boost::python::self * boost::python::self)
+        .def(boost::python::self * GfHalf())
+        .def(GfHalf() * boost::python::self)
+        .def(boost::python::self / GfHalf())
 
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
@@ -166,7 +164,7 @@ void wrapQuath()
         ;
 
 
-    to_python_converter<std::vector<GfQuath>,
+    boost::python::to_python_converter<std::vector<GfQuath>,
         TfPySequenceToPython<std::vector<GfQuath> > >();
     
 }

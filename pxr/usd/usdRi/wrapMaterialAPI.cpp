@@ -37,7 +37,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -52,21 +51,21 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateSurfaceAttr(UsdRiMaterialAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateSurfaceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDisplacementAttr(UsdRiMaterialAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateDisplacementAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateVolumeAttr(UsdRiMaterialAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateVolumeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
@@ -104,56 +103,56 @@ void wrapUsdRiMaterialAPI()
     UsdRiMaterialAPI_CanApplyResult::Wrap<UsdRiMaterialAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
+    boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
         cls("MaterialAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
-        .def("Apply", &This::Apply, (arg("prim")))
+        .def("Apply", &This::Apply, (boost::python::arg("prim")))
         .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetSurfaceAttr",
              &This::GetSurfaceAttr)
         .def("CreateSurfaceAttr",
              &_CreateSurfaceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetDisplacementAttr",
              &This::GetDisplacementAttr)
         .def("CreateDisplacementAttr",
              &_CreateDisplacementAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetVolumeAttr",
              &This::GetVolumeAttr)
         .def("CreateVolumeAttr",
              &_CreateVolumeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;
@@ -185,12 +184,12 @@ namespace {
 WRAP_CUSTOM {
     typedef UsdRiMaterialAPI This;
     _class
-        .def(init<UsdShadeMaterial>(arg("material")))
+        .def(boost::python::init<UsdShadeMaterial>(boost::python::arg("material")))
 
-        .def("GetSurface", &This::GetSurface, (arg("ignoreBaseMaterial")=false))
+        .def("GetSurface", &This::GetSurface, (boost::python::arg("ignoreBaseMaterial")=false))
         .def("GetDisplacement", &This::GetDisplacement, 
-             (arg("ignoreBaseMaterial")=false))
-        .def("GetVolume", &This::GetVolume, (arg("ignoreBaseMaterial")=false))
+             (boost::python::arg("ignoreBaseMaterial")=false))
+        .def("GetVolume", &This::GetVolume, (boost::python::arg("ignoreBaseMaterial")=false))
  
         .def("GetSurfaceOutput", &This::GetSurfaceOutput)
         .def("GetDisplacementOutput", &This::GetDisplacementOutput)
@@ -202,8 +201,8 @@ WRAP_CUSTOM {
  
         .def("ComputeInterfaceInputConsumersMap", 
             &This::ComputeInterfaceInputConsumersMap, 
-            (arg("computeTransitiveConsumers")=false),
-            return_value_policy<TfPyMapToDictionary>())
+            (boost::python::arg("computeTransitiveConsumers")=false),
+            boost::python::return_value_policy<TfPyMapToDictionary>())
     ;
 }
 

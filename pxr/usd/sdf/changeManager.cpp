@@ -36,8 +36,6 @@
 
 #include <tbb/atomic.h>
 
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -134,7 +132,7 @@ Sdf_ChangeManager::_ProcessRemoveIfInert(_Data *data)
     }
     
     // Swap pending removes into a local variable.
-    vector<SdfSpec> remove;
+    std::vector<SdfSpec> remove;
     remove.swap(data->removeIfInert);
 
     // Remove inert stuff.
@@ -356,10 +354,10 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
     else if (field == FieldKeys->SubLayers) {
         std::vector<std::string> addedLayers, removedLayers;
         {        
-            const vector<string> oldSubLayers = 
-                oldVal.GetWithDefault<vector<string> >();
-            const vector<string> newSubLayers = 
-                newVal.GetWithDefault<vector<string> >();
+            const std::vector<std::string> oldSubLayers = 
+                oldVal.GetWithDefault<std::vector<std::string> >();
+            const std::vector<std::string> newSubLayers = 
+                newVal.GetWithDefault<std::vector<std::string> >();
         
             const std::set<std::string> oldSet(oldSubLayers.begin(), 
                                                oldSubLayers.end());

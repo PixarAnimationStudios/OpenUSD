@@ -28,7 +28,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -36,7 +35,7 @@ namespace {
 
 struct Tf_PyObjWrapperFromPython {
     Tf_PyObjWrapperFromPython() {
-        converter::registry::
+        boost::python::converter::registry::
             push_back(&_convertible, &_construct,
                       boost::python::type_id<TfPyObjWrapper>());
     }
@@ -51,12 +50,12 @@ private:
 
     static void
     _construct(PyObject *obj_ptr,
-               converter::rvalue_from_python_stage1_data *data) {
+               boost::python::converter::rvalue_from_python_stage1_data *data) {
         void *storage =
-            ((converter::rvalue_from_python_storage<TfPyObjWrapper>*)data)
+            ((boost::python::converter::rvalue_from_python_storage<TfPyObjWrapper>*)data)
             ->storage.bytes;
         // Make a TfPyObjWrapper holding the Python object.
-        new (storage) TfPyObjWrapper(object(borrowed(obj_ptr)));
+        new (storage) TfPyObjWrapper(boost::python::object(boost::python::borrowed(obj_ptr)));
         data->convertible = storage;
     }
 };
@@ -64,7 +63,7 @@ private:
 struct Tf_PyObjWrapperToPython {
     static PyObject *
     convert(TfPyObjWrapper const &val) {
-        return incref(val.Get().ptr());
+        return boost::python::incref(val.Get().ptr());
     }
 };
 
@@ -90,10 +89,10 @@ _RoundTripWrapperIndexTest(TfPyObjWrapper const &wrapper, int index)
 
 void wrapPyObjWrapper()
 {
-    to_python_converter<TfPyObjWrapper, Tf_PyObjWrapperToPython>();
+    boost::python::to_python_converter<TfPyObjWrapper, Tf_PyObjWrapperToPython>();
     Tf_PyObjWrapperFromPython();
 
-    def("_RoundTripWrapperTest", _RoundTripWrapperTest);
-    def("_RoundTripWrapperCallTest", _RoundTripWrapperCallTest);
-    def("_RoundTripWrapperIndexTest", _RoundTripWrapperIndexTest);
+    boost::python::def("_RoundTripWrapperTest", _RoundTripWrapperTest);
+    boost::python::def("_RoundTripWrapperCallTest", _RoundTripWrapperCallTest);
+    boost::python::def("_RoundTripWrapperIndexTest", _RoundTripWrapperIndexTest);
 }

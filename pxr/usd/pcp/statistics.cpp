@@ -215,13 +215,12 @@ public:
         const Pcp_GraphStats& culledStats,
         std::ostream& out)
     {
-        using namespace std;
 
         out << "  Total nodes:                       " 
-            << _Helper::FormatNumber(totalStats.numNodes) << endl;
+            << _Helper::FormatNumber(totalStats.numNodes) << std::endl;
         out << "  Total culled* nodes:               " 
-            << _Helper::FormatNumber(culledStats.numNodes) << endl;
-        out << "  By type (total / culled*):         " << endl;
+            << _Helper::FormatNumber(culledStats.numNodes) << std::endl;
+        out << "  By type (total / culled*):         " << std::endl;
 
         std::map<PcpArcType, size_t> typeToNumNodes = 
             totalStats.typeToNumNodes;
@@ -235,7 +234,7 @@ public:
                     (int)(31 - nodeTypeName.size()), "",
                     _Helper::FormatNumber(typeToNumNodes[t]).c_str(),
                     _Helper::FormatNumber(typeToNumCulledNodes[t]).c_str())
-                << endl;
+                << std::endl;
             
             if (t == PcpArcTypeInherit) {
                 out << "      implied inherits: "
@@ -243,67 +242,66 @@ public:
                         13, "",
                         _Helper::FormatNumber(totalStats.numImpliedInherits).c_str(),
                         _Helper::FormatNumber(culledStats.numImpliedInherits).c_str())
-                    << endl;
+                    << std::endl;
             }
         }
 
         out << "  (*) This does not include culled nodes that were erased "
-            << "from the graph" << endl;
+            << "from the graph" << std::endl;
     }
 
     static void PrintCacheStats(
         const PcpCache* cache, std::ostream& out)
     {
-        using namespace std;
 
         Pcp_CacheStats stats;
         AccumulateCacheStats(cache, &stats);
 
-        out << "PcpCache Statistics" << endl
-            << "-------------------" << endl;
+        out << "PcpCache Statistics" << std::endl
+            << "-------------------" << std::endl;
         
-        out << "Entries: " << endl;
+        out << "Entries: " << std::endl;
         out << "  Prim indexes:                      " 
-            << _Helper::FormatNumber(stats.numPrimIndexes) << endl;
+            << _Helper::FormatNumber(stats.numPrimIndexes) << std::endl;
         out << "  Property indexes:                  " 
-            << _Helper::FormatNumber(stats.numPropertyIndexes) << endl;
-        out << endl;
+            << _Helper::FormatNumber(stats.numPropertyIndexes) << std::endl;
+        out << std::endl;
 
-        out << "Prim graphs: " << endl;
+        out << "Prim graphs: " << std::endl;
         PrintGraphStats(
             stats.allGraphStats, stats.culledGraphStats, out);
-        out << endl;
+        out << std::endl;
 
-        out << "Prim graphs (shared): " << endl;
+        out << "Prim graphs (shared): " << std::endl;
         out << "  Graph instances:                   "
-            << _Helper::FormatNumber(stats.numGraphInstances) << endl;
+            << _Helper::FormatNumber(stats.numGraphInstances) << std::endl;
         PrintGraphStats(
             stats.sharedAllGraphStats, stats.sharedCulledGraphStats, out);
-        out << endl;
+        out << std::endl;
 
-        out << "Memory usage: " << endl;
+        out << "Memory usage: " << std::endl;
         out << "  sizeof(PcpMapFunction):            " 
-            << _Helper::FormatSize(sizeof(PcpMapFunction)) << endl;
+            << _Helper::FormatSize(sizeof(PcpMapFunction)) << std::endl;
         out << "  sizeof(PcpLayerStackPtr):          " 
-            << _Helper::FormatSize(sizeof(PcpLayerStackPtr)) << endl;
+            << _Helper::FormatSize(sizeof(PcpLayerStackPtr)) << std::endl;
         out << "  sizeof(PcpLayerStackSite):         " 
-            << _Helper::FormatSize(sizeof(PcpLayerStackSite)) << endl;
+            << _Helper::FormatSize(sizeof(PcpLayerStackSite)) << std::endl;
         out << "  sizeof(PcpPrimIndex):              " 
-            << _Helper::FormatSize(sizeof(PcpPrimIndex)) << endl;
+            << _Helper::FormatSize(sizeof(PcpPrimIndex)) << std::endl;
         out << "  sizeof(PcpPrimIndex_Graph):        " 
-            << _Helper::FormatSize(sizeof(PcpPrimIndex_Graph)) << endl;
+            << _Helper::FormatSize(sizeof(PcpPrimIndex_Graph)) << std::endl;
         out << "  sizeof(PcpPrimIndex_Graph::_Node): " 
-            << _Helper::FormatSize(sizeof(PcpPrimIndex_Graph::_Node)) << endl;
-        out << endl;
+            << _Helper::FormatSize(sizeof(PcpPrimIndex_Graph::_Node)) << std::endl;
+        out << std::endl;
 
-        out << "PcpMapFunction size histogram: " << endl;
-        out << "SIZE    COUNT" << endl;
+        out << "PcpMapFunction size histogram: " << std::endl;
+        out << "SIZE    COUNT" << std::endl;
         TF_FOR_ALL(i, stats.mapFunctionSizeDistribution) {
             printf("%zu   %zu\n", i->first, i->second);
         }
 
-        out << "PcpLayerStack pathsWithRelocates size histogram: " << endl;
-        out << "SIZE    COUNT" << endl;
+        out << "PcpLayerStack pathsWithRelocates size histogram: " << std::endl;
+        out << "SIZE    COUNT" << std::endl;
         TF_FOR_ALL(i, stats.layerStackRelocationsSizeDistribution) {
             printf("%zu   %zu\n", i->first, i->second);
         }
@@ -312,7 +310,6 @@ public:
     static void PrintPrimIndexStats(
         const PcpPrimIndex& primIndex, std::ostream& out)
     {
-        using namespace std;
 
         Pcp_GraphStats totalStats, culledStats;
         AccumulateGraphStats(
@@ -321,11 +318,11 @@ public:
             primIndex, &culledStats, /* culledNodesOnly = */ true);
 
         out << "PcpPrimIndex Statistics - " 
-            << primIndex.GetRootNode().GetPath() << endl
-            << "-----------------------" << endl;
+            << primIndex.GetRootNode().GetPath() << std::endl
+            << "-----------------------" << std::endl;
 
         PrintGraphStats(totalStats, culledStats, out);
-        out << endl;
+        out << std::endl;
     }
 };
 

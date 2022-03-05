@@ -33,18 +33,16 @@
 #include <boost/python/operators.hpp>
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string
+static std::string
 _Repr(GfInterval const &self)
 {
-    string r = TF_PY_REPR_PREFIX + "Interval(";
+    std::string r = TF_PY_REPR_PREFIX + "Interval(";
     if (!self.IsEmpty()) {
         r += TfPyRepr(self.GetMin()) + ", " + TfPyRepr(self.GetMax());
         if (!self.IsMinClosed() || !self.IsMaxClosed()) {
@@ -62,12 +60,12 @@ void wrapInterval()
 {    
     typedef GfInterval This;
 
-    class_<This>( "Interval", "Basic mathematical interval class", init<>() )
-        .def(init<double>(
+    boost::python::class_<This>( "Interval", "Basic mathematical interval class", boost::python::init<>() )
+        .def(boost::python::init<double>(
                  "Create a closed interval representing the single point [val,val]."))
-        .def(init<double, double>(
+        .def(boost::python::init<double, double>(
                  "Create a closed interval representing the range [v1,v2]."))
-        .def(init<double, double, bool, bool>("Create the interval."))
+        .def(boost::python::init<double, double, bool, bool>("Create the interval."))
 
         .def( TfTypePythonClass() )
 
@@ -134,31 +132,31 @@ void wrapInterval()
              "Set the minimum value and boundary condition.")
 
         // ring_operators
-        .def(self + self)
-        .def(self += self)
-        .def(self * self)
-        .def(self *= self)
-        .def(self - self)
-        .def(self -= self)
-        .def( -self )
+        .def(boost::python::self + boost::python::self)
+        .def(boost::python::self += boost::python::self)
+        .def(boost::python::self * boost::python::self)
+        .def(boost::python::self *= boost::python::self)
+        .def(boost::python::self - boost::python::self)
+        .def(boost::python::self -= boost::python::self)
+        .def( -boost::python::self )
 
         // andable
-        .def(self &= self)
-        .def(self & self)
+        .def(boost::python::self &= boost::python::self)
+        .def(boost::python::self & boost::python::self)
 
         // orable
-        .def(self |= self)
-        .def(self | self)
+        .def(boost::python::self |= boost::python::self)
+        .def(boost::python::self | boost::python::self)
 
         // totally_ordered
-        .def(self == self)
-        .def(self != self)
-        .def(self < self)
-        .def(self <= self)
-        .def(self > self)
-        .def(self >= self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self < boost::python::self)
+        .def(boost::python::self <= boost::python::self)
+        .def(boost::python::self > boost::python::self)
+        .def(boost::python::self >= boost::python::self)
 
-        .def(str(self))
+        .def(boost::python::self_ns::str(boost::python::self))
         .def("__repr__", _Repr)
         .def("__hash__", &This::Hash)
         ;

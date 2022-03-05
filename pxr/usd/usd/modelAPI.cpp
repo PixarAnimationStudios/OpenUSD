@@ -121,7 +121,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/kind/registry.h"
 
 #include <string>
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -198,26 +197,26 @@ UsdModelAPI::SetAssetIdentifier(const SdfAssetPath &identifier) const
 }
 
 bool 
-UsdModelAPI::GetAssetName(string *assetName) const
+UsdModelAPI::GetAssetName(std::string *assetName) const
 {
     return _GetAssetInfoByKey(UsdModelAPIAssetInfoKeys->name, assetName);
 }
 
 void 
-UsdModelAPI::SetAssetName(const string &assetName) const
+UsdModelAPI::SetAssetName(const std::string &assetName) const
 {
     GetPrim().SetAssetInfoByKey(UsdModelAPIAssetInfoKeys->name, 
                                 VtValue(assetName));
 }
 
 bool 
-UsdModelAPI::GetAssetVersion(string *version) const
+UsdModelAPI::GetAssetVersion(std::string *version) const
 {
     return _GetAssetInfoByKey(UsdModelAPIAssetInfoKeys->version, version);
 }
 
 void
-UsdModelAPI::SetAssetVersion(const string &version) const
+UsdModelAPI::SetAssetVersion(const std::string &version) const
 {
     GetPrim().SetAssetInfoByKey(UsdModelAPIAssetInfoKeys->version, 
                                 VtValue(version));

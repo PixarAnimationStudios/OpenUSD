@@ -48,8 +48,6 @@
 
 #include <string>
 
-using namespace boost::python;
-using namespace std;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -64,17 +62,17 @@ static TfType
 _GetTfTypeFromPython(PyObject *p)
 {
     if (TfPyBytes_Check(p) || PyUnicode_Check(p))
-        return TfType::FindByName( extract<string>(p)() );
+        return TfType::FindByName( boost::python::extract<std::string>(p)() );
     else
-        return TfType::FindByPythonClass( object(borrowed(p)) );
+        return TfType::FindByPythonClass( boost::python::object(boost::python::borrowed(p)) );
 }
 
 // A from-Python converter that uses the _GetTfTypeFromPython function.
 struct _TfTypeFromPython
 {
     _TfTypeFromPython() {
-        converter::registry::insert(&_Convertible, &_Construct,
-                                    type_id<TfType>());
+        boost::python::converter::registry::insert(&_Convertible, &_Construct,
+                                    boost::python::type_id<TfType>());
     }
 private:
     static void* _Convertible(PyObject *p) {
@@ -82,16 +80,16 @@ private:
             TfPyThrowTypeError(
                 TfStringPrintf("cannot convert %s to TfType; has that type "
                                "been defined as a TfType?",
-                               TfPyRepr( object(borrowed(p) ) ).c_str()
+                               TfPyRepr( boost::python::object(boost::python::borrowed(p) ) ).c_str()
                               ) );
         }
         return p;
     }
 
     static void _Construct(PyObject *p,
-                           converter::rvalue_from_python_stage1_data *data)
+                           boost::python::converter::rvalue_from_python_stage1_data *data)
     {
-        void* const storage = ((converter::rvalue_from_python_storage
+        void* const storage = ((boost::python::converter::rvalue_from_python_storage
                                 <TfType>*)data)->storage.bytes;
 
         TfType type = _GetTfTypeFromPython(p);
@@ -155,7 +153,7 @@ static void wrapTestCppBase()
 
 ////////////////////////////////////////////////////////////////////////
 
-static string
+static std::string
 _Repr( const TfType & t )
 {
     if (t.IsUnknown()) {
@@ -202,16 +200,16 @@ _FindByName( const std::string & name )
 static std::vector<TfType>
 _GetAllDerivedTypes( TfType & t )
 {
-    set<TfType> types;
+    std::set<TfType> types;
     t.GetAllDerivedTypes(&types);
-    return vector<TfType>( types.begin(), types.end() );
+    return std::vector<TfType>( types.begin(), types.end() );
 }
 
 // Convert out parameter to return value
 static std::vector<TfType>
 _GetAllAncestorTypes( TfType & t )
 {
-    vector<TfType> types;
+    std::vector<TfType> types;
     t.GetAllAncestorTypes(&types);
     return types;
 }
@@ -257,17 +255,17 @@ void wrapType()
 {
     typedef TfType This;
 
-    class_<This> classDef( "Type" );
+    boost::python::class_<This> classDef( "Type" );
     classDef
-        .def( init<const TfType &>() )
+        .def( boost::python::init<const TfType &>() )
 
-        .def(!self)
-        .def( self == self )
-        .def( self != self )
-        .def( self < self )
-        .def( self > self )
-        .def( self <= self )
-        .def( self >= self )
+        .def(!boost::python::self)
+        .def( boost::python::self == boost::python::self )
+        .def( boost::python::self != boost::python::self )
+        .def( boost::python::self < boost::python::self )
+        .def( boost::python::self > boost::python::self )
+        .def( boost::python::self <= boost::python::self )
+        .def( boost::python::self >= boost::python::self )
         .def( "__repr__", &_Repr)
         .def( "__hash__", &_TypeHash)
 
@@ -290,24 +288,24 @@ void wrapType()
         .add_property("sizeof", &This::GetSizeof)
 
         .add_property("typeName",
-            make_function( &This::GetTypeName,
-                           return_value_policy<return_by_value>() ) )
+            boost::python::make_function( &This::GetTypeName,
+                           boost::python::return_value_policy<boost::python::return_by_value>() ) )
 
         .add_property("pythonClass", &This::GetPythonClass)
 
         .add_property("baseTypes",
-            make_function( &This::GetBaseTypes,
-                return_value_policy< TfPySequenceToTuple >() ) )
+            boost::python::make_function( &This::GetBaseTypes,
+                boost::python::return_value_policy< TfPySequenceToTuple >() ) )
         .add_property("derivedTypes",
-            make_function( &This::GetDirectlyDerivedTypes,
-                return_value_policy< TfPySequenceToTuple >() ) )
+            boost::python::make_function( &This::GetDirectlyDerivedTypes,
+                boost::python::return_value_policy< TfPySequenceToTuple >() ) )
 
         .def("GetAliases", &This::GetAliases,
-             return_value_policy< TfPySequenceToTuple >() )
+             boost::python::return_value_policy< TfPySequenceToTuple >() )
         .def("GetAllDerivedTypes", &_GetAllDerivedTypes,
-             return_value_policy< TfPySequenceToTuple >() )
+             boost::python::return_value_policy< TfPySequenceToTuple >() )
         .def("GetAllAncestorTypes", &_GetAllAncestorTypes,
-             return_value_policy< TfPySequenceToTuple >() )
+             boost::python::return_value_policy< TfPySequenceToTuple >() )
 
         .def("Define", &TfType_DefinePythonTypeAndBases)
         .staticmethod("Define")

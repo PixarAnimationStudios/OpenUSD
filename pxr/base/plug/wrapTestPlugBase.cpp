@@ -31,7 +31,6 @@
 #include <boost/noncopyable.hpp>
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -42,7 +41,7 @@ void wrap_TestPlugBase(const std::string & name)
 {
     typedef T This;
     typedef TfWeakPtr<T> ThisPtr;
-    class_<This, ThisPtr, boost::noncopyable> ( name.c_str(), no_init )
+    boost::python::class_<This, ThisPtr, boost::noncopyable> ( name.c_str(), boost::python::no_init )
         .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(&This::New))
 

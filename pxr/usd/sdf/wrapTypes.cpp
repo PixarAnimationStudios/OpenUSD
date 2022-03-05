@@ -48,8 +48,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -81,7 +79,7 @@ public:
             &Sdf_VariantSelectionMapConverter::convertible,
             &Sdf_VariantSelectionMapConverter::construct,
             boost::python::type_id<SdfVariantSelectionMap>());
-        to_python_converter<SdfVariantSelectionMap,
+        boost::python::to_python_converter<SdfVariantSelectionMap,
                             Sdf_VariantSelectionMapConverter>();
     }
 
@@ -95,7 +93,7 @@ public:
       boost::python::converter::rvalue_from_python_stage1_data* data)
     {
         void* storage = (
-            (converter::rvalue_from_python_storage<SdfVariantSelectionMap>*)
+            (boost::python::converter::rvalue_from_python_storage<SdfVariantSelectionMap>*)
             data)->storage.bytes;
         new (storage) SdfVariantSelectionMap();
         data->convertible = storage;
@@ -111,22 +109,22 @@ public:
 private:
     static PyObject* _convert(PyObject* pyDict, SdfVariantSelectionMap* result)
     {
-        extract<dict> dictProxy(pyDict);
+        boost::python::extract<boost::python::dict> dictProxy(pyDict);
         if (!dictProxy.check()) {
             return NULL;
         }
-        dict d = dictProxy();
+        boost::python::dict d = dictProxy();
 
-        list keys = d.keys();
-        for (int i = 0, numKeys = len(d); i < numKeys; ++i) {
-            object pyKey = keys[i];
-            extract<std::string> keyProxy(pyKey);
+        boost::python::list keys = d.keys();
+        for (int i = 0, numKeys = boost::python::len(d); i < numKeys; ++i) {
+            boost::python::object pyKey = keys[i];
+            boost::python::extract<std::string> keyProxy(pyKey);
             if (!keyProxy.check()) {
                 return NULL;
             }
 
-            object pyValue = d[pyKey];
-            extract<std::string> valueProxy(pyValue);
+            boost::python::object pyValue = d[pyKey];
+            boost::python::extract<std::string> valueProxy(pyValue);
             if (!valueProxy.check()) {
                 return NULL;
             }
@@ -202,10 +200,10 @@ public:
     static void UpdateList(Type& x, const boost::python::list& pairs)
     {
         std::vector<pair_type> values;
-        for (int i = 0, n = len(pairs); i != n; ++i) {
+        for (int i = 0, n = boost::python::len(pairs); i != n; ++i) {
             values.push_back(pair_type(
-                extract<key_type>(pairs[i][0]),
-                extract<mapped_type>(pairs[i][1])));
+                boost::python::extract<key_type>(pairs[i][0]),
+                boost::python::extract<mapped_type>(pairs[i][1])));
         }
         Update(x, values);
     }
@@ -222,24 +220,24 @@ _ModifyVariantSelectionProxy()
     // customized methods.  We need to fix __setitem__, setdefault,
     // and update.
     typedef Sdf_VariantSelectionProxyWrap Wrap;
-    object cls = TfPyGetClassObject<SdfVariantSelectionProxy>();
+    boost::python::object cls = TfPyGetClassObject<SdfVariantSelectionProxy>();
 
     // Erase old methods.
     PyObject* const ns = cls.ptr();
     PyObject* dict = ((PyTypeObject*)ns)->tp_dict;
-    PyObject_DelItem(dict, str("__setitem__").ptr());
-    PyObject_DelItem(dict, str("setdefault").ptr());
-    PyObject_DelItem(dict, str("update").ptr());
+    PyObject_DelItem(dict, boost::python::str("__setitem__").ptr());
+    PyObject_DelItem(dict, boost::python::str("setdefault").ptr());
+    PyObject_DelItem(dict, boost::python::str("update").ptr());
 
     // Insert new methods.
-    object setitem    = make_function(&Wrap::SetItem);
-    object setdefault = make_function(&Wrap::SetDefault);
-    object updateList = make_function(&Wrap::UpdateList);
-    object updateDict = make_function(&Wrap::UpdateDict);
-    objects::add_to_namespace(cls, "__setitem__", setitem);
-    objects::add_to_namespace(cls, "setdefault", setdefault);
-    objects::add_to_namespace(cls, "update", updateDict);
-    objects::add_to_namespace(cls, "update", updateList);
+    boost::python::object setitem    = boost::python::make_function(&Wrap::SetItem);
+    boost::python::object setdefault = boost::python::make_function(&Wrap::SetDefault);
+    boost::python::object updateList = boost::python::make_function(&Wrap::UpdateList);
+    boost::python::object updateDict = boost::python::make_function(&Wrap::UpdateDict);
+    boost::python::objects::add_to_namespace(cls, "__setitem__", setitem);
+    boost::python::objects::add_to_namespace(cls, "setdefault", setdefault);
+    boost::python::objects::add_to_namespace(cls, "update", updateDict);
+    boost::python::objects::add_to_namespace(cls, "update", updateList);
 }
 
 static TfEnum
@@ -254,16 +252,16 @@ _DefaultUnitWrapper2(const TfToken &typeName)
     return SdfDefaultUnit(typeName);
 }
 
-static string
+static std::string
 _UnitCategoryWrapper(const TfEnum & unit)
 {
     return SdfUnitCategory(unit);
 }
 
-static string
+static std::string
 _UnregisteredValueRepr(const SdfUnregisteredValue &self)
 {
-    string value = TfPyRepr(self.GetValue());
+    std::string value = TfPyRepr(self.GetValue());
     return TF_PY_REPR_PREFIX + "UnregisteredValue(" + value + ")";
 }
 
@@ -280,7 +278,7 @@ _UnregisteredValueHash(const SdfUnregisteredValue &self)
     }
 }
 
-static string
+static std::string
 _SdfValueBlockRepr(const SdfValueBlock &self) 
 {
     return TF_PY_REPR_PREFIX + "ValueBlock";
@@ -313,34 +311,34 @@ void wrapTypes()
     TF_PY_WRAP_PUBLIC_TOKENS("ValueRoleNames",
                              SdfValueRoleNames, SDF_VALUE_ROLE_NAME_TOKENS);
 
-    def( "DefaultUnit", _DefaultUnitWrapper1,
+    boost::python::def( "DefaultUnit", _DefaultUnitWrapper1,
         "For a given unit of measurement get the default compatible unit.");
 
-    def( "DefaultUnit", _DefaultUnitWrapper2,
+    boost::python::def( "DefaultUnit", _DefaultUnitWrapper2,
         "For a given typeName ('Vector', 'Point' etc.) get the "
         "default unit of measurement.");
 
-    def( "UnitCategory", _UnitCategoryWrapper,
+    boost::python::def( "UnitCategory", _UnitCategoryWrapper,
         "For a given unit of measurement get the unit category.");
 
-    def( "ConvertUnit", &SdfConvertUnit,
+    boost::python::def( "ConvertUnit", &SdfConvertUnit,
         "Convert a unit of measurement to a compatible unit.");
 
-    def( "ValueHasValidType", &SdfValueHasValidType );
-    def( "GetTypeForValueTypeName", &SdfGetTypeForValueTypeName );
-    def( "GetValueTypeNameForValue", &SdfGetValueTypeNameForValue );
+    boost::python::def( "ValueHasValidType", &SdfValueHasValidType );
+    boost::python::def( "GetTypeForValueTypeName", &SdfGetTypeForValueTypeName );
+    boost::python::def( "GetValueTypeNameForValue", &SdfGetValueTypeNameForValue );
 
-    def( "ConvertToValidMetadataDictionary",
+    boost::python::def( "ConvertToValidMetadataDictionary",
          &_ConvertToValidMetadataDictionary );
 
-    def( "GetUnitFromName", &SdfGetUnitFromName,
-         return_value_policy<return_by_value>() );
-    def( "GetNameForUnit", &SdfGetNameForUnit,
-         return_value_policy<return_by_value>() );
+    boost::python::def( "GetUnitFromName", &SdfGetUnitFromName,
+         boost::python::return_value_policy<boost::python::return_by_value>() );
+    boost::python::def( "GetNameForUnit", &SdfGetNameForUnit,
+         boost::python::return_value_policy<boost::python::return_by_value>() );
 
     // Register Python conversions for std::vector<SdfUnregisteredValue>
     using _UnregisteredValueVector = std::vector<SdfUnregisteredValue>;
-    to_python_converter<_UnregisteredValueVector,
+    boost::python::to_python_converter<_UnregisteredValueVector,
                         TfPySequenceToPython<_UnregisteredValueVector> >();
     TfPyContainerConversions::from_python_sequence<
         _UnregisteredValueVector,
@@ -413,26 +411,26 @@ void wrapTypes()
     _ModifyVariantSelectionProxy();
 
     // Register to_python conversion for SdfRelocatesMap.
-    to_python_converter<SdfRelocatesMap, Sdf_RelocatesMapConverter>();
+    boost::python::to_python_converter<SdfRelocatesMap, Sdf_RelocatesMapConverter>();
 
     // Register python conversions for SdfVariantSelectionMap.
     Sdf_VariantSelectionMapConverter();
 
     // Register python conversions for SdfTimeSampleMap.
-    to_python_converter<SdfTimeSampleMap, Sdf_TimeSampleMapConverter>();
+    boost::python::to_python_converter<SdfTimeSampleMap, Sdf_TimeSampleMapConverter>();
 
-    class_<SdfUnregisteredValue>("UnregisteredValue")
-        .def(init<const std::string &>())
-        .def(init<const VtDictionary &>())
-        .def(init<const SdfUnregisteredValue &>())
-        .def(init<const SdfUnregisteredValueListOp &>())
+    boost::python::class_<SdfUnregisteredValue>("UnregisteredValue")
+        .def(boost::python::init<const std::string &>())
+        .def(boost::python::init<const VtDictionary &>())
+        .def(boost::python::init<const SdfUnregisteredValue &>())
+        .def(boost::python::init<const SdfUnregisteredValueListOp &>())
 
         .add_property("value",
-            make_function(&SdfUnregisteredValue::GetValue,
-                return_value_policy<return_by_value>()))
+            boost::python::make_function(&SdfUnregisteredValue::GetValue,
+                boost::python::return_value_policy<boost::python::return_by_value>()))
 
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
 
         .def("__repr__", _UnregisteredValueRepr)
         .def("__hash__", _UnregisteredValueHash)
@@ -440,8 +438,8 @@ void wrapTypes()
 
     VtValueFromPython<SdfUnregisteredValue>();
 
-    class_<Sdf_ValueTypeNamesType, boost::noncopyable>(
-            "ValueTypeNames", no_init)
+    boost::python::class_<Sdf_ValueTypeNamesType, boost::noncopyable>(
+            "ValueTypeNames", boost::python::no_init)
         .def( "Find", &_FindType )
         .staticmethod("Find")
         .def_readonly("Bool"    , SdfValueTypeNames->Bool)
@@ -553,9 +551,9 @@ void wrapTypes()
         .def_readonly("TexCoord3dArray", SdfValueTypeNames->TexCoord3dArray)
         ;
 
-    class_<SdfValueBlock>("ValueBlock")
-        .def(self == self)
-        .def(self != self)
+    boost::python::class_<SdfValueBlock>("ValueBlock")
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
         .def("__repr__", _SdfValueBlockRepr)
         .def("__hash__", _SdfValueBlockHash);
     VtValueFromPython<SdfValueBlock>();

@@ -30,7 +30,6 @@
 
 #include <boost/python.hpp>
 
-namespace bp = boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -109,7 +108,7 @@ struct MapConverter
                 obj_ptr);
         boost::python::list keys = map.keys();
         boost::python::list values = map.values();
-        for (int i = 0; i < len(keys); ++i) {
+        for (int i = 0; i < boost::python::len(keys); ++i) {
 
             boost::python::object keyObj = keys[i];
             if (!boost::python::extract<Key>(keyObj).check()) {
@@ -139,7 +138,7 @@ struct MapConverter
                 boost::python::extract<boost::python::dict>(obj_ptr);
         boost::python::list keys = map.keys();
         boost::python::list values = map.values();
-        for (int i = 0; i < len(keys); ++i) {
+        for (int i = 0; i < boost::python::len(keys); ++i) {
 
             boost::python::object keyObj = keys[i];
             boost::python::object valueObj = values[i];
@@ -155,43 +154,42 @@ void wrapNodeDiscoveryResult()
 {
     MapConverter<NdrTokenMap>();
 
-    using namespace boost::python;
 
     typedef NdrNodeDiscoveryResult This;
-    class_<This>("NodeDiscoveryResult", no_init)
-        .def(init<NdrIdentifier, NdrVersion, std::string, TfToken, TfToken, 
+    boost::python::class_<This>("NodeDiscoveryResult", boost::python::no_init)
+        .def(boost::python::init<NdrIdentifier, NdrVersion, std::string, TfToken, TfToken, 
                   TfToken, std::string, std::string, std::string,
                   NdrTokenMap, std::string, TfToken>(
-                  (arg("identifier"),
-                   arg("version"),
-                   arg("name"),
-                   arg("family"),
-                   arg("discoveryType"),
-                   arg("sourceType"),
-                   arg("uri"),
-                   arg("resolvedUri"),
-                   arg("sourceCode")=std::string(), 
-                   arg("metadata")=NdrTokenMap(),
-                   arg("blindData")=std::string(),
-                   arg("subIdentifier")=TfToken())))
-        .add_property("identifier", make_getter(&This::identifier,
-                          return_value_policy<return_by_value>()))
+                  (boost::python::arg("identifier"),
+                   boost::python::arg("version"),
+                   boost::python::arg("name"),
+                   boost::python::arg("family"),
+                   boost::python::arg("discoveryType"),
+                   boost::python::arg("sourceType"),
+                   boost::python::arg("uri"),
+                   boost::python::arg("resolvedUri"),
+                   boost::python::arg("sourceCode")=std::string(), 
+                   boost::python::arg("metadata")=NdrTokenMap(),
+                   boost::python::arg("blindData")=std::string(),
+                   boost::python::arg("subIdentifier")=TfToken())))
+        .add_property("identifier", boost::python::make_getter(&This::identifier,
+                          boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("version", &This::version)
         .add_property("name", &This::name)
-        .add_property("family", make_getter(&This::family, 
-                          return_value_policy<return_by_value>()))
-        .add_property("discoveryType", make_getter(&This::discoveryType, 
-                          return_value_policy<return_by_value>()))
-        .add_property("sourceType", make_getter(&This::sourceType, 
-                          return_value_policy<return_by_value>()))
+        .add_property("family", boost::python::make_getter(&This::family, 
+                          boost::python::return_value_policy<boost::python::return_by_value>()))
+        .add_property("discoveryType", boost::python::make_getter(&This::discoveryType, 
+                          boost::python::return_value_policy<boost::python::return_by_value>()))
+        .add_property("sourceType", boost::python::make_getter(&This::sourceType, 
+                          boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("uri", &This::uri)
         .add_property("resolvedUri", &This::resolvedUri)
         .add_property("sourceCode", &This::sourceCode)
-        .add_property("metadata", make_getter(&This::metadata,  
-                          return_value_policy<TfPyMapToDictionary>()))
+        .add_property("metadata", boost::python::make_getter(&This::metadata,  
+                          boost::python::return_value_policy<TfPyMapToDictionary>()))
         .add_property("blindData", &This::blindData)
-        .add_property("subIdentifier", make_getter(&This::subIdentifier, 
-                          return_value_policy<return_by_value>()))
+        .add_property("subIdentifier", boost::python::make_getter(&This::subIdentifier, 
+                          boost::python::return_value_policy<boost::python::return_by_value>()))
         .def("__repr__", _Repr)
         ;
 

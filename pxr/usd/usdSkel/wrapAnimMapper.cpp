@@ -36,7 +36,6 @@
 #include <boost/python.hpp>
 
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -76,29 +75,29 @@ void wrapUsdSkelAnimMapper()
 {
     using This = UsdSkelAnimMapper;
 
-    class_<This,UsdSkelAnimMapperRefPtr>("AnimMapper", no_init)
+    boost::python::class_<This,UsdSkelAnimMapperRefPtr>("AnimMapper", boost::python::no_init)
 
-        .def(init<>())
+        .def(boost::python::init<>())
 
-        .def(init<size_t>())
+        .def(boost::python::init<size_t>())
         
-        .def(init<VtTokenArray,VtTokenArray>(
-                 (arg("sourceOrder"), arg("targetOrder"))))
+        .def(boost::python::init<VtTokenArray,VtTokenArray>(
+                 (boost::python::arg("sourceOrder"), boost::python::arg("targetOrder"))))
         .def("Remap", &_Remap,
-             (arg("source"),
-              arg("target")=VtValue(),
-              arg("elementSize")=1,
-              arg("defaultValue")=VtValue()))
+             (boost::python::arg("source"),
+              boost::python::arg("target")=VtValue(),
+              boost::python::arg("elementSize")=1,
+              boost::python::arg("defaultValue")=VtValue()))
 
         .def("RemapTransforms", &_RemapTransforms<GfMatrix4d>,
-             (arg("source"),
-              arg("target"),
-              arg("elementSize")=1))
+             (boost::python::arg("source"),
+              boost::python::arg("target"),
+              boost::python::arg("elementSize")=1))
 
         .def("RemapTransforms", &_RemapTransforms<GfMatrix4f>,
-             (arg("source"),
-              arg("target"),
-              arg("elementSize")=1))
+             (boost::python::arg("source"),
+              boost::python::arg("target"),
+              boost::python::arg("elementSize")=1))
 
         .def("IsIdentity", &This::IsIdentity)
 

@@ -29,7 +29,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -85,52 +84,52 @@ _WrapGetPropertyMetadataByDictKey(const UsdPrimDefinition &self,
 void wrapUsdPrimDefinition()
 {
     typedef UsdPrimDefinition This;
-    class_<This, boost::noncopyable>("PrimDefinition", no_init)
+    boost::python::class_<This, boost::noncopyable>("PrimDefinition", boost::python::no_init)
         .def("GetPropertyNames", &This::GetPropertyNames,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetAppliedAPISchemas", &This::GetAppliedAPISchemas,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetSchemaPropertySpec", &This::GetSchemaPropertySpec,
-             (arg("propName")))
+             (boost::python::arg("propName")))
         .def("GetSchemaAttributeSpec", &This::GetSchemaAttributeSpec,
-             (arg("attrName")))
+             (boost::python::arg("attrName")))
         .def("GetSchemaRelationshipSpec", &This::GetSchemaRelationshipSpec,
-             (arg("relName")))
+             (boost::python::arg("relName")))
         .def("GetAttributeFallbackValue", &_WrapGetAttributeFallbackValue,
-             (arg("attrName"), arg("key")))
+             (boost::python::arg("attrName"), boost::python::arg("key")))
 
         .def("ListMetadataFields", &This::ListMetadataFields,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetMetadata", &_WrapGetMetadata,
-             (arg("key")))
+             (boost::python::arg("key")))
         .def("GetMetadataByDictKey", &_WrapGetMetadataByDictKey,
-             (arg("key"), arg("keyPath")))
+             (boost::python::arg("key"), boost::python::arg("keyPath")))
         .def("GetDocumentation", &This::GetDocumentation)
 
         .def("ListPropertyMetadataFields", &This::ListPropertyMetadataFields,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetPropertyMetadata", &_WrapGetPropertyMetadata,
-             (arg("propName"), arg("key")))
+             (boost::python::arg("propName"), boost::python::arg("key")))
         .def("GetPropertyMetadataByDictKey", &_WrapGetPropertyMetadataByDictKey,
-             (arg("propName"), arg("key"), arg("keyPath")))
+             (boost::python::arg("propName"), boost::python::arg("key"), boost::python::arg("keyPath")))
         .def("GetPropertyDocumentation", &This::GetPropertyDocumentation,
-             (arg("propName")))
+             (boost::python::arg("propName")))
         .def("FlattenTo", 
              (UsdPrim (This::*)(const UsdPrim&, 
                                 SdfSpecifier) const) &This::FlattenTo,
-              (arg("prim"), 
-               arg("newSpecSpecifier")=SdfSpecifierOver))
+              (boost::python::arg("prim"), 
+               boost::python::arg("newSpecSpecifier")=SdfSpecifierOver))
         .def("FlattenTo", 
              (UsdPrim (This::*)(const UsdPrim&, const TfToken&,
                                 SdfSpecifier) const) &This::FlattenTo,
-              (arg("parent"), 
-               arg("name"), 
-               arg("newSpecSpecifier")=SdfSpecifierOver))
+              (boost::python::arg("parent"), 
+               boost::python::arg("name"), 
+               boost::python::arg("newSpecSpecifier")=SdfSpecifierOver))
         .def("FlattenTo", 
              (bool (This::*)(const SdfLayerHandle&, const SdfPath&,
                              SdfSpecifier) const) &This::FlattenTo,
-              (arg("layer"), 
-               arg("path"), 
-               arg("newSpecSpecifier")=SdfSpecifierOver))
+              (boost::python::arg("layer"), 
+               boost::python::arg("path"), 
+               boost::python::arg("newSpecSpecifier")=SdfSpecifierOver))
         ;
 }

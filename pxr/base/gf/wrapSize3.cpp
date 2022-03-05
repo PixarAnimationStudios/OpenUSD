@@ -36,9 +36,7 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -81,7 +79,7 @@ static GfSize3 __itruediv__(GfSize3 &self, size_t value)
 }
 #endif
 
-static string _Repr(GfSize3 const &self) {
+static std::string _Repr(GfSize3 const &self) {
     return TF_PY_REPR_PREFIX + "Size3(" + TfPyRepr(self[0]) + ", " +
         TfPyRepr(self[1]) + ", " + TfPyRepr(self[2]) + ")";
 }
@@ -94,14 +92,14 @@ void wrapSize3()
 
     static const int dimension = 3;
 
-    class_<This>( "Size3", "A 3D size class", init<>() )
-        .def(init<const This &>())
-        .def(init<const GfVec3i &>())
-        .def(init<size_t, size_t, size_t>())
+    boost::python::class_<This>( "Size3", "A 3D size class", boost::python::init<>() )
+        .def(boost::python::init<const This &>())
+        .def(boost::python::init<const GfVec3i &>())
+        .def(boost::python::init<size_t, size_t, size_t>())
 
         .def( TfTypePythonClass() )
 
-        .def("Set", (GfSize3 &(This::*)(size_t, size_t, size_t))&This::Set, return_self<>())
+        .def("Set", (GfSize3 &(This::*)(size_t, size_t, size_t))&This::Set, boost::python::return_self<>())
 
         .def_readonly("dimension", dimension)
 
@@ -110,20 +108,20 @@ void wrapSize3()
         .def("__setitem__", __setitem__)
         .def("__contains__", __contains__)
 
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
+        .def( boost::python::self_ns::str(boost::python::self) )
+        .def( boost::python::self == boost::python::self )
+        .def( boost::python::self != boost::python::self )
 
-        .def( self += self )
-        .def( self -= self )
-        .def( self *= size_t() )
-        .def( self /= size_t() )
-        .def( self + self )
-        .def( self - self )
-        .def( self * self )
-        .def( size_t() * self )
-        .def( self * size_t() )
-        .def( self / size_t() )
+        .def( boost::python::self += boost::python::self )
+        .def( boost::python::self -= boost::python::self )
+        .def( boost::python::self *= size_t() )
+        .def( boost::python::self /= size_t() )
+        .def( boost::python::self + boost::python::self )
+        .def( boost::python::self - boost::python::self )
+        .def( boost::python::self * boost::python::self )
+        .def( size_t() * boost::python::self )
+        .def( boost::python::self * size_t() )
+        .def( boost::python::self / size_t() )
         
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
@@ -135,11 +133,11 @@ void wrapSize3()
         .def("__repr__", _Repr)
 
         ;
-    to_python_converter<std::vector<This>,
+    boost::python::to_python_converter<std::vector<This>,
         TfPySequenceToPython<std::vector<This> > >();
 
 
     // conversion operator
-    implicitly_convertible<This, GfVec3i>();
+    boost::python::implicitly_convertible<This, GfVec3i>();
     
 }

@@ -31,7 +31,6 @@
 
 #include <sstream>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -58,30 +57,30 @@ void wrapMeshTopology()
     const PxOsdSubdivTags& (This::*getSubdivTags)() const =
         &This::GetSubdivTags;
 
-    class_<This>("MeshTopology",
-                 init<TfToken, TfToken, VtIntArray, VtIntArray>())
-        .def(init<TfToken, TfToken, VtIntArray, VtIntArray, VtIntArray>())
-        .def(init<TfToken, TfToken, VtIntArray, VtIntArray, VtIntArray, PxOsdSubdivTags>())
-        .def(init<TfToken, TfToken, VtIntArray, VtIntArray, PxOsdSubdivTags>())
-        .def(init<>())
+    boost::python::class_<This>("MeshTopology",
+                 boost::python::init<TfToken, TfToken, VtIntArray, VtIntArray>())
+        .def(boost::python::init<TfToken, TfToken, VtIntArray, VtIntArray, VtIntArray>())
+        .def(boost::python::init<TfToken, TfToken, VtIntArray, VtIntArray, VtIntArray, PxOsdSubdivTags>())
+        .def(boost::python::init<TfToken, TfToken, VtIntArray, VtIntArray, PxOsdSubdivTags>())
+        .def(boost::python::init<>())
         .def("__repr__", &::_ReprMeshTopology)
-        .def(self == self)
-        .def(self != self)
-        .def(str(self))
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self_ns::str(boost::python::self))
 
         .def("GetScheme", &This::GetScheme)
         .def("WithScheme", &This::WithScheme)
         .def("GetFaceVertexCounts", &This::GetFaceVertexCounts,
-             return_value_policy<copy_const_reference>())
+             boost::python::return_value_policy<boost::python::copy_const_reference>())
         .def("GetFaceVertexIndices", &This::GetFaceVertexIndices,
-             return_value_policy<copy_const_reference>())
+             boost::python::return_value_policy<boost::python::copy_const_reference>())
         .def("GetOrientation", &This::GetOrientation,
-             return_value_policy<copy_const_reference>())
+             boost::python::return_value_policy<boost::python::copy_const_reference>())
         .def("GetHoleIndices", &This::GetHoleIndices,
-             return_value_policy<copy_const_reference>())
+             boost::python::return_value_policy<boost::python::copy_const_reference>())
         .def("WithHoleIndices", &This::WithHoleIndices)
         .def("GetSubdivTags", getSubdivTags,
-             return_value_policy<copy_const_reference>())
+             boost::python::return_value_policy<boost::python::copy_const_reference>())
         .def("WithSubdivTags", &This::WithSubdivTags)
         .def("ComputeHash", &This::ComputeHash)
         .def("Validate", &This::Validate)

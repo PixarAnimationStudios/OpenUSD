@@ -368,26 +368,26 @@ UsdSamples::TakeSamples(SdfTimeSampleMap& samples)
 class _Parent {
 public:
     /// Construct invalid parent.
-    _Parent() : _object(new _Prim(shared_ptr<OObject>(new OObject))) { }
+    _Parent() : _object(new _Prim(std::shared_ptr<OObject>(new OObject))) { }
 
     /// Construct from an Alembic shared pointer to an OObject subclass.
     template <class T>
-    _Parent(const shared_ptr<T>& prim) :
+    _Parent(const std::shared_ptr<T>& prim) :
         _object(new _Prim(static_pointer_cast<OObject>(prim))) { }
 
     /// Construct from an Alembic shared pointer to a supported
     /// schema based OSchemaObject.
-    _Parent(const shared_ptr<OCamera>& prim):
+    _Parent(const std::shared_ptr<OCamera>& prim):
         _object(new _GeomPrim<OCamera>(prim)) { }
-    _Parent(const shared_ptr<OCurves>& prim):
+    _Parent(const std::shared_ptr<OCurves>& prim):
         _object(new _GeomPrim<OCurves>(prim)) { }
-    _Parent(const shared_ptr<OPoints>& prim):
+    _Parent(const std::shared_ptr<OPoints>& prim):
         _object(new _GeomPrim<OPoints>(prim)) { }
-    _Parent(const shared_ptr<OPolyMesh>& prim):
+    _Parent(const std::shared_ptr<OPolyMesh>& prim):
         _object(new _GeomPrim<OPolyMesh>(prim)) { }
-    _Parent(const shared_ptr<OSubD>& prim):
+    _Parent(const std::shared_ptr<OSubD>& prim):
         _object(new _GeomPrim<OSubD>(prim)) { }
-    _Parent(const shared_ptr<OXform>& prim):
+    _Parent(const std::shared_ptr<OXform>& prim):
         _object(new _GeomPrim<OXform>(prim)) { }
 
     /// Returns the OObject.
@@ -410,21 +410,21 @@ public:
 private:
     class _Prim {
     public:
-        explicit _Prim(const shared_ptr<OObject>& object) : _object(object) { }
+        explicit _Prim(const std::shared_ptr<OObject>& object) : _object(object) { }
         virtual ~_Prim();
-        const shared_ptr<OObject>& GetObjectPtr() const { return _object; }
+        const std::shared_ptr<OObject>& GetObjectPtr() const { return _object; }
         virtual OCompoundProperty GetSchema() const;
         virtual OCompoundProperty GetArbGeomParams() const;
         virtual OCompoundProperty GetUserProperties() const;
 
     private:
-        shared_ptr<OObject> _object;
+        std::shared_ptr<OObject> _object;
     };
 
     template <class T>
     class _GeomPrim : public _Prim {
     public:
-        explicit _GeomPrim(const shared_ptr<T>& object) : _Prim(object) { }
+        explicit _GeomPrim(const std::shared_ptr<T>& object) : _Prim(object) { }
         virtual ~_GeomPrim() { }
         virtual OCompoundProperty GetSchema() const;
         virtual OCompoundProperty GetArbGeomParams() const;
@@ -432,7 +432,7 @@ private:
     };
 
 private:
-    shared_ptr<_Prim> _object;
+    std::shared_ptr<_Prim> _object;
 };
 
 _Parent::_Prim::~_Prim()
@@ -961,7 +961,7 @@ private:
         UsdSamples result = _ExtractSamples(name);
         if (!result.IsEmpty() && !types.empty()) {
             SdfValueTypeName resultTypeName = result.GetTypeName();
-            if (find(types.begin(), types.end(), resultTypeName) ==
+            if (std::find(types.begin(), types.end(), resultTypeName) ==
                 types.end())
             {
                 TF_WARN("Property '%s' did not have expected type (got '%s')",
@@ -2470,7 +2470,7 @@ void
 _WriteRoot(_PrimWriterContext* context)
 {
     // Create the Alembic root.
-    shared_ptr<OObject> root(new OObject(context->GetArchive(), kTop));
+    std::shared_ptr<OObject> root(new OObject(context->GetArchive(), kTop));
     context->SetParent(root);
 
     // Make the root metadata.
@@ -2547,7 +2547,7 @@ _WriteCameraParameters(_PrimWriterContext* context)
     typedef OCamera Type;
 
     // Create the object and make it the parent.
-    shared_ptr<Type> object(new Type(context->GetParent(),
+    std::shared_ptr<Type> object(new Type(context->GetParent(),
                                      context->GetAlembicPrimName(),
                                      _GetPrimMetadata(*context)));
     context->SetParent(object);
@@ -2676,7 +2676,7 @@ _WriteUnknown(_PrimWriterContext* context)
     }
 
     // Create the object and make it the parent.
-    shared_ptr<Type> object(new Type(context->GetParent(),
+    std::shared_ptr<Type> object(new Type(context->GetParent(),
                                      context->GetAlembicPrimName(),
                                      metadata));
     context->SetParent(object);
@@ -2797,7 +2797,7 @@ _WritePolyMesh(_PrimWriterContext* context)
     const _WriterSchema& schema = context->GetSchema();
 
     // Create the object and make it the parent.
-    shared_ptr<Type> object(new Type(context->GetParent(),
+    std::shared_ptr<Type> object(new Type(context->GetParent(),
                                      context->GetAlembicPrimName(),
                                      _GetPrimMetadata(*context)));
     context->SetParent(object);
@@ -2904,7 +2904,7 @@ _WriteFaceSet(_PrimWriterContext* context)
     const _WriterSchema& schema = context->GetSchema();
 
     // Create the object and make it the parent.
-    shared_ptr<Type> object(new Type(context->GetParent(),
+    std::shared_ptr<Type> object(new Type(context->GetParent(),
                                      context->GetAlembicPrimName(),
                                      _GetPrimMetadata(*context)));
     context->SetParent(object);
@@ -2985,7 +2985,7 @@ _WriteSubD(_PrimWriterContext* context)
     const _WriterSchema& schema = context->GetSchema();
 
     // Create the object and make it the parent.
-    shared_ptr<Type> object(new Type(context->GetParent(),
+    std::shared_ptr<Type> object(new Type(context->GetParent(),
                                      context->GetAlembicPrimName(),
                                      _GetPrimMetadata(*context)));
     context->SetParent(object);
@@ -3155,7 +3155,7 @@ _WriteNurbsCurves(_PrimWriterContext* context)
     const _WriterSchema& schema = context->GetSchema();
 
     // Create the object and make it the parent.
-    shared_ptr<Type> object(new Type(context->GetParent(),
+    std::shared_ptr<Type> object(new Type(context->GetParent(),
                                      context->GetAlembicPrimName(),
                                      _GetPrimMetadata(*context)));
     context->SetParent(object);
@@ -3246,7 +3246,7 @@ _WriteBasisCurves(_PrimWriterContext* context)
     const _WriterSchema& schema = context->GetSchema();
 
     // Create the object and make it the parent.
-    shared_ptr<Type> object(new Type(context->GetParent(),
+    std::shared_ptr<Type> object(new Type(context->GetParent(),
                                      context->GetAlembicPrimName(),
                                      _GetPrimMetadata(*context)));
     context->SetParent(object);
@@ -3339,7 +3339,7 @@ _WriteHermiteCurves(_PrimWriterContext* context)
     const _WriterSchema& schema = context->GetSchema();
 
     // Create the object and make it the parent.
-    shared_ptr<Type> object(new Type(context->GetParent(),
+    std::shared_ptr<Type> object(new Type(context->GetParent(),
                                      context->GetAlembicPrimName(),
                                      _GetPrimMetadata(*context)));
     context->SetParent(object);
@@ -3450,7 +3450,7 @@ _WritePoints(_PrimWriterContext* context)
     const _WriterSchema& schema = context->GetSchema();
 
     // Create the object and make it the parent.
-    shared_ptr<Type> object(new Type(context->GetParent(),
+    std::shared_ptr<Type> object(new Type(context->GetParent(),
                                      context->GetAlembicPrimName(),
                                      _GetPrimMetadata(*context)));
     context->SetParent(object);

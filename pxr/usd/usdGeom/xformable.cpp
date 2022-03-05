@@ -154,7 +154,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((invertPrefix, "!invert!"))
 );
 
-using std::vector;
 
 TF_MAKE_STATIC_DATA(GfMatrix4d, _IDENTITY) {
     *_IDENTITY = GfMatrix4d(1.0);
@@ -393,7 +392,7 @@ UsdGeomXformable::GetResetXformStack() const
 
 bool 
 UsdGeomXformable::SetXformOpOrder(
-    vector<UsdGeomXformOp> const &orderedXformOps, 
+    std::vector<UsdGeomXformOp> const &orderedXformOps, 
     bool resetXformStack) const
 {
     VtTokenArray ops;
@@ -421,7 +420,7 @@ UsdGeomXformable::SetXformOpOrder(
 bool
 UsdGeomXformable::ClearXformOpOrder() const
 {
-    return SetXformOpOrder(vector<UsdGeomXformOp>());
+    return SetXformOpOrder(std::vector<UsdGeomXformOp>());
 }
 
 UsdGeomXformOp
@@ -437,18 +436,18 @@ UsdGeomXformable::MakeMatrixXform() const
     return AddTransformOp();
 }
 
-vector<UsdGeomXformOp>
+std::vector<UsdGeomXformOp>
 UsdGeomXformable::GetOrderedXformOps(bool *resetXformStack) const
 {
     return _GetOrderedXformOps(
         resetXformStack, /*withAttributeQueries=*/false);
 }
 
-vector<UsdGeomXformOp>
+std::vector<UsdGeomXformOp>
 UsdGeomXformable::_GetOrderedXformOps(bool *resetsXformStack,
                                       bool withAttributeQueries) const
 {
-    vector<UsdGeomXformOp> result;
+    std::vector<UsdGeomXformOp> result;
 
     if (resetsXformStack) {
         *resetsXformStack = false;
@@ -550,7 +549,7 @@ UsdGeomXformable::XformQuery::HasNonEmptyXformOpOrder() const
 
 static
 bool 
-_TransformMightBeTimeVarying(vector<UsdGeomXformOp> const &xformOps)
+_TransformMightBeTimeVarying(std::vector<UsdGeomXformOp> const &xformOps)
 {
     // If any of the xform ops may vary, then the cumulative transform may vary.
     TF_FOR_ALL(it, xformOps) {
@@ -606,7 +605,7 @@ UsdGeomXformable::TransformMightBeTimeVarying() const
 
 bool
 UsdGeomXformable::TransformMightBeTimeVarying(
-    const vector<UsdGeomXformOp> &ops) const
+    const std::vector<UsdGeomXformOp> &ops) const
 {
     if (!ops.empty())
         return _TransformMightBeTimeVarying(ops);
@@ -619,8 +618,8 @@ UsdGeomXformable::TransformMightBeTimeVarying(
 /* static */
 bool
 UsdGeomXformable::GetTimeSamples(
-    vector<UsdGeomXformOp> const &orderedXformOps,
-    vector<double> *times)
+    std::vector<UsdGeomXformOp> const &orderedXformOps,
+    std::vector<double> *times)
 {
     return GetTimeSamplesInInterval(orderedXformOps, 
             GfInterval::GetFullInterval(), times);
@@ -640,7 +639,7 @@ UsdGeomXformable::GetTimeSamplesInInterval(
             times);
     }
 
-    vector<UsdAttribute> xformOpAttrs;
+    std::vector<UsdAttribute> xformOpAttrs;
     xformOpAttrs.reserve(orderedXformOps.size());
     for (auto &xformOp : orderedXformOps) {
         xformOpAttrs.push_back(xformOp.GetAttr());
@@ -656,7 +655,7 @@ UsdGeomXformable::GetTimeSamplesInInterval(
     std::vector<double> *times) const
 {
     bool resetsXformStack=false;
-    const vector<UsdGeomXformOp> &orderedXformOps= GetOrderedXformOps(
+    const std::vector<UsdGeomXformOp> &orderedXformOps= GetOrderedXformOps(
         &resetsXformStack);
 
     return UsdGeomXformable::GetTimeSamplesInInterval(orderedXformOps, interval, 
@@ -664,7 +663,7 @@ UsdGeomXformable::GetTimeSamplesInInterval(
 }
 
 bool 
-UsdGeomXformable::XformQuery::GetTimeSamples(vector<double> *times) const
+UsdGeomXformable::XformQuery::GetTimeSamples(std::vector<double> *times) const
 {
     return GetTimeSamplesInInterval(GfInterval::GetFullInterval(), times);
 }
@@ -672,13 +671,13 @@ UsdGeomXformable::XformQuery::GetTimeSamples(vector<double> *times) const
 bool 
 UsdGeomXformable::XformQuery::GetTimeSamplesInInterval(
     const GfInterval &interval, 
-    vector<double> *times) const
+    std::vector<double> *times) const
 {
     if (_xformOps.size() == 1) {
         _xformOps.front().GetTimeSamplesInInterval(interval, times);
     }
 
-    vector<UsdAttributeQuery> xformOpAttrQueries;
+    std::vector<UsdAttributeQuery> xformOpAttrQueries;
     xformOpAttrQueries.reserve(_xformOps.size());
     for (auto &xformOp : _xformOps) {
         // This should never throw and exception because XformQuery's constructor
@@ -693,10 +692,10 @@ UsdGeomXformable::XformQuery::GetTimeSamplesInInterval(
 }
 
 bool 
-UsdGeomXformable::GetTimeSamples(vector<double> *times) const
+UsdGeomXformable::GetTimeSamples(std::vector<double> *times) const
 {
     bool resetsXformStack=false;
-    const vector<UsdGeomXformOp> &orderedXformOps= GetOrderedXformOps(
+    const std::vector<UsdGeomXformOp> &orderedXformOps= GetOrderedXformOps(
         &resetsXformStack);
 
     return GetTimeSamples(orderedXformOps, times);
@@ -814,7 +813,7 @@ bool
 UsdGeomXformable::GetLocalTransformation(
     GfMatrix4d *transform,
     bool *resetsXformStack,
-    const vector<UsdGeomXformOp> &ops,
+    const std::vector<UsdGeomXformOp> &ops,
     const UsdTimeCode time) const
 {
     TRACE_FUNCTION();
@@ -831,12 +830,12 @@ UsdGeomXformable::GetLocalTransformation(
 bool 
 UsdGeomXformable::GetLocalTransformation(
     GfMatrix4d *transform,
-    const vector<UsdGeomXformOp> &orderedXformOps, 
+    const std::vector<UsdGeomXformOp> &orderedXformOps, 
     const UsdTimeCode time)
 {
     GfMatrix4d xform(1.);
 
-    for (vector<UsdGeomXformOp>::const_reverse_iterator 
+    for (std::vector<UsdGeomXformOp>::const_reverse_iterator 
             it = orderedXformOps.rbegin();
          it != orderedXformOps.rend(); ++it) {
 

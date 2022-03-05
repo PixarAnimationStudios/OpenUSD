@@ -28,22 +28,21 @@
 
 #include <boost/python/def.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdDraco()
 {
-    def("_WriteDraco", UsdDraco_WriteDraco,
-        (arg("mesh"),
-         arg("fileName"),
-         arg("qp"),
-         arg("qt"),
-         arg("qn"),
-         arg("cl"),
-         arg("preservePolygons"),
-         arg("preservePositionOrder"),
-         arg("preserveHoles")));
-    def("_PrimvarSupported", UsdDraco_PrimvarSupported,
-        (arg("primvar")));
+    boost::python::def("_WriteDraco", UsdDraco_WriteDraco,
+        (boost::python::arg("mesh"),
+         boost::python::arg("fileName"),
+         boost::python::arg("qp"),
+         boost::python::arg("qt"),
+         boost::python::arg("qn"),
+         boost::python::arg("cl"),
+         boost::python::arg("preservePolygons"),
+         boost::python::arg("preservePositionOrder"),
+         boost::python::arg("preserveHoles")));
+    boost::python::def("_PrimvarSupported", UsdDraco_PrimvarSupported,
+        (boost::python::arg("primvar")));
 }

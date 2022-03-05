@@ -32,17 +32,15 @@
 
 #include <string>
 
-using namespace boost::python;
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string
+static std::string
 _Repr(const SdfReference &self)
 {
-    string args;
+    std::string args;
     bool useKeywordArgs = false;
 
     if (!self.GetAssetPath().empty()) {
@@ -80,7 +78,7 @@ void wrapReference()
     using This = SdfReference;
 
     // Register conversion for python list <-> vector<SdfReference>
-    to_python_converter<
+    boost::python::to_python_converter<
         SdfReferenceVector,
         TfPySequenceToPython<SdfReferenceVector> >();
     TfPyContainerConversions::from_python_sequence<
@@ -94,38 +92,38 @@ void wrapReference()
     //       first explicit reference, but would instead modify a temporary
     //       Sdf.Reference object.
 
-    class_<This>( "Reference" )
-        .def(init<const string &,
+    boost::python::class_<This>( "Reference" )
+        .def(boost::python::init<const std::string &,
                   const SdfPath &,
                   const SdfLayerOffset &,
                   const VtDictionary &>(
-            ( arg("assetPath") = string(),
-              arg("primPath") = SdfPath(),
-              arg("layerOffset") = SdfLayerOffset(),
-              arg("customData") = VtDictionary(0) ) ) )
-        .def(init<const This &>())
+            ( boost::python::arg("assetPath") = std::string(),
+              boost::python::arg("primPath") = SdfPath(),
+              boost::python::arg("layerOffset") = SdfLayerOffset(),
+              boost::python::arg("customData") = VtDictionary(0) ) ) )
+        .def(boost::python::init<const This &>())
 
         .add_property("assetPath",
-            make_function(
-                &This::GetAssetPath, return_value_policy<return_by_value>()))
+            boost::python::make_function(
+                &This::GetAssetPath, boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("primPath",
-            make_function(
-                &This::GetPrimPath, return_value_policy<return_by_value>()))
+            boost::python::make_function(
+                &This::GetPrimPath, boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("layerOffset",
-            make_function(
-                &This::GetLayerOffset, return_value_policy<return_by_value>()))
+            boost::python::make_function(
+                &This::GetLayerOffset, boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("customData",
-            make_function(
-                &This::GetCustomData, return_value_policy<return_by_value>()))
+            boost::python::make_function(
+                &This::GetCustomData, boost::python::return_value_policy<boost::python::return_by_value>()))
 
         .def("IsInternal", &This::IsInternal)
 
-        .def(self == self)
-        .def(self != self)
-        .def(self < self)
-        .def(self > self)
-        .def(self <= self)
-        .def(self >= self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self < boost::python::self)
+        .def(boost::python::self > boost::python::self)
+        .def(boost::python::self <= boost::python::self)
+        .def(boost::python::self >= boost::python::self)
 
         .def("__repr__", _Repr)
 

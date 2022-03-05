@@ -33,7 +33,6 @@
 #include <boost/python/operators.hpp>
 #include <boost/python/return_value_policy.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -57,33 +56,33 @@ wrapResolvedPath()
 {
     using This = ArResolvedPath;
 
-    class_<This>("ResolvedPath")
-        .def(init<>())
-        .def(init<const std::string&>())
+    boost::python::class_<This>("ResolvedPath")
+        .def(boost::python::init<>())
+        .def(boost::python::init<const std::string&>())
 
-        .def(self == self)
-        .def(self != self)
-        .def(self < self)
-        .def(self > self)
-        .def(self <= self)
-        .def(self >= self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self < boost::python::self)
+        .def(boost::python::self > boost::python::self)
+        .def(boost::python::self <= boost::python::self)
+        .def(boost::python::self >= boost::python::self)
 
-        .def(self == std::string())
-        .def(self != std::string())
-        .def(self < std::string())
-        .def(self > std::string())
-        .def(self <= std::string())
-        .def(self >= std::string())
+        .def(boost::python::self == std::string())
+        .def(boost::python::self != std::string())
+        .def(boost::python::self < std::string())
+        .def(boost::python::self > std::string())
+        .def(boost::python::self <= std::string())
+        .def(boost::python::self >= std::string())
 
         .def(TfPyBoolBuiltinFuncName, _NonZero)
         .def("__hash__", &This::GetHash)
         .def("__repr__", &_Repr)
         .def("__str__", &This::GetPathString,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("GetPathString", &This::GetPathString,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         ;
 
-    implicitly_convertible<This, std::string>();
+    boost::python::implicitly_convertible<This, std::string>();
 }

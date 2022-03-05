@@ -33,25 +33,24 @@
 #include <boost/python/return_value_policy.hpp>
 #include <boost/python/return_by_value.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdRiRmanUtilities()
 {
-    def("ConvertToRManInterpolateBoundary", (int (*)(const TfToken &))
+    boost::python::def("ConvertToRManInterpolateBoundary", (int (*)(const TfToken &))
         UsdRiConvertToRManInterpolateBoundary,
-        return_value_policy<return_by_value>());
-    def("ConvertFromRManInterpolateBoundary", (const TfToken & (*)(int))
+        boost::python::return_value_policy<boost::python::return_by_value>());
+    boost::python::def("ConvertFromRManInterpolateBoundary", (const TfToken & (*)(int))
         UsdRiConvertFromRManInterpolateBoundary,
-        return_value_policy<return_by_value>());
+        boost::python::return_value_policy<boost::python::return_by_value>());
 
-    def("ConvertToRManFaceVaryingLinearInterpolation",
+    boost::python::def("ConvertToRManFaceVaryingLinearInterpolation",
         (int (*)(const TfToken &))
         UsdRiConvertToRManFaceVaryingLinearInterpolation,
-        return_value_policy<return_by_value>());
-    def("ConvertFromRManFaceVaryingLinearInterpolation",
+        boost::python::return_value_policy<boost::python::return_by_value>());
+    boost::python::def("ConvertFromRManFaceVaryingLinearInterpolation",
         (const TfToken & (*)(int))
         UsdRiConvertFromRManFaceVaryingLinearInterpolation,
-        return_value_policy<return_by_value>());
+        boost::python::return_value_policy<boost::python::return_by_value>());
 }

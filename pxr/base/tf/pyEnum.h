@@ -387,7 +387,6 @@ public:
     /// stripped.
     explicit TfPyWrapEnum( std::string const &name = std::string())
     {
-        using namespace boost::python;
 
         const bool explicitName = !name.empty();
 
@@ -424,8 +423,8 @@ public:
         }
 
         // Make a python type for T.
-        _EnumPyClassType enumClass(enumName.c_str(), no_init);
-        enumClass.def("GetValueFromName", &Tf_TypedPyEnumWrapper<T>::GetValueFromName, arg("name"));
+        _EnumPyClassType enumClass(enumName.c_str(), boost::python::no_init);
+        enumClass.def("GetValueFromName", &Tf_TypedPyEnumWrapper<T>::GetValueFromName, boost::python::arg("name"));
         enumClass.staticmethod("GetValueFromName");
         enumClass.setattr("_baseName", baseName);
 

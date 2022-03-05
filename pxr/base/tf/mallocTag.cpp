@@ -51,11 +51,6 @@
 #include <vector>
 #include <ostream>
 
-using std::map;
-using std::make_pair;
-using std::pair;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -89,14 +84,14 @@ bool TfMallocTag::_doTagging = false;
 static bool
 _UsePtmalloc()
 {
-    string impl = TfGetenv("TF_MALLOC_TAG_IMPL", "auto");
-    vector<string> legalImpl = {"auto",     "agnostic",
+    std::string impl = TfGetenv("TF_MALLOC_TAG_IMPL", "auto");
+    std::vector<std::string> legalImpl = {"auto",     "agnostic",
                                 "jemalloc", "jemalloc force",
                                 "ptmalloc", "ptmalloc force",
                                 "pxmalloc", "pxmalloc force"};
 
     if (std::find(legalImpl.begin(), legalImpl.end(), impl) == legalImpl.end()) {
-        string values = TfStringJoin(legalImpl, "', '");
+        std::string values = TfStringJoin(legalImpl, "', '");
         TF_WARN("Invalid value '%s' for TF_MALLOC_TAG_IMPL: "
                 "(not one of '%s')", impl.c_str(), values.c_str());
     }
@@ -136,8 +131,8 @@ static const unsigned HIWORD_INDEX_BIT_OFFSET = BITS_FOR_MALLOC_SIZE - 32;
 static const unsigned HIWORD_INDEX_MASK = ~(~0U << HIWORD_INDEX_BIT_OFFSET);  // (HIWORD_INDEX_BIT_OFFSET no. of 1 bits.)
 static const unsigned long long MALLOC_SIZE_MASK = ~(~0ULL << BITS_FOR_MALLOC_SIZE) & ~0x7ULL;
 
-static bool Tf_MatchesMallocTagDebugName(const string& name);
-static bool Tf_MatchesMallocTagTraceName(const string& name);
+static bool Tf_MatchesMallocTagDebugName(const std::string& name);
+static bool Tf_MatchesMallocTagTraceName(const std::string& name);
 static void Tf_MallocTagDebugHook(void* ptr, size_t size) ARCH_NOINLINE;
 
 static void Tf_MallocTagDebugHook(void* ptr, size_t size)
@@ -294,7 +289,7 @@ Tf_MallocTagStringMatchTable::Match(const char* s) const
  */
 struct Tf_MallocCallSite
 {
-    Tf_MallocCallSite(const string& name, uint32_t index)
+    Tf_MallocCallSite(const std::string& name, uint32_t index)
         : _name(name), _totalBytes(0), _nPaths(0), _index(index)
     {
         _debug = Tf_MatchesMallocTagDebugName(_name);
@@ -302,7 +297,7 @@ struct Tf_MallocCallSite
     }
 
     // Note: _name needs to be const since we call c_str() on it.
-    const string _name;
+    const std::string _name;
     int64_t _totalBytes;
     size_t _nPaths;    
     uint32_t _index;
@@ -399,7 +394,7 @@ struct Tf_MallocGlobalData
 
     // Vector of path nodes indicating location of an allocated block. 
     // Implementations associate indices into this vector with a block.
-    vector<struct Tf_MallocPathNode*> _allPathNodes;
+    std::vector<struct Tf_MallocPathNode*> _allPathNodes;
 
     // Mapping from memory block to information about that block.
     // Used by allocator-agnostic implementation.
@@ -418,7 +413,7 @@ struct Tf_MallocGlobalData
     Tf_MallocTagStringMatchTable _debugMatchTable;
 
     // Pre-allocated space for getting stack traces.
-    vector<uintptr_t> _captureStack;
+    std::vector<uintptr_t> _captureStack;
 };
 
 /*
@@ -453,7 +448,7 @@ struct Tf_MallocPathNode
             return NULL;
         }
 
-        _children.push_back(make_pair(site, pathNode));
+        _children.push_back(std::make_pair(site, pathNode));
         site->_nPaths++;
         return pathNode;
     }
@@ -464,7 +459,7 @@ struct Tf_MallocPathNode
     Tf_MallocCallSite* _callSite;
     int64_t _totalBytes;
     int64_t _numAllocations;
-    vector<pair<Tf_MallocCallSite*, Tf_MallocPathNode*> > _children;
+    std::vector<std::pair<Tf_MallocCallSite*, Tf_MallocPathNode*> > _children;
     uint32_t _index;    // only 24 bits
     bool _repeated;    // repeated node
 };
@@ -554,7 +549,7 @@ Tf_MallocGlobalData::_MatchesTraceName(const std::string& name)
     return _traceMatchTable.Match(name.c_str());
 }
 
-static bool Tf_MatchesMallocTagTraceName(const string& name)
+static bool Tf_MatchesMallocTagTraceName(const std::string& name)
 {
     return _mallocGlobalData->_MatchesTraceName(name);
 }
@@ -619,7 +614,7 @@ Tf_MallocGlobalData::_MatchesDebugName(const std::string& name)
     return _debugMatchTable.Match(name.c_str());
 }
 
-static bool Tf_MatchesMallocTagDebugName(const string& name)
+static bool Tf_MatchesMallocTagDebugName(const std::string& name)
 {
     return _mallocGlobalData->_MatchesDebugName(name);
 }
@@ -629,7 +624,7 @@ namespace {
 //
 struct _HashMallocStack
 {
-    size_t operator()(const vector<uintptr_t> &stack) const {
+    size_t operator()(const std::vector<uintptr_t> &stack) const {
         return ArchHash(
             (const char *)&stack[0], sizeof(uintptr_t) * stack.size());
     }
@@ -640,7 +635,7 @@ struct _HashMallocStack
 //
 struct _MallocStackData
 {
-    const vector<uintptr_t> *stack;
+    const std::vector<uintptr_t> *stack;
     size_t size;
     size_t numAllocations;
 };
@@ -667,7 +662,7 @@ Tf_MallocGlobalData::_BuildUniqueMallocStacks(TfMallocTag::CallTree* tree)
     if (!_callStackTable.empty()) {
         // Create a map from malloc stacks to the malloc stack data.
         typedef TfHashMap<
-            vector<uintptr_t>, _MallocStackData, _HashMallocStack> _Map;
+            std::vector<uintptr_t>, _MallocStackData, _HashMallocStack> _Map;
         _Map map;
 
         TF_FOR_ALL(it, _callStackTable) {
@@ -676,8 +671,8 @@ Tf_MallocGlobalData::_BuildUniqueMallocStacks(TfMallocTag::CallTree* tree)
             const TfMallocTag::CallStackInfo &stackInfo = it->second;
             _MallocStackData data = { &stackInfo.stack, 0, 0 };
 
-            pair<_Map::iterator, bool> insertResult = map.insert(
-                make_pair(stackInfo.stack, data));
+            std::pair<_Map::iterator, bool> insertResult = map.insert(
+                std::make_pair(stackInfo.stack, data));
 
             _MallocStackData &updateData = insertResult.first->second;
             updateData.size += stackInfo.size;
@@ -924,10 +919,10 @@ TfMallocTag::SetCapturedMallocStacksMatchList(const std::string& matchList)
     }
 }
 
-vector<vector<uintptr_t> >
+std::vector<std::vector<uintptr_t> >
 TfMallocTag::GetCapturedMallocStacks()
 {
-    vector<vector<uintptr_t> > result;
+    std::vector<std::vector<uintptr_t> > result;
     
     if (!TfMallocTag::IsInitialized())
         return result;
@@ -1319,7 +1314,7 @@ TfMallocTag::_FreeWrapper_ptmalloc(void* ptr, const void*)
 }
 
 bool
-TfMallocTag::Initialize(string* errMsg)
+TfMallocTag::Initialize(std::string* errMsg)
 {
     static bool status = _Initialize(errMsg);
     return status;
@@ -1449,7 +1444,7 @@ TfMallocTag::_Initialize(std::string* errMsg)
 }
 
 void
-TfMallocTag::Auto::_Begin(const string& name)
+TfMallocTag::Auto::_Begin(const std::string& name)
 {
     _Begin(name.c_str());
 }
@@ -1529,12 +1524,12 @@ TfMallocTag::Pop(const char* name)
 // Returns the given number as a string with commas used as thousands
 // separators.
 //
-static string
+static std::string
 _GetAsCommaSeparatedString(size_t number)
 {
-    string result;
+    std::string result;
 
-    string str = TfStringPrintf("%ld", number);
+    std::string str = TfStringPrintf("%ld", number);
     size_t n = str.size();
 
     TF_FOR_ALL(it, str) {
@@ -1548,9 +1543,9 @@ _GetAsCommaSeparatedString(size_t number)
 }
 
 static void
-_PrintHeader(string *rpt)
+_PrintHeader(std::string *rpt)
 {
-    *rpt += "\n" + string(80, '-') + "\n";
+    *rpt += "\n" + std::string(80, '-') + "\n";
     *rpt += TfStringPrintf("\nMalloc Tag Report\n\n\n");
     *rpt += TfStringPrintf("Total bytes = %s\n\n\n",
         _GetAsCommaSeparatedString(TfMallocTag::GetTotalBytes()).c_str());
@@ -1558,7 +1553,7 @@ _PrintHeader(string *rpt)
 
 static size_t
 _PrintMallocNode(
-    string* rpt,
+    std::string* rpt,
     const TfMallocTag::CallTree::PathNode &node,
     size_t rootTotal,
     size_t parentTotal,
@@ -1573,7 +1568,7 @@ _PrintMallocNode(
                                "BytesIncl", "BytesExcl", "%Prnt", "% Exc",
                                "%Totl");
         *rpt += TfStringPrintf("%-72s %12s%12s %5s %5s %5s\n\n",
-                               string(72, '-').c_str(),
+                               std::string(72, '-').c_str(),
                                " --------------", " --------------",
                                "-----", "-----", "-----");
 
@@ -1588,11 +1583,11 @@ _PrintMallocNode(
     }
     printedNodes++;
 
-    string name = string(indent, ' ') +
+    std::string name = std::string(indent, ' ') +
         node.siteName.substr(0, maxNameWidth-indent);
     int postLen = static_cast<int>(maxNameWidth - name.length());
     if (postLen > 0) {
-        name += string(postLen, ' ');
+        name += std::string(postLen, ' ');
     }
 
     *rpt += TfStringPrintf(
@@ -1601,9 +1596,9 @@ _PrintMallocNode(
         _GetAsCommaSeparatedString(node.nBytes).c_str(),
         _GetAsCommaSeparatedString(node.nBytesDirect).c_str());
 
-    string curPercent;
-    string curPercentDirect;
-    string percentDirectOfRoot;
+    std::string curPercent;
+    std::string curPercentDirect;
+    std::string percentDirectOfRoot;
 
     if (parentTotal) {
 
@@ -1634,7 +1629,7 @@ _PrintMallocNode(
                            curPercentDirect.c_str(),
                            percentDirectOfRoot.c_str());
 
-    vector<TfMallocTag::CallTree::PathNode>::const_iterator it;
+    std::vector<TfMallocTag::CallTree::PathNode>::const_iterator it;
     for (it = node.children.begin(); it != node.children.end(); ++it) {
         _PrintMallocNode(rpt, *it, rootTotal, node.nBytes, level+1,
                          printedNodes,
@@ -1646,16 +1641,16 @@ _PrintMallocNode(
 
 static void
 _PrintMallocCallSites(
-   string* rpt,
-   const vector<TfMallocTag::CallTree::CallSite>& callSites,
+   std::string* rpt,
+   const std::vector<TfMallocTag::CallTree::CallSite>& callSites,
    size_t rootTotal)
 {
     *rpt += TfStringPrintf("\n\nCall Sites\n\n");
 
     // Use a map to sort by allocation size.
-    map<size_t, const string *> map;
+    std::map<size_t, const std::string *> map;
     TF_FOR_ALL(csi, callSites) {
-        map.insert(make_pair(csi->nBytes, &csi->name));
+        map.insert(std::make_pair(csi->nBytes, &csi->name));
     }
 
     // XXX:cleanup We should pass in maxNameWidth.
@@ -1663,20 +1658,20 @@ _PrintMallocCallSites(
     const size_t maxBytesWidth = 15;
     const size_t maxPercentageWidth = 15;
 
-    string fmt = TfStringPrintf(
+    std::string fmt = TfStringPrintf(
         "%%-%lds %%%lds %%%lds\n",
         maxNameWidth, maxBytesWidth, maxPercentageWidth);
 
     *rpt += TfStringPrintf(fmt.c_str(), "NAME", "BYTES", "%ROOT");
-    *rpt += string(maxNameWidth, '-') + ' ' + 
-            string(maxBytesWidth, '-') + ' ' + 
-            string(maxPercentageWidth, '-') + "\n\n";
+    *rpt += std::string(maxNameWidth, '-') + ' ' + 
+            std::string(maxBytesWidth, '-') + ' ' + 
+            std::string(maxPercentageWidth, '-') + "\n\n";
 
     TF_REVERSE_FOR_ALL(it, map) {
         size_t nBytes = it->first;
-        const string &name = *it->second;
+        const std::string &name = *it->second;
 
-        string curPercent;
+        std::string curPercent;
         if (rootTotal) {
             double percent = 100.0*nBytes/rootTotal;
             // Don't print anything less than 0.1%.
@@ -1737,7 +1732,7 @@ _ReportMallocNode(
         #endif
     }
 
-    string indent(2*level, ' ');
+    std::string indent(2*level, ' ');
 
     // Insert '|' characters every 4 spaces.
     for (size_t i=0; i<(level + 1)/2; i++) {
@@ -1817,7 +1812,7 @@ _ReportCapturedMallocStacks(
     for(size_t n=0; n<numReportedStacks; n++) {
         const TfMallocTag::CallStackInfo &stackInfo = stackInfos[n];
 
-        out << string(100, '-') << "\n"
+        out << std::string(100, '-') << "\n"
             << "Captured malloc stack #" << n << "\n"
             << "Size:            " <<
                 _GetAsCommaSeparatedString(stackInfo.size) << "\n"
@@ -1829,11 +1824,11 @@ _ReportCapturedMallocStacks(
 }
 
 
-string
+std::string
 TfMallocTag::CallTree::GetPrettyPrintString(PrintSetting setting,
                                             size_t maxPrintedNodes) const
 {
-    string rpt;
+    std::string rpt;
 
     _PrintHeader(&rpt);
 

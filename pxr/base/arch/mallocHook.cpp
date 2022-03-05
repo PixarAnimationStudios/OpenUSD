@@ -43,7 +43,6 @@
 #   define __MALLOC_HOOK_VOLATILE
 #endif /* !defined(__MALLOC_HOOK_VOLATILE) */
 
-using std::string;
 
 /*
  * These are hook variables (they're not functions, so they don't need
@@ -179,13 +178,13 @@ ArchMallocHook::IsInitialized()
 
 #if defined(ARCH_OS_LINUX)
 template <typename T>
-static bool _GetSymbol(T* addr, const char* name, string* errMsg) {
+static bool _GetSymbol(T* addr, const char* name, std::string* errMsg) {
     if (void* symbol = dlsym(RTLD_DEFAULT, name)) {
         *addr = (T) symbol;
         return true;
     }
     else {
-        *errMsg = "lookup for symbol '" + string(name) + "' failed";
+        *errMsg = "lookup for symbol '" + std::string(name) + "' failed";
         return false;
     }
 }
@@ -239,7 +238,7 @@ ArchMallocHook::Initialize(
     ARCH_UNUSED_ARG void* (*reallocWrapper)(void*, size_t, const void*),
     ARCH_UNUSED_ARG void* (*memalignWrapper)(size_t, size_t, const void*),
     ARCH_UNUSED_ARG void  (*freeWrapper)(void*, const void*),
-    string* errMsg)
+    std::string* errMsg)
 {
 #if !defined(ARCH_OS_LINUX)
     *errMsg = "ArchMallocHook functionality not implemented for non-linux systems";

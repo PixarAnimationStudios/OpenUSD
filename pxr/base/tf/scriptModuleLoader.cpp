@@ -47,14 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(TfScriptModuleLoader);
 
-using std::deque;
-using std::string;
-using std::vector;
 
-using boost::python::borrowed;
-using boost::python::dict;
-using boost::python::handle;
-using boost::python::object;
 
 
 TfScriptModuleLoader::TfScriptModuleLoader()
@@ -70,7 +63,7 @@ TfScriptModuleLoader::~TfScriptModuleLoader()
 void
 TfScriptModuleLoader::
 RegisterLibrary(TfToken const &name, TfToken const &moduleName,
-                vector<TfToken> const &predecessors)
+                std::vector<TfToken> const &predecessors)
 {
 
     if (TfDebug::IsEnabled(TF_SCRIPT_MODULE_LOADER)) {
@@ -83,7 +76,7 @@ RegisterLibrary(TfToken const &name, TfToken const &moduleName,
     }
 
     // Add library with predecessors.
-    vector<TfToken> &predsInTable = _libInfo[name].predecessors;
+    std::vector<TfToken> &predsInTable = _libInfo[name].predecessors;
     predsInTable = predecessors;
     std::sort(predsInTable.begin(), predsInTable.end());
     _libsToModules[name] = moduleName;
@@ -93,11 +86,11 @@ RegisterLibrary(TfToken const &name, TfToken const &moduleName,
         _AddSuccessor(*pred, name);
 }
 
-vector<string>
+std::vector<std::string>
 TfScriptModuleLoader::GetModuleNames() const
 {
-    vector<TfToken> order;
-    vector<string> ret;
+    std::vector<TfToken> order;
+    std::vector<std::string> ret;
     _TopologicalSort(&order);
     ret.reserve(order.size());
     TF_FOR_ALL(lib, order) {
@@ -108,12 +101,12 @@ TfScriptModuleLoader::GetModuleNames() const
     return ret;
 }
 
-dict
+boost::python::dict
 TfScriptModuleLoader::GetModulesDict() const
 {
     if (!TfPyIsInitialized()) {
         TF_CODING_ERROR("Python is not initialized!");
-        return dict();
+        return boost::python::dict();
     }
 
     // Kick the registry function so any loaded libraries with script
@@ -124,16 +117,16 @@ TfScriptModuleLoader::GetModulesDict() const
 
     // Get the sys.modules dict from python, so we can see if modules are
     // already loaded.
-    dict modulesDict(handle<>(borrowed(PyImport_GetModuleDict())));
+    boost::python::dict modulesDict(boost::python::handle<>(boost::python::borrowed(PyImport_GetModuleDict())));
 
-    vector<TfToken> order;
-    dict ret;
+    std::vector<TfToken> order;
+    boost::python::dict ret;
     _TopologicalSort(&order);
     TF_FOR_ALL(lib, order) {
         _TokenToTokenMap::const_iterator i = _libsToModules.find(*lib);
         if (i != _libsToModules.end() &&
             modulesDict.has_key(i->second.GetText())) {
-            handle<> modHandle(PyImport_ImportModule(const_cast<char *>
+            boost::python::handle<> modHandle(PyImport_ImportModule(const_cast<char *>
                                                      (i->second.GetText())));
 
             // Use the upper-cased form of the library name as
@@ -159,16 +152,16 @@ TfScriptModuleLoader::GetModulesDict() const
             //
             // For now, we just upper-case the library name.
             //
-            string moduleName = TfStringCapitalize(lib->GetString());
+            std::string moduleName = TfStringCapitalize(lib->GetString());
 
-            ret[moduleName] = object(modHandle);
+            ret[moduleName] = boost::python::object(modHandle);
         }
     }
     return ret;
 }
 
 void
-TfScriptModuleLoader::WriteDotFile(string const &file) const
+TfScriptModuleLoader::WriteDotFile(std::string const &file) const
 {
     FILE *out = ArchOpenFile(file.c_str(), "w");
     if (!out) {
@@ -207,7 +200,7 @@ TfScriptModuleLoader::_HasTransitiveSuccessor(TfToken const &predecessor,
     // This function does a simple DFS of the dependency dag, to determine if \a
     // predecessor has \a successor somewhere in the transitive closure.
 
-    vector<TfToken> predStack(1, predecessor);
+    std::vector<TfToken> predStack(1, predecessor);
     TfToken::HashSet seenPreds;
 
     while (!predStack.empty()) {
@@ -243,7 +236,7 @@ void
 TfScriptModuleLoader::_LoadUpTo(TfToken const &name)
 {
     static size_t indent = 0;
-    string indentString;
+    std::string indentString;
     char const *indentTxt = 0;
 
     if (TfDebug::IsEnabled(TF_SCRIPT_MODULE_LOADER)) {
@@ -262,11 +255,11 @@ TfScriptModuleLoader::_LoadUpTo(TfToken const &name)
 
     // Otherwise load modules in topological dependency order until we
     // encounter the requested module.
-    vector<TfToken> order;
+    std::vector<TfToken> order;
     if (name.IsEmpty()) {
         _TopologicalSort(&order);
     } else {
-        _GetOrderedDependencies(vector<TfToken>(1, name), &order);
+        _GetOrderedDependencies(std::vector<TfToken>(1, name), &order);
     }
 
     TF_DEBUG(TF_SCRIPT_MODULE_LOADER)
@@ -384,7 +377,7 @@ _AddSuccessor(TfToken const &lib, TfToken const &successor)
     }
 
     // Add dependent as a dependent of lib.
-    vector<TfToken> *successors = &(_libInfo[lib].successors);
+    std::vector<TfToken> *successors = &(_libInfo[lib].successors);
     successors->insert(std::lower_bound(successors->begin(),
                                         successors->end(), successor),
                        successor);
@@ -394,7 +387,7 @@ void
 TfScriptModuleLoader
 ::_GetOrderedDependenciesRecursive(TfToken const &lib,
                                    TfToken::HashSet *seenLibs,
-                                   vector<TfToken> *result) const
+                                   std::vector<TfToken> *result) const
 {
     // If we've not yet visited this library, then visit its predecessors, and
     // finally add it to the order.
@@ -408,8 +401,8 @@ TfScriptModuleLoader
 
 void
 TfScriptModuleLoader::
-_GetOrderedDependencies(vector<TfToken> const &input,
-                        vector<TfToken> *result) const
+_GetOrderedDependencies(std::vector<TfToken> const &input,
+                        std::vector<TfToken> *result) const
 {
     TfToken::HashSet seenLibs;
     TF_FOR_ALL(i, input) {
@@ -425,11 +418,11 @@ _GetOrderedDependencies(vector<TfToken> const &input,
 
 void
 TfScriptModuleLoader::
-_TopologicalSort(vector<TfToken> *result) const
+_TopologicalSort(std::vector<TfToken> *result) const
 {
     // Find all libs with no successors, then produce all ordered dependencies
     // from them.
-    vector<TfToken> leaves;
+    std::vector<TfToken> leaves;
     TF_FOR_ALL(i, _libInfo) {
         if (i->second.successors.empty())
             leaves.push_back(i->first);

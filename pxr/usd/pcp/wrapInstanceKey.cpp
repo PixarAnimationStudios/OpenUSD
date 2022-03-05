@@ -29,7 +29,6 @@
 #include <boost/python/class.hpp>
 #include <boost/python/operators.hpp>
  
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -46,11 +45,11 @@ __hash__(const PcpInstanceKey& key)
 void
 wrapInstanceKey()
 {
-    class_<PcpInstanceKey>("InstanceKey")
-        .def(init<const PcpPrimIndex&>(args("primIndex")))
+    boost::python::class_<PcpInstanceKey>("InstanceKey")
+        .def(boost::python::init<const PcpPrimIndex&>(boost::python::args("primIndex")))
 
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
 
         .def("__str__", &PcpInstanceKey::GetString)
         .def("__hash_", __hash__)

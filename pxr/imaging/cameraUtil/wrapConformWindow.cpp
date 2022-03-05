@@ -36,7 +36,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -61,20 +60,20 @@ wrapConformWindow()
     typedef void (*Signature6)(
         GfFrustum *, CameraUtilConformWindowPolicy, double);
 
-    def("ConformedWindow", (Signature1)&CameraUtilConformedWindow,
-        (arg("window"), arg("policy"), arg("targetAspect")));
-    def("ConformedWindow", (Signature2)&CameraUtilConformedWindow,
-        (arg("window"), arg("policy"), arg("targetAspect")));
-    def("ConformedWindow", (Signature3)&CameraUtilConformedWindow,
-        (arg("window"), arg("policy"), arg("targetAspect")));
-    def("ConformedWindow", (Signature4)&CameraUtilConformedWindow,
-        (arg("window"), arg("policy"), arg("targetAspect")));
+    boost::python::def("ConformedWindow", (Signature1)&CameraUtilConformedWindow,
+        (boost::python::arg("window"), boost::python::arg("policy"), boost::python::arg("targetAspect")));
+    boost::python::def("ConformedWindow", (Signature2)&CameraUtilConformedWindow,
+        (boost::python::arg("window"), boost::python::arg("policy"), boost::python::arg("targetAspect")));
+    boost::python::def("ConformedWindow", (Signature3)&CameraUtilConformedWindow,
+        (boost::python::arg("window"), boost::python::arg("policy"), boost::python::arg("targetAspect")));
+    boost::python::def("ConformedWindow", (Signature4)&CameraUtilConformedWindow,
+        (boost::python::arg("window"), boost::python::arg("policy"), boost::python::arg("targetAspect")));
     
-    def("ConformWindow", (Signature5)&CameraUtilConformWindow,
-        (arg("camera"), arg("policy"), arg("targetAspect")));
+    boost::python::def("ConformWindow", (Signature5)&CameraUtilConformWindow,
+        (boost::python::arg("camera"), boost::python::arg("policy"), boost::python::arg("targetAspect")));
 
-    def("ConformWindow", (Signature6)&CameraUtilConformWindow,
-        (arg("frustum"), arg("policy"), arg("targetAspect")));
+    boost::python::def("ConformWindow", (Signature6)&CameraUtilConformWindow,
+        (boost::python::arg("frustum"), boost::python::arg("policy"), boost::python::arg("targetAspect")));
 
     TfPyWrapEnum<CameraUtilConformWindowPolicy>();
 }

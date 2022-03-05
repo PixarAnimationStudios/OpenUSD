@@ -29,7 +29,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE;
 
@@ -54,11 +53,11 @@ _ComputeSubShapeWeights(const UsdSkelBlendShapeQuery& self,
 
 template <typename T>
 std::vector<T>
-_PyListToVector(const list& l)
+_PyListToVector(const boost::python::list& l)
 {
-    std::vector<T> vec(len(l));
+    std::vector<T> vec(boost::python::len(l));
     for (size_t i = 0; i < vec.size(); ++i) {
-        vec[i] = extract<T>(l[i]);
+        vec[i] = boost::python::extract<T>(l[i]);
     }
     return vec;
 }
@@ -69,8 +68,8 @@ _ComputeDeformedPoints(const UsdSkelBlendShapeQuery& self,
                        const TfSpan<const float> subShapeWeights,
                        const TfSpan<const unsigned> blendShapeIndices,
                        const TfSpan<const unsigned> subShapeIndices,
-                       const list& blendShapePointIndices,
-                       const list& subShapePointOffsets,
+                       const boost::python::list& blendShapePointIndices,
+                       const boost::python::list& subShapePointOffsets,
                        TfSpan<GfVec3f> points)
 {
     return self.ComputeDeformedPoints(
@@ -87,8 +86,8 @@ void wrapUsdSkelBlendShapeQuery()
 {
     using This = UsdSkelBlendShapeQuery;
 
-    class_<This>("BlendShapeQuery", init<>())
-        .def(init<UsdSkelBindingAPI>())
+    boost::python::class_<This>("BlendShapeQuery", boost::python::init<>())
+        .def(boost::python::init<UsdSkelBindingAPI>())
 
         .def("__str__", &This::GetDescription)
 
@@ -101,20 +100,20 @@ void wrapUsdSkelBlendShapeQuery()
 
         .def("ComputeBlendShapePointIndices",
              &This::ComputeBlendShapePointIndices,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("ComputeSubShapePointOffsets",
              &This::ComputeSubShapePointOffsets,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("ComputeSubShapeWeights", &_ComputeSubShapeWeights)
 
         .def("ComputeDeformedPoints", &_ComputeDeformedPoints,
-             (arg("subShapeWeights"),
-              arg("blendShapeIndices"),
-              arg("subShapeIndices"),
-              arg("blendShapePointIndices"),
-              arg("subShapePointOffset"),
-              arg("points")))
+             (boost::python::arg("subShapeWeights"),
+              boost::python::arg("blendShapeIndices"),
+              boost::python::arg("subShapeIndices"),
+              boost::python::arg("blendShapePointIndices"),
+              boost::python::arg("subShapePointOffset"),
+              boost::python::arg("points")))
         ;
 }

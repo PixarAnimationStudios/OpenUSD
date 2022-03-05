@@ -36,15 +36,13 @@
 
 #include <vector>
 
-using std::vector;
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
 static bool
-_Set(const UsdShadeInput &self, object val, const UsdTimeCode &time) 
+_Set(const UsdShadeInput &self, boost::python::object val, const UsdTimeCode &time) 
 {
     return self.Set(UsdPythonToSdfType(val, self.GetTypeName()), time);
 }
@@ -56,7 +54,7 @@ _Get(const UsdShadeInput &self, UsdTimeCode time) {
     return UsdVtValueToPython(val);
 }
 
-static object
+static boost::python::object
 _GetConnectedSources(const UsdShadeInput &self)
 {
     SdfPathVector invalidSourcePaths;
@@ -67,7 +65,7 @@ _GetConnectedSources(const UsdShadeInput &self)
         invalidSourcePaths);
 }
 
-static object
+static boost::python::object
 _GetConnectedSource(const UsdShadeInput &self)
 {
     UsdShadeConnectableAPI source;
@@ -77,7 +75,7 @@ _GetConnectedSource(const UsdShadeInput &self)
     if (self.GetConnectedSource(&source, &sourceName, &sourceType)){
         return boost::python::make_tuple(source, sourceName, sourceType);
     } else {
-        return object();
+        return boost::python::object();
     }
 }
 
@@ -89,7 +87,7 @@ _GetRawConnectedSourcePaths(const UsdShadeInput &self)
     return sourcePaths;
 }
 
-static object
+static boost::python::object
 _GetValueProducingAttribute(const UsdShadeInput &self)
 {
     UsdShadeAttributeType attrType;
@@ -125,40 +123,40 @@ void wrapUsdShadeInput()
     bool (Input::*CanConnect_1)(
         UsdAttribute const &) const = &Input::CanConnect;
 
-    class_<Input>("Input")
-        .def(init<UsdAttribute>(arg("attr")))
-        .def(self==self)
-        .def(self!=self)
-        .def(!self)
+    boost::python::class_<Input>("Input")
+        .def(boost::python::init<UsdAttribute>(boost::python::arg("attr")))
+        .def(boost::python::self==boost::python::self)
+        .def(boost::python::self!=boost::python::self)
+        .def(!boost::python::self)
 
         .def("GetFullName", &Input::GetFullName,
-                return_value_policy<return_by_value>())
+                boost::python::return_value_policy<boost::python::return_by_value>())
         .def("GetBaseName", &Input::GetBaseName)
         .def("GetPrim", &Input::GetPrim)
         .def("GetTypeName", &Input::GetTypeName)
-        .def("Get", _Get, (arg("time")=UsdTimeCode::Default()))
-        .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
+        .def("Get", _Get, (boost::python::arg("time")=UsdTimeCode::Default()))
+        .def("Set", _Set, (boost::python::arg("value"), boost::python::arg("time")=UsdTimeCode::Default()))
         .def("SetRenderType", &Input::SetRenderType,
-             (arg("renderType")))
+             (boost::python::arg("renderType")))
         .def("GetRenderType", &Input::GetRenderType)
         .def("HasRenderType", &Input::HasRenderType)
 
         .def("GetSdrMetadata", &Input::GetSdrMetadata)
         .def("GetSdrMetadataByKey", &Input::GetSdrMetadataByKey,
-             (arg("key")))
+             (boost::python::arg("key")))
 
         .def("SetSdrMetadata", &Input::SetSdrMetadata,
-             (arg("sdrMetadata")))
+             (boost::python::arg("sdrMetadata")))
         .def("SetSdrMetadataByKey", &Input::SetSdrMetadataByKey,
-             (arg("key"), arg("value")))
+             (boost::python::arg("key"), boost::python::arg("value")))
 
         .def("HasSdrMetadata", &Input::HasSdrMetadata)
         .def("HasSdrMetadataByKey", &Input::HasSdrMetadataByKey,
-             (arg("key")))
+             (boost::python::arg("key")))
 
         .def("ClearSdrMetadata", &Input::ClearSdrMetadata)
         .def("ClearSdrMetadataByKey", 
-             &Input::ClearSdrMetadataByKey, (arg("key")))
+             &Input::ClearSdrMetadataByKey, (boost::python::arg("key")))
 
         .def("SetDocumentation", &Input::SetDocumentation)
         .def("GetDocumentation", &Input::GetDocumentation)
@@ -171,40 +169,40 @@ void wrapUsdShadeInput()
 
         .def("GetValueProducingAttributes",
             &Input::GetValueProducingAttributes,
-            (arg("shaderOutputsOnly")=false))
+            (boost::python::arg("shaderOutputsOnly")=false))
         .def("GetValueProducingAttribute", _GetValueProducingAttribute)
 
         .def("GetAttr", &Input::GetAttr,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("CanConnect", CanConnect_1,
-            (arg("source")))
+            (boost::python::arg("source")))
 
         .def("ConnectToSource", ConnectToSource_5,
-            (arg("source"),
-             arg("mod")=UsdShadeConnectionModification::Replace))
+            (boost::python::arg("source"),
+             boost::python::arg("mod")=UsdShadeConnectionModification::Replace))
         .def("ConnectToSource", ConnectToSource_1,
-            (arg("source"), arg("sourceName"), 
-             arg("sourceType")=UsdShadeAttributeType::Output,
-             arg("typeName")=SdfValueTypeName()))
+            (boost::python::arg("source"), boost::python::arg("sourceName"), 
+             boost::python::arg("sourceType")=UsdShadeAttributeType::Output,
+             boost::python::arg("typeName")=SdfValueTypeName()))
         .def("ConnectToSource", ConnectToSource_2,
-            (arg("sourcePath")))
+            (boost::python::arg("sourcePath")))
         .def("ConnectToSource", ConnectToSource_3,
-            (arg("input")))
+            (boost::python::arg("input")))
         .def("ConnectToSource", ConnectToSource_4,
-            (arg("output")))
+            (boost::python::arg("output")))
 
         .def("SetConnectedSources", &Input::SetConnectedSources)
 
         .def("GetConnectedSources", _GetConnectedSources)
         .def("GetConnectedSource", _GetConnectedSource)
         .def("GetRawConnectedSourcePaths", _GetRawConnectedSourcePaths,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
         .def("HasConnectedSource", &Input::HasConnectedSource)
         .def("IsSourceConnectionFromBaseMaterial",
              &Input::IsSourceConnectionFromBaseMaterial)
         .def("DisconnectSource", &Input::DisconnectSource,
-             (arg("sourceAttr")=UsdAttribute()))
+             (boost::python::arg("sourceAttr")=UsdAttribute()))
         .def("ClearSources", &Input::ClearSources)
         .def("ClearSource", &Input::ClearSource)
 
@@ -214,9 +212,9 @@ void wrapUsdShadeInput()
         .staticmethod("IsInterfaceInputName")
         ;
 
-    implicitly_convertible<Input, UsdAttribute>();
+    boost::python::implicitly_convertible<Input, UsdAttribute>();
 
-    to_python_converter<
+    boost::python::to_python_converter<
         std::vector<Input>,
         TfPySequenceToPython<std::vector<Input> > >();
 }

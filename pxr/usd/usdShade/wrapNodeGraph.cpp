@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -64,31 +63,31 @@ void wrapUsdShadeNodeGraph()
 {
     typedef UsdShadeNodeGraph This;
 
-    class_<This, bases<UsdTyped> >
+    boost::python::class_<This, boost::python::bases<UsdTyped> >
         cls("NodeGraph");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
+        .def("Define", &This::Define, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Define")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
 
         .def("__repr__", ::_Repr)
@@ -120,7 +119,7 @@ void wrapUsdShadeNodeGraph()
 
 namespace {
 
-static object
+static boost::python::object
 _WrapComputeOutputSource(const UsdShadeNodeGraph &self, 
                          const TfToken &outputName)
 {
@@ -133,35 +132,35 @@ _WrapComputeOutputSource(const UsdShadeNodeGraph &self,
 
 WRAP_CUSTOM {
     _class
-        .def(init<UsdShadeConnectableAPI>(arg("connectable")))
+        .def(boost::python::init<UsdShadeConnectableAPI>(boost::python::arg("connectable")))
         .def("ConnectableAPI", &UsdShadeNodeGraph::ConnectableAPI)
 
         .def("CreateOutput", 
              &UsdShadeNodeGraph::CreateOutput,
-             (arg("name"), arg("typeName")))
+             (boost::python::arg("name"), boost::python::arg("typeName")))
         .def("GetOutput",
              &UsdShadeNodeGraph::GetOutput,
-             (arg("name")))
+             (boost::python::arg("name")))
         .def("GetOutputs",
              &UsdShadeNodeGraph::GetOutputs,
-             (arg("onlyAuthored") = true),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("onlyAuthored") = true),
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("ComputeOutputSource", _WrapComputeOutputSource, 
-             (arg("outputName")))
+             (boost::python::arg("outputName")))
 
         .def("CreateInput", &UsdShadeNodeGraph::CreateInput,
-             (arg("name"), arg("type")))
-        .def("GetInput", &UsdShadeNodeGraph::GetInput, arg("name"))
+             (boost::python::arg("name"), boost::python::arg("type")))
+        .def("GetInput", &UsdShadeNodeGraph::GetInput, boost::python::arg("name"))
         .def("GetInputs", &UsdShadeNodeGraph::GetInputs,
-             (arg("onlyAuthored") = true),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("onlyAuthored") = true),
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetInterfaceInputs", &UsdShadeNodeGraph::GetInterfaceInputs,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("ComputeInterfaceInputConsumersMap",
              &UsdShadeNodeGraph::ComputeInterfaceInputConsumersMap,
-             return_value_policy<TfPyMapToDictionary>(),
-             (arg("computeTransitiveConsumers")=false))
+             boost::python::return_value_policy<TfPyMapToDictionary>(),
+             (boost::python::arg("computeTransitiveConsumers")=false))
 
     ;
 }

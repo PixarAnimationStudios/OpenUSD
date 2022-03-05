@@ -60,8 +60,6 @@
 // Un-comment for extra runtime validation.
 // #define PCP_DIAGNOSTIC_VALIDATION 1
 
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -1986,7 +1984,7 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
                 err->arcType = ARC_TYPE;
                 err->layer = srcLayer;
                 if (!m.IsClean()) {
-                    vector<string> commentary;
+                    std::vector<std::string> commentary;
                     for (auto const &err: m) {
                         commentary.push_back(err.GetCommentary());
                     }

@@ -32,12 +32,11 @@
 #include <set>
 #include <string>
 
-using namespace std;
 
 namespace {
     struct _Cache {
         tbb::spin_mutex lock;
-        set<string> data;
+        std::set<std::string> data;
     };
 }
 
@@ -56,7 +55,7 @@ Tf_PythonCallContext(char const *fileName,
 {
     static _Cache cache;
 
-    string const& fullName = TfStringPrintf("%s.%s", moduleName, functionName);
+    std::string const& fullName = TfStringPrintf("%s.%s", moduleName, functionName);
 
     tbb::spin_mutex::scoped_lock lock(cache.lock);
     char const* prettyFunctionPtr = cache.data.insert(fullName).first->c_str();

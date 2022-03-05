@@ -33,9 +33,7 @@
 #include <boost/python/class.hpp>
 #include <boost/python/operators.hpp>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -47,15 +45,15 @@ PXR_NAMESPACE_USING_DIRECTIVE
 static TfStaticData<TfPyObjWrapper> _object__getattribute__;
 
 // This function gets wrapped as __getattribute__ on UsdSchemaBase.
-static object
-__getattribute__(object selfObj, const char *name) {
+static boost::python::object
+__getattribute__(boost::python::object selfObj, const char *name) {
     // Allow attribute lookups if the attribute name starts with '__', or
     // if the object's prim is valid. Also add explicit exceptions for every
     // method on this base class. The real purpose here is to protect against
     // invalid calls in subclasses which will try to actually manipulate the
     // underlying (invalid) prim and likely crash.
     if ((name[0] == '_' && name[1] == '_') ||
-        extract<UsdSchemaBase &>(selfObj)().GetPrim().IsValid() ||
+        boost::python::extract<UsdSchemaBase &>(selfObj)().GetPrim().IsValid() ||
         strcmp(name, "GetPrim") == 0 ||
         strcmp(name, "GetPath") == 0 ||
         strcmp(name, "GetSchemaClassPrimDefinition") == 0 ||
@@ -74,26 +72,26 @@ __getattribute__(object selfObj, const char *name) {
             TfStringPrintf("Accessed schema on invalid prim"));
     }
     // Unreachable.
-    return object();
+    return boost::python::object();
 }
 
 void wrapUsdSchemaBase()
 {
-    class_<UsdSchemaBase> cls("SchemaBase");
+    boost::python::class_<UsdSchemaBase> cls("SchemaBase");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("otherSchema")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("otherSchema")))
         .def(TfTypePythonClass())
 
         .def("GetPrim", &UsdSchemaBase::GetPrim)
         .def("GetPath", &UsdSchemaBase::GetPath)
         .def("GetSchemaClassPrimDefinition",
              &UsdSchemaBase::GetSchemaClassPrimDefinition,
-             return_internal_reference<>())
+             boost::python::return_internal_reference<>())
         .def("GetSchemaAttributeNames", &UsdSchemaBase::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("IsAPISchema", &UsdSchemaBase::IsAPISchema)
@@ -104,11 +102,11 @@ void wrapUsdSchemaBase()
 
         .def("GetSchemaKind", &UsdSchemaBase::GetSchemaKind)
 
-        .def(!self)
+        .def(!boost::python::self)
 
         ;
 
     // Save existing __getattribute__ and replace.
-    *_object__getattribute__ = object(cls.attr("__getattribute__"));
+    *_object__getattribute__ = boost::python::object(cls.attr("__getattribute__"));
     cls.def("__getattribute__", __getattribute__);
 }

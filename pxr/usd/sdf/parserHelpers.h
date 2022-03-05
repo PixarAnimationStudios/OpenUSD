@@ -100,7 +100,7 @@ private:
     T _Cast(In in) {
         try {
             return boost::numeric_cast<T>(in);
-        } catch (const boost::bad_numeric_cast &) {
+        } catch (const boost::numeric::bad_numeric_cast &) {
             throw boost::bad_get();
         }
     }
@@ -151,7 +151,7 @@ private:
     T _Cast(In in) {
         try {
             return boost::numeric_cast<T>(in);
-        } catch (const boost::bad_numeric_cast &) {
+        } catch (const boost::numeric::bad_numeric_cast &) {
             throw boost::bad_get();
         }
     }

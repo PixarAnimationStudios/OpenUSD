@@ -42,7 +42,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-using std::string;
 
 TF_DEFINE_PUBLIC_TOKENS(
     UsdAbcAlembicFileFormatTokens, 
@@ -75,7 +74,7 @@ UsdAbcAlembicFileFormat::InitData(const FileFormatArguments& args) const
 }
 
 bool
-UsdAbcAlembicFileFormat::CanRead(const string& filePath) const
+UsdAbcAlembicFileFormat::CanRead(const std::string& filePath) const
 {
     // XXX: Add more verification of file header magic
     auto extension = TfGetExtension(filePath);
@@ -89,7 +88,7 @@ UsdAbcAlembicFileFormat::CanRead(const string& filePath) const
 bool
 UsdAbcAlembicFileFormat::Read(
     SdfLayer* layer,
-    const string& resolvedPath,
+    const std::string& resolvedPath,
     bool metadataOnly) const
 {
     TRACE_FUNCTION();

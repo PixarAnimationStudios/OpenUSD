@@ -32,7 +32,6 @@
 #include <boost/python.hpp>
 
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -40,7 +39,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 
-tuple
+boost::python::tuple
 _Validate(const UsdSkelTopology& self)
 {
     std::string reason;
@@ -56,17 +55,17 @@ void wrapUsdSkelTopology()
 {
     using This = UsdSkelTopology;
 
-    class_<This>("Topology", no_init)
-        .def(init<const SdfPathVector&>())
-        .def(init<const VtTokenArray&>())
-        .def(init<VtIntArray>())
+    boost::python::class_<This>("Topology", boost::python::no_init)
+        .def(boost::python::init<const SdfPathVector&>())
+        .def(boost::python::init<const VtTokenArray&>())
+        .def(boost::python::init<VtIntArray>())
 
         .def("GetParent", &This::GetParent)
 
         .def("IsRoot", &This::IsRoot)
         
         .def("GetParentIndices", &This::GetParentIndices,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("GetNumJoints", &This::GetNumJoints)
 

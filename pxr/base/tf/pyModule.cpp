@@ -54,9 +54,7 @@
 
 #include <string>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -66,12 +64,12 @@ public:
     typedef Tf_ModuleProcessor This;
 
     using WalkCallbackFn =
-        bool (This::*) (char const *, object const &, object const &);
+        bool (This::*) (char const *, boost::python::object const &, boost::python::object const &);
 
-    inline bool IsBoostPythonFunc(object const &obj)
+    inline bool IsBoostPythonFunc(boost::python::object const &obj)
     {
         if (!_cachedBPFuncType) {
-            handle<> typeStr(PyObject_Str((PyObject *)obj.ptr()->ob_type));
+            boost::python::handle<> typeStr(PyObject_Str((PyObject *)obj.ptr()->ob_type));
             if (strstr(TfPyString_AsString(typeStr.get()), "Boost.Python.function")) {
                 _cachedBPFuncType = (PyObject *)obj.ptr()->ob_type;
                 return true;
@@ -81,10 +79,10 @@ public:
         return (PyObject *)obj.ptr()->ob_type == _cachedBPFuncType;
     }
 
-    inline bool IsBoostPythonClass(object const &obj)
+    inline bool IsBoostPythonClass(boost::python::object const &obj)
     { 
         if (!_cachedBPClassType) {
-            handle<> typeStr(PyObject_Str((PyObject *)obj.ptr()->ob_type));
+            boost::python::handle<> typeStr(PyObject_Str((PyObject *)obj.ptr()->ob_type));
             if (strstr(TfPyString_AsString(typeStr.get()), "Boost.Python.class")) {
                 _cachedBPClassType = (PyObject *)obj.ptr()->ob_type;
                 return true;
@@ -94,23 +92,23 @@ public:
         return (PyObject *)obj.ptr()->ob_type == _cachedBPClassType;
     }
 
-    inline bool IsProperty(object const &obj)
+    inline bool IsProperty(boost::python::object const &obj)
     {
         return PyObject_TypeCheck(obj.ptr(), &PyProperty_Type);
     }
 
-    inline bool IsStaticMethod(object const &obj)
+    inline bool IsStaticMethod(boost::python::object const &obj)
     {
         return PyObject_TypeCheck(obj.ptr(), &PyStaticMethod_Type);
     }
     
-    inline bool IsClassMethod(object const &obj)
+    inline bool IsClassMethod(boost::python::object const &obj)
     { 
         return PyObject_TypeCheck(obj.ptr(), &PyClassMethod_Type);
     }
 
 private:
-    void _WalkModule(object const &obj, WalkCallbackFn callback,
+    void _WalkModule(boost::python::object const &obj, WalkCallbackFn callback,
                      TfHashSet<PyObject *, TfHash> *visitedObjs)
     {
         if (PyObject_HasAttrString(obj.ptr(), "__dict__")) {
@@ -122,16 +120,16 @@ private:
             // dict_items instead
             //
             // A workaround is to use the boost::python::list constructor
-            object items_view = obj.attr("__dict__").attr("items")();
-            list items(items_view);
+            boost::python::object items_view = obj.attr("__dict__").attr("items")();
+            boost::python::list items(items_view);
 #else
             list items = extract<list>(obj.attr("__dict__").attr("items")());
 #endif
-            size_t lenItems = len(items);
+            size_t lenItems = boost::python::len(items);
             for (size_t i = 0; i < lenItems; ++i) {
-                object value = items[i][1];
+                boost::python::object value = items[i][1];
                 if (!visitedObjs->count(value.ptr())) {
-                    const std::string name = TfPyString_AsString(object(items[i][0]).ptr());
+                    const std::string name = TfPyString_AsString(boost::python::object(items[i][0]).ptr());
                     bool keepGoing = (this->*callback)(name.c_str(), obj, value);
                     visitedObjs->insert(value.ptr());
                     if (IsBoostPythonClass(value) && keepGoing) {
@@ -143,7 +141,7 @@ private:
     }
 
 public:
-    void WalkModule(object const &obj, WalkCallbackFn callback)
+    void WalkModule(boost::python::object const &obj, WalkCallbackFn callback)
     {
         TfHashSet<PyObject *, TfHash> visited;
         _WalkModule(obj, callback, &visited);
@@ -152,15 +150,15 @@ public:
     class _InvokeWithErrorHandling
     {
     public:
-        _InvokeWithErrorHandling(object const &fn,
-                                 string const &funcName,
-                                 string const &fileName)
+        _InvokeWithErrorHandling(boost::python::object const &fn,
+                                 std::string const &funcName,
+                                 std::string const &fileName)
             : _fn(fn)
             , _funcName(funcName)
             , _fileName(fileName)
         {}
 
-        handle<> operator()(tuple const &args, dict const &kw) const {
+        boost::python::handle<> operator()(boost::python::tuple const &args, boost::python::dict const &kw) const {
 
             // Fabricate a python tracing event to record the python -> c++ ->
             // python transition.
@@ -178,7 +176,7 @@ public:
             TfErrorMark m;
 
             // Call the function.
-            handle<> ret(allow_null(
+            boost::python::handle<> ret(boost::python::allow_null(
                              PyObject_Call(_fn.ptr(), args.ptr(), kw.ptr())));
 
             // Fabricate the return tracing event.
@@ -189,14 +187,14 @@ public:
             // python.
             if (ARCH_UNLIKELY(!ret)) {
                 TF_VERIFY(PyErr_Occurred());
-                throw_error_already_set();
+                boost::python::throw_error_already_set();
             }
 
             // If the call completed successfully, then we need to see if any tf
             // errors occurred, and if so, convert them to python exceptions.
             if (ARCH_UNLIKELY(!m.IsClean() &&
                               TfPyConvertTfErrorsToPythonException(m))) {
-                throw_error_already_set();
+                boost::python::throw_error_already_set();
             }
 
             // Otherwise everything was clean -- return the result.
@@ -204,21 +202,21 @@ public:
         }
 
     private:
-        object _fn;
+        boost::python::object _fn;
         std::string _funcName;
         std::string _fileName;
     };
 
-    object DecorateForErrorHandling(
-        const char *name, object const &owner, object const &fn)
+    boost::python::object DecorateForErrorHandling(
+        const char *name, boost::python::object const &owner, boost::python::object const &fn)
     {
-        object ret = fn;
+        boost::python::object ret = fn;
         if (ARCH_LIKELY(fn.ptr() != Py_None)) {
             // Make a new function, and bind in the tracing info, funcname and
             // filename.  The perhaps slighly unusual string operations are for
             // performance reasons.
-            string *fullNamePrefix = &_newModuleName;
-            string localPrefix;
+            std::string *fullNamePrefix = &_newModuleName;
+            std::string localPrefix;
             if (PyObject_HasAttrString(owner.ptr(), "__module__")) {
                 char const *ownerName =
                     TfPyString_AsString(PyObject_GetAttrString
@@ -229,7 +227,7 @@ public:
                 fullNamePrefix = &localPrefix;
             }
 
-            ret = raw_function(
+            ret = boost::python::raw_function(
                 _InvokeWithErrorHandling(
                     fn, *fullNamePrefix + "." + name, *fullNamePrefix));
 
@@ -239,16 +237,16 @@ public:
         return ret;
     }
 
-    inline object ReplaceFunctionOnOwner(char const *name, object owner, object fn)
+    inline boost::python::object ReplaceFunctionOnOwner(char const *name, boost::python::object owner, boost::python::object fn)
     {
-        object newFn = DecorateForErrorHandling(name, owner, fn);
+        boost::python::object newFn = DecorateForErrorHandling(name, owner, fn);
         PyObject_DelAttrString(owner.ptr(), name);
-        objects::function::add_to_namespace(owner, name, newFn);
+        boost::python::objects::function::add_to_namespace(owner, name, newFn);
         return newFn;
     }
     
     bool WrapForErrorHandlingCB(
-        char const *name, object const &owner, object const &obj)
+        char const *name, boost::python::object const &owner, boost::python::object const &obj)
     {
         // Handle no-throw list stuff...
         if (!strcmp(name, "RepostErrors") || 
@@ -282,40 +280,40 @@ public:
                 // property.  For now, just not wrapping static properties with
                 // error handling.
             } else {
-                object propType(handle<>(borrowed(&PyProperty_Type)));
-                object newfget =
+                boost::python::object propType(boost::python::handle<>(boost::python::borrowed(&PyProperty_Type)));
+                boost::python::object newfget =
                     DecorateForErrorHandling(name, owner, obj.attr("fget"));
-                object newfset =
+                boost::python::object newfset =
                     DecorateForErrorHandling(name, owner, obj.attr("fset"));
-                object newfdel =
+                boost::python::object newfdel =
                     DecorateForErrorHandling(name, owner, obj.attr("fdel"));
-                object newProp =
+                boost::python::object newProp =
                     propType(newfget, newfset, newfdel,
-                             object(obj.attr("__doc__")));
-                setattr(owner, name, newProp);
+                             boost::python::object(obj.attr("__doc__")));
+                boost::python::api::setattr(owner, name, newProp);
             }
             return false;
         } else if (IsStaticMethod(obj)) {
-            object underlyingFn = obj.attr("__get__")(owner);
+            boost::python::object underlyingFn = obj.attr("__get__")(owner);
             if (IsBoostPythonFunc(underlyingFn)) {
                 // Replace owner's name attribute with a new staticmethod,
                 // decorating the underlying function.
-                object newFn =
+                boost::python::object newFn =
                     ReplaceFunctionOnOwner(name, owner, underlyingFn);
-                setattr(owner, name,
-                    object(handle<>(PyStaticMethod_New(newFn.ptr()))));
+                boost::python::api::setattr(owner, name,
+                    boost::python::object(boost::python::handle<>(PyStaticMethod_New(newFn.ptr()))));
             }
             return false;
         } else if (IsClassMethod(obj)) {
-            object underlyingFn =
+            boost::python::object underlyingFn =
                 obj.attr("__get__")(owner).attr(TfPyClassMethodFuncName);
             if (IsBoostPythonFunc(underlyingFn)) {
                 // Replace owner's name attribute with a new classmethod, decorating
                 // the underlying function.
-                object newFn =
+                boost::python::object newFn =
                     ReplaceFunctionOnOwner(name, owner, underlyingFn);
-                setattr(owner, name,
-                    object(handle<>(PyClassMethod_New(newFn.ptr()))));
+                boost::python::api::setattr(owner, name,
+                    boost::python::object(boost::python::handle<>(PyClassMethod_New(newFn.ptr()))));
             }
             return false;
         }
@@ -329,7 +327,7 @@ public:
 
 
     bool FixModuleAttrsCB(
-        char const *name, object const& owner, object const &obj)
+        char const *name, boost::python::object const& owner, boost::python::object const &obj)
     {
         if (PyObject_HasAttrString(obj.ptr(), "__module__")) {
             PyObject_SetAttrString(obj.ptr(), "__module__",
@@ -349,24 +347,24 @@ public:
     }
 
 
-    Tf_ModuleProcessor(object const &module)
+    Tf_ModuleProcessor(boost::python::object const &module)
         : _module(module)
         , _cachedBPFuncType(0)
         , _cachedBPClassType(0)
     {
-        auto obj = object(module.attr("__name__"));
+        auto obj = boost::python::object(module.attr("__name__"));
         _oldModuleName =
             TfPyString_AsString(obj.ptr());
         _newModuleName = TfStringGetBeforeSuffix(_oldModuleName);
-        _newModuleNameObj = object(_newModuleName);
+        _newModuleNameObj = boost::python::object(_newModuleName);
     }
 
 private:
 
-    string _oldModuleName, _newModuleName;
-    object _newModuleNameObj;
+    std::string _oldModuleName, _newModuleName;
+    boost::python::object _newModuleNameObj;
 
-    object _module;
+    boost::python::object _module;
 
     PyObject *_cachedBPFuncType;
     PyObject *_cachedBPClassType;
@@ -377,15 +375,15 @@ void Tf_PyPostProcessModule()
 {
     // First fix up module names for classes, the wrap all functions with proper
     // error handling.
-    scope module;
+    boost::python::scope module;
     try {
         Tf_ModuleProcessor mp(module);
         mp.FixModuleAttrs();
         mp.WrapForErrorHandling();
         if (PyErr_Occurred())
-            throw_error_already_set();
-    } catch (error_already_set const &) {
-        string name = extract<string>(module.attr("__name__"));
+            boost::python::throw_error_already_set();
+    } catch (boost::python::error_already_set const &) {
+        std::string name = boost::python::extract<std::string>(module.attr("__name__"));
         TF_WARN("Error occurred postprocessing module %s!", name.c_str());
         TfPyPrintError();
     }
@@ -409,7 +407,7 @@ void Tf_PyInitWrapModule(
     TfScriptModuleLoader::GetInstance().
         LoadModulesForLibrary(TfToken(packageName));
     if (PyErr_Occurred()) {
-        throw_error_already_set();
+        boost::python::throw_error_already_set();
     }
 
     TfAutoMallocTag2 tag2(packageTag2, "WrapModule");

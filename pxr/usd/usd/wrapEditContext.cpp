@@ -29,7 +29,6 @@
 
 #include <memory>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -40,7 +39,7 @@ struct Usd_PyEditContextAccess {
             std::make_shared<UsdEditContext>(self._stage);
     }
 
-    static void __exit__(UsdPyEditContext &self, object, object, object) {
+    static void __exit__(UsdPyEditContext &self, boost::python::object, boost::python::object, boost::python::object) {
         self._editContext.reset();
     }
 };
@@ -51,10 +50,10 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdEditContext()
 {
-    class_<UsdPyEditContext>(
-        "EditContext", init<UsdStagePtr, optional<UsdEditTarget> >(
-            (arg("stage"), arg("editTarget")=UsdEditTarget())))
-        .def("__enter__", &Usd_PyEditContextAccess::__enter__, return_self<>())
+    boost::python::class_<UsdPyEditContext>(
+        "EditContext", boost::python::init<UsdStagePtr, boost::python::optional<UsdEditTarget> >(
+            (boost::python::arg("stage"), boost::python::arg("editTarget")=UsdEditTarget())))
+        .def("__enter__", &Usd_PyEditContextAccess::__enter__, boost::python::return_self<>())
         .def("__exit__", &Usd_PyEditContextAccess::__exit__)
         ;
 }

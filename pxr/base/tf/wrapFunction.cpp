@@ -29,7 +29,6 @@
 
 #include <string>
 
-using namespace boost;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -40,5 +39,5 @@ void wrapFunction() {
     TfPyFunctionFromPython<long ()>();
     TfPyFunctionFromPython<double ()>();
     TfPyFunctionFromPython<std::string ()>();
-    TfPyFunctionFromPython<python::object ()>();
+    TfPyFunctionFromPython<boost::python::object ()>();
 }

@@ -27,7 +27,6 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 
-using namespace boost::python;
 
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -36,8 +35,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 void
 wrapCamera()
 {
-    def(
+    boost::python::def(
         "GetCameraAtPath",
         UsdAppUtilsGetCameraAtPath,
-        (arg("stage"), arg("cameraPath")));
+        (boost::python::arg("stage"), boost::python::arg("cameraPath")));
 }

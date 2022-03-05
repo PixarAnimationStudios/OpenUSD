@@ -25,7 +25,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/patternMatcher.h"
 
-using namespace std;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -37,7 +36,7 @@ TfPatternMatcher::TfPatternMatcher() :
 }
 
 
-TfPatternMatcher::TfPatternMatcher( const string &pattern,
+TfPatternMatcher::TfPatternMatcher( const std::string &pattern,
                                     bool caseSensitive, bool isGlob ) :
     _caseSensitive( caseSensitive ),
     _isGlob( isGlob ),
@@ -53,7 +52,7 @@ TfPatternMatcher::~TfPatternMatcher()
 }
 
 
-string
+std::string
 TfPatternMatcher::GetInvalidReason() const
 {
     _Compile();
@@ -68,7 +67,7 @@ TfPatternMatcher::IsValid() const
 }
 
 bool
-TfPatternMatcher::Match( const string &query, string *errorMsg ) const
+TfPatternMatcher::Match( const std::string &query, std::string *errorMsg ) const
 {
     if( IsValid() ) {
         if( errorMsg ) {
@@ -105,7 +104,7 @@ TfPatternMatcher::SetIsGlobPattern( bool isGlob )
 
 
 void
-TfPatternMatcher::SetPattern( const string &pattern )
+TfPatternMatcher::SetPattern( const std::string &pattern )
 {
     if( pattern != _pattern ) {
         _recompile = true;

@@ -45,9 +45,7 @@
 #include <boost/python/class.hpp>
 #include <boost/python/tuple.hpp>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -78,22 +76,22 @@ _Export(const UsdStagePtr &self, const std::string& filename,
     return self->Export(filename, addSourceFileComment, args);
 }
 
-static string
+static std::string
 _ExportToString(const UsdStagePtr &self, bool addSourceFileComment=true)
 {
-    string result;
+    std::string result;
     self->ExportToString(&result, addSourceFileComment);
     return result;
 }
 
-static string
+static std::string
 __repr__(const UsdStagePtr &self)
 {
     if (self.IsExpired()) {
         return "invalid " + UsdDescribe(self);
     }
     
-    string result = TF_PY_REPR_PREFIX + TfStringPrintf(
+    std::string result = TF_PY_REPR_PREFIX + TfStringPrintf(
         "Stage.Open(rootLayer=%s, sessionLayer=%s",
         TfPyRepr(self->GetRootLayer()).c_str(),
         TfPyRepr(self->GetSessionLayer()).c_str());
@@ -118,7 +116,7 @@ _GetMetadata(const UsdStagePtr &self, const TfToken &key)
 }
 
 static bool _SetMetadata(const UsdStagePtr &self, const TfToken& key,
-                         object obj) {
+                         boost::python::object obj) {
     VtValue value;
     return UsdPythonToMetadataValue(key, /*keyPath*/TfToken(), obj, &value) &&
         self->SetMetadata(key, value);
@@ -136,14 +134,14 @@ _GetMetadataByDictKey(const UsdStagePtr &self,
 }
 
 static bool _SetMetadataByDictKey(const UsdStagePtr &self, const TfToken& key,
-                                  const TfToken &keyPath, object obj) {
+                                  const TfToken &keyPath, boost::python::object obj) {
     VtValue value;
     return UsdPythonToMetadataValue(key, keyPath, obj, &value) &&
         self->SetMetadataByDictKey(key, keyPath, value);
 }
 
 static void
-_SetGlobalVariantFallbacks(const dict& d)
+_SetGlobalVariantFallbacks(const boost::python::dict& d)
 {
     PcpVariantFallbackMap fallbacks;
     if (PcpVariantFallbackMapFromPython(d, &fallbacks)) {
@@ -182,7 +180,7 @@ _ExpandPopulationMask(UsdStage &self,
     return self.ExpandPopulationMask(relPred, attrPred);
 }
 
-static object 
+static boost::python::object 
 _GetColorConfigFallbacks()
 {
     SdfAssetPath colorConfiguration;
@@ -198,204 +196,204 @@ void wrapUsdStage()
 {
     typedef TfWeakPtr<UsdStage> StagePtr;
 
-    class_<UsdStage, StagePtr, boost::noncopyable>
-        cls("Stage", no_init)
+    boost::python::class_<UsdStage, StagePtr, boost::noncopyable>
+        cls("Stage", boost::python::no_init)
         ;
 
     // Expose the UsdStage::InitialLoadSet enum under the Usd.Stage scope.
     // We need to do this here because we use enum values as default
     // parameters to other wrapped functions.
-    scope s = cls;
+    boost::python::scope s = cls;
     TfPyWrapEnum<UsdStage::InitialLoadSet>();
 
     cls
         .def(TfPyRefAndWeakPtr())
         .def("__repr__", __repr__)
 
-        .def("CreateNew", (UsdStageRefPtr (*)(const string &,
+        .def("CreateNew", (UsdStageRefPtr (*)(const std::string &,
                                               UsdStage::InitialLoadSet))
              &UsdStage::CreateNew,
-             (arg("identifier"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
-        .def("CreateNew", (UsdStageRefPtr (*)(const string &,
+             (boost::python::arg("identifier"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
+        .def("CreateNew", (UsdStageRefPtr (*)(const std::string &,
                                               const SdfLayerHandle &,
                                               UsdStage::InitialLoadSet))
              &UsdStage::CreateNew,
-             (arg("identifier"), 
-              arg("sessionLayer"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
-        .def("CreateNew", (UsdStageRefPtr (*)(const string &,
+             (boost::python::arg("identifier"), 
+              boost::python::arg("sessionLayer"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
+        .def("CreateNew", (UsdStageRefPtr (*)(const std::string &,
                                               const ArResolverContext &,
                                               UsdStage::InitialLoadSet))
              &UsdStage::CreateNew,
-             (arg("identifier"), 
-              arg("pathResolverContext"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
-        .def("CreateNew", (UsdStageRefPtr (*)(const string &,
+             (boost::python::arg("identifier"), 
+              boost::python::arg("pathResolverContext"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
+        .def("CreateNew", (UsdStageRefPtr (*)(const std::string &,
                                               const SdfLayerHandle &,
                                               const ArResolverContext &,
                                               UsdStage::InitialLoadSet))
              &UsdStage::CreateNew,
-             (arg("identifier"), 
-              arg("sessionLayer"),
-              arg("pathResolverContext"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("identifier"), 
+              boost::python::arg("sessionLayer"),
+              boost::python::arg("pathResolverContext"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .staticmethod("CreateNew")
 
         .def("CreateInMemory", (UsdStageRefPtr (*)(
                                     UsdStage::InitialLoadSet))
              &UsdStage::CreateInMemory,
-             (arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .def("CreateInMemory", (UsdStageRefPtr (*)(
-                                    const string &,
+                                    const std::string &,
                                     UsdStage::InitialLoadSet))
              &UsdStage::CreateInMemory,
-             (arg("identifier"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("identifier"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .def("CreateInMemory", (UsdStageRefPtr (*)(
-                                    const string &,
+                                    const std::string &,
                                     const ArResolverContext &,
                                     UsdStage::InitialLoadSet))
              &UsdStage::CreateInMemory,
-             (arg("identifier"), 
-              arg("pathResolverContext"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("identifier"), 
+              boost::python::arg("pathResolverContext"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .def("CreateInMemory", (UsdStageRefPtr (*)(
-                                    const string &,
+                                    const std::string &,
                                     const SdfLayerHandle &,
                                     UsdStage::InitialLoadSet))
              &UsdStage::CreateInMemory,
-             (arg("identifier"), 
-              arg("sessionLayer"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("identifier"), 
+              boost::python::arg("sessionLayer"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .def("CreateInMemory", (UsdStageRefPtr (*)(
-                                    const string &,
+                                    const std::string &,
                                     const SdfLayerHandle &,
                                     const ArResolverContext &,
                                     UsdStage::InitialLoadSet))
              &UsdStage::CreateInMemory,
-             (arg("identifier"),
-              arg("sessionLayer"),
-              arg("pathResolverContext"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("identifier"),
+              boost::python::arg("sessionLayer"),
+              boost::python::arg("pathResolverContext"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .staticmethod("CreateInMemory")
 
-        .def("Open", (UsdStageRefPtr (*)(const string &, 
+        .def("Open", (UsdStageRefPtr (*)(const std::string &, 
                                          UsdStage::InitialLoadSet))
              &UsdStage::Open,
-             (arg("filePath"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
-        .def("Open", (UsdStageRefPtr (*)(const string &,
+             (boost::python::arg("filePath"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
+        .def("Open", (UsdStageRefPtr (*)(const std::string &,
                                          const ArResolverContext &, 
                                          UsdStage::InitialLoadSet))
              &UsdStage::Open,
-             (arg("filePath"),
-              arg("pathResolverContext"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("filePath"),
+              boost::python::arg("pathResolverContext"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
 
         .def("Open", (UsdStageRefPtr (*)(const SdfLayerHandle &, 
                                          UsdStage::InitialLoadSet))
              &UsdStage::Open,
-             (arg("rootLayer"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("rootLayer"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .def("Open", (UsdStageRefPtr (*)(const SdfLayerHandle &,
                                          const SdfLayerHandle &, 
                                          UsdStage::InitialLoadSet))
              &UsdStage::Open,
-             (arg("rootLayer"),
-              arg("sessionLayer"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("rootLayer"),
+              boost::python::arg("sessionLayer"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .def("Open", (UsdStageRefPtr (*)(const SdfLayerHandle &,
                                          const ArResolverContext &, 
                                          UsdStage::InitialLoadSet))
              &UsdStage::Open,
-             (arg("rootLayer"),
-              arg("pathResolverContext"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("rootLayer"),
+              boost::python::arg("pathResolverContext"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .def("Open", (UsdStageRefPtr (*)(const SdfLayerHandle &,
                                          const SdfLayerHandle &,
                                          const ArResolverContext &, 
                                          UsdStage::InitialLoadSet))
              &UsdStage::Open,
-             (arg("rootLayer"),
-              arg("sessionLayer"),
-              arg("pathResolverContext"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("rootLayer"),
+              boost::python::arg("sessionLayer"),
+              boost::python::arg("pathResolverContext"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .staticmethod("Open")
 
-        .def("OpenMasked", (UsdStageRefPtr (*)(const string &, 
+        .def("OpenMasked", (UsdStageRefPtr (*)(const std::string &, 
                                                const UsdStagePopulationMask &,
                                                UsdStage::InitialLoadSet))
              &UsdStage::OpenMasked,
-             (arg("filePath"),
-              arg("mask"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
-        .def("OpenMasked", (UsdStageRefPtr (*)(const string &,
+             (boost::python::arg("filePath"),
+              boost::python::arg("mask"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
+        .def("OpenMasked", (UsdStageRefPtr (*)(const std::string &,
                                                const ArResolverContext &, 
                                                const UsdStagePopulationMask &,
                                                UsdStage::InitialLoadSet))
              &UsdStage::OpenMasked,
-             (arg("filePath"),
-              arg("pathResolverContext"),
-              arg("mask"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("filePath"),
+              boost::python::arg("pathResolverContext"),
+              boost::python::arg("mask"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .def("OpenMasked", (UsdStageRefPtr (*)(const SdfLayerHandle &,
                                                const UsdStagePopulationMask &,
                                                UsdStage::InitialLoadSet))
              &UsdStage::OpenMasked,
-             (arg("rootLayer"),
-              arg("mask"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("rootLayer"),
+              boost::python::arg("mask"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .def("OpenMasked", (UsdStageRefPtr (*)(const SdfLayerHandle &,
                                                const SdfLayerHandle &, 
                                                const UsdStagePopulationMask &,
                                                UsdStage::InitialLoadSet))
              &UsdStage::OpenMasked,
-             (arg("rootLayer"),
-              arg("sessionLayer"),
-              arg("mask"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("rootLayer"),
+              boost::python::arg("sessionLayer"),
+              boost::python::arg("mask"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .def("OpenMasked", (UsdStageRefPtr (*)(const SdfLayerHandle &,
                                                const ArResolverContext &, 
                                                const UsdStagePopulationMask &,
                                                UsdStage::InitialLoadSet))
              &UsdStage::OpenMasked,
-             (arg("rootLayer"),
-              arg("pathResolverContext"),
-              arg("mask"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("rootLayer"),
+              boost::python::arg("pathResolverContext"),
+              boost::python::arg("mask"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .def("OpenMasked", (UsdStageRefPtr (*)(const SdfLayerHandle &,
                                                const SdfLayerHandle &,
                                                const ArResolverContext &, 
                                                const UsdStagePopulationMask &,
                                                UsdStage::InitialLoadSet))
              &UsdStage::OpenMasked,
-             (arg("rootLayer"),
-              arg("sessionLayer"),
-              arg("pathResolverContext"),
-              arg("mask"),
-              arg("load")=UsdStage::LoadAll),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             (boost::python::arg("rootLayer"),
+              boost::python::arg("sessionLayer"),
+              boost::python::arg("pathResolverContext"),
+              boost::python::arg("mask"),
+              boost::python::arg("load")=UsdStage::LoadAll),
+             boost::python::return_value_policy<TfPyRefPtrFactory<> >())
         .staticmethod("OpenMasked")
         
         .def("Reload", &UsdStage::Reload)
@@ -406,110 +404,110 @@ void wrapUsdStage()
 
         .def("GetGlobalVariantFallbacks",
              &UsdStage::GetGlobalVariantFallbacks,
-             return_value_policy<TfPyMapToDictionary>())
+             boost::python::return_value_policy<TfPyMapToDictionary>())
         .staticmethod("GetGlobalVariantFallbacks")
         .def("SetGlobalVariantFallbacks", &_SetGlobalVariantFallbacks)
         .staticmethod("SetGlobalVariantFallbacks")
 
         .def("Load", &UsdStage::Load,
-             (arg("path")=SdfPath::AbsoluteRootPath(),
-              arg("policy")=UsdLoadWithDescendants))
+             (boost::python::arg("path")=SdfPath::AbsoluteRootPath(),
+              boost::python::arg("policy")=UsdLoadWithDescendants))
 
         .def("Unload", &UsdStage::Unload,
-             arg("path")=SdfPath::AbsoluteRootPath())
+             boost::python::arg("path")=SdfPath::AbsoluteRootPath())
 
         .def("LoadAndUnload", &UsdStage::LoadAndUnload,
-             (arg("loadSet"), arg("unloadSet"),
-              arg("policy")=UsdLoadWithDescendants))
+             (boost::python::arg("loadSet"), boost::python::arg("unloadSet"),
+              boost::python::arg("policy")=UsdLoadWithDescendants))
 
         .def("GetLoadSet", &UsdStage::GetLoadSet,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("FindLoadable", &UsdStage::FindLoadable,
-             arg("rootPath")=SdfPath::AbsoluteRootPath(),
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("rootPath")=SdfPath::AbsoluteRootPath(),
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("GetLoadRules", &UsdStage::GetLoadRules,
-             return_value_policy<return_by_value>())
-        .def("SetLoadRules", &UsdStage::SetLoadRules, arg("rules"))
+             boost::python::return_value_policy<boost::python::return_by_value>())
+        .def("SetLoadRules", &UsdStage::SetLoadRules, boost::python::arg("rules"))
 
         .def("GetPopulationMask", &UsdStage::GetPopulationMask)
-        .def("SetPopulationMask", &UsdStage::SetPopulationMask, arg("mask"))
+        .def("SetPopulationMask", &UsdStage::SetPopulationMask, boost::python::arg("mask"))
         .def("ExpandPopulationMask", &_ExpandPopulationMask,
-             (arg("relationshipPredicate")=object(),
-              arg("attributePredicate")=object()))
+             (boost::python::arg("relationshipPredicate")=boost::python::object(),
+              boost::python::arg("attributePredicate")=boost::python::object()))
 
         .def("GetPseudoRoot", &UsdStage::GetPseudoRoot)
 
         .def("GetDefaultPrim", &UsdStage::GetDefaultPrim)
-        .def("SetDefaultPrim", &UsdStage::SetDefaultPrim, arg("prim"))
+        .def("SetDefaultPrim", &UsdStage::SetDefaultPrim, boost::python::arg("prim"))
         .def("ClearDefaultPrim", &UsdStage::ClearDefaultPrim)
         .def("HasDefaultPrim", &UsdStage::HasDefaultPrim)
 
-        .def("GetPrimAtPath", &UsdStage::GetPrimAtPath, arg("path"))
-        .def("GetObjectAtPath", &UsdStage::GetObjectAtPath, arg("path"))
-        .def("GetPropertyAtPath", &UsdStage::GetPropertyAtPath, arg("path"))
-        .def("GetAttributeAtPath", &UsdStage::GetAttributeAtPath, arg("path"))
-        .def("GetRelationshipAtPath", &UsdStage::GetRelationshipAtPath, arg("path"))
+        .def("GetPrimAtPath", &UsdStage::GetPrimAtPath, boost::python::arg("path"))
+        .def("GetObjectAtPath", &UsdStage::GetObjectAtPath, boost::python::arg("path"))
+        .def("GetPropertyAtPath", &UsdStage::GetPropertyAtPath, boost::python::arg("path"))
+        .def("GetAttributeAtPath", &UsdStage::GetAttributeAtPath, boost::python::arg("path"))
+        .def("GetRelationshipAtPath", &UsdStage::GetRelationshipAtPath, boost::python::arg("path"))
         .def("Traverse", (UsdPrimRange (UsdStage::*)())
              &UsdStage::Traverse)
         .def("Traverse",
              (UsdPrimRange (UsdStage::*)(const Usd_PrimFlagsPredicate &))
-             &UsdStage::Traverse, arg("predicate"))
+             &UsdStage::Traverse, boost::python::arg("predicate"))
         .def("TraverseAll", &UsdStage::TraverseAll)
 
-        .def("OverridePrim", &UsdStage::OverridePrim, arg("path"))
+        .def("OverridePrim", &UsdStage::OverridePrim, boost::python::arg("path"))
         .def("DefinePrim", &UsdStage::DefinePrim,
-             (arg("path"), arg("typeName")=TfToken()))
-        .def("CreateClassPrim", &UsdStage::CreateClassPrim, arg("rootPrimPath"))
+             (boost::python::arg("path"), boost::python::arg("typeName")=TfToken()))
+        .def("CreateClassPrim", &UsdStage::CreateClassPrim, boost::python::arg("rootPrimPath"))
 
-        .def("RemovePrim", &UsdStage::RemovePrim, arg("path"))
+        .def("RemovePrim", &UsdStage::RemovePrim, boost::python::arg("path"))
 
         .def("GetSessionLayer", &UsdStage::GetSessionLayer)
         .def("GetRootLayer", &UsdStage::GetRootLayer)
         .def("GetPathResolverContext", &UsdStage::GetPathResolverContext)
         .def("ResolveIdentifierToEditTarget",
-             &UsdStage::ResolveIdentifierToEditTarget, arg("identifier"))
+             &UsdStage::ResolveIdentifierToEditTarget, boost::python::arg("identifier"))
         .def("GetLayerStack", &UsdStage::GetLayerStack,
-             arg("includeSessionLayers")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeSessionLayers")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetUsedLayers", &UsdStage::GetUsedLayers,
-             arg("includeClipLayers")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeClipLayers")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
 
-        .def("HasLocalLayer", &UsdStage::HasLocalLayer, arg("layer"))
+        .def("HasLocalLayer", &UsdStage::HasLocalLayer, boost::python::arg("layer"))
 
         .def("GetEditTarget", &UsdStage::GetEditTarget,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .def("GetEditTargetForLocalLayer", &_GetEditTargetForLocalLayerIndex,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .def("GetEditTargetForLocalLayer", &_GetEditTargetForLocalLayer,
-             return_value_policy<return_by_value>())
-        .def("SetEditTarget", &UsdStage::SetEditTarget, arg("editTarget"))
+             boost::python::return_value_policy<boost::python::return_by_value>())
+        .def("SetEditTarget", &UsdStage::SetEditTarget, boost::python::arg("editTarget"))
 
         .def("MuteLayer", &UsdStage::MuteLayer,
-             (arg("layerIdentifier")))
+             (boost::python::arg("layerIdentifier")))
         .def("UnmuteLayer", &UsdStage::UnmuteLayer,
-             (arg("layerIdentifier")))
+             (boost::python::arg("layerIdentifier")))
         .def("MuteAndUnmuteLayers", &UsdStage::MuteAndUnmuteLayers,
-             (arg("muteLayers"),
-              arg("unmuteLayers")))
+             (boost::python::arg("muteLayers"),
+              boost::python::arg("unmuteLayers")))
         .def("GetMutedLayers", &UsdStage::GetMutedLayers,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("IsLayerMuted", &UsdStage::IsLayerMuted,
-             (arg("layerIdentifier")))
+             (boost::python::arg("layerIdentifier")))
 
         .def("Export", &_Export,
-             (arg("filename"), 
-              arg("addSourceFileComment")=true,
-              arg("args") = boost::python::dict()))
+             (boost::python::arg("filename"), 
+              boost::python::arg("addSourceFileComment")=true,
+              boost::python::arg("args") = boost::python::dict()))
 
         .def("ExportToString", _ExportToString,
-             arg("addSourceFileComment")=true)
+             boost::python::arg("addSourceFileComment")=true)
 
         .def("Flatten", &UsdStage::Flatten,
-             (arg("addSourceFileComment")=true),
-             return_value_policy<TfPyRefPtrFactory<SdfLayerHandle> >())
+             (boost::python::arg("addSourceFileComment")=true),
+             boost::python::return_value_policy<TfPyRefPtrFactory<SdfLayerHandle> >())
 
         .def("GetMetadata", &_GetMetadata)
         .def("HasMetadata", &UsdStage::HasMetadata)
@@ -547,20 +545,20 @@ void wrapUsdStage()
         .staticmethod("GetColorConfigFallbacks")
 
         .def("SetColorConfigFallbacks", &UsdStage::SetColorConfigFallbacks,
-            (arg("colorConfiguration")=SdfAssetPath(), 
-             arg("colorManagementSystem")=TfToken()))
+            (boost::python::arg("colorConfiguration")=SdfAssetPath(), 
+             boost::python::arg("colorManagementSystem")=TfToken()))
         .staticmethod("SetColorConfigFallbacks")        
             
         .def("GetInterpolationType", &UsdStage::GetInterpolationType)
         .def("SetInterpolationType", &UsdStage::SetInterpolationType)
-        .def("IsSupportedFile", &UsdStage::IsSupportedFile, arg("filePath"))
+        .def("IsSupportedFile", &UsdStage::IsSupportedFile, boost::python::arg("filePath"))
         .staticmethod("IsSupportedFile")
 
         .def("GetPrototypes", &UsdStage::GetPrototypes,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("_GetPcpCache", &Usd_PcpCacheAccess::GetPcpCache,
-             return_internal_reference<>())
+             boost::python::return_internal_reference<>())
         ;
 }
 

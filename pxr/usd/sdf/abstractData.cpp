@@ -29,9 +29,6 @@
 #include <vector>
 #include <utility>
 
-using std::vector;
-using std::pair;
-using std::make_pair;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -387,7 +384,7 @@ SdfAbstractData::ListDictKeys(const SdfPath &path,
                               const TfToken &fieldName,
                               const TfToken &keyPath) const
 {
-    vector<TfToken> result;
+    std::vector<TfToken> result;
     VtValue dictVal = GetDictValueByKey(path, fieldName, keyPath);
     if (dictVal.IsHolding<VtDictionary>()) {
         VtDictionary const &dict = dictVal.UncheckedGet<VtDictionary>();

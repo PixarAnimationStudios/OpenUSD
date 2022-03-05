@@ -45,7 +45,6 @@
 #include <boost/python/extract.hpp>
 
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -95,7 +94,7 @@ _ConcatJointTransforms(const UsdSkelTopology& topology,
 
 
 template <typename Matrix4>
-tuple
+boost::python::tuple
 _DecomposeTransform(const Matrix4& mx)
 {
     GfVec3f t;
@@ -111,7 +110,7 @@ _DecomposeTransform(const Matrix4& mx)
 
 
 template <typename Matrix4>
-tuple
+boost::python::tuple
 _DecomposeTransforms(const TfSpan<Matrix4>& xforms)
 {
     VtVec3fArray t(xforms.size());
@@ -212,100 +211,100 @@ _NonInterleavedSkinTransformLBS(const Matrix4& geomBindTransform,
 template <class Matrix3, class Matrix4>
 void _WrapUtilsT()
 {
-    def("ComputeJointLocalTransforms",
+    boost::python::def("ComputeJointLocalTransforms",
         static_cast<bool (*)(const UsdSkelTopology&, TfSpan<const Matrix4>,
                              TfSpan<const Matrix4>, TfSpan<Matrix4>,
                              const Matrix4*)>(
                                  &UsdSkelComputeJointLocalTransforms),
-        (arg("topology"), arg("xforms"), arg("inverseXforms"),
-         arg("jointLocalXforms"), arg("rootInverseXform")=object()));
+        (boost::python::arg("topology"), boost::python::arg("xforms"), boost::python::arg("inverseXforms"),
+         boost::python::arg("jointLocalXforms"), boost::python::arg("rootInverseXform")=boost::python::object()));
 
-    def("ComputeJointLocalTransforms",
+    boost::python::def("ComputeJointLocalTransforms",
         static_cast<bool (*)(const UsdSkelTopology&, TfSpan<const Matrix4>,
                              TfSpan<Matrix4>, const Matrix4*)>(
                                  &UsdSkelComputeJointLocalTransforms),
-        (arg("topology"), arg("xforms"),
-         arg("jointLocalXforms"), arg("rootInverseXform")=object()));
+        (boost::python::arg("topology"), boost::python::arg("xforms"),
+         boost::python::arg("jointLocalXforms"), boost::python::arg("rootInverseXform")=boost::python::object()));
 
-    def("ConcatJointTransforms",
+    boost::python::def("ConcatJointTransforms",
         static_cast<bool (*)(const UsdSkelTopology&, TfSpan<const Matrix4>,
                              TfSpan<Matrix4>, const Matrix4*)>(
                                  &UsdSkelConcatJointTransforms),
-        (arg("topology"), arg("jointLocalXforms"),
-         arg("rootXform")=object()));
+        (boost::python::arg("topology"), boost::python::arg("jointLocalXforms"),
+         boost::python::arg("rootXform")=boost::python::object()));
 
-    def("DecomposeTransform", &_DecomposeTransform<Matrix4>,
+    boost::python::def("DecomposeTransform", &_DecomposeTransform<Matrix4>,
         "Decompose a transform into a (translate,rotate,scale) tuple.");
 
-    def("DecomposeTransforms", &_DecomposeTransforms<Matrix4>,
+    boost::python::def("DecomposeTransforms", &_DecomposeTransforms<Matrix4>,
         "Decompose a transform array into a "
         "(translations,rotations,scales) tuple.");
 
-    def("ComputeJointsExtent", _ComputeJointsExtent<Matrix4>,
-        (arg("xforms"), arg("pad")=0.0f, arg("rootXform")=object()));
+    boost::python::def("ComputeJointsExtent", _ComputeJointsExtent<Matrix4>,
+        (boost::python::arg("xforms"), boost::python::arg("pad")=0.0f, boost::python::arg("rootXform")=boost::python::object()));
 
-    def("SkinPointsLBS",
+    boost::python::def("SkinPointsLBS",
         static_cast<bool (*)(const Matrix4&, TfSpan<const Matrix4>,
                              TfSpan<const int>, TfSpan<const float>,
                              int, TfSpan<GfVec3f>, bool)>(
                                  &UsdSkelSkinPointsLBS),
-        (arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("jointIndices"),
-         arg("jointWeights"),
-         arg("numInfluencesPerPoint"),
-         arg("points"),
-         arg("inSerial")=true));
+        (boost::python::arg("geomBindTransform"),
+         boost::python::arg("jointXforms"),
+         boost::python::arg("jointIndices"),
+         boost::python::arg("jointWeights"),
+         boost::python::arg("numInfluencesPerPoint"),
+         boost::python::arg("points"),
+         boost::python::arg("inSerial")=true));
 
-    def("SkinPointsLBS",
+    boost::python::def("SkinPointsLBS",
         static_cast<bool (*)(const Matrix4&, TfSpan<const Matrix4>,
                              TfSpan<const GfVec2f>, int,
                              TfSpan<GfVec3f>, bool)>(
                                  &UsdSkelSkinPointsLBS),
-        (arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("influences"),
-         arg("numInfluencesPerPoint"),
-         arg("points"),
-         arg("inSerial")=true));
+        (boost::python::arg("geomBindTransform"),
+         boost::python::arg("jointXforms"),
+         boost::python::arg("influences"),
+         boost::python::arg("numInfluencesPerPoint"),
+         boost::python::arg("points"),
+         boost::python::arg("inSerial")=true));
 
 
 
-    def("SkinNormalsLBS",
+    boost::python::def("SkinNormalsLBS",
         static_cast<bool (*)(const Matrix3&, TfSpan<const Matrix3>,
                              TfSpan<const int>, TfSpan<const float>,
                              int, TfSpan<GfVec3f>, bool)>(
                                  &UsdSkelSkinNormalsLBS),
-        (arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("jointIndices"),
-         arg("jointWeights"),
-         arg("numInfluencesPerPoint"),
-         arg("normals"),
-         arg("inSerial")=true));
+        (boost::python::arg("geomBindTransform"),
+         boost::python::arg("jointXforms"),
+         boost::python::arg("jointIndices"),
+         boost::python::arg("jointWeights"),
+         boost::python::arg("numInfluencesPerPoint"),
+         boost::python::arg("normals"),
+         boost::python::arg("inSerial")=true));
 
-    def("SkinNormalsLBS",
+    boost::python::def("SkinNormalsLBS",
         static_cast<bool (*)(const Matrix3&, TfSpan<const Matrix3>,
                              TfSpan<const GfVec2f>, int,
                              TfSpan<GfVec3f>, bool)>(
                                  &UsdSkelSkinNormalsLBS),
-        (arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("influences"),
-         arg("numInfluencesPerPoint"),
-         arg("normals"),
-         arg("inSerial")=true));
+        (boost::python::arg("geomBindTransform"),
+         boost::python::arg("jointXforms"),
+         boost::python::arg("influences"),
+         boost::python::arg("numInfluencesPerPoint"),
+         boost::python::arg("normals"),
+         boost::python::arg("inSerial")=true));
 
-    def("SkinTransformLBS", &_InterleavedSkinTransformLBS<Matrix4>,
-        (arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("influences")));
+    boost::python::def("SkinTransformLBS", &_InterleavedSkinTransformLBS<Matrix4>,
+        (boost::python::arg("geomBindTransform"),
+         boost::python::arg("jointXforms"),
+         boost::python::arg("influences")));
 
-    def("SkinTransformLBS", &_NonInterleavedSkinTransformLBS<Matrix4>,
-        (arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("jointIndices"),
-         arg("jointWeights")));
+    boost::python::def("SkinTransformLBS", &_NonInterleavedSkinTransformLBS<Matrix4>,
+        (boost::python::arg("geomBindTransform"),
+         boost::python::arg("jointXforms"),
+         boost::python::arg("jointIndices"),
+         boost::python::arg("jointWeights")));
 }
 
 
@@ -318,68 +317,68 @@ void wrapUsdSkelUtils()
     _WrapUtilsT<GfMatrix3d, GfMatrix4d>();
     _WrapUtilsT<GfMatrix3f, GfMatrix4f>();
 
-    def("IsSkelAnimationPrim", &UsdSkelIsSkelAnimationPrim, (arg("prim")));
+    boost::python::def("IsSkelAnimationPrim", &UsdSkelIsSkelAnimationPrim, (boost::python::arg("prim")));
 
-    def("IsSkinnablePrim", &UsdSkelIsSkinnablePrim, (arg("prim")));
-
-    // deprecated
-    def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
-        (arg("topology"), arg("xforms"), arg("inverseXforms"),
-         arg("rootInverseXform")=object()));
+    boost::python::def("IsSkinnablePrim", &UsdSkelIsSkinnablePrim, (boost::python::arg("prim")));
 
     // deprecated
-    def("ComputeJointLocalTransforms",
+    boost::python::def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
+        (boost::python::arg("topology"), boost::python::arg("xforms"), boost::python::arg("inverseXforms"),
+         boost::python::arg("rootInverseXform")=boost::python::object()));
+
+    // deprecated
+    boost::python::def("ComputeJointLocalTransforms",
         &_ComputeJointLocalTransforms_NoInvXforms,
-        (arg("topology"), arg("xforms"),
-         arg("rootInverseXform")=object()));
+        (boost::python::arg("topology"), boost::python::arg("xforms"),
+         boost::python::arg("rootInverseXform")=boost::python::object()));
 
     // deprecated
-    def("ConcatJointTransforms", &_ConcatJointTransforms,
-        (arg("topology"), arg("jointLocalXforms"),
-         arg("rootXform")=object()));
+    boost::python::def("ConcatJointTransforms", &_ConcatJointTransforms,
+        (boost::python::arg("topology"), boost::python::arg("jointLocalXforms"),
+         boost::python::arg("rootXform")=boost::python::object()));
 
-    def("MakeTransform", &_MakeTransform,
-        (arg("translate"), arg("rotate"), arg("scale")));
+    boost::python::def("MakeTransform", &_MakeTransform,
+        (boost::python::arg("translate"), boost::python::arg("rotate"), boost::python::arg("scale")));
 
     // deprecated
-    def("MakeTransforms", &_MakeTransforms,
-        (arg("translations"), arg("rotations"), arg("scales")));
+    boost::python::def("MakeTransforms", &_MakeTransforms,
+        (boost::python::arg("translations"), boost::python::arg("rotations"), boost::python::arg("scales")));
 
-    def("NormalizeWeights",
+    boost::python::def("NormalizeWeights",
         static_cast<bool (*)(TfSpan<float>,int)>(
             &UsdSkelNormalizeWeights),
-        (arg("weights"), arg("numInfluencesPerComponent")));
+        (boost::python::arg("weights"), boost::python::arg("numInfluencesPerComponent")));
 
-    def("SortInfluences",
+    boost::python::def("SortInfluences",
         static_cast<bool (*)(TfSpan<int>, TfSpan<float>,int)>(
             &UsdSkelSortInfluences),
-        (arg("indices"), arg("weights"), arg("numInfluencesPerComponent")));
+        (boost::python::arg("indices"), boost::python::arg("weights"), boost::python::arg("numInfluencesPerComponent")));
 
-    def("ExpandConstantInfluencesToVarying",
+    boost::python::def("ExpandConstantInfluencesToVarying",
         &_ExpandConstantInfluencesToVarying<int>,
-        (arg("array"), arg("size")));
+        (boost::python::arg("array"), boost::python::arg("size")));
 
-    def("ExpandConstantInfluencesToVarying",
+    boost::python::def("ExpandConstantInfluencesToVarying",
         &_ExpandConstantInfluencesToVarying<float>,
-        (arg("array"), arg("size")));
+        (boost::python::arg("array"), boost::python::arg("size")));
 
-    def("ResizeInfluences", &_ResizeInfluences<int>,
-        (arg("array"),
-         arg("srcNumInfluencesPerComponent"),
-         arg("newNumInfluencesPerComponent")));
+    boost::python::def("ResizeInfluences", &_ResizeInfluences<int>,
+        (boost::python::arg("array"),
+         boost::python::arg("srcNumInfluencesPerComponent"),
+         boost::python::arg("newNumInfluencesPerComponent")));
 
-    def("ResizeInfluences", &_ResizeInfluences<float>,
-        (arg("array"),
-         arg("srcNumInfluencesPerComponent"),
-         arg("newNumInfluencesPerComponent")));
+    boost::python::def("ResizeInfluences", &_ResizeInfluences<float>,
+        (boost::python::arg("array"),
+         boost::python::arg("srcNumInfluencesPerComponent"),
+         boost::python::arg("newNumInfluencesPerComponent")));
 
-    def("InterleaveInfluences", &UsdSkelInterleaveInfluences,
-        (arg("indices"), arg("weights"),
-         arg("interleavedInfluences")));
+    boost::python::def("InterleaveInfluences", &UsdSkelInterleaveInfluences,
+        (boost::python::arg("indices"), boost::python::arg("weights"),
+         boost::python::arg("interleavedInfluences")));
 
-    def("ApplyBlendShape", &UsdSkelApplyBlendShape,
-        (arg("weight"),
-         arg("offsets"),
-         arg("indices"),
-         arg("points")));
+    boost::python::def("ApplyBlendShape", &UsdSkelApplyBlendShape,
+        (boost::python::arg("weight"),
+         boost::python::arg("offsets"),
+         boost::python::arg("indices"),
+         boost::python::arg("points")));
 }

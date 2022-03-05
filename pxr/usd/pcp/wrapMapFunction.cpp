@@ -32,20 +32,18 @@
 #include "pxr/base/tf/pyUtils.h"
 #include <boost/python.hpp>
 
-using namespace boost::python;
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string
+static std::string
 _Repr(const PcpMapFunction &f)
 {
     if (f.IsIdentity()) {
         return "Pcp.MapFunction.Identity()";
     }
-    string s = "Pcp.MapFunction(";
+    std::string s = "Pcp.MapFunction(";
     if (!f.IsNull()) {
         const boost::python::dict sourceToTargetMap = 
             TfPyCopyMapToDictionary(f.GetSourceToTargetMap());
@@ -60,7 +58,7 @@ _Repr(const PcpMapFunction &f)
     return s;
 }
 
-static string
+static std::string
 _Str(const PcpMapFunction& f)
 {
     return f.GetString();
@@ -101,43 +99,43 @@ void wrapMapFunction()
         std::vector< PcpMapFunction >,
         TfPyContainerConversions::variable_capacity_policy >();
 
-    class_<This>("MapFunction")
-        .def(init<const This &>())
+    boost::python::class_<This>("MapFunction")
+        .def(boost::python::init<const This &>())
         .def("__init__",
              boost::python::make_constructor(
                 &_Create,
-                default_call_policies(),
-                (arg("sourceToTargetMap"),
-                 arg("timeOffset") = SdfLayerOffset())))
+                boost::python::default_call_policies(),
+                (boost::python::arg("sourceToTargetMap"),
+                 boost::python::arg("timeOffset") = SdfLayerOffset())))
 
         .def("__repr__", _Repr)
         .def("__str__", _Str)
 
         .def("Identity", &This::Identity,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("Identity")
         .def("IdentityPathMap", &This::IdentityPathMap,
-             return_value_policy<TfPyMapToDictionary>())
+             boost::python::return_value_policy<TfPyMapToDictionary>())
         .staticmethod("IdentityPathMap")
         .add_property("isIdentity", &This::IsIdentity)
         .add_property("isNull", &This::IsNull)
 
         .def("MapSourceToTarget", &This::MapSourceToTarget,
-            (arg("path")))
+            (boost::python::arg("path")))
         .def("MapTargetToSource", &This::MapTargetToSource,
-            (arg("path")))
+            (boost::python::arg("path")))
         .def("Compose", &This::Compose)
-        .def("ComposeOffset", &This::ComposeOffset, arg("offset"))
+        .def("ComposeOffset", &This::ComposeOffset, boost::python::arg("offset"))
         .def("GetInverse", &This::GetInverse)
 
         .add_property("sourceToTargetMap",
-            make_function( &This::GetSourceToTargetMap,
-                           return_value_policy<TfPyMapToDictionary>()) )
+            boost::python::make_function( &This::GetSourceToTargetMap,
+                           boost::python::return_value_policy<TfPyMapToDictionary>()) )
         .add_property("timeOffset",
-            make_function( &This::GetTimeOffset,
-                           return_value_policy<return_by_value>()) )
+            boost::python::make_function( &This::GetTimeOffset,
+                           boost::python::return_value_policy<boost::python::return_by_value>()) )
 
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
         ;
 }

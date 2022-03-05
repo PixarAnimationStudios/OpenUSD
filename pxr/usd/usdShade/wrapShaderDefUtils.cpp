@@ -33,13 +33,12 @@
 #include "pxr/usd/usdShade/shaderDefUtils.h"
 #include "pxr/usd/usdShade/shader.h"
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static object 
+static boost::python::object 
 _WrapSplitShaderIdentifier(const TfToken &identifier)
 {
     TfToken familyName, shaderName;
@@ -48,7 +47,7 @@ _WrapSplitShaderIdentifier(const TfToken &identifier)
             &familyName, &shaderName, &version)) {
         return boost::python::make_tuple(familyName, shaderName, version);
     } else {
-        return object();
+        return boost::python::object();
     }
 }
 
@@ -56,23 +55,23 @@ _WrapSplitShaderIdentifier(const TfToken &identifier)
 
 void wrapUsdShadeShaderDefUtils()
 {
-    scope thisScope = class_<UsdShadeShaderDefUtils>("ShaderDefUtils", no_init)
+    boost::python::scope thisScope = boost::python::class_<UsdShadeShaderDefUtils>("ShaderDefUtils", boost::python::no_init)
         .def("SplitShaderIdentifier", _WrapSplitShaderIdentifier,
-            arg("identifier"))
+            boost::python::arg("identifier"))
         .staticmethod("SplitShaderIdentifier")
         .def("GetNodeDiscoveryResults", 
              &UsdShadeShaderDefUtils::GetNodeDiscoveryResults,
-             (arg("shaderDef"), arg("sourceUri")),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("shaderDef"), boost::python::arg("sourceUri")),
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetNodeDiscoveryResults")
         .def("GetShaderProperties", 
              &UsdShadeShaderDefUtils::GetShaderProperties,
-             arg("shaderDef"),
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("shaderDef"),
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetShaderProperties")
         .def("GetPrimvarNamesMetadataString", 
              &UsdShadeShaderDefUtils::GetPrimvarNamesMetadataString,
-             (arg("metadata"), arg("shaderDef")))
+             (boost::python::arg("metadata"), boost::python::arg("shaderDef")))
         .staticmethod("GetPrimvarNamesMetadataString")
     ;
 }

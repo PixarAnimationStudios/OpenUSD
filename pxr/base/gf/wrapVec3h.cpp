@@ -54,9 +54,7 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -118,7 +116,7 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
         return -1;
     }
 
-    GfVec3h &vec = extract<GfVec3h &>(self);
+    GfVec3h &vec = boost::python::extract<GfVec3h &>(self);
 
     view->obj = self;
     view->buf = static_cast<void *>(vec.data());
@@ -168,8 +166,8 @@ static PyBufferProcs bufferProcs = {
 ////////////////////////////////////////////////////////////////////////
 
 
-static string __repr__(GfVec3h const &self) {
-    string elems;
+static std::string __repr__(GfVec3h const &self) {
+    std::string elems;
     for (size_t i = 0; i < self.dimension; ++i) 
         elems += (i ? ", " : "") + TfPyRepr(self[i]);
 
@@ -208,7 +206,7 @@ OrthogonalizeBasisHelper( GfVec3h *v1, GfVec3h *v2, GfVec3h *v3,
 BOOST_PYTHON_FUNCTION_OVERLOADS(OrthogonalizeBasis_overloads,
                                 OrthogonalizeBasisHelper, 4, 5)
 
-static tuple
+static boost::python::tuple
 BuildOrthonormalFrameHelper(const GfVec3h &self,
                             double eps = 0.001)
 {
@@ -234,13 +232,13 @@ static GfHalf __getitem__(const GfVec3h &self, int index) {
 }
 
 // Implements __getitem__ for a slice
-static list __getslice__(const GfVec3h &self, slice indices) {
-    list result;
+static boost::python::list __getslice__(const GfVec3h &self, boost::python::slice indices) {
+    boost::python::list result;
 
     const GfHalf* begin = self.data();
     const GfHalf* end = begin + 3;
 
-    slice::range<const GfHalf*> bounds;
+    boost::python::slice::range<const GfHalf*> bounds;
     try {
         // This appears to be a typo in the boost headers.  The method
         // name should be "get_indices".
@@ -270,16 +268,16 @@ static void __setitem__(GfVec3h &self, int index, GfHalf value) {
 // Handles refcounting & extraction for PySequence_GetItem.
 static GfHalf _SequenceGetItem(PyObject *seq, Py_ssize_t i) {
     boost::python::handle<> h(PySequence_GetItem(seq, i));
-    return extract<GfHalf>(boost::python::object(h));
+    return boost::python::extract<GfHalf>(boost::python::object(h));
 }
 
 static bool _SequenceCheckItem(PyObject *seq, Py_ssize_t i) {
     boost::python::handle<> h(PySequence_GetItem(seq, i));
-    extract<GfHalf> e((boost::python::object(h)));
+    boost::python::extract<GfHalf> e((boost::python::object(h)));
     return e.check();
 }
 
-static void __setslice__(GfVec3h &self, slice indices, object values) {
+static void __setslice__(GfVec3h &self, boost::python::slice indices, boost::python::object values) {
     // Verify our arguments
     //
     PyObject* valuesObj = values.ptr();
@@ -293,7 +291,7 @@ static void __setslice__(GfVec3h &self, slice indices, object values) {
 
     Py_ssize_t sliceLength = -1;
 
-    slice::range<GfHalf*> bounds;
+    boost::python::slice::range<GfHalf*> bounds;
 
     // Convince g++ that we're not using uninitialized values.
     //
@@ -371,7 +369,7 @@ static V *__init__() {
 
 struct FromPythonTuple {
     FromPythonTuple() {
-        converter::registry::
+        boost::python::converter::registry::
             push_back(&_convertible, &_construct,
                       boost::python::type_id<GfVec3h>());
     }
@@ -397,10 +395,10 @@ struct FromPythonTuple {
         return 0;
     }
 
-    static void _construct(PyObject *obj_ptr, converter::
+    static void _construct(PyObject *obj_ptr, boost::python::converter::
                            rvalue_from_python_stage1_data *data) {
         typedef GfHalf Scalar;
-        void *storage = ((converter::rvalue_from_python_storage<GfVec3h>*)data)
+        void *storage = ((boost::python::converter::rvalue_from_python_storage<GfVec3h>*)data)
 	    ->storage.bytes;
         new (storage)
 	    GfVec3h(
@@ -431,29 +429,29 @@ void wrapVec3h()
     static const size_t _dimension = 3;
     static const bool _true = true;
     
-    def("Dot", (Scalar (*)( const Vec &, const Vec &))GfDot);
+    boost::python::def("Dot", (Scalar (*)( const Vec &, const Vec &))GfDot);
     
-    def("CompDiv", (Vec (*)(const Vec &v1, const Vec&v2))GfCompDiv);
-    def("CompMult", (Vec (*)(const Vec &v1, const Vec&v2))GfCompMult);
-    def("GetLength", (Scalar (*)(const Vec &v))GfGetLength);
-    def("GetNormalized", (Vec (*)(const Vec &v, Scalar eps))
+    boost::python::def("CompDiv", (Vec (*)(const Vec &v1, const Vec&v2))GfCompDiv);
+    boost::python::def("CompMult", (Vec (*)(const Vec &v1, const Vec&v2))GfCompMult);
+    boost::python::def("GetLength", (Scalar (*)(const Vec &v))GfGetLength);
+    boost::python::def("GetNormalized", (Vec (*)(const Vec &v, Scalar eps))
         GfGetNormalized, GetNormalized_overloads());
-    def("GetProjection", (Vec (*)(const Vec &a, const Vec &b))
+    boost::python::def("GetProjection", (Vec (*)(const Vec &a, const Vec &b))
         GfGetProjection);
-    def("GetComplement", (Vec (*)(const Vec &a, const Vec &b))
+    boost::python::def("GetComplement", (Vec (*)(const Vec &a, const Vec &b))
         GfGetComplement);
-    def("IsClose", (bool (*)(const Vec &v1, const Vec &v2, double))
+    boost::python::def("IsClose", (bool (*)(const Vec &v1, const Vec &v2, double))
         GfIsClose);
-    def("Normalize", NormalizeHelper, Normalize_overloads());
+    boost::python::def("Normalize", NormalizeHelper, Normalize_overloads());
         
-    def("Cross", (Vec (*)(const Vec &v1, const Vec &v2))GfCross);
-    def("Slerp", (Vec (*)(double alpha, const Vec &v0, const Vec &v1))
+    boost::python::def("Cross", (Vec (*)(const Vec &v1, const Vec &v2))GfCross);
+    boost::python::def("Slerp", (Vec (*)(double alpha, const Vec &v0, const Vec &v1))
         GfSlerp);
 
  
-    class_<GfVec3h> cls("Vec3h", no_init);
+    boost::python::class_<GfVec3h> cls("Vec3h", boost::python::no_init);
     cls
-        .def("__init__", make_constructor(__init__<Vec>))
+        .def("__init__", boost::python::make_constructor(__init__<Vec>))
 
         // A tag indicating that this is a GfVec class, for internal use.
         .def_readonly("__isGfVec", _true)
@@ -461,13 +459,13 @@ void wrapVec3h()
         .def_pickle(PickleSuite())
 
         // Conversion from other vec types.
-        .def(init<GfVec3d>())
-        .def(init<GfVec3f>())
-        .def(init<GfVec3i>())
+        .def(boost::python::init<GfVec3d>())
+        .def(boost::python::init<GfVec3f>())
+        .def(boost::python::init<GfVec3i>())
         
-        .def(init<Vec>())
-        .def(init<Scalar>())
-        .def(init<Scalar, Scalar, Scalar>())
+        .def(boost::python::init<Vec>())
+        .def(boost::python::init<Scalar>())
+        .def(boost::python::init<Scalar, Scalar, Scalar>())
 
         .def(TfTypePythonClass())
 
@@ -481,23 +479,23 @@ void wrapVec3h()
         .def_readonly("dimension", _dimension)
         
         // Comparison to other vec types.
-        .def( self == GfVec3i() )
-        .def( self != GfVec3i() )
+        .def( boost::python::self == GfVec3i() )
+        .def( boost::python::self != GfVec3i() )
 
-        .def(self == self)
-        .def(self != self)
-        .def(self += self)
-        .def(self -= self)
-        .def(self *= double())
-        .def(self * double())
-        .def(double() * self)
-        .def(self /= GfHalf())
-        .def(self / GfHalf())
-        .def(-self)
-        .def(self + self)
-        .def(self - self)
-        .def(self * self)
-        .def(str(self))
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self += boost::python::self)
+        .def(boost::python::self -= boost::python::self)
+        .def(boost::python::self *= double())
+        .def(boost::python::self * double())
+        .def(double() * boost::python::self)
+        .def(boost::python::self /= GfHalf())
+        .def(boost::python::self / GfHalf())
+        .def(-boost::python::self)
+        .def(boost::python::self + boost::python::self)
+        .def(boost::python::self - boost::python::self)
+        .def(boost::python::self * boost::python::self)
+        .def(boost::python::self_ns::str(boost::python::self))
 
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
@@ -519,7 +517,7 @@ void wrapVec3h()
         .def("GetNormalized", &Vec::GetNormalized, VecGetNormalized_overloads())
         .def("GetProjection", &Vec::GetProjection)
         .def("Normalize", &Vec::Normalize, VecNormalize_overloads())
-        .def(self ^ self)
+        .def(boost::python::self ^ boost::python::self)
         .def("GetCross", (Vec (*)(const Vec &v1, const Vec &v2))GfCross)
         .def("OrthogonalizeBasis",
              OrthogonalizeBasisHelper, OrthogonalizeBasis_overloads())
@@ -531,7 +529,7 @@ void wrapVec3h()
         .def("__repr__", __repr__)
         .def("__hash__", __hash__)
         ;
-    to_python_converter<std::vector<GfVec3h>,
+    boost::python::to_python_converter<std::vector<GfVec3h>,
         TfPySequenceToPython<std::vector<GfVec3h> > >();
 
     // Install buffer protocol: set the tp_as_buffer slot to point to a

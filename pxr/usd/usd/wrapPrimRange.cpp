@@ -32,7 +32,6 @@
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/converter/from_python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -102,9 +101,9 @@ public:
 
     static void RegisterConversions() {
         // to-python
-        to_python_converter<UsdPrimRange, Usd_PyPrimRange>();
+        boost::python::to_python_converter<UsdPrimRange, Usd_PyPrimRange>();
         // from-python
-        converter::registry::push_back(
+        boost::python::converter::registry::push_back(
             &_convertible, &_construct,
             boost::python::type_id<UsdPrimRange>());
     }
@@ -128,15 +127,15 @@ private:
         {}
 
     static void *_convertible(PyObject *obj_ptr) {
-        extract<Usd_PyPrimRange> extractor(obj_ptr);
+        boost::python::extract<Usd_PyPrimRange> extractor(obj_ptr);
         return extractor.check() ? obj_ptr : nullptr;
     }
 
     static void _construct(PyObject *obj_ptr,
-                           converter::rvalue_from_python_stage1_data *data) {
-        void *storage = ((converter::rvalue_from_python_storage<
+                           boost::python::converter::rvalue_from_python_stage1_data *data) {
+        void *storage = ((boost::python::converter::rvalue_from_python_storage<
                           Usd_PyPrimRange>*)data)->storage.bytes;
-        Usd_PyPrimRange pyIter = extract<Usd_PyPrimRange>(obj_ptr);
+        Usd_PyPrimRange pyIter = boost::python::extract<Usd_PyPrimRange>(obj_ptr);
         new (storage) UsdPrimRange(pyIter._rng);
         data->convertible = storage;
     }
@@ -166,7 +165,7 @@ public:
                 PyExc_RuntimeError,
                 TfStringPrintf("Iterator points to %s",
                                curPrim.GetDescription().c_str()).c_str());
-            throw_error_already_set();
+            boost::python::throw_error_already_set();
         }
         if (didFirst) {
             ++iter;
@@ -181,7 +180,7 @@ public:
     void _RaiseIfAtEnd() const {
         if (iter == range->_rng.end()) {
             PyErr_SetString(PyExc_StopIteration, "PrimRange at end");
-            throw_error_already_set();
+            boost::python::throw_error_already_set();
         }
     }
 
@@ -213,57 +212,57 @@ _TestPrimRangeRoundTrip(const UsdPrimRange &primRange) {
 void wrapUsdPrimRange()
 {
     {
-        scope s =
-            class_<Usd_PyPrimRange>("PrimRange", no_init)
-            .def(init<UsdPrim>(arg("root")))
-            .def(init<UsdPrim, Usd_PrimFlagsPredicate>(
-                     (arg("root"), arg("predicate"))))
+        boost::python::scope s =
+            boost::python::class_<Usd_PyPrimRange>("PrimRange", boost::python::no_init)
+            .def(boost::python::init<UsdPrim>(boost::python::arg("root")))
+            .def(boost::python::init<UsdPrim, Usd_PrimFlagsPredicate>(
+                     (boost::python::arg("root"), boost::python::arg("predicate"))))
             
             .def("PreAndPostVisit",
                  (Usd_PyPrimRange (*)(UsdPrim))
-                 &Usd_PyPrimRange::PreAndPostVisit, arg("root"))
+                 &Usd_PyPrimRange::PreAndPostVisit, boost::python::arg("root"))
             .def("PreAndPostVisit",
                  (Usd_PyPrimRange (*)(UsdPrim, Usd_PrimFlagsPredicate))
                  &Usd_PyPrimRange::PreAndPostVisit,
-                 (arg("root"), arg("predicate")))
+                 (boost::python::arg("root"), boost::python::arg("predicate")))
             .staticmethod("PreAndPostVisit")
              
-            .def("AllPrims", &Usd_PyPrimRange::AllPrims, arg("root"))
+            .def("AllPrims", &Usd_PyPrimRange::AllPrims, boost::python::arg("root"))
             .staticmethod("AllPrims")
 
             .def("AllPrimsPreAndPostVisit",
-                 &Usd_PyPrimRange::AllPrimsPreAndPostVisit, arg("root"))
+                 &Usd_PyPrimRange::AllPrimsPreAndPostVisit, boost::python::arg("root"))
             .staticmethod("AllPrimsPreAndPostVisit")
 
             .def("Stage",
                  (Usd_PyPrimRange (*)(const UsdStagePtr &))
-                 &Usd_PyPrimRange::Stage, arg("stage"))
+                 &Usd_PyPrimRange::Stage, boost::python::arg("stage"))
             .def("Stage",
                  (Usd_PyPrimRange (*)(
                      const UsdStagePtr &, const Usd_PrimFlagsPredicate &))
-                 &Usd_PyPrimRange::Stage, (arg("stage"), arg("predicate")))
+                 &Usd_PyPrimRange::Stage, (boost::python::arg("stage"), boost::python::arg("predicate")))
             .staticmethod("Stage")
 
             .def("IsValid", &Usd_PyPrimRange::IsValid,
                  "true if the iterator is not yet exhausted")
 
-            .def(!self)
-            .def(self == self)
-            .def(self != self)
+            .def(!boost::python::self)
+            .def(boost::python::self == boost::python::self)
+            .def(boost::python::self != boost::python::self)
 
             // with_custodian_and_ward_postcall<0, 1> makes it so that the
             // returned iterator will prevent the source range (this) from
             // expiring until the iterator expires itself.  We need that since
             // the iterator stores a pointer to its range.
             .def("__iter__", &Usd_PyPrimRange::__iter__,
-                 with_custodian_and_ward_postcall<0, 1>())
+                 boost::python::with_custodian_and_ward_postcall<0, 1>())
             ;
 
-        class_<Usd_PyPrimRangeIterator>("_Iterator", no_init)
+        boost::python::class_<Usd_PyPrimRangeIterator>("_Iterator", boost::python::no_init)
             // This is a lambda that does nothing cast to a function pointer.
             // All we want is to return 'self'.
             .def("__iter__", static_cast<void (*)(Usd_PyPrimRangeIterator)>
-                     ([](Usd_PyPrimRangeIterator){}), return_self<>())
+                     ([](Usd_PyPrimRangeIterator){}), boost::python::return_self<>())
             .def(TfPyIteratorNextMethodName, &Usd_PyPrimRangeIterator::next)
             .def("IsPostVisit", &Usd_PyPrimRangeIterator::IsPostVisit)
             .def("PruneChildren", &Usd_PyPrimRangeIterator::PruneChildren)
@@ -278,5 +277,5 @@ void wrapUsdPrimRange()
 
     Usd_PyPrimRange::RegisterConversions();
 
-    def("_TestPrimRangeRoundTrip", _TestPrimRangeRoundTrip);
+    boost::python::def("_TestPrimRangeRoundTrip", _TestPrimRangeRoundTrip);
 }

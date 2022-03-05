@@ -41,9 +41,6 @@
 #include <algorithm>
 #include <ostream>
 
-using std::pair;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -127,7 +124,7 @@ static inline bool _IsValidIdentifier(TfToken const &name);
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<SdfPath>();
-    TfType::Define< vector<SdfPath> >()
+    TfType::Define< std::vector<SdfPath> >()
         .Alias(TfType::GetRoot(), "vector<SdfPath>");    
 }
 
@@ -431,7 +428,7 @@ SdfPath::GetNameToken() const
     return _primPart ? _primPart.get()->GetName() : SdfPathTokens->empty;
 }
 
-string
+std::string
 SdfPath::GetElementString() const
 {
     return GetElementToken().GetString();
@@ -498,10 +495,10 @@ SdfPath::GetAllTargetPathsRecursively(SdfPathVector *result) const
     }
 }
 
-pair<string, string>
+std::pair<std::string, std::string>
 SdfPath::GetVariantSelection() const
 {
-    pair<string, string> result;
+    std::pair<std::string, std::string> result;
     if (IsPrimVariantSelectionPath()) {
         const Sdf_PathNode::VariantSelectionType& sel =
             _primPart.get()->GetVariantSelection();
@@ -713,7 +710,7 @@ SdfPath::AppendPath(const SdfPath &newSuffix) const {
     }
 
     // This list winds up in reverse order to what one might at first expect.
-    vector<Sdf_PathNode const *> tailNodes;
+    std::vector<Sdf_PathNode const *> tailNodes;
 
     // Walk up to top of newSuffix.
     Sdf_PathNode const *curNode = newSuffix._propPart.get();
@@ -959,8 +956,8 @@ SdfPath::AppendProperty(TfToken const &propName) const {
 }
 
 SdfPath
-SdfPath::AppendVariantSelection(const string &variantSet,
-                                const string &variant) const
+SdfPath::AppendVariantSelection(const std::string &variantSet,
+                                const std::string &variant) const
 {
     _DeferredDiagnostics dd;
     auto isValid = [this, &variantSet, &variant, &dd]() {
@@ -1111,7 +1108,7 @@ SdfPath::AppendElementToken(const TfToken &elementTok) const
     // No static tokens for variant chars...
     if (ARCH_UNLIKELY(txt[0] == '{')) {
         
-        vector<string> tokens = TfStringTokenize(element, "{=}");
+        std::vector<std::string> tokens = TfStringTokenize(element, "{=}");
         TfToken variantSel;
         if (tokens.size() == 2){
             variantSel = TfToken(tokens[1]);
@@ -1132,11 +1129,11 @@ SdfPath::AppendElementToken(const TfToken &elementTok) const
         // to determine what the property sub-type should be.
 
         if (IsPropertyPath()) {
-            static string mapperStr =
+            static std::string mapperStr =
                 SdfPathTokens->propertyDelimiter.GetString() +
                 SdfPathTokens->mapperIndicator.GetString() +
                 SdfPathTokens->relationshipTargetStart.GetString();
-            static string expressionStr =
+            static std::string expressionStr =
                 SdfPathTokens->propertyDelimiter.GetString() +
                 SdfPathTokens->expressionIndicator.GetString();
         
@@ -1643,7 +1640,7 @@ SdfPath::MakeAbsolutePath(const SdfPath & anchor) const {
         // Collect all the ancestral path nodes.
         Sdf_PathNode const *curNode = _primPart.get();
         size_t numNodes = curNode->GetElementCount();
-        vector<Sdf_PathNode const *> relNodes(numNodes);
+        std::vector<Sdf_PathNode const *> relNodes(numNodes);
         while (numNodes--) {
             relNodes[numNodes] = curNode;
             curNode = curNode->GetParentNode();
@@ -1725,7 +1722,7 @@ SdfPath::MakeRelativePath(const SdfPath & anchor) const
     // We are absolute, we want to be relative
 
     // This list winds up in reverse order to what one might at first expect.
-    vector<Sdf_PathNode const *> relNodes;
+    std::vector<Sdf_PathNode const *> relNodes;
 
     // We need to crawl up the this path until we are the same length as
     // the anchor.

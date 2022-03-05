@@ -41,8 +41,6 @@
 #include <ostream>
 #include <vector>
 
-using std::ostream;
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -52,7 +50,7 @@ TF_DEFINE_PUBLIC_TOKENS(TraceReporterTokens, TRACE_REPORTER_TOKENS);
 // TraceReporter
 //
 
-TraceReporter::TraceReporter(const string& label,
+TraceReporter::TraceReporter(const std::string& label,
                              DataSourcePtr dataSource) :
     TraceReporterBase(std::move(dataSource)),
     _label(label),
@@ -89,21 +87,21 @@ _GetKeyName(const TfToken& key)
 }
 
 static void
-_PrintLineTimes(ostream &s, double inclusive, double exclusive,
-                int count, const string& label, int indent,
+_PrintLineTimes(std::ostream &s, double inclusive, double exclusive,
+                int count, const std::string& label, int indent,
                 bool recursive_node, int iterationCount)
 {
-    string inclusiveStr = TfStringPrintf("%9.3f ms ",
+    std::string inclusiveStr = TfStringPrintf("%9.3f ms ",
             ArchTicksToSeconds( uint64_t(inclusive * 1e3) / iterationCount ));
     if (inclusive <= 0)
-        inclusiveStr = string(inclusiveStr.size(), ' ');
+        inclusiveStr = std::string(inclusiveStr.size(), ' ');
 
-    string exclusiveStr = TfStringPrintf("%9.3f ms ",
+    std::string exclusiveStr = TfStringPrintf("%9.3f ms ",
             ArchTicksToSeconds( uint64_t(exclusive * 1e3) / iterationCount ));
     if (exclusive <= 0)
-        exclusiveStr = string(exclusiveStr.size(), ' ');
+        exclusiveStr = std::string(exclusiveStr.size(), ' ');
 
-    string countStr;
+    std::string countStr;
     if (iterationCount == 1)
         countStr = TfStringPrintf("%7.0f samples ", double(count));
     else
@@ -113,7 +111,7 @@ _PrintLineTimes(ostream &s, double inclusive, double exclusive,
     if (count <= 0)
     {
         // CODE_COVERAGE_OFF -- shouldn't get a count of zero
-        countStr = string(countStr.size(), ' ');
+        countStr = std::string(countStr.size(), ' ');
         // CODE_COVERAGE_ON
     }
 
@@ -130,16 +128,16 @@ _PrintLineTimes(ostream &s, double inclusive, double exclusive,
 
 static void
 _PrintRecursionMarker(
-    ostream &s,
+    std::ostream &s,
     const std::string &label, 
     int indent)
 {
-    string inclusiveStr(13, ' ');
-    string exclusiveStr(13, ' ');
-    string countStr(16, ' ');
+    std::string inclusiveStr(13, ' ');
+    std::string exclusiveStr(13, ' ');
+    std::string countStr(16, ' ');
 
     // Need -1 here in order to get '|' characters to line up.
-    string indentStr( _IndentString(indent-1) );
+    std::string indentStr( _IndentString(indent-1) );
 
     s << inclusiveStr << exclusiveStr << countStr << " " << indentStr << " ";
     s << "[" << label << "]\n";
@@ -148,7 +146,7 @@ _PrintRecursionMarker(
 
 static void
 _PrintNodeTimes(
-    ostream &s,
+    std::ostream &s,
     TraceAggregateNodeRefPtr node,
     int indent, 
     int iterationCount)
@@ -180,7 +178,7 @@ _PrintNodeTimes(
 }
 
 void
-TraceReporter::_PrintTimes(ostream &s)
+TraceReporter::_PrintTimes(std::ostream &s)
 {
     using SortedTimes = std::multimap<TimeStamp, TfToken>;
 

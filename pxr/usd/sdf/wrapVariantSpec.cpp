@@ -31,7 +31,6 @@
 #include "pxr/usd/sdf/pyChildrenProxy.h"
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -50,12 +49,12 @@ _WrapGetVariantSetsProxy(const SdfVariantSpec& owner)
 
 void wrapVariantSpec()
 {
-    def("CreateVariantInLayer", SdfCreateVariantInLayer);
+    boost::python::def("CreateVariantInLayer", SdfCreateVariantInLayer);
 
     typedef SdfVariantSpec This;
 
-    class_<This, SdfHandle<This>, bases<SdfSpec>, boost::noncopyable>
-        ("VariantSpec", no_init)
+    boost::python::class_<This, SdfHandle<This>, boost::python::bases<SdfSpec>, boost::noncopyable>
+        ("VariantSpec", boost::python::no_init)
         .def(SdfPySpec())
         .def(SdfMakePySpecConstructor(&This::New))
 
@@ -64,8 +63,8 @@ void wrapVariantSpec()
         .add_property("owner", &This::GetOwner,
             "The variant set that this variant belongs to.")
         .add_property("name",
-            make_function(&This::GetName,
-                          return_value_policy<return_by_value>()),
+            boost::python::make_function(&This::GetName,
+                          boost::python::return_value_policy<boost::python::return_by_value>()),
             "The variant's name.")
         .add_property("variantSets",
             &_WrapGetVariantSetsProxy)

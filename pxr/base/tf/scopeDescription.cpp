@@ -38,8 +38,6 @@
 #include <chrono>
 #include <thread>
 
-using std::vector;
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -428,7 +426,7 @@ TfGetCurrentScopeDescriptionStack()
     return _GetScopeDescriptionStack(ArchGetMainThreadId());
 }
 
-vector<string>
+std::vector<std::string>
 TfGetThisThreadScopeDescriptionStack()
 {
     return _GetScopeDescriptionStack(std::this_thread::get_id());

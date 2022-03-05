@@ -29,7 +29,6 @@
 #include <boost/python/def.hpp>
 #include <boost/python/scope.hpp>
 
-using namespace boost::python;
 
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -40,21 +39,21 @@ wrapFrameRecorder()
 {
     using This = UsdAppUtilsFrameRecorder;
 
-    scope s = class_<This, boost::noncopyable>("FrameRecorder")
-        .def(init<>())
+    boost::python::scope s = boost::python::class_<This, boost::noncopyable>("FrameRecorder")
+        .def(boost::python::init<>())
         .def("GetCurrentRendererId", &This::GetCurrentRendererId)
         .def("SetRendererPlugin", &This::SetRendererPlugin)
         .def("SetImageWidth", &This::SetImageWidth)
         .def("SetComplexity", &This::SetComplexity)
         .def("SetColorCorrectionMode", &This::SetColorCorrectionMode)
         .def("SetIncludedPurposes", &This::SetIncludedPurposes,
-             (arg("purposes")))
+             (boost::python::arg("purposes")))
         .def(
             "Record",
             &This::Record,
-            (arg("stage"),
-             arg("usdCamera"),
-             arg("timeCode"),
-             arg("outputImagePath")))
+            (boost::python::arg("stage"),
+             boost::python::arg("usdCamera"),
+             boost::python::arg("timeCode"),
+             boost::python::arg("outputImagePath")))
     ;
 }

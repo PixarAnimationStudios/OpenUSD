@@ -27,44 +27,42 @@
 #include <boost/python/class.hpp>
 #include <boost/python/operators.hpp>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdPayloads()
 {
-    class_<UsdPayloads>("Payloads", no_init)
+    boost::python::class_<UsdPayloads>("Payloads", boost::python::no_init)
         .def("AddPayload",
              (bool (UsdPayloads::*)(const SdfPayload &, UsdListPosition))
              &UsdPayloads::AddPayload,
-             (arg("payload"),
-              arg("position")=UsdListPositionBackOfPrependList))
+             (boost::python::arg("payload"),
+              boost::python::arg("position")=UsdListPositionBackOfPrependList))
         .def("AddPayload",
-             (bool (UsdPayloads::*)(const string &, const SdfPath &,
+             (bool (UsdPayloads::*)(const std::string &, const SdfPath &,
                                     const SdfLayerOffset &, UsdListPosition))
              &UsdPayloads::AddPayload,
-             (arg("assetPath"), arg("primPath"),
-              arg("layerOffset")=SdfLayerOffset(),
-              arg("position")=UsdListPositionBackOfPrependList))
-        .def("AddPayload",(bool (UsdPayloads::*)(const string &,
+             (boost::python::arg("assetPath"), boost::python::arg("primPath"),
+              boost::python::arg("layerOffset")=SdfLayerOffset(),
+              boost::python::arg("position")=UsdListPositionBackOfPrependList))
+        .def("AddPayload",(bool (UsdPayloads::*)(const std::string &,
                                                  const SdfLayerOffset &,
                                                  UsdListPosition))
              &UsdPayloads::AddPayload,
-             (arg("assetPath"),
-              arg("layerOffset")=SdfLayerOffset(),
-              arg("position")=UsdListPositionBackOfPrependList))
+             (boost::python::arg("assetPath"),
+              boost::python::arg("layerOffset")=SdfLayerOffset(),
+              boost::python::arg("position")=UsdListPositionBackOfPrependList))
         .def("AddInternalPayload",
              &UsdPayloads::AddInternalPayload, 
-             (arg("primPath"),
-              arg("layerOffset")=SdfLayerOffset(),
-              arg("position")=UsdListPositionBackOfPrependList))
+             (boost::python::arg("primPath"),
+              boost::python::arg("layerOffset")=SdfLayerOffset(),
+              boost::python::arg("position")=UsdListPositionBackOfPrependList))
 
-        .def("RemovePayload", &UsdPayloads::RemovePayload, arg("payload"))
+        .def("RemovePayload", &UsdPayloads::RemovePayload, boost::python::arg("payload"))
         .def("ClearPayloads", &UsdPayloads::ClearPayloads)
         .def("SetPayloads", &UsdPayloads::SetPayloads)
         .def("GetPrim", (UsdPrim (UsdPayloads::*)()) &UsdPayloads::GetPrim)
-        .def(!self)
+        .def(!boost::python::self)
         ;
 }

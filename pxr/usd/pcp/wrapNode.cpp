@@ -30,18 +30,17 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
 #define PCP_GET_NODE_FN(nodeFn)                                         \
-    static boost::python::object                                        \
+    static boost::python::api::object                                        \
     _ ## nodeFn(const PcpNodeRef& node)                                 \
     {                                                                   \
         PcpNodeRef n = node.nodeFn();                                   \
-        return n ? boost::python::object(n) : boost::python::object();  \
+        return n ? boost::python::api::object(n) : boost::python::api::object();  \
     }
 
 PCP_GET_NODE_FN(GetParentNode);
@@ -62,30 +61,30 @@ wrapNode()
 {
     typedef PcpNodeRef This;
 
-    scope s = class_<This>
-        ("NodeRef", no_init)
+    boost::python::scope s = boost::python::class_<This>
+        ("NodeRef", boost::python::no_init)
 
         .add_property("site", &This::GetSite)
         .add_property("path", 
-                      make_function(&This::GetPath, 
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&This::GetPath, 
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("layerStack", 
-                      make_function(&This::GetLayerStack, 
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&This::GetLayerStack, 
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
 
         .add_property("parent", &_GetParentNode)
         .add_property("origin", &_GetOriginNode)
         .add_property("children", 
-                      make_function(&_GetChildren, 
-                                    return_value_policy<TfPySequenceToList>()))
+                      boost::python::make_function(&_GetChildren, 
+                                    boost::python::return_value_policy<TfPySequenceToList>()))
 
         .add_property("arcType", &This::GetArcType)
         .add_property("mapToParent", 
-                      make_function(&This::GetMapToParent,
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&This::GetMapToParent,
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("mapToRoot", 
-                      make_function(&This::GetMapToRoot,
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&This::GetMapToRoot,
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
         
         .add_property("siblingNumAtOrigin", &This::GetSiblingNumAtOrigin)
         .add_property("namespaceDepth", &This::GetNamespaceDepth)
@@ -108,7 +107,7 @@ wrapNode()
 
         .def("CanContributeSpecs", &This::CanContributeSpecs)
 
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
         ;
 }

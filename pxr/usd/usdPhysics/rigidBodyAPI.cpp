@@ -340,7 +340,7 @@ bool _GetCoM(const UsdPrim& usdPrim, GfVec3f* com, UsdGeomXformCache* xfCache)
         comAttribute.Get(&v);        
 
         // -inf -inf -inf is the sentinel value, though any inf works
-        if (isfinite(v[0]) && isfinite(v[1]) && isfinite(v[2]))
+        if (std::isfinite(v[0]) && std::isfinite(v[1]) && std::isfinite(v[2]))
         {
             // need to extract scale as physics in general does not support scale, 
             //we need to scale the com

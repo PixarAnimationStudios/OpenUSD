@@ -38,7 +38,6 @@
 #include <stdexcept>
 #include <csignal>
 
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -58,7 +57,7 @@ Tf_VerifyStringFormat(const char *format, ...)
 {
     va_list ap;
     va_start(ap, format);
-    string s = TfVStringPrintf(format, ap);
+    std::string s = TfVStringPrintf(format, ap);
     va_end(ap);
     return strdup(s.c_str());
 }
@@ -118,8 +117,8 @@ _BadThrowHandler()
 void
 Tf_TerminateHandler()
 {
-    string reason("<unknown reason>");
-    string type("<unknown type>");
+    std::string reason("<unknown reason>");
+    std::string type("<unknown type>");
 
     std::vector<uintptr_t> throwStack;
     TfCallContext throwContext;
@@ -189,7 +188,7 @@ Tf_TerminateHandler()
         reason.c_str(), type.c_str());
 }
 
-void TfSetProgramNameForErrors(string const& programName)
+void TfSetProgramNameForErrors(std::string const& programName)
 {
     ArchSetProgramNameForErrors(programName.c_str());
 }

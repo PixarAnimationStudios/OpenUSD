@@ -36,9 +36,6 @@
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-using namespace std;
-using namespace boost::python;
-using namespace boost;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -90,9 +87,9 @@ _SetLightingState(UsdImagingGLEngine &self, GlfSimpleLightVector const &lights,
 }
 
 void _SetOverrideWindowPolicy(UsdImagingGLEngine & self,
-                              const object &pyObj)
+                              const boost::python::object &pyObj)
 {
-    extract<CameraUtilConformWindowPolicy> extractor(pyObj);
+    boost::python::extract<CameraUtilConformWindowPolicy> extractor(pyObj);
     if (extractor.check()) {
         self.SetOverrideWindowPolicy({true, extractor()});
     } else {
@@ -105,10 +102,10 @@ void _SetOverrideWindowPolicy(UsdImagingGLEngine & self,
 void wrapEngine()
 {
     { 
-        scope engineScope = class_<UsdImagingGLEngine, boost::noncopyable>(
+        boost::python::scope engineScope = boost::python::class_<UsdImagingGLEngine, boost::noncopyable>(
                 "Engine", "UsdImaging Renderer class")
-            .def( init<>() )
-            .def( init<const SdfPath &, const SdfPathVector&,
+            .def( boost::python::init<>() )
+            .def( boost::python::init<const SdfPath &, const SdfPathVector&,
                     const SdfPathVector& >() )
             .def("Render", &UsdImagingGLEngine::Render)
             .def("SetWindowPolicy", &UsdImagingGLEngine::SetWindowPolicy)
@@ -129,7 +126,7 @@ void wrapEngine()
                 .staticmethod("IsHydraEnabled")
             .def("IsConverged", &UsdImagingGLEngine::IsConverged)
             .def("GetRendererPlugins", &UsdImagingGLEngine::GetRendererPlugins,
-                 return_value_policy< TfPySequenceToList >())
+                 boost::python::return_value_policy< TfPySequenceToList >())
                 .staticmethod("GetRendererPlugins")
             .def("GetRendererDisplayName", 
                     &UsdImagingGLEngine::GetRendererDisplayName)
@@ -140,14 +137,14 @@ void wrapEngine()
                     &UsdImagingGLEngine::SetRendererPlugin)
             .def("GetRendererAovs", 
                     &UsdImagingGLEngine::GetRendererAovs,
-                 return_value_policy< TfPySequenceToList >())
+                 boost::python::return_value_policy< TfPySequenceToList >())
             .def("SetRendererAov", 
                     &UsdImagingGLEngine::SetRendererAov)
             .def("GetRenderStats", 
                     &UsdImagingGLEngine::GetRenderStats)
             .def("GetRendererSettingsList", 
                     &UsdImagingGLEngine::GetRendererSettingsList,
-                 return_value_policy< TfPySequenceToList >())
+                 boost::python::return_value_policy< TfPySequenceToList >())
             .def("GetRendererSetting", &UsdImagingGLEngine::GetRendererSetting)
             .def("SetRendererSetting", &UsdImagingGLEngine::SetRendererSetting)
             .def("SetColorCorrectionSettings", 
@@ -157,7 +154,7 @@ void wrapEngine()
                 .staticmethod("IsColorCorrectionCapable")
             .def("GetRendererCommandDescriptors",
                 &UsdImagingGLEngine::GetRendererCommandDescriptors,
-                return_value_policy< TfPySequenceToList >() )
+                boost::python::return_value_policy< TfPySequenceToList >() )
             .def("InvokeRendererCommand",
                 &UsdImagingGLEngine::InvokeRendererCommand,
                 (boost::python::arg("command"),
@@ -178,7 +175,7 @@ void wrapEngine()
     }
 
     // Wrap the constants.
-    scope().attr("ALL_INSTANCES") = UsdImagingDelegate::ALL_INSTANCES;
+    boost::python::scope().attr("ALL_INSTANCES") = UsdImagingDelegate::ALL_INSTANCES;
 
     TfPyContainerConversions::from_python_sequence<
         std::vector<GlfSimpleLight>, 

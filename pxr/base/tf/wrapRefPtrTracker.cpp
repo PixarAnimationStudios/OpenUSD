@@ -33,7 +33,6 @@
 #include <boost/python/class.hpp>
 #include <sstream>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -74,7 +73,7 @@ wrapRefPtrTracker()
      typedef TfRefPtrTracker This;
      typedef TfWeakPtr<TfRefPtrTracker> ThisPtr;
      
-     class_<This, ThisPtr, boost::noncopyable>("RefPtrTracker", no_init)
+     boost::python::class_<This, ThisPtr, boost::noncopyable>("RefPtrTracker", boost::python::no_init)
         .def(TfPySingleton())
 
         .def("GetAllWatchedCountsReport", _ReportAllWatchedCounts)

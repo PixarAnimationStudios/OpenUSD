@@ -34,8 +34,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-using std::string;
-using std::vector;
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -207,9 +205,9 @@ _GetDefaultValue(
 
 HioGlslfxConfig *
 HioGlslfxConfig::Read(TfToken const & technique,
-                      string const & input,
-                      string const & filename,
-                      string *errorStr)
+                      std::string const & input,
+                      std::string const & filename,
+                      std::string *errorStr)
 {
     return new HioGlslfxConfig(technique,
         Hio_GetDictionaryFromInput(input, filename, errorStr), errorStr );
@@ -217,14 +215,14 @@ HioGlslfxConfig::Read(TfToken const & technique,
 
 HioGlslfxConfig::HioGlslfxConfig(TfToken const & technique,
                                  VtDictionary const & dict,
-                                 string * errors)
+                                 std::string * errors)
 : _technique(technique)
 {
     _Init(dict, errors);
 }
 
 void
-HioGlslfxConfig::_Init(VtDictionary const & dict, string * errors)
+HioGlslfxConfig::_Init(VtDictionary const & dict, std::string * errors)
 {
     TRACE_FUNCTION();
 
@@ -245,7 +243,7 @@ HioGlslfxConfig::GetSourceKeys(TfToken const & shaderStageKey) const
  
 HioGlslfxConfig::_SourceKeyMap
 HioGlslfxConfig::_GetSourceKeyMap(VtDictionary const & dict,
-                                   string *errorStr) const
+                                   std::string *errorStr) const
 {
     // XXX as we implement more public API for this thing, some better structure
     // in the internal API we use to access parts of this graph would
@@ -301,7 +299,7 @@ HioGlslfxConfig::_GetSourceKeyMap(VtDictionary const & dict,
     const VtDictionary& specDict = techniqueSpec.UncheckedGet<VtDictionary>();
     // get all of the shader stages specified in the spec
     for (const std::pair<std::string, VtValue>& p : specDict) {
-        const string& shaderStageKey = p.first;
+        const std::string& shaderStageKey = p.first;
         const VtValue& shaderStageSpec = p.second;
 
         // verify that the shaderStageSpec also holds a VtDictionary
@@ -326,7 +324,7 @@ HioGlslfxConfig::_GetSourceKeyMap(VtDictionary const & dict,
         }
 
         // verify that source holds a list
-        if (!source.IsHolding<vector<VtValue> >()) {
+        if (!source.IsHolding<std::vector<VtValue> >()) {
             *errorStr = TfStringPrintf("%s of %s for spec %s expects a list",
                                        _tokens->source.GetText(),
                                        shaderStageKey.c_str(),
@@ -334,10 +332,10 @@ HioGlslfxConfig::_GetSourceKeyMap(VtDictionary const & dict,
             return ret;
         }
 
-        vector<VtValue> sourceList = source.UncheckedGet<vector<VtValue>>();
+        std::vector<VtValue> sourceList = source.UncheckedGet<std::vector<VtValue>>();
         for (VtValue const& val : sourceList) {
             // verify that this value is a string
-            if (!val.IsHolding<string>()) {
+            if (!val.IsHolding<std::string>()) {
                 *errorStr = TfStringPrintf("%s of %s for spec %s expects a "
                                            "list of strings",
                                            _tokens->source.GetText(),
@@ -346,7 +344,7 @@ HioGlslfxConfig::_GetSourceKeyMap(VtDictionary const & dict,
                 return ret;
             }
 
-            ret[shaderStageKey].push_back(val.UncheckedGet<string>());
+            ret[shaderStageKey].push_back(val.UncheckedGet<std::string>());
         }
     }
 
@@ -354,7 +352,7 @@ HioGlslfxConfig::_GetSourceKeyMap(VtDictionary const & dict,
 }
 
 static HioGlslfxConfig::Role
-_GetRoleFromString(string const & roleString, string *errorStr)
+_GetRoleFromString(std::string const & roleString, std::string *errorStr)
 {
     if (roleString == _tokens->color) {
         return HioGlslfxConfig::RoleColor;
@@ -374,7 +372,7 @@ HioGlslfxConfig::GetParameters() const
 
 HioGlslfxConfig::Parameters
 HioGlslfxConfig::_GetParameters(VtDictionary const & dict, 
-                                 string *errorStr) const
+                                 std::string *errorStr) const
 {
     Parameters ret;
 
@@ -393,31 +391,31 @@ HioGlslfxConfig::_GetParameters(VtDictionary const & dict,
     }
 
     // look for the parameterOrder section: 
-    vector<string> paramOrder;
+    std::vector<std::string> paramOrder;
     VtValue paramOrderAny;
     TfMapLookup(dict, _tokens->parameterOrder, &paramOrderAny);
 
     if (!paramOrderAny.IsEmpty()) {
         // verify the type
-        if (!paramOrderAny.IsHolding<vector<VtValue> >()) {
+        if (!paramOrderAny.IsHolding<std::vector<VtValue> >()) {
             *errorStr =
                 TfStringPrintf("%s declaration expects a list of strings",
                                _tokens->parameterOrder.GetText());
             return ret;
         }
 
-        const vector<VtValue>& paramOrderList =
-            paramOrderAny.UncheckedGet<vector<VtValue> >();
+        const std::vector<VtValue>& paramOrderList =
+            paramOrderAny.UncheckedGet<std::vector<VtValue> >();
         for (VtValue const& val : paramOrderList) {
             // verify that this value is a string
-            if (!val.IsHolding<string>()) {
+            if (!val.IsHolding<std::string>()) {
                 *errorStr = TfStringPrintf("%s declaration expects a list of "
                                            "strings",
                                            _tokens->parameterOrder.GetText());
                 return ret;
             }
 
-            const string& paramName = val.UncheckedGet<string>();
+            const std::string& paramName = val.UncheckedGet<std::string>();
             if (std::find(paramOrder.begin(), paramOrder.end(), paramName) ==
                     paramOrder.end()) {
                 paramOrder.push_back(paramName);
@@ -429,7 +427,7 @@ HioGlslfxConfig::_GetParameters(VtDictionary const & dict,
     const VtDictionary& paramsDict = params.UncheckedGet<VtDictionary>();
     // pre-process the paramsDict in order to get the merged ordering
     for (const std::pair<std::string, VtValue>& p : paramsDict) {
-        string paramName = p.first;
+        std::string paramName = p.first;
         if (std::find(paramOrder.begin(), paramOrder.end(), paramName) ==
                 paramOrder.end()) {
             paramOrder.push_back(paramName);
@@ -468,9 +466,9 @@ HioGlslfxConfig::_GetParameters(VtDictionary const & dict,
 
         // optional documentation string
         VtValue docVal;
-        string docString;
+        std::string docString;
         if (TfMapLookup(paramDataDict, _tokens->documentation, &docVal)) {
-            if (!docVal.IsHolding<string>()) {
+            if (!docVal.IsHolding<std::string>()) {
                 *errorStr = TfStringPrintf("Value for %s for %s is not a "
                                            "string",
                                            _tokens->documentation.GetText(),
@@ -478,13 +476,13 @@ HioGlslfxConfig::_GetParameters(VtDictionary const & dict,
                 return ret;
             }
 
-            docString = docVal.UncheckedGet<string>();
+            docString = docVal.UncheckedGet<std::string>();
         }
         // optional role specification
         VtValue roleVal;
         Role role = RoleNone;
         if (TfMapLookup(paramDataDict, _tokens->role, &roleVal)) {
-            if (!roleVal.IsHolding<string>()) {
+            if (!roleVal.IsHolding<std::string>()) {
                 *errorStr = TfStringPrintf("Value for %s for %s is not a "
                                            "string",
                                            _tokens->role.GetText(),
@@ -492,7 +490,7 @@ HioGlslfxConfig::_GetParameters(VtDictionary const & dict,
                 return ret;
             }
 
-            const string& roleString = roleVal.UncheckedGet<string>();
+            const std::string& roleString = roleVal.UncheckedGet<std::string>();
             role = _GetRoleFromString(roleString, errorStr);
             if (!errorStr->empty()) {
                 return ret;
@@ -517,7 +515,7 @@ HioGlslfxConfig::GetTextures() const
 
 HioGlslfxConfig::Textures
 HioGlslfxConfig::_GetTextures(VtDictionary const & dict, 
-                               string *errorStr) const
+                               std::string *errorStr) const
 {
     Textures ret;
 
@@ -537,7 +535,7 @@ HioGlslfxConfig::_GetTextures(VtDictionary const & dict,
 
     const VtDictionary& texturesDict = textures.UncheckedGet<VtDictionary>();
     for (const std::pair<std::string, VtValue>& p : texturesDict) {
-        const string& textureName = p.first;
+        const std::string& textureName = p.first;
         const VtValue& textureData = p.second;
         if (!textureData.IsHolding<VtDictionary>()) {
             *errorStr = TfStringPrintf("%s declaration for %s expects a "
@@ -557,9 +555,9 @@ HioGlslfxConfig::_GetTextures(VtDictionary const & dict,
 
         // optional documentation string
         VtValue docVal;
-        string docString;
+        std::string docString;
         if (TfMapLookup(textureDataDict, _tokens->documentation, &docVal)) {
-            if (!docVal.IsHolding<string>()) {
+            if (!docVal.IsHolding<std::string>()) {
                 *errorStr = TfStringPrintf("Value for %s for %s is not a "
                                            "string",
                                            _tokens->documentation.GetText(),
@@ -567,7 +565,7 @@ HioGlslfxConfig::_GetTextures(VtDictionary const & dict,
                 return ret;
             }
 
-            docString = docVal.UncheckedGet<string>();
+            docString = docVal.UncheckedGet<std::string>();
         }
 
         TF_DEBUG(HIO_DEBUG_GLSLFX).Msg("        texture: %s\n",
@@ -587,7 +585,7 @@ HioGlslfxConfig::GetAttributes() const
 
 HioGlslfxConfig::Attributes
 HioGlslfxConfig::_GetAttributes(VtDictionary const & dict,
-                                 string *errorStr) const
+                                 std::string *errorStr) const
 {
     Attributes ret;
 
@@ -608,7 +606,7 @@ HioGlslfxConfig::_GetAttributes(VtDictionary const & dict,
     const VtDictionary& attributesDict =
         attributes.UncheckedGet<VtDictionary>();
     for (const std::pair<std::string, VtValue>& p : attributesDict) {
-        const string& attributeName = p.first;
+        const std::string& attributeName = p.first;
         const VtValue& attributeData = p.second;
         if (!attributeData.IsHolding<VtDictionary>()) {
             *errorStr = TfStringPrintf("%s declaration for %s expects a "
@@ -624,9 +622,9 @@ HioGlslfxConfig::_GetAttributes(VtDictionary const & dict,
 
         // optional documentation string
         VtValue docVal;
-        string docString;
+        std::string docString;
         if (TfMapLookup(attributeDataDict, _tokens->documentation, &docVal)) {
-            if (!docVal.IsHolding<string>()) {
+            if (!docVal.IsHolding<std::string>()) {
                 *errorStr = TfStringPrintf("Value for %s for %s is not a "
                                            "string",
                                            _tokens->documentation.GetText(),
@@ -634,7 +632,7 @@ HioGlslfxConfig::_GetAttributes(VtDictionary const & dict,
                 return ret;
             }
 
-            docString = docVal.UncheckedGet<string>();
+            docString = docVal.UncheckedGet<std::string>();
         }
 
         TF_DEBUG(HIO_DEBUG_GLSLFX).Msg("        attribute: %s\n",
@@ -659,7 +657,7 @@ HioGlslfxConfig::GetMetadata() const
 
 HioGlslfxConfig::MetadataDictionary
 HioGlslfxConfig::_GetMetadata(VtDictionary const & dict,
-                              string *errorStr) const
+                              std::string *errorStr) const
 {
     MetadataDictionary ret;
 

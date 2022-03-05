@@ -35,11 +35,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using std::vector;
-using std::string;
 
 /* static */
-string 
+std::string 
 UsdShadeUtils::GetPrefixForAttributeType(UsdShadeAttributeType sourceType)
 {
     switch (sourceType) {
@@ -48,7 +46,7 @@ UsdShadeUtils::GetPrefixForAttributeType(UsdShadeAttributeType sourceType)
         case UsdShadeAttributeType::Output:
             return UsdShadeTokens->outputs.GetString();
         default:
-            return string();
+            return std::string();
     }
 }
 

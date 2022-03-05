@@ -31,20 +31,19 @@
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapMetrics()
 {
-    def("GetStageKilogramsPerUnit", UsdPhysicsGetStageKilogramsPerUnit, 
-            arg("stage"));
-    def("StageHasAuthoredKilogramsPerUnit", 
-            UsdPhysicsStageHasAuthoredKilogramsPerUnit, arg("stage"));
-    def("SetStageKilogramsPerUnit", UsdPhysicsSetStageKilogramsPerUnit, 
-        (arg("stage"), arg("metersPerUnit")));
-    def("MassUnitsAre", UsdPhysicsMassUnitsAre, 
-        (arg("authoredUnits"), arg("standardUnits"), arg("epsilon")=1e-5));
+    boost::python::def("GetStageKilogramsPerUnit", UsdPhysicsGetStageKilogramsPerUnit, 
+            boost::python::arg("stage"));
+    boost::python::def("StageHasAuthoredKilogramsPerUnit", 
+            UsdPhysicsStageHasAuthoredKilogramsPerUnit, boost::python::arg("stage"));
+    boost::python::def("SetStageKilogramsPerUnit", UsdPhysicsSetStageKilogramsPerUnit, 
+        (boost::python::arg("stage"), boost::python::arg("metersPerUnit")));
+    boost::python::def("MassUnitsAre", UsdPhysicsMassUnitsAre, 
+        (boost::python::arg("authoredUnits"), boost::python::arg("standardUnits"), boost::python::arg("epsilon")=1e-5));
 
     boost::python::class_<UsdPhysicsMassUnits>
         cls("MassUnits", boost::python::no_init);

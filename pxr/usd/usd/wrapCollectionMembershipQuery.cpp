@@ -28,7 +28,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -54,33 +53,33 @@ static bool _WrapIsPathIncluded_2(
 void
 wrapUsdCollectionMembershipQuery()
 {
-    def("ComputeIncludedObjectsFromCollection",
+    boost::python::def("ComputeIncludedObjectsFromCollection",
         &UsdComputeIncludedObjectsFromCollection,
-        (arg("query"), arg("stage"),
-         arg("predicate")=UsdPrimDefaultPredicate),
-        return_value_policy<TfPySequenceToList>());
+        (boost::python::arg("query"), boost::python::arg("stage"),
+         boost::python::arg("predicate")=UsdPrimDefaultPredicate),
+        boost::python::return_value_policy<TfPySequenceToList>());
 
-    def("ComputeIncludedPathsFromCollection",
+    boost::python::def("ComputeIncludedPathsFromCollection",
         &UsdComputeIncludedPathsFromCollection,
-        (arg("query"), arg("stage"),
-         arg("predicate")=UsdPrimDefaultPredicate),
-        return_value_policy<TfPySequenceToList>());
+        (boost::python::arg("query"), boost::python::arg("stage"),
+         boost::python::arg("predicate")=UsdPrimDefaultPredicate),
+        boost::python::return_value_policy<TfPySequenceToList>());
 
-    class_<UsdCollectionMembershipQuery>("UsdCollectionMembershipQuery")
-        .def(init<>())
-        .def("IsPathIncluded", _WrapIsPathIncluded_1, arg("path"))
+    boost::python::class_<UsdCollectionMembershipQuery>("UsdCollectionMembershipQuery")
+        .def(boost::python::init<>())
+        .def("IsPathIncluded", _WrapIsPathIncluded_1, boost::python::arg("path"))
         .def("IsPathIncluded", _WrapIsPathIncluded_2, 
-             (arg("path"), arg("parentExpansionRule")))
+             (boost::python::arg("path"), boost::python::arg("parentExpansionRule")))
         .def("HasExcludes", &UsdCollectionMembershipQuery::HasExcludes)
         .def("GetAsPathExpansionRuleMap",
              &UsdCollectionMembershipQuery::GetAsPathExpansionRuleMap,
-             return_value_policy<TfPyMapToDictionary>())
+             boost::python::return_value_policy<TfPyMapToDictionary>())
         .def("GetIncludedCollections",
              &UsdCollectionMembershipQuery::GetIncludedCollections,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("__hash__", &UsdCollectionMembershipQuery::GetHash)
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
         ;
 }
 

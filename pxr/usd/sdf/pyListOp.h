@@ -69,25 +69,24 @@ private:
 
     static void _Wrap(const std::string& name)
     {
-        using namespace boost::python;
 
         using ItemVector = typename T::ItemVector;
 
-        class_<T>(name.c_str())
+        boost::python::class_<T>(name.c_str())
             .def("__str__", &This::_GetStr)
 
             .def("Create", &T::Create,
-                 (arg("prependedItems") = ItemVector(),
-                  arg("appendedItems") = ItemVector(),
-                  arg("deletedItems") = ItemVector()))
+                 (boost::python::arg("prependedItems") = ItemVector(),
+                  boost::python::arg("appendedItems") = ItemVector(),
+                  boost::python::arg("deletedItems") = ItemVector()))
             .staticmethod("Create")
 
             .def("CreateExplicit", &T::CreateExplicit,
-                 (arg("explicitItems") = ItemVector()))
+                 (boost::python::arg("explicitItems") = ItemVector()))
             .staticmethod("CreateExplicit")
 
-            .def(self == self)
-            .def(self != self)
+            .def(boost::python::self == boost::python::self)
+            .def(boost::python::self != boost::python::self)
 
             .def("HasItem", &T::HasItem)
 
@@ -97,28 +96,28 @@ private:
             .def("ApplyOperations", &This::_ApplyOperations2)
 
             .add_property("explicitItems",
-                make_function(&T::GetExplicitItems,
-                              return_value_policy<return_by_value>()),
+                boost::python::make_function(&T::GetExplicitItems,
+                              boost::python::return_value_policy<boost::python::return_by_value>()),
                 &T::SetExplicitItems)
             .add_property("addedItems",
-                make_function(&T::GetAddedItems,
-                              return_value_policy<return_by_value>()),
+                boost::python::make_function(&T::GetAddedItems,
+                              boost::python::return_value_policy<boost::python::return_by_value>()),
                 &T::SetAddedItems)
             .add_property("prependedItems",
-                make_function(&T::GetPrependedItems,
-                              return_value_policy<return_by_value>()),
+                boost::python::make_function(&T::GetPrependedItems,
+                              boost::python::return_value_policy<boost::python::return_by_value>()),
                 &T::SetPrependedItems)
             .add_property("appendedItems",
-                make_function(&T::GetAppendedItems,
-                              return_value_policy<return_by_value>()),
+                boost::python::make_function(&T::GetAppendedItems,
+                              boost::python::return_value_policy<boost::python::return_by_value>()),
                 &T::SetAppendedItems)
             .add_property("deletedItems",
-                make_function(&T::GetDeletedItems,
-                              return_value_policy<return_by_value>()),
+                boost::python::make_function(&T::GetDeletedItems,
+                              boost::python::return_value_policy<boost::python::return_by_value>()),
                 &T::SetDeletedItems)
             .add_property("orderedItems",
-                make_function(&T::GetOrderedItems,
-                              return_value_policy<return_by_value>()),
+                boost::python::make_function(&T::GetOrderedItems,
+                              boost::python::return_value_policy<boost::python::return_by_value>()),
                 &T::SetOrderedItems)
             .def("GetAddedOrExplicitItems",
                 &This::_GetAddedOrExplicitItems)

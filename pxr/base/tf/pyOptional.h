@@ -82,7 +82,6 @@ struct python_optional : public boost::noncopyable
     {
         static void * convertible(PyObject * source)
         {
-            using namespace boost::python::converter;
 
             if ((source == Py_None) || boost::python::extract<T>(source).check())
                 return source;
@@ -93,10 +92,9 @@ struct python_optional : public boost::noncopyable
         static void construct(PyObject * source,
                               boost::python::converter::rvalue_from_python_stage1_data * data)
         {
-            using namespace boost::python::converter;
 
             void * const storage =
-                ((rvalue_from_python_storage<T> *)data)->storage.bytes;
+                ((boost::python::converter::rvalue_from_python_storage<T> *)data)->storage.bytes;
 
             if (data->convertible == Py_None) {
                 new (storage) boost::optional<T>(); // An uninitialized optional

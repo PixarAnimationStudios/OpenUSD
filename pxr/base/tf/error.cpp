@@ -29,12 +29,11 @@
 
 #include <string>
 
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TfError::TfError(TfEnum errorCode, const char* errorCodeString,
-                 TfCallContext const &context, const string& commentary, 
+                 TfCallContext const &context, const std::string& commentary, 
                  TfDiagnosticInfo info, bool quiet)
     : TfDiagnosticBase(errorCode, errorCodeString, context, commentary, info,
                        quiet)

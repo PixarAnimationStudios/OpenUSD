@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -64,28 +63,28 @@ void wrapUsdGeomPrimvarsAPI()
 {
     typedef UsdGeomPrimvarsAPI This;
 
-    class_<This, bases<UsdAPISchemaBase> >
+    boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
         cls("PrimvarsAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
 
         .def("__repr__", ::_Repr)
@@ -117,7 +116,7 @@ namespace {
 
 static UsdGeomPrimvar
 _CreateNonIndexedPrimvar(const UsdGeomPrimvarsAPI &self, const TfToken &name, 
-        const SdfValueTypeName &typeName, const object &pyVal, 
+        const SdfValueTypeName &typeName, const boost::python::object &pyVal, 
         const TfToken &interpolation, int elementSize, UsdTimeCode time)
 {
     VtValue val = UsdPythonToSdfType(pyVal, typeName);
@@ -127,7 +126,7 @@ _CreateNonIndexedPrimvar(const UsdGeomPrimvarsAPI &self, const TfToken &name,
 
 static UsdGeomPrimvar
 _CreateIndexedPrimvar(const UsdGeomPrimvarsAPI &self, const TfToken &name, 
-        const SdfValueTypeName &typeName, const object &pyVal, 
+        const SdfValueTypeName &typeName, const boost::python::object &pyVal, 
         const VtIntArray &indices, const TfToken &interpolation, 
         int elementSize, UsdTimeCode time)
 {
@@ -139,56 +138,56 @@ _CreateIndexedPrimvar(const UsdGeomPrimvarsAPI &self, const TfToken &name,
 WRAP_CUSTOM {
     _class
         .def("CreatePrimvar", &UsdGeomPrimvarsAPI::CreatePrimvar,
-             (arg("name"), arg("typeName"), arg("interpolation")=TfToken(),
-              arg("elementSize")=-1))
+             (boost::python::arg("name"), boost::python::arg("typeName"), boost::python::arg("interpolation")=TfToken(),
+              boost::python::arg("elementSize")=-1))
         .def("CreateNonIndexedPrimvar", _CreateNonIndexedPrimvar,
-             (arg("name"), arg("typeName"), arg("value"),
-              arg("interpolation")=TfToken(), arg("elementSize")=-1, 
-              arg("time")=UsdTimeCode::Default()))
+             (boost::python::arg("name"), boost::python::arg("typeName"), boost::python::arg("value"),
+              boost::python::arg("interpolation")=TfToken(), boost::python::arg("elementSize")=-1, 
+              boost::python::arg("time")=UsdTimeCode::Default()))
         .def("CreateIndexedPrimvar", _CreateIndexedPrimvar,
-             (arg("name"), arg("typeName"), arg("value"), arg("indices"),
-              arg("interpolation")=TfToken(), arg("elementSize")=-1, 
-              arg("time")=UsdTimeCode::Default()))
+             (boost::python::arg("name"), boost::python::arg("typeName"), boost::python::arg("value"), boost::python::arg("indices"),
+              boost::python::arg("interpolation")=TfToken(), boost::python::arg("elementSize")=-1, 
+              boost::python::arg("time")=UsdTimeCode::Default()))
         .def("RemovePrimvar", &UsdGeomPrimvarsAPI::RemovePrimvar,
-             arg("name"))
+             boost::python::arg("name"))
         .def("BlockPrimvar", &UsdGeomPrimvarsAPI::BlockPrimvar,
-             arg("name"))
-        .def("GetPrimvar", &UsdGeomPrimvarsAPI::GetPrimvar, arg("name"))
+             boost::python::arg("name"))
+        .def("GetPrimvar", &UsdGeomPrimvarsAPI::GetPrimvar, boost::python::arg("name"))
         .def("GetPrimvars", &UsdGeomPrimvarsAPI::GetPrimvars,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetAuthoredPrimvars", &UsdGeomPrimvarsAPI::GetAuthoredPrimvars,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetPrimvarsWithValues", &UsdGeomPrimvarsAPI::GetPrimvarsWithValues,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetPrimvarsWithAuthoredValues", 
              &UsdGeomPrimvarsAPI::GetPrimvarsWithAuthoredValues,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("FindInheritablePrimvars", 
              &UsdGeomPrimvarsAPI::FindInheritablePrimvars,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("FindIncrementallyInheritablePrimvars", 
              &UsdGeomPrimvarsAPI::FindIncrementallyInheritablePrimvars,
-             (arg("inheritedFromAncestors")),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("inheritedFromAncestors")),
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("FindPrimvarWithInheritance", 
              (UsdGeomPrimvar (UsdGeomPrimvarsAPI::*)(const TfToken&) const)&UsdGeomPrimvarsAPI::FindPrimvarWithInheritance,
-             (arg("name")))
+             (boost::python::arg("name")))
         .def("FindPrimvarWithInheritance", 
              (UsdGeomPrimvar (UsdGeomPrimvarsAPI::*)(const TfToken&, const std::vector<UsdGeomPrimvar>&) const)&UsdGeomPrimvarsAPI::FindPrimvarWithInheritance,
-             (arg("name"), arg("inheritedFromAncestors")))
+             (boost::python::arg("name"), boost::python::arg("inheritedFromAncestors")))
         .def("FindPrimvarsWithInheritance", 
              (std::vector<UsdGeomPrimvar> (UsdGeomPrimvarsAPI::*)() const)&UsdGeomPrimvarsAPI::FindPrimvarsWithInheritance,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("FindPrimvarsWithInheritance", 
              (std::vector<UsdGeomPrimvar> (UsdGeomPrimvarsAPI::*)(const std::vector<UsdGeomPrimvar>&) const)&UsdGeomPrimvarsAPI::FindPrimvarsWithInheritance,
-             (arg("inheritedFromAncestors")),
-             return_value_policy<TfPySequenceToList>())
-        .def("HasPrimvar", &UsdGeomPrimvarsAPI::HasPrimvar, arg("name"))
+             (boost::python::arg("inheritedFromAncestors")),
+             boost::python::return_value_policy<TfPySequenceToList>())
+        .def("HasPrimvar", &UsdGeomPrimvarsAPI::HasPrimvar, boost::python::arg("name"))
         .def("HasPossiblyInheritedPrimvar", 
              &UsdGeomPrimvarsAPI::HasPossiblyInheritedPrimvar,
-             arg("name"))
+             boost::python::arg("name"))
         .def("CanContainPropertyName", 
-             &UsdGeomPrimvarsAPI::CanContainPropertyName, arg("name"))
+             &UsdGeomPrimvarsAPI::CanContainPropertyName, boost::python::arg("name"))
         .staticmethod("CanContainPropertyName")
         ;
 }

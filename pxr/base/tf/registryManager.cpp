@@ -138,12 +138,6 @@
 #include <set>
 #include <vector>
 
-using std::list;
-using std::map;
-using std::set;
-using std::string;
-using std::type_info;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -220,17 +214,17 @@ public:
     /// for the type to be run if they haven't run already and causes any
     /// registration functions added later for that type to run during
     /// library load.
-    void SubscribeTo(const string& typeName);
+    void SubscribeTo(const std::string& typeName);
 
     /// Unsubscribe from a type.  Any registration functions added later
     /// will not automatically run but they're saved in case \c SubscribeTo()
     /// is called for the type.
-    void UnsubscribeFrom(const string& typeName);
+    void UnsubscribeFrom(const std::string& typeName);
 
     static bool runUnloadersAtExit;
 
 private:
-    typedef string LibraryName;
+    typedef std::string LibraryName;
 
     Tf_RegistryManagerImpl();
     ~Tf_RegistryManagerImpl();
@@ -239,13 +233,13 @@ private:
     void _ProcessLibraryNoLock();
     void _UpdateSubscribersNoLock();
     bool _TransferActiveLibraryNoLock();
-    void _RunRegistrationFunctionsNoLock(const string& typeName);
+    void _RunRegistrationFunctionsNoLock(const std::string& typeName);
     void _UnloadNoLock(const char* libraryName);
 
 private:
 
-    typedef string TypeName;
-    typedef map<LibraryName, LibraryIdentifier> _LibraryNameMap;
+    typedef std::string TypeName;
+    typedef std::map<LibraryName, LibraryIdentifier> _LibraryNameMap;
     struct _RegistrationValue {
         _RegistrationValue(RegistrationFunction function_,
                            LibraryIdentifier identifier_) :
@@ -254,10 +248,10 @@ private:
         RegistrationFunction function;
         LibraryIdentifier unloadKey;
     };
-    typedef list<_RegistrationValue> _RegistrationValueList;
+    typedef std::list<_RegistrationValue> _RegistrationValueList;
     typedef TfHashMap<TypeName, _RegistrationValueList,
                       TfHash> _RegistrationFunctionMap;
-    typedef list<UnloadFunction> _UnloadFunctionList;
+    typedef std::list<UnloadFunction> _UnloadFunctionList;
     typedef TfHashMap<LibraryIdentifier,
                       _UnloadFunctionList, TfHash> _UnloadFunctionMap;
 
@@ -274,8 +268,8 @@ private:
 
     // Subscription state.
     _LibraryNameMap _libraryNameMap;
-    set<TypeName> _subscriptions;
-    list<TypeName> _orderedSubscriptions;
+    std::set<TypeName> _subscriptions;
+    std::list<TypeName> _orderedSubscriptions;
     _RegistrationFunctionMap _registrationFunctions;
     _UnloadFunctionMap _unloadFunctions;
 
@@ -387,7 +381,7 @@ Tf_RegistryManagerImpl::UnloadLibrary(const char* libraryName)
 }
 
 void
-Tf_RegistryManagerImpl::SubscribeTo(const string& typeName)
+Tf_RegistryManagerImpl::SubscribeTo(const std::string& typeName)
 {
     std::lock_guard<std::recursive_mutex> lock(_mutex);
 
@@ -405,7 +399,7 @@ Tf_RegistryManagerImpl::SubscribeTo(const string& typeName)
 }
 
 void
-Tf_RegistryManagerImpl::UnsubscribeFrom(const string& typeName)
+Tf_RegistryManagerImpl::UnsubscribeFrom(const std::string& typeName)
 {
     std::lock_guard<std::recursive_mutex> lock(_mutex);
     if (_subscriptions.erase(typeName)) {
@@ -467,7 +461,7 @@ Tf_RegistryManagerImpl::_TransferActiveLibraryNoLock()
 }
 
 void
-Tf_RegistryManagerImpl::_RunRegistrationFunctionsNoLock(const string& typeName)
+Tf_RegistryManagerImpl::_RunRegistrationFunctionsNoLock(const std::string& typeName)
 {
     _RegistrationFunctionMap::iterator i = _registrationFunctions.find(typeName);
     if (i == _registrationFunctions.end()) {
@@ -590,13 +584,13 @@ TfRegistryManager::AddFunctionForUnload(const UnloadFunctionType& func)
 }
 
 void 
-TfRegistryManager::_SubscribeTo(const type_info& ti)
+TfRegistryManager::_SubscribeTo(const std::type_info& ti)
 {
     Tf_RegistryManagerImpl::GetInstance().SubscribeTo(ArchGetDemangled(ti));
 }
 
 void
-TfRegistryManager::_UnsubscribeFrom(const type_info& ti)
+TfRegistryManager::_UnsubscribeFrom(const std::type_info& ti)
 {
     Tf_RegistryManagerImpl::GetInstance().UnsubscribeFrom(ArchGetDemangled(ti));
 }

@@ -40,8 +40,6 @@
 #include <algorithm>
 #include <utility>
 
-using std::pair;
-using std::make_pair;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -55,16 +53,16 @@ public:
 
     typedef SdfLayerHandleVector Layers;
     typedef PcpLayerStackPtrVector LayerStacks;
-    typedef boost::unordered_map<PcpLayerStackIdentifier, PcpLayerStackPtr>
+    typedef boost::unordered::unordered_map<PcpLayerStackIdentifier, PcpLayerStackPtr>
         IdentifierToLayerStack;
-    typedef boost::unordered_map<SdfLayerHandle, LayerStacks>
+    typedef boost::unordered::unordered_map<SdfLayerHandle, LayerStacks>
         LayerToLayerStacks;
-    typedef boost::unordered_map<PcpLayerStackPtr, Layers>
+    typedef boost::unordered::unordered_map<PcpLayerStackPtr, Layers>
         LayerStackToLayers;
 
-    typedef boost::unordered_map<std::string, LayerStacks>
+    typedef boost::unordered::unordered_map<std::string, LayerStacks>
         MutedLayerIdentifierToLayerStacks;
-    typedef boost::unordered_map<PcpLayerStackPtr, std::set<std::string> >
+    typedef boost::unordered::unordered_map<PcpLayerStackPtr, std::set<std::string> >
         LayerStackToMutedLayerIdentifiers;
 
     IdentifierToLayerStack identifierToLayerStack;

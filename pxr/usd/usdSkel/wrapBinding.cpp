@@ -37,7 +37,6 @@
 #include <boost/python.hpp>
 
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -48,11 +47,11 @@ namespace {
 UsdSkelBinding*
 _New(const UsdSkelSkeleton& skel, const boost::python::list& skinningQueries)
 {
-    const size_t numQueries = len(skinningQueries);
+    const size_t numQueries = boost::python::len(skinningQueries);
     VtArray<UsdSkelSkinningQuery> skinningQueriesArray(numQueries);
     for (size_t i = 0; i < numQueries; ++i) {
         skinningQueriesArray[i] =
-            extract<const UsdSkelSkinningQuery&>(skinningQueries[i]);
+            boost::python::extract<const UsdSkelSkinningQuery&>(skinningQueries[i]);
     }
     return new UsdSkelBinding(skel, skinningQueriesArray);
 }
@@ -65,14 +64,14 @@ void wrapUsdSkelBinding()
 {
     using This = UsdSkelBinding;
 
-    class_<This>("Binding", init<>())
+    boost::python::class_<This>("Binding", boost::python::init<>())
 
-        .def("__init__", make_constructor(&_New))
+        .def("__init__", boost::python::make_constructor(&_New))
 
         .def("GetSkeleton", &This::GetSkeleton,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("GetSkinningTargets", &This::GetSkinningTargets,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         ;
 }

@@ -37,7 +37,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -52,49 +51,49 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateShapingFocusAttr(UsdLuxShapingAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateShapingFocusAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateShapingFocusTintAttr(UsdLuxShapingAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateShapingFocusTintAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Color3f), writeSparsely);
 }
         
 static UsdAttribute
 _CreateShapingConeAngleAttr(UsdLuxShapingAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateShapingConeAngleAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateShapingConeSoftnessAttr(UsdLuxShapingAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateShapingConeSoftnessAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateShapingIesFileAttr(UsdLuxShapingAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateShapingIesFileAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
         
 static UsdAttribute
 _CreateShapingIesAngleScaleAttr(UsdLuxShapingAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateShapingIesAngleScaleAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateShapingIesNormalizeAttr(UsdLuxShapingAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateShapingIesNormalizeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
@@ -132,84 +131,84 @@ void wrapUsdLuxShapingAPI()
     UsdLuxShapingAPI_CanApplyResult::Wrap<UsdLuxShapingAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
+    boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
         cls("ShapingAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
-        .def("Apply", &This::Apply, (arg("prim")))
+        .def("Apply", &This::Apply, (boost::python::arg("prim")))
         .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetShapingFocusAttr",
              &This::GetShapingFocusAttr)
         .def("CreateShapingFocusAttr",
              &_CreateShapingFocusAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetShapingFocusTintAttr",
              &This::GetShapingFocusTintAttr)
         .def("CreateShapingFocusTintAttr",
              &_CreateShapingFocusTintAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetShapingConeAngleAttr",
              &This::GetShapingConeAngleAttr)
         .def("CreateShapingConeAngleAttr",
              &_CreateShapingConeAngleAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetShapingConeSoftnessAttr",
              &This::GetShapingConeSoftnessAttr)
         .def("CreateShapingConeSoftnessAttr",
              &_CreateShapingConeSoftnessAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetShapingIesFileAttr",
              &This::GetShapingIesFileAttr)
         .def("CreateShapingIesFileAttr",
              &_CreateShapingIesFileAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetShapingIesAngleScaleAttr",
              &This::GetShapingIesAngleScaleAttr)
         .def("CreateShapingIesAngleScaleAttr",
              &_CreateShapingIesAngleScaleAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetShapingIesNormalizeAttr",
              &This::GetShapingIesNormalizeAttr)
         .def("CreateShapingIesNormalizeAttr",
              &_CreateShapingIesNormalizeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;
@@ -242,22 +241,22 @@ namespace {
 
 WRAP_CUSTOM {
     _class
-        .def(init<UsdShadeConnectableAPI>(arg("connectable")))
+        .def(boost::python::init<UsdShadeConnectableAPI>(boost::python::arg("connectable")))
         .def("ConnectableAPI", &UsdLuxShapingAPI::ConnectableAPI)
 
         .def("CreateOutput", &UsdLuxShapingAPI::CreateOutput,
-             (arg("name"), arg("type")))
-        .def("GetOutput", &UsdLuxShapingAPI::GetOutput, arg("name"))
+             (boost::python::arg("name"), boost::python::arg("type")))
+        .def("GetOutput", &UsdLuxShapingAPI::GetOutput, boost::python::arg("name"))
         .def("GetOutputs", &UsdLuxShapingAPI::GetOutputs,
-             (arg("onlyAuthored")=true),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("onlyAuthored")=true),
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("CreateInput", &UsdLuxShapingAPI::CreateInput,
-             (arg("name"), arg("type")))
-        .def("GetInput", &UsdLuxShapingAPI::GetInput, arg("name"))
+             (boost::python::arg("name"), boost::python::arg("type")))
+        .def("GetInput", &UsdLuxShapingAPI::GetInput, boost::python::arg("name"))
         .def("GetInputs", &UsdLuxShapingAPI::GetInputs,
-             (arg("onlyAuthored")=true),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("onlyAuthored")=true),
+             boost::python::return_value_policy<TfPySequenceToList>())
         ;
 }
 

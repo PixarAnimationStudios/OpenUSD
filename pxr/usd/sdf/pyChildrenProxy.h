@@ -135,12 +135,11 @@ private:
 
     static void _Wrap()
     {
-        using namespace boost::python;
 
         std::string name = _GetName();
 
-        scope thisScope =
-        class_<This>(name.c_str(), no_init)
+        boost::python::scope thisScope =
+        boost::python::class_<This>(name.c_str(), boost::python::no_init)
             .def("__repr__", &This::_GetRepr, TfPyRaiseOnError<>())
             .def("__len__", &This::_GetSize, TfPyRaiseOnError<>())
             .def("__getitem__", &This::_GetItemByKey, TfPyRaiseOnError<>())
@@ -176,20 +175,20 @@ private:
             .def("__ne__", &This::operator!=, TfPyRaiseOnError<>())
             ;
 
-        class_<_Iterator<_ExtractItem> >
-            ((name + "_Iterator").c_str(), no_init)
+        boost::python::class_<_Iterator<_ExtractItem> >
+            ((name + "_Iterator").c_str(), boost::python::no_init)
             .def("__iter__", &This::template _Iterator<_ExtractItem>::GetCopy)
             .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractItem>::GetNext)
             ;
 
-        class_<_Iterator<_ExtractKey> >
-            ((name + "_KeyIterator").c_str(), no_init)
+        boost::python::class_<_Iterator<_ExtractKey> >
+            ((name + "_KeyIterator").c_str(), boost::python::no_init)
             .def("__iter__", &This::template _Iterator<_ExtractKey>::GetCopy)
             .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractKey>::GetNext)
             ;
 
-        class_<_Iterator<_ExtractValue> >
-            ((name + "_ValueIterator").c_str(), no_init)
+        boost::python::class_<_Iterator<_ExtractValue> >
+            ((name + "_ValueIterator").c_str(), boost::python::no_init)
             .def("__iter__", &This::template _Iterator<_ExtractValue>::GetCopy)
             .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractValue>::GetNext)
             ;

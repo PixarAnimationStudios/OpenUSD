@@ -46,10 +46,6 @@
 #include <set>
 #include <vector>
 
-using std::map;
-using std::set;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -1697,16 +1693,16 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
             // Look for 'appliesTo', either a single string or a list of strings
             // specifying which spec types this metadatum should be registered
             // for.
-            set<string> appliesTo;
+            std::set<std::string> appliesTo;
             {
                 const JsValue val = 
                     TfMapLookupByValue(fieldInfo,
                     _tokens->AppliesTo.GetString(), JsValue());
-                if (val.IsArrayOf<string>()) {
-                    const vector<string> vec = val.GetArrayOf<string>();
+                if (val.IsArrayOf<std::string>()) {
+                    const std::vector<std::string> vec = val.GetArrayOf<std::string>();
                     appliesTo.insert(vec.begin(), vec.end());
-                } else if (val.Is<string>()) {
-                    appliesTo.insert(val.Get<string>());
+                } else if (val.Is<std::string>()) {
+                    appliesTo.insert(val.Get<std::string>());
                 }
 
                 // this is so appliesTo does not show up in fieldDef's info
@@ -1762,7 +1758,7 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
 void
 SdfSchemaBase::_AddRequiredFieldName(const TfToken &fieldName)
 {
-    if (find(_requiredFieldNames.begin(),
+    if (std::find(_requiredFieldNames.begin(),
              _requiredFieldNames.end(), fieldName) == _requiredFieldNames.end())
         _requiredFieldNames.push_back(fieldName);
 }

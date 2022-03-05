@@ -100,7 +100,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using namespace std;
 
 #define MAX_STACK_DEPTH 4096
 
@@ -1117,7 +1116,7 @@ ArchLogPostMortem(const char* reason,
  */
 void
 ArchLogStackTrace(const std::string& reason, bool fatal, 
-                  const string &sessionLog)
+                  const std::string &sessionLog)
 {
     ArchLogStackTrace(ArchGetProgramNameForErrors(), reason, fatal,
                       sessionLog);
@@ -1130,9 +1129,9 @@ ArchLogStackTrace(const std::string& reason, bool fatal,
  */
 void
 ArchLogStackTrace(const std::string& progname, const std::string& reason,
-                  bool fatal, const string &sessionLog)
+                  bool fatal, const std::string &sessionLog)
 {
-    string tmpFile;
+    std::string tmpFile;
     int fd = ArchMakeTmpFile(ArchStringPrintf("%s_%s",
                                               stackTracePrefix,
                                               ArchGetProgramNameForErrors()),
@@ -1225,7 +1224,7 @@ _LogStackTraceToOutputIterator(OutputIterator oi, size_t maxDepth, bool addEndl)
 void
 ArchPrintStackTrace(FILE *fout, const std::string& programName, const std::string& reason)
 {
-    ostringstream oss;
+    std::ostringstream oss;
 
     ArchPrintStackTrace(oss, programName, reason);
 
@@ -1257,13 +1256,13 @@ ArchPrintStackTrace(std::ostream& out, const std::string& reason)
  * it calls printf and other unsafe functions.
  */
 void
-ArchPrintStackTrace(ostream& oss,
+ArchPrintStackTrace(std::ostream& oss,
                     const std::string& programName,
                     const std::string& reason)
 {
     oss << "==============================================================\n"
         << " A stack trace has been requested by "
-        << programName << " because: " << reason << endl;
+        << programName << " because: " << reason << std::endl;
 
 #if defined(ARCH_OS_DARWIN)
 
@@ -1271,7 +1270,7 @@ ArchPrintStackTrace(ostream& oss,
 
 #else
 
-    vector<uintptr_t> frames;
+    std::vector<uintptr_t> frames;
     ArchGetStackFrames(MAX_STACK_DEPTH, &frames);
     ArchPrintStackFrames(oss, frames);
 
@@ -1281,13 +1280,13 @@ ArchPrintStackTrace(ostream& oss,
 }
 
 void
-ArchGetStackTrace(ostream& oss, const std::string& reason)
+ArchGetStackTrace(std::ostream& oss, const std::string& reason)
 {
     ArchPrintStackTrace(oss, ArchGetProgramNameForErrors(), reason);
 }
 
 void
-ArchGetStackFrames(size_t maxDepth, vector<uintptr_t> *frames)
+ArchGetStackFrames(size_t maxDepth, std::vector<uintptr_t> *frames)
 {
     ArchGetStackFrames(maxDepth, /* skip = */ 0, frames);
 }
@@ -1296,13 +1295,13 @@ ArchGetStackFrames(size_t maxDepth, vector<uintptr_t> *frames)
 struct Arch_UnwindContext {
 public:
     Arch_UnwindContext(size_t inMaxdepth, size_t inSkip,
-                       vector<uintptr_t>* inFrames) :
+                       std::vector<uintptr_t>* inFrames) :
         maxdepth(inMaxdepth), skip(inSkip), frames(inFrames) { }
 
 public:
     size_t maxdepth;
     size_t skip;
-    vector<uintptr_t>* frames;
+    std::vector<uintptr_t>* frames;
 };
 
 static _Unwind_Reason_Code
@@ -1332,7 +1331,7 @@ Arch_unwindcb(struct _Unwind_Context *ctx, void *data)
  *  save some of stack into buffer.
  */
 void
-ArchGetStackFrames(size_t maxdepth, size_t skip, vector<uintptr_t> *frames)
+ArchGetStackFrames(size_t maxdepth, size_t skip, std::vector<uintptr_t> *frames)
 {
     /* use the exception handling mechanism to unwind our stack.
      * note this is gcc >= 3.3.3 only.
@@ -1409,8 +1408,8 @@ Arch_DefaultStackTraceCallback(uintptr_t address)
 }
 
 static
-vector<string>
-Arch_GetStackTrace(const vector<uintptr_t> &frames,
+std::vector<std::string>
+Arch_GetStackTrace(const std::vector<uintptr_t> &frames,
                    bool skipUnknownFrames=false);
 
 /*
@@ -1418,10 +1417,10 @@ Arch_GetStackTrace(const vector<uintptr_t> &frames,
  *  print out stack frames to the given ostream.
  */
 void
-ArchPrintStackFrames(ostream& oss, const vector<uintptr_t> &frames,
+ArchPrintStackFrames(std::ostream& oss, const std::vector<uintptr_t> &frames,
                      bool skipUnknownFrames)
 {
-    const vector<string> result = Arch_GetStackTrace(frames, skipUnknownFrames);
+    const std::vector<std::string> result = Arch_GetStackTrace(frames, skipUnknownFrames);
     for (size_t i = 0; i < result.size(); i++) {
         oss << result[i] << std::endl;
     }
@@ -1431,10 +1430,10 @@ ArchPrintStackFrames(ostream& oss, const vector<uintptr_t> &frames,
  * ArchGetStackTrace
  *  vector of strings
  */
-vector<string>
+std::vector<std::string>
 ArchGetStackTrace(size_t maxDepth)
 {
-    vector<uintptr_t> frames;
+    std::vector<uintptr_t> frames;
     ArchGetStackFrames(maxDepth, &frames);
     return Arch_GetStackTrace(frames);
 }
@@ -1448,11 +1447,11 @@ Arch_GetStackTraceCallback()
     return &callback;
 }
 
-static vector<string>
-Arch_GetStackTrace(const vector<uintptr_t> &frames,
+static std::vector<std::string>
+Arch_GetStackTrace(const std::vector<uintptr_t> &frames,
                    bool skipUnknownFrames)
 {
-    vector<string> rv;
+    std::vector<std::string> rv;
 
     if (frames.empty()) {
         rv.push_back("No frames saved, stack traces probably not supported "

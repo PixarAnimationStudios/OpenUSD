@@ -44,7 +44,6 @@
 #include <boost/assign.hpp>
 #include <ostream>
 
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -59,18 +58,18 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 // Our interface to the YACC layer parser for parsing to SdfData.
 extern bool Sdf_ParseLayer(
-    const string& context, 
+    const std::string& context, 
     const std::shared_ptr<PXR_NS::ArAsset>& asset,
-    const string& token,
-    const string& version,
+    const std::string& token,
+    const std::string& version,
     bool metadataOnly,
     PXR_NS::SdfDataRefPtr data,
     PXR_NS::SdfLayerHints *hints);
 
 extern bool Sdf_ParseLayerFromString(
     const std::string & layerString,
-    const string& token,
-    const string& version,
+    const std::string& token,
+    const std::string& version,
     PXR_NS::SdfDataRefPtr data,
     PXR_NS::SdfLayerHints *hints);
 
@@ -136,7 +135,7 @@ _CanReadImpl(const std::shared_ptr<ArAsset>& asset,
 } // end anonymous namespace
 
 bool
-SdfTextFileFormat::CanRead(const string& filePath) const
+SdfTextFileFormat::CanRead(const std::string& filePath) const
 {
     TRACE_FUNCTION();
 
@@ -156,7 +155,7 @@ SdfTextFileFormat::_CanReadFromAsset(
 bool
 SdfTextFileFormat::Read(
     SdfLayer* layer,
-    const string& resolvedPath,
+    const std::string& resolvedPath,
     bool metadataOnly) const
 {
     TRACE_FUNCTION();
@@ -173,7 +172,7 @@ SdfTextFileFormat::Read(
 bool
 SdfTextFileFormat::_ReadFromAsset(
     SdfLayer* layer,
-    const string& resolvedPath,
+    const std::string& resolvedPath,
     const std::shared_ptr<ArAsset>& asset,
     bool metadataOnly) const
 {
@@ -232,9 +231,9 @@ static bool
 _WriteLayer(
     const SdfLayer* l,
     Sdf_TextOutput& out,
-    const string& cookie,
-    const string& versionString,
-    const string& commentOverride)
+    const std::string& cookie,
+    const std::string& versionString,
+    const std::string& commentOverride)
 {
     TRACE_FUNCTION();
 
@@ -304,7 +303,7 @@ _WriteLayer(
     } // end for each field
 
     // Write header if not empty.
-    string headerStr = header.GetString();
+    std::string headerStr = header.GetString();
     if (!headerStr.empty()) {
         _Write(out, 0, "(\n");
         _Write(out, 0, "%s", headerStr.c_str());

@@ -40,7 +40,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-using std::string;
 
 TF_DEFINE_PUBLIC_TOKENS(UsdUtilsUsdStageStatsKeys, USDUTILS_USDSTAGE_STATS);
 
@@ -71,7 +70,7 @@ UsdUtilsComputeUsdStageStats(const std::string &rootLayerPath,
 static
 void
 _UpdateCountsHelper(const UsdPrim &prim, 
-    std::set<string> *seenAssetNames,    
+    std::set<std::string> *seenAssetNames,    
     size_t *totalPrimCount,
     size_t *subTotalPrimCount,
     size_t *modelCount,
@@ -100,7 +99,7 @@ _UpdateCountsHelper(const UsdPrim &prim,
                 ++(*instancedModelCount);
             }
 
-            string assetName;
+            std::string assetName;
             if (UsdModelAPI(prim).GetAssetName(&assetName)) {
                 if (seenAssetNames->insert(assetName).second) {
                     ++(*assetCount);
@@ -148,7 +147,7 @@ UsdUtilsComputeUsdStageStats(const UsdStageWeakPtr &stage,
         PrimTypeAndCountMap;
     PrimTypeAndCountMap primCountsByType;
     
-    std::set<string> seenAssetNames;
+    std::set<std::string> seenAssetNames;
     for (UsdPrim prim: stage->TraverseAll()) {
         _UpdateCountsHelper(prim, &seenAssetNames, 
             &totalPrimCount, &primaryPrimCount, 

@@ -34,9 +34,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using std::make_pair;
-using std::pair;
-using std::vector;
 
 TF_DEFINE_ENV_SETTING(
     USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY, false,
@@ -211,8 +208,8 @@ Usd_InstanceCache::_CreateOrUpdatePrototypeForInstances(
     std::unordered_map<SdfPath, SdfPath, SdfPath::Hash> const &
     prototypeToOldSourceIndexPath)
 {
-    pair<_InstanceKeyToPrototypeMap::iterator, bool> result = 
-        _instanceKeyToPrototypeMap.insert(make_pair(key, SdfPath()));
+    std::pair<_InstanceKeyToPrototypeMap::iterator, bool> result = 
+        _instanceKeyToPrototypeMap.insert(std::make_pair(key, SdfPath()));
     
     const bool createdNewPrototype = result.second;
     if (createdNewPrototype) {
@@ -463,7 +460,7 @@ Usd_InstanceCache::IsPrototypePath(const SdfPath& path)
         TfStringStartsWith(path.GetName(), "__Prototype_");
 }
 
-vector<SdfPath>
+std::vector<SdfPath>
 Usd_InstanceCache::GetInstancePrimIndexesForPrototype(
     const SdfPath& prototypePath) const
 {
@@ -471,7 +468,7 @@ Usd_InstanceCache::GetInstancePrimIndexesForPrototype(
         _prototypeToPrimIndexesMap.find(prototypePath);
 
     return (it == _prototypeToPrimIndexesMap.end()) ? 
-        vector<SdfPath>() : it->second;
+        std::vector<SdfPath>() : it->second;
 }
 
 SdfPath 
@@ -481,10 +478,10 @@ Usd_InstanceCache::_GetNextPrototypePath(const Usd_InstanceKey& key)
         TfToken(TfStringPrintf("__Prototype_%zu", ++_lastPrototypeIndex)));
 }
 
-vector<SdfPath> 
+std::vector<SdfPath> 
 Usd_InstanceCache::GetAllPrototypes() const
 {
-    vector<SdfPath> paths;
+    std::vector<SdfPath> paths;
     paths.reserve(_instanceKeyToPrototypeMap.size());
     for (const _InstanceKeyToPrototypeMap::value_type& v:
              _instanceKeyToPrototypeMap) {
@@ -534,20 +531,20 @@ Usd_InstanceCache::PrototypeUsesPrimIndexPath(
     return _PrototypeUsesPrimIndexPath(primIndexPath);
 }
 
-vector<SdfPath> 
+std::vector<SdfPath> 
 Usd_InstanceCache::GetPrimsInPrototypesUsingPrimIndexPath(
     const SdfPath& primIndexPath) const
 {
-    vector<SdfPath> prototypePaths;
+    std::vector<SdfPath> prototypePaths;
     _PrototypeUsesPrimIndexPath(primIndexPath, &prototypePaths);
     return prototypePaths;
 }
 
-vector<std::pair<SdfPath, SdfPath>> 
+std::vector<std::pair<SdfPath, SdfPath>> 
 Usd_InstanceCache::GetPrototypesUsingPrimIndexPathOrDescendents(
         const SdfPath& primIndexPath) const
 {
-    vector<std::pair<SdfPath, SdfPath>> prototypeSourceIndexPairs;
+    std::vector<std::pair<SdfPath, SdfPath>> prototypeSourceIndexPairs;
     for (_SourcePrimIndexToPrototypeMap::const_iterator 
              it = _sourcePrimIndexToPrototypeMap.lower_bound(primIndexPath),
              end = _sourcePrimIndexToPrototypeMap.end();
@@ -575,7 +572,7 @@ Usd_InstanceCache::GetPrototypesUsingPrimIndexPathOrDescendents(
 bool
 Usd_InstanceCache::_PrototypeUsesPrimIndexPath(
     const SdfPath& primIndexPath,
-    vector<SdfPath>* prototypePaths) const
+    std::vector<SdfPath>* prototypePaths) const
 {
     // This function is trickier than you might expect because it has
     // to deal with nested instances. Consider this case:

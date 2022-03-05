@@ -27,7 +27,6 @@
 
 #include <string>
 
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -40,7 +39,7 @@ int ArchVsnprintf(char *str, size_t size, const char *format, va_list ap)
     return vsnprintf(str, size, format, ap);
 }
 
-string
+std::string
 ArchVStringPrintf(const char *fmt, va_list ap)
 {
     // on architectures where arguments are passed in registers and
@@ -51,12 +50,12 @@ ArchVStringPrintf(const char *fmt, va_list ap)
 
     char buf[4096]; // past this size, we'll incur a new/delete.
     size_t needed = ArchVsnprintf(buf, sizeof(buf), fmt, ap) + 1;
-    string s(needed <= sizeof(buf) ? buf : string());
+    std::string s(needed <= sizeof(buf) ? buf : std::string());
 
     if (s.empty()) {
         char* tmp = new char[needed];
         ArchVsnprintf(tmp, needed, fmt, apcopy);
-        s = string(tmp);
+        s = std::string(tmp);
         delete [] tmp;
     }
 
@@ -65,12 +64,12 @@ ArchVStringPrintf(const char *fmt, va_list ap)
     return s;
 }
 
-string
+std::string
 ArchStringPrintf(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    string s = ArchVStringPrintf(fmt, ap);
+    std::string s = ArchVStringPrintf(fmt, ap);
     va_end(ap);
     return s;
 }

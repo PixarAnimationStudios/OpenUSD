@@ -53,12 +53,6 @@ TF_DEFINE_PUBLIC_TOKENS(HioGlslfxTokens, HIO_GLSLFX_TOKENS);
 
 #define CURRENT_VERSION 0.1
 
-using std::string;
-using std::vector;
-using std::list;
-using std::istringstream;
-using std::istream;
-using std::ifstream;
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -72,7 +66,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((toolSubst, "$TOOLS"))
 );
 
-using namespace std;
 
 namespace {
 
@@ -106,7 +99,7 @@ ShaderResourceRegistry::ShaderResourceRegistry()
         if (TfMapLookup(metadata, _tokens->shaderResources, &value)
                && value.Is<std::string>()) {
 
-            string shaderPath =
+            std::string shaderPath =
                 TfStringCatPaths(plugin->GetResourcePath(),
                                  value.Get<std::string>());
             _resourceMap[packageName] = shaderPath;
@@ -119,7 +112,7 @@ ShaderResourceRegistry::GetShaderResourcePath(
         std::string const & packageName,
         std::string const & shaderAssetPath) const
 {
-    string resourcePath;
+    std::string resourcePath;
     if (!TfMapLookup(_resourceMap, packageName, &resourcePath)) {
         return std::string();
     }
@@ -131,10 +124,10 @@ static TfStaticData<const ShaderResourceRegistry> _shaderResourceRegistry;
 
 };
 
-static string
-_ResolveResourcePath(const string& importFile, string *errorStr)
+static std::string
+_ResolveResourcePath(const std::string& importFile, std::string *errorStr)
 {
-    const vector<string> pathTokens = TfStringTokenize(importFile, "/");
+    const std::vector<std::string> pathTokens = TfStringTokenize(importFile, "/");
     if (pathTokens.size() < 3) {
         if( errorStr )
         {
@@ -145,12 +138,12 @@ _ResolveResourcePath(const string& importFile, string *errorStr)
         return "";
     }
 
-    const string packageName = pathTokens[1];
+    const std::string packageName = pathTokens[1];
 
-    const string assetPath = TfStringJoin(
-        vector<string>(pathTokens.begin() + 3, pathTokens.end()), "/");
+    const std::string assetPath = TfStringJoin(
+        std::vector<std::string>(pathTokens.begin() + 3, pathTokens.end()), "/");
 
-    const string resourcePath =
+    const std::string resourcePath =
         _shaderResourceRegistry->GetShaderResourcePath(packageName,
                                                         assetPath);
     if (resourcePath.empty() && errorStr) {
@@ -163,11 +156,11 @@ _ResolveResourcePath(const string& importFile, string *errorStr)
     return TfPathExists(resourcePath) ? resourcePath : ""; 
 }
 
-static string
+static std::string
 _ComputeResolvedPath(
-    const string &containingFile,
-    const string &filename,
-    string *errorStr )
+    const std::string &containingFile,
+    const std::string &filename,
+    std::string *errorStr )
 {
     // Resolve $TOOLS-prefixed paths.
     if (TfStringStartsWith(filename, _tokens->toolSubst.GetString() + "/")) {
@@ -208,7 +201,7 @@ _ComputeResolvedPath(
     // then resolve it.
     const std::string assetPath =
         resolver.CreateIdentifier(filename, ArResolvedPath(containingFile));
-    return assetPath.empty() ? string() : resolver.Resolve(assetPath);
+    return assetPath.empty() ? std::string() : resolver.Resolve(assetPath);
 #endif
 }
 
@@ -218,12 +211,12 @@ HioGlslfx::HioGlslfx() :
     // do nothing
 }
 
-HioGlslfx::HioGlslfx(string const & filePath, TfToken const & technique)
+HioGlslfx::HioGlslfx(std::string const & filePath, TfToken const & technique)
     : _technique(technique)
     , _valid(true)
     , _hash(0)
 {
-    string errorStr;
+    std::string errorStr;
 #if AR_VERSION == 1
     // Resolve with the containingFile set to the current working directory
     // with a trailing slash. This ensures that relative paths supplied to the
@@ -231,8 +224,8 @@ HioGlslfx::HioGlslfx(string const & filePath, TfToken const & technique)
     const string resolvedPath =
         _ComputeResolvedPath(ArchGetCwd() + "/", filePath, &errorStr);
 #else
-    const string resolvedPath =
-        _ComputeResolvedPath(string(), filePath, &errorStr);
+    const std::string resolvedPath =
+        _ComputeResolvedPath(std::string(), filePath, &errorStr);
 #endif
     if (resolvedPath.empty()) {
         if (!errorStr.empty()) {
@@ -256,7 +249,7 @@ HioGlslfx::HioGlslfx(string const & filePath, TfToken const & technique)
     }
 }
 
-HioGlslfx::HioGlslfx(istream &is, TfToken const & technique)
+HioGlslfx::HioGlslfx(std::istream &is, TfToken const & technique)
     : _globalContext("istream")
     , _technique(technique)
     , _valid(true)
@@ -280,20 +273,20 @@ HioGlslfx::IsValid(std::string *reason) const
     return _valid;
 }
 
-static unique_ptr<istream>
-_CreateStreamForFile(string const& filePath)
+static std::unique_ptr<std::istream>
+_CreateStreamForFile(std::string const& filePath)
 {
     if (TfIsFile(filePath)) {
-        return make_unique<ifstream>(filePath);
+        return std::make_unique<std::ifstream>(filePath);
     }
 
-    const shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
+    const std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
         ArResolvedPath(filePath));
     if (asset) {
-        const shared_ptr<const char> buffer = asset->GetBuffer();
+        const std::shared_ptr<const char> buffer = asset->GetBuffer();
         if (buffer) {
-            return make_unique<istringstream>(
-                string(buffer.get(), asset->GetSize()));
+            return std::make_unique<std::istringstream>(
+                std::string(buffer.get(), asset->GetSize()));
         }
     }
 
@@ -301,7 +294,7 @@ _CreateStreamForFile(string const& filePath)
 }
 
 bool
-HioGlslfx::_ProcessFile(string const & filePath, _ParseContext & context)
+HioGlslfx::_ProcessFile(std::string const & filePath, _ParseContext & context)
 {
     if (_seenFiles.count(filePath)) {
         // for now, just ignore files that have already been included
@@ -312,7 +305,7 @@ HioGlslfx::_ProcessFile(string const & filePath, _ParseContext & context)
 
     _seenFiles.insert(filePath);
 
-    const unique_ptr<istream> str = _CreateStreamForFile(filePath);
+    const std::unique_ptr<std::istream> str = _CreateStreamForFile(filePath);
     if (!str) {
         TF_RUNTIME_ERROR("Could not open %s", filePath.c_str());
         return false;
@@ -322,18 +315,18 @@ HioGlslfx::_ProcessFile(string const & filePath, _ParseContext & context)
 }
 
 // static
-vector<string>
-HioGlslfx::ExtractImports(const string& filename)
+std::vector<std::string>
+HioGlslfx::ExtractImports(const std::string& filename)
 {
-    const unique_ptr<istream> input = _CreateStreamForFile(filename);
+    const std::unique_ptr<std::istream> input = _CreateStreamForFile(filename);
     if (!input) {
         return {};
     }
 
-    vector<string> imports;
+    std::vector<std::string> imports;
 
-    string line;
-    while (getline(*input, line)) {
+    std::string line;
+    while (std::getline(*input, line)) {
         if (line.find(_tokens->import) == 0) {
             imports.push_back(TfStringTrim(line.substr(_tokens->import.size())));
         }
@@ -346,7 +339,7 @@ bool
 HioGlslfx::_ProcessInput(std::istream * input,
                          _ParseContext & context)
 {
-    while (getline(*input, context.currentLine)) {
+    while (std::getline(*input, context.currentLine)) {
         // trim to avoid issues with cross-platform line endings
         context.currentLine = TfStringTrimRight(context.currentLine);
 
@@ -419,7 +412,7 @@ HioGlslfx::_ProcessInput(std::istream * input,
 bool
 HioGlslfx::_ProcessImport(_ParseContext & context)
 {
-    const vector<string> tokens = TfStringTokenize(context.currentLine);
+    const std::vector<std::string> tokens = TfStringTokenize(context.currentLine);
 
     if (tokens.size() != 2) {
         TF_RUNTIME_ERROR("Syntax Error on line %d of %s. #import declaration "
@@ -428,8 +421,8 @@ HioGlslfx::_ProcessImport(_ParseContext & context)
         return false;
     }
 
-    string errorStr;
-    const string importFile = _ComputeResolvedPath(context.filename, tokens[1],
+    std::string errorStr;
+    const std::string importFile = _ComputeResolvedPath(context.filename, tokens[1],
                                                    &errorStr );
 
     if (importFile.empty()) {
@@ -453,7 +446,7 @@ bool
 HioGlslfx::_ParseSectionLine(_ParseContext & context)
 {
 
-    vector<string> tokens = TfStringTokenize(context.currentLine);
+    std::vector<std::string> tokens = TfStringTokenize(context.currentLine);
     if (tokens.size() == 1) {
         TF_RUNTIME_ERROR("Syntax Error on line %d of %s. Section delimiter "
                          "must be followed by a valid token.",
@@ -481,7 +474,7 @@ HioGlslfx::_ParseSectionLine(_ParseContext & context)
 }
 
 bool
-HioGlslfx::_ParseGLSLSectionLine(vector<string> const & tokens,
+HioGlslfx::_ParseGLSLSectionLine(std::vector<std::string> const & tokens,
                                   _ParseContext & context)
 {
     if (tokens.size() < 3) {
@@ -514,7 +507,7 @@ HioGlslfx::_ParseGLSLSectionLine(vector<string> const & tokens,
 }
 
 bool
-HioGlslfx::_ParseVersionLine(vector<string> const & tokens,
+HioGlslfx::_ParseVersionLine(std::vector<std::string> const & tokens,
                               _ParseContext & context)
 {
     if (context.lineNo != 1) {
@@ -594,7 +587,7 @@ HioGlslfx::_ComposeConfiguration(std::string *reason)
         TF_DEBUG(HIO_DEBUG_GLSLFX).Msg("    Parsing config for %s\n",
                                         TfGetBaseName(item).c_str());
 
-        string errorStr;
+        std::string errorStr;
         _config.reset(HioGlslfxConfig::Read(
             _technique, _configMap[item], item, &errorStr));
 
@@ -649,17 +642,17 @@ HioGlslfx::GetMetadata() const
     return HioGlslfxConfig::MetadataDictionary();
 }
 
-string
+std::string
 HioGlslfx::_GetSource(const TfToken &shaderStageKey) const
 {
     if (!_config) {
         return "";
     }
 
-    string errors;
-    vector<string> sourceKeys = _config->GetSourceKeys(shaderStageKey);
+    std::string errors;
+    std::vector<std::string> sourceKeys = _config->GetSourceKeys(shaderStageKey);
 
-    string ret;
+    std::string ret;
 
     for (std::string const& key : sourceKeys) {
         // now look up the keys and concatenate them together..
@@ -670,7 +663,7 @@ HioGlslfx::_GetSource(const TfToken &shaderStageKey) const
                              "<%s>",
                              shaderStageKey.GetText(),
                              key.c_str());
-            return string();
+            return std::string();
         }
 
         ret += cit->second + "\n";
@@ -679,25 +672,25 @@ HioGlslfx::_GetSource(const TfToken &shaderStageKey) const
     return ret;
 }
 
-string
+std::string
 HioGlslfx::GetSurfaceSource() const
 {
     return _GetSource(HioGlslfxTokens->surfaceShader);
 }
 
-string
+std::string
 HioGlslfx::GetDisplacementSource() const
 {
     return _GetSource(HioGlslfxTokens->displacementShader);
 }
 
-string
+std::string
 HioGlslfx::GetVolumeSource() const
 {
     return _GetSource(HioGlslfxTokens->volumeShader);
 }
 
-string
+std::string
 HioGlslfx::GetSource(const TfToken &shaderStageKey) const
 {
     return _GetSource(shaderStageKey);

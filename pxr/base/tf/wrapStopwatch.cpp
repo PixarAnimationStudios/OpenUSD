@@ -29,7 +29,6 @@
 #include <boost/python/class.hpp>
 
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -37,7 +36,7 @@ void wrapStopwatch() {
 
     typedef TfStopwatch This;
 
-    class_<This>("Stopwatch")
+    boost::python::class_<This>("Stopwatch")
 
         .def("Start", &This::Start)
         .def("Stop", &This::Stop)

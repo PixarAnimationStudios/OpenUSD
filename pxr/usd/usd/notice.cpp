@@ -28,7 +28,6 @@
 
 #include <boost/iterator/transform_iterator.hpp>
 
-using boost::make_transform_iterator;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -74,8 +73,8 @@ UsdNotice::ObjectsChanged::PathRange::const_iterator::GetChangedFields() const
     TfTokenVector fields;
     for (const SdfChangeList::Entry* entry : base()->second) {
         fields.insert(fields.end(),
-            make_transform_iterator(entry->infoChanged.begin(), TfGet<0>()),
-            make_transform_iterator(entry->infoChanged.end(), TfGet<0>()));
+            boost::make_transform_iterator(entry->infoChanged.begin(), TfGet<0>()),
+            boost::make_transform_iterator(entry->infoChanged.end(), TfGet<0>()));
     }
 
     std::sort(fields.begin(), fields.end());

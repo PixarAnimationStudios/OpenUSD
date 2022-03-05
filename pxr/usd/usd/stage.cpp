@@ -112,18 +112,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using boost::make_transform_iterator;
-using std::pair;
-using std::make_pair;
-using std::map;
-using std::string;
-using std::vector;
 
 // ------------------------------------------------------------------------- //
 // UsdStage Helpers
 // ------------------------------------------------------------------------- //
 
-using _ColorConfigurationFallbacks = pair<SdfAssetPath, TfToken>;
+using _ColorConfigurationFallbacks = std::pair<SdfAssetPath, TfToken>;
 
 // Fetch the color configuration fallback values from the plugins.
 TF_MAKE_STATIC_DATA(_ColorConfigurationFallbacks, _colorConfigurationFallbacks)
@@ -527,7 +521,7 @@ UsdStage::_Close()
     WorkWithScopedParallelism([this]() {
 
             // Destroy prim structure.
-            vector<SdfPath> primsToDestroy;
+            std::vector<SdfPath> primsToDestroy;
             {
                 // Scope the dispatcher so that its dtor Wait()s for work to
                 // complete before primsToDestroy is destroyed, since tasks we
@@ -2319,12 +2313,12 @@ UsdStage::ExpandPopulationMask(
             tgtPaths = root.FindAllRelationshipTargetPaths(relPred, false),
             connPaths = root.FindAllAttributeConnectionPaths(attrPred, false);
         
-        tgtPaths.erase(remove_if(tgtPaths.begin(), tgtPaths.end(),
+        tgtPaths.erase(std::remove_if(tgtPaths.begin(), tgtPaths.end(),
                                  [this](SdfPath const &path) {
                                      return _populationMask.Includes(path);
                                  }),
                        tgtPaths.end());
-        connPaths.erase(remove_if(connPaths.begin(), connPaths.end(),
+        connPaths.erase(std::remove_if(connPaths.begin(), connPaths.end(),
                                  [this](SdfPath const &path) {
                                      return _populationMask.Includes(path);
                                  }),
@@ -2348,7 +2342,7 @@ UsdStage::ExpandPopulationMask(
 // Instancing
 // ------------------------------------------------------------------------- //
 
-vector<UsdPrim>
+std::vector<UsdPrim>
 UsdStage::GetPrototypes() const
 {
     // Sort the instance prototype paths to provide a stable ordering for
@@ -2356,7 +2350,7 @@ UsdStage::GetPrototypes() const
     SdfPathVector prototypePaths = _instanceCache->GetAllPrototypes();
     std::sort(prototypePaths.begin(), prototypePaths.end());
 
-    vector<UsdPrim> prototypePrims;
+    std::vector<UsdPrim> prototypePrims;
     for (const auto& path : prototypePaths) {
         UsdPrim p = GetPrimAtPath(path);
         if (TF_VERIFY(p, "Failed to find prim at prototype path <%s>.\n",
@@ -2367,14 +2361,14 @@ UsdStage::GetPrototypes() const
     return prototypePrims;
 }
 
-vector<UsdPrim>
+std::vector<UsdPrim>
 UsdStage::_GetInstancesForPrototype(const UsdPrim& prototypePrim) const
 {
     if (!prototypePrim.IsPrototype()) {
         return {};
     }
 
-    vector<UsdPrim> instances;
+    std::vector<UsdPrim> instances;
     SdfPathVector instancePaths = 
         _instanceCache->GetInstancePrimIndexesForPrototype(
             prototypePrim.GetPath());
@@ -2429,7 +2423,7 @@ UsdStage::_GetPrimPathUsingPrimIndexAtPath(const SdfPath& primIndexPath) const
         primPath = primIndexPath;
     } 
     else if (_instanceCache->GetNumPrototypes() != 0) {
-        const vector<SdfPath> prototypesUsingPrimIndex = 
+        const std::vector<SdfPath> prototypesUsingPrimIndex = 
             _instanceCache->GetPrimsInPrototypesUsingPrimIndexPath(
                 primIndexPath);
 
@@ -2460,7 +2454,7 @@ UsdStage::_InstantiatePrim(const SdfPath &primPath)
 
     // Instantiate new prim data instance.
     Usd_PrimDataPtr p = new Usd_PrimData(this, primPath);
-    pair<PathToNodeMap::iterator, bool> result;
+    std::pair<PathToNodeMap::iterator, bool> result;
     std::pair<SdfPath, Usd_PrimDataPtr> payload(primPath, p);
     {
         tbb::spin_rw_mutex::scoped_lock lock;
@@ -2559,7 +2553,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
         } else {
             // Remove all names from nameOrder that aren't included in the mask.
             nameOrder.erase(
-                remove_if(nameOrder.begin(), nameOrder.end(),
+                std::remove_if(nameOrder.begin(), nameOrder.end(),
                           [&sourceIndexPath, mask](TfToken const &nameTok) {
                               return !mask->Includes(
                                   sourceIndexPath.AppendChild(nameTok));
@@ -2677,20 +2671,20 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
         prim->GetPath().GetText());
 
     // Make a vector of iterators into nameOrder from [curName, nameEnd).
-    typedef vector<TfTokenVector::const_iterator> TokenVectorIterVec;
+    typedef std::vector<TfTokenVector::const_iterator> TokenVectorIterVec;
     TokenVectorIterVec nameOrderIters(std::distance(curName, nameEnd));
     for (size_t i = 0, sz = nameOrderIters.size(); i != sz; ++i) {
         nameOrderIters[i] = curName + i;
     }
 
     // Sort the name order iterators *by name*.
-    sort(nameOrderIters.begin(), nameOrderIters.end(), _DerefIterLess());
+    std::sort(nameOrderIters.begin(), nameOrderIters.end(), _DerefIterLess());
 
     // Make a vector of the existing prim children and sort them by name.
-    vector<Usd_PrimDataPtr> oldChildren(cur, end);
-    sort(oldChildren.begin(), oldChildren.end(), _PrimNameLess());
+    std::vector<Usd_PrimDataPtr> oldChildren(cur, end);
+    std::sort(oldChildren.begin(), oldChildren.end(), _PrimNameLess());
 
-    vector<Usd_PrimDataPtr>::const_iterator
+    std::vector<Usd_PrimDataPtr>::const_iterator
         oldChildIt = oldChildren.begin(),
         oldChildEnd = oldChildren.end();
 
@@ -2700,7 +2694,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
 
     // We build a vector of pairs of prims and the original name order
     // iterators.  This lets us re-sort by original order once we're finished.
-    vector<pair<Usd_PrimDataPtr, TfTokenVector::const_iterator> >
+    std::vector<std::pair<Usd_PrimDataPtr, TfTokenVector::const_iterator> >
         tempChildren;
     tempChildren.reserve(nameOrderIters.size());
 
@@ -2724,7 +2718,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
              ++newNameItersIt, ++oldChildIt) {
             TF_DEBUG(USD_COMPOSITION).Msg("Preserving <%s>\n",
                                           (*oldChildIt)->GetPath().GetText());
-            tempChildren.push_back(make_pair(*oldChildIt, *newNameItersIt));
+            tempChildren.push_back(std::make_pair(*oldChildIt, *newNameItersIt));
             if (recurse) {
                 Usd_PrimDataPtr child = tempChildren.back().first;
                 _ComposeChildSubtree(child, prim, mask);
@@ -2740,7 +2734,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
             TF_DEBUG(USD_COMPOSITION).Msg("Creating new <%s>\n",
                                           newChildPath.GetText());
             tempChildren.push_back(
-                make_pair(_InstantiatePrim(newChildPath), *newNameItersIt));
+                std::make_pair(_InstantiatePrim(newChildPath), *newNameItersIt));
             if (recurse) {
                 Usd_PrimDataPtr child = tempChildren.back().first;
                 _ComposeChildSubtree(child, prim, mask);
@@ -2758,7 +2752,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
     // Now all the new children are in lexicographical order by name, paired
     // with their name's iterator in the original name order.  Recover the
     // original order by sorting by the iterators natural order.
-    sort(tempChildren.begin(), tempChildren.end(), _SecondLess());
+    std::sort(tempChildren.begin(), tempChildren.end(), _SecondLess());
 
     // Now all the new children are correctly ordered.  Set the 
     // sibling and parent links to add them to the prim's children.
@@ -2901,8 +2895,8 @@ _ComposeAuthoredAppliedSchemas(
 
 void
 UsdStage::_ComposeSubtreesInParallel(
-    const vector<Usd_PrimDataPtr> &prims,
-    const vector<SdfPath> *primIndexPaths)
+    const std::vector<Usd_PrimDataPtr> &prims,
+    const std::vector<SdfPath> *primIndexPaths)
 {
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
@@ -3062,7 +3056,7 @@ UsdStage::_DestroyDescendents(Usd_PrimDataPtr prim)
 }
 
 void 
-UsdStage::_DestroyPrimsInParallel(const vector<SdfPath>& paths)
+UsdStage::_DestroyPrimsInParallel(const std::vector<SdfPath>& paths)
 {
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
@@ -3556,7 +3550,7 @@ UsdStage::GetLayerStack(bool includeSessionLayers) const
         // layer to the end.
         SdfLayerRefPtrVector::const_iterator copyBegin =
             includeSessionLayers ? layers.begin() :
-            find(layers.begin(), layers.end(), GetRootLayer());
+            std::find(layers.begin(), layers.end(), GetRootLayer());
 
         TF_VERIFY(copyBegin != layers.end(),
                   "Root layer @%s@ not in LayerStack",
@@ -4556,7 +4550,7 @@ UsdStage::_ComposePrimIndexesInParallel(
         std::vector<SdfPath> dbgPaths(
             primIndexPaths.begin(),
             primIndexPaths.begin() + std::min(maxPaths, primIndexPaths.size()));
-        string msg = TfStringPrintf(
+        std::string msg = TfStringPrintf(
             "Composing prim indexes: %s%s\n",
             TfStringify(dbgPaths).c_str(), primIndexPaths.size() > maxPaths ?
             TfStringPrintf(
@@ -4657,7 +4651,7 @@ UsdStage::_RegisterPerLayerNotices()
              *usedLayersIter < layerAndKeyIter->first)) {
             // This is a newly added layer.  Register for the notice and add it.
             newLayersAndNoticeKeys.push_back(
-                make_pair(*usedLayersIter,
+                std::make_pair(*usedLayersIter,
                           TfNotice::Register(
                               self, &UsdStage::_HandleLayersDidChange,
                               *usedLayersIter)));
@@ -4877,7 +4871,7 @@ _CopyMetadata(const SdfSpecHandle& dest, const UsdMetadataValueMap& metadata)
 {
     // Copy each key/value into the Sdf spec.
     TfErrorMark m;
-    vector<string> msgs;
+    std::vector<std::string> msgs;
     for (auto const& tokVal : metadata) {
         dest->SetInfo(tokVal.first, tokVal.second);
         if (!m.IsClean()) {
@@ -5327,7 +5321,6 @@ static const T &_UncheckedGet(const VtValue *val) {
 
 template <class T>
 void _UncheckedSwap(SdfAbstractDataValue *dv, T& val) {
-    using namespace std;
     swap(*static_cast<T*>(dv->value), val);
 }
 template <class T>
@@ -7886,7 +7879,7 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
     // queries clear out the return vector
     times->clear();
     const auto copySamplesInInterval = [](const std::set<double>& samples, 
-                                          vector<double>* target, 
+                                          std::vector<double>* target, 
                                           const GfInterval& interval) 
     {
         std::set<double>::iterator samplesBegin, samplesEnd; 

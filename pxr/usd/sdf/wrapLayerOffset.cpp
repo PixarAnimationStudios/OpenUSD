@@ -31,9 +31,7 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -72,11 +70,11 @@ void wrapLayerOffset()
     //       first explicit reference, but would instead modify a temporary
     //       Sdf.LayerOffset object.
 
-    class_<This>( "LayerOffset" )
-        .def(init<double, double>(
-            ( arg("offset") = 0.0,
-              arg("scale") = 1.0 ) ) )
-        .def(init<const This &>())
+    boost::python::class_<This>( "LayerOffset" )
+        .def(boost::python::init<double, double>(
+            ( boost::python::arg("offset") = 0.0,
+              boost::python::arg("scale") = 1.0 ) ) )
+        .def(boost::python::init<const This &>())
 
         .add_property("offset", &This::GetOffset)
         .add_property("scale", &This::GetScale)
@@ -84,14 +82,14 @@ void wrapLayerOffset()
         .def("IsIdentity", &This::IsIdentity)
         .def("GetInverse", &This::GetInverse)
         
-        .def( self == self )
-        .def( self != self )
-        .def( self * self )
+        .def( boost::python::self == boost::python::self )
+        .def( boost::python::self != boost::python::self )
+        .def( boost::python::self * boost::python::self )
 
         // This order is required to prevent doubles from implicitly converting
         // to SdfTimeCode when calling SdfLayerOffset * double.
-        .def( self * SdfTimeCode() )
-        .def( self * double() )
+        .def( boost::python::self * SdfTimeCode() )
+        .def( boost::python::self * double() )
 
         .def("__repr__", _Repr)
         

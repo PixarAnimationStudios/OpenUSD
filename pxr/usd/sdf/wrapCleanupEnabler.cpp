@@ -27,7 +27,6 @@
 #include <boost/python.hpp>
 #include <memory>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -64,7 +63,7 @@ public:
     // The three extra arguments are required by the __enter__/__exit__
     // protocol, and can contain the python exception state if the
     // with-statement is exited by an exception.  We ignore them here.
-    void Exit(object const &, object const &, object const &)
+    void Exit(boost::python::object const &, boost::python::object const &, boost::python::object const &)
     {
         _state.reset();
     }
@@ -79,8 +78,8 @@ void wrapCleanupEnabler()
 {
     typedef Sdf_PyCleanupEnabler This;
 
-    class_<This,boost::noncopyable>("CleanupEnabler",
-        init<>())
+    boost::python::class_<This,boost::noncopyable>("CleanupEnabler",
+        boost::python::init<>())
 
         // Callbacks for the python 'with' statement
         .def("__enter__", &This::Enter)

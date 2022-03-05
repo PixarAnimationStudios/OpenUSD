@@ -46,8 +46,6 @@
 #include <type_traits>
 #include <vector>
 
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -55,7 +53,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Producer side: Implement the buffer protocol on VtArrays.
 namespace {
 
-namespace bp = boost::python;
 
 ////////////////////////////////////////////////////////////////////////
 // Element sub-type.  e.g. GfVec3f -> float.
@@ -289,7 +286,7 @@ Vt_getbuffer(PyObject *self, Py_buffer *view, int flags)
         return -1;
     }
 
-    T &array = bp::extract<T &>(self);
+    T &array = boost::python::extract<T &>(self);
     auto wrapper = std::unique_ptr<Vt_ArrayBufferWrapper<T>>(
         new Vt_ArrayBufferWrapper<T>(array));
 
@@ -352,7 +349,7 @@ Vt_AddBufferProtocol()
 
     // Look up the python class object, then set its fields to point at our
     // buffer protocol implementation.
-    bp::object cls = TfPyGetClassObject<ArrayType>();
+    boost::python::object cls = TfPyGetClassObject<ArrayType>();
     if (TfPyIsNone(cls)) {
         TF_CODING_ERROR("Failed to find python class object for '%s'",
                         ArchGetDemangled<ArrayType>().c_str());
@@ -375,9 +372,9 @@ Vt_AddBufferProtocol()
 template <class T>
 bool
 Vt_ArrayFromBuffer(TfPyObjWrapper const &obj,
-                   VtArray<T> *out, string *errPtr = nullptr)
+                   VtArray<T> *out, std::string *errPtr = nullptr)
 {
-    string localErr;
+    std::string localErr;
     auto &err = errPtr ? *errPtr : localErr;
 
     TfPyLock lock;
@@ -530,23 +527,23 @@ static VtValue Vt_CastPyObjToArray(VtValue const &v)
 template <class T>
 static VtValue Vt_CastVectorToArray(VtValue const &v) {
     VtValue ret;
-    if (v.IsHolding<vector<VtValue>>()) {
+    if (v.IsHolding<std::vector<VtValue>>()) {
         // This is a bit unfortunate.  We convert back to python, attempt to get
         // a python list, and then attempt to convert each element in it.
         VtArray<T> result;
         TfPyLock lock;
         try {
             auto obj = TfPyObject(v);
-            bp::list pylist = bp::extract<bp::list>(obj);
-            size_t len = bp::len(pylist);
+            boost::python::list pylist = boost::python::extract<boost::python::list>(obj);
+            size_t len = boost::python::len(pylist);
             result.reserve(len);
             for (size_t i = 0; i != len; ++i) {
-                bp::object item = pylist[i];
-                bp::extract<T> e(item);
+                boost::python::object item = pylist[i];
+                boost::python::extract<T> e(item);
                 if (e.check()) {
                     result.push_back(e());
                 } else {
-                    VtValue val = bp::extract<VtValue>(item);
+                    VtValue val = boost::python::extract<VtValue>(item);
                     if (val.Cast<T>().template IsHolding<T>()) {
                         result.push_back(val.UncheckedGet<T>());
                     } else {
@@ -557,7 +554,7 @@ static VtValue Vt_CastVectorToArray(VtValue const &v) {
                 }
             }
             ret.Swap(result);
-        } catch (bp::error_already_set const &) {
+        } catch (boost::python::error_already_set const &) {
             // swallow the exception and just fail the cast.
             PyErr_Clear();
         }
@@ -570,9 +567,9 @@ TfPyObjWrapper
 Vt_WrapArrayFromBuffer(TfPyObjWrapper const &obj)
 {
     VtArray<T> result;
-    string err;
+    std::string err;
     if (Vt_ArrayFromBuffer(obj, &result, &err)) {
-        return bp::object(result);
+        return boost::python::object(result);
     }
     TfPyThrowValueError(
         TfStringPrintf("Failed to produce VtArray<%s> via python buffer "
@@ -608,7 +605,7 @@ VT_API void Vt_AddBufferProtocolSupportToVtArrays()
     Vt_AddBufferProtocol<VtArray<VT_TYPE(elem)> >();                 \
     VtValue::RegisterCast<TfPyObjWrapper, VtArray<VT_TYPE(elem)> >(  \
         Vt_CastPyObjToArray<VT_TYPE(elem)>);                         \
-    VtValue::RegisterCast<vector<VtValue>, VtArray<VT_TYPE(elem)> >( \
+    VtValue::RegisterCast<std::vector<VtValue>, VtArray<VT_TYPE(elem)> >( \
         Vt_CastVectorToArray<VT_TYPE(elem)>);                        \
     boost::python::def(TF_PP_STRINGIZE(VT_TYPE_NAME(elem))           \
                         "ArrayFromBuffer",                           \

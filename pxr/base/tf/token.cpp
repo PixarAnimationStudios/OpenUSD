@@ -46,9 +46,6 @@
 #include <utility>
 #include <algorithm>
 
-using std::vector;
-using std::string;
-using std::pair;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -119,19 +116,19 @@ struct Tf_TokenRegistry
     inline _RepPtrAndBits _GetPtrChar(char const *s, bool makeImmortal) {
         return _GetPtrImpl(s, makeImmortal);
     }
-    inline _RepPtrAndBits _GetPtrStr(string const &s, bool makeImmortal) {
+    inline _RepPtrAndBits _GetPtrStr(std::string const &s, bool makeImmortal) {
         // Explicitly specify template arg -- if unspecified, it will deduce
         // string by-value, which we don't want.
-        return _GetPtrImpl<string const &>(s, makeImmortal);
+        return _GetPtrImpl<std::string const &>(s, makeImmortal);
     }
 
     inline _RepPtrAndBits _FindPtrChar(char const *s) const {
         return _FindPtrImpl(s);
     }
-    inline _RepPtrAndBits _FindPtrStr(string const &s) const {
+    inline _RepPtrAndBits _FindPtrStr(std::string const &s) const {
         // Explicitly specify template arg -- if unspecified, it will deduce
         // string by-value, which we don't want.
-        return _FindPtrImpl<string const &>(s);
+        return _FindPtrImpl<std::string const &>(s);
     }
 
     /*
@@ -140,7 +137,7 @@ struct Tf_TokenRegistry
      */
     void _PossiblyDestroyRep(_RepPtr rep) {
         bool repFoundInSet = true;
-        string repString;
+        std::string repString;
         {
             unsigned int setNum = rep->_setNum;
 
@@ -181,10 +178,10 @@ struct Tf_TokenRegistry
 private:
 
     inline bool _IsEmpty(char const *s) const { return !s || !s[0]; }
-    inline bool _IsEmpty(string const &s) const { return s.empty(); }
+    inline bool _IsEmpty(std::string const &s) const { return s.empty(); }
 
     inline char const *_CStr(char const *s) const { return s; }
-    inline char const *_CStr(string const &s) const { return s.c_str(); }
+    inline char const *_CStr(std::string const &s) const { return s.c_str(); }
 
     static TfToken::_Rep _LookupRep(char const *cstr) {
         TfToken::_Rep ret;
@@ -266,7 +263,7 @@ TF_INSTANTIATE_SINGLETON(Tf_TokenRegistry);
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<TfToken>();
-    TfType::Define< vector<TfToken> >()
+    TfType::Define< std::vector<TfToken> >()
         .Alias( TfType::GetRoot(), "vector<TfToken>" );
 }
 
@@ -276,14 +273,14 @@ TfToken::_PossiblyDestroyRep() const
     Tf_TokenRegistry::_GetInstance()._PossiblyDestroyRep(_rep.Get());
 }
 
-string const&
+std::string const&
 TfToken::_GetEmptyString()
 {
     static std::string empty;
     return empty;
 }
 
-TfToken::TfToken(const string &s)
+TfToken::TfToken(const std::string &s)
     : _rep(Tf_TokenRegistry::_GetInstance().
            _GetPtrStr(s, /*makeImmortal*/false))
 {
@@ -295,7 +292,7 @@ TfToken::TfToken(const char *s)
 {
 }
 
-TfToken::TfToken(const string &s, _ImmortalTag)
+TfToken::TfToken(const std::string &s, _ImmortalTag)
     : _rep(Tf_TokenRegistry::_GetInstance().
            _GetPtrStr(s, /*makeImmortal*/true))
 {
@@ -308,7 +305,7 @@ TfToken::TfToken(const char *s, _ImmortalTag)
 }
 
 TfToken
-TfToken::Find(const string& s)
+TfToken::Find(const std::string& s)
 {
     TfToken t;
     t._rep = Tf_TokenRegistry::_GetInstance()._FindPtrStr(s);
@@ -316,7 +313,7 @@ TfToken::Find(const string& s)
 }
 
 bool 
-TfToken::operator==(const string &o) const
+TfToken::operator==(const std::string &o) const
 {
     return GetString() == o;
 }
@@ -328,15 +325,15 @@ TfToken::operator==(const char *o) const
 }
 
 std::vector<TfToken>
-TfToTokenVector(const std::vector<string> &sv)
+TfToTokenVector(const std::vector<std::string> &sv)
 {
-    return vector<TfToken>(sv.begin(), sv.end());
+    return std::vector<TfToken>(sv.begin(), sv.end());
 }
 
-std::vector<string>
+std::vector<std::string>
 TfToStringVector(const std::vector<TfToken> &tv)
 {
-    std::vector<string> sv(tv.size());
+    std::vector<std::string> sv(tv.size());
 
     for (size_t i = 0; i != tv.size(); i++)
         sv[i] = tv[i].GetString();

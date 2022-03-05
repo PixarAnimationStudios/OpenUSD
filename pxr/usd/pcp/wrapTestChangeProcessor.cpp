@@ -34,7 +34,6 @@
 #include <boost/noncopyable.hpp>
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -57,7 +56,7 @@ public:
             &Pcp_PyTestChangeProcessor::_HandleLayerDidChange);
     }
 
-    void Exit(const object&, const object&, const object&)
+    void Exit(const boost::python::object&, const boost::python::object&, const boost::python::object&)
     {
         TfNotice::Revoke(_layerChangedNoticeKey);
         _changes = PcpChanges();
@@ -121,19 +120,19 @@ wrapTestChangeProcessor()
     typedef Pcp_PyTestChangeProcessor This;
     typedef TfWeakPtr<Pcp_PyTestChangeProcessor> ThisPtr;
 
-    class_<This, ThisPtr, boost::noncopyable>
-        ("_TestChangeProcessor", init<PcpCache*>())
-        .def("__enter__", &This::Enter, return_self<>())
+    boost::python::class_<This, ThisPtr, boost::noncopyable>
+        ("_TestChangeProcessor", boost::python::init<PcpCache*>())
+        .def("__enter__", &This::Enter, boost::python::return_self<>())
         .def("__exit__", &This::Exit)
 
         .def("GetSignificantChanges", 
             &This::GetSignificantChanges,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetSpecChanges", 
             &This::GetSpecChanges,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetPrimChanges", 
             &This::GetPrimChanges,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
         ;
 }

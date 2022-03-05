@@ -36,28 +36,25 @@
 #include <string>
 #include <vector>
 
-using std::string;
-using std::vector;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static object
+static boost::python::object
 _HasAuthoredVariantSelection(const UsdVariantSet &self)
 {
-    string value;
+    std::string value;
     if (self.HasAuthoredVariantSelection(&value))
-        return object(value);
-    return object();
+        return boost::python::object(value);
+    return boost::python::object();
 }
 
-static vector<string>
+static std::vector<std::string>
 _GetNames(const UsdVariantSets &self)
 {
-    vector<string> result;
+    std::vector<std::string> result;
     self.GetNames(&result);
     return result;
 }
@@ -71,45 +68,45 @@ _GetVariantEditContext(const UsdVariantSet &self, const SdfLayerHandle &layer) {
 
 void wrapUsdVariantSets()
 {
-    class_<UsdVariantSet>("VariantSet", no_init)
+    boost::python::class_<UsdVariantSet>("VariantSet", boost::python::no_init)
         .def("AddVariant", &UsdVariantSet::AddVariant,
-             (arg("variantName"),
-              arg("position")=UsdListPositionBackOfPrependList))
+             (boost::python::arg("variantName"),
+              boost::python::arg("position")=UsdListPositionBackOfPrependList))
         .def("GetVariantNames", &UsdVariantSet::GetVariantNames,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("HasAuthoredVariant", &UsdVariantSet::HasAuthoredVariant)
         .def("GetVariantSelection", &UsdVariantSet::GetVariantSelection)
         .def("HasAuthoredVariantSelection", _HasAuthoredVariantSelection)
         .def("SetVariantSelection", &UsdVariantSet::SetVariantSelection,
-             arg("variantName"))
+             boost::python::arg("variantName"))
         .def("ClearVariantSelection", &UsdVariantSet::ClearVariantSelection)
         .def("BlockVariantSelection", &UsdVariantSet::BlockVariantSelection)
         .def("GetVariantEditTarget", &UsdVariantSet::GetVariantEditTarget,
-             arg("layer")=SdfLayerHandle())
+             boost::python::arg("layer")=SdfLayerHandle())
         .def("GetVariantEditContext", _GetVariantEditContext,
-             arg("layer")=SdfLayerHandle())
+             boost::python::arg("layer")=SdfLayerHandle())
         .def("GetPrim", &UsdVariantSet::GetPrim, 
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .def("GetName", &UsdVariantSet::GetName, 
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .def("IsValid", &UsdVariantSet::IsValid)
-        .def(!self)
+        .def(!boost::python::self)
         ;
 
-    class_<UsdVariantSets>("VariantSets", no_init)
+    boost::python::class_<UsdVariantSets>("VariantSets", boost::python::no_init)
         .def("AddVariantSet", &UsdVariantSets::AddVariantSet,
-             (arg("variantSetName"),
-              arg("position")=UsdListPositionBackOfPrependList))
-        .def("GetNames", _GetNames, return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("variantSetName"),
+              boost::python::arg("position")=UsdListPositionBackOfPrependList))
+        .def("GetNames", _GetNames, boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetVariantSet", &UsdVariantSets::GetVariantSet,
-             arg("variantSetName"))
+             boost::python::arg("variantSetName"))
         .def("HasVariantSet", &UsdVariantSets::HasVariantSet,
-             arg("variantSetName"))
+             boost::python::arg("variantSetName"))
         .def("GetVariantSelection", &UsdVariantSets::GetVariantSelection,
-             arg("variantSetName"))
+             boost::python::arg("variantSetName"))
         .def("SetSelection", &UsdVariantSets::SetSelection,
-             (arg("variantSetName"), arg("variantName")))
+             (boost::python::arg("variantSetName"), boost::python::arg("variantName")))
         .def("GetAllVariantSelections", &UsdVariantSets::GetAllVariantSelections, 
-             return_value_policy<TfPyMapToDictionary>())
+             boost::python::return_value_policy<TfPyMapToDictionary>())
         ;
 }

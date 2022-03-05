@@ -49,9 +49,7 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -113,7 +111,7 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
         return -1;
     }
 
-    GfVec3i &vec = extract<GfVec3i &>(self);
+    GfVec3i &vec = boost::python::extract<GfVec3i &>(self);
 
     view->obj = self;
     view->buf = static_cast<void *>(vec.data());
@@ -163,8 +161,8 @@ static PyBufferProcs bufferProcs = {
 ////////////////////////////////////////////////////////////////////////
 
 
-static string __repr__(GfVec3i const &self) {
-    string elems;
+static std::string __repr__(GfVec3i const &self) {
+    std::string elems;
     for (size_t i = 0; i < self.dimension; ++i) 
         elems += (i ? ", " : "") + TfPyRepr(self[i]);
 
@@ -191,13 +189,13 @@ static int __getitem__(const GfVec3i &self, int index) {
 }
 
 // Implements __getitem__ for a slice
-static list __getslice__(const GfVec3i &self, slice indices) {
-    list result;
+static boost::python::list __getslice__(const GfVec3i &self, boost::python::slice indices) {
+    boost::python::list result;
 
     const int* begin = self.data();
     const int* end = begin + 3;
 
-    slice::range<const int*> bounds;
+    boost::python::slice::range<const int*> bounds;
     try {
         // This appears to be a typo in the boost headers.  The method
         // name should be "get_indices".
@@ -227,16 +225,16 @@ static void __setitem__(GfVec3i &self, int index, int value) {
 // Handles refcounting & extraction for PySequence_GetItem.
 static int _SequenceGetItem(PyObject *seq, Py_ssize_t i) {
     boost::python::handle<> h(PySequence_GetItem(seq, i));
-    return extract<int>(boost::python::object(h));
+    return boost::python::extract<int>(boost::python::object(h));
 }
 
 static bool _SequenceCheckItem(PyObject *seq, Py_ssize_t i) {
     boost::python::handle<> h(PySequence_GetItem(seq, i));
-    extract<int> e((boost::python::object(h)));
+    boost::python::extract<int> e((boost::python::object(h)));
     return e.check();
 }
 
-static void __setslice__(GfVec3i &self, slice indices, object values) {
+static void __setslice__(GfVec3i &self, boost::python::slice indices, boost::python::object values) {
     // Verify our arguments
     //
     PyObject* valuesObj = values.ptr();
@@ -250,7 +248,7 @@ static void __setslice__(GfVec3i &self, slice indices, object values) {
 
     Py_ssize_t sliceLength = -1;
 
-    slice::range<int*> bounds;
+    boost::python::slice::range<int*> bounds;
 
     // Convince g++ that we're not using uninitialized values.
     //
@@ -328,7 +326,7 @@ static V *__init__() {
 
 struct FromPythonTuple {
     FromPythonTuple() {
-        converter::registry::
+        boost::python::converter::registry::
             push_back(&_convertible, &_construct,
                       boost::python::type_id<GfVec3i>());
     }
@@ -354,10 +352,10 @@ struct FromPythonTuple {
         return 0;
     }
 
-    static void _construct(PyObject *obj_ptr, converter::
+    static void _construct(PyObject *obj_ptr, boost::python::converter::
                            rvalue_from_python_stage1_data *data) {
         typedef int Scalar;
-        void *storage = ((converter::rvalue_from_python_storage<GfVec3i>*)data)
+        void *storage = ((boost::python::converter::rvalue_from_python_storage<GfVec3i>*)data)
 	    ->storage.bytes;
         new (storage)
 	    GfVec3i(
@@ -388,12 +386,12 @@ void wrapVec3i()
     static const size_t _dimension = 3;
     static const bool _true = true;
     
-    def("Dot", (Scalar (*)( const Vec &, const Vec &))GfDot);
+    boost::python::def("Dot", (Scalar (*)( const Vec &, const Vec &))GfDot);
     
  
-    class_<GfVec3i> cls("Vec3i", no_init);
+    boost::python::class_<GfVec3i> cls("Vec3i", boost::python::no_init);
     cls
-        .def("__init__", make_constructor(__init__<Vec>))
+        .def("__init__", boost::python::make_constructor(__init__<Vec>))
 
         // A tag indicating that this is a GfVec class, for internal use.
         .def_readonly("__isGfVec", _true)
@@ -401,9 +399,9 @@ void wrapVec3i()
         .def_pickle(PickleSuite())
 
         
-        .def(init<Vec>())
-        .def(init<Scalar>())
-        .def(init<Scalar, Scalar, Scalar>())
+        .def(boost::python::init<Vec>())
+        .def(boost::python::init<Scalar>())
+        .def(boost::python::init<Scalar, Scalar, Scalar>())
 
         .def(TfTypePythonClass())
 
@@ -417,20 +415,20 @@ void wrapVec3i()
         .def_readonly("dimension", _dimension)
         
 
-        .def(self == self)
-        .def(self != self)
-        .def(self += self)
-        .def(self -= self)
-        .def(self *= double())
-        .def(self * double())
-        .def(double() * self)
-        .def(self /= int())
-        .def(self / int())
-        .def(-self)
-        .def(self + self)
-        .def(self - self)
-        .def(self * self)
-        .def(str(self))
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self += boost::python::self)
+        .def(boost::python::self -= boost::python::self)
+        .def(boost::python::self *= double())
+        .def(boost::python::self * double())
+        .def(double() * boost::python::self)
+        .def(boost::python::self /= int())
+        .def(boost::python::self / int())
+        .def(-boost::python::self)
+        .def(boost::python::self + boost::python::self)
+        .def(boost::python::self - boost::python::self)
+        .def(boost::python::self * boost::python::self)
+        .def(boost::python::self_ns::str(boost::python::self))
 
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
@@ -451,7 +449,7 @@ void wrapVec3i()
         .def("__repr__", __repr__)
         .def("__hash__", __hash__)
         ;
-    to_python_converter<std::vector<GfVec3i>,
+    boost::python::to_python_converter<std::vector<GfVec3i>,
         TfPySequenceToPython<std::vector<GfVec3i> > >();
 
     // Install buffer protocol: set the tp_as_buffer slot to point to a

@@ -31,14 +31,13 @@
 #include <boost/python/class.hpp>
 #include <boost/python/object.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
 static void
-_SetOutputFile(object const &file)
+_SetOutputFile(boost::python::object const &file)
 {
     int filefd = PyObject_AsFileDescriptor(file.ptr());
     if (filefd == ArchFileNo(stdout)) {
@@ -59,9 +58,9 @@ void wrapDebug()
 {
     typedef TfDebug This;
 
-    class_<This>("Debug", no_init)
+    boost::python::class_<This>("Debug", boost::python::no_init)
         .def("SetDebugSymbolsByName", &This::SetDebugSymbolsByName,
-             ( arg("pattern"), arg("value") ))
+             ( boost::python::arg("pattern"), boost::python::arg("value") ))
         .staticmethod("SetDebugSymbolsByName")
 
         .def("IsDebugSymbolNameEnabled", &This::IsDebugSymbolNameEnabled)

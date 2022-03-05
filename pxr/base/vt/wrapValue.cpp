@@ -59,10 +59,7 @@
 #include <string>
 #include <vector>
 
-using namespace boost::python;
 
-using std::string;
-using std::map;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -87,7 +84,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 // This is only for testing and hitting code coverage.
-static string _test_ValueTypeName(VtValue const &val) {
+static std::string _test_ValueTypeName(VtValue const &val) {
     return val.GetTypeName();
 }
 static VtValue _test_Ident(VtValue const &val) {
@@ -115,13 +112,13 @@ struct Vt_ValueWrapper {
 
 struct Vt_ValueToPython {
     static PyObject *convert(VtValue const &val) {
-        return incref(Vt_GetPythonObjectFromHeldValue(val).ptr());
+        return boost::python::incref(Vt_GetPythonObjectFromHeldValue(val).ptr());
     }
 };
 
 struct Vt_ValueWrapperFromPython {
     Vt_ValueWrapperFromPython() {
-        converter::registry::
+        boost::python::converter::registry::
             push_back(&_convertible, &_construct,
                       boost::python::type_id<VtValue>());
     }
@@ -129,14 +126,14 @@ struct Vt_ValueWrapperFromPython {
   private:
 
     static void *_convertible(PyObject *obj_ptr) {
-        return extract<Vt_ValueWrapper>(obj_ptr).check() ? obj_ptr : NULL;
+        return boost::python::extract<Vt_ValueWrapper>(obj_ptr).check() ? obj_ptr : NULL;
     }
 
-    static void _construct(PyObject *obj_ptr, converter::
+    static void _construct(PyObject *obj_ptr, boost::python::converter::
                            rvalue_from_python_stage1_data *data) {
-        void *storage = ((converter::rvalue_from_python_storage<VtValue>*)data)
+        void *storage = ((boost::python::converter::rvalue_from_python_storage<VtValue>*)data)
             ->storage.bytes;
-        new (storage) VtValue(extract<Vt_ValueWrapper>(obj_ptr)().GetValue());
+        new (storage) VtValue(boost::python::extract<Vt_ValueWrapper>(obj_ptr)().GetValue());
         data->convertible = storage;
     }
 };  
@@ -145,7 +142,7 @@ struct Vt_ValueWrapperFromPython {
 struct Vt_ValueFromPython {
 
     Vt_ValueFromPython() {
-        converter::registry::
+        boost::python::converter::registry::
             push_back(&_convertible, &_construct,
                       boost::python::type_id<VtValue>());
     }
@@ -155,14 +152,14 @@ struct Vt_ValueFromPython {
     static void *_convertible(PyObject *obj_ptr) {
         // Can always make a VtValue, but disregard wrappers.  We let implicit
         // conversions handle those.
-        if (extract<Vt_ValueWrapper>(obj_ptr).check())
+        if (boost::python::extract<Vt_ValueWrapper>(obj_ptr).check())
             return 0;
         return obj_ptr;
     }
     
-    static void _construct(PyObject *obj_ptr, converter::
+    static void _construct(PyObject *obj_ptr, boost::python::converter::
                            rvalue_from_python_stage1_data *data) {
-        void *storage = ((converter::rvalue_from_python_storage<VtValue>*)data)
+        void *storage = ((boost::python::converter::rvalue_from_python_storage<VtValue>*)data)
             ->storage.bytes;
 
         // A big typeswitch.  Note that order matters here -- the first
@@ -235,7 +232,7 @@ struct Vt_ValueFromPython {
         }
         if (TfPyBytes_Check(obj_ptr) || PyUnicode_Check(obj_ptr)) {
             // Py string or unicode -> std::string.
-            new (storage) VtValue(std::string(extract<std::string>(obj_ptr)));
+            new (storage) VtValue(std::string(boost::python::extract<std::string>(obj_ptr)));
             data->convertible = storage;
             return;
         }
@@ -250,7 +247,7 @@ struct Vt_ValueFromPython {
         } else {
             // Fall back to generic python object.
             new (storage)
-                VtValue(TfPyObjWrapper(extract<object>(obj_ptr)()));
+                VtValue(TfPyObjWrapper(boost::python::extract<boost::python::object>(obj_ptr)()));
             data->convertible = storage; 
             return;
         }
@@ -261,15 +258,15 @@ struct Vt_ValueFromPython {
 
 void wrapValue()
 {
-    def("_test_ValueTypeName", _test_ValueTypeName);
-    def("_test_Ident", _test_Ident);
-    def("_test_Str", _test_Str);
+    boost::python::def("_test_ValueTypeName", _test_ValueTypeName);
+    boost::python::def("_test_Ident", _test_Ident);
+    boost::python::def("_test_Str", _test_Str);
 
-    to_python_converter<VtValue, Vt_ValueToPython>();
+    boost::python::to_python_converter<VtValue, Vt_ValueToPython>();
     Vt_ValueFromPython();
     Vt_ValueWrapperFromPython();
 
-    class_<Vt_ValueWrapper>("_ValueWrapper", no_init);
+    boost::python::class_<Vt_ValueWrapper>("_ValueWrapper", boost::python::no_init);
 
     static char const *funcDocString = "%s(value) -> _ValueWrapper\n\n"
         "value : %s\n\n"
@@ -277,38 +274,38 @@ void wrapValue()
         "when calling a C++ wrapped function that expects a VtValue. (There are "
         "some C++ types that have no equivalents in Python, such as short.)";
 
-    def("Bool", Vt_ValueWrapper::Create<bool>, 
+    boost::python::def("Bool", Vt_ValueWrapper::Create<bool>, 
         TfStringPrintf(funcDocString, "Bool","bool","bool").c_str());
-    def("UChar", Vt_ValueWrapper::Create<unsigned char>, 
+    boost::python::def("UChar", Vt_ValueWrapper::Create<unsigned char>, 
         TfStringPrintf(funcDocString, "UChar","unsigned char","unsigned char").c_str());
-    def("Short", Vt_ValueWrapper::Create<short>, 
+    boost::python::def("Short", Vt_ValueWrapper::Create<short>, 
         TfStringPrintf(funcDocString, "Short","short","short").c_str());
-    def("UShort", Vt_ValueWrapper::Create<unsigned short>, 
+    boost::python::def("UShort", Vt_ValueWrapper::Create<unsigned short>, 
         TfStringPrintf(funcDocString, "UShort","unsigned short","unsigned short").c_str());
-    def("Int", Vt_ValueWrapper::Create<int>, 
+    boost::python::def("Int", Vt_ValueWrapper::Create<int>, 
         TfStringPrintf(funcDocString, "Int","int","int").c_str());
-    def("UInt", Vt_ValueWrapper::Create<unsigned int>, 
+    boost::python::def("UInt", Vt_ValueWrapper::Create<unsigned int>, 
         TfStringPrintf(funcDocString, "UInt","unsigned int","unsigned int").c_str());
-    def("Long", Vt_ValueWrapper::Create<long>, 
+    boost::python::def("Long", Vt_ValueWrapper::Create<long>, 
         TfStringPrintf(funcDocString, "Long","long","long").c_str());
-    def("ULong", Vt_ValueWrapper::Create<unsigned long>, 
+    boost::python::def("ULong", Vt_ValueWrapper::Create<unsigned long>, 
         TfStringPrintf(funcDocString, "ULong","unsigned long","unsigned long").c_str());
 
-    def("Int64", Vt_ValueWrapper::Create<int64_t>, 
+    boost::python::def("Int64", Vt_ValueWrapper::Create<int64_t>, 
         TfStringPrintf(funcDocString, "Int64","int64_t","int64_t").c_str());
-    def("UInt64", Vt_ValueWrapper::Create<uint64_t>, 
+    boost::python::def("UInt64", Vt_ValueWrapper::Create<uint64_t>, 
         TfStringPrintf(funcDocString, "UInt64","uint64_t","uint64_t").c_str());
 
-    def("Half", Vt_ValueWrapper::Create<GfHalf>, 
+    boost::python::def("Half", Vt_ValueWrapper::Create<GfHalf>, 
         TfStringPrintf(funcDocString, "Half","half","GfHalf").c_str());
-    def("Float", Vt_ValueWrapper::Create<float>, 
+    boost::python::def("Float", Vt_ValueWrapper::Create<float>, 
         TfStringPrintf(funcDocString, "Float","float","float").c_str());
-    def("Double", Vt_ValueWrapper::Create<double>, 
+    boost::python::def("Double", Vt_ValueWrapper::Create<double>, 
         TfStringPrintf(funcDocString, "Double","double","double").c_str());
 
     // Since strings and tokens are indistiguishable in Python-land, users need to
     // manually declare when they want a VtValue with a token
-    def("Token", Vt_ValueWrapper::Create<TfToken>,
+    boost::python::def("Token", Vt_ValueWrapper::Create<TfToken>,
         TfStringPrintf(funcDocString, "TfToken","TfToken","TfToken").c_str());
 
     // Register conversions for VtValue from python, but first make sure that
@@ -333,7 +330,7 @@ void wrapValue()
                           VT_SCALAR_CLASS_VALUE_TYPES VT_NONARRAY_VALUE_TYPES)
 #undef REGISTER_VALUE_FROM_PYTHON
 
-    VtValueFromPython<string>();
+    VtValueFromPython<std::string>();
     VtValueFromPython<double>();
     VtValueFromPython<int>();
     // XXX: Disable rvalue conversion of TfType.  It causes a mysterious

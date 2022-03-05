@@ -45,8 +45,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using std::string;
-using std::vector;
 
 // ---------------------------------------------------------------------- //
 // UsdVariantSet: Public Methods
@@ -68,7 +66,7 @@ UsdVariantSet::AddVariant(const std::string& variantName,
     return false;
 }
 
-vector<string>
+std::vector<std::string>
 UsdVariantSet::GetVariantNames() const
 {
     std::set<std::string> namesSet;
@@ -78,7 +76,7 @@ UsdVariantSet::GetVariantNames() const
         }
     }
 
-    return vector<string>(namesSet.begin(), namesSet.end());
+    return std::vector<std::string>(namesSet.begin(), namesSet.end());
 }
 
 bool 
@@ -91,7 +89,7 @@ UsdVariantSet::HasAuthoredVariant(const std::string& variantName) const
 }
 
 
-string
+std::string
 UsdVariantSet::GetVariantSelection() const
 {
     // Scan the composed prim for variant arcs for this variant set and
@@ -115,7 +113,7 @@ UsdVariantSet::GetVariantSelection() const
 bool
 UsdVariantSet::HasAuthoredVariantSelection(std::string *value) const
 {
-    string sel;
+    std::string sel;
     if (!value) {
         value = &sel;
     }
@@ -145,7 +143,7 @@ UsdVariantSet::ClearVariantSelection()
 {
     // empty selection is how you clear in SdfPrimSpec... don't want to
     // adopt that pattern in our API.  Let's be "clear" about it!
-    return SetVariantSelection(string());
+    return SetVariantSelection(std::string());
 }
 
 bool
@@ -162,12 +160,11 @@ UsdVariantSet::BlockVariantSelection()
 UsdEditTarget
 UsdVariantSet::GetVariantEditTarget(const SdfLayerHandle &layer) const
 {
-    using std::pair;
     UsdEditTarget target;
 
     // Obtain the current VariantSet name & selection.  If there is no
     // selection, there is no context to pursue
-    pair<string, string> curVarSel(_variantSetName, GetVariantSelection());
+    std::pair<std::string, std::string> curVarSel(_variantSetName, GetVariantSelection());
     if (curVarSel.second.empty())
         return target;
 
@@ -210,7 +207,7 @@ UsdVariantSet::_AddVariantSet(UsdListPosition position)
     SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(); 
     if (primSpec){
         SdfPath varSetPath = primSpec->GetPath()
-            .AppendVariantSelection(_variantSetName, string());
+            .AppendVariantSelection(_variantSetName, std::string());
         if (varSetPath.IsEmpty()) {
             return result;
         }
@@ -238,7 +235,7 @@ UsdVariantSets::GetVariantSet(const std::string& variantSetName) const
 
         // XXX:
         // Define a sentinel?
-        return UsdVariantSet(UsdPrim(), string());
+        return UsdVariantSet(UsdPrim(), std::string());
     }
     return _prim.GetVariantSet(TfToken(variantSetName));
 }
@@ -292,7 +289,7 @@ UsdVariantSets::GetNames() const
     return names;
 }
 
-string
+std::string
 UsdVariantSets::GetVariantSelection(const std::string &variantSetName) const
 {
     return GetVariantSet(variantSetName).GetVariantSelection();

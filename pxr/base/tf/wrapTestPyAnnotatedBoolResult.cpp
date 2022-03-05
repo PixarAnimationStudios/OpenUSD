@@ -28,7 +28,6 @@
 #include <boost/python/def.hpp>
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -51,7 +50,7 @@ _TestAnnotatedBoolResult(
 
 void wrapTf_TestPyAnnotatedBoolResult()
 {
-    def("_TestAnnotatedBoolResult", &_TestAnnotatedBoolResult);
+    boost::python::def("_TestAnnotatedBoolResult", &_TestAnnotatedBoolResult);
 
     Tf_TestAnnotatedBoolResult::Wrap<Tf_TestAnnotatedBoolResult>(
         "Tf_TestAnnotatedBoolResult", "annotation");

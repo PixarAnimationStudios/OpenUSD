@@ -386,7 +386,7 @@ UsdUtilsSparseValueWriter::GetSparseAttrValueWriters() const
     std::vector<UsdUtilsSparseAttrValueWriter> sparseValueWriterVec;
     sparseValueWriterVec.reserve(_attrValueWriterMap.size());
     std::transform(_attrValueWriterMap.begin(), _attrValueWriterMap.end(),
-                    back_inserter(sparseValueWriterVec), TfGet<1>());
+                    std::back_inserter(sparseValueWriterVec), TfGet<1>());
     return sparseValueWriterVec;
 }
 

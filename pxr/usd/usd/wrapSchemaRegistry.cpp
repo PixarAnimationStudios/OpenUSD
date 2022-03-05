@@ -34,9 +34,7 @@
 
 #include <boost/python.hpp>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -52,141 +50,141 @@ void wrapUsdSchemaRegistry()
     typedef UsdSchemaRegistry This;
     typedef TfWeakPtr<UsdSchemaRegistry> ThisPtr;
 
-    class_<This, ThisPtr, boost::noncopyable>("SchemaRegistry", no_init)
+    boost::python::class_<This, ThisPtr, boost::noncopyable>("SchemaRegistry", boost::python::no_init)
         .def(TfPySingleton())
 
         .def("GetSchemaTypeName",
              (TfToken (*)(const TfType &)) &This::GetSchemaTypeName,
-             (arg("schemaType")))
+             (boost::python::arg("schemaType")))
         .staticmethod("GetSchemaTypeName")
         .def("GetConcreteSchemaTypeName",
              (TfToken (*)(const TfType &)) &This::GetConcreteSchemaTypeName,
-             (arg("schemaType")))
+             (boost::python::arg("schemaType")))
         .staticmethod("GetConcreteSchemaTypeName")
         .def("GetAPISchemaTypeName",
              (TfToken (*)(const TfType &)) &This::GetAPISchemaTypeName,
-             (arg("schemaType")))
+             (boost::python::arg("schemaType")))
         .staticmethod("GetAPISchemaTypeName")
 
         .def("GetTypeFromSchemaTypeName", 
              &This::GetTypeFromSchemaTypeName, 
-             (arg("typeName")))
+             (boost::python::arg("typeName")))
         .staticmethod("GetTypeFromSchemaTypeName")
         .def("GetConcreteTypeFromSchemaTypeName", 
              &This::GetConcreteTypeFromSchemaTypeName, 
-             (arg("typeName")))
+             (boost::python::arg("typeName")))
         .staticmethod("GetConcreteTypeFromSchemaTypeName")
         .def("GetAPITypeFromSchemaTypeName", 
              &This::GetAPITypeFromSchemaTypeName, 
-             (arg("typeName")))
+             (boost::python::arg("typeName")))
         .staticmethod("GetAPITypeFromSchemaTypeName")
 
         .def("IsDisallowedField",
              &This::IsDisallowedField,
-             (arg("fieldName")))
+             (boost::python::arg("fieldName")))
         .staticmethod("IsDisallowedField")
 
         .def("IsTyped",
              &This::IsTyped,
-             (arg("primType")))
+             (boost::python::arg("primType")))
         .staticmethod("IsTyped")
 
         .def("GetSchemaKind",
              (UsdSchemaKind (*)(const TfType &)) &This::GetSchemaKind,
-             (arg("primType")))
+             (boost::python::arg("primType")))
         .def("GetSchemaKind",
              (UsdSchemaKind (*)(const TfToken &)) &This::GetSchemaKind,
-             (arg("primType")))
+             (boost::python::arg("primType")))
         .staticmethod("GetSchemaKind")
 
         .def("IsConcrete",
              (bool (*)(const TfType &)) &This::IsConcrete,
-             (arg("primType")))
+             (boost::python::arg("primType")))
         .def("IsConcrete",
              (bool (*)(const TfToken &)) &This::IsConcrete,
-             (arg("primType")))
+             (boost::python::arg("primType")))
         .staticmethod("IsConcrete")
 
         .def("IsAppliedAPISchema", 
              (bool (*)(const TfType &)) &This::IsAppliedAPISchema,
-             (arg("apiSchemaType")))
+             (boost::python::arg("apiSchemaType")))
         .def("IsAppliedAPISchema", 
              (bool (*)(const TfToken &)) &This::IsAppliedAPISchema,
-             (arg("apiSchemaType")))
+             (boost::python::arg("apiSchemaType")))
         .staticmethod("IsAppliedAPISchema")
 
         .def("IsMultipleApplyAPISchema", 
              (bool (*)(const TfType &)) &This::IsMultipleApplyAPISchema,
-             (arg("apiSchemaType")))
+             (boost::python::arg("apiSchemaType")))
         .def("IsMultipleApplyAPISchema", 
              (bool (*)(const TfToken &)) &This::IsMultipleApplyAPISchema,
-             (arg("apiSchemaType")))
+             (boost::python::arg("apiSchemaType")))
         .staticmethod("IsMultipleApplyAPISchema")
 
         .def("GetTypeFromName", &This::GetTypeFromName, 
-            (arg("typeName")))
+            (boost::python::arg("typeName")))
         .staticmethod("GetTypeFromName")
 
         .def("GetTypeNameAndInstance", &This::GetTypeNameAndInstance,
-            (arg("typeName")), return_value_policy<TfPyPairToTuple>())
+            (boost::python::arg("typeName")), boost::python::return_value_policy<TfPyPairToTuple>())
         .staticmethod("GetTypeNameAndInstance")
 
         .def("IsAllowedAPISchemaInstanceName", 
              &This::IsAllowedAPISchemaInstanceName,
-             (arg("apiSchemaName"), arg("instanceName")))
+             (boost::python::arg("apiSchemaName"), boost::python::arg("instanceName")))
         .staticmethod("IsAllowedAPISchemaInstanceName")
 
         .def("GetAPISchemaCanOnlyApplyToTypeNames", 
              &This::GetAPISchemaCanOnlyApplyToTypeNames,
-             (arg("apiSchemaName"), arg("instanceName")=TfToken()),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("apiSchemaName"), boost::python::arg("instanceName")=TfToken()),
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetAPISchemaCanOnlyApplyToTypeNames")
 
         .def("GetAutoApplyAPISchemas", &This::GetAutoApplyAPISchemas,
-             return_value_policy<TfPyMapToDictionary>())
+             boost::python::return_value_policy<TfPyMapToDictionary>())
         .staticmethod("GetAutoApplyAPISchemas")
 
         .def("MakeMultipleApplyNameTemplate", 
              &This::MakeMultipleApplyNameTemplate,
-             arg("namespacePrefix"),
-             arg("baseName"))
+             boost::python::arg("namespacePrefix"),
+             boost::python::arg("baseName"))
         .staticmethod("MakeMultipleApplyNameTemplate")
 
         .def("MakeMultipleApplyNameInstance", 
              &This::MakeMultipleApplyNameInstance,
-             arg("nameTemplate"),
-             arg("instanceName"))
+             boost::python::arg("nameTemplate"),
+             boost::python::arg("instanceName"))
         .staticmethod("MakeMultipleApplyNameInstance")
 
         .def("GetMultipleApplyNameTemplateBaseName", 
              &This::GetMultipleApplyNameTemplateBaseName,
-             arg("nameTemplate"))
+             boost::python::arg("nameTemplate"))
         .staticmethod("GetMultipleApplyNameTemplateBaseName")
 
         .def("IsMultipleApplyNameTemplate", 
              &This::IsMultipleApplyNameTemplate,
-             arg("nameTemplate"))
+             boost::python::arg("nameTemplate"))
         .staticmethod("IsMultipleApplyNameTemplate")
 
         .def("FindConcretePrimDefinition", 
              &This::FindConcretePrimDefinition,
-             (arg("typeName")),
-             return_internal_reference<>())
+             (boost::python::arg("typeName")),
+             boost::python::return_internal_reference<>())
 
         .def("FindAppliedAPIPrimDefinition", 
              &This::FindAppliedAPIPrimDefinition,
-             (arg("typeName")),
-             return_internal_reference<>())
+             (boost::python::arg("typeName")),
+             boost::python::return_internal_reference<>())
 
         .def("GetEmptyPrimDefinition", 
              &This::GetEmptyPrimDefinition,
-             return_internal_reference<>())
+             boost::python::return_internal_reference<>())
 
         .def("BuildComposedPrimDefinition", 
              &_WrapBuildComposedPrimDefinition,
-             return_value_policy<manage_new_object>())
+             boost::python::return_value_policy<boost::python::manage_new_object>())
 
         .def("GetFallbackPrimTypes", &This::GetFallbackPrimTypes, 
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         ;
 }

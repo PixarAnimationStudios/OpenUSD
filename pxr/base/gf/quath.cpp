@@ -189,7 +189,7 @@ GfSlerp(double alpha, const GfQuath& q0, const GfQuath& q1)
     if (1.0 - cosTheta > 0.00001 ) {
         // standard case
         GfHalf theta = acos(cosTheta),
-               sinTheta = sin(theta);
+               sinTheta = std::sin(theta);
 
         scale0 = sin((1.0 - alpha) * theta) / sinTheta;
         scale1 = sin(alpha * theta) / sinTheta;

@@ -31,23 +31,22 @@
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapMetrics()
 {
-    def("GetStageUpAxis", UsdGeomGetStageUpAxis, arg("stage"));
-    def("SetStageUpAxis", UsdGeomSetStageUpAxis, 
-        (arg("stage"), arg("upAxis")));
-    def("GetFallbackUpAxis", UsdGeomGetFallbackUpAxis);
+    boost::python::def("GetStageUpAxis", UsdGeomGetStageUpAxis, boost::python::arg("stage"));
+    boost::python::def("SetStageUpAxis", UsdGeomSetStageUpAxis, 
+        (boost::python::arg("stage"), boost::python::arg("upAxis")));
+    boost::python::def("GetFallbackUpAxis", UsdGeomGetFallbackUpAxis);
 
-    def("GetStageMetersPerUnit", UsdGeomGetStageMetersPerUnit, arg("stage"));
-    def("StageHasAuthoredMetersPerUnit", UsdGeomStageHasAuthoredMetersPerUnit, arg("stage"));
-    def("SetStageMetersPerUnit", UsdGeomSetStageMetersPerUnit, 
-        (arg("stage"), arg("metersPerUnit")));
-    def("LinearUnitsAre", UsdGeomLinearUnitsAre, 
-        (arg("authoredUnits"), arg("standardUnits"), arg("epsilon")=1e-5));
+    boost::python::def("GetStageMetersPerUnit", UsdGeomGetStageMetersPerUnit, boost::python::arg("stage"));
+    boost::python::def("StageHasAuthoredMetersPerUnit", UsdGeomStageHasAuthoredMetersPerUnit, boost::python::arg("stage"));
+    boost::python::def("SetStageMetersPerUnit", UsdGeomSetStageMetersPerUnit, 
+        (boost::python::arg("stage"), boost::python::arg("metersPerUnit")));
+    boost::python::def("LinearUnitsAre", UsdGeomLinearUnitsAre, 
+        (boost::python::arg("authoredUnits"), boost::python::arg("standardUnits"), boost::python::arg("epsilon")=1e-5));
 
     boost::python::class_<UsdGeomLinearUnits>
         cls("LinearUnits", boost::python::no_init);

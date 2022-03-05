@@ -39,7 +39,6 @@
 #include <boost/python.hpp>
 
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -47,7 +46,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 
-object
+boost::python::object
 _ComputeJointInfluences(const UsdSkelSkinningQuery& self, UsdTimeCode time)
 {
     VtIntArray indices;
@@ -55,11 +54,11 @@ _ComputeJointInfluences(const UsdSkelSkinningQuery& self, UsdTimeCode time)
     if (self.ComputeJointInfluences(&indices, &weights, time)) {
         return boost::python::make_tuple(indices, weights);
     }
-    return object();
+    return boost::python::object();
 }
 
 
-object
+boost::python::object
 _ComputeVaryingJointInfluences(const UsdSkelSkinningQuery& self,
                                size_t numPoints,
                                UsdTimeCode time)
@@ -70,7 +69,7 @@ _ComputeVaryingJointInfluences(const UsdSkelSkinningQuery& self,
                                           &weights, time)) {
         return boost::python::make_tuple(indices, weights);
     }
-    return object();
+    return boost::python::object();
 }
 
 
@@ -93,22 +92,22 @@ _GetTimeSamplesInInterval(const UsdSkelSkinningQuery& self,
 }
 
 
-object
+boost::python::object
 _GetJointOrder(const UsdSkelSkinningQuery& self)
 {
     VtTokenArray jointOrder;
     if (self.GetJointOrder(&jointOrder))
-        return object(jointOrder);
+        return boost::python::object(jointOrder);
     return {};
 }
 
 
-object
+boost::python::object
 _GetBlendShapeOrder(const UsdSkelSkinningQuery& self)
 {
     VtTokenArray blendShapeOrder;
     if (self.GetBlendShapeOrder(&blendShapeOrder))
-        return object(blendShapeOrder);
+        return boost::python::object(blendShapeOrder);
     return {};
 }
 
@@ -142,14 +141,14 @@ void wrapUsdSkelSkinningQuery()
 {
     using This = UsdSkelSkinningQuery;
 
-    class_<This>("SkinningQuery")
+    boost::python::class_<This>("SkinningQuery")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         .def("__str__", &This::GetDescription)
 
         .def("GetPrim", &This::GetPrim,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("HasJointInfluences", &This::HasJointInfluences)
 
@@ -159,34 +158,34 @@ void wrapUsdSkelSkinningQuery()
              &This::GetNumInfluencesPerComponent)
 
         .def("GetInterpolation", &This::GetInterpolation,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("IsRigidlyDeformed", &This::IsRigidlyDeformed)
 
         .def("GetGeomBindTransformAttr", &This::GetGeomBindTransformAttr,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("GetJointIndicesPrimvar", &This::GetJointIndicesPrimvar,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("GetJointWeightsPrimvar", &This::GetJointWeightsPrimvar,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("GetBlendShapesAttr", &This::GetBlendShapesAttr,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("GetBlendShapeTargetsRel", &This::GetBlendShapeTargetsRel,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         // deprecated
         .def("GetMapper", &This::GetMapper,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("GetJointMapper", &This::GetJointMapper,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("GetBlendShapeMapper", &This::GetBlendShapeMapper,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("GetJointOrder", &_GetJointOrder)
 
@@ -197,46 +196,46 @@ void wrapUsdSkelSkinningQuery()
         .def("GetTimeSamplesInInterval", &_GetTimeSamplesInInterval)
 
         .def("ComputeJointInfluences", &_ComputeJointInfluences,
-             (arg("time")=UsdTimeCode::Default()))
+             (boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("ComputeVaryingJointInfluences", &_ComputeVaryingJointInfluences,
-             (arg("numPoints"), arg("time")=UsdTimeCode::Default()))
+             (boost::python::arg("numPoints"), boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("ComputeSkinnedPoints", &_ComputeSkinnedPoints<GfMatrix4d>,
-             (arg("xforms"), arg("points"),
-              arg("time")=UsdTimeCode::Default()))
+             (boost::python::arg("xforms"), boost::python::arg("points"),
+              boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("ComputeSkinnedPoints", &_ComputeSkinnedPoints<GfMatrix4f>,
-             (arg("xforms"), arg("points"),
-              arg("time")=UsdTimeCode::Default()))
+             (boost::python::arg("xforms"), boost::python::arg("points"),
+              boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("ComputeSkinnedTransform", &_ComputeSkinnedTransform<GfMatrix4d>,
-             (arg("xforms"),
-              arg("time")=UsdTimeCode::Default()))
+             (boost::python::arg("xforms"),
+              boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("ComputeSkinnedTransform", &_ComputeSkinnedTransform<GfMatrix4f>,
-             (arg("xforms"),
-              arg("time")=UsdTimeCode::Default()))
+             (boost::python::arg("xforms"),
+              boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("ComputeExtentsPadding",
              static_cast<float (UsdSkelSkinningQuery::*)(
                  const VtMatrix4dArray&,
                  const UsdGeomBoundable&) const>(
                      &This::ComputeExtentsPadding),
-             (arg("skelRestXforms"),
-              arg("boundable"),
-              arg("time")=UsdTimeCode::Default()))
+             (boost::python::arg("skelRestXforms"),
+              boost::python::arg("boundable"),
+              boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("ComputeExtentsPadding",
              static_cast<float (UsdSkelSkinningQuery::*)(
                  const VtMatrix4fArray&,
                  const UsdGeomBoundable&) const>(
                      &This::ComputeExtentsPadding),
-             (arg("skelRestXforms"),
-              arg("boundable"),
-              arg("time")=UsdTimeCode::Default()))
+             (boost::python::arg("skelRestXforms"),
+              boost::python::arg("boundable"),
+              boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("GetGeomBindTransform", &This::GetGeomBindTransform,
-             (arg("time")=UsdTimeCode::Default()))
+             (boost::python::arg("time")=UsdTimeCode::Default()))
         ;
 }

@@ -465,7 +465,7 @@ GfMatrix3f::ExtractRotationQuaternion() const
     double  r;
 
     if (_mtx[0][0] + _mtx[1][1] + _mtx[2][2] > _mtx[i][i]) {
-	r = 0.5 * sqrt(_mtx[0][0] + _mtx[1][1] +
+	r = 0.5 * std::sqrt(_mtx[0][0] + _mtx[1][1] +
 		       _mtx[2][2] + 1);
 	im.Set((_mtx[1][2] - _mtx[2][1]) / (4.0 * r),
 	       (_mtx[2][0] - _mtx[0][2]) / (4.0 * r),
@@ -474,7 +474,7 @@ GfMatrix3f::ExtractRotationQuaternion() const
     else {
 	int j = (i + 1) % 3;
 	int k = (i + 2) % 3;
-	double q = 0.5 * sqrt(_mtx[i][i] - _mtx[j][j] -
+	double q = 0.5 * std::sqrt(_mtx[i][i] - _mtx[j][j] -
 			      _mtx[k][k] + 1); 
 
 	im[i] = q;

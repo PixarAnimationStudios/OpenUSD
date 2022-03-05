@@ -32,7 +32,6 @@
 
 #include <cstdarg>
 
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -165,7 +165,7 @@ _ReadPlugInfoObject(const std::string& pathname, JsObject* result)
     //       calling JsParseStream() as of this writing.
     std::string line;
     std::vector<std::string> filtered;
-    while (getline(ifs, line)) {
+    while (std::getline(ifs, line)) {
         if (line.find('#') < line.find_first_not_of(" \t#"))
             line.clear();
         filtered.push_back(line);

@@ -34,7 +34,6 @@
 #include <boost/python.hpp>
 #include <boost/python/return_internal_reference.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -43,9 +42,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 struct SdrShaderNodeConstPtrToPythonConverter
 {
     static PyObject* convert(SdrShaderNodeConstPtr shaderNode) {
-        object shaderNodeObject(ptr(shaderNode));
+        boost::python::object shaderNodeObject(boost::python::ptr(shaderNode));
 
-        return incref(shaderNodeObject.ptr());
+        return boost::python::incref(shaderNodeObject.ptr());
     }
 };
 
@@ -65,19 +64,19 @@ void wrapShaderNode()
         "NodeRole", SdrNodeRole, SDR_NODE_ROLE_TOKENS
     );
 
-    return_value_policy<copy_const_reference> copyRefPolicy;
-    to_python_converter<SdrShaderNodeConstPtr,
+    boost::python::return_value_policy<boost::python::copy_const_reference> copyRefPolicy;
+    boost::python::to_python_converter<SdrShaderNodeConstPtr,
                         SdrShaderNodeConstPtrToPythonConverter>();
 
-    class_<This, ThisPtr, bases<NdrNode>, boost::noncopyable>("ShaderNode", no_init)
+    boost::python::class_<This, ThisPtr, boost::python::bases<NdrNode>, boost::noncopyable>("ShaderNode", boost::python::no_init)
         .def("GetShaderInput", &This::GetShaderInput,
-            return_internal_reference<>())
+            boost::python::return_internal_reference<>())
         .def("GetShaderOutput", &This::GetShaderOutput,
-            return_internal_reference<>())
+            boost::python::return_internal_reference<>())
         .def("GetAssetIdentifierInputNames", &This::GetAssetIdentifierInputNames,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetDefaultInput", &This::GetDefaultInput,
-            return_internal_reference<>())
+            boost::python::return_internal_reference<>())
         .def("GetLabel", &This::GetLabel, copyRefPolicy)
         .def("GetCategory", &This::GetCategory, copyRefPolicy)
         .def("GetHelp", &This::GetHelp)

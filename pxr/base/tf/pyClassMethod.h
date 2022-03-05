@@ -35,13 +35,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Tf_PyClassMethod {
 
-using namespace boost::python;
 
 // Visitor for wrapping functions as Python class methods.
 // See typedef below for docs.
 // This is very similar to the staticmethod() method on boost::python::class,
 // except it uses PyClassMethod_New() instead of PyStaticMethod_New().
-struct _TfPyClassMethod : def_visitor<_TfPyClassMethod>
+struct _TfPyClassMethod : boost::python::def_visitor<_TfPyClassMethod>
 {
     friend class def_visitor_access;
 
@@ -53,20 +52,20 @@ struct _TfPyClassMethod : def_visitor<_TfPyClassMethod>
     template <typename CLS>
     void visit(CLS &c) const
     {
-        PyTypeObject* self = downcast<PyTypeObject>( c.ptr() );
-        dict d((handle<>(borrowed(self->tp_dict))));
+        PyTypeObject* self = boost::python::downcast<PyTypeObject>( c.ptr() );
+        boost::python::dict d((boost::python::handle<>(boost::python::borrowed(self->tp_dict))));
 
-        object method(d[_methodName]);
+        boost::python::object method(d[_methodName]);
 
-        c.attr(_methodName.c_str()) = object(
-            handle<>( PyClassMethod_New((_CallableCheck)(method.ptr()) )));
+        c.attr(_methodName.c_str()) = boost::python::object(
+            boost::python::handle<>( PyClassMethod_New((_CallableCheck)(method.ptr()) )));
     }
 
 private:
 
     PyObject* _CallableCheck(PyObject* callable) const
     {
-        if (PyCallable_Check(expect_non_null(callable)))
+        if (PyCallable_Check(boost::python::expect_non_null(callable)))
             return callable;
 
         PyErr_Format( PyExc_TypeError,
@@ -74,7 +73,7 @@ private:
            "which is not callable",
            callable->ob_type->tp_name);
 
-        throw_error_already_set();
+        boost::python::throw_error_already_set();
         return 0;
     }
 

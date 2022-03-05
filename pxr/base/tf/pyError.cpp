@@ -38,9 +38,6 @@
 
 #include <vector>
 
-using namespace boost::python;
-using std::vector;
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -48,7 +45,7 @@ bool TfPyConvertTfErrorsToPythonException(TfErrorMark const &m) {
     // If there is a python exception somewhere in here, restore that, otherwise
     // raise a normal error exception.
     if (!m.IsClean()) {
-        list args;
+        boost::python::list args;
         for (TfErrorMark::Iterator e = m.GetBegin(); e != m.GetEnd(); ++e) {
             if (e->GetErrorCode() == TF_PYTHON_EXCEPTION) {
                 if (const TfPyExceptionState* info =
@@ -81,8 +78,8 @@ bool TfPyConvertTfErrorsToPythonException(TfErrorMark const &m) {
                 args.append(*e);
         }
         // make and set a python exception
-        handle<> excObj(PyObject_CallObject(Tf_PyGetErrorExceptionClass().get(),
-                                            tuple(args).ptr()));
+        boost::python::handle<> excObj(PyObject_CallObject(Tf_PyGetErrorExceptionClass().get(),
+                                            boost::python::tuple(args).ptr()));
         PyErr_SetObject(Tf_PyGetErrorExceptionClass().get(), excObj.get());
         m.Clear();
         return true;
@@ -102,11 +99,11 @@ TfPyConvertPythonExceptionToTfErrors()
         if (exc.GetType().get() == Tf_PyGetErrorExceptionClass().get() &&
             exc.GetValue()) {
             // Replace the errors in m with errors pulled out of exc.
-            object exception = object(exc.GetValue());
-            object args = exception.attr("args");
-            extract<vector<TfError> > extractor(args);
+            boost::python::object exception = boost::python::object(exc.GetValue());
+            boost::python::object args = exception.attr("args");
+            boost::python::extract<std::vector<TfError> > extractor(args);
             if (extractor.check()) {
-                vector<TfError> errs = extractor();
+                std::vector<TfError> errs = extractor();
                 TF_FOR_ALL(e, errs)
                     TfDiagnosticMgr::GetInstance().AppendError(*e);
             }
@@ -115,9 +112,9 @@ TfPyConvertPythonExceptionToTfErrors()
         }
     }
     else if (exc.GetValue()) {
-        object exception(exc.GetValue());
+        boost::python::object exception(exc.GetValue());
         if (PyObject_HasAttrString(exception.ptr(), "_pxr_SavedTfException")) {
-            extract<uintptr_t>
+            boost::python::extract<uintptr_t>
                 extractor(exception.attr("_pxr_SavedTfException"));
             std::exception_ptr *excPtrPtr;
             if (extractor.check()) {

@@ -31,7 +31,6 @@
 #include <boost/python/class.hpp>
 #include <boost/python/operators.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -51,19 +50,19 @@ __repr__(const ArTimestamp &self)
 
 void wrapTimestamp()
 {
-    class_<ArTimestamp>("Timestamp")
-        .def(init<double>())
-        .def(init<ArTimestamp>())
+    boost::python::class_<ArTimestamp>("Timestamp")
+        .def(boost::python::init<double>())
+        .def(boost::python::init<ArTimestamp>())
 
         .def("IsValid", &ArTimestamp::IsValid)
         .def("GetTime", &ArTimestamp::GetTime)
 
-        .def(self == self)
-        .def(self != self)
-        .def(self < self)
-        .def(self <= self)
-        .def(self > self)
-        .def(self >= self)  
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self < boost::python::self)
+        .def(boost::python::self <= boost::python::self)
+        .def(boost::python::self > boost::python::self)
+        .def(boost::python::self >= boost::python::self)  
 
         .def("__hash__", __hash__)
         .def("__repr__", __repr__)

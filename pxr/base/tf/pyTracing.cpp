@@ -40,11 +40,10 @@
 #include <list>
 #include <mutex>
 
-using std::list;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef list<std::weak_ptr<TfPyTraceFn> > TraceFnList;
+typedef std::list<std::weak_ptr<TfPyTraceFn> > TraceFnList;
 
 static TfStaticData<TraceFnList> _traceFns;
 static bool _traceFnInstalled;

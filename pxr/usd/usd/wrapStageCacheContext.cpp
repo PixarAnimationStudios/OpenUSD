@@ -35,9 +35,7 @@
 
 #include <vector>
 
-using std::vector;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -64,7 +62,7 @@ struct Usd_PyStageCacheContext
     void __enter__() { _context.reset(_makeContext()); }
 
     // Drop the shared_ptr.
-    void __exit__(object, object, object) { _context.reset(); }
+    void __exit__(boost::python::object, boost::python::object, boost::python::object) { _context.reset(); }
 
 private:
 
@@ -86,20 +84,20 @@ void wrapUsdStageCacheContext()
     // Must ensure that the returned Wrapper objects below keep their cache
     // argument alive, otherwise the Wrappers could have dangling references to
     // their caches.
-    class_<Usd_NonPopulatingStageCacheWrapper>(
-        "_NonPopulatingStageCacheWrapper", no_init);
-    def("UseButDoNotPopulateCache", UsdUseButDoNotPopulateCache<UsdStageCache>,
-        with_custodian_and_ward_postcall<0, 1>());
+    boost::python::class_<Usd_NonPopulatingStageCacheWrapper>(
+        "_NonPopulatingStageCacheWrapper", boost::python::no_init);
+    boost::python::def("UseButDoNotPopulateCache", UsdUseButDoNotPopulateCache<UsdStageCache>,
+        boost::python::with_custodian_and_ward_postcall<0, 1>());
 
     // The constructor needs to ensure that the wrapper arguments be kept alive
     // as long as the context is, to transitively keep their held cache objects
     // alive.
-    class_<Usd_PyStageCacheContext>("StageCacheContext", no_init)
-        .def(init<Usd_NonPopulatingStageCacheWrapper>()[
-                 with_custodian_and_ward<1, 2>()])
-        .def(init<UsdStageCache &>()[
-                 with_custodian_and_ward<1, 2>()])
-        .def(init<UsdStageCacheContextBlockType>())
+    boost::python::class_<Usd_PyStageCacheContext>("StageCacheContext", boost::python::no_init)
+        .def(boost::python::init<Usd_NonPopulatingStageCacheWrapper>()[
+                 boost::python::with_custodian_and_ward<1, 2>()])
+        .def(boost::python::init<UsdStageCache &>()[
+                 boost::python::with_custodian_and_ward<1, 2>()])
+        .def(boost::python::init<UsdStageCacheContextBlockType>())
         .def("__enter__", &Usd_PyStageCacheContext::__enter__)
         .def("__exit__", &Usd_PyStageCacheContext::__exit__)
         ;

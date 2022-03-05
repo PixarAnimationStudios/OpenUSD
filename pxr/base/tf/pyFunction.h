@@ -65,10 +65,9 @@ struct TfPyFunctionFromPython<Ret (Args...)>
         TfPyObjWrapper weak;
 
         Ret operator()(Args... args) {
-            using namespace boost::python;
             // Attempt to get the referenced callable object.
             TfPyLock lock;
-            object callable(handle<>(borrowed(PyWeakref_GetObject(weak.ptr()))));
+            boost::python::object callable(boost::python::handle<>(boost::python::borrowed(PyWeakref_GetObject(weak.ptr()))));
             if (TfPyIsNone(callable)) {
                 TF_WARN("Tried to call an expired python callback");
                 return Ret();
@@ -86,7 +85,6 @@ struct TfPyFunctionFromPython<Ret (Args...)>
 #endif
 
         Ret operator()(Args... args) {
-            using namespace boost::python;
             // Attempt to get the referenced self parameter, then build a new
             // instance method and call it.
             TfPyLock lock;
@@ -98,7 +96,7 @@ struct TfPyFunctionFromPython<Ret (Args...)>
 #if PY_MAJOR_VERSION == 2
             object method(handle<>(PyMethod_New(func.ptr(), self, cls.ptr())));
 #else 
-            object method(handle<>(PyMethod_New(func.ptr(), self)));
+            boost::python::object method(boost::python::handle<>(PyMethod_New(func.ptr(), self)));
 #endif
             return TfPyCall<Ret>(method)(args...);
         }
@@ -112,9 +110,8 @@ struct TfPyFunctionFromPython<Ret (Args...)>
     template <typename FuncType>
     static void
     RegisterFunctionType() {
-        using namespace boost::python;
-        converter::registry::
-            insert(&convertible, &construct<FuncType>, type_id<FuncType>());
+        boost::python::converter::registry::
+            insert(&convertible, &construct<FuncType>, boost::python::type_id<FuncType>());
     }
 
     static void *convertible(PyObject *obj) {
@@ -124,10 +121,8 @@ struct TfPyFunctionFromPython<Ret (Args...)>
     template <typename FuncType>
     static void construct(PyObject *src, boost::python::converter::
                           rvalue_from_python_stage1_data *data) {
-        using std::string;
-        using namespace boost::python;
         
-        void *storage = ((converter::rvalue_from_python_storage<FuncType> *)
+        void *storage = ((boost::python::converter::rvalue_from_python_storage<FuncType> *)
                          data)->storage.bytes;
 
         if (src == Py_None) {
@@ -153,7 +148,7 @@ struct TfPyFunctionFromPython<Ret (Args...)>
             // This is all sort of contrived, but seems to have the right behavior
             // for most usage patterns.
             
-            object callable(handle<>(borrowed(src)));
+            boost::python::object callable(boost::python::handle<>(boost::python::borrowed(src)));
             PyObject *pyCallable = callable.ptr();
             PyObject *self =
                 PyMethod_Check(pyCallable) ?
@@ -165,9 +160,9 @@ struct TfPyFunctionFromPython<Ret (Args...)>
 #if PY_MAJOR_VERSION == 2
                 object cls(handle<>(borrowed(PyMethod_GET_CLASS(pyCallable))));
 #endif
-                object func(handle<>(borrowed(PyMethod_GET_FUNCTION(
+                boost::python::object func(boost::python::handle<>(boost::python::borrowed(PyMethod_GET_FUNCTION(
                                                   pyCallable))));
-                object weakSelf(handle<>(PyWeakref_NewRef(self, NULL)));
+                boost::python::object weakSelf(boost::python::handle<>(PyWeakref_NewRef(self, NULL)));
                 new (storage)
                     FuncType(CallMethod{
                             TfPyObjWrapper(func),
@@ -178,7 +173,7 @@ struct TfPyFunctionFromPython<Ret (Args...)>
                         });
                 
             } else if (PyObject_HasAttrString(pyCallable, "__name__") &&
-                       extract<string>(callable.attr("__name__"))()
+                       boost::python::extract<std::string>(callable.attr("__name__"))()
                                                                 == "<lambda>") {
                 // Explicitly hold on to strong references to lambdas.
                 new (storage) FuncType(Call{TfPyObjWrapper(callable)});
@@ -189,7 +184,7 @@ struct TfPyFunctionFromPython<Ret (Args...)>
                     new (storage)
                         FuncType(
                             CallWeak{TfPyObjWrapper(
-                                    object(handle<>(weakCallable)))});
+                                    boost::python::object(boost::python::handle<>(weakCallable)))});
                 } else {
                     // Fall back to taking a strong reference.
                     PyErr_Clear();

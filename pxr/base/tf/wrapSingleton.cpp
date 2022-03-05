@@ -30,7 +30,6 @@
 #include <boost/python/raw_function.hpp>
 #include <boost/python/tuple.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -40,11 +39,11 @@ namespace {
 // python.
 struct Tf_PySingleton {};
 
-static object
-_GetSingletonInstance(object const &classObj) {
+static boost::python::object
+_GetSingletonInstance(boost::python::object const &classObj) {
 
     // Try to get existing instance from this class.
-    object instance = classObj.attr("__dict__").attr("get")("__instance");
+    boost::python::object instance = classObj.attr("__dict__").attr("get")("__instance");
 
     if (TfPyIsNone(instance)) {
         // Create instance.  Use our first base class in the method resolution
@@ -53,10 +52,10 @@ _GetSingletonInstance(object const &classObj) {
             <Tf_PySingleton>().attr("__mro__")[1].attr("__new__")(classObj);
 
         // Store singleton instance in class.
-        setattr(classObj, "__instance", instance);
+        boost::python::api::setattr(classObj, "__instance", instance);
 
         // If there's an 'init' method, call it.
-        if (!TfPyIsNone(getattr(instance, "init", object())))
+        if (!TfPyIsNone(boost::python::api::getattr(instance, "init", boost::python::object())))
             instance.attr("init")();
     }
 
@@ -66,13 +65,13 @@ _GetSingletonInstance(object const &classObj) {
 
 
 // Need an init method that accepts any arguments and does nothing.
-static object _DummyInit(tuple const &, dict const &) { return object(); }
+static boost::python::object _DummyInit(boost::python::tuple const &, boost::python::dict const &) { return boost::python::object(); }
 
 } // anonymous namespace 
 
 void wrapSingleton() {
-    class_<Tf_PySingleton>("Singleton", no_init)
+    boost::python::class_<Tf_PySingleton>("Singleton", boost::python::no_init)
         .def("__new__", _GetSingletonInstance).staticmethod("__new__")
-        .def("__init__", raw_function(_DummyInit))
+        .def("__init__", boost::python::raw_function(_DummyInit))
         ;
 }

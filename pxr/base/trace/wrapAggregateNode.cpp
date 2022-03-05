@@ -38,7 +38,6 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace boost::python;
 
 
 static double
@@ -63,19 +62,19 @@ void wrapAggregateNode()
     using This = TraceAggregateNode;
     using ThisPtr = TraceAggregateNodePtr;
 
-    class_<This, ThisPtr>("AggregateNode", no_init)
+    boost::python::class_<This, ThisPtr>("AggregateNode", boost::python::no_init)
         .def(TfPyWeakPtr())
         .add_property("key", &This::GetKey )
         .add_property("id", 
-            make_function(&This::GetId, 
-                          return_value_policy<return_by_value>()))
+            boost::python::make_function(&This::GetId, 
+                          boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("count", GetCount)
         .add_property("exclusiveCount", &This::GetExclusiveCount)
         .add_property("inclusiveTime", GetInclusiveTime)
         .add_property("exclusiveTime", GetExclusiveTime)
         .add_property("children", 
-            make_function(&This::GetChildren,
-                          return_value_policy<TfPySequenceToList>()) )
+            boost::python::make_function(&This::GetChildren,
+                          boost::python::return_value_policy<TfPySequenceToList>()) )
         .add_property("expanded", &This::IsExpanded, &This::SetExpanded)
         
         ;

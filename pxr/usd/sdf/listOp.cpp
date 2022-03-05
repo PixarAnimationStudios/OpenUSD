@@ -39,8 +39,6 @@
 
 #include <ostream>
 
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -757,7 +755,7 @@ template <typename T>
 static void
 _StreamOutItems(
     std::ostream &out,
-    const string &itemsName,
+    const std::string &itemsName,
     const std::vector<T> &items,
     bool *firstItems,
     bool isExplicitList = false)
@@ -855,7 +853,7 @@ SDF_INSTANTIATE_LIST_OP(int);
 SDF_INSTANTIATE_LIST_OP(unsigned int);
 SDF_INSTANTIATE_LIST_OP(int64_t);
 SDF_INSTANTIATE_LIST_OP(uint64_t);
-SDF_INSTANTIATE_LIST_OP(string);
+SDF_INSTANTIATE_LIST_OP(std::string);
 SDF_INSTANTIATE_LIST_OP(TfToken);
 SDF_INSTANTIATE_LIST_OP(SdfUnregisteredValue);
 SDF_INSTANTIATE_LIST_OP(SdfPath);

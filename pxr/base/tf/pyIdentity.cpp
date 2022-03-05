@@ -36,8 +36,6 @@
 // Compile-time option to help debug identity issues.
 //#define DEBUG_IDENTITY
 
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -177,13 +175,12 @@ static void _WeakBaseDied(void const *key) {
 };
 
 static std::string _GetTypeName(PyObject *obj) {
-    using namespace boost::python;
     TfPyLock lock;
-    handle<> typeHandle( borrowed<>( PyObject_Type(obj) ) );
+    boost::python::handle<> typeHandle( boost::python::borrowed<>( PyObject_Type(obj) ) );
     if (typeHandle) {
-        object classObj(typeHandle);
-        object nameObj(classObj.attr("__name__"));
-        extract<string> name(nameObj);
+        boost::python::object classObj(typeHandle);
+        boost::python::object nameObj(classObj.attr("__name__"));
+        boost::python::extract<std::string> name(nameObj);
         if (name.check())
             return name();
     }
@@ -334,7 +331,7 @@ void Tf_PyIdentityHelper::Release(void const *key) {
 }
 
 
-static TfStaticData<vector<PyGILState_STATE> > _pyLocks;
+static TfStaticData<std::vector<PyGILState_STATE> > _pyLocks;
 static void _LockPython() {
     // Python may already be shut down -- if so, don't do anything.
     if (Py_IsInitialized()) {

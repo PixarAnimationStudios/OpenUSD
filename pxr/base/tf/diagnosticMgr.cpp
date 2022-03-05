@@ -50,8 +50,6 @@
 #include <thread>
 #include <memory>
 
-using std::list;
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -221,7 +219,7 @@ TfDiagnosticMgr::_SpliceErrors(ErrorList &src)
 void
 TfDiagnosticMgr::PostError(TfEnum errorCode, const char* errorCodeString,
                            TfCallContext const &context,
-                           const string& commentary,
+                           const std::string& commentary,
                            TfDiagnosticInfo info, bool quiet)
 {
     if (TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_ERROR))
@@ -468,14 +466,14 @@ TfDiagnosticMgr::EraseRange(ErrorIterator first, ErrorIterator last)
 
 void
 TfDiagnosticMgr::ErrorHelper::PostWithInfo(
-    const string& msg, TfDiagnosticInfo info) const
+    const std::string& msg, TfDiagnosticInfo info) const
 {
     TfDiagnosticMgr::GetInstance().PostError(_errorCode, _errorCodeString,
         _context, msg, info, false);
 }
 
 void
-TfDiagnosticMgr::ErrorHelper::Post(const string& msg) const
+TfDiagnosticMgr::ErrorHelper::Post(const std::string& msg) const
 {
     TfDiagnosticMgr::GetInstance().PostError(_errorCode, _errorCodeString,
         _context, msg, TfDiagnosticInfo(), false);
@@ -483,7 +481,7 @@ TfDiagnosticMgr::ErrorHelper::Post(const string& msg) const
 
 void
 TfDiagnosticMgr::ErrorHelper::PostQuietly(
-    const string& msg, TfDiagnosticInfo info) const
+    const std::string& msg, TfDiagnosticInfo info) const
 {
     TfDiagnosticMgr::GetInstance().PostError(_errorCode, _errorCodeString,
         _context, msg, info, true);
@@ -518,7 +516,7 @@ TfDiagnosticMgr::WarningHelper::Post(const char *fmt, ...) const
 }
 
 void
-TfDiagnosticMgr::WarningHelper::Post(const string& msg) const
+TfDiagnosticMgr::WarningHelper::Post(const std::string& msg) const
 {
     TfDiagnosticMgr::GetInstance().PostWarning(_warningCode, _warningCodeString,
         _context, msg, TfDiagnosticInfo(), false);
@@ -526,7 +524,7 @@ TfDiagnosticMgr::WarningHelper::Post(const string& msg) const
 
 void
 TfDiagnosticMgr::WarningHelper::PostWithInfo(
-    const string& msg, TfDiagnosticInfo info) const
+    const std::string& msg, TfDiagnosticInfo info) const
 {
     TfDiagnosticMgr::GetInstance().PostWarning(_warningCode, _warningCodeString,
         _context, msg, info, false);
@@ -542,7 +540,7 @@ TfDiagnosticMgr::StatusHelper::Post(const char *fmt, ...) const
 }
 
 void
-TfDiagnosticMgr::StatusHelper::Post(const string& msg) const
+TfDiagnosticMgr::StatusHelper::Post(const std::string& msg) const
 {
     TfDiagnosticMgr::GetInstance().PostStatus(_statusCode, _statusCodeString,
         _context, msg, TfDiagnosticInfo(), false);
@@ -550,7 +548,7 @@ TfDiagnosticMgr::StatusHelper::Post(const string& msg) const
 
 void
 TfDiagnosticMgr::StatusHelper::PostWithInfo(
-    const string& msg, TfDiagnosticInfo info) const
+    const std::string& msg, TfDiagnosticInfo info) const
 {
     TfDiagnosticMgr::GetInstance().PostStatus(_statusCode, _statusCodeString,
         _context, msg, info, false);
@@ -560,7 +558,7 @@ TfDiagnosticMgr::StatusHelper::PostWithInfo(
 std::string
 TfDiagnosticMgr::GetCodeName(const TfEnum &code)
 {
-    string codeName = TfEnum::GetDisplayName(code);
+    std::string codeName = TfEnum::GetDisplayName(code);
     if (codeName.empty()) {
         codeName = TfStringPrintf("(%s)%d",
             ArchGetDemangled(code.GetType()).c_str(),
@@ -651,8 +649,8 @@ TfDiagnosticMgr::FormatDiagnostic(const TfEnum &code,
         const TfCallContext &context, const std::string &msg, 
         const TfDiagnosticInfo &info)
 {
-    string output;
-    string codeName = TfDiagnosticMgr::GetCodeName(code);
+    std::string output;
+    std::string codeName = TfDiagnosticMgr::GetCodeName(code);
     if (context.IsHidden() ||
         !strcmp(context.GetFunction(), "") || !strcmp(context.GetFile(), "")) {
         output = TfStringPrintf("%s%s: %s [%s]\n",

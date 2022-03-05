@@ -28,8 +28,6 @@
 #include "pxr/base/tf/noticeRegistry.h"
 #include "pxr/base/tf/type.h"
 
-using std::type_info;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -49,10 +47,10 @@ void
 TfNotice::_DelivererBase::
 _BeginDelivery(const TfNotice &notice,
                const TfWeakBase *sender,
-               const type_info &senderType,
+               const std::type_info &senderType,
                const TfWeakBase *listener,
-               const type_info &listenerType,
-               const vector<TfNotice::WeakProbePtr> &probes)
+               const std::type_info &listenerType,
+               const std::vector<TfNotice::WeakProbePtr> &probes)
 {
     Tf_NoticeRegistry::_GetInstance().
         _BeginDelivery(notice, sender, senderType,
@@ -61,7 +59,7 @@ _BeginDelivery(const TfNotice &notice,
 
 void
 TfNotice::_DelivererBase::
-_EndDelivery(const vector<TfNotice::WeakProbePtr> &probes)
+_EndDelivery(const std::vector<TfNotice::WeakProbePtr> &probes)
 {
     Tf_NoticeRegistry::_GetInstance()._EndDelivery(probes);
 }
@@ -92,7 +90,7 @@ TfNotice::_Register(_DelivererBase *deliverer)
 size_t 
 TfNotice::_Send(const TfWeakBase *s,
                 const void *senderUniqueId,
-                const type_info &senderType) const
+                const std::type_info &senderType) const
 {
     // Look up the notice type using the static type_info.
     // This is faster than TfType::Find().
@@ -106,7 +104,7 @@ size_t
 TfNotice::_SendWithType(const TfType &noticeType,
                         const TfWeakBase *s,
                         const void *senderUniqueId,
-                        const type_info &senderType) const
+                        const std::type_info &senderType) const
 {
     return Tf_NoticeRegistry::_GetInstance().
         _Send(*this, noticeType, s, senderUniqueId, senderType);
@@ -149,7 +147,7 @@ TfNotice::Revoke(Keys* keys)
 }
 
 void
-TfNotice::_VerifyFailedCast(const type_info& toType,
+TfNotice::_VerifyFailedCast(const std::type_info& toType,
                             const TfNotice& notice, const TfNotice* castNotice)
 {
     Tf_NoticeRegistry::_GetInstance()

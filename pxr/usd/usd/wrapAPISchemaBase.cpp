@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -55,7 +54,7 @@ void wrapUsdAPISchemaBase()
 {
     typedef UsdAPISchemaBase This;
 
-    class_< This , bases<UsdSchemaBase>, boost::noncopyable> cls ("APISchemaBase", "", no_init);
+    boost::python::class_< This , boost::python::bases<UsdSchemaBase>, boost::noncopyable> cls ("APISchemaBase", "", boost::python::no_init);
 
     cls
         .def(TfTypePythonClass())
@@ -63,15 +62,15 @@ void wrapUsdAPISchemaBase()
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
 
     ;

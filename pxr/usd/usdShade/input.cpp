@@ -41,8 +41,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-using std::vector;
-using std::string;
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -58,7 +56,7 @@ UsdShadeInput::UsdShadeInput(const UsdAttribute &attr)
 TfToken 
 UsdShadeInput::GetBaseName() const
 {
-    string name = GetFullName();
+    std::string name = GetFullName();
     if (TfStringStartsWith(name, UsdShadeTokens->inputs)) {
         return TfToken(name.substr(UsdShadeTokens->inputs.GetString().size()));
     }

@@ -34,34 +34,31 @@
 #include <boost/noncopyable.hpp>
 #include <string>
 
-using namespace boost::python;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static dict
+static boost::python::dict
 _ConvertDict( const JsObject & dictionary )
 {
-    dict result;
+    boost::python::dict result;
     TF_FOR_ALL(i, dictionary) {
-        const string & key = i->first;
+        const std::string & key = i->first;
         const JsValue & val = i->second;
 
-        result[key] = JsConvertToContainerType<object, dict>(val);
+        result[key] = JsConvertToContainerType<boost::python::object, boost::python::dict>(val);
     }
     return result;
 }
 
-static dict
+static boost::python::dict
 _GetMetadata(PlugPluginPtr plugin)
 {
     return _ConvertDict(plugin->GetMetadata());
 }
 
-static dict
+static boost::python::dict
 _GetMetadataForType(PlugPluginPtr plugin, const TfType &type)
 {
     return _ConvertDict(plugin->GetMetadataForType(type));
@@ -74,7 +71,7 @@ void wrapPlugin()
     typedef PlugPlugin This;
     typedef PlugPluginPtr ThisPtr;
 
-    class_<This, ThisPtr, boost::noncopyable> ( "Plugin", no_init )
+    boost::python::class_<This, ThisPtr, boost::noncopyable> ( "Plugin", boost::python::no_init )
         .def(TfPyWeakPtr())
         .def("Load", &This::Load)
 
@@ -85,31 +82,31 @@ void wrapPlugin()
         .add_property("metadata", _GetMetadata)
 
         .add_property("name",
-                      make_function(&This::GetName,
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&This::GetName,
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("path",
-                      make_function(&This::GetPath,
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&This::GetPath,
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("resourcePath",
-                      make_function(&This::GetResourcePath,
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&This::GetResourcePath,
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
 
         .def("GetMetadataForType", _GetMetadataForType)
         .def("DeclaresType", &This::DeclaresType,
-             (arg("type"), 
-              arg("includeSubclasses") = false))
+             (boost::python::arg("type"), 
+              boost::python::arg("includeSubclasses") = false))
 
         .def("MakeResourcePath", &This::MakeResourcePath)
         .def("FindPluginResource", &This::FindPluginResource,
-             (arg("path"), 
-              arg("verify") = true))
+             (boost::python::arg("path"), 
+              boost::python::arg("verify") = true))
         ;
 
     // The call to JsConvertToContainerType in _ConvertDict creates
     // vectors of boost::python::objects for array values, so register
     // a converter that turns that vector into a Python list.
-    boost::python::to_python_converter<std::vector<object>,
-        TfPySequenceToPython<std::vector<object> > >();
+    boost::python::to_python_converter<std::vector<boost::python::object>,
+        TfPySequenceToPython<std::vector<boost::python::object> > >();
 }
 
 TF_REFPTR_CONST_VOLATILE_GET(PlugPlugin)

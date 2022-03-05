@@ -25,8 +25,6 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/pyUtils.h"
 
-using namespace boost::python;
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -35,9 +33,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 // If successful, returns the pointer; otherwise returns null
 template <typename T>
 static T*
-_ExtractValue(object &pyObject, T* varPtr)
+_ExtractValue(boost::python::object &pyObject, T* varPtr)
 {
-    extract<T> extractor(pyObject);
+    boost::python::extract<T> extractor(pyObject);
     if (extractor.check()) {
         *varPtr = extractor();
         return varPtr;
@@ -47,13 +45,13 @@ _ExtractValue(object &pyObject, T* varPtr)
 }
 
 bool
-PcpVariantFallbackMapFromPython( const dict& d,
+PcpVariantFallbackMapFromPython( const boost::python::dict& d,
                                  PcpVariantFallbackMap *result)
 {
-    object iterItems = d.items();
-    for (int i = 0; i < len(iterItems); ++i) {
-        object key = iterItems[i][0];
-        object value = iterItems[i][1];
+    boost::python::object iterItems = d.items();
+    for (int i = 0; i < boost::python::len(iterItems); ++i) {
+        boost::python::object key = iterItems[i][0];
+        boost::python::object value = iterItems[i][1];
         std::string k;
         std::vector<std::string> v;
         

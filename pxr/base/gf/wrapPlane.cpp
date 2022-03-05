@@ -39,22 +39,20 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string _Repr(GfPlane const &self) {
+static std::string _Repr(GfPlane const &self) {
     return TF_PY_REPR_PREFIX + "Plane(" + TfPyRepr(self.GetNormal()) + ", " +
         TfPyRepr(self.GetDistanceFromOrigin()) + ")";
 }
 
-static object _FitPlaneToPoints(const std::vector<GfVec3d>& points) {
+static boost::python::object _FitPlaneToPoints(const std::vector<GfVec3d>& points) {
     GfPlane plane;
-    return GfFitPlaneToPoints(points, &plane) ? object(plane) : object();
+    return GfFitPlaneToPoints(points, &plane) ? boost::python::object(plane) : boost::python::object();
 }
 
 } // anonymous namespace 
@@ -63,28 +61,28 @@ void wrapPlane()
 {    
     typedef GfPlane This;
 
-    object getNormal = make_function(&This::GetNormal,
-                                     return_value_policy<return_by_value>());
+    boost::python::object getNormal = boost::python::make_function(&This::GetNormal,
+                                     boost::python::return_value_policy<boost::python::return_by_value>());
 
-    def( "FitPlaneToPoints", _FitPlaneToPoints );
+    boost::python::def( "FitPlaneToPoints", _FitPlaneToPoints );
 
-    class_<This>( "Plane", init<>() )
-        .def(init< const GfVec3d &, double >())
-        .def(init< const GfVec3d &, const GfVec3d & >())
-        .def(init< const GfVec3d &, const GfVec3d &, const GfVec3d & >())
-        .def(init< const GfVec4d & >())
+    boost::python::class_<This>( "Plane", boost::python::init<>() )
+        .def(boost::python::init< const GfVec3d &, double >())
+        .def(boost::python::init< const GfVec3d &, const GfVec3d & >())
+        .def(boost::python::init< const GfVec3d &, const GfVec3d &, const GfVec3d & >())
+        .def(boost::python::init< const GfVec4d & >())
 
         .def( TfTypePythonClass() )
 
         .def("Set", (void (This::*)(const GfVec3d &, double))
-             &This::Set, return_self<>())
+             &This::Set, boost::python::return_self<>())
         .def("Set", (void (This::*)(const GfVec3d &, const GfVec3d &))
-             &This::Set, return_self<>())
+             &This::Set, boost::python::return_self<>())
         .def("Set", (void (This::*)( const GfVec3d &, const GfVec3d &,
                                      const GfVec3d & ))
-             &This::Set, return_self<>())
+             &This::Set, boost::python::return_self<>())
         .def("Set", (void (This::*)(const GfVec4d &))
-             &This::Set, return_self<>())
+             &This::Set, boost::python::return_self<>())
 
         .add_property( "normal", getNormal)
         .add_property( "distanceFromOrigin", &This::GetDistanceFromOrigin )
@@ -95,9 +93,9 @@ void wrapPlane()
         .def( "GetEquation", &This::GetEquation )
         .def( "Project", &This::Project )
 
-        .def( "Transform", &This::Transform, return_self<>() )
+        .def( "Transform", &This::Transform, boost::python::return_self<>() )
 
-        .def( "Reorient", &This::Reorient, return_self<>() )
+        .def( "Reorient", &This::Reorient, boost::python::return_self<>() )
 
         .def( "IntersectsPositiveHalfSpace",
               (bool (This::*)( const GfRange3d & ) const)
@@ -107,14 +105,14 @@ void wrapPlane()
               (bool (This::*)( const GfVec3d & ) const)
               &This::IntersectsPositiveHalfSpace )
 
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
+        .def( boost::python::self_ns::str(boost::python::self) )
+        .def( boost::python::self == boost::python::self )
+        .def( boost::python::self != boost::python::self )
 
         .def("__repr__", _Repr)
         
         ;
-    to_python_converter<std::vector<This>,
+    boost::python::to_python_converter<std::vector<This>,
         TfPySequenceToPython<std::vector<This> > >();
     
 }

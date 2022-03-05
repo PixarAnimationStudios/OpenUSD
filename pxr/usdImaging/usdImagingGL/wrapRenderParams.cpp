@@ -29,7 +29,6 @@
 
 #include "pxr/usdImaging/usdImagingGL/renderParams.h"
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -37,7 +36,7 @@ void
 wrapRenderParams()
 {
     // Wrap the DrawMode enum. Accessible as UsdImagingGL.DrawMode
-    enum_<UsdImagingGLDrawMode>("DrawMode")
+    boost::python::enum_<UsdImagingGLDrawMode>("DrawMode")
         .value("DRAW_POINTS", UsdImagingGLDrawMode::DRAW_POINTS)
         .value("DRAW_WIREFRAME", UsdImagingGLDrawMode::DRAW_WIREFRAME)
         .value("DRAW_WIREFRAME_ON_SURFACE", 
@@ -50,7 +49,7 @@ wrapRenderParams()
         ;
 
     // Wrap the CullStyle enum. Accessible as UsdImagingGL.CullStyle
-    enum_<UsdImagingGLCullStyle>("CullStyle")
+    boost::python::enum_<UsdImagingGLCullStyle>("CullStyle")
         .value("CULL_STYLE_NOTHING", UsdImagingGLCullStyle::CULL_STYLE_NOTHING)
         .value("CULL_STYLE_BACK", UsdImagingGLCullStyle::CULL_STYLE_BACK)
         .value("CULL_STYLE_FRONT", UsdImagingGLCullStyle::CULL_STYLE_FRONT)
@@ -61,7 +60,7 @@ wrapRenderParams()
     // Wrap the UsdImagingGLRenderParams struct. Accessible as 
     // UsdImagingGL.RenderParams
     using Params = UsdImagingGLRenderParams;
-    class_<UsdImagingGLRenderParams>("RenderParams", "Render parameters")
+    boost::python::class_<UsdImagingGLRenderParams>("RenderParams", "Render parameters")
         .def_readwrite("frame", &Params::frame)
         .def_readwrite("complexity", &Params::complexity)
         .def_readwrite("drawMode", &Params::drawMode)

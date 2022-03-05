@@ -37,9 +37,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Private implementation namespace; public types are exposed below.
 namespace TfType_WrapHelpers {
 
-    using namespace boost::python;
 
-    struct _PythonClass : def_visitor<_PythonClass>
+    struct _PythonClass : boost::python::def_visitor<_PythonClass>
     {
         friend class def_visitor_access;
             
@@ -57,7 +56,7 @@ namespace TfType_WrapHelpers {
             // appropriately depending on whether it is a polymorphic
             // wrapper<> type.
             typedef typename CLS::wrapped_type Type;
-            _Visit(c, detail::unwrap_wrapper((Type*)0));
+            _Visit(c, boost::python::detail::unwrap_wrapper((Type*)0));
         }
     };
 

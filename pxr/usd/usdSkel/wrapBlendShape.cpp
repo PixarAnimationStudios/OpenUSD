@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -51,21 +50,21 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateOffsetsAttr(UsdSkelBlendShape &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateOffsetsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateNormalOffsetsAttr(UsdSkelBlendShape &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateNormalOffsetsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreatePointIndicesAttr(UsdSkelBlendShape &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreatePointIndicesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->IntArray), writeSparsely);
 }
@@ -85,53 +84,53 @@ void wrapUsdSkelBlendShape()
 {
     typedef UsdSkelBlendShape This;
 
-    class_<This, bases<UsdTyped> >
+    boost::python::class_<This, boost::python::bases<UsdTyped> >
         cls("BlendShape");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
+        .def("Define", &This::Define, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Define")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetOffsetsAttr",
              &This::GetOffsetsAttr)
         .def("CreateOffsetsAttr",
              &_CreateOffsetsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetNormalOffsetsAttr",
              &This::GetNormalOffsetsAttr)
         .def("CreateNormalOffsetsAttr",
              &_CreateNormalOffsetsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetPointIndicesAttr",
              &This::GetPointIndicesAttr)
         .def("CreatePointIndicesAttr",
              &_CreatePointIndicesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;
@@ -161,7 +160,7 @@ void wrapUsdSkelBlendShape()
 namespace {
 
 
-tuple
+boost::python::tuple
 _ValidatePointIndices(TfSpan<const int> pointIndices,
                       size_t numPoints)
 {
@@ -177,17 +176,17 @@ WRAP_CUSTOM {
     using This = UsdSkelBlendShape;
 
     _class
-        .def("CreateInbetween", &This::CreateInbetween, arg("name"))
-        .def("GetInbetween", &This::GetInbetween, arg("name"))
-        .def("HasInbetween", &This::HasInbetween, arg("name"))
+        .def("CreateInbetween", &This::CreateInbetween, boost::python::arg("name"))
+        .def("GetInbetween", &This::GetInbetween, boost::python::arg("name"))
+        .def("HasInbetween", &This::HasInbetween, boost::python::arg("name"))
         
         .def("GetInbetweens", &This::GetInbetweens,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetAuthoredInbetweens", &This::GetAuthoredInbetweens,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("ValidatePointIndices", &_ValidatePointIndices,
-             (arg("pointIndices"), arg("numPoints")))
+             (boost::python::arg("pointIndices"), boost::python::arg("numPoints")))
         .staticmethod("ValidatePointIndices")
         ;
 }

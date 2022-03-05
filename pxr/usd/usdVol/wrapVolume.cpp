@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -64,31 +63,31 @@ void wrapUsdVolVolume()
 {
     typedef UsdVolVolume This;
 
-    class_<This, bases<UsdGeomGprim> >
+    boost::python::class_<This, boost::python::bases<UsdGeomGprim> >
         cls("Volume");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
+        .def("Define", &This::Define, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Define")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
 
         .def("__repr__", ::_Repr)
@@ -121,15 +120,15 @@ namespace {
 WRAP_CUSTOM {
     _class
         .def("GetFieldPaths", &UsdVolVolume::GetFieldPaths,
-             return_value_policy<TfPyMapToDictionary>())
+             boost::python::return_value_policy<TfPyMapToDictionary>())
         .def("GetFieldPath", &UsdVolVolume::GetFieldPath,
-             arg("name"))
+             boost::python::arg("name"))
         .def("HasFieldRelationship", &UsdVolVolume::HasFieldRelationship,
-             arg("name"))
+             boost::python::arg("name"))
         .def("CreateFieldRelationship", &UsdVolVolume::CreateFieldRelationship,
-             (arg("name"), arg("fieldPath")))
+             (boost::python::arg("name"), boost::python::arg("fieldPath")))
         .def("BlockFieldRelationship", &UsdVolVolume::BlockFieldRelationship,
-             arg("name"))
+             boost::python::arg("name"))
         ;
 }
 

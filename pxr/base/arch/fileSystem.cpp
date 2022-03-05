@@ -59,9 +59,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using std::pair;
-using std::string;
-using std::set;
 
 #if defined (ARCH_OS_WINDOWS)
 namespace {
@@ -145,14 +142,14 @@ namespace { // Helpers for ArchNormPath.
 
 enum TokenType { Dot, DotDot, Elem };
 
-typedef pair<string::const_iterator, string::const_iterator> Token;
-typedef pair<string::reverse_iterator, string::reverse_iterator> RToken;
+typedef std::pair<std::string::const_iterator, std::string::const_iterator> Token;
+typedef std::pair<std::string::reverse_iterator, std::string::reverse_iterator> RToken;
 
 template <class Iter>
-inline pair<Iter, Iter>
+inline std::pair<Iter, Iter>
 _NextToken(Iter i, Iter end)
 {
-    pair<Iter, Iter> t;
+    std::pair<Iter, Iter> t;
     for (t.first = i;
          t.first != end && *t.first == '/'; ++t.first) {}
     for (t.second = t.first;
@@ -162,7 +159,7 @@ _NextToken(Iter i, Iter end)
 
 template <class Iter>
 inline TokenType
-_GetTokenType(pair<Iter, Iter> t) {
+_GetTokenType(std::pair<Iter, Iter> t) {
     size_t len = distance(t.first, t.second);
     if (len == 1 && t.first[0] == '.')
         return Dot;
@@ -171,8 +168,8 @@ _GetTokenType(pair<Iter, Iter> t) {
     return Elem;
 }
 
-string
-_NormPath(string const &inPath)
+std::string
+_NormPath(std::string const &inPath)
 {
     // We take one pass through the string, transforming it into a normalized
     // path in-place.  This works since the normalized path never grows, except
@@ -218,14 +215,14 @@ _NormPath(string const &inPath)
     // and deep copy so we want to avoid that in the common case where the input
     // path is already normalized.
 
-    string path(inPath);
+    std::string path(inPath);
 
     // Find the first path token.
     Token t = _NextToken(inPath.begin(), inPath.end());
 
     // Allow zero, one, or two leading slashes, per POSIX.  Three or more get
     // collapsed to one.
-    const size_t numLeadingSlashes = distance(inPath.begin(), t.first);
+    const size_t numLeadingSlashes = std::distance(inPath.begin(), t.first);
     size_t writeIdx = numLeadingSlashes >= 3 ? 1 : numLeadingSlashes;
 
     // Save a reverse iterator at where we start the output, we'll use this when
@@ -241,7 +238,7 @@ _NormPath(string const &inPath)
             // to the output yet, which is true if the write head is in the same
             // place in the output as it is in the input.
             if (inPath.begin() + writeIdx == t.first) {
-                writeIdx += distance(t.first, t.second);
+                writeIdx += std::distance(t.first, t.second);
                 t.first = t.second;
                 if (writeIdx != path.size())
                     ++writeIdx;
@@ -258,7 +255,7 @@ _NormPath(string const &inPath)
         case DotDot: {
             // Here we are very likely to be modifying the string, so we use
             // non-const iterators and mutate.
-            string::reverse_iterator
+            std::string::reverse_iterator
                 rstart(path.begin() + firstWriteIdx),
                 rwrite(path.begin() + writeIdx);
             // Find the last token of the output by finding the next token in
@@ -276,7 +273,7 @@ _NormPath(string const &inPath)
             } else if (backToken.first != rstart) {
                 // Otherwise, consume the last elem by moving writeIdx back to
                 // before the elem.
-                writeIdx = distance(path.begin(), backToken.second.base());
+                writeIdx = std::distance(path.begin(), backToken.second.base());
             }
         }
             break;
@@ -328,15 +325,15 @@ ArchNormPath(const string& inPath, bool stripDriveSpecifier)
     return prefix + _NormPath(path);
 }
 #else
-string
-ArchNormPath(const string& inPath, bool /*stripDriveSpecifier*/)
+std::string
+ArchNormPath(const std::string& inPath, bool /*stripDriveSpecifier*/)
 {
     return _NormPath(inPath);
 }
 #endif // defined(ARCH_OS_WINDOWS)
 
-string
-ArchAbsPath(const string& path)
+std::string
+ArchAbsPath(const std::string& path)
 {
     if (path.empty()) {
         return path;
@@ -364,7 +361,7 @@ ArchAbsPath(const string& path)
         return path;
     }
 
-    return ArchNormPath(string(cwd.get()) + "/" + path);
+    return ArchNormPath(std::string(cwd.get()) + "/" + path);
 #endif
 }
 
@@ -466,11 +463,11 @@ ArchGetFileLength(const char* fileName)
 #endif
 }
 
-string
+std::string
 ArchGetFileName(FILE *file)
 {
 #if defined (ARCH_OS_LINUX)
-    string result;
+    std::string result;
     char buf[PATH_MAX];
     ssize_t r = readlink(
         ArchStringPrintf("/proc/self/fd/%d", fileno(file)).c_str(),
@@ -511,10 +508,10 @@ ArchGetFileName(FILE *file)
 #endif
 }
 
-string
-ArchMakeTmpFileName(const string& prefix, const string& suffix)
+std::string
+ArchMakeTmpFileName(const std::string& prefix, const std::string& suffix)
 {
-    string  tmpDir = ArchGetTmpDir();
+    std::string  tmpDir = ArchGetTmpDir();
 
     static std::atomic<int> nCalls(1);
     const int n = nCalls++;

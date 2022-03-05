@@ -34,7 +34,6 @@
 #include <boost/python/operators.hpp>
 #include <boost/python/implicit.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -107,18 +106,18 @@ _GetOpTypeEnum(const TfToken& opTypeToken)
 static TfStaticData<TfPyObjWrapper> _object__getattribute__;
 
 // This function gets wrapped as __getattribute__ on UsdGeomXformOp.
-static object
-__getattribute__(object selfObj, const char *name) {
+static boost::python::object
+__getattribute__(boost::python::object selfObj, const char *name) {
     // Allow attribute lookups if the attribute name starts with '__', or
     // if the object's prim and attribute are both valid, or allow a few
     // methods if just the prim is valid, or an even smaller subset if neighter
     // is valid.
     if ((name[0] == '_' && name[1] == '_') ||
         // prim and attr are valid, let everything through.
-        (extract<UsdGeomXformOp &>(selfObj)().GetAttr().IsValid() &&
-         extract<UsdGeomXformOp &>(selfObj)().GetAttr().GetPrim().IsValid()) ||
+        (boost::python::extract<UsdGeomXformOp &>(selfObj)().GetAttr().IsValid() &&
+         boost::python::extract<UsdGeomXformOp &>(selfObj)().GetAttr().GetPrim().IsValid()) ||
         // prim is valid, but attr is invalid, let a few things through.
-        (extract<UsdGeomXformOp &>(selfObj)().GetAttr().GetPrim().IsValid() &&
+        (boost::python::extract<UsdGeomXformOp &>(selfObj)().GetAttr().GetPrim().IsValid() &&
          (strcmp(name, "GetName") == 0 ||
           strcmp(name, "GetBaseName") == 0 ||
           strcmp(name, "GetNamespace") == 0 ||
@@ -136,7 +135,7 @@ __getattribute__(object selfObj, const char *name) {
             TfStringPrintf("Accessed schema on invalid prim"));
     }
     // Unreachable.
-    return object();
+    return boost::python::object();
 }
 
 void wrapUsdGeomXformOp()
@@ -146,37 +145,37 @@ void wrapUsdGeomXformOp()
     TF_PY_WRAP_PUBLIC_TOKENS("XformOpTypes", UsdGeomXformOpTypes,
                              USDGEOM_XFORM_OP_TYPES);
 
-    class_<XformOp> cls("XformOp");
-    scope s = cls
-        .def(init<UsdAttribute, bool>(
-                (arg("attr"), 
-                 arg("isInverseOp")=false)))
+    boost::python::class_<XformOp> cls("XformOp");
+    boost::python::scope s = cls
+        .def(boost::python::init<UsdAttribute, bool>(
+                (boost::python::arg("attr"), 
+                 boost::python::arg("isInverseOp")=false)))
 
-        .def(!self)
-        .def(self == self)
-        .def(self != self)
+        .def(!boost::python::self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
 
         .def("GetAttr", &XformOp::GetAttr,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("IsInverseOp", &XformOp::IsInverseOp)
         .def("IsDefined", &XformOp::IsDefined)
         .def("GetName", &XformOp::GetName,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .def("GetBaseName", &XformOp::GetBaseName)
         .def("GetNamespace", &XformOp::GetNamespace)
         .def("SplitName", &XformOp::SplitName,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetTypeName", &XformOp::GetTypeName)
 
-        .def("Get", _Get, (arg("time")=UsdTimeCode::Default()))
-        .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
+        .def("Get", _Get, (boost::python::arg("time")=UsdTimeCode::Default()))
+        .def("Set", _Set, (boost::python::arg("value"), boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("GetTimeSamples", _GetTimeSamples,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("GetNumTimeSamples", &XformOp::GetNumTimeSamples)
 
@@ -199,9 +198,9 @@ void wrapUsdGeomXformOp()
         TfPyWrapEnum<UsdGeomXformOp::Type>();
         TfPyWrapEnum<UsdGeomXformOp::Precision>();
 
-    implicitly_convertible<XformOp, UsdAttribute>();
-    implicitly_convertible<XformOp, UsdProperty>();
-    implicitly_convertible<XformOp, UsdObject>();
+    boost::python::implicitly_convertible<XformOp, UsdAttribute>();
+    boost::python::implicitly_convertible<XformOp, UsdProperty>();
+    boost::python::implicitly_convertible<XformOp, UsdObject>();
 
     // Register to and from vector conversions.
     boost::python::to_python_converter<std::vector<XformOp >, 
@@ -211,7 +210,7 @@ void wrapUsdGeomXformOp()
         TfPyContainerConversions::variable_capacity_policy >();
 
     // Save existing __getattribute__ and replace.
-    *_object__getattribute__ = object(cls.attr("__getattribute__"));
+    *_object__getattribute__ = boost::python::object(cls.attr("__getattribute__"));
     cls.def("__getattribute__", __getattribute__);
 }
 

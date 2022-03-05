@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -51,63 +50,63 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateLocalPos0Attr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateLocalPos0Attr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Point3f), writeSparsely);
 }
         
 static UsdAttribute
 _CreateLocalRot0Attr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateLocalRot0Attr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Quatf), writeSparsely);
 }
         
 static UsdAttribute
 _CreateLocalPos1Attr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateLocalPos1Attr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Point3f), writeSparsely);
 }
         
 static UsdAttribute
 _CreateLocalRot1Attr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateLocalRot1Attr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Quatf), writeSparsely);
 }
         
 static UsdAttribute
 _CreateJointEnabledAttr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateJointEnabledAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateCollisionEnabledAttr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateCollisionEnabledAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateExcludeFromArticulationAttr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateExcludeFromArticulationAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateBreakForceAttr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateBreakForceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateBreakTorqueAttr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateBreakTorqueAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
@@ -127,95 +126,95 @@ void wrapUsdPhysicsJoint()
 {
     typedef UsdPhysicsJoint This;
 
-    class_<This, bases<UsdGeomImageable> >
+    boost::python::class_<This, boost::python::bases<UsdGeomImageable> >
         cls("Joint");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
+        .def("Define", &This::Define, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Define")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetLocalPos0Attr",
              &This::GetLocalPos0Attr)
         .def("CreateLocalPos0Attr",
              &_CreateLocalPos0Attr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetLocalRot0Attr",
              &This::GetLocalRot0Attr)
         .def("CreateLocalRot0Attr",
              &_CreateLocalRot0Attr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetLocalPos1Attr",
              &This::GetLocalPos1Attr)
         .def("CreateLocalPos1Attr",
              &_CreateLocalPos1Attr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetLocalRot1Attr",
              &This::GetLocalRot1Attr)
         .def("CreateLocalRot1Attr",
              &_CreateLocalRot1Attr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetJointEnabledAttr",
              &This::GetJointEnabledAttr)
         .def("CreateJointEnabledAttr",
              &_CreateJointEnabledAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetCollisionEnabledAttr",
              &This::GetCollisionEnabledAttr)
         .def("CreateCollisionEnabledAttr",
              &_CreateCollisionEnabledAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetExcludeFromArticulationAttr",
              &This::GetExcludeFromArticulationAttr)
         .def("CreateExcludeFromArticulationAttr",
              &_CreateExcludeFromArticulationAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetBreakForceAttr",
              &This::GetBreakForceAttr)
         .def("CreateBreakForceAttr",
              &_CreateBreakForceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetBreakTorqueAttr",
              &This::GetBreakTorqueAttr)
         .def("CreateBreakTorqueAttr",
              &_CreateBreakTorqueAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         
         .def("GetBody0Rel",

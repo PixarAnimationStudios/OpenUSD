@@ -37,49 +37,46 @@
 #include <string>
 #include <vector>
 
-using std::string;
-using std::vector;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static vector<double>
+static std::vector<double>
 _GetTimeSamples(const UsdAttributeQuery& query) 
 {
-    vector<double> result;
+    std::vector<double> result;
     query.GetTimeSamples(&result);
     return result;
 }
 
-static vector<double>
+static std::vector<double>
 _GetTimeSamplesInInterval(const UsdAttributeQuery& query,
                           const GfInterval& interval) {
-    vector<double> result;
+    std::vector<double> result;
     query.GetTimeSamplesInInterval(interval, &result);
     return result;
 }
 
-static vector<double>
-_GetUnionedTimeSamples(const vector<UsdAttributeQuery> & attrQueries) 
+static std::vector<double>
+_GetUnionedTimeSamples(const std::vector<UsdAttributeQuery> & attrQueries) 
 {
-    vector<double> result;
+    std::vector<double> result;
     UsdAttributeQuery::GetUnionedTimeSamples(attrQueries, &result);
     return result;
 }
 
-static vector<double>
-_GetUnionedTimeSamplesInInterval(const vector<UsdAttributeQuery>& attrQueries,
+static std::vector<double>
+_GetUnionedTimeSamplesInInterval(const std::vector<UsdAttributeQuery>& attrQueries,
                                  const GfInterval& interval) {
-    vector<double> result;
+    std::vector<double> result;
     UsdAttributeQuery::GetUnionedTimeSamplesInInterval(attrQueries, interval,
                                                        &result);
     return result;
 }
 
-static object
+static boost::python::object
 _GetBracketingTimeSamples(const UsdAttributeQuery& self, double desiredTime) 
 {
     double lower = 0.0, upper = 0.0;
@@ -87,9 +84,9 @@ _GetBracketingTimeSamples(const UsdAttributeQuery& self, double desiredTime)
 
     if (self.GetBracketingTimeSamples(
             desiredTime, &lower, &upper, &hasTimeSamples)) {
-        return hasTimeSamples ? make_tuple(lower, upper) : make_tuple();
+        return hasTimeSamples ? boost::python::make_tuple(lower, upper) : boost::python::make_tuple();
     }
-    return object();
+    return boost::python::object();
 }
 
 static TfPyObjWrapper
@@ -104,47 +101,47 @@ _Get(const UsdAttributeQuery& self, UsdTimeCode time)
 
 void wrapUsdAttributeQuery()
 {
-    class_<UsdAttributeQuery, boost::noncopyable>
-        ("AttributeQuery", no_init)
-        .def(init<const UsdAttribute&>(
-                (arg("attribute"))))
+    boost::python::class_<UsdAttributeQuery, boost::noncopyable>
+        ("AttributeQuery", boost::python::no_init)
+        .def(boost::python::init<const UsdAttribute&>(
+                (boost::python::arg("attribute"))))
         
-        .def(init<const UsdPrim&, const TfToken&>(
-                (arg("prim"), arg("attributeName"))))
+        .def(boost::python::init<const UsdPrim&, const TfToken&>(
+                (boost::python::arg("prim"), boost::python::arg("attributeName"))))
 
         .def("CreateQueries", &UsdAttributeQuery::CreateQueries,
-             (arg("prim"), arg("attributeNames")),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("prim"), boost::python::arg("attributeNames")),
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("CreateQueries")
         
         .def("IsValid", &UsdAttributeQuery::IsValid)
-        .def(!self)
+        .def(!boost::python::self)
 
         .def("GetAttribute", &UsdAttributeQuery::GetAttribute,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("GetTimeSamples", _GetTimeSamples,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval,
-             arg("interval"),
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("interval"),
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("GetUnionedTimeSamples", 
              _GetUnionedTimeSamples,
-             arg("attrQueries"),
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("attrQueries"),
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetUnionedTimeSamples")
 
         .def("GetUnionedTimeSamplesInInterval", 
              _GetUnionedTimeSamplesInInterval,
-             (arg("attrQueries"), arg("interval")),
-             return_value_policy<TfPySequenceToList>())
+             (boost::python::arg("attrQueries"), boost::python::arg("interval")),
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetUnionedTimeSamplesInInterval")
 
         .def("GetNumTimeSamples", &UsdAttributeQuery::GetNumTimeSamples)
         .def("GetBracketingTimeSamples", _GetBracketingTimeSamples,
-             arg("desiredTime"))
+             boost::python::arg("desiredTime"))
 
         .def("HasValue", &UsdAttributeQuery::HasValue)
         .def("HasAuthoredValueOpinion", 
@@ -155,7 +152,7 @@ void wrapUsdAttributeQuery()
         .def("ValueMightBeTimeVarying", 
              &UsdAttributeQuery::ValueMightBeTimeVarying)
 
-        .def("Get", _Get, arg("time")=UsdTimeCode::Default())
+        .def("Get", _Get, boost::python::arg("time")=UsdTimeCode::Default())
          
         ;
 

@@ -35,15 +35,13 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string _Repr(GfRect2i const &self) {
+static std::string _Repr(GfRect2i const &self) {
     return TF_PY_REPR_PREFIX + "Rect2i(" + TfPyRepr(self.GetMin()) + ", " +
         TfPyRepr(self.GetMax()) + ")";
 }
@@ -54,16 +52,16 @@ void wrapRect2i()
 {    
     using This = GfRect2i;
 
-    object getMin = make_function(&This::GetMin,
-                                    return_value_policy<return_by_value>());
+    boost::python::object getMin = boost::python::make_function(&This::GetMin,
+                                    boost::python::return_value_policy<boost::python::return_by_value>());
 
-    object getMax = make_function(&This::GetMax,
-                                     return_value_policy<return_by_value>());
+    boost::python::object getMax = boost::python::make_function(&This::GetMax,
+                                     boost::python::return_value_policy<boost::python::return_by_value>());
 
-    class_<This>( "Rect2i", init<>() )
-        .def(init<const This &>())
-        .def(init<const GfVec2i &, const GfVec2i &>())
-        .def(init<const GfVec2i &, int, int >())
+    boost::python::class_<This>( "Rect2i", boost::python::init<>() )
+        .def(boost::python::init<const This &>())
+        .def(boost::python::init<const GfVec2i &, const GfVec2i &>())
+        .def(boost::python::init<const GfVec2i &, int, int >())
 
         .def( TfTypePythonClass() )
 
@@ -101,23 +99,23 @@ void wrapRect2i()
         .def("GetSize", &This::GetSize)
         .def("GetWidth", &This::GetWidth)
 
-        .def("Translate", &This::Translate, return_self<>())
+        .def("Translate", &This::Translate, boost::python::return_self<>())
         .def("GetNormalized", &This::GetNormalized)
         .def("GetIntersection", &This::GetIntersection)
         .def("GetUnion", &This::GetUnion)
 
         .def("Contains", &This::Contains )
 
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
-        .def( self += self )
-        .def( self + self )
+        .def( boost::python::self_ns::str(boost::python::self) )
+        .def( boost::python::self == boost::python::self )
+        .def( boost::python::self != boost::python::self )
+        .def( boost::python::self += boost::python::self )
+        .def( boost::python::self + boost::python::self )
         
         .def("__repr__", _Repr)
         
         ;
-    to_python_converter<std::vector<This>,
+    boost::python::to_python_converter<std::vector<This>,
         TfPySequenceToPython<std::vector<This> > >();
     
 }

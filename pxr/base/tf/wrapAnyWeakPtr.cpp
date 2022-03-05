@@ -28,14 +28,13 @@
 
 #include <boost/python/to_python_converter.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Put this in the pxr namespace so that we can declare it a friend in
 // anyWeakPtr.h
 
-object Tf_GetPythonObjectFromAnyWeakPtr(TfAnyWeakPtr const &self) {
+boost::python::object Tf_GetPythonObjectFromAnyWeakPtr(TfAnyWeakPtr const &self) {
     return self._GetPythonObject();
 }
 
@@ -48,11 +47,11 @@ namespace {
 struct Tf_AnyWeakPtrToPython {
 
     Tf_AnyWeakPtrToPython() {
-        to_python_converter<TfAnyWeakPtr, Tf_AnyWeakPtrToPython>();
+        boost::python::to_python_converter<TfAnyWeakPtr, Tf_AnyWeakPtrToPython>();
     }
 
     static PyObject *convert(TfAnyWeakPtr const &any) {
-        return incref(Tf_GetPythonObjectFromAnyWeakPtr(any).ptr());
+        return boost::python::incref(Tf_GetPythonObjectFromAnyWeakPtr(any).ptr());
     }
 };
 
@@ -60,7 +59,7 @@ struct Tf_AnyWeakPtrToPython {
 
 void wrapAnyWeakPtr()
 {
-    to_python_converter<TfAnyWeakPtr, Tf_AnyWeakPtrToPython>();
+    boost::python::to_python_converter<TfAnyWeakPtr, Tf_AnyWeakPtrToPython>();
 
     TfPyContainerConversions::from_python_sequence<
         std::set<TfAnyWeakPtr>,

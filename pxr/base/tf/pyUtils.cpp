@@ -43,15 +43,12 @@
 #include <functional>
 #include <vector>
 
-using namespace boost::python;
 
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 void
-TfPyThrowIndexError(string const &msg)
+TfPyThrowIndexError(std::string const &msg)
 {
     TfPyLock pyLock;
     PyErr_SetString(PyExc_IndexError, msg.c_str());
@@ -59,7 +56,7 @@ TfPyThrowIndexError(string const &msg)
 }
 
 void
-TfPyThrowRuntimeError(string const &msg)
+TfPyThrowRuntimeError(std::string const &msg)
 {
     TfPyLock pyLock;
     PyErr_SetString(PyExc_RuntimeError, msg.c_str());
@@ -67,7 +64,7 @@ TfPyThrowRuntimeError(string const &msg)
 }
 
 void
-TfPyThrowStopIteration(string const &msg)
+TfPyThrowStopIteration(std::string const &msg)
 {
     TfPyLock pyLock;
     PyErr_SetString(PyExc_StopIteration, msg.c_str());
@@ -75,7 +72,7 @@ TfPyThrowStopIteration(string const &msg)
 }
 
 void
-TfPyThrowKeyError(string const &msg)
+TfPyThrowKeyError(std::string const &msg)
 {
     TfPyLock pyLock;
     PyErr_SetString(PyExc_KeyError, msg.c_str());
@@ -83,7 +80,7 @@ TfPyThrowKeyError(string const &msg)
 }
 
 void
-TfPyThrowValueError(string const &msg)
+TfPyThrowValueError(std::string const &msg)
 {
     TfPyLock pyLock;
     PyErr_SetString(PyExc_ValueError, msg.c_str());
@@ -91,7 +88,7 @@ TfPyThrowValueError(string const &msg)
 }
 
 void
-TfPyThrowTypeError(string const &msg)
+TfPyThrowTypeError(std::string const &msg)
 {
     TfPyLock pyLock;
     PyErr_SetString(PyExc_TypeError, msg.c_str());
@@ -114,7 +111,7 @@ void Tf_PyLoadScriptModule(std::string const &moduleName)
 {
     if (TfPyIsInitialized()) {
         TfPyLock pyLock;
-        string tmp(moduleName);
+        std::string tmp(moduleName);
         PyObject *result =
             PyImport_ImportModule(const_cast<char *>(tmp.c_str()));
         if (!result) {
@@ -137,7 +134,7 @@ TfPyIsInitialized()
     return Py_IsInitialized();
 }
 
-string
+std::string
 TfPyObjectRepr(boost::python::object const &t)
 {
     if (!TfPyIsInitialized()) {
@@ -150,11 +147,11 @@ TfPyObjectRepr(boost::python::object const &t)
     TfPyLock pyLock;
 
     // In case the try block throws, we'll return this string.
-    string reprString("<invalid repr>");
+    std::string reprString("<invalid repr>");
 
     try {
-        handle<> repr(PyObject_Repr(t.ptr()));
-        reprString = extract<string>(repr.get());
+        boost::python::handle<> repr(PyObject_Repr(t.ptr()));
+        reprString = boost::python::extract<std::string>(repr.get());
 
         // Python's repr() for NaN and Inf are not valid python which evaluates
         // to themselves.  Special case them here to produce python which has
@@ -168,7 +165,7 @@ TfPyObjectRepr(boost::python::object const &t)
         if (reprString == "-inf")
             reprString = "-float('inf')";
 
-    } catch (error_already_set const &) {
+    } catch (boost::python::error_already_set const &) {
         PyErr_Clear();
     }
     return reprString;
@@ -176,21 +173,21 @@ TfPyObjectRepr(boost::python::object const &t)
 
 
 boost::python::object
-TfPyEvaluate(std::string const &expr, dict const& extraGlobals)
+TfPyEvaluate(std::string const &expr, boost::python::dict const& extraGlobals)
 {
     TfPyLock lock;
     try {
         // Get the modules dict for the loaded script modules.
-        dict modulesDict =
+        boost::python::dict modulesDict =
             TfScriptModuleLoader::GetInstance().GetModulesDict();
 
         // Make sure the builtins are available
-        handle<> modHandle(PyImport_ImportModule(TfPyBuiltinModuleName));
-        modulesDict["__builtins__"] = object(modHandle);
+        boost::python::handle<> modHandle(PyImport_ImportModule(TfPyBuiltinModuleName));
+        modulesDict["__builtins__"] = boost::python::object(modHandle);
         modulesDict.update(extraGlobals);
 
         // Eval the expression in that enviornment.
-        return object(TfPyRunString(expr, Py_eval_input,
+        return boost::python::object(TfPyRunString(expr, Py_eval_input,
                                     modulesDict, modulesDict));
     } catch (boost::python::error_already_set const &) {
         TfPyConvertPythonExceptionToTfErrors();
@@ -258,15 +255,15 @@ TfPyGetClassObject(std::type_info const &type) {
         (boost::python::objects::registered_class_object(type));
 }
 
-string TfPyGetClassName(object const &obj)
+std::string TfPyGetClassName(boost::python::object const &obj)
 {
     // Take the interpreter lock as we're about to call back to Python.
     TfPyLock pyLock;
 
-    object classObject(obj.attr("__class__"));
+    boost::python::object classObject(obj.attr("__class__"));
     if (classObject) {
-        object typeNameObject(classObject.attr("__name__"));
-        extract<string> typeName(typeNameObject);
+        boost::python::object typeNameObject(classObject.attr("__name__"));
+        boost::python::extract<std::string> typeName(typeNameObject);
         if (typeName.check())
             return typeName();
     }
@@ -300,9 +297,9 @@ TfPyCopyBufferToByteArray(const char* buffer, size_t size)
     return result;
 }
 
-vector<string> TfPyGetTraceback()
+std::vector<std::string> TfPyGetTraceback()
 {
-    vector<string> result;
+    std::vector<std::string> result;
 
     if (!TfPyIsInitialized())
         return result;
@@ -312,12 +309,12 @@ vector<string> TfPyGetTraceback()
     // should not affect the exception state.
     TfPyExceptionStateScope exceptionStateScope;
     try {
-        object tbModule(handle<>(PyImport_ImportModule("traceback")));
-        object stack = tbModule.attr("format_stack")();
-        size_t size = len(stack);
+        boost::python::object tbModule(boost::python::handle<>(PyImport_ImportModule("traceback")));
+        boost::python::object stack = tbModule.attr("format_stack")();
+        size_t size = boost::python::len(stack);
         result.reserve(size);
         for (size_t i = 0; i < size; ++i) {
-            string s = extract<string>(stack[i]);
+            std::string s = boost::python::extract<std::string>(stack[i]);
             result.push_back(s);
         }
     } catch (boost::python::error_already_set const &) {
@@ -327,22 +324,22 @@ vector<string> TfPyGetTraceback()
 }
 
 void
-TfPyGetStackFrames(vector<uintptr_t> *frames)
+TfPyGetStackFrames(std::vector<uintptr_t> *frames)
 {
     if (!TfPyIsInitialized())
         return;
 
     TfPyLock lock;
     try {
-        object tbModule(handle<>(PyImport_ImportModule("traceback")));
-        object stack = tbModule.attr("format_stack")();
-        size_t size = len(stack);
+        boost::python::object tbModule(boost::python::handle<>(PyImport_ImportModule("traceback")));
+        boost::python::object stack = tbModule.attr("format_stack")();
+        size_t size = boost::python::len(stack);
         frames->reserve(size);
         // Reverse the order of stack frames so that the stack is ordered 
         // like the output of ArchGetStackFrames() (deepest function call at 
         // the top of stack).
         for (long i = static_cast<long>(size)-1; i >= 0; --i) {
-            string *s = new string(extract<string>(stack[i]));
+            std::string *s = new std::string(boost::python::extract<std::string>(stack[i]));
             frames->push_back((uintptr_t)s);
         }
     } catch (boost::python::error_already_set const &) {
@@ -353,13 +350,13 @@ TfPyGetStackFrames(vector<uintptr_t> *frames)
 
 void TfPyDumpTraceback() {
     printf("Traceback (most recent call last):\n");
-    vector<string> tb = TfPyGetTraceback();
+    std::vector<std::string> tb = TfPyGetTraceback();
     TF_FOR_ALL(i, tb)
         printf("%s", i->c_str());
 }
 
 
-static object
+static boost::python::object
 _GetOsEnviron()
 {
     // In theory, we could just check that the os module has been imported,
@@ -386,7 +383,7 @@ TfPySetenv(const std::string & name, const std::string & value)
     TfPyLock lock;
 
     try {
-        object environObj(_GetOsEnviron());
+        boost::python::object environObj(_GetOsEnviron());
         environObj[name] = value;
         return true;
     }
@@ -408,8 +405,8 @@ TfPyUnsetenv(const std::string & name)
     TfPyLock lock;
 
     try {
-        object environObj(_GetOsEnviron());
-        object has_key = environObj.attr("__contains__");
+        boost::python::object environObj(_GetOsEnviron());
+        boost::python::object has_key = environObj.attr("__contains__");
         if (has_key(name)) {
             environObj[name].del();
         }

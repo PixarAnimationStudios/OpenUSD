@@ -33,17 +33,15 @@
 
 #include <string>
 
-using namespace boost::python;
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string
+static std::string
 _Repr(const SdfPayload &self)
 {
-    string args;
+    std::string args;
     bool useKeywordArgs = false;
 
     if (!self.GetAssetPath().empty()) {
@@ -75,36 +73,36 @@ void wrapPayload()
 {    
     typedef SdfPayload This;
 
-    class_<This>( "Payload" )
-        .def(init<const string &,
+    boost::python::class_<This>( "Payload" )
+        .def(boost::python::init<const std::string &,
                   const SdfPath &,
                   const SdfLayerOffset &>(
-            ( arg("assetPath") = string(),
-              arg("primPath") = SdfPath(),
-              arg("layerOffset") = SdfLayerOffset() ) ) )
-        .def(init<const This &>())
+            ( boost::python::arg("assetPath") = std::string(),
+              boost::python::arg("primPath") = SdfPath(),
+              boost::python::arg("layerOffset") = SdfLayerOffset() ) ) )
+        .def(boost::python::init<const This &>())
 
         .add_property("assetPath",
-            make_function(
-                &This::GetAssetPath, return_value_policy<return_by_value>()),
+            boost::python::make_function(
+                &This::GetAssetPath, boost::python::return_value_policy<boost::python::return_by_value>()),
             &This::SetAssetPath)
 
         .add_property("primPath",
-            make_function(
-                &This::GetPrimPath, return_value_policy<return_by_value>()),
+            boost::python::make_function(
+                &This::GetPrimPath, boost::python::return_value_policy<boost::python::return_by_value>()),
             &This::SetPrimPath)
 
         .add_property("layerOffset",
-            make_function(
-                &This::GetLayerOffset, return_value_policy<return_by_value>()),
+            boost::python::make_function(
+                &This::GetLayerOffset, boost::python::return_value_policy<boost::python::return_by_value>()),
             &This::SetLayerOffset)
 
-        .def(self == self)
-        .def(self != self)
-        .def(self < self)
-        .def(self > self)
-        .def(self <= self)
-        .def(self >= self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self < boost::python::self)
+        .def(boost::python::self > boost::python::self)
+        .def(boost::python::self <= boost::python::self)
+        .def(boost::python::self >= boost::python::self)
 
         .def("__repr__", _Repr)
 
@@ -113,7 +111,7 @@ void wrapPayload()
     VtValueFromPython<SdfPayload>();
 
     // Register conversion for python list <-> vector<SdfPayload>
-    to_python_converter<
+    boost::python::to_python_converter<
         SdfPayloadVector,
         TfPySequenceToPython<SdfPayloadVector> >();
     TfPyContainerConversions::from_python_sequence<

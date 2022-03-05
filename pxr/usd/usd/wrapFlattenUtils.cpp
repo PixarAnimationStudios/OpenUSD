@@ -33,7 +33,6 @@
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/makePyConstructor.h"
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -63,20 +62,20 @@ _UsdFlattenLayerStack3(
 
 void wrapUsdFlattenUtils()
 {
-    def("FlattenLayerStack",
+    boost::python::def("FlattenLayerStack",
         &_UsdFlattenLayerStack2,
-        (arg("layerStack"), arg("tag")=std::string()),
+        (boost::python::arg("layerStack"), boost::python::arg("tag")=std::string()),
         boost::python::return_value_policy<
         TfPyRefPtrFactory<SdfLayerHandle> >());
 
     TfPyFunctionFromPython<Py_UsdFlattenResolveAssetPathSig>();
-    def("FlattenLayerStack",
+    boost::python::def("FlattenLayerStack",
         &_UsdFlattenLayerStack3,
-        (arg("layerStack"), arg("resolveAssetPathFn"), arg("tag")=std::string()),
+        (boost::python::arg("layerStack"), boost::python::arg("resolveAssetPathFn"), boost::python::arg("tag")=std::string()),
         boost::python::return_value_policy<
         TfPyRefPtrFactory<SdfLayerHandle> >());
 
-    def("FlattenLayerStackResolveAssetPath",
+    boost::python::def("FlattenLayerStackResolveAssetPath",
         UsdFlattenLayerStackResolveAssetPath,
-        (arg("sourceLayer"), arg("assetPath")));
+        (boost::python::arg("sourceLayer"), boost::python::arg("assetPath")));
 }

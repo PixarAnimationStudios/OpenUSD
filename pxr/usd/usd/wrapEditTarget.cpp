@@ -29,36 +29,35 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdEditTarget()
 {
-    class_<UsdEditTarget>("EditTarget")
-        .def(init<SdfLayerHandle, optional<PcpNodeRef> >(
-                 (arg("layer"), arg("node"))))
+    boost::python::class_<UsdEditTarget>("EditTarget")
+        .def(boost::python::init<SdfLayerHandle, boost::python::optional<PcpNodeRef> >(
+                 (boost::python::arg("layer"), boost::python::arg("node"))))
         .def("ForLocalDirectVariant", &UsdEditTarget::ForLocalDirectVariant,
-             (arg("layer"), arg("varSelPath")))
+             (boost::python::arg("layer"), boost::python::arg("varSelPath")))
         .staticmethod("ForLocalDirectVariant")
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
         .def("IsNull", &UsdEditTarget::IsNull)
         .def("IsValid", &UsdEditTarget::IsValid)
         .def("GetLayer", &UsdEditTarget::GetLayer,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .def("GetMapFunction", &UsdEditTarget::GetMapFunction,
-             return_value_policy<return_by_value>())
-        .def("MapToSpecPath", &UsdEditTarget::MapToSpecPath, arg("scenePath"))
+             boost::python::return_value_policy<boost::python::return_by_value>())
+        .def("MapToSpecPath", &UsdEditTarget::MapToSpecPath, boost::python::arg("scenePath"))
         .def("GetPrimSpecForScenePath",
-             &UsdEditTarget::GetPrimSpecForScenePath, arg("scenePath"))
+             &UsdEditTarget::GetPrimSpecForScenePath, boost::python::arg("scenePath"))
         .def("GetPropertySpecForScenePath",
-             &UsdEditTarget::GetPropertySpecForScenePath, arg("scenePath"))
+             &UsdEditTarget::GetPropertySpecForScenePath, boost::python::arg("scenePath"))
         .def("GetSpecForScenePath",
-             &UsdEditTarget::GetPrimSpecForScenePath, arg("scenePath"))
-        .def("ComposeOver", &UsdEditTarget::ComposeOver, arg("weaker"))
+             &UsdEditTarget::GetPrimSpecForScenePath, boost::python::arg("scenePath"))
+        .def("ComposeOver", &UsdEditTarget::ComposeOver, boost::python::arg("weaker"))
         ;
 
     // Allow passing SdLayerHandle to wrapped functions expecting UsdEditTarget.
-    implicitly_convertible<SdfLayerHandle, UsdEditTarget>();
+    boost::python::implicitly_convertible<SdfLayerHandle, UsdEditTarget>();
 }

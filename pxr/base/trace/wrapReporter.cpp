@@ -40,7 +40,6 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace boost::python;
 
 static void
 _Report(
@@ -97,20 +96,20 @@ void wrapReporter()
     using This = TraceReporter;
     using ThisPtr = TraceReporterPtr;
 
-    object reporter_class = 
-        class_<This, ThisPtr, boost::noncopyable>("Reporter", no_init)
+    boost::python::object reporter_class = 
+        boost::python::class_<This, ThisPtr, boost::noncopyable>("Reporter", boost::python::no_init)
         .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(_Constructor1))
 
         .def("GetLabel", &This::GetLabel,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("Report", &::_Report,
-             (arg("iterationCount")=1))
+             (boost::python::arg("iterationCount")=1))
 
         .def("Report", &::_ReportToFile,
-             (arg("iterationCount")=1,
-              arg("append")=false))
+             (boost::python::arg("iterationCount")=1,
+              boost::python::arg("append")=false))
 
         .def("ReportTimes", &::_ReportTimes)
 

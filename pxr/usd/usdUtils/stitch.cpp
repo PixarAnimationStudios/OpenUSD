@@ -397,15 +397,14 @@ UsdUtilsStitchInfo(
     const SdfSpecHandle& weakObj,
     const UsdUtilsStitchValueFn& stitchValueFn)
 {
-    namespace ph = std::placeholders;
 
     SdfCopySpec(
         weakObj->GetLayer(), weakObj->GetPath(),
         strongObj->GetLayer(), strongObj->GetPath(),
         /* shouldCopyValueFn = */ std::bind(
             _MergeValueFn, 
-            ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, 
-            ph::_8, ph::_9, std::cref(stitchValueFn)),
+            std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, 
+            std::placeholders::_8, std::placeholders::_9, std::cref(stitchValueFn)),
         /* shouldCopyChildrenFn = */ _DontCopyChildrenFn);
 }
 
@@ -423,15 +422,14 @@ UsdUtilsStitchLayers(
     const SdfLayerHandle& weakLayer,
     const UsdUtilsStitchValueFn& stitchValueFn)
 {
-    namespace ph = std::placeholders;
   
     SdfCopySpec(
         weakLayer, SdfPath::AbsoluteRootPath(),
         strongLayer, SdfPath::AbsoluteRootPath(),
         /* shouldCopyValueFn = */ std::bind(
             _MergeValueFn, 
-            ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, 
-            ph::_8, ph::_9, std::cref(stitchValueFn)),
+            std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, 
+            std::placeholders::_8, std::placeholders::_9, std::cref(stitchValueFn)),
         /* shouldCopyChildrenFn = */ _MergeChildrenFn);
 }
 

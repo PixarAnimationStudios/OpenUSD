@@ -38,15 +38,13 @@
 #include <string>
 #include <limits>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static int DictionaryStrcmp(string const &l, string const &r) {
+static int DictionaryStrcmp(std::string const &l, std::string const &r) {
     TfDictionaryLessThan lt;
     return lt(l, r) ? -1 : (lt(r, l) ? 1 : 0);
 }
@@ -112,20 +110,20 @@ _GetLongMin() {
 } // anonymous namespace 
 
 void wrapStringUtils() {
-    def("StringSplit", TfStringSplit, return_value_policy<TfPySequenceToList>());
-    def("DictionaryStrcmp", DictionaryStrcmp);
+    boost::python::def("StringSplit", TfStringSplit, boost::python::return_value_policy<TfPySequenceToList>());
+    boost::python::def("DictionaryStrcmp", DictionaryStrcmp);
 
-    def("IsValidIdentifier", TfIsValidIdentifier);
-    def("MakeValidIdentifier", TfMakeValidIdentifier);
+    boost::python::def("IsValidIdentifier", TfIsValidIdentifier);
+    boost::python::def("MakeValidIdentifier", TfMakeValidIdentifier);
 
-    def("StringToDouble",
+    boost::python::def("StringToDouble",
         (double (*)(const std::string &))TfStringToDouble);
-    def("StringToLong", _StringToLong);
-    def("StringToULong", _StringToULong);
+    boost::python::def("StringToLong", _StringToLong);
+    boost::python::def("StringToULong", _StringToULong);
 
-    def("_GetULongMax", _GetULongMax);
-    def("_GetLongMax", _GetLongMax);
-    def("_GetLongMin", _GetLongMin);
+    boost::python::def("_GetULongMax", _GetULongMax);
+    boost::python::def("_GetLongMax", _GetLongMax);
+    boost::python::def("_GetLongMin", _GetLongMin);
     
     Tf_StdStringFromPythonUnicode();
 }

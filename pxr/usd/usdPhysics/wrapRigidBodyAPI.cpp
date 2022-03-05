@@ -37,7 +37,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -52,35 +51,35 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateRigidBodyEnabledAttr(UsdPhysicsRigidBodyAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateRigidBodyEnabledAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateKinematicEnabledAttr(UsdPhysicsRigidBodyAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateKinematicEnabledAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateStartsAsleepAttr(UsdPhysicsRigidBodyAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateStartsAsleepAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateVelocityAttr(UsdPhysicsRigidBodyAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateVelocityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3f), writeSparsely);
 }
         
 static UsdAttribute
 _CreateAngularVelocityAttr(UsdPhysicsRigidBodyAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateAngularVelocityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3f), writeSparsely);
 }
@@ -118,70 +117,70 @@ void wrapUsdPhysicsRigidBodyAPI()
     UsdPhysicsRigidBodyAPI_CanApplyResult::Wrap<UsdPhysicsRigidBodyAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
+    boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
         cls("RigidBodyAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
-        .def("Apply", &This::Apply, (arg("prim")))
+        .def("Apply", &This::Apply, (boost::python::arg("prim")))
         .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetRigidBodyEnabledAttr",
              &This::GetRigidBodyEnabledAttr)
         .def("CreateRigidBodyEnabledAttr",
              &_CreateRigidBodyEnabledAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetKinematicEnabledAttr",
              &This::GetKinematicEnabledAttr)
         .def("CreateKinematicEnabledAttr",
              &_CreateKinematicEnabledAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetStartsAsleepAttr",
              &This::GetStartsAsleepAttr)
         .def("CreateStartsAsleepAttr",
              &_CreateStartsAsleepAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetVelocityAttr",
              &This::GetVelocityAttr)
         .def("CreateVelocityAttr",
              &_CreateVelocityAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
         
         .def("GetAngularVelocityAttr",
              &This::GetAngularVelocityAttr)
         .def("CreateAngularVelocityAttr",
              &_CreateAngularVelocityAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         
         .def("GetSimulationOwnerRel",
@@ -217,7 +216,7 @@ void wrapUsdPhysicsRigidBodyAPI()
 
 namespace {
 
-    static tuple
+    static boost::python::tuple
     ComputeMassPropertiesHelper( const UsdPhysicsRigidBodyAPI &self, const UsdPhysicsRigidBodyAPI::MassInformationFn& massInfoFn)
     {    
         GfVec3f diagonalInertia;
@@ -234,12 +233,12 @@ namespace {
 
         TfPyFunctionFromPython<UsdPhysicsRigidBodyAPI::MassInformationFnSig>();
 
-        scope s = _class
+        boost::python::scope s = _class
             .def("ComputeMassProperties", ComputeMassPropertiesHelper)
 
         ;
 
-        class_<UsdPhysicsRigidBodyAPI::MassInformation>("MassInformation")
+        boost::python::class_<UsdPhysicsRigidBodyAPI::MassInformation>("MassInformation")
             .def_readwrite("volume", &UsdPhysicsRigidBodyAPI::MassInformation::volume)
             .def_readwrite("inertia", &UsdPhysicsRigidBodyAPI::MassInformation::inertia)
             .def_readwrite("centerOfMass", &UsdPhysicsRigidBodyAPI::MassInformation::centerOfMass)

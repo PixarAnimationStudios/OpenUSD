@@ -27,26 +27,24 @@
 
 #include <boost/python/class.hpp>
 
-using std::string;
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string
+static std::string
 _GetFileString(TfCallContext const& cc) {
-    return string(cc.GetFile());
+    return std::string(cc.GetFile());
 }
 
-static string
+static std::string
 _GetFunctionString(TfCallContext const& cc) {
-    return string(cc.GetFunction());
+    return std::string(cc.GetFunction());
 }
 
-static string
+static std::string
 _GetPrettyFunctionString(TfCallContext const& cc) {
-    return string(cc.GetPrettyFunction());
+    return std::string(cc.GetPrettyFunction());
 }
 
 } // anonymous namespace 
@@ -54,7 +52,7 @@ _GetPrettyFunctionString(TfCallContext const& cc) {
 void wrapCallContext() {
     typedef TfCallContext This;
 
-    class_ <This> ("CallContext", no_init)
+    boost::python::class_ <This> ("CallContext", boost::python::no_init)
         .add_property("file", &_GetFileString)
         .add_property("function", &_GetFunctionString)
         .add_property("line", &This::GetLine)

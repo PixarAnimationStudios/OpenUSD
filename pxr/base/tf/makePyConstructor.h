@@ -110,11 +110,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Tf_MakePyConstructor {
 
-namespace bp = boost::python;
 
 template <typename CTOR>
-struct InitVisitor : bp::def_visitor<InitVisitor<CTOR> > {
-    friend class bp::def_visitor_access;
+struct InitVisitor : boost::python::def_visitor<InitVisitor<CTOR> > {
+    friend class boost::python::def_visitor_access;
     const std::string _doc;
     InitVisitor(const std::string &doc = std::string()) : _doc(doc) {}
 
@@ -132,12 +131,12 @@ struct InitVisitor : bp::def_visitor<InitVisitor<CTOR> > {
 };
 
 TF_API
-bp::object _DummyInit(bp::tuple const & /* args */,
-                      bp::dict const & /* kw */);
+boost::python::object _DummyInit(boost::python::tuple const & /* args */,
+                      boost::python::dict const & /* kw */);
 
 template <typename CTOR>
-struct NewVisitor : bp::def_visitor<NewVisitor<CTOR> > {
-    friend class bp::def_visitor_access;
+struct NewVisitor : boost::python::def_visitor<NewVisitor<CTOR> > {
+    friend class boost::python::def_visitor_access;
     const std::string _doc;
     NewVisitor(const std::string &doc = std::string()) : _doc(doc) {}
 
@@ -161,7 +160,7 @@ struct NewVisitor : bp::def_visitor<NewVisitor<CTOR> > {
         c.staticmethod("__new__");
 
         //c.def("__init__", CTOR::template __init__<CLS>, _doc.c_str());
-        c.def("__init__", bp::raw_function(_DummyInit));
+        c.def("__init__", boost::python::raw_function(_DummyInit));
     }
 
     template <class CLS, class Options>
@@ -189,13 +188,13 @@ struct NewVisitor : bp::def_visitor<NewVisitor<CTOR> > {
         c.staticmethod("__new__");
 
         //c.def("__init__", CTOR::template __init__<CLS>, _doc.c_str());
-        c.def("__init__", bp::raw_function(_DummyInit));
+        c.def("__init__", boost::python::raw_function(_DummyInit));
     }
 
 };
 
 
-typedef bp::object object;
+typedef boost::python::object object;
 
 template <typename T>
 struct InstallPolicy {
@@ -222,7 +221,7 @@ void Install(object const &self, T const &t, TfErrorMark const &m) {
     // Stick the weakptr into the python object self to complete
     // construction.
     typedef typename CLS::metadata::holder Holder;
-    typedef typename bp::objects::instance<Holder> instance_t;
+    typedef typename boost::python::objects::instance<Holder> instance_t;
     typedef InstallPolicy<T> Policy;
     typedef typename CLS::metadata::held_type HeldType;
 
@@ -235,13 +234,13 @@ void Install(object const &self, T const &t, TfErrorMark const &m) {
         Holder *holder = (new (memory) Holder(held));
         // If there was a TfError, raise that back to python.
         if (TfPyConvertTfErrorsToPythonException(m))
-            bp::throw_error_already_set();
+            boost::python::throw_error_already_set();
         // If no TfError, but object construction failed, raise a generic error
         // back to python.
         if (!held)
             TfPyThrowRuntimeError("could not construct " +
                                   ArchGetDemangled(typeid(HeldType)));
-        bp::detail::initialize_wrapper(self.ptr(), &(*(held.operator->())));
+        boost::python::detail::initialize_wrapper(self.ptr(), &(*(held.operator->())));
         holder->install(self.ptr());
 
         // Set object identity
@@ -273,13 +272,13 @@ struct _RefPtrFactoryConverter {
 
         // If resulting pointer is null, return None.
         if (!ptr)
-            return bp::incref(Py_None);
+            return boost::python::incref(Py_None);
 
         // The to-python converter will set identity here.
         object result(ptr);
 
         Policy::PostInstall(result, p, ptr.GetUniqueIdentifier());
-        return bp::incref(result.ptr());
+        return boost::python::incref(result.ptr());
     }
     // Required for boost.python signature generator, in play when
     // BOOST_PYTHON_NO_PY_SIGNATURES is undefined.
@@ -409,7 +408,6 @@ struct Tf_PySequenceToListConverterRefPtrFactory {
         return true;
     }
     PyObject *operator()(T seq) const {
-        using namespace boost::python;
 
         typedef typename Tf_MakePyConstructor::RefPtrFactory<>::
             apply<typename SeqType::value_type>::type RefPtrFactory;
@@ -417,7 +415,7 @@ struct Tf_PySequenceToListConverterRefPtrFactory {
         boost::python::list l;
         for (typename SeqType::const_iterator i = seq.begin();
              i != seq.end(); ++i) {
-            l.append(object(handle<>(RefPtrFactory()(*i))));
+            l.append(boost::python::object(boost::python::handle<>(RefPtrFactory()(*i))));
         }
         return boost::python::incref(l.ptr());
     }

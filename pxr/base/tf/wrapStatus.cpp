@@ -33,17 +33,15 @@
 #include <boost/python/def.hpp>
 #include <boost/python/scope.hpp>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
 static void
-_Status(string const &msg, string const& moduleName, string const& functionName,
-        string const& fileName, int lineNo)
+_Status(std::string const &msg, std::string const& moduleName, std::string const& functionName,
+        std::string const& fileName, int lineNo)
 {
     TfDiagnosticMgr::
         StatusHelper(Tf_PythonCallContext(fileName.c_str(), moduleName.c_str(),
@@ -54,10 +52,10 @@ _Status(string const &msg, string const& moduleName, string const& functionName,
         Post(msg);
 }
 
-static string
+static std::string
 TfStatus__repr__(TfStatus const &self)
 {
-    string ret = TfStringPrintf("Status in '%s' at line %zu in file %s : '%s'",
+    std::string ret = TfStringPrintf("Status in '%s' at line %zu in file %s : '%s'",
              self.GetSourceFunction().c_str(),
              self.GetSourceLineNumber(),
              self.GetSourceFileName().c_str(),
@@ -69,14 +67,14 @@ TfStatus__repr__(TfStatus const &self)
 } // anonymous namespace 
 
 void wrapStatus() {
-    def("_Status", &_Status);
+    boost::python::def("_Status", &_Status);
 
     typedef TfStatus This;
 
     // Can't call this scope Status because Tf.Status() is a function def'd
     // above.
-    scope statusScope =
-        class_<This, bases<TfDiagnosticBase> >("StatusObject", no_init)
+    boost::python::scope statusScope =
+        boost::python::class_<This, boost::python::bases<TfDiagnosticBase> >("StatusObject", boost::python::no_init)
 
         .def("__repr__", TfStatus__repr__)
         ;

@@ -31,7 +31,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -61,7 +60,7 @@ TF_INSTANTIATE_NOTICE_WRAPPER(
 void
 wrapNotice()
 {
-    scope s = class_<SdfNotice>("Notice", no_init);
+    boost::python::scope s = boost::python::class_<SdfNotice>("Notice", boost::python::no_init);
 
     TfPyNoticeWrapper<SdfNotice::Base, TfNotice>::Wrap();
 
@@ -69,7 +68,7 @@ wrapNotice()
         SdfNotice::LayersDidChange, SdfNotice::Base>::Wrap()
         .def("GetLayers",
             &SdfNotice::LayersDidChange::GetLayers,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetSerialNumber",
              &SdfNotice::LayersDidChange::GetSerialNumber)
         ;
@@ -78,7 +77,7 @@ wrapNotice()
         SdfNotice::LayersDidChangeSentPerLayer, SdfNotice::Base>::Wrap()
         .def("GetLayers",
             &SdfNotice::LayersDidChangeSentPerLayer::GetLayers,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetSerialNumber",
              &SdfNotice::LayersDidChangeSentPerLayer::GetSerialNumber)
         ;
@@ -93,20 +92,20 @@ wrapNotice()
     TfPyNoticeWrapper<
         SdfNotice::LayerInfoDidChange, SdfNotice::Base>::Wrap()
         .def("key", &SdfNotice::LayerInfoDidChange::key,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         ;
 
     TfPyNoticeWrapper<
         SdfNotice::LayerIdentifierDidChange, 
         SdfNotice::Base>::Wrap()
         .add_property("oldIdentifier", 
-             make_function(
+             boost::python::make_function(
                  &SdfNotice::LayerIdentifierDidChange::GetOldIdentifier,
-                 return_value_policy<return_by_value>()))
+                 boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("newIdentifier", 
-             make_function(
+             boost::python::make_function(
                  &SdfNotice::LayerIdentifierDidChange::GetNewIdentifier,
-                 return_value_policy<return_by_value>()))
+                 boost::python::return_value_policy<boost::python::return_by_value>()))
         ;
 
     TfPyNoticeWrapper<
@@ -118,9 +117,9 @@ wrapNotice()
         SdfNotice::LayerMutenessChanged,
         SdfNotice::Base>::Wrap()
         .add_property("layerPath",
-             make_function(
+             boost::python::make_function(
                  &SdfNotice::LayerMutenessChanged::GetLayerPath,
-                 return_value_policy<return_by_value>()))
+                 boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("wasMuted", &SdfNotice::LayerMutenessChanged::WasMuted)
         ;
 }

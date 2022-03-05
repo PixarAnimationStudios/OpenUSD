@@ -88,7 +88,7 @@ UsdCollectionAPI::IsSchemaPropertyBaseName(const TfToken &baseName)
             UsdTokens->collection_MultipleApplyTemplate_Excludes),
     };
 
-    return find(attrsAndRels.begin(), attrsAndRels.end(), baseName)
+    return std::find(attrsAndRels.begin(), attrsAndRels.end(), baseName)
             != attrsAndRels.end();
 }
 

@@ -38,7 +38,6 @@
 
 #include <functional>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -155,7 +154,7 @@ _AddOldAndNew3(
 static
 bool
 _TranslateCanEdit(
-    const object& canEdit,
+    const boost::python::object& canEdit,
     const SdfNamespaceEdit& edit,
     std::string* whyNot)
 {
@@ -163,40 +162,40 @@ _TranslateCanEdit(
         return true;
     }
 
-    object result = TfPyCall<object>(canEdit)(edit);
+    boost::python::object result = TfPyCall<boost::python::object>(canEdit)(edit);
 
     // We expect the result to be True or a tuple (False, str).  We'll
     // also accept for success a tuple (True, str) and we'll ignore the
     // string.  We'll also accept for failure just a str.
     {
-        extract<tuple> e(result);
+        boost::python::extract<boost::python::tuple> e(result);
         if (e.check()) {
-            tuple tupleResult = e();
-            if (len(tupleResult) != 2) {
+            boost::python::tuple tupleResult = e();
+            if (boost::python::len(tupleResult) != 2) {
                 TfPyThrowValueError("expected a 2-tuple");
             }
-            str whyNotResult = extract<str>(tupleResult[1]);
-            if (extract<bool>(tupleResult[0])) {
+            boost::python::str whyNotResult = boost::python::extract<boost::python::str>(tupleResult[1]);
+            if (boost::python::extract<bool>(tupleResult[0])) {
                 return true;
             }
             else {
                 if (whyNot) {
-                    *whyNot = extract<std::string>(whyNotResult);
+                    *whyNot = boost::python::extract<std::string>(whyNotResult);
                 }
                 return false;
             }
         }
     }
     {
-        extract<str> whyNotResult(result);
+        boost::python::extract<boost::python::str> whyNotResult(result);
         if (whyNotResult.check()) {
             if (whyNot) {
-                *whyNot = extract<std::string>(whyNotResult);
+                *whyNot = boost::python::extract<std::string>(whyNotResult);
             }
             return false;
         }
     }
-    if (!extract<bool>(result)) {
+    if (!boost::python::extract<bool>(result)) {
         // Need a string on failure.
         TfPyThrowValueError("expected a 2-tuple");
     }
@@ -204,14 +203,13 @@ _TranslateCanEdit(
 }
 
 static
-tuple
+boost::python::tuple
 _Process(
     const SdfBatchNamespaceEdit& x,
-    const object& hasObjectAtPath,
-    const object& canEdit,
+    const boost::python::object& hasObjectAtPath,
+    const boost::python::object& canEdit,
     bool fixBackpointers)
 {
-    namespace ph = std::placeholders;
     // Return a pair (true,Edits) on success or (false,vector<string>) on
     // failure.
     SdfNamespaceEditVector edits;
@@ -220,20 +218,20 @@ _Process(
     if (TfPyIsNone(hasObjectAtPath)) {
         result = x.Process(&edits, SdfBatchNamespaceEdit::HasObjectAtPath(),
                            std::bind(&_TranslateCanEdit, canEdit,
-                                     ph::_1, ph::_2),
+                                     std::placeholders::_1, std::placeholders::_2),
                            &details, fixBackpointers);
     }
     else {
         result = x.Process(&edits, TfPyCall<bool>(hasObjectAtPath),
                            std::bind(&_TranslateCanEdit, canEdit,
-                                     ph::_1, ph::_2),
+                                     std::placeholders::_1, std::placeholders::_2),
                            &details, fixBackpointers);
     }
     if (result) {
-        return make_tuple(object(true), object(edits));
+        return boost::python::make_tuple(boost::python::object(true), boost::python::object(edits));
     }
     else {
-        return make_tuple(object(false), object(details));
+        return boost::python::make_tuple(boost::python::object(false), boost::python::object(details));
     }
 }
 
@@ -243,24 +241,24 @@ wrapNamespaceEditDetail()
     typedef SdfNamespaceEditDetail This;
 
     // Wrap SdfNamespaceEditDetail.
-    scope s =
-    class_<This>("NamespaceEditDetail", no_init)
-        .def(init<>())
-        .def(init<This::Result, const SdfNamespaceEdit&, const std::string&>())
+    boost::python::scope s =
+    boost::python::class_<This>("NamespaceEditDetail", boost::python::no_init)
+        .def(boost::python::init<>())
+        .def(boost::python::init<This::Result, const SdfNamespaceEdit&, const std::string&>())
         .def("__str__", &_StringifyEditDetail)
         .def("__repr__", &_ReprEditDetail)
         .def_readwrite("result", &This::result)
         .def_readwrite("edit", &This::edit)
         .def_readwrite("reason", &This::reason)
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
         ;
 
     // Wrap SdfNamespaceEditDetail::Result.
     TfPyWrapEnum<This::Result>();
 
     // Wrap SdfNamespaceEditDetailVector.
-    to_python_converter<SdfNamespaceEditDetailVector,
+    boost::python::to_python_converter<SdfNamespaceEditDetailVector,
                         TfPySequenceToPython<SdfNamespaceEditDetailVector> >();
     TfPyContainerConversions::from_python_sequence<
         SdfNamespaceEditDetailVector,
@@ -272,22 +270,22 @@ wrapBatchNamespaceEdit()
 {
     typedef SdfBatchNamespaceEdit This;
 
-    class_<This>("BatchNamespaceEdit", no_init)
-        .def(init<>())
-        .def(init<const This&>())
-        .def(init<const SdfNamespaceEditVector&>())
+    boost::python::class_<This>("BatchNamespaceEdit", boost::python::no_init)
+        .def(boost::python::init<>())
+        .def(boost::python::init<const This&>())
+        .def(boost::python::init<const SdfNamespaceEditVector&>())
         .def("__str__", &_StringifyBatchEdit)
         .def("__repr__", &_ReprBatchEdit)
         .def("Add", &_AddEdit)
         .def("Add", &_AddOldAndNew2)
         .def("Add", &_AddOldAndNew3)
         .add_property("edits",
-            make_function(&This::GetEdits,
-                          return_value_policy<return_by_value>()))
+            boost::python::make_function(&This::GetEdits,
+                          boost::python::return_value_policy<boost::python::return_by_value>()))
         .def("Process", &_Process,
-            (arg("hasObjectAtPath"),
-             arg("canEdit"),
-             arg("fixBackpointers") = true))
+            (boost::python::arg("hasObjectAtPath"),
+             boost::python::arg("canEdit"),
+             boost::python::arg("fixBackpointers") = true))
         ;
 }
 
@@ -301,10 +299,10 @@ wrapNamespaceEdit()
 {
     typedef SdfNamespaceEdit This;
 
-    class_<This>("NamespaceEdit", no_init)
-        .def(init<>())
-        .def(init<const This::Path&, const This::Path&,
-                  optional<This::Index> >())
+    boost::python::class_<This>("NamespaceEdit", boost::python::no_init)
+        .def(boost::python::init<>())
+        .def(boost::python::init<const This::Path&, const This::Path&,
+                  boost::python::optional<This::Index> >())
         .def("__str__", &_StringifyEdit)
         .def("__repr__", &_ReprEdit)
         .def_readwrite("currentPath", &This::currentPath)
@@ -312,8 +310,8 @@ wrapNamespaceEdit()
         .def_readwrite("index", &This::index)
         .def_readonly("atEnd", &_atEnd)
         .def_readonly("same", &_same)
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
 
         .def("Remove", &This::Remove)
         .staticmethod("Remove")
@@ -328,7 +326,7 @@ wrapNamespaceEdit()
         ;
 
     // Wrap SdfNamespaceEditVector.
-    to_python_converter<SdfNamespaceEditVector,
+    boost::python::to_python_converter<SdfNamespaceEditVector,
                         TfPySequenceToPython<SdfNamespaceEditVector> >();
     TfPyContainerConversions::from_python_sequence<
         SdfNamespaceEditVector,

@@ -32,7 +32,6 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -40,9 +39,9 @@ void wrapRelationshipSpec()
 {    
     typedef SdfRelationshipSpec This;
 
-    class_<This, SdfHandle<This>, 
-           bases<SdfPropertySpec>, boost::noncopyable>
-        ("RelationshipSpec", no_init)
+    boost::python::class_<This, SdfHandle<This>, 
+           boost::python::bases<SdfPropertySpec>, boost::noncopyable>
+        ("RelationshipSpec", boost::python::no_init)
         
         .def(SdfPySpec())
 
@@ -54,10 +53,10 @@ void wrapRelationshipSpec()
                 "name : string\n"
                 "custom : bool\n"
                 "varibility : Sd.Variability\n"),
-                (arg("ownerPrimSpec"),
-                 arg("name"),
-                 arg("custom") = true,
-                 arg("variability") = SdfVariabilityUniform))
+                (boost::python::arg("ownerPrimSpec"),
+                 boost::python::arg("name"),
+                 boost::python::arg("custom") = true,
+                 boost::python::arg("variability") = SdfVariabilityUniform))
 
         .add_property("targetPathList",
             &This::GetTargetPathList,
@@ -76,7 +75,7 @@ void wrapRelationshipSpec()
 
         .def("ReplaceTargetPath", &This::ReplaceTargetPath)
         .def("RemoveTargetPath", &This::RemoveTargetPath,
-             (arg("preserveTargetOrder") = false))
+             (boost::python::arg("preserveTargetOrder") = false))
 
         // property keys
         .setattr("TargetsKey", SdfFieldKeys->TargetPaths)

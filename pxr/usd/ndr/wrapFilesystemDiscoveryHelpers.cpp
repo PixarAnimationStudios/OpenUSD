@@ -28,7 +28,6 @@
 
 #include <boost/python/def.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -51,9 +50,9 @@ _WrapFsHelpersDiscoverNodes(
 
 void wrapFilesystemDiscoveryHelpers()
 {
-    def("FsHelpersDiscoverNodes", _WrapFsHelpersDiscoverNodes,
-        (args("searchPaths"),
-        args("allowedExtensions"),
-        args("followSymlinks") = true,
-        args("context") = TfWeakPtr<NdrDiscoveryPluginContext>()));
+    boost::python::def("FsHelpersDiscoverNodes", _WrapFsHelpersDiscoverNodes,
+        (boost::python::args("searchPaths"),
+        boost::python::args("allowedExtensions"),
+        boost::python::args("followSymlinks") = true,
+        boost::python::args("context") = TfWeakPtr<NdrDiscoveryPluginContext>()));
 }

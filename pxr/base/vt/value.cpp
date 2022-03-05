@@ -52,10 +52,6 @@
 #include <cmath>
 #include <limits>
 
-using std::map;
-using std::string;
-using std::type_info;
-using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -71,7 +67,7 @@ static inline VtValue _BoostNumericCast(const From x)
 {
     try {
         return VtValue(boost::numeric_cast<To>(x));
-    } catch (const boost::bad_numeric_cast &) {
+    } catch (const boost::numeric::bad_numeric_cast &) {
         return VtValue();
     }
 }
@@ -123,8 +119,8 @@ class Vt_CastRegistry {
         return TfSingleton<Vt_CastRegistry>::GetInstance();
     }    
 
-    void Register(type_info const &from,
-                  type_info const &to,
+    void Register(std::type_info const &from,
+                  std::type_info const &to,
                   VtValue (*castFn)(VtValue const &))
     {
         std::type_index src = from;
@@ -142,7 +138,7 @@ class Vt_CastRegistry {
         }
     }
 
-    VtValue PerformCast(type_info const &to, VtValue const &val) {
+    VtValue PerformCast(std::type_info const &to, VtValue const &val) {
         if (val.IsEmpty())
             return val;
 
@@ -158,7 +154,7 @@ class Vt_CastRegistry {
         return castFn ? castFn(val) : VtValue();
     }
 
-    bool CanCast(type_info const &from, type_info const &to) {
+    bool CanCast(std::type_info const &from, std::type_info const &to) {
         std::type_index src = from;
         std::type_index dst = to;
 
@@ -431,20 +427,20 @@ VtValue::CastToTypeid(VtValue const &val, std::type_info const &type) {
     return ret.CastToTypeid(type);
 }
 
-void VtValue::_RegisterCast(type_info const &from,
-                            type_info const &to,
+void VtValue::_RegisterCast(std::type_info const &from,
+                            std::type_info const &to,
                             VtValue (*castFn)(VtValue const &))
 {
     Vt_CastRegistry::GetInstance().Register(from, to, castFn);
 }
 
-VtValue VtValue::_PerformCast(type_info const &to, VtValue const &val)
+VtValue VtValue::_PerformCast(std::type_info const &to, VtValue const &val)
 {
     TF_DEV_AXIOM(!TfSafeTypeCompare(val.GetTypeid(), to));
     return Vt_CastRegistry::GetInstance().PerformCast(to, val);
 }
 
-bool VtValue::_CanCast(type_info const &from, type_info const &to)
+bool VtValue::_CanCast(std::type_info const &from, std::type_info const &to)
 {
     if (TfSafeTypeCompare(from, to))
         return true;
@@ -513,12 +509,12 @@ _FindOrCreateDefaultValue(std::type_info const &type,
 
     TfAutoMallocTag2 tag("Vt", "VtValue _FindOrCreateDefaultValue");
     
-    typedef map<string, Vt_DefaultValueHolder> DefaultValuesMap;
+    typedef std::map<std::string, Vt_DefaultValueHolder> DefaultValuesMap;
     
     static DefaultValuesMap defaultValues;
     static tbb::spin_mutex defaultValuesMutex;
 
-    string key = ArchGetDemangled(type);
+    std::string key = ArchGetDemangled(type);
 
     {
         // If there's already an entry for this type we can return it directly.
@@ -574,7 +570,7 @@ VtValue::_FailGet(Vt_DefaultValueHolder (*factory)(),
 }
 
 std::ostream &
-VtStreamOut(vector<VtValue> const &val, std::ostream &stream) {
+VtStreamOut(std::vector<VtValue> const &val, std::ostream &stream) {
     bool first = true;
     stream << '[';
     TF_FOR_ALL(i, val) {

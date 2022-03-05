@@ -34,9 +34,7 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -98,62 +96,62 @@ bool __call__Predicate(const Usd_PrimFlagsPredicate &p, const UsdPrim& prim){
 
 void wrapUsdPrimFlags()
 {
-    class_<Usd_Term>("_Term", no_init)
-        .def(~self)
-        .def(self == self)
-        .def(self != self)
-        .def(self & self)
-        .def(self | self)
+    boost::python::class_<Usd_Term>("_Term", boost::python::no_init)
+        .def(~boost::python::self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self & boost::python::self)
+        .def(boost::python::self | boost::python::self)
         .def("__hash__", __hash__Term)
         ;
-    implicitly_convertible<Usd_Term, Usd_PrimFlagsPredicate>();
-    implicitly_convertible<Usd_Term, Usd_PrimFlagsConjunction>();
-    implicitly_convertible<Usd_Term, Usd_PrimFlagsDisjunction>();
+    boost::python::implicitly_convertible<Usd_Term, Usd_PrimFlagsPredicate>();
+    boost::python::implicitly_convertible<Usd_Term, Usd_PrimFlagsConjunction>();
+    boost::python::implicitly_convertible<Usd_Term, Usd_PrimFlagsDisjunction>();
 
-    class_<Usd_PrimFlagsPredicate>("_PrimFlagsPredicate", no_init)
+    boost::python::class_<Usd_PrimFlagsPredicate>("_PrimFlagsPredicate", boost::python::no_init)
         .def("Tautology", &Usd_PrimFlagsPredicate::Tautology)
         .staticmethod("Tautology")
         .def("Contradiction", &Usd_PrimFlagsPredicate::Contradiction)
         .staticmethod("Contradiction")
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
         .def("__hash__", __hash__Predicate)
         .def("__call__", __call__Predicate)
         ;
 
-    class_<Usd_PrimFlagsConjunction, bases<Usd_PrimFlagsPredicate> >
-        ("_PrimFlagsConjunction", no_init)
-        .def(~self)
-        .def(self &= other<Usd_Term>())
-        .def(self & other<Usd_Term>())
-        .def(other<Usd_Term>() & self)
+    boost::python::class_<Usd_PrimFlagsConjunction, boost::python::bases<Usd_PrimFlagsPredicate> >
+        ("_PrimFlagsConjunction", boost::python::no_init)
+        .def(~boost::python::self)
+        .def(boost::python::self &= boost::python::other<Usd_Term>())
+        .def(boost::python::self & boost::python::other<Usd_Term>())
+        .def(boost::python::other<Usd_Term>() & boost::python::self)
         ;
 
-    class_<Usd_PrimFlagsDisjunction, bases<Usd_PrimFlagsPredicate> >
-        ("_PrimFlagsDisjunction", no_init)
-        .def(~self)
-        .def(self |= other<Usd_Term>())
-        .def(self | other<Usd_Term>())
-        .def(other<Usd_Term>() | self)
+    boost::python::class_<Usd_PrimFlagsDisjunction, boost::python::bases<Usd_PrimFlagsPredicate> >
+        ("_PrimFlagsDisjunction", boost::python::no_init)
+        .def(~boost::python::self)
+        .def(boost::python::self |= boost::python::other<Usd_Term>())
+        .def(boost::python::self | boost::python::other<Usd_Term>())
+        .def(boost::python::other<Usd_Term>() | boost::python::self)
         ;
 
-    scope().attr("PrimIsActive") = Usd_Term(UsdPrimIsActive);
-    scope().attr("PrimIsLoaded") = Usd_Term(UsdPrimIsLoaded);
-    scope().attr("PrimIsModel") = Usd_Term(UsdPrimIsModel);
-    scope().attr("PrimIsGroup") = Usd_Term(UsdPrimIsGroup);
-    scope().attr("PrimIsAbstract") = Usd_Term(UsdPrimIsAbstract);
-    scope().attr("PrimIsDefined") = Usd_Term(UsdPrimIsDefined);
-    scope().attr("PrimIsInstance") = Usd_Term(UsdPrimIsInstance);
-    scope().attr("PrimHasDefiningSpecifier") 
+    boost::python::scope().attr("PrimIsActive") = Usd_Term(UsdPrimIsActive);
+    boost::python::scope().attr("PrimIsLoaded") = Usd_Term(UsdPrimIsLoaded);
+    boost::python::scope().attr("PrimIsModel") = Usd_Term(UsdPrimIsModel);
+    boost::python::scope().attr("PrimIsGroup") = Usd_Term(UsdPrimIsGroup);
+    boost::python::scope().attr("PrimIsAbstract") = Usd_Term(UsdPrimIsAbstract);
+    boost::python::scope().attr("PrimIsDefined") = Usd_Term(UsdPrimIsDefined);
+    boost::python::scope().attr("PrimIsInstance") = Usd_Term(UsdPrimIsInstance);
+    boost::python::scope().attr("PrimHasDefiningSpecifier") 
         = Usd_Term(UsdPrimHasDefiningSpecifier);
 
-    scope().attr("PrimDefaultPredicate") = UsdPrimDefaultPredicate;
-    scope().attr("PrimAllPrimsPredicate") = UsdPrimAllPrimsPredicate;
+    boost::python::scope().attr("PrimDefaultPredicate") = UsdPrimDefaultPredicate;
+    boost::python::scope().attr("PrimAllPrimsPredicate") = UsdPrimAllPrimsPredicate;
 
-    def("TraverseInstanceProxies", 
+    boost::python::def("TraverseInstanceProxies", 
         (Usd_PrimFlagsPredicate(*)())&UsdTraverseInstanceProxies);
-    def("TraverseInstanceProxies", 
+    boost::python::def("TraverseInstanceProxies", 
         (Usd_PrimFlagsPredicate(*)(Usd_PrimFlagsPredicate))
             &UsdTraverseInstanceProxies, 
-        arg("predicate"));
+        boost::python::arg("predicate"));
 }

@@ -47,9 +47,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-using std::string;
-using std::vector;
-using std::pair;
 
 using LockGuard = std::lock_guard<std::mutex>;
 
@@ -105,9 +102,9 @@ typedef boost::multi_index::multi_index_container<
         >
     > StageContainer;
 
-typedef StageContainer::index<ById>::type StagesById;
-typedef StageContainer::index<ByStage>::type StagesByStage;
-typedef StageContainer::index<ByRootLayer>::type StagesByRootLayer;
+typedef boost::multi_index::index<ById>::type StagesById;
+typedef boost::multi_index::index<ByStage>::type StagesByStage;
+typedef boost::multi_index::index<ByRootLayer>::type StagesByRootLayer;
 
 // Walk range, which must be from index, applying pred() to every element.  For
 // those elements where pred(element) is true, erase the element from the index
@@ -146,7 +143,7 @@ struct DebugHelper
     template <class Range>
     void AddEntries(const Range &rng) {
         if (IsEnabled())
-            _entries.insert(_entries.end(), boost::begin(rng), boost::end(rng));
+            _entries.insert(_entries.end(), boost::range_adl_barrier::begin(rng), boost::range_adl_barrier::end(rng));
     }
 
     void AddEntry(const Entry &entry) {
@@ -171,12 +168,12 @@ struct DebugHelper
         }
     }
 
-    vector<Entry> *GetEntryVec() {
+    std::vector<Entry> *GetEntryVec() {
         return IsEnabled() ? &_entries : nullptr;
     }
 
 private:
-    vector<Entry> _entries;
+    std::vector<Entry> _entries;
     const UsdStageCache &_cache;
     const char *_prefix;
     bool _enabled;
@@ -215,7 +212,7 @@ struct Usd_StageCacheImpl
 {
     StageContainer stages;
     std::vector<UsdStageCacheRequest *> pendingRequests;
-    string debugName;
+    std::string debugName;
 };
 
 UsdStageCache::UsdStageCache() : _impl(new _Impl)
@@ -258,12 +255,12 @@ UsdStageCache::operator=(const UsdStageCache &other)
     return *this;
 }
 
-vector<UsdStageRefPtr>
+std::vector<UsdStageRefPtr>
 UsdStageCache::GetAllStages() const
 {
     LockGuard lock(_mutex);
     StagesByStage &byStage = _impl->stages.get<ByStage>();
-    vector<UsdStageRefPtr> result;
+    std::vector<UsdStageRefPtr> result;
     result.reserve(_impl->stages.size());
     for (auto const &entry: byStage)
         result.push_back(entry.stage);
@@ -470,7 +467,7 @@ UsdStageCache::FindAllMatching(const SdfLayerHandle &rootLayer) const
 {
     LockGuard lock(_mutex);
     StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
-    vector<UsdStageRefPtr> result;
+    std::vector<UsdStageRefPtr> result;
     auto range = byRootLayer.equal_range(rootLayer);
     for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
          const auto& entry = *entryIt;
@@ -485,7 +482,7 @@ UsdStageCache::FindAllMatching(const SdfLayerHandle &rootLayer,
 {
     LockGuard lock(_mutex);
     StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
-    vector<UsdStageRefPtr> result;
+    std::vector<UsdStageRefPtr> result;
     auto range = byRootLayer.equal_range(rootLayer);
     for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
         const auto& entry = *entryIt;
@@ -502,7 +499,7 @@ UsdStageCache::FindAllMatching(
 {
     LockGuard lock(_mutex);
     StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
-    vector<UsdStageRefPtr> result;
+    std::vector<UsdStageRefPtr> result;
     auto range = byRootLayer.equal_range(rootLayer);
     for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
         const auto& entry = *entryIt;
@@ -520,7 +517,7 @@ UsdStageCache::FindAllMatching(
 {
     LockGuard lock(_mutex);
     StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
-    vector<UsdStageRefPtr> result;
+    std::vector<UsdStageRefPtr> result;
     auto range = byRootLayer.equal_range(rootLayer);
     for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
         const auto& entry = *entryIt;
@@ -657,20 +654,20 @@ UsdStageCache::Clear()
 }
 
 void
-UsdStageCache::SetDebugName(const string &debugName)
+UsdStageCache::SetDebugName(const std::string &debugName)
 {
     LockGuard lock(_mutex);
     _impl->debugName = debugName;
 }
 
-string
+std::string
 UsdStageCache::GetDebugName() const
 {
     LockGuard lock(_mutex);
     return _impl->debugName;
 }
 
-string
+std::string
 UsdDescribe(const UsdStageCache &cache)
 {
     return TfStringPrintf("stage cache %s (size=%zu)",

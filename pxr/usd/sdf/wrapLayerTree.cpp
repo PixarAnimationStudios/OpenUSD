@@ -30,7 +30,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include <boost/python.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -63,28 +62,28 @@ _New(const SdfLayerHandle & layer,
 void wrapLayerTree()
 {    
     // Register conversion for python list <-> SdfLayerTreeHandleVector
-    to_python_converter<SdfLayerTreeHandleVector,
+    boost::python::to_python_converter<SdfLayerTreeHandleVector,
                         TfPySequenceToPython<SdfLayerTreeHandleVector> >();
     TfPyContainerConversions::from_python_sequence<
         SdfLayerTreeHandleVector,
         TfPyContainerConversions::
             variable_capacity_all_items_convertible_policy >();
 
-    class_<SdfLayerTree, TfWeakPtr<SdfLayerTree>, boost::noncopyable>
-        ("LayerTree", "", no_init)
+    boost::python::class_<SdfLayerTree, TfWeakPtr<SdfLayerTree>, boost::noncopyable>
+        ("LayerTree", "", boost::python::no_init)
         .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(&_NewEmpty))
         .def(TfMakePyConstructor(&_NewNoOffset))
         .def(TfMakePyConstructor(&_New))
         .add_property("layer",
-                      make_function(&SdfLayerTree::GetLayer,
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&SdfLayerTree::GetLayer,
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("offset",
-                      make_function(&SdfLayerTree::GetOffset,
-                                    return_value_policy<return_by_value>()))
+                      boost::python::make_function(&SdfLayerTree::GetOffset,
+                                    boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("childTrees",
-            make_function(&SdfLayerTree::GetChildTrees,
-                          return_value_policy<TfPySequenceToList>()))
+            boost::python::make_function(&SdfLayerTree::GetChildTrees,
+                          boost::python::return_value_policy<TfPySequenceToList>()))
         ;
 }
 

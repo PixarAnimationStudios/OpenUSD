@@ -45,19 +45,16 @@
 #include <boost/python/scope.hpp>
 #include <boost/python/tuple.hpp>
 
-using std::string;
-using std::vector;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
 static void
-_RaiseCodingError(string const &msg,
-                 string const& moduleName, string const& functionName,
-                 string const& fileName, int lineNo)
+_RaiseCodingError(std::string const &msg,
+                 std::string const& moduleName, std::string const& functionName,
+                 std::string const& fileName, int lineNo)
 {
     TfDiagnosticMgr::
         ErrorHelper(Tf_PythonCallContext(fileName.c_str(), moduleName.c_str(),
@@ -69,9 +66,9 @@ _RaiseCodingError(string const &msg,
 }
 
 static void
-_RaiseRuntimeError(string const &msg,
-                 string const& moduleName, string const& functionName,
-                 string const& fileName, int lineNo)                  
+_RaiseRuntimeError(std::string const &msg,
+                 std::string const& moduleName, std::string const& functionName,
+                 std::string const& fileName, int lineNo)                  
 {
     TfDiagnosticMgr::
         ErrorHelper(Tf_PythonCallContext(fileName.c_str(), moduleName.c_str(),
@@ -83,8 +80,8 @@ _RaiseRuntimeError(string const &msg,
 
 // CODE_COVERAGE_OFF This will abort the program.
 static void
-_Fatal(string const &msg, string const& moduleName, string const& functionName,
-      string const& fileName, int lineNo)
+_Fatal(std::string const &msg, std::string const& moduleName, std::string const& functionName,
+      std::string const& fileName, int lineNo)
 {
     TfDiagnosticMgr::FatalHelper(Tf_PythonCallContext(fileName.c_str(), moduleName.c_str(),
                                                       functionName.c_str(), lineNo),
@@ -92,8 +89,8 @@ _Fatal(string const &msg, string const& moduleName, string const& functionName,
 }
 // CODE_COVERAGE_ON
 
-static handle<>
-_InvokeWithErrorHandling(tuple const &args, dict const &kw)
+static boost::python::handle<>
+_InvokeWithErrorHandling(boost::python::tuple const &args, boost::python::dict const &kw)
 {
     // This function uses basically bare Python C API since it wants to be as
     // fast as it can be.
@@ -102,23 +99,23 @@ _InvokeWithErrorHandling(tuple const &args, dict const &kw)
     // first tuple element is the callable.
     PyObject *callable = PyTuple_GET_ITEM(argsp, 0);
     // remove callable from positional args.
-    handle<> args_tail(PyTuple_GetSlice(argsp, 1, PyTuple_GET_SIZE(argsp)));
+    boost::python::handle<> args_tail(PyTuple_GetSlice(argsp, 1, PyTuple_GET_SIZE(argsp)));
     // call the callable -- if this raises a python exception, handle<>'s
     // constructor will throw a c++ exception which will exit this function and
     // return to python.
-    handle<> ret(PyObject_Call(callable, args_tail.get(), kw.ptr()));
+    boost::python::handle<> ret(PyObject_Call(callable, args_tail.get(), kw.ptr()));
     // if the call completed successfully, then we need to see if any tf errors
     // occurred, and if so, convert them to python exceptions.
     if (!m.IsClean() && TfPyConvertTfErrorsToPythonException(m))
-        throw_error_already_set();
+        boost::python::throw_error_already_set();
     // if we made it this far, we return the result.
     return ret;
 }
 
-static string
+static std::string
 TfError__repr__(TfError const &self) 
 {
-    string ret = TfStringPrintf("Error in '%s' at line %zu in file %s : '%s'",
+    std::string ret = TfStringPrintf("Error in '%s' at line %zu in file %s : '%s'",
              self.GetSourceFunction().c_str(),
              self.GetSourceLineNumber(),
              self.GetSourceFileName().c_str(),
@@ -131,10 +128,10 @@ TfError__repr__(TfError const &self)
     return ret;
 }
 
-static vector<TfError>
+static std::vector<TfError>
 _GetErrors( const TfErrorMark & mark )
 {
-    return vector<TfError>(mark.GetBegin(), mark.GetEnd());
+    return std::vector<TfError>(mark.GetBegin(), mark.GetEnd());
 }
 
 // Repost any errors contained in exc to the TfError system.  This is used for
@@ -160,10 +157,10 @@ _RepostErrors(boost::python::object exc)
 
     if ((PyObject *)exc.ptr()->ob_type ==
         Tf_PyGetErrorExceptionClass().get()) {
-        object args = exc.attr("args");
-        extract<vector<TfError> > extractor(args);
+        boost::python::object args = exc.attr("args");
+        boost::python::extract<std::vector<TfError> > extractor(args);
         if (extractor.check()) {
-            vector<TfError> errs = extractor();
+            std::vector<TfError> errs = extractor();
             if (errs.empty()) {
                 if (TF_ERROR_MARK_TRACKING)
                     printf("Tf.RepostErrors: exception contains no errors\n");
@@ -188,7 +185,7 @@ static void
 _PythonExceptionDebugTracer(TfPyTraceInfo const &info)
 {
     if (info.what == PyTrace_EXCEPTION) {
-        string excName = "<unknown>";
+        std::string excName = "<unknown>";
         if (PyObject *excType = PyTuple_GET_ITEM(info.arg, 0)) {
             if (PyObject *r = PyObject_Repr(excType)) {
                 excName = TfPyString_AsString(r);
@@ -216,38 +213,38 @@ _SetPythonExceptionDebugTracingEnabled(bool enable)
 } // anonymous namespace 
 
 void wrapError() {
-    def("_RaiseCodingError", &_RaiseCodingError);
-    def("_RaiseRuntimeError", &_RaiseRuntimeError);
-    def("_Fatal", &_Fatal);
-    def("RepostErrors", &_RepostErrors, arg("exception"));
-    def("ReportActiveErrorMarks", TfReportActiveErrorMarks);
-    def("SetPythonExceptionDebugTracingEnabled",
-        _SetPythonExceptionDebugTracingEnabled, arg("enabled"));
-    def("__SetErrorExceptionClass", Tf_PySetErrorExceptionClass);
-    def("InvokeWithErrorHandling", raw_function(_InvokeWithErrorHandling, 1));
-    TfPyContainerConversions::from_python_sequence< vector<TfError>,
+    boost::python::def("_RaiseCodingError", &_RaiseCodingError);
+    boost::python::def("_RaiseRuntimeError", &_RaiseRuntimeError);
+    boost::python::def("_Fatal", &_Fatal);
+    boost::python::def("RepostErrors", &_RepostErrors, boost::python::arg("exception"));
+    boost::python::def("ReportActiveErrorMarks", TfReportActiveErrorMarks);
+    boost::python::def("SetPythonExceptionDebugTracingEnabled",
+        _SetPythonExceptionDebugTracingEnabled, boost::python::arg("enabled"));
+    boost::python::def("__SetErrorExceptionClass", Tf_PySetErrorExceptionClass);
+    boost::python::def("InvokeWithErrorHandling", boost::python::raw_function(_InvokeWithErrorHandling, 1));
+    TfPyContainerConversions::from_python_sequence< std::vector<TfError>,
         TfPyContainerConversions::variable_capacity_policy >();
 
     typedef TfError This;
 
-    scope errorScope = class_<This, bases<TfDiagnosticBase> >("Error", no_init)
+    boost::python::scope errorScope = boost::python::class_<This, boost::python::bases<TfDiagnosticBase> >("Error", boost::python::no_init)
         .add_property("errorCode", &This::GetErrorCode,
                        "The error code posted for this error.")
 
         .add_property("errorCodeString",
-                      make_function(&This::GetErrorCodeAsString,
-                                    return_value_policy<return_by_value>()),
+                      boost::python::make_function(&This::GetErrorCodeAsString,
+                                    boost::python::return_value_policy<boost::python::return_by_value>()),
                                     "The error code posted for this error, as a string.")
 
         .def("__repr__", TfError__repr__)
         ;
 
-    class_<TfErrorMark, boost::noncopyable>("Mark")
+    boost::python::class_<TfErrorMark, boost::noncopyable>("Mark")
         .def("SetMark", &TfErrorMark::SetMark)
         .def("IsClean", &TfErrorMark::IsClean)
         .def("Clear", &TfErrorMark::Clear)
         .def("GetErrors", &_GetErrors,
-            return_value_policy<TfPySequenceToList>(),
+            boost::python::return_value_policy<TfPySequenceToList>(),
              "A list of the errors held by this mark.")
         ;
     

@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -51,7 +50,7 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateTangentsAttr(UsdGeomHermiteCurves &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateTangentsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
 }
@@ -71,39 +70,39 @@ void wrapUsdGeomHermiteCurves()
 {
     typedef UsdGeomHermiteCurves This;
 
-    class_<This, bases<UsdGeomCurves> >
+    boost::python::class_<This, boost::python::bases<UsdGeomCurves> >
         cls("HermiteCurves");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
+        .def("Define", &This::Define, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Define")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetTangentsAttr",
              &This::GetTangentsAttr)
         .def("CreateTangentsAttr",
              &_CreateTangentsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;
@@ -143,21 +142,21 @@ WRAP_CUSTOM {
     typedef UsdGeomHermiteCurves This;
     {
         typedef UsdGeomHermiteCurves::PointAndTangentArrays ThisStruct;
-        scope obj = _class;
-        class_<ThisStruct>("PointAndTangentArrays", init<>())
-            .def(init<const VtVec3fArray&,const VtVec3fArray&>())
+        boost::python::scope obj = _class;
+        boost::python::class_<ThisStruct>("PointAndTangentArrays", boost::python::init<>())
+            .def(boost::python::init<const VtVec3fArray&,const VtVec3fArray&>())
             .def("GetPoints", &ThisStruct::GetPoints,
-                 return_value_policy<copy_const_reference>())
+                 boost::python::return_value_policy<boost::python::copy_const_reference>())
             .def("GetTangents", &ThisStruct::GetTangents,
-                 return_value_policy<copy_const_reference>())
+                 boost::python::return_value_policy<boost::python::copy_const_reference>())
             .def("IsEmpty", &ThisStruct::IsEmpty)
             .def("Interleave", &ThisStruct::Interleave)
             .def("Separate", &ThisStruct::Separate)
             .staticmethod("Separate")
             .def("__repr__", &::_PointAndTangentsRepr)
-            .def(!self)
-            .def(self == self)
-            .def(self != self);
+            .def(!boost::python::self)
+            .def(boost::python::self == boost::python::self)
+            .def(boost::python::self != boost::python::self);
     }
 }
 

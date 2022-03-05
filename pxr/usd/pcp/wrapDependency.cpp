@@ -29,14 +29,12 @@
 
 #include <boost/python.hpp>
 
-using namespace boost::python;
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string
+static std::string
 _DependencyRepr(const PcpDependency &dep)
 {
      return TF_PY_REPR_PREFIX + "Cache.Dependency("
@@ -59,14 +57,14 @@ _DependencyInit(
 void 
 wrapDependency()
 {
-    class_<PcpDependency>("Dependency", no_init)
+    boost::python::class_<PcpDependency>("Dependency", boost::python::no_init)
         .def_readwrite("indexPath", &PcpDependency::indexPath)
         .def_readwrite("sitePath", &PcpDependency::sitePath)
         .def_readwrite("mapFunc", &PcpDependency::mapFunc)
         .def("__repr__", &_DependencyRepr)
-        .def("__init__", make_constructor(_DependencyInit))
-        .def(self == self)
-        .def(self != self)
+        .def("__init__", boost::python::make_constructor(_DependencyInit))
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
         ;
 
     TfPyWrapEnum<PcpDependencyType>();

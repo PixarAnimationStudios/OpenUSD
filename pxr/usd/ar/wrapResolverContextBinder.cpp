@@ -29,7 +29,6 @@
 
 #include <memory>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -71,8 +70,8 @@ wrapResolverContextBinder()
 {
     typedef _PyResolverContextBinder This;
 
-    class_<This, boost::noncopyable>
-        ("ResolverContextBinder", init<const ArResolverContext&>())
+    boost::python::class_<This, boost::noncopyable>
+        ("ResolverContextBinder", boost::python::init<const ArResolverContext&>())
         .def("__enter__", &This::Enter)
         .def("__exit__", &This::Exit)
         ;

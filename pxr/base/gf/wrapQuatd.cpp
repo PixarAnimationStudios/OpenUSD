@@ -45,15 +45,13 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string __repr__(GfQuatd const &self) {
+static std::string __repr__(GfQuatd const &self) {
     return TF_PY_REPR_PREFIX + "Quatd(" +
         TfPyRepr(self.GetReal()) + ", " +
         TfPyRepr(self.GetImaginary()) + ")";
@@ -78,39 +76,39 @@ static GfQuatd *__init__() { return new GfQuatd(0); }
 
 void wrapQuatd()
 {    
-    object getImaginary =
-        make_function(&GfQuatd::GetImaginary,
-                      return_value_policy<return_by_value>());
+    boost::python::object getImaginary =
+        boost::python::make_function(&GfQuatd::GetImaginary,
+                      boost::python::return_value_policy<boost::python::return_by_value>());
 
-    object setImaginaryVec =
-        make_function((void (GfQuatd::*)(const GfVec3d &))
+    boost::python::object setImaginaryVec =
+        boost::python::make_function((void (GfQuatd::*)(const GfVec3d &))
                       &GfQuatd::SetImaginary);
 
-    object setImaginaryScl =
-        make_function((void (GfQuatd::*)(double, double, double))
+    boost::python::object setImaginaryScl =
+        boost::python::make_function((void (GfQuatd::*)(double, double, double))
                       &GfQuatd::SetImaginary,
-                      default_call_policies(),
-                      (arg("i"), arg("j"), arg("k")));
+                      boost::python::default_call_policies(),
+                      (boost::python::arg("i"), boost::python::arg("j"), boost::python::arg("k")));
 
-    def("Slerp",
+    boost::python::def("Slerp",
         (GfQuatd (*)(double, const GfQuatd&, const GfQuatd&))
         GfSlerp);
 
-    def("Dot",
+    boost::python::def("Dot",
         (double (*)(const GfQuatd&, const GfQuatd&))
         GfDot);
     
-    class_<GfQuatd>("Quatd", no_init)
-        .def("__init__", make_constructor(__init__))
+    boost::python::class_<GfQuatd>("Quatd", boost::python::no_init)
+        .def("__init__", boost::python::make_constructor(__init__))
                           
         .def(TfTypePythonClass())
 
-        .def(init<GfQuatd>())
-        .def(init<double>(arg("real")))
-        .def(init<double, const GfVec3d &>(
-                 (arg("real"), arg("imaginary"))))
-        .def(init<double, double, double, double>(
-                 (arg("real"), arg("i"), arg("j"), arg("k"))))
+        .def(boost::python::init<GfQuatd>())
+        .def(boost::python::init<double>(boost::python::arg("real")))
+        .def(boost::python::init<double, const GfVec3d &>(
+                 (boost::python::arg("real"), boost::python::arg("imaginary"))))
+        .def(boost::python::init<double, double, double, double>(
+                 (boost::python::arg("real"), boost::python::arg("i"), boost::python::arg("j"), boost::python::arg("k"))))
 
         .def("GetIdentity", &GfQuatd::GetIdentity)
         .staticmethod("GetIdentity")
@@ -127,30 +125,30 @@ void wrapQuatd()
         .def("GetLength", &GfQuatd::GetLength)
 
         .def("GetNormalized", &GfQuatd::GetNormalized,
-             (arg("eps")=GF_MIN_VECTOR_LENGTH))
+             (boost::python::arg("eps")=GF_MIN_VECTOR_LENGTH))
         .def("Normalize", &GfQuatd::Normalize,
-             (arg("eps")=GF_MIN_VECTOR_LENGTH), return_self<>())
+             (boost::python::arg("eps")=GF_MIN_VECTOR_LENGTH), boost::python::return_self<>())
 
         .def("GetConjugate", &GfQuatd::GetConjugate)
         .def("GetInverse", &GfQuatd::GetInverse)
 
         .def("Transform", &GfQuatd::Transform)
 
-        .def(str(self))
-        .def(-self)
-        .def(self == self)
-        .def(self != self)
-        .def(self *= self)
-        .def(self *= double())
-        .def(self /= double())
-        .def(self += self)
-        .def(self -= self)
-        .def(self + self)
-        .def(self - self)
-        .def(self * self)
-        .def(self * double())
-        .def(double() * self)
-        .def(self / double())
+        .def(boost::python::self_ns::str(boost::python::self))
+        .def(-boost::python::self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self *= boost::python::self)
+        .def(boost::python::self *= double())
+        .def(boost::python::self /= double())
+        .def(boost::python::self += boost::python::self)
+        .def(boost::python::self -= boost::python::self)
+        .def(boost::python::self + boost::python::self)
+        .def(boost::python::self - boost::python::self)
+        .def(boost::python::self * boost::python::self)
+        .def(boost::python::self * double())
+        .def(double() * boost::python::self)
+        .def(boost::python::self / double())
 
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
@@ -163,10 +161,10 @@ void wrapQuatd()
 
         ;
 
-    implicitly_convertible<GfQuatf, GfQuatd>();
-    implicitly_convertible<GfQuath, GfQuatd>();
+    boost::python::implicitly_convertible<GfQuatf, GfQuatd>();
+    boost::python::implicitly_convertible<GfQuath, GfQuatd>();
 
-    to_python_converter<std::vector<GfQuatd>,
+    boost::python::to_python_converter<std::vector<GfQuatd>,
         TfPySequenceToPython<std::vector<GfQuatd> > >();
     
 }

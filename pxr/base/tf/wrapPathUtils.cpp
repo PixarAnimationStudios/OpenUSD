@@ -29,36 +29,34 @@
 #include <boost/python/def.hpp>
 #include <string>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string
-_RealPath(string const &path, bool allowInaccessibleSuffix, bool raiseOnError)
+static std::string
+_RealPath(std::string const &path, bool allowInaccessibleSuffix, bool raiseOnError)
 {
-    string error;
-    string realPath = TfRealPath(path, allowInaccessibleSuffix, &error);
+    std::string error;
+    std::string realPath = TfRealPath(path, allowInaccessibleSuffix, &error);
     if (raiseOnError && !error.empty()) {
         TF_RUNTIME_ERROR(error);
     }
     return realPath;
 }
 
-static string::size_type
-_FindLongestAccessiblePrefix(string const &path)
+static std::string::size_type
+_FindLongestAccessiblePrefix(std::string const &path)
 {
     // For python, we convert npos into path's length, which makes the return
     // value correct to use in slices.
-    string error;
-    string::size_type result = TfFindLongestAccessiblePrefix(path, &error);
+    std::string error;
+    std::string::size_type result = TfFindLongestAccessiblePrefix(path, &error);
 
     if (!error.empty()) {
         PyErr_SetString(PyExc_OSError, error.c_str());
-        throw_error_already_set();
+        boost::python::throw_error_already_set();
     }
 
     return result;
@@ -68,10 +66,10 @@ _FindLongestAccessiblePrefix(string const &path)
 
 void wrapPathUtils()
 {
-    def("RealPath", _RealPath,
-        ( arg("path"),
-          arg("allowInaccessibleSuffix") = false,
-          arg("raiseOnError") = false ));
+    boost::python::def("RealPath", _RealPath,
+        ( boost::python::arg("path"),
+          boost::python::arg("allowInaccessibleSuffix") = false,
+          boost::python::arg("raiseOnError") = false ));
 
-    def("FindLongestAccessiblePrefix", _FindLongestAccessiblePrefix);
+    boost::python::def("FindLongestAccessiblePrefix", _FindLongestAccessiblePrefix);
 }

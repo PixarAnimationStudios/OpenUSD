@@ -36,7 +36,6 @@
 
 #include <string>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -51,7 +50,7 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateXformOpOrderAttr(UsdGeomXformable &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      boost::python::object defaultVal, bool writeSparsely) {
     return self.CreateXformOpOrderAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
 }
@@ -71,36 +70,36 @@ void wrapUsdGeomXformable()
 {
     typedef UsdGeomXformable This;
 
-    class_<This, bases<UsdGeomImageable> >
+    boost::python::class_<This, boost::python::bases<UsdGeomImageable> >
         cls("Xformable");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(boost::python::init<UsdPrim>(boost::python::arg("prim")))
+        .def(boost::python::init<UsdSchemaBase const&>(boost::python::arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::arg("includeInherited")=true,
+             boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
         .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .staticmethod("_GetStaticTfType")
 
-        .def(!self)
+        .def(!boost::python::self)
 
         
         .def("GetXformOpOrderAttr",
              &This::GetXformOpOrderAttr)
         .def("CreateXformOpOrderAttr",
              &_CreateXformOpOrderAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             (boost::python::arg("defaultValue")=boost::python::object(),
+              boost::python::arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;
@@ -185,89 +184,89 @@ WRAP_CUSTOM {
         const std::vector<UsdGeomXformOp> &) const 
         = &This::TransformMightBeTimeVarying;
 
-    scope s = _class
+    boost::python::scope s = _class
         .def("AddXformOp", &This::AddXformOp, 
-            (arg("opType"), 
-             arg("precision")=UsdGeomXformOp::PrecisionDouble,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            (boost::python::arg("opType"), 
+             boost::python::arg("precision")=UsdGeomXformOp::PrecisionDouble,
+             boost::python::arg("opSuffix")=TfToken(),
+             boost::python::arg("isInverseOp")=false))
 
         .def("AddTranslateOp", &This::AddTranslateOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionDouble,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            (boost::python::arg("precision")=UsdGeomXformOp::PrecisionDouble,
+             boost::python::arg("opSuffix")=TfToken(),
+             boost::python::arg("isInverseOp")=false))
 
         .def("AddScaleOp", &This::AddScaleOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            (boost::python::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             boost::python::arg("opSuffix")=TfToken(),
+             boost::python::arg("isInverseOp")=false))
 
         .def("AddRotateXOp", &This::AddRotateXOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            (boost::python::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             boost::python::arg("opSuffix")=TfToken(),
+             boost::python::arg("isInverseOp")=false))
 
         .def("AddRotateYOp", &This::AddRotateYOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            (boost::python::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             boost::python::arg("opSuffix")=TfToken(),
+             boost::python::arg("isInverseOp")=false))
 
         .def("AddRotateZOp", &This::AddRotateZOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            (boost::python::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             boost::python::arg("opSuffix")=TfToken(),
+             boost::python::arg("isInverseOp")=false))
 
         .def("AddRotateXYZOp", &This::AddRotateXYZOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            (boost::python::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             boost::python::arg("opSuffix")=TfToken(),
+             boost::python::arg("isInverseOp")=false))
 
         .def("AddRotateXZYOp", &This::AddRotateXZYOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            (boost::python::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             boost::python::arg("opSuffix")=TfToken(),
+             boost::python::arg("isInverseOp")=false))
 
         .def("AddRotateYXZOp", &This::AddRotateYXZOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            (boost::python::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             boost::python::arg("opSuffix")=TfToken(),
+             boost::python::arg("isInverseOp")=false))
 
         .def("AddRotateYZXOp", &This::AddRotateYZXOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            (boost::python::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             boost::python::arg("opSuffix")=TfToken(),
+             boost::python::arg("isInverseOp")=false))
 
         .def("AddRotateZXYOp", &This::AddRotateZXYOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            (boost::python::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             boost::python::arg("opSuffix")=TfToken(),
+             boost::python::arg("isInverseOp")=false))
 
         .def("AddRotateZYXOp", &This::AddRotateZYXOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            (boost::python::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             boost::python::arg("opSuffix")=TfToken(),
+             boost::python::arg("isInverseOp")=false))
 
         .def("AddOrientOp", &This::AddOrientOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            (boost::python::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             boost::python::arg("opSuffix")=TfToken(),
+             boost::python::arg("isInverseOp")=false))
 
         .def("AddTransformOp", &This::AddTransformOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionDouble,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            (boost::python::arg("precision")=UsdGeomXformOp::PrecisionDouble,
+             boost::python::arg("opSuffix")=TfToken(),
+             boost::python::arg("isInverseOp")=false))
 
         .def("SetResetXformStack", &This::SetResetXformStack,
-            (arg("resetXform")))
+            (boost::python::arg("resetXform")))
 
         .def("GetResetXformStack", &This::GetResetXformStack)
 
         .def("SetXformOpOrder", &This::SetXformOpOrder,
-            (arg("orderedXformOps"),
-             arg("resetXformStack")=false))
+            (boost::python::arg("orderedXformOps"),
+             boost::python::arg("resetXformStack")=false))
 
         .def("GetOrderedXformOps", &_GetOrderedXformOps, 
-            return_value_policy<TfPySequenceToList>(),
+            boost::python::return_value_policy<TfPySequenceToList>(),
             "Return the ordered list of transform operations to be applied to "
             "this prim, in least-to-most-local order.  This is determined by "
             "the intersection of authored op-attributes and the explicit "
@@ -290,13 +289,13 @@ WRAP_CUSTOM {
         .def("TransformMightBeTimeVarying", TransformMightBeTimeVarying_2)
 
         .def("GetTimeSamples", _GetTimeSamples,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval,
-            return_value_policy<TfPySequenceToList>())
+            boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("GetLocalTransformation", _GetLocalTransformation1,
-            (arg("time")=UsdTimeCode::Default()),
+            (boost::python::arg("time")=UsdTimeCode::Default()),
             "Compute the fully-combined, local-to-parent transformation for "
             "this prim.\n"
             "If a client does not need to manipulate the individual ops "
@@ -310,7 +309,7 @@ WRAP_CUSTOM {
             " GetResetXformStack() to be able to construct the local-to-world"
             " transformation.")
         .def("GetLocalTransformation", _GetLocalTransformation2,
-            (arg("ops"),arg("time")=UsdTimeCode::Default()),
+            (boost::python::arg("ops"),boost::python::arg("time")=UsdTimeCode::Default()),
             "Compute the fully-combined, local-to-parent transformation for "
             "this prim as efficiently as possible, using pre-fetched "
             "list of ordered xform ops supplied by the client.\n"

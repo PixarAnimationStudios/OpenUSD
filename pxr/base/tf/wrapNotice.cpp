@@ -43,9 +43,7 @@
 
 #include <functional>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -78,7 +76,7 @@ class Tf_PyNoticeInternal
 
     struct Listener : public TfWeakBase, public boost::noncopyable {
 
-        typedef void CallbackSig(object const &, handle<> const &);
+        typedef void CallbackSig(boost::python::object const &, boost::python::handle<> const &);
         typedef std::function<CallbackSig> Callback;
 
         static Listener *New(TfType const &noticeType,
@@ -112,7 +110,7 @@ class Tf_PyNoticeInternal
                  noticeType, sender);
         }
 
-        object _GetDeliverableNotice(TfNotice const &notice,
+        boost::python::object _GetDeliverableNotice(TfNotice const &notice,
                                      TfType const &noticeType) {
             // If the notice type is not wrapped, return the type name in a
             // string.
@@ -120,14 +118,14 @@ class Tf_PyNoticeInternal
             /// XXX noticeType is incorrect when the notice is
             /// python-implemented.  We should fix this when TfType optimization
             /// work is done.
-            object noticeClass = TfPyGetClassObject(typeid(notice));
+            boost::python::object noticeClass = TfPyGetClassObject(typeid(notice));
             if (TfPyIsNone(noticeClass))
-                return object(TfType::Find(notice).GetTypeName());
+                return boost::python::object(TfType::Find(notice).GetTypeName());
 
             // If it's a python notice, use the embedded python object.
             if (TfPyNoticeWrapperBase const *pyNotice =
                 TfSafeDynamic_cast<TfPyNoticeWrapperBase const *>(&notice))
-                return object(pyNotice->GetNoticePythonObject());
+                return boost::python::object(pyNotice->GetNoticePythonObject());
 
             // Otherwise convert the notice to python like normal.  We
             // can't just use object(notice) because that won't produce
@@ -141,12 +139,12 @@ class Tf_PyNoticeInternal
                            void const *senderUniqueId,
                            const std::type_info &) {
             TfPyLock lock;
-            object pyNotice = _GetDeliverableNotice(notice, type);
+            boost::python::object pyNotice = _GetDeliverableNotice(notice, type);
             if (!TfPyIsNone(pyNotice)) {
                 // Get the python sender.
-                handle<> pySender = sender ?
-                    handle<>(allow_null(Tf_PyIdentityHelper::
-                                        Get(senderUniqueId))) : handle<>();
+                boost::python::handle<> pySender = sender ?
+                    boost::python::handle<>(boost::python::allow_null(Tf_PyIdentityHelper::
+                                        Get(senderUniqueId))) : boost::python::handle<>();
                 _callback(pyNotice, pySender);
             }
         }
@@ -167,7 +165,7 @@ class Tf_PyNoticeInternal
     static Listener *
     RegisterWithPythonSender(TfType const &noticeType,
                              Listener::Callback const &cb,
-                             object const &sender) {
+                             boost::python::object const &sender) {
         Tf_PyWeakObjectPtr weakSender = Tf_PyWeakObject::GetOrCreate(sender);
         if (!weakSender)
             TfPyThrowTypeError("Cannot register to listen to notices from the "
@@ -194,7 +192,7 @@ class Tf_PyNoticeInternal
     }
 
     static size_t
-    SendWithPythonSender(TfNotice const &self, object const &sender) {
+    SendWithPythonSender(TfNotice const &self, boost::python::object const &sender) {
         // Get a "WeakObjectPtr" corresponding to the sender -- this is a
         // TfWeakPtr to an object which holds a python weak reference.  This
         // object expires when the python object expires.  This is what lets us
@@ -223,15 +221,15 @@ void wrapNotice()
 
     // Passing TfNotice for both T and its base indicates that this is the root
     // of the notice hierarchy.
-    scope notice = TfPyNoticeWrapper<TfNotice, TfNotice>::Wrap("Notice")
-        .def(init<>())
+    boost::python::scope notice = TfPyNoticeWrapper<TfNotice, TfNotice>::Wrap("Notice")
+        .def(boost::python::init<>())
         
         // We register the method that takes any python object first, as this is
         // the last overload that will be tried.  Thus, it will only be invoked
         // if the python object is not already weak-pointable.
         .def("Register",
              Tf_PyNoticeInternal::RegisterWithPythonSender,
-             return_value_policy<manage_new_object>(),
+             boost::python::return_value_policy<boost::python::manage_new_object>(),
          "Register( noticeType, callback, sender ) -> Listener \n\n"
          "noticeType : Tf.Notice\n"
          "callback : function\n"
@@ -251,12 +249,12 @@ void wrapNotice()
              )
         .def("Register",
              Tf_PyNoticeInternal::RegisterWithAnyWeakPtrSender,
-             return_value_policy<manage_new_object>())
+             boost::python::return_value_policy<boost::python::manage_new_object>())
         .staticmethod("Register")
         
         .def("RegisterGlobally",
              Tf_PyNoticeInternal::RegisterGlobally,
-             return_value_policy<manage_new_object>(), 
+             boost::python::return_value_policy<boost::python::manage_new_object>(), 
              "RegisterGlobally( noticeType, callback ) -> Listener \n\n"
              "noticeType : Tf.Notice\n"
              "callback : function\n\n"
@@ -299,8 +297,8 @@ void wrapNotice()
     "You can also use the Revoke() function to break the connection. "
     "A Listener object is returned from the Register() and  "
     "RegisterGlobally() functions. ";
-    class_<Tf_PyNoticeInternal::Listener,
-           boost::noncopyable>("Listener", Listener_string, no_init)
+    boost::python::class_<Tf_PyNoticeInternal::Listener,
+           boost::noncopyable>("Listener", Listener_string, boost::python::no_init)
         .def("Revoke", &Tf_PyNoticeInternal::Listener::Revoke,
             "Revoke() \n\n"
             "Revoke interest by a notice listener. "

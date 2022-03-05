@@ -84,7 +84,7 @@ UsdPhysicsLimitAPI::IsSchemaPropertyBaseName(const TfToken &baseName)
             UsdPhysicsTokens->limit_MultipleApplyTemplate_PhysicsHigh),
     };
 
-    return find(attrsAndRels.begin(), attrsAndRels.end(), baseName)
+    return std::find(attrsAndRels.begin(), attrsAndRels.end(), baseName)
             != attrsAndRels.end();
 }
 

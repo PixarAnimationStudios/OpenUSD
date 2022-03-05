@@ -32,9 +32,7 @@
 #include <boost/python/class.hpp>
 #include <boost/python/tuple.hpp>
 
-using std::string;
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -56,7 +54,7 @@ _GetForwardedTargets(const UsdRelationship &self)
     return result;
 }
 
-static string
+static std::string
 __repr__(const UsdRelationship &self)
 {
     if (self) {
@@ -72,22 +70,22 @@ __repr__(const UsdRelationship &self)
 
 void wrapUsdRelationship()
 {
-    class_<UsdRelationship, bases<UsdProperty> >("Relationship")
+    boost::python::class_<UsdRelationship, boost::python::bases<UsdProperty> >("Relationship")
         .def(Usd_ObjectSubclass())
         .def("__repr__", __repr__)
         .def("AddTarget", &UsdRelationship::AddTarget,
-             (arg("target"),
-              arg("position")=UsdListPositionBackOfPrependList))
-        .def("RemoveTarget", &UsdRelationship::RemoveTarget, arg("target"))
-        .def("SetTargets", &UsdRelationship::SetTargets, arg("targets"))
-        .def("ClearTargets", &UsdRelationship::ClearTargets, arg("removeSpec"))
+             (boost::python::arg("target"),
+              boost::python::arg("position")=UsdListPositionBackOfPrependList))
+        .def("RemoveTarget", &UsdRelationship::RemoveTarget, boost::python::arg("target"))
+        .def("SetTargets", &UsdRelationship::SetTargets, boost::python::arg("targets"))
+        .def("ClearTargets", &UsdRelationship::ClearTargets, boost::python::arg("removeSpec"))
         .def("GetTargets", _GetTargets,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetForwardedTargets", _GetForwardedTargets,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("HasAuthoredTargets", &UsdRelationship::HasAuthoredTargets)
         ;
     TfPyRegisterStlSequencesFromPython<UsdRelationship>();
-    to_python_converter<std::vector<UsdRelationship>,
+    boost::python::to_python_converter<std::vector<UsdRelationship>,
                         TfPySequenceToPython<std::vector<UsdRelationship>>>();
 }

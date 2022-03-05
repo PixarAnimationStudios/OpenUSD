@@ -41,26 +41,22 @@
 #include <thread>
 #include <atomic>
 
-using namespace boost::python;
-using std::pair;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static vector<SdfPath> GetPrefixesHelper( const SdfPath &path ) {
+static std::vector<SdfPath> GetPrefixesHelper( const SdfPath &path ) {
     return path.GetPrefixes();
 }
 
-static string
+static std::string
 _Repr(const SdfPath &self) {
     if (self.IsEmpty()) {
         return TF_PY_REPR_PREFIX + "Path.emptyPath";
     }
     else {
-        return string(TF_PY_REPR_PREFIX +
+        return std::string(TF_PY_REPR_PREFIX +
             "Path(")+TfPyRepr(self.GetAsString())+")";
     }
 }
@@ -79,48 +75,48 @@ _RemoveAncestorPaths(SdfPathVector paths)
     return paths;
 }
 
-static object
+static boost::python::object
 _FindPrefixedRange(SdfPathVector const &paths, SdfPath const &prefix)
 {
-    pair<SdfPathVector::const_iterator, SdfPathVector::const_iterator>
+    std::pair<SdfPathVector::const_iterator, SdfPathVector::const_iterator>
         result = SdfPathFindPrefixedRange(paths.begin(), paths.end(), prefix);
-    object start(result.first - paths.begin());
-    object stop(result.second - paths.begin());
-    handle<> slice(PySlice_New(start.ptr(), stop.ptr(), NULL));
-    return object(slice);
+    boost::python::object start(result.first - paths.begin());
+    boost::python::object stop(result.second - paths.begin());
+    boost::python::handle<> slice(PySlice_New(start.ptr(), stop.ptr(), NULL));
+    return boost::python::object(slice);
 }
 
-static object
+static boost::python::object
 _FindLongestPrefix(SdfPathVector const &paths, SdfPath const &path)
 {
     SdfPathVector::const_iterator result =
         SdfPathFindLongestPrefix(paths.begin(), paths.end(), path);
     if (result == paths.end())
-        return object();
-    return object(*result);
+        return boost::python::object();
+    return boost::python::object(*result);
 }
 
-static object
+static boost::python::object
 _FindLongestStrictPrefix(SdfPathVector const &paths, SdfPath const &path)
 {
     SdfPathVector::const_iterator result =
         SdfPathFindLongestStrictPrefix(paths.begin(), paths.end(), path);
     if (result == paths.end())
-        return object();
-    return object(*result);
+        return boost::python::object();
+    return boost::python::object(*result);
 }
 
-struct Sdf_PathIsValidPathStringResult : public TfPyAnnotatedBoolResult<string>
+struct Sdf_PathIsValidPathStringResult : public TfPyAnnotatedBoolResult<std::string>
 {
-    Sdf_PathIsValidPathStringResult(bool val, string const &msg) :
-        TfPyAnnotatedBoolResult<string>(val, msg) {}
+    Sdf_PathIsValidPathStringResult(bool val, std::string const &msg) :
+        TfPyAnnotatedBoolResult<std::string>(val, msg) {}
 };
 
 static
 Sdf_PathIsValidPathStringResult
-_IsValidPathString(string const &pathString)
+_IsValidPathString(std::string const &pathString)
 {
-    string errMsg;
+    std::string errMsg;
     bool valid = SdfPath::IsValidPathString(pathString, &errMsg);
     return Sdf_PathIsValidPathStringResult(valid, errMsg);
 }
@@ -208,7 +204,7 @@ private:
     void _RaiseIfAtEnd() const {
         if (_it == _end) {
             PyErr_SetString(PyExc_StopIteration, "Iterator at end");
-            throw_error_already_set();
+            boost::python::throw_error_already_set();
         }
     }
 
@@ -228,14 +224,14 @@ void Sdf_wrapAncestorsRange()
 {
     using This = SdfPathAncestorsRange;
 
-    scope s = class_<This>("AncestorsRange", init<const SdfPath&>() )
+    boost::python::scope s = boost::python::class_<This>("AncestorsRange", boost::python::init<const SdfPath&>() )
         .def("GetPath", &This::GetPath,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .def("__iter__", &Sdf_GetIterator)
         ;
 
     using Iter = Sdf_PyPathAncestorsRangeIterator;
-    class_<Iter>("_iterator", no_init)
+    boost::python::class_<Iter>("_iterator", boost::python::no_init)
         .def(TfPyIteratorNextMethodName, &Iter::next)
         ;
 }
@@ -246,13 +242,13 @@ void Sdf_wrapAncestorsRange()
 void wrapPath() {    
     typedef SdfPath This;
 
-    def("_PathGetDebuggerPathText", Sdf_PathGetDebuggerPathText);
-    def("_PathStress", &_PathStress);
-    def("_DumpPathStats", &Sdf_DumpPathStats);
+    boost::python::def("_PathGetDebuggerPathText", Sdf_PathGetDebuggerPathText);
+    boost::python::def("_PathStress", &_PathStress);
+    boost::python::def("_DumpPathStats", &Sdf_DumpPathStats);
 
-    scope s = class_<This> ( "Path", init< const string & >() )
-        .def( init<const SdfPath &>() )
-        .def( init<>() )
+    boost::python::scope s = boost::python::class_<This> ( "Path", boost::python::init< const std::string & >() )
+        .def( boost::python::init<const SdfPath &>() )
+        .def( boost::python::init<>() )
 
         // XXX: Document constants
         .def_readonly("absoluteRootPath", &SdfPath::AbsoluteRootPath(),
@@ -266,32 +262,32 @@ void wrapPath() {
         .add_property("pathElementCount", &This::GetPathElementCount, 
             "The number of path elements in this path.")
         .add_property("pathString",
-            make_function(&This::GetAsString),
+            boost::python::make_function(&This::GetAsString),
             "The string representation of this path.")
-        .add_property("name", make_function(&This::GetName, 
-                    return_value_policy<copy_const_reference>()), 
+        .add_property("name", boost::python::make_function(&This::GetName, 
+                    boost::python::return_value_policy<boost::python::copy_const_reference>()), 
             "The name of the prim, property or relational\n"
             "attribute identified by the path.\n\n"
             "'' for EmptyPath.  '.' for ReflexiveRelativePath.\n"
             "'..' for a path ending in ParentPathElement.\n")
         .add_property("elementString",
-            make_function(&This::GetElementString, 
-                return_value_policy<return_by_value>()),
+            boost::python::make_function(&This::GetElementString, 
+                boost::python::return_value_policy<boost::python::return_by_value>()),
             "The string representation of the terminal component of this path."
             "\nThis path can be reconstructed via \n"
             "thisPath.GetParentPath().AppendElementString(thisPath.element).\n"
             "None of absoluteRootPath, reflexiveRelativePath, nor emptyPath\n"
             "possess the above quality; their .elementString is the empty string.")
-        .add_property("targetPath", make_function(&This::GetTargetPath, 
-                    return_value_policy<copy_const_reference>()), 
+        .add_property("targetPath", boost::python::make_function(&This::GetTargetPath, 
+                    boost::python::return_value_policy<boost::python::copy_const_reference>()), 
             "The relational attribute target path for this path.\n\n"
             "EmptyPath if this is not a relational attribute path.")
 
         .def("GetAllTargetPathsRecursively", &_WrapGetAllTargetPathsRecursively,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("GetVariantSelection", &This::GetVariantSelection,
-             return_value_policy<TfPyPairToTuple>())
+             boost::python::return_value_policy<TfPyPairToTuple>())
 
         .def("IsAbsolutePath", &This::IsAbsolutePath)
         .def("IsAbsoluteRootPath", &This::IsAbsoluteRootPath)
@@ -319,7 +315,7 @@ void wrapPath() {
         .def("MakeRelativePath", &This::MakeRelativePath)
 
         .def("GetPrefixes", GetPrefixesHelper,
-              return_value_policy< TfPySequenceToList >(), 
+              boost::python::return_value_policy< TfPySequenceToList >(), 
             "Returns the prefix paths of this path.")
 
         .def("GetAncestorsRange", &This::GetAncestorsRange)
@@ -342,27 +338,27 @@ void wrapPath() {
         .def("AppendElementString", &This::AppendElementString)
 
         .def("ReplacePrefix", &This::ReplacePrefix,
-             ( arg("oldPrefix"),
-               arg("newPrefix"),
-               arg("fixTargetPaths") = true))
+             ( boost::python::arg("oldPrefix"),
+               boost::python::arg("newPrefix"),
+               boost::python::arg("fixTargetPaths") = true))
         .def("GetCommonPrefix", &This::GetCommonPrefix)
         .def("RemoveCommonSuffix", &This::RemoveCommonSuffix,
-            arg("stopAtRootPrim") = false,
-            return_value_policy< TfPyPairToTuple >())
+            boost::python::arg("stopAtRootPrim") = false,
+            boost::python::return_value_policy< TfPyPairToTuple >())
         .def("ReplaceName", &This::ReplaceName)
         .def("ReplaceTargetPath", &This::ReplaceTargetPath)
         .def("MakeAbsolutePath", &This::MakeAbsolutePath)
         .def("MakeRelativePath", &This::MakeRelativePath)
 
         .def("GetConciseRelativePaths", &This::GetConciseRelativePaths,
-            return_value_policy< TfPySequenceToList >())
+            boost::python::return_value_policy< TfPySequenceToList >())
             .staticmethod("GetConciseRelativePaths")
 
         .def("RemoveDescendentPaths", _RemoveDescendentPaths,
-             return_value_policy< TfPySequenceToList >())
+             boost::python::return_value_policy< TfPySequenceToList >())
             .staticmethod("RemoveDescendentPaths")
         .def("RemoveAncestorPaths", _RemoveAncestorPaths,
-             return_value_policy< TfPySequenceToList >())
+             boost::python::return_value_policy< TfPySequenceToList >())
             .staticmethod("RemoveAncestorPaths")
 
         .def("IsValidIdentifier", &This::IsValidIdentifier)
@@ -387,7 +383,7 @@ void wrapPath() {
                  &This::StripNamespace)
             .staticmethod("StripNamespace")
         .def("StripPrefixNamespace", &This::StripPrefixNamespace, 
-                return_value_policy<TfPyPairToTuple>())
+                boost::python::return_value_policy<TfPyPairToTuple>())
             .staticmethod("StripPrefixNamespace")
 
         .def("IsValidPathString", &_IsValidPathString)
@@ -402,16 +398,16 @@ void wrapPath() {
         .def("FindLongestStrictPrefix", _FindLongestStrictPrefix)
             .staticmethod("FindLongestStrictPrefix")
 
-        .def("__str__", make_function(&This::GetAsString))
+        .def("__str__", boost::python::make_function(&This::GetAsString))
 
         .def(TfPyBoolBuiltinFuncName, __nonzero__)
 
-        .def(self == self)
-        .def(self != self)
-        .def(self < self)
-        .def(self > self)
-        .def(self <= self)
-        .def(self >= self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self < boost::python::self)
+        .def(boost::python::self > boost::python::self)
+        .def(boost::python::self <= boost::python::self)
+        .def(boost::python::self >= boost::python::self)
         .def("__repr__", _Repr)
         .def("__hash__", &This::GetHash)
         ;
@@ -428,19 +424,19 @@ void wrapPath() {
     s.attr("namespaceDelimiter") = &SdfPathTokens->namespaceDelimiter; 
 
     // Register conversion for python list <-> vector<SdfPath>
-    to_python_converter<SdfPathVector, TfPySequenceToPython<SdfPathVector> >();
+    boost::python::to_python_converter<SdfPathVector, TfPySequenceToPython<SdfPathVector> >();
     TfPyContainerConversions::from_python_sequence<
         SdfPathVector,
         TfPyContainerConversions::
             variable_capacity_all_items_convertible_policy >();
 
     // Register conversion for python list <-> set<SdfPath>
-    to_python_converter<SdfPathSet, TfPySequenceToPython<SdfPathSet> >();
+    boost::python::to_python_converter<SdfPathSet, TfPySequenceToPython<SdfPathSet> >();
     TfPyContainerConversions::from_python_sequence<
         std::set<SdfPath>,
         TfPyContainerConversions::set_policy >();
 
-    implicitly_convertible<string, This>();
+    boost::python::implicitly_convertible<std::string, This>();
 
     VtValueFromPython<SdfPath>();
 

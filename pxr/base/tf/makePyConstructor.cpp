@@ -29,9 +29,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Tf_MakePyConstructor {
 
-bp::object _DummyInit(bp::tuple const & /* args */,
-                      bp::dict const & /* kw */) {
-    return bp::object();
+boost::python::object _DummyInit(boost::python::tuple const & /* args */,
+                      boost::python::dict const & /* kw */) {
+    return boost::python::object();
 }
 
 }

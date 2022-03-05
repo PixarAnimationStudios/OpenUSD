@@ -34,21 +34,19 @@
 
 #include <vector>
 
-using namespace boost::python;
-using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static tuple
+static boost::python::tuple
 _GetDeclarationInfo(const UsdGeomPrimvar &self)
 {
     TfToken name, interpolation;
     SdfValueTypeName typeName;
     int elementSize;
     self.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
-    return make_tuple(name, object(typeName), interpolation, elementSize);
+    return boost::python::make_tuple(name, boost::python::object(typeName), interpolation, elementSize);
 }
 
 static bool
@@ -83,19 +81,19 @@ _ComputeFlattened(const UsdGeomPrimvar &self,
     return UsdVtValueToPython(retValue);
 }    
 
-static vector<double>
+static std::vector<double>
 _GetTimeSamples(const UsdGeomPrimvar &self) 
 {
-    vector<double> result;
+    std::vector<double> result;
     self.GetTimeSamples(&result);
     return result;
 }
 
-static vector<double>
+static std::vector<double>
 _GetTimeSamplesInInterval(const UsdGeomPrimvar &self,
                           const GfInterval& interval) 
 {
-    vector<double> result;
+    std::vector<double> result;
     self.GetTimeSamplesInInterval(interval, &result);
     return result;
 }
@@ -110,8 +108,8 @@ static size_t __hash__(const UsdGeomPrimvar &self) { return hash_value(self); }
 static TfStaticData<TfPyObjWrapper> _object__getattribute__;
 
 // This function gets wrapped as __getattribute__ on UsdGeomPrimvar.
-static object
-__getattribute__(object selfObj, const char *name) {
+static boost::python::object
+__getattribute__(boost::python::object selfObj, const char *name) {
 
     // Allow attribute lookups if the attribute name starts with '__', or
     // if the object's prim and attribute are both valid, or allow a few
@@ -119,10 +117,10 @@ __getattribute__(object selfObj, const char *name) {
     // are valid.
     if ((name[0] == '_' && name[1] == '_') ||
         // prim and attr are valid, let everything through.
-        (extract<UsdGeomPrimvar &>(selfObj)().GetAttr().IsValid() &&
-         extract<UsdGeomPrimvar &>(selfObj)().GetAttr().GetPrim().IsValid()) ||
+        (boost::python::extract<UsdGeomPrimvar &>(selfObj)().GetAttr().IsValid() &&
+         boost::python::extract<UsdGeomPrimvar &>(selfObj)().GetAttr().GetPrim().IsValid()) ||
         // prim is valid, but attr is invalid, let a few things through.
-        (extract<UsdGeomPrimvar &>(selfObj)().GetAttr().GetPrim().IsValid() &&
+        (boost::python::extract<UsdGeomPrimvar &>(selfObj)().GetAttr().GetPrim().IsValid() &&
          (strcmp(name, "HasValue") == 0 ||
           strcmp(name, "HasAuthoredValue") == 0 ||
           strcmp(name, "GetName") == 0 ||
@@ -142,7 +140,7 @@ __getattribute__(object selfObj, const char *name) {
             TfStringPrintf("Accessed invalid attribute as a primvar"));
     }
     // Unreachable.
-    return object();
+    return boost::python::object();
 }
 
 } // anonymous namespace 
@@ -151,88 +149,88 @@ void wrapUsdGeomPrimvar()
 {
     typedef UsdGeomPrimvar Primvar;
 
-    class_<Primvar> clsObj("Primvar");
+    boost::python::class_<Primvar> clsObj("Primvar");
     clsObj
-        .def(init<UsdAttribute>(arg("attr")))
+        .def(boost::python::init<UsdAttribute>(boost::python::arg("attr")))
 
-        .def(self == self)
-        .def(self != self)
-        .def(!self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(!boost::python::self)
         .def("__hash__", __hash__)
 
         .def("GetInterpolation", &Primvar::GetInterpolation)
         .def("SetInterpolation", &Primvar::SetInterpolation,
-             arg("interpolation"))
+             boost::python::arg("interpolation"))
         .def("HasAuthoredInterpolation", &Primvar::HasAuthoredInterpolation)
 
         .def("GetElementSize", &Primvar::GetElementSize)
-        .def("SetElementSize", &Primvar::SetElementSize, arg("eltSize"))
+        .def("SetElementSize", &Primvar::SetElementSize, boost::python::arg("eltSize"))
         .def("HasAuthoredElementSize", &Primvar::HasAuthoredElementSize)
 
-        .def("IsPrimvar", Primvar::IsPrimvar, arg("attr"))
+        .def("IsPrimvar", Primvar::IsPrimvar, boost::python::arg("attr"))
         .staticmethod("IsPrimvar")
 
         .def("IsValidPrimvarName", Primvar::IsValidPrimvarName, 
-                arg("name"))
+                boost::python::arg("name"))
         .staticmethod("IsValidPrimvarName")
         
-        .def("StripPrimvarsName", Primvar::StripPrimvarsName, arg("name"))
+        .def("StripPrimvarsName", Primvar::StripPrimvarsName, boost::python::arg("name"))
         .staticmethod("StripPrimvarsName")
 
         .def("IsValidInterpolation", Primvar::IsValidInterpolation,
-             arg("interpolation"))
+             boost::python::arg("interpolation"))
         .staticmethod("IsValidInterpolation")
 
         .def("GetDeclarationInfo", _GetDeclarationInfo)
         .def("GetAttr", &Primvar::GetAttr,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .def("IsDefined", &Primvar::IsDefined)
         .def("HasValue", &Primvar::HasValue)
         .def("HasAuthoredValue", &Primvar::HasAuthoredValue)
         .def("GetName", &Primvar::GetName,
-             return_value_policy<return_by_value>())
+             boost::python::return_value_policy<boost::python::return_by_value>())
         .def("GetPrimvarName", &Primvar::GetPrimvarName)
         .def("NameContainsNamespaces", &Primvar::NameContainsNamespaces)
         .def("GetBaseName", &Primvar::GetBaseName)
         .def("GetNamespace", &Primvar::GetNamespace)
         .def("SplitName", &Primvar::SplitName,
-             return_value_policy<TfPySequenceToList>())
+             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetTypeName", &Primvar::GetTypeName)
-        .def("Get", _Get, (arg("time")=UsdTimeCode::Default()))
-        .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
+        .def("Get", _Get, (boost::python::arg("time")=UsdTimeCode::Default()))
+        .def("Set", _Set, (boost::python::arg("value"), boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("GetTimeSamples", _GetTimeSamples)
         .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval)
         .def("ValueMightBeTimeVarying", &Primvar::ValueMightBeTimeVarying)
 
         .def("SetIndices", &Primvar::SetIndices, 
-            (arg("indices"),
-             arg("time")=UsdTimeCode::Default()))
+            (boost::python::arg("indices"),
+             boost::python::arg("time")=UsdTimeCode::Default()))
         .def("BlockIndices", &Primvar::BlockIndices)
         .def("GetIndices", _GetIndices, 
-            (arg("time")=UsdTimeCode::Default()))
+            (boost::python::arg("time")=UsdTimeCode::Default()))
         .def("GetIndicesAttr", &Primvar::GetIndicesAttr)
         .def("CreateIndicesAttr", &Primvar::GetIndicesAttr)
         .def("IsIndexed", &Primvar::IsIndexed)
 
         .def("GetUnauthoredValuesIndex", &Primvar::GetUnauthoredValuesIndex)
         .def("SetUnauthoredValuesIndex", &Primvar::SetUnauthoredValuesIndex,
-            arg("unauthoredValuesIndex"))
+            boost::python::arg("unauthoredValuesIndex"))
 
         .def("ComputeFlattened", _ComputeFlattened,
-            (arg("time")=UsdTimeCode::Default()))
+            (boost::python::arg("time")=UsdTimeCode::Default()))
     
         .def("IsIdTarget", &Primvar::IsIdTarget)
         .def("SetIdTarget", &Primvar::SetIdTarget)
         ;
 
     TfPyRegisterStlSequencesFromPython<UsdGeomPrimvar>();
-    to_python_converter<std::vector<UsdGeomPrimvar>,
+    boost::python::to_python_converter<std::vector<UsdGeomPrimvar>,
                         TfPySequenceToPython<std::vector<UsdGeomPrimvar>>>();
-    implicitly_convertible<Primvar, UsdAttribute>();
+    boost::python::implicitly_convertible<Primvar, UsdAttribute>();
 
     // Save existing __getattribute__ and replace.
-    *_object__getattribute__ = object(clsObj.attr("__getattribute__"));
+    *_object__getattribute__ = boost::python::object(clsObj.attr("__getattribute__"));
     clsObj.def("__getattribute__", __getattribute__);
 }
 
