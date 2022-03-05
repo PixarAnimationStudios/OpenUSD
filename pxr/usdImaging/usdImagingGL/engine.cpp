@@ -1153,7 +1153,13 @@ UsdImagingGLEngine::SetRendererSetting(TfToken const& id, VtValue const& value)
     }
 
     TF_VERIFY(_renderDelegate);
-    _renderDelegate->SetRenderSetting(id, value);
+    // usdviewq passes a double as VtValue since Python has no 'float' type
+    if (value.IsHolding<double>()) {
+        _renderDelegate->SetRenderSetting(
+            id, VtValue(static_cast<float>(value.UncheckedGet<double>())));
+    } else {
+        _renderDelegate->SetRenderSetting(id, value);
+    }
 }
 
 void
