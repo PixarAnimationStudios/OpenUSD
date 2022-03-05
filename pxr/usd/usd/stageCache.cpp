@@ -102,9 +102,9 @@ typedef boost::multi_index::multi_index_container<
         >
     > StageContainer;
 
-typedef boost::multi_index::index<ById>::type StagesById;
-typedef boost::multi_index::index<ByStage>::type StagesByStage;
-typedef boost::multi_index::index<ByRootLayer>::type StagesByRootLayer;
+typedef StageContainer::index<ById>::type StagesById;
+typedef StageContainer::index<ByStage>::type StagesByStage;
+typedef StageContainer::index<ByRootLayer>::type StagesByRootLayer;
 
 // Walk range, which must be from index, applying pred() to every element.  For
 // those elements where pred(element) is true, erase the element from the index

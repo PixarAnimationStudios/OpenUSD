@@ -123,7 +123,7 @@ private:
             boost::python::object items_view = obj.attr("__dict__").attr("items")();
             boost::python::list items(items_view);
 #else
-            list items = extract<list>(obj.attr("__dict__").attr("items")());
+            boost::python::list items = boost::python::extract<boost::python::list>(obj.attr("__dict__").attr("items")());
 #endif
             size_t lenItems = boost::python::len(items);
             for (size_t i = 0; i < lenItems; ++i) {

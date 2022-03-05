@@ -3726,8 +3726,8 @@ static std::string
 _Stringify(const ChangedPaths& paths)
 {
     return _Stringify(SdfPathVector(
-        make_transform_iterator(paths.begin(), TfGet<0>()),
-        make_transform_iterator(paths.end(), TfGet<0>())));
+        boost::make_transform_iterator(paths.begin(), TfGet<0>()),
+        boost::make_transform_iterator(paths.end(), TfGet<0>())));
 }
 
 // Add paths in the given cache that depend on the given path in the given 
@@ -4407,8 +4407,8 @@ UsdStage::_RecomposePrims(T *pathsToRecompose)
     // around this.
     std::vector<Usd_PrimDataPtr> subtreesToRecompose;
     _ComputeSubtreesToRecompose(
-        make_transform_iterator(pathsToRecompose->begin(), TfGet<0>()),
-        make_transform_iterator(pathsToRecompose->end(), TfGet<0>()),
+        boost::make_transform_iterator(pathsToRecompose->begin(), TfGet<0>()),
+        boost::make_transform_iterator(pathsToRecompose->end(), TfGet<0>()),
         &subtreesToRecompose);
 
     // Recompose subtrees.

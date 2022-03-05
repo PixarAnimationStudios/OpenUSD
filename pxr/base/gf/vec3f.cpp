@@ -237,7 +237,7 @@ GfSlerp(double alpha, const GfVec3f &v0, const GfVec3f &v1)
     // determine the angle between the two lines going from the center of
     // the sphere to v0 and v1.  the projection (dot prod) of one onto the
     // other gives us the arc cosine of the angle between them.
-    double angle = acos(GfClamp((double)GfDot(v0, v1), -1.0, 1.0));
+    double angle = std::acos(GfClamp((double)GfDot(v0, v1), -1.0, 1.0));
 
     // Check for very small angle between the vectors, and if so, just lerp them.
     // XXX: This value for epsilon is somewhat arbitrary, and if
@@ -247,7 +247,7 @@ GfSlerp(double alpha, const GfVec3f &v0, const GfVec3f &v1)
     }
 
     // compute the sin of the angle, we need it a couple of places
-    double sinAngle = sin(angle);
+    double sinAngle = std::sin(angle);
 
     // Check if the vectors are nearly opposing, and if so,
     // compute an arbitrary orthogonal vector to interpolate across.
@@ -256,7 +256,7 @@ GfSlerp(double alpha, const GfVec3f &v0, const GfVec3f &v1)
     if ( fabs(sinAngle) < 0.00001 ) {
         GfVec3f vX, vY;
         v0.BuildOrthonormalFrame(&vX, &vY);
-        GfVec3f v = v0 * cos(alpha*M_PI) + vX * sin(alpha*M_PI);
+        GfVec3f v = v0 * std::cos(alpha*M_PI) + vX * std::sin(alpha*M_PI);
         return v;
     }
 
@@ -264,8 +264,8 @@ GfSlerp(double alpha, const GfVec3f &v0, const GfVec3f &v1)
     double oneOverSinAngle = 1.0 / sinAngle;
 
     return
-        v0 * (sin((1.0-alpha)*angle) * oneOverSinAngle) +
-        v1 * (sin(     alpha *angle) * oneOverSinAngle);
+        v0 * (std::sin((1.0-alpha)*angle) * oneOverSinAngle) +
+        v1 * (std::sin(     alpha *angle) * oneOverSinAngle);
 }
 
 

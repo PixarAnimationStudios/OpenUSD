@@ -65,7 +65,7 @@ TfPyObjWrapper::TfPyObjWrapper()
 }
 
 TfPyObjWrapper::TfPyObjWrapper(boost::python::object obj)
-    : _objectPtr(new object(obj), _DeleteObjectWithLock())
+    : _objectPtr(new boost::python::object(obj), _DeleteObjectWithLock())
 {
 }
 

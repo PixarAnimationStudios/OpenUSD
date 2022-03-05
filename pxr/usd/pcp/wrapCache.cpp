@@ -110,7 +110,7 @@ _ComputePropertyIndex( PcpCache &cache, const SdfPath &path )
 {
     PcpErrorVector errors;
     const PcpPropertyIndex &result = cache.ComputePropertyIndex(path, &errors);
-    boost::python::apply<PcpPropertyIndex>::type converter;
+    boost::python::return_by_value::apply<PcpPropertyIndex>::type converter;
     return boost::python::make_tuple(
         boost::python::object(boost::python::handle<>(converter(result))), 
         errors);

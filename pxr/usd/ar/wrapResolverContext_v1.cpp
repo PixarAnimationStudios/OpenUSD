@@ -28,7 +28,6 @@
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/ar/pyResolverContext.h"
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -38,13 +37,13 @@ struct Ar_ResolverContextToPython
 {
     Ar_ResolverContextToPython()
     {
-        to_python_converter<
+        boost::python::to_python_converter<
             ArResolverContext, Ar_ResolverContextToPython>();
     }
 
     static PyObject* convert(const ArResolverContext& context)
     {
-        return incref(Ar_ConvertResolverContextToPython(context).ptr());
+        return boost::python::incref(Ar_ConvertResolverContextToPython(context).ptr());
     }
 };
 
@@ -52,7 +51,7 @@ struct Ar_ResolverContextFromPython
 {
     Ar_ResolverContextFromPython() 
     {
-        converter::registry::push_back(
+        boost::python::converter::registry::push_back(
             &_convertible, &_construct,
             boost::python::type_id<ArResolverContext>());
     }
@@ -67,9 +66,9 @@ struct Ar_ResolverContextFromPython
     }
     
     static void _construct(
-        PyObject* obj_ptr, converter::rvalue_from_python_stage1_data *data) 
+        PyObject* obj_ptr, boost::python::converter::rvalue_from_python_stage1_data *data) 
     {
-        void *storage = ((converter::rvalue_from_python_storage<ArResolverContext>*)data)
+        void *storage = ((boost::python::converter::rvalue_from_python_storage<ArResolverContext>*)data)
             ->storage.bytes;
 
         ArResolverContext context;

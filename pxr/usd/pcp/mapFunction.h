@@ -258,7 +258,7 @@ private:
                 }
             }
             else {
-                remotePairs.~std::shared_ptr<PathPair>();
+                remotePairs.~shared_ptr<PathPair>();
             }
         }
 

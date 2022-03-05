@@ -35,6 +35,7 @@
 #include "pxr/base/tf/type.h"
 
 #include <algorithm>
+#include <cmath>
 #include <ostream>
 
 
@@ -282,7 +283,7 @@ GfFrustum::FitToSphere(const GfVec3d &center, double radius, double slack)
         // the sphere at the point of tangency.
         _viewDistance =
             radius * (1.0/halfSize) *
-             sqrt(GfSqr(halfSize) + GfSqr(_nearFar.GetMin()));
+             std::sqrt(GfSqr(halfSize) + GfSqr(_nearFar.GetMin()));
 
         // XXX.
         // Hmmm. This is not really used anywhere but in tests, so 

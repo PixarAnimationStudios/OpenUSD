@@ -149,13 +149,13 @@ private:
         > _Layers;
 
     // Identity index.
-    typedef boost::multi_index::index<by_identity>::type _LayersByIdentity;
+    typedef _Layers::index<by_identity>::type _LayersByIdentity;
     // Identifier index.
-    typedef boost::multi_index::index<by_identifier>::type _LayersByIdentifier;
+    typedef _Layers::index<by_identifier>::type _LayersByIdentifier;
     // Real path index.
-    typedef boost::multi_index::index<by_real_path>::type _LayersByRealPath;
+    typedef _Layers::index<by_real_path>::type _LayersByRealPath;
     // Repository path index.
-    typedef boost::multi_index::index<by_repository_path>::type _LayersByRepositoryPath;
+    typedef _Layers::index<by_repository_path>::type _LayersByRepositoryPath;
 
     _Layers _layers;
 };

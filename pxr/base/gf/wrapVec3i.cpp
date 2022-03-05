@@ -67,7 +67,7 @@ getreadbuf(PyObject *self, Py_ssize_t segment, void **ptrptr) {
         PyErr_SetString(PyExc_ValueError, "accessed non-existent segment");
         return -1;
     }
-    GfVec3i &vec = extract<GfVec3i &>(self);
+    GfVec3i &vec = boost::python::extract<GfVec3i &>(self);
     *ptrptr = static_cast<void *>(vec.data());
     // Return size in bytes.
     return sizeof(GfVec3i);

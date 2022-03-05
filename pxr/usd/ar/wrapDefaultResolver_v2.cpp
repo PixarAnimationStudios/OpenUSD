@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/defaultResolver.h"
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -36,11 +35,11 @@ wrapDefaultResolver()
 {
     using This = ArDefaultResolver;
 
-    class_<This, bases<ArResolver>, boost::noncopyable>
-        ("DefaultResolver", no_init)
+    boost::python::class_<This, boost::python::bases<ArResolver>, boost::noncopyable>
+        ("DefaultResolver", boost::python::no_init)
 
         .def("SetDefaultSearchPath", &This::SetDefaultSearchPath,
-             args("searchPath"))
+             boost::python::args("searchPath"))
         .staticmethod("SetDefaultSearchPath")
         ;
 }

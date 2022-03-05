@@ -221,7 +221,7 @@ Vt_getreadbuf(PyObject *self, Py_ssize_t segment, void **ptrptr) {
         PyErr_SetString(PyExc_ValueError, "accessed non-existent segment");
         return -1;
     }
-    T &selfT = bp::extract<T &>(self);
+    T &selfT = boost::python::extract<T &>(self);
     *ptrptr = const_cast<void *>(static_cast<void const *>(selfT.cdata()));
     // Return size in bytes.
     return selfT.size() * sizeof(typename T::value_type);
@@ -239,7 +239,7 @@ Vt_getwritebuf(PyObject *self, Py_ssize_t segment, void **ptrptr) {
 template <class T>
 Py_ssize_t
 Vt_getsegcount(PyObject *self, Py_ssize_t *lenp) {
-    T &selfT = bp::extract<T &>(self);
+    T &selfT = boost::python::extract<T &>(self);
     if (lenp)
         *lenp = selfT.size() * sizeof(typename T::value_type);
     return 1; // Always one contiguous segment.
@@ -593,7 +593,7 @@ VtArrayFromPyBuffer(TfPyObjWrapper const &obj, std::string *err)
 
 #define INSTANTIATE(r, unused, elem)                                       \
 template boost::optional<VtArray<VT_TYPE(elem)> >                          \
-VtArrayFromPyBuffer<VT_TYPE(elem)>(TfPyObjWrapper const &obj, string *err);
+VtArrayFromPyBuffer<VT_TYPE(elem)>(TfPyObjWrapper const &obj, std::string *err);
 BOOST_PP_SEQ_FOR_EACH(INSTANTIATE, ~, VT_ARRAY_PYBUFFER_TYPES)
 #undef INSTANTIATE
 

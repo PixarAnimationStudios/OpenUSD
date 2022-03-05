@@ -320,7 +320,7 @@ TfGetBaseName(const std::string& fileName)
     if (fileName.empty())
         return fileName;
 #if defined(ARCH_OS_WINDOWS)
-    const string::size_type i = fileName.find_last_of("\\/");
+    const std::string::size_type i = fileName.find_last_of("\\/");
 #else
     const std::string::size_type i = fileName.rfind("/");
 #endif
@@ -336,8 +336,8 @@ TfGetBaseName(const std::string& fileName)
     // fileName was already basename, in which case we want to return the
     // string back.
     if (result == wfileName.c_str()) {
-        const bool hasDriveLetter = fileName.find(":") != string::npos;
-        const bool hasPathSeparator  = i != string::npos;
+        const bool hasDriveLetter = fileName.find(":") != std::string::npos;
+        const bool hasPathSeparator  = i != std::string::npos;
         if (hasDriveLetter || hasPathSeparator) {
             return std::string();
         }

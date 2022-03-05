@@ -35,6 +35,8 @@
 #include "pxr/base/gf/quat{{ SCALAR_SUFFIX(S) }}.h"
 {% endfor %}
 
+#include <cmath>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
@@ -186,11 +188,11 @@ GfSlerp(double alpha, const {{ QUAT }}& q0, const {{ QUAT }}& q1)
 
     if (1.0 - cosTheta > 0.00001 ) {
         // standard case
-        {{ SCL }} theta = acos(cosTheta),
-               sinTheta = sin(theta);
+        {{ SCL }} theta = std::acos(cosTheta),
+               sinTheta = std::sin(theta);
 
-        scale0 = sin((1.0 - alpha) * theta) / sinTheta;
-        scale1 = sin(alpha * theta) / sinTheta;
+        scale0 = std::sin((1.0 - alpha) * theta) / sinTheta;
+        scale1 = std::sin(alpha * theta) / sinTheta;
     } else {        
         // rot0 and rot1 very close - just do linear interp and renormalize.
         scale0 = 1.0 - alpha;

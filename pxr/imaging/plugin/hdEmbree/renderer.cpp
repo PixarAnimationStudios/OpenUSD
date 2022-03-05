@@ -908,7 +908,7 @@ HdEmbreeRenderer::_ComputeColor(RTCRayHit const& rayHit,
     // Lighting model: (camera dot normal), i.e. diffuse-only point light
     // centered on the camera.
     GfVec3f dir = GfVec3f(rayHit.ray.dir_x, rayHit.ray.dir_y, rayHit.ray.dir_z);
-    float diffuseLight = std::fabs(GfDot(-dir, normal)) *
+    float diffuseLight = fabs(GfDot(-dir, normal)) *
         HdEmbreeConfig::GetInstance().cameraLightIntensity;
 
     // Lighting gets modulated by an ambient occlusion term.

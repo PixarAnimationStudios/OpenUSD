@@ -32,8 +32,6 @@
 #include "pxr/base/tf/stringUtils.h"
 
 #include <set>
-#include <string>
-#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

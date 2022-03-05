@@ -66,7 +66,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // attributes by testing: (actual & attributes) == expected
 bool
 Tf_HasAttribute(
-    string const& path,
+    std::string const& path,
     bool resolveSymlinks,
     DWORD attribute,
     DWORD expected)
@@ -103,7 +103,7 @@ Tf_HasAttribute(
 // Same as above but the bits in attribute must all be set.
 bool
 Tf_HasAttribute(
-    string const& path,
+    std::string const& path,
     bool resolveSymlinks,
     DWORD attribute)
 {
@@ -300,7 +300,7 @@ static bool
 Tf_MakeDirsRec(std::string const& path, int mode, bool existOk)
 {
 #if defined(ARCH_OS_WINDOWS)
-    static const string pathsep = "\\/";
+    static const std::string pathsep = "\\/";
 #else
     static const std::string pathsep = "/";
 #endif

@@ -85,7 +85,7 @@ float _ConvertColorSpace(const float in)
         if (in <= 0.0031308) {
             out = 12.92 * in;
         } else {
-            out = 1.055 * std::pow(in, 1.0 / 2.4) - 0.055;
+            out = 1.055 * pow(in, 1.0 / 2.4) - 0.055;
         }
     }
 

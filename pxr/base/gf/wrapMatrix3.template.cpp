@@ -33,8 +33,8 @@
 {% endblock customIncludes %}
 
 {% block customInit %}
-        .def(init< const GfRotation& >())
-        .def(init< const GfQuat{{ SCL[0] }}& >())
+        .def(boost::python::init< const GfRotation& >())
+        .def(boost::python::init< const GfQuat{{ SCL[0] }}& >())
 {% endblock customInit %}
 
 {% block customDefs %}
@@ -43,20 +43,20 @@
         .def("IsRightHanded", &This::IsRightHanded)
 
         .def("Orthonormalize", &This::Orthonormalize,
-             (arg("issueWarning") = true))
+             (boost::python::arg("issueWarning") = true))
         .def("GetOrthonormalized", &This::GetOrthonormalized,
-             (arg("issueWarning") = true))
+             (boost::python::arg("issueWarning") = true))
 {% endblock customDefs %}
 
 {% block customXformDefs %}
-        .def("SetScale", (This & (This::*)( const GfVec3{{ SCL[0] }} & ))&This::SetScale, return_self<>())
+        .def("SetScale", (This & (This::*)( const GfVec3{{ SCL[0] }} & ))&This::SetScale, boost::python::return_self<>())
         .def("SetRotate",
              (This & (This::*)( const GfQuat{{ SCL[0] }} & )) &This::SetRotate,
-             return_self<>())
+             boost::python::return_self<>())
         .def("SetRotate",
              (This & (This::*)( const GfRotation & )) &This::SetRotate,
-             return_self<>())
+             boost::python::return_self<>())
         .def("ExtractRotation", &This::ExtractRotation)
-        .def("SetScale", (This & (This::*)( {{ SCL }} ))&This::SetScale, return_self<>())
+        .def("SetScale", (This & (This::*)( {{ SCL }} ))&This::SetScale, boost::python::return_self<>())
 
 {% endblock customXformDefs %}

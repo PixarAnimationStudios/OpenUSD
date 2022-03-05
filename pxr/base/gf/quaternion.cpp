@@ -28,6 +28,7 @@
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/tf/type.h"
 
+#include <cmath>
 #include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -41,14 +42,14 @@ TF_REGISTRY_FUNCTION(TfType) {
 double
 GfQuaternion::GetLength() const
 {
-    return sqrt(_GetLengthSquared());
+    return std::sqrt(_GetLengthSquared());
 }
 
 
 GfQuaternion
 GfQuaternion::GetNormalized(double eps) const
 {
-    double length = sqrt(_GetLengthSquared());
+    double length = std::sqrt(_GetLengthSquared());
 
     if (length < eps)
         return GetIdentity();
@@ -59,7 +60,7 @@ GfQuaternion::GetNormalized(double eps) const
 double
 GfQuaternion::Normalize(double eps)
 {
-    double length = sqrt(_GetLengthSquared());
+    double length = std::sqrt(_GetLengthSquared());
 
     if (length < eps)
         *this = GetIdentity();
@@ -125,11 +126,11 @@ GfSlerp(double alpha, const GfQuaternion& q0, const GfQuaternion& q1)
 
     if (1.0 - cosTheta > 0.00001 ) {
         // standard case
-        double theta = acos(cosTheta),
-               sinTheta = sin(theta);
+        double theta = std::acos(cosTheta),
+               sinTheta = std::sin(theta);
 
-        scale0 = sin((1.0 - alpha) * theta) / sinTheta;
-        scale1 = sin(alpha * theta) / sinTheta;
+        scale0 = std::sin((1.0 - alpha) * theta) / sinTheta;
+        scale1 = std::sin(alpha * theta) / sinTheta;
     } else {        
         // rot0 and rot1 very close - just do linear interp and renormalize.
         scale0 = 1.0 - alpha;

@@ -38,6 +38,7 @@
 #include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/rotation.h"
+#include <cmath>
 #include <float.h>
 #include <ostream>
 
@@ -924,7 +925,7 @@ GfMatrix4f::Factor(GfMatrix4f* r, GfVec3f* s, GfMatrix4f* u,
         if (eigenvalues[i] < eps) {
             (*s)[i] = detSign * eps;
         } else {
-            (*s)[i] = detSign * sqrt(eigenvalues[i]);
+            (*s)[i] = detSign * std::sqrt(eigenvalues[i]);
         }
         sInv._mtx[i][i] = 1.0 / (*s)[i];
     }
@@ -984,14 +985,14 @@ GfMatrix4f::_Jacobi3(GfVec3d *eigenvalues, GfVec3d eigenvectors[3]) const
 			t = a._mtx[p][q] / h;
 		    } else {
 			double theta = 0.5 * h / a._mtx[p][q];
-			t = 1.0 / (GfAbs(theta) + sqrt(1.0 + theta * theta));
+			t = 1.0 / (GfAbs(theta) + std::sqrt(1.0 + theta * theta));
 			if (theta < 0.0)
 			    t = -t;
 		    }
 
 		    // End of computing tangent of rotation angle
 		    
-		    double c = 1.0 / sqrt(1.0 + t*t);
+		    double c = 1.0 / std::sqrt(1.0 + t*t);
 		    double s = t * c;
 		    double tau = s / (1.0 + c);
 		    h = t * a._mtx[p][q];

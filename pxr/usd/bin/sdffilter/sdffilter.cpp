@@ -256,11 +256,11 @@ ParseTimes(std::vector<std::string> const &timeSpecs,
                 TfStringPrintf("invalid time syntax '%s'", spec.c_str()));
         }
     }
-    std::sort(literalTimes->begin(), literalTimes->end());
-    literalTimes->erase(std::unique(literalTimes->begin(), literalTimes->end()),
+    sort(literalTimes->begin(), literalTimes->end());
+    literalTimes->erase(unique(literalTimes->begin(), literalTimes->end()),
                         literalTimes->end());
-    std::sort(timeRanges->begin(), timeRanges->end());
-    timeRanges->erase(std::unique(timeRanges->begin(), timeRanges->end()),
+    sort(timeRanges->begin(), timeRanges->end());
+    timeRanges->erase(unique(timeRanges->begin(), timeRanges->end()),
                       timeRanges->end());
 }
 
@@ -286,7 +286,7 @@ CollectMatchingFields(SdfLayerHandle const &layer,
                       TfPatternMatcher const *matcher)
 {
     std::vector<TfToken> fields = layer->ListFields(path);
-    fields.erase(std::remove_if(fields.begin(), fields.end(),
+    fields.erase(remove_if(fields.begin(), fields.end(),
                            [&matcher](TfToken const &f) {
                                return matcher && !matcher->Match(f.GetString());
                            }),
@@ -339,7 +339,7 @@ GetReportTimeSamplesValue(SdfLayerHandle const &layer,
     else {
         for (auto time: times) {
             // Check literalTimes.
-            auto rng = std::equal_range(
+            auto rng = equal_range(
                 p.literalTimes.begin(), p.literalTimes.end(), time,
                 [&p](double a, double b)  {
                     return IsClose(a, b, p.timeTolerance) ? false : a < b;
@@ -409,7 +409,7 @@ GetReportByPath(SdfLayerHandle const &layer,
 {
     std::vector<SdfPath> paths =
         CollectMatchingSpecPaths(layer, p.pathMatcher.get());
-    std::sort(paths.begin(), paths.end());
+    sort(paths.begin(), paths.end());
     for (auto const &path: paths) {
         SdfSpecType specType = layer->GetSpecType(path);
         report.push_back(
@@ -447,7 +447,7 @@ GetReportByField(SdfLayerHandle const &layer,
     std::unordered_map<
         std::string, std::vector<std::string>> pathsByFieldString;
     std::unordered_set<std::string> allFieldStrings;
-    std::sort(paths.begin(), paths.end());
+    sort(paths.begin(), paths.end());
     for (auto const &path: paths) {
         std::vector<TfToken> fields =
             CollectMatchingFields(layer, path, p.fieldMatcher.get());
@@ -470,7 +470,7 @@ GetReportByField(SdfLayerHandle const &layer,
     }
     std::vector<std::string>
         fsvec(allFieldStrings.begin(), allFieldStrings.end());
-    std::sort(fsvec.begin(), fsvec.end());
+    sort(fsvec.begin(), fsvec.end());
 
     for (auto const &fs: fsvec) {
         report.push_back(fs);
@@ -504,6 +504,7 @@ FilterLayer(SdfLayerHandle const &inLayer,
             SdfLayerHandle const &outLayer,
             ReportParams const &p)
 {
+    namespace ph = std::placeholders;
     auto copyValueFn = [&p](
         SdfSpecType specType, TfToken const &field,
         SdfLayerHandle const &srcLayer, const SdfPath& srcPath, bool fieldInSrc,
@@ -530,8 +531,8 @@ FilterLayer(SdfLayerHandle const &inLayer,
                         copyValueFn,
                         std::bind(SdfShouldCopyChildren,
                                   std::cref(path), std::cref(path),
-                                  std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5,
-                                  std::placeholders::_6, std::placeholders::_7, std::placeholders::_8, std::placeholders::_9));
+                                  ph::_1, ph::_2, ph::_3, ph::_4, ph::_5,
+                                  ph::_6, ph::_7, ph::_8, ph::_9));
         }
     }
 }
@@ -552,7 +553,7 @@ Validate(SdfLayerHandle const &layer, ReportParams const &p,
                             path.GetText(), layer->GetIdentifier().c_str());
                         paths.push_back(path);
                     });
-    std::sort(paths.begin(), paths.end());
+    sort(paths.begin(), paths.end());
     for (auto const &path: paths) {
         TF_DESCRIBE_SCOPE("Collecting fields for <%s> in @%s@",
                      path.GetText(), layer->GetIdentifier().c_str());
@@ -647,7 +648,7 @@ void Process(SdfLayerHandle layer, ReportParams const &p)
             GetReportByField(layer, p, report);
         }
         TfStringPrintf("@%s@\n", layer->GetIdentifier().c_str());
-        for (string const &line: report) {
+        for (std::string const &line: report) {
             output.Write(line);
             output.Write("\n");
         }
@@ -696,6 +697,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 int
 main(int argc, char const *argv[])
 {
+    namespace po = boost::program_options;
     PXR_NAMESPACE_USING_DIRECTIVE
 
     progName = TfGetBaseName(argv[0]);
@@ -713,40 +715,40 @@ main(int argc, char const *argv[])
     int64_t timeSamplesSizeLimit = -2;
     bool noValues = false;
 
-    boost::program_options::options_description argOpts("Options");
+    po::options_description argOpts("Options");
     argOpts.add_options()
         ("help,h", "Show help message.")
-        ("path,p", boost::program_options::value<std::string>(&pathRegex)->value_name("regex"),
+        ("path,p", po::value<std::string>(&pathRegex)->value_name("regex"),
          "Report only paths matching this regex.  For 'layer' and "
          "'pseudoLayer' output types, include all descendants of matching "
          "paths.")
-        ("field,f", boost::program_options::value<std::string>(&fieldRegex)->value_name("regex"),
+        ("field,f", po::value<std::string>(&fieldRegex)->value_name("regex"),
          "Report only fields matching this regex.")
-        ("time,t", boost::program_options::value<std::vector<std::string>>(&timeSpecs)->
+        ("time,t", po::value<std::vector<std::string>>(&timeSpecs)->
          multitoken()->value_name("n or ff..lf"),
          "Report only these times or time ranges for 'timeSamples' fields.")
-        ("timeTolerance", boost::program_options::value<double>(&timeTolerance)->
+        ("timeTolerance", po::value<double>(&timeTolerance)->
          default_value(timeTolerance)->value_name("tol"),
          "Report times that are close to those requested within this "
          "relative tolerance.")
-        ("arraySizeLimit", boost::program_options::value<int64_t>(&arraySizeLimit)->value_name("N"),
+        ("arraySizeLimit", po::value<int64_t>(&arraySizeLimit)->value_name("N"),
          "Truncate arrays with more than this many elements.  If -1, do not "
          "truncate arrays.  Default: 0 for 'outline' output, 8 for "
          "'pseudoLayer' output, and -1 for 'layer' output.")
         ("timeSamplesSizeLimit",
-         boost::program_options::value<int64_t>(&timeSamplesSizeLimit)->value_name("N"),
+         po::value<int64_t>(&timeSamplesSizeLimit)->value_name("N"),
          "Truncate timeSamples with more than this many values.  If -1, do not "
          "truncate timeSamples.  Default: 0 for 'outline' output, 8 for "
          "'pseudoLayer' output, and -1 for 'layer' output.  Truncation "
          "performed after initial filtering by --time arguments.")
         ("out,o",
-         boost::program_options::value<std::string>(&outputFile)->default_value(std::string())->
+         po::value<std::string>(&outputFile)->default_value(std::string())->
          value_name("outputFile"),
          "Direct output to this file.  Use the "
          "'outputFormat' for finer control over the underlying format for "
          "output formats that are not uniquely determined by file extension.")
         ("outputType",
-         boost::program_options::value<OutputType>(&outputType)->default_value(outputType)->
+         po::value<OutputType>(&outputType)->default_value(outputType)->
          value_name("validity|summary|outline|pseudoLayer|layer"),
          "Specify output format; 'summary' reports overall statistics, "
          "'outline' is a flat text report of paths and fields, "
@@ -755,33 +757,33 @@ main(int argc, char const *argv[])
          "true layer output, with the format controlled by the 'outputFile' "
          "and 'outputFormat' arguments.")
         ("outputFormat",
-         boost::program_options::value<std::string>(&outputFormat)->value_name("format"),
+         po::value<std::string>(&outputFormat)->value_name("format"),
          "Supply this as the 'format' entry of SdfFileFormatArguments for "
          "'layer' output to a file.  Requires both 'layer' output and a "
          "specified 'outputFile'.")
-        ("sortBy", boost::program_options::value<SortKey>(&sortKey)->default_value(sortKey)->
+        ("sortBy", po::value<SortKey>(&sortKey)->default_value(sortKey)->
          value_name("path|field"),
          "Group 'outline' output by either path or field.  Ignored for other "
          "output types.")
-        ("noValues", boost::program_options::bool_switch(&noValues),
+        ("noValues", po::bool_switch(&noValues),
          "Do not report field values for 'outline' output.  Ignored for other "
          "output types.")
         ;
 
-    boost::program_options::options_description inputFile("Input");
+    po::options_description inputFile("Input");
     inputFile.add_options()
-        ("input-file", boost::program_options::value<std::vector<std::string>>(&inputFiles), "input files");
+        ("input-file", po::value<std::vector<std::string>>(&inputFiles), "input files");
 
-    boost::program_options::options_description allOpts;
+    po::options_description allOpts;
     allOpts.add(argOpts).add(inputFile);
 
-    boost::program_options::variables_map vm;
+    po::variables_map vm;
     try {
-        boost::program_options::positional_options_description p;
+        po::positional_options_description p;
         p.add("input-file", -1);
-        boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
+        po::store(po::command_line_parser(argc, argv).
                   options(allOpts).positional(p).run(), vm);
-        boost::program_options::notify(vm);
+        po::notify(vm);
         ParseTimes(timeSpecs, &literalTimes, &timeRanges);
     } catch (std::exception const &e) {
         ErrExit("%s", e.what());

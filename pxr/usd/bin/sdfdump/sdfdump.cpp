@@ -88,12 +88,13 @@ std::ostream &operator<<(std::ostream &os, SortKey const &sk) { return os << sk.
 
 // boost::program_options calls validate() for custom argument types.
 void validate(boost::any& v, const std::vector<std::string> &values, SortKey*, int) {
-    boost::program_options::validators::check_first_occurrence(v);
-    std::string const &s = boost::program_options::validators::get_single_string(values);
+    using namespace boost::program_options;
+    validators::check_first_occurrence(v);
+    std::string const &s = validators::get_single_string(values);
     if (s == "path" || s == "field") {
         v = SortKey(s);
     } else {
-        throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
+        throw validation_error(validation_error::invalid_option_value);
     }
 }
 
@@ -123,11 +124,11 @@ ParseTimes(std::vector<std::string> const &timeSpecs,
                 TfStringPrintf("invalid time syntax '%s'", spec.c_str()));
         }
     }
-    std::sort(literalTimes->begin(), literalTimes->end());
-    literalTimes->erase(std::unique(literalTimes->begin(), literalTimes->end()),
+    sort(literalTimes->begin(), literalTimes->end());
+    literalTimes->erase(unique(literalTimes->begin(), literalTimes->end()),
                         literalTimes->end());
-    std::sort(timeRanges->begin(), timeRanges->end());
-    timeRanges->erase(std::unique(timeRanges->begin(), timeRanges->end()),
+    sort(timeRanges->begin(), timeRanges->end());
+    timeRanges->erase(unique(timeRanges->begin(), timeRanges->end()),
                       timeRanges->end());
 }
 
@@ -186,7 +187,7 @@ CollectFields(SdfLayerHandle const &layer, SdfPath const &path,
               ReportParams const &p)
 {
     std::vector<TfToken> fields = layer->ListFields(path);
-    fields.erase(std::remove_if(fields.begin(), fields.end(),
+    fields.erase(remove_if(fields.begin(), fields.end(),
                            [&p](TfToken const &f) {
                                return !p.fieldMatcher->Match(f.GetString());
                            }),
@@ -222,7 +223,7 @@ GetTimeSamplesValueString(SdfLayerHandle const &layer,
     else {
         for (auto time: times) {
             // Check literalTimes.
-            auto rng = std::equal_range(
+            auto rng = equal_range(
                 p.literalTimes.begin(), p.literalTimes.end(), time,
                 [&p](double a, double b)  {
                     return IsClose(a, b, p.timeTolerance) ? false : a < b;
@@ -275,7 +276,7 @@ GetReportByPath(SdfLayerHandle const &layer, ReportParams const &p,
                 std::vector<std::string> &report)
 {
     std::vector<SdfPath> paths = CollectPaths(layer, p);
-    std::sort(paths.begin(), paths.end());
+    sort(paths.begin(), paths.end());
     for (auto const &path: paths) {
         SdfSpecType specType = layer->GetSpecType(path);
         report.push_back(
@@ -307,7 +308,7 @@ GetReportByField(SdfLayerHandle const &layer, ReportParams const &p,
     std::vector<SdfPath> paths = CollectPaths(layer, p);
     std::unordered_map<std::string, std::vector<std::string>> pathsByFieldString;
     std::unordered_set<std::string> allFieldStrings;
-    std::sort(paths.begin(), paths.end());
+    sort(paths.begin(), paths.end());
     for (auto const &path: paths) {
         std::vector<TfToken> fields = CollectFields(layer, path, p);
         if (fields.empty())
@@ -327,7 +328,7 @@ GetReportByField(SdfLayerHandle const &layer, ReportParams const &p,
         }
     }
     std::vector<std::string> fsvec(allFieldStrings.begin(), allFieldStrings.end());
-    std::sort(fsvec.begin(), fsvec.end());
+    sort(fsvec.begin(), fsvec.end());
 
     for (auto const &fs: fsvec) {
         report.push_back(fs);
@@ -352,7 +353,7 @@ Validate(SdfLayerHandle const &layer, ReportParams const &p,
                             path.GetText(), layer->GetIdentifier().c_str());
                         paths.push_back(path);
                     });
-    std::sort(paths.begin(), paths.end());
+    sort(paths.begin(), paths.end());
     for (auto const &path: paths) {
         TF_DESCRIBE_SCOPE("Collecting fields for <%s> in @%s@",
                      path.GetText(), layer->GetIdentifier().c_str());
@@ -420,6 +421,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 int
 main(int argc, char const *argv[])
 {
+    namespace po = boost::program_options;
     PXR_NAMESPACE_USING_DIRECTIVE
 
     progName = TfGetBaseName(argv[0]);
@@ -433,47 +435,47 @@ main(int argc, char const *argv[])
     std::vector<std::pair<double, double>> timeRanges;
     double timeTolerance = 1.25e-4; // ugh -- chosen to print well in help.
 
-    boost::program_options::options_description argOpts("Options");
+    po::options_description argOpts("Options");
     argOpts.add_options()
         ("help,h", "Show help message.")
-        ("summary,s", boost::program_options::bool_switch(&showSummary),
+        ("summary,s", po::bool_switch(&showSummary),
          "Report a high-level summary.")
-        ("validate", boost::program_options::bool_switch(&validate),
+        ("validate", po::bool_switch(&validate),
          "Check validity by trying to read all data values.")
-        ("path,p", boost::program_options::value<std::string>(&pathRegex)->value_name("regex"),
+        ("path,p", po::value<std::string>(&pathRegex)->value_name("regex"),
          "Report only paths matching this regex.")
-        ("field,f", boost::program_options::value<std::string>(&fieldRegex)->value_name("regex"),
+        ("field,f", po::value<std::string>(&fieldRegex)->value_name("regex"),
          "Report only fields matching this regex.")
-        ("time,t", boost::program_options::value<std::vector<std::string>>(&timeSpecs)->
+        ("time,t", po::value<std::vector<std::string>>(&timeSpecs)->
          multitoken()->value_name("n or ff..lf"),
          "Report only these times or time ranges for 'timeSamples' fields.")
-        ("timeTolerance", boost::program_options::value<double>(&timeTolerance)->
+        ("timeTolerance", po::value<double>(&timeTolerance)->
          default_value(timeTolerance)->value_name("tol"),
          "Report times that are close to those requested within this "
          "relative tolerance.")
-        ("sortBy", boost::program_options::value<SortKey>(&sortKey)->default_value(sortKey)->
+        ("sortBy", po::value<SortKey>(&sortKey)->default_value(sortKey)->
          value_name("path|field"),
          "Group output by either path or field.")
-        ("noValues", boost::program_options::bool_switch(&noValues),
+        ("noValues", po::bool_switch(&noValues),
          "Do not report field values.")
-        ("fullArrays", boost::program_options::bool_switch(&fullArrays),
+        ("fullArrays", po::bool_switch(&fullArrays),
          "Report full array contents rather than number of elements.")
         ;
 
-    boost::program_options::options_description inputFile("Input");
+    po::options_description inputFile("Input");
     inputFile.add_options()
-        ("input-file", boost::program_options::value<std::vector<std::string>>(&inputFiles), "input files");
+        ("input-file", po::value<std::vector<std::string>>(&inputFiles), "input files");
 
-    boost::program_options::options_description allOpts;
+    po::options_description allOpts;
     allOpts.add(argOpts).add(inputFile);
 
-    boost::program_options::variables_map vm;
+    po::variables_map vm;
     try {
-        boost::program_options::positional_options_description p;
+        po::positional_options_description p;
         p.add("input-file", -1);
-        boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
+        po::store(po::command_line_parser(argc, argv).
                   options(allOpts).positional(p).run(), vm);
-        boost::program_options::notify(vm);
+        po::notify(vm);
         ParseTimes(timeSpecs, &literalTimes, &timeRanges);
     } catch (std::exception const &e) {
         ErrExit("%s", e.what());

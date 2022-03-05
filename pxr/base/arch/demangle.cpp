@@ -101,17 +101,17 @@ _FixupStringNames(std::string* name)
 
 #if defined(ARCH_OS_WINDOWS)
     pos = 0;
-    while ((pos = name->find("class ", pos)) != string::npos) {
+    while ((pos = name->find("class ", pos)) != std::string::npos) {
         name->erase(pos, 6);
     }
 
     pos = 0;
-    while ((pos = name->find("struct ", pos)) != string::npos) {
+    while ((pos = name->find("struct ", pos)) != std::string::npos) {
         name->erase(pos, 7);
     }
 
     pos = 0;
-    while ((pos = name->find("enum ", pos)) != string::npos) {
+    while ((pos = name->find("enum ", pos)) != std::string::npos) {
         name->erase(pos, 5);
     }
 #endif
@@ -221,7 +221,7 @@ bool
 ArchDemangle(std::string* mangledTypeName)
 {
 #if defined(_PARANOID_CHECK_MODE)
-    string copy = *mangledTypeName;
+    std::string copy = *mangledTypeName;
     if (_DemangleNew(mangledTypeName)) {
         if (_DemangleOld(&copy) && copy != *mangledTypeName) {
             fprintf(stderr, "ArchDemangle: disagreement between old and new\n"
@@ -260,14 +260,14 @@ Arch_DemangleFunctionName(std::string* mangledFunctionName)
 
 #elif defined(ARCH_OS_WINDOWS)
 
-static string*
+static std::string*
 _NewDemangledStringTypeName()
 {
-    return new string(typeid(string).name());
+    return new std::string(typeid(std::string).name());
 }
 
 bool
-ArchDemangle(string* mangledTypeName)
+ArchDemangle(std::string* mangledTypeName)
 {
     _FixupStringNames(mangledTypeName);
     #if PXR_USE_NAMESPACES
@@ -277,7 +277,7 @@ ArchDemangle(string* mangledTypeName)
 }
 
 void
-Arch_DemangleFunctionName(string* mangledFunctionName)
+Arch_DemangleFunctionName(std::string* mangledFunctionName)
 {
     ArchDemangle(mangledFunctionName);
 }

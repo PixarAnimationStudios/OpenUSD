@@ -945,7 +945,7 @@ struct UsdImagingInstanceAdapter::_IsInstanceTransformVaryingFn
 
     // We keep a simple cache directly on _IsInstanceTransformVaryingFn because
     // we only need it during initialization and resyncs (not in UpdateForTime).
-    boost::unordered::unordered_map<UsdPrim, bool, boost::hash<UsdPrim>> cache;
+    boost::unordered_map<UsdPrim, bool, boost::hash<UsdPrim>> cache;
 };
 
 bool 
@@ -2307,7 +2307,7 @@ struct UsdImagingInstanceAdapter::_ComputeInstanceMapVariabilityFn
     // We keep a simple cache of visibility varying states directly on
     // _ComputeInstanceMapVariabilityFn because we only need it for the
     // variability calculation and during resyncs.
-    boost::unordered::unordered_map<UsdPrim, bool, boost::hash<UsdPrim>> varyingCache;
+    boost::unordered_map<UsdPrim, bool, boost::hash<UsdPrim>> varyingCache;
     const UsdImagingInstanceAdapter* adapter;
     std::vector<_InstancerData::Visibility>* visibility;
 };

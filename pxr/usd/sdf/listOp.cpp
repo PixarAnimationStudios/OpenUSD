@@ -861,8 +861,8 @@ SDF_INSTANTIATE_LIST_OP(SdfReference);
 SDF_INSTANTIATE_LIST_OP(SdfPayload);
 
 template
-SDF_API void SdfApplyListOrdering(std::vector<string>* v, 
-                          const std::vector<string>& order);
+SDF_API void SdfApplyListOrdering(std::vector<std::string>* v, 
+                          const std::vector<std::string>& order);
 template
 SDF_API void SdfApplyListOrdering(std::vector<TfToken>* v, 
                           const std::vector<TfToken>& order);

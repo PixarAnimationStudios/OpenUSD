@@ -160,7 +160,7 @@ Hio_StbImage::_GetFilenameExtension()
 {
     std::string fileExtension = ArGetResolver().GetExtension(_filename);
     //convert to lowercase
-    std::transform(fileExtension.begin(), 
+    transform(fileExtension.begin(), 
               fileExtension.end(), 
               fileExtension.begin(), ::tolower);
     return fileExtension;
@@ -328,12 +328,12 @@ Hio_StbImage::IsColorSpaceSRGB() const
     const float gamma_epsilon = 0.1f;
 
     // If we found gamma in the texture, use it to decide if we are sRGB
-    bool isSRGB = ( std::fabs(_gamma-0.45455f) < gamma_epsilon);
+    bool isSRGB = ( fabs(_gamma-0.45455f) < gamma_epsilon);
     if (isSRGB) {
         return true;
     }
 
-    bool isLinear = ( std::fabs(_gamma-1) < gamma_epsilon);
+    bool isLinear = ( fabs(_gamma-1) < gamma_epsilon);
     if (isLinear) {
         return false;
     }

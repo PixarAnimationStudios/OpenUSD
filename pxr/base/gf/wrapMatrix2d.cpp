@@ -67,7 +67,7 @@ getreadbuf(PyObject *self, Py_ssize_t segment, void **ptrptr) {
         PyErr_SetString(PyExc_ValueError, "accessed non-existent segment");
         return -1;
     }
-    GfMatrix2d &mat = extract<GfMatrix2d &>(self);
+    GfMatrix2d &mat = boost::python::extract<GfMatrix2d &>(self);
     *ptrptr = static_cast<void *>(mat.GetArray());
     // Return size in bytes.
     return sizeof(GfMatrix2d);

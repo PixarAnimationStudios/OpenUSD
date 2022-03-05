@@ -1055,7 +1055,7 @@ _GetBitmaskEncodedVisibilityBuffer(VtIntArray invisibleIndices,
                                     SdfPath const& rprimId)
 {
     size_t numBitsPerUInt = std::numeric_limits<uint32_t>::digits; // i.e, 32
-    size_t numUIntsNeeded = std::ceil(numTotalIndices/(float) numBitsPerUInt);
+    size_t numUIntsNeeded = ceil(numTotalIndices/(float) numBitsPerUInt);
     // Initialize all bits to 1 (visible)
     VtArray<uint32_t> visibility(numUIntsNeeded,
                                  std::numeric_limits<uint32_t>::max());

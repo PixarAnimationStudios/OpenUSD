@@ -33,6 +33,7 @@
 #include "pxr/base/gf/matrix3{{ SCL[0] }}.h"
 #include "pxr/base/gf/quat{{ SCL[0] }}.h"
 #include "pxr/base/gf/rotation.h"
+#include <cmath>
 {% endblock customIncludes %}
 
 {% block customConstructors %}
@@ -555,7 +556,7 @@ bool
         if (eigenvalues[i] < eps) {
             (*s)[i] = detSign * eps;
         } else {
-            (*s)[i] = detSign * sqrt(eigenvalues[i]);
+            (*s)[i] = detSign * std::sqrt(eigenvalues[i]);
         }
         sInv._mtx[i][i] = 1.0 / (*s)[i];
     }
@@ -619,14 +620,14 @@ void
 			t = a._mtx[p][q] / h;
 		    } else {
 			double theta = 0.5 * h / a._mtx[p][q];
-			t = 1.0 / (GfAbs(theta) + sqrt(1.0 + theta * theta));
+			t = 1.0 / (GfAbs(theta) + std::sqrt(1.0 + theta * theta));
 			if (theta < 0.0)
 			    t = -t;
 		    }
 
 		    // End of computing tangent of rotation angle
 		    
-		    double c = 1.0 / sqrt(1.0 + t*t);
+		    double c = 1.0 / std::sqrt(1.0 + t*t);
 		    double s = t * c;
 		    double tau = s / (1.0 + c);
 		    h = t * a._mtx[p][q];
@@ -708,7 +709,7 @@ GfQuat{{ SCL[0] }}
     ScalarType  r;
 
     if (_mtx[0][0] + _mtx[1][1] + _mtx[2][2] > _mtx[i][i]) {
-	r = 0.5 * sqrt(_mtx[0][0] + _mtx[1][1] +
+	r = 0.5 * std::sqrt(_mtx[0][0] + _mtx[1][1] +
 		       _mtx[2][2] + _mtx[3][3]);
 	im.Set((_mtx[1][2] - _mtx[2][1]) / (4.0 * r),
 	       (_mtx[2][0] - _mtx[0][2]) / (4.0 * r),
@@ -717,7 +718,7 @@ GfQuat{{ SCL[0] }}
     else {
 	int j = (i + 1) % 3;
 	int k = (i + 2) % 3;
-	ScalarType q = 0.5 * sqrt(_mtx[i][i] - _mtx[j][j] -
+	ScalarType q = 0.5 * std::sqrt(_mtx[i][i] - _mtx[j][j] -
 			      _mtx[k][k] + _mtx[3][3]); 
 
 	im[i] = q;

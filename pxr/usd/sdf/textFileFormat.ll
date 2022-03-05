@@ -40,8 +40,8 @@
 #define isatty(fd) ArchFileIsaTTY(fd)
 #endif
 
-using std::map;
-using std::vector;
+
+
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -1201,7 +1201,7 @@ _LogStackTraceToOutputIterator(OutputIterator oi, size_t maxDepth, bool addEndl)
     _LogStackTraceForPid(logfile);
 
     ifstream inFile(logfile);
-    string line;
+    std::string line;
     size_t currentDepth = 0;
     while(!inFile.eof() && currentDepth < maxDepth) {
         getline(inFile, line);
@@ -1266,7 +1266,7 @@ ArchPrintStackTrace(std::ostream& oss,
 
 #if defined(ARCH_OS_DARWIN)
 
-    _LogStackTraceToOutputIterator(ostream_iterator<string>(oss), numeric_limits<size_t>::max(), true);
+    _LogStackTraceToOutputIterator(ostream_iterator<std::string>(oss), numeric_limits<size_t>::max(), true);
 
 #else
 
@@ -1344,7 +1344,7 @@ ArchGetStackFrames(size_t maxdepth, size_t skip, std::vector<uintptr_t> *frames)
 #elif defined(ARCH_OS_WINDOWS)
 
 void
-ArchGetStackFrames(size_t maxdepth, size_t skip, vector<uintptr_t> *frames)
+ArchGetStackFrames(size_t maxdepth, size_t skip, std::vector<uintptr_t> *frames)
 {
     void* stack[MAX_STACK_DEPTH];
     size_t frameCount = CaptureStackBackTrace(skip, MAX_STACK_DEPTH, stack, NULL);
@@ -1358,7 +1358,7 @@ ArchGetStackFrames(size_t maxdepth, size_t skip, vector<uintptr_t> *frames)
 #elif defined(ARCH_OS_DARWIN)
 
 void
-ArchGetStackFrames(size_t maxdepth, size_t skip, vector<uintptr_t> *frames)
+ArchGetStackFrames(size_t maxdepth, size_t skip, std::vector<uintptr_t> *frames)
 {
     void* stack[MAX_STACK_DEPTH];
     const size_t frameCount =
@@ -1372,7 +1372,7 @@ ArchGetStackFrames(size_t maxdepth, size_t skip, vector<uintptr_t> *frames)
 #else
 
 void
-ArchGetStackFrames(size_t, size_t, vector<uintptr_t> *)
+ArchGetStackFrames(size_t, size_t, std::vector<uintptr_t> *)
 {
 }
 

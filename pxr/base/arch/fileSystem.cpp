@@ -299,11 +299,11 @@ _NormPath(std::string const &inPath)
 } // anon
 
 #if defined(ARCH_OS_WINDOWS)
-string
-ArchNormPath(const string& inPath, bool stripDriveSpecifier)
+std::string
+ArchNormPath(const std::string& inPath, bool stripDriveSpecifier)
 {
     // Convert backslashes to forward slashes.
-    string path = inPath;
+    std::string path = inPath;
     std::replace(path.begin(), path.end(), '\\', '/');
 
     // Extract the drive specifier.  Note that we don't correctly handle
@@ -312,7 +312,7 @@ ArchNormPath(const string& inPath, bool stripDriveSpecifier)
     // Also make sure drive letters are always lower-case out of ArchNormPath
     // on Windows -- this is so that we can be sure we can reliably use the
     // paths as keys in tables, etc.
-    string prefix;
+    std::string prefix;
     if (path.size() >= 2 && path[1] == ':') {
         if (!stripDriveSpecifier) {
             prefix.assign(2, ':');
@@ -477,7 +477,7 @@ ArchGetFileName(FILE *file)
     }
     return result;
 #elif defined (ARCH_OS_DARWIN)
-    string result;
+    std::string result;
     char buf[MAXPATHLEN];
     if (fcntl(fileno(file), F_GETPATH, buf) != -1) {
         result = buf;
@@ -488,7 +488,7 @@ ArchGetFileName(FILE *file)
         sizeof(FILE_NAME_INFO) + sizeof(WCHAR) * 4096;
     HANDLE hfile = _FileToWinHANDLE(file);
     auto fileNameInfo = reinterpret_cast<PFILE_NAME_INFO>(malloc(bufSize));
-    string result;
+    std::string result;
     if (GetFileInformationByHandleEx(
             hfile, FileNameInfo, static_cast<void *>(fileNameInfo), bufSize)) {
         size_t outSize = WideCharToMultiByte(
@@ -1186,20 +1186,20 @@ std::string ArchReadLink(const char* path)
 
             // Convert wide-char to narrow char
             std::wstring ws(reparsePath.get());
-            string str(ws.begin(), ws.end());
+            std::string str(ws.begin(), ws.end());
 
             // Symlinks can be absolute, or relative to the parent directory.
             // Deal with the relative case here by prepending the parent path.
             if ((reparse->SymbolicLinkReparseBuffer.Flags &
                  SYMLINK_FLAG_RELATIVE) == SYMLINK_FLAG_RELATIVE)
             {
-                string fullpath = ArchAbsPath(path);
-                string::size_type i = fullpath.find_last_of("/\\");
-                if (i != string::npos)
+                std::string fullpath = ArchAbsPath(path);
+                std::string::size_type i = fullpath.find_last_of("/\\");
+                if (i != std::string::npos)
                 {
                     // Grab the parent directory path, including the trailing
                     // slash, and insert it ahead of the relative symlink path.
-                    string dirpath = fullpath.substr(0, i+1);
+                    std::string dirpath = fullpath.substr(0, i+1);
                     str.insert(0, dirpath);
                 }
             }
@@ -1220,7 +1220,7 @@ std::string ArchReadLink(const char* path)
 
             // Convert wide-char to narrow char
             std::wstring ws(reparsePath.get());
-            string str(ws.begin(), ws.end());
+            std::string str(ws.begin(), ws.end());
 
             // Note that junctions do not support the relative path form
             // like SYMLINKS do, so nothing more to do here.

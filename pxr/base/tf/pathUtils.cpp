@@ -145,7 +145,7 @@ TfRealPath(std::string const& path, bool allowInaccessibleSuffix, std::string* e
     // Expand all symbolic links.
     if (!TfPathExists(prefix)) {
         *error = "the named file does not exist";
-        return string();
+        return std::string();
     }
     std::string resolved = _ExpandSymlinks(prefix);
 
@@ -323,19 +323,19 @@ namespace {
 static
 void
 Tf_Glob(
-    vector<string>* result,
+    std::vector<std::string>* result,
     const std::string& prefix,
     const std::string& pattern,
     unsigned int flags)
 {
     // Search for the first wildcard in pattern.
-    const string::size_type i = pattern.find_first_of("*?");
+    const std::string::size_type i = pattern.find_first_of("*?");
 
-    if (i == string::npos) {
+    if (i == std::string::npos) {
         // No more patterns so we simply need to see if the file exists.
         // Conveniently GetFileAttributes() works on paths with a trailing
         // backslash.
-        string path = prefix + pattern;
+        std::string path = prefix + pattern;
             const DWORD attributes =
                 GetFileAttributesW(ArchWindowsUtf8ToUtf16(path).c_str());
         if (attributes != INVALID_FILE_ATTRIBUTES) {
@@ -354,20 +354,20 @@ Tf_Glob(
     else {
         // There are additional patterns to glob.  Find the next directory
         // after the wildcard.
-        string::size_type j = pattern.find_first_of('\\', i);
-        if (j == string::npos) {
+        std::string::size_type j = pattern.find_first_of('\\', i);
+        if (j == std::string::npos) {
             // We've bottomed out on the pattern.
             j = pattern.size();
         }
 
         // Construct the remaining pattern, if any.
-        const string remainingPattern = pattern.substr(j);
+        const std::string remainingPattern = pattern.substr(j);
 
         // Construct the leftmost pattern.
-        const string leftmostPattern = prefix + pattern.substr(0, j);
+        const std::string leftmostPattern = prefix + pattern.substr(0, j);
 
         // Construct the leftmost pattern's directory. 
-        const string leftmostDir = TfGetPathName(leftmostPattern);
+        const std::string leftmostDir = TfGetPathName(leftmostPattern);
 
         // Glob the leftmost pattern.
         WIN32_FIND_DATAW data;
@@ -387,10 +387,10 @@ Tf_Glob(
 
 }
 
-vector<string>
-TfGlob(vector<string> const& paths, unsigned int flags)
+std::vector<std::string>
+TfGlob(std::vector<std::string> const& paths, unsigned int flags)
 {
-    vector<string> result;
+    std::vector<std::string> result;
 
     for (auto path: paths) {
         const size_t n = result.size();

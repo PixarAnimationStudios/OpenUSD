@@ -36,7 +36,6 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -48,33 +47,33 @@ struct Ar_ResolverContextFromPython
 {
     Ar_ResolverContextFromPython() 
     {
-        converter::registry::push_back(
+        boost::python::converter::registry::push_back(
             &_convertible, &_construct,
             boost::python::type_id<ArResolverContext>());
     }
 
     static void* _convertible(PyObject* obj_ptr) 
     {
-        object obj(handle<>(borrowed(obj_ptr)));
+        boost::python::object obj(boost::python::handle<>(boost::python::borrowed(obj_ptr)));
         if (obj.is_none() ||
-            extract<std::vector<ArResolverContext>>(obj).check()) {
+            boost::python::extract<std::vector<ArResolverContext>>(obj).check()) {
             return obj_ptr;
         }
         return 0;
     }
     
     static void _construct(
-        PyObject* obj_ptr, converter::rvalue_from_python_stage1_data *data) 
+        PyObject* obj_ptr, boost::python::converter::rvalue_from_python_stage1_data *data) 
     {
-        void *storage = ((converter::rvalue_from_python_storage<ArResolverContext>*)data)
+        void *storage = ((boost::python::converter::rvalue_from_python_storage<ArResolverContext>*)data)
             ->storage.bytes;
 
         ArResolverContext context;
 
-        object obj(handle<>(borrowed(obj_ptr)));
+        boost::python::object obj(boost::python::handle<>(boost::python::borrowed(obj_ptr)));
         if (!obj.is_none()) {
             context = ArResolverContext(
-                extract<std::vector<ArResolverContext>>(obj)());
+                boost::python::extract<std::vector<ArResolverContext>>(obj)());
         }
 
         new (storage) ArResolverContext(context);
@@ -115,7 +114,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 static ArResolverContext*
 _Create(const boost::python::object& obj)
 {
-    extract<ArResolverContext> convertToContext(obj);
+    boost::python::extract<ArResolverContext> convertToContext(obj);
     return new ArResolverContext(convertToContext());
 }
 
@@ -136,18 +135,18 @@ wrapResolverContext()
 {
     Ar_ResolverContextFromPython();
 
-    class_<ArResolverContext>
-        ("ResolverContext", no_init)
-        .def(init<>())
-        .def("__init__", make_constructor(&_Create))
+    boost::python::class_<ArResolverContext>
+        ("ResolverContext", boost::python::no_init)
+        .def(boost::python::init<>())
+        .def("__init__", boost::python::make_constructor(&_Create))
 
         .def("IsEmpty", &ArResolverContext::IsEmpty)
         .def("Get", &Ar_ResolverContextPythonAccess::GetAsList)
         .def("GetDebugString", &ArResolverContext::GetDebugString)
 
-        .def(self == self)
-        .def(self != self)
-        .def(self < self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self < boost::python::self)
 
         .def("__hash__", &_Hash)
         .def("__repr__", &Ar_ResolverContextPythonAccess::GetRepr)
@@ -159,5 +158,5 @@ wrapResolverContext()
 
     // Helper function for unit tests to exercise implicit conversion of
     // context objects into an ArResolverContext.
-    def("_TestImplicitConversion", &_TestImplicitConversion);
+    boost::python::def("_TestImplicitConversion", &_TestImplicitConversion);
 }

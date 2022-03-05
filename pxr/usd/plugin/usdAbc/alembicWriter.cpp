@@ -961,7 +961,7 @@ private:
         UsdSamples result = _ExtractSamples(name);
         if (!result.IsEmpty() && !types.empty()) {
             SdfValueTypeName resultTypeName = result.GetTypeName();
-            if (std::find(types.begin(), types.end(), resultTypeName) ==
+            if (find(types.begin(), types.end(), resultTypeName) ==
                 types.end())
             {
                 TF_WARN("Property '%s' did not have expected type (got '%s')",

@@ -192,14 +192,12 @@ static std::string _GetTypeName(PyObject *obj) {
 
 #include <map>
 #include <utility>
-using std::map;
-using std::make_pair;
 
-TfStaticData<map<void const *, string> > _establishedIdentityStacks;
+TfStaticData<std::map<void const *, std::string> > _establishedIdentityStacks;
 
 static void _RecordEstablishedIdentityStack(void const *key)
 {
-    _establishedIdentityStacks->insert(make_pair(key, TfGetStackTrace()));
+    _establishedIdentityStacks->insert(std::make_pair(key, TfGetStackTrace()));
 }
 
 static void _EraseEstablishedIdentityStack(void const *key)

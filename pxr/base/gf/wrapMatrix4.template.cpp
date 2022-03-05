@@ -37,14 +37,14 @@
 {% endblock customIncludes %}
 
 {% block customFunctions %}
-static tuple FactorWithEpsilon({{ MAT }} &self, double eps) {
+static boost::python::tuple FactorWithEpsilon({{ MAT }} &self, double eps) {
     {{ MAT }} r, u, p;
     GfVec3{{ SCL[0] }} s, t;
     bool result = self.Factor(&r, &s, &u, &t, &p, eps);
     return boost::python::make_tuple(result, r, s, u, t, p);
 }    
 
-static tuple Factor({{ MAT }} &self) {
+static boost::python::tuple Factor({{ MAT }} &self) {
     {{ MAT }} r, u, p;
     GfVec3{{ SCL[0] }} s, t;
     bool result = self.Factor(&r, &s, &u, &t, &p);
@@ -57,16 +57,16 @@ static {{ MAT }} RemoveScaleShearWrapper( const {{ MAT }} &self ) {
 {% endblock customFunctions %}
 
 {% block customInit %}
-        .def(init< const vector<float>&,
-                   const vector<float>&,
-                   const vector<float>&,
-                   const vector<float>& >())
-        .def(init< const vector<double>&,
-                   const vector<double>&,
-                   const vector<double>&,
-                   const vector<double>& >())
-        .def(init< const GfMatrix3{{ SCL[0] }} &, const GfVec3{{ SCL[0] }} >())
-        .def(init< const GfRotation &, const GfVec3{{ SCL[0] }} >())
+        .def(boost::python::init< const std::vector<float>&,
+                   const std::vector<float>&,
+                   const std::vector<float>&,
+                   const std::vector<float>& >())
+        .def(boost::python::init< const std::vector<double>&,
+                   const std::vector<double>&,
+                   const std::vector<double>&,
+                   const std::vector<double>& >())
+        .def(boost::python::init< const GfMatrix3{{ SCL[0] }} &, const GfVec3{{ SCL[0] }} >())
+        .def(boost::python::init< const GfRotation &, const GfVec3{{ SCL[0] }} >())
 {% endblock customInit %}
 
 {% block customDefs %}
@@ -80,57 +80,57 @@ static {{ MAT }} RemoveScaleShearWrapper( const {{ MAT }} &self ) {
         .def("IsRightHanded", &This::IsRightHanded)
 
         .def("Orthonormalize", &This::Orthonormalize,
-             (arg("issueWarning") = true))
+             (boost::python::arg("issueWarning") = true))
         .def("GetOrthonormalized", &This::GetOrthonormalized,
-             (arg("issueWarning") = true))
+             (boost::python::arg("issueWarning") = true))
 {% endblock customDefs %}
 
 {% block customXformDefs %}
         .def("SetTransform",
 	     (This & (This::*)( const GfRotation &,
 				const GfVec3{{ SCL[0] }} & ))&This::SetTransform,
-	     return_self<>())	
+	     boost::python::return_self<>())	
         .def("SetTransform",
 	     (This & (This::*)( const GfMatrix3{{ SCL[0] }}&,
 				const GfVec3{{ SCL[0] }} & ))&This::SetTransform,
-	     return_self<>())
+	     boost::python::return_self<>())
 
         .def("SetScale", (This & (This::*)( const GfVec3{{ SCL[0] }}& ))&This::SetScale,
-	     return_self<>())
+	     boost::python::return_self<>())
 
-        .def("SetTranslate", &This::SetTranslate, return_self<>())
-        .def("SetTranslateOnly", &This::SetTranslateOnly, return_self<>())
+        .def("SetTranslate", &This::SetTranslate, boost::python::return_self<>())
+        .def("SetTranslateOnly", &This::SetTranslateOnly, boost::python::return_self<>())
 
         .def("SetRotate",
 	     (This & (This::*)( const GfQuat{{ SCL[0] }} & )) &This::SetRotate,
-	     return_self<>())
+	     boost::python::return_self<>())
         .def("SetRotateOnly",
 	     (This & (This::*)( const GfQuat{{ SCL[0] }} & )) &This::SetRotateOnly,
-	     return_self<>())
+	     boost::python::return_self<>())
 
         .def("SetRotate",
 	     (This & (This::*)( const GfRotation & )) &This::SetRotate,
-	     return_self<>())
+	     boost::python::return_self<>())
         .def("SetRotateOnly",
 	     (This & (This::*)( const GfRotation & )) &This::SetRotateOnly,
-	     return_self<>())
+	     boost::python::return_self<>())
 
         .def("SetRotate",
 	     (This & (This::*)( const GfMatrix3{{ SCL[0] }}& )) &This::SetRotate,
-	     return_self<>())
+	     boost::python::return_self<>())
         .def("SetRotateOnly",
 	     (This & (This::*)( const GfMatrix3{{ SCL[0] }}& )) &This::SetRotateOnly,
-	     return_self<>())
+	     boost::python::return_self<>())
 
         .def("SetLookAt", (This & (This::*)( const GfVec3{{ SCL[0] }} &,
                                              const GfVec3{{ SCL[0] }} &,
                                              const GfVec3{{ SCL[0] }} & ))&This::SetLookAt,
-	     return_self<>())
+	     boost::python::return_self<>())
 
         .def("SetLookAt",
              (This & (This::*)( const GfVec3{{ SCL[0] }} &,
                                 const GfRotation & ))&This::SetLookAt,
-             return_self<>())
+             boost::python::return_self<>())
 
         .def("ExtractTranslation", &This::ExtractTranslation)
         .def("ExtractRotation", &This::ExtractRotation)
@@ -156,6 +156,6 @@ static {{ MAT }} RemoveScaleShearWrapper( const {{ MAT }} &self ) {
         .def("TransformAffine",
 	     (GfVec3d (This::*)(const GfVec3d &) const)&This::TransformAffine)
         .def("SetScale", (This & (This::*)( {{ SCL }} ))&This::SetScale,
-	     return_self<>())
+	     boost::python::return_self<>())
 
 {% endblock customXformDefs %}

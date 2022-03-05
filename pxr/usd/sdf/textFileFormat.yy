@@ -69,7 +69,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 using Sdf_ParserHelpers::Value;
-using boost::get;
+
 
 //--------------------------------------------------------------------
 // Helper macros/functions for handling errors

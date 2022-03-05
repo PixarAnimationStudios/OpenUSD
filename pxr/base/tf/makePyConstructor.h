@@ -449,13 +449,13 @@ struct InitCtor<SIGNATURE> : CtorBase<SIGNATURE> {
     InitCtor(Sig *func) { Base::SetFunc(func); }
 
     template <typename CLS>
-    static bp::object init_callable() {
-        return bp::make_function(__init__<CLS>);
+    static boost::python::object init_callable() {
+        return boost::python::make_function(__init__<CLS>);
     }
 
     template <typename CLS, typename Options>
-    static bp::object init_callable(Options& o) {
-        return bp::make_function(__init__<CLS>, o.policies(), o.keywords()) ;
+    static boost::python::object init_callable(Options& o) {
+        return boost::python::make_function(__init__<CLS>, o.policies(), o.keywords()) ;
     }
 
     template <typename CLS>
@@ -472,21 +472,21 @@ struct NewCtor<SIGNATURE> : CtorBase<SIGNATURE> {
     NewCtor(Sig *func) { Base::SetFunc(func); }
 
     template <class CLS>
-    static bp::object __new__(object &cls PARAMLIST) {
+    static boost::python::object __new__(object &cls PARAMLIST) {
         typedef typename CLS::metadata::held_type HeldType;
         TfErrorMark m;
         R r((Base::_func(ARGLIST)));
         HeldType h((r));
         if (TfPyConvertTfErrorsToPythonException(m))
-            bp::throw_error_already_set();
-        bp::object ret = TfPyObject(h);
+            boost::python::throw_error_already_set();
+        boost::python::object ret = TfPyObject(h);
         if (TfPyIsNone(ret))
             TfPyThrowRuntimeError("could not construct " +
                                   ArchGetDemangled(typeid(HeldType)));
 
-        bp::detail::initialize_wrapper(ret.ptr(), get_pointer(h));
+        boost::python::detail::initialize_wrapper(ret.ptr(), get_pointer(h));
         // make the object have the right class.
-        bp::setattr(ret, "__class__", cls);
+        boost::python::setattr(ret, "__class__", cls);
 
         InstallPolicy<R>::PostInstall(ret, r, h.GetUniqueIdentifier());
         return ret;
@@ -495,15 +495,15 @@ struct NewCtor<SIGNATURE> : CtorBase<SIGNATURE> {
 
 #define VAR_SIGNATURE                                   \
     R (BOOST_PP_ENUM_PARAMS(N, A) BOOST_PP_COMMA_IF(N)  \
-       const bp::tuple&, const bp::dict&)
+       const boost::python::tuple&, const boost::python::dict&)
 
 #define FORMAT_STR(z, n, data) "%s, "
-#define ARG_TYPE_STR_A(z, n, data) bp::type_id<A##n>().name()
+#define ARG_TYPE_STR_A(z, n, data) boost::python::type_id<A##n>().name()
 
 #define EXTRACT_REQ_ARG_A(z, n, data)                                     \
     /* The n'th required arg is stored at n + 1 in the positional args */ \
     /* tuple as the 0'th element is always the self object */             \
-    bp::extract<typename boost::remove_reference<A##n>::type>(data[n + 1])
+    boost::python::extract<typename boost::remove_reference<A##n>::type>(data[n + 1])
 
 template <typename R BOOST_PP_ENUM_TRAILING_PARAMS(N, typename A)>
 struct InitCtorWithVarArgs<VAR_SIGNATURE> : CtorBase<VAR_SIGNATURE> {
@@ -512,27 +512,27 @@ struct InitCtorWithVarArgs<VAR_SIGNATURE> : CtorBase<VAR_SIGNATURE> {
     InitCtorWithVarArgs(Sig *func) { Base::SetFunc(func); }
 
     template <typename CLS>
-    static bp::object init_callable() {
+    static boost::python::object init_callable() {
         // Specify min_args as 1 to account for just the 'self' argument.
         // min_args really should be N + 1. However, we want to do this check
         // ourselves later so we can emit a better error message.
-        return bp::raw_function(__init__<CLS>, /* min_args = */ 1);
+        return boost::python::raw_function(__init__<CLS>, /* min_args = */ 1);
     }
 
     template <typename CLS, typename Options>
-    static bp::object init_callable(Options& options) {
+    static boost::python::object init_callable(Options& options) {
         // XXX: Note ignoring options.keywords(), current implementation can't
         //      handle that correctly.
-        return bp::raw_function(
-            bp::make_function(__init__<CLS>, options.policies()),
+        return boost::python::raw_function(
+            boost::python::make_function(__init__<CLS>, options.policies()),
             /* min_args = */ 1);
     }
 
     template <typename CLS>
-    static bp::object __init__(const bp::tuple& args, const bp::dict& kwargs) {
+    static boost::python::object __init__(const boost::python::tuple& args, const boost::python::dict& kwargs) {
         TfErrorMark m;
 
-        const unsigned int numArgs = bp::len(args);
+        const unsigned int numArgs = boost::python::len(args);
         if (numArgs - 1 < N) {
             // User didn't provide enough positional arguments for the factory
             // function. Complain.
@@ -543,7 +543,7 @@ struct InitCtorWithVarArgs<VAR_SIGNATURE> : CtorBase<VAR_SIGNATURE> {
                     BOOST_PP_COMMA_IF(N) BOOST_PP_ENUM(N, ARG_TYPE_STR_A, 0)
                 )
             );
-            return bp::object();
+            return boost::python::object();
         }
 
         Install<CLS>(
@@ -554,10 +554,10 @@ struct InitCtorWithVarArgs<VAR_SIGNATURE> : CtorBase<VAR_SIGNATURE> {
             // those are the required arguments for the factory function.
             Base::_func(
                 BOOST_PP_ENUM(N, EXTRACT_REQ_ARG_A, args) BOOST_PP_COMMA_IF(N)
-                bp::tuple(args.slice(N + 1, numArgs)), kwargs),
+                boost::python::tuple(args.slice(N + 1, numArgs)), kwargs),
             m);
 
-        return bp::object();
+        return boost::python::object();
     }
 
 };
@@ -579,13 +579,13 @@ struct InitCtorWithBackReference<SIGNATURE> : CtorBase<SIGNATURE> {
     InitCtorWithBackReference(Sig *func) { Base::SetFunc(func); }
 
     template <typename CLS>
-    static bp::object init_callable() {
-        return bp::make_function(__init__<CLS>);
+    static boost::python::object init_callable() {
+        return boost::python::make_function(__init__<CLS>);
     }
 
     template <typename CLS, typename Options>
-    static bp::object init_callable(Options& o) {
-        return bp::make_function(__init__<CLS>, o.policies(), o.keywords());
+    static boost::python::object init_callable(Options& o) {
+        return boost::python::make_function(__init__<CLS>, o.policies(), o.keywords());
     }
 
     template <typename CLS>
@@ -602,21 +602,21 @@ struct NewCtorWithClassReference<SIGNATURE> : CtorBase<SIGNATURE> {
     NewCtorWithClassReference(Sig *func) { Base::SetFunc(func); }
 
     template <class CLS>
-    static bp::object __new__(PARAMLIST) {
+    static boost::python::object __new__(PARAMLIST) {
         typedef typename CLS::metadata::held_type HeldType;
         TfErrorMark m;
         R r(Base::_func(ARGLIST));
         HeldType h(r);
         if (TfPyConvertTfErrorsToPythonException(m))
-            bp::throw_error_already_set();
-        bp::object ret = TfPyObject(h);
+            boost::python::throw_error_already_set();
+        boost::python::object ret = TfPyObject(h);
         if (TfPyIsNone(ret))
             TfPyThrowRuntimeError("could not construct " +
                                   ArchGetDemangled(typeid(HeldType)));
 
-        bp::detail::initialize_wrapper(ret.ptr(), get_pointer(h));
+        boost::python::detail::initialize_wrapper(ret.ptr(), get_pointer(h));
         // make the object have the right class.
-        bp::setattr(ret, "__class__", a0);
+        boost::python::setattr(ret, "__class__", a0);
 
         InstallPolicy<R>::PostInstall(ret, r, h.GetUniqueIdentifier());
         return ret;

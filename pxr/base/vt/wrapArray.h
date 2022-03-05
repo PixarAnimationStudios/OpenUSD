@@ -509,14 +509,14 @@ void VtWrapArray()
         VTOPERATOR_WRAPDECLARE(%,__mod__,__rmod__)
 #endif
 #ifdef DOUBLE_MULT_OPERATOR
-        .def(self * double())
-        .def(double() * self)
+        .def(boost::python::self * double())
+        .def(double() * boost::python::self)
 #endif
 #ifdef DOUBLE_DIV_OPERATOR
-        .def(self / double())
+        .def(boost::python::self / double())
 #endif
 #ifdef UNARY_NEG_OPERATOR
-        .def(- self)
+        .def(- boost::python::self)
 #endif
 
         ;

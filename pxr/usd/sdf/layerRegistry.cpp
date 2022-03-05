@@ -181,7 +181,7 @@ Sdf_LayerRegistry::Find(
         ArResolver& resolver = ArGetResolver();
 
 #if AR_VERSION == 1
-        const string layerPath = 
+        const std::string layerPath = 
             resolver.ComputeNormalizedPath(inputLayerPath);
 
         // If the layer path is relative, this may be either a search path

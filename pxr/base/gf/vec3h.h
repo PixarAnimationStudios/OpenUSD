@@ -262,7 +262,7 @@ public:
     /// Length
     GfHalf GetLength() const {
         // TODO should use GfSqrt.
-        return sqrt(GetLengthSq());
+        return std::sqrt(GetLengthSq());
     }
 
     /// Normalizes the vector in place to unit length, returning the

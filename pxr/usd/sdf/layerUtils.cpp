@@ -193,7 +193,7 @@ SdfComputeAssetPathRelativeToLayer(
     // Relative paths are resolved using the look-here-first scheme, in
     // which we first look relative to the layer, then fall back to search
     // path resolution.
-    string finalLayerPath = anchor->ComputeAbsolutePath(assetPath);
+    std::string finalLayerPath = anchor->ComputeAbsolutePath(assetPath);
     if (!SdfLayer::IsAnonymousLayerIdentifier(finalLayerPath)) {
         if (resolver.IsSearchPath(assetPath) &&
             resolver.Resolve(finalLayerPath).empty())

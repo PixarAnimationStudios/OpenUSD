@@ -741,6 +741,7 @@ static yyconst flex_int32_t yy_ec[256] =
 #endif
 
 
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 // As a pure parser, we must define the following

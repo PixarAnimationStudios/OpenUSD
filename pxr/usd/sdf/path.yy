@@ -34,9 +34,9 @@
 #include <utility>
 #include <vector>
 
-using std::pair;
-using std::string;
-using std::vector;
+
+
+
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -36,6 +36,7 @@
 
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/rotation.h"
+#include <cmath>
 #include <float.h>
 #include <ostream>
 

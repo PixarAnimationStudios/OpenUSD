@@ -222,7 +222,7 @@ void Tf_InitializeEnvSetting(TfEnvSetting<T> *setting)
 // Explicitly instantiate for the supported types: bool, int, and string.
 template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<bool> *);
 template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<int> *);
-template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<string> *);
+template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<std::string> *);
 
 TF_API
 boost::variant<int, bool, std::string> const *

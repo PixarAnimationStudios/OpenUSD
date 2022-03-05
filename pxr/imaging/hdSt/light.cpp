@@ -99,7 +99,7 @@ static GfVec3f _BlackbodyTemperatureAsRgb(float temp)
     // to simplify boundary behavior
     constexpr int numSegs = (numKnots-4);
     const float x = u_spline * numSegs;
-    const int seg = int(std::floor(x));
+    const int seg = int(floor(x));
     const float u_seg = x-seg; // Parameter within segment
     // Knot values for this segment
     GfVec3f k0 = _blackbodyRGB[seg+0];

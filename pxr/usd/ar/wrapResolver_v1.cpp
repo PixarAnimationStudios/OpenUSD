@@ -33,7 +33,6 @@
 
 #include <boost/noncopyable.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -42,8 +41,8 @@ wrapResolver()
 {
     typedef ArResolver This;
 
-    class_<This, boost::noncopyable>
-        ("Resolver", no_init)
+    boost::python::class_<This, boost::noncopyable>
+        ("Resolver", boost::python::no_init)
         .def("ConfigureResolverForAsset", &This::ConfigureResolverForAsset)
         .def("CreateDefaultContext", &This::CreateDefaultContext)
         .def("CreateDefaultContextForAsset", 
@@ -58,14 +57,14 @@ wrapResolver()
         .def("RefreshContext", &This::RefreshContext)
         ;
 
-    def("GetResolver", ArGetResolver,
-        return_value_policy<reference_existing_object>());
+    boost::python::def("GetResolver", ArGetResolver,
+        return_value_policy<boost::python::reference_existing_object>());
 
-    def("SetPreferredResolver", ArSetPreferredResolver,
-        arg("resolverTypeName"));
+    boost::python::def("SetPreferredResolver", ArSetPreferredResolver,
+        boost::python::arg("resolverTypeName"));
 
-    def("GetUnderlyingResolver", ArGetUnderlyingResolver,
-        return_value_policy<reference_existing_object>());
+    boost::python::def("GetUnderlyingResolver", ArGetUnderlyingResolver,
+        return_value_policy<boost::python::reference_existing_object>());
 }
 
 TF_REFPTR_CONST_VOLATILE_GET(ArResolver)

@@ -595,8 +595,8 @@ HdUnitTestDelegate::UpdateRprims(float time)
         if (_FindPrimvar(id, HdTokens->displayColor, &pvIt)) {
             if (pvIt->interp == HdInterpolationConstant) {
                 GfVec4f color = pvIt->value.Get<GfVec4f>();
-                color[0] = std::fmod(color[0] + delta, 1.0f);
-                color[1] = std::fmod(color[1] + delta*2, 1.0f);    
+                color[0] = fmod(color[0] + delta, 1.0f);
+                color[1] = fmod(color[1] + delta*2, 1.0f);    
                 pvIt->value = VtValue(color);
             }
         }
@@ -1660,7 +1660,7 @@ HdUnitTestDelegate::AddPoints(
     VtVec3fArray points(numPoints);
     float s = 0, t = 0;
     for (int i = 0; i < numPoints; ++i) {
-        GfVec4f p (std::sin(s)*std::cos(t), std::sin(s)*std::sin(t), std::cos(s), 1);
+        GfVec4f p (sin(s)*cos(t), sin(s)*sin(t), cos(s), 1);
         p = p * transform;
         points[i] = GfVec3f(p[0], p[1], p[2]);;
         s += 0.10;

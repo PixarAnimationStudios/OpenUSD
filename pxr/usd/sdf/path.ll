@@ -38,7 +38,7 @@
 #define isatty(fd) ArchFileIsaTTY(fd)
 #endif
 
-using std::string;
+
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

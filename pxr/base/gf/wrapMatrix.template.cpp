@@ -51,9 +51,6 @@
 #include <string>
 #include <vector>
 
-using namespace boost::python;
-using std::string;
-using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -71,7 +68,7 @@ getreadbuf(PyObject *self, Py_ssize_t segment, void **ptrptr) {
         PyErr_SetString(PyExc_ValueError, "accessed non-existent segment");
         return -1;
     }
-    {{ MAT }} &mat = extract<{{ MAT }} &>(self);
+    {{ MAT }} &mat = boost::python::extract<{{ MAT }} &>(self);
     *ptrptr = static_cast<void *>(mat.GetArray());
     // Return size in bytes.
     return sizeof({{ MAT }});
@@ -115,7 +112,7 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
         return -1;
     }
 
-    {{ MAT }} &mat = extract<{{ MAT }} &>(self);
+    {{ MAT }} &mat = boost::python::extract<{{ MAT }} &>(self);
 
     view->obj = self;
     view->buf = static_cast<void *>(mat.GetArray());
@@ -165,7 +162,7 @@ static PyBufferProcs bufferProcs = {
 // End python buffer protocol support.
 ////////////////////////////////////////////////////////////////////////
 
-static string _Repr({{ MAT }} const &self) {
+static std::string _Repr({{ MAT }} const &self) {
     static char newline[] = ",\n            ";
     return TF_PY_REPR_PREFIX + "Matrix{{ SUFFIX }}(" +
 {% for ROW in range(DIM) %}
@@ -195,11 +192,11 @@ static int __len__({{ MAT }} const &self) {
     return {{ DIM }};
 }
 
-static {{ SCL }} __getitem__{{ SCL }}({{ MAT }} const &self, tuple index) {
+static {{ SCL }} __getitem__{{ SCL }}({{ MAT }} const &self, boost::python::tuple index) {
     int i1=0, i2=0;
-    if (len(index) == 2) {
-        i1 = normalizeIndex(extract<int>(index[0]));
-        i2 = normalizeIndex(extract<int>(index[1]));
+    if (boost::python::len(index) == 2) {
+        i1 = normalizeIndex(boost::python::extract<int>(index[0]));
+        i2 = normalizeIndex(boost::python::extract<int>(index[1]));
     } else
         throwIndexErr("Index has incorrect size.");
 
@@ -210,11 +207,11 @@ static GfVec{{ SUFFIX }} __getitem__vector({{ MAT }} const &self, int index) {
     return GfVec{{ SUFFIX }}(self[normalizeIndex(index)]);
 }
 
-static void __setitem__{{ SCL }}({{ MAT }} &self, tuple index, {{ SCL }} value) {
+static void __setitem__{{ SCL }}({{ MAT }} &self, boost::python::tuple index, {{ SCL }} value) {
     int i1=0, i2=0;
-    if (len(index) == 2) {
-        i1 = normalizeIndex(extract<int>(index[0]));
-        i2 = normalizeIndex(extract<int>(index[1]));
+    if (boost::python::len(index) == 2) {
+        i1 = normalizeIndex(boost::python::extract<int>(index[0]));
+        i2 = normalizeIndex(boost::python::extract<int>(index[1]));
     } else
         throwIndexErr("Index has incorrect size.");
 
@@ -281,7 +278,7 @@ static boost::python::tuple get_dimension()
     // It seems likely that this has to do with the order of
     // destruction of these objects when deinitializing, but we did
     // not dig deeply into this difference.
-    return make_tuple({{ DIM }}, {{ DIM }});
+    return boost::python::make_tuple({{ DIM }}, {{ DIM }});
 }
 
 } // anonymous namespace 
@@ -290,23 +287,23 @@ void wrapMatrix{{ SUFFIX }}()
 {    
     typedef {{ MAT }} This;
 
-    def("IsClose", (bool (*)(const {{ MAT}} &m1, const {{ MAT }} &m2, double))
+    boost::python::def("IsClose", (bool (*)(const {{ MAT}} &m1, const {{ MAT }} &m2, double))
         GfIsClose);
     
-    class_<This> cls( "Matrix{{ SUFFIX }}", no_init);
+    boost::python::class_<This> cls( "Matrix{{ SUFFIX }}", boost::python::no_init);
     cls
         .def_pickle({{ MAT }}_Pickle_Suite())
-	.def("__init__", make_constructor(__init__))
-        .def(init< const GfMatrix{{ DIM }}d & >())
-        .def(init< const GfMatrix{{ DIM }}f & >())
-        .def(init< int >())
-        .def(init< {{ SCL }} >())
-        .def(init<
+	.def("__init__", boost::python::make_constructor(__init__))
+        .def(boost::python::init< const GfMatrix{{ DIM }}d & >())
+        .def(boost::python::init< const GfMatrix{{ DIM }}f & >())
+        .def(boost::python::init< int >())
+        .def(boost::python::init< {{ SCL }} >())
+        .def(boost::python::init<
              {{ MATRIX(SCL, indent=13) }} 
              >())
-        .def(init< const GfVec{{ SUFFIX }} & >())
-        .def(init< const vector< vector<float> >& >())
-        .def(init< const vector< vector<double> >& >())
+        .def(boost::python::init< const GfVec{{ SUFFIX }} & >())
+        .def(boost::python::init< const std::vector< std::vector<float> >& >())
+        .def(boost::python::init< const std::vector< std::vector<double> >& >())
 {% block customInit %}
 {% endblock customInit %}
 
@@ -325,17 +322,17 @@ void wrapMatrix{{ SUFFIX }}()
 {% endblock customSpecialMethods %}
 
         .def("Set", (This &(This::*)({{ MATRIX(SCL, indent=37) }}))&This::Set,
-             return_self<>())
+             boost::python::return_self<>())
         
-        .def("SetIdentity", &This::SetIdentity, return_self<>())
-        .def("SetZero", &This::SetZero, return_self<>())
+        .def("SetIdentity", &This::SetIdentity, boost::python::return_self<>())
+        .def("SetZero", &This::SetZero, boost::python::return_self<>())
 
         .def("SetDiagonal", 
              (This & (This::*)({{ SCL }}))&This::SetDiagonal, 
-             return_self<>())
+             boost::python::return_self<>())
         .def("SetDiagonal", 
              (This & (This::*)(const GfVec{{ SUFFIX }} &))&This::SetDiagonal, 
-             return_self<>())
+             boost::python::return_self<>())
 
         .def("SetRow", &This::SetRow)
         .def("SetColumn", &This::SetColumn)
@@ -349,35 +346,35 @@ void wrapMatrix{{ SUFFIX }}()
 {% block customDefs %}
 {% endblock customDefs %}
         
-        .def( str(self) )
-        .def( self == self )
+        .def( boost::python::self_ns::str(boost::python::self) )
+        .def( boost::python::self == boost::python::self )
 {% if SCL == 'float' %}
-        .def( self == GfMatrix{{ DIM }}d() )
+        .def( boost::python::self == GfMatrix{{ DIM }}d() )
 {% elif SCL == 'double' %}
-        .def( self == GfMatrix{{ DIM }}f() )
+        .def( boost::python::self == GfMatrix{{ DIM }}f() )
 {% endif %}
-        .def( self != self )
+        .def( boost::python::self != boost::python::self )
 {% if SCL == 'float' %}
-        .def( self != GfMatrix{{ DIM }}d() )
+        .def( boost::python::self != GfMatrix{{ DIM }}d() )
 {% elif SCL == 'double' %}
-        .def( self != GfMatrix{{ DIM }}f() )
+        .def( boost::python::self != GfMatrix{{ DIM }}f() )
 {% endif %}
-        .def( self *= self )
-        .def( self * self )
-        .def( self *= double() )
-        .def( self * double() )
-        .def( double() * self )
-        .def( self += self )
-        .def( self + self )
-        .def( self -= self )
-        .def( self - self )
-        .def( -self )
-        .def( self / self )
-        .def( self * GfVec{{ SUFFIX }}() )
-        .def( GfVec{{ SUFFIX }}() * self )
+        .def( boost::python::self *= boost::python::self )
+        .def( boost::python::self * boost::python::self )
+        .def( boost::python::self *= double() )
+        .def( boost::python::self * double() )
+        .def( double() * boost::python::self )
+        .def( boost::python::self += boost::python::self )
+        .def( boost::python::self + boost::python::self )
+        .def( boost::python::self -= boost::python::self )
+        .def( boost::python::self - boost::python::self )
+        .def( -boost::python::self )
+        .def( boost::python::self / boost::python::self )
+        .def( boost::python::self * GfVec{{ SUFFIX }}() )
+        .def( GfVec{{ SUFFIX }}() * boost::python::self )
 {% if SCL == 'double' %}
-        .def( self * GfVec{{ DIM }}f() )
-        .def( GfVec{{ DIM }}f() * self )
+        .def( boost::python::self * GfVec{{ DIM }}f() )
+        .def( GfVec{{ DIM }}f() * boost::python::self )
 {% endif %}
 
 #if PY_MAJOR_VERSION == 2
@@ -392,7 +389,7 @@ void wrapMatrix{{ SUFFIX }}()
         .def("__hash__", __hash__)
 
         ;
-    to_python_converter<std::vector<This>,
+    boost::python::to_python_converter<std::vector<This>,
         TfPySequenceToPython<std::vector<This> > >();
     
     // Install buffer protocol: set the tp_as_buffer slot to point to a

@@ -36,7 +36,6 @@
 
 #include <boost/noncopyable.hpp>
 
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -68,66 +67,66 @@ wrapResolver()
 
     typedef ArResolver This;
 
-    class_<This, boost::noncopyable>
-        ("Resolver", no_init)
+    boost::python::class_<This, boost::noncopyable>
+        ("Resolver", boost::python::no_init)
 
         .def("CreateDefaultContext", &This::CreateDefaultContext)
         .def("CreateDefaultContextForAsset", 
              &This::CreateDefaultContextForAsset,
-             args("assetPath"))
+             boost::python::args("assetPath"))
 
         .def("CreateContextFromString", 
              (ArResolverContext (This::*)(const std::string&) const)
                  &This::CreateContextFromString,
-             args("contextStr"))
+             boost::python::args("contextStr"))
 
         .def("CreateContextFromString", 
              (ArResolverContext (This::*)
                  (const std::string&, const std::string&) const)
                  &This::CreateContextFromString,
-             (arg("uriScheme"), arg("contextStr")))
+             (boost::python::arg("uriScheme"), boost::python::arg("contextStr")))
 
         .def("CreateContextFromStrings", &This::CreateContextFromStrings,
-             args("contextStrs"))
+             boost::python::args("contextStrs"))
 
         .def("GetCurrentContext", &This::GetCurrentContext)
 
         .def("IsContextDependentPath", &This::IsContextDependentPath,
-             args("assetPath"))
+             boost::python::args("assetPath"))
 
         .def("CreateIdentifier", &This::CreateIdentifier,
-             (args("assetPath"), 
-              args("anchorAssetPath") = ArResolvedPath()))
+             (boost::python::args("assetPath"), 
+              boost::python::args("anchorAssetPath") = ArResolvedPath()))
         .def("CreateIdentifierForNewAsset", &This::CreateIdentifierForNewAsset,
-             (args("assetPath"), 
-              args("anchorAssetPath") = ArResolvedPath()))
+             (boost::python::args("assetPath"), 
+              boost::python::args("anchorAssetPath") = ArResolvedPath()))
 
         .def("Resolve", &This::Resolve,
-             (args("assetPath")))
+             (boost::python::args("assetPath")))
         .def("ResolveForNewAsset", &This::ResolveForNewAsset,
-             (args("assetPath")))
+             (boost::python::args("assetPath")))
 
         .def("GetAssetInfo", &This::GetAssetInfo,
-             (args("assetPath"), args("resolvedPath")))
+             (boost::python::args("assetPath"), boost::python::args("resolvedPath")))
         .def("GetModificationTimestamp", &This::GetModificationTimestamp,
-             (args("assetPath"), args("resolvedPath")))
+             (boost::python::args("assetPath"), boost::python::args("resolvedPath")))
         .def("GetExtension", &This::GetExtension,
-             args("assetPath"))
+             boost::python::args("assetPath"))
 
         .def("CanWriteAssetToPath", &_CanWriteAssetToPath,
-             args("resolvedPath"))
+             boost::python::args("resolvedPath"))
 
         .def("RefreshContext", &This::RefreshContext)
         ;
 
-    def("GetResolver", ArGetResolver,
-        return_value_policy<reference_existing_object>());
+    boost::python::def("GetResolver", ArGetResolver,
+        boost::python::return_value_policy<boost::python::reference_existing_object>());
 
-    def("SetPreferredResolver", ArSetPreferredResolver,
-        arg("resolverTypeName"));
+    boost::python::def("SetPreferredResolver", ArSetPreferredResolver,
+        boost::python::arg("resolverTypeName"));
 
-    def("GetUnderlyingResolver", ArGetUnderlyingResolver,
-        return_value_policy<reference_existing_object>());
+    boost::python::def("GetUnderlyingResolver", ArGetUnderlyingResolver,
+        boost::python::return_value_policy<boost::python::reference_existing_object>());
 }
 
 TF_REFPTR_CONST_VOLATILE_GET(ArResolver)

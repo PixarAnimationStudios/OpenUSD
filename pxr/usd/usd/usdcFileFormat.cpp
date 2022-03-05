@@ -76,13 +76,13 @@ UsdUsdcFileFormat::InitData(const FileFormatArguments& args) const
 }
 
 bool
-UsdUsdcFileFormat::CanRead(const string& filePath) const
+UsdUsdcFileFormat::CanRead(const std::string& filePath) const
 {
     return Usd_CrateData::CanRead(filePath);
 }
 
 bool
-UsdUsdcFileFormat::_CanReadFromAsset(const string& filePath,
+UsdUsdcFileFormat::_CanReadFromAsset(const std::string& filePath,
                                      const std::shared_ptr<ArAsset>& asset) const
 {
     return Usd_CrateData::CanRead(filePath, asset);
@@ -90,7 +90,7 @@ UsdUsdcFileFormat::_CanReadFromAsset(const string& filePath,
 
 bool
 UsdUsdcFileFormat::Read(SdfLayer* layer,
-                        const string& resolvedPath,
+                        const std::string& resolvedPath,
                         bool metadataOnly) const
 {
     TRACE_FUNCTION();
@@ -99,7 +99,7 @@ UsdUsdcFileFormat::Read(SdfLayer* layer,
 
 bool
 UsdUsdcFileFormat::_ReadFromAsset(SdfLayer* layer,
-                                  const string& resolvedPath,
+                                  const std::string& resolvedPath,
                                   const std::shared_ptr<ArAsset>& asset,
                                   bool metadataOnly) const
 {

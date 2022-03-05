@@ -38,6 +38,7 @@
 #include "pxr/base/gf/matrix3d.h"
 #include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/rotation.h"
+#include <cmath>
 #include <float.h>
 #include <ostream>
 
@@ -946,7 +947,7 @@ GfMatrix4d::Factor(GfMatrix4d* r, GfVec3d* s, GfMatrix4d* u,
         if (eigenvalues[i] < eps) {
             (*s)[i] = detSign * eps;
         } else {
-            (*s)[i] = detSign * sqrt(eigenvalues[i]);
+            (*s)[i] = detSign * std::sqrt(eigenvalues[i]);
         }
         sInv._mtx[i][i] = 1.0 / (*s)[i];
     }
@@ -1005,14 +1006,14 @@ GfMatrix4d::_Jacobi3(GfVec3d *eigenvalues, GfVec3d eigenvectors[3]) const
 			t = a._mtx[p][q] / h;
 		    } else {
 			double theta = 0.5 * h / a._mtx[p][q];
-			t = 1.0 / (GfAbs(theta) + sqrt(1.0 + theta * theta));
+			t = 1.0 / (GfAbs(theta) + std::sqrt(1.0 + theta * theta));
 			if (theta < 0.0)
 			    t = -t;
 		    }
 
 		    // End of computing tangent of rotation angle
 		    
-		    double c = 1.0 / sqrt(1.0 + t*t);
+		    double c = 1.0 / std::sqrt(1.0 + t*t);
 		    double s = t * c;
 		    double tau = s / (1.0 + c);
 		    h = t * a._mtx[p][q];
@@ -1094,7 +1095,7 @@ GfMatrix4d::ExtractRotationQuat() const
     ScalarType  r;
 
     if (_mtx[0][0] + _mtx[1][1] + _mtx[2][2] > _mtx[i][i]) {
-	r = 0.5 * sqrt(_mtx[0][0] + _mtx[1][1] +
+	r = 0.5 * std::sqrt(_mtx[0][0] + _mtx[1][1] +
 		       _mtx[2][2] + _mtx[3][3]);
 	im.Set((_mtx[1][2] - _mtx[2][1]) / (4.0 * r),
 	       (_mtx[2][0] - _mtx[0][2]) / (4.0 * r),
@@ -1103,7 +1104,7 @@ GfMatrix4d::ExtractRotationQuat() const
     else {
 	int j = (i + 1) % 3;
 	int k = (i + 2) % 3;
-	ScalarType q = 0.5 * sqrt(_mtx[i][i] - _mtx[j][j] -
+	ScalarType q = 0.5 * std::sqrt(_mtx[i][i] - _mtx[j][j] -
 			      _mtx[k][k] + _mtx[3][3]); 
 
 	im[i] = q;

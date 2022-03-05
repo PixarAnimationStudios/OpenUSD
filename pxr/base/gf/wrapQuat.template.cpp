@@ -45,15 +45,13 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static string __repr__({{ QUAT }} const &self) {
+static std::string __repr__({{ QUAT }} const &self) {
     return TF_PY_REPR_PREFIX + "Quat{{ SUFFIX }}(" +
         TfPyRepr(self.GetReal()) + ", " +
         TfPyRepr(self.GetImaginary()) + ")";
@@ -78,41 +76,41 @@ static {{ QUAT }} *__init__() { return new {{ QUAT }}(0); }
 
 void wrapQuat{{ SUFFIX }}()
 {    
-    object getImaginary =
-        make_function(&{{ QUAT }}::GetImaginary,
-                      return_value_policy<return_by_value>());
+    boost::python::object getImaginary =
+        boost::python::make_function(&{{ QUAT }}::GetImaginary,
+                      boost::python::return_value_policy<boost::python::return_by_value>());
 
-    object setImaginaryVec =
-        make_function((void ({{ QUAT }}::*)(const GfVec3{{ SUFFIX }} &))
+    boost::python::object setImaginaryVec =
+        boost::python::make_function((void ({{ QUAT }}::*)(const GfVec3{{ SUFFIX }} &))
                       &{{ QUAT }}::SetImaginary);
 
-    object setImaginaryScl =
-        make_function((void ({{ QUAT }}::*)({{ SCL }}, {{ SCL }}, {{ SCL }}))
+    boost::python::object setImaginaryScl =
+        boost::python::make_function((void ({{ QUAT }}::*)({{ SCL }}, {{ SCL }}, {{ SCL }}))
                       &{{ QUAT }}::SetImaginary,
-                      default_call_policies(),
-                      (arg("i"), arg("j"), arg("k")));
+                      boost::python::default_call_policies(),
+                      (boost::python::arg("i"), boost::python::arg("j"), boost::python::arg("k")));
 
-    def("Slerp",
+    boost::python::def("Slerp",
         ({{ QUAT }} (*)(double, const {{ QUAT }}&, const {{ QUAT }}&))
         GfSlerp);
 
-    def("Dot",
+    boost::python::def("Dot",
         ({{ SCL }} (*)(const {{ QUAT }}&, const {{ QUAT }}&))
         GfDot);
     
-    class_<{{ QUAT }}>("Quat{{ SUFFIX }}", no_init)
-        .def("__init__", make_constructor(__init__))
+    boost::python::class_<{{ QUAT }}>("Quat{{ SUFFIX }}", boost::python::no_init)
+        .def("__init__", boost::python::make_constructor(__init__))
                           
         .def(TfTypePythonClass())
 
-        .def(init<GfQuat{{ SUFFIX }}>())
-        .def(init<{{ SCL }}>(arg("real")))
-        .def(init<{{ SCL }}, const GfVec3{{ SUFFIX }} &>(
-                 (arg("real"), arg("imaginary"))))
-        .def(init<{{ SCL }}, {{ SCL }}, {{ SCL }}, {{ SCL }}>(
-                 (arg("real"), arg("i"), arg("j"), arg("k"))))
+        .def(boost::python::init<GfQuat{{ SUFFIX }}>())
+        .def(boost::python::init<{{ SCL }}>(boost::python::arg("real")))
+        .def(boost::python::init<{{ SCL }}, const GfVec3{{ SUFFIX }} &>(
+                 (boost::python::arg("real"), boost::python::arg("imaginary"))))
+        .def(boost::python::init<{{ SCL }}, {{ SCL }}, {{ SCL }}, {{ SCL }}>(
+                 (boost::python::arg("real"), boost::python::arg("i"), boost::python::arg("j"), boost::python::arg("k"))))
 {% for S in SCALARS if S != SCL and not ALLOW_IMPLICIT_CONVERSION(S, SCL) %}
-        .def(init<const GfQuat{{ SCALAR_SUFFIX(S) }} & >())
+        .def(boost::python::init<const GfQuat{{ SCALAR_SUFFIX(S) }} & >())
 {% endfor %}
 
         .def("GetIdentity", &{{ QUAT }}::GetIdentity)
@@ -130,30 +128,30 @@ void wrapQuat{{ SUFFIX }}()
         .def("GetLength", &{{ QUAT }}::GetLength)
 
         .def("GetNormalized", &{{ QUAT }}::GetNormalized,
-             (arg("eps")=GF_MIN_VECTOR_LENGTH))
+             (boost::python::arg("eps")=GF_MIN_VECTOR_LENGTH))
         .def("Normalize", &{{ QUAT }}::Normalize,
-             (arg("eps")=GF_MIN_VECTOR_LENGTH), return_self<>())
+             (boost::python::arg("eps")=GF_MIN_VECTOR_LENGTH), boost::python::return_self<>())
 
         .def("GetConjugate", &{{ QUAT }}::GetConjugate)
         .def("GetInverse", &{{ QUAT }}::GetInverse)
 
         .def("Transform", &{{ QUAT }}::Transform)
 
-        .def(str(self))
-        .def(-self)
-        .def(self == self)
-        .def(self != self)
-        .def(self *= self)
-        .def(self *= {{ SCL }}())
-        .def(self /= {{ SCL }}())
-        .def(self += self)
-        .def(self -= self)
-        .def(self + self)
-        .def(self - self)
-        .def(self * self)
-        .def(self * {{ SCL }}())
-        .def({{ SCL }}() * self)
-        .def(self / {{ SCL }}())
+        .def(boost::python::self_ns::str(boost::python::self))
+        .def(-boost::python::self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
+        .def(boost::python::self *= boost::python::self)
+        .def(boost::python::self *= {{ SCL }}())
+        .def(boost::python::self /= {{ SCL }}())
+        .def(boost::python::self += boost::python::self)
+        .def(boost::python::self -= boost::python::self)
+        .def(boost::python::self + boost::python::self)
+        .def(boost::python::self - boost::python::self)
+        .def(boost::python::self * boost::python::self)
+        .def(boost::python::self * {{ SCL }}())
+        .def({{ SCL }}() * boost::python::self)
+        .def(boost::python::self / {{ SCL }}())
 
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
@@ -167,10 +165,10 @@ void wrapQuat{{ SUFFIX }}()
         ;
 
 {% for S in SCALARS if S != SCL and ALLOW_IMPLICIT_CONVERSION(S, SCL) %}
-    implicitly_convertible<{{ QUATNAME(S) }}, {{ QUAT }}>();
+    boost::python::implicitly_convertible<{{ QUATNAME(S) }}, {{ QUAT }}>();
 {% endfor %}
 
-    to_python_converter<std::vector<{{ QUAT }}>,
+    boost::python::to_python_converter<std::vector<{{ QUAT }}>,
         TfPySequenceToPython<std::vector<{{ QUAT }}> > >();
     
 }

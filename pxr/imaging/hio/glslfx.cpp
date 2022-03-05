@@ -178,11 +178,11 @@ _ComputeResolvedPath(
     // the anchored file path otherwise the relative file must be local to the
     // containing file. If the anchored path cannot be represented as a
     // repository path, perform a simple existence check.
-    const string anchoredPath =
+    const std::string anchoredPath =
         resolver.AnchorRelativePath(containingFile, filename);
-    const string repositoryPath =
+    const std::string repositoryPath =
         resolver.ComputeRepositoryPath(anchoredPath);
-    const string resolvedPath = repositoryPath.empty()
+    const std::string resolvedPath = repositoryPath.empty()
         ? (TfPathExists(anchoredPath) ? anchoredPath : "")
         : resolver.Resolve(repositoryPath);
     if (!resolvedPath.empty() || filename[0] == '.') {
@@ -221,7 +221,7 @@ HioGlslfx::HioGlslfx(std::string const & filePath, TfToken const & technique)
     // Resolve with the containingFile set to the current working directory
     // with a trailing slash. This ensures that relative paths supplied to the
     // constructor are properly anchored to the containing file's directory.
-    const string resolvedPath =
+    const std::string resolvedPath =
         _ComputeResolvedPath(ArchGetCwd() + "/", filePath, &errorStr);
 #else
     const std::string resolvedPath =
@@ -326,7 +326,7 @@ HioGlslfx::ExtractImports(const std::string& filename)
     std::vector<std::string> imports;
 
     std::string line;
-    while (std::getline(*input, line)) {
+    while (getline(*input, line)) {
         if (line.find(_tokens->import) == 0) {
             imports.push_back(TfStringTrim(line.substr(_tokens->import.size())));
         }
@@ -339,7 +339,7 @@ bool
 HioGlslfx::_ProcessInput(std::istream * input,
                          _ParseContext & context)
 {
-    while (std::getline(*input, context.currentLine)) {
+    while (getline(*input, context.currentLine)) {
         // trim to avoid issues with cross-platform line endings
         context.currentLine = TfStringTrimRight(context.currentLine);
 

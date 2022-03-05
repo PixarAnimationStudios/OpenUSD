@@ -4250,6 +4250,8 @@ static yyconst flex_int32_t yy_ec[256] =
 #endif
 
 
+
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 #define YYSTYPE Sdf_ParserHelpers::Value

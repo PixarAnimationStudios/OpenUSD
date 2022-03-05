@@ -42,9 +42,7 @@
 
 #include <string>
 
-using namespace boost::python;
 
-using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -52,7 +50,7 @@ namespace {
 
 static const int _dimension = {{ DIM }};
 
-static string _Repr({{ RNG }} const &self) {
+static std::string _Repr({{ RNG }} const &self) {
     return TF_PY_REPR_PREFIX + "Range{{ SUFFIX }}(" +
         TfPyRepr(self.GetMin()) + ", " + TfPyRepr(self.GetMax()) + ")";
 }
@@ -75,15 +73,15 @@ static size_t __hash__({{ RNG }} const &r) { return hash_value(r); }
 
 void wrapRange{{ SUFFIX }}()
 {    
-    object getMin = make_function(&{{ RNG }}::GetMin,
-                                  return_value_policy<return_by_value>());
+    boost::python::object getMin = boost::python::make_function(&{{ RNG }}::GetMin,
+                                  boost::python::return_value_policy<boost::python::return_by_value>());
 
-    object getMax = make_function(&{{ RNG }}::GetMax,
-                                  return_value_policy<return_by_value>());
+    boost::python::object getMax = boost::python::make_function(&{{ RNG }}::GetMax,
+                                  boost::python::return_value_policy<boost::python::return_by_value>());
 
-    class_<{{ RNG }}>("Range{{ SUFFIX }}", init<>())
-        .def(init<{{ RNG }}>())
-        .def(init<{{ MINMAXPARM }}, {{ MINMAXPARM }}>())
+    boost::python::class_<{{ RNG }}>("Range{{ SUFFIX }}", boost::python::init<>())
+        .def(boost::python::init<{{ RNG }}>())
+        .def(boost::python::init<{{ MINMAXPARM }}, {{ MINMAXPARM }}>())
         
         .def(TfTypePythonClass())
 
@@ -114,34 +112,34 @@ void wrapRange{{ SUFFIX }}()
         .staticmethod("GetUnion")
     
         .def("UnionWith", (const {{ RNG }} & ({{ RNG }}::*)({{ MINMAXPARM }}))
-             &{{ RNG }}::UnionWith, return_self<>())
+             &{{ RNG }}::UnionWith, boost::python::return_self<>())
         .def("UnionWith", (const {{ RNG }} & ({{ RNG }}::*)(const {{ RNG }} &))
-             &{{ RNG }}::UnionWith, return_self<>())
+             &{{ RNG }}::UnionWith, boost::python::return_self<>())
     
         .def("GetIntersection", &{{ RNG }}::GetIntersection)
         .staticmethod("GetIntersection")
     
         .def("IntersectWith", (const {{ RNG }} & ({{ RNG }}::*)(const {{ RNG }} &))
-             &{{ RNG }}::IntersectWith, return_self<>())
+             &{{ RNG }}::IntersectWith, boost::python::return_self<>())
     
         .def("GetDistanceSquared", &{{ RNG }}::GetDistanceSquared)
     
-        .def(str(self))
-        .def(self += self)
-        .def(self -= self)
-        .def(self *= double())
-        .def(self /= double())
-        .def(self + self)
-        .def(self - self)
-        .def(double() * self)
-        .def(self * double())
-        .def(self / double())
+        .def(boost::python::self_ns::str(boost::python::self))
+        .def(boost::python::self += boost::python::self)
+        .def(boost::python::self -= boost::python::self)
+        .def(boost::python::self *= double())
+        .def(boost::python::self /= double())
+        .def(boost::python::self + boost::python::self)
+        .def(boost::python::self - boost::python::self)
+        .def(double() * boost::python::self)
+        .def(boost::python::self * double())
+        .def(boost::python::self / double())
 {% for S in SCALARS if S != SCL %}
-        .def(self == {{ RNGNAME(DIM, S) }}())
-        .def(self != {{ RNGNAME(DIM, S) }}())
+        .def(boost::python::self == {{ RNGNAME(DIM, S) }}())
+        .def(boost::python::self != {{ RNGNAME(DIM, S) }}())
 {% endfor %}
-        .def(self == self)
-        .def(self != self)
+        .def(boost::python::self == boost::python::self)
+        .def(boost::python::self != boost::python::self)
     
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
@@ -164,7 +162,7 @@ void wrapRange{{ SUFFIX }}()
 {% endif %}
         
         ;
-    to_python_converter<std::vector<{{ RNG }}>,
+    boost::python::to_python_converter<std::vector<{{ RNG }}>,
         TfPySequenceToPython<std::vector<{{ RNG }}> > >();
     
 }

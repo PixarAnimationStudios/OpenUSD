@@ -48,8 +48,6 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using std::vector;
-using namespace std::placeholders;
 
 typedef std::function<bool (const UsdNotice::ObjectsChanged &)> TestFn;
 

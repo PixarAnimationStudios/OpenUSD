@@ -94,7 +94,7 @@ struct TfPyFunctionFromPython<Ret (Args...)>
                 return Ret();
             }
 #if PY_MAJOR_VERSION == 2
-            object method(handle<>(PyMethod_New(func.ptr(), self, cls.ptr())));
+            boost::python::object method(boost::python::handle<>(PyMethod_New(func.ptr(), self, cls.ptr())));
 #else 
             boost::python::object method(boost::python::handle<>(PyMethod_New(func.ptr(), self)));
 #endif
@@ -158,7 +158,7 @@ struct TfPyFunctionFromPython<Ret (Args...)>
                 // Deconstruct the method and attempt to get a weak reference to
                 // the self instance.
 #if PY_MAJOR_VERSION == 2
-                object cls(handle<>(borrowed(PyMethod_GET_CLASS(pyCallable))));
+                boost::python::object cls(boost::python::handle<>(boost::python::borrowed(PyMethod_GET_CLASS(pyCallable))));
 #endif
                 boost::python::object func(boost::python::handle<>(boost::python::borrowed(PyMethod_GET_FUNCTION(
                                                   pyCallable))));

@@ -32,6 +32,7 @@
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/type.h"
 
+#include <cmath>
 #include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -50,7 +51,7 @@ GfRotation::SetQuat(const GfQuatd &quat)
         // Pass through the public API which normalizes axis.
         // Otherwise, it would be possible to create GfRotations using
         // SetQuaternion which cannot be re-created via SetAxisAngle().
-        double x = acos(GfClamp(quat.GetReal(), -1.0, 1.0));
+        double x = std::acos(GfClamp(quat.GetReal(), -1.0, 1.0));
         SetAxisAngle(quat.GetImaginary() / len, 2.0 * GfRadiansToDegrees(x));
     }
     else
@@ -86,7 +87,7 @@ GfRotation::SetRotateInto(const GfVec3d &rotateFrom, const GfVec3d &rotateTo)
     // Generic case: compute the rotation to bring the vectors
     // together.
     GfVec3d axis = GfCross(rotateFrom, rotateTo).GetNormalized();
-    return SetAxisAngle(axis, GfRadiansToDegrees(acos(cos)));
+    return SetAxisAngle(axis, GfRadiansToDegrees(std::acos(cos)));
 }
 
 GfQuatd
@@ -141,7 +142,7 @@ GfRotation::Decompose( const GfVec3d &axis0,
     // Euler Angle Conversion by Ken Shoemake.
     int i = 0, j = 1, k = 2;
     double r0, r1, r2;
-    double cy = sqrt(m[i][i]*m[i][i] + m[j][i]*m[j][i]);
+    double cy = std::sqrt(m[i][i]*m[i][i] + m[j][i]*m[j][i]);
     if (cy > _GetEpsilon()) {
         r0 = atan2(m[k][j], m[k][k]);
         r1 = atan2(-m[k][i], cy);
@@ -618,7 +619,7 @@ GfRotation::ComposeRotation(double         tw,
                         fbAxis(1,0,0),
                         lrAxis(0,1,0);
 
-    vector<GfMatrix4d> matVec;
+    std::vector<GfMatrix4d> matVec;
     matVec.resize(4);
     matVec[0].SetRotate(GfRotation(twAxis,tw));
     matVec[1].SetRotate(GfRotation(fbAxis,fb));
@@ -662,7 +663,7 @@ GfRotation::operator *=(const GfRotation &r)
     double len = q.GetImaginary().GetLength();
     if (len > GF_MIN_VECTOR_LENGTH) {
         _axis  = q.GetImaginary() / len;
-        _angle = 2.0 * GfRadiansToDegrees(acos(q.GetReal()));
+        _angle = 2.0 * GfRadiansToDegrees(std::acos(q.GetReal()));
     }
     else {
         // Leave the axis as is; just set the angle to 0.
