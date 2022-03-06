@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdArWrapResolverContext_v2 {
 
 // Helper struct to allow implicit conversions from None or a
 // sequence of context objects to an Ar.ResolverContext object.
@@ -111,6 +111,8 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
+namespace pxrUsdArWrapResolverContext_v2 {
+
 static ArResolverContext*
 _Create(const boost::python::object& obj)
 {
@@ -130,15 +132,17 @@ _TestImplicitConversion(const ArResolverContext& ctx)
     return ctx;
 }
 
+} // pxrUsdArWrapResolverContext_v2
+
 void
 wrapResolverContext()
 {
-    Ar_ResolverContextFromPython();
+    pxrUsdArWrapResolverContext_v2::Ar_ResolverContextFromPython();
 
     boost::python::class_<ArResolverContext>
         ("ResolverContext", boost::python::no_init)
         .def(boost::python::init<>())
-        .def("__init__", boost::python::make_constructor(&_Create))
+        .def("__init__", boost::python::make_constructor(&pxrUsdArWrapResolverContext_v2::_Create))
 
         .def("IsEmpty", &ArResolverContext::IsEmpty)
         .def("Get", &Ar_ResolverContextPythonAccess::GetAsList)
@@ -148,7 +152,7 @@ wrapResolverContext()
         .def(boost::python::self != boost::python::self)
         .def(boost::python::self < boost::python::self)
 
-        .def("__hash__", &_Hash)
+        .def("__hash__", &pxrUsdArWrapResolverContext_v2::_Hash)
         .def("__repr__", &Ar_ResolverContextPythonAccess::GetRepr)
         ;
 
@@ -158,5 +162,5 @@ wrapResolverContext()
 
     // Helper function for unit tests to exercise implicit conversion of
     // context objects into an ArResolverContext.
-    boost::python::def("_TestImplicitConversion", &_TestImplicitConversion);
+    boost::python::def("_TestImplicitConversion", &pxrUsdArWrapResolverContext_v2::_TestImplicitConversion);
 }

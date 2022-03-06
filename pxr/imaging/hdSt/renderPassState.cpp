@@ -57,10 +57,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrImagingHdStRenderPassState {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (renderPassState)
 );
+
+} // pxrImagingHdStRenderPassState
 
 HdStRenderPassState::HdStRenderPassState()
     : HdStRenderPassState(std::make_shared<HdStRenderPassShader>())
@@ -213,7 +217,7 @@ HdStRenderPassState::Prepare(
 
         // add buffer binding request
         _renderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, _tokens->renderPassState,
+            HdBindingRequest(HdBinding::UBO, pxrImagingHdStRenderPassState::_tokens->renderPassState,
                              _renderPassStateBar_, /*interleaved=*/true));
     }
 
@@ -326,7 +330,7 @@ HdStRenderPassState::SetRenderPassShader(HdStRenderPassShaderSharedPtr const &re
             std::static_pointer_cast<HdStBufferArrayRange> (_renderPassStateBar);
 
         _renderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, _tokens->renderPassState,
+            HdBindingRequest(HdBinding::UBO, pxrImagingHdStRenderPassState::_tokens->renderPassState,
                              _renderPassStateBar_, /*interleaved=*/true));
     }
 }

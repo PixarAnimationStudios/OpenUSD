@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdPhysicsMeshCollisionAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (PhysicsMeshCollisionAPI)
 );
+
+} // pxrUsdUsdPhysicsMeshCollisionAPI
 
 /* virtual */
 UsdPhysicsMeshCollisionAPI::~UsdPhysicsMeshCollisionAPI()

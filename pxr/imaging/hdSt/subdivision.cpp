@@ -65,6 +65,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // ---------------------------------------------------------------------------
 
+namespace pxrImagingHdStSubdivision {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (evalStencils)
@@ -76,6 +78,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (baseFaceToRefinedFacesMap)
     (refinedFaceCounts)
 );
+
+} // pxrImagingHdStSubdivision
 
 // The stencil table data is managed using two buffer array ranges
 // the first containing the sizes and offsets which are perPoint for
@@ -294,19 +298,19 @@ HdSt_OsdStencilTableBufferSource::Resolve()
     _gpuStencilTable->numCoarsePoints = stencilTable->GetNumControlVertices();
     _gpuStencilTable->numRefinedPoints = stencilTable->GetNumStencils();
 
-    if (_name == _tokens->sizes) {
+    if (_name == pxrImagingHdStSubdivision::_tokens->sizes) {
         _resultData = stencilTable->GetSizes().data();
         _resultNumElements = stencilTable->GetSizes().size();
         _resultTupleType = HdTupleType{HdTypeInt32, 1};
-    } else if (_name == _tokens->offsets) {
+    } else if (_name == pxrImagingHdStSubdivision::_tokens->offsets) {
         _resultData = stencilTable->GetOffsets().data();
         _resultNumElements = stencilTable->GetOffsets().size();
         _resultTupleType = HdTupleType{HdTypeInt32, 1};
-    } else if (_name == _tokens->indices) {
+    } else if (_name == pxrImagingHdStSubdivision::_tokens->indices) {
         _resultData = stencilTable->GetControlIndices().data();
         _resultNumElements = stencilTable->GetControlIndices().size();
         _resultTupleType = HdTupleType{HdTypeInt32, 1};
-    } else if (_name == _tokens->weights) {
+    } else if (_name == pxrImagingHdStSubdivision::_tokens->weights) {
         // Note: weights table may have excess entries, so here we
         // copy only the entries corresponding to control indices.
         _resultData = stencilTable->GetWeights().data();
@@ -396,21 +400,21 @@ HdSt_Subdivision::_CreateGpuStencilTable(
 {
     // Allocate buffer array range for perPoint data
     HdBufferSpecVector perPointSpecs = {
-        { _tokens->sizes, HdTupleType{HdTypeInt32, 1} },
-        { _tokens->offsets, HdTupleType{HdTypeInt32, 1} },
+        { pxrImagingHdStSubdivision::_tokens->sizes, HdTupleType{HdTypeInt32, 1} },
+        { pxrImagingHdStSubdivision::_tokens->offsets, HdTupleType{HdTypeInt32, 1} },
     };
     HdBufferArrayRangeSharedPtr perPointRange =
         registry->AllocateSingleBufferArrayRange(
-            _tokens->stencilData, perPointSpecs, HdBufferArrayUsageHint());
+            pxrImagingHdStSubdivision::_tokens->stencilData, perPointSpecs, HdBufferArrayUsageHint());
 
     // Allocate buffer array range for perIndex data
     HdBufferSpecVector perIndexSpecs = {
-        { _tokens->indices, HdTupleType{HdTypeInt32, 1} },
-        { _tokens->weights, HdTupleType{HdTypeFloat, 1} },
+        { pxrImagingHdStSubdivision::_tokens->indices, HdTupleType{HdTypeInt32, 1} },
+        { pxrImagingHdStSubdivision::_tokens->weights, HdTupleType{HdTypeFloat, 1} },
     };
     HdBufferArrayRangeSharedPtr perIndexRange =
         registry->AllocateSingleBufferArrayRange(
-            _tokens->stencilData, perIndexSpecs, HdBufferArrayUsageHint());
+            pxrImagingHdStSubdivision::_tokens->stencilData, perIndexSpecs, HdBufferArrayUsageHint());
 
     HdSt_GpuStencilTableSharedPtr gpuStencilTable =
         std::make_shared<HdSt_GpuStencilTable>(
@@ -419,10 +423,10 @@ HdSt_Subdivision::_CreateGpuStencilTable(
     // Register buffer sources for computed perPoint stencil table data
     HdBufferSourceSharedPtrVector perPointSources{
         std::make_shared<HdSt_OsdStencilTableBufferSource>(
-            this, osdTopology, _tokens->sizes,
+            this, osdTopology, pxrImagingHdStSubdivision::_tokens->sizes,
             gpuStencilTable, interpolation, fvarChannel),
         std::make_shared<HdSt_OsdStencilTableBufferSource>(
-            this, osdTopology, _tokens->offsets,
+            this, osdTopology, pxrImagingHdStSubdivision::_tokens->offsets,
             gpuStencilTable, interpolation, fvarChannel)
     };
     registry->AddSources(perPointRange, std::move(perPointSources));
@@ -430,10 +434,10 @@ HdSt_Subdivision::_CreateGpuStencilTable(
     // Register buffer sources for computed perIndex stencil table data
     HdBufferSourceSharedPtrVector perIndexSources{
         std::make_shared<HdSt_OsdStencilTableBufferSource>(
-            this, osdTopology, _tokens->indices,
+            this, osdTopology, pxrImagingHdStSubdivision::_tokens->indices,
             gpuStencilTable, interpolation, fvarChannel),
         std::make_shared<HdSt_OsdStencilTableBufferSource>(
-            this, osdTopology, _tokens->weights,
+            this, osdTopology, pxrImagingHdStSubdivision::_tokens->weights,
             gpuStencilTable, interpolation, fvarChannel)
     };
     registry->AddSources(perIndexRange, std::move(perIndexSources));
@@ -1584,9 +1588,9 @@ HdSt_OsdBaseFaceToRefinedFacesMapComputation::
 void HdSt_OsdBaseFaceToRefinedFacesMapComputation::GetBufferSpecs(
     HdBufferSpecVector *specs) const
 {
-    specs->emplace_back(_tokens->baseFaceToRefinedFacesMap, 
+    specs->emplace_back(pxrImagingHdStSubdivision::_tokens->baseFaceToRefinedFacesMap, 
         HdTupleType {HdTypeInt32, 1});
-    specs->emplace_back(_tokens->refinedFaceCounts, 
+    specs->emplace_back(pxrImagingHdStSubdivision::_tokens->refinedFaceCounts, 
         HdTupleType {HdTypeInt32, 1});
 }
 
@@ -1632,11 +1636,11 @@ HdSt_OsdBaseFaceToRefinedFacesMapComputation::Resolve()
     }
 
     HdBufferSourceSharedPtr source = std::make_shared<HdVtBufferSource>(
-        _tokens->baseFaceToRefinedFacesMap, VtValue(baseFaceToRefinedFacesArr));
+        pxrImagingHdStSubdivision::_tokens->baseFaceToRefinedFacesMap, VtValue(baseFaceToRefinedFacesArr));
     _SetResult(source);
 
     _refinedFaceCounts = std::make_shared<HdVtBufferSource>(
-        _tokens->refinedFaceCounts, VtValue(refinedFaceCounts));
+        pxrImagingHdStSubdivision::_tokens->refinedFaceCounts, VtValue(refinedFaceCounts));
 
     _SetResolved();
     return true;
@@ -1803,7 +1807,7 @@ _EvalStencilsGPU(
     HdResourceRegistry * resourceRegistry)
 {
     // select shader by datatype
-    TfToken shaderToken = _tokens->evalStencils;
+    TfToken shaderToken = pxrImagingHdStSubdivision::_tokens->evalStencils;
     if (!TF_VERIFY(!shaderToken.IsEmpty())) return;
 
     HdStBufferArrayRangeSharedPtr primvarRange =
@@ -1906,13 +1910,13 @@ _EvalStencilsGPU(
 
     // buffer resources for GPU computation
     HdStBufferResourceSharedPtr sizes = perPointRange->GetResource(
-                                                            _tokens->sizes);
+                                                            pxrImagingHdStSubdivision::_tokens->sizes);
     HdStBufferResourceSharedPtr offsets = perPointRange->GetResource(
-                                                            _tokens->offsets);
+                                                            pxrImagingHdStSubdivision::_tokens->offsets);
     HdStBufferResourceSharedPtr indices = perIndexRange->GetResource(
-                                                            _tokens->indices);
+                                                            pxrImagingHdStSubdivision::_tokens->indices);
     HdStBufferResourceSharedPtr weights = perIndexRange->GetResource(
-                                                            _tokens->weights);
+                                                            pxrImagingHdStSubdivision::_tokens->weights);
 
     Hgi* hgi = hdStResourceRegistry->GetHgi();
 

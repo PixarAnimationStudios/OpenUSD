@@ -268,6 +268,8 @@ HdStRenderBuffer::IsMultiSampled() const
     return bool(_textureMSAAObject);
 }
 
+namespace pxrImagingHdStRenderBuffer {
+
 static
 const GfVec3i &
 _GetDimensions(HdStDynamicUvTextureObjectSharedPtr const &textureObject)
@@ -284,22 +286,24 @@ _GetDimensions(HdStDynamicUvTextureObjectSharedPtr const &textureObject)
     return texture->GetDescriptor().dimensions;
 }
 
+} // pxrImagingHdStRenderBuffer
+
 unsigned int
 HdStRenderBuffer::GetWidth() const
 {
-    return _GetDimensions(_textureObject)[0];
+    return pxrImagingHdStRenderBuffer::_GetDimensions(_textureObject)[0];
 }
 
 unsigned int
 HdStRenderBuffer::GetHeight() const
 {
-    return _GetDimensions(_textureObject)[1];
+    return pxrImagingHdStRenderBuffer::_GetDimensions(_textureObject)[1];
 }
 
 unsigned int
 HdStRenderBuffer::GetDepth() const
 {
-    return _GetDimensions(_textureObject)[2];
+    return pxrImagingHdStRenderBuffer::_GetDimensions(_textureObject)[2];
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

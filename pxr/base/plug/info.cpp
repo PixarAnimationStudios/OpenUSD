@@ -205,7 +205,7 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
 
     // Append the default plug info filename if the path ends in a slash.
     if (*pathname.rbegin() == '/') {
-        pathname = pathname + _Tokens->PlugInfoName.GetString();
+        pathname = pathname + pxrBasePlugInfo::_Tokens->PlugInfoName.GetString();
     }
 
     // Ignore redundant reads.  This also prevents infinite recursion.
@@ -227,7 +227,7 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
 
     // Look for our expected keys.
     JsObject::const_iterator i;
-    i = top.find(_Tokens->PluginsKey);
+    i = top.find(pxrBasePlugInfo::_Tokens->PluginsKey);
     if (i != top.end()) {
         if (!i->second.IsArray()) {
             TF_RUNTIME_ERROR("Plugin info file %s key '%s' "
@@ -241,7 +241,7 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
             }
         }
     }
-    i = top.find(_Tokens->IncludesKey);
+    i = top.find(pxrBasePlugInfo::_Tokens->IncludesKey);
     if (i != top.end()) {
         if (!i->second.IsArray()) {
             TF_RUNTIME_ERROR("Plugin info file %s key '%s' "
@@ -273,8 +273,8 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
     // Report unexpected keys.
     for (const auto& v : top) {
         const JsObject::key_type& key = v.first;
-        if (key != _Tokens->PluginsKey && 
-            key != _Tokens->IncludesKey) {
+        if (key != pxrBasePlugInfo::_Tokens->PluginsKey && 
+            key != pxrBasePlugInfo::_Tokens->IncludesKey) {
             TF_RUNTIME_ERROR("Plugin info file %s has unknown key %s",
                              pathname.c_str(), key.c_str());
         }
@@ -413,7 +413,7 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
     pattern = TfStringPrintf("%s/%s%s",
                              dirname.c_str(), pattern.c_str(),
                              !pattern.empty() && *pattern.rbegin() == '/'
-                             ? _Tokens->PlugInfoName.GetText() : "");
+                             ? pxrBasePlugInfo::_Tokens->PlugInfoName.GetText() : "");
 
     std::shared_ptr<std::regex> re;
     try {

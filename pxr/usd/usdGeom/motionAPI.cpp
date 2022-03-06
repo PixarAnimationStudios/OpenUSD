@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdGeomMotionAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (MotionAPI)
 );
+
+} // pxrUsdUsdGeomMotionAPI
 
 /* virtual */
 UsdGeomMotionAPI::~UsdGeomMotionAPI()

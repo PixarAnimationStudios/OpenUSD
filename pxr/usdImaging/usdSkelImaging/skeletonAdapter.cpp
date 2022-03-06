@@ -55,6 +55,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdImagingUsdSkelImagingSkeletonAdapter {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -91,6 +93,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 );
 
+} // pxrUsdImagingUsdSkelImagingSkeletonAdapter
+
 TF_DEFINE_ENV_SETTING(USDSKELIMAGING_FORCE_CPU_COMPUTE, 0,
                       "Use Hydra ExtCPU computations for skinning.");
 
@@ -100,6 +104,8 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
+
+namespace pxrUsdImagingUsdSkelImagingSkeletonAdapter {
 
 // XXX: Temporary way to force CPU comps. Ideally, this is a render delegate
 // opinion, or should be handled in Hydra ExtComputation.
@@ -118,6 +124,8 @@ _IsEnabledAggregatorComputation()
     static bool enabled = !_IsEnabledCPUComputations();
     return enabled;
 }
+
+} // pxrUsdImagingUsdSkelImagingSkeletonAdapter
 
 UsdSkelImagingSkeletonAdapter::~UsdSkelImagingSkeletonAdapter()
 {}
@@ -213,7 +221,7 @@ UsdSkelImagingSkeletonAdapter::Populate(
                     skinnedPrim,
                     shared_from_this());
 
-            if (_IsEnabledAggregatorComputation()) {
+            if (pxrUsdImagingUsdSkelImagingSkeletonAdapter::_IsEnabledAggregatorComputation()) {
                 SdfPath aggrCompPath =
                     _GetSkinningInputAggregatorComputationPath(skinnedPrimPath);
 
@@ -501,7 +509,7 @@ UsdSkelImagingSkeletonAdapter::MarkDirty(const UsdPrim& prim,
 
         // The aggregator computation pulls on primvars authored on the skinned
         // prim, but doesn't pull on its transform.
-        if (_IsEnabledAggregatorComputation() &&
+        if (pxrUsdImagingUsdSkelImagingSkeletonAdapter::_IsEnabledAggregatorComputation() &&
             (dirty & HdChangeTracker::DirtyPrimvar)) {
             index->MarkSprimDirty(
                 _GetSkinningInputAggregatorComputationPath(cachePath),
@@ -863,28 +871,28 @@ UsdSkelImagingSkeletonAdapter::InvokeComputation(
     SdfPath const &computationPath = cachePath;
 
     VtValue restPoints
-        = context->GetInputValue(_tokens->restPoints);
+        = context->GetInputValue(pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->restPoints);
     VtValue geomBindXform
-        = context->GetInputValue(_tokens->geomBindXform);
+        = context->GetInputValue(pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->geomBindXform);
     VtValue influences
-        = context->GetInputValue(_tokens->influences);
+        = context->GetInputValue(pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->influences);
     VtValue numInfluencesPerComponent
-        = context->GetInputValue(_tokens->numInfluencesPerComponent);
+        = context->GetInputValue(pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numInfluencesPerComponent);
     VtValue hasConstantInfluences
-        = context->GetInputValue(_tokens->hasConstantInfluences);
+        = context->GetInputValue(pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->hasConstantInfluences);
     VtValue primWorldToLocal
-        = context->GetInputValue(_tokens->primWorldToLocal);
+        = context->GetInputValue(pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->primWorldToLocal);
     VtValue blendShapeOffsets
-        = context->GetInputValue(_tokens->blendShapeOffsets);
+        = context->GetInputValue(pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsets);
     VtValue blendShapeOffsetRanges
-        = context->GetInputValue(_tokens->blendShapeOffsetRanges);
+        = context->GetInputValue(pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsetRanges);
 
     VtValue blendShapeWeights
-        = context->GetInputValue(_tokens->blendShapeWeights);
+        = context->GetInputValue(pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeWeights);
     VtValue skinningXforms
-        = context->GetInputValue(_tokens->skinningXforms);
+        = context->GetInputValue(pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skinningXforms);
     VtValue skelLocalToWorld
-        = context->GetInputValue(_tokens->skelLocalToWorld);
+        = context->GetInputValue(pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skelLocalToWorld);
 
     // Ensure inputs are holding the right value types.
     if (!restPoints.IsHolding<VtVec3fArray>() ||
@@ -963,7 +971,7 @@ UsdSkelImagingSkeletonAdapter::InvokeComputation(
         }
     }
 
-    context->SetOutputValue(_tokens->skinnedPoints, VtValue(skinnedPoints));
+    context->SetOutputValue(pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skinnedPoints, VtValue(skinnedPoints));
 }
 
 // ---------------------------------------------------------------------- //
@@ -1186,16 +1194,16 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationSceneInputNames(
 
     if (_IsSkinningComputationPath(cachePath)) {
 
-        if (_IsEnabledAggregatorComputation()) {
+        if (pxrUsdImagingUsdSkelImagingSkeletonAdapter::_IsEnabledAggregatorComputation()) {
 
             // Scene inputs
             static TfTokenVector sceneInputNames({
                     // From the skinned prim
-                        _tokens->primWorldToLocal,
+                        pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->primWorldToLocal,
                     // From the skeleton
-                        _tokens->blendShapeWeights,
-                        _tokens->skinningXforms,
-                        _tokens->skelLocalToWorld,
+                        pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeWeights,
+                        pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skinningXforms,
+                        pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skelLocalToWorld,
             });
             return sceneInputNames;
 
@@ -1204,20 +1212,20 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationSceneInputNames(
             // Scene inputs
             static TfTokenVector sceneInputNames({
                 // From the skinned prim
-                    _tokens->restPoints,
-                    _tokens->geomBindXform,
-                    _tokens->influences,
-                    _tokens->numInfluencesPerComponent,
-                    _tokens->hasConstantInfluences,
-                    _tokens->primWorldToLocal,
-                    _tokens->blendShapeOffsets,
-                    _tokens->blendShapeOffsetRanges,
-                    _tokens->numBlendShapeOffsetRanges,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->restPoints,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->geomBindXform,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->influences,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numInfluencesPerComponent,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->hasConstantInfluences,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->primWorldToLocal,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsets,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsetRanges,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numBlendShapeOffsetRanges,
 
                 // From the skeleton
-                    _tokens->blendShapeWeights,
-                    _tokens->skinningXforms,
-                    _tokens->skelLocalToWorld
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeWeights,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skinningXforms,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skelLocalToWorld
             });
             return sceneInputNames;
         }
@@ -1228,14 +1236,14 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationSceneInputNames(
         // ExtComputation inputs
         static TfTokenVector inputNames({
             // Data authored on the skinned prim as primvars.
-                _tokens->restPoints,
-                _tokens->geomBindXform,
-                _tokens->influences,
-                _tokens->numInfluencesPerComponent,
-                _tokens->hasConstantInfluences,
-                _tokens->blendShapeOffsets,
-                _tokens->blendShapeOffsetRanges,
-                _tokens->numBlendShapeOffsetRanges
+                pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->restPoints,
+                pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->geomBindXform,
+                pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->influences,
+                pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numInfluencesPerComponent,
+                pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->hasConstantInfluences,
+                pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsets,
+                pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsetRanges,
+                pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numBlendShapeOffsetRanges
         });
         return inputNames;
 
@@ -1253,18 +1261,18 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationInputs(
 {
     if (_IsSkinningComputationPath(cachePath)) {
 
-        if (_IsEnabledAggregatorComputation()) {
+        if (pxrUsdImagingUsdSkelImagingSkeletonAdapter::_IsEnabledAggregatorComputation()) {
 
             // Computation inputs
             static TfTokenVector compInputNames({
-                    _tokens->restPoints,
-                    _tokens->geomBindXform,
-                    _tokens->influences,
-                    _tokens->numInfluencesPerComponent,
-                    _tokens->hasConstantInfluences,
-                    _tokens->blendShapeOffsets,
-                    _tokens->blendShapeOffsetRanges,
-                    _tokens->numBlendShapeOffsetRanges
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->restPoints,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->geomBindXform,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->influences,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numInfluencesPerComponent,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->hasConstantInfluences,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsets,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsetRanges,
+                    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numBlendShapeOffsetRanges
             });
 
             SdfPath skinnedPrimPath =
@@ -1312,7 +1320,7 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationOutputs(
         pointsType.count = 1;
         
         HdExtComputationOutputDescriptorVector outputsEntry;
-        outputsEntry.emplace_back(_tokens->skinnedPoints, pointsType);
+        outputsEntry.emplace_back(pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skinnedPoints, pointsType);
 
         return outputsEntry;
     }
@@ -1354,7 +1362,7 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationPrimvars(
                         HdPrimvarRoleTokens->point,
                         _ConvertCachePathToIndexPath(
                             _GetSkinningComputationPath(skinnedPrimPath)),
-                        _tokens->skinnedPoints,
+                        pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skinnedPoints,
                         pointsType);
 
         return compPrimvars;
@@ -1500,10 +1508,10 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
         return VtValue(numPoints);
     }
 
-    if (!_IsEnabledAggregatorComputation()) {
+    if (!pxrUsdImagingUsdSkelImagingSkeletonAdapter::_IsEnabledAggregatorComputation()) {
 
         // Rest Points
-        if (name == _tokens->restPoints) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->restPoints) {
             VtVec3fArray restPoints = _GetSkinnedPrimPoints(prim, 
                                             skinnedPrimCachePath, time);
             return VtValue(restPoints);
@@ -1517,7 +1525,7 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
         }
 
         // GeomBindXform
-        if (name == _tokens->geomBindXform) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->geomBindXform) {
             // read (optional) geomBindTransform property.
             // If unauthored, it is identity.
             const GfMatrix4d geomBindXform =
@@ -1528,9 +1536,9 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
         }
 
         // Influences
-        if (name == _tokens->influences || 
-            name == _tokens->numInfluencesPerComponent ||
-            name == _tokens->hasConstantInfluences) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->influences || 
+            name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numInfluencesPerComponent ||
+            name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->hasConstantInfluences) {
 
             VtVec2fArray influences;
             int numInfluencesPerComponent = 0;
@@ -1543,21 +1551,21 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
                                &usesConstantJointPrimvar);
             }
 
-            if (name == _tokens->influences) {
+            if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->influences) {
                 return VtValue(influences);
             }
-            if (name == _tokens->numInfluencesPerComponent) {
+            if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numInfluencesPerComponent) {
                 return VtValue(numInfluencesPerComponent);
             }
-            if (name == _tokens->hasConstantInfluences) {
+            if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->hasConstantInfluences) {
                 return VtValue(usesConstantJointPrimvar);
             }
         }
 
         // BlendShapes
-        if (name == _tokens->blendShapeOffsets ||
-            name == _tokens->blendShapeOffsetRanges ||
-            name == _tokens->numBlendShapeOffsetRanges) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsets ||
+            name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsetRanges ||
+            name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numBlendShapeOffsetRanges) {
 
             VtVec4fArray offsets;
             VtVec2iArray ranges;
@@ -1565,20 +1573,20 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
                 skinnedPrimData->blendShapeQuery->ComputePackedShapeTable(
                     &offsets, &ranges);
             }
-            if (name == _tokens->blendShapeOffsets) {
+            if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsets) {
                 return VtValue(offsets);
             }
-            if (name == _tokens->blendShapeOffsetRanges) {
+            if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsetRanges) {
                 return VtValue(ranges);
             }
-            if (name == _tokens->numBlendShapeOffsetRanges) {
+            if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numBlendShapeOffsetRanges) {
                 return VtValue(static_cast<int>(ranges.size()));
             }
         }
     }
 
     // primWorldToLocal
-    if (name == _tokens->primWorldToLocal) {
+    if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->primWorldToLocal) {
         UsdGeomXformCache xformCache(time);
         GfMatrix4d primWorldToLocal =
                 xformCache.GetLocalToWorldTransform(prim).GetInverse();
@@ -1586,9 +1594,9 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
     }
     
     // skinningXforms, skelLocalToWorld, blendShapeWeights
-    if (name == _tokens->skinningXforms ||
-        name == _tokens->skelLocalToWorld ||
-        name == _tokens->blendShapeWeights)
+    if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skinningXforms ||
+        name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skelLocalToWorld ||
+        name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeWeights)
     {
         const _SkinnedPrimData* skinnedPrimData = 
             _GetSkinnedPrimData(skinnedPrimCachePath);
@@ -1602,7 +1610,7 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
             return VtValue();
         }
 
-        if (name == _tokens->skinningXforms) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skinningXforms) {
             VtMatrix4fArray skinningXforms;
             if (!skinnedPrimData->hasJointInfluences ||
                 !pxrUsdImagingUsdSkelImagingSkeletonAdapter::_ComputeSkinningTransforms(skelData->skelQuery,
@@ -1618,7 +1626,7 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
             return VtValue(skinningXforms);
         }
 
-        if (name == _tokens->blendShapeWeights) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeWeights) {
             VtFloatArray weights;
             if (!skinnedPrimData->blendShapeQuery ||
                 !pxrUsdImagingUsdSkelImagingSkeletonAdapter::_ComputeSubShapeWeights(skelData->skelQuery,
@@ -1635,7 +1643,7 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
 
         }
 
-        if (name == _tokens->skelLocalToWorld) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skelLocalToWorld) {
             // PERFORMANCE:
             // Would be better if we could access a shared xformCache here?
             UsdGeomXformCache xformCache(time);
@@ -1685,14 +1693,14 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForInputAggregator(
     }
 
     // restPoints
-    if (name == _tokens->restPoints) {
+    if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->restPoints) {
         VtVec3fArray restPoints =
             _GetSkinnedPrimPoints(prim, skinnedPrimCachePath, time);
         return VtValue(restPoints);
     }
 
     // geomBindXform
-    if (name == _tokens->geomBindXform) {
+    if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->geomBindXform) {
         // read (optional) geomBindTransform property.
         // If unauthored, it is identity.
         const GfMatrix4d geomBindXform =
@@ -1703,9 +1711,9 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForInputAggregator(
     }
 
     // influences, numInfluencesPerComponent, hasConstantInfluences
-    if (name == _tokens->influences ||
-        name == _tokens->numInfluencesPerComponent ||
-        name == _tokens->hasConstantInfluences) {
+    if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->influences ||
+        name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numInfluencesPerComponent ||
+        name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->hasConstantInfluences) {
 
         VtVec2fArray influences;
         int numInfluencesPerComponent = 0;
@@ -1718,22 +1726,22 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForInputAggregator(
                            &usesConstantJointPrimvar);
         }
 
-        if (name == _tokens->influences) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->influences) {
             return VtValue(influences);
         }
-        if (name == _tokens->numInfluencesPerComponent) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numInfluencesPerComponent) {
             return VtValue(numInfluencesPerComponent);
         }
-        if (name == _tokens->hasConstantInfluences) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->hasConstantInfluences) {
             return VtValue(usesConstantJointPrimvar);
         }
     }
 
             
     // blendShapeOffsets, blendShapeOffsetRanges, numBlendShapeOffsetRanges
-    if (name == _tokens->blendShapeOffsets ||
-        name == _tokens->blendShapeOffsetRanges ||
-        name == _tokens->numBlendShapeOffsetRanges) {
+    if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsets ||
+        name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsetRanges ||
+        name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numBlendShapeOffsetRanges) {
             
         VtVec4fArray offsets;
         VtVec2iArray ranges;
@@ -1742,13 +1750,13 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForInputAggregator(
                 &offsets, &ranges);
         }
 
-        if (name == _tokens->blendShapeOffsets) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsets) {
             return VtValue(offsets);
         }
-        if (name == _tokens->blendShapeOffsetRanges) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsetRanges) {
             return VtValue(ranges);
         }
-        if (name == _tokens->numBlendShapeOffsetRanges) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numBlendShapeOffsetRanges) {
             // The size of the offset ranges needs to be available for GL
             return VtValue(static_cast<int>(ranges.size()));
         }
@@ -1840,7 +1848,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForSkinningComputation(
     }
 
     // primWorldToLocal
-    if (name == _tokens->primWorldToLocal) {
+    if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->primWorldToLocal) {
         // This "CAPACITY = 4" indicates the maximum size of the stack in these 
         // TfSmallVectors. Ideally, this would be configurable by higher level 
         // components such as the render delegate (similar to the rest of our 
@@ -1863,9 +1871,9 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForSkinningComputation(
     }
     
     // skinningXforms, skelLocalToWorld, blendShapeWeights
-    if (name == _tokens->skinningXforms ||
-        name == _tokens->skelLocalToWorld ||
-        name == _tokens->blendShapeWeights)
+    if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skinningXforms ||
+        name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skelLocalToWorld ||
+        name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeWeights)
     {
         const _SkinnedPrimData* skinnedPrimData = 
             _GetSkinnedPrimData(skinnedPrimCachePath);
@@ -1879,7 +1887,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForSkinningComputation(
             return 0;
         }
 
-        if (name == _tokens->skinningXforms) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skinningXforms) {
             const UsdSkelAnimQuery &animQuery = skinnedPrimData->animQuery;
 
             if (skinnedPrimData->hasJointInfluences && animQuery) {
@@ -1921,7 +1929,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForSkinningComputation(
             }
         }
 
-        if (name == _tokens->blendShapeWeights) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeWeights) {
             const UsdSkelAnimQuery &animQuery = skinnedPrimData->animQuery;
             if (skinnedPrimData->blendShapeQuery && animQuery) {
 
@@ -1960,7 +1968,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForSkinningComputation(
             }
         }
 
-        if (name == _tokens->skelLocalToWorld) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skelLocalToWorld) {
             UsdPrim skelPrim(skelData->skelQuery.GetPrim());
             if (skelPrim.IsInPrototype()) {
                 const auto bindingIt = 
@@ -1991,7 +1999,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForSkinningComputation(
         }
     }
 
-    if (!_IsEnabledAggregatorComputation()) {
+    if (!pxrUsdImagingUsdSkelImagingSkeletonAdapter::_IsEnabledAggregatorComputation()) {
         // If there isn't a separate aggregator computation, those inputs are
         // part of this computation so we can just call into the same function.
         return _SampleExtComputationInputForInputAggregator(
@@ -2038,7 +2046,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForInputAggregator(
     }
 
     // restPoints
-    if (name == _tokens->restPoints) {
+    if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->restPoints) {
         // Rest points aren't expected to be time-varying.
         sampleValues[0] =
             VtValue(_GetSkinnedPrimPoints(prim, skinnedPrimCachePath, time));
@@ -2047,7 +2055,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForInputAggregator(
     }
 
     // geomBindXform
-    if (name == _tokens->geomBindXform) {
+    if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->geomBindXform) {
         // read (optional) geomBindTransform property.
         // If unauthored, it is identity.
         const GfMatrix4d geomBindXform =
@@ -2060,9 +2068,9 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForInputAggregator(
     }
 
     // influences, numInfluencesPerComponent, hasConstantInfluences
-    if (name == _tokens->influences ||
-        name == _tokens->numInfluencesPerComponent ||
-        name == _tokens->hasConstantInfluences) {
+    if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->influences ||
+        name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numInfluencesPerComponent ||
+        name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->hasConstantInfluences) {
 
         VtVec2fArray influences;
         int numInfluencesPerComponent = 0;
@@ -2074,13 +2082,13 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForInputAggregator(
                            &usesConstantJointPrimvar);
         }
 
-        if (name == _tokens->influences) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->influences) {
             sampleValues[0] = VtValue(influences);
         }
-        if (name == _tokens->numInfluencesPerComponent) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numInfluencesPerComponent) {
             sampleValues[0] = VtValue(numInfluencesPerComponent);
         }
-        if (name == _tokens->hasConstantInfluences) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->hasConstantInfluences) {
             sampleValues[0] = VtValue(usesConstantJointPrimvar);
         }
 
@@ -2089,9 +2097,9 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForInputAggregator(
     }
 
     // blendShapeOffsets, blendShapeOffsetRanges, numBlendShapeOffsetRanges
-    if (name == _tokens->blendShapeOffsets ||
-        name == _tokens->blendShapeOffsetRanges ||
-        name == _tokens->numBlendShapeOffsetRanges) {
+    if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsets ||
+        name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsetRanges ||
+        name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numBlendShapeOffsetRanges) {
 
         VtVec4fArray offsets;
         VtVec2iArray ranges;
@@ -2100,13 +2108,13 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForInputAggregator(
                 &offsets, &ranges);
         }
 
-        if (name == _tokens->blendShapeOffsets) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsets) {
             sampleValues[0] = VtValue(offsets);
         }
-        if (name == _tokens->blendShapeOffsetRanges) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->blendShapeOffsetRanges) {
             sampleValues[0] = VtValue(ranges);
         }
-        if (name == _tokens->numBlendShapeOffsetRanges) {
+        if (name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->numBlendShapeOffsetRanges) {
             // The size of the offset ranges needs to be available for GL
             sampleValues[0] = VtValue(static_cast<int>(ranges.size()));
         }
@@ -2183,7 +2191,7 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationKernel(
     TRACE_FUNCTION();
 
     if (_IsSkinningComputationPath(cachePath)) {
-        if (_IsEnabledCPUComputations()) {
+        if (pxrUsdImagingUsdSkelImagingSkeletonAdapter::_IsEnabledCPUComputations()) {
             return std::string();
         } else {
             return _GetSkinningComputeKernel();
@@ -2282,7 +2290,7 @@ UsdSkelImagingSkeletonAdapter::_RemoveSkinnedPrimAndComputations(
     SdfPath compPath = _GetSkinningComputationPath(cachePath);
     index->RemoveSprim(HdPrimTypeTokens->extComputation, compPath);
     
-    if (_IsEnabledAggregatorComputation()) {
+    if (pxrUsdImagingUsdSkelImagingSkeletonAdapter::_IsEnabledAggregatorComputation()) {
         SdfPath aggrCompPath =
             _GetSkinningInputAggregatorComputationPath(cachePath);
         index->RemoveSprim(HdPrimTypeTokens->extComputation, aggrCompPath);
@@ -2299,7 +2307,7 @@ SdfPath
 UsdSkelImagingSkeletonAdapter::_GetSkinningComputationPath(
     const SdfPath& skinnedPrimPath) const
 {
-    return skinnedPrimPath.AppendChild(_tokens->skinningComputation);
+    return skinnedPrimPath.AppendChild(pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skinningComputation);
 }
 
 
@@ -2307,7 +2315,7 @@ SdfPath
 UsdSkelImagingSkeletonAdapter::_GetSkinningInputAggregatorComputationPath(
     const SdfPath& skinnedPrimPath) const
 {
-    return skinnedPrimPath.AppendChild(_tokens->skinningInputAggregatorComputation);
+    return skinnedPrimPath.AppendChild(pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skinningInputAggregatorComputation);
 }
 
 
@@ -2315,7 +2323,7 @@ bool
 UsdSkelImagingSkeletonAdapter::_IsSkinningComputationPath(
     const SdfPath& cachePath) const
 {
-    return cachePath.GetName() == _tokens->skinningComputation;
+    return cachePath.GetName() == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skinningComputation;
 }
 
 
@@ -2323,7 +2331,7 @@ bool
 UsdSkelImagingSkeletonAdapter::_IsSkinningInputAggregatorComputationPath(
     const SdfPath& cachePath) const
 {
-    return cachePath.GetName() == _tokens->skinningInputAggregatorComputation;
+    return cachePath.GetName() == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skinningInputAggregatorComputation;
 }
 
 
@@ -2384,8 +2392,8 @@ UsdSkelImagingSkeletonAdapter::_LoadSkinningComputeKernel()
         return std::string();
     }
 
-    //const TfToken& kernelKey = _tokens->skinPointsSimpleKernel;
-    const TfToken& kernelKey = _tokens->skinPointsLBSKernel;
+    //const TfToken& kernelKey = pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skinPointsSimpleKernel;
+    const TfToken& kernelKey = pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skinPointsLBSKernel;
     
     std::string shaderSource = gfx.GetSource(kernelKey);
     if (!TF_VERIFY(!shaderSource.empty())) {
@@ -2484,9 +2492,9 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinnedPrimForTime(
         HdPrimvarDescriptorVector& primvars =
             primvarDescCache->GetPrimvars(skinnedPrimPath);
         for (auto it = primvars.begin(); it != primvars.end(); ) {
-            if (it->name == _tokens->skelJointIndices ||
-                it->name == _tokens->skelJointWeights  ||
-                it->name == _tokens->skelGeomBindXform) {
+            if (it->name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skelJointIndices ||
+                it->name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skelJointWeights  ||
+                it->name == pxrUsdImagingUsdSkelImagingSkeletonAdapter::_tokens->skelGeomBindXform) {
                 it = primvars.erase(it);
             } else {
                 ++it;

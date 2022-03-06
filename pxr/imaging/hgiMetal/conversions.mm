@@ -29,6 +29,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHgiMetalConversions {
 //
 // HgiFormat
 //
@@ -441,6 +442,8 @@ struct {
                                 MTLPrimitiveTypeTriangle /*Invalid*/}
 };
 
+} // pxrImagingHgiMetalConversions
+
 MTLPixelFormat
 HgiMetalConversions::GetPixelFormat(HgiFormat inFormat)
 {
@@ -454,7 +457,7 @@ HgiMetalConversions::GetPixelFormat(HgiFormat inFormat)
         return MTLPixelFormatRGBA8Unorm;
     }
 
-    MTLPixelFormat outFormat = _PIXEL_FORMAT_DESC[inFormat];
+    MTLPixelFormat outFormat = pxrImagingHgiMetalConversions::_PIXEL_FORMAT_DESC[inFormat];
     if (outFormat == MTLPixelFormatInvalid)
     {
         TF_CODING_ERROR("Unsupported HgiFormat %d", inFormat);
@@ -472,7 +475,7 @@ HgiMetalConversions::GetVertexFormat(HgiFormat inFormat)
         return MTLVertexFormatFloat4;
     }
 
-    MTLVertexFormat outFormat = _VERTEX_FORMAT_DESC[inFormat];
+    MTLVertexFormat outFormat = pxrImagingHgiMetalConversions::_VERTEX_FORMAT_DESC[inFormat];
     if (outFormat == MTLVertexFormatInvalid)
     {
         TF_CODING_ERROR("Unsupported HgiFormat %d", inFormat);
@@ -484,13 +487,13 @@ HgiMetalConversions::GetVertexFormat(HgiFormat inFormat)
 MTLCullMode
 HgiMetalConversions::GetCullMode(HgiCullMode cm)
 {
-    return _CullModeTable[cm].metalCullMode;
+    return pxrImagingHgiMetalConversions::_CullModeTable[cm].metalCullMode;
 }
 
 MTLTriangleFillMode
 HgiMetalConversions::GetPolygonMode(HgiPolygonMode pm)
 {
-    return _PolygonModeTable[pm].metalFillMode;
+    return pxrImagingHgiMetalConversions::_PolygonModeTable[pm].metalFillMode;
 }
 
 MTLBlendFactor
@@ -502,67 +505,67 @@ HgiMetalConversions::GetBlendFactor(HgiBlendFactor bf)
 MTLBlendOperation
 HgiMetalConversions::GetBlendEquation(HgiBlendOp bo)
 {
-    return _blendEquationTable[bo].metalBlendOp;
+    return pxrImagingHgiMetalConversions::_blendEquationTable[bo].metalBlendOp;
 }
 
 MTLWinding
 HgiMetalConversions::GetWinding(HgiWinding winding)
 {
-    return _windingTable[winding].metalWinding;
+    return pxrImagingHgiMetalConversions::_windingTable[winding].metalWinding;
 }
 
 MTLLoadAction
 HgiMetalConversions::GetAttachmentLoadOp(HgiAttachmentLoadOp loadOp)
 {
-    return _attachmentLoadOpTable[loadOp].metalLoadOp;
+    return pxrImagingHgiMetalConversions::_attachmentLoadOpTable[loadOp].metalLoadOp;
 }
 
 MTLStoreAction
 HgiMetalConversions::GetAttachmentStoreOp(HgiAttachmentStoreOp storeOp)
 {
-    return _attachmentStoreOpTable[storeOp].metalStoreOp;
+    return pxrImagingHgiMetalConversions::_attachmentStoreOpTable[storeOp].metalStoreOp;
 }
 
 MTLCompareFunction
 HgiMetalConversions::GetCompareFunction(HgiCompareFunction cf)
 {
-    return _compareFnTable[cf].metalCF;
+    return pxrImagingHgiMetalConversions::_compareFnTable[cf].metalCF;
 }
 
 MTLStencilOperation
 HgiMetalConversions::GetStencilOp(HgiStencilOp op)
 {
-    return _stencilOpTable[op].metalStencilOp;
+    return pxrImagingHgiMetalConversions::_stencilOpTable[op].metalStencilOp;
 }
 
 MTLTextureType
 HgiMetalConversions::GetTextureType(HgiTextureType tt)
 {
-    return _textureTypeTable[tt].metalTT;
+    return pxrImagingHgiMetalConversions::_textureTypeTable[tt].metalTT;
 }
 
 MTLSamplerAddressMode
 HgiMetalConversions::GetSamplerAddressMode(HgiSamplerAddressMode a)
 {
-    return _samplerAddressModeTable[a].metalAM;
+    return pxrImagingHgiMetalConversions::_samplerAddressModeTable[a].metalAM;
 }
 
 MTLSamplerMinMagFilter
 HgiMetalConversions::GetMinMagFilter(HgiSamplerFilter mf)
 {
-    return _samplerFilterTable[mf].metalSF;
+    return pxrImagingHgiMetalConversions::_samplerFilterTable[mf].metalSF;
 }
 
 MTLSamplerMipFilter
 HgiMetalConversions::GetMipFilter(HgiMipFilter mf)
 {
-    return _mipFilterTable[mf].metalMF;
+    return pxrImagingHgiMetalConversions::_mipFilterTable[mf].metalMF;
 }
 
 MTLSamplerBorderColor
 HgiMetalConversions::GetBorderColor(HgiBorderColor bc)
 {
-    return _borderColorTable[bc].metalBC;
+    return pxrImagingHgiMetalConversions::_borderColorTable[bc].metalBC;
 }
 
 #if (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15) \
@@ -570,20 +573,20 @@ HgiMetalConversions::GetBorderColor(HgiBorderColor bc)
 MTLTextureSwizzle
 HgiMetalConversions::GetComponentSwizzle(HgiComponentSwizzle componentSwizzle)
 {
-    return _componentSwizzleTable[componentSwizzle].metalCS;
+    return pxrImagingHgiMetalConversions::_componentSwizzleTable[componentSwizzle].metalCS;
 }
 #endif
 
 MTLPrimitiveTopologyClass
 HgiMetalConversions::GetPrimitiveClass(HgiPrimitiveType pt)
 {
-    return _primitiveClassTable[pt].metalTC;
+    return pxrImagingHgiMetalConversions::_primitiveClassTable[pt].metalTC;
 }
 
 MTLPrimitiveType
 HgiMetalConversions::GetPrimitiveType(HgiPrimitiveType pt)
 {
-    return _primitiveTypeTable[pt].metalPT;
+    return pxrImagingHgiMetalConversions::_primitiveTypeTable[pt].metalPT;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

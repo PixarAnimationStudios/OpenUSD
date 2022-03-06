@@ -32,14 +32,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 // UsdPayloads
 // ------------------------------------------------------------------------- //
 
-using _ListEditImpl = 
+using _PayloadsListEditImpl = 
     Usd_ListEditImpl<UsdPayloads, SdfPayloadsProxy>;
 
 // The implementation doesn't define this function as it needs to be specialized
 // so we implement it here.
 template <>
 SdfPayloadsProxy 
-_ListEditImpl::_GetListEditorForSpec(const SdfPrimSpecHandle &spec)
+_PayloadsListEditImpl::_GetListEditorForSpec(const SdfPrimSpecHandle &spec)
 {
     return spec->GetPayloadList();
 }
@@ -47,7 +47,7 @@ _ListEditImpl::_GetListEditorForSpec(const SdfPrimSpecHandle &spec)
 bool
 UsdPayloads::AddPayload(const SdfPayload& refIn, UsdListPosition position)
 {
-    return _ListEditImpl::Add(*this, refIn, position);
+    return _PayloadsListEditImpl::Add(*this, refIn, position);
 }
 
 bool
@@ -81,19 +81,19 @@ UsdPayloads::AddInternalPayload(const SdfPath &primPath,
 bool
 UsdPayloads::RemovePayload(const SdfPayload& refIn)
 {
-    return _ListEditImpl::Remove(*this, refIn);
+    return _PayloadsListEditImpl::Remove(*this, refIn);
 }
 
 bool
 UsdPayloads::ClearPayloads()
 {
-    return _ListEditImpl::Clear(*this);
+    return _PayloadsListEditImpl::Clear(*this);
 }
 
 bool 
 UsdPayloads::SetPayloads(const SdfPayloadVector& itemsIn)
 {
-    return _ListEditImpl::Set(*this, itemsIn);
+    return _PayloadsListEditImpl::Set(*this, itemsIn);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

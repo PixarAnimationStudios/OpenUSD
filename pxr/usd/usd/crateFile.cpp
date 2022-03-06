@@ -3955,7 +3955,7 @@ struct _GetTypeidForNonArrayTypes {
 };
 
 template <bool SupportsArray>
-using _GetTypeid = typename std::conditional<SupportsArray,
+using _CrateFileGetTypeid = typename std::conditional<SupportsArray,
                                              _GetTypeidForArrayTypes,
                                              _GetTypeidForNonArrayTypes>::type;
 
@@ -3965,7 +3965,7 @@ CrateFile::GetTypeid(ValueRep rep) const
     switch (rep.GetType()) {
 #define xx(ENUMNAME, _unused, T, SUPPORTSARRAY)                                \
         case TypeEnum::ENUMNAME:                                               \
-            return _GetTypeid<SUPPORTSARRAY>::Get<T>(rep.IsArray());
+            return _CrateFileGetTypeid<SUPPORTSARRAY>::Get<T>(rep.IsArray());
 
 #include "crateDataTypes.h"
 
@@ -4025,7 +4025,7 @@ void
 CrateFile::_DeleteValueHandlers() {
 #define xx(_unused1, _unused2, T, _unused3)                                    \
     delete static_cast<_ValueHandler<T> *>(                                    \
-        _valueHandlers[static_cast<int>(TypeEnumFor<T>())]);
+        _valueHandlers[static_cast<int>(pxrUsdUsdCrateFile::TypeEnumFor<T>())]);
 
 #include "crateDataTypes.h"
 
@@ -4036,7 +4036,7 @@ void
 CrateFile::_ClearValueHandlerDedupTables() {
 #define xx(_unused1, _unused2, T, _unused3)                                    \
     static_cast<_ValueHandler<T> *>(                                           \
-        _valueHandlers[static_cast<int>(TypeEnumFor<T>())])->Clear();
+        _valueHandlers[static_cast<int>(pxrUsdUsdCrateFile::TypeEnumFor<T>())])->Clear();
 
 #include "crateDataTypes.h"
 

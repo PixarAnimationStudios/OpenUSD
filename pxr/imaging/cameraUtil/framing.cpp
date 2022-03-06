@@ -76,6 +76,8 @@ CameraUtilFraming::operator!=(const CameraUtilFraming& other) const
     return !(*this == other);
 }
 
+namespace pxrImagingCameraUtilFraming {
+
 template<typename T>
 static GfVec2f _ComputeCenter(const T &window)
 {
@@ -90,6 +92,8 @@ static double _SafeDiv(const double a, const double b)
     return a / b;
 }
 
+} // pxrImagingCameraUtilFraming
+
 GfMatrix4d
 CameraUtilFraming::ApplyToProjectionMatrix(
     const GfMatrix4d &projectionMatrix,
@@ -98,10 +102,10 @@ CameraUtilFraming::ApplyToProjectionMatrix(
     const GfVec2f &dispSize = displayWindow.GetSize();
     const GfVec2f dataSize = dataWindow.GetSize();
     const double aspect =
-        pixelAspectRatio * _SafeDiv(dispSize[0], dispSize[1]);
+        pixelAspectRatio * pxrImagingCameraUtilFraming::_SafeDiv(dispSize[0], dispSize[1]);
 
     const GfVec2f t =
-        2.0f * (_ComputeCenter(displayWindow) - _ComputeCenter(dataWindow));
+        2.0f * (pxrImagingCameraUtilFraming::_ComputeCenter(displayWindow) - pxrImagingCameraUtilFraming::_ComputeCenter(dataWindow));
 
     return
         // Conform frustum to display window aspect ratio.

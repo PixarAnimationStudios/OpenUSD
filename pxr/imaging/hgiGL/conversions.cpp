@@ -32,6 +32,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHgiGLConversions {
+
 struct _FormatDesc {
     GLenum format;
     GLenum type;
@@ -282,6 +284,8 @@ _imageLayoutFormatTable[HgiFormatCount][2] =
     {"HgiFormatFloat32UInt8",      ""},
 };
 
+} // pxrImagingHgiGLConversions
+
 void
 HgiGLConversions::GetFormat(
         HgiFormat inFormat,
@@ -304,7 +308,7 @@ HgiGLConversions::GetFormat(
         return;
     }
 
-    const _FormatDesc &desc = FORMAT_DESC[inFormat];
+    const pxrImagingHgiGLConversions::_FormatDesc &desc = pxrImagingHgiGLConversions::FORMAT_DESC[inFormat];
     if (outFormat) {
         *outFormat = desc.format;
     }
@@ -319,14 +323,14 @@ HgiGLConversions::GetFormat(
 GLenum
 HgiGLConversions::GetFormatType(HgiFormat inFormat)
 {
-    const _FormatDesc &desc = FORMAT_DESC[inFormat];
+    const pxrImagingHgiGLConversions::_FormatDesc &desc = pxrImagingHgiGLConversions::FORMAT_DESC[inFormat];
     return desc.type;
 }
 
 bool
 HgiGLConversions::IsVertexAttribIntegerFormat(HgiFormat inFormat)
 {
-    const _FormatDesc &desc = FORMAT_DESC[inFormat];
+    const pxrImagingHgiGLConversions::_FormatDesc &desc = pxrImagingHgiGLConversions::FORMAT_DESC[inFormat];
     return desc.type == GL_BYTE ||
            desc.type == GL_UNSIGNED_BYTE ||
            desc.type == GL_SHORT ||
@@ -339,7 +343,7 @@ std::vector<GLenum>
 HgiGLConversions::GetShaderStages(HgiShaderStage ss)
 {
     std::vector<GLenum> stages;
-    for (const auto& f : _ShaderStageTable) {
+    for (const auto& f : pxrImagingHgiGLConversions::_ShaderStageTable) {
         if (ss & f[0]) stages.push_back(f[1]);
     }
 
@@ -352,49 +356,49 @@ HgiGLConversions::GetShaderStages(HgiShaderStage ss)
 GLenum
 HgiGLConversions::GetCullMode(HgiCullMode cm)
 {
-    return _CullModeTable[cm][1];
+    return pxrImagingHgiGLConversions::_CullModeTable[cm][1];
 }
 
 GLenum
 HgiGLConversions::GetPolygonMode(HgiPolygonMode pm)
 {
-    return _PolygonModeTable[pm][1];
+    return pxrImagingHgiGLConversions::_PolygonModeTable[pm][1];
 }
 
 GLenum
 HgiGLConversions::GetBlendFactor(HgiBlendFactor bf)
 {
-    return _blendFactorTable[bf][1];
+    return pxrImagingHgiGLConversions::_blendFactorTable[bf][1];
 }
 
 GLenum
 HgiGLConversions::GetBlendEquation(HgiBlendOp bo)
 {
-    return _blendEquationTable[bo][1];
+    return pxrImagingHgiGLConversions::_blendEquationTable[bo][1];
 }
 
 GLenum
 HgiGLConversions::GetCompareFunction(HgiCompareFunction cf)
 {
-    return _compareFunctionTable[cf][1];
+    return pxrImagingHgiGLConversions::_compareFunctionTable[cf][1];
 }
 
 GLenum
 HgiGLConversions::GetStencilOp(HgiStencilOp op)
 {
-    return _stencilOpTable[op][1];
+    return pxrImagingHgiGLConversions::_stencilOpTable[op][1];
 }
 
 GLenum
 HgiGLConversions::GetTextureType(HgiTextureType tt)
 {
-    return _textureTypeTable[tt][1];
+    return pxrImagingHgiGLConversions::_textureTypeTable[tt][1];
 }
 
 GLenum
 HgiGLConversions::GetSamplerAddressMode(HgiSamplerAddressMode am)
 {
-    return _samplerAddressModeTable[am][1];
+    return pxrImagingHgiGLConversions::_samplerAddressModeTable[am][1];
 }
 
 GLenum
@@ -464,23 +468,23 @@ HgiGLConversions::GetBorderColor(HgiBorderColor borderColor)
 GLenum
 HgiGLConversions::GetComponentSwizzle(HgiComponentSwizzle componentSwizzle)
 {
-    return _componentSwizzleTable[componentSwizzle][1];
+    return pxrImagingHgiGLConversions::_componentSwizzleTable[componentSwizzle][1];
 }
 
 GLenum
 HgiGLConversions::GetPrimitiveType(HgiPrimitiveType pt)
 {
-    return _primitiveTypeTable[pt][1];
+    return pxrImagingHgiGLConversions::_primitiveTypeTable[pt][1];
 }
 
 std::string 
 HgiGLConversions::GetImageLayoutFormatQualifier(HgiFormat inFormat)
 {
-    const std::string layoutQualifier = _imageLayoutFormatTable[inFormat][1];
+    const std::string layoutQualifier = pxrImagingHgiGLConversions::_imageLayoutFormatTable[inFormat][1];
     if (layoutQualifier.empty()) {
         TF_WARN("Given HgiFormat is not a supported image unit format, "
                 "defaulting to rgba16f");
-        return _imageLayoutFormatTable[9][1];
+        return pxrImagingHgiGLConversions::_imageLayoutFormatTable[9][1];
     }
     return layoutQualifier;
 }

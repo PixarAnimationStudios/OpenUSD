@@ -39,6 +39,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 NDR_REGISTER_PARSER_PLUGIN(SdrGlslfxParserPlugin);
 
+namespace pxrUsdImagingPluginSdrGlslfxParserPlugin {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -47,17 +49,19 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sourceType, "glslfx"))
 );
 
+} // pxrUsdImagingPluginSdrGlslfxParserPlugin
+
 const NdrTokenVec& 
 SdrGlslfxParserPlugin::GetDiscoveryTypes() const
 {
-    static const NdrTokenVec _DiscoveryTypes = {_tokens->discoveryType};
+    static const NdrTokenVec _DiscoveryTypes = {pxrUsdImagingPluginSdrGlslfxParserPlugin::_tokens->discoveryType};
     return _DiscoveryTypes;
 }
 
 const TfToken& 
 SdrGlslfxParserPlugin::GetSourceType() const
 {
-    return _tokens->sourceType;
+    return pxrUsdImagingPluginSdrGlslfxParserPlugin::_tokens->sourceType;
 }
 
 static VtValue
@@ -312,8 +316,8 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
         discoveryResult.version,
         discoveryResult.name,
         discoveryResult.family,
-        _tokens->sourceType,
-        _tokens->sourceType,
+        pxrUsdImagingPluginSdrGlslfxParserPlugin::_tokens->sourceType,
+        pxrUsdImagingPluginSdrGlslfxParserPlugin::_tokens->sourceType,
         discoveryResult.resolvedUri,
         discoveryResult.resolvedUri,
         std::move(nodeProperties),

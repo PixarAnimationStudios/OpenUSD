@@ -59,9 +59,13 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<ArResolver>();
 }
 
+namespace pxrUsdArResolver_v1 {
+
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
     (extensions)
 );
+
+} // pxrUsdArResolver_v1
 
 TF_DEFINE_ENV_SETTING(
     PXR_AR_DISABLE_PLUGIN_RESOLVER, false,
@@ -662,11 +666,11 @@ private:
 
             const JsOptionalValue extensionsVal = JsFindValue(
                 plugin->GetMetadataForType(packageResolverType),
-                _tokens->extensions.GetString());
+                pxrUsdArResolver_v1::_tokens->extensions.GetString());
             if (!extensionsVal) {
                 TF_RUNTIME_ERROR(
                     "No package formats specified in '%s' metadata for '%s'",
-                    _tokens->extensions.GetText(), 
+                    pxrUsdArResolver_v1::_tokens->extensions.GetText(), 
                     packageResolverType.GetTypeName().c_str());
                 continue;
             }
@@ -678,7 +682,7 @@ private:
                 if (m.Clear()) {
                     TF_RUNTIME_ERROR(
                         "Expected list of formats in '%s' metadata for '%s'",
-                        _tokens->extensions.GetText(), 
+                        pxrUsdArResolver_v1::_tokens->extensions.GetText(), 
                         packageResolverType.GetTypeName().c_str());
                     continue;
                 }

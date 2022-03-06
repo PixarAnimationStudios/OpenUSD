@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdRiStatementsAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (StatementsAPI)
 );
+
+} // pxrUsdUsdRiStatementsAPI
 
 /* virtual */
 UsdRiStatementsAPI::~UsdRiStatementsAPI()
@@ -146,6 +150,8 @@ TF_DEFINE_ENV_SETTING(
     "If on, UsdRiStatementsAPI will read old-style attributes.  "
     "Otherwise, primvars in the ri: namespace will be read instead.");
 
+namespace pxrUsdUsdRiStatementsAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((fullAttributeNamespace, "ri:attributes:"))
@@ -161,9 +167,11 @@ TF_DEFINE_PRIVATE_TOKENS(
 static TfToken
 _MakeRiAttrNamespace(const std::string &nameSpace, const std::string &attrName)
 {
-    return TfToken(_tokens->fullAttributeNamespace.GetString() + 
+    return TfToken(pxrUsdUsdRiStatementsAPI::_tokens->fullAttributeNamespace.GetString() + 
                    nameSpace + ":" + attrName);
 }
+
+} // pxrUsdUsdRiStatementsAPI
 
 UsdAttribute
 UsdRiStatementsAPI::CreateRiAttribute(
@@ -171,7 +179,7 @@ UsdRiStatementsAPI::CreateRiAttribute(
     const std::string &riType,
     const std::string &nameSpace)
 {
-    TfToken fullName = _MakeRiAttrNamespace(nameSpace, name.GetString());
+    TfToken fullName = pxrUsdUsdRiStatementsAPI::_MakeRiAttrNamespace(nameSpace, name.GetString());
     SdfValueTypeName usdType = UsdRi_GetUsdType(riType);
     return UsdGeomPrimvarsAPI(GetPrim())
         .CreatePrimvar(fullName, usdType).GetAttr();
@@ -183,7 +191,7 @@ UsdRiStatementsAPI::CreateRiAttribute(
     const TfType &tfType,
     const std::string &nameSpace)
 {
-    TfToken fullName = _MakeRiAttrNamespace(nameSpace, name.GetString());
+    TfToken fullName = pxrUsdUsdRiStatementsAPI::_MakeRiAttrNamespace(nameSpace, name.GetString());
     SdfValueTypeName usdType = SdfSchema::GetInstance().FindType(tfType);
     return UsdGeomPrimvarsAPI(GetPrim())
         .CreatePrimvar(fullName, usdType).GetAttr();
@@ -194,7 +202,7 @@ UsdRiStatementsAPI::GetRiAttribute(
     const TfToken &name, 
     const std::string &nameSpace)
 {
-    TfToken fullName = _MakeRiAttrNamespace(nameSpace, name.GetString());
+    TfToken fullName = pxrUsdUsdRiStatementsAPI::_MakeRiAttrNamespace(nameSpace, name.GetString());
     if (UsdGeomPrimvar p = UsdGeomPrimvarsAPI(GetPrim()).GetPrimvar(fullName)) {
         return p;
     }
@@ -211,7 +219,7 @@ UsdRiStatementsAPI::GetRiAttributes(
     std::vector<UsdProperty> validProps;
 
     // Read as primvars.
-    std::string const& ns = _tokens->fullAttributeNamespace.GetString();
+    std::string const& ns = pxrUsdUsdRiStatementsAPI::_tokens->fullAttributeNamespace.GetString();
     for (UsdGeomPrimvar const& pv:
          UsdGeomPrimvarsAPI(GetPrim()).GetPrimvars()) {
         if (TfStringStartsWith(pv.GetPrimvarName().GetString(), ns)) {
@@ -223,7 +231,7 @@ UsdRiStatementsAPI::GetRiAttributes(
     if (TfGetEnvSetting(USDRI_STATEMENTS_READ_OLD_ATTR_ENCODING)) {
         const size_t numNewStylePrimvars = validProps.size();
         std::vector<UsdProperty> props = 
-            GetPrim().GetPropertiesInNamespace(_tokens->fullAttributeNamespace);
+            GetPrim().GetPropertiesInNamespace(pxrUsdUsdRiStatementsAPI::_tokens->fullAttributeNamespace);
         std::vector<std::string> names;
         bool requestedNameSpace = (nameSpace != "");
         for (UsdProperty const& prop: props) {
@@ -259,7 +267,7 @@ TfToken UsdRiStatementsAPI::GetRiAttributeNameSpace(const UsdProperty &prop)
 {
     const std::vector<std::string> names = prop.SplitName();
     // Parse primvar encoding.
-    if (TfStringStartsWith(prop.GetName(), _tokens->primvarAttrNamespace)) {
+    if (TfStringStartsWith(prop.GetName(), pxrUsdUsdRiStatementsAPI::_tokens->primvarAttrNamespace)) {
         if (names.size() >= 5) {
             // Primvar with N custom namespaces:
             // "primvars:ri:attributes:$(NS_1):...:$(NS_N):$(NAME)"
@@ -268,7 +276,7 @@ TfToken UsdRiStatementsAPI::GetRiAttributeNameSpace(const UsdProperty &prop)
         return TfToken();
     }
     // Optionally parse old-style attribute encoding.
-    if (TfStringStartsWith(prop.GetName(), _tokens->fullAttributeNamespace) &&
+    if (TfStringStartsWith(prop.GetName(), pxrUsdUsdRiStatementsAPI::_tokens->fullAttributeNamespace) &&
         TfGetEnvSetting(USDRI_STATEMENTS_READ_OLD_ATTR_ENCODING)) {
         if (names.size() >= 4) {
             // Old-style attribute with N custom namespaces:
@@ -283,11 +291,11 @@ bool
 UsdRiStatementsAPI::IsRiAttribute(const UsdProperty &attr)
 {
     // Accept primvar encoding.
-    if (TfStringStartsWith(attr.GetName(), _tokens->primvarAttrNamespace)) {
+    if (TfStringStartsWith(attr.GetName(), pxrUsdUsdRiStatementsAPI::_tokens->primvarAttrNamespace)) {
         return true;
     }
     // Optionally accept old-style attribute encoding.
-    if (TfStringStartsWith(attr.GetName(), _tokens->fullAttributeNamespace) &&
+    if (TfStringStartsWith(attr.GetName(), pxrUsdUsdRiStatementsAPI::_tokens->fullAttributeNamespace) &&
         TfGetEnvSetting(USDRI_STATEMENTS_READ_OLD_ATTR_ENCODING)) {
         return true;
     }
@@ -301,11 +309,11 @@ UsdRiStatementsAPI::MakeRiAttributePropertyName(const std::string &attrName)
 
     // If this is an already-encoded name, return it unchanged.
     if (names.size() == 5 &&
-        TfStringStartsWith(attrName, _tokens->primvarAttrNamespace)) {
+        TfStringStartsWith(attrName, pxrUsdUsdRiStatementsAPI::_tokens->primvarAttrNamespace)) {
         return attrName;
     }
     if (names.size() == 4 &&
-        TfStringStartsWith(attrName, _tokens->fullAttributeNamespace)) {
+        TfStringStartsWith(attrName, pxrUsdUsdRiStatementsAPI::_tokens->fullAttributeNamespace)) {
         return attrName;
     }
 
@@ -323,7 +331,7 @@ UsdRiStatementsAPI::MakeRiAttributePropertyName(const std::string &attrName)
     }
 
     std::string fullName =
-        _tokens->primvarAttrNamespace.GetString() +
+        pxrUsdUsdRiStatementsAPI::_tokens->primvarAttrNamespace.GetString() +
         names[0] + ":" + ( names.size() > 2 ?
                            TfStringJoin(names.begin() + 1, names.end(), "_")
                            : names[1]);
@@ -334,7 +342,7 @@ UsdRiStatementsAPI::MakeRiAttributePropertyName(const std::string &attrName)
 void
 UsdRiStatementsAPI::SetCoordinateSystem(const std::string &coordSysName)
 {
-    UsdAttribute attr = GetPrim().CreateAttribute(_tokens->coordsys, 
+    UsdAttribute attr = GetPrim().CreateAttribute(pxrUsdUsdRiStatementsAPI::_tokens->coordsys, 
                                                   SdfValueTypeNames->String, 
                                                   /* custom = */ false);
     if (TF_VERIFY(attr)) {
@@ -345,7 +353,7 @@ UsdRiStatementsAPI::SetCoordinateSystem(const std::string &coordSysName)
             if (currPrim.IsModel() && !currPrim.IsGroup() &&
                 currPrim.GetPath() != SdfPath::AbsoluteRootPath()) {
                 UsdRelationship rel =
-                    currPrim.CreateRelationship(_tokens->modelCoordsys,
+                    currPrim.CreateRelationship(pxrUsdUsdRiStatementsAPI::_tokens->modelCoordsys,
                                                 /* custom = */ false);
                 if (TF_VERIFY(rel)) {
                     // Order should not matter, since these are a set,
@@ -364,7 +372,7 @@ std::string
 UsdRiStatementsAPI::GetCoordinateSystem() const
 {
     std::string result;
-    UsdAttribute attr = GetPrim().GetAttribute(_tokens->coordsys);
+    UsdAttribute attr = GetPrim().GetAttribute(pxrUsdUsdRiStatementsAPI::_tokens->coordsys);
     if (attr) {
         attr.Get(&result);
     }
@@ -375,7 +383,7 @@ bool
 UsdRiStatementsAPI::HasCoordinateSystem() const
 {
     std::string result;
-    UsdAttribute attr = GetPrim().GetAttribute(_tokens->coordsys);
+    UsdAttribute attr = GetPrim().GetAttribute(pxrUsdUsdRiStatementsAPI::_tokens->coordsys);
     if (attr) {
         return attr.Get(&result);
     }
@@ -385,7 +393,7 @@ UsdRiStatementsAPI::HasCoordinateSystem() const
 void
 UsdRiStatementsAPI::SetScopedCoordinateSystem(const std::string &coordSysName)
 {
-    UsdAttribute attr = GetPrim().CreateAttribute(_tokens->scopedCoordsys, 
+    UsdAttribute attr = GetPrim().CreateAttribute(pxrUsdUsdRiStatementsAPI::_tokens->scopedCoordsys, 
                                                   SdfValueTypeNames->String,
                                                   /* custom = */ false);
     if (TF_VERIFY(attr)) {
@@ -396,7 +404,7 @@ UsdRiStatementsAPI::SetScopedCoordinateSystem(const std::string &coordSysName)
             if (currPrim.IsModel() && !currPrim.IsGroup() &&
                 currPrim.GetPath() != SdfPath::AbsoluteRootPath()) {
                 UsdRelationship rel =
-                    currPrim.CreateRelationship(_tokens->modelScopedCoordsys,
+                    currPrim.CreateRelationship(pxrUsdUsdRiStatementsAPI::_tokens->modelScopedCoordsys,
                                                 /* custom = */ false);
                 if (TF_VERIFY(rel)) {
                     rel.AddTarget(GetPrim().GetPath());
@@ -413,7 +421,7 @@ std::string
 UsdRiStatementsAPI::GetScopedCoordinateSystem() const
 {
     std::string result;
-    UsdAttribute attr = GetPrim().GetAttribute(_tokens->scopedCoordsys);
+    UsdAttribute attr = GetPrim().GetAttribute(pxrUsdUsdRiStatementsAPI::_tokens->scopedCoordsys);
     if (attr) {
         attr.Get(&result);
     }
@@ -424,7 +432,7 @@ bool
 UsdRiStatementsAPI::HasScopedCoordinateSystem() const
 {
     std::string result;
-    UsdAttribute attr = GetPrim().GetAttribute(_tokens->scopedCoordsys);
+    UsdAttribute attr = GetPrim().GetAttribute(pxrUsdUsdRiStatementsAPI::_tokens->scopedCoordsys);
     if (attr) {
         return attr.Get(&result);
     }
@@ -436,7 +444,7 @@ UsdRiStatementsAPI::GetModelCoordinateSystems(SdfPathVector *targets) const
 {
     if (GetPrim().IsModel()) {
         UsdRelationship rel =
-            GetPrim().GetRelationship(_tokens->modelCoordsys);
+            GetPrim().GetRelationship(pxrUsdUsdRiStatementsAPI::_tokens->modelCoordsys);
         return rel && rel.GetForwardedTargets(targets);
     }
 
@@ -448,7 +456,7 @@ UsdRiStatementsAPI::GetModelScopedCoordinateSystems(SdfPathVector *targets) cons
 {
     if (GetPrim().IsModel()) {
         UsdRelationship rel =
-            GetPrim().GetRelationship(_tokens->modelScopedCoordsys);
+            GetPrim().GetRelationship(pxrUsdUsdRiStatementsAPI::_tokens->modelScopedCoordsys);
         return rel && rel.GetForwardedTargets(targets);
     }
 

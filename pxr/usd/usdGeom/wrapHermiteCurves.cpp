@@ -153,7 +153,7 @@ WRAP_CUSTOM {
             .def("Interleave", &ThisStruct::Interleave)
             .def("Separate", &ThisStruct::Separate)
             .staticmethod("Separate")
-            .def("__repr__", &::_PointAndTangentsRepr)
+            .def("__repr__", &pxrUsdUsdGeomWrapHermiteCurves::_PointAndTangentsRepr)
             .def(!boost::python::self)
             .def(boost::python::self == boost::python::self)
             .def(boost::python::self != boost::python::self);

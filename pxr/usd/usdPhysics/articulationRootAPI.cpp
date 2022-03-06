@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdPhysicsArticulationRootAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (PhysicsArticulationRootAPI)
 );
+
+} // pxrUsdUsdPhysicsArticulationRootAPI
 
 /* virtual */
 UsdPhysicsArticulationRootAPI::~UsdPhysicsArticulationRootAPI()

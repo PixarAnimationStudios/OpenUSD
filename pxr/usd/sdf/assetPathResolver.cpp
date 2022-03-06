@@ -45,10 +45,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdSdfAssetPathResolver {
+
 TF_DEFINE_PRIVATE_TOKENS(_Tokens,
     ((AnonLayerPrefix,  "anon:"))
     ((ArgsDelimiter, ":SDF_FORMAT_ARGS:"))
     );
+
+} // pxrUsdSdfAssetPathResolver
 
 bool
 operator==(
@@ -244,7 +248,7 @@ Sdf_IsAnonLayerIdentifier(
     const std::string& identifier)
 {
     return TfStringStartsWith(identifier,
-        _Tokens->AnonLayerPrefix.GetString());
+        pxrUsdSdfAssetPathResolver::_Tokens->AnonLayerPrefix.GetString());
 }
 
 std::string
@@ -271,7 +275,7 @@ Sdf_GetAnonLayerIdentifierTemplate(
     const std::string& tag)
 {
     std::string idTag = tag.empty() ? tag : TfStringTrim(tag);
-    return _Tokens->AnonLayerPrefix.GetString() + "%p" +
+    return pxrUsdSdfAssetPathResolver::_Tokens->AnonLayerPrefix.GetString() + "%p" +
         (idTag.empty() ? idTag : ":" + idTag);
 }
 
@@ -289,7 +293,7 @@ static std::string
 Sdf_EncodeArguments(
     const SdfLayer::FileFormatArguments& args)
 {
-    const char* delimiter = _Tokens->ArgsDelimiter.GetText();
+    const char* delimiter = pxrUsdSdfAssetPathResolver::_Tokens->ArgsDelimiter.GetText();
     std::string argString;
     for (const auto& entry : args) {
         argString += delimiter;
@@ -308,19 +312,19 @@ Sdf_DecodeArguments(
     const std::string& argString,
     SdfLayer::FileFormatArguments* args)
 {
-    if (argString.empty() || argString.size() == _Tokens->ArgsDelimiter.size()) {
+    if (argString.empty() || argString.size() == pxrUsdSdfAssetPathResolver::_Tokens->ArgsDelimiter.size()) {
         args->clear();
         return true;
     }
 
     const size_t argStringLength = argString.size();
-    if (!TF_VERIFY(argStringLength > _Tokens->ArgsDelimiter.size())) {
+    if (!TF_VERIFY(argStringLength > pxrUsdSdfAssetPathResolver::_Tokens->ArgsDelimiter.size())) {
         return false;
     }
 
     SdfLayer::FileFormatArguments tmpArgs;
 
-    size_t startIdx = _Tokens->ArgsDelimiter.size();
+    size_t startIdx = pxrUsdSdfAssetPathResolver::_Tokens->ArgsDelimiter.size();
     while (startIdx < argStringLength) {
         const size_t eqIdx = argString.find('=', startIdx);
         if (eqIdx == std::string::npos) {
@@ -361,7 +365,7 @@ Sdf_SplitIdentifier(
     std::string* layerPath,
     std::string* arguments)
 {
-    size_t argPos = identifier.find(_Tokens->ArgsDelimiter.GetString());
+    size_t argPos = identifier.find(pxrUsdSdfAssetPathResolver::_Tokens->ArgsDelimiter.GetString());
     if (argPos == std::string::npos) {
         argPos = identifier.size();
     }
@@ -394,7 +398,7 @@ bool
 Sdf_IdentifierContainsArguments(
     const std::string& identifier)
 {
-    return identifier.find(_Tokens->ArgsDelimiter.GetString()) != std::string::npos;
+    return identifier.find(pxrUsdSdfAssetPathResolver::_Tokens->ArgsDelimiter.GetString()) != std::string::npos;
 }
 
 std::string 

@@ -40,7 +40,7 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace usdSchemaExamplesWrapSimple {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -98,7 +98,7 @@ void wrapUsdSchemaExamplesSimple()
         .def("GetIntAttrAttr",
              &This::GetIntAttrAttr)
         .def("CreateIntAttrAttr",
-             &_CreateIntAttrAttr,
+             &usdSchemaExamplesWrapSimple::_CreateIntAttrAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
@@ -107,10 +107,10 @@ void wrapUsdSchemaExamplesSimple()
              &This::GetTargetRel)
         .def("CreateTargetRel",
              &This::CreateTargetRel)
-        .def("__repr__", ::_Repr)
+        .def("__repr__", usdSchemaExamplesWrapSimple::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    usdSchemaExamplesWrapSimple::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -132,7 +132,7 @@ void wrapUsdSchemaExamplesSimple()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace usdSchemaExamplesWrapSimple {
 
 WRAP_CUSTOM {
 }

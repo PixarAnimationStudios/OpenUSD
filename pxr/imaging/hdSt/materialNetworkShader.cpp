@@ -51,8 +51,12 @@ _IsEnabledMaterialPrimvarFiltering() {
     return TfGetEnvSetting(HDST_ENABLE_MATERIAL_PRIMVAR_FILTERING);
 }
 
+namespace pxrImagingHdStMaterialNetworkShader {
+
 static TfTokenVector
 _CollectPrimvarNames(const HdSt_MaterialParamVector &params);
+
+} // pxrImagingHdStMaterialNetworkShader
 
 HdSt_MaterialNetworkShader::HdSt_MaterialNetworkShader()
  : HdStShaderCode()
@@ -61,7 +65,7 @@ HdSt_MaterialNetworkShader::HdSt_MaterialNetworkShader()
  , _params()
  , _paramSpec()
  , _paramArray()
- , _primvarNames(_CollectPrimvarNames(_params))
+ , _primvarNames(pxrImagingHdStMaterialNetworkShader::_CollectPrimvarNames(_params))
  , _isEnabledPrimvarFiltering(_IsEnabledMaterialPrimvarFiltering())
  , _computedHash(0)
  , _isValidComputedHash(false)
@@ -254,7 +258,7 @@ void
 HdSt_MaterialNetworkShader::SetParams(const HdSt_MaterialParamVector &params)
 {
     _params = params;
-    _primvarNames = _CollectPrimvarNames(_params);
+    _primvarNames = pxrImagingHdStMaterialNetworkShader::_CollectPrimvarNames(_params);
     _isValidComputedHash = false;
 }
 
@@ -357,6 +361,8 @@ HdSt_MaterialNetworkShader::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
     return true;
 }
 
+namespace pxrImagingHdStMaterialNetworkShader {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -390,24 +396,24 @@ _GetExtraIncludedShaderPrimvarNames()
         // Include a few ad hoc primvar names that
         // are used by the built-in material shading system.
 
-        _tokens->ptexFaceOffset,
+        pxrImagingHdStMaterialNetworkShader::_tokens->ptexFaceOffset,
 
-        _tokens->displayMetallic,
-        _tokens->displayRoughness,
+        pxrImagingHdStMaterialNetworkShader::_tokens->displayMetallic,
+        pxrImagingHdStMaterialNetworkShader::_tokens->displayRoughness,
 
-        _tokens->hullColor,
-        _tokens->hullOpacity,
-        _tokens->scalarOverride,
-        _tokens->scalarOverrideColorRamp,
-        _tokens->selectedWeight,
+        pxrImagingHdStMaterialNetworkShader::_tokens->hullColor,
+        pxrImagingHdStMaterialNetworkShader::_tokens->hullOpacity,
+        pxrImagingHdStMaterialNetworkShader::_tokens->scalarOverride,
+        pxrImagingHdStMaterialNetworkShader::_tokens->scalarOverrideColorRamp,
+        pxrImagingHdStMaterialNetworkShader::_tokens->selectedWeight,
 
-        _tokens->indicatorColor,
-        _tokens->indicatorWeight,
-        _tokens->overrideColor,
-        _tokens->overrideWireframeColor,
-        _tokens->maskColor,
-        _tokens->maskWeight,
-        _tokens->wireframeColor
+        pxrImagingHdStMaterialNetworkShader::_tokens->indicatorColor,
+        pxrImagingHdStMaterialNetworkShader::_tokens->indicatorWeight,
+        pxrImagingHdStMaterialNetworkShader::_tokens->overrideColor,
+        pxrImagingHdStMaterialNetworkShader::_tokens->overrideWireframeColor,
+        pxrImagingHdStMaterialNetworkShader::_tokens->maskColor,
+        pxrImagingHdStMaterialNetworkShader::_tokens->maskWeight,
+        pxrImagingHdStMaterialNetworkShader::_tokens->wireframeColor
     };
     return primvarNames;
 }
@@ -437,6 +443,8 @@ _CollectPrimvarNames(const HdSt_MaterialParamVector &params)
     }
     return primvarNames;
 }
+
+} // pxrImagingHdStMaterialNetworkShader
 
 void
 HdSt_MaterialNetworkShader::AddResourcesFromTextures(ResourceContext &ctx) const

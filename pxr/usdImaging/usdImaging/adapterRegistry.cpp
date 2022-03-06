@@ -42,9 +42,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(UsdImagingAdapterRegistry);
 
+namespace pxrUsdImagingUsdImagingAdapterRegistry {
+
 TF_MAKE_STATIC_DATA(TfType, _adapterBaseType) {
     *_adapterBaseType = TfType::Find<UsdImagingPrimAdapter>();
 }
+
+} // pxrUsdImagingUsdImagingAdapterRegistry
 
 TF_DEFINE_PUBLIC_TOKENS(UsdImagingAdapterKeyTokens, 
                         USD_IMAGING_ADAPTER_KEY_TOKENS);
@@ -63,7 +67,7 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
     // open the libraries, it only reads metadata from text files.
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
     std::set<TfType> types;
-    PlugRegistry::GetAllDerivedTypes(*_adapterBaseType, &types);
+    PlugRegistry::GetAllDerivedTypes(*pxrUsdImagingUsdImagingAdapterRegistry::_adapterBaseType, &types);
     std::vector<TfToken> includeDerivedPrimTypes;
 
     TF_FOR_ALL(typeIt, types) {

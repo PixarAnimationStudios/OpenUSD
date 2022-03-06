@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdArWrapResolverContext_v1 {
 
 struct Ar_ResolverContextToPython
 {
@@ -86,6 +86,6 @@ struct Ar_ResolverContextFromPython
 void
 wrapResolverContext()
 {
-    Ar_ResolverContextToPython();
-    Ar_ResolverContextFromPython();
+    pxrUsdArWrapResolverContext_v1::Ar_ResolverContextToPython();
+    pxrUsdArWrapResolverContext_v1::Ar_ResolverContextFromPython();
 }

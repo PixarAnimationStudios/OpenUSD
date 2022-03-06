@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdPhysicsRigidBodyAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (PhysicsRigidBodyAPI)
 );
+
+} // pxrUsdUsdPhysicsRigidBodyAPI
 
 /* virtual */
 UsdPhysicsRigidBodyAPI::~UsdPhysicsRigidBodyAPI()
@@ -265,6 +269,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdPhysicsRigidBodyAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _physicsPurposeTokens,
     ((materialPurposePhysics, "physics"))
@@ -471,6 +477,8 @@ UsdPhysicsMassProperties _ParseCollisionShapeForMass(const UsdPrim& prim,
     return UsdPhysicsMassProperties(shapeMassInfo.mass, inertia, massInfo.centerOfMass);
 }
 
+} // pxrUsdUsdPhysicsRigidBodyAPI
+
 // compute mass properties for given rigid body
 float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia, 
     GfVec3f* _com, GfQuatf* _principalAxes, const MassInformationFn& massInfoFn) const
@@ -483,7 +491,7 @@ float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia,
     UsdGeomXformCache xfCache;
 
     // Parse dynamic body mass data
-    const _MassApiData rigidBodyMassInfo = _ParseMassApi(usdPrim);
+    const pxrUsdUsdPhysicsRigidBodyAPI::_MassApiData rigidBodyMassInfo = pxrUsdUsdPhysicsRigidBodyAPI::_ParseMassApi(usdPrim);
 
     // If we dont have mass, we need to compute mass from collisions
     const bool accumulateMass = rigidBodyMassInfo.mass <= 0.0f;
@@ -492,7 +500,7 @@ float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia,
     GfVec3f outCenterOfMass(0.0f);
     const bool hasPa = rigidBodyMassInfo.hasPa;
     GfQuatf outPrincipalAxes = rigidBodyMassInfo.principalAxes;
-    const bool hasCoM = _GetCoM(usdPrim, &outCenterOfMass, &xfCache);    
+    const bool hasCoM = pxrUsdUsdPhysicsRigidBodyAPI::_GetCoM(usdPrim, &outCenterOfMass, &xfCache);    
     float outMass = rigidBodyMassInfo.mass;
     GfVec3f outDiagonalizedInertiaTensor = rigidBodyMassInfo.diagonalInertia;
 
@@ -518,7 +526,7 @@ float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia,
 
         // get materials for all prims
         std::vector<UsdShadeMaterial> physicsMaterials = 
-            UsdShadeMaterialBindingAPI::ComputeBoundMaterials(collisionPrims, _physicsPurposeTokens->materialPurposePhysics);
+            UsdShadeMaterialBindingAPI::ComputeBoundMaterials(collisionPrims, pxrUsdUsdPhysicsRigidBodyAPI::_physicsPurposeTokens->materialPurposePhysics);
         for (UsdShadeMaterial& material : physicsMaterials)
         {
             if (material && !material.GetPrim().HasAPI<UsdPhysicsMaterialAPI>())
@@ -533,11 +541,11 @@ float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia,
             const UsdPhysicsCollisionAPI collisionAPI(collisionPrim);
             float shapeDensity = 0.0f;
 
-            _MassApiData _MassApiData = 
-                _GetCollisionShapeMassAPIData(collisionAPI, rigidBodyMassInfo.density, &shapeDensity, physicsMaterials[i]);
+            pxrUsdUsdPhysicsRigidBodyAPI::_MassApiData _MassApiData = 
+                pxrUsdUsdPhysicsRigidBodyAPI::_GetCollisionShapeMassAPIData(collisionAPI, rigidBodyMassInfo.density, &shapeDensity, physicsMaterials[i]);
 
             GfMatrix4f matrix;
-            massProps.push_back(_ParseCollisionShapeForMass(collisionPrim, _MassApiData, shapeDensity, &matrix, &xfCache, massInfoFn));
+            massProps.push_back(pxrUsdUsdPhysicsRigidBodyAPI::_ParseCollisionShapeForMass(collisionPrim, _MassApiData, shapeDensity, &matrix, &xfCache, massInfoFn));
             massTransf.push_back(matrix);
         }
 

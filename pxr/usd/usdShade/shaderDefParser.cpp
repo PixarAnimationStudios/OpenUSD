@@ -30,6 +30,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+UsdStageCache UsdShadeShaderDefParserPlugin::_cache;
+
+namespace pxrUsdUsdShadeShaderDefParser {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -38,8 +42,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (usdc)
     (usd)
 );
-
-UsdStageCache UsdShadeShaderDefParserPlugin::_cache;
 
 static
 NdrTokenMap
@@ -61,6 +63,8 @@ _GetSdrMetadata(const UsdShadeShader &shaderDef,
 
     return metadata;
 }
+
+} // pxrUsdUsdShadeShaderDefParser
 
 NdrNodeUniquePtr 
 UsdShadeShaderDefParserPlugin::Parse(
@@ -129,7 +133,7 @@ UsdShadeShaderDefParserPlugin::Parse(
         resolvedImplementationUri,
         UsdShadeShaderDefUtils::GetShaderProperties(
             shaderDef.ConnectableAPI()),
-        _GetSdrMetadata(shaderDef, discoveryResult.metadata),
+        pxrUsdUsdShadeShaderDefParser::_GetSdrMetadata(shaderDef, discoveryResult.metadata),
         discoveryResult.sourceCode
     ));
     
@@ -138,9 +142,9 @@ UsdShadeShaderDefParserPlugin::Parse(
 const NdrTokenVec &
 UsdShadeShaderDefParserPlugin::GetDiscoveryTypes() const 
 {
-    static const NdrTokenVec discoveryTypes{_tokens->usda, 
-                                            _tokens->usdc, 
-                                            _tokens->usd};
+    static const NdrTokenVec discoveryTypes{pxrUsdUsdShadeShaderDefParser::_tokens->usda, 
+                                            pxrUsdUsdShadeShaderDefParser::_tokens->usdc, 
+                                            pxrUsdUsdShadeShaderDefParser::_tokens->usd};
     return discoveryTypes;
 }
 

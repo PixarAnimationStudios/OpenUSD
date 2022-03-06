@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdRiSplineAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (RiSplineAPI)
 );
+
+} // pxrUsdUsdRiSplineAPI
 
 /* virtual */
 UsdRiSplineAPI::~UsdRiSplineAPI()

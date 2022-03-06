@@ -60,7 +60,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapVec{{ SUFFIX }} {
 
 ////////////////////////////////////////////////////////////////////////
 // Python buffer protocol support.
@@ -440,14 +440,14 @@ void wrapVec{{ SUFFIX }}()
     boost::python::def("CompMult", (Vec (*)(const Vec &v1, const Vec&v2))GfCompMult);
     boost::python::def("GetLength", (Scalar (*)(const Vec &v))GfGetLength);
     boost::python::def("GetNormalized", (Vec (*)(const Vec &v, Scalar eps))
-        GfGetNormalized, GetNormalized_overloads());
+        GfGetNormalized, pxrBaseGfWrapVec{{ SUFFIX }}::GetNormalized_overloads());
     boost::python::def("GetProjection", (Vec (*)(const Vec &a, const Vec &b))
         GfGetProjection);
     boost::python::def("GetComplement", (Vec (*)(const Vec &a, const Vec &b))
         GfGetComplement);
     boost::python::def("IsClose", (bool (*)(const Vec &v1, const Vec &v2, double))
         GfIsClose);
-    boost::python::def("Normalize", NormalizeHelper, Normalize_overloads());
+    boost::python::def("Normalize", pxrBaseGfWrapVec{{ SUFFIX }}::NormalizeHelper, pxrBaseGfWrapVec{{ SUFFIX }}::Normalize_overloads());
         
 {% if DIM == 3 %}
     boost::python::def("Cross", (Vec (*)(const Vec &v1, const Vec &v2))GfCross);
@@ -459,12 +459,12 @@ void wrapVec{{ SUFFIX }}()
 
     boost::python::class_<{{ VEC }}> cls("Vec{{ SUFFIX }}", boost::python::no_init);
     cls
-        .def("__init__", boost::python::make_constructor(__init__<Vec>))
+        .def("__init__", boost::python::make_constructor(pxrBaseGfWrapVec{{ SUFFIX }}::__init__<Vec>))
 
         // A tag indicating that this is a GfVec class, for internal use.
         .def_readonly("__isGfVec", _true)
 
-        .def_pickle(PickleSuite())
+        .def_pickle(pxrBaseGfWrapVec{{ SUFFIX }}::PickleSuite())
 
 {% if IS_FLOATING_POINT(SCL) %}
         // Conversion from other vec types.
@@ -479,12 +479,12 @@ void wrapVec{{ SUFFIX }}()
 
         .def(TfTypePythonClass())
 
-        .def("__len__", __len__ )
-        .def("__getitem__", __getitem__ )
-        .def("__getitem__", __getslice__ )
-        .def("__setitem__", __setitem__ )
-        .def("__setitem__", __setslice__ )
-        .def("__contains__", __contains__ )
+        .def("__len__", pxrBaseGfWrapVec{{ SUFFIX }}::__len__ )
+        .def("__getitem__", pxrBaseGfWrapVec{{ SUFFIX }}::__getitem__ )
+        .def("__getitem__", pxrBaseGfWrapVec{{ SUFFIX }}::__getslice__ )
+        .def("__setitem__", pxrBaseGfWrapVec{{ SUFFIX }}::__setitem__ )
+        .def("__setitem__", pxrBaseGfWrapVec{{ SUFFIX }}::__setslice__ )
+        .def("__contains__", pxrBaseGfWrapVec{{ SUFFIX }}::__contains__ )
 
         .def_readonly("dimension", _dimension)
         
@@ -514,8 +514,8 @@ void wrapVec{{ SUFFIX }}()
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
         // python 2. In python 3 builds boost::python adds this for us.
-        .def("__truediv__", __truediv__ )
-        .def("__itruediv__", __itruediv__ )
+        .def("__truediv__", pxrBaseGfWrapVec{{ SUFFIX }}::__truediv__ )
+        .def("__itruediv__", pxrBaseGfWrapVec{{ SUFFIX }}::__itruediv__ )
 #endif
 
         .def("Axis", &Vec::Axis).staticmethod("Axis")
@@ -529,23 +529,23 @@ void wrapVec{{ SUFFIX }}()
 {% if IS_FLOATING_POINT(SCL) %}
         .def("GetComplement", &Vec::GetComplement)
         .def("GetLength", &Vec::GetLength)
-        .def("GetNormalized", &Vec::GetNormalized, VecGetNormalized_overloads())
+        .def("GetNormalized", &Vec::GetNormalized, pxrBaseGfWrapVec{{ SUFFIX }}::VecGetNormalized_overloads())
         .def("GetProjection", &Vec::GetProjection)
-        .def("Normalize", &Vec::Normalize, VecNormalize_overloads())
+        .def("Normalize", &Vec::Normalize, pxrBaseGfWrapVec{{ SUFFIX }}::VecNormalize_overloads())
 {% if DIM == 3 %}
         .def(boost::python::self ^ boost::python::self)
         .def("GetCross", (Vec (*)(const Vec &v1, const Vec &v2))GfCross)
         .def("OrthogonalizeBasis",
-             OrthogonalizeBasisHelper, OrthogonalizeBasis_overloads())
+             pxrBaseGfWrapVec{{ SUFFIX }}::OrthogonalizeBasisHelper, pxrBaseGfWrapVec{{ SUFFIX }}::OrthogonalizeBasis_overloads())
         .staticmethod("OrthogonalizeBasis")
 
         .def("BuildOrthonormalFrame",
-             BuildOrthonormalFrameHelper, BuildOrthonormalFrame_overloads())
+             pxrBaseGfWrapVec{{ SUFFIX }}::BuildOrthonormalFrameHelper, pxrBaseGfWrapVec{{ SUFFIX }}::BuildOrthonormalFrame_overloads())
 {% endif %}
 {% endif %}
 
-        .def("__repr__", __repr__)
-        .def("__hash__", __hash__)
+        .def("__repr__", pxrBaseGfWrapVec{{ SUFFIX }}::__repr__)
+        .def("__hash__", pxrBaseGfWrapVec{{ SUFFIX }}::__hash__)
         ;
     boost::python::to_python_converter<std::vector<{{ VEC }}>,
         TfPySequenceToPython<std::vector<{{ VEC }}> > >();
@@ -555,12 +555,12 @@ void wrapVec{{ SUFFIX }}()
     // this type, and set the type flags to indicate that this type supports the
     // buffer protocol.
     auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
-    typeObj->tp_as_buffer = &bufferProcs;
+    typeObj->tp_as_buffer = &pxrBaseGfWrapVec{{ SUFFIX }}::bufferProcs;
     typeObj->tp_flags |= (TfPy_TPFLAGS_HAVE_NEWBUFFER |
                           TfPy_TPFLAGS_HAVE_GETCHARBUFFER);
 
     // Allow appropriate tuples to be passed where Vecs are expected.
-    FromPythonTuple();
+    pxrBaseGfWrapVec{{ SUFFIX }}::FromPythonTuple();
 
     // Allow conversion of lists of {{ VEC }} to std::vector<{{ VEC }}>
     TfPyContainerConversions::from_python_sequence<

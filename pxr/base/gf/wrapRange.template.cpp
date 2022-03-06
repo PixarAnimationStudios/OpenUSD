@@ -46,7 +46,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapRange{{ SUFFIX }} {
 
 static const int _dimension = {{ DIM }};
 
@@ -85,7 +85,7 @@ void wrapRange{{ SUFFIX }}()
         
         .def(TfTypePythonClass())
 
-        .def_readonly("dimension", _dimension)
+        .def_readonly("dimension", pxrBaseGfWrapRange{{ SUFFIX }}::_dimension)
         
         .add_property("min", getMin, &{{ RNG }}::SetMin)
         .add_property("max", getMax, &{{ RNG }}::SetMax)
@@ -144,12 +144,12 @@ void wrapRange{{ SUFFIX }}()
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
         // python 2. In python 3 builds boost::python adds this for us.
-        .def("__truediv__", __truediv__ )
-        .def("__itruediv__", __itruediv__ )
+        .def("__truediv__", pxrBaseGfWrapRange{{ SUFFIX }}::__truediv__ )
+        .def("__itruediv__", pxrBaseGfWrapRange{{ SUFFIX }}::__itruediv__ )
 #endif
 
-        .def("__repr__", _Repr)
-        .def("__hash__", __hash__)
+        .def("__repr__", pxrBaseGfWrapRange{{ SUFFIX }}::_Repr)
+        .def("__hash__", pxrBaseGfWrapRange{{ SUFFIX }}::__hash__)
 
 {% if DIM == 2 %}
         .def("GetCorner", &{{ RNG }}::GetCorner)

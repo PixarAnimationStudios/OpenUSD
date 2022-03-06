@@ -52,6 +52,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrUsdImagingUsdImagingPointInstancerAdapter {
+
 // XXX: These should come from Hd or UsdImaging
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -61,6 +63,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (scale)
     (translate)
 );
+
+} // pxrUsdImagingUsdImagingPointInstancerAdapter
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -500,12 +504,12 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
         _IsVarying(prim,
             UsdGeomTokens->invisibleIds,
             HdChangeTracker::DirtyInstanceIndex,
-            _tokens->instancer,
+            pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->instancer,
             timeVaryingBits,
             false) || _IsVarying(prim,
                 UsdGeomTokens->protoIndices,
                 HdChangeTracker::DirtyInstanceIndex,
-                _tokens->instancer,
+                pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->instancer,
                 timeVaryingBits,
                 false);
 
@@ -540,19 +544,19 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
         _IsVarying(prim,
                 UsdGeomTokens->positions,
                 HdChangeTracker::DirtyPrimvar,
-                _tokens->instancer,
+                pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->instancer,
                 timeVaryingBits,
                 false) ||
             _IsVarying(prim,
                     UsdGeomTokens->orientations,
                     HdChangeTracker::DirtyPrimvar,
-                    _tokens->instancer,
+                    pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->instancer,
                     timeVaryingBits,
                     false) ||
             _IsVarying(prim,
                     UsdGeomTokens->scales,
                     HdChangeTracker::DirtyPrimvar,
-                    _tokens->instancer,
+                    pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->instancer,
                     timeVaryingBits,
                     false);
 
@@ -564,7 +568,7 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
                     interp != UsdGeomTokens->uniform &&
                     pv.ValueMightBeTimeVarying()) {
                     *timeVaryingBits |= HdChangeTracker::DirtyPrimvar;
-                    HD_PERF_COUNTER_INCR(_tokens->instancer);
+                    HD_PERF_COUNTER_INCR(pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->instancer);
                     break;
                 }
             }
@@ -618,7 +622,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             if (instancer.GetPositionsAttr().Get(&positions, time)) {
                 _MergePrimvar(
                     &vPrimvars,
-                    _tokens->translate,
+                    pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->translate,
                     HdInterpolationInstance,
                     HdPrimvarRoleTokens->vector);
             }
@@ -627,7 +631,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             if (instancer.GetOrientationsAttr().Get(&orientations, time)) {
                 _MergePrimvar(
                     &vPrimvars,
-                    _tokens->rotate,
+                    pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->rotate,
                     HdInterpolationInstance);
             }
 
@@ -635,7 +639,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             if (instancer.GetScalesAttr().Get(&scales, time)) {
                 _MergePrimvar(
                     &vPrimvars,
-                    _tokens->scale,
+                    pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->scale,
                     HdInterpolationInstance);
             }
 
@@ -705,11 +709,11 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
 
         TfToken primvarName = propertyName;
         if (propertyName == UsdGeomTokens->positions) {
-            primvarName = _tokens->translate;
+            primvarName = pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->translate;
         } else if (propertyName == UsdGeomTokens->orientations) {
-            primvarName = _tokens->rotate;
+            primvarName = pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->rotate;
         } else if (propertyName == UsdGeomTokens->scales) {
-            primvarName = _tokens->scale;
+            primvarName = pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->scale;
         }
 
         return _ProcessNonPrefixedPrimvarPropertyChange(
@@ -1645,11 +1649,11 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
     } else {
         // Map Hydra-PI transform keys to their USD equivalents.
         TfToken usdKey = key;
-        if (key == _tokens->translate) {
+        if (key == pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->translate) {
             usdKey = UsdGeomTokens->positions;
-        } else if (key == _tokens->scale) {
+        } else if (key == pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->scale) {
             usdKey = UsdGeomTokens->scales;
-        } else if (key == _tokens->rotate) {
+        } else if (key == pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->rotate) {
             usdKey = UsdGeomTokens->orientations;
         }
         return UsdImagingPrimAdapter::SamplePrimvar(
@@ -1864,21 +1868,21 @@ UsdImagingPointInstancerAdapter::Get(UsdPrim const& usdPrim,
                 TfMapLookupPtr(_instancerData, cachePath)) {
         TF_UNUSED(instrData);
 
-        if (key == _tokens->translate) {
+        if (key == pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->translate) {
             UsdGeomPointInstancer instancer(usdPrim);
             VtVec3fArray positions;
             if (instancer.GetPositionsAttr().Get(&positions, time)) {
                 return VtValue(positions);
             }
 
-        } else if (key == _tokens->rotate) {
+        } else if (key == pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->rotate) {
             UsdGeomPointInstancer instancer(usdPrim);
             VtQuathArray orientations;
             if (instancer.GetOrientationsAttr().Get(&orientations, time)) {
                 return VtValue(orientations);
             }
 
-        } else if (key == _tokens->scale) {
+        } else if (key == pxrUsdImagingUsdImagingPointInstancerAdapter::_tokens->scale) {
             UsdGeomPointInstancer instancer(usdPrim);
             VtVec3fArray scales;
             if (instancer.GetScalesAttr().Get(&scales, time)) {

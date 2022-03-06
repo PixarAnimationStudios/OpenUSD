@@ -230,6 +230,8 @@ PcpMapFunction::Identity()
     return *_identityMapFunction;
 }
 
+namespace pxrUsdPcpMapFunction {
+
 TF_MAKE_STATIC_DATA(PcpMapFunction::PathMap, _identityPathMap)
 {
     const SdfPath & absoluteRootPath = SdfPath::AbsoluteRootPath();
@@ -237,10 +239,12 @@ TF_MAKE_STATIC_DATA(PcpMapFunction::PathMap, _identityPathMap)
         std::make_pair(absoluteRootPath, absoluteRootPath));
 }
 
+} // pxrUsdPcpMapFunction
+
 const PcpMapFunction::PathMap &
 PcpMapFunction::IdentityPathMap() 
 {
-    return *_identityPathMap;
+    return *pxrUsdPcpMapFunction::_identityPathMap;
 }
 
 bool

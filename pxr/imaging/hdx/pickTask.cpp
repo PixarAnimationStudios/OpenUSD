@@ -56,6 +56,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdxPickTokens, HDX_PICK_TOKENS);
 
+namespace pxrImagingHdxPickTask {
+
 static HdRenderPassStateSharedPtr
 _InitIdRenderPassState(HdRenderIndex *index)
 {
@@ -105,6 +107,8 @@ _GetAovPath(TfToken const& aovName)
     return SdfPath(identifier);
 }
 
+} // pxrImagingHdxPickTask
+
 // -------------------------------------------------------------------------- //
 // HdxPickTask
 // -------------------------------------------------------------------------- //
@@ -151,9 +155,9 @@ HdxPickTask::_InitIfNeeded()
             _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
 
         // initialize renderPassStates with ID render shader
-        _pickableRenderPassState = _InitIdRenderPassState(_index);
-        _occluderRenderPassState = _InitIdRenderPassState(_index);
-        _widgetRenderPassState = _InitIdRenderPassState(_index);
+        _pickableRenderPassState = pxrImagingHdxPickTask::_InitIdRenderPassState(_index);
+        _occluderRenderPassState = pxrImagingHdxPickTask::_InitIdRenderPassState(_index);
+        _widgetRenderPassState = pxrImagingHdxPickTask::_InitIdRenderPassState(_index);
         // Turn off color writes for the occluders, wherein we want to only
         // condition the depth buffer and not write out any IDs.
         // XXX: This is a hacky alternative to using a different shader mixin
@@ -177,9 +181,9 @@ HdxPickTask::_CreateAovBindings()
                        _contextParams.resolution[1], 1);
 
     // Add the new renderbuffers.
-    for (size_t i = 0; i < _aovOutputs.size(); ++i) {
-        TfToken const & aovOutput = _aovOutputs[i];
-        SdfPath const aovId = _GetAovPath(aovOutput);
+    for (size_t i = 0; i < pxrImagingHdxPickTask::_aovOutputs.size(); ++i) {
+        TfToken const & aovOutput = pxrImagingHdxPickTask::_aovOutputs[i];
+        SdfPath const aovId = pxrImagingHdxPickTask::_GetAovPath(aovOutput);
 
         _pickableAovBuffers.push_back(
             std::make_unique<HdStRenderBuffer>(
@@ -213,7 +217,7 @@ HdxPickTask::_CreateAovBindings()
     {
         _widgetDepthStencilBuffer = std::make_unique<HdStRenderBuffer>(
             hdStResourceRegistry.get(),
-            _GetAovPath(_tokens->widgetDepthStencil));
+            pxrImagingHdxPickTask::_GetAovPath(pxrImagingHdxPickTask::_tokens->widgetDepthStencil));
 
         HdAovDescriptor depthDesc = renderDelegate->GetDefaultAovDescriptor(
             HdAovTokens->depth);
@@ -224,9 +228,9 @@ HdxPickTask::_CreateAovBindings()
         }
 
         HdRenderPassAovBinding widgetDepthBinding;
-        widgetDepthBinding.aovName = _tokens->widgetDepthStencil;
-        widgetDepthBinding.renderBufferId = _GetAovPath(
-            _tokens->widgetDepthStencil);
+        widgetDepthBinding.aovName = pxrImagingHdxPickTask::_tokens->widgetDepthStencil;
+        widgetDepthBinding.renderBufferId = pxrImagingHdxPickTask::_GetAovPath(
+            pxrImagingHdxPickTask::_tokens->widgetDepthStencil);
         widgetDepthBinding.aovSettings = depthDesc.aovSettings;
         widgetDepthBinding.renderBuffer = _widgetDepthStencilBuffer.get();
         widgetDepthBinding.clearValue = VtValue(GfVec4f(1));
@@ -410,7 +414,7 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
 {
     GLF_GROUP_FUNCTION();
 
-    if (!_IsStormRenderer( delegate->GetRenderIndex().GetRenderDelegate() )) {
+    if (!pxrImagingHdxPickTask::_IsStormRenderer( delegate->GetRenderIndex().GetRenderDelegate() )) {
         return;
     }
 

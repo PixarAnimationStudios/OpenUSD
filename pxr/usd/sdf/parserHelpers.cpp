@@ -372,6 +372,8 @@ struct _MakeFactoryMap {
     _ValueFactoryMap *_factories;
 };
 
+namespace pxrUsdSdfParserHelpers {
+
 TF_MAKE_STATIC_DATA(_ValueFactoryMap, _valueFactories) {
     _MakeFactoryMap builder(_valueFactories);
     // XXX: Would be better if SdfValueTypeName had a method to take
@@ -489,17 +491,19 @@ TF_MAKE_STATIC_DATA(_ValueFactoryMap, _valueFactories) {
 
 }
 
+} // pxrUsdSdfParserHelpers
+
 ValueFactory const &GetValueFactoryForMenvaName(std::string const &name,
                                                 bool *found)
 {
-    _ValueFactoryMap::const_iterator it = _valueFactories->find(name);
-    if (it != _valueFactories->end()) {
+    _ValueFactoryMap::const_iterator it = pxrUsdSdfParserHelpers::_valueFactories->find(name);
+    if (it != pxrUsdSdfParserHelpers::_valueFactories->end()) {
         *found = true;
         return it->second;
     }
     
     // No factory for given name.
-    static ValueFactory const& none = (*_valueFactories)[std::string("None")];
+    static ValueFactory const& none = (*pxrUsdSdfParserHelpers::_valueFactories)[std::string("None")];
     *found = false;
     return none;
 }

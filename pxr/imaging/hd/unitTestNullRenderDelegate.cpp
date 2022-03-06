@@ -40,11 +40,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdUnitTestNullRenderDelegate {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (print)
     (message)
 );
+
+} // pxrImagingHdUnitTestNullRenderDelegate
 
 
 ////////////////////////////////////////////////////////////////
@@ -433,10 +437,10 @@ Hd_UnitTestNullRenderDelegate::CommitResources(HdChangeTracker *tracker)
 HdCommandDescriptors
 Hd_UnitTestNullRenderDelegate::GetCommandDescriptors() const
 {
-    HdCommandArgDescriptor printArgDesc{ _tokens->message, VtValue("") };
+    HdCommandArgDescriptor printArgDesc{ pxrImagingHdUnitTestNullRenderDelegate::_tokens->message, VtValue("") };
     HdCommandArgDescriptors argDescs{ printArgDesc };
 
-    HdCommandDescriptor commandDesc(_tokens->print, "Print command", argDescs);
+    HdCommandDescriptor commandDesc(pxrImagingHdUnitTestNullRenderDelegate::_tokens->print, "Print command", argDescs);
 
     return { commandDesc };
 }
@@ -446,8 +450,8 @@ Hd_UnitTestNullRenderDelegate::InvokeCommand(
     const TfToken &command,
     const HdCommandArgs &args)
 {
-    if (command == _tokens->print) {
-        HdCommandArgs::const_iterator it = args.find(_tokens->message);
+    if (command == pxrImagingHdUnitTestNullRenderDelegate::_tokens->print) {
+        HdCommandArgs::const_iterator it = args.find(pxrImagingHdUnitTestNullRenderDelegate::_tokens->message);
         if (it == args.end()) {
             TF_WARN("No argument 'message' argument found.");
             return false;

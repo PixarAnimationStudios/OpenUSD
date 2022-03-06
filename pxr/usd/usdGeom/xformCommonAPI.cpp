@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdGeomXformCommonAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (XformCommonAPI)
 );
+
+} // pxrUsdUsdGeomXformCommonAPI
 
 /* virtual */
 UsdGeomXformCommonAPI::~UsdGeomXformCommonAPI()

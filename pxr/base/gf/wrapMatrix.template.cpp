@@ -54,7 +54,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapMatrix{{ SUFFIX }} {
 
 ////////////////////////////////////////////////////////////////////////
 // Python buffer protocol support.
@@ -292,8 +292,8 @@ void wrapMatrix{{ SUFFIX }}()
     
     boost::python::class_<This> cls( "Matrix{{ SUFFIX }}", boost::python::no_init);
     cls
-        .def_pickle({{ MAT }}_Pickle_Suite())
-	.def("__init__", boost::python::make_constructor(__init__))
+        .def_pickle(pxrBaseGfWrapMatrix{{ SUFFIX }}::{{ MAT }}_Pickle_Suite())
+	.def("__init__", boost::python::make_constructor(pxrBaseGfWrapMatrix{{ SUFFIX }}::__init__))
         .def(boost::python::init< const GfMatrix{{ DIM }}d & >())
         .def(boost::python::init< const GfMatrix{{ DIM }}f & >())
         .def(boost::python::init< int >())
@@ -309,15 +309,15 @@ void wrapMatrix{{ SUFFIX }}()
 
         .def( TfTypePythonClass() )
 
-        .add_static_property("dimension", get_dimension)
-        .def( "__len__", __len__, "Return number of rows" )
+        .add_static_property("dimension", pxrBaseGfWrapMatrix{{ SUFFIX }}::get_dimension)
+        .def( "__len__", pxrBaseGfWrapMatrix{{ SUFFIX }}::__len__, "Return number of rows" )
 
-        .def( "__getitem__", __getitem__{{ SCL }} )
-        .def( "__getitem__", __getitem__vector )
-        .def( "__setitem__", __setitem__{{ SCL }} )
-        .def( "__setitem__", __setitem__vector )
-        .def( "__contains__", __contains__{{ SCL }} )
-        .def( "__contains__", __contains__vector, "Check rows against GfVec"  )
+        .def( "__getitem__", pxrBaseGfWrapMatrix{{ SUFFIX }}::__getitem__{{ SCL }} )
+        .def( "__getitem__", pxrBaseGfWrapMatrix{{ SUFFIX }}::__getitem__vector )
+        .def( "__setitem__", pxrBaseGfWrapMatrix{{ SUFFIX }}::__setitem__{{ SCL }} )
+        .def( "__setitem__", pxrBaseGfWrapMatrix{{ SUFFIX }}::__setitem__vector )
+        .def( "__contains__", pxrBaseGfWrapMatrix{{ SUFFIX }}::__contains__{{ SCL }} )
+        .def( "__contains__", pxrBaseGfWrapMatrix{{ SUFFIX }}::__contains__vector, "Check rows against GfVec"  )
 {% block customSpecialMethods %}
 {% endblock customSpecialMethods %}
 
@@ -340,7 +340,7 @@ void wrapMatrix{{ SUFFIX }}()
         .def("GetColumn", &This::GetColumn)
 
         .def("GetTranspose", &This::GetTranspose)
-        .def("GetInverse", GetInverseWrapper)
+        .def("GetInverse", pxrBaseGfWrapMatrix{{ SUFFIX }}::GetInverseWrapper)
 
         .def("GetDeterminant", &This::GetDeterminant)
 {% block customDefs %}
@@ -380,13 +380,13 @@ void wrapMatrix{{ SUFFIX }}()
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
         // python 2. In python 3 builds boost::python adds this for us.
-        .def("__truediv__", __truediv__ )
+        .def("__truediv__", pxrBaseGfWrapMatrix{{ SUFFIX }}::__truediv__ )
 #endif
 
 {% block customXformDefs %}
 {% endblock customXformDefs %}
-        .def("__repr__", _Repr)
-        .def("__hash__", __hash__)
+        .def("__repr__", pxrBaseGfWrapMatrix{{ SUFFIX }}::_Repr)
+        .def("__hash__", pxrBaseGfWrapMatrix{{ SUFFIX }}::__hash__)
 
         ;
     boost::python::to_python_converter<std::vector<This>,
@@ -397,7 +397,7 @@ void wrapMatrix{{ SUFFIX }}()
     // this type, and set the type flags to indicate that this type supports the
     // buffer protocol.
     auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
-    typeObj->tp_as_buffer = &bufferProcs;
+    typeObj->tp_as_buffer = &pxrBaseGfWrapMatrix{{ SUFFIX }}::bufferProcs;
     typeObj->tp_flags |= (TfPy_TPFLAGS_HAVE_NEWBUFFER |
                           TfPy_TPFLAGS_HAVE_GETCHARBUFFER);
 }

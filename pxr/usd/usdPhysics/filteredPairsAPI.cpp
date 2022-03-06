@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdPhysicsFilteredPairsAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (PhysicsFilteredPairsAPI)
 );
+
+} // pxrUsdUsdPhysicsFilteredPairsAPI
 
 /* virtual */
 UsdPhysicsFilteredPairsAPI::~UsdPhysicsFilteredPairsAPI()

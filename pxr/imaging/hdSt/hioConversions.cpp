@@ -27,6 +27,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrImagingHdStHioConversions {
+
 static const HioFormat FORMAT_DESC[] =
 {
     // HioFormat            // HdFormat
@@ -70,6 +72,8 @@ static const HioFormat FORMAT_DESC[] =
 static_assert(TfArraySize(FORMAT_DESC) ==
         HdFormatCount, "hioConversion FORMAT_DESC to HdFormat enum mismatch");
 
+} // pxrImagingHdStHioConversions
+
 
 HioFormat
 HdStHioConversions::GetHioFormat(HdFormat inFormat)
@@ -78,7 +82,7 @@ HdStHioConversions::GetHioFormat(HdFormat inFormat)
         TF_CODING_ERROR("Unexpected HdFormat %d", inFormat);
         return HioFormatUNorm8Vec4;
     }
-    return FORMAT_DESC[inFormat];
+    return pxrImagingHdStHioConversions::FORMAT_DESC[inFormat];
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

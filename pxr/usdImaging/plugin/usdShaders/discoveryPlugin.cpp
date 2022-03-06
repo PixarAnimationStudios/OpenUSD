@@ -43,6 +43,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdImagingPluginUsdShadersDiscoveryPlugin {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -67,10 +69,12 @@ _GetShaderResourcePath(char const * resourceName="")
     return path;
 }
 
+} // pxrUsdImagingPluginUsdShadersDiscoveryPlugin
+
 const NdrStringVec& 
 UsdShadersDiscoveryPlugin::GetSearchURIs() const
 {
-    static const NdrStringVec searchPaths{_GetShaderResourcePath()};
+    static const NdrStringVec searchPaths{pxrUsdImagingPluginUsdShadersDiscoveryPlugin::_GetShaderResourcePath()};
     return searchPaths;
 }
 
@@ -79,7 +83,7 @@ UsdShadersDiscoveryPlugin::DiscoverNodes(const Context &context)
 {
     NdrNodeDiscoveryResultVec result;
 
-    static std::string shaderDefsFile = _GetShaderResourcePath(
+    static std::string shaderDefsFile = pxrUsdImagingPluginUsdShadersDiscoveryPlugin::_GetShaderResourcePath(
             "shaderDefs.usda");
     if (shaderDefsFile.empty())
         return result;

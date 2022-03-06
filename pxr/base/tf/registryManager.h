@@ -169,7 +169,8 @@ public:
                              (void(*)(KEY_TYPE*, TAG*))_Tf_RegistryFunction,   \
                              TF_PP_STRINGIZE(KEY_TYPE));                       \
     }                                                                          \
-    _ARCH_ENSURE_PER_LIB_INIT(Tf_RegistryStaticInit, _tfRegistryInit);         \
+    _ARCH_ENSURE_PER_LIB_INIT(                                                 \
+        pxrBaseTfRegistryManager::Tf_RegistryStaticInit, _tfRegistryInit);     \
     static void _Tf_RegistryFunction(KEY_TYPE*, TAG*)
     
 // Define a registry function outside of a template.  Follow the macro with
@@ -185,7 +186,8 @@ public:
                              TF_PP_CAT(_Tf_RegistryFunction, NAME),            \
                              TF_PP_STRINGIZE(KEY_TYPE));                       \
     }                                                                          \
-    _ARCH_ENSURE_PER_LIB_INIT(Tf_RegistryStaticInit, _tfRegistryInit);         \
+    _ARCH_ENSURE_PER_LIB_INIT(                                                 \
+        pxrBaseTfRegistryManager::Tf_RegistryStaticInit, _tfRegistryInit);     \
     static void TF_PP_CAT(_Tf_RegistryFunction, NAME)(KEY_TYPE*, void*)
 
 

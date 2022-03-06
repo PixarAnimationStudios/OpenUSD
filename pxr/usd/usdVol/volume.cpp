@@ -130,21 +130,25 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdVolVolume {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((fieldPrefix, "field:"))
 );
+
+} // pxrUsdUsdVolVolume
 
 TfToken
 UsdVolVolume::_MakeNamespaced(const TfToken& name)
 {
     TfToken result;
 
-    if (TfStringStartsWith(name, _tokens->fieldPrefix)) {
+    if (TfStringStartsWith(name, pxrUsdUsdVolVolume::_tokens->fieldPrefix)) {
 	result = name;
     }
     else {
-	result = TfToken(_tokens->fieldPrefix.GetString() + name.GetString());
+	result = TfToken(pxrUsdUsdVolVolume::_tokens->fieldPrefix.GetString() + name.GetString());
     }
 
     return result;
@@ -158,7 +162,7 @@ UsdVolVolume::GetFieldPaths() const
 
     if (prim) {
         std::vector<UsdProperty> fieldProps =
-            prim.GetPropertiesInNamespace(_tokens->fieldPrefix);
+            prim.GetPropertiesInNamespace(pxrUsdUsdVolVolume::_tokens->fieldPrefix);
         for (const UsdProperty &fieldProp : fieldProps) {
             UsdRelationship fieldRel = fieldProp.As<UsdRelationship>();
             SdfPathVector targets;

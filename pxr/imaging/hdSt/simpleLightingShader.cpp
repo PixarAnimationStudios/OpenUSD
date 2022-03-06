@@ -51,12 +51,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdStSimpleLightingShader {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (domeLightIrradiance)
     (domeLightPrefilter) 
     (domeLightBRDF)
 );
+
+} // pxrImagingHdStSimpleLightingShader
 
 
 HdStSimpleLightingShader::HdStSimpleLightingShader() 
@@ -231,7 +235,7 @@ HdStSimpleLightingShader::AddBindings(HdBindingRequestVector *customBindings)
         _lightTextureParams.push_back(
             HdSt_MaterialParam(
                 HdSt_MaterialParam::ParamTypeTexture,
-                _tokens->domeLightIrradiance,
+                pxrImagingHdStSimpleLightingShader::_tokens->domeLightIrradiance,
                 VtValue(GfVec4f(0.0)),
                 TfTokenVector(),
                 HdTextureType::Uv));
@@ -239,7 +243,7 @@ HdStSimpleLightingShader::AddBindings(HdBindingRequestVector *customBindings)
         _lightTextureParams.push_back(
             HdSt_MaterialParam(
                 HdSt_MaterialParam::ParamTypeTexture,
-                _tokens->domeLightPrefilter,
+                pxrImagingHdStSimpleLightingShader::_tokens->domeLightPrefilter,
                 VtValue(GfVec4f(0.0)),
                 TfTokenVector(),
                 HdTextureType::Uv));
@@ -247,7 +251,7 @@ HdStSimpleLightingShader::AddBindings(HdBindingRequestVector *customBindings)
         _lightTextureParams.push_back(
             HdSt_MaterialParam(
                 HdSt_MaterialParam::ParamTypeTexture,
-                _tokens->domeLightBRDF,
+                pxrImagingHdStSimpleLightingShader::_tokens->domeLightBRDF,
                 VtValue(GfVec4f(0.0)),
                 TfTokenVector(),
                 HdTextureType::Uv));
@@ -416,7 +420,7 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdSceneDelegate *const delegate
 
     _namedTextureHandles = {
         _MakeNamedTextureHandle(
-            _tokens->domeLightIrradiance,
+            pxrImagingHdStSimpleLightingShader::_tokens->domeLightIrradiance,
             resolvedPath,
             HdWrapRepeat, HdWrapClamp, HdWrapRepeat,
             HdMinFilterLinear,
@@ -424,7 +428,7 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdSceneDelegate *const delegate
             shared_from_this()),
 
         _MakeNamedTextureHandle(
-            _tokens->domeLightPrefilter,
+            pxrImagingHdStSimpleLightingShader::_tokens->domeLightPrefilter,
             resolvedPath,
             HdWrapRepeat, HdWrapClamp, HdWrapRepeat,
             HdMinFilterLinearMipmapLinear,
@@ -432,7 +436,7 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdSceneDelegate *const delegate
             shared_from_this()),
 
         _MakeNamedTextureHandle(
-            _tokens->domeLightBRDF,
+            pxrImagingHdStSimpleLightingShader::_tokens->domeLightBRDF,
             resolvedPath,
             HdWrapClamp, HdWrapClamp, HdWrapClamp,
             HdMinFilterLinear,
@@ -459,7 +463,7 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
     ctx.AddComputation(
         nullptr,
         std::make_shared<HdSt_DomeLightComputationGPU>(
-            _tokens->domeLightIrradiance,
+            pxrImagingHdStSimpleLightingShader::_tokens->domeLightIrradiance,
             thisShader),
         HdStComputeQueueZero);
     
@@ -492,7 +496,7 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
         ctx.AddComputation(
             nullptr,
             std::make_shared<HdSt_DomeLightComputationGPU>(
-                _tokens->domeLightPrefilter, 
+                pxrImagingHdStSimpleLightingShader::_tokens->domeLightPrefilter, 
                 thisShader,
                 numPrefilterLevels,
                 mipLevel,
@@ -504,7 +508,7 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
     ctx.AddComputation(
         nullptr,
         std::make_shared<HdSt_DomeLightComputationGPU>(
-            _tokens->domeLightBRDF,
+            pxrImagingHdStSimpleLightingShader::_tokens->domeLightBRDF,
             thisShader),
         HdStComputeQueueZero);
 }

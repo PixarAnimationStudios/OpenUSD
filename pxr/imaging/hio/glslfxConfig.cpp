@@ -35,6 +35,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 
+namespace pxrImagingHioGlslfxConfig {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (attributes)
@@ -51,10 +53,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     (type)
 );
 
+} // pxrImagingHioGlslfxConfig
+
 TF_DEFINE_ENV_SETTING(HIO_GLSLFX_DEFAULT_VALUE_VALIDATION, true,
     "If true, there is no check that the default value of an attribute matches "
     "the type declared in the glslfx config section.");
                       
+namespace pxrImagingHioGlslfxConfig {
+
 static
 bool
 _IsFloatOrDouble(const VtValue &v)
@@ -112,7 +118,7 @@ _GetDefaultValue(
     // Get default key
     VtValue defaultValue;
     const bool hasDefaultValue =
-        TfMapLookup(attributeDataDict, _tokens->defVal, &defaultValue);
+        TfMapLookup(attributeDataDict, pxrImagingHioGlslfxConfig::_tokens->defVal, &defaultValue);
 
     // Old behavior - so that assets where the default value and the
     // type do not match still work.
@@ -124,7 +130,7 @@ _GetDefaultValue(
     // Get type key
     VtValue typeNameValue;
     const bool hasTypeNameValue =
-        TfMapLookup(attributeDataDict, _tokens->type, &typeNameValue);
+        TfMapLookup(attributeDataDict, pxrImagingHioGlslfxConfig::_tokens->type, &typeNameValue);
 
     if (!hasTypeNameValue) {
         if (hasDefaultValue) {
@@ -203,6 +209,8 @@ _GetDefaultValue(
     return VtValue(std::vector<float>(4, 0.0f));
 }
 
+} // pxrImagingHioGlslfxConfig
+
 HioGlslfxConfig *
 HioGlslfxConfig::Read(TfToken const & technique,
                       std::string const & input,
@@ -253,16 +261,16 @@ HioGlslfxConfig::_GetSourceKeyMap(VtDictionary const & dict,
     VtValue techniques;
 
     // verify that techiniques is specified
-    if (!TfMapLookup(dict, _tokens->techniques, &techniques)) {
+    if (!TfMapLookup(dict, pxrImagingHioGlslfxConfig::_tokens->techniques, &techniques)) {
         *errorStr = TfStringPrintf("Configuration does not specify %s",
-                                   _tokens->techniques.GetText());
+                                   pxrImagingHioGlslfxConfig::_tokens->techniques.GetText());
         return ret;
     }
 
     // verify that it holds a VtDictionary
     if (!techniques.IsHolding<VtDictionary>()) {
         *errorStr = TfStringPrintf("%s declaration expects a dictionary value",
-                                   _tokens->techniques.GetText());
+                                   pxrImagingHioGlslfxConfig::_tokens->techniques.GetText());
         return ret;
     }
 
@@ -273,14 +281,14 @@ HioGlslfxConfig::_GetSourceKeyMap(VtDictionary const & dict,
 
     if (techniquesDict.size() == 0) {
         *errorStr = TfStringPrintf("No %s specified",
-                                   _tokens->techniques.GetText());
+                                   pxrImagingHioGlslfxConfig::_tokens->techniques.GetText());
         return ret;
     }
 
     VtDictionary::const_iterator entry = techniquesDict.find(_technique);
     if (entry == techniquesDict.end()) {
         *errorStr = TfStringPrintf("No entry for %s: %s",
-                                   _tokens->techniques.GetText(), 
+                                   pxrImagingHioGlslfxConfig::_tokens->techniques.GetText(), 
                                    _technique.GetText());
         return ret;
     }
@@ -291,7 +299,7 @@ HioGlslfxConfig::_GetSourceKeyMap(VtDictionary const & dict,
     // verify that it also holds a VtDictionary
     if (!techniqueSpec.IsHolding<VtDictionary>()) {
         *errorStr = TfStringPrintf("%s spec for %s expects a dictionary value",
-                                   _tokens->techniques.GetText(),
+                                   pxrImagingHioGlslfxConfig::_tokens->techniques.GetText(),
                                    entry->first.c_str());
         return ret;
     }
@@ -315,10 +323,10 @@ HioGlslfxConfig::_GetSourceKeyMap(VtDictionary const & dict,
         const VtDictionary& shaderStageDict =
             shaderStageSpec.UncheckedGet<VtDictionary>();
         VtValue source;
-        if (!TfMapLookup(shaderStageDict, _tokens->source, &source)) {
+        if (!TfMapLookup(shaderStageDict, pxrImagingHioGlslfxConfig::_tokens->source, &source)) {
             *errorStr = TfStringPrintf("%s spec doesn't define %s for %s",
                                        entry->first.c_str(),
-                                       _tokens->source.GetText(),
+                                       pxrImagingHioGlslfxConfig::_tokens->source.GetText(),
                                        shaderStageKey.c_str());
             return ret;
         }
@@ -326,7 +334,7 @@ HioGlslfxConfig::_GetSourceKeyMap(VtDictionary const & dict,
         // verify that source holds a list
         if (!source.IsHolding<std::vector<VtValue> >()) {
             *errorStr = TfStringPrintf("%s of %s for spec %s expects a list",
-                                       _tokens->source.GetText(),
+                                       pxrImagingHioGlslfxConfig::_tokens->source.GetText(),
                                        shaderStageKey.c_str(),
                                        entry->first.c_str());
             return ret;
@@ -338,7 +346,7 @@ HioGlslfxConfig::_GetSourceKeyMap(VtDictionary const & dict,
             if (!val.IsHolding<std::string>()) {
                 *errorStr = TfStringPrintf("%s of %s for spec %s expects a "
                                            "list of strings",
-                                           _tokens->source.GetText(),
+                                           pxrImagingHioGlslfxConfig::_tokens->source.GetText(),
                                            shaderStageKey.c_str(),
                                            entry->first.c_str());
                 return ret;
@@ -354,7 +362,7 @@ HioGlslfxConfig::_GetSourceKeyMap(VtDictionary const & dict,
 static HioGlslfxConfig::Role
 _GetRoleFromString(std::string const & roleString, std::string *errorStr)
 {
-    if (roleString == _tokens->color) {
+    if (roleString == pxrImagingHioGlslfxConfig::_tokens->color) {
         return HioGlslfxConfig::RoleColor;
     }
 
@@ -379,28 +387,28 @@ HioGlslfxConfig::_GetParameters(VtDictionary const & dict,
     VtValue params;
 
     // look for the params section
-    if (!TfMapLookup(dict, _tokens->parameters, &params)) {
+    if (!TfMapLookup(dict, pxrImagingHioGlslfxConfig::_tokens->parameters, &params)) {
         return ret;
     }
 
     // verify that it holds a VtDictionary
     if (!params.IsHolding<VtDictionary>()) {
         *errorStr = TfStringPrintf("%s declaration expects a dictionary value",
-                                   _tokens->parameters.GetText());
+                                   pxrImagingHioGlslfxConfig::_tokens->parameters.GetText());
         return ret;
     }
 
     // look for the parameterOrder section: 
     std::vector<std::string> paramOrder;
     VtValue paramOrderAny;
-    TfMapLookup(dict, _tokens->parameterOrder, &paramOrderAny);
+    TfMapLookup(dict, pxrImagingHioGlslfxConfig::_tokens->parameterOrder, &paramOrderAny);
 
     if (!paramOrderAny.IsEmpty()) {
         // verify the type
         if (!paramOrderAny.IsHolding<std::vector<VtValue> >()) {
             *errorStr =
                 TfStringPrintf("%s declaration expects a list of strings",
-                               _tokens->parameterOrder.GetText());
+                               pxrImagingHioGlslfxConfig::_tokens->parameterOrder.GetText());
             return ret;
         }
 
@@ -411,7 +419,7 @@ HioGlslfxConfig::_GetParameters(VtDictionary const & dict,
             if (!val.IsHolding<std::string>()) {
                 *errorStr = TfStringPrintf("%s declaration expects a list of "
                                            "strings",
-                                           _tokens->parameterOrder.GetText());
+                                           pxrImagingHioGlslfxConfig::_tokens->parameterOrder.GetText());
                 return ret;
             }
 
@@ -447,7 +455,7 @@ HioGlslfxConfig::_GetParameters(VtDictionary const & dict,
         if (!paramData.IsHolding<VtDictionary>()) {
             *errorStr = TfStringPrintf("%s declaration for %s expects a "
                                        "dictionary value",
-                                       _tokens->parameters.GetText(),
+                                       pxrImagingHioGlslfxConfig::_tokens->parameters.GetText(),
                                        paramName.c_str());
             return ret;
         }
@@ -456,10 +464,10 @@ HioGlslfxConfig::_GetParameters(VtDictionary const & dict,
         const VtDictionary& paramDataDict =
             paramData.UncheckedGet<VtDictionary>();
         VtValue defVal;
-        if (!TfMapLookup(paramDataDict, _tokens->defVal, &defVal)) {
+        if (!TfMapLookup(paramDataDict, pxrImagingHioGlslfxConfig::_tokens->defVal, &defVal)) {
             *errorStr = TfStringPrintf("%s declaration for %s must specify "
                                        "a default value",
-                                       _tokens->parameters.GetText(),
+                                       pxrImagingHioGlslfxConfig::_tokens->parameters.GetText(),
                                        paramName.c_str());
             return ret;
         }
@@ -467,11 +475,11 @@ HioGlslfxConfig::_GetParameters(VtDictionary const & dict,
         // optional documentation string
         VtValue docVal;
         std::string docString;
-        if (TfMapLookup(paramDataDict, _tokens->documentation, &docVal)) {
+        if (TfMapLookup(paramDataDict, pxrImagingHioGlslfxConfig::_tokens->documentation, &docVal)) {
             if (!docVal.IsHolding<std::string>()) {
                 *errorStr = TfStringPrintf("Value for %s for %s is not a "
                                            "string",
-                                           _tokens->documentation.GetText(),
+                                           pxrImagingHioGlslfxConfig::_tokens->documentation.GetText(),
                                            paramName.c_str());
                 return ret;
             }
@@ -481,11 +489,11 @@ HioGlslfxConfig::_GetParameters(VtDictionary const & dict,
         // optional role specification
         VtValue roleVal;
         Role role = RoleNone;
-        if (TfMapLookup(paramDataDict, _tokens->role, &roleVal)) {
+        if (TfMapLookup(paramDataDict, pxrImagingHioGlslfxConfig::_tokens->role, &roleVal)) {
             if (!roleVal.IsHolding<std::string>()) {
                 *errorStr = TfStringPrintf("Value for %s for %s is not a "
                                            "string",
-                                           _tokens->role.GetText(),
+                                           pxrImagingHioGlslfxConfig::_tokens->role.GetText(),
                                            paramName.c_str());
                 return ret;
             }
@@ -522,14 +530,14 @@ HioGlslfxConfig::_GetTextures(VtDictionary const & dict,
     VtValue textures;
 
     // look for the params section
-    if (!TfMapLookup(dict, _tokens->textures, &textures)) {
+    if (!TfMapLookup(dict, pxrImagingHioGlslfxConfig::_tokens->textures, &textures)) {
         return ret;
     }
 
     // verify that it holds a VtDictionary
     if (!textures.IsHolding<VtDictionary>()) {
         *errorStr = TfStringPrintf("%s declaration expects a dictionary value",
-                                   _tokens->textures.GetText());
+                                   pxrImagingHioGlslfxConfig::_tokens->textures.GetText());
         return ret;
     }
 
@@ -540,7 +548,7 @@ HioGlslfxConfig::_GetTextures(VtDictionary const & dict,
         if (!textureData.IsHolding<VtDictionary>()) {
             *errorStr = TfStringPrintf("%s declaration for %s expects a "
                                        "dictionary value",
-                                       _tokens->textures.GetText(),
+                                       pxrImagingHioGlslfxConfig::_tokens->textures.GetText(),
                                        textureName.c_str());
             return ret;
         }
@@ -551,16 +559,16 @@ HioGlslfxConfig::_GetTextures(VtDictionary const & dict,
 
         // optional default color
         VtValue defVal;
-        TfMapLookup(textureDataDict, _tokens->defVal, &defVal);
+        TfMapLookup(textureDataDict, pxrImagingHioGlslfxConfig::_tokens->defVal, &defVal);
 
         // optional documentation string
         VtValue docVal;
         std::string docString;
-        if (TfMapLookup(textureDataDict, _tokens->documentation, &docVal)) {
+        if (TfMapLookup(textureDataDict, pxrImagingHioGlslfxConfig::_tokens->documentation, &docVal)) {
             if (!docVal.IsHolding<std::string>()) {
                 *errorStr = TfStringPrintf("Value for %s for %s is not a "
                                            "string",
-                                           _tokens->documentation.GetText(),
+                                           pxrImagingHioGlslfxConfig::_tokens->documentation.GetText(),
                                            textureName.c_str());
                 return ret;
             }
@@ -592,14 +600,14 @@ HioGlslfxConfig::_GetAttributes(VtDictionary const & dict,
     VtValue attributes;
 
     // look for the attribute section
-    if (!TfMapLookup(dict, _tokens->attributes, &attributes)) {
+    if (!TfMapLookup(dict, pxrImagingHioGlslfxConfig::_tokens->attributes, &attributes)) {
         return ret;
     }
 
     // verify that it holds a VtDictionary
     if (!attributes.IsHolding<VtDictionary>()) {
         *errorStr = TfStringPrintf("%s declaration expects a dictionary value",
-                                   _tokens->attributes.GetText());
+                                   pxrImagingHioGlslfxConfig::_tokens->attributes.GetText());
         return ret;
     }
 
@@ -611,7 +619,7 @@ HioGlslfxConfig::_GetAttributes(VtDictionary const & dict,
         if (!attributeData.IsHolding<VtDictionary>()) {
             *errorStr = TfStringPrintf("%s declaration for %s expects a "
                                        "dictionary value",
-                                       _tokens->attributes.GetText(),
+                                       pxrImagingHioGlslfxConfig::_tokens->attributes.GetText(),
                                        attributeName.c_str());
             return ret;
         }
@@ -623,11 +631,11 @@ HioGlslfxConfig::_GetAttributes(VtDictionary const & dict,
         // optional documentation string
         VtValue docVal;
         std::string docString;
-        if (TfMapLookup(attributeDataDict, _tokens->documentation, &docVal)) {
+        if (TfMapLookup(attributeDataDict, pxrImagingHioGlslfxConfig::_tokens->documentation, &docVal)) {
             if (!docVal.IsHolding<std::string>()) {
                 *errorStr = TfStringPrintf("Value for %s for %s is not a "
                                            "string",
-                                           _tokens->documentation.GetText(),
+                                           pxrImagingHioGlslfxConfig::_tokens->documentation.GetText(),
                                            attributeName.c_str());
                 return ret;
             }
@@ -640,7 +648,7 @@ HioGlslfxConfig::_GetAttributes(VtDictionary const & dict,
 
         ret.push_back(
             Attribute(attributeName,
-                      _GetDefaultValue(attributeName,
+                      pxrImagingHioGlslfxConfig::_GetDefaultValue(attributeName,
                                        attributeDataDict,
                                        errorStr),
                       docString));
@@ -664,14 +672,14 @@ HioGlslfxConfig::_GetMetadata(VtDictionary const & dict,
     VtValue metadata;
 
     // look for the metadata section
-    if (!TfMapLookup(dict, _tokens->metadata, &metadata)) {
+    if (!TfMapLookup(dict, pxrImagingHioGlslfxConfig::_tokens->metadata, &metadata)) {
         return ret;
     }
 
     // verify that it holds a VtDictionary
     if (!metadata.IsHolding<VtDictionary>()) {
         *errorStr = TfStringPrintf("%s declaration expects a dictionary value",
-                                   _tokens->metadata.GetText());
+                                   pxrImagingHioGlslfxConfig::_tokens->metadata.GetText());
         return ret;
     }
 

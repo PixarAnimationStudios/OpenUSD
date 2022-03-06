@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdLuxVolumeLightAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (VolumeLightAPI)
 );
+
+} // pxrUsdUsdLuxVolumeLightAPI
 
 /* virtual */
 UsdLuxVolumeLightAPI::~UsdLuxVolumeLightAPI()

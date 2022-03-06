@@ -41,6 +41,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdxVisualizeAovTask {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     // texture identifiers
@@ -58,6 +60,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((empty, ""))
 );
+
+} // pxrImagingHdxVisualizeAovTask
 
 HdxVisualizeAovTaskParams::HdxVisualizeAovTaskParams() = default;
 
@@ -142,16 +146,16 @@ HdxVisualizeAovTask::_GetTextureIdentifierForShader() const
 {
     switch(_vizKernel) {
         case VizKernelDepth:
-            return _tokens->depthIn;
+            return pxrImagingHdxVisualizeAovTask::_tokens->depthIn;
         case VizKernelId:
-            return _tokens->idIn;
+            return pxrImagingHdxVisualizeAovTask::_tokens->idIn;
         case VizKernelNormal:
-            return _tokens->normalIn;
+            return pxrImagingHdxVisualizeAovTask::_tokens->normalIn;
         case VizKernelFallback:
-            return _tokens->aovIn;
+            return pxrImagingHdxVisualizeAovTask::_tokens->aovIn;
         default:
             TF_CODING_ERROR("Unhandled kernel viz enumeration");
-            return _tokens->empty;
+            return pxrImagingHdxVisualizeAovTask::_tokens->empty;
     }
 }
 
@@ -160,16 +164,16 @@ HdxVisualizeAovTask::_GetFragmentMixin() const
 {
     switch(_vizKernel) {
         case VizKernelDepth:
-            return _tokens->visualizeAovFragmentDepth;
+            return pxrImagingHdxVisualizeAovTask::_tokens->visualizeAovFragmentDepth;
         case VizKernelId:
-            return _tokens->visualizeAovFragmentId;
+            return pxrImagingHdxVisualizeAovTask::_tokens->visualizeAovFragmentId;
         case VizKernelNormal:
-            return _tokens->visualizeAovFragmentNormal;
+            return pxrImagingHdxVisualizeAovTask::_tokens->visualizeAovFragmentNormal;
         case VizKernelFallback:
-            return _tokens->visualizeAovFragmentFallback;
+            return pxrImagingHdxVisualizeAovTask::_tokens->visualizeAovFragmentFallback;
         default:
             TF_CODING_ERROR("Unhandled kernel viz enumeration");
-            return _tokens->empty;
+            return pxrImagingHdxVisualizeAovTask::_tokens->empty;
     }
 }
 
@@ -189,7 +193,7 @@ HdxVisualizeAovTask::_CreateShaderResources(
     {
         std::string vsCode;
         HgiShaderFunctionDesc vertDesc;
-        vertDesc.debugName = _tokens->visualizeAovVertex.GetString();
+        vertDesc.debugName = pxrImagingHdxVisualizeAovTask::_tokens->visualizeAovVertex.GetString();
         vertDesc.shaderStage = HgiShaderStageVertex;
         HgiShaderFunctionAddStageInput(
             &vertDesc, "position", "vec4");
@@ -199,7 +203,7 @@ HdxVisualizeAovTask::_CreateShaderResources(
             &vertDesc, "gl_Position", "vec4", "position");
         HgiShaderFunctionAddStageOutput(
             &vertDesc, "uvOut", "vec2");
-        vsCode += glslfx.GetSource(_tokens->visualizeAovVertex);
+        vsCode += glslfx.GetSource(pxrImagingHdxVisualizeAovTask::_tokens->visualizeAovVertex);
         vertDesc.shaderCode = vsCode.c_str();
 
         vertFn = _GetHgi()->CreateShaderFunction(vertDesc);

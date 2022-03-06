@@ -45,11 +45,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdStMaterial {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (limitSurfaceEvaluation)
     (opacity)
 );
+
+} // pxrImagingHdStMaterial
 
 HioGlslfx *HdStMaterial::_fallbackGlslfx = nullptr;
 
@@ -389,7 +393,7 @@ bool
 HdStMaterial::_GetHasLimitSurfaceEvaluation(VtDictionary const & metadata) const
 {
     VtValue value = TfMapLookupByValue(metadata,
-                                       _tokens->limitSurfaceEvaluation,
+                                       pxrImagingHdStMaterial::_tokens->limitSurfaceEvaluation,
                                        VtValue());
     return value.IsHolding<bool>() && value.Get<bool>();
 }

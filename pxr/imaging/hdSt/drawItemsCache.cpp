@@ -52,6 +52,8 @@ std::ostream &operator <<(std::ostream &os, TfTokenVector const &tags)
 //------------------------------------------------------------------------------
 // Helper methods
 
+namespace pxrImagingHdStDrawItemsCache {
+
 static size_t
 _GetMaterialTagsVersion(HdRenderIndex *renderIndex)
 {
@@ -69,6 +71,8 @@ _GetGeomSubsetDrawItemsVersion(HdRenderIndex *renderIndex)
 
     return size_t(stRenderParam->GetGeomSubsetDrawItemsVersion());
 }
+
+} // pxrImagingHdStDrawItemsCache
 
 //------------------------------------------------------------------------------
 
@@ -167,9 +171,9 @@ HdSt_DrawItemsCache::_IsCacheEntryStale(
     const bool renderTagsVersionChanged =
         val.renderTagsVersion != tracker.GetRenderTagVersion();
     const bool materialTagsVersionChanged =
-        val.materialTagsVersion != _GetMaterialTagsVersion(renderIndex);
+        val.materialTagsVersion != pxrImagingHdStDrawItemsCache::_GetMaterialTagsVersion(renderIndex);
     const bool geomSubsetDrawItemsChanged =
-        val.geomSubsetDrawItemsVersion != _GetGeomSubsetDrawItemsVersion(
+        val.geomSubsetDrawItemsVersion != pxrImagingHdStDrawItemsCache::_GetGeomSubsetDrawItemsVersion(
             renderIndex);
 
     return collectionVersionChanged ||
@@ -192,8 +196,8 @@ HdSt_DrawItemsCache::_UpdateCacheEntry(
     val->collectionVersion =
         tracker.GetCollectionVersion(collection.GetName());
     val->renderTagsVersion = tracker.GetRenderTagVersion();
-    val->materialTagsVersion = _GetMaterialTagsVersion(renderIndex);
-    val->geomSubsetDrawItemsVersion = _GetGeomSubsetDrawItemsVersion(
+    val->materialTagsVersion = pxrImagingHdStDrawItemsCache::_GetMaterialTagsVersion(renderIndex);
+    val->geomSubsetDrawItemsVersion = pxrImagingHdStDrawItemsCache::_GetGeomSubsetDrawItemsVersion(
         renderIndex);
 
     val->drawItems = std::make_shared<HdDrawItemConstPtrVector>();

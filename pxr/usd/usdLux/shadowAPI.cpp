@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdLuxShadowAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (ShadowAPI)
 );
+
+} // pxrUsdUsdLuxShadowAPI
 
 /* virtual */
 UsdLuxShadowAPI::~UsdLuxShadowAPI()

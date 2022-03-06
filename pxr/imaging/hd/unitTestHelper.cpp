@@ -39,6 +39,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrImagingHdUnitTestHelper {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (l0dir)
@@ -51,6 +53,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Collection names
     (testCollection)
 );
+
+} // pxrImagingHdUnitTestHelper
 
 class Hd_DrawTask final : public HdTask
 {
@@ -101,6 +105,8 @@ private:
     Hd_DrawTask &operator =(const Hd_DrawTask &) = delete;
 };
 
+namespace pxrImagingHdUnitTestHelper {
+
 template <typename T>
 static VtArray<T>
 _BuildArray(T values[], int numValues)
@@ -110,6 +116,8 @@ _BuildArray(T values[], int numValues)
     return result;
 }
 
+} // namespace pxrImagingHdUnitTestHelper
+
 Hd_TestDriver::Hd_TestDriver()
  : _engine()
  , _renderDelegate()
@@ -118,7 +126,7 @@ Hd_TestDriver::Hd_TestDriver()
  , _cameraId(SdfPath("/__camera"))
  , _renderPass()
  , _renderPassState(_renderDelegate.CreateRenderPassState())
- , _collection(_tokens->testCollection, HdReprSelector())
+ , _collection(pxrImagingHdUnitTestHelper::_tokens->testCollection, HdReprSelector())
 {
     HdReprSelector reprSelector = HdReprSelector(HdReprTokens->hull);
     if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
@@ -136,7 +144,7 @@ Hd_TestDriver::Hd_TestDriver(HdReprSelector const &reprSelector)
  , _cameraId(SdfPath("/__camera"))
  , _renderPass()
  , _renderPassState(_renderDelegate.CreateRenderPassState())
- , _collection(_tokens->testCollection, HdReprSelector())
+ , _collection(pxrImagingHdUnitTestHelper::_tokens->testCollection, HdReprSelector())
 {
     _Init(reprSelector);
 }
@@ -195,6 +203,8 @@ Hd_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides)
     _engine.Execute(&_sceneDelegate->GetRenderIndex(), &tasks);
 }
 
+namespace pxrImagingHdUnitTestHelper {
+
 static
 HdCamera::Projection
 _ToHd(const GfCamera::Projection projection)
@@ -208,6 +218,8 @@ _ToHd(const GfCamera::Projection projection)
     TF_CODING_ERROR("Bad GfCamera::Projection value");
     return HdCamera::Perspective;
 }
+
+} // pxrImagingHdUnitTestHelper
 
 void
 Hd_TestDriver::SetCamera(GfMatrix4d const &viewMatrix,
@@ -224,7 +236,7 @@ Hd_TestDriver::SetCamera(GfMatrix4d const &viewMatrix,
     _sceneDelegate->UpdateCamera(
         _cameraId,
         HdCameraTokens->projection,
-        VtValue(_ToHd(cam.GetProjection())));
+        VtValue(pxrImagingHdUnitTestHelper::_ToHd(cam.GetProjection())));
     _sceneDelegate->UpdateCamera(
         _cameraId,
         HdCameraTokens->focalLength,

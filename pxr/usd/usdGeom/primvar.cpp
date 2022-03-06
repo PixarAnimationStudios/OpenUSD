@@ -34,12 +34,16 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrUsdUsdGeomPrimvar {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((primvarsPrefix, "primvars:"))
     ((idFrom, ":idFrom"))
     ((indicesSuffix, ":indices"))
 );
+
+} // pxrUsdUsdGeomPrimvar
 
 UsdGeomPrimvar::UsdGeomPrimvar(const UsdAttribute &attr)
     : _attr(attr)
@@ -65,8 +69,8 @@ UsdGeomPrimvar::IsValidPrimvarName(const TfToken& name)
     // the "sidecar" attributes we create as part of the schema, like
     // "primvars:foo:indices".  We do not need to worry about the idFrom
     // suffix because it only appears on relationships.
-    return (TfStringStartsWith(name, _tokens->primvarsPrefix) &&
-            !TfStringEndsWith(name, _tokens->indicesSuffix));
+    return (TfStringStartsWith(name, pxrUsdUsdGeomPrimvar::_tokens->primvarsPrefix) &&
+            !TfStringEndsWith(name, pxrUsdUsdGeomPrimvar::_tokens->indicesSuffix));
 }
 
 /* static */
@@ -76,7 +80,7 @@ UsdGeomPrimvar::StripPrimvarsName(const TfToken& name)
     std::string const & fullName = name.GetString();
 
     std::pair<std::string, bool> res =
-        SdfPath::StripPrefixNamespace(fullName, _tokens->primvarsPrefix);
+        SdfPath::StripPrefixNamespace(fullName, pxrUsdUsdGeomPrimvar::_tokens->primvarsPrefix);
 
     return res.second ? TfToken(res.first) : name;
 }
@@ -85,7 +89,7 @@ UsdGeomPrimvar::StripPrimvarsName(const TfToken& name)
 bool
 UsdGeomPrimvar::_IsNamespaced(const TfToken& name)
 {
-    return TfStringStartsWith(name, _tokens->primvarsPrefix);
+    return TfStringStartsWith(name, pxrUsdUsdGeomPrimvar::_tokens->primvarsPrefix);
 }
     
 /* static */
@@ -97,7 +101,7 @@ UsdGeomPrimvar::_MakeNamespaced(const TfToken& name, bool quiet)
         result = name;
     }
     else {
-        result = TfToken(_tokens->primvarsPrefix.GetString() + name.GetString());
+        result = TfToken(pxrUsdUsdGeomPrimvar::_tokens->primvarsPrefix.GetString() + name.GetString());
     }
 
     if (!IsValidPrimvarName(result)){
@@ -118,7 +122,7 @@ UsdGeomPrimvar::_MakeNamespaced(const TfToken& name, bool quiet)
 TfToken const&
 UsdGeomPrimvar::_GetNamespacePrefix()
 {
-    return _tokens->primvarsPrefix;
+    return pxrUsdUsdGeomPrimvar::_tokens->primvarsPrefix;
 }
 
 TfToken
@@ -210,7 +214,7 @@ UsdAttribute
 UsdGeomPrimvar::_GetIndicesAttr(bool create) const
 {
     TfToken indicesAttrName(GetName().GetString() + 
-        _tokens->indicesSuffix.GetString());
+        pxrUsdUsdGeomPrimvar::_tokens->indicesSuffix.GetString());
 
     if (create) {
         return _attr.GetPrim().CreateAttribute(indicesAttrName,
@@ -427,7 +431,7 @@ UsdGeomPrimvar::_SetIdTargetRelName()
     if (typeName == SdfValueTypeNames->String ||
             typeName == SdfValueTypeNames->StringArray) {
         std::string name(_attr.GetName().GetString());
-        _idTargetRelName = TfToken(name.append(_tokens->idFrom.GetText()));
+        _idTargetRelName = TfToken(name.append(pxrUsdUsdGeomPrimvar::_tokens->idFrom.GetText()));
     }
 }
 
@@ -590,7 +594,7 @@ UsdGeomPrimvar::GetPrimvarName() const
     std::string const & fullName = _attr.GetName().GetString();
 
     std::pair<std::string, bool> res =
-        SdfPath::StripPrefixNamespace(fullName, _tokens->primvarsPrefix);
+        SdfPath::StripPrefixNamespace(fullName, pxrUsdUsdGeomPrimvar::_tokens->primvarsPrefix);
 
     return res.second ? TfToken(res.first) : TfToken();
 }
@@ -598,7 +602,7 @@ UsdGeomPrimvar::GetPrimvarName() const
 bool
 UsdGeomPrimvar::NameContainsNamespaces() const 
 { 
-    static const size_t primvarsPrefixLen = _tokens->primvarsPrefix.GetString().size();
+    static const size_t primvarsPrefixLen = pxrUsdUsdGeomPrimvar::_tokens->primvarsPrefix.GetString().size();
     return (_attr.GetName().GetString().find(':', primvarsPrefixLen)
             != std::string::npos);
 }

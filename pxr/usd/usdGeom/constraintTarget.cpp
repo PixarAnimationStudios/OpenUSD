@@ -35,12 +35,16 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrUsdUsdGeomConstraintTarget {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     
     (constraintTargets)
     (constraintTargetIdentifier)
 );
+
+} // pxrUsdUsdGeomConstraintTarget
 
 UsdGeomConstraintTarget::UsdGeomConstraintTarget(const UsdAttribute &attr)
     : _attr(attr)
@@ -59,7 +63,7 @@ UsdGeomConstraintTarget::IsValid(const UsdAttribute &attr)
     return UsdModelAPI(attr.GetPrim()).IsModel() /* is this a model */
 
         /* is it in the constraintTargets namespace */
-        && attr.SplitName().front() == _tokens->constraintTargets
+        && attr.SplitName().front() == pxrUsdUsdGeomConstraintTarget::_tokens->constraintTargets
 
         /* is it matrix-typed */
         && attr.GetTypeName().GetType() == matrix4dType;
@@ -82,7 +86,7 @@ UsdGeomConstraintTarget::GetIdentifier() const
 {
     TfToken result;
     if (_attr) {
-        if (_attr.GetMetadata(_tokens->constraintTargetIdentifier, &result)) {
+        if (_attr.GetMetadata(pxrUsdUsdGeomConstraintTarget::_tokens->constraintTargetIdentifier, &result)) {
             return result;
         }
     }
@@ -94,7 +98,7 @@ void
 UsdGeomConstraintTarget::SetIdentifier(const TfToken &identifier)
 {
     if (_attr) {
-        _attr.SetMetadata(_tokens->constraintTargetIdentifier, identifier);
+        _attr.SetMetadata(pxrUsdUsdGeomConstraintTarget::_tokens->constraintTargetIdentifier, identifier);
     }
 }
 
@@ -103,7 +107,7 @@ TfToken
 UsdGeomConstraintTarget::GetConstraintAttrName(
     const std::string &constraintName)
 {
-    return TfToken(_tokens->constraintTargets.GetString() + ":" + 
+    return TfToken(pxrUsdUsdGeomConstraintTarget::_tokens->constraintTargets.GetString() + ":" + 
                    constraintName);
 }
 

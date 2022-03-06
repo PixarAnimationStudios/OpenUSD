@@ -425,12 +425,16 @@ HdStTextureUtils::GetAllMipImages(
     return result;
 };
 
+namespace pxrImagingHdStTextureUtils {
+
 static
 GfVec3i
 _GetDimensions(HioImageSharedPtr const &image)
 {
     return GfVec3i(image->GetWidth(), image->GetHeight(), 1);
 }
+
+} // pxrImagingHdStTextureUtils
 
 GfVec3i
 HdStTextureUtils::ComputeDimensionsFromTargetMemory(
@@ -447,14 +451,14 @@ HdStTextureUtils::ComputeDimensionsFromTargetMemory(
         if (mipIndex) {
             *mipIndex = 0;
         }
-        return _GetDimensions(mips.front());
+        return pxrImagingHdStTextureUtils::_GetDimensions(mips.front());
     }
 
     // Iterate through mips until one is found that fits into the target
     // memory.
     for (size_t i = 0; i < mips.size(); i++) {
         HioImageSharedPtr const &image = mips[i];
-        const GfVec3i dim = _GetDimensions(image);
+        const GfVec3i dim = pxrImagingHdStTextureUtils::_GetDimensions(image);
         // The factor of 4/3 = 1 + 1/4 + 1/16 + ... accounts for all the
         // lower mipmaps.
         const size_t totalMem = 
@@ -473,7 +477,7 @@ HdStTextureUtils::ComputeDimensionsFromTargetMemory(
 
     // If none of the mips fit, take the last one and compute
     // mip chain from it.
-    const GfVec3i dim = _GetDimensions(mips.back());
+    const GfVec3i dim = pxrImagingHdStTextureUtils::_GetDimensions(mips.back());
     const std::vector<HgiMipInfo> mipInfos =
         HgiGetMipInfos(targetFormat, dim, tileCount);
 

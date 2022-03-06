@@ -39,11 +39,15 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdPhysicsLimitAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (PhysicsLimitAPI)
     (limit)
 );
+
+} // pxrUsdUsdPhysicsLimitAPI
 
 /* virtual */
 UsdPhysicsLimitAPI::~UsdPhysicsLimitAPI()
@@ -109,9 +113,9 @@ UsdPhysicsLimitAPI::IsPhysicsLimitAPIPath(
     }
 
     if (tokens.size() >= 2
-        && tokens[0] == _schemaTokens->limit) {
+        && tokens[0] == pxrUsdUsdPhysicsLimitAPI::_schemaTokens->limit) {
         *name = TfToken(propertyName.substr(
-            _schemaTokens->limit.GetString().size() + 1));
+            pxrUsdUsdPhysicsLimitAPI::_schemaTokens->limit.GetString().size() + 1));
         return true;
     }
 
@@ -165,6 +169,8 @@ UsdPhysicsLimitAPI::_GetTfType() const
     return _GetStaticTfType();
 }
 
+namespace pxrUsdUsdPhysicsLimitAPI {
+
 /// Returns the property name prefixed with the correct namespace prefix, which
 /// is composed of the the API's propertyNamespacePrefix metadata and the
 /// instance name of the API.
@@ -175,11 +181,13 @@ _GetNamespacedPropertyName(const TfToken instanceName, const TfToken propName)
     return UsdSchemaRegistry::MakeMultipleApplyNameInstance(propName, instanceName);
 }
 
+} // pxrUsdUsdPhysicsLimitAPI
+
 UsdAttribute
 UsdPhysicsLimitAPI::GetLowAttr() const
 {
     return GetPrim().GetAttribute(
-        _GetNamespacedPropertyName(
+        pxrUsdUsdPhysicsLimitAPI::_GetNamespacedPropertyName(
             GetName(),
             UsdPhysicsTokens->limit_MultipleApplyTemplate_PhysicsLow));
 }
@@ -188,7 +196,7 @@ UsdAttribute
 UsdPhysicsLimitAPI::CreateLowAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
-                       _GetNamespacedPropertyName(
+                       pxrUsdUsdPhysicsLimitAPI::_GetNamespacedPropertyName(
                             GetName(),
                            UsdPhysicsTokens->limit_MultipleApplyTemplate_PhysicsLow),
                        SdfValueTypeNames->Float,
@@ -202,7 +210,7 @@ UsdAttribute
 UsdPhysicsLimitAPI::GetHighAttr() const
 {
     return GetPrim().GetAttribute(
-        _GetNamespacedPropertyName(
+        pxrUsdUsdPhysicsLimitAPI::_GetNamespacedPropertyName(
             GetName(),
             UsdPhysicsTokens->limit_MultipleApplyTemplate_PhysicsHigh));
 }
@@ -211,7 +219,7 @@ UsdAttribute
 UsdPhysicsLimitAPI::CreateHighAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
-                       _GetNamespacedPropertyName(
+                       pxrUsdUsdPhysicsLimitAPI::_GetNamespacedPropertyName(
                             GetName(),
                            UsdPhysicsTokens->limit_MultipleApplyTemplate_PhysicsHigh),
                        SdfValueTypeNames->Float,

@@ -228,6 +228,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrUsdUsdSkelSkeleton {
+
 /// Plugin extent method.
 static bool
 _ComputeExtent(const UsdGeomBoundable& boundable,
@@ -257,10 +259,12 @@ _ComputeExtent(const UsdGeomBoundable& boundable,
     return true;
 }
 
+} // pxrUsdUsdSkelSkeleton
+
 
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)
 {
-    UsdGeomRegisterComputeExtentFunction<UsdSkelSkeleton>(_ComputeExtent);
+    UsdGeomRegisterComputeExtentFunction<UsdSkelSkeleton>(pxrUsdUsdSkelSkeleton::_ComputeExtent);
 }
 
 

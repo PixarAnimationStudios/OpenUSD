@@ -38,12 +38,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdSdfFileFormatRegistry {
+
 TF_DEFINE_PRIVATE_TOKENS(_PlugInfoKeyTokens,
     ((FormatId,   "formatId"))
     ((Extensions, "extensions"))
     ((Target,     "target"))
     ((Primary,    "primary"))
     );
+
+} // pxrUsdSdfFileFormatRegistry
 
 SdfFileFormatRefPtr
 Sdf_FileFormatRegistry::_Info::GetFileFormat() const
@@ -200,7 +204,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             "  plugin '%s'\n", plugin->GetName().c_str());
 
         JsValue aFormatId = reg.GetDataFromPluginMetaData(
-            formatType, _PlugInfoKeyTokens->FormatId);
+            formatType, pxrUsdSdfFileFormatRegistry::_PlugInfoKeyTokens->FormatId);
         if (aFormatId.IsNull()) {
             TF_DEBUG(SDF_FILE_FORMAT).Msg("_RegisterFormatPlugins: "
                 "No format identifier for type '%s', skipping.",
@@ -211,7 +215,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
         if (!aFormatId.IsString()) {
             TF_CODING_ERROR("Unexpected value type for key '%s' "
                 "in plugin meta data for file format type '%s'",
-                _PlugInfoKeyTokens->FormatId.GetText(),
+                pxrUsdSdfFileFormatRegistry::_PlugInfoKeyTokens->FormatId.GetText(),
                 formatType.GetTypeName().c_str());
             continue;
         }
@@ -220,7 +224,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
         if (formatId.empty()) {
             TF_CODING_ERROR("File format '%s' plugin meta data '%s' is empty",
                 formatType.GetTypeName().c_str(),
-                _PlugInfoKeyTokens->FormatId.GetText());
+                pxrUsdSdfFileFormatRegistry::_PlugInfoKeyTokens->FormatId.GetText());
             continue;
         }
 
@@ -228,7 +232,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             "  formatId '%s'\n", formatId.c_str());
 
         JsValue aExtensions = reg.GetDataFromPluginMetaData(
-            formatType, _PlugInfoKeyTokens->Extensions);
+            formatType, pxrUsdSdfFileFormatRegistry::_PlugInfoKeyTokens->Extensions);
         if (aExtensions.IsNull()) {
             TF_DEBUG(SDF_FILE_FORMAT).Msg("_RegisterFormatPlugins: "
                 "No extensions registered for type '%s', skipping.",
@@ -239,7 +243,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
         if (!aExtensions.IsArrayOf<std::string>()) {
             TF_CODING_ERROR("Unexpected value type for key '%s' "
                 "in plugin meta data for file format type '%s'",
-                _PlugInfoKeyTokens->Extensions.GetText(),
+                pxrUsdSdfFileFormatRegistry::_PlugInfoKeyTokens->Extensions.GetText(),
                 formatType.GetTypeName().c_str());
             continue;
         }
@@ -248,7 +252,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
         if (extensions.empty()) {
             TF_CODING_ERROR("File format '%s' plugin meta data '%s' is empty",
                 formatType.GetTypeName().c_str(),
-                _PlugInfoKeyTokens->Extensions.GetText());
+                pxrUsdSdfFileFormatRegistry::_PlugInfoKeyTokens->Extensions.GetText());
             continue;
         }
 
@@ -261,7 +265,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             formatType.GetAllAncestorTypes(&typeHierarchy);
             TF_FOR_ALL(type, typeHierarchy) {
                 aTarget = reg.GetDataFromPluginMetaData(
-                    *type, _PlugInfoKeyTokens->Target);
+                    *type, pxrUsdSdfFileFormatRegistry::_PlugInfoKeyTokens->Target);
                 if (!aTarget.IsNull()) {
                     TF_DEBUG(SDF_FILE_FORMAT).Msg("_RegisterFormatPlugins: "
                         "    Found target for type '%s' from type '%s'\n",
@@ -282,7 +286,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
         if (!aTarget.IsString()) {
             TF_CODING_ERROR("Unexpected value type for key '%s' "
                 "in plugin meta data for file format type '%s'",
-                _PlugInfoKeyTokens->Target.GetText(),
+                pxrUsdSdfFileFormatRegistry::_PlugInfoKeyTokens->Target.GetText(),
                 formatType.GetTypeName().c_str());
             continue;
         }
@@ -291,7 +295,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
         if (target.empty()) {
             TF_CODING_ERROR("File format '%s' plugin meta data '%s' is empty",
                 formatType.GetTypeName().c_str(),
-                _PlugInfoKeyTokens->Target.GetText());
+                pxrUsdSdfFileFormatRegistry::_PlugInfoKeyTokens->Target.GetText());
             continue;
         }
 
@@ -361,7 +365,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
         else {
             TF_FOR_ALL(infoIt, infos) {
                 const JsValue aPrimary = reg.GetDataFromPluginMetaData(
-                    (*infoIt)->type, _PlugInfoKeyTokens->Primary);
+                    (*infoIt)->type, pxrUsdSdfFileFormatRegistry::_PlugInfoKeyTokens->Primary);
                 if (aPrimary.IsNull()) {
                     continue;
                 }
@@ -369,7 +373,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
                 if (!aPrimary.IsBool()) {
                     TF_CODING_ERROR("Unexpected value type for key '%s' "
                         "in plugin meta data for file format type '%s'",
-                        _PlugInfoKeyTokens->Primary.GetText(),
+                        pxrUsdSdfFileFormatRegistry::_PlugInfoKeyTokens->Primary.GetText(),
                         (*infoIt)->type.GetTypeName().c_str());
                     continue;
                 }

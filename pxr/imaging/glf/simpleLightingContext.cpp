@@ -53,6 +53,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrImagingGlfSimpleLightingContext {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((lightingUB, "Lighting"))
@@ -61,6 +63,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((postSurfaceShaderUB, "PostSurfaceShaderParams"))
     ((shadowCompareTextures, "shadowCompareTextures"))
 );
+
+} // pxrImagingGlfSimpleLightingContext
 
 // XXX:
 // currently max number of lights are limited to 16 by
@@ -234,10 +238,10 @@ GlfSimpleLightingContext::InitUniformBlockBindings(
         GlfBindingMapPtr const &bindingMap) const
 {
     // populate uniform bindings (XXX: need better API)
-    bindingMap->GetUniformBinding(_tokens->lightingUB);
-    bindingMap->GetUniformBinding(_tokens->shadowUB);
-    bindingMap->GetUniformBinding(_tokens->materialUB);
-    bindingMap->GetUniformBinding(_tokens->postSurfaceShaderUB);
+    bindingMap->GetUniformBinding(pxrImagingGlfSimpleLightingContext::_tokens->lightingUB);
+    bindingMap->GetUniformBinding(pxrImagingGlfSimpleLightingContext::_tokens->shadowUB);
+    bindingMap->GetUniformBinding(pxrImagingGlfSimpleLightingContext::_tokens->materialUB);
+    bindingMap->GetUniformBinding(pxrImagingGlfSimpleLightingContext::_tokens->postSurfaceShaderUB);
 }
 
 void
@@ -248,7 +252,7 @@ GlfSimpleLightingContext::InitSamplerUnitBindings(
     for (size_t i = 0; i < numShadows; ++i) {
         bindingMap->GetSamplerUnit(
             TfStringPrintf("%s[%zd]",
-                _tokens->shadowCompareTextures.GetText(), i));
+                pxrImagingGlfSimpleLightingContext::_tokens->shadowCompareTextures.GetText(), i));
     }
 }
 
@@ -408,10 +412,10 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
         }
     }
 
-    _lightingUniformBlock->Bind(bindingMap, _tokens->lightingUB);
+    _lightingUniformBlock->Bind(bindingMap, pxrImagingGlfSimpleLightingContext::_tokens->lightingUB);
 
     if (shadowExists) {
-        _shadowUniformBlock->Bind(bindingMap, _tokens->shadowUB);
+        _shadowUniformBlock->Bind(bindingMap, pxrImagingGlfSimpleLightingContext::_tokens->shadowUB);
     }
 
     if (!_materialUniformBlockValid) {
@@ -439,7 +443,7 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
         _materialUniformBlockValid = true;
     }
 
-    _materialUniformBlock->Bind(bindingMap, _tokens->materialUB);
+    _materialUniformBlock->Bind(bindingMap, pxrImagingGlfSimpleLightingContext::_tokens->materialUB);
 
     _BindPostSurfaceShaderParams(bindingMap);
 }
@@ -451,7 +455,7 @@ GlfSimpleLightingContext::BindSamplers(GlfBindingMapPtr const &bindingMap)
     for (size_t i = 0; i < numShadows; ++i) {
         std::string samplerName =
             TfStringPrintf("%s[%zd]",
-                _tokens->shadowCompareTextures.GetText(), i);
+                pxrImagingGlfSimpleLightingContext::_tokens->shadowCompareTextures.GetText(), i);
         int shadowSampler = bindingMap->GetSamplerUnit(samplerName);
 
         glActiveTexture(GL_TEXTURE0 + shadowSampler);
@@ -469,7 +473,7 @@ GlfSimpleLightingContext::UnbindSamplers(GlfBindingMapPtr const &bindingMap)
     for (size_t i = 0; i < numShadows; ++i) {
         std::string samplerName =
             TfStringPrintf("%s[%zd]",
-                _tokens->shadowCompareTextures.GetText(), i);
+                pxrImagingGlfSimpleLightingContext::_tokens->shadowCompareTextures.GetText(), i);
         int shadowSampler = bindingMap->GetSamplerUnit(samplerName);
 
         glActiveTexture(GL_TEXTURE0 + shadowSampler);
@@ -780,7 +784,7 @@ GlfSimpleLightingContext::_BindPostSurfaceShaderParams(
 
     if (_postSurfaceShaderState && _postSurfaceShaderState->GetUniformBlock()) {
         _postSurfaceShaderState->GetUniformBlock()->
-                Bind(bindingMap, _tokens->postSurfaceShaderUB);
+                Bind(bindingMap, pxrImagingGlfSimpleLightingContext::_tokens->postSurfaceShaderUB);
     }
 }
 

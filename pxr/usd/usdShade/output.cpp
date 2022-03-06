@@ -39,10 +39,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 
+namespace pxrUsdUsdShadeOutput {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (renderType)
 );
+
+} // pxrUsdUsdShadeOutput
 
 UsdShadeOutput::UsdShadeOutput(const UsdAttribute &attr)
     : _attr(attr)
@@ -95,21 +99,21 @@ bool
 UsdShadeOutput::SetRenderType(
         TfToken const& renderType) const
 {
-    return _attr.SetMetadata(_tokens->renderType, renderType);
+    return _attr.SetMetadata(pxrUsdUsdShadeOutput::_tokens->renderType, renderType);
 }
 
 TfToken 
 UsdShadeOutput::GetRenderType() const
 {
     TfToken renderType;
-    _attr.GetMetadata(_tokens->renderType, &renderType);
+    _attr.GetMetadata(pxrUsdUsdShadeOutput::_tokens->renderType, &renderType);
     return renderType;
 }
 
 bool 
 UsdShadeOutput::HasRenderType() const
 {
-    return _attr.HasMetadata(_tokens->renderType);
+    return _attr.HasMetadata(pxrUsdUsdShadeOutput::_tokens->renderType);
 }
 
 NdrTokenMap

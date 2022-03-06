@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdRiMaterialAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (RiMaterialAPI)
 );
+
+} // pxrUsdUsdRiMaterialAPI
 
 /* virtual */
 UsdRiMaterialAPI::~UsdRiMaterialAPI()
@@ -208,6 +212,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdRiMaterialAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((defaultOutputName, "outputs:out"))
@@ -218,6 +224,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((bxdfOutputAttrName, "outputs:ri:bxdf"))
     ((riLookBxdf, "riLook:bxdf"))
 );
+
+} // pxrUsdUsdRiMaterialAPI
 
 UsdShadeShader
 UsdRiMaterialAPI::_GetSourceShaderObject(const UsdShadeOutput &output,
@@ -250,7 +258,7 @@ UsdRiMaterialAPI::_GetBxdfOutput(const UsdPrim &materialPrim) const
 {
     // Check if the deprecated bxdf output is present.
     if (const UsdAttribute bxdfAttr = materialPrim.GetAttribute(
-            _tokens->bxdfOutputAttrName)) {
+            pxrUsdUsdRiMaterialAPI::_tokens->bxdfOutputAttrName)) {
         return UsdShadeOutput(bxdfAttr);
     }
     return UsdShadeOutput();    
@@ -286,51 +294,51 @@ UsdRiMaterialAPI::GetVolume(bool ignoreBaseMaterial) const
 UsdShadeOutput 
 UsdRiMaterialAPI::GetSurfaceOutput() const
 {
-    return  UsdShadeMaterial(GetPrim()).GetSurfaceOutput(_tokens->ri);
+    return  UsdShadeMaterial(GetPrim()).GetSurfaceOutput(pxrUsdUsdRiMaterialAPI::_tokens->ri);
 }
 
 UsdShadeOutput 
 UsdRiMaterialAPI::GetDisplacementOutput() const
 {
-    return UsdShadeMaterial(GetPrim()).GetDisplacementOutput(_tokens->ri);
+    return UsdShadeMaterial(GetPrim()).GetDisplacementOutput(pxrUsdUsdRiMaterialAPI::_tokens->ri);
 }
 
 UsdShadeOutput 
 UsdRiMaterialAPI::GetVolumeOutput() const
 {
-    return UsdShadeMaterial(GetPrim()).GetVolumeOutput(_tokens->ri);
+    return UsdShadeMaterial(GetPrim()).GetVolumeOutput(pxrUsdUsdRiMaterialAPI::_tokens->ri);
 }
 
 bool
 UsdRiMaterialAPI::SetSurfaceSource(const SdfPath &surfacePath) const
 {
     UsdShadeOutput surfaceOutput = UsdShadeMaterial(GetPrim())
-            .CreateSurfaceOutput(/*purpose*/ _tokens->ri);
+            .CreateSurfaceOutput(/*purpose*/ pxrUsdUsdRiMaterialAPI::_tokens->ri);
     return UsdShadeConnectableAPI::ConnectToSource(
         surfaceOutput, surfacePath.IsPropertyPath() ? surfacePath :
-            surfacePath.AppendProperty(_tokens->defaultOutputName));
+            surfacePath.AppendProperty(pxrUsdUsdRiMaterialAPI::_tokens->defaultOutputName));
 }
 
 bool
 UsdRiMaterialAPI::SetDisplacementSource(const SdfPath &displacementPath) const
 {
     UsdShadeOutput displacementOutput = UsdShadeMaterial(GetPrim())
-            .CreateDisplacementOutput(/*purpose*/ _tokens->ri);
+            .CreateDisplacementOutput(/*purpose*/ pxrUsdUsdRiMaterialAPI::_tokens->ri);
     return UsdShadeConnectableAPI::ConnectToSource(
         displacementOutput, displacementPath.IsPropertyPath() ? 
             displacementPath :
-            displacementPath.AppendProperty(_tokens->defaultOutputName));
+            displacementPath.AppendProperty(pxrUsdUsdRiMaterialAPI::_tokens->defaultOutputName));
 }
 
 bool
 UsdRiMaterialAPI::SetVolumeSource(const SdfPath &volumePath) const
 {
     UsdShadeOutput volumeOutput = UsdShadeMaterial(GetPrim())
-            .CreateVolumeOutput(/*purpose*/ _tokens->ri);
+            .CreateVolumeOutput(/*purpose*/ pxrUsdUsdRiMaterialAPI::_tokens->ri);
     return UsdShadeConnectableAPI::ConnectToSource(
         volumeOutput, volumePath.IsPropertyPath() ? 
             volumePath :
-            volumePath.AppendProperty(_tokens->defaultOutputName));
+            volumePath.AppendProperty(pxrUsdUsdRiMaterialAPI::_tokens->defaultOutputName));
 }
 
 UsdShadeNodeGraph::InterfaceInputConsumersMap

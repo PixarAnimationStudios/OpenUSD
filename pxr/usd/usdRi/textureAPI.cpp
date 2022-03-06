@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdRiTextureAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (RiTextureAPI)
 );
+
+} // pxrUsdUsdRiTextureAPI
 
 /* virtual */
 UsdRiTextureAPI::~UsdRiTextureAPI()

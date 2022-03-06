@@ -59,6 +59,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdStPipelineDrawBatch {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -75,6 +77,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (ulocCullParams)
 );
+
+} // pxrImagingHdStPipelineDrawBatch
 
 
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_PIPELINE_DRAW_BATCHING, false,
@@ -436,7 +440,7 @@ _AddInstanceCullResourceViews(HdStDispatchBufferSharedPtr const & cullInput,
     }
     // cull draw index
     cullInput->AddBufferResourceView(
-        _tokens->drawCommandIndex, {HdTypeInt32, 1},
+        pxrImagingHdStPipelineDrawBatch::_tokens->drawCommandIndex, {HdTypeInt32, 1},
         traits.baseInstance_offset);
 }
 
@@ -454,11 +458,11 @@ _AddNonInstanceCullResourceViews(HdStDispatchBufferSharedPtr const & cullInput,
         traits.drawingCoord0_offset);
     // cull draw index
     cullInput->AddBufferResourceView(
-        _tokens->drawCommandIndex, {HdTypeInt32, 1},
+        pxrImagingHdStPipelineDrawBatch::_tokens->drawCommandIndex, {HdTypeInt32, 1},
         traits.baseInstance_offset);
     // cull instance count input
     cullInput->AddBufferResourceView(
-        _tokens->instanceCountInput, {HdTypeInt32, 1},
+        pxrImagingHdStPipelineDrawBatch::_tokens->instanceCountInput, {HdTypeInt32, 1},
         traits.instanceCount_offset);
 }
 
@@ -716,7 +720,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
 
     // allocate draw dispatch buffer
     _dispatchBuffer =
-        resourceRegistry->RegisterDispatchBuffer(_tokens->drawIndirect,
+        resourceRegistry->RegisterDispatchBuffer(pxrImagingHdStPipelineDrawBatch::_tokens->drawIndirect,
                                                  numDrawItemInstances,
                                                  traits.numUInt32);
 
@@ -733,7 +737,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
         // and drawingCoord parameters, but it is simplest to just make
         // a copy.
         _dispatchBufferCullInput =
-            resourceRegistry->RegisterDispatchBuffer(_tokens->drawIndirectCull,
+            resourceRegistry->RegisterDispatchBuffer(pxrImagingHdStPipelineDrawBatch::_tokens->drawIndirectCull,
                                                      numDrawItemInstances,
                                                      traits.numUInt32);
 
@@ -903,7 +907,7 @@ _BindingState::GetBindingsForViewTransformation(
 
     // Bind the constant buffer for the prim transformation and bounds.
     binder.GetInterleavedBufferArrayBindingDesc(
-        bindingsDesc, constantBar, _tokens->constantPrimvars);
+        bindingsDesc, constantBar, pxrImagingHdStPipelineDrawBatch::_tokens->constantPrimvars);
 
     // Bind the instance buffers to support instance transformations.
     if (instanceIndexBar) {
@@ -1376,7 +1380,7 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
         _BeginGPUCountVisibleInstances(resourceRegistry);
         state.binder.GetBufferBindingDesc(
                 &bindingsDesc,
-                _tokens->drawIndirectResult,
+                pxrImagingHdStPipelineDrawBatch::_tokens->drawIndirectResult,
                 _resultBuffer,
                 _resultBuffer->GetOffset());
                 
@@ -1386,7 +1390,7 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
     // (using entire buffer bind to start from offset=0)
     state.binder.GetBufferBindingDesc(
             &bindingsDesc,
-            _tokens->dispatchBuffer,
+            pxrImagingHdStPipelineDrawBatch::_tokens->dispatchBuffer,
             _dispatchBuffer->GetEntireResource(),
             _dispatchBuffer->GetEntireResource()->GetOffset());
 
@@ -1400,7 +1404,7 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
     GfVec2f const &drawRangeNdc = renderPassState->GetDrawingRangeNDC();
 
     // Get the bind index for the 'cullParams' uniform block
-    HdBinding binding = state.binder.GetBinding(_tokens->ulocCullParams);
+    HdBinding binding = state.binder.GetBinding(pxrImagingHdStPipelineDrawBatch::_tokens->ulocCullParams);
     int bindLoc = binding.GetLocation();
 
     if (_useInstanceCulling) {
@@ -1526,7 +1530,7 @@ HdSt_PipelineDrawBatch::_BeginGPUCountVisibleInstances(
 
         _resultBuffer =
             resourceRegistry->RegisterBufferResource(
-                _tokens->drawIndirectResult, tupleType);
+                pxrImagingHdStPipelineDrawBatch::_tokens->drawIndirectResult, tupleType);
     }
 
     // Reset visible item count
@@ -1625,24 +1629,24 @@ HdSt_PipelineDrawBatch::_CullingProgram::_GetCustomBindings(
         !TF_VERIFY(customBindings)) return;
 
     customBindings->push_back(HdBindingRequest(HdBinding::SSBO,
-                                  _tokens->drawIndirectResult));
+                                  pxrImagingHdStPipelineDrawBatch::_tokens->drawIndirectResult));
     customBindings->push_back(HdBindingRequest(HdBinding::SSBO,
-                                  _tokens->dispatchBuffer));
+                                  pxrImagingHdStPipelineDrawBatch::_tokens->dispatchBuffer));
     customBindings->push_back(HdBindingRequest(HdBinding::UBO,
-                                  _tokens->ulocCullParams));
+                                  pxrImagingHdStPipelineDrawBatch::_tokens->ulocCullParams));
 
     if (_useInstanceCulling) {
         customBindings->push_back(
             HdBindingRequest(HdBinding::DRAW_INDEX_INSTANCE,
-                _tokens->drawCommandIndex));
+                pxrImagingHdStPipelineDrawBatch::_tokens->drawCommandIndex));
     } else {
         // non-instance culling
         customBindings->push_back(
             HdBindingRequest(HdBinding::DRAW_INDEX,
-                _tokens->drawCommandIndex));
+                pxrImagingHdStPipelineDrawBatch::_tokens->drawCommandIndex));
         customBindings->push_back(
             HdBindingRequest(HdBinding::DRAW_INDEX,
-                _tokens->instanceCountInput));
+                pxrImagingHdStPipelineDrawBatch::_tokens->instanceCountInput));
     }
 
     // set instanceDraw true if instanceCulling is enabled.

@@ -222,6 +222,8 @@ HdStGLConversions::GetPrimitiveMode(
     return primMode;
 }
 
+namespace pxrImagingHdStGlConversions {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _glTypeNames,
     ((_bool, "bool"))
@@ -255,6 +257,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (packed_half4)
 );
 
+} // pxrImagingHdStGlConversions
+
 TfToken
 HdStGLConversions::GetGLSLTypename(HdType type)
 {
@@ -265,60 +269,60 @@ HdStGLConversions::GetGLSLTypename(HdType type)
 
     // Packed types (require special handling in codegen)...
     case HdTypeInt32_2_10_10_10_REV:
-        return _glTypeNames->packed_2_10_10_10;
+        return pxrImagingHdStGlConversions::_glTypeNames->packed_2_10_10_10;
     // XXX: Note that we don't support half or half3, since we can't
     // index-address them...
     case HdTypeHalfFloatVec2:
-        return _glTypeNames->packed_half2;
+        return pxrImagingHdStGlConversions::_glTypeNames->packed_half2;
     case HdTypeHalfFloatVec4:
-        return _glTypeNames->packed_half4;
+        return pxrImagingHdStGlConversions::_glTypeNames->packed_half4;
 
     case HdTypeBool:
-        return _glTypeNames->_bool;
+        return pxrImagingHdStGlConversions::_glTypeNames->_bool;
 
     case HdTypeInt32:
-        return _glTypeNames->_int;
+        return pxrImagingHdStGlConversions::_glTypeNames->_int;
     case HdTypeInt32Vec2:
-        return _glTypeNames->ivec2;
+        return pxrImagingHdStGlConversions::_glTypeNames->ivec2;
     case HdTypeInt32Vec3:
-        return _glTypeNames->ivec3;
+        return pxrImagingHdStGlConversions::_glTypeNames->ivec3;
     case HdTypeInt32Vec4:
-        return _glTypeNames->ivec4;
+        return pxrImagingHdStGlConversions::_glTypeNames->ivec4;
 
     case HdTypeUInt32:
-        return _glTypeNames->_uint;
+        return pxrImagingHdStGlConversions::_glTypeNames->_uint;
     case HdTypeUInt32Vec2:
-        return _glTypeNames->uvec2;
+        return pxrImagingHdStGlConversions::_glTypeNames->uvec2;
     case HdTypeUInt32Vec3:
-        return _glTypeNames->uvec3;
+        return pxrImagingHdStGlConversions::_glTypeNames->uvec3;
     case HdTypeUInt32Vec4:
-        return _glTypeNames->uvec4;
+        return pxrImagingHdStGlConversions::_glTypeNames->uvec4;
 
     case HdTypeFloat:
-        return _glTypeNames->_float;
+        return pxrImagingHdStGlConversions::_glTypeNames->_float;
     case HdTypeFloatVec2:
-        return _glTypeNames->vec2;
+        return pxrImagingHdStGlConversions::_glTypeNames->vec2;
     case HdTypeFloatVec3:
-        return _glTypeNames->vec3;
+        return pxrImagingHdStGlConversions::_glTypeNames->vec3;
     case HdTypeFloatVec4:
-        return _glTypeNames->vec4;
+        return pxrImagingHdStGlConversions::_glTypeNames->vec4;
     case HdTypeFloatMat3:
-        return _glTypeNames->mat3;
+        return pxrImagingHdStGlConversions::_glTypeNames->mat3;
     case HdTypeFloatMat4:
-        return _glTypeNames->mat4;
+        return pxrImagingHdStGlConversions::_glTypeNames->mat4;
 
     case HdTypeDouble:
-        return _glTypeNames->_double;
+        return pxrImagingHdStGlConversions::_glTypeNames->_double;
     case HdTypeDoubleVec2:
-        return _glTypeNames->dvec2;
+        return pxrImagingHdStGlConversions::_glTypeNames->dvec2;
     case HdTypeDoubleVec3:
-        return _glTypeNames->dvec3;
+        return pxrImagingHdStGlConversions::_glTypeNames->dvec3;
     case HdTypeDoubleVec4:
-        return _glTypeNames->dvec4;
+        return pxrImagingHdStGlConversions::_glTypeNames->dvec4;
     case HdTypeDoubleMat3:
-        return _glTypeNames->dmat3;
+        return pxrImagingHdStGlConversions::_glTypeNames->dmat3;
     case HdTypeDoubleMat4:
-        return _glTypeNames->dmat4;
+        return pxrImagingHdStGlConversions::_glTypeNames->dmat4;
     };
 }
 

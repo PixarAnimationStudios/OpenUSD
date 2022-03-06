@@ -54,6 +54,8 @@ using ShaderMetadataHelpers::OptionVecVal;
 
 NDR_REGISTER_PARSER_PLUGIN(SdrOslParserPlugin)
 
+namespace pxrUsdPluginSdrOslOslParser {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -66,17 +68,19 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sourceType, "OSL"))
 );
 
+} // pxrUsdPluginSdrOslOslParser
+
 const NdrTokenVec& 
 SdrOslParserPlugin::GetDiscoveryTypes() const
 {
-    static const NdrTokenVec _DiscoveryTypes = {_tokens->discoveryType};
+    static const NdrTokenVec _DiscoveryTypes = {pxrUsdPluginSdrOslOslParser::_tokens->discoveryType};
     return _DiscoveryTypes;
 }
 
 const TfToken& 
 SdrOslParserPlugin::GetSourceType() const
 {
-    return _tokens->sourceType;
+    return pxrUsdPluginSdrOslOslParser::_tokens->sourceType;
 }
 
 SdrOslParserPlugin::SdrOslParserPlugin()
@@ -181,8 +185,8 @@ SdrOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             discoveryResult.version,
             discoveryResult.name,
             discoveryResult.family,
-            _tokens->sourceType,
-            _tokens->sourceType,    // OSL shaders don't declare different types
+            pxrUsdPluginSdrOslOslParser::_tokens->sourceType,
+            pxrUsdPluginSdrOslOslParser::_tokens->sourceType,    // OSL shaders don't declare different types
                                     // so use the same type as the source type
             discoveryResult.resolvedUri,
             discoveryResult.resolvedUri,    // Definitive assertion that the
@@ -232,7 +236,7 @@ SdrOslParserPlugin::_getNodeProperties(
                 continue;
             }
 
-            if (metaIt->first == _tokens->sdrDefinitionName){
+            if (metaIt->first == pxrUsdPluginSdrOslOslParser::_tokens->sdrDefinitionName){
                 definitionName = metaIt->second;
                 metaIt = metadata.erase(metaIt);
                 continue;
@@ -240,7 +244,7 @@ SdrOslParserPlugin::_getNodeProperties(
             
             // The metadata sometimes incorrectly specifies array size; this
             // value is not respected
-            if (metaIt->first == _tokens->arraySize) {
+            if (metaIt->first == pxrUsdPluginSdrOslOslParser::_tokens->arraySize) {
                 TF_DEBUG(NDR_PARSING).Msg(
                     "Ignoring bad 'arraySize' attribute on property [%s] "
                     "on OSL shader [%s]",
@@ -300,7 +304,7 @@ SdrOslParserPlugin::_getPropertyMetadata(const OslParameter* param,
 
         // Vstruct metadata needs to be specially parsed; otherwise, just stuff
         // the value into the map
-        if (entryName == _tokens->vstructMember) {
+        if (entryName == pxrUsdPluginSdrOslOslParser::_tokens->vstructMember) {
             std::string vstruct = _getParamAsString(metaParam);
 
             if (!vstruct.empty()) {

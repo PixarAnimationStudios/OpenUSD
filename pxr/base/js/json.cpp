@@ -54,7 +54,7 @@
 
 namespace rj = RAPIDJSON_NAMESPACE;
 
-namespace {
+namespace pxrBaseJsJson {
 PXR_NAMESPACE_USING_DIRECTIVE
 
 struct _InputHandler : public rj::BaseReaderHandler<rj::UTF8<>, _InputHandler>
@@ -251,7 +251,7 @@ JsParseString(
         return JsValue();
     }
 
-    _InputHandler handler;
+    pxrBaseJsJson::_InputHandler handler;
     rj::Reader reader;
     rj::StringStream ss(data.c_str());
     // Need Full precision flag to round trip double values correctly.
@@ -300,7 +300,7 @@ JsWriteToStream(
     const rj::Value ivalue = _JsValueToImplValue(value, d.GetAllocator());
 
     rj::OStreamWrapper os(ostr);
-    _WriterFix<rj::PrettyWriter<rj::OStreamWrapper>> writer(os);
+    pxrBaseJsJson::_WriterFix<rj::PrettyWriter<rj::OStreamWrapper>> writer(os);
     writer.SetFormatOptions(rj::kFormatSingleLineArray);
     ivalue.Accept(writer);
 }
@@ -313,7 +313,7 @@ JsWriteToString(
     const rj::Value ivalue = _JsValueToImplValue(value, d.GetAllocator());
 
     rj::StringBuffer buffer;
-     _WriterFix<rj::PrettyWriter<rj::StringBuffer>> writer(buffer);
+    pxrBaseJsJson::_WriterFix<rj::PrettyWriter<rj::StringBuffer>> writer(buffer);
     writer.SetFormatOptions(rj::kFormatSingleLineArray);
     ivalue.Accept(writer);
 
@@ -362,7 +362,7 @@ JsWriteValue(JsWriter* writer, const JsValue& js)
 // JsWriter
 //
 
-namespace {
+namespace pxrBaseJsJson {
 
 // This helper interface is to wrap rapidJSON Writer and PrettyWriter so we can 
 // choose which writer to use at runtime.
@@ -442,9 +442,9 @@ public:
 class JsWriter::_Impl
 {
     using PrettyWriter =
-        Js_PolymorphicWriter<_WriterFix<rj::PrettyWriter<rj::OStreamWrapper>>>;
+        pxrBaseJsJson::Js_PolymorphicWriter<::pxrBaseJsJson::_WriterFix<rj::PrettyWriter<rj::OStreamWrapper>>>;
     using Writer =
-        Js_PolymorphicWriter<_WriterFix<rj::Writer<rj::OStreamWrapper>>>;
+        pxrBaseJsJson::Js_PolymorphicWriter<::pxrBaseJsJson::_WriterFix<rj::Writer<rj::OStreamWrapper>>>;
 
 public:
     _Impl(std::ostream& s, Style style) 
@@ -460,12 +460,12 @@ public:
         }
     }
     
-    Js_PolymorphicWriterInterface* GetWriter() {
+    pxrBaseJsJson::Js_PolymorphicWriterInterface* GetWriter() {
         return _writer.get();
     }
 
 private:
-    std::unique_ptr<Js_PolymorphicWriterInterface> _writer;
+    std::unique_ptr<pxrBaseJsJson::Js_PolymorphicWriterInterface> _writer;
     rj::OStreamWrapper _strWrapper;
 };
 

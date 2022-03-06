@@ -39,11 +39,15 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdCollectionAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (CollectionAPI)
     (collection)
 );
+
+} // pxrUsdUsdCollectionAPI
 
 /* virtual */
 UsdCollectionAPI::~UsdCollectionAPI()
@@ -113,9 +117,9 @@ UsdCollectionAPI::IsCollectionAPIPath(
     }
 
     if (tokens.size() >= 2
-        && tokens[0] == _schemaTokens->collection) {
+        && tokens[0] == pxrUsdUsdCollectionAPI::_schemaTokens->collection) {
         *name = TfToken(propertyName.substr(
-            _schemaTokens->collection.GetString().size() + 1));
+            pxrUsdUsdCollectionAPI::_schemaTokens->collection.GetString().size() + 1));
         return true;
     }
 
@@ -169,6 +173,8 @@ UsdCollectionAPI::_GetTfType() const
     return _GetStaticTfType();
 }
 
+namespace pxrUsdUsdCollectionAPI {
+
 /// Returns the property name prefixed with the correct namespace prefix, which
 /// is composed of the the API's propertyNamespacePrefix metadata and the
 /// instance name of the API.
@@ -179,11 +185,13 @@ _GetNamespacedPropertyName(const TfToken instanceName, const TfToken propName)
     return UsdSchemaRegistry::MakeMultipleApplyNameInstance(propName, instanceName);
 }
 
+} // pxrUsdUsdCollectionAPI
+
 UsdAttribute
 UsdCollectionAPI::GetExpansionRuleAttr() const
 {
     return GetPrim().GetAttribute(
-        _GetNamespacedPropertyName(
+        pxrUsdUsdCollectionAPI::_GetNamespacedPropertyName(
             GetName(),
             UsdTokens->collection_MultipleApplyTemplate_ExpansionRule));
 }
@@ -192,7 +200,7 @@ UsdAttribute
 UsdCollectionAPI::CreateExpansionRuleAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
-                       _GetNamespacedPropertyName(
+                       pxrUsdUsdCollectionAPI::_GetNamespacedPropertyName(
                             GetName(),
                            UsdTokens->collection_MultipleApplyTemplate_ExpansionRule),
                        SdfValueTypeNames->Token,
@@ -206,7 +214,7 @@ UsdAttribute
 UsdCollectionAPI::GetIncludeRootAttr() const
 {
     return GetPrim().GetAttribute(
-        _GetNamespacedPropertyName(
+        pxrUsdUsdCollectionAPI::_GetNamespacedPropertyName(
             GetName(),
             UsdTokens->collection_MultipleApplyTemplate_IncludeRoot));
 }
@@ -215,7 +223,7 @@ UsdAttribute
 UsdCollectionAPI::CreateIncludeRootAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
-                       _GetNamespacedPropertyName(
+                       pxrUsdUsdCollectionAPI::_GetNamespacedPropertyName(
                             GetName(),
                            UsdTokens->collection_MultipleApplyTemplate_IncludeRoot),
                        SdfValueTypeNames->Bool,
@@ -229,7 +237,7 @@ UsdRelationship
 UsdCollectionAPI::GetIncludesRel() const
 {
     return GetPrim().GetRelationship(
-        _GetNamespacedPropertyName(
+        pxrUsdUsdCollectionAPI::_GetNamespacedPropertyName(
             GetName(),
             UsdTokens->collection_MultipleApplyTemplate_Includes));
 }
@@ -238,7 +246,7 @@ UsdRelationship
 UsdCollectionAPI::CreateIncludesRel() const
 {
     return GetPrim().CreateRelationship(
-                       _GetNamespacedPropertyName(
+                       pxrUsdUsdCollectionAPI::_GetNamespacedPropertyName(
                            GetName(),
                            UsdTokens->collection_MultipleApplyTemplate_Includes),
                        /* custom = */ false);
@@ -248,7 +256,7 @@ UsdRelationship
 UsdCollectionAPI::GetExcludesRel() const
 {
     return GetPrim().GetRelationship(
-        _GetNamespacedPropertyName(
+        pxrUsdUsdCollectionAPI::_GetNamespacedPropertyName(
             GetName(),
             UsdTokens->collection_MultipleApplyTemplate_Excludes));
 }
@@ -257,7 +265,7 @@ UsdRelationship
 UsdCollectionAPI::CreateExcludesRel() const
 {
     return GetPrim().CreateRelationship(
-                       _GetNamespacedPropertyName(
+                       pxrUsdUsdCollectionAPI::_GetNamespacedPropertyName(
                            GetName(),
                            UsdTokens->collection_MultipleApplyTemplate_Excludes),
                        /* custom = */ false);
@@ -380,7 +388,7 @@ _GetCollectionAPIAliases(const TfType &collSchemaType)
 {
     // The alias for UsdCollectionAPI is already available as a static token 
     // in _schemaTokes.
-    std::vector<std::string> collectionAPIAliases{_schemaTokens->CollectionAPI};
+    std::vector<std::string> collectionAPIAliases{pxrUsdUsdCollectionAPI::_schemaTokens->CollectionAPI};
 
     // If there are derived types of the CollectionAPI, include their aliases
     // too.

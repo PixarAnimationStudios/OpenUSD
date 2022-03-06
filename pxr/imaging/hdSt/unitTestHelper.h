@@ -223,6 +223,8 @@ HdSt_TestDriverBase<SceneDelegate>::_Init(HdReprSelector const &reprSelector)
     tracker.AddCollection(_collection.GetName());
 }
 
+namespace pxrImagingHdStUnitTestHelper {
+
 static
 HdCamera::Projection
 _ToHd(const GfCamera::Projection projection)
@@ -236,6 +238,8 @@ _ToHd(const GfCamera::Projection projection)
     TF_CODING_ERROR("Bad GfCamera::Projection value");
     return HdCamera::Perspective;
 }
+
+} // pxrImagingHdStUnitTestHelper
 
 template<typename SceneDelegate>
 void
@@ -254,7 +258,7 @@ HdSt_TestDriverBase<SceneDelegate>::SetCamera(
     _sceneDelegate->UpdateCamera(
         _cameraId,
         HdCameraTokens->projection,
-        VtValue(_ToHd(cam.GetProjection())));
+        VtValue(pxrImagingHdStUnitTestHelper::_ToHd(cam.GetProjection())));
     _sceneDelegate->UpdateCamera(
         _cameraId,
         HdCameraTokens->focalLength,

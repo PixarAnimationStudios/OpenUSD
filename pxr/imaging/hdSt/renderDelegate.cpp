@@ -90,14 +90,14 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->sphereLight
 };
 
+namespace pxrImagingHdStRenderDelegate {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (mtlx)
 );
 
 using HdStResourceRegistryWeakPtr =  std::weak_ptr<HdStResourceRegistry>;
-
-namespace pxrImagingHdStRenderDelegate {
 
 //
 // Map from Hgi instances to resource registries.
@@ -539,7 +539,7 @@ TfTokenVector
 HdStRenderDelegate::GetShaderSourceTypes() const
 {
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
-    return {HioGlslfxTokens->glslfx, _tokens->mtlx};
+    return {HioGlslfxTokens->glslfx, pxrImagingHdStRenderDelegate::_tokens->mtlx};
 #else
     return {HioGlslfxTokens->glslfx};
 #endif
@@ -549,7 +549,7 @@ TfTokenVector
 HdStRenderDelegate::GetMaterialRenderContexts() const
 {
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
-    return {HioGlslfxTokens->glslfx, _tokens->mtlx};
+    return {HioGlslfxTokens->glslfx, pxrImagingHdStRenderDelegate::_tokens->mtlx};
 #else
     return {HioGlslfxTokens->glslfx};
 #endif

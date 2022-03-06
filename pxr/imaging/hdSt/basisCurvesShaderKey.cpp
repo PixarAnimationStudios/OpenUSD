@@ -45,6 +45,8 @@ TF_REGISTRY_FUNCTION(TfEnum) {
      TF_ADD_ENUM_NAME(HdSt_BasisCurvesShaderKey::ROUND);
 };
 
+namespace pxrImagingHdStBasisCurvesShaderKey {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,                      "basisCurves.glslfx"))
@@ -118,15 +120,17 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((scalarOverrideFS,                "Fragment.ScalarOverride"))
 );
 
+} // pxrImagingHdStBasisCurvesShaderKey
+
 static TfToken HdSt_BasisToShaderKey(const TfToken& basis){
     if (basis == HdTokens->bezier)
-        return _tokens->curvesBezier;
+        return pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesBezier;
     else if (basis == HdTokens->catmullRom)
-        return _tokens->curvesCatmullRom;
+        return pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesCatmullRom;
     else if (basis == HdTokens->bSpline)
-        return _tokens->curvesBspline;
+        return pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesBspline;
     TF_WARN("Unknown basis");
-    return _tokens->curvesFallback;
+    return pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesFallback;
 }
 
 HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
@@ -136,7 +140,7 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     bool basisNormalInterpolation,
     TfToken shadingTerminal,
     bool hasAuthoredTopologicalVisibility)
-    : glslfx(_tokens->baseGLSLFX)
+    : glslfx(pxrImagingHdStBasisCurvesShaderKey::_tokens->baseGLSLFX)
 {
     bool drawThick = (drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE) || 
                      (drawStyle == HdSt_BasisCurvesShaderKey::RIBBON);
@@ -164,20 +168,20 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     bool oriented = normalStyle == HdSt_BasisCurvesShaderKey::ORIENTED;
 
     uint8_t vsIndex = 0;
-    VS[vsIndex++]  = _tokens->instancing;
-    VS[vsIndex++]  = drawThick ? _tokens->curvesVertexPatch 
-                       : _tokens->curvesVertexWire;
-    VS[vsIndex++]  = oriented ? _tokens->curvesVertexNormalOriented 
-                      : _tokens->curvesVertexNormalImplicit;
+    VS[vsIndex++]  = pxrImagingHdStBasisCurvesShaderKey::_tokens->instancing;
+    VS[vsIndex++]  = drawThick ? pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesVertexPatch 
+                       : pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesVertexWire;
+    VS[vsIndex++]  = oriented ? pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesVertexNormalOriented 
+                      : pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesVertexNormalImplicit;
     if (isPrimTypePoints) {
         // Add mixins that allow for picking and sel highlighting of points.
         // Even though these are more "render pass-ish", we do this here to
         // reduce the shader code generated when the points repr isn't used.
-        VS[vsIndex++] = _tokens->pointIdVS;
-        VS[vsIndex++] = _tokens->pointIdSelDecodeUtilsVS;
-        VS[vsIndex++] = _tokens->pointIdSelPointSelVS;
+        VS[vsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->pointIdVS;
+        VS[vsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->pointIdSelDecodeUtilsVS;
+        VS[vsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->pointIdSelPointSelVS;
     } else {
-        VS[vsIndex++] = _tokens->pointIdNoneVS;
+        VS[vsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->pointIdNoneVS;
     }
     VS[vsIndex]  = TfToken();
 
@@ -193,34 +197,34 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
         }
         case HdSt_BasisCurvesShaderKey::RIBBON:
         {
-            TCS[0] = _tokens->curvesTessControlShared;
-            TCS[1] = _tokens->curvesTessControlLinearPatch; 
-            TCS[2] = _tokens->curvesTessControlLinearRibbon;
+            TCS[0] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessControlShared;
+            TCS[1] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessControlLinearPatch; 
+            TCS[2] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessControlLinearRibbon;
             TCS[3] = TfToken();  
 
-            TES[0] = _tokens->instancing;
-            TES[1] = _tokens->curvesTessEvalPatch;
-            TES[2] = _tokens->curvesFallback;
-            TES[3] = _tokens->curvesTessEvalLinearPatch;
-            TES[4] = oriented ? _tokens->curvesTessEvalRibbonOriented
-                            : _tokens->curvesTessEvalRibbonImplicit;
-            TES[5] = _tokens->curvesLinearVaryingInterp;
+            TES[0] = pxrImagingHdStBasisCurvesShaderKey::_tokens->instancing;
+            TES[1] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessEvalPatch;
+            TES[2] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesFallback;
+            TES[3] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessEvalLinearPatch;
+            TES[4] = oriented ? pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessEvalRibbonOriented
+                            : pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessEvalRibbonImplicit;
+            TES[5] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesLinearVaryingInterp;
             TES[6] = TfToken();
             break;
         }
         case HdSt_BasisCurvesShaderKey::HALFTUBE:
         {
-            TCS[0] = _tokens->curvesTessControlShared;
-            TCS[1] = _tokens->curvesTessControlLinearPatch; 
-            TCS[2] = _tokens->curvesTessControlLinearHalfTube;
+            TCS[0] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessControlShared;
+            TCS[1] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessControlLinearPatch; 
+            TCS[2] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessControlLinearHalfTube;
             TCS[3] = TfToken();  
 
-            TES[0] = _tokens->instancing;
-            TES[1] = _tokens->curvesTessEvalPatch;
-            TES[2] = _tokens->curvesFallback;
-            TES[3] = _tokens->curvesTessEvalLinearPatch;
-            TES[4] = _tokens->curvesTessEvalHalfTube;
-            TES[5] = _tokens->curvesLinearVaryingInterp;
+            TES[0] = pxrImagingHdStBasisCurvesShaderKey::_tokens->instancing;
+            TES[1] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessEvalPatch;
+            TES[2] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesFallback;
+            TES[3] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessEvalLinearPatch;
+            TES[4] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessEvalHalfTube;
+            TES[5] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesLinearVaryingInterp;
             TES[6] = TfToken();
             break;
         }
@@ -237,60 +241,60 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
         }
         case HdSt_BasisCurvesShaderKey::WIRE:
         {
-            TCS[0] = _tokens->curvesTessControlShared;
-            TCS[1] = _tokens->curvesTessControlCubicWire;
+            TCS[0] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessControlShared;
+            TCS[1] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessControlCubicWire;
             TCS[2] = TfToken();
 
-            TES[0] = _tokens->instancing;
-            TES[1] = _tokens->curvesTessEvalCubicWire;
+            TES[0] = pxrImagingHdStBasisCurvesShaderKey::_tokens->instancing;
+            TES[1] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessEvalCubicWire;
             TES[2] = HdSt_BasisToShaderKey(basis);
-            TES[3] = _tokens->curvesCubicVaryingInterp;
+            TES[3] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesCubicVaryingInterp;
             TES[4] = TfToken();
             break;
         }
         case HdSt_BasisCurvesShaderKey::RIBBON:
         {
-            TCS[0] = _tokens->curvesTessControlShared;
-            TCS[1] = _tokens->curvesTessControlCubicPatch;
-            TCS[2] = _tokens->curvesTessControlCubicRibbon;
+            TCS[0] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessControlShared;
+            TCS[1] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessControlCubicPatch;
+            TCS[2] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessControlCubicRibbon;
             TCS[3] = TfToken();
 
 
-            TES[0] = _tokens->instancing;
-            TES[1] = _tokens->curvesTessEvalPatch;
-            TES[2] = _tokens->curvesTessEvalCubicPatch;
+            TES[0] = pxrImagingHdStBasisCurvesShaderKey::_tokens->instancing;
+            TES[1] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessEvalPatch;
+            TES[2] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessEvalCubicPatch;
             TES[3] = HdSt_BasisToShaderKey(basis);
-            TES[4] = oriented ? _tokens->curvesTessEvalRibbonOriented
-                            : _tokens->curvesTessEvalRibbonImplicit;
+            TES[4] = oriented ? pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessEvalRibbonOriented
+                            : pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessEvalRibbonImplicit;
             TES[5] = basisWidthInterpolation ? 
-                        _tokens->curveCubicWidthsBasis 
-                    : _tokens->curveCubicWidthsLinear;
+                        pxrImagingHdStBasisCurvesShaderKey::_tokens->curveCubicWidthsBasis 
+                    : pxrImagingHdStBasisCurvesShaderKey::_tokens->curveCubicWidthsLinear;
             TES[6] = basisNormalInterpolation ?
-                        _tokens->curveCubicNormalsBasis :
-                        _tokens->curveCubicNormalsLinear;
-            TES[7] = _tokens->curvesCubicVaryingInterp;
+                        pxrImagingHdStBasisCurvesShaderKey::_tokens->curveCubicNormalsBasis :
+                        pxrImagingHdStBasisCurvesShaderKey::_tokens->curveCubicNormalsLinear;
+            TES[7] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesCubicVaryingInterp;
             TES[8] = TfToken();
             break;
         }
         case HdSt_BasisCurvesShaderKey::HALFTUBE:
         {
-            TCS[0] = _tokens->curvesTessControlShared;
-            TCS[1] = _tokens->curvesTessControlCubicPatch;
-            TCS[2] = _tokens->curvesTessControlCubicHalfTube;
+            TCS[0] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessControlShared;
+            TCS[1] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessControlCubicPatch;
+            TCS[2] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessControlCubicHalfTube;
             TCS[3] = TfToken();
 
-            TES[0] = _tokens->instancing;
-            TES[1] = _tokens->curvesTessEvalPatch;
-            TES[2] = _tokens->curvesTessEvalCubicPatch;
+            TES[0] = pxrImagingHdStBasisCurvesShaderKey::_tokens->instancing;
+            TES[1] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessEvalPatch;
+            TES[2] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessEvalCubicPatch;
             TES[3] = HdSt_BasisToShaderKey(basis);
-            TES[4] = _tokens->curvesTessEvalHalfTube;
+            TES[4] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesTessEvalHalfTube;
             TES[5] = basisWidthInterpolation ? 
-                        _tokens->curveCubicWidthsBasis 
-                    : _tokens->curveCubicWidthsLinear;
+                        pxrImagingHdStBasisCurvesShaderKey::_tokens->curveCubicWidthsBasis 
+                    : pxrImagingHdStBasisCurvesShaderKey::_tokens->curveCubicWidthsLinear;
             TES[6] = basisNormalInterpolation ?
-                        _tokens->curveCubicNormalsBasis :
-                        _tokens->curveCubicNormalsLinear;
-            TES[7] = _tokens->curvesCubicVaryingInterp;
+                        pxrImagingHdStBasisCurvesShaderKey::_tokens->curveCubicNormalsBasis :
+                        pxrImagingHdStBasisCurvesShaderKey::_tokens->curveCubicNormalsLinear;
+            TES[7] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesCubicVaryingInterp;
             TES[8] = TfToken();
             break;
         }
@@ -302,65 +306,65 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     // setup fragment shaders
     // Common must be first as it defines terminal interfaces
     uint8_t fsIndex = 0;
-    FS[fsIndex++] = _tokens->commonFS;
+    FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->commonFS;
     if (shadingTerminal == HdBasisCurvesReprDescTokens->hullColor) {
-        FS[fsIndex++] = _tokens->hullColorFS;
+        FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->hullColorFS;
     } else if (shadingTerminal == HdBasisCurvesReprDescTokens->pointColor) {
-        FS[fsIndex++] = _tokens->pointColorFS;
+        FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->pointColorFS;
     } else if (shadingTerminal ==
                HdBasisCurvesReprDescTokens->surfaceShaderUnlit) {
-        FS[fsIndex++] = _tokens->surfaceUnlitFS;
+        FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->surfaceUnlitFS;
     } else {
-        FS[fsIndex++] = _tokens->surfaceFS;
+        FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->surfaceFS;
     }
-    FS[fsIndex++] = _tokens->scalarOverrideFS;
+    FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->scalarOverrideFS;
 
     FS[fsIndex++] = isPrimTypePoints?
-                        _tokens->pointIdFS : _tokens->pointIdFallbackFS;
+                        pxrImagingHdStBasisCurvesShaderKey::_tokens->pointIdFS : pxrImagingHdStBasisCurvesShaderKey::_tokens->pointIdFallbackFS;
     
-    FS[fsIndex++] = hasAuthoredTopologicalVisibility? _tokens->topVisFS :
-                                                      _tokens->topVisFallbackFS;
+    FS[fsIndex++] = hasAuthoredTopologicalVisibility? pxrImagingHdStBasisCurvesShaderKey::_tokens->topVisFS :
+                                                      pxrImagingHdStBasisCurvesShaderKey::_tokens->topVisFallbackFS;
 
 
     if (drawStyle == HdSt_BasisCurvesShaderKey::WIRE || 
         drawStyle == HdSt_BasisCurvesShaderKey::POINTS) {
-        FS[fsIndex++] = _tokens->curvesFragmentWire;
+        FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesFragmentWire;
         FS[fsIndex++] = TfToken();
     }
     else if (drawStyle == HdSt_BasisCurvesShaderKey::RIBBON &&
              normalStyle == HdSt_BasisCurvesShaderKey::ORIENTED){
-        FS[fsIndex++] = _tokens->curvesFragmentPatch;
-        FS[fsIndex++] = _tokens->curvesFragmentRibbonOriented;
+        FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesFragmentPatch;
+        FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesFragmentRibbonOriented;
         FS[fsIndex++] = TfToken();
     }
     else if (drawStyle == HdSt_BasisCurvesShaderKey::RIBBON &&
              normalStyle == HdSt_BasisCurvesShaderKey::ROUND){
-        FS[fsIndex++] = _tokens->curvesFragmentPatch;
-        FS[fsIndex++] = _tokens->curvesFragmentRibbonRound;
+        FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesFragmentPatch;
+        FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesFragmentRibbonRound;
         FS[fsIndex++] = TfToken();
     }
     else if (drawStyle == HdSt_BasisCurvesShaderKey::RIBBON &&
              normalStyle == HdSt_BasisCurvesShaderKey::HAIR){
-        FS[fsIndex++] = _tokens->curvesFragmentPatch;
-        FS[fsIndex++] = _tokens->curvesFragmentHair;
+        FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesFragmentPatch;
+        FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesFragmentHair;
         FS[fsIndex++] = TfToken();
     }
     else if (drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE &&
              normalStyle == HdSt_BasisCurvesShaderKey::ROUND){
-        FS[fsIndex++] = _tokens->curvesFragmentPatch;
-        FS[fsIndex++] = _tokens->curvesFragmentHalfTube;
+        FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesFragmentPatch;
+        FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesFragmentHalfTube;
         FS[fsIndex++] = TfToken();
     }
     else if (drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE &&
              normalStyle == HdSt_BasisCurvesShaderKey::HAIR){
-        FS[fsIndex++] = _tokens->curvesFragmentPatch;
-        FS[fsIndex++] = _tokens->curvesFragmentHair;
+        FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesFragmentPatch;
+        FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesFragmentHair;
         FS[fsIndex++] = TfToken();
     }
     else{
         TF_WARN("Cannot setup fragment shaders for invalid combination of \
                  basis curves shader key settings.");
-        FS[fsIndex++] = _tokens->curvesFragmentHair;
+        FS[fsIndex++] = pxrImagingHdStBasisCurvesShaderKey::_tokens->curvesFragmentHair;
         FS[fsIndex++] = TfToken();
     }
 }

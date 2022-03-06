@@ -39,12 +39,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdxSkydomeTask {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     ((skydomeFrag, "SkydomeFragment"))
     (skydomeTexture)
 );
+
+} // pxrImagingHdxSkydomeTask
 
 HdxSkydomeTask::HdxSkydomeTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdxTask(id)
@@ -154,7 +158,7 @@ HdxSkydomeTask::Execute(HdTaskContext* ctx)
     }
     
     // Bind the skydome texture 
-    _compositor->BindTextures( {_tokens->skydomeTexture}, {_skydomeTexture} );
+    _compositor->BindTextures( {pxrImagingHdxSkydomeTask::_tokens->skydomeTexture}, {_skydomeTexture} );
 
     // Get the viewport size
     GfVec2f size = renderPassState->GetFraming().dataWindow.GetSize();
@@ -232,7 +236,7 @@ void
 HdxSkydomeTask::_SetFragmentShader()
 {
     HgiShaderFunctionDesc fragDesc;
-    fragDesc.debugName = _tokens->skydomeFrag.GetString();
+    fragDesc.debugName = pxrImagingHdxSkydomeTask::_tokens->skydomeFrag.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
 
     HgiShaderFunctionAddStageInput(&fragDesc, "uvOut", "vec2");
@@ -246,7 +250,7 @@ HdxSkydomeTask::_SetFragmentShader()
     HgiShaderFunctionAddConstantParam(&fragDesc, "lightTransform", "mat4");
 
     _compositor->SetProgram(
-        HdxPackageSkydomeShader(), _tokens->skydomeFrag, fragDesc);
+        HdxPackageSkydomeShader(), pxrImagingHdxSkydomeTask::_tokens->skydomeFrag, fragDesc);
 }
 
 bool

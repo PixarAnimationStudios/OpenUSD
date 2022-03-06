@@ -42,11 +42,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 
+namespace pxrUsdUsdShadeInput {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (connectability)
     (renderType)
 );
+
+} // pxrUsdUsdShadeInput
 
 UsdShadeInput::UsdShadeInput(const UsdAttribute &attr)
     : _attr(attr)
@@ -112,21 +116,21 @@ UsdShadeInput::Set(const VtValue& value, UsdTimeCode time) const
 bool 
 UsdShadeInput::SetRenderType(TfToken const& renderType) const
 {
-    return _attr.SetMetadata(_tokens->renderType, renderType);
+    return _attr.SetMetadata(pxrUsdUsdShadeInput::_tokens->renderType, renderType);
 }
 
 TfToken 
 UsdShadeInput::GetRenderType() const
 {
     TfToken renderType;
-    _attr.GetMetadata(_tokens->renderType, &renderType);
+    _attr.GetMetadata(pxrUsdUsdShadeInput::_tokens->renderType, &renderType);
     return renderType;
 }
 
 bool 
 UsdShadeInput::HasRenderType() const
 {
-    return _attr.HasMetadata(_tokens->renderType);
+    return _attr.HasMetadata(pxrUsdUsdShadeInput::_tokens->renderType);
 }
 
 
@@ -371,14 +375,14 @@ UsdShadeInput::ClearSource() const
 bool 
 UsdShadeInput::SetConnectability(const TfToken &connectability) const
 {
-    return _attr.SetMetadata(_tokens->connectability, connectability);
+    return _attr.SetMetadata(pxrUsdUsdShadeInput::_tokens->connectability, connectability);
 }
 
 TfToken 
 UsdShadeInput::GetConnectability() const
 {
     TfToken connectability; 
-    _attr.GetMetadata(_tokens->connectability, &connectability);
+    _attr.GetMetadata(pxrUsdUsdShadeInput::_tokens->connectability, &connectability);
 
     // If there's an authored non-empty connectability value, then return it. 
     // If not, return "full".
@@ -392,7 +396,7 @@ UsdShadeInput::GetConnectability() const
 bool 
 UsdShadeInput::ClearConnectability() const
 {
-    return _attr.ClearMetadata(_tokens->connectability);
+    return _attr.ClearMetadata(pxrUsdUsdShadeInput::_tokens->connectability);
 }
 
 UsdShadeAttributeVector

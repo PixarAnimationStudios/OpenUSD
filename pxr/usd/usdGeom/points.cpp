@@ -214,6 +214,8 @@ UsdGeomPoints::SetWidthsInterpolation(TfToken const &interpolation)
     return false;
 }
 
+namespace pxrUsdUsdGeomPoints {
+
 static bool
 _ComputeExtent(const VtVec3fArray& points, const VtFloatArray& widths,
     const GfMatrix4d* transform, VtVec3fArray* extent)
@@ -267,11 +269,13 @@ _ComputeExtent(const VtVec3fArray& points, const VtFloatArray& widths,
     return true;
 }
 
+} // pxrUsdUsdGeomPoints
+
 bool
 UsdGeomPoints::ComputeExtent(const VtVec3fArray& points, 
     const VtFloatArray& widths, VtVec3fArray* extent)
 {
-    return _ComputeExtent(points, widths, nullptr, extent);
+    return pxrUsdUsdGeomPoints::_ComputeExtent(points, widths, nullptr, extent);
 }
 
 bool
@@ -279,7 +283,7 @@ UsdGeomPoints::ComputeExtent(const VtVec3fArray& points,
     const VtFloatArray& widths, const GfMatrix4d& transform,
     VtVec3fArray* extent)
 {
-    return _ComputeExtent(points, widths, &transform, extent);
+    return pxrUsdUsdGeomPoints::_ComputeExtent(points, widths, &transform, extent);
 }
 
 static bool

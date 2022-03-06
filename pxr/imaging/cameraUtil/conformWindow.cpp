@@ -116,6 +116,8 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(CameraUtilDontConform,       "DontConform");
 }
 
+namespace pxrImagingCameraUtil {
+
 static
 double
 _SafeDivOne(const double a, const double b)
@@ -164,21 +166,23 @@ _DoesNotRequireAdjustment(CameraUtilConformWindowPolicy policy)
     return (policy == CameraUtilDontConform);
 }
 
+} // pxrImagingCameraUtil
+
 GfVec2d
 CameraUtilConformedWindow(
     const GfVec2d &window,
     CameraUtilConformWindowPolicy policy,
     double targetAspect)
 {
-    if (_DoesNotRequireAdjustment(policy)) {
+    if (pxrImagingCameraUtil::_DoesNotRequireAdjustment(policy)) {
         return window;
     }
 
     const CameraUtilConformWindowPolicy resolvedPolicy =
-        _ResolveConformWindowPolicy(window, policy, targetAspect);
+        pxrImagingCameraUtil::_ResolveConformWindowPolicy(window, policy, targetAspect);
 
     if (resolvedPolicy == CameraUtilMatchHorizontally) {
-        return GfVec2d(window[0], _SafeDiv(window[0], targetAspect));
+        return GfVec2d(window[0], pxrImagingCameraUtil::_SafeDiv(window[0], targetAspect));
     } else {
         return GfVec2d(window[1] * targetAspect, window[1]);
     }
@@ -190,7 +194,7 @@ CameraUtilConformedWindow(
     CameraUtilConformWindowPolicy policy,
     double targetAspect)
 {
-    if (_DoesNotRequireAdjustment(policy)) {
+    if (pxrImagingCameraUtil::_DoesNotRequireAdjustment(policy)) {
         return window;
     }
 
@@ -198,11 +202,11 @@ CameraUtilConformedWindow(
     const GfVec2d center = (window.GetMin() + window.GetMax()) / 2.0;
 
     const CameraUtilConformWindowPolicy resolvedPolicy =
-        _ResolveConformWindowPolicy(size, policy, targetAspect);
+        pxrImagingCameraUtil::_ResolveConformWindowPolicy(size, policy, targetAspect);
     
     
     if (resolvedPolicy == CameraUtilMatchHorizontally) {
-        const double height = _SafeDiv(size[0], targetAspect);
+        const double height = pxrImagingCameraUtil::_SafeDiv(size[0], targetAspect);
 
         return GfRange2d(
             GfVec2d(window.GetMin()[0], center[1] - height / 2.0),
@@ -222,7 +226,7 @@ CameraUtilConformedWindow(
     CameraUtilConformWindowPolicy policy,
     double targetAspect)
 {
-    if (_DoesNotRequireAdjustment(policy)) {
+    if (pxrImagingCameraUtil::_DoesNotRequireAdjustment(policy)) {
         return window;
     }
 
@@ -252,7 +256,7 @@ CameraUtilConformedWindow(
     const GfMatrix4d &projectionMatrix,
     CameraUtilConformWindowPolicy policy, double targetAspect)
 {
-    if (_DoesNotRequireAdjustment(policy)) {
+    if (pxrImagingCameraUtil::_DoesNotRequireAdjustment(policy)) {
         return projectionMatrix;
     }
 
@@ -274,7 +278,7 @@ CameraUtilConformedWindow(
     // This tells us whether we need to adjust the parameters affecting the
     // vertical or horizontal aspects of the projectionMatrix.
     const CameraUtilConformWindowPolicy resolvedPolicy =
-        _ResolveConformWindowPolicy(window, policy, targetAspect);
+        pxrImagingCameraUtil::_ResolveConformWindowPolicy(window, policy, targetAspect);
 
     if (resolvedPolicy == CameraUtilMatchHorizontally) {
         // Adjust vertical size
@@ -285,7 +289,7 @@ CameraUtilConformedWindow(
         // on the left is different from the angle on the right.
         // First compute the factor by which we scaled vertically...
         const double scaleFactor =
-            _SafeDiv(result[1][1], projectionMatrix[1][1]);
+            pxrImagingCameraUtil::_SafeDiv(result[1][1], projectionMatrix[1][1]);
         
         // ...and then apply it to the offsets making the frustum asymetric.
         // This one is important for perspective:
@@ -295,10 +299,10 @@ CameraUtilConformedWindow(
     } else {
         // As above, but horizontally.
         result[0][0] =
-            _Sign(projectionMatrix[0][0]) * _SafeDiv(window[0], targetAspect);
+            _Sign(projectionMatrix[0][0]) * pxrImagingCameraUtil::_SafeDiv(window[0], targetAspect);
 
         const double scaleFactor =
-            _SafeDiv(result[0][0],  projectionMatrix[0][0]);
+            pxrImagingCameraUtil::_SafeDiv(result[0][0],  projectionMatrix[0][0]);
         
         result[2][0] *= scaleFactor;
         result[3][0] *= scaleFactor;
@@ -314,7 +318,7 @@ CameraUtilConformWindow(
     CameraUtilConformWindowPolicy policy,
     double targetAspect)
 {
-    if (_DoesNotRequireAdjustment(policy)) {
+    if (pxrImagingCameraUtil::_DoesNotRequireAdjustment(policy)) {
         return;
     }
     
@@ -333,7 +337,7 @@ CameraUtilConformWindow(
     GfFrustum *frustum,
     CameraUtilConformWindowPolicy policy, double targetAspect)
 {
-    if (_DoesNotRequireAdjustment(policy)) {
+    if (pxrImagingCameraUtil::_DoesNotRequireAdjustment(policy)) {
         return;
     }
     

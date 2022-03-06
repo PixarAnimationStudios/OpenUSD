@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdShadeConnectableAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (ConnectableAPI)
 );
+
+} // pxrUsdUsdShadeConnectableAPI
 
 /* virtual */
 UsdShadeConnectableAPI::~UsdShadeConnectableAPI()
@@ -128,6 +132,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdShadeConnectableAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (outputName)
@@ -164,6 +170,8 @@ _GetOrCreateSourceAttr(UsdShadeConnectionSourceInfo const &sourceInfo,
     return sourceAttr;
 }
 
+} // pxrUsdUsdShadeConnectableAPI
+
 /* static */
 bool
 UsdShadeConnectableAPI::ConnectToSource(
@@ -184,7 +192,7 @@ UsdShadeConnectableAPI::ConnectToSource(
     }
 
     UsdAttribute sourceAttr =
-                _GetOrCreateSourceAttr(source, shadingAttr.GetTypeName());
+                pxrUsdUsdShadeConnectableAPI::_GetOrCreateSourceAttr(source, shadingAttr.GetTypeName());
     if (!sourceAttr) {
         // _GetOrCreateSourceAttr can only fail if CreateAttribute fails, which
         // will issue an appropriate error
@@ -279,7 +287,7 @@ UsdShadeConnectableAPI::SetConnectedSources(
         }
 
         UsdAttribute sourceAttr =
-                _GetOrCreateSourceAttr(sourceInfo, shadingAttr.GetTypeName());
+                pxrUsdUsdShadeConnectableAPI::_GetOrCreateSourceAttr(sourceInfo, shadingAttr.GetTypeName());
         if (!sourceAttr) {
             // _GetOrCreateSourceAttr can only fail if CreateAttribute fails,
             // which will issue an appropriate error

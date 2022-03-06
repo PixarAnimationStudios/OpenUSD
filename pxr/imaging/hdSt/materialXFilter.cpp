@@ -44,6 +44,8 @@ namespace mx = MaterialX;
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrImagingHdStMaterialXFilter {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (mtlx)
@@ -93,6 +95,8 @@ R"(
 </materialx>
 )";
 
+} // pxrImagingHdStMaterialXFilter
+
 // Use the given mxDocument to generate the corresponding glsl shader
 // Based on MaterialXViewer Viewer::loadDocument()
 mx::ShaderPtr
@@ -107,7 +111,7 @@ HdSt_GenMaterialXShader(
     
     // Add the Direct Light mtlx file to the mxDoc 
     mx::DocumentPtr lightDoc = mx::createDocument();
-    mx::readFromXmlString(lightDoc, mxDirectLightString);
+    mx::readFromXmlString(lightDoc, pxrImagingHdStMaterialXFilter::mxDirectLightString);
     mxDoc->importLibrary(lightDoc);
 
     // Make sure the Light data properties are added to the mxLightData struct
@@ -143,7 +147,7 @@ HdSt_GenMaterialXShader(
     mx::TypedElementPtr typedElem = mxElem ? mxElem->asA<mx::TypedElement>()
                                          : nullptr;
     if (typedElem) {
-        return _GenMaterialXShader(mxContext, typedElem);
+        return pxrImagingHdStMaterialXFilter::_GenMaterialXShader(mxContext, typedElem);
     }
     return nullptr;
 }
@@ -256,7 +260,7 @@ _GetTextureCoordinateName(
     for (auto& inputConnections : hdTextureNode->inputConnections) {
 
         // Texture Coordinates are connected through the 'texcoord' input
-        if ( inputConnections.first != _tokens->texcoord) {
+        if ( inputConnections.first != pxrImagingHdStMaterialXFilter::_tokens->texcoord) {
             continue;
         }
 
@@ -272,7 +276,7 @@ _GetTextureCoordinateName(
             }
             
             // Get the texture coordinate name from the 'geomprop' parameter
-            auto coordNameIt = hdCoordNode.parameters.find(_tokens->geomprop);
+            auto coordNameIt = hdCoordNode.parameters.find(pxrImagingHdStMaterialXFilter::_tokens->geomprop);
             if (coordNameIt != hdCoordNode.parameters.end()) {
 
                 std::string const& texcoordName = 
@@ -280,7 +284,7 @@ _GetTextureCoordinateName(
                 
                 // Set the 'st' parameter as a TfToken
                 // hdTextureNode->parameters[_tokens->st] = 
-                hdNetwork->nodes[hdTextureNodePath].parameters[_tokens->st] = 
+                hdNetwork->nodes[hdTextureNodePath].parameters[pxrImagingHdStMaterialXFilter::_tokens->st] = 
                                 TfToken(texcoordName.c_str());
 
                 // Save texture coordinate primvar name for the glslfx header;
@@ -298,14 +302,14 @@ _GetTextureCoordinateName(
     
     // If we did not have a connected node, and the 'st' parameter is not set
     // get the default texture cordinate name from the textureNodes sdr metadata 
-    if ( !textureCoordSet && hdTextureNode->parameters.find(_tokens->st) == 
+    if ( !textureCoordSet && hdTextureNode->parameters.find(pxrImagingHdStMaterialXFilter::_tokens->st) == 
                              hdTextureNode->parameters.end()) {
 
         // Get the sdr node for the mxTexture node
         SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
         const SdrShaderNodeConstPtr sdrTextureNode = 
             sdrRegistry.GetShaderNodeByIdentifierAndType(
-                hdTextureNode->nodeTypeId, _tokens->mtlx);
+                hdTextureNode->nodeTypeId, pxrImagingHdStMaterialXFilter::_tokens->mtlx);
 
         if (sdrTextureNode) {
 
@@ -314,7 +318,7 @@ _GetTextureCoordinateName(
             auto primvarName = metadata[SdrNodeMetadata->Primvars];
 
             // Set the 'st' parameter as a TfToken
-            hdNetwork->nodes[hdTextureNodePath].parameters[_tokens->st] = 
+            hdNetwork->nodes[hdTextureNodePath].parameters[pxrImagingHdStMaterialXFilter::_tokens->st] = 
                             TfToken(primvarName.c_str());
 
             // Save the default texture coordinate name for the glslfx header
@@ -389,7 +393,7 @@ _UpdatePrimvarNodes(
         HdMaterialNode2 hdPrimvarNode = hdNetwork->nodes[primvarPath];
 
         // Save primvar name for the glslfx header
-        auto primvarNameIt = hdPrimvarNode.parameters.find(_tokens->geomprop);
+        auto primvarNameIt = hdPrimvarNode.parameters.find(pxrImagingHdStMaterialXFilter::_tokens->geomprop);
         if (primvarNameIt != hdPrimvarNode.parameters.end()) {
             std::string const& primvarName =
                 HdMtlxConvertToString(primvarNameIt->second);
@@ -421,7 +425,7 @@ _GetMaterialTag(HdMaterialNode2 const& terminal)
     // StandardSurface materials do not have an opacityThreshold parameter
     // so we StandardSurface will not use the Masked materialTag.
     for (auto const& currParam : terminal.parameters) {
-        if (currParam.first != _tokens->opacityThreshold) continue;
+        if (currParam.first != pxrImagingHdStMaterialXFilter::_tokens->opacityThreshold) continue;
 
         if (currParam.second.Get<float>() > 0.0f) {
             return HdStMaterialTagTokens->masked.GetString();
@@ -441,13 +445,13 @@ _GetMaterialTag(HdMaterialNode2 const& terminal)
     // material, where the default value of (1,1,1) is fully opaque.
 
     // First check the opacity and transmission connections
-    auto const& opacityConnIt = terminal.inputConnections.find(_tokens->opacity);
+    auto const& opacityConnIt = terminal.inputConnections.find(pxrImagingHdStMaterialXFilter::_tokens->opacity);
     if (opacityConnIt != terminal.inputConnections.end()) {
         return HdStMaterialTagTokens->translucent.GetString();
     }
 
     auto const& transmissionConnIt = terminal.inputConnections.find(
-                                                _tokens->transmission);
+                                                pxrImagingHdStMaterialXFilter::_tokens->transmission);
     isTranslucent = (transmissionConnIt != terminal.inputConnections.end());
 
     // Then check the opacity and transmission parameter value
@@ -455,20 +459,20 @@ _GetMaterialTag(HdMaterialNode2 const& terminal)
         for (auto const& currParam : terminal.parameters) {
 
             // UsdPreviewSurface
-            if (currParam.first == _tokens->opacity && 
+            if (currParam.first == pxrImagingHdStMaterialXFilter::_tokens->opacity && 
                 currParam.second.IsHolding<float>()) {
                 isTranslucent = currParam.second.Get<float>() < 1.0f;
                 break;
             }
             // StandardSurface
-            if (currParam.first == _tokens->opacity && 
+            if (currParam.first == pxrImagingHdStMaterialXFilter::_tokens->opacity && 
                 currParam.second.IsHolding<GfVec3f>()) {
                 GfVec3f opacityColor = currParam.second.Get<GfVec3f>();
                 isTranslucent |= ( opacityColor[0] < 1.0f 
                                 || opacityColor[1] < 1.0f
                                 || opacityColor[2] < 1.0f );
             }
-            if (currParam.first == _tokens->transmission && 
+            if (currParam.first == pxrImagingHdStMaterialXFilter::_tokens->transmission && 
                 currParam.second.IsHolding<float>()) {
                 isTranslucent |= currParam.second.Get<float>() > 0.0f;
             }
@@ -574,7 +578,7 @@ HdSt_ApplyMaterialXFilter(
     SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
     const SdrShaderNodeConstPtr mtlxSdrNode = 
         sdrRegistry.GetShaderNodeByIdentifierAndType(terminalNode.nodeTypeId, 
-                                                     _tokens->mtlx);
+                                                     pxrImagingHdStMaterialXFilter::_tokens->mtlx);
 
     if (mtlxSdrNode) {
 

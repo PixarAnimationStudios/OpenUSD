@@ -49,12 +49,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdStVolume {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _fallbackShaderTokens,
 
     (density)
     (emission)
 );
+
+} // pxrImagingHdStVolume
 
 const float HdStVolume::defaultStepSize                 =   1.0f;
 const float HdStVolume::defaultStepSizeLighting         =  10.0f;
@@ -204,14 +208,14 @@ _MakeFallbackVolumeMaterialData()
             {
                 HdSt_MaterialParam(
                     HdSt_MaterialParam::ParamTypeFieldRedirect,
-                    _fallbackShaderTokens->density,
+                    pxrImagingHdStVolume::_fallbackShaderTokens->density,
                     VtValue(0.0f),
-                    { _fallbackShaderTokens->density }),
+                    { pxrImagingHdStVolume::_fallbackShaderTokens->density }),
                 HdSt_MaterialParam(
                     HdSt_MaterialParam::ParamTypeFieldRedirect,
-                    _fallbackShaderTokens->emission,
+                    pxrImagingHdStVolume::_fallbackShaderTokens->emission,
                     VtValue(GfVec3f(0.0, 0.0, 0.0)),
-                    { _fallbackShaderTokens->emission })
+                    { pxrImagingHdStVolume::_fallbackShaderTokens->emission })
             }
         };
 }

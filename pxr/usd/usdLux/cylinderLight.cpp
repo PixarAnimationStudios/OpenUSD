@@ -202,6 +202,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdLuxCylinderLight {
+
 static bool
 _ComputeLocalExtent(const float radius, 
                     const float length, 
@@ -249,9 +251,11 @@ _ComputeExtent(
     return true;
 }
 
+} // pxrUsdUsdLuxCylinderLight
+
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)
 {
-    UsdGeomRegisterComputeExtentFunction<UsdLuxCylinderLight>(_ComputeExtent);
+    UsdGeomRegisterComputeExtentFunction<UsdLuxCylinderLight>(pxrUsdUsdLuxCylinderLight::_ComputeExtent);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -54,6 +54,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrImagingHdStCodeGen {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((_double, "double"))
@@ -107,6 +109,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (samplerBuffer)
 );
 
+} // pxrImagingHdStCodeGen
+
 HdSt_CodeGen::HdSt_CodeGen(HdSt_GeometricShaderPtr const &geometricShader,
                        HdStShaderCodeSharedPtrVector const &shaders,
                        TfToken const &materialTag)
@@ -141,7 +145,7 @@ _GetPtexTextureShaderSource()
 {
     static std::string source =
         HioGlslfx(HdStPackagePtexTextureShader()).GetSource(
-            _tokens->ptexTextureSampler);
+            pxrImagingHdStCodeGen::_tokens->ptexTextureSampler);
     return source;
 }
 
@@ -301,26 +305,26 @@ static TfToken const &
 _GetPackedType(TfToken const &token, bool packedAlignment)
 {
     if (packedAlignment) {
-        if (token == _tokens->ivec3) {
-            return _tokens->hd_ivec3;
-        } else if (token == _tokens->vec3) {
-            return _tokens->hd_vec3;
-        } else if (token == _tokens->dvec3) {
-            return _tokens->hd_dvec3;
-        } else if (token == _tokens->mat3) {
-            return _tokens->hd_mat3;
-        } else if (token == _tokens->dmat3) {
-            return _tokens->hd_dmat3;
+        if (token == pxrImagingHdStCodeGen::_tokens->ivec3) {
+            return pxrImagingHdStCodeGen::_tokens->hd_ivec3;
+        } else if (token == pxrImagingHdStCodeGen::_tokens->vec3) {
+            return pxrImagingHdStCodeGen::_tokens->hd_vec3;
+        } else if (token == pxrImagingHdStCodeGen::_tokens->dvec3) {
+            return pxrImagingHdStCodeGen::_tokens->hd_dvec3;
+        } else if (token == pxrImagingHdStCodeGen::_tokens->mat3) {
+            return pxrImagingHdStCodeGen::_tokens->hd_mat3;
+        } else if (token == pxrImagingHdStCodeGen::_tokens->dmat3) {
+            return pxrImagingHdStCodeGen::_tokens->hd_dmat3;
         }
     }
-    if (token == _tokens->packed_2_10_10_10) {
-        return _tokens->_int;
+    if (token == pxrImagingHdStCodeGen::_tokens->packed_2_10_10_10) {
+        return pxrImagingHdStCodeGen::_tokens->_int;
     }
-    if (token == _tokens->packed_half2) {
-        return _tokens->_uint;
+    if (token == pxrImagingHdStCodeGen::_tokens->packed_half2) {
+        return pxrImagingHdStCodeGen::_tokens->_uint;
     }
-    if (token == _tokens->packed_half4) {
-        return _tokens->uvec2;
+    if (token == pxrImagingHdStCodeGen::_tokens->packed_half4) {
+        return pxrImagingHdStCodeGen::_tokens->uvec2;
     }
     return token;
 }
@@ -328,14 +332,14 @@ _GetPackedType(TfToken const &token, bool packedAlignment)
 static TfToken const &
 _GetUnpackedType(TfToken const &token, bool packedAlignment)
 {
-    if (token == _tokens->packed_2_10_10_10) {
-        return _tokens->vec4;
+    if (token == pxrImagingHdStCodeGen::_tokens->packed_2_10_10_10) {
+        return pxrImagingHdStCodeGen::_tokens->vec4;
     }
-    if (token == _tokens->packed_half2) {
-        return _tokens->vec2;
+    if (token == pxrImagingHdStCodeGen::_tokens->packed_half2) {
+        return pxrImagingHdStCodeGen::_tokens->vec2;
     }
-    if (token == _tokens->packed_half4) {
-        return _tokens->vec4;
+    if (token == pxrImagingHdStCodeGen::_tokens->packed_half4) {
+        return pxrImagingHdStCodeGen::_tokens->vec4;
     }
     return token;
 }
@@ -344,26 +348,26 @@ static TfToken const &
 _GetPackedTypeAccessor(TfToken const &token, bool packedAlignment)
 {
     if (packedAlignment) {
-        if (token == _tokens->ivec3) {
-            return _tokens->hd_ivec3_get;
-        } else if (token == _tokens->vec3) {
-            return _tokens->hd_vec3_get;
-        } else if (token == _tokens->dvec3) {
-            return _tokens->hd_dvec3_get;
-        } else if (token == _tokens->mat3) {
-            return _tokens->hd_mat3_get;
-        } else if (token == _tokens->dmat3) {
-            return _tokens->hd_dmat3_get;
+        if (token == pxrImagingHdStCodeGen::_tokens->ivec3) {
+            return pxrImagingHdStCodeGen::_tokens->hd_ivec3_get;
+        } else if (token == pxrImagingHdStCodeGen::_tokens->vec3) {
+            return pxrImagingHdStCodeGen::_tokens->hd_vec3_get;
+        } else if (token == pxrImagingHdStCodeGen::_tokens->dvec3) {
+            return pxrImagingHdStCodeGen::_tokens->hd_dvec3_get;
+        } else if (token == pxrImagingHdStCodeGen::_tokens->mat3) {
+            return pxrImagingHdStCodeGen::_tokens->hd_mat3_get;
+        } else if (token == pxrImagingHdStCodeGen::_tokens->dmat3) {
+            return pxrImagingHdStCodeGen::_tokens->hd_dmat3_get;
         }
     }
-    if (token == _tokens->packed_2_10_10_10) {
-        return _tokens->hd_vec4_2_10_10_10_get;
+    if (token == pxrImagingHdStCodeGen::_tokens->packed_2_10_10_10) {
+        return pxrImagingHdStCodeGen::_tokens->hd_vec4_2_10_10_10_get;
     }
-    if (token == _tokens->packed_half2) {
-        return _tokens->hd_half2_get;
+    if (token == pxrImagingHdStCodeGen::_tokens->packed_half2) {
+        return pxrImagingHdStCodeGen::_tokens->hd_half2_get;
     }
-    if (token == _tokens->packed_half4) {
-        return _tokens->hd_half4_get;
+    if (token == pxrImagingHdStCodeGen::_tokens->packed_half4) {
+        return pxrImagingHdStCodeGen::_tokens->hd_half4_get;
     }
     return token;
 }
@@ -372,26 +376,26 @@ static TfToken const &
 _GetPackedTypeMutator(TfToken const &token, bool packedAlignment)
 {
     if (packedAlignment) {
-        if (token == _tokens->ivec3) {
-            return _tokens->hd_ivec3_set;
-        } else if (token == _tokens->vec3) {
-            return _tokens->hd_vec3_set;
-        } else if (token == _tokens->dvec3) {
-            return _tokens->hd_dvec3_set;
-        } else if (token == _tokens->mat3) {
-            return _tokens->hd_mat3_set;
-        } else if (token == _tokens->dmat3) {
-            return _tokens->hd_dmat3_set;
+        if (token == pxrImagingHdStCodeGen::_tokens->ivec3) {
+            return pxrImagingHdStCodeGen::_tokens->hd_ivec3_set;
+        } else if (token == pxrImagingHdStCodeGen::_tokens->vec3) {
+            return pxrImagingHdStCodeGen::_tokens->hd_vec3_set;
+        } else if (token == pxrImagingHdStCodeGen::_tokens->dvec3) {
+            return pxrImagingHdStCodeGen::_tokens->hd_dvec3_set;
+        } else if (token == pxrImagingHdStCodeGen::_tokens->mat3) {
+            return pxrImagingHdStCodeGen::_tokens->hd_mat3_set;
+        } else if (token == pxrImagingHdStCodeGen::_tokens->dmat3) {
+            return pxrImagingHdStCodeGen::_tokens->hd_dmat3_set;
         }
     }
-    if (token == _tokens->packed_2_10_10_10) {
-        return _tokens->hd_vec4_2_10_10_10_set;
+    if (token == pxrImagingHdStCodeGen::_tokens->packed_2_10_10_10) {
+        return pxrImagingHdStCodeGen::_tokens->hd_vec4_2_10_10_10_set;
     }
-    if (token == _tokens->packed_half2) {
-        return _tokens->hd_half2_set;
+    if (token == pxrImagingHdStCodeGen::_tokens->packed_half2) {
+        return pxrImagingHdStCodeGen::_tokens->hd_half2_set;
     }
-    if (token == _tokens->packed_half4) {
-        return _tokens->hd_half4_set;
+    if (token == pxrImagingHdStCodeGen::_tokens->packed_half4) {
+        return pxrImagingHdStCodeGen::_tokens->hd_half4_set;
     }
     return token;
 }
@@ -399,32 +403,32 @@ _GetPackedTypeMutator(TfToken const &token, bool packedAlignment)
 static TfToken const &
 _GetFlatType(TfToken const &token)
 {
-    if (token == _tokens->ivec2) {
-        return _tokens->_int;
-    } else if (token == _tokens->ivec3) {
-        return _tokens->_int;
-    } else if (token == _tokens->ivec4) {
-        return _tokens->_int;
-    } else if (token == _tokens->vec2) {
-        return _tokens->_float;
-    } else if (token == _tokens->vec3) {
-        return _tokens->_float;
-    } else if (token == _tokens->vec4) {
-        return _tokens->_float;
-    } else if (token == _tokens->dvec2) {
-        return _tokens->_double;
-    } else if (token == _tokens->dvec3) {
-        return _tokens->_double;
-    } else if (token == _tokens->dvec4) {
-        return _tokens->_double;
-    } else if (token == _tokens->mat3) {
-        return _tokens->_float;
-    } else if (token == _tokens->mat4) {
-        return _tokens->_float;
-    } else if (token == _tokens->dmat3) {
-        return _tokens->_double;
-    } else if (token == _tokens->dmat4) {
-        return _tokens->_double;
+    if (token == pxrImagingHdStCodeGen::_tokens->ivec2) {
+        return pxrImagingHdStCodeGen::_tokens->_int;
+    } else if (token == pxrImagingHdStCodeGen::_tokens->ivec3) {
+        return pxrImagingHdStCodeGen::_tokens->_int;
+    } else if (token == pxrImagingHdStCodeGen::_tokens->ivec4) {
+        return pxrImagingHdStCodeGen::_tokens->_int;
+    } else if (token == pxrImagingHdStCodeGen::_tokens->vec2) {
+        return pxrImagingHdStCodeGen::_tokens->_float;
+    } else if (token == pxrImagingHdStCodeGen::_tokens->vec3) {
+        return pxrImagingHdStCodeGen::_tokens->_float;
+    } else if (token == pxrImagingHdStCodeGen::_tokens->vec4) {
+        return pxrImagingHdStCodeGen::_tokens->_float;
+    } else if (token == pxrImagingHdStCodeGen::_tokens->dvec2) {
+        return pxrImagingHdStCodeGen::_tokens->_double;
+    } else if (token == pxrImagingHdStCodeGen::_tokens->dvec3) {
+        return pxrImagingHdStCodeGen::_tokens->_double;
+    } else if (token == pxrImagingHdStCodeGen::_tokens->dvec4) {
+        return pxrImagingHdStCodeGen::_tokens->_double;
+    } else if (token == pxrImagingHdStCodeGen::_tokens->mat3) {
+        return pxrImagingHdStCodeGen::_tokens->_float;
+    } else if (token == pxrImagingHdStCodeGen::_tokens->mat4) {
+        return pxrImagingHdStCodeGen::_tokens->_float;
+    } else if (token == pxrImagingHdStCodeGen::_tokens->dmat3) {
+        return pxrImagingHdStCodeGen::_tokens->_double;
+    } else if (token == pxrImagingHdStCodeGen::_tokens->dmat4) {
+        return pxrImagingHdStCodeGen::_tokens->_double;
     }
     return token;
 }
@@ -1309,19 +1313,19 @@ static std::string _GetSwizzleString(TfToken const& type,
     if (!swizzle.empty()) {
         return "." + swizzle;
     } 
-    if (type == _tokens->vec4 || type == _tokens->ivec4) {
+    if (type == pxrImagingHdStCodeGen::_tokens->vec4 || type == pxrImagingHdStCodeGen::_tokens->ivec4) {
         return "";
     }
-    if (type == _tokens->vec3 || type == _tokens->ivec3) {
+    if (type == pxrImagingHdStCodeGen::_tokens->vec3 || type == pxrImagingHdStCodeGen::_tokens->ivec3) {
         return ".xyz";
     }
-    if (type == _tokens->vec2 || type == _tokens->ivec2) {
+    if (type == pxrImagingHdStCodeGen::_tokens->vec2 || type == pxrImagingHdStCodeGen::_tokens->ivec2) {
         return ".xy";
     }
-    if (type == _tokens->_float || type == _tokens->_int) {
+    if (type == pxrImagingHdStCodeGen::_tokens->_float || type == pxrImagingHdStCodeGen::_tokens->_int) {
         return ".x";
     }
-    if (type == _tokens->packed_2_10_10_10) {            
+    if (type == pxrImagingHdStCodeGen::_tokens->packed_2_10_10_10) {            
         return ".x";
     }
 
@@ -1331,15 +1335,15 @@ static std::string _GetSwizzleString(TfToken const& type,
 static int _GetNumComponents(TfToken const& type)
 {
     int numComponents = 1;
-    if (type == _tokens->vec2 || type == _tokens->ivec2) {
+    if (type == pxrImagingHdStCodeGen::_tokens->vec2 || type == pxrImagingHdStCodeGen::_tokens->ivec2) {
         numComponents = 2;
-    } else if (type == _tokens->vec3 || type == _tokens->ivec3) {
+    } else if (type == pxrImagingHdStCodeGen::_tokens->vec3 || type == pxrImagingHdStCodeGen::_tokens->ivec3) {
         numComponents = 3;
-    } else if (type == _tokens->vec4 || type == _tokens->ivec4) {
+    } else if (type == pxrImagingHdStCodeGen::_tokens->vec4 || type == pxrImagingHdStCodeGen::_tokens->ivec4) {
         numComponents = 4;
-    } else if (type == _tokens->mat3 || type == _tokens->dmat3) {
+    } else if (type == pxrImagingHdStCodeGen::_tokens->mat3 || type == pxrImagingHdStCodeGen::_tokens->dmat3) {
         numComponents = 9;
-    } else if (type == _tokens->mat4 || type == _tokens->dmat4) {
+    } else if (type == pxrImagingHdStCodeGen::_tokens->mat4 || type == pxrImagingHdStCodeGen::_tokens->dmat4) {
         numComponents = 16;
     }
 
@@ -2974,13 +2978,13 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
         // primvar accessors
         _EmitAccessor(accessorsVS, name, dataType, binding);
 
-        _EmitStructAccessor(accessorsTCS, _tokens->inPrimvars,
+        _EmitStructAccessor(accessorsTCS, pxrImagingHdStCodeGen::_tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1, "gl_InvocationID");
-        _EmitStructAccessor(accessorsTES, _tokens->inPrimvars,
+        _EmitStructAccessor(accessorsTES, pxrImagingHdStCodeGen::_tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1, "localIndex");
-        _EmitStructAccessor(accessorsGS,  _tokens->inPrimvars,
+        _EmitStructAccessor(accessorsGS,  pxrImagingHdStCodeGen::_tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1, "localIndex");
-        _EmitStructAccessor(accessorsFS,  _tokens->inPrimvars,
+        _EmitStructAccessor(accessorsFS,  pxrImagingHdStCodeGen::_tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1);
 
         // interstage plumbing
@@ -3039,13 +3043,13 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
         // primvar accessors
         _EmitBufferAccessor(accessorsVS, name, dataType, 
             "GetDrawingCoord().varyingCoord + gl_VertexID - GetBaseVertexOffset()");
-        _EmitStructAccessor(accessorsTCS, _tokens->inPrimvars,
+        _EmitStructAccessor(accessorsTCS, pxrImagingHdStCodeGen::_tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1, "gl_InvocationID");
-        _EmitStructAccessor(accessorsTES, _tokens->inPrimvars,
+        _EmitStructAccessor(accessorsTES, pxrImagingHdStCodeGen::_tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1, "localIndex");
-        _EmitStructAccessor(accessorsGS,  _tokens->inPrimvars,
+        _EmitStructAccessor(accessorsGS,  pxrImagingHdStCodeGen::_tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1, "localIndex");
-        _EmitStructAccessor(accessorsFS,  _tokens->inPrimvars,
+        _EmitStructAccessor(accessorsFS,  pxrImagingHdStCodeGen::_tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1);
 
         // interstage plumbing
@@ -3180,7 +3184,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
                               _geometricShader->GetFvarPatchType(),
                               channel);
         
-            _EmitStructAccessor(accessorsFS, _tokens->inPrimvars,
+            _EmitStructAccessor(accessorsFS, pxrImagingHdStCodeGen::_tokens->inPrimvars,
                                 name, dataType,
                                 /*arraySize=*/1, NULL);
 

@@ -55,6 +55,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdStMaterialNetwork {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (opacity)
@@ -93,7 +95,7 @@ _GetMaterialTag(
 
     // Next check for authored terminal.opacityThreshold value > 0
     for (auto const& paramIt : terminal.parameters) {
-        if (paramIt.first != _tokens->opacityThreshold) continue;
+        if (paramIt.first != pxrImagingHdStMaterialNetwork::_tokens->opacityThreshold) continue;
 
         VtValue const& vtOpacityThreshold = paramIt.second;
         if (vtOpacityThreshold.Get<float>() > 0.0f) {
@@ -104,13 +106,13 @@ _GetMaterialTag(
     bool isTranslucent = false;
 
     // Next strongest opinion is a connection to 'terminal.opacity'
-    auto const& opacityConIt = terminal.inputConnections.find(_tokens->opacity);
+    auto const& opacityConIt = terminal.inputConnections.find(pxrImagingHdStMaterialNetwork::_tokens->opacity);
     isTranslucent = (opacityConIt != terminal.inputConnections.end());
 
     // Weakest opinion is an authored terminal.opacity value.
     if (!isTranslucent) {
         for (auto const& paramIt : terminal.parameters) {
-            if (paramIt.first != _tokens->opacity) continue;
+            if (paramIt.first != pxrImagingHdStMaterialNetwork::_tokens->opacity) continue;
 
             VtValue const& vtOpacity = paramIt.second;
             isTranslucent = vtOpacity.Get<float>() < 1.0f;
@@ -423,12 +425,12 @@ _MakeMaterialParamsForTransform2d(
     transform2dParam.paramType = HdSt_MaterialParam::ParamTypeTransform2d;
     transform2dParam.name = paramName;
     transform2dParam.fallbackValue = _GetParamFallbackValue(network, node,
-                                                            _tokens->in);
+                                                            pxrImagingHdStMaterialNetwork::_tokens->in);
 
     HdSt_MaterialParamVector additionalParams;
 
     // Find the input connection to the transform2d node
-    auto inIt = node.inputConnections.find(_tokens->in);
+    auto inIt = node.inputConnections.find(pxrImagingHdStMaterialNetwork::_tokens->in);
     if (inIt != node.inputConnections.end()) {
         if (!inIt->second.empty()) {
             HdMaterialConnection2 const& con = inIt->second.front();
@@ -469,7 +471,7 @@ _MakeMaterialParamsForTransform2d(
         }
     } else {
         // See if input value was directly authored as value.
-        auto iter = node.parameters.find(_tokens->in);
+        auto iter = node.parameters.find(pxrImagingHdStMaterialNetwork::_tokens->in);
 
         if (iter != node.parameters.end()) {
             if (iter->second.IsHolding<TfToken>()) {
@@ -596,7 +598,7 @@ _ResolveWrapSamplerParameter(
     }
 
     if (value == HdStTextureTokens->useMetadata) {
-        if (node.nodeTypeId == _tokens->HwUvTexture_1) {
+        if (node.nodeTypeId == pxrImagingHdStMaterialNetwork::_tokens->HwUvTexture_1) {
             return HdWrapLegacy;
         }
         return HdWrapUseMetadata;
@@ -707,7 +709,7 @@ _GetSubtextureIdentifier(
     const TfToken &sourceColorSpace)
 {
     if (textureType == HdTextureType::Uv) {
-        const bool flipVertically = (nodeType == _tokens->HwUvTexture_1);
+        const bool flipVertically = (nodeType == pxrImagingHdStMaterialNetwork::_tokens->HwUvTexture_1);
         return std::make_unique<HdStAssetUvSubtextureIdentifier>(flipVertically, 
             premultiplyAlpha, sourceColorSpace);
     } 
@@ -738,7 +740,7 @@ _MakeMaterialParamsForTexture(
 
     SdrRegistry& shaderReg = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(
-        node.nodeTypeId, {HioGlslfxTokens->glslfx, _tokens->mtlx});
+        node.nodeTypeId, {HioGlslfxTokens->glslfx, pxrImagingHdStMaterialNetwork::_tokens->mtlx});
 
     HdSt_MaterialParam texParam;
     texParam.paramType = HdSt_MaterialParam::ParamTypeTexture;
@@ -756,7 +758,7 @@ _MakeMaterialParamsForTexture(
 
     // Determine the texture type
     texParam.textureType = HdTextureType::Uv;
-    if (sdrNode && sdrNode->GetMetadata().count(_tokens->isPtex)) {
+    if (sdrNode && sdrNode->GetMetadata().count(pxrImagingHdStMaterialNetwork::_tokens->isPtex)) {
         texParam.textureType = HdTextureType::Ptex;
     }
 
@@ -766,14 +768,14 @@ _MakeMaterialParamsForTexture(
     // same texture node via output "a", as long as the material tag is not 
     // "masked"
     bool premultiplyTexture = false;
-    if (paramName == _tokens->diffuseColor && 
+    if (paramName == pxrImagingHdStMaterialNetwork::_tokens->diffuseColor && 
         materialTag != HdStMaterialTagTokens->masked) {
         auto const& opacityConIt = downstreamNode.inputConnections.find(
-            _tokens->opacity);
+            pxrImagingHdStMaterialNetwork::_tokens->opacity);
         if (opacityConIt != downstreamNode.inputConnections.end()) {
             HdMaterialConnection2 const& con = opacityConIt->second.front();
             premultiplyTexture = ((nodePath == con.upstreamNode) && 
-                                  (con.upstreamOutputName == _tokens->a));
+                                  (con.upstreamOutputName == pxrImagingHdStMaterialNetwork::_tokens->a));
         } 
     }
     texParam.isPremultiplied = premultiplyTexture;
@@ -782,10 +784,10 @@ _MakeMaterialParamsForTexture(
     // XXX: This is a workaround for Presto. If there's no colorspace token, 
     // check if there's a colorspace string.
     TfToken sourceColorSpace = _ResolveParameter(
-        node, sdrNode, _tokens->sourceColorSpace, TfToken());
+        node, sdrNode, pxrImagingHdStMaterialNetwork::_tokens->sourceColorSpace, TfToken());
     if (sourceColorSpace.IsEmpty()) {
         const std::string sourceColorSpaceStr = _ResolveParameter(
-            node, sdrNode, _tokens->sourceColorSpace, 
+            node, sdrNode, pxrImagingHdStMaterialNetwork::_tokens->sourceColorSpace, 
             HdStTokens->colorSpaceAuto.GetString());
         sourceColorSpace = TfToken(sourceColorSpaceStr);
     }
@@ -865,9 +867,9 @@ _MakeMaterialParamsForTexture(
     // connections to inputs and pick one that has a 'primvar' or 'transform2d' 
     // node attached. That could also be problematic if you connect a primvar or 
     // transform2d to one of the other inputs of the texture node.
-    auto stIt = node.inputConnections.find(_tokens->st);
+    auto stIt = node.inputConnections.find(pxrImagingHdStMaterialNetwork::_tokens->st);
     if (stIt == node.inputConnections.end()) {
-        stIt = node.inputConnections.find(_tokens->uv);
+        stIt = node.inputConnections.find(pxrImagingHdStMaterialNetwork::_tokens->uv);
     }
 
     if (stIt != node.inputConnections.end()) {
@@ -939,9 +941,9 @@ _MakeMaterialParamsForTexture(
 
         // See if a st value was directly authored as value.
         
-        auto iter = node.parameters.find(_tokens->st);
+        auto iter = node.parameters.find(pxrImagingHdStMaterialNetwork::_tokens->st);
         if (iter == node.parameters.end()) {
-            iter = node.parameters.find(_tokens->uv);
+            iter = node.parameters.find(pxrImagingHdStMaterialNetwork::_tokens->uv);
         }
 
         if (iter != node.parameters.end()) {
@@ -977,7 +979,7 @@ _MakeMaterialParamsForTexture(
     // Attribute is in Mebibytes, but Storm texture system expects
     // bytes.
     const size_t memoryRequest = 1048576 * 
-        _ResolveParameter<float>(node, sdrNode, _tokens->textureMemory, 0.0f);
+        _ResolveParameter<float>(node, sdrNode, pxrImagingHdStMaterialNetwork::_tokens->textureMemory, 0.0f);
 
     textureDescriptors->push_back(
         { paramName,
@@ -1020,7 +1022,7 @@ _MakeMaterialParamsForFieldReader(
     // is missing for fields: UsdPrimvarReader.inputs:varname is tagged with
     // sdrMetadata as primvarProperty="1" so that we can use
     // sdrNode->GetAdditionalPrimvarProperties to know what attribute to use.
-    TfToken const& varName = _tokens->fieldname;
+    TfToken const& varName = pxrImagingHdStMaterialNetwork::_tokens->fieldname;
 
     auto const& it = node.parameters.find(varName);
     if (it != node.parameters.end()){
@@ -1072,7 +1074,7 @@ _MakeParamsForInputParameter(
                 SdrShaderNodeConstPtr upstreamSdr = 
                     shaderReg.GetShaderNodeByIdentifier(
                         upstreamNode.nodeTypeId,
-                        {HioGlslfxTokens->glslfx, _tokens->mtlx});
+                        {HioGlslfxTokens->glslfx, pxrImagingHdStMaterialNetwork::_tokens->mtlx});
 
                 if (upstreamSdr) {
                     TfToken sdrRole(upstreamSdr->GetRole());
@@ -1193,6 +1195,8 @@ _GatherMaterialParams(
     }
 }
 
+} // pxrImagingHdStMaterialNetwork
+
 HdStMaterialNetwork::HdStMaterialNetwork()
     : _materialTag(HdStMaterialTagTokens->defaultMaterialTag)
     , _surfaceGfxHash(0)
@@ -1229,7 +1233,7 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
 
     SdfPath surfTerminalPath;
     if (HdMaterialNode2 const* surfTerminal = 
-            _GetTerminalNode(surfaceNetwork, terminalName, &surfTerminalPath)) {
+            pxrImagingHdStMaterialNetwork::_GetTerminalNode(surfaceNetwork, terminalName, &surfTerminalPath)) {
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
         if (!isVolume) {
@@ -1242,7 +1246,7 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
         }
 #endif
         // Extract the glslfx and metadata for surface/volume.
-        _GetGlslfxForTerminal(_surfaceGfx, &_surfaceGfxHash,
+        pxrImagingHdStMaterialNetwork::_GetGlslfxForTerminal(_surfaceGfx, &_surfaceGfxHash,
                               surfTerminal->nodeTypeId, resourceRegistry);
         if (_surfaceGfx) {
 
@@ -1255,8 +1259,8 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
                 _volumeSource = _surfaceGfx->GetVolumeSource();
 
                 _materialMetadata = _surfaceGfx->GetMetadata();
-                _materialTag = _GetMaterialTag(_materialMetadata, *surfTerminal);
-                _GatherMaterialParams(surfaceNetwork, *surfTerminal,
+                _materialTag = pxrImagingHdStMaterialNetwork::_GetMaterialTag(_materialMetadata, *surfTerminal);
+                pxrImagingHdStMaterialNetwork::_GatherMaterialParams(surfaceNetwork, *surfTerminal,
                                       &_materialParams, &_textureDescriptors, 
                                       _materialTag);
 

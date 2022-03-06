@@ -35,14 +35,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 // UsdInherits
 // ------------------------------------------------------------------------- //
 
-using _ListEditImpl = 
+using _InheritsListEditImpl = 
     Usd_ListEditImpl<UsdInherits, SdfInheritsProxy>;
 
 // The implementation doesn't define this function as it needs to be specialized
 // so we implement it here.
 template <>
 SdfInheritsProxy 
-_ListEditImpl::_GetListEditorForSpec(const SdfPrimSpecHandle &spec)
+_InheritsListEditImpl::_GetListEditorForSpec(const SdfPrimSpecHandle &spec)
 {
     return spec->GetInheritPathList();
 }
@@ -50,25 +50,25 @@ _ListEditImpl::_GetListEditorForSpec(const SdfPrimSpecHandle &spec)
 bool
 UsdInherits::AddInherit(const SdfPath &primPathIn, UsdListPosition position)
 {
-    return _ListEditImpl::Add(*this, primPathIn, position);
+    return _InheritsListEditImpl::Add(*this, primPathIn, position);
 }
 
 bool
 UsdInherits::RemoveInherit(const SdfPath &primPathIn)
 {
-    return _ListEditImpl::Remove(*this, primPathIn);
+    return _InheritsListEditImpl::Remove(*this, primPathIn);
 }
 
 bool
 UsdInherits::ClearInherits()
 {
-    return _ListEditImpl::Clear(*this);
+    return _InheritsListEditImpl::Clear(*this);
 }
 
 bool 
 UsdInherits::SetInherits(const SdfPathVector& itemsIn)
 {
-    return _ListEditImpl::Set(*this, itemsIn);
+    return _InheritsListEditImpl::Set(*this, itemsIn);
 }
 
 SdfPathVector

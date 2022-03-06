@@ -49,6 +49,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdSdfSchema {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -57,6 +59,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((Type,"type"))
     ((AppliesTo,"appliesTo"))
 );
+
+} // pxrUsdSdfSchema
 
 //
 // SdfSchemaBase::FieldDefinition
@@ -1617,7 +1621,7 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
 
             std::string valueTypeName;
             if (!_ExtractKey(
-                fieldInfo, _tokens->Type.GetString(), &valueTypeName)) {
+                fieldInfo, pxrUsdSdfSchema::_tokens->Type.GetString(), &valueTypeName)) {
                 TF_CODING_ERROR("Could not read a string for \"type\" "
                                 "(at \"%s\" in plugin \"%s\")",
                                 fieldName.GetText(), plug->GetPath().c_str());
@@ -1637,7 +1641,7 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
             {
                 const JsValue pluginDefault = 
                     TfMapLookupByValue(fieldInfo,
-                    _tokens->Default.GetString(), JsValue());
+                    pxrUsdSdfSchema::_tokens->Default.GetString(), JsValue());
 
                 TfErrorMark m;
 
@@ -1683,7 +1687,7 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
             {
                 std::string displayGroupString;
                 if (_ExtractKey(fieldInfo,
-                    _tokens->DisplayGroup.GetString(), &displayGroupString))
+                    pxrUsdSdfSchema::_tokens->DisplayGroup.GetString(), &displayGroupString))
                     displayGroup = TfToken(displayGroupString);
             }
 
@@ -1697,7 +1701,7 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
             {
                 const JsValue val = 
                     TfMapLookupByValue(fieldInfo,
-                    _tokens->AppliesTo.GetString(), JsValue());
+                    pxrUsdSdfSchema::_tokens->AppliesTo.GetString(), JsValue());
                 if (val.IsArrayOf<std::string>()) {
                     const std::vector<std::string> vec = val.GetArrayOf<std::string>();
                     appliesTo.insert(vec.begin(), vec.end());
@@ -1706,7 +1710,7 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
                 }
 
                 // this is so appliesTo does not show up in fieldDef's info
-                fieldInfo.erase(_tokens->AppliesTo.GetString());
+                fieldInfo.erase(pxrUsdSdfSchema::_tokens->AppliesTo.GetString());
             }
             if (appliesTo.empty() || appliesTo.count("layers")) {
                 _ExtendSpecDefinition(SdfSpecTypePseudoRoot)

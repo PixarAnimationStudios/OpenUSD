@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdModelAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (ModelAPI)
 );
+
+} // pxrUsdUsdModelAPI
 
 /* virtual */
 UsdModelAPI::~UsdModelAPI()

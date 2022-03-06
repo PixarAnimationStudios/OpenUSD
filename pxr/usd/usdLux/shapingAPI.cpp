@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdLuxShapingAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (ShapingAPI)
 );
+
+} // pxrUsdUsdLuxShapingAPI
 
 /* virtual */
 UsdLuxShapingAPI::~UsdLuxShapingAPI()

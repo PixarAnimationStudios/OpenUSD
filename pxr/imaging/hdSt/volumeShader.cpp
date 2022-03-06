@@ -38,6 +38,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdStVolumeShader {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (stepSize)
@@ -48,6 +50,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (volumeBBoxLocalMin)
     (volumeBBoxLocalMax)
 );
+
+} // pxrImagingHdStVolumeShader
 
 
 HdSt_VolumeShader::HdSt_VolumeShader(HdRenderDelegate * const renderDelegate)
@@ -69,12 +73,12 @@ HdSt_VolumeShader::AddBindings(HdBindingRequestVector * const customBindings)
     customBindings->push_back(
         HdBindingRequest(
             HdBinding::UNIFORM,
-            _tokens->stepSize,
+            pxrImagingHdStVolumeShader::_tokens->stepSize,
             HdTypeFloat));
     customBindings->push_back(
         HdBindingRequest(
             HdBinding::UNIFORM,
-            _tokens->stepSizeLighting,
+            pxrImagingHdStVolumeShader::_tokens->stepSizeLighting,
             HdTypeFloat));
 }
 
@@ -97,8 +101,8 @@ HdSt_VolumeShader::BindResources(const int program,
             HdStVolume::defaultStepSizeLighting);
     }
     
-    binder.BindUniformf(_tokens->stepSize, 1, &_stepSize);
-    binder.BindUniformf(_tokens->stepSizeLighting, 1, &_stepSizeLighting);
+    binder.BindUniformf(pxrImagingHdStVolumeShader::_tokens->stepSize, 1, &_stepSize);
+    binder.BindUniformf(pxrImagingHdStVolumeShader::_tokens->stepSizeLighting, 1, &_stepSizeLighting);
 }
 
 void
@@ -137,11 +141,11 @@ HdSt_VolumeShader::GetParamsAndBufferSpecsForBBoxAndSampleDistance(
     {
         params->emplace_back(
             HdSt_MaterialParam::ParamTypeFallback,
-            _tokens->volumeBBoxInverseTransform,
+            pxrImagingHdStVolumeShader::_tokens->volumeBBoxInverseTransform,
             VtValue(GfMatrix4d()));
 
         static const TfToken sourceName(
-            _ConcatFallback(_tokens->volumeBBoxInverseTransform));
+            _ConcatFallback(pxrImagingHdStVolumeShader::_tokens->volumeBBoxInverseTransform));
         specs->emplace_back(
             sourceName,
             HdTupleType{HdTypeDoubleMat4, 1});
@@ -150,11 +154,11 @@ HdSt_VolumeShader::GetParamsAndBufferSpecsForBBoxAndSampleDistance(
     {
         params->emplace_back(
             HdSt_MaterialParam::ParamTypeFallback,
-            _tokens->volumeBBoxLocalMin,
+            pxrImagingHdStVolumeShader::_tokens->volumeBBoxLocalMin,
             VtValue(GfVec3d()));
 
         static const TfToken sourceName(
-            _ConcatFallback(_tokens->volumeBBoxLocalMin));
+            _ConcatFallback(pxrImagingHdStVolumeShader::_tokens->volumeBBoxLocalMin));
         specs->emplace_back(
             sourceName,
             HdTupleType{HdTypeDoubleVec3, 1});
@@ -163,11 +167,11 @@ HdSt_VolumeShader::GetParamsAndBufferSpecsForBBoxAndSampleDistance(
     {
         params->emplace_back(
             HdSt_MaterialParam::ParamTypeFallback,
-            _tokens->volumeBBoxLocalMax,
+            pxrImagingHdStVolumeShader::_tokens->volumeBBoxLocalMax,
             VtValue(GfVec3d()));
 
         static const TfToken sourceName(
-            _ConcatFallback(_tokens->volumeBBoxLocalMax));
+            _ConcatFallback(pxrImagingHdStVolumeShader::_tokens->volumeBBoxLocalMax));
         specs->emplace_back(
             sourceName,
             HdTupleType{HdTypeDoubleVec3, 1});
@@ -176,11 +180,11 @@ HdSt_VolumeShader::GetParamsAndBufferSpecsForBBoxAndSampleDistance(
     {
         params->emplace_back(
             HdSt_MaterialParam::ParamTypeFallback,
-            _tokens->sampleDistance,
+            pxrImagingHdStVolumeShader::_tokens->sampleDistance,
             VtValue(100000.0f));
 
         static const TfToken sourceName(
-            _ConcatFallback(_tokens->sampleDistance));
+            _ConcatFallback(pxrImagingHdStVolumeShader::_tokens->sampleDistance));
         specs->emplace_back(
             sourceName,
             HdTupleType{HdTypeFloat, 1});
@@ -197,7 +201,7 @@ HdSt_VolumeShader::GetBufferSourcesForBBoxAndSampleDistance(
 
     {
         static const TfToken sourceName(
-            _ConcatFallback(_tokens->volumeBBoxInverseTransform));
+            _ConcatFallback(pxrImagingHdStVolumeShader::_tokens->volumeBBoxInverseTransform));
         sources->push_back(
             std::make_shared<HdVtBufferSource>(
                 sourceName,
@@ -206,7 +210,7 @@ HdSt_VolumeShader::GetBufferSourcesForBBoxAndSampleDistance(
 
     {
         static const TfToken sourceName(
-            _ConcatFallback(_tokens->volumeBBoxLocalMin));
+            _ConcatFallback(pxrImagingHdStVolumeShader::_tokens->volumeBBoxLocalMin));
         sources->push_back(
             std::make_shared<HdVtBufferSource>(
                 sourceName,
@@ -215,7 +219,7 @@ HdSt_VolumeShader::GetBufferSourcesForBBoxAndSampleDistance(
 
     {
         static const TfToken sourceName(
-            _ConcatFallback(_tokens->volumeBBoxLocalMax));
+            _ConcatFallback(pxrImagingHdStVolumeShader::_tokens->volumeBBoxLocalMax));
         sources->push_back(
             std::make_shared<HdVtBufferSource>(
                 sourceName,
@@ -226,7 +230,7 @@ HdSt_VolumeShader::GetBufferSourcesForBBoxAndSampleDistance(
         const float sampleDistance = bboxAndSampleDistance.second;
 
         static const TfToken sourceName(
-            _ConcatFallback(_tokens->sampleDistance));
+            _ConcatFallback(pxrImagingHdStVolumeShader::_tokens->sampleDistance));
         sources->push_back(
             std::make_shared<HdVtBufferSource>(
                 sourceName,

@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdPhysicsMaterialAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (PhysicsMaterialAPI)
 );
+
+} // pxrUsdUsdPhysicsMaterialAPI
 
 /* virtual */
 UsdPhysicsMaterialAPI::~UsdPhysicsMaterialAPI()

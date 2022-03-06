@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdLuxListAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (ListAPI)
 );
+
+} // pxrUsdUsdLuxListAPI
 
 /* virtual */
 UsdLuxListAPI::~UsdLuxListAPI()

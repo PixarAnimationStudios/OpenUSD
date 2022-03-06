@@ -54,6 +54,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PUBLIC_TOKENS(HdSt_ResourceBindingSuffixTokens,
                         HDST_RESOURCE_BINDING_SUFFIX_TOKENS);
 
+namespace pxrImagingHdStResourceBinder {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((_double, "double"))
@@ -73,7 +75,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (topologyVisibility)
 );
 
-namespace pxrImagingHdStResourceBinder {
     struct BindingLocator {
         BindingLocator() :
             uniformLocation(0), uboLocation(0),
@@ -246,7 +247,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     // constant primvar (per-object)
     HdBinding constantPrimvarBinding =
                 locator.GetBinding(structBufferBindingType,
-                                   _tokens->constantPrimvars);
+                                   pxrImagingHdStResourceBinder::_tokens->constantPrimvars);
 
     if (HdBufferArrayRangeSharedPtr constantBar_ =
         drawItem->GetConstantPrimvarRange()) {
@@ -254,7 +255,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         HdStBufferArrayRangeSharedPtr constantBar =
             std::static_pointer_cast<HdStBufferArrayRange>(constantBar_);
 
-        MetaData::StructBlock sblock(_tokens->constantPrimvars);
+        MetaData::StructBlock sblock(pxrImagingHdStResourceBinder::_tokens->constantPrimvars);
         TF_FOR_ALL (it, constantBar->GetResources()) {
             HdTupleType valueType = it->second->GetTupleType();
             TfToken glType = HdStGLConversions::GetGLSLTypename(valueType.type);
@@ -276,7 +277,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     }
 
      // constant primvars are interleaved into single struct.
-    _bindingMap[_tokens->constantPrimvars] = constantPrimvarBinding;
+    _bindingMap[pxrImagingHdStResourceBinder::_tokens->constantPrimvars] = constantPrimvarBinding;
 
     TfTokenVector filterNames = _GetInstancerFilterNames(drawItem);
 
@@ -431,7 +432,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
      // topology visibility
     HdBinding topologyVisibilityBinding =
                 locator.GetBinding(structBufferBindingType,
-                                   /*debugName*/_tokens->topologyVisibility);
+                                   /*debugName*/pxrImagingHdStResourceBinder::_tokens->topologyVisibility);
 
     if (HdBufferArrayRangeSharedPtr topVisBar_ =
         drawItem->GetTopologyVisibilityRange()) {
@@ -439,7 +440,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         HdStBufferArrayRangeSharedPtr topVisBar =
             std::static_pointer_cast<HdStBufferArrayRange>(topVisBar_);
 
-        MetaData::StructBlock sblock(_tokens->topologyVisibility);
+        MetaData::StructBlock sblock(pxrImagingHdStResourceBinder::_tokens->topologyVisibility);
         TF_FOR_ALL (it, topVisBar->GetResources()) {
             HdTupleType valueType = it->second->GetTupleType();
             TfToken glType = HdStGLConversions::GetGLSLTypename(valueType.type);
@@ -457,7 +458,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     }
 
      // topology visibility is interleaved into single struct.
-    _bindingMap[_tokens->topologyVisibility] = topologyVisibilityBinding;
+    _bindingMap[pxrImagingHdStResourceBinder::_tokens->topologyVisibility] = topologyVisibilityBinding;
 
     // element primvar (per-face, per-line)
     if (HdBufferArrayRangeSharedPtr elementBar_ =
@@ -529,7 +530,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     _bindingMap[HdTokens->drawingCoord0] = drawingCoord0Binding;
     metaDataOut->drawingCoord0Binding =
         MetaData::BindingDeclaration(/*name=*/HdTokens->drawingCoord0,
-                                     /*type=*/_tokens->ivec4,
+                                     /*type=*/pxrImagingHdStResourceBinder::_tokens->ivec4,
                                      /*binding=*/drawingCoord0Binding);
 
     HdBinding drawingCoord1Binding = locator.GetBinding(
@@ -537,7 +538,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     _bindingMap[HdTokens->drawingCoord1] = drawingCoord1Binding;
     metaDataOut->drawingCoord1Binding =
         MetaData::BindingDeclaration(/*name=*/HdTokens->drawingCoord1,
-                                     /*type=*/_tokens->ivec4,
+                                     /*type=*/pxrImagingHdStResourceBinder::_tokens->ivec4,
                                      /*binding=*/drawingCoord1Binding);
 
     HdBinding drawingCoord2Binding = locator.GetBinding(
@@ -545,7 +546,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     _bindingMap[HdTokens->drawingCoord2] = drawingCoord2Binding;
     metaDataOut->drawingCoord2Binding =
         MetaData::BindingDeclaration(/*name=*/HdTokens->drawingCoord2,
-                                     /*type=*/_tokens->ivec2,
+                                     /*type=*/pxrImagingHdStResourceBinder::_tokens->ivec2,
                                      /*binding=*/drawingCoord2Binding);
 
     if (instancerNumLevels > 0) {
@@ -562,7 +563,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         _bindingMap[HdTokens->drawingCoordI] = drawingCoordIBinding;
         metaDataOut->drawingCoordIBinding =
             MetaData::BindingDeclaration(/*name=*/HdTokens->drawingCoordI,
-                                         /*type=*/_tokens->_int,
+                                         /*type=*/pxrImagingHdStResourceBinder::_tokens->_int,
                                          /*binding=*/drawingCoordIBinding);
     }
 
@@ -1376,7 +1377,7 @@ HdSt_ResourceBinder::BindConstantBuffer(
     if (!constantBar) return;
 
     // constant buffer is interleaved. we just need to bind a buffer.
-    BindBuffer(_tokens->constantPrimvars, constantBar->GetResource());
+    BindBuffer(pxrImagingHdStResourceBinder::_tokens->constantPrimvars, constantBar->GetResource());
 }
 
 void
@@ -1385,7 +1386,7 @@ HdSt_ResourceBinder::UnbindConstantBuffer(
 {
     if (!constantBar) return;
 
-    UnbindBuffer(_tokens->constantPrimvars, constantBar->GetResource());
+    UnbindBuffer(pxrImagingHdStResourceBinder::_tokens->constantPrimvars, constantBar->GetResource());
 }
 
 void

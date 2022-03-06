@@ -36,6 +36,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrImagingHdStUnitTestHelper {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (lighting)
@@ -49,6 +51,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Collection names
     (testCollection)
 );
+
+} // pxrImagingHdStUnitTestHelper
 
 HdSt_DrawTask::HdSt_DrawTask(
     HdRenderPassSharedPtr const &renderPass,
@@ -84,6 +88,8 @@ HdSt_DrawTask::Execute(HdTaskContext* ctx)
     _renderPass->Execute(_renderPassState, GetRenderTags());
 }
 
+namespace pxrImagingHdStUnitTestHelper {
+
 template <typename T>
 static VtArray<T>
 _BuildArray(T values[], int numValues)
@@ -92,6 +98,8 @@ _BuildArray(T values[], int numValues)
     std::copy(values, values+numValues, result.begin());
     return result;
 }
+
+} // pxrImagingHdStUnitTestHelper
 
 // --------------------------------------------------------------------------
 
@@ -256,30 +264,30 @@ HdSt_TestLightingShader::Prepare()
             _renderIndex->GetResourceRegistry());
 
     HdBufferSpecVector const bufferSpecs = {
-        HdBufferSpec(_tokens->l0dir, HdTupleType{HdTypeFloatVec3, 1}),
-        HdBufferSpec(_tokens->l0color, HdTupleType{HdTypeFloatVec3, 1}),
-        HdBufferSpec(_tokens->l1dir, HdTupleType{HdTypeFloatVec3, 1}),
-        HdBufferSpec(_tokens->l1color, HdTupleType{HdTypeFloatVec3, 1}),
-        HdBufferSpec(_tokens->sceneAmbient, HdTupleType{HdTypeFloatVec3, 1}),
+        HdBufferSpec(pxrImagingHdStUnitTestHelper::_tokens->l0dir, HdTupleType{HdTypeFloatVec3, 1}),
+        HdBufferSpec(pxrImagingHdStUnitTestHelper::_tokens->l0color, HdTupleType{HdTypeFloatVec3, 1}),
+        HdBufferSpec(pxrImagingHdStUnitTestHelper::_tokens->l1dir, HdTupleType{HdTypeFloatVec3, 1}),
+        HdBufferSpec(pxrImagingHdStUnitTestHelper::_tokens->l1color, HdTupleType{HdTypeFloatVec3, 1}),
+        HdBufferSpec(pxrImagingHdStUnitTestHelper::_tokens->sceneAmbient, HdTupleType{HdTypeFloatVec3, 1}),
     };
 
     _lightingBar =
         hdStResourceRegistry->AllocateUniformBufferArrayRange(
-            _tokens->lighting,
+            pxrImagingHdStUnitTestHelper::_tokens->lighting,
             bufferSpecs,
             HdBufferArrayUsageHint());
 
     HdBufferSourceSharedPtrVector sources = {
         std::make_shared<HdVtBufferSource>(
-            _tokens->l0dir, VtValue(VtVec3fArray(1, _lights[0].eyeDir))),
+            pxrImagingHdStUnitTestHelper::_tokens->l0dir, VtValue(VtVec3fArray(1, _lights[0].eyeDir))),
         std::make_shared<HdVtBufferSource>(
-            _tokens->l0color, VtValue(VtVec3fArray(1, _lights[0].color))),
+            pxrImagingHdStUnitTestHelper::_tokens->l0color, VtValue(VtVec3fArray(1, _lights[0].color))),
         std::make_shared<HdVtBufferSource>(
-            _tokens->l1dir, VtValue(VtVec3fArray(1, _lights[1].eyeDir))),
+            pxrImagingHdStUnitTestHelper::_tokens->l1dir, VtValue(VtVec3fArray(1, _lights[1].eyeDir))),
         std::make_shared<HdVtBufferSource>(
-            _tokens->l1color, VtValue(VtVec3fArray(1, _lights[1].color))),
+            pxrImagingHdStUnitTestHelper::_tokens->l1color, VtValue(VtVec3fArray(1, _lights[1].color))),
         std::make_shared<HdVtBufferSource>(
-            _tokens->sceneAmbient, VtValue(VtVec3fArray(1, _sceneAmbient))),
+            pxrImagingHdStUnitTestHelper::_tokens->sceneAmbient, VtValue(VtVec3fArray(1, _sceneAmbient))),
     };
 
     hdStResourceRegistry->AddSources(_lightingBar, std::move(sources));
@@ -290,7 +298,7 @@ HdBindingRequest
 _GetBindingRequest(HdBufferArrayRangeSharedPtr lightingBar)
 {
     return HdBindingRequest(HdBinding::UBO,
-                            _tokens->lighting,
+                            pxrImagingHdStUnitTestHelper::_tokens->lighting,
                             lightingBar,
                             /*interleaved=*/true,
                             /*writable=*/false,

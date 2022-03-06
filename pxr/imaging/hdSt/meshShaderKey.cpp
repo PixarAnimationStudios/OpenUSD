@@ -30,6 +30,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrImagingHdStMeshShaderKey {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,              "mesh.glslfx"))
@@ -136,6 +138,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((noScalarOverrideFS,      "Fragment.NoScalarOverride"))
 );
 
+} // pxrImagingHdStMeshShaderKey
+
 HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     HdSt_GeometricShader::PrimitiveType primitiveType,
     TfToken shadingTerminal,
@@ -161,7 +165,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     , polygonMode(HdPolygonModeFill)
     , lineWidth(lineWidth)
     , fvarPatchType(fvarPatchType)
-    , glslfx(_tokens->baseGLSLFX)
+    , glslfx(pxrImagingHdStMeshShaderKey::_tokens->baseGLSLFX)
 {
     if (geomStyle == HdMeshGeomStyleEdgeOnly ||
         geomStyle == HdMeshGeomStyleHullEdgeOnly) {
@@ -220,78 +224,78 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // vertex shader
     uint8_t vsIndex = 0;
-    VS[vsIndex++] = _tokens->instancing;
+    VS[vsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->instancing;
 
     VS[vsIndex++] = (normalsSource == NormalSourceSmooth) ?
-        _tokens->normalsSmooth :
-        (vsSceneNormals ? _tokens->normalsScene : _tokens->normalsPass);
+        pxrImagingHdStMeshShaderKey::_tokens->normalsSmooth :
+        (vsSceneNormals ? pxrImagingHdStMeshShaderKey::_tokens->normalsScene : pxrImagingHdStMeshShaderKey::_tokens->normalsPass);
 
     if (isPrimTypePoints) {
         // Add mixins that allow for picking and sel highlighting of points.
         // Even though these are more "render pass-ish", we do this here to
         // reduce the shader code generated when the points repr isn't used.
-        VS[vsIndex++] = _tokens->pointIdVS;
-        VS[vsIndex++] = _tokens->selDecodeUtils;
-        VS[vsIndex++] = _tokens->selPointSelVS;
+        VS[vsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->pointIdVS;
+        VS[vsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->selDecodeUtils;
+        VS[vsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->selPointSelVS;
     } else {
-        VS[vsIndex++] =  _tokens->pointIdNoneVS;
+        VS[vsIndex++] =  pxrImagingHdStMeshShaderKey::_tokens->pointIdNoneVS;
     }
-    VS[vsIndex++] = _tokens->mainVS;
+    VS[vsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->mainVS;
     VS[vsIndex] = TfToken();
 
     // tessellation control shader
-    TCS[0] = isPrimTypePatches ? _tokens->instancing : TfToken();
+    TCS[0] = isPrimTypePatches ? pxrImagingHdStMeshShaderKey::_tokens->instancing : TfToken();
     TCS[1] = isPrimTypePatches ? isPrimTypePatchesBSpline
-                                   ? _tokens->mainBSplineQuadTCS
-                                   : _tokens->mainBoxSplineTriangleTCS
+                                   ? pxrImagingHdStMeshShaderKey::_tokens->mainBSplineQuadTCS
+                                   : pxrImagingHdStMeshShaderKey::_tokens->mainBoxSplineTriangleTCS
                                : TfToken();
     TCS[2] = TfToken();
 
     // tessellation evaluation shader
-    TES[0] = isPrimTypePatches ? _tokens->instancing : TfToken();
+    TES[0] = isPrimTypePatches ? pxrImagingHdStMeshShaderKey::_tokens->instancing : TfToken();
     TES[1] = isPrimTypePatches ? isPrimTypePatchesBSpline
-                                   ? _tokens->mainBezierQuadTES
-                                   : _tokens->mainBezierTriangleTES
+                                   ? pxrImagingHdStMeshShaderKey::_tokens->mainBezierQuadTES
+                                   : pxrImagingHdStMeshShaderKey::_tokens->mainBezierTriangleTES
                                : TfToken();
-    TES[2] = isPrimTypePatches ? _tokens->mainVaryingInterpTES : TfToken();
+    TES[2] = isPrimTypePatches ? pxrImagingHdStMeshShaderKey::_tokens->mainVaryingInterpTES : TfToken();
     TES[3] = TfToken();
 
     // geometry shader
     uint8_t gsIndex = 0;
-    GS[gsIndex++] = _tokens->instancing;
+    GS[gsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->instancing;
 
     GS[gsIndex++] = (normalsSource == NormalSourceFlat) ?
-        _tokens->normalsFlat :
-        (gsSceneNormals ? (isPrimTypePatches ? _tokens->normalsScenePatches : 
-            _tokens->normalsScene) : 
-        _tokens->normalsPass);
+        pxrImagingHdStMeshShaderKey::_tokens->normalsFlat :
+        (gsSceneNormals ? (isPrimTypePatches ? pxrImagingHdStMeshShaderKey::_tokens->normalsScenePatches : 
+            pxrImagingHdStMeshShaderKey::_tokens->normalsScene) : 
+        pxrImagingHdStMeshShaderKey::_tokens->normalsPass);
    
     GS[gsIndex++] = (normalsSource == NormalSourceGeometryShader) ?
-            _tokens->normalsGeometryFlat : _tokens->normalsGeometryNoFlat;
+            pxrImagingHdStMeshShaderKey::_tokens->normalsGeometryFlat : pxrImagingHdStMeshShaderKey::_tokens->normalsGeometryNoFlat;
 
     // emit "ComputeSelectionOffset" GS function.
     if (renderWireframe) {
         // emit necessary selection decoding and helper mixins
-        GS[gsIndex++] = _tokens->selDecodeUtils;
-        GS[gsIndex++] = _tokens->selElementSelGS;
-        GS[gsIndex++] = _tokens->selWireOffsetGS;
+        GS[gsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->selDecodeUtils;
+        GS[gsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->selElementSelGS;
+        GS[gsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->selWireOffsetGS;
     } else {
-        GS[gsIndex++] = _tokens->selWireNoOffsetGS;
+        GS[gsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->selWireNoOffsetGS;
     }
 
     // Displacement shading can be disabled explicitly, or if the entrypoint
     // doesn't exist (resolved in HdStMesh).
     GS[gsIndex++] = (!hasCustomDisplacement) ?
-        _tokens->noCustomDisplacementGS :
-        _tokens->customDisplacementGS;
+        pxrImagingHdStMeshShaderKey::_tokens->noCustomDisplacementGS :
+        pxrImagingHdStMeshShaderKey::_tokens->customDisplacementGS;
 
     GS[gsIndex++] = isPrimTypeQuads
-                        ? _tokens->mainQuadGS
+                        ? pxrImagingHdStMeshShaderKey::_tokens->mainQuadGS
                         : isPrimTypeTriQuads
-                            ? _tokens->mainTriQuadGS
+                            ? pxrImagingHdStMeshShaderKey::_tokens->mainTriQuadGS
                             : isPrimTypePatches
-                                ? _tokens->mainTriangleTessGS
-                                    : _tokens->mainTriangleGS;
+                                ? pxrImagingHdStMeshShaderKey::_tokens->mainTriangleTessGS
+                                    : pxrImagingHdStMeshShaderKey::_tokens->mainTriangleGS;
     GS[gsIndex] = TfToken();
 
     // Optimization : See if we can skip the geometry shader.
@@ -326,19 +330,19 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // fragment shader
     uint8_t fsIndex = 0;
-    FS[fsIndex++] = _tokens->instancing;
+    FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->instancing;
 
     FS[fsIndex++] =
         (normalsSource == NormalSourceScreenSpace)
-            ? _tokens->normalsScreenSpaceFS
+            ? pxrImagingHdStMeshShaderKey::_tokens->normalsScreenSpaceFS
             : (!gsStageEnabled && normalsSource == NormalSourceFlat)
-                ? _tokens->normalsFlat
+                ? pxrImagingHdStMeshShaderKey::_tokens->normalsFlat
                 : ((!gsStageEnabled && gsSceneNormals)
-                    ? _tokens->normalsScene
-                    : _tokens->normalsPass);
+                    ? pxrImagingHdStMeshShaderKey::_tokens->normalsScene
+                    : pxrImagingHdStMeshShaderKey::_tokens->normalsPass);
 
     FS[fsIndex++] = doubleSided ?
-        _tokens->normalsDoubleSidedFS : _tokens->normalsSingleSidedFS;
+        pxrImagingHdStMeshShaderKey::_tokens->normalsDoubleSidedFS : pxrImagingHdStMeshShaderKey::_tokens->normalsSingleSidedFS;
 
     bool const faceCullFrontFacing =
         !useHardwareFaceCulling &&
@@ -350,123 +354,123 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
              (cullStyle == HdCullStyleBackUnlessDoubleSided && !doubleSided));
     FS[fsIndex++] =
         faceCullFrontFacing
-            ? _tokens->faceCullFrontFacingFS
+            ? pxrImagingHdStMeshShaderKey::_tokens->faceCullFrontFacingFS
             : faceCullBackFacing
-                ? _tokens->faceCullBackFacingFS
-                : _tokens->faceCullNoneFS; // DontCare, Nothing, HW
+                ? pxrImagingHdStMeshShaderKey::_tokens->faceCullBackFacingFS
+                : pxrImagingHdStMeshShaderKey::_tokens->faceCullNoneFS; // DontCare, Nothing, HW
 
     // Wire (edge) related mixins
     if (renderWireframe || renderEdges) {
         if (isPrimTypeRefinedMesh) {
             if (isPrimTypeTriQuads) {
-                FS[fsIndex++] = _tokens->edgeMaskRefinedTriQuadFS;
+                FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeMaskRefinedTriQuadFS;
             } else if (isPrimTypeQuads) {
-                FS[fsIndex++] = _tokens->edgeMaskRefinedQuadFS;
+                FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeMaskRefinedQuadFS;
             } else {
-                FS[fsIndex++] = _tokens->edgeMaskNoneFS;
+                FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeMaskNoneFS;
             }
         } else if (isPrimTypeTris) {
-            FS[fsIndex++] = _tokens->edgeMaskTriangleFS;
+            FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeMaskTriangleFS;
         } else if (isPrimTypeTriQuads) {
-            FS[fsIndex++] = _tokens->edgeMaskTriQuadFS;
+            FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeMaskTriQuadFS;
         } else {
-            FS[fsIndex++] = _tokens->edgeMaskQuadFS;
+            FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeMaskQuadFS;
         }
 
-        FS[fsIndex++] = _tokens->edgeCommonFS;
-        FS[fsIndex++] = _tokens->edgeParamFS;
+        FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeCommonFS;
+        FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeParamFS;
 
         if (renderWireframe) {
             if (isPrimTypePatches) {
-                FS[fsIndex++] = _tokens->patchEdgeOnlyFS;
+                FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->patchEdgeOnlyFS;
             } else {
                 FS[fsIndex++] = blendWireframeColor
-                                    ? _tokens->edgeOnlyBlendFS
-                                    : _tokens->edgeOnlyNoBlendFS;
+                                    ? pxrImagingHdStMeshShaderKey::_tokens->edgeOnlyBlendFS
+                                    : pxrImagingHdStMeshShaderKey::_tokens->edgeOnlyNoBlendFS;
             }
         } else {
             if (isPrimTypeTris || isPrimTypePatchesBoxSplineTriangle) {
-                FS[fsIndex++] = _tokens->patchEdgeTriangleFS;
+                FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->patchEdgeTriangleFS;
             } else {
-                FS[fsIndex++] = _tokens->patchEdgeQuadFS;
+                FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->patchEdgeQuadFS;
             }
             if (isPrimTypeRefinedMesh) {
-                FS[fsIndex++] = _tokens->patchEdgeOnSurfFS;
+                FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->patchEdgeOnSurfFS;
             } else {
-                FS[fsIndex++] = _tokens->edgeOnSurfFS;
+                FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeOnSurfFS;
             }
         }
     } else {
-        FS[fsIndex++] = _tokens->edgeNoneFS;
-        FS[fsIndex++] = _tokens->edgeParamFS;
+        FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeNoneFS;
+        FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeParamFS;
     }
 
     // Shading terminal mixin
     TfToken terminalFS;
     if (shadingTerminal == HdMeshReprDescTokens->surfaceShader) {
-        terminalFS = _tokens->surfaceFS;
+        terminalFS = pxrImagingHdStMeshShaderKey::_tokens->surfaceFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->surfaceShaderUnlit) {
-        terminalFS = _tokens->surfaceUnlitFS;
+        terminalFS = pxrImagingHdStMeshShaderKey::_tokens->surfaceUnlitFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->surfaceShaderSheer) {
-        terminalFS = _tokens->surfaceSheerFS;
+        terminalFS = pxrImagingHdStMeshShaderKey::_tokens->surfaceSheerFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->surfaceShaderOutline) {
-        terminalFS = _tokens->surfaceOutlineFS;
+        terminalFS = pxrImagingHdStMeshShaderKey::_tokens->surfaceOutlineFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->constantColor) {
-        terminalFS = _tokens->constantColorFS;
+        terminalFS = pxrImagingHdStMeshShaderKey::_tokens->constantColorFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->hullColor) {
-        terminalFS = _tokens->hullColorFS;
+        terminalFS = pxrImagingHdStMeshShaderKey::_tokens->hullColorFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->pointColor) {
-        terminalFS = _tokens->pointColorFS;
+        terminalFS = pxrImagingHdStMeshShaderKey::_tokens->pointColorFS;
     } else if (!shadingTerminal.IsEmpty()) {
         terminalFS = shadingTerminal;
     } else {
-        terminalFS = _tokens->surfaceFS;
+        terminalFS = pxrImagingHdStMeshShaderKey::_tokens->surfaceFS;
     }
 
     // Common must be first as it defines terminal interfaces
-    FS[fsIndex++] = _tokens->commonFS;
+    FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->commonFS;
     FS[fsIndex++] = terminalFS;
 
-    FS[fsIndex++] =  enableScalarOverride ? _tokens->scalarOverrideFS :
-                                            _tokens->noScalarOverrideFS;
+    FS[fsIndex++] =  enableScalarOverride ? pxrImagingHdStMeshShaderKey::_tokens->scalarOverrideFS :
+                                            pxrImagingHdStMeshShaderKey::_tokens->noScalarOverrideFS;
 
     // EdgeId mixin(s) for edge picking and selection
     // Note: When rendering a mesh as points, we handle this in code gen.
     if (!isPrimTypePoints) {
-        FS[fsIndex++] = _tokens->edgeIdCommonFS;
+        FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeIdCommonFS;
         if (isPrimTypeTris || isPrimTypePatchesBoxSplineTriangle) {
             if (polygonMode == HdPolygonModeLine) {
-                FS[fsIndex++] = _tokens->edgeIdTriangleLineFS;
+                FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeIdTriangleLineFS;
             } else {
-                FS[fsIndex++] = _tokens->edgeIdTriangleSurfFS;
+                FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeIdTriangleSurfFS;
             }
-            FS[fsIndex++] = _tokens->edgeIdTriangleParamFS;
+            FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeIdTriangleParamFS;
         } else {
             if (polygonMode == HdPolygonModeLine) {
-                FS[fsIndex++] = _tokens->edgeIdQuadLineFS;
+                FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeIdQuadLineFS;
             } else {
-                FS[fsIndex++] = _tokens->edgeIdQuadSurfFS;
+                FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeIdQuadSurfFS;
             }
-            FS[fsIndex++] = _tokens->edgeIdQuadParamFS;
+            FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->edgeIdQuadParamFS;
         }
     }
 
     // PointId mixin for point picking and selection
-    FS[fsIndex++] = isPrimTypePoints? _tokens->pointIdFS :
-                                      _tokens->pointIdFallbackFS;
-    FS[fsIndex++] = hasTopologicalVisibility? _tokens->topVisFS :
-                                              _tokens->topVisFallbackFS;
+    FS[fsIndex++] = isPrimTypePoints? pxrImagingHdStMeshShaderKey::_tokens->pointIdFS :
+                                      pxrImagingHdStMeshShaderKey::_tokens->pointIdFallbackFS;
+    FS[fsIndex++] = hasTopologicalVisibility? pxrImagingHdStMeshShaderKey::_tokens->topVisFS :
+                                              pxrImagingHdStMeshShaderKey::_tokens->topVisFallbackFS;
 
     if (isPrimTypeTris && !gsStageEnabled) {
-        FS[fsIndex++] = _tokens->mainPatchCoordTriangleFS;
+        FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->mainPatchCoordTriangleFS;
     } else if (isPrimTypeQuads && !gsStageEnabled) {
-        FS[fsIndex++] = _tokens->mainPatchCoordQuadFS;
+        FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->mainPatchCoordQuadFS;
     } else if (isPrimTypeTriQuads) {
-        FS[fsIndex++] = _tokens->mainPatchCoordTriQuadFS;
+        FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->mainPatchCoordTriQuadFS;
     } else {
-        FS[fsIndex++] = _tokens->mainPatchCoordFS;
+        FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->mainPatchCoordFS;
     }
-    FS[fsIndex++] = _tokens->mainFS;
+    FS[fsIndex++] = pxrImagingHdStMeshShaderKey::_tokens->mainFS;
     FS[fsIndex] = TfToken();
 }
 

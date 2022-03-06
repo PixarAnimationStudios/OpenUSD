@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdGeomModelAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (GeomModelAPI)
 );
+
+} // pxrUsdUsdGeomModelAPI
 
 /* virtual */
 UsdGeomModelAPI::~UsdGeomModelAPI()

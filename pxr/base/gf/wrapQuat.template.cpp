@@ -49,7 +49,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapQuat{{ SUFFIX }} {
 
 static std::string __repr__({{ QUAT }} const &self) {
     return TF_PY_REPR_PREFIX + "Quat{{ SUFFIX }}(" +
@@ -99,7 +99,7 @@ void wrapQuat{{ SUFFIX }}()
         GfDot);
     
     boost::python::class_<{{ QUAT }}>("Quat{{ SUFFIX }}", boost::python::no_init)
-        .def("__init__", boost::python::make_constructor(__init__))
+        .def("__init__", boost::python::make_constructor(pxrBaseGfWrapQuat{{ SUFFIX }}::__init__))
                           
         .def(TfTypePythonClass())
 
@@ -156,11 +156,11 @@ void wrapQuat{{ SUFFIX }}()
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
         // python 2. In python 3 builds boost::python adds this for us.
-        .def("__truediv__", __truediv__ )
-        .def("__itruediv__", __itruediv__ )
+        .def("__truediv__", pxrBaseGfWrapQuat{{ SUFFIX }}::__truediv__ )
+        .def("__itruediv__", pxrBaseGfWrapQuat{{ SUFFIX }}::__itruediv__ )
 #endif
 
-        .def("__repr__", __repr__)
+        .def("__repr__", pxrBaseGfWrapQuat{{ SUFFIX }}::__repr__)
 
         ;
 

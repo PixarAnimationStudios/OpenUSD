@@ -52,6 +52,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 OIIO_NAMESPACE_USING
 
+namespace pxrImagingPluginHioOiioOiioImage {
+
 // _ioProxySupportedExtensions is a list of hardcoded file extensions that 
 // support ioProxy. Although OIIO has an api call for checking whether or 
 // not a file type supports ioProxy, version 2.0.9 does not include this 
@@ -63,6 +65,8 @@ TF_MAKE_STATIC_DATA(std::vector<std::string>, _ioProxySupportedExtensions)
 {
     _ioProxySupportedExtensions->push_back("exr");
 }
+
+} // pxrImagingPluginHioOiioOiioImage
 
 class HioOIIO_Image : public HioImage
 {
@@ -562,10 +566,10 @@ bool
 HioOIIO_Image::_CanUseIOProxyForExtension(std::string extension,
                                           const ImageSpec & config) const
 {
-    if (std::find(_ioProxySupportedExtensions->begin(), 
-                  _ioProxySupportedExtensions->end(), 
+    if (std::find(pxrImagingPluginHioOiioOiioImage::_ioProxySupportedExtensions->begin(), 
+                  pxrImagingPluginHioOiioOiioImage::_ioProxySupportedExtensions->end(), 
                   extension)
-            != _ioProxySupportedExtensions->end()) {
+            != pxrImagingPluginHioOiioOiioImage::_ioProxySupportedExtensions->end()) {
         return true;
     }
     std::string inputFilename("test.");

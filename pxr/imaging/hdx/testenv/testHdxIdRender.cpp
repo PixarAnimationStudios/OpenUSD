@@ -275,12 +275,12 @@ My_TestGLDrawing::InitTest()
             white(1,1,1,1), black(0,0,0,1);
 
     GfVec4f faceColors[] = { red, green, blue, yellow, magenta, cyan};
-    VtValue faceColor = VtValue(_BuildArray(&faceColors[0],
+    VtValue faceColor = VtValue(pxrImagingHdxUnitTestDelegate::_BuildArray(&faceColors[0],
                                  sizeof(faceColors)/sizeof(faceColors[0])));
 
     GfVec4f vertColors[] = { white, blue, green, yellow,
                              black, blue, magenta, red};
-    VtValue vertColor = VtValue(_BuildArray(&vertColors[0],
+    VtValue vertColor = VtValue(pxrImagingHdxUnitTestDelegate::_BuildArray(&vertColors[0],
                                  sizeof(vertColors)/sizeof(vertColors[0])));
 
     delegate.AddCube(SdfPath("/cube0"), _GetTranslate( 5, 0, 5),

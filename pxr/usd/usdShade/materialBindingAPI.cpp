@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdShaderMaterialBindingAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (MaterialBindingAPI)
 );
+
+} // pxrUsdUsdShaderMaterialBindingAPI
 
 /* virtual */
 UsdShadeMaterialBindingAPI::~UsdShadeMaterialBindingAPI()
@@ -137,6 +141,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdShaderMaterialBindingAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((materialBindingFull, "material:binding:full"))
@@ -154,9 +160,9 @@ _GetDirectBindingRelName(const TfToken &materialPurpose)
     if (materialPurpose == UsdShadeTokens->allPurpose) {
         return UsdShadeTokens->materialBinding;
     } else if (materialPurpose == UsdShadeTokens->preview) {
-        return _tokens->materialBindingPreview;
+        return pxrUsdUsdShaderMaterialBindingAPI::_tokens->materialBindingPreview;
     } else if (materialPurpose == UsdShadeTokens->full) {
-        return _tokens->materialBindingFull;
+        return pxrUsdUsdShaderMaterialBindingAPI::_tokens->materialBindingFull;
     }
     return TfToken(SdfPath::JoinIdentifier(UsdShadeTokens->materialBinding,     
                                            materialPurpose));
@@ -173,21 +179,23 @@ _GetCollectionBindingRelName(const TfToken &bindingName,
             UsdShadeTokens->materialBindingCollection, bindingName));
     } else if (materialPurpose == UsdShadeTokens->preview) {
         return TfToken(SdfPath::JoinIdentifier(
-            _tokens->materialBindingCollectionPreview, bindingName));
+            pxrUsdUsdShaderMaterialBindingAPI::_tokens->materialBindingCollectionPreview, bindingName));
     } else if (materialPurpose == UsdShadeTokens->full) {
         return TfToken(SdfPath::JoinIdentifier(
-            _tokens->materialBindingCollectionFull, bindingName));
+            pxrUsdUsdShaderMaterialBindingAPI::_tokens->materialBindingCollectionFull, bindingName));
     }
     return TfToken(SdfPath::JoinIdentifier(std::vector<TfToken>{
             UsdShadeTokens->materialBindingCollection,
             materialPurpose, bindingName}));
 }
 
+} // pxrUsdUsdShaderMaterialBindingAPI
+
 UsdRelationship
 UsdShadeMaterialBindingAPI::GetDirectBindingRel(
     const TfToken &materialPurpose) const
 {
-    return GetPrim().GetRelationship(_GetDirectBindingRelName(materialPurpose));
+    return GetPrim().GetRelationship(pxrUsdUsdShaderMaterialBindingAPI::_GetDirectBindingRelName(materialPurpose));
 }
 
 UsdRelationship 
@@ -196,7 +204,7 @@ UsdShadeMaterialBindingAPI::GetCollectionBindingRel(
     const TfToken &materialPurpose) const
 {
     return GetPrim().GetRelationship(
-        _GetCollectionBindingRelName(bindingName, materialPurpose));
+        pxrUsdUsdShaderMaterialBindingAPI::_GetCollectionBindingRelName(bindingName, materialPurpose));
 }
 
 // Returns the material purpose associated with the given binding relationship. 
@@ -253,7 +261,7 @@ UsdShadeMaterialBindingAPI::GetCollectionBindingRels(
 {
     std::vector<UsdProperty> collectionBindingProperties = 
         GetPrim().GetAuthoredPropertiesInNamespace(
-            _GetCollectionBindingRelName(TfToken(), materialPurpose));
+            pxrUsdUsdShaderMaterialBindingAPI::_GetCollectionBindingRelName(TfToken(), materialPurpose));
 
     std::vector<UsdRelationship> result;
     for (const UsdProperty &prop : collectionBindingProperties) {
@@ -397,7 +405,7 @@ UsdShadeMaterialBindingAPI::_CreateDirectBindingRel(
     const TfToken &materialPurpose) const
 {
     return GetPrim().CreateRelationship(
-        _GetDirectBindingRelName(materialPurpose), /*custom*/ false);
+        pxrUsdUsdShaderMaterialBindingAPI::_GetDirectBindingRelName(materialPurpose), /*custom*/ false);
 }
     
 UsdRelationship 
@@ -405,7 +413,7 @@ UsdShadeMaterialBindingAPI::_CreateCollectionBindingRel(
     const TfToken &bindingName,
     const TfToken &materialPurpose) const
 {
-    TfToken collBindingRelName = _GetCollectionBindingRelName(
+    TfToken collBindingRelName = pxrUsdUsdShaderMaterialBindingAPI::_GetCollectionBindingRelName(
             bindingName, materialPurpose);
     return GetPrim().CreateRelationship(collBindingRelName, /* custom */ false);
 }
@@ -463,7 +471,7 @@ UsdShadeMaterialBindingAPI::UnbindDirectBinding(
     const TfToken &materialPurpose) const
 {
     UsdRelationship bindingRel = GetPrim().CreateRelationship(
-        _GetDirectBindingRelName(materialPurpose), /*custom*/ false);
+        pxrUsdUsdShaderMaterialBindingAPI::_GetDirectBindingRelName(materialPurpose), /*custom*/ false);
     return bindingRel && bindingRel.SetTargets({});
 }
 
@@ -473,7 +481,7 @@ UsdShadeMaterialBindingAPI::UnbindCollectionBinding(
     const TfToken &materialPurpose) const
 {
     UsdRelationship collBindingRel = GetPrim().CreateRelationship(
-        _GetCollectionBindingRelName(bindingName, materialPurpose), 
+        pxrUsdUsdShaderMaterialBindingAPI::_GetCollectionBindingRelName(bindingName, materialPurpose), 
         /*custom*/ false);
     return collBindingRel && collBindingRel.SetTargets({});
 }
@@ -547,7 +555,7 @@ _GetCollectionBindingPropertyNames(
     const TfTokenVector &matBindingPropNames,
     const TfToken &purpose)
 {
-    TfToken collBindingPrefix = _GetCollectionBindingRelName(
+    TfToken collBindingPrefix = pxrUsdUsdShaderMaterialBindingAPI::_GetCollectionBindingRelName(
         /* bindingName */ TfToken(), purpose);
     
     TfTokenVector collBindingRelNames;
@@ -592,7 +600,7 @@ UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
                     relName) != matBindingPropNames.end();
     };
 
-    TfToken directBindingRelName = _GetDirectBindingRelName(materialPurpose);
+    TfToken directBindingRelName = pxrUsdUsdShaderMaterialBindingAPI::_GetDirectBindingRelName(materialPurpose);
     if (foundMatBindingProp(directBindingRelName)) {
         UsdRelationship directBindingRel = 
                 prim.GetRelationship(directBindingRelName);
@@ -607,7 +615,7 @@ UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
         // This may not be necessary if a specific purpose collection-binding 
         // already includes the prim for which the resolved binding is being 
         // computed.
-         TfToken allPurposeDBRelName = _GetDirectBindingRelName(
+         TfToken allPurposeDBRelName = pxrUsdUsdShaderMaterialBindingAPI::_GetDirectBindingRelName(
             UsdShadeTokens->allPurpose);
 
         if (foundMatBindingProp(allPurposeDBRelName)) {

@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdGeomPrimvarsAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (PrimvarsAPI)
 );
+
+} // pxrUsdUsdGeomPrimvarsAPI
 
 /* virtual */
 UsdGeomPrimvarsAPI::~UsdGeomPrimvarsAPI()

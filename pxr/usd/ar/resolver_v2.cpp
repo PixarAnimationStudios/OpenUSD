@@ -66,6 +66,8 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<ArResolver>();
 }
 
+namespace pxrUsdArResolver_v2 {
+
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
     // Plugin metadata key for package resolver extensions.
     (extensions)
@@ -78,6 +80,8 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
     (implementsScopedCaches)
 );
 
+} // pxrUsdArResolver_v2
+
 TF_DEFINE_ENV_SETTING(
     PXR_AR_DISABLE_PLUGIN_RESOLVER, false,
     "Disables plugin resolver implementation, falling back to default "
@@ -87,17 +91,21 @@ TF_DEFINE_ENV_SETTING(
     PXR_AR_DISABLE_PLUGIN_URI_RESOLVERS, false,
     "Disables plugin URI resolver implementations.");
 
+namespace pxrUsdArResolver_v2 {
+
 static TfStaticData<std::string> _preferredResolver;
+
+} // pxrUsdArResolver_v2
 
 void
 ArSetPreferredResolver(const std::string& resolverTypeName)
 {
-    *_preferredResolver = resolverTypeName;
+    *pxrUsdArResolver_v2::_preferredResolver = resolverTypeName;
 }
 
 // ------------------------------------------------------------
 
-namespace
+namespace pxrUsdArResolver_v2
 {
 
 // Global stack of resolvers being constructed used by
@@ -220,7 +228,7 @@ _GetAvailableResolvers()
         std::vector<std::string> uriSchemes;
         if (const JsOptionalValue uriSchemesVal = JsFindValue(
                 plugin->GetMetadataForType(resolverType),
-                _tokens->uriSchemes.GetString())) {
+                pxrUsdArResolver_v2::_tokens->uriSchemes.GetString())) {
 
             if (uriSchemesVal->IsArrayOf<std::string>()) {
                 uriSchemes = uriSchemesVal->GetArrayOf<std::string>();
@@ -228,7 +236,7 @@ _GetAvailableResolvers()
             else {
                 TF_CODING_ERROR(
                     "'%s' metadata for %s must be a list of strings.",
-                    _tokens->uriSchemes.GetText(),
+                    pxrUsdArResolver_v2::_tokens->uriSchemes.GetText(),
                     resolverType.GetTypeName().c_str());
                 continue;
             }
@@ -236,11 +244,11 @@ _GetAvailableResolvers()
 
         const JsOptionalValue implementsContextsVal = 
             _FindMetadataValueOnTypeOrBase<bool>(
-                _tokens->implementsContexts, resolverType);
+                pxrUsdArResolver_v2::_tokens->implementsContexts, resolverType);
 
         const JsOptionalValue implementsScopedCachesVal =
             _FindMetadataValueOnTypeOrBase<bool>(
-                _tokens->implementsScopedCaches, resolverType);
+                pxrUsdArResolver_v2::_tokens->implementsScopedCaches, resolverType);
 
         _ResolverInfo info;
         info.plugin = plugin;
@@ -1022,25 +1030,25 @@ private:
                 "ArGetResolver(): Plugin asset resolver disabled via "
                 "PXR_AR_DISABLE_PLUGIN_RESOLVER.\n");
         }
-        else if (!_preferredResolver->empty()) {
+        else if (!pxrUsdArResolver_v2::_preferredResolver->empty()) {
             const TfType preferredResolverType = 
-                PlugRegistry::FindTypeByName(*_preferredResolver);
+                PlugRegistry::FindTypeByName(*pxrUsdArResolver_v2::_preferredResolver);
             if (!preferredResolverType) {
                 TF_WARN(
                     "ArGetResolver(): Preferred resolver %s not found. "
                     "Using default resolver.",
-                    _preferredResolver->c_str());
+                    pxrUsdArResolver_v2::_preferredResolver->c_str());
             }
             else if (!preferredResolverType.IsA<ArResolver>()) {
                 TF_WARN(
                     "ArGetResolver(): Preferred resolver %s does not derive "
                     "from ArResolver. Using default resolver.\n",
-                    _preferredResolver->c_str());
+                    pxrUsdArResolver_v2::_preferredResolver->c_str());
             }
             else {
                 TF_DEBUG(AR_RESOLVER_INIT).Msg(
                     "ArGetResolver(): Using preferred resolver %s\n",
-                    _preferredResolver->c_str());
+                    pxrUsdArResolver_v2::_preferredResolver->c_str());
                 resolverType = preferredResolverType;
             }
         }
@@ -1178,11 +1186,11 @@ private:
 
             const JsOptionalValue extensionsVal = JsFindValue(
                 plugin->GetMetadataForType(packageResolverType),
-                _tokens->extensions.GetString());
+                pxrUsdArResolver_v2::_tokens->extensions.GetString());
             if (!extensionsVal) {
                 TF_CODING_ERROR(
                     "No package formats specified in '%s' metadata for '%s'",
-                    _tokens->extensions.GetText(), 
+                    pxrUsdArResolver_v2::_tokens->extensions.GetText(), 
                     packageResolverType.GetTypeName().c_str());
                 continue;
             }
@@ -1194,7 +1202,7 @@ private:
             else {
                 TF_CODING_ERROR(
                     "'%s' metadata for %s must be a list of strings.",
-                    _tokens->extensions.GetText(), 
+                    pxrUsdArResolver_v2::_tokens->extensions.GetText(), 
                     packageResolverType.GetTypeName().c_str());
                 continue;
             }
@@ -1517,14 +1525,14 @@ ArResolverContext
 ArResolver::CreateContextFromString(
     const std::string& uriScheme, const std::string& contextStr) const
 {
-    return _GetResolver().CreateContextFromString(uriScheme, contextStr);
+    return pxrUsdArResolver_v2::_GetResolver().CreateContextFromString(uriScheme, contextStr);
 }
 
 ArResolverContext
 ArResolver::CreateContextFromStrings(
     const std::vector<std::pair<std::string, std::string>>& contextStrs) const
 {
-    return _GetResolver().CreateContextFromStrings(contextStrs);
+    return pxrUsdArResolver_v2::_GetResolver().CreateContextFromStrings(contextStrs);
 }
 
 void
@@ -1720,7 +1728,7 @@ ArResolver::_IsRepositoryPath(
 const ArResolverContext*
 ArResolver::_GetInternallyManagedCurrentContext() const
 {
-    return _GetResolver().GetInternallyManagedCurrentContext();
+    return pxrUsdArResolver_v2::_GetResolver().GetInternallyManagedCurrentContext();
 }
 
 // ------------------------------------------------------------
@@ -1728,21 +1736,21 @@ ArResolver::_GetInternallyManagedCurrentContext() const
 ArResolver& 
 ArGetResolver()
 {
-    return _GetResolver();
+    return pxrUsdArResolver_v2::_GetResolver();
 }
 
 ArResolver&
 ArGetUnderlyingResolver()
 {
-    return _GetResolver().GetPrimaryResolver();
+    return pxrUsdArResolver_v2::_GetResolver().GetPrimaryResolver();
 }
 
 std::vector<TfType>
 ArGetAvailableResolvers()
 {
     std::vector<TfType> resolverTypes;
-    for (const _ResolverInfo& info : 
-             _GetAvailablePrimaryResolvers(_GetAvailableResolvers())) {
+    for (const pxrUsdArResolver_v2::_ResolverInfo& info : 
+             pxrUsdArResolver_v2::_GetAvailablePrimaryResolvers(pxrUsdArResolver_v2::_GetAvailableResolvers())) {
         resolverTypes.push_back(info.type);
     }
     return resolverTypes;
@@ -1751,7 +1759,7 @@ ArGetAvailableResolvers()
 std::unique_ptr<ArResolver>
 ArCreateResolver(const TfType& resolverType)
 {
-    return _CreateResolver(resolverType);
+    return pxrUsdArResolver_v2::_CreateResolver(resolverType);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

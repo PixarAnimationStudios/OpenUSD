@@ -29,6 +29,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdStAssetUvTextureCpuData {
+
 // For texture debug string
 static
 const char *
@@ -51,6 +53,8 @@ _GetDimensions(HioImageSharedPtr const &image)
 {
     return GfVec3i(image->GetWidth(), image->GetHeight(), 1);
 }
+
+} // pxrImagingHdStAssetUvTextureCpuData
 
 HdStAssetUvTextureCpuData::HdStAssetUvTextureCpuData(
     std::string const &filePath,
@@ -115,7 +119,7 @@ HdStAssetUvTextureCpuData::HdStAssetUvTextureCpuData(
     // dimension to be suitable as mip for the GPU.
     size_t numUsableMips = 1;
     while (firstMip + numUsableMips < mips.size() &&
-           _GetDimensions(mips[firstMip + numUsableMips]) ==
+           pxrImagingHdStAssetUvTextureCpuData::_GetDimensions(mips[firstMip + numUsableMips]) ==
                                         mipInfos[numUsableMips].dimensions) {
         numUsableMips++;
     }
@@ -176,7 +180,7 @@ HdStAssetUvTextureCpuData::HdStAssetUvTextureCpuData(
         + " - premultiplyAlpha="
         + std::to_string(int(premultiplyAlpha))
         + " - sourceColorSpace="
-        + _ToString(sourceColorSpace);
+        + pxrImagingHdStAssetUvTextureCpuData::_ToString(sourceColorSpace);
 
     // We successfully made it to the end of the function. Indicate that
     // the texture descriptor is valid by setting the data and its size.

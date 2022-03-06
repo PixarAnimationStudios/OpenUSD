@@ -159,7 +159,7 @@ UsdSchemaExamplesParamsAPI::CreateVolumeAttr(VtValue const &defaultValue, bool w
                        writeSparsely);
 }
 
-namespace {
+namespace usdSchemaExamplesParamsAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -181,7 +181,7 @@ UsdSchemaExamplesParamsAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdSchemaExamplesTokens->paramsVolume,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        usdSchemaExamplesParamsAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

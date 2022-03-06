@@ -112,6 +112,8 @@ void wrapUsdLuxBoundableLightBase()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+namespace pxrUsdUsdLuxWrapBoundableLightBase {
+
 static UsdAttribute
 _CreateIntensityAttr(UsdLuxBoundableLightBase &self,
                                       boost::python::object defaultVal, bool writeSparsely) {
@@ -167,8 +169,6 @@ _CreateColorTemperatureAttr(UsdLuxBoundableLightBase &self,
     return self.CreateColorTemperatureAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
-
-namespace pxrUsdUsdLuxWrapBoundableLightBase {
 
 WRAP_CUSTOM {
     typedef UsdLuxBoundableLightBase This;

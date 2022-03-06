@@ -148,6 +148,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdGeomXformable {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (transform)
@@ -158,6 +160,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 TF_MAKE_STATIC_DATA(GfMatrix4d, _IDENTITY) {
     *_IDENTITY = GfMatrix4d(1.0);
 }
+
+} // pxrUsdUsdGeomXformable
 
 bool 
 UsdGeomXformable::_GetXformOpOrderValue(VtTokenArray *xformOpOrder) const
@@ -727,8 +731,8 @@ _AreInverseXformOps(const UsdGeomXformOp &a, const UsdGeomXformOp &b)
 static bool
 _AreInverseXformOps(const TfToken &a, const TfToken &b)
 {
-    return _tokens->invertPrefix.GetString() + a.GetString() == b.GetString() 
-        || _tokens->invertPrefix.GetString() + b.GetString() == a.GetString();
+    return pxrUsdUsdGeomXformable::_tokens->invertPrefix.GetString() + a.GetString() == b.GetString() 
+        || pxrUsdUsdGeomXformable::_tokens->invertPrefix.GetString() + b.GetString() == a.GetString();
 }
 
 bool 
@@ -791,7 +795,7 @@ UsdGeomXformable::GetLocalTransformation(
                 if (op) {
                     GfMatrix4d opTransform = op.GetOpTransform(time);
                     // Avoid multiplying by the identity matrix when possible.
-                    if (opTransform != *_IDENTITY) {
+                    if (opTransform != *pxrUsdUsdGeomXformable::_IDENTITY) {
                         (*transform) *= opTransform;
                     }
                 }
@@ -853,7 +857,7 @@ UsdGeomXformable::GetLocalTransformation(
 
         GfMatrix4d opTransform = xformOp.GetOpTransform(time);
         // Avoid multiplying by the identity matrix when possible.
-        if (opTransform != *_IDENTITY) {
+        if (opTransform != *pxrUsdUsdGeomXformable::_IDENTITY) {
             xform *= opTransform;
         }
     }

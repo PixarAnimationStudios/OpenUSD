@@ -284,6 +284,8 @@ void wrapUsdLuxLightAPI()
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 
+namespace pxrUsdUsdLuxWrapLightAPI {
+
 static UsdAttribute
 _CreateShaderIdAttrForRenderContext(
     UsdLuxLightAPI &self, 
@@ -296,8 +298,6 @@ _CreateShaderIdAttrForRenderContext(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), 
         writeSparsely);
 }
-
-namespace pxrUsdUsdLuxWrapLightAPI {
 
 WRAP_CUSTOM {
     _class

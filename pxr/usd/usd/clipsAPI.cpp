@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdClipsAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (ClipsAPI)
 );
+
+} // pxrUsdUsdClipsAPI
 
 /* virtual */
 UsdClipsAPI::~UsdClipsAPI()

@@ -35,9 +35,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_INSTANTIATE_SINGLETON(KindRegistry);
 TF_DEFINE_PUBLIC_TOKENS(KindTokens, KIND_TOKENS);
 
+namespace pxrUsdKindRegistry {
+
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
     ((PluginKindsKey, "Kinds"))
     );
+
+} // pxrUsdKindRegistry
 
 
 KindRegistry::KindRegistry()
@@ -191,7 +195,7 @@ KindRegistry::_RegisterDefaults()
     TF_FOR_ALL(plug, plugins){
         JsObject kinds;
         const JsObject &metadata = (*plug)->GetMetadata();
-        if (!_GetKey(metadata, _tokens->PluginKindsKey, &kinds)) continue;
+        if (!_GetKey(metadata, pxrUsdKindRegistry::_tokens->PluginKindsKey, &kinds)) continue;
 
         TF_FOR_ALL(kindEntry, kinds){
             // Each entry is a map from kind -> metadata dict.

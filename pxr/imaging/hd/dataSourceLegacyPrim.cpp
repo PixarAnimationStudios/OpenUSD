@@ -73,6 +73,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdLegacyPrimTypeTokens, HD_LEGACY_PRIMTYPE_TOKENS);
 
+namespace pxrImagingHdDataSourceLegacyPrim {
+
 // XXX: currently private and duplicated where used so as to not yet formally
 //      define this convention.
 TF_DEFINE_PRIVATE_TOKENS(
@@ -80,6 +82,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (prmanParams)
     ((prmanParamsNames, ""))
 );
+
+} // pxrImagingHdDataSourceLegacyPrim
 
 // ----------------------------------------------------------------------------
 
@@ -1754,6 +1758,8 @@ private:
 
 // ----------------------------------------------------------------------------
 
+namespace pxrImagingHdDataSourceLegacyPrim {
+
 // Duplicated here because they are currently only defined in hdSt -- on which
 // we cannot depend on but must be able to emulate
 TF_DEFINE_PRIVATE_TOKENS(
@@ -1767,6 +1773,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (depthPriority)
 );
 
+} // pxrImagingHdDataSourceLegacyPrim
+
 
 class Hd_LegacyDrawTargetContainerDataSource : public HdContainerDataSource
 {
@@ -1779,14 +1787,14 @@ public:
 
     bool Has(const TfToken &name) override
     {
-        return std::find(_drawTargetTokens->allTokens.begin(),
-            _drawTargetTokens->allTokens.end(), name)
-                != _drawTargetTokens->allTokens.end();
+        return std::find(pxrImagingHdDataSourceLegacyPrim::_drawTargetTokens->allTokens.begin(),
+            pxrImagingHdDataSourceLegacyPrim::_drawTargetTokens->allTokens.end(), name)
+                != pxrImagingHdDataSourceLegacyPrim::_drawTargetTokens->allTokens.end();
     }
 
     TfTokenVector GetNames() override
     {
-        return _drawTargetTokens->allTokens;
+        return pxrImagingHdDataSourceLegacyPrim::_drawTargetTokens->allTokens;
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
@@ -2330,8 +2338,8 @@ HdDataSourceLegacyPrim::Has(const TfToken &name)
         }
     }
 
-    if (_type == _tokens->prmanParams) {
-        if (name == _tokens->prmanParams) {
+    if (_type == pxrImagingHdDataSourceLegacyPrim::_tokens->prmanParams) {
+        if (name == pxrImagingHdDataSourceLegacyPrim::_tokens->prmanParams) {
             return true;
         }
     }
@@ -2422,8 +2430,8 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdPrimTypeTokens->drawTarget);
     }
 
-    if (_type == _tokens->prmanParams) {
-        result.push_back(_tokens->prmanParams);
+    if (_type == pxrImagingHdDataSourceLegacyPrim::_tokens->prmanParams) {
+        result.push_back(pxrImagingHdDataSourceLegacyPrim::_tokens->prmanParams);
     }
 
     result.push_back(HdSceneIndexEmulationTokens->sceneDelegate);
@@ -2822,7 +2830,7 @@ HdDataSourceLegacyPrim::_GetInstanceCategoriesDataSource()
 HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetPrmanParamsDataSource()
 {
-    VtValue namesValue = _sceneDelegate->Get(_id, _tokens->prmanParamsNames);
+    VtValue namesValue = _sceneDelegate->Get(_id, pxrImagingHdDataSourceLegacyPrim::_tokens->prmanParamsNames);
     if (!namesValue.IsHolding<TfTokenVector>()) {
         return nullptr;
     }
@@ -2921,8 +2929,8 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
             pxrImagingHdDataSourceLegacyPrim::Hd_LegacyDrawTargetContainerDataSource::New(_sceneDelegate, _id));
     } else if (name == HdExtComputationSchemaTokens->extComputation) {
         return pxrImagingHdDataSourceLegacyPrim::Hd_DataSourceLegacyExtComputation::New(_id, _sceneDelegate);
-    } else if (name == _tokens->prmanParams) {
-        if (_type == _tokens->prmanParams) {
+    } else if (name == pxrImagingHdDataSourceLegacyPrim::_tokens->prmanParams) {
+        if (_type == pxrImagingHdDataSourceLegacyPrim::_tokens->prmanParams) {
             return _GetPrmanParamsDataSource();
         }
     }

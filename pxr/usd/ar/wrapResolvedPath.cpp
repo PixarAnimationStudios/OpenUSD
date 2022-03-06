@@ -36,6 +36,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace pxrUsdArWrapResolvedPath {
+
 static std::string
 _Repr(const ArResolvedPath& p)
 {
@@ -50,6 +52,8 @@ _NonZero(const ArResolvedPath& p)
 {
     return static_cast<bool>(p);
 }
+
+} // pxrUsdArWrapResolvedPath
 
 void
 wrapResolvedPath()
@@ -74,9 +78,9 @@ wrapResolvedPath()
         .def(boost::python::self <= std::string())
         .def(boost::python::self >= std::string())
 
-        .def(TfPyBoolBuiltinFuncName, _NonZero)
+        .def(TfPyBoolBuiltinFuncName, pxrUsdArWrapResolvedPath::_NonZero)
         .def("__hash__", &This::GetHash)
-        .def("__repr__", &_Repr)
+        .def("__repr__", &pxrUsdArWrapResolvedPath::_Repr)
         .def("__str__", &This::GetPathString,
              boost::python::return_value_policy<boost::python::return_by_value>())
 

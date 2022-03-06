@@ -46,6 +46,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrImagingHdUnitTestDelegate {
+
 template <typename T>
 static VtArray<T>
 _BuildArray(T values[], int numValues)
@@ -54,6 +56,8 @@ _BuildArray(T values[], int numValues)
     std::copy(values, values+numValues, result.begin());
     return result;
 }
+
+} // pxrImagingHdUnitTestDelegate
 
 HdUnitTestDelegate::HdUnitTestDelegate(HdRenderIndex *parentIndex,
                                          SdfPath const& delegateID)
@@ -1195,9 +1199,9 @@ HdUnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4f const &transform, bool
         AddMesh(
             id,
             transform,
-            _BuildArray(points, sizeof(points)/sizeof(points[0])),
-            _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
-            _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
+            pxrImagingHdUnitTestDelegate::_BuildArray(points, sizeof(points)/sizeof(points[0])),
+            pxrImagingHdUnitTestDelegate::_BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
+            pxrImagingHdUnitTestDelegate::_BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
             guide,
             instancerId,
             scheme);
@@ -1214,9 +1218,9 @@ HdUnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4f const &transform, bool
         AddMesh(
             id,
             transform,
-            _BuildArray(points, sizeof(points)/sizeof(points[0])),
-            _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
-            _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
+            pxrImagingHdUnitTestDelegate::_BuildArray(points, sizeof(points)/sizeof(points[0])),
+            pxrImagingHdUnitTestDelegate::_BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
+            pxrImagingHdUnitTestDelegate::_BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
             guide,
             instancerId,
             scheme);
@@ -1257,7 +1261,7 @@ HdUnitTestDelegate::AddPolygons(
         GfVec3f colors[] = { GfVec3f(1, 0, 0),
                              GfVec3f(0, 0, 1),
                              GfVec3f(0, 1, 0) };
-        color = VtValue(_BuildArray(&colors[0], sizeof(colors)/sizeof(colors[0])));
+        color = VtValue(pxrImagingHdUnitTestDelegate::_BuildArray(&colors[0], sizeof(colors)/sizeof(colors[0])));
     } else if (colorInterp == HdInterpolationVertex) {
         VtVec3fArray colorArray(sizeof(points)/sizeof(points[0]));
         for (size_t i = 0; i < colorArray.size(); ++i) {
@@ -1280,9 +1284,9 @@ HdUnitTestDelegate::AddPolygons(
 
     AddMesh(id,
             transform,
-            _BuildArray(points, sizeof(points)/sizeof(points[0])),
-            _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
-            _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
+            pxrImagingHdUnitTestDelegate::_BuildArray(points, sizeof(points)/sizeof(points[0])),
+            pxrImagingHdUnitTestDelegate::_BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
+            pxrImagingHdUnitTestDelegate::_BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
             holes,
             subdivTags,
             color,
@@ -1341,9 +1345,9 @@ HdUnitTestDelegate::AddFaceVaryingPolygons(
 
     AddMesh(id,
             transform,
-            _BuildArray(points, sizeof(points)/sizeof(points[0])),
-            _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
-            _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
+            pxrImagingHdUnitTestDelegate::_BuildArray(points, sizeof(points)/sizeof(points[0])),
+            pxrImagingHdUnitTestDelegate::_BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
+            pxrImagingHdUnitTestDelegate::_BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
             holes,
             subdivTags,
             VtValue(colorArray),
@@ -1395,9 +1399,9 @@ HdUnitTestDelegate::AddGrid(SdfPath const &id, int nx, int ny,
 
     AddMesh(id,
             transform,
-            _BuildArray(&points[0], points.size()),
-            _BuildArray(&numVerts[0], numVerts.size()),
-            _BuildArray(&verts[0], verts.size()),
+            pxrImagingHdUnitTestDelegate::_BuildArray(&points[0], points.size()),
+            pxrImagingHdUnitTestDelegate::_BuildArray(&numVerts[0], numVerts.size()),
+            pxrImagingHdUnitTestDelegate::_BuildArray(&verts[0], verts.size()),
             false,
             instancerId,
             PxOsdOpenSubdivTokens->catmullClark,
@@ -1423,9 +1427,9 @@ HdUnitTestDelegate::AddGridWithCustomColor(SdfPath const &id, int nx, int ny,
 
     AddMesh(id,
             transform,
-            _BuildArray(&points[0], points.size()),
-            _BuildArray(&numVerts[0], numVerts.size()),
-            _BuildArray(&verts[0], verts.size()),
+            pxrImagingHdUnitTestDelegate::_BuildArray(&points[0], points.size()),
+            pxrImagingHdUnitTestDelegate::_BuildArray(&numVerts[0], numVerts.size()),
+            pxrImagingHdUnitTestDelegate::_BuildArray(&verts[0], verts.size()),
             holes,
             subdivTags,
             color,
@@ -1461,9 +1465,9 @@ HdUnitTestDelegate::AddGridWithFaceColor(SdfPath const &id, int nx, int ny,
 
     AddMesh(id,
             transform,
-            _BuildArray(&points[0], points.size()),
-            _BuildArray(&numVerts[0], numVerts.size()),
-            _BuildArray(&verts[0], verts.size()),
+            pxrImagingHdUnitTestDelegate::_BuildArray(&points[0], points.size()),
+            pxrImagingHdUnitTestDelegate::_BuildArray(&numVerts[0], numVerts.size()),
+            pxrImagingHdUnitTestDelegate::_BuildArray(&verts[0], verts.size()),
             holes,
             subdivTags,
             VtValue(colorArray),
@@ -1499,9 +1503,9 @@ HdUnitTestDelegate::AddGridWithVertexColor(SdfPath const &id, int nx, int ny,
 
     AddMesh(id,
             transform,
-            _BuildArray(&points[0], points.size()),
-            _BuildArray(&numVerts[0], numVerts.size()),
-            _BuildArray(&verts[0], verts.size()),
+            pxrImagingHdUnitTestDelegate::_BuildArray(&points[0], points.size()),
+            pxrImagingHdUnitTestDelegate::_BuildArray(&numVerts[0], numVerts.size()),
+            pxrImagingHdUnitTestDelegate::_BuildArray(&verts[0], verts.size()),
             holes,
             subdivTags,
             VtValue(colorArray),
@@ -1537,9 +1541,9 @@ HdUnitTestDelegate::AddGridWithFaceVaryingColor(SdfPath const &id, int nx, int n
 
     AddMesh(id,
             transform,
-            _BuildArray(&points[0], points.size()),
-            _BuildArray(&numVerts[0], numVerts.size()),
-            _BuildArray(&verts[0], verts.size()),
+            pxrImagingHdUnitTestDelegate::_BuildArray(&points[0], points.size()),
+            pxrImagingHdUnitTestDelegate::_BuildArray(&numVerts[0], numVerts.size()),
+            pxrImagingHdUnitTestDelegate::_BuildArray(&verts[0], verts.size()),
             holes,
             subdivTags,
             VtValue(colorArray),
@@ -1588,7 +1592,7 @@ HdUnitTestDelegate::AddCurves(
             GfVec3f( -1.0f,  .0f,  .0f ),
             GfVec3f( -1.0f,  .0f,  .0f )
         };
-        authNormals = _BuildArray(normals, sizeof(normals)/sizeof(normals[0]));
+        authNormals = pxrImagingHdUnitTestDelegate::_BuildArray(normals, sizeof(normals)/sizeof(normals[0]));
     }
 
     for(size_t i = 0;i < sizeof(points) / sizeof(points[0]); ++ i) {
@@ -1602,7 +1606,7 @@ HdUnitTestDelegate::AddCurves(
         color = VtValue(GfVec3f(1));
     } else if (colorInterp == HdInterpolationUniform) {
         GfVec3f colors[] = { GfVec3f(1, 0, 0), GfVec3f(0, 0, 1) };
-        color = VtValue(_BuildArray(&colors[0], sizeof(colors)/sizeof(colors[0])));
+        color = VtValue(pxrImagingHdUnitTestDelegate::_BuildArray(&colors[0], sizeof(colors)/sizeof(colors[0])));
     } else if (colorInterp == HdInterpolationVertex) {
         GfVec3f colors[] = { GfVec3f(0, 0, 1),
                              GfVec3f(0, 1, 0),
@@ -1612,7 +1616,7 @@ HdUnitTestDelegate::AddCurves(
                              GfVec3f(1, 1, 0),
                              GfVec3f(1, 1, 1),
                              GfVec3f(0.5, 0.5, 1) };
-        color = VtValue(_BuildArray(&colors[0], sizeof(colors)/sizeof(colors[0])));
+        color = VtValue(pxrImagingHdUnitTestDelegate::_BuildArray(&colors[0], sizeof(colors)/sizeof(colors[0])));
     }
 
     VtValue width;
@@ -1621,22 +1625,22 @@ HdUnitTestDelegate::AddCurves(
         width = VtValue(0.1f);
     } else if (widthInterp == HdInterpolationUniform) {
         float widths[] = { 0.1f, 0.4f };
-        width = VtValue(_BuildArray(&widths[0], sizeof(widths)/sizeof(widths[0])));
+        width = VtValue(pxrImagingHdUnitTestDelegate::_BuildArray(&widths[0], sizeof(widths)/sizeof(widths[0])));
     } else if (widthInterp == HdInterpolationVertex) {
         float widths[] = { 0, 0.1f, 0.2f, 0.3f, 0.1f, 0.2f, 0.2f, 0.1f };
-        width = VtValue(_BuildArray(&widths[0], sizeof(widths)/sizeof(widths[0])));
+        width = VtValue(pxrImagingHdUnitTestDelegate::_BuildArray(&widths[0], sizeof(widths)/sizeof(widths[0])));
     } else if (type == HdTokens->cubic && widthInterp == HdInterpolationVarying) {
         float widths[] = { 0, 0.1f, 0.2f, 0.3f};
-        width = VtValue(_BuildArray(&widths[0], sizeof(widths)/sizeof(widths[0])));
+        width = VtValue(pxrImagingHdUnitTestDelegate::_BuildArray(&widths[0], sizeof(widths)/sizeof(widths[0])));
     } else if (type == HdTokens->linear && widthInterp == HdInterpolationVarying) {
         float widths[] = { 0, 0.1f, 0.2f, 0.3f, 0.1f, 0.2f, 0.2f, 0.1f };
-        width = VtValue(_BuildArray(&widths[0], sizeof(widths)/sizeof(widths[0])));
+        width = VtValue(pxrImagingHdUnitTestDelegate::_BuildArray(&widths[0], sizeof(widths)/sizeof(widths[0])));
     }
 
     AddBasisCurves(
         id,
-        _BuildArray(points, sizeof(points)/sizeof(points[0])),
-        _BuildArray(curveVertexCounts,
+        pxrImagingHdUnitTestDelegate::_BuildArray(points, sizeof(points)/sizeof(points[0])),
+        pxrImagingHdUnitTestDelegate::_BuildArray(curveVertexCounts,
                     sizeof(curveVertexCounts)/sizeof(curveVertexCounts[0])),
         /*curveIndices=*/VtIntArray(),
         authNormals,
@@ -1750,15 +1754,15 @@ HdUnitTestDelegate::AddSubdiv(SdfPath const &id, GfMatrix4f const &transform,
     float cornerSharpnesses[] = { 5.0f };
 
     PxOsdSubdivTags subdivTags;
-    subdivTags.SetCreaseLengths(_BuildArray(creaseLengths,
+    subdivTags.SetCreaseLengths(pxrImagingHdUnitTestDelegate::_BuildArray(creaseLengths,
         sizeof(creaseLengths)/sizeof(creaseLengths[0])));
-    subdivTags.SetCreaseIndices(_BuildArray(creaseIndices,
+    subdivTags.SetCreaseIndices(pxrImagingHdUnitTestDelegate::_BuildArray(creaseIndices,
         sizeof(creaseIndices)/sizeof(creaseIndices[0])));
-    subdivTags.SetCreaseWeights(_BuildArray(creaseSharpnesses,
+    subdivTags.SetCreaseWeights(pxrImagingHdUnitTestDelegate::_BuildArray(creaseSharpnesses,
         sizeof(creaseSharpnesses)/sizeof(creaseSharpnesses[0])));
-    subdivTags.SetCornerIndices(_BuildArray(cornerIndices,
+    subdivTags.SetCornerIndices(pxrImagingHdUnitTestDelegate::_BuildArray(cornerIndices,
         sizeof(cornerIndices)/sizeof(cornerIndices[0])));
-    subdivTags.SetCornerWeights(_BuildArray(cornerSharpnesses,
+    subdivTags.SetCornerWeights(pxrImagingHdUnitTestDelegate::_BuildArray(cornerSharpnesses,
         sizeof(cornerSharpnesses)/sizeof(cornerSharpnesses[0])));
 
     subdivTags.SetVertexInterpolationRule(PxOsdOpenSubdivTokens->edgeOnly);
@@ -1766,10 +1770,10 @@ HdUnitTestDelegate::AddSubdiv(SdfPath const &id, GfMatrix4f const &transform,
 
     AddMesh(id,
             transform,
-            _BuildArray(points, sizeof(points)/sizeof(points[0])),
-            _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
-            _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
-            _BuildArray(holes, sizeof(holes)/sizeof(holes[0])),
+            pxrImagingHdUnitTestDelegate::_BuildArray(points, sizeof(points)/sizeof(points[0])),
+            pxrImagingHdUnitTestDelegate::_BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
+            pxrImagingHdUnitTestDelegate::_BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
+            pxrImagingHdUnitTestDelegate::_BuildArray(holes, sizeof(holes)/sizeof(holes[0])),
             subdivTags,
             /*color=*/VtValue(GfVec3f(1)),
             /*colorInterpolation=*/HdInterpolationConstant,

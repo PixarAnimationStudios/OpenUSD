@@ -220,6 +220,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdGeomCone {
+
 static bool
 _ComputeExtentMax(double height, double radius, const TfToken& axis,
     GfVec3f* max)
@@ -237,6 +239,8 @@ _ComputeExtentMax(double height, double radius, const TfToken& axis,
     return true;
 }
 
+} // pxrUsdUsdGeomCone
+
 bool
 UsdGeomCone::ComputeExtent(double height, double radius, const TfToken& axis,
     VtVec3fArray* extent)
@@ -245,7 +249,7 @@ UsdGeomCone::ComputeExtent(double height, double radius, const TfToken& axis,
     extent->resize(2);
 
     GfVec3f max;
-    if (!_ComputeExtentMax(height, radius, axis, &max)) {
+    if (!pxrUsdUsdGeomCone::_ComputeExtentMax(height, radius, axis, &max)) {
         return false;
     }
 
@@ -263,7 +267,7 @@ UsdGeomCone::ComputeExtent(double height, double radius, const TfToken& axis,
     extent->resize(2);
 
     GfVec3f max;
-    if (!_ComputeExtentMax(height, radius, axis, &max)) {
+    if (!pxrUsdUsdGeomCone::_ComputeExtentMax(height, radius, axis, &max)) {
         return false;
     }
 

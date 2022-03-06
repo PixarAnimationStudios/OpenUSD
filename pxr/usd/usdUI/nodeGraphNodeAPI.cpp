@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdUINodeGraphNodeAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (NodeGraphNodeAPI)
 );
+
+} // pxrUsdUsdUINodeGraphNodeAPI
 
 /* virtual */
 UsdUINodeGraphNodeAPI::~UsdUINodeGraphNodeAPI()

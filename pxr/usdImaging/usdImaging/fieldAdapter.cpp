@@ -30,10 +30,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdImagingUsdImagingFieldAdapter {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (textureMemory)
 );
+
+} // pxrUsdImagingUsdImagingFieldAdapter
 
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -146,7 +150,7 @@ UsdImagingFieldAdapter::Get(UsdPrim const& prim,
                             UsdTimeCode time,
                             VtIntArray *outIndices) const
 {
-    if (key == _tokens->textureMemory) {
+    if (key == pxrUsdImagingUsdImagingFieldAdapter::_tokens->textureMemory) {
         UsdAttribute const &attr = prim.GetAttribute(key);
         VtValue value;
         if (attr && attr.Get(&value, time)) {

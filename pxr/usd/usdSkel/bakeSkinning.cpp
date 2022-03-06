@@ -67,6 +67,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrUsdUsdSkelBakeSkinning {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((xformOpTransform, "xformOp:transform"))
@@ -117,8 +119,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 */
 
-
-namespace pxrUsdUsdSkelBakeSkinning {
 
 
 std::string
@@ -542,8 +542,6 @@ private:
 using _SkelAdapterRefPtr = std::shared_ptr<_SkelAdapter>;
 
 
-namespace pxrUsdUsdSkelBakeSkinning {
-
 
 bool
 _WorldTransformMightBeTimeVarying(const UsdPrim& prim,
@@ -581,8 +579,6 @@ _ExtendWorldTransformTimeSamples(const UsdPrim& prim,
     }
 }
 
-
-} // namespace
 
 
 _SkelAdapter::_SkelAdapter(const UsdSkelBakeSkinningParms& parms,
@@ -628,7 +624,7 @@ _SkelAdapter::_SkelAdapter(const UsdSkelBakeSkinningParms& parms,
                 // Also active computation for skel's local to world transform.
                 _skelLocalToWorldXformTask.SetActive(true, /*required*/ false);
                 _skelLocalToWorldXformTask.SetMightBeTimeVarying(
-                    _WorldTransformMightBeTimeVarying(
+                    pxrUsdUsdSkelBakeSkinning::_WorldTransformMightBeTimeVarying(
                         skel.GetPrim(), xformCache));
             }
         }
@@ -690,7 +686,7 @@ _SkelAdapter::ExtendTimeSamples(const GfInterval& interval,
         }
     }
     if (_skelLocalToWorldXformTask) {
-        _ExtendWorldTransformTimeSamples(GetPrim(), interval, times);
+        pxrUsdUsdSkelBakeSkinning::_ExtendWorldTransformTimeSamples(GetPrim(), interval, times);
     }
 }
 
@@ -1137,14 +1133,14 @@ _SkinningAdapter::_SkinningAdapter(
     }
     if (_flags & UsdSkelBakeSkinningParms::ModifiesXform) {
         _AttrWriter xformOpOrderWriter;
-        if (_xformWriter.Define(primSpec, _tokens->xformOpTransform,
+        if (_xformWriter.Define(primSpec, pxrUsdUsdSkelBakeSkinning::_tokens->xformOpTransform,
                                 SdfValueTypeNames->Matrix4d,
                                 SdfVariabilityVarying) &&
             xformOpOrderWriter.Define(primSpec, UsdGeomTokens->xformOpOrder,
                                       SdfValueTypeNames->TokenArray,
                                       SdfVariabilityUniform)) {
             static const VtTokenArray matrixXformOpOrder(
-                {_tokens->xformOpTransform});
+                {pxrUsdUsdSkelBakeSkinning::_tokens->xformOpTransform});
             xformOpOrderWriter.Set(matrixXformOpOrder, UsdTimeCode::Default());
         } else {
             _flags &= ~UsdSkelBakeSkinningParms::ModifiesXform;
@@ -1192,7 +1188,7 @@ _SkinningAdapter::_SkinningAdapter(
     if (_flags & RequiresPrimLocalToWorldXform) {
         _localToWorldXformTask.SetActive(true);
         _localToWorldXformTask.SetMightBeTimeVarying(
-            _WorldTransformMightBeTimeVarying(
+            pxrUsdUsdSkelBakeSkinning::_WorldTransformMightBeTimeVarying(
                 skinningQuery.GetPrim(), xformCache));
     }
 
@@ -1201,7 +1197,7 @@ _SkinningAdapter::_SkinningAdapter(
         if (!xformCache->GetResetXformStack(skinningQuery.GetPrim())) {
             _parentToWorldXformTask.SetActive(true);
             _parentToWorldXformTask.SetMightBeTimeVarying(
-                _WorldTransformMightBeTimeVarying(
+                pxrUsdUsdSkelBakeSkinning::_WorldTransformMightBeTimeVarying(
                     skinningQuery.GetPrim().GetParent(), xformCache));
         } else {
             // Parent xform will always be identity.
@@ -1279,11 +1275,11 @@ _SkinningAdapter::ExtendTimeSamples(const GfInterval& interval,
         }
     }
     if (_localToWorldXformTask) {
-        _ExtendWorldTransformTimeSamples(_skinningQuery.GetPrim(),
+        pxrUsdUsdSkelBakeSkinning::_ExtendWorldTransformTimeSamples(_skinningQuery.GetPrim(),
                                          interval, times);
     }
     if  (_parentToWorldXformTask) {
-        _ExtendWorldTransformTimeSamples(_skinningQuery.GetPrim().GetParent(),
+        pxrUsdUsdSkelBakeSkinning::_ExtendWorldTransformTimeSamples(_skinningQuery.GetPrim().GetParent(),
                                          interval, times);
     }
 }
@@ -2021,7 +2017,7 @@ _ConvertSkelRootsToXforms(const UsdSkelBakeSkinningParms& parms)
 
                     if (const SdfPrimSpecHandle spec =
                         SdfCreatePrimInLayer(layer, root.GetPrim().GetPath())) {
-                        spec->SetTypeName(_tokens->Xform);
+                        spec->SetTypeName(pxrUsdUsdSkelBakeSkinning::_tokens->Xform);
                         spec->SetSpecifier(SdfSpecifierDef);
                     }
                     break;

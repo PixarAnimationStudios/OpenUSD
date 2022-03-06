@@ -64,11 +64,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Define this to dump the namespace hierarchy as we traverse Alembic.
 //#define USDABC_ALEMBIC_DEBUG
 
+namespace pxrUsdPluginUsdAbcAlembicReader {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (transform)
     ((xformOpTransform, "xformOp:transform"))
 );
+
+} // pxrUsdPluginUsdAbcAlembicReader
 
 TF_DEFINE_ENV_SETTING(
     USD_ABC_WARN_ALL_UNSUPPORTED_VALUES, false,
@@ -3161,12 +3165,12 @@ _ReadXform(_PrimReaderContext* context)
         // we figure out a solution to the round-tripping problem.
         // 
         context->AddProperty(
-            _tokens->xformOpTransform,
+            pxrUsdPluginUsdAbcAlembicReader::_tokens->xformOpTransform,
             SdfValueTypeNames->Matrix4d,
             _CopyXform(object));
 
         VtTokenArray opOrderVec(1);
-        opOrderVec[0] = _tokens->xformOpTransform;
+        opOrderVec[0] = pxrUsdPluginUsdAbcAlembicReader::_tokens->xformOpTransform;
         context->AddUniformProperty(
             UsdGeomTokens->xformOpOrder,
             SdfValueTypeNames->TokenArray,
@@ -3976,15 +3980,15 @@ _ReaderSchemaBuilder::_ReaderSchemaBuilder()
         ;
 }
 
-} // anonymous namespace
-
 static
-const pxrUsdPluginUsdAbcAlembicReader::_ReaderSchema&
+const _ReaderSchema&
 _GetSchema()
 {
-    static pxrUsdPluginUsdAbcAlembicReader::_ReaderSchemaBuilder builder;
+    static _ReaderSchemaBuilder builder;
     return builder.schema;
 }
+
+} // anonymous namespace
 
 //
 // UsdAbc_AlembicDataReader::TimeSamples
@@ -4100,7 +4104,7 @@ UsdAbc_AlembicDataReader::TimeSamples::Bracket(
 template
 bool
 UsdAbc_AlembicDataReader::TimeSamples::Bracket(
-    const UsdAbc_TimeSamples& samples, double usdTime,
+    const pxrUsdPluginUsdAbcAlembicReader::UsdAbc_TimeSamples& samples, double usdTime,
     double* tLower, double* tUpper);
 
 bool
@@ -4119,7 +4123,7 @@ class UsdAbc_AlembicDataReaderImpl : public pxrUsdPluginUsdAbcAlembicReader::_Re
 UsdAbc_AlembicDataReader::UsdAbc_AlembicDataReader() :
     _impl(new UsdAbc_AlembicDataReaderImpl)
 {
-    _impl->SetSchema(&_GetSchema());
+    _impl->SetSchema(&pxrUsdPluginUsdAbcAlembicReader::_GetSchema());
 }
 
 UsdAbc_AlembicDataReader::~UsdAbc_AlembicDataReader()
@@ -4182,7 +4186,7 @@ UsdAbc_AlembicDataReader::HasField(
     const TfToken& fieldName,
     SdfAbstractDataValue* value) const
 {
-    return _impl->HasField(path, fieldName, UsdAbc_AlembicDataAny(value));
+    return _impl->HasField(path, fieldName, pxrUsdPluginUsdAbcAlembicReader::UsdAbc_AlembicDataAny(value));
 }
 
 bool
@@ -4191,7 +4195,7 @@ UsdAbc_AlembicDataReader::HasField(
     const TfToken& fieldName,
     VtValue* value) const
 {
-    return _impl->HasField(path, fieldName, UsdAbc_AlembicDataAny(value));
+    return _impl->HasField(path, fieldName, pxrUsdPluginUsdAbcAlembicReader::UsdAbc_AlembicDataAny(value));
 }
 
 bool
@@ -4200,7 +4204,7 @@ UsdAbc_AlembicDataReader::HasValue(
     Index index,
     SdfAbstractDataValue* value) const
 {
-    return _impl->HasValue(path, index, UsdAbc_AlembicDataAny(value));
+    return _impl->HasValue(path, index, pxrUsdPluginUsdAbcAlembicReader::UsdAbc_AlembicDataAny(value));
 }
 
 bool
@@ -4209,7 +4213,7 @@ UsdAbc_AlembicDataReader::HasValue(
     Index index,
     VtValue* value) const
 {
-    return _impl->HasValue(path, index, UsdAbc_AlembicDataAny(value));
+    return _impl->HasValue(path, index, pxrUsdPluginUsdAbcAlembicReader::UsdAbc_AlembicDataAny(value));
 }
 
 void

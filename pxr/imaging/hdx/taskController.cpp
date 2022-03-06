@@ -55,6 +55,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdxTaskController {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -94,6 +96,8 @@ static const uint32_t MSAA_SAMPLE_COUNT = 4;
 // Distant Light values
 static const float DISTANT_LIGHT_ANGLE = 0.53;
 static const float DISTANT_LIGHT_INTENSITY = 15000.0;
+
+} // pxrImagingHdxTaskController
 
 // ---------------------------------------------------------------------------
 // Delegate implementation.
@@ -141,7 +145,7 @@ HdxTaskController::_Delegate::GetLightParamValue(SdfPath const& id,
 VtValue
 HdxTaskController::_Delegate::GetMaterialResource(SdfPath const& id)
 {
-    return Get(id, _tokens->materialNetworkMap);
+    return Get(id, pxrImagingHdxTaskController::_tokens->materialNetworkMap);
 }
 
 /* virtual */
@@ -156,7 +160,7 @@ HdRenderBufferDescriptor
 HdxTaskController::_Delegate::GetRenderBufferDescriptor(SdfPath const& id)
 {
     return GetParameter<HdRenderBufferDescriptor>(id,
-                _tokens->renderBufferDescriptor);
+                pxrImagingHdxTaskController::_tokens->renderBufferDescriptor);
 }
 
 
@@ -164,8 +168,8 @@ HdxTaskController::_Delegate::GetRenderBufferDescriptor(SdfPath const& id)
 TfTokenVector
 HdxTaskController::_Delegate::GetTaskRenderTags(SdfPath const& taskId)
 {
-    if (HasParameter(taskId, _tokens->renderTags)) {
-        return GetParameter<TfTokenVector>(taskId, _tokens->renderTags);
+    if (HasParameter(taskId, pxrImagingHdxTaskController::_tokens->renderTags)) {
+        return GetParameter<TfTokenVector>(taskId, pxrImagingHdxTaskController::_tokens->renderTags);
     }
     return TfTokenVector();
 }
@@ -419,7 +423,7 @@ HdxTaskController::_CreateOitResolveTask()
     // OIT geometry and only use the resolved AOVs from then on.
     renderParams.useAovMultiSample = false;
 
-    _oitResolveTaskId = GetControllerId().AppendChild(_tokens->oitResolveTask);
+    _oitResolveTaskId = GetControllerId().AppendChild(pxrImagingHdxTaskController::_tokens->oitResolveTask);
 
     GetRenderIndex()->InsertTask<HdxOitResolveTask>(&_delegate,
         _oitResolveTaskId);
@@ -431,7 +435,7 @@ void
 HdxTaskController::_CreateSelectionTask()
 {
     // Create a selection highlighting task.
-    _selectionTaskId = GetControllerId().AppendChild(_tokens->selectionTask);
+    _selectionTaskId = GetControllerId().AppendChild(pxrImagingHdxTaskController::_tokens->selectionTask);
 
     HdxSelectionTaskParams selectionParams;
     selectionParams.enableSelection = true;
@@ -450,7 +454,7 @@ HdxTaskController::_CreateColorizeSelectionTask()
 {
     // Create a post-process selection highlighting task.
     _colorizeSelectionTaskId = GetControllerId().AppendChild(
-        _tokens->colorizeSelectionTask);
+        pxrImagingHdxTaskController::_tokens->colorizeSelectionTask);
 
     HdxColorizeSelectionTaskParams selectionParams;
     selectionParams.enableSelection = true;
@@ -469,7 +473,7 @@ HdxTaskController::_CreateLightingTask()
 {
     // Simple lighting task uses lighting state from Sprims.
     _simpleLightTaskId = GetControllerId().AppendChild(
-        _tokens->simpleLightTask);
+        pxrImagingHdxTaskController::_tokens->simpleLightTask);
 
     HdxSimpleLightTaskParams simpleLightParams;
     simpleLightParams.cameraPath = _freeCameraSceneDelegate->GetCameraId();
@@ -484,7 +488,7 @@ HdxTaskController::_CreateLightingTask()
 void
 HdxTaskController::_CreateShadowTask() 
 {
-    _shadowTaskId = GetControllerId().AppendChild(_tokens->shadowTask);
+    _shadowTaskId = GetControllerId().AppendChild(pxrImagingHdxTaskController::_tokens->shadowTask);
 
     GetRenderIndex()->InsertTask<HdxShadowTask>(&_delegate, _shadowTaskId);
 
@@ -492,13 +496,13 @@ HdxTaskController::_CreateShadowTask()
 
     _delegate.SetParameter(_shadowTaskId, HdTokens->params,
                            HdxShadowTaskParams());
-    _delegate.SetParameter(_shadowTaskId, _tokens->renderTags, renderTags);
+    _delegate.SetParameter(_shadowTaskId, pxrImagingHdxTaskController::_tokens->renderTags, renderTags);
 }
 
 SdfPath
 HdxTaskController::_CreateSkydomeTask() 
 {
-    SdfPath skydomeTaskId = GetControllerId().AppendChild(_tokens->skydomeTask);
+    SdfPath skydomeTaskId = GetControllerId().AppendChild(pxrImagingHdxTaskController::_tokens->skydomeTask);
     GetRenderIndex()->InsertTask<HdxSkydomeTask>(&_delegate, skydomeTaskId);
 
     // This task wil be added to the _renderTaskIds so that the AOV's are 
@@ -524,7 +528,7 @@ void
 HdxTaskController::_CreateColorCorrectionTask()
 {
     _colorCorrectionTaskId = GetControllerId().AppendChild(
-        _tokens->colorCorrectionTask);
+        pxrImagingHdxTaskController::_tokens->colorCorrectionTask);
 
     GetRenderIndex()->InsertTask<HdxColorCorrectionTask>(&_delegate,
         _colorCorrectionTaskId);
@@ -537,7 +541,7 @@ void
 HdxTaskController::_CreateVisualizeAovTask()
 {
     _visualizeAovTaskId = GetControllerId().AppendChild(
-        _tokens->visualizeAovTask);
+        pxrImagingHdxTaskController::_tokens->visualizeAovTask);
     GetRenderIndex()->InsertTask<HdxVisualizeAovTask>(&_delegate,
         _visualizeAovTaskId);
 
@@ -549,7 +553,7 @@ void
 HdxTaskController::_CreatePickTask()
 {
     _pickTaskId = GetControllerId().AppendChild(
-        _tokens->pickTask);
+        pxrImagingHdxTaskController::_tokens->pickTask);
 
     HdxPickTaskParams taskParams;
 
@@ -562,7 +566,7 @@ void
 HdxTaskController::_CreatePickFromRenderBufferTask()
 {
     _pickFromRenderBufferTaskId = GetControllerId().AppendChild(
-        _tokens->pickFromRenderBufferTask);
+        pxrImagingHdxTaskController::_tokens->pickFromRenderBufferTask);
 
     HdxPickFromRenderBufferTaskParams taskParams;
     taskParams.cameraId = _freeCameraSceneDelegate->GetCameraId();
@@ -577,7 +581,7 @@ HdxTaskController::_CreatePickFromRenderBufferTask()
 void 
 HdxTaskController::_CreateAovInputTask()
 {
-    _aovInputTaskId = GetControllerId().AppendChild(_tokens->aovInputTask);
+    _aovInputTaskId = GetControllerId().AppendChild(pxrImagingHdxTaskController::_tokens->aovInputTask);
 
     HdxAovInputTaskParams taskParams;
 
@@ -592,7 +596,7 @@ void
 HdxTaskController::_CreatePresentTask()
 {
     _presentTaskId = GetControllerId().AppendChild(
-        _tokens->presentTask);
+        pxrImagingHdxTaskController::_tokens->presentTask);
 
     HdxPresentTaskParams taskParams;
 
@@ -822,9 +826,9 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
 
         // Initialize distant light specific parameters
         _delegate.SetParameter(pathName, HdLightTokens->angle, 
-            VtValue(DISTANT_LIGHT_ANGLE));
+            VtValue(pxrImagingHdxTaskController::DISTANT_LIGHT_ANGLE));
         _delegate.SetParameter(pathName, HdLightTokens->intensity, 
-            VtValue(DISTANT_LIGHT_INTENSITY));
+            VtValue(pxrImagingHdxTaskController::DISTANT_LIGHT_INTENSITY));
     }
 }
 
@@ -841,7 +845,7 @@ HdxTaskController::_SetMaterialNetwork(SdfPath const& pathName,
     // XXX Using these Pxr**Light tokens works for now since HdPrman is 
     // currently the only renderer that supports material networks for lights. 
     node.identifier = light.IsDomeLight() 
-        ? _tokens->PxrDomeLight : _tokens->PxrDistantLight;
+        ? pxrImagingHdxTaskController::_tokens->PxrDomeLight : pxrImagingHdxTaskController::_tokens->PxrDistantLight;
 
     // Initialize parameters - same as above, but without Storm specific 
     // parameters (ShadowParams, ShadowCollection, params)
@@ -866,8 +870,8 @@ HdxTaskController::_SetMaterialNetwork(SdfPath const& pathName,
         node.parameters[HdTokens->transform] = trans;
 
         // Initialize distant light specific parameters
-        node.parameters[HdLightTokens->angle] = DISTANT_LIGHT_ANGLE;
-        node.parameters[HdLightTokens->intensity] = DISTANT_LIGHT_INTENSITY;
+        node.parameters[HdLightTokens->angle] = pxrImagingHdxTaskController::DISTANT_LIGHT_ANGLE;
+        node.parameters[HdLightTokens->intensity] = pxrImagingHdxTaskController::DISTANT_LIGHT_INTENSITY;
     }
     lightNetwork.nodes.push_back(node);
 
@@ -876,7 +880,7 @@ HdxTaskController::_SetMaterialNetwork(SdfPath const& pathName,
     networkMap.map.emplace(HdMaterialTerminalTokens->light, lightNetwork);
     networkMap.terminals.push_back(pathName);
 
-    _delegate.SetParameter(pathName, _tokens->materialNetworkMap, 
+    _delegate.SetParameter(pathName, pxrImagingHdxTaskController::_tokens->materialNetworkMap, 
         VtValue(networkMap));
 }
 
@@ -1023,10 +1027,10 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
         desc.dimensions = dimensions3;
         desc.format = outputDescs[i].format;
         desc.multiSampled = outputDescs[i].multiSampled;
-        _delegate.SetParameter(aovId, _tokens->renderBufferDescriptor,desc);
+        _delegate.SetParameter(aovId, pxrImagingHdxTaskController::_tokens->renderBufferDescriptor,desc);
         _delegate.SetParameter(aovId,
                                HdStRenderBufferTokens->stormMsaaSampleCount,
-                               MSAA_SAMPLE_COUNT);
+                               pxrImagingHdxTaskController::MSAA_SAMPLE_COUNT);
         GetRenderIndex()->GetChangeTracker().MarkBprimDirty(aovId,
             HdRenderBuffer::DirtyDescription);
         _aovBufferIds.push_back(aovId);
@@ -1230,7 +1234,7 @@ HdxTaskController::SetRenderOutputSettings(TfToken const& name,
     // Check if we're setting a value for a nonexistent AOV.
     SdfPath renderBufferId = _GetAovPath(name);
     if (!_delegate.HasParameter(renderBufferId,
-                                _tokens->renderBufferDescriptor)) {
+                                pxrImagingHdxTaskController::_tokens->renderBufferDescriptor)) {
         TF_WARN("Render output %s doesn't exist", name.GetText());
         return;
     }
@@ -1239,7 +1243,7 @@ HdxTaskController::SetRenderOutputSettings(TfToken const& name,
     // and the renderpass aov binding.  Update them both.
     HdRenderBufferDescriptor rbDesc =
         _delegate.GetParameter<HdRenderBufferDescriptor>(renderBufferId,
-            _tokens->renderBufferDescriptor);
+            pxrImagingHdxTaskController::_tokens->renderBufferDescriptor);
 
     if (rbDesc.format != desc.format ||
         rbDesc.multiSampled != desc.multiSampled) {
@@ -1247,7 +1251,7 @@ HdxTaskController::SetRenderOutputSettings(TfToken const& name,
         rbDesc.format = desc.format;
         rbDesc.multiSampled = desc.multiSampled;
         _delegate.SetParameter(renderBufferId,
-            _tokens->renderBufferDescriptor, rbDesc);
+            pxrImagingHdxTaskController::_tokens->renderBufferDescriptor, rbDesc);
         GetRenderIndex()->GetChangeTracker().MarkBprimDirty(renderBufferId,
             HdRenderBuffer::DirtyDescription);
     }
@@ -1290,13 +1294,13 @@ HdxTaskController::GetRenderOutputSettings(TfToken const& name) const
     // Check if we're getting a value for a nonexistent AOV.
     SdfPath renderBufferId = _GetAovPath(name);
     if (!_delegate.HasParameter(renderBufferId,
-                                _tokens->renderBufferDescriptor)) {
+                                pxrImagingHdxTaskController::_tokens->renderBufferDescriptor)) {
         return HdAovDescriptor();
     }
 
     HdRenderBufferDescriptor rbDesc =
         _delegate.GetParameter<HdRenderBufferDescriptor>(renderBufferId,
-            _tokens->renderBufferDescriptor);
+            pxrImagingHdxTaskController::_tokens->renderBufferDescriptor);
 
     HdAovDescriptor desc;
     desc.format = rbDesc.format;
@@ -1430,7 +1434,7 @@ HdxTaskController::SetRenderTags(TfTokenVector const& renderTags)
     for (SdfPath const& renderTaskId : _renderTaskIds) {
         if (_delegate.GetTaskRenderTags(renderTaskId) != renderTags) {
             _delegate.SetParameter(renderTaskId,
-                                   _tokens->renderTags,
+                                   pxrImagingHdxTaskController::_tokens->renderTags,
                                    renderTags);
             tracker.MarkTaskDirty(renderTaskId,
                                   HdChangeTracker::DirtyRenderTags);
@@ -1440,7 +1444,7 @@ HdxTaskController::SetRenderTags(TfTokenVector const& renderTags)
     if (!_pickTaskId.IsEmpty()) {
         if (_delegate.GetTaskRenderTags(_pickTaskId) != renderTags) {
             _delegate.SetParameter(_pickTaskId,
-                                   _tokens->renderTags,
+                                   pxrImagingHdxTaskController::_tokens->renderTags,
                                    renderTags);
 
             tracker.MarkTaskDirty(_pickTaskId,
@@ -2026,10 +2030,10 @@ HdxTaskController::_UpdateAovDimensions(GfVec2i const& dimensions)
     for (auto const& id : _aovBufferIds) {
         HdRenderBufferDescriptor desc =
             _delegate.GetParameter<HdRenderBufferDescriptor>(id,
-                _tokens->renderBufferDescriptor);
+                pxrImagingHdxTaskController::_tokens->renderBufferDescriptor);
         if (desc.dimensions != dimensions3) {
             desc.dimensions = dimensions3;
-            _delegate.SetParameter(id, _tokens->renderBufferDescriptor, desc);
+            _delegate.SetParameter(id, pxrImagingHdxTaskController::_tokens->renderBufferDescriptor, desc);
             changeTracker.MarkBprimDirty(id,
                 HdRenderBuffer::DirtyDescription);
         }

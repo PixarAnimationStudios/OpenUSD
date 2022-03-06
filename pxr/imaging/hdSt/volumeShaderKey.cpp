@@ -28,6 +28,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrImagingHdStVolumeShaderKey {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,         "volume.glslfx"))
@@ -43,11 +45,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((instancing,         "Instancing.Transform"))
 );
 
+} // pxrImagingHdStVolumeShaderKey
+
 HdSt_VolumeShaderKey::HdSt_VolumeShaderKey()
-    : glslfx(_tokens->baseGLSLFX),
-      VS{ _tokens->instancing, _tokens->mainVS, TfToken() },
-      FS{ _tokens->pointIdFS, _tokens->instancing,
-          _tokens->mainFS, TfToken() }
+    : glslfx(pxrImagingHdStVolumeShaderKey::_tokens->baseGLSLFX),
+      VS{ pxrImagingHdStVolumeShaderKey::_tokens->instancing, pxrImagingHdStVolumeShaderKey::_tokens->mainVS, TfToken() },
+      FS{ pxrImagingHdStVolumeShaderKey::_tokens->pointIdFS, pxrImagingHdStVolumeShaderKey::_tokens->instancing,
+          pxrImagingHdStVolumeShaderKey::_tokens->mainFS, TfToken() }
 {
 }
 

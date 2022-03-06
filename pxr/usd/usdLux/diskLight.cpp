@@ -166,6 +166,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdLuxDiskLight {
+
 static bool
 _ComputeLocalExtent(const float radius, VtVec3fArray *extent)
 {
@@ -206,9 +208,11 @@ _ComputeExtent(
     return true;
 }
 
+} // pxrUsdUsdLuxDiskLight
+
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)
 {
-    UsdGeomRegisterComputeExtentFunction<UsdLuxDiskLight>(_ComputeExtent);
+    UsdGeomRegisterComputeExtentFunction<UsdLuxDiskLight>(pxrUsdUsdLuxDiskLight::_ComputeExtent);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

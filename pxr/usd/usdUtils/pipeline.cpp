@@ -56,6 +56,8 @@ TF_DEFINE_ENV_SETTING(
     "site-based configuration.");
 
 
+namespace pxrUsdUsdUtilsPipeline {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -75,6 +77,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (pref)
     (st)
 );
+
+} // pxrUsdUsdUtilsPipeline
 
 
 TfToken UsdUtilsGetAlphaAttributeNameForColor(TfToken const &colorAttrName)
@@ -116,6 +120,8 @@ UsdUtilsGetModelNameFromRootLayer(
     return modelName;
 }
 
+namespace pxrUsdUsdUtilsPipeline {
+
 TF_MAKE_STATIC_DATA(std::set<UsdUtilsRegisteredVariantSet>, _regVarSets)
 {
     PlugPluginPtrVector plugs = PlugRegistry::GetInstance().GetAllPlugins();
@@ -123,7 +129,7 @@ TF_MAKE_STATIC_DATA(std::set<UsdUtilsRegisteredVariantSet>, _regVarSets)
         PlugPluginPtr plug = *plugIter;
         JsObject metadata = plug->GetMetadata();
         JsValue pipelineUtilsDictValue;
-        if (TfMapLookup(metadata, _tokens->UsdUtilsPipeline, &pipelineUtilsDictValue)) {
+        if (TfMapLookup(metadata, pxrUsdUsdUtilsPipeline::_tokens->UsdUtilsPipeline, &pipelineUtilsDictValue)) {
             if (!pipelineUtilsDictValue.Is<JsObject>()) {
                 TF_CODING_ERROR(
                         "%s[UsdUtilsPipeline] was not a dictionary.",
@@ -136,7 +142,7 @@ TF_MAKE_STATIC_DATA(std::set<UsdUtilsRegisteredVariantSet>, _regVarSets)
 
             JsValue registeredVariantSetsValue;
             if (TfMapLookup(pipelineUtilsDict,
-                        _tokens->RegisteredVariantSets,
+                        pxrUsdUsdUtilsPipeline::_tokens->RegisteredVariantSets,
                         &registeredVariantSetsValue)) {
                 if (!registeredVariantSetsValue.IsObject()) {
                     TF_CODING_ERROR(
@@ -159,19 +165,19 @@ TF_MAKE_STATIC_DATA(std::set<UsdUtilsRegisteredVariantSet>, _regVarSets)
                     }
 
                     JsObject info = v.GetJsObject();
-                    std::string variantSetType = info[_tokens->selectionExportPolicy].GetString();
+                    std::string variantSetType = info[pxrUsdUsdUtilsPipeline::_tokens->selectionExportPolicy].GetString();
 
 
                     UsdUtilsRegisteredVariantSet::SelectionExportPolicy selectionExportPolicy;
-                    if (variantSetType == _tokens->never) {
+                    if (variantSetType == pxrUsdUsdUtilsPipeline::_tokens->never) {
                         selectionExportPolicy = 
                             UsdUtilsRegisteredVariantSet::SelectionExportPolicy::Never;
                     }
-                    else if (variantSetType == _tokens->ifAuthored) {
+                    else if (variantSetType == pxrUsdUsdUtilsPipeline::_tokens->ifAuthored) {
                         selectionExportPolicy = 
                             UsdUtilsRegisteredVariantSet::SelectionExportPolicy::IfAuthored;
                     }
-                    else if (variantSetType == _tokens->always) {
+                    else if (variantSetType == pxrUsdUsdUtilsPipeline::_tokens->always) {
                         selectionExportPolicy = 
                             UsdUtilsRegisteredVariantSet::SelectionExportPolicy::Always;
                     }
@@ -190,10 +196,12 @@ TF_MAKE_STATIC_DATA(std::set<UsdUtilsRegisteredVariantSet>, _regVarSets)
     }
 }
 
+} // pxrUsdUsdUtilsPipeline
+
 const std::set<UsdUtilsRegisteredVariantSet>&
 UsdUtilsGetRegisteredVariantSets()
 {
-    return *_regVarSets;
+    return *pxrUsdUsdUtilsPipeline::_regVarSets;
 }
 
 UsdPrim 
@@ -248,12 +256,12 @@ UsdUtilsUninstancePrimAtPath(const UsdStagePtr &stage,
 
 const TfToken& UsdUtilsGetPrimaryUVSetName()
 {
-    return _tokens->st;
+    return pxrUsdUsdUtilsPipeline::_tokens->st;
 }
 
 const TfToken& UsdUtilsGetPrefName()
 {
-    return _tokens->pref;
+    return pxrUsdUsdUtilsPipeline::_tokens->pref;
 }
 
 using _TokenToTokenMap = TfHashMap<TfToken, TfToken, TfToken::HashFunctor>;
@@ -270,7 +278,7 @@ static
 _TokenToTokenMap
 _GetPipelineIdentifierTokens(const TfTokenVector& identifierKeys)
 {
-    const TfToken metadataDictKey = _tokens->UsdUtilsPipeline;
+    const TfToken metadataDictKey = pxrUsdUsdUtilsPipeline::_tokens->UsdUtilsPipeline;
 
     _TokenToTokenMap identifierMap;
 
@@ -332,41 +340,45 @@ _GetPipelineIdentifierTokens(const TfTokenVector& identifierKeys)
     return identifierMap;
 }
 
+namespace pxrUsdUsdUtilsPipeline {
+
 TF_MAKE_STATIC_DATA(_TokenToTokenMap, _pipelineIdentifiersMap)
 {
     const TfTokenVector identifierKeys({
-        _tokens->MaterialsScopeName,
-        _tokens->PrimaryCameraName
+        pxrUsdUsdUtilsPipeline::_tokens->MaterialsScopeName,
+        pxrUsdUsdUtilsPipeline::_tokens->PrimaryCameraName
     });
 
     *_pipelineIdentifiersMap = _GetPipelineIdentifierTokens(identifierKeys);
 }
+
+} // pxrUsdUsdUtilsPipeline
 
 TfToken
 UsdUtilsGetMaterialsScopeName(const bool forceDefault)
 {
     if (TfGetEnvSetting(USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME) ||
             forceDefault) {
-        return _tokens->DefaultMaterialsScopeName;
+        return pxrUsdUsdUtilsPipeline::_tokens->DefaultMaterialsScopeName;
     }
 
     return TfMapLookupByValue(
-        *_pipelineIdentifiersMap,
-        _tokens->MaterialsScopeName,
-        _tokens->DefaultMaterialsScopeName);
+        *pxrUsdUsdUtilsPipeline::_pipelineIdentifiersMap,
+        pxrUsdUsdUtilsPipeline::_tokens->MaterialsScopeName,
+        pxrUsdUsdUtilsPipeline::_tokens->DefaultMaterialsScopeName);
 }
 
 TfToken
 UsdUtilsGetPrimaryCameraName(const bool forceDefault)
 {
     if (forceDefault) {
-        return _tokens->DefaultPrimaryCameraName;
+        return pxrUsdUsdUtilsPipeline::_tokens->DefaultPrimaryCameraName;
     }
 
     return TfMapLookupByValue(
-        *_pipelineIdentifiersMap,
-        _tokens->PrimaryCameraName,
-        _tokens->DefaultPrimaryCameraName);
+        *pxrUsdUsdUtilsPipeline::_pipelineIdentifiersMap,
+        pxrUsdUsdUtilsPipeline::_tokens->PrimaryCameraName,
+        pxrUsdUsdUtilsPipeline::_tokens->DefaultPrimaryCameraName);
 }
 
 

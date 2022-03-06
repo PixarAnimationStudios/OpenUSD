@@ -199,6 +199,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdGeomSubset {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -210,6 +212,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     // that a collection of GeomSubsets with a common familyName belong to.
     (familyType)
 );
+
+} // pxrUsdUsdGeomSubset
 
 /* static */
 UsdGeomSubset 
@@ -352,9 +356,9 @@ static TfToken
 _GetFamilyTypeAttrName(const TfToken &familyName)
 {
     return TfToken(TfStringJoin(std::vector<std::string>{
-        _tokens->subsetFamily.GetString(),
+        pxrUsdUsdGeomSubset::_tokens->subsetFamily.GetString(),
         familyName.GetString(),
-        _tokens->familyType.GetString()}, ":"));
+        pxrUsdUsdGeomSubset::_tokens->familyType.GetString()}, ":"));
 }
 
 /* static */

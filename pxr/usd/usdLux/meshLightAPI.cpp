@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdLuxMeshLightAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (MeshLightAPI)
 );
+
+} // pxrUsdUsdLuxMeshLightAPI
 
 /* virtual */
 UsdLuxMeshLightAPI::~UsdLuxMeshLightAPI()

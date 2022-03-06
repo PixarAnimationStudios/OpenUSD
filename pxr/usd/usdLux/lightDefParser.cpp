@@ -37,6 +37,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdLuxLightDefParser {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -53,18 +55,20 @@ TF_DEFINE_PRIVATE_TOKENS(
     (VolumeLightAPI)
 );
 
+} // pxrUsdUsdLuxLightDefParser
+
 /*static*/
 const TfToken &
 UsdLux_LightDefParserPlugin::_GetSourceType() 
 {
-    return _tokens->sourceType;
+    return pxrUsdUsdLuxLightDefParser::_tokens->sourceType;
 }
 
 /*static*/
 const TfToken &
 UsdLux_LightDefParserPlugin::_GetDiscoveryType()
 {
-    return _tokens->discoveryType;
+    return pxrUsdUsdLuxLightDefParser::_tokens->discoveryType;
 }
 
 /*static*/
@@ -72,8 +76,8 @@ const UsdLux_LightDefParserPlugin::ShaderIdToAPITypeNameMap&
 UsdLux_LightDefParserPlugin::_GetShaderIdToAPITypeNameMap() {
     static const UsdLux_LightDefParserPlugin::ShaderIdToAPITypeNameMap 
         shaderIdToAPITypeNameMap = {
-        {_tokens->MeshLight, _tokens->MeshLightAPI},
-        {_tokens->VolumeLight, _tokens->VolumeLightAPI}
+        {pxrUsdUsdLuxLightDefParser::_tokens->MeshLight, pxrUsdUsdLuxLightDefParser::_tokens->MeshLightAPI},
+        {pxrUsdUsdLuxLightDefParser::_tokens->VolumeLight, pxrUsdUsdLuxLightDefParser::_tokens->VolumeLightAPI}
     };
     return shaderIdToAPITypeNameMap;
 }
@@ -192,10 +196,10 @@ UsdLux_LightDefParserPlugin::Parse(
     // Note, that the order we copy is important as the light type itself may
     // have properties that override properties that come from the LightAPI. 
     const TfTokenVector schemas({
-        _tokens->LightAPI, 
+        pxrUsdUsdLuxLightDefParser::_tokens->LightAPI, 
         primTypeName,
-        _tokens->ShadowAPI, 
-        _tokens->ShapingAPI});
+        pxrUsdUsdLuxLightDefParser::_tokens->ShadowAPI, 
+        pxrUsdUsdLuxLightDefParser::_tokens->ShapingAPI});
     for (const TfToken &schemaName : schemas) {
         // It's important that we copy just the properties. Prim fields like 
         // the typeName, apiSchemas, and the property children can affect what 

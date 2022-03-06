@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdShadeCoordSysAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (CoordSysAPI)
 );
+
+} // pxrUsdUsdShadeCoordSysAPI
 
 /* virtual */
 UsdShadeCoordSysAPI::~UsdShadeCoordSysAPI()
@@ -117,10 +121,14 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdShadeCoordSysAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (coordSys)
 );
+
+} // pxrUsdUsdShadeCoordSysAPI
 
 std::vector<UsdShadeCoordSysAPI::Binding> 
 UsdShadeCoordSysAPI::GetLocalBindings() const
@@ -128,7 +136,7 @@ UsdShadeCoordSysAPI::GetLocalBindings() const
     std::vector<Binding> result;
     SdfPathVector targets;
     for (UsdProperty prop:
-         GetPrim().GetAuthoredPropertiesInNamespace(_tokens->coordSys)) {
+         GetPrim().GetAuthoredPropertiesInNamespace(pxrUsdUsdShadeCoordSysAPI::_tokens->coordSys)) {
         if (UsdRelationship rel = prop.As<UsdRelationship>()) {
             targets.clear();
             if (rel.GetForwardedTargets(&targets) && !targets.empty()) {
@@ -148,7 +156,7 @@ UsdShadeCoordSysAPI::FindBindingsWithInheritance() const
     for (UsdPrim prim = GetPrim(); prim; prim = prim.GetParent()) {
         SdfPathVector targets;
         for (UsdProperty prop:
-             prim.GetAuthoredPropertiesInNamespace(_tokens->coordSys)) {
+             prim.GetAuthoredPropertiesInNamespace(pxrUsdUsdShadeCoordSysAPI::_tokens->coordSys)) {
             if (UsdRelationship rel = prop.As<UsdRelationship>()) {
                 // Check if name is already bound; skip if bound.
                 bool nameIsAlreadyBound = false;
@@ -176,7 +184,7 @@ bool
 UsdShadeCoordSysAPI::HasLocalBindings() const
 {
     for (UsdProperty prop:
-         GetPrim().GetAuthoredPropertiesInNamespace(_tokens->coordSys)) {
+         GetPrim().GetAuthoredPropertiesInNamespace(pxrUsdUsdShadeCoordSysAPI::_tokens->coordSys)) {
         if (UsdRelationship rel = prop.As<UsdRelationship>()) {
             if (rel.HasAuthoredTargets()) {
                 return true;
@@ -219,7 +227,7 @@ UsdShadeCoordSysAPI::BlockBinding(const TfToken &name) const
 TfToken
 UsdShadeCoordSysAPI::GetCoordSysRelationshipName(const std::string &name)
 {
-    return TfToken(_tokens->coordSys.GetString() + ":" + name);
+    return TfToken(pxrUsdUsdShadeCoordSysAPI::_tokens->coordSys.GetString() + ":" + name);
 }
 
 /* static */

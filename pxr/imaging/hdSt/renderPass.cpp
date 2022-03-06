@@ -50,6 +50,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_DRAW_ITEMS_CACHE, false,
                 "Enable usage of the draw items cache in Storm.");
 
+namespace pxrImagingHdStRenderPass {
+
 static bool
 _IsDrawItemsCacheEnabled()
 {
@@ -83,6 +85,8 @@ _GetGeomSubsetDrawItemsVersion(HdRenderIndex *renderIndex)
 
     return stRenderParam->GetGeomSubsetDrawItemsVersion();
 }
+
+} // pxrImagingHdStRenderPass
 
 HdSt_RenderPass::HdSt_RenderPass(HdRenderIndex *index,
                                  HdRprimCollection const &collection)
@@ -275,7 +279,7 @@ HdSt_RenderPass::_UpdateDrawItems(TfTokenVector const& renderTags)
     HD_TRACE_FUNCTION();
 
     HdRprimCollection const &collection = GetRprimCollection();
-    if (_IsDrawItemsCacheEnabled()) {
+    if (pxrImagingHdStRenderPass::_IsDrawItemsCacheEnabled()) {
         HdStDrawItemsCachePtr cache = _GetDrawItemsCache(GetRenderIndex());
 
         HdDrawItemConstPtrVectorSharedPtr cachedEntry =
@@ -301,10 +305,10 @@ HdSt_RenderPass::_UpdateDrawItems(TfTokenVector const& renderTags)
     const int rprimRenderTagVersion = tracker.GetRenderTagVersion();
 
     const unsigned int materialTagsVersion =
-        _GetMaterialTagsVersion(GetRenderIndex());
+        pxrImagingHdStRenderPass::_GetMaterialTagsVersion(GetRenderIndex());
 
     const unsigned int geomSubsetDrawItemsVersion =
-        _GetGeomSubsetDrawItemsVersion(GetRenderIndex());
+        pxrImagingHdStRenderPass::_GetGeomSubsetDrawItemsVersion(GetRenderIndex());
 
     const bool collectionChanged = _collectionChanged ||
         (_collectionVersion != collectionVersion);
@@ -401,7 +405,7 @@ HdSt_RenderPass::_UpdateCommandBuffer(TfTokenVector const& renderTags)
     // command buffers.
     _UpdateDrawItems(renderTags);
 
-    const int batchVersion = _GetDrawBatchesVersion(GetRenderIndex());
+    const int batchVersion = pxrImagingHdStRenderPass::_GetDrawBatchesVersion(GetRenderIndex());
     // Rebuild draw batches based on new draw items
     if (_drawItemsChanged) {
         _cmdBuffer.SetDrawItems(_drawItems, batchVersion,

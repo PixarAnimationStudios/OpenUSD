@@ -117,6 +117,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 // UsdStage Helpers
 // ------------------------------------------------------------------------- //
 
+namespace pxrUsdUsdStage {
+
 using _ColorConfigurationFallbacks = std::pair<SdfAssetPath, TfToken>;
 
 // Fetch the color configuration fallback values from the plugins.
@@ -217,20 +219,22 @@ TF_MAKE_STATIC_DATA(PcpVariantFallbackMap, _usdGlobalVariantFallbackMap)
 }
 static tbb::spin_rw_mutex _usdGlobalVariantFallbackMapMutex;
 
+} // pxrUsdUsdStage
+
 PcpVariantFallbackMap
 UsdStage::GetGlobalVariantFallbacks()
 {
     tbb::spin_rw_mutex::scoped_lock
-        lock(_usdGlobalVariantFallbackMapMutex, /*write=*/false);
-    return *_usdGlobalVariantFallbackMap;
+        lock(pxrUsdUsdStage::_usdGlobalVariantFallbackMapMutex, /*write=*/false);
+    return *pxrUsdUsdStage::_usdGlobalVariantFallbackMap;
 }
 
 void
 UsdStage::SetGlobalVariantFallbacks(const PcpVariantFallbackMap &fallbacks)
 {
     tbb::spin_rw_mutex::scoped_lock
-        lock(_usdGlobalVariantFallbackMapMutex, /*write=*/true);
-    *_usdGlobalVariantFallbackMap = fallbacks;
+        lock(pxrUsdUsdStage::_usdGlobalVariantFallbackMapMutex, /*write=*/true);
+    *pxrUsdUsdStage::_usdGlobalVariantFallbackMap = fallbacks;
 }
 
 // Returns the SdfLayerOffset that maps times in \a layer in the local layer
@@ -5295,6 +5299,8 @@ UsdStage::_GetPcpPrimIndex(const SdfPath& primPath) const
 //                               VALUE RESOLUTION                             //
 // ========================================================================== //
 
+namespace pxrUsdUsdStage {
+
 //
 // Helper template function for determining type names from arbitrary pointer
 // types, which may include SdfAbstractDataValue and VtValue.
@@ -5327,8 +5333,6 @@ template <class T>
 void _UncheckedSwap(VtValue *value, T& val) {
     value->UncheckedSwap(val);
 }
-
-namespace pxrUsdUsdStage {
 
 // Helper for lazily computing and caching the layer to stage offset for the 
 // value resolution functions below. This allows to only resolve the layer 
@@ -5388,9 +5392,9 @@ _UncheckedResolveAssetPath(Storage storage,
                            bool anchorAssetPathsOnly)
 {
     T v;
-    _UncheckedSwap(storage, v);
+    pxrUsdUsdStage::_UncheckedSwap(storage, v);
     _ResolveAssetPath(&v, context, layer, anchorAssetPathsOnly);
-    _UncheckedSwap(storage, v);
+    pxrUsdUsdStage::_UncheckedSwap(storage, v);
 }
 
 template <class T, class Storage>
@@ -5400,7 +5404,7 @@ _TryResolveAssetPath(Storage storage,
                      const SdfLayerRefPtr &layer,
                      bool anchorAssetPathsOnly)
 {
-    if (_IsHolding<T>(storage)) {
+    if (pxrUsdUsdStage::_IsHolding<T>(storage)) {
         _UncheckedResolveAssetPath<T>(
             storage, context, layer, anchorAssetPathsOnly);
         return true;
@@ -5431,9 +5435,9 @@ _UncheckedApplyLayerOffsetToValue(Storage storage,
 {
     if (!offset.IsIdentity()) {
         T v;
-        _UncheckedSwap(storage, v);
+        pxrUsdUsdStage::_UncheckedSwap(storage, v);
         Usd_ApplyLayerOffsetToValue(&v, offset);
-        _UncheckedSwap(storage, v);
+        pxrUsdUsdStage::_UncheckedSwap(storage, v);
     }
 }
 
@@ -5445,7 +5449,7 @@ static bool
 _TryApplyLayerOffsetToValue(Storage storage, 
                             const pxrUsdUsdStage::LayerOffsetAccess &offsetAccess)
 {
-    if (_IsHolding<T>(storage)) {
+    if (pxrUsdUsdStage::_IsHolding<T>(storage)) {
         const SdfLayerOffset &offset = offsetAccess.Get();
         _UncheckedApplyLayerOffsetToValue<T>(storage, offset);
         return true;
@@ -5505,12 +5509,12 @@ _TryResolveValuesInDictionary(Storage storage,
                               const pxrUsdUsdStage::LayerOffsetAccess *offsetAccess,
                               bool anchorAssetPathsOnly)
 {
-    if (_IsHolding<VtDictionary>(storage)) {
+    if (pxrUsdUsdStage::_IsHolding<VtDictionary>(storage)) {
         VtDictionary resolvedDict;
-        _UncheckedSwap(storage, resolvedDict);
+        pxrUsdUsdStage::_UncheckedSwap(storage, resolvedDict);
         _ResolveValuesInDictionary(
             anchor, context, offsetAccess, &resolvedDict, anchorAssetPathsOnly);
-        _UncheckedSwap(storage, resolvedDict);
+        pxrUsdUsdStage::_UncheckedSwap(storage, resolvedDict);
         return true;
     }
     return false;
@@ -5575,7 +5579,7 @@ protected:
     {
         // Copy to the side since we'll have to merge if the next opinion
         // is also a dictionary.
-        VtDictionary tmpDict = _UncheckedGet<VtDictionary>(_value);
+        VtDictionary tmpDict = pxrUsdUsdStage::_UncheckedGet<VtDictionary>(_value);
 
         // Try to read value from scene description.
         if (_GetValue(layer, specPath, fieldName, keyPath)) {
@@ -5591,8 +5595,8 @@ protected:
                     _anchorAssetPathsOnly)) {
                 // Merge the resolved dictionary.
                 VtDictionaryOverRecursive(
-                    &tmpDict, _UncheckedGet<VtDictionary>(_value));
-                _UncheckedSwap(_value, tmpDict);
+                    &tmpDict, pxrUsdUsdStage::_UncheckedGet<VtDictionary>(_value));
+                pxrUsdUsdStage::_UncheckedSwap(_value, tmpDict);
             } 
             return true;
         }
@@ -5609,17 +5613,17 @@ protected:
     {
         // Copy to the side since we'll have to merge if the next opinion is
         // also a dictionary.
-        VtDictionary tmpDict = _UncheckedGet<VtDictionary>(_value);
+        VtDictionary tmpDict = pxrUsdUsdStage::_UncheckedGet<VtDictionary>(_value);
 
         // Try to read fallback value.
         if(_GetFallbackValue(primDef, propName, fieldName, keyPath)) {
             // Always done after reading the fallback value.
             _done = true;
-            if (_IsHolding<VtDictionary>(_value)) {
+            if (pxrUsdUsdStage::_IsHolding<VtDictionary>(_value)) {
                 // Merge dictionaries: _value is weaker, tmpDict stronger.
                 VtDictionaryOverRecursive(&tmpDict, 
-                                          _UncheckedGet<VtDictionary>(_value));
-                _UncheckedSwap(_value, tmpDict);
+                                          pxrUsdUsdStage::_UncheckedGet<VtDictionary>(_value));
+                pxrUsdUsdStage::_UncheckedSwap(_value, tmpDict);
             }
         }
     }
@@ -5685,7 +5689,7 @@ struct UntypedValueComposer : public ValueComposerBase<VtValue *>
 
 protected:
     bool _IsHoldingDictionary() const {
-        return _IsHolding<VtDictionary>(this->_value);
+        return pxrUsdUsdStage::_IsHolding<VtDictionary>(this->_value);
     }
 
     void _ResolveValue(const PcpNodeRef &node, const SdfLayerRefPtr &layer)
@@ -8597,7 +8601,7 @@ UsdStage::GetColorConfiguration() const
     GetMetadata(SdfFieldKeys->ColorConfiguration, &colorConfig);
 
     return colorConfig.GetAssetPath().empty() ? 
-        _colorConfigurationFallbacks->first : colorConfig;
+        pxrUsdUsdStage::_colorConfigurationFallbacks->first : colorConfig;
 }
 
 void 
@@ -8612,7 +8616,7 @@ UsdStage::GetColorManagementSystem() const
     TfToken cms;
     GetMetadata(SdfFieldKeys->ColorManagementSystem, &cms);
 
-    return cms.IsEmpty() ? _colorConfigurationFallbacks->second : cms;
+    return cms.IsEmpty() ? pxrUsdUsdStage::_colorConfigurationFallbacks->second : cms;
 }
 
 /* static */
@@ -8622,10 +8626,10 @@ UsdStage::GetColorConfigFallbacks(
     TfToken *colorManagementSystem)
 {
     if (colorConfiguration) {
-        *colorConfiguration = _colorConfigurationFallbacks->first;
+        *colorConfiguration = pxrUsdUsdStage::_colorConfigurationFallbacks->first;
     }
     if (colorManagementSystem) {
-        *colorManagementSystem = _colorConfigurationFallbacks->second;
+        *colorManagementSystem = pxrUsdUsdStage::_colorConfigurationFallbacks->second;
     }
 }
 
@@ -8636,9 +8640,9 @@ UsdStage::SetColorConfigFallbacks(
     const TfToken &colorManagementSystem)
 {
     if (!colorConfiguration.GetAssetPath().empty())
-        _colorConfigurationFallbacks->first = colorConfiguration;
+        pxrUsdUsdStage::_colorConfigurationFallbacks->first = colorConfiguration;
     if (!colorManagementSystem.IsEmpty())
-        _colorConfigurationFallbacks->second = colorManagementSystem;
+        pxrUsdUsdStage::_colorConfigurationFallbacks->second = colorManagementSystem;
 }
 
 std::string

@@ -34,7 +34,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-namespace {
+namespace pxrImagingGarchGlPlatformDebugWindowWindows {
 
 static
 std::map<HWND, Garch_GLPlatformDebugWindow*>&
@@ -96,7 +96,7 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
     }
 
     ShowWindow(_hWND, SW_SHOW);
-    _GetWindowsMap()[_hWND] = this;
+    pxrImagingGarchGlPlatformDebugWindowWindows::_GetWindowsMap()[_hWND] = this;
     _hDC = GetDC(_hWND);
 
     PIXELFORMATDESCRIPTOR pfd;
@@ -151,7 +151,7 @@ Garch_GetModifierKeys(WPARAM wParam)
 Garch_GLPlatformDebugWindow *
 Garch_GLPlatformDebugWindow::_GetWindowByHandle(HWND hWND)
 {
-    const auto& windows = _GetWindowsMap();
+    const auto& windows = pxrImagingGarchGlPlatformDebugWindowWindows::_GetWindowsMap();
     auto it = windows.find(hWND);
     if (it != windows.end()) {
         return it->second;
@@ -252,7 +252,7 @@ Garch_GLPlatformDebugWindow::Run()
     wglDeleteContext(_hGLRC);
     ReleaseDC(_hWND, _hDC);
 
-    _GetWindowsMap().erase(_hWND);
+    pxrImagingGarchGlPlatformDebugWindowWindows::_GetWindowsMap().erase(_hWND);
     _hWND = 0;
 }
 

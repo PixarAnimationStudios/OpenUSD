@@ -35,6 +35,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdxColorizeSelectionTask {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((outlineFrag, "OutlineFragment"))
@@ -43,6 +45,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (radius)
     (texelSize)    
 );
+
+} // pxrImagingHdxColorizeSelectionTask
 
 HdxColorizeSelectionTask::HdxColorizeSelectionTask(
     HdSceneDelegate* delegate,
@@ -199,7 +203,7 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     //Make set program take
     
     HgiShaderFunctionDesc fragDesc;
-    fragDesc.debugName = _tokens->outlineFrag.GetString();
+    fragDesc.debugName = pxrImagingHdxColorizeSelectionTask::_tokens->outlineFrag.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
     HgiShaderFunctionAddStageInput(
         &fragDesc, "uvOut", "vec2");
@@ -216,7 +220,7 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     HgiShaderFunctionAddStageOutput(
         &fragDesc, "hd_FragColor", "vec4", "color");
     
-    _compositor->SetProgram(HdxPackageOutlineShader(), _tokens->outlineFrag, fragDesc);
+    _compositor->SetProgram(HdxPackageOutlineShader(), pxrImagingHdxColorizeSelectionTask::_tokens->outlineFrag, fragDesc);
 
     _CreateTexture(
         _primId->GetWidth(), 
@@ -224,7 +228,7 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
         HdFormatUNorm8Vec4, 
         _outputBuffer);
 
-    _compositor->BindTextures({_tokens->colorIn}, {_texture});
+    _compositor->BindTextures({pxrImagingHdxColorizeSelectionTask::_tokens->colorIn}, {_texture});
 
     if (_UpdateParameterBuffer()) {
         const size_t byteSize = sizeof(_ParameterBuffer);

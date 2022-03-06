@@ -39,7 +39,7 @@ HgiMetalShaderGenerator::CreateShaderSection(T && ...t)
     return result;
 }
 
-namespace {
+namespace pxrImagingHgiMetalShaderGenerator {
 
 //This is a conversion layer from descriptors into shader sections
 //In purity we don't want the shader generator to know how to
@@ -170,7 +170,7 @@ private:
     const std::string _inputInstanceName;
 };
 
-namespace {
+namespace pxrImagingHgiMetalShaderGenerator {
 
 //This is used by the macro blob, basically this is dumped on top
 //of the generated shader
@@ -567,7 +567,7 @@ std::string _BuildOutputTypeName(const HgiMetalShaderStageEntryPoint &ep)
 } // anonymous namespace
 
 HgiMetalShaderStageEntryPoint::HgiMetalShaderStageEntryPoint(
-      const ShaderStageData &stageData,
+      const pxrImagingHgiMetalShaderGenerator::ShaderStageData &stageData,
       HgiMetalShaderGenerator *generator,
       const std::string &outputShortHandPrefix,
       const std::string &scopePostfix,
@@ -576,7 +576,7 @@ HgiMetalShaderStageEntryPoint::HgiMetalShaderStageEntryPoint(
     : _outputShortHandPrefix(outputShortHandPrefix),
       _scopePostfix(scopePostfix),
       _entryPointStageName(entryPointStageName),
-      _outputTypeName(_BuildOutputTypeName(*this)),
+      _outputTypeName(pxrImagingHgiMetalShaderGenerator::_BuildOutputTypeName(*this)),
       _entryPointFunctionName(entryPointStageName + "EntryPoint"),
       _inputInstanceName(inputInstanceName)
 {
@@ -588,7 +588,7 @@ HgiMetalShaderStageEntryPoint::HgiMetalShaderStageEntryPoint(
 }
 
 HgiMetalShaderStageEntryPoint::HgiMetalShaderStageEntryPoint(
-    const ShaderStageData &stageData,
+    const pxrImagingHgiMetalShaderGenerator::ShaderStageData &stageData,
     HgiMetalShaderGenerator *generator,
     const std::string &outputShortHandPrefix,
     const std::string &scopePostfix,
@@ -721,7 +721,7 @@ HgiMetalShaderStageEntryPoint::_Init(
     HgiMetalShaderGenerator *generator)
 {
     _parameters =
-        _BuildStructInstance<HgiMetalArgumentBufferInputShaderSection>(
+        pxrImagingHgiMetalShaderGenerator::_BuildStructInstance<HgiMetalArgumentBufferInputShaderSection>(
         GetConstantBufferTypeName(),
         GetConstantBufferInstanceName(),
         /* attribute = */ "buffer(0)",
@@ -731,7 +731,7 @@ HgiMetalShaderStageEntryPoint::_Init(
         generator);
 
     _inputs =
-        _BuildStructInstance<HgiMetalArgumentBufferInputShaderSection>(
+        pxrImagingHgiMetalShaderGenerator::_BuildStructInstance<HgiMetalArgumentBufferInputShaderSection>(
         GetInputsTypeName(),
         GetInputsInstanceName(),
         /* attribute = */ "stage_in",
@@ -741,7 +741,7 @@ HgiMetalShaderStageEntryPoint::_Init(
         generator);
 
     _outputs =
-        _BuildStructInstance<HgiMetalStageOutputShaderSection>(
+        pxrImagingHgiMetalShaderGenerator::_BuildStructInstance<HgiMetalStageOutputShaderSection>(
         GetOutputTypeName(),
         GetOutputInstanceName(),
         /* attribute = */ std::string(),
@@ -879,7 +879,7 @@ HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
     _BuildKeywordInputShaderSections(descriptor);
 
     //Create differing shader function signature based on stage
-    const ShaderStageData stageData(descriptor, this);
+    const pxrImagingHgiMetalShaderGenerator::ShaderStageData stageData(descriptor, this);
     
     switch (descriptor.shaderStage) {
         case HgiShaderStageVertex: {
@@ -928,7 +928,7 @@ HgiMetalShaderGenerator::HgiMetalShaderGenerator(
   , _computeThreadGroupSize(GfVec3i(0))
 {
     CreateShaderSection<HgiMetalMacroShaderSection>(
-        _GetHeader(device),
+        pxrImagingHgiMetalShaderGenerator::_GetHeader(device),
         "Headers");
 
     if (descriptor.shaderStage == HgiShaderStageCompute) {

@@ -40,6 +40,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdxUnitTestDelegate {
+
 template <typename T>
 static VtArray<T>
 _BuildArray(T values[], int numValues)
@@ -48,6 +50,8 @@ _BuildArray(T values[], int numValues)
     std::copy(values, values+numValues, result.begin());
     return result;
 }
+
+} // pxrImagingHdxUnitTestDelegate
 
 class Hdx_UnitTestDelegate : public HdSceneDelegate
 {

@@ -47,6 +47,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_RESOURCE_INSTANCING, true,
                   "Enable instance registry deduplication of resource data");
 
+namespace pxrImagingHdStResourceRegistry {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _perfTokens,
 
@@ -94,6 +96,8 @@ _Register(ID id, HdInstanceRegistry<T> &registry, TfToken const &perfToken)
         return HdInstance<T>(id);
     }
 }
+
+} // pxrImagingHdStResourceRegistry
 
 HdStResourceRegistry::HdStResourceRegistry(Hgi * const hgi)
     : _hgi(hgi)
@@ -559,7 +563,7 @@ HdInstance<HdSt_MeshTopologySharedPtr>
 HdStResourceRegistry::RegisterMeshTopology(
         HdInstance<HdSt_MeshTopologySharedPtr>::ID id)
 {
-    return _Register(id, _meshTopologyRegistry,
+    return pxrImagingHdStResourceRegistry::_Register(id, _meshTopologyRegistry,
                      HdPerfTokens->instMeshTopology);
 }
 
@@ -567,7 +571,7 @@ HdInstance<HdSt_BasisCurvesTopologySharedPtr>
 HdStResourceRegistry::RegisterBasisCurvesTopology(
         HdInstance<HdSt_BasisCurvesTopologySharedPtr>::ID id)
 {
-    return _Register(id, _basisCurvesTopologyRegistry,
+    return pxrImagingHdStResourceRegistry::_Register(id, _basisCurvesTopologyRegistry,
                      HdPerfTokens->instBasisCurvesTopology);
 }
 
@@ -575,7 +579,7 @@ HdInstance<Hd_VertexAdjacencySharedPtr>
 HdStResourceRegistry::RegisterVertexAdjacency(
         HdInstance<Hd_VertexAdjacencySharedPtr>::ID id)
 {
-    return _Register(id, _vertexAdjacencyRegistry,
+    return pxrImagingHdStResourceRegistry::_Register(id, _vertexAdjacencyRegistry,
                      HdPerfTokens->instVertexAdjacency);
 }
 
@@ -583,7 +587,7 @@ HdInstance<HdBufferArrayRangeSharedPtr>
 HdStResourceRegistry::RegisterMeshIndexRange(
         HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name)
 {
-    return _Register(id, _meshTopologyIndexRangeRegistry[name],
+    return pxrImagingHdStResourceRegistry::_Register(id, _meshTopologyIndexRangeRegistry[name],
                      HdPerfTokens->instMeshTopologyRange);
 }
 
@@ -591,7 +595,7 @@ HdInstance<HdBufferArrayRangeSharedPtr>
 HdStResourceRegistry::RegisterBasisCurvesIndexRange(
         HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name)
 {
-    return _Register(id, _basisCurvesTopologyIndexRangeRegistry[name],
+    return pxrImagingHdStResourceRegistry::_Register(id, _basisCurvesTopologyIndexRangeRegistry[name],
                      HdPerfTokens->instBasisCurvesTopologyRange);
 }
 
@@ -599,7 +603,7 @@ HdInstance<HdBufferArrayRangeSharedPtr>
 HdStResourceRegistry::RegisterPrimvarRange(
         HdInstance<HdBufferArrayRangeSharedPtr>::ID id)
 {
-    return _Register(id, _primvarRangeRegistry,
+    return pxrImagingHdStResourceRegistry::_Register(id, _primvarRangeRegistry,
                      HdPerfTokens->instPrimvarRange);
 }
 
@@ -607,7 +611,7 @@ HdInstance<HdBufferArrayRangeSharedPtr>
 HdStResourceRegistry::RegisterExtComputationDataRange(
         HdInstance<HdBufferArrayRangeSharedPtr>::ID id)
 {
-    return _Register(id, _extComputationDataRangeRegistry,
+    return pxrImagingHdStResourceRegistry::_Register(id, _extComputationDataRangeRegistry,
                      HdPerfTokens->instExtComputationDataRange);
 }
 
@@ -871,7 +875,7 @@ HdStResourceRegistry::_Commit()
                 dstRange->CopyData(src);
 
                 // also copy any chained buffers
-                _CopyChainedBuffers(src, dstRange);
+                pxrImagingHdStResourceRegistry::_CopyChainedBuffers(src, dstRange);
             }
 
             if (TfDebug::IsEnabled(HD_BUFFER_ARRAY_RANGE_CLEANED)) {
@@ -1186,11 +1190,11 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
 
         const size_t numTexObjects =
             textureObjectRegistry->GetNumberOfTextureObjects();
-        (*result)[_perfTokens->numberOfTextureObjects] = VtValue(numTexObjects);
+        (*result)[pxrImagingHdStResourceRegistry::_perfTokens->numberOfTextureObjects] = VtValue(numTexObjects);
 
         const size_t numTexHandles =
             _textureHandleRegistry->GetNumberOfTextureHandles();
-        (*result)[_perfTokens->numberOfTextureHandles] = VtValue(numTexHandles);
+        (*result)[pxrImagingHdStResourceRegistry::_perfTokens->numberOfTextureHandles] = VtValue(numTexHandles);
             
     }
 

@@ -38,11 +38,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdxColorChannelTask {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((colorChannelFrag, "ColorChannelFragment"))
     (colorIn)
 );
+
+} // pxrImagingHdxColorChannelTask
 
 HdxColorChannelTask::HdxColorChannelTask(
     HdSceneDelegate* delegate, 
@@ -94,7 +98,7 @@ HdxColorChannelTask::Execute(HdTaskContext* ctx)
     _GetTaskContextData(ctx, HdAovTokens->color, &aovTexture);
     
     HgiShaderFunctionDesc fragDesc;
-    fragDesc.debugName = _tokens->colorChannelFrag.GetString();
+    fragDesc.debugName = pxrImagingHdxColorChannelTask::_tokens->colorChannelFrag.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
     HgiShaderFunctionAddStageInput(
         &fragDesc, "uvOut", "vec2");
@@ -112,7 +116,7 @@ HdxColorChannelTask::Execute(HdTaskContext* ctx)
 
     _compositor->SetProgram(
         HdxPackageColorChannelShader(), 
-        _tokens->colorChannelFrag,
+        pxrImagingHdxColorChannelTask::_tokens->colorChannelFrag,
         fragDesc);
     const auto &aovDesc = aovTexture->GetDescriptor();
     if (_UpdateParameterBuffer(
@@ -123,7 +127,7 @@ HdxColorChannelTask::Execute(HdTaskContext* ctx)
     }
 
     _compositor->BindTextures(
-        {_tokens->colorIn}, 
+        {pxrImagingHdxColorChannelTask::_tokens->colorIn}, 
         {aovTexture});
 
     _compositor->Draw(aovTexture, /*no depth*/HgiTextureHandle());

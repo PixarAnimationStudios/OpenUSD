@@ -265,6 +265,8 @@ UsdLuxLightFilter::GetFilterLinkCollectionAPI() const
     return UsdCollectionAPI(GetPrim(), UsdLuxTokens->filterLink);
 }
 
+namespace pxrUsdUsdLuxLightFilter {
+
 static TfToken 
 _GetShaderIdAttrName(const TfToken &renderContext)
 {
@@ -275,11 +277,13 @@ _GetShaderIdAttrName(const TfToken &renderContext)
         renderContext, UsdLuxTokens->lightFilterShaderId));
 }
 
+} // pxrUsdUsdLuxLightFilter
+
 UsdAttribute 
 UsdLuxLightFilter::GetShaderIdAttrForRenderContext(
     const TfToken &renderContext) const
 {
-    return GetPrim().GetAttribute(_GetShaderIdAttrName(renderContext));
+    return GetPrim().GetAttribute(pxrUsdUsdLuxLightFilter::_GetShaderIdAttrName(renderContext));
 }
 
 UsdAttribute 
@@ -288,7 +292,7 @@ UsdLuxLightFilter::CreateShaderIdAttrForRenderContext(
     VtValue const &defaultValue, 
     bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(_GetShaderIdAttrName(renderContext),
+    return UsdSchemaBase::_CreateAttr(pxrUsdUsdLuxLightFilter::_GetShaderIdAttrName(renderContext),
                        SdfValueTypeNames->Token,
                        /* custom = */ false,
                        SdfVariabilityUniform,

@@ -57,6 +57,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrUsdPluginUsdAbcAlembicWriter {
+
 // The name of this exporter, embedded in written Alembic files.
 static const char* writerName = "UsdAbc_AlembicData";
 
@@ -65,6 +67,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (transform)
     ((xformOpTransform, "xformOp:transform"))
 );
+
+} // pxrUsdPluginUsdAbcAlembicWriter
 
 TF_DEFINE_ENV_SETTING(USD_ABC_READ_FLOAT2_AS_UV, true,
         "Turn to false to disable reading float2 arrays as uv sets");
@@ -2709,14 +2713,14 @@ _WriteXform(_PrimWriterContext* context)
     // old-style transform attribute.
     // 
     const TfToken &transformAttrName = hasXformOpOrder ? 
-        _tokens->xformOpTransform : _tokens->transform;
+        pxrUsdPluginUsdAbcAlembicWriter::_tokens->xformOpTransform : pxrUsdPluginUsdAbcAlembicWriter::_tokens->transform;
     const SdfValueTypeName &transformValueType = hasXformOpOrder ? 
         SdfValueTypeNames->Matrix4d : SdfValueTypeNames->Matrix4d;
 
     if (hasXformOpOrder) {
         // Extract and clear samples from the old-style transform attribute, if 
         // it exists, so it doesn't get written out as blind data.
-        context->ExtractSamples(_tokens->transform, 
+        context->ExtractSamples(pxrUsdPluginUsdAbcAlembicWriter::_tokens->transform, 
                                 SdfValueTypeNames->Matrix4d);                                                   
         context->SetSampleTimesUnion(UsdAbc_TimeSamples());
     }
@@ -3699,15 +3703,15 @@ _WriterSchemaBuilder::_WriterSchemaBuilder()
         ;
 }
 
-} // anonymous namespace
-
 static
-const pxrUsdPluginUsdAbcAlembicWriter::_WriterSchema&
+const _WriterSchema&
 _GetSchema()
 {
-    static pxrUsdPluginUsdAbcAlembicWriter::_WriterSchemaBuilder builder;
+    static _WriterSchemaBuilder builder;
     return builder.schema;
 }
+
+} // anonymous namespace
 
 //
 // UsdAbc_AlembicDataWriter
@@ -3743,8 +3747,8 @@ UsdAbc_AlembicDataWriter::Open(
 
     try {
         _impl->SetArchive(
-            CreateArchiveWithInfo(Alembic::AbcCoreOgawa::WriteArchive(),
-                                  filePath, writerName, comment));
+            Alembic::Abc::CreateArchiveWithInfo(Alembic::AbcCoreOgawa::WriteArchive(),
+                                  filePath, pxrUsdPluginUsdAbcAlembicWriter::writerName, comment));
         return true;
     }
     catch (std::exception& e) {
@@ -3761,7 +3765,7 @@ UsdAbc_AlembicDataWriter::Write(const SdfAbstractDataConstPtr& data)
 
     try {
         if (_impl->GetArchive().valid() && data) {
-            const pxrUsdPluginUsdAbcAlembicWriter::_WriterSchema& schema = _GetSchema();
+            const pxrUsdPluginUsdAbcAlembicWriter::_WriterSchema& schema = pxrUsdPluginUsdAbcAlembicWriter::_GetSchema();
             _impl->SetSchema(&schema);
             _impl->SetData(data);
             pxrUsdPluginUsdAbcAlembicWriter::_WritePrim(*_impl, pxrUsdPluginUsdAbcAlembicWriter::_Parent(), SdfPath::AbsoluteRootPath());
@@ -3787,7 +3791,7 @@ UsdAbc_AlembicDataWriter::Close()
     //
     // For now we just destroy the archive and don't bother looking for
     // errors.
-    _impl->SetArchive(OArchive());
+    _impl->SetArchive(Alembic::Abc::OArchive());
     return true;
 }
 

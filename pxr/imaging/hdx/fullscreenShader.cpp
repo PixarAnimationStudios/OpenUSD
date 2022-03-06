@@ -39,6 +39,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdxFullscreenShader {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((fullscreenVertex,              "FullscreenVertex"))
@@ -46,6 +48,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((compositeFragmentWithDepth,    "CompositeFragmentWithDepth"))
     (fullscreenShader)
 );
+
+} // pxrImagingHdxFullscreenShader
 
 HdxFullscreenShader::HdxFullscreenShader(
     Hgi* hgi,
@@ -145,7 +149,7 @@ HdxFullscreenShader::SetProgram(
     std::string vsCode;
     //pass this guy in as a reference -->
     
-    vsCode +=vsGlslfx.GetSource(_tokens->fullscreenVertex);
+    vsCode +=vsGlslfx.GetSource(pxrImagingHdxFullscreenShader::_tokens->fullscreenVertex);
     TF_VERIFY(!vsCode.empty());
 
     vertDesc.shaderCode = vsCode.c_str();
@@ -161,7 +165,7 @@ HdxFullscreenShader::SetProgram(
 
     // Setup the shader program
     HgiShaderProgramDesc programDesc;
-    programDesc.debugName = _tokens->fullscreenShader.GetString();
+    programDesc.debugName = pxrImagingHdxFullscreenShader::_tokens->fullscreenShader.GetString();
     programDesc.shaderFunctions.push_back(std::move(vertFn));
     programDesc.shaderFunctions.push_back(std::move(fragFn));
     _shaderProgram = _hgi->CreateShaderProgram(programDesc);
@@ -178,7 +182,7 @@ HgiShaderFunctionDesc
 HdxFullscreenShader::GetFullScreenVertexDesc()
 {
     HgiShaderFunctionDesc vertDesc;
-    vertDesc.debugName = _tokens->fullscreenVertex;
+    vertDesc.debugName = pxrImagingHdxFullscreenShader::_tokens->fullscreenVertex;
     vertDesc.shaderStage = HgiShaderStageVertex;
     
     HgiShaderFunctionAddStageInput(
@@ -612,7 +616,7 @@ HdxFullscreenShader::_Draw(
         const bool depthAware = it != textures.end();
         HgiShaderFunctionDesc vertDesc;
         
-        vertDesc.debugName = _tokens->fullscreenVertex.GetString();
+        vertDesc.debugName = pxrImagingHdxFullscreenShader::_tokens->fullscreenVertex.GetString();
         vertDesc.shaderStage = HgiShaderStageVertex;
         HgiShaderFunctionAddStageInput(
             &vertDesc, "position", "vec4", "position");
@@ -641,8 +645,8 @@ HdxFullscreenShader::_Draw(
         }
         
         SetProgram(HdxPackageFullscreenShader(),
-            depthAware ? _tokens->compositeFragmentWithDepth :
-                         _tokens->compositeFragmentNoDepth,
+            depthAware ? pxrImagingHdxFullscreenShader::_tokens->compositeFragmentWithDepth :
+                         pxrImagingHdxFullscreenShader::_tokens->compositeFragmentNoDepth,
             fragDesc,
             vertDesc);
     }

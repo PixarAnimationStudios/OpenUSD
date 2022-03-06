@@ -41,7 +41,7 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace usdSchemaExamplesWrapParamsAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -101,7 +101,7 @@ void wrapUsdSchemaExamplesParamsAPI()
 {
     typedef UsdSchemaExamplesParamsAPI This;
 
-    UsdSchemaExamplesParamsAPI_CanApplyResult::Wrap<UsdSchemaExamplesParamsAPI_CanApplyResult>(
+    usdSchemaExamplesWrapParamsAPI::UsdSchemaExamplesParamsAPI_CanApplyResult::Wrap<usdSchemaExamplesWrapParamsAPI::UsdSchemaExamplesParamsAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
@@ -115,7 +115,7 @@ void wrapUsdSchemaExamplesParamsAPI()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .def("CanApply", &usdSchemaExamplesWrapParamsAPI::_WrapCanApply, (arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (arg("prim")))
@@ -137,28 +137,28 @@ void wrapUsdSchemaExamplesParamsAPI()
         .def("GetMassAttr",
              &This::GetMassAttr)
         .def("CreateMassAttr",
-             &_CreateMassAttr,
+             &usdSchemaExamplesWrapParamsAPI::_CreateMassAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
         .def("GetVelocityAttr",
              &This::GetVelocityAttr)
         .def("CreateVelocityAttr",
-             &_CreateVelocityAttr,
+             &usdSchemaExamplesWrapParamsAPI::_CreateVelocityAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
         .def("GetVolumeAttr",
              &This::GetVolumeAttr)
         .def("CreateVolumeAttr",
-             &_CreateVolumeAttr,
+             &usdSchemaExamplesWrapParamsAPI::_CreateVolumeAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", usdSchemaExamplesWrapParamsAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    usdSchemaExamplesWrapParamsAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -180,7 +180,7 @@ void wrapUsdSchemaExamplesParamsAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace usdSchemaExamplesWrapParamsAPI {
 
 WRAP_CUSTOM {
 }

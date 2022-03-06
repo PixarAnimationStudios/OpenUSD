@@ -30,6 +30,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdxFreeCameraSceneDelegate {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -45,14 +47,16 @@ _ComputeCameraId(
     if (!renderIndex->IsSprimTypeSupported(HdPrimTypeTokens->camera)) {
         return SdfPath();
     }
-    return delegateId.AppendChild(_tokens->camera);
+    return delegateId.AppendChild(pxrImagingHdxFreeCameraSceneDelegate::_tokens->camera);
 }    
+
+} // pxrImagingHdxFreeCameraSceneDelegate
 
 HdxFreeCameraSceneDelegate::HdxFreeCameraSceneDelegate(
     HdRenderIndex *renderIndex,
     SdfPath const &delegateId)
   : HdSceneDelegate(renderIndex, delegateId)
-  , _cameraId(_ComputeCameraId(renderIndex, delegateId))
+  , _cameraId(pxrImagingHdxFreeCameraSceneDelegate::_ComputeCameraId(renderIndex, delegateId))
   , _policy(CameraUtilFit)
 {
     if (_cameraId.IsEmpty()) {
@@ -152,6 +156,8 @@ HdxFreeCameraSceneDelegate::GetTransform(
     return _camera.GetTransform();
 }
 
+namespace pxrImagingHdxFreeCameraSceneDelegate {
+
 static
 HdCamera::Projection
 _ToHd(const GfCamera::Projection projection)
@@ -166,6 +172,8 @@ _ToHd(const GfCamera::Projection projection)
     return HdCamera::Perspective;
 }
 
+} // pxrImagingHdxFreeCameraSceneDelegate
+
 
 
 VtValue
@@ -174,7 +182,7 @@ HdxFreeCameraSceneDelegate::GetCameraParamValue(
     TfToken const &key)
 {
     if (key == HdCameraTokens->projection) {
-        return VtValue(_ToHd(_camera.GetProjection()));
+        return VtValue(pxrImagingHdxFreeCameraSceneDelegate::_ToHd(_camera.GetProjection()));
     }
 
     if (key == HdCameraTokens->focalLength) {

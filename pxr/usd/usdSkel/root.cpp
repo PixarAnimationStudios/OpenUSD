@@ -154,6 +154,8 @@ UsdSkelRoot::Find(const UsdPrim& prim)
 }
 
 
+namespace pxrUsdUsdSkelRoot {
+
 /// Plugin extent method.
 static bool
 _ComputeExtent(const UsdGeomBoundable& boundable,
@@ -244,9 +246,11 @@ _ComputeExtent(const UsdGeomBoundable& boundable,
     return true;
 }        
 
+} // pxrUsdUsdSkelRoot
+
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)
 {
-    UsdGeomRegisterComputeExtentFunction<UsdSkelRoot>(_ComputeExtent);
+    UsdGeomRegisterComputeExtentFunction<UsdSkelRoot>(pxrUsdUsdSkelRoot::_ComputeExtent);
 }
 
 

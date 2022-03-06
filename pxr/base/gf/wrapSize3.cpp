@@ -126,8 +126,8 @@ void wrapSize3()
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
         // python 2. In python 3 builds boost::python adds this for us.
-        .def("__truediv__", __truediv__ )
-        .def("__itruediv__", __itruediv__ )
+        .def("__truediv__", pxrBaseGfWrapSize3::__truediv__ )
+        .def("__itruediv__", pxrBaseGfWrapSize3::__itruediv__ )
 #endif
 
         .def("__repr__", pxrBaseGfWrapSize3::_Repr)

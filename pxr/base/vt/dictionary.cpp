@@ -42,9 +42,13 @@ TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<VtDictionary>();
 }
 
+namespace pxrBaseVtDictionary {
+
 TF_MAKE_STATIC_DATA(VtDictionary, _emptyDictionary) {
     *_emptyDictionary = VtDictionary();
 }
+
+} // pxrBaseVtDictionary
 
 VtDictionary::VtDictionary(VtDictionary const& other) {
     if (other._dictMap)
@@ -301,7 +305,7 @@ void VtDictionary::_CreateDictIfNeeded() {
 
 
 VtDictionary const &VtGetEmptyDictionary() {
-    return *_emptyDictionary;
+    return *pxrBaseVtDictionary::_emptyDictionary;
 }
 
 Vt_DefaultGenerator VtDefault;

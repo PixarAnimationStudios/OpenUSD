@@ -120,7 +120,7 @@ UsdSchemaExamplesComplex::CreateComplexStringAttr(VtValue const &defaultValue, b
                        writeSparsely);
 }
 
-namespace {
+namespace usdSchemaExamplesComplex {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -140,7 +140,7 @@ UsdSchemaExamplesComplex::GetSchemaAttributeNames(bool includeInherited)
         UsdSchemaExamplesTokens->complexString,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        usdSchemaExamplesComplex::_ConcatenateAttributeNames(
             UsdSchemaExamplesSimple::GetSchemaAttributeNames(true),
             localNames);
 

@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdShadeNodeDefAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (NodeDefAPI)
 );
+
+} // pxrUsdUsdShadeNodeDefAPI
 
 /* virtual */
 UsdShadeNodeDefAPI::~UsdShadeNodeDefAPI()
@@ -188,6 +192,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdShadeNodeDefAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (info)
@@ -195,6 +201,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((infoSubIdentifier, "info:sourceAsset:subIdentifier"))
     ((infoSourceCode, "info:sourceCode"))
 );
+
+} // pxrUsdUsdShadeNodeDefAPI
 
 TfToken 
 UsdShadeNodeDefAPI::GetImplementationSource() const
@@ -237,10 +245,10 @@ TfToken
 _GetSourceAssetAttrName(const TfToken &sourceType) 
 {
     if (sourceType == UsdShadeTokens->universalSourceType) {
-        return _tokens->infoSourceAsset;
+        return pxrUsdUsdShadeNodeDefAPI::_tokens->infoSourceAsset;
     }
     return TfToken(SdfPath::JoinIdentifier(TfTokenVector{
-                                    _tokens->info, 
+                                    pxrUsdUsdShadeNodeDefAPI::_tokens->info, 
                                     sourceType,
                                     UsdShadeTokens->sourceAsset}));
 }
@@ -292,10 +300,10 @@ TfToken
 _GetSourceAssetSubIdentifierAttrName(const TfToken &sourceType)
 {
     if (sourceType == UsdShadeTokens->universalSourceType) {
-        return _tokens->infoSubIdentifier;
+        return pxrUsdUsdShadeNodeDefAPI::_tokens->infoSubIdentifier;
     }
     return TfToken(SdfPath::JoinIdentifier(TfTokenVector{
-                                    _tokens->info,
+                                    pxrUsdUsdShadeNodeDefAPI::_tokens->info,
                                     sourceType,
                                     UsdShadeTokens->sourceAsset,
                                     UsdShadeTokens->subIdentifier}));
@@ -352,10 +360,10 @@ TfToken
 _GetSourceCodeAttrName(const TfToken &sourceType) 
 {
     if (sourceType == UsdShadeTokens->universalSourceType) {
-        return _tokens->infoSourceCode;
+        return pxrUsdUsdShadeNodeDefAPI::_tokens->infoSourceCode;
     }
     return TfToken(SdfPath::JoinIdentifier(TfTokenVector{
-                                    _tokens->info, 
+                                    pxrUsdUsdShadeNodeDefAPI::_tokens->info, 
                                     sourceType,
                                     UsdShadeTokens->sourceCode}));
 }

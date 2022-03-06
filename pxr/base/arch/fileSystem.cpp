@@ -61,7 +61,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 #if defined (ARCH_OS_WINDOWS)
-namespace {
+namespace pxrBaseArchFileSystem {
 static inline HANDLE _FileToWinHANDLE(FILE *file)
 {
     return reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(file)));
@@ -412,7 +412,7 @@ ArchGetStatusChangeTime(const struct stat& st)
 
 #if defined (ARCH_OS_WINDOWS)
 
-namespace {
+namespace pxrBaseArchFileSystem {
 int64_t
 _GetFileLength(HANDLE handle)
 {
@@ -433,7 +433,7 @@ ArchGetFileLength(FILE *file)
     return fstat(fileno(file), &buf) < 0 ? -1 :
         static_cast<int64_t>(buf.st_size);
 #elif defined (ARCH_OS_WINDOWS)
-    return _GetFileLength(_FileToWinHANDLE(file));
+    return pxrBaseArchFileSystem::_GetFileLength(pxrBaseArchFileSystem::_FileToWinHANDLE(file));
 #else
 #error Unknown system architecture
 #endif
@@ -453,7 +453,7 @@ ArchGetFileLength(const char* fileName)
                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                    nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (handle) {
-        const auto result = _GetFileLength(handle);
+        const auto result = pxrBaseArchFileSystem::_GetFileLength(handle);
         CloseHandle(handle);
         return result;
     }
@@ -486,7 +486,7 @@ ArchGetFileName(FILE *file)
 #elif defined (ARCH_OS_WINDOWS)
     static constexpr DWORD bufSize =
         sizeof(FILE_NAME_INFO) + sizeof(WCHAR) * 4096;
-    HANDLE hfile = _FileToWinHANDLE(file);
+    HANDLE hfile = pxrBaseArchFileSystem::_FileToWinHANDLE(file);
     auto fileNameInfo = reinterpret_cast<PFILE_NAME_INFO>(malloc(bufSize));
     std::string result;
     if (GetFileInformationByHandleEx(
@@ -537,7 +537,7 @@ ArchMakeTmpFile(const std::string& prefix, std::string* pathname)
 
 #if defined (ARCH_OS_WINDOWS)
 
-namespace {
+namespace pxrBaseArchFileSystem {
 std::string
 MakeUnique(
     const std::string& sTemplate,
@@ -589,7 +589,7 @@ ArchMakeTmpFile(const std::string& tmpdir,
 #if defined(ARCH_OS_WINDOWS)
     int fd = -1;
     auto cTemplate =
-        MakeUnique(sTemplate, [&fd](const char* name){
+        pxrBaseArchFileSystem::MakeUnique(sTemplate, [&fd](const char* name){
                     _wsopen_s(&fd, ArchWindowsUtf8ToUtf16(name).c_str(),
                               _O_CREAT | _O_EXCL | _O_RDWR | _O_BINARY,
                               _SH_DENYNO, _S_IREAD | _S_IWRITE);
@@ -632,7 +632,7 @@ ArchMakeTmpSubdir(const std::string& tmpdir,
 
 #if defined(ARCH_OS_WINDOWS)
     retstr =
-        MakeUnique(sTemplate, [](const char* name){
+        pxrBaseArchFileSystem::MakeUnique(sTemplate, [](const char* name){
             return CreateDirectoryW(
                 ArchWindowsUtf8ToUtf16(name).c_str(), NULL) != FALSE;
         });
@@ -734,7 +734,7 @@ Arch_MapFileImpl(FILE *file, std::string *errMsg)
     DWORD maxSizeHigh = static_cast<DWORD>(unsignedLength >> 32);
     DWORD maxSizeLow = static_cast<DWORD>(unsignedLength);
     HANDLE hFileMap = CreateFileMapping(
-        _FileToWinHANDLE(file), NULL,
+        pxrBaseArchFileSystem::_FileToWinHANDLE(file), NULL,
         PAGE_READONLY /* allow read-only or copy-on-write */,
         maxSizeHigh, maxSizeLow, NULL);
     if (hFileMap == NULL)
@@ -877,7 +877,7 @@ ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset)
         return 0;
 
 #if defined(ARCH_OS_WINDOWS)
-    HANDLE hFile = _FileToWinHANDLE(file);
+    HANDLE hFile = pxrBaseArchFileSystem::_FileToWinHANDLE(file);
 
     OVERLAPPED overlapped;
     memset(&overlapped, 0, sizeof(overlapped));
@@ -932,7 +932,7 @@ ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset)
         return -1;
 
 #if defined(ARCH_OS_WINDOWS)
-    HANDLE hFile = _FileToWinHANDLE(file);
+    HANDLE hFile = pxrBaseArchFileSystem::_FileToWinHANDLE(file);
 
     OVERLAPPED overlapped;
     memset(&overlapped, 0, sizeof(overlapped));

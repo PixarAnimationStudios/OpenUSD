@@ -63,6 +63,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_SHARED_VERTEX_PRIMVAR, 1,
                       "Enable sharing of vertex primvar");
 
+namespace pxrImagingHdStPrimUtils {
+
 TF_MAKE_STATIC_DATA(
     HdSt_MaterialNetworkShaderSharedPtr,
     _fallbackWidgetShader)
@@ -71,6 +73,8 @@ TF_MAKE_STATIC_DATA(
         std::make_shared<HioGlslfx>(HdStPackageWidgetShader()));
     (*_fallbackWidgetShader)->SetIsSceneMaterial(false);
 }
+
+} // pxrImagingHdStPrimUtils
 
 // -----------------------------------------------------------------------------
 // Draw invalidation utilities
@@ -372,7 +376,7 @@ HdStGetMaterialNetworkShader(
             TF_DEBUG(HD_RPRIM_UPDATED).Msg("Using built-in widget material for "
                 "%s\n", prim->GetId().GetText());
                
-            return *_fallbackWidgetShader;
+            return *pxrImagingHdStPrimUtils::_fallbackWidgetShader;
         } else {
             TF_DEBUG(HD_RPRIM_UPDATED).Msg("Using fallback material for %s\n",
                 prim->GetId().GetText());

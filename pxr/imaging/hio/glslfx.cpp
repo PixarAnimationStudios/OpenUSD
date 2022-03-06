@@ -54,6 +54,8 @@ TF_DEFINE_PUBLIC_TOKENS(HioGlslfxTokens, HIO_GLSLFX_TOKENS);
 #define CURRENT_VERSION 0.1
 
 
+namespace pxrImagingHioGlslfx {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((sectionDelimiter, "--"))
@@ -66,8 +68,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((toolSubst, "$TOOLS"))
 );
 
-
-namespace pxrImagingHioGlslfx {
 
 // This is a private registry of paths to shader resources installed
 // within package bundles. Packages which install glslfx shader source
@@ -96,7 +96,7 @@ ShaderResourceRegistry::ShaderResourceRegistry()
         JsObject metadata = plugin->GetMetadata();
 
         JsValue value;
-        if (TfMapLookup(metadata, _tokens->shaderResources, &value)
+        if (TfMapLookup(metadata, pxrImagingHioGlslfx::_tokens->shaderResources, &value)
                && value.Is<std::string>()) {
 
             std::string shaderPath =
@@ -133,7 +133,7 @@ _ResolveResourcePath(const std::string& importFile, std::string *errorStr)
         {
             *errorStr = TfStringPrintf( "Expected line of the form "
                             "%s/<packageName>/path",
-                            _tokens->toolSubst.GetText() );
+                            pxrImagingHioGlslfx::_tokens->toolSubst.GetText() );
         }
         return "";
     }
@@ -163,7 +163,7 @@ _ComputeResolvedPath(
     std::string *errorStr )
 {
     // Resolve $TOOLS-prefixed paths.
-    if (TfStringStartsWith(filename, _tokens->toolSubst.GetString() + "/")) {
+    if (TfStringStartsWith(filename, pxrImagingHioGlslfx::_tokens->toolSubst.GetString() + "/")) {
         return _ResolveResourcePath(filename, errorStr);
     }
 
@@ -327,8 +327,8 @@ HioGlslfx::ExtractImports(const std::string& filename)
 
     std::string line;
     while (getline(*input, line)) {
-        if (line.find(_tokens->import) == 0) {
-            imports.push_back(TfStringTrim(line.substr(_tokens->import.size())));
+        if (line.find(pxrImagingHioGlslfx::_tokens->import) == 0) {
+            imports.push_back(TfStringTrim(line.substr(pxrImagingHioGlslfx::_tokens->import.size())));
         }
     }
 
@@ -357,12 +357,12 @@ HioGlslfx::_ProcessInput(std::istream * input,
 
         // simply ignore comments
         if (context.currentLine.find(
-                _tokens->commentDelimiter.GetText()) == 0) {
+                pxrImagingHioGlslfx::_tokens->commentDelimiter.GetText()) == 0) {
             continue;
         } else
         // we found a section delimiter
         if (context.currentLine.find(
-                _tokens->sectionDelimiter.GetText()) == 0) {
+                pxrImagingHioGlslfx::_tokens->sectionDelimiter.GetText()) == 0) {
             if (!_ParseSectionLine(context)) {
                 return false;
             }
@@ -373,18 +373,18 @@ HioGlslfx::_ProcessInput(std::istream * input,
 
         } else
         if (context.currentSectionType == HioGlslfxTokens->glslfx && 
-                context.currentLine.find(_tokens->import.GetText()) == 0) {
+                context.currentLine.find(pxrImagingHioGlslfx::_tokens->import.GetText()) == 0) {
             if (!_ProcessImport(context)) {
                 return false;
             }
         } else
-        if (context.currentSectionType == _tokens->glsl) {
+        if (context.currentSectionType == pxrImagingHioGlslfx::_tokens->glsl) {
             // don't do any parsing of these lines. this will be compiled
             // and linked with the glsl compiler later.
             _sourceMap[context.currentSectionId].append(
                 context.currentLine + "\n");
         } else
-        if (context.currentSectionType == _tokens->configuration) {
+        if (context.currentSectionType == pxrImagingHioGlslfx::_tokens->configuration) {
             // this is added to the config dictionary which we will compose
             // later
             _configMap[context.filename].append(context.currentLine + "\n");
@@ -460,10 +460,10 @@ HioGlslfx::_ParseSectionLine(_ParseContext & context)
     if (context.currentSectionType == HioGlslfxTokens->glslfx.GetText()) {
         return _ParseVersionLine(tokens, context);
     }
-    if (context.currentSectionType == _tokens->configuration.GetText()) {
+    if (context.currentSectionType == pxrImagingHioGlslfx::_tokens->configuration.GetText()) {
         return _ParseConfigurationLine(context);
     } else
-    if (context.currentSectionType == _tokens->glsl.GetText()) {
+    if (context.currentSectionType == pxrImagingHioGlslfx::_tokens->glsl.GetText()) {
         return _ParseGLSLSectionLine(tokens, context);
     }
 
@@ -518,7 +518,7 @@ HioGlslfx::_ParseVersionLine(std::vector<std::string> const & tokens,
     }
 
     // verify that the version spec is what we expect
-    if (tokens.size() != 4 || tokens[2] != _tokens->version.GetText()) {
+    if (tokens.size() != 4 || tokens[2] != pxrImagingHioGlslfx::_tokens->version.GetText()) {
         TF_RUNTIME_ERROR("Syntax Error on line %d of %s. Invalid "
                          "version specifier.", context.lineNo, context.filename.c_str());
         return false;

@@ -428,6 +428,8 @@ _FixAssetPaths(const SdfLayerHandle &sourceLayer,
     }
 }
 
+namespace pxrUsdUsdFlattenUtils {
+
 // List of fields that we do not want to flatten generically.
 TF_MAKE_STATIC_DATA(std::set<TfToken>, _fieldsToSkip) {
     // SdfChildrenKeys fields are maintained internally by Sdf.
@@ -498,7 +500,7 @@ _FlattenFields(const PcpLayerStackRefPtr &layerStack,
     const SdfSpecType specType = targetSpec->GetSpecType();
     const SdfPath &path = targetSpec->GetPath();
     for (const TfToken &field: schema.GetFields(specType)) {
-        if (_fieldsToSkip->find(field) != _fieldsToSkip->end()) {
+        if (pxrUsdUsdFlattenUtils::_fieldsToSkip->find(field) != pxrUsdUsdFlattenUtils::_fieldsToSkip->end()) {
             continue;
         }
         VtValue val = _ReduceField(
@@ -678,6 +680,8 @@ _FlattenSpec(const PcpLayerStackRefPtr &layerStack,
     }
 }
 
+} // pxrUsdUsdFlattenUtils
+
 SdfLayerRefPtr
 UsdFlattenLayerStack(const PcpLayerStackRefPtr &layerStack,
                      const UsdFlattenResolveAssetPathFn& resolveAssetPathFn,
@@ -691,8 +695,8 @@ UsdFlattenLayerStack(const PcpLayerStackRefPtr &layerStack,
     // extension here if needed to ensure that we get a usda file.
     SdfLayerRefPtr outputLayer = SdfLayer::CreateAnonymous(
         TfStringEndsWith(tag, ".usda") ? tag : (tag + ".usda"));
-    _FlattenFields(layerStack, outputLayer->GetPseudoRoot(), resolveAssetPathFn);
-    _FlattenSpec(layerStack, outputLayer->GetPseudoRoot(), resolveAssetPathFn);
+    pxrUsdUsdFlattenUtils::_FlattenFields(layerStack, outputLayer->GetPseudoRoot(), resolveAssetPathFn);
+    pxrUsdUsdFlattenUtils::_FlattenSpec(layerStack, outputLayer->GetPseudoRoot(), resolveAssetPathFn);
     return outputLayer;
 }
 

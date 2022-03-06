@@ -27,7 +27,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace usdSchemaExamplesWrapTokens {
 
 // Helper to return a static token as a string.  We wrap tokens as Python
 // strings and for some reason simply wrapping the token using def_readonly
@@ -64,10 +64,10 @@ void wrapUsdSchemaExamplesTokens()
 {
     boost::python::class_<UsdSchemaExamplesTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
-    _AddToken(cls, "complexString", UsdSchemaExamplesTokens->complexString);
-    _AddToken(cls, "intAttr", UsdSchemaExamplesTokens->intAttr);
-    _AddToken(cls, "paramsMass", UsdSchemaExamplesTokens->paramsMass);
-    _AddToken(cls, "paramsVelocity", UsdSchemaExamplesTokens->paramsVelocity);
-    _AddToken(cls, "paramsVolume", UsdSchemaExamplesTokens->paramsVolume);
-    _AddToken(cls, "target", UsdSchemaExamplesTokens->target);
+    usdSchemaExamplesWrapTokens::_AddToken(cls, "complexString", UsdSchemaExamplesTokens->complexString);
+    usdSchemaExamplesWrapTokens::_AddToken(cls, "intAttr", UsdSchemaExamplesTokens->intAttr);
+    usdSchemaExamplesWrapTokens::_AddToken(cls, "paramsMass", UsdSchemaExamplesTokens->paramsMass);
+    usdSchemaExamplesWrapTokens::_AddToken(cls, "paramsVelocity", UsdSchemaExamplesTokens->paramsVelocity);
+    usdSchemaExamplesWrapTokens::_AddToken(cls, "paramsVolume", UsdSchemaExamplesTokens->paramsVolume);
+    usdSchemaExamplesWrapTokens::_AddToken(cls, "target", UsdSchemaExamplesTokens->target);
 }

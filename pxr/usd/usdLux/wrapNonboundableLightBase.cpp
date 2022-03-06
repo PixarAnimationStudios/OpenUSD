@@ -112,6 +112,8 @@ void wrapUsdLuxNonboundableLightBase()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+namespace pxrUsdUsdLuxWrapNonboundableLightBase {
+
 static UsdAttribute
 _CreateIntensityAttr(UsdLuxNonboundableLightBase &self,
                                       boost::python::object defaultVal, bool writeSparsely) {
@@ -167,8 +169,6 @@ _CreateColorTemperatureAttr(UsdLuxNonboundableLightBase &self,
     return self.CreateColorTemperatureAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
-
-namespace pxrUsdUsdLuxWrapNonboundableLightBase {
 
 WRAP_CUSTOM {
     typedef UsdLuxNonboundableLightBase This;

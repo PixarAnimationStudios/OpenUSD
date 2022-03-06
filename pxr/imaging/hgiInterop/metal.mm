@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrImagingHgiInteropMetal {
     struct Vertex {
         float position[2];
         float uv[2];
@@ -178,18 +178,18 @@ HgiInteropMetal::_CreateShaderContext(
                               2,
                               GL_FLOAT,
                               GL_FALSE,
-                              sizeof(Vertex),
-                              (void*)(offsetof(Vertex, position)));
+                              sizeof(pxrImagingHgiInteropMetal::Vertex),
+                              (void*)(offsetof(pxrImagingHgiInteropMetal::Vertex, position)));
         glEnableVertexAttribArray(shader.texAttrib);
         glVertexAttribPointer(shader.texAttrib,
                               2,
                               GL_FLOAT,
                               GL_FALSE,
-                              sizeof(Vertex),
-                              (void*)(offsetof(Vertex, uv)));
+                              sizeof(pxrImagingHgiInteropMetal::Vertex),
+                              (void*)(offsetof(pxrImagingHgiInteropMetal::Vertex, uv)));
     }
     
-    Vertex v[12] = {
+    pxrImagingHgiInteropMetal::Vertex v[12] = {
         { {-1, -1}, {0, 0} },
         { { 1, -1}, {1, 0} },
         { {-1,  1}, {0, 1} },
@@ -829,12 +829,12 @@ HgiInteropMetal::_BlitToOpenGL(VtValue const &framebuffer,
 
         glEnableVertexAttribArray(shader.posAttrib);
         glVertexAttribPointer(
-            shader.posAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-            (void*)(offsetof(Vertex, position)));
+            shader.posAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(pxrImagingHgiInteropMetal::Vertex),
+            (void*)(offsetof(pxrImagingHgiInteropMetal::Vertex, position)));
         glEnableVertexAttribArray(shader.texAttrib);
         glVertexAttribPointer(
-            shader.texAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-            (void*)(offsetof(Vertex, uv)));
+            shader.texAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(pxrImagingHgiInteropMetal::Vertex),
+            (void*)(offsetof(pxrImagingHgiInteropMetal::Vertex, uv)));
     }
 
     GLint unit = 0;

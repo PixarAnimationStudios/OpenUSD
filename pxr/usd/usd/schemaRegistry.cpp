@@ -72,6 +72,8 @@ TF_DEFINE_ENV_SETTING(
 
 TF_INSTANTIATE_SINGLETON(UsdSchemaRegistry);
 
+namespace pxrUsdUsdSchemaRegistry {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (appliedAPISchemas)
@@ -99,7 +101,6 @@ using _TypeToTokenVecMap =
 using _TokenToTokenMap = 
     TfHashMap<TfToken, TfToken, TfToken::HashFunctor>;
 
-namespace pxrUsdUsdSchemaRegistry {
 // Helper struct for caching a bidirecional mapping between schema TfType and
 // USD type name token. This cache is used as a static local instance providing
 // this type mapping without having to build the entire schema registry
@@ -234,29 +235,29 @@ _IsMultipleApplySchemaKind(const UsdSchemaKind schemaKind)
 static UsdSchemaKind 
 _GetSchemaKindFromMetadata(const JsObject &dict)
 {
-    const JsValue *kindValue = TfMapLookupPtr(dict, _tokens->schemaKind);
+    const JsValue *kindValue = TfMapLookupPtr(dict, pxrUsdUsdSchemaRegistry::_tokens->schemaKind);
     if (!kindValue) {
         return UsdSchemaKind::Invalid;
     }
 
     const TfToken schemaTypeToken(kindValue->GetString());
-    if (schemaTypeToken == _tokens->nonAppliedAPI) {
+    if (schemaTypeToken == pxrUsdUsdSchemaRegistry::_tokens->nonAppliedAPI) {
         return UsdSchemaKind::NonAppliedAPI;
-    } else if (schemaTypeToken == _tokens->singleApplyAPI) {
+    } else if (schemaTypeToken == pxrUsdUsdSchemaRegistry::_tokens->singleApplyAPI) {
         return UsdSchemaKind::SingleApplyAPI;
-    } else if (schemaTypeToken == _tokens->multipleApplyAPI) {
+    } else if (schemaTypeToken == pxrUsdUsdSchemaRegistry::_tokens->multipleApplyAPI) {
         return UsdSchemaKind::MultipleApplyAPI;
-    } else if (schemaTypeToken == _tokens->concreteTyped) {
+    } else if (schemaTypeToken == pxrUsdUsdSchemaRegistry::_tokens->concreteTyped) {
         return UsdSchemaKind::ConcreteTyped;
-    } else if (schemaTypeToken == _tokens->abstractTyped) {
+    } else if (schemaTypeToken == pxrUsdUsdSchemaRegistry::_tokens->abstractTyped) {
         return UsdSchemaKind::AbstractTyped;
-    } else if (schemaTypeToken == _tokens->abstractBase) {
+    } else if (schemaTypeToken == pxrUsdUsdSchemaRegistry::_tokens->abstractBase) {
         return UsdSchemaKind::AbstractBase;
     }
 
     TF_CODING_ERROR("Invalid schema kind name '%s' found for plugin metadata "
                     "key '%s'.", 
-                    schemaTypeToken.GetText(), _tokens->schemaKind.GetText());
+                    schemaTypeToken.GetText(), pxrUsdUsdSchemaRegistry::_tokens->schemaKind.GetText());
     return UsdSchemaKind::Invalid;
 }
 
@@ -613,7 +614,7 @@ UsdSchemaRegistry::CollectAddtionalAutoApplyAPISchemasFromPlugins(
         // }
         const JsObject &metadata = plug->GetMetadata();
         const JsValue *autoApplyMetadataValue = TfMapLookupPtr(
-            metadata, _tokens->PluginAutoApplyAPISchemasKey);
+            metadata, pxrUsdUsdSchemaRegistry::_tokens->PluginAutoApplyAPISchemasKey);
         if (!autoApplyMetadataValue) {
             continue;
         }
@@ -636,7 +637,7 @@ UsdSchemaRegistry::CollectAddtionalAutoApplyAPISchemasFromPlugins(
             // for the auto apply built in to the schema type info.
             TfTokenVector apiSchemaAutoApplyToNames =
                 _GetNameListFromMetadata(
-                    entry.second.GetJsObject(), _tokens->apiSchemaAutoApplyTo);
+                    entry.second.GetJsObject(), pxrUsdUsdSchemaRegistry::_tokens->apiSchemaAutoApplyTo);
 
             if (!apiSchemaAutoApplyToNames.empty()) {
 
@@ -663,10 +664,10 @@ UsdSchemaRegistry::CollectAddtionalAutoApplyAPISchemasFromPlugins(
     }
 }
 
-static _TypeToTokenVecMap
+static pxrUsdUsdSchemaRegistry::_TypeToTokenVecMap
 _GetTypeToAutoAppliedAPISchemaNames()
 {
-    _TypeToTokenVecMap result;
+    pxrUsdUsdSchemaRegistry::_TypeToTokenVecMap result;
 
     const pxrUsdUsdSchemaRegistry::_TypeMapCache & typeMapCache = pxrUsdUsdSchemaRegistry::_GetTypeMapCache();
 
@@ -809,7 +810,7 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
     // those types. We need this before initializing our prim definitions. Note
     // the prim definitions will take the API schema lists from this map in the
     // following loop.
-    _TypeToTokenVecMap typeToAutoAppliedAPISchemaNames =
+    pxrUsdUsdSchemaRegistry::_TypeToTokenVecMap typeToAutoAppliedAPISchemaNames =
         _GetTypeToAutoAppliedAPISchemaNames();
 
     // Get all the plugins that provide the types and initialize prim defintions
@@ -1664,7 +1665,7 @@ Usd_GetAPISchemaPluginApplyToInfoForType(
     // Both single and multiple apply API schema types can have metadata 
     // specifying the list that the type can only be applied to.
     TfTokenVector canOnlyApplyToTypeNames =
-        _GetNameListFromMetadata(dict, _tokens->apiSchemaCanOnlyApplyTo);
+        _GetNameListFromMetadata(dict, pxrUsdUsdSchemaRegistry::_tokens->apiSchemaCanOnlyApplyTo);
     if (!canOnlyApplyToTypeNames.empty()) {
         (*canOnlyApplyAPISchemasMap)[apiSchemaName] = 
             std::move(canOnlyApplyToTypeNames);
@@ -1679,7 +1680,7 @@ Usd_GetAPISchemaPluginApplyToInfoForType(
         // For single apply API schemas, we can get the types it should auto
         // apply to.
         TfTokenVector autoApplyToTypeNames =
-            _GetNameListFromMetadata(dict, _tokens->apiSchemaAutoApplyTo);
+            _GetNameListFromMetadata(dict, pxrUsdUsdSchemaRegistry::_tokens->apiSchemaAutoApplyTo);
         if (!autoApplyToTypeNames.empty()) {
              TF_DEBUG(USD_AUTO_APPLY_API_SCHEMAS).Msg(
                  "API schema '%s' is defined to auto apply to the following "
@@ -1694,7 +1695,7 @@ Usd_GetAPISchemaPluginApplyToInfoForType(
         // For multiple apply schemas, the metadata may specify a list of 
         // allowed instance names.
         TfTokenVector allowedInstanceNames =
-            _GetNameListFromMetadata(dict, _tokens->apiSchemaAllowedInstanceNames);
+            _GetNameListFromMetadata(dict, pxrUsdUsdSchemaRegistry::_tokens->apiSchemaAllowedInstanceNames);
         if (!allowedInstanceNames.empty()) {
             (*allowedInstanceNamesMap)[apiSchemaName].insert(
                 allowedInstanceNames.begin(), allowedInstanceNames.end());
@@ -1706,7 +1707,7 @@ Usd_GetAPISchemaPluginApplyToInfoForType(
         // instances names, but in the future we can add auto-apply metadata
         // here as well.
         const JsValue *apiSchemaInstancesValue = 
-            TfMapLookupPtr(dict, _tokens->apiSchemaInstances);
+            TfMapLookupPtr(dict, pxrUsdUsdSchemaRegistry::_tokens->apiSchemaInstances);
         if (!apiSchemaInstancesValue) {
             return;
         }
@@ -1715,7 +1716,7 @@ Usd_GetAPISchemaPluginApplyToInfoForType(
             TF_CODING_ERROR("Metadata value for key '%s' for API schema type "
                             "'%s' is not holding a dictionary. PlugInfo may "
                             "need to be regenerated.",
-                            _tokens->apiSchemaInstances.GetText(),
+                            pxrUsdUsdSchemaRegistry::_tokens->apiSchemaInstances.GetText(),
                             apiSchemaName.GetText());
             return;
         }
@@ -1730,7 +1731,7 @@ Usd_GetAPISchemaPluginApplyToInfoForType(
                 TF_CODING_ERROR("%s value for instance name '%s' for API "
                                 "schema type '%s' is not holding a dictionary. "
                                 "PlugInfo may need to be regenerated.",
-                                _tokens->apiSchemaInstances.GetText(),
+                                pxrUsdUsdSchemaRegistry::_tokens->apiSchemaInstances.GetText(),
                                 instanceName.c_str(),
                                 apiSchemaName.GetText());
                 continue;
@@ -1742,7 +1743,7 @@ Usd_GetAPISchemaPluginApplyToInfoForType(
 
             TfTokenVector instanceCanOnlyApplyToTypeNames =
                 _GetNameListFromMetadata(instanceDict, 
-                                         _tokens->apiSchemaCanOnlyApplyTo);
+                                         pxrUsdUsdSchemaRegistry::_tokens->apiSchemaCanOnlyApplyTo);
             if (!instanceCanOnlyApplyToTypeNames.empty()) {
                 (*canOnlyApplyAPISchemasMap)[schemaInstanceName] = 
                     std::move(instanceCanOnlyApplyToTypeNames);

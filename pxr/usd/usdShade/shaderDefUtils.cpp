@@ -40,6 +40,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdShadeShaderDefUtils {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -56,6 +58,8 @@ static bool _IsNumber(const std::string& s)
                      [](unsigned char c) { return !std::isdigit(c); })
         == s.end();
 }
+
+} // pxrUsdUsdShadeShaderDefUtils
 
 /* static */ 
 bool
@@ -79,7 +83,7 @@ UsdShadeShaderDefUtils::SplitShaderIdentifier(
         *implementationName = identifier;
         *version = NdrVersion();
     } else if (tokens.size() == 2) {
-        if (_IsNumber(tokens[tokens.size()-1])) {
+        if (pxrUsdUsdShadeShaderDefUtils::_IsNumber(tokens[tokens.size()-1])) {
             int major = std::stoi(*tokens.rbegin());
             *version = NdrVersion(major);
             *implementationName = *familyName;
@@ -88,8 +92,8 @@ UsdShadeShaderDefUtils::SplitShaderIdentifier(
             *implementationName = identifier;
         }
     } else if (tokens.size() > 2) {
-        bool lastTokenIsNumber = _IsNumber(tokens[tokens.size()-1]);
-        bool penultimateTokenIsNumber = _IsNumber(tokens[tokens.size()-2]);
+        bool lastTokenIsNumber = pxrUsdUsdShadeShaderDefUtils::_IsNumber(tokens[tokens.size()-1]);
+        bool penultimateTokenIsNumber = pxrUsdUsdShadeShaderDefUtils::_IsNumber(tokens[tokens.size()-2]);
 
         if (penultimateTokenIsNumber && !lastTokenIsNumber) {
             TF_WARN("Invalid shader identifier '%s'.", identifier.GetText()); 
@@ -412,10 +416,10 @@ UsdShadeShaderDefUtils::GetShaderProperties(
         NdrTokenMap metadata = shaderInput.GetSdrMetadata();
 
         // Only inputs might have this metadata key
-        auto iter = metadata.find(_tokens->defaultInput);
+        auto iter = metadata.find(pxrUsdUsdShadeShaderDefUtils::_tokens->defaultInput);
         if (iter != metadata.end()) {
             metadata[SdrPropertyMetadata->DefaultInput] = "1";
-            metadata.erase(_tokens->defaultInput);
+            metadata.erase(pxrUsdUsdShadeShaderDefUtils::_tokens->defaultInput);
         }
 
         // Only inputs have the GetConnectability method
@@ -423,7 +427,7 @@ UsdShadeShaderDefUtils::GetShaderProperties(
             shaderInput.GetConnectability() == UsdShadeTokens->interfaceOnly ?
             "0" : "1";
 
-        auto implementationName = metadata.find(_tokens->implementationName);
+        auto implementationName = metadata.find(pxrUsdUsdShadeShaderDefUtils::_tokens->implementationName);
         if (implementationName != metadata.end()){
             metadata[SdrPropertyMetadata->ImplementationName] = 
                 implementationName->second;
@@ -463,7 +467,7 @@ UsdShadeShaderDefUtils::GetPrimvarNamesMetadataString(
     }
 
     for (auto &shdInput : shaderDef.GetInputs(/* onlyAuthored */ false)) {
-        if (shdInput.HasSdrMetadataByKey(_tokens->primvarProperty)) {
+        if (shdInput.HasSdrMetadataByKey(pxrUsdUsdShadeShaderDefUtils::_tokens->primvarProperty)) {
             // Check if the input holds a string here and issue a warning if it 
             // doesn't.
             if (_GetShaderPropertyTypeAndArraySize(

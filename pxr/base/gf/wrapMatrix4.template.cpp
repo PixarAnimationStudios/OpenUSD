@@ -137,9 +137,9 @@ static {{ MAT }} RemoveScaleShearWrapper( const {{ MAT }} &self ) {
         .def("ExtractRotationMatrix", &This::ExtractRotationMatrix)
         .def("ExtractRotationQuat", &This::ExtractRotationQuat)
 
-        .def("Factor", FactorWithEpsilon)
-        .def("Factor", Factor)
-        .def("RemoveScaleShear", RemoveScaleShearWrapper)
+        .def("Factor", pxrBaseGfWrapMatrix{{ SUFFIX }}::FactorWithEpsilon)
+        .def("Factor", pxrBaseGfWrapMatrix{{ SUFFIX }}::Factor)
+        .def("RemoveScaleShear", pxrBaseGfWrapMatrix{{ SUFFIX }}::RemoveScaleShearWrapper)
         
         .def("Transform",
 	     (GfVec3f (This::*)(const GfVec3f &) const)&This::Transform)

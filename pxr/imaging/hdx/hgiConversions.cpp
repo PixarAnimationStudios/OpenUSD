@@ -26,6 +26,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdxHgiConversions {
+
 struct _FormatDesc {
     HdFormat hdFormat;
     HgiFormat hgiFormat;
@@ -85,6 +87,8 @@ constexpr bool _CompileTimeValidateFormatTable() {
 static_assert(_CompileTimeValidateFormatTable(), 
               "_FormatDesc array out of sync with HdFormat/HgiFormat enum");
 
+} // pxrImagingHdxHgiConversions
+
 HgiFormat
 HdxHgiConversions::GetHgiFormat(HdFormat hdFormat)
 {
@@ -94,7 +98,7 @@ HdxHgiConversions::GetHgiFormat(HdFormat hdFormat)
         return HgiFormatInvalid;
     }
 
-    return FORMAT_DESC[hdFormat].hgiFormat;
+    return pxrImagingHdxHgiConversions::FORMAT_DESC[hdFormat].hgiFormat;
 }
 
 HdFormat
@@ -107,7 +111,7 @@ HdxHgiConversions::GetHdFormat(HgiFormat hgiFormat)
     }
 
     for (size_t i = 0; i < HdFormatCount; i++) {
-        if (FORMAT_DESC[i].hgiFormat == hgiFormat) {
+        if (pxrImagingHdxHgiConversions::FORMAT_DESC[i].hgiFormat == hgiFormat) {
             return HdFormat(i);
         }
     }

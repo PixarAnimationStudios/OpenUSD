@@ -184,6 +184,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdLuxSphereLight {
+
 static bool
 _ComputeLocalExtent(const float radius, VtVec3fArray *extent)
 {
@@ -224,9 +226,11 @@ _ComputeExtent(
     return true;
 }
 
+} // pxrUsdUsdLuxSphereLight
+
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)
 {
-    UsdGeomRegisterComputeExtentFunction<UsdLuxSphereLight>(_ComputeExtent);
+    UsdGeomRegisterComputeExtentFunction<UsdLuxSphereLight>(pxrUsdUsdLuxSphereLight::_ComputeExtent);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

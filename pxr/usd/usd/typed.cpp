@@ -60,13 +60,18 @@ UsdTyped::_IsCompatible() const
     return GetPrim().IsA(_GetType());
 }
 
+namespace pxrUsdUsdTyped {
+
 TF_MAKE_STATIC_DATA(TfType, _tfType) {
     *_tfType = TfType::Find<UsdTyped>();
 }
+
+} // pxrUsdUsdTyped
+
 const TfType &
 UsdTyped::_GetTfType() const
 {
-    return *_tfType;
+    return *pxrUsdUsdTyped::_tfType;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

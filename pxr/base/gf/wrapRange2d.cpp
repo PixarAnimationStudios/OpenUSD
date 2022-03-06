@@ -140,8 +140,8 @@ void wrapRange2d()
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
         // python 2. In python 3 builds boost::python adds this for us.
-        .def("__truediv__", __truediv__ )
-        .def("__itruediv__", __itruediv__ )
+        .def("__truediv__", pxrBaseGfWrapRange2d::__truediv__ )
+        .def("__itruediv__", pxrBaseGfWrapRange2d::__itruediv__ )
 #endif
 
         .def("__repr__", pxrBaseGfWrapRange2d::_Repr)

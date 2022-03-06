@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdUISceneGraphPrimAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (SceneGraphPrimAPI)
 );
+
+} // pxrUsdUsdUISceneGraphPrimAPI
 
 /* virtual */
 UsdUISceneGraphPrimAPI::~UsdUISceneGraphPrimAPI()

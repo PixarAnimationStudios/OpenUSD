@@ -54,6 +54,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace pxrUsdPluginUsdMtlxReader {
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    ((light, "light"))
+    ((mtlxRenderContext, "mtlx"))
+);
+
 // Attribute name tokens.
 struct _AttributeNames {
     using Name = const std::string;
@@ -104,13 +111,6 @@ struct _AttributeNames {
     Name ypos             {"ypos"};
 };
 static const _AttributeNames names;
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    ((light, "light"))
-    ((mtlxRenderContext, "mtlx"))
-);
 
 // Returns the name of an element.
 template <typename T>
@@ -1404,23 +1404,23 @@ _Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
     // Connect the shader's outputs to the material.
     if (auto output = usdShader.GetOutput(UsdShadeTokens->surface)) {
         UsdShadeConnectableAPI::ConnectToSource(
-            _usdMaterial.CreateSurfaceOutput(_tokens->mtlxRenderContext),
+            _usdMaterial.CreateSurfaceOutput(pxrUsdPluginUsdMtlxReader::_tokens->mtlxRenderContext),
             output);
     }
     if (auto output = usdShader.GetOutput(UsdShadeTokens->displacement)) {
         UsdShadeConnectableAPI::ConnectToSource(
-            _usdMaterial.CreateDisplacementOutput(_tokens->mtlxRenderContext),
+            _usdMaterial.CreateDisplacementOutput(pxrUsdPluginUsdMtlxReader::_tokens->mtlxRenderContext),
             output);
     }
     if (auto output = usdShader.GetOutput(UsdShadeTokens->volume)) {
         UsdShadeConnectableAPI::ConnectToSource(
-            _usdMaterial.CreateVolumeOutput(_tokens->mtlxRenderContext),
+            _usdMaterial.CreateVolumeOutput(pxrUsdPluginUsdMtlxReader::_tokens->mtlxRenderContext),
             output);
     }
-    if (auto output = usdShader.GetOutput(_tokens->light)) {
+    if (auto output = usdShader.GetOutput(pxrUsdPluginUsdMtlxReader::_tokens->light)) {
         // USD doesn't support this type.
         UsdShadeConnectableAPI::ConnectToSource(
-            _usdMaterial.CreateOutput(_tokens->light, SdfValueTypeNames->Token),
+            _usdMaterial.CreateOutput(pxrUsdPluginUsdMtlxReader::_tokens->light, SdfValueTypeNames->Token),
             output);
     }
 
@@ -1430,7 +1430,7 @@ _Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
         if (name != UsdShadeTokens->surface &&
             name != UsdShadeTokens->displacement &&
             name != UsdShadeTokens->volume &&
-            name != _tokens->light) {
+            name != pxrUsdPluginUsdMtlxReader::_tokens->light) {
             UsdShadeConnectableAPI::ConnectToSource(
                 _usdMaterial.CreateOutput(name, SdfValueTypeNames->Token),
                 output);
@@ -1761,7 +1761,7 @@ _Context::_AddShaderOutput(
     }
     else if (context == "light" || type == mx::LIGHT_SHADER_TYPE_STRING) {
         // USD doesn't support this.
-        return connectable.CreateOutput(_tokens->light,
+        return connectable.CreateOutput(pxrUsdPluginUsdMtlxReader::_tokens->light,
                                         SdfValueTypeNames->Token);
     }
     else if (!context.empty()) {

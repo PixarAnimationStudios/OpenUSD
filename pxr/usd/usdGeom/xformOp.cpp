@@ -64,6 +64,8 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(UsdGeomXformOp::PrecisionHalf, "Half");
 };
 
+namespace pxrUsdUsdGeomXformOp {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((xformOpPrefix, "xformOp:"))
@@ -91,7 +93,7 @@ static
 bool
 _IsNamespaced(const TfToken& opName)
 {
-    return TfStringStartsWith(opName, _tokens->xformOpPrefix);
+    return TfStringStartsWith(opName, pxrUsdUsdGeomXformOp::_tokens->xformOpPrefix);
 }
     
 static
@@ -99,7 +101,7 @@ TfToken
 _MakeNamespaced(const TfToken& name)
 {
     return _IsNamespaced(name) ? name : 
-        TfToken(_tokens->xformOpPrefix.GetString() + 
+        TfToken(pxrUsdUsdGeomXformOp::_tokens->xformOpPrefix.GetString() + 
                 name.GetString());
 }
 
@@ -109,8 +111,10 @@ static
 bool 
 _IsInverseOp(TfToken const &opName)
 {
-    return TfStringStartsWith(opName, _tokens->inverseXformOpPrefix);
+    return TfStringStartsWith(opName, pxrUsdUsdGeomXformOp::_tokens->inverseXformOpPrefix);
 }
+
+} // pxrUsdUsdGeomXformOp
 
 UsdGeomXformOp::UsdGeomXformOp(const UsdAttribute &attr, bool isInverseOp)
     : _attr(attr),
@@ -127,7 +131,7 @@ UsdGeomXformOp::UsdGeomXformOp(const UsdAttribute &attr, bool isInverseOp)
     const TfToken &name = GetName();
     const std::vector<std::string> &opNameComponents = SplitName();
 
-    if (_IsNamespaced(name)) {
+    if (pxrUsdUsdGeomXformOp::_IsNamespaced(name)) {
         _opType = GetOpTypeEnum(TfToken(opNameComponents[1]));
     } else {
         TF_CODING_ERROR("Invalid xform op: <%s>.", attr.GetPath().GetText());
@@ -181,7 +185,7 @@ UsdGeomXformOp::UsdGeomXformOp(UsdAttributeQuery &&query, bool isInverseOp,
 TfToken 
 UsdGeomXformOp::GetOpName() const
 {
-    return _isInverseOp ? TfToken(_tokens->invertPrefix.GetString() + 
+    return _isInverseOp ? TfToken(pxrUsdUsdGeomXformOp::_tokens->invertPrefix.GetString() + 
                                   GetName().GetString()) 
                         : GetName();
 }
@@ -200,7 +204,7 @@ UsdGeomXformOp::IsXformOp(const UsdAttribute &attr)
 bool
 UsdGeomXformOp::IsXformOp(const TfToken &attrName) 
 {
-    return _IsNamespaced(attrName);
+    return pxrUsdUsdGeomXformOp::_IsNamespaced(attrName);
 }
 
 /* static */
@@ -208,14 +212,14 @@ UsdAttribute
 UsdGeomXformOp::_GetXformOpAttr(UsdPrim const& prim, const TfToken &opName,
                                 bool *isInverseOp)
 {
-    *isInverseOp = _IsInverseOp(opName);
+    *isInverseOp = pxrUsdUsdGeomXformOp::_IsInverseOp(opName);
 
     // Is it is an inverse operation, strip off the "invert:" at the beginning 
     // of opName to get the associated attribute's name.
     return *isInverseOp ?
         prim.GetAttribute(
             TfToken(opName.GetString().substr(
-                        _tokens->invertPrefix.GetString().size()))) :
+                        pxrUsdUsdGeomXformOp::_tokens->invertPrefix.GetString().size()))) :
         prim.GetAttribute(opName);
 }
 
@@ -461,13 +465,13 @@ UsdGeomXformOp::GetOpName(
     const TfToken &opSuffix,
     bool isInverseOp)
 {
-    TfToken opName = _MakeNamespaced(GetOpTypeToken(opType));
+    TfToken opName = pxrUsdUsdGeomXformOp::_MakeNamespaced(GetOpTypeToken(opType));
 
     if (!opSuffix.IsEmpty())
         opName = TfToken(opName.GetString() + ":" + opSuffix.GetString());
 
     if (isInverseOp)
-        opName = TfToken(_tokens->invertPrefix.GetString() + opName.GetString());
+        opName = TfToken(pxrUsdUsdGeomXformOp::_tokens->invertPrefix.GetString() + opName.GetString());
 
     return opName;
 }

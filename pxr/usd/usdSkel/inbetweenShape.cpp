@@ -27,11 +27,15 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrUsdUsdSkelInbetweenShape {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((inbetweensPrefix, "inbetweens:"))
     ((normalOffsetsSuffix, ":normalOffsets"))
 );
+
+} // pxrUsdUsdSkelInbetweenShape
 
 
 
@@ -74,8 +78,8 @@ UsdSkelInbetweenShape::_IsValidInbetweenName(const std::string& name,
     // We do, however, need to exclude extra properties that apply
     // within the namespace of each inbetween. For now, the only
     // such property is 'normalOffsets', which we elide here manually.
-    return TfStringStartsWith(name, _tokens->inbetweensPrefix) &&
-          !TfStringEndsWith(name, _tokens->normalOffsetsSuffix);
+    return TfStringStartsWith(name, pxrUsdUsdSkelInbetweenShape::_tokens->inbetweensPrefix) &&
+          !TfStringEndsWith(name, pxrUsdUsdSkelInbetweenShape::_tokens->normalOffsetsSuffix);
 }
 
 
@@ -83,7 +87,7 @@ UsdSkelInbetweenShape::_IsValidInbetweenName(const std::string& name,
 bool
 UsdSkelInbetweenShape::_IsNamespaced(const TfToken& name)
 {
-    return TfStringStartsWith(name, _tokens->inbetweensPrefix);
+    return TfStringStartsWith(name, pxrUsdUsdSkelInbetweenShape::_tokens->inbetweensPrefix);
 }
 
     
@@ -95,7 +99,7 @@ UsdSkelInbetweenShape::_MakeNamespaced(const TfToken& name, bool quiet)
     if(_IsNamespaced(name)){
         result = name;
     } else {
-        result = TfToken(_tokens->inbetweensPrefix.GetString() +
+        result = TfToken(pxrUsdUsdSkelInbetweenShape::_tokens->inbetweensPrefix.GetString() +
                          name.GetString());
     }
 
@@ -115,7 +119,7 @@ UsdSkelInbetweenShape::_MakeNamespaced(const TfToken& name, bool quiet)
 const TfToken&
 UsdSkelInbetweenShape::_GetNamespacePrefix()
 {
-    return _tokens->inbetweensPrefix;
+    return pxrUsdUsdSkelInbetweenShape::_tokens->inbetweensPrefix;
 }
 
 
@@ -123,7 +127,7 @@ UsdAttribute
 UsdSkelInbetweenShape::_GetNormalOffsetsAttr(bool create) const
 {
     const TfToken normalOffsetsName(_attr.GetName().GetString() +
-                                    _tokens->normalOffsetsSuffix.GetString());
+                                    pxrUsdUsdSkelInbetweenShape::_tokens->normalOffsetsSuffix.GetString());
 
     if (!create) {
         return _attr.GetPrim().GetAttribute(normalOffsetsName);

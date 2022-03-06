@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrImagingHgiVulkanResourceBindings {
     static const uint8_t _descriptorSetCnt = 1;
 }
 
@@ -173,7 +173,7 @@ HgiVulkanResourceBindings::HgiVulkanResourceBindings(
     VkDescriptorPoolCreateInfo pool_info = {};
     pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-    pool_info.maxSets = _descriptorSetCnt;
+    pool_info.maxSets = pxrImagingHgiVulkanResourceBindings::_descriptorSetCnt;
     pool_info.poolSizeCount = (uint32_t) poolSizes.size();
     pool_info.pPoolSizes = poolSizes.data();
 
@@ -202,7 +202,7 @@ HgiVulkanResourceBindings::HgiVulkanResourceBindings(
         {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
 
     allocateInfo.descriptorPool = _vkDescriptorPool;
-    allocateInfo.descriptorSetCount = _descriptorSetCnt;
+    allocateInfo.descriptorSetCount = pxrImagingHgiVulkanResourceBindings::_descriptorSetCnt;
     allocateInfo.pSetLayouts = &_vkDescriptorSetLayout;
 
     TF_VERIFY(
@@ -398,7 +398,7 @@ HgiVulkanResourceBindings::BindResources(
         bindPoint,
         layout,
         0, // firstSet/slot - Hgi does not provide slot index, assume 0.
-        _descriptorSetCnt,
+        pxrImagingHgiVulkanResourceBindings::_descriptorSetCnt,
         &_vkDescriptorSet,
         0, // dynamicOffset
         nullptr);

@@ -45,6 +45,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdxColorCorrectionTask {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((colorCorrectionVertex,    "ColorCorrectionVertex"))
@@ -54,9 +56,11 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 static const int HDX_DEFAULT_LUT3D_SIZE_OCIO = 65;
 
+} // pxrImagingHdxColorCorrectionTask
+
 HdxColorCorrectionTaskParams::HdxColorCorrectionTaskParams()
   : colorCorrectionMode(HdxColorCorrectionTokens->disabled)
-  , lut3dSizeOCIO(HDX_DEFAULT_LUT3D_SIZE_OCIO)
+  , lut3dSizeOCIO(pxrImagingHdxColorCorrectionTask::HDX_DEFAULT_LUT3D_SIZE_OCIO)
 {
 }
 
@@ -71,7 +75,7 @@ HdxColorCorrectionTask::HdxColorCorrectionTask(
   , _shaderProgram()
   , _resourceBindings()
   , _pipeline()
-  , _lut3dSizeOCIO(HDX_DEFAULT_LUT3D_SIZE_OCIO)
+  , _lut3dSizeOCIO(pxrImagingHdxColorCorrectionTask::HDX_DEFAULT_LUT3D_SIZE_OCIO)
   , _screenSize{}
 {
 }
@@ -217,7 +221,7 @@ HdxColorCorrectionTask::_CreateShaderResources()
     // Setup the vertex shader
     std::string vsCode;
     HgiShaderFunctionDesc vertDesc;
-    vertDesc.debugName = _tokens->colorCorrectionVertex.GetString();
+    vertDesc.debugName = pxrImagingHdxColorCorrectionTask::_tokens->colorCorrectionVertex.GetString();
     vertDesc.shaderStage = HgiShaderStageVertex;
     HgiShaderFunctionAddStageInput(
         &vertDesc, "position", "vec4");
@@ -227,7 +231,7 @@ HdxColorCorrectionTask::_CreateShaderResources()
         &vertDesc, "gl_Position", "vec4", "position");
     HgiShaderFunctionAddStageOutput(
         &vertDesc, "uvOut", "vec2");
-    vsCode += glslfx.GetSource(_tokens->colorCorrectionVertex);
+    vsCode += glslfx.GetSource(pxrImagingHdxColorCorrectionTask::_tokens->colorCorrectionVertex);
     vertDesc.shaderCode = vsCode.c_str();
     HgiShaderFunctionHandle vertFn = _GetHgi()->CreateShaderFunction(vertDesc);
 
@@ -246,7 +250,7 @@ HdxColorCorrectionTask::_CreateShaderResources()
         &fragDesc, "hd_FragColor", "vec4", "color");
     HgiShaderFunctionAddConstantParam(
         &fragDesc, "screenSize", "vec2");
-    fragDesc.debugName = _tokens->colorCorrectionFragment.GetString();
+    fragDesc.debugName = pxrImagingHdxColorCorrectionTask::_tokens->colorCorrectionFragment.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
     if (useOCIO) {
         fsCode += "#define GLSLFX_USE_OCIO\n";
@@ -258,14 +262,14 @@ HdxColorCorrectionTask::_CreateShaderResources()
         std::string ocioGpuShaderText = _CreateOpenColorIOResources();
         fsCode = fsCode + ocioGpuShaderText;
     }
-    fsCode += glslfx.GetSource(_tokens->colorCorrectionFragment);
+    fsCode += glslfx.GetSource(pxrImagingHdxColorCorrectionTask::_tokens->colorCorrectionFragment);
 
     fragDesc.shaderCode = fsCode.c_str();
     HgiShaderFunctionHandle fragFn = _GetHgi()->CreateShaderFunction(fragDesc);
 
     // Setup the shader program
     HgiShaderProgramDesc programDesc;
-    programDesc.debugName =_tokens->colorCorrectionShader.GetString();
+    programDesc.debugName =pxrImagingHdxColorCorrectionTask::_tokens->colorCorrectionShader.GetString();
     programDesc.shaderFunctions.push_back(std::move(vertFn));
     programDesc.shaderFunctions.push_back(std::move(fragFn));
     _shaderProgram = _GetHgi()->CreateShaderProgram(programDesc);

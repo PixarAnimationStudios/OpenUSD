@@ -30,6 +30,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdStField {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (fieldIndex)
@@ -39,6 +41,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (openvdbAsset)
     (field3dAsset)
 );
+
+} // pxrImagingHdStField
 
 HdStField::HdStField(SdfPath const& id, TfToken const & fieldType) 
   : HdField(id)
@@ -74,18 +78,18 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
         const TfToken &fieldName = fieldNameValue.Get<TfToken>();
 
         const VtValue fieldIndexValue = sceneDelegate->Get(
-            GetId(), _tokens->fieldIndex);
+            GetId(), pxrImagingHdStField::_tokens->fieldIndex);
 
         const int fieldIndex = fieldIndexValue.Get<int>();
 
-        if (_fieldType == _tokens->openvdbAsset) {
+        if (_fieldType == pxrImagingHdStField::_tokens->openvdbAsset) {
             _textureId = HdStTextureIdentifier(
                 resolvedFilePath,
                 std::make_unique<HdStOpenVDBAssetSubtextureIdentifier>(
                     fieldName, fieldIndex));
         } else {
             const VtValue fieldPurposeValue = sceneDelegate->Get(
-                GetId(), _tokens->fieldPurpose);
+                GetId(), pxrImagingHdStField::_tokens->fieldPurpose);
             const TfToken &fieldPurpose = fieldPurposeValue.Get<TfToken>();
 
             _textureId = HdStTextureIdentifier(
@@ -95,7 +99,7 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
         }
 
         const VtValue textureMemoryValue = sceneDelegate->Get(
-            GetId(), _tokens->textureMemory);
+            GetId(), pxrImagingHdStField::_tokens->textureMemory);
         _textureMemory =
             1048576 * textureMemoryValue.GetWithDefault<float>(0.0f);
         
@@ -127,8 +131,8 @@ const TfTokenVector &
 HdStField::GetSupportedBprimTypes()
 {
     static const TfTokenVector result = {
-        _tokens->openvdbAsset,
-        _tokens->field3dAsset
+        pxrImagingHdStField::_tokens->openvdbAsset,
+        pxrImagingHdStField::_tokens->field3dAsset
     };
     return result;
 }
@@ -137,8 +141,8 @@ bool
 HdStField::IsSupportedBprimType(const TfToken &bprimType)
 {
     return 
-        bprimType == _tokens->openvdbAsset ||
-        bprimType == _tokens->field3dAsset;
+        bprimType == pxrImagingHdStField::_tokens->openvdbAsset ||
+        bprimType == pxrImagingHdStField::_tokens->field3dAsset;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

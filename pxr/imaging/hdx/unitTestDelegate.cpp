@@ -53,6 +53,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdxUnitTestDelegate {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -82,6 +84,8 @@ _CreateGrid(int nx, int ny, VtVec3fArray *points,
         }
     }
 }
+
+} // pxrImagingHdxUnitTestDelegate
 
 namespace pxrImagingHdxUnitTestDelegate {
 class ShadowMatrix : public HdxShadowMatrixComputation
@@ -157,6 +161,8 @@ Hdx_UnitTestDelegate::SetCamera(GfMatrix4d const &viewMatrix,
     SetCamera(_cameraId, viewMatrix, projMatrix);
 }
 
+namespace pxrImagingHdxUnitTestDelegate {
+
 static
 HdCamera::Projection
 _ToHd(const GfCamera::Projection projection)
@@ -171,6 +177,8 @@ _ToHd(const GfCamera::Projection projection)
     return HdCamera::Perspective;
 }
 
+} // pxrImagingHdxUnitTestDelegate
+
 void
 Hdx_UnitTestDelegate::SetCamera(SdfPath const &cameraId,
                                 GfMatrix4d const &viewMatrix,
@@ -183,7 +191,7 @@ Hdx_UnitTestDelegate::SetCamera(SdfPath const &cameraId,
     _cameraTransforms[cameraId] = cam.GetTransform();
 
     _ValueCache &cache = _valueCacheMap[cameraId];
-    cache[HdCameraTokens->projection] = VtValue(_ToHd(cam.GetProjection()));
+    cache[HdCameraTokens->projection] = VtValue(pxrImagingHdxUnitTestDelegate::_ToHd(cam.GetProjection()));
     cache[HdCameraTokens->focalLength] = VtValue(
         cam.GetFocalLength() * float(GfCamera::FOCAL_LENGTH_UNIT));
     cache[HdCameraTokens->horizontalAperture] = VtValue(
@@ -303,7 +311,7 @@ Hdx_UnitTestDelegate::AddRenderBuffer(SdfPath const &id,
     GetRenderIndex().InsertBprim(HdPrimTypeTokens->renderBuffer, this, id);
 
     _ValueCache &cache = _valueCacheMap[id];
-    cache[_tokens->renderBufferDescriptor] = desc;
+    cache[pxrImagingHdxUnitTestDelegate::_tokens->renderBufferDescriptor] = desc;
 }
 
 void
@@ -311,7 +319,7 @@ Hdx_UnitTestDelegate::UpdateRenderBuffer(SdfPath const &id,
                                          HdRenderBufferDescriptor const &desc)
 {
     _ValueCache &cache = _valueCacheMap[id];
-    cache[_tokens->renderBufferDescriptor] = desc;
+    cache[pxrImagingHdxUnitTestDelegate::_tokens->renderBufferDescriptor] = desc;
     GetRenderIndex().GetChangeTracker().MarkBprimDirty(id, HdRenderBuffer::DirtyDescription);
 }
 
@@ -636,9 +644,9 @@ Hdx_UnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4d const &transform,
         AddMesh(
             id,
             transform,
-            _BuildArray(points, sizeof(points)/sizeof(points[0])),
-            _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
-            _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
+            pxrImagingHdxUnitTestDelegate::_BuildArray(points, sizeof(points)/sizeof(points[0])),
+            pxrImagingHdxUnitTestDelegate::_BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
+            pxrImagingHdxUnitTestDelegate::_BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
             PxOsdSubdivTags(),
             color,
             colorInterpolation,
@@ -660,9 +668,9 @@ Hdx_UnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4d const &transform,
         AddMesh(
             id,
             transform,
-            _BuildArray(points, sizeof(points)/sizeof(points[0])),
-            _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
-            _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
+            pxrImagingHdxUnitTestDelegate::_BuildArray(points, sizeof(points)/sizeof(points[0])),
+            pxrImagingHdxUnitTestDelegate::_BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
+            pxrImagingHdxUnitTestDelegate::_BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
             PxOsdSubdivTags(),
             color,
             colorInterpolation,
@@ -683,13 +691,13 @@ Hdx_UnitTestDelegate::AddGrid(SdfPath const &id,
     VtVec3fArray points;
     VtIntArray numVerts;
     VtIntArray verts;
-    _CreateGrid(10, 10, &points, &numVerts, &verts);
+    pxrImagingHdxUnitTestDelegate::_CreateGrid(10, 10, &points, &numVerts, &verts);
 
     AddMesh(id,
             transform,
-            _BuildArray(&points[0], points.size()),
-            _BuildArray(&numVerts[0], numVerts.size()),
-            _BuildArray(&verts[0], verts.size()),
+            pxrImagingHdxUnitTestDelegate::_BuildArray(&points[0], points.size()),
+            pxrImagingHdxUnitTestDelegate::_BuildArray(&numVerts[0], numVerts.size()),
+            pxrImagingHdxUnitTestDelegate::_BuildArray(&verts[0], verts.size()),
             PxOsdSubdivTags(),
             /*color=*/VtValue(GfVec3f(1,1,0)),
             /*colorInterpolation=*/HdInterpolationConstant,
@@ -742,9 +750,9 @@ Hdx_UnitTestDelegate::AddTet(SdfPath const &id, GfMatrix4d const &transform,
      AddMesh(
             id,
             transform,
-            _BuildArray(points, sizeof(points)/sizeof(points[0])),
-            _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
-            _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
+            pxrImagingHdxUnitTestDelegate::_BuildArray(points, sizeof(points)/sizeof(points[0])),
+            pxrImagingHdxUnitTestDelegate::_BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
+            pxrImagingHdxUnitTestDelegate::_BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
             PxOsdSubdivTags(),
             /*color=*/VtValue(GfVec3f(1,1,1)),
             /*colorInterpolation=*/HdInterpolationConstant,
@@ -1021,7 +1029,7 @@ Hdx_UnitTestDelegate::GetRenderBufferDescriptor(SdfPath const &id)
     }
     
     VtValue ret;
-    if (!TfMapLookup(*vcache, _tokens->renderBufferDescriptor, &ret)) {
+    if (!TfMapLookup(*vcache, pxrImagingHdxUnitTestDelegate::_tokens->renderBufferDescriptor, &ret)) {
         return HdRenderBufferDescriptor();
     }
 

@@ -74,13 +74,18 @@ UsdSchemaBase::_IsCompatible() const
     return true;
 }
 
+namespace pxrUsdUsdSchemaBase {
+
 TF_MAKE_STATIC_DATA(TfType, _tfType) {
     *_tfType = TfType::Find<UsdSchemaBase>();
 }
+
+} // pxrUsdUsdSchemaBase
+
 const TfType &
 UsdSchemaBase::_GetTfType() const
 {
-    return *_tfType;
+    return *pxrUsdUsdSchemaBase::_tfType;
 }
 
 UsdAttribute

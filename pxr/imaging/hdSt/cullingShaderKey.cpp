@@ -27,6 +27,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrImagingHdStCullingShaderKey {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,       "frustumCull.glslfx"))
@@ -40,16 +42,18 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainVS,           "ViewFrustumCull.Vertex"))
 );
 
+} // pxrImagingHdStCullingShaderKey
+
 HdSt_CullingShaderKey::HdSt_CullingShaderKey(
     bool instancing, bool tinyCull, bool counting)
-    : glslfx(_tokens->baseGLSLFX)
+    : glslfx(pxrImagingHdStCullingShaderKey::_tokens->baseGLSLFX)
 {
 
-    VS[0] = _tokens->instancing;
-    VS[1] = counting ? _tokens->counting : _tokens->noCounting;
-    VS[2] = tinyCull ? _tokens->tinyCull : _tokens->noTinyCull;
-    VS[3] = _tokens->isVisible;
-    VS[4] = instancing ? _tokens->mainInstancingVS : _tokens->mainVS;
+    VS[0] = pxrImagingHdStCullingShaderKey::_tokens->instancing;
+    VS[1] = counting ? pxrImagingHdStCullingShaderKey::_tokens->counting : pxrImagingHdStCullingShaderKey::_tokens->noCounting;
+    VS[2] = tinyCull ? pxrImagingHdStCullingShaderKey::_tokens->tinyCull : pxrImagingHdStCullingShaderKey::_tokens->noTinyCull;
+    VS[3] = pxrImagingHdStCullingShaderKey::_tokens->isVisible;
+    VS[4] = instancing ? pxrImagingHdStCullingShaderKey::_tokens->mainInstancingVS : pxrImagingHdStCullingShaderKey::_tokens->mainVS;
     VS[5] = TfToken();
 }
 

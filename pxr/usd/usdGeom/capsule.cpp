@@ -220,6 +220,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdGeomCapsule {
+
 static bool
 _ComputeExtentMax(double height, double radius, const TfToken& axis,
     GfVec3f* max)
@@ -241,6 +243,8 @@ _ComputeExtentMax(double height, double radius, const TfToken& axis,
     return true;
 }
 
+} // pxrUsdUsdGeomCapsule
+
 bool
 UsdGeomCapsule::ComputeExtent(double height, double radius, const TfToken& axis,
     VtVec3fArray* extent)
@@ -249,7 +253,7 @@ UsdGeomCapsule::ComputeExtent(double height, double radius, const TfToken& axis,
     extent->resize(2);
 
     GfVec3f max;
-    if (!_ComputeExtentMax(height, radius, axis, &max)) {
+    if (!pxrUsdUsdGeomCapsule::_ComputeExtentMax(height, radius, axis, &max)) {
         return false;
     }
 
@@ -267,7 +271,7 @@ UsdGeomCapsule::ComputeExtent(double height, double radius, const TfToken& axis,
     extent->resize(2);
 
     GfVec3f max;
-    if (!_ComputeExtentMax(height, radius, axis, &max)) {
+    if (!pxrUsdUsdGeomCapsule::_ComputeExtentMax(height, radius, axis, &max)) {
         return false;
     }
 

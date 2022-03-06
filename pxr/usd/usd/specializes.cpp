@@ -32,14 +32,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 // UsdSpecializes
 // ------------------------------------------------------------------------- //
 
-using _ListEditImpl = 
+using _SpecializesListEditImpl = 
     Usd_ListEditImpl<UsdSpecializes, SdfSpecializesProxy>;
 
 // The implementation doesn't define this function as it needs to be specialized
 // so we implement it here.
 template <>
 SdfSpecializesProxy 
-_ListEditImpl::_GetListEditorForSpec(const SdfPrimSpecHandle &spec)
+_SpecializesListEditImpl::_GetListEditorForSpec(const SdfPrimSpecHandle &spec)
 {
     return spec->GetSpecializesList();
 }
@@ -48,25 +48,25 @@ bool
 UsdSpecializes::AddSpecialize(const SdfPath &primPathIn, 
                               UsdListPosition position)
 {
-    return _ListEditImpl::Add(*this, primPathIn, position);
+    return _SpecializesListEditImpl::Add(*this, primPathIn, position);
 }
 
 bool
 UsdSpecializes::RemoveSpecialize(const SdfPath &primPathIn)
 {
-    return _ListEditImpl::Remove(*this, primPathIn);
+    return _SpecializesListEditImpl::Remove(*this, primPathIn);
 }
 
 bool
 UsdSpecializes::ClearSpecializes()
 {
-    return _ListEditImpl::Clear(*this);
+    return _SpecializesListEditImpl::Clear(*this);
 }
 
 bool 
 UsdSpecializes::SetSpecializes(const SdfPathVector& itemsIn)
 {
-    return _ListEditImpl::Set(*this, itemsIn);
+    return _SpecializesListEditImpl::Set(*this, itemsIn);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

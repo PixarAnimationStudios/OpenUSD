@@ -50,10 +50,14 @@ UsdviewqUtils::_GetAllPrimsOfType(UsdStagePtr const &stage,
     return result;
 }
 
+namespace pxrUsdImagingUsdviewqUtils {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (root)
 );
+
+} // pxrUsdImagingUsdviewqUtils
 
 UsdviewqUtils::PrimInfo::PrimInfo(const UsdPrim &prim, const UsdTimeCode time)
 {
@@ -96,7 +100,7 @@ UsdviewqUtils::PrimInfo::PrimInfo(const UsdPrim &prim, const UsdTimeCode time)
     if (prim.GetParent())
         name = prim.GetName().GetString();
     else
-        name = _tokens->root.GetString();
+        name = pxrUsdImagingUsdviewqUtils::_tokens->root.GetString();
     typeName = prim.GetTypeName().GetString();
 }
 

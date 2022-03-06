@@ -318,7 +318,7 @@ TfGlob(std::vector<std::string> const& paths, unsigned int flags)
 
 #else
 
-namespace {
+namespace pxrBaseTfPathUtils {
 
 static
 void
@@ -399,7 +399,7 @@ TfGlob(std::vector<std::string> const& paths, unsigned int flags)
         path = TfStringReplace(path, "/", "\\");
 
         // Do the real work.
-        Tf_Glob(&result, "", path, flags);
+        pxrBaseTfPathUtils::Tf_Glob(&result, "", path, flags);
 
         // If no match and NOCHECK then append the input.
         if ((flags & ARCH_GLOB_NOCHECK) && n == result.size()) {

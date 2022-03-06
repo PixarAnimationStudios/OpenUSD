@@ -122,6 +122,8 @@ UsdImagingConeAdapter::GetPoints(UsdPrim const& prim,
     return GetMeshPoints(prim, time);
 }
 
+namespace pxrUsdImagingUsdImagingConeAdapter {
+
 static GfMatrix4d
 _GetImplicitGeomScaleTransform(UsdPrim const& prim, UsdTimeCode time)
 {
@@ -146,6 +148,8 @@ _GetImplicitGeomScaleTransform(UsdPrim const& prim, UsdTimeCode time)
     return UsdImagingGenerateConeOrCylinderTransform(height, radius, axis);
 }
 
+} // pxrUsdImagingUsdImagingConeAdapter
+
 /*static*/
 VtValue
 UsdImagingConeAdapter::GetMeshPoints(UsdPrim const& prim,
@@ -153,7 +157,7 @@ UsdImagingConeAdapter::GetMeshPoints(UsdPrim const& prim,
 {
     // Return scaled points (and not that of a unit geometry)
     VtVec3fArray points = UsdImagingGetUnitConeMeshPoints();
-    GfMatrix4d scale = _GetImplicitGeomScaleTransform(prim, time);
+    GfMatrix4d scale = pxrUsdImagingUsdImagingConeAdapter::_GetImplicitGeomScaleTransform(prim, time);
     for (GfVec3f& pt : points) {
         pt = scale.Transform(pt);
     }

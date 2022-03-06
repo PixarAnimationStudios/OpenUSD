@@ -76,20 +76,29 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdImagingUsdImagingDelegate {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (lightFilterType)
     (LightAPI)
 );
 
+} // pxrUsdImagingUsdImagingDelegate
+
 // This environment variable matches a set of similar ones in
 // primAdapter.cpp, controlling other attribute caches.
 TF_DEFINE_ENV_SETTING(USDIMAGING_ENABLE_DRAWMODE_CACHE, 1,
                       "Enable a cache for model:drawMode.");
+
+namespace pxrUsdImagingUsdImagingDelegate {
+
 static bool _IsEnabledDrawModeCache() {
     static bool _v = TfGetEnvSetting(USDIMAGING_ENABLE_DRAWMODE_CACHE) == 1;
     return _v;
 }
+
+} // pxrUsdImagingUsdImagingDelegate
 
 // -------------------------------------------------------------------------- //
 // Delegate Implementation.
@@ -210,7 +219,7 @@ UsdImagingDelegate::_GetModelDrawMode(UsdPrim const& prim)
         return UsdGeomTokens->bounds;
     }
 
-    if (_IsEnabledDrawModeCache())
+    if (pxrUsdImagingUsdImagingDelegate::_IsEnabledDrawModeCache())
         return _drawModeCache.GetValue(prim);
     else
         return UsdImaging_DrawModeStrategy::ComputeDrawMode(prim);
@@ -248,7 +257,7 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
     // will not return a light adapter. Support for this is expected to be added
     // in the future.
     if (!adapter && prim.HasAPI<UsdLuxLightAPI>()) {
-        return _AdapterLookup(_tokens->LightAPI);
+        return _AdapterLookup(pxrUsdImagingUsdImagingDelegate::_tokens->LightAPI);
     }
     return adapter;
 }
@@ -2727,7 +2736,7 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
         // Its ok that this is not a light. Lets assume its a light filter.
         // Asking for the lightFilterType is the render delegates way of
         // determining the type of the light filter.
-        if (paramName == _tokens->lightFilterType) {
+        if (paramName == pxrUsdImagingUsdImagingDelegate::_tokens->lightFilterType) {
             // Use the schema type name from the prim type info which is the
             // official type of the prim.
             return VtValue(prim.GetPrimTypeInfo().GetSchemaTypeName());

@@ -202,6 +202,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdLuxRectLight {
+
 static bool
 _ComputeLocalExtent(const float width, 
                     const float height, 
@@ -249,9 +251,11 @@ _ComputeExtent(
     return true;
 }
 
+} // pxrUsdUsdLuxRectLight
+
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)
 {
-    UsdGeomRegisterComputeExtentFunction<UsdLuxRectLight>(_ComputeExtent);
+    UsdGeomRegisterComputeExtentFunction<UsdLuxRectLight>(pxrUsdUsdLuxRectLight::_ComputeExtent);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

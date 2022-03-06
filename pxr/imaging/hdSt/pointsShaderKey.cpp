@@ -28,6 +28,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrImagingHdStPointsShaderKey {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,         "points.glslfx"))
@@ -51,22 +53,24 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((instancing,               "Instancing.Transform"))
 );
 
+} // pxrImagingHdStPointsShaderKey
+
 HdSt_PointsShaderKey::HdSt_PointsShaderKey()
-    : glslfx(_tokens->baseGLSLFX)
+    : glslfx(pxrImagingHdStPointsShaderKey::_tokens->baseGLSLFX)
 {
-    VS[0] = _tokens->instancing;
-    VS[1] = _tokens->mainVS;
-    VS[2] = _tokens->pointIdVS;
-    VS[3] = _tokens->pointIdSelDecodeUtilsVS;
-    VS[4] = _tokens->pointIdSelPointSelVS;
+    VS[0] = pxrImagingHdStPointsShaderKey::_tokens->instancing;
+    VS[1] = pxrImagingHdStPointsShaderKey::_tokens->mainVS;
+    VS[2] = pxrImagingHdStPointsShaderKey::_tokens->pointIdVS;
+    VS[3] = pxrImagingHdStPointsShaderKey::_tokens->pointIdSelDecodeUtilsVS;
+    VS[4] = pxrImagingHdStPointsShaderKey::_tokens->pointIdSelPointSelVS;
     VS[5] = TfToken();
 
     // Common must be first as it defines terminal interfaces
-    FS[0] = _tokens->commonFS;
-    FS[1] = _tokens->surfaceFS;
-    FS[2] = _tokens->noScalarOverrideFS;
-    FS[3] = _tokens->mainFS;
-    FS[4] = _tokens->pointIdFS;
+    FS[0] = pxrImagingHdStPointsShaderKey::_tokens->commonFS;
+    FS[1] = pxrImagingHdStPointsShaderKey::_tokens->surfaceFS;
+    FS[2] = pxrImagingHdStPointsShaderKey::_tokens->noScalarOverrideFS;
+    FS[3] = pxrImagingHdStPointsShaderKey::_tokens->mainFS;
+    FS[4] = pxrImagingHdStPointsShaderKey::_tokens->pointIdFS;
     FS[5] = TfToken();
 }
 

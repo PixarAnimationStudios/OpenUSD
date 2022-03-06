@@ -42,10 +42,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrUsdUsdGeomMetrics {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (UsdGeomMetrics)
 );
+
+} // pxrUsdUsdGeomMetrics
 
 TfToken 
 UsdGeomGetStageUpAxis(const UsdStageWeakPtr &stage)
@@ -86,6 +90,8 @@ UsdGeomSetStageUpAxis(const UsdStageWeakPtr &stage, const TfToken &axis)
     return stage->SetMetadata(UsdGeomTokens->upAxis, VtValue(axis));
 }
 
+namespace pxrUsdUsdGeomMetrics {
+
 TF_MAKE_STATIC_DATA(TfToken, _fallbackUpAxis)
 {
     TfToken upAxis;
@@ -99,12 +105,12 @@ TF_MAKE_STATIC_DATA(TfToken, _fallbackUpAxis)
         PlugPluginPtr plug = *plugIter;
         JsObject metadata = plug->GetMetadata();
         JsValue metricsDictValue;
-        if (TfMapLookup(metadata, _tokens->UsdGeomMetrics, &metricsDictValue)){
+        if (TfMapLookup(metadata, pxrUsdUsdGeomMetrics::_tokens->UsdGeomMetrics, &metricsDictValue)){
             if (!metricsDictValue.Is<JsObject>()) {
                 TF_CODING_ERROR(
                         "%s[%s] was not a dictionary in plugInfo.json file.",
                         plug->GetName().c_str(), 
-                        _tokens->UsdGeomMetrics.GetText());
+                        pxrUsdUsdGeomMetrics::_tokens->UsdGeomMetrics.GetText());
                 continue;
             }
 
@@ -118,7 +124,7 @@ TF_MAKE_STATIC_DATA(TfToken, _fallbackUpAxis)
                     TF_CODING_ERROR(
                         "%s[%s][%s] was not a string.",
                         plug->GetName().c_str(),
-                        _tokens->UsdGeomMetrics.GetText(),
+                        pxrUsdUsdGeomMetrics::_tokens->UsdGeomMetrics.GetText(),
                         UsdGeomTokens->upAxis.GetText());
                     continue;
                 }
@@ -134,7 +140,7 @@ TF_MAKE_STATIC_DATA(TfToken, _fallbackUpAxis)
                         "%s[%s][%s] had value \"%s\", but only \"Y\" and"
                         " \"Z\" are allowed.",
                         plug->GetName().c_str(),
-                        _tokens->UsdGeomMetrics.GetText(),
+                        pxrUsdUsdGeomMetrics::_tokens->UsdGeomMetrics.GetText(),
                         UsdGeomTokens->upAxis.GetText(),
                         axisStr.c_str());
                     continue;
@@ -163,10 +169,12 @@ TF_MAKE_STATIC_DATA(TfToken, _fallbackUpAxis)
     *_fallbackUpAxis = upAxis.IsEmpty() ? schemaFallback : upAxis;
 }
 
+} // pxrUsdUsdGeomMetrics
+
 TfToken
 UsdGeomGetFallbackUpAxis()
 {
-    return *_fallbackUpAxis;
+    return *pxrUsdUsdGeomMetrics::_fallbackUpAxis;
 }
 
 

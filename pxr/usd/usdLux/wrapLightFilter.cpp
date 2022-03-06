@@ -131,6 +131,8 @@ void wrapUsdLuxLightFilter()
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 
+namespace pxrUsdUsdLuxWrapLightFilter {
+
 static UsdAttribute
 _CreateShaderIdAttrForRenderContext(
     UsdLuxLightFilter &self, 
@@ -143,8 +145,6 @@ _CreateShaderIdAttrForRenderContext(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), 
         writeSparsely);
 }
-
-namespace pxrUsdUsdLuxWrapLightFilter {
 
 WRAP_CUSTOM {
     _class

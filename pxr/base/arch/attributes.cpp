@@ -38,7 +38,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrBaseArchAttributes {
 
 // Minimal access to a Mach-O header, providing just enough to find a
 // named section in a named segment.  This assumes the headers have
@@ -241,7 +241,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrBaseArchAttributes {
 
 // Minimal access to an NT header, providing just enough to find a
 // named section.  This assumes the headers have been mapped into the
@@ -373,14 +373,14 @@ Arch_ConstructorInit::Arch_ConstructorInit()
 {
     // Get the module containing this object, which we expect to be static
     // global.
-    RunConstructors(GetCurrentModule(this));
+    pxrBaseArchAttributes::RunConstructors(pxrBaseArchAttributes::GetCurrentModule(this));
 }
 
 Arch_ConstructorInit::~Arch_ConstructorInit()
 {
     // Get the module containing this object, which we expect to be static
     // global.
-    RunDestructors(GetCurrentModule(this));
+    pxrBaseArchAttributes::RunDestructors(pxrBaseArchAttributes::GetCurrentModule(this));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

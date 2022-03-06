@@ -31,6 +31,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdSdrShaderMetadataHelpers {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -44,6 +46,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     // SdrPropertyTypes->Terminal
     ((terminal, "terminal"))
 );
+
+} // pxrUsdSdrShaderMetadataHelpers
 
 namespace ShaderMetadataHelpers
 {
@@ -224,9 +228,9 @@ namespace ShaderMetadataHelpers
         if (widgetSearch != metadata.end()) {
             const TfToken widget = TfToken(widgetSearch->second);
 
-            if ((widget == _tokens->assetIdInput) ||
-                (widget == _tokens->filename) ||
-                (widget == _tokens->fileInput)) {
+            if ((widget == pxrUsdSdrShaderMetadataHelpers::_tokens->assetIdInput) ||
+                (widget == pxrUsdSdrShaderMetadataHelpers::_tokens->filename) ||
+                (widget == pxrUsdSdrShaderMetadataHelpers::_tokens->fileInput)) {
                 return true;
             }
         }
@@ -249,7 +253,7 @@ namespace ShaderMetadataHelpers
             // the property as a terminal, we only need to check that the first
             // string in the renderType value specifies "terminal"
             if (TfStringStartsWith(
-                renderTypeSearch->second, _tokens->terminal)) {
+                renderTypeSearch->second, pxrUsdSdrShaderMetadataHelpers::_tokens->terminal)) {
                 return true;
             }
         }

@@ -221,10 +221,14 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdUsdShadeMaterial {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (material)
 );
+
+} // pxrUsdUsdShadeMaterial
 
 
 std::pair<UsdStagePtr, UsdEditTarget >

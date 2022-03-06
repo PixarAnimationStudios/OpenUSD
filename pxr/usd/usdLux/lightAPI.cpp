@@ -39,10 +39,14 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdLuxLightAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (LightAPI)
 );
+
+} // pxrUsdUsdLuxLightAPI
 
 /* virtual */
 UsdLuxLightAPI::~UsdLuxLightAPI()
@@ -445,6 +449,8 @@ UsdLuxLightAPI::GetShadowLinkCollectionAPI() const
     return UsdCollectionAPI(GetPrim(), UsdLuxTokens->shadowLink);
 }
 
+namespace pxrUsdUsdLuxLightAPI {
+
 static TfToken 
 _GetShaderIdAttrName(const TfToken &renderContext)
 {
@@ -455,11 +461,13 @@ _GetShaderIdAttrName(const TfToken &renderContext)
         SdfPath::JoinIdentifier(renderContext, UsdLuxTokens->lightShaderId));
 }
 
+} // pxrUsdUsdLuxLightAPI
+
 UsdAttribute 
 UsdLuxLightAPI::GetShaderIdAttrForRenderContext(
     const TfToken &renderContext) const
 {
-    return GetPrim().GetAttribute(_GetShaderIdAttrName(renderContext));
+    return GetPrim().GetAttribute(pxrUsdUsdLuxLightAPI::_GetShaderIdAttrName(renderContext));
 }
 
 UsdAttribute 
@@ -468,7 +476,7 @@ UsdLuxLightAPI::CreateShaderIdAttrForRenderContext(
     VtValue const &defaultValue, 
     bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(_GetShaderIdAttrName(renderContext),
+    return UsdSchemaBase::_CreateAttr(pxrUsdUsdLuxLightAPI::_GetShaderIdAttrName(renderContext),
                        SdfValueTypeNames->Token,
                        /* custom = */ false,
                        SdfVariabilityUniform,

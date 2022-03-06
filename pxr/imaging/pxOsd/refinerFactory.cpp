@@ -204,8 +204,8 @@ namespace Far {
 
 //----------------------------------------------------------
 template <> inline bool
-TopologyRefinerFactory<PXR_NS::Converter>::resizeComponentTopology(
-    Far::TopologyRefiner & refiner, PXR_NS::Converter const & converter) {
+TopologyRefinerFactory<PXR_NS::pxrImagingPxOsdRefinerFactory::Converter>::resizeComponentTopology(
+    Far::TopologyRefiner & refiner, PXR_NS::pxrImagingPxOsdRefinerFactory::Converter const & converter) {
 
     PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -237,8 +237,8 @@ TopologyRefinerFactory<PXR_NS::Converter>::resizeComponentTopology(
 //----------------------------------------------------------
 template <>
 inline bool
-TopologyRefinerFactory<PXR_NS::Converter>::assignComponentTopology(
-    Far::TopologyRefiner & refiner, PXR_NS::Converter const & converter) {
+TopologyRefinerFactory<PXR_NS::pxrImagingPxOsdRefinerFactory::Converter>::assignComponentTopology(
+    Far::TopologyRefiner & refiner, PXR_NS::pxrImagingPxOsdRefinerFactory::Converter const & converter) {
 
     PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -270,8 +270,8 @@ TopologyRefinerFactory<PXR_NS::Converter>::assignComponentTopology(
 
 template <>
 inline bool
-TopologyRefinerFactory<PXR_NS::Converter>::assignComponentTags(
-    Far::TopologyRefiner & refiner, PXR_NS::Converter const & converter) {
+TopologyRefinerFactory<PXR_NS::pxrImagingPxOsdRefinerFactory::Converter>::assignComponentTags(
+    Far::TopologyRefiner & refiner, PXR_NS::pxrImagingPxOsdRefinerFactory::Converter const & converter) {
 
     PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -398,8 +398,8 @@ TopologyRefinerFactory<PXR_NS::Converter>::assignComponentTags(
 
 template <>
 bool
-TopologyRefinerFactory<PXR_NS::Converter>::assignFaceVaryingTopology(
-    TopologyRefiner & refiner, PXR_NS::Converter const & converter) {
+TopologyRefinerFactory<PXR_NS::pxrImagingPxOsdRefinerFactory::Converter>::assignFaceVaryingTopology(
+    TopologyRefiner & refiner, PXR_NS::pxrImagingPxOsdRefinerFactory::Converter const & converter) {
 
     PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -447,9 +447,9 @@ TopologyRefinerFactory<PXR_NS::Converter>::assignFaceVaryingTopology(
 //----------------------------------------------------------
 template <>
 inline void
-TopologyRefinerFactory<PXR_NS::Converter>::reportInvalidTopology(
+TopologyRefinerFactory<PXR_NS::pxrImagingPxOsdRefinerFactory::Converter>::reportInvalidTopology(
     TopologyRefinerFactory::TopologyError /* errCode */,
-        char const * msg, PXR_NS::Converter const & converter) {
+        char const * msg, PXR_NS::pxrImagingPxOsdRefinerFactory::Converter const & converter) {
     PXR_NAMESPACE_USING_DIRECTIVE
     TF_WARN("%s (%s)", msg, converter.name.GetText());
 }

@@ -44,6 +44,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrUsdImagingUsdImagingGLDrawModeAdapter {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -84,7 +86,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (activeTexCard)
 );
 
-namespace pxrUsdImagingUsdImagingGLDrawModeAdapter {
     enum AxesMask : uint8_t {
         xPos = (1 << 0),
         yPos = (1 << 1),
@@ -108,7 +109,7 @@ TF_REGISTRY_FUNCTION(TfType)
 static SdfPath
 _GetMaterialPath(UsdPrim const& prim)
 {
-    const SdfPath matPath = SdfPath(_tokens->material.GetString());
+    const SdfPath matPath = SdfPath(pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->material.GetString());
     return prim.GetPath().AppendPath(matPath);
 }
 
@@ -247,7 +248,7 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
 bool
 UsdImagingGLDrawModeAdapter::_IsMaterialPath(SdfPath const& path) const
 {
-    return path.GetNameToken() == _tokens->material;
+    return path.GetNameToken() == pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->material;
 }
 
 void
@@ -255,7 +256,7 @@ UsdImagingGLDrawModeAdapter::ProcessPrimResync(SdfPath const& cachePath,
         UsdImagingIndexProxy* index)
 
 {
-    if (cachePath.GetNameToken() == _tokens->material) {
+    if (cachePath.GetNameToken() == pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->material) {
         // Ignore a resync of the material on the theory that the rprim resync
         // will take care of it.
         return;
@@ -274,7 +275,7 @@ void
 UsdImagingGLDrawModeAdapter::ProcessPrimRemoval(SdfPath const& cachePath,
         UsdImagingIndexProxy* index)
 {
-    if (cachePath.GetNameToken() == _tokens->material) {
+    if (cachePath.GetNameToken() == pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->material) {
         // Ignore a removal of the material on the theory that the rprim removal
         // will take care of it.
         return;
@@ -570,7 +571,7 @@ UsdImagingGLDrawModeAdapter::Get(UsdPrim const& prim,
             &points, &extent, &uv, &assign);
         return points;
 
-    } else if (key == _tokens->cardsUv) {
+    } else if (key == pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->cardsUv) {
         TRACE_FUNCTION_SCOPE("cardsUV");
         TfToken drawMode = UsdGeomTokens->default_;
         _DrawModeMap::const_iterator it = _drawModeMap.find(cachePath);
@@ -587,7 +588,7 @@ UsdImagingGLDrawModeAdapter::Get(UsdPrim const& prim,
             &points, &extent, &uv, &assign);
         return uv;
 
-    } else if (key == _tokens->cardsTexAssign) {
+    } else if (key == pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->cardsTexAssign) {
         TRACE_FUNCTION_SCOPE("cardsTexAssign");
         TfToken drawMode = UsdGeomTokens->default_;
         _DrawModeMap::const_iterator it = _drawModeMap.find(cachePath);
@@ -604,7 +605,7 @@ UsdImagingGLDrawModeAdapter::Get(UsdPrim const& prim,
             &points, &extent, &uv, &assign);
         return assign;
 
-    } else if (key == _tokens->displayRoughness) {
+    } else if (key == pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->displayRoughness) {
         return VtValue(1.0f);
     }
 
@@ -662,18 +663,18 @@ UsdImagingGLDrawModeAdapter::GetMaterialResource(UsdPrim const& prim,
     terminal.identifier = sdrNode->GetIdentifier();
 
     const TfToken textureNames[12] = {
-        _tokens->textureXPosColor,
-        _tokens->textureYPosColor,
-        _tokens->textureZPosColor,
-        _tokens->textureXNegColor,
-        _tokens->textureYNegColor,
-        _tokens->textureZNegColor,
-        _tokens->textureXPosOpacity,
-        _tokens->textureYPosOpacity,
-        _tokens->textureZPosOpacity,
-        _tokens->textureXNegOpacity,
-        _tokens->textureYNegOpacity,
-        _tokens->textureZNegOpacity
+        pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->textureXPosColor,
+        pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->textureYPosColor,
+        pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->textureZPosColor,
+        pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->textureXNegColor,
+        pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->textureYNegColor,
+        pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->textureZNegColor,
+        pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->textureXPosOpacity,
+        pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->textureYPosOpacity,
+        pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->textureZPosOpacity,
+        pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->textureXNegOpacity,
+        pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->textureYNegOpacity,
+        pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->textureZNegOpacity
     };
 
     if (model) {
@@ -703,19 +704,19 @@ UsdImagingGLDrawModeAdapter::GetMaterialResource(UsdPrim const& prim,
                 HdMaterialNode textureNode;
                 textureNode.path = textureNodePath;
                 textureNode.identifier = UsdImagingTokens->UsdUVTexture;
-                textureNode.parameters[_tokens->st] = _tokens->cardsUv;
-                textureNode.parameters[_tokens->fallback] = fallback;
-                textureNode.parameters[_tokens->file] = textureFile;
-                textureNode.parameters[_tokens->minFilter] =
-                    _tokens->linearMipmapLinear;
-                textureNode.parameters[_tokens->magFilter] =
-                    _tokens->linear;
+                textureNode.parameters[pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->st] = pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->cardsUv;
+                textureNode.parameters[pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->fallback] = fallback;
+                textureNode.parameters[pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->file] = textureFile;
+                textureNode.parameters[pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->minFilter] =
+                    pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->linearMipmapLinear;
+                textureNode.parameters[pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->magFilter] =
+                    pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->linear;
 
                 // Insert connection between texture node and terminal color
                 // input
                 HdMaterialRelationship colorRel;
                 colorRel.inputId = textureNode.path;
-                colorRel.inputName = _tokens->rgb;
+                colorRel.inputName = pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->rgb;
                 colorRel.outputId = terminal.path;
                 colorRel.outputName = textureNames[i];
                 network.relationships.emplace_back(std::move(colorRel));
@@ -724,7 +725,7 @@ UsdImagingGLDrawModeAdapter::GetMaterialResource(UsdPrim const& prim,
                 // opacity input
                 HdMaterialRelationship opacityRel;
                 opacityRel.inputId = textureNode.path;
-                opacityRel.inputName = _tokens->a;
+                opacityRel.inputName = pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->a;
                 opacityRel.outputId = terminal.path;
                 opacityRel.outputName = textureNames[i + 6];
                 network.relationships.emplace_back(std::move(opacityRel));
@@ -746,19 +747,19 @@ UsdImagingGLDrawModeAdapter::GetMaterialResource(UsdPrim const& prim,
     // Adding a primvar reader for the card assignment
     // Make primvar reader node
     SdfPath primvarNodePath = _GetMaterialPath(prim)
-        .AppendProperty(_tokens->cardsTexAssign);
+        .AppendProperty(pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->cardsTexAssign);
     HdMaterialNode primvarNode;
     primvarNode.path = primvarNodePath;
     primvarNode.identifier = UsdImagingTokens->UsdPrimvarReader_int;
-    primvarNode.parameters[_tokens->varname] = _tokens->cardsTexAssign;
-    primvarNode.parameters[_tokens->fallback] = VtValue(0);
+    primvarNode.parameters[pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->varname] = pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->cardsTexAssign;
+    primvarNode.parameters[pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->fallback] = VtValue(0);
 
     // Insert connection between primvar reader node and terminal
     HdMaterialRelationship relPrimvar;
     relPrimvar.inputId = primvarNode.path;
-    relPrimvar.inputName = _tokens->result;
+    relPrimvar.inputName = pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->result;
     relPrimvar.outputId = terminal.path;
-    relPrimvar.outputName = _tokens->activeTexCard;
+    relPrimvar.outputName = pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->activeTexCard;
     network.relationships.emplace_back(std::move(relPrimvar));
 
     // Insert primvar reader node
@@ -898,13 +899,13 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
 
         if (drawMode == UsdGeomTokens->cards) {
             // Merge "cardsUv" and "cardsTexAssign" primvars
-            _MergePrimvar(&primvars, _tokens->cardsUv,
+            _MergePrimvar(&primvars, pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->cardsUv,
                 HdInterpolationVertex);
-            _MergePrimvar(&primvars, _tokens->cardsTexAssign,
+            _MergePrimvar(&primvars, pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->cardsTexAssign,
                 HdInterpolationUniform);
 
             // XXX: backdoor into the material system.
-            _MergePrimvar(&primvars, _tokens->displayRoughness, 
+            _MergePrimvar(&primvars, pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->displayRoughness, 
                 HdInterpolationConstant);
         }
 
@@ -1358,7 +1359,7 @@ UsdImagingGLDrawModeAdapter::_GetMatrixFromImageMetadata(
     //   in row major order.
     // - GfMatrix4f or GfMatrix4d
     VtValue worldtoscreen;
-    if (img->GetMetadata(_tokens->worldtoscreen, &worldtoscreen)) {
+    if (img->GetMetadata(pxrUsdImagingUsdImagingGLDrawModeAdapter::_tokens->worldtoscreen, &worldtoscreen)) {
         if (worldtoscreen.IsHolding<std::vector<float>>()) {
             return pxrUsdImagingUsdImagingGLDrawModeAdapter::_ConvertToMatrix(
                 worldtoscreen.UncheckedGet<std::vector<float>>(), mat);

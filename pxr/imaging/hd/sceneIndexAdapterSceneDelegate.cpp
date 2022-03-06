@@ -85,6 +85,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace pxrImagingHdSceneIndexAdapterSceneDelegate {
+
 // XXX: currently private and duplicated where used so as to not yet formally
 //      define this convention.
 TF_DEFINE_PRIVATE_TOKENS(
@@ -92,6 +94,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (prmanParams)
     ((prmanParamsNames, ""))
 );
+
+} // pxrImagingHdSceneIndexAdapterSceneDelegate
 
 
 /* static */
@@ -1303,15 +1307,15 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
     // Temporary backdoor for getting arbitrary data to render delegates
     // Currently supported for setting Options and active integrator parameters
     // in hdPrman.
-    if (prim.primType == _tokens->prmanParams) {
+    if (prim.primType == pxrImagingHdSceneIndexAdapterSceneDelegate::_tokens->prmanParams) {
          HdContainerDataSourceHandle prmanParamsDs = HdContainerDataSource::Cast(
-                prim.dataSource->Get(_tokens->prmanParams));
+                prim.dataSource->Get(pxrImagingHdSceneIndexAdapterSceneDelegate::_tokens->prmanParams));
 
          if (!prmanParamsDs) {
             return VtValue();
          }
 
-         if (key == _tokens->prmanParamsNames) {
+         if (key == pxrImagingHdSceneIndexAdapterSceneDelegate::_tokens->prmanParamsNames) {
             return VtValue(prmanParamsDs->GetNames());
          } else {
             if (HdContainerDataSourceHandle paramsDs =

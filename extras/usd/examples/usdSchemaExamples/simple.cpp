@@ -114,7 +114,7 @@ UsdSchemaExamplesSimple::CreateTargetRel() const
                        /* custom = */ false);
 }
 
-namespace {
+namespace usdSchemaExamplesSimple {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -134,7 +134,7 @@ UsdSchemaExamplesSimple::GetSchemaAttributeNames(bool includeInherited)
         UsdSchemaExamplesTokens->intAttr,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        usdSchemaExamplesSimple::_ConcatenateAttributeNames(
             UsdTyped::GetSchemaAttributeNames(true),
             localNames);
 

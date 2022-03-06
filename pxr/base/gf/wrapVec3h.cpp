@@ -500,8 +500,8 @@ void wrapVec3h()
 #if PY_MAJOR_VERSION == 2
         // Needed only to support "from __future__ import division" in
         // python 2. In python 3 builds boost::python adds this for us.
-        .def("__truediv__", __truediv__ )
-        .def("__itruediv__", __itruediv__ )
+        .def("__truediv__", pxrBaseGfWrapVec3h::__truediv__ )
+        .def("__itruediv__", pxrBaseGfWrapVec3h::__itruediv__ )
 #endif
 
         .def("Axis", &Vec::Axis).staticmethod("Axis")

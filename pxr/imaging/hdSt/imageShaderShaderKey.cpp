@@ -27,6 +27,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+namespace pxrImagingHdStImageShaderShaderKey {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,       "imageShader.glslfx"))
@@ -34,13 +36,15 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainFS,           "ImageShader.Fragment"))
 );
 
+} // pxrImagingHdStImageShaderShaderKey
+
 HdSt_ImageShaderShaderKey::HdSt_ImageShaderShaderKey()
-    : glslfx(_tokens->baseGLSLFX)
+    : glslfx(pxrImagingHdStImageShaderShaderKey::_tokens->baseGLSLFX)
 {
-    VS[0] = _tokens->mainVS;
+    VS[0] = pxrImagingHdStImageShaderShaderKey::_tokens->mainVS;
     VS[1] = TfToken();
 
-    FS[0] = _tokens->mainFS;
+    FS[0] = pxrImagingHdStImageShaderShaderKey::_tokens->mainFS;
     FS[1] = TfToken();
 }
 

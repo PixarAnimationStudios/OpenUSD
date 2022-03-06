@@ -39,11 +39,15 @@ TF_REGISTRY_FUNCTION(TfType)
     
 }
 
+namespace pxrUsdUsdPhysicsDriveAPI {
+
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
     (PhysicsDriveAPI)
     (drive)
 );
+
+} // pxrUsdUsdPhysicsDriveAPI
 
 /* virtual */
 UsdPhysicsDriveAPI::~UsdPhysicsDriveAPI()
@@ -117,9 +121,9 @@ UsdPhysicsDriveAPI::IsPhysicsDriveAPIPath(
     }
 
     if (tokens.size() >= 2
-        && tokens[0] == _schemaTokens->drive) {
+        && tokens[0] == pxrUsdUsdPhysicsDriveAPI::_schemaTokens->drive) {
         *name = TfToken(propertyName.substr(
-            _schemaTokens->drive.GetString().size() + 1));
+            pxrUsdUsdPhysicsDriveAPI::_schemaTokens->drive.GetString().size() + 1));
         return true;
     }
 
@@ -173,6 +177,8 @@ UsdPhysicsDriveAPI::_GetTfType() const
     return _GetStaticTfType();
 }
 
+namespace pxrUsdUsdPhysicsDriveAPI {
+
 /// Returns the property name prefixed with the correct namespace prefix, which
 /// is composed of the the API's propertyNamespacePrefix metadata and the
 /// instance name of the API.
@@ -183,11 +189,13 @@ _GetNamespacedPropertyName(const TfToken instanceName, const TfToken propName)
     return UsdSchemaRegistry::MakeMultipleApplyNameInstance(propName, instanceName);
 }
 
+} // pxrUsdUsdPhysicsDriveAPI
+
 UsdAttribute
 UsdPhysicsDriveAPI::GetTypeAttr() const
 {
     return GetPrim().GetAttribute(
-        _GetNamespacedPropertyName(
+        pxrUsdUsdPhysicsDriveAPI::_GetNamespacedPropertyName(
             GetName(),
             UsdPhysicsTokens->drive_MultipleApplyTemplate_PhysicsType));
 }
@@ -196,7 +204,7 @@ UsdAttribute
 UsdPhysicsDriveAPI::CreateTypeAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
-                       _GetNamespacedPropertyName(
+                       pxrUsdUsdPhysicsDriveAPI::_GetNamespacedPropertyName(
                             GetName(),
                            UsdPhysicsTokens->drive_MultipleApplyTemplate_PhysicsType),
                        SdfValueTypeNames->Token,
@@ -210,7 +218,7 @@ UsdAttribute
 UsdPhysicsDriveAPI::GetMaxForceAttr() const
 {
     return GetPrim().GetAttribute(
-        _GetNamespacedPropertyName(
+        pxrUsdUsdPhysicsDriveAPI::_GetNamespacedPropertyName(
             GetName(),
             UsdPhysicsTokens->drive_MultipleApplyTemplate_PhysicsMaxForce));
 }
@@ -219,7 +227,7 @@ UsdAttribute
 UsdPhysicsDriveAPI::CreateMaxForceAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
-                       _GetNamespacedPropertyName(
+                       pxrUsdUsdPhysicsDriveAPI::_GetNamespacedPropertyName(
                             GetName(),
                            UsdPhysicsTokens->drive_MultipleApplyTemplate_PhysicsMaxForce),
                        SdfValueTypeNames->Float,
@@ -233,7 +241,7 @@ UsdAttribute
 UsdPhysicsDriveAPI::GetTargetPositionAttr() const
 {
     return GetPrim().GetAttribute(
-        _GetNamespacedPropertyName(
+        pxrUsdUsdPhysicsDriveAPI::_GetNamespacedPropertyName(
             GetName(),
             UsdPhysicsTokens->drive_MultipleApplyTemplate_PhysicsTargetPosition));
 }
@@ -242,7 +250,7 @@ UsdAttribute
 UsdPhysicsDriveAPI::CreateTargetPositionAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
-                       _GetNamespacedPropertyName(
+                       pxrUsdUsdPhysicsDriveAPI::_GetNamespacedPropertyName(
                             GetName(),
                            UsdPhysicsTokens->drive_MultipleApplyTemplate_PhysicsTargetPosition),
                        SdfValueTypeNames->Float,
@@ -256,7 +264,7 @@ UsdAttribute
 UsdPhysicsDriveAPI::GetTargetVelocityAttr() const
 {
     return GetPrim().GetAttribute(
-        _GetNamespacedPropertyName(
+        pxrUsdUsdPhysicsDriveAPI::_GetNamespacedPropertyName(
             GetName(),
             UsdPhysicsTokens->drive_MultipleApplyTemplate_PhysicsTargetVelocity));
 }
@@ -265,7 +273,7 @@ UsdAttribute
 UsdPhysicsDriveAPI::CreateTargetVelocityAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
-                       _GetNamespacedPropertyName(
+                       pxrUsdUsdPhysicsDriveAPI::_GetNamespacedPropertyName(
                             GetName(),
                            UsdPhysicsTokens->drive_MultipleApplyTemplate_PhysicsTargetVelocity),
                        SdfValueTypeNames->Float,
@@ -279,7 +287,7 @@ UsdAttribute
 UsdPhysicsDriveAPI::GetDampingAttr() const
 {
     return GetPrim().GetAttribute(
-        _GetNamespacedPropertyName(
+        pxrUsdUsdPhysicsDriveAPI::_GetNamespacedPropertyName(
             GetName(),
             UsdPhysicsTokens->drive_MultipleApplyTemplate_PhysicsDamping));
 }
@@ -288,7 +296,7 @@ UsdAttribute
 UsdPhysicsDriveAPI::CreateDampingAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
-                       _GetNamespacedPropertyName(
+                       pxrUsdUsdPhysicsDriveAPI::_GetNamespacedPropertyName(
                             GetName(),
                            UsdPhysicsTokens->drive_MultipleApplyTemplate_PhysicsDamping),
                        SdfValueTypeNames->Float,
@@ -302,7 +310,7 @@ UsdAttribute
 UsdPhysicsDriveAPI::GetStiffnessAttr() const
 {
     return GetPrim().GetAttribute(
-        _GetNamespacedPropertyName(
+        pxrUsdUsdPhysicsDriveAPI::_GetNamespacedPropertyName(
             GetName(),
             UsdPhysicsTokens->drive_MultipleApplyTemplate_PhysicsStiffness));
 }
@@ -311,7 +319,7 @@ UsdAttribute
 UsdPhysicsDriveAPI::CreateStiffnessAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
-                       _GetNamespacedPropertyName(
+                       pxrUsdUsdPhysicsDriveAPI::_GetNamespacedPropertyName(
                             GetName(),
                            UsdPhysicsTokens->drive_MultipleApplyTemplate_PhysicsStiffness),
                        SdfValueTypeNames->Float,
