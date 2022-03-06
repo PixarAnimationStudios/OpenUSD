@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapScene {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -107,21 +107,21 @@ void wrapUsdPhysicsScene()
         .def("GetGravityDirectionAttr",
              &This::GetGravityDirectionAttr)
         .def("CreateGravityDirectionAttr",
-             &_CreateGravityDirectionAttr,
+             &pxrUsdUsdPhysicsWrapScene::_CreateGravityDirectionAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetGravityMagnitudeAttr",
              &This::GetGravityMagnitudeAttr)
         .def("CreateGravityMagnitudeAttr",
-             &_CreateGravityMagnitudeAttr,
+             &pxrUsdUsdPhysicsWrapScene::_CreateGravityMagnitudeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdPhysicsWrapScene::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdPhysicsWrapScene::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -143,7 +143,7 @@ void wrapUsdPhysicsScene()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapScene {
 
 WRAP_CUSTOM {
 }

@@ -44,7 +44,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrImagingHdStRenderPassShader {
 
 struct _NamedTextureIdentifier {
     TfToken name;
@@ -282,10 +282,10 @@ HdStRenderPassShader::UpdateAovInputTextures(
 
     // Compute the identifiers for the textures backing the requested
     // (resolved) AOVs.
-    const _NamedTextureIdentifiers namedTextureIdentifiers =
-        _GetNamedTextureIdentifiers(aovInputBindings, renderIndex);
+    const pxrImagingHdStRenderPassShader::_NamedTextureIdentifiers namedTextureIdentifiers =
+        pxrImagingHdStRenderPassShader::_GetNamedTextureIdentifiers(aovInputBindings, renderIndex);
     // If the (named) texture handles are up-to-date, there is nothing to do.
-    if (_AreHandlesValid(_namedTextureHandles, namedTextureIdentifiers)) {
+    if (pxrImagingHdStRenderPassShader::_AreHandlesValid(_namedTextureHandles, namedTextureIdentifiers)) {
         return;
     }
 

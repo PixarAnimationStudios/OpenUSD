@@ -41,7 +41,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapAttributeQuery {
 
 static std::vector<double>
 _GetTimeSamples(const UsdAttributeQuery& query) 
@@ -120,27 +120,27 @@ void wrapUsdAttributeQuery()
         .def("GetAttribute", &UsdAttributeQuery::GetAttribute,
              boost::python::return_value_policy<boost::python::return_by_value>())
 
-        .def("GetTimeSamples", _GetTimeSamples,
+        .def("GetTimeSamples", pxrUsdUsdWrapAttributeQuery::_GetTimeSamples,
              boost::python::return_value_policy<TfPySequenceToList>())
 
-        .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval,
+        .def("GetTimeSamplesInInterval", pxrUsdUsdWrapAttributeQuery::_GetTimeSamplesInInterval,
              boost::python::arg("interval"),
              boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("GetUnionedTimeSamples", 
-             _GetUnionedTimeSamples,
+             pxrUsdUsdWrapAttributeQuery::_GetUnionedTimeSamples,
              boost::python::arg("attrQueries"),
              boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetUnionedTimeSamples")
 
         .def("GetUnionedTimeSamplesInInterval", 
-             _GetUnionedTimeSamplesInInterval,
+             pxrUsdUsdWrapAttributeQuery::_GetUnionedTimeSamplesInInterval,
              (boost::python::arg("attrQueries"), boost::python::arg("interval")),
              boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetUnionedTimeSamplesInInterval")
 
         .def("GetNumTimeSamples", &UsdAttributeQuery::GetNumTimeSamples)
-        .def("GetBracketingTimeSamples", _GetBracketingTimeSamples,
+        .def("GetBracketingTimeSamples", pxrUsdUsdWrapAttributeQuery::_GetBracketingTimeSamples,
              boost::python::arg("desiredTime"))
 
         .def("HasValue", &UsdAttributeQuery::HasValue)
@@ -152,7 +152,7 @@ void wrapUsdAttributeQuery()
         .def("ValueMightBeTimeVarying", 
              &UsdAttributeQuery::ValueMightBeTimeVarying)
 
-        .def("Get", _Get, boost::python::arg("time")=UsdTimeCode::Default())
+        .def("Get", pxrUsdUsdWrapAttributeQuery::_Get, boost::python::arg("time")=UsdTimeCode::Default())
          
         ;
 

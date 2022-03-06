@@ -138,7 +138,7 @@ UsdLuxListAPI::CreateLightListRel() const
                        /* custom = */ false);
 }
 
-namespace {
+namespace pxrUsdUsdLuxListAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -158,7 +158,7 @@ UsdLuxListAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->lightListCacheBehavior,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdLuxListAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

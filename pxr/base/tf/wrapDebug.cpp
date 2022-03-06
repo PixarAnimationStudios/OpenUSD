@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapDebug {
 
 static void
 _SetOutputFile(boost::python::object const &file)
@@ -75,7 +75,7 @@ void wrapDebug()
         .def("GetDebugSymbolDescription", &This::GetDebugSymbolDescription)
         .staticmethod("GetDebugSymbolDescription")
 
-        .def("SetOutputFile", _SetOutputFile)
+        .def("SetOutputFile", pxrBaseTfWrapDebug::_SetOutputFile)
         .staticmethod("SetOutputFile")
 
         ;

@@ -65,7 +65,7 @@ UsdUsdzFileFormat::IsPackage() const
     return true;
 }
 
-namespace
+namespace pxrUsdUsdUsdzFileFormat
 {
 
 std::string
@@ -88,7 +88,7 @@ UsdUsdzFileFormat::GetPackageRootLayerPath(
     const std::string& resolvedPath) const
 {
     TRACE_FUNCTION();
-    return _GetFirstFileInZipFile(resolvedPath);
+    return pxrUsdUsdUsdzFileFormat::_GetFirstFileInZipFile(resolvedPath);
 }
 
 SdfAbstractDataRefPtr
@@ -102,7 +102,7 @@ UsdUsdzFileFormat::CanRead(const std::string& filePath) const
 {
     TRACE_FUNCTION();
 
-    const std::string firstFile = _GetFirstFileInZipFile(filePath);
+    const std::string firstFile = pxrUsdUsdUsdzFileFormat::_GetFirstFileInZipFile(filePath);
     if (firstFile.empty()) {
         return false;
     }
@@ -135,7 +135,7 @@ UsdUsdzFileFormat::Read(
     // open the asset again.
     ArResolverScopedCache scopedCache;
 
-    const std::string firstFile = _GetFirstFileInZipFile(resolvedPath);
+    const std::string firstFile = pxrUsdUsdUsdzFileFormat::_GetFirstFileInZipFile(resolvedPath);
     if (firstFile.empty()) {
         return false;
     }

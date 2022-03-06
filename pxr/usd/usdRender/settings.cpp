@@ -150,7 +150,7 @@ UsdRenderSettings::CreateProductsRel() const
                        /* custom = */ false);
 }
 
-namespace {
+namespace pxrUsdUsdRenderSettings {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -171,7 +171,7 @@ UsdRenderSettings::GetSchemaAttributeNames(bool includeInherited)
         UsdRenderTokens->materialBindingPurposes,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdRenderSettings::_ConcatenateAttributeNames(
             UsdRenderSettingsBase::GetSchemaAttributeNames(true),
             localNames);
 

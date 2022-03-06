@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapRect2i {
 
 static std::string _Repr(GfRect2i const &self) {
     return TF_PY_REPR_PREFIX + "Rect2i(" + TfPyRepr(self.GetMin()) + ", " +
@@ -112,7 +112,7 @@ void wrapRect2i()
         .def( boost::python::self += boost::python::self )
         .def( boost::python::self + boost::python::self )
         
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrBaseGfWrapRect2i::_Repr)
         
         ;
     boost::python::to_python_converter<std::vector<This>,

@@ -137,7 +137,7 @@ UsdPhysicsDistanceJoint::CreateMaxDistanceAttr(VtValue const &defaultValue, bool
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdPhysicsDistanceJoint {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -158,7 +158,7 @@ UsdPhysicsDistanceJoint::GetSchemaAttributeNames(bool includeInherited)
         UsdPhysicsTokens->physicsMaxDistance,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdPhysicsDistanceJoint::_ConcatenateAttributeNames(
             UsdPhysicsJoint::GetSchemaAttributeNames(true),
             localNames);
 

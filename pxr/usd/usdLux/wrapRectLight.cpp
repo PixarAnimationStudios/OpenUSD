@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdLuxWrapRectLight {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -114,28 +114,28 @@ void wrapUsdLuxRectLight()
         .def("GetWidthAttr",
              &This::GetWidthAttr)
         .def("CreateWidthAttr",
-             &_CreateWidthAttr,
+             &pxrUsdUsdLuxWrapRectLight::_CreateWidthAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetHeightAttr",
              &This::GetHeightAttr)
         .def("CreateHeightAttr",
-             &_CreateHeightAttr,
+             &pxrUsdUsdLuxWrapRectLight::_CreateHeightAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetTextureFileAttr",
              &This::GetTextureFileAttr)
         .def("CreateTextureFileAttr",
-             &_CreateTextureFileAttr,
+             &pxrUsdUsdLuxWrapRectLight::_CreateTextureFileAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdLuxWrapRectLight::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdLuxWrapRectLight::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -157,7 +157,7 @@ void wrapUsdLuxRectLight()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdLuxWrapRectLight {
 
 WRAP_CUSTOM {
 }

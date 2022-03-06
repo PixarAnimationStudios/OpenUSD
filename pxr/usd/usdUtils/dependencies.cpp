@@ -58,7 +58,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-namespace {
+namespace pxrUsdUsdUtilsDependencies {
 
 // Enum class representing the type of dependency.
 enum class _DepType {
@@ -996,22 +996,22 @@ _GetDestRelativePath(const std::string &fullDestPath,
 static void
 _ExtractExternalReferences(
     const std::string& filePath,
-    const _ReferenceTypesToInclude &refTypesToInclude,
+    const pxrUsdUsdUtilsDependencies::_ReferenceTypesToInclude &refTypesToInclude,
     std::vector<std::string>* subLayers,
     std::vector<std::string>* references,
     std::vector<std::string>* payloads)
 {
     // We only care about knowing what the dependencies are. Hence, set 
     // remapPathFunc to empty.
-    _FileAnalyzer(filePath, refTypesToInclude,
+    pxrUsdUsdUtilsDependencies::_FileAnalyzer(filePath, refTypesToInclude,
         /*remapPathFunc*/ {}, 
         [&subLayers, &references, &payloads](const std::string &assetPath,
-                                          const _DepType &depType) {
-            if (depType == _DepType::Reference) {
+                                          const pxrUsdUsdUtilsDependencies::_DepType &depType) {
+            if (depType == pxrUsdUsdUtilsDependencies::_DepType::Reference) {
                 references->push_back(assetPath);
-            } else if (depType == _DepType::Sublayer) {
+            } else if (depType == pxrUsdUsdUtilsDependencies::_DepType::Sublayer) {
                 subLayers->push_back(assetPath);
-            } else if (depType == _DepType::Payload) {
+            } else if (depType == pxrUsdUsdUtilsDependencies::_DepType::Payload) {
                 payloads->push_back(assetPath);
             }
         });
@@ -1037,7 +1037,7 @@ UsdUtilsExtractExternalReferences(
     std::vector<std::string>* payloads)
 {
     TRACE_FUNCTION();
-    _ExtractExternalReferences(filePath, _ReferenceTypesToInclude::All, 
+    _ExtractExternalReferences(filePath, pxrUsdUsdUtilsDependencies::_ReferenceTypesToInclude::All, 
         subLayers, references, payloads);
 }
 
@@ -1056,7 +1056,7 @@ _CreateNewUsdzPackage(const SdfAssetPath &assetPath,
 
     std::string destDir = TfGetPathName(usdzFilePath);
     destDir = destDir.empty() ? "./" : destDir;
-    _AssetLocalizer localizer(assetPath, destDir, firstLayerName, 
+    pxrUsdUsdUtilsDependencies::_AssetLocalizer localizer(assetPath, destDir, firstLayerName, 
                               origRootFilePath, dependenciesToSkip);
 
     auto &layerExportMap = localizer.GetLayerExportMap();
@@ -1084,7 +1084,7 @@ _CreateNewUsdzPackage(const SdfAssetPath &assetPath,
     bool success = true;
     for (auto &layerAndDestPath : layerExportMap) {
         const auto &layer = layerAndDestPath.first;
-        std::string destPath = _GetDestRelativePath(
+        std::string destPath = pxrUsdUsdUtilsDependencies::_GetDestRelativePath(
                 layerAndDestPath.second, destDir);
 
         // Change the first layer's name if requested.
@@ -1173,7 +1173,7 @@ _CreateNewUsdzPackage(const SdfAssetPath &assetPath,
 
     for (auto &fileSrcAndDestPath : fileCopyMap) {
         const std::string &srcPath = fileSrcAndDestPath.first;
-        const std::string destPath = _GetDestRelativePath(
+        const std::string destPath = pxrUsdUsdUtilsDependencies::_GetDestRelativePath(
                 fileSrcAndDestPath.second, destDir);
         TF_DEBUG(USDUTILS_CREATE_USDZ_PACKAGE).Msg(
             ".. adding file '%s' to package at path '%s'.\n", 
@@ -1243,7 +1243,7 @@ UsdUtilsCreateNewARKitUsdzPackage(
     // the composition of the stage.
     std::vector<std::string> sublayers, references, payloads;
     _ExtractExternalReferences(resolvedPath, 
-        _ReferenceTypesToInclude::CompositionOnly,
+        pxrUsdUsdUtilsDependencies::_ReferenceTypesToInclude::CompositionOnly,
         &sublayers, &references, &payloads);
 
     // Ensure that the root layer has the ".usdc" extension.
@@ -1316,7 +1316,7 @@ UsdUtilsComputeAllDependencies(const SdfAssetPath &assetPath,
 {
     // We are not interested in localizing here, hence pass in the empty string
     // for destination directory.
-    _AssetLocalizer localizer(assetPath, /* destDir */ std::string());
+    pxrUsdUsdUtilsDependencies::_AssetLocalizer localizer(assetPath, /* destDir */ std::string());
 
     // Clear the vectors before we start.
     layers->clear();
@@ -1345,8 +1345,8 @@ UsdUtilsModifyAssetPaths(
         const SdfLayerHandle& layer,
         const UsdUtilsModifyAssetPathFn& modifyFn)
 {
-    _FileAnalyzer(layer,
-        _ReferenceTypesToInclude::All, 
+    pxrUsdUsdUtilsDependencies::_FileAnalyzer(layer,
+        pxrUsdUsdUtilsDependencies::_ReferenceTypesToInclude::All, 
         [&modifyFn](const std::string& assetPath, 
                     const SdfLayerRefPtr& layer, 
                     bool skipDep) { 

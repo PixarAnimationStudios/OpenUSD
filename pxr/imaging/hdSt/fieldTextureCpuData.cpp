@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrImagingHdStFieldTextureCpuData {
 
 bool
 _IsValid(HioFieldTextureDataSharedPtr const &textureData)
@@ -61,7 +61,7 @@ HdSt_FieldTextureCpuData::HdSt_FieldTextureCpuData(
     }
 
     // Sanity checks
-    if (!_IsValid(textureData)) {
+    if (!pxrImagingHdStFieldTextureCpuData::_IsValid(textureData)) {
         return;
     }
 

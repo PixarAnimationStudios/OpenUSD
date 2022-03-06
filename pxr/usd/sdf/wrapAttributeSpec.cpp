@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapAttributeSpec {
 
 static 
 std::vector<TfToken> 
@@ -134,8 +134,8 @@ void wrapAttributeSpec()
             "for more information.")
 
 	.add_property("allowedTokens",
-	    &_WrapGetAllowedTokens,
-	    &_WrapSetAllowedTokens,
+	    &pxrUsdSdfWrapAttributeSpec::_WrapGetAllowedTokens,
+	    &pxrUsdSdfWrapAttributeSpec::_WrapSetAllowedTokens,
 	    "The allowed value tokens for this property")
 
         .add_property("colorSpace",

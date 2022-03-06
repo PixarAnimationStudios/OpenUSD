@@ -49,7 +49,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapError {
 
 static void
 _RaiseCodingError(std::string const &msg,
@@ -213,15 +213,15 @@ _SetPythonExceptionDebugTracingEnabled(bool enable)
 } // anonymous namespace 
 
 void wrapError() {
-    boost::python::def("_RaiseCodingError", &_RaiseCodingError);
-    boost::python::def("_RaiseRuntimeError", &_RaiseRuntimeError);
-    boost::python::def("_Fatal", &_Fatal);
-    boost::python::def("RepostErrors", &_RepostErrors, boost::python::arg("exception"));
+    boost::python::def("_RaiseCodingError", &pxrBaseTfWrapError::_RaiseCodingError);
+    boost::python::def("_RaiseRuntimeError", &pxrBaseTfWrapError::_RaiseRuntimeError);
+    boost::python::def("_Fatal", &pxrBaseTfWrapError::_Fatal);
+    boost::python::def("RepostErrors", &pxrBaseTfWrapError::_RepostErrors, boost::python::arg("exception"));
     boost::python::def("ReportActiveErrorMarks", TfReportActiveErrorMarks);
     boost::python::def("SetPythonExceptionDebugTracingEnabled",
-        _SetPythonExceptionDebugTracingEnabled, boost::python::arg("enabled"));
+        pxrBaseTfWrapError::_SetPythonExceptionDebugTracingEnabled, boost::python::arg("enabled"));
     boost::python::def("__SetErrorExceptionClass", Tf_PySetErrorExceptionClass);
-    boost::python::def("InvokeWithErrorHandling", boost::python::raw_function(_InvokeWithErrorHandling, 1));
+    boost::python::def("InvokeWithErrorHandling", boost::python::raw_function(pxrBaseTfWrapError::_InvokeWithErrorHandling, 1));
     TfPyContainerConversions::from_python_sequence< std::vector<TfError>,
         TfPyContainerConversions::variable_capacity_policy >();
 
@@ -236,14 +236,14 @@ void wrapError() {
                                     boost::python::return_value_policy<boost::python::return_by_value>()),
                                     "The error code posted for this error, as a string.")
 
-        .def("__repr__", TfError__repr__)
+        .def("__repr__", pxrBaseTfWrapError::TfError__repr__)
         ;
 
     boost::python::class_<TfErrorMark, boost::noncopyable>("Mark")
         .def("SetMark", &TfErrorMark::SetMark)
         .def("IsClean", &TfErrorMark::IsClean)
         .def("Clear", &TfErrorMark::Clear)
-        .def("GetErrors", &_GetErrors,
+        .def("GetErrors", &pxrBaseTfWrapError::_GetErrors,
             boost::python::return_value_policy<TfPySequenceToList>(),
              "A list of the errors held by this mark.")
         ;

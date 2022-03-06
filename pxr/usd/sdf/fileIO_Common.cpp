@@ -193,7 +193,7 @@ _StringFromVtValueHelper(std::string* valueStr, const VtValue& value)
 // Helpers functions for writing SdfListOp<T>. Consumers can
 // specialize the _ListOpWriter struct for custom behavior based
 // on the element type of the list op.
-namespace
+namespace pxrUsdSdfFileIO_Common
 {
 
 template <class T> 
@@ -676,7 +676,7 @@ Sdf_FileIOUtility::WriteListOp(
     Sdf_TextOutput &out, size_t indent, const TfToken& fieldName,
     const SdfListOp<T>& listOp)
 {
-    _WriteListOp(out, indent, fieldName, listOp);
+    pxrUsdSdfFileIO_Common::_WriteListOp(out, indent, fieldName, listOp);
 }
 
 template void

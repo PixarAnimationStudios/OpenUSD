@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdPcpWrapPropertyIndex {
 
 static SdfPropertySpecHandleVector
 _WrapPropertyStack(const PcpPropertyIndex& propIndex)
@@ -61,8 +61,8 @@ wrapPropertyIndex()
 
     boost::python::class_<This>
         ("PropertyIndex", "", boost::python::no_init)
-        .add_property("propertyStack", _WrapPropertyStack)
-        .add_property("localPropertyStack", _WrapLocalPropertyStack)
+        .add_property("propertyStack", pxrUsdPcpWrapPropertyIndex::_WrapPropertyStack)
+        .add_property("localPropertyStack", pxrUsdPcpWrapPropertyIndex::_WrapLocalPropertyStack)
         .add_property("localErrors", 
                       boost::python::make_function(&This::GetLocalErrors,
                                     boost::python::return_value_policy<TfPySequenceToList>()))

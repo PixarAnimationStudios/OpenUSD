@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapFilteredPairsAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -79,7 +79,7 @@ void wrapUsdPhysicsFilteredPairsAPI()
 {
     typedef UsdPhysicsFilteredPairsAPI This;
 
-    UsdPhysicsFilteredPairsAPI_CanApplyResult::Wrap<UsdPhysicsFilteredPairsAPI_CanApplyResult>(
+    pxrUsdUsdPhysicsWrapFilteredPairsAPI::UsdPhysicsFilteredPairsAPI_CanApplyResult::Wrap<pxrUsdUsdPhysicsWrapFilteredPairsAPI::UsdPhysicsFilteredPairsAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -93,7 +93,7 @@ void wrapUsdPhysicsFilteredPairsAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdPhysicsWrapFilteredPairsAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -117,10 +117,10 @@ void wrapUsdPhysicsFilteredPairsAPI()
              &This::GetFilteredPairsRel)
         .def("CreateFilteredPairsRel",
              &This::CreateFilteredPairsRel)
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdPhysicsWrapFilteredPairsAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdPhysicsWrapFilteredPairsAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -142,7 +142,7 @@ void wrapUsdPhysicsFilteredPairsAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapFilteredPairsAPI {
 
 WRAP_CUSTOM {
 }

@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapLayerTree {
 
 static SdfLayerTreeHandle
 _NewEmpty()
@@ -72,9 +72,9 @@ void wrapLayerTree()
     boost::python::class_<SdfLayerTree, TfWeakPtr<SdfLayerTree>, boost::noncopyable>
         ("LayerTree", "", boost::python::no_init)
         .def(TfPyRefAndWeakPtr())
-        .def(TfMakePyConstructor(&_NewEmpty))
-        .def(TfMakePyConstructor(&_NewNoOffset))
-        .def(TfMakePyConstructor(&_New))
+        .def(TfMakePyConstructor(&pxrUsdSdfWrapLayerTree::_NewEmpty))
+        .def(TfMakePyConstructor(&pxrUsdSdfWrapLayerTree::_NewNoOffset))
+        .def(TfMakePyConstructor(&pxrUsdSdfWrapLayerTree::_New))
         .add_property("layer",
                       boost::python::make_function(&SdfLayerTree::GetLayer,
                                     boost::python::return_value_policy<boost::python::return_by_value>()))

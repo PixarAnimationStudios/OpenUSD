@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapTestPyAnnotatedBoolResult {
 
 struct Tf_TestAnnotatedBoolResult : TfPyAnnotatedBoolResult<std::string> {
     Tf_TestAnnotatedBoolResult(bool value, const std::string& annotation)
@@ -50,8 +50,8 @@ _TestAnnotatedBoolResult(
 
 void wrapTf_TestPyAnnotatedBoolResult()
 {
-    boost::python::def("_TestAnnotatedBoolResult", &_TestAnnotatedBoolResult);
+    boost::python::def("_TestAnnotatedBoolResult", &pxrBaseTfWrapTestPyAnnotatedBoolResult::_TestAnnotatedBoolResult);
 
-    Tf_TestAnnotatedBoolResult::Wrap<Tf_TestAnnotatedBoolResult>(
+    pxrBaseTfWrapTestPyAnnotatedBoolResult::Tf_TestAnnotatedBoolResult::Wrap<pxrBaseTfWrapTestPyAnnotatedBoolResult::Tf_TestAnnotatedBoolResult>(
         "Tf_TestAnnotatedBoolResult", "annotation");
 }

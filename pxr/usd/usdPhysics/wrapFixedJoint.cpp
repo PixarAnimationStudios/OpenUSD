@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapFixedJoint {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -90,10 +90,10 @@ void wrapUsdPhysicsFixedJoint()
         .def(!boost::python::self)
 
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdPhysicsWrapFixedJoint::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdPhysicsWrapFixedJoint::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -115,7 +115,7 @@ void wrapUsdPhysicsFixedJoint()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapFixedJoint {
 
 WRAP_CUSTOM {
 }

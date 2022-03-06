@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdSkelWrapAnimation {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -135,49 +135,49 @@ void wrapUsdSkelAnimation()
         .def("GetJointsAttr",
              &This::GetJointsAttr)
         .def("CreateJointsAttr",
-             &_CreateJointsAttr,
+             &pxrUsdUsdSkelWrapAnimation::_CreateJointsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetTranslationsAttr",
              &This::GetTranslationsAttr)
         .def("CreateTranslationsAttr",
-             &_CreateTranslationsAttr,
+             &pxrUsdUsdSkelWrapAnimation::_CreateTranslationsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetRotationsAttr",
              &This::GetRotationsAttr)
         .def("CreateRotationsAttr",
-             &_CreateRotationsAttr,
+             &pxrUsdUsdSkelWrapAnimation::_CreateRotationsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetScalesAttr",
              &This::GetScalesAttr)
         .def("CreateScalesAttr",
-             &_CreateScalesAttr,
+             &pxrUsdUsdSkelWrapAnimation::_CreateScalesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetBlendShapesAttr",
              &This::GetBlendShapesAttr)
         .def("CreateBlendShapesAttr",
-             &_CreateBlendShapesAttr,
+             &pxrUsdUsdSkelWrapAnimation::_CreateBlendShapesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetBlendShapeWeightsAttr",
              &This::GetBlendShapeWeightsAttr)
         .def("CreateBlendShapeWeightsAttr",
-             &_CreateBlendShapeWeightsAttr,
+             &pxrUsdUsdSkelWrapAnimation::_CreateBlendShapeWeightsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdSkelWrapAnimation::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdSkelWrapAnimation::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -199,7 +199,7 @@ void wrapUsdSkelAnimation()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdSkelWrapAnimation {
 
 VtMatrix4dArray
 _GetTransforms(const UsdSkelAnimation& self, UsdTimeCode time)

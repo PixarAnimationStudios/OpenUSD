@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapScopeDescription {
 
 // This class lets us expose TfScopeDescription to python for use as a "context
 // manager" object.  That is, for use with the 'with'-statement.  For example:
@@ -98,7 +98,7 @@ void wrapScopeDescription()
         TfGetCurrentScopeDescriptionStack,
         boost::python::return_value_policy<TfPySequenceToList>());
 
-    typedef Tf_PyScopeDescription This;
+    typedef pxrBaseTfWrapScopeDescription::Tf_PyScopeDescription This;
     
     boost::python::class_<This, boost::noncopyable>("ScopeDescription", boost::python::init<std::string>())
         .def("__enter__", &This::__enter__, boost::python::return_self<>())

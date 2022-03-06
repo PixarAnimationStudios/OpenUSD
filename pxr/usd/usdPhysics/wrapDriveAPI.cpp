@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapDriveAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -128,7 +128,7 @@ void wrapUsdPhysicsDriveAPI()
 {
     typedef UsdPhysicsDriveAPI This;
 
-    UsdPhysicsDriveAPI_CanApplyResult::Wrap<UsdPhysicsDriveAPI_CanApplyResult>(
+    pxrUsdUsdPhysicsWrapDriveAPI::UsdPhysicsDriveAPI_CanApplyResult::Wrap<pxrUsdUsdPhysicsWrapDriveAPI::UsdPhysicsDriveAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -151,7 +151,7 @@ void wrapUsdPhysicsDriveAPI()
             (boost::python::arg("prim"), boost::python::arg("name")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim"), boost::python::arg("name")))
+        .def("CanApply", &pxrUsdUsdPhysicsWrapDriveAPI::_WrapCanApply, (boost::python::arg("prim"), boost::python::arg("name")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim"), boost::python::arg("name")))
@@ -179,51 +179,51 @@ void wrapUsdPhysicsDriveAPI()
         .def("GetTypeAttr",
              &This::GetTypeAttr)
         .def("CreateTypeAttr",
-             &_CreateTypeAttr,
+             &pxrUsdUsdPhysicsWrapDriveAPI::_CreateTypeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetMaxForceAttr",
              &This::GetMaxForceAttr)
         .def("CreateMaxForceAttr",
-             &_CreateMaxForceAttr,
+             &pxrUsdUsdPhysicsWrapDriveAPI::_CreateMaxForceAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetTargetPositionAttr",
              &This::GetTargetPositionAttr)
         .def("CreateTargetPositionAttr",
-             &_CreateTargetPositionAttr,
+             &pxrUsdUsdPhysicsWrapDriveAPI::_CreateTargetPositionAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetTargetVelocityAttr",
              &This::GetTargetVelocityAttr)
         .def("CreateTargetVelocityAttr",
-             &_CreateTargetVelocityAttr,
+             &pxrUsdUsdPhysicsWrapDriveAPI::_CreateTargetVelocityAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetDampingAttr",
              &This::GetDampingAttr)
         .def("CreateDampingAttr",
-             &_CreateDampingAttr,
+             &pxrUsdUsdPhysicsWrapDriveAPI::_CreateDampingAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetStiffnessAttr",
              &This::GetStiffnessAttr)
         .def("CreateStiffnessAttr",
-             &_CreateStiffnessAttr,
+             &pxrUsdUsdPhysicsWrapDriveAPI::_CreateStiffnessAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("IsPhysicsDriveAPIPath", _WrapIsPhysicsDriveAPIPath)
+        .def("IsPhysicsDriveAPIPath", pxrUsdUsdPhysicsWrapDriveAPI::_WrapIsPhysicsDriveAPIPath)
             .staticmethod("IsPhysicsDriveAPIPath")
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdPhysicsWrapDriveAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdPhysicsWrapDriveAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -245,7 +245,7 @@ void wrapUsdPhysicsDriveAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapDriveAPI {
 
 WRAP_CUSTOM {
 }

@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdArWrapResolverScopedCache {
 
 class _PyResolverScopedCache
     : public boost::noncopyable
@@ -66,7 +66,7 @@ private:
 void
 wrapResolverScopedCache()
 {
-    typedef _PyResolverScopedCache This;
+    typedef pxrUsdArWrapResolverScopedCache::_PyResolverScopedCache This;
 
     boost::python::class_<This, boost::noncopyable>
         ("ResolverScopedCache")

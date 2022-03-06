@@ -40,7 +40,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
-namespace {
+namespace pxrUsdUsdSkelWrapAnimMapper {
 
 TfPyObjWrapper
 _Remap(const UsdSkelAnimMapper& self,
@@ -83,18 +83,18 @@ void wrapUsdSkelAnimMapper()
         
         .def(boost::python::init<VtTokenArray,VtTokenArray>(
                  (boost::python::arg("sourceOrder"), boost::python::arg("targetOrder"))))
-        .def("Remap", &_Remap,
+        .def("Remap", &pxrUsdUsdSkelWrapAnimMapper::_Remap,
              (boost::python::arg("source"),
               boost::python::arg("target")=VtValue(),
               boost::python::arg("elementSize")=1,
               boost::python::arg("defaultValue")=VtValue()))
 
-        .def("RemapTransforms", &_RemapTransforms<GfMatrix4d>,
+        .def("RemapTransforms", &pxrUsdUsdSkelWrapAnimMapper::_RemapTransforms<GfMatrix4d>,
              (boost::python::arg("source"),
               boost::python::arg("target"),
               boost::python::arg("elementSize")=1))
 
-        .def("RemapTransforms", &_RemapTransforms<GfMatrix4f>,
+        .def("RemapTransforms", &pxrUsdUsdSkelWrapAnimMapper::_RemapTransforms<GfMatrix4f>,
              (boost::python::arg("source"),
               boost::python::arg("target"),
               boost::python::arg("elementSize")=1))

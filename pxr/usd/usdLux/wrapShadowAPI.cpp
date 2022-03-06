@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdLuxWrapShadowAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -114,7 +114,7 @@ void wrapUsdLuxShadowAPI()
 {
     typedef UsdLuxShadowAPI This;
 
-    UsdLuxShadowAPI_CanApplyResult::Wrap<UsdLuxShadowAPI_CanApplyResult>(
+    pxrUsdUsdLuxWrapShadowAPI::UsdLuxShadowAPI_CanApplyResult::Wrap<pxrUsdUsdLuxWrapShadowAPI::UsdLuxShadowAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -128,7 +128,7 @@ void wrapUsdLuxShadowAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdLuxWrapShadowAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -150,42 +150,42 @@ void wrapUsdLuxShadowAPI()
         .def("GetShadowEnableAttr",
              &This::GetShadowEnableAttr)
         .def("CreateShadowEnableAttr",
-             &_CreateShadowEnableAttr,
+             &pxrUsdUsdLuxWrapShadowAPI::_CreateShadowEnableAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetShadowColorAttr",
              &This::GetShadowColorAttr)
         .def("CreateShadowColorAttr",
-             &_CreateShadowColorAttr,
+             &pxrUsdUsdLuxWrapShadowAPI::_CreateShadowColorAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetShadowDistanceAttr",
              &This::GetShadowDistanceAttr)
         .def("CreateShadowDistanceAttr",
-             &_CreateShadowDistanceAttr,
+             &pxrUsdUsdLuxWrapShadowAPI::_CreateShadowDistanceAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetShadowFalloffAttr",
              &This::GetShadowFalloffAttr)
         .def("CreateShadowFalloffAttr",
-             &_CreateShadowFalloffAttr,
+             &pxrUsdUsdLuxWrapShadowAPI::_CreateShadowFalloffAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetShadowFalloffGammaAttr",
              &This::GetShadowFalloffGammaAttr)
         .def("CreateShadowFalloffGammaAttr",
-             &_CreateShadowFalloffGammaAttr,
+             &pxrUsdUsdLuxWrapShadowAPI::_CreateShadowFalloffGammaAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdLuxWrapShadowAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdLuxWrapShadowAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -209,7 +209,7 @@ void wrapUsdLuxShadowAPI()
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 
-namespace {
+namespace pxrUsdUsdLuxWrapShadowAPI {
 
 WRAP_CUSTOM {
     _class

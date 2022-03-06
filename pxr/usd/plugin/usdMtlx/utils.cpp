@@ -55,7 +55,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(UsdMtlxTokens, USD_MTLX_TOKENS);
 
-namespace {
+namespace pxrUsdPluginUsdMtlxUtils {
 
 using DocumentCache = std::map<std::string, mx::DocumentPtr>;
 
@@ -346,7 +346,7 @@ UsdMtlxGetDocumentFromString(const std::string &mtlxXml)
 {
     std::string hashStr = std::to_string(std::hash<std::string>{}(mtlxXml));
     // Look up in the cache, inserting a null document if missing.
-    auto insertResult = _GetCache().emplace(hashStr, nullptr);
+    auto insertResult = pxrUsdPluginUsdMtlxUtils::_GetCache().emplace(hashStr, nullptr);
     auto& document = insertResult.first->second;
     if (insertResult.second) {       
         // cache miss
@@ -368,7 +368,7 @@ mx::ConstDocumentPtr
 UsdMtlxGetDocument(const std::string& resolvedUri)
 {
     // Look up in the cache, inserting a null document if missing.
-    auto insertResult = _GetCache().emplace(resolvedUri, nullptr);
+    auto insertResult = pxrUsdPluginUsdMtlxUtils::_GetCache().emplace(resolvedUri, nullptr);
     auto& document = insertResult.first->second;
     if (!insertResult.second) {
         // Cache hit.
@@ -403,7 +403,7 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
                 }
 
                 // Merge into library.
-                _CopyContent(document, doc);
+                pxrUsdPluginUsdMtlxUtils::_CopyContent(document, doc);
             }
             catch (mx::Exception& x) {
                 TF_RUNTIME_ERROR("MaterialX error reading '%s': %s",
@@ -552,7 +552,7 @@ UsdMtlxGetUsdValue(
                         : mtlx->getAttribute(valueAttr);
 
     // Get the value.
-    return _GetUsdValue(valueString, mtlx->getAttribute(typeAttr));
+    return pxrUsdPluginUsdMtlxUtils::_GetUsdValue(valueString, mtlx->getAttribute(typeAttr));
 }
 
 std::vector<VtValue>
@@ -567,7 +567,7 @@ UsdMtlxGetPackedUsdValues(const std::string& values, const std::string& type)
 
     // Split on commas and convert each value separately.
     for (auto element: TfStringSplit(values, ",")) {
-        auto typeErased = _GetUsdValue(TfStringTrim(element), type);
+        auto typeErased = pxrUsdPluginUsdMtlxUtils::_GetUsdValue(TfStringTrim(element), type);
         if (typeErased.IsEmpty()) {
             result.clear();
             break;

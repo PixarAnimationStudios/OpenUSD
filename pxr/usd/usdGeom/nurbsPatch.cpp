@@ -392,7 +392,7 @@ UsdGeomNurbsPatch::CreateTrimCurvePointsAttr(VtValue const &defaultValue, bool w
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomNurbsPatch {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -428,7 +428,7 @@ UsdGeomNurbsPatch::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->trimCurvePoints,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomNurbsPatch::_ConcatenateAttributeNames(
             UsdGeomPointBased::GetSchemaAttributeNames(true),
             localNames);
 

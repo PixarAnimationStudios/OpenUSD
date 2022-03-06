@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapPointInstancer {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -156,63 +156,63 @@ void wrapUsdGeomPointInstancer()
         .def("GetProtoIndicesAttr",
              &This::GetProtoIndicesAttr)
         .def("CreateProtoIndicesAttr",
-             &_CreateProtoIndicesAttr,
+             &pxrUsdUsdGeomWrapPointInstancer::_CreateProtoIndicesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetIdsAttr",
              &This::GetIdsAttr)
         .def("CreateIdsAttr",
-             &_CreateIdsAttr,
+             &pxrUsdUsdGeomWrapPointInstancer::_CreateIdsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetPositionsAttr",
              &This::GetPositionsAttr)
         .def("CreatePositionsAttr",
-             &_CreatePositionsAttr,
+             &pxrUsdUsdGeomWrapPointInstancer::_CreatePositionsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetOrientationsAttr",
              &This::GetOrientationsAttr)
         .def("CreateOrientationsAttr",
-             &_CreateOrientationsAttr,
+             &pxrUsdUsdGeomWrapPointInstancer::_CreateOrientationsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetScalesAttr",
              &This::GetScalesAttr)
         .def("CreateScalesAttr",
-             &_CreateScalesAttr,
+             &pxrUsdUsdGeomWrapPointInstancer::_CreateScalesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetVelocitiesAttr",
              &This::GetVelocitiesAttr)
         .def("CreateVelocitiesAttr",
-             &_CreateVelocitiesAttr,
+             &pxrUsdUsdGeomWrapPointInstancer::_CreateVelocitiesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetAccelerationsAttr",
              &This::GetAccelerationsAttr)
         .def("CreateAccelerationsAttr",
-             &_CreateAccelerationsAttr,
+             &pxrUsdUsdGeomWrapPointInstancer::_CreateAccelerationsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetAngularVelocitiesAttr",
              &This::GetAngularVelocitiesAttr)
         .def("CreateAngularVelocitiesAttr",
-             &_CreateAngularVelocitiesAttr,
+             &pxrUsdUsdGeomWrapPointInstancer::_CreateAngularVelocitiesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetInvisibleIdsAttr",
              &This::GetInvisibleIdsAttr)
         .def("CreateInvisibleIdsAttr",
-             &_CreateInvisibleIdsAttr,
+             &pxrUsdUsdGeomWrapPointInstancer::_CreateInvisibleIdsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
@@ -221,10 +221,10 @@ void wrapUsdGeomPointInstancer()
              &This::GetPrototypesRel)
         .def("CreatePrototypesRel",
              &This::CreatePrototypesRel)
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapPointInstancer::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapPointInstancer::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -248,7 +248,7 @@ void wrapUsdGeomPointInstancer()
 
 #include "pxr/base/tf/pyEnum.h"
 
-namespace {
+namespace pxrUsdUsdGeomWrapPointInstancer {
 
 static
 boost::python::list

@@ -41,7 +41,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdPcpWrapCache {
 
 static boost::python::tuple
 _ComputeLayerStack( PcpCache &cache, 
@@ -241,15 +241,15 @@ wrapCache()
         // parameters representing the resulting cache invalidation.
         .def("GetLayerStackIdentifier", &PcpCache::GetLayerStackIdentifier,
              boost::python::return_value_policy<boost::python::return_by_value>())
-        .def("SetVariantFallbacks", &_SetVariantFallbacks)
+        .def("SetVariantFallbacks", &pxrUsdPcpWrapCache::_SetVariantFallbacks)
         .def("GetVariantFallbacks", &PcpCache::GetVariantFallbacks,
              boost::python::return_value_policy<TfPyMapToDictionary>())
         .def("GetUsedLayers", &PcpCache::GetUsedLayers,
              boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetUsedLayersRevision", &PcpCache::GetUsedLayersRevision)
         .def("IsPayloadIncluded", &PcpCache::IsPayloadIncluded)
-        .def("RequestPayloads", &_RequestPayloads)
-        .def("RequestLayerMuting", &_RequestLayerMuting,
+        .def("RequestPayloads", &pxrUsdPcpWrapCache::_RequestPayloads)
+        .def("RequestLayerMuting", &pxrUsdPcpWrapCache::_RequestLayerMuting,
              (boost::python::args("layersToMute"),
               boost::python::args("layersToUnmute")))
         .def("GetMutedLayers", &PcpCache::GetMutedLayers,
@@ -264,28 +264,28 @@ wrapCache()
                       boost::python::make_function(&PcpCache::GetFileFormatTarget,
                                     boost::python::return_value_policy<boost::python::return_by_value>()))
 
-        .def("ComputeLayerStack", &_ComputeLayerStack)
+        .def("ComputeLayerStack", &pxrUsdPcpWrapCache::_ComputeLayerStack)
         .def("UsesLayerStack", &PcpCache::UsesLayerStack)
-        .def("ComputePrimIndex", &_ComputePrimIndex)
-        .def("FindPrimIndex", &_FindPrimIndex)
-        .def("ComputePropertyIndex", &_ComputePropertyIndex)
-        .def("FindPropertyIndex", &_FindPropertyIndex)
+        .def("ComputePrimIndex", &pxrUsdPcpWrapCache::_ComputePrimIndex)
+        .def("FindPrimIndex", &pxrUsdPcpWrapCache::_FindPrimIndex)
+        .def("ComputePropertyIndex", &pxrUsdPcpWrapCache::_ComputePropertyIndex)
+        .def("FindPropertyIndex", &pxrUsdPcpWrapCache::_FindPropertyIndex)
 
         .def("ComputeRelationshipTargetPaths", 
-             &_ComputeRelationshipTargetPaths,
+             &pxrUsdPcpWrapCache::_ComputeRelationshipTargetPaths,
              (boost::python::args("relPath"),
               boost::python::args("localOnly") = false,
               boost::python::args("stopProperty") = SdfSpecHandle(),
               boost::python::args("includeStopProperty") = false))
         .def("ComputeAttributeConnectionPaths", 
-             &_ComputeAttributeConnectionPaths,
+             &pxrUsdPcpWrapCache::_ComputeAttributeConnectionPaths,
              (boost::python::args("relPath"),
               boost::python::args("localOnly") = false,
               boost::python::args("stopProperty") = SdfSpecHandle(),
               boost::python::args("includeStopProperty") = false))
 
         .def("FindSiteDependencies",
-             &_FindSiteDependencies,
+             &pxrUsdPcpWrapCache::_FindSiteDependencies,
              (boost::python::args("siteLayerStack"),
               boost::python::args("sitePath"),
               boost::python::args("dependencyType") = PcpDependencyTypeAnyNonVirtual,
@@ -310,6 +310,6 @@ wrapCache()
              boost::python::return_value_policy<boost::python::reference_existing_object>())
 
         .def("PrintStatistics", &PcpCache::PrintStatistics)
-        .def("Reload", &_Reload)
+        .def("Reload", &pxrUsdPcpWrapCache::_Reload)
         ;
 }

@@ -45,7 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///////////////////////////////////////////////////////////////////////////////
 // Helpers
 
-namespace {
+namespace pxrImagingHdStPtexTextureObject {
 
 // Implements Deleter for std::unique_ptr calling release.
 template<typename T>
@@ -145,7 +145,7 @@ HdStPtexTextureObject::_Load()
     // (required to build guttering pixels efficiently)
     constexpr int PTEX_MAX_CACHE_SIZE = 128 * 1024 * 1024;
     // Held by std::unique_ptr calling release instead of d'tor
-    const _ReleaseUniquePtr<PtexCache> cache(
+    const pxrImagingHdStPtexTextureObject::_ReleaseUniquePtr<PtexCache> cache(
         PtexCache::create(1, PTEX_MAX_CACHE_SIZE, premultiplyAlpha));
     if (!cache) {
         TF_WARN("Unable to create PtexCache");
@@ -155,7 +155,7 @@ HdStPtexTextureObject::_Load()
     // load
     Ptex::String ptexError;
     // Held by std::unique_ptr calling release instead of d'tor
-    const _ReleaseUniquePtr<PtexTexture> reader(
+    const pxrImagingHdStPtexTextureObject::_ReleaseUniquePtr<PtexTexture> reader(
         cache->get(filename.c_str(), ptexError));
     if (!reader) {
         TF_WARN("Unable to open ptex %s : %s",

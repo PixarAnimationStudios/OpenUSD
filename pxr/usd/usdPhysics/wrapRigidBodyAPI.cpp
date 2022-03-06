@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapRigidBodyAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -114,7 +114,7 @@ void wrapUsdPhysicsRigidBodyAPI()
 {
     typedef UsdPhysicsRigidBodyAPI This;
 
-    UsdPhysicsRigidBodyAPI_CanApplyResult::Wrap<UsdPhysicsRigidBodyAPI_CanApplyResult>(
+    pxrUsdUsdPhysicsWrapRigidBodyAPI::UsdPhysicsRigidBodyAPI_CanApplyResult::Wrap<pxrUsdUsdPhysicsWrapRigidBodyAPI::UsdPhysicsRigidBodyAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -128,7 +128,7 @@ void wrapUsdPhysicsRigidBodyAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdPhysicsWrapRigidBodyAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -150,35 +150,35 @@ void wrapUsdPhysicsRigidBodyAPI()
         .def("GetRigidBodyEnabledAttr",
              &This::GetRigidBodyEnabledAttr)
         .def("CreateRigidBodyEnabledAttr",
-             &_CreateRigidBodyEnabledAttr,
+             &pxrUsdUsdPhysicsWrapRigidBodyAPI::_CreateRigidBodyEnabledAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetKinematicEnabledAttr",
              &This::GetKinematicEnabledAttr)
         .def("CreateKinematicEnabledAttr",
-             &_CreateKinematicEnabledAttr,
+             &pxrUsdUsdPhysicsWrapRigidBodyAPI::_CreateKinematicEnabledAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetStartsAsleepAttr",
              &This::GetStartsAsleepAttr)
         .def("CreateStartsAsleepAttr",
-             &_CreateStartsAsleepAttr,
+             &pxrUsdUsdPhysicsWrapRigidBodyAPI::_CreateStartsAsleepAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetVelocityAttr",
              &This::GetVelocityAttr)
         .def("CreateVelocityAttr",
-             &_CreateVelocityAttr,
+             &pxrUsdUsdPhysicsWrapRigidBodyAPI::_CreateVelocityAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetAngularVelocityAttr",
              &This::GetAngularVelocityAttr)
         .def("CreateAngularVelocityAttr",
-             &_CreateAngularVelocityAttr,
+             &pxrUsdUsdPhysicsWrapRigidBodyAPI::_CreateAngularVelocityAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
@@ -187,10 +187,10 @@ void wrapUsdPhysicsRigidBodyAPI()
              &This::GetSimulationOwnerRel)
         .def("CreateSimulationOwnerRel",
              &This::CreateSimulationOwnerRel)
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdPhysicsWrapRigidBodyAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdPhysicsWrapRigidBodyAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -214,7 +214,7 @@ void wrapUsdPhysicsRigidBodyAPI()
 
 #include "pxr/base/tf/pyFunction.h"
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapRigidBodyAPI {
 
     static boost::python::tuple
     ComputeMassPropertiesHelper( const UsdPhysicsRigidBodyAPI &self, const UsdPhysicsRigidBodyAPI::MassInformationFn& massInfoFn)

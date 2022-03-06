@@ -282,7 +282,7 @@ UsdPhysicsJoint::CreateBody1Rel() const
                        /* custom = */ false);
 }
 
-namespace {
+namespace pxrUsdUsdPhysicsJoint {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -310,7 +310,7 @@ UsdPhysicsJoint::GetSchemaAttributeNames(bool includeInherited)
         UsdPhysicsTokens->physicsBreakTorque,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdPhysicsJoint::_ConcatenateAttributeNames(
             UsdGeomImageable::GetSchemaAttributeNames(true),
             localNames);
 

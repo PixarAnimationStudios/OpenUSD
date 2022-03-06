@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdNdrFilesystemDiscoveryHelpers {
 
 // Examines the specified set of files, and determines if any of the files
 // are candidates for being parsed into a node. If a file is determined
@@ -142,7 +142,7 @@ NdrFsHelpersDiscoverNodes(
         TfWalkDirs(
             searchPath,
             std::bind(
-                &FsHelpersExamineFiles,
+                &pxrUsdNdrFilesystemDiscoveryHelpers::FsHelpersExamineFiles,
                 &foundNodes,
                 &foundNodesWithTypes,
                 std::ref(allowedExtensions),

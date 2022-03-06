@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapVariantSpec {
 
 typedef SdfPyChildrenProxy<SdfVariantSetView> VariantSetProxy;
 
@@ -67,7 +67,7 @@ void wrapVariantSpec()
                           boost::python::return_value_policy<boost::python::return_by_value>()),
             "The variant's name.")
         .add_property("variantSets",
-            &_WrapGetVariantSetsProxy)
+            &pxrUsdSdfWrapVariantSpec::_WrapGetVariantSetsProxy)
         .def("GetVariantNames", &This::GetVariantNames)
         ;
 }

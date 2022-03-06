@@ -92,7 +92,7 @@ HdLegacyPrimTypeIsVolumeField(TfToken const &primType)
 
 // ----------------------------------------------------------------------------
 
-namespace {
+namespace pxrImagingHdDataSourceLegacyPrim {
 
 class Hd_DataSourceLegacyPrimvarValue : public HdSampledDataSource
 {
@@ -2563,7 +2563,7 @@ HdDataSourceLegacyPrim::_GetPrimvarsDataSource()
 
     TRACE_FUNCTION();
 
-    Hd_DataSourceLegacyPrimvarsContainerHandle primvarsDs;
+    pxrImagingHdDataSourceLegacyPrim::Hd_DataSourceLegacyPrimvarsContainerHandle primvarsDs;
 
     for (size_t interpolation = HdInterpolationConstant;
         interpolation < HdInterpolationCount; ++interpolation) {
@@ -2572,12 +2572,12 @@ HdDataSourceLegacyPrim::_GetPrimvarsDataSource()
             _id, 
             (HdInterpolation)interpolation);
 
-        TfToken interpolationToken = _InterpolationAsToken(
+        TfToken interpolationToken = pxrImagingHdDataSourceLegacyPrim::_InterpolationAsToken(
             (HdInterpolation)interpolation);
 
         for (const auto &primvarDesc : v) {
             if (!primvarsDs) {
-                primvarsDs = Hd_DataSourceLegacyPrimvarsContainer::New(
+                primvarsDs = pxrImagingHdDataSourceLegacyPrim::Hd_DataSourceLegacyPrimvarsContainer::New(
                     _id, _sceneDelegate);
             }
             primvarsDs->AddDesc(
@@ -2600,7 +2600,7 @@ HdDataSourceLegacyPrim::_GetExtComputationPrimvarsDataSource()
         return _extComputationPrimvars;
     }
 
-    Hd_DataSourceLegacyExtComputationPrimvarsContainerHandle primvarsDs;
+    pxrImagingHdDataSourceLegacyPrim::Hd_DataSourceLegacyExtComputationPrimvarsContainerHandle primvarsDs;
 
     for (size_t interpolation = HdInterpolationConstant;
          interpolation < HdInterpolationCount; ++interpolation) {
@@ -2608,13 +2608,13 @@ HdDataSourceLegacyPrim::_GetExtComputationPrimvarsDataSource()
             _sceneDelegate->GetExtComputationPrimvarDescriptors(
                 _id, (HdInterpolation)interpolation);
 
-        TfToken interpolationToken = _InterpolationAsToken(
+        TfToken interpolationToken = pxrImagingHdDataSourceLegacyPrim::_InterpolationAsToken(
             (HdInterpolation)interpolation);
 
         for (const auto &primvarDesc : v) {
             if (!primvarsDs) {
                 primvarsDs =
-                    Hd_DataSourceLegacyExtComputationPrimvarsContainer::New(
+                    pxrImagingHdDataSourceLegacyPrim::Hd_DataSourceLegacyExtComputationPrimvarsContainer::New(
                         _id, _sceneDelegate);
             }
             primvarsDs->AddDesc(
@@ -2651,7 +2651,7 @@ HdDataSourceLegacyPrim::_GetXformDataSource()
 {
     HdContainerDataSourceHandle t = 
         HdXformSchema::BuildRetained(
-            Hd_DataSourceLegacyMatrixValue::New(_type, _id, _sceneDelegate),
+            pxrImagingHdDataSourceLegacyPrim::Hd_DataSourceLegacyMatrixValue::New(_type, _id, _sceneDelegate),
             // Mark this transform as fully composed, since scene delegate
             // transforms are always fully composed.
             HdRetainedTypedSampledDataSource<bool>::New(true)
@@ -2682,7 +2682,7 @@ HdDataSourceLegacyPrim::_GetMaterialDataSource()
 HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetDisplayStyleDataSource()
 {
-    return Hd_DisplayStyleDataSource::New(_sceneDelegate, _id);
+    return pxrImagingHdDataSourceLegacyPrim::Hd_DisplayStyleDataSource::New(_sceneDelegate, _id);
 }
 
 HdDataSourceBaseHandle
@@ -2710,7 +2710,7 @@ HdDataSourceLegacyPrim::_GetInstancerTopologyDataSource()
     }
 
     instancerTopology =
-        Hd_InstancerTopologyDataSource::New(_id, _sceneDelegate);
+        pxrImagingHdDataSourceLegacyPrim::Hd_InstancerTopologyDataSource::New(_id, _sceneDelegate);
 
     HdContainerDataSource::AtomicStore(
         _instancerTopology, instancerTopology);
@@ -2815,7 +2815,7 @@ HdDataSourceLegacyPrim::_GetInstanceCategoriesDataSource()
 {
     return HdInstanceCategoriesSchema::BuildRetained(
         HdVectorDataSourceHandle(
-            Hd_InstanceCategoriesVectorDataSource::New(_id, _sceneDelegate))
+            pxrImagingHdDataSourceLegacyPrim::Hd_InstanceCategoriesVectorDataSource::New(_id, _sceneDelegate))
     );
 }
 
@@ -2867,12 +2867,12 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
 {
     if (name == HdMeshSchemaTokens->mesh) {
         if (_type == HdPrimTypeTokens->mesh) {
-            return Hd_DataSourceMesh::New(_id, _sceneDelegate);
+            return pxrImagingHdDataSourceLegacyPrim::Hd_DataSourceMesh::New(_id, _sceneDelegate);
         }
         
     } else if (name == HdBasisCurvesSchemaTokens->basisCurves) {
         if (_type == HdPrimTypeTokens->basisCurves) {
-            return Hd_DataSourceBasisCurves::New(_id, _sceneDelegate);
+            return pxrImagingHdDataSourceLegacyPrim::Hd_DataSourceBasisCurves::New(_id, _sceneDelegate);
         }
     } else if (name == HdPrimvarsSchemaTokens->primvars) {
         return _GetPrimvarsDataSource();
@@ -2905,22 +2905,22 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
     } else if (name == HdExtentSchemaTokens->extent) {
         return _GetExtentDataSource();
     } else if (name == HdCameraSchemaTokens->camera) {
-        return Hd_DataSourceCamera::New(_id, _sceneDelegate);
+        return pxrImagingHdDataSourceLegacyPrim::Hd_DataSourceCamera::New(_id, _sceneDelegate);
     } else if (name == HdLightSchemaTokens->light) {
-        return Hd_DataSourceLight::New(_id, _sceneDelegate);
+        return pxrImagingHdDataSourceLegacyPrim::Hd_DataSourceLight::New(_id, _sceneDelegate);
     } else if (name == HdCategoriesSchemaTokens->categories) {
         return _GetCategoriesDataSource();
     } else if (name == HdInstanceCategoriesSchemaTokens->instanceCategories) {
         return _GetInstanceCategoriesDataSource();
     } else if (name == HdRenderBufferSchemaTokens->renderBuffer) {
-        return Hd_DataSourceRenderBuffer::New(_sceneDelegate, _id);
+        return pxrImagingHdDataSourceLegacyPrim::Hd_DataSourceRenderBuffer::New(_sceneDelegate, _id);
     } else if (name == HdVolumeFieldSchemaTokens->volumeField) {
-        return Hd_DataSourceVolumeField::New(_id, _sceneDelegate);
+        return pxrImagingHdDataSourceLegacyPrim::Hd_DataSourceVolumeField::New(_id, _sceneDelegate);
     } else if (name == HdPrimTypeTokens->drawTarget) {
         return HdContainerDataSourceHandle(
-            Hd_LegacyDrawTargetContainerDataSource::New(_sceneDelegate, _id));
+            pxrImagingHdDataSourceLegacyPrim::Hd_LegacyDrawTargetContainerDataSource::New(_sceneDelegate, _id));
     } else if (name == HdExtComputationSchemaTokens->extComputation) {
-        return Hd_DataSourceLegacyExtComputation::New(_id, _sceneDelegate);
+        return pxrImagingHdDataSourceLegacyPrim::Hd_DataSourceLegacyExtComputation::New(_id, _sceneDelegate);
     } else if (name == _tokens->prmanParams) {
         if (_type == _tokens->prmanParams) {
             return _GetPrmanParamsDataSource();

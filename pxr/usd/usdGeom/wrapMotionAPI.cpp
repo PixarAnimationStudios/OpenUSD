@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapMotionAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -86,7 +86,7 @@ void wrapUsdGeomMotionAPI()
 {
     typedef UsdGeomMotionAPI This;
 
-    UsdGeomMotionAPI_CanApplyResult::Wrap<UsdGeomMotionAPI_CanApplyResult>(
+    pxrUsdUsdGeomWrapMotionAPI::UsdGeomMotionAPI_CanApplyResult::Wrap<pxrUsdUsdGeomWrapMotionAPI::UsdGeomMotionAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -100,7 +100,7 @@ void wrapUsdGeomMotionAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdGeomWrapMotionAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -122,14 +122,14 @@ void wrapUsdGeomMotionAPI()
         .def("GetVelocityScaleAttr",
              &This::GetVelocityScaleAttr)
         .def("CreateVelocityScaleAttr",
-             &_CreateVelocityScaleAttr,
+             &pxrUsdUsdGeomWrapMotionAPI::_CreateVelocityScaleAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapMotionAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapMotionAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -151,7 +151,7 @@ void wrapUsdGeomMotionAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdGeomWrapMotionAPI {
 
 WRAP_CUSTOM {
     _class

@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace
+namespace pxrUsdSdfWrapCopyUtils
 {
 
 VtValue
@@ -173,9 +173,9 @@ wrapCopyUtils()
         &SdfCopySpec,
         (boost::python::arg("srcLayer"), boost::python::arg("srcPath"), boost::python::arg("dstLayer"), boost::python::arg("dstPath")));
 
-    TfPyFunctionFromPython<Py_SdfShouldCopyChildrenSig>();
-    TfPyFunctionFromPython<Py_SdfShouldCopyValueSig>();
-    boost::python::def("CopySpec", &Py_SdfCopySpec,
+    TfPyFunctionFromPython<pxrUsdSdfWrapCopyUtils::Py_SdfShouldCopyChildrenSig>();
+    TfPyFunctionFromPython<pxrUsdSdfWrapCopyUtils::Py_SdfShouldCopyValueSig>();
+    boost::python::def("CopySpec", &pxrUsdSdfWrapCopyUtils::Py_SdfCopySpec,
         (boost::python::arg("srcLayer"), boost::python::arg("srcPath"), boost::python::arg("dstLayer"), boost::python::arg("dstPath"),
          boost::python::arg("shouldCopyValueFn"), boost::python::arg("shouldCopyChildrenFn")));
 }

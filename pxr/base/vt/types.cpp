@@ -94,7 +94,7 @@ TF_REGISTRY_FUNCTION(TfType)
 
 // Floating point conversions... in future, we might hope to use SSE here.
 // Where is the right place to document the existence of these?
-namespace {
+namespace pxrBaseVtTypes {
 
 // A function object that converts a 'From' to a 'To'.
 template <class To>
@@ -161,23 +161,23 @@ TF_REGISTRY_FUNCTION(VtValue)
     VtValue::RegisterSimpleBidirectionalCast<GfVec4f, GfVec4d>();
 
     // Precision casts.
-    _RegisterArrayCasts<VtHalfArray, VtFloatArray>();
-    _RegisterArrayCasts<VtHalfArray, VtDoubleArray>();
-    _RegisterArrayCasts<VtFloatArray, VtDoubleArray>();
-    _RegisterArrayCasts<VtVec2hArray, VtVec2fArray>();
-    _RegisterArrayCasts<VtVec2hArray, VtVec2dArray>();
-    _RegisterArrayCasts<VtVec2fArray, VtVec2dArray>();
-    _RegisterArrayCasts<VtVec3hArray, VtVec3fArray>();
-    _RegisterArrayCasts<VtVec3hArray, VtVec3dArray>();
-    _RegisterArrayCasts<VtVec3fArray, VtVec3dArray>();
-    _RegisterArrayCasts<VtVec4hArray, VtVec4fArray>();
-    _RegisterArrayCasts<VtVec4hArray, VtVec4dArray>();
-    _RegisterArrayCasts<VtVec4fArray, VtVec4dArray>();
+    pxrBaseVtTypes::_RegisterArrayCasts<VtHalfArray, VtFloatArray>();
+    pxrBaseVtTypes::_RegisterArrayCasts<VtHalfArray, VtDoubleArray>();
+    pxrBaseVtTypes::_RegisterArrayCasts<VtFloatArray, VtDoubleArray>();
+    pxrBaseVtTypes::_RegisterArrayCasts<VtVec2hArray, VtVec2fArray>();
+    pxrBaseVtTypes::_RegisterArrayCasts<VtVec2hArray, VtVec2dArray>();
+    pxrBaseVtTypes::_RegisterArrayCasts<VtVec2fArray, VtVec2dArray>();
+    pxrBaseVtTypes::_RegisterArrayCasts<VtVec3hArray, VtVec3fArray>();
+    pxrBaseVtTypes::_RegisterArrayCasts<VtVec3hArray, VtVec3dArray>();
+    pxrBaseVtTypes::_RegisterArrayCasts<VtVec3fArray, VtVec3dArray>();
+    pxrBaseVtTypes::_RegisterArrayCasts<VtVec4hArray, VtVec4fArray>();
+    pxrBaseVtTypes::_RegisterArrayCasts<VtVec4hArray, VtVec4dArray>();
+    pxrBaseVtTypes::_RegisterArrayCasts<VtVec4fArray, VtVec4dArray>();
 
     // Not sure how necessary these are; here for consistency
-    _RegisterRangeArrayCasts<VtRange1fArray, VtRange1dArray>();
-    _RegisterRangeArrayCasts<VtRange2fArray, VtRange2dArray>();
-    _RegisterRangeArrayCasts<VtRange3fArray, VtRange3dArray>();
+    pxrBaseVtTypes::_RegisterRangeArrayCasts<VtRange1fArray, VtRange1dArray>();
+    pxrBaseVtTypes::_RegisterRangeArrayCasts<VtRange2fArray, VtRange2dArray>();
+    pxrBaseVtTypes::_RegisterRangeArrayCasts<VtRange3fArray, VtRange3dArray>();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

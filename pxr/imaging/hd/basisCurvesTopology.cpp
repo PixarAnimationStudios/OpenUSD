@@ -29,7 +29,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrImagingHdBasisCurvesTopology {
 
 static size_t
 _ComputeNumPoints(
@@ -74,7 +74,7 @@ HdBasisCurvesTopology::HdBasisCurvesTopology(const HdBasisCurvesTopology& src)
   , _invisibleCurves(src._invisibleCurves)
 {
     HD_PERF_COUNTER_INCR(HdPerfTokens->basisCurvesTopology);
-    _numPoints = _ComputeNumPoints(_curveVertexCounts, _curveIndices);
+    _numPoints = pxrImagingHdBasisCurvesTopology::_ComputeNumPoints(_curveVertexCounts, _curveIndices);
 }
 
 HdBasisCurvesTopology::HdBasisCurvesTopology(const TfToken &curveType,
@@ -102,7 +102,7 @@ HdBasisCurvesTopology::HdBasisCurvesTopology(const TfToken &curveType,
         _curveBasis = TfToken();
     }
     HD_PERF_COUNTER_INCR(HdPerfTokens->basisCurvesTopology);
-    _numPoints = _ComputeNumPoints(_curveVertexCounts, _curveIndices);
+    _numPoints = pxrImagingHdBasisCurvesTopology::_ComputeNumPoints(_curveVertexCounts, _curveIndices);
 }
 
 HdBasisCurvesTopology::~HdBasisCurvesTopology()

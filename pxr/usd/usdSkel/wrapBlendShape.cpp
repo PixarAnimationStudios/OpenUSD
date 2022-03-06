@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdSkelWrapBlendShape {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -114,28 +114,28 @@ void wrapUsdSkelBlendShape()
         .def("GetOffsetsAttr",
              &This::GetOffsetsAttr)
         .def("CreateOffsetsAttr",
-             &_CreateOffsetsAttr,
+             &pxrUsdUsdSkelWrapBlendShape::_CreateOffsetsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetNormalOffsetsAttr",
              &This::GetNormalOffsetsAttr)
         .def("CreateNormalOffsetsAttr",
-             &_CreateNormalOffsetsAttr,
+             &pxrUsdUsdSkelWrapBlendShape::_CreateNormalOffsetsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetPointIndicesAttr",
              &This::GetPointIndicesAttr)
         .def("CreatePointIndicesAttr",
-             &_CreatePointIndicesAttr,
+             &pxrUsdUsdSkelWrapBlendShape::_CreatePointIndicesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdSkelWrapBlendShape::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdSkelWrapBlendShape::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -157,7 +157,7 @@ void wrapUsdSkelBlendShape()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdSkelWrapBlendShape {
 
 
 boost::python::tuple

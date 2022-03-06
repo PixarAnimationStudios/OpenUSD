@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapReference {
 
 static std::string
 _Repr(const SdfReference &self)
@@ -125,7 +125,7 @@ void wrapReference()
         .def(boost::python::self <= boost::python::self)
         .def(boost::python::self >= boost::python::self)
 
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrUsdSdfWrapReference::_Repr)
 
         ;
 

@@ -29,7 +29,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapXformCache {
 
 static
 boost::python::tuple
@@ -69,9 +69,9 @@ void wrapUsdGeomXformCache()
         .def("GetParentToWorldTransform",
              &XformCache::GetParentToWorldTransform, boost::python::arg("prim"))
         .def("GetLocalTransformation",
-             &_GetLocalTransformation, boost::python::arg("prim"))
+             &pxrUsdUsdGeomWrapXformCache::_GetLocalTransformation, boost::python::arg("prim"))
         .def("ComputeRelativeTransform",
-             &_ComputeRelativeTransform, (boost::python::arg("prim"), boost::python::arg("ancestor")))
+             &pxrUsdUsdGeomWrapXformCache::_ComputeRelativeTransform, (boost::python::arg("prim"), boost::python::arg("ancestor")))
         .def("Clear", &XformCache::Clear)
         .def("SetTime", &XformCache::SetTime, boost::python::arg("time"))
         .def("GetTime", &XformCache::GetTime)

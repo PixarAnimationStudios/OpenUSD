@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapLayerOffset {
 
 static std::string
 _Repr(const SdfLayerOffset &self) {
@@ -91,7 +91,7 @@ void wrapLayerOffset()
         .def( boost::python::self * SdfTimeCode() )
         .def( boost::python::self * double() )
 
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrUsdSdfWrapLayerOffset::_Repr)
         
         ;
 

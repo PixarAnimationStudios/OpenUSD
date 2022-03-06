@@ -137,7 +137,7 @@ UsdVolOpenVDBAsset::CreateFieldClassAttr(VtValue const &defaultValue, bool write
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdVolOpenVDBAsset {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -158,7 +158,7 @@ UsdVolOpenVDBAsset::GetSchemaAttributeNames(bool includeInherited)
         UsdVolTokens->fieldClass,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdVolOpenVDBAsset::_ConcatenateAttributeNames(
             UsdVolFieldAsset::GetSchemaAttributeNames(true),
             localNames);
 

@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapMaterialAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -107,7 +107,7 @@ void wrapUsdPhysicsMaterialAPI()
 {
     typedef UsdPhysicsMaterialAPI This;
 
-    UsdPhysicsMaterialAPI_CanApplyResult::Wrap<UsdPhysicsMaterialAPI_CanApplyResult>(
+    pxrUsdUsdPhysicsWrapMaterialAPI::UsdPhysicsMaterialAPI_CanApplyResult::Wrap<pxrUsdUsdPhysicsWrapMaterialAPI::UsdPhysicsMaterialAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -121,7 +121,7 @@ void wrapUsdPhysicsMaterialAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdPhysicsWrapMaterialAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -143,35 +143,35 @@ void wrapUsdPhysicsMaterialAPI()
         .def("GetDynamicFrictionAttr",
              &This::GetDynamicFrictionAttr)
         .def("CreateDynamicFrictionAttr",
-             &_CreateDynamicFrictionAttr,
+             &pxrUsdUsdPhysicsWrapMaterialAPI::_CreateDynamicFrictionAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetStaticFrictionAttr",
              &This::GetStaticFrictionAttr)
         .def("CreateStaticFrictionAttr",
-             &_CreateStaticFrictionAttr,
+             &pxrUsdUsdPhysicsWrapMaterialAPI::_CreateStaticFrictionAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetRestitutionAttr",
              &This::GetRestitutionAttr)
         .def("CreateRestitutionAttr",
-             &_CreateRestitutionAttr,
+             &pxrUsdUsdPhysicsWrapMaterialAPI::_CreateRestitutionAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetDensityAttr",
              &This::GetDensityAttr)
         .def("CreateDensityAttr",
-             &_CreateDensityAttr,
+             &pxrUsdUsdPhysicsWrapMaterialAPI::_CreateDensityAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdPhysicsWrapMaterialAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdPhysicsWrapMaterialAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -193,7 +193,7 @@ void wrapUsdPhysicsMaterialAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapMaterialAPI {
 
 WRAP_CUSTOM {
 }

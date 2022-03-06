@@ -52,7 +52,7 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdPluginUsdMtlxReader {
 
 // Attribute name tokens.
 struct _AttributeNames {
@@ -2367,13 +2367,13 @@ UsdMtlxRead(
         return;
     }
 
-    _Context context(stage, internalPath);
+    pxrUsdPluginUsdMtlxReader::_Context context(stage, internalPath);
 
     // Color management.
-    if (auto cms = _Attr(mtlx, names.cms)) {
+    if (auto cms = pxrUsdPluginUsdMtlxReader::_Attr(mtlx, pxrUsdPluginUsdMtlxReader::names.cms)) {
         stage->SetColorManagementSystem(TfToken(cms));
     }
-    if (auto cmsconfig = _Attr(mtlx, names.cmsconfig)) {
+    if (auto cmsconfig = pxrUsdPluginUsdMtlxReader::_Attr(mtlx, pxrUsdPluginUsdMtlxReader::names.cmsconfig)) {
         // XXX -- Is it okay to use the URI as is?
         stage->SetColorConfiguration(SdfAssetPath(cmsconfig));
     }
@@ -2385,7 +2385,7 @@ UsdMtlxRead(
     }
 
     // Translate all materials.
-    ReadMaterials(mtlx, context);
+    pxrUsdPluginUsdMtlxReader::ReadMaterials(mtlx, context);
 
     // If there are no looks then we're done.
     if (mtlx->getLooks().empty()) {
@@ -2396,19 +2396,19 @@ UsdMtlxRead(
     context.AddVariants(mtlx);
 
     // Translate all collections.
-    auto hasCollections = ReadCollections(mtlx, context);
+    auto hasCollections = pxrUsdPluginUsdMtlxReader::ReadCollections(mtlx, context);
 
     // Collect all of the material/variant assignments.
-    VariantAssignmentsBuilder materialVariantAssignmentsBuilder;
+    pxrUsdPluginUsdMtlxReader::VariantAssignmentsBuilder materialVariantAssignmentsBuilder;
     for (auto& mtlxLook: mtlx->getLooks()) {
         // Get the variant assigns for the look and (recursively) its
         // inherited looks.
-        VariantAssignments lookVariantAssigns;
+        pxrUsdPluginUsdMtlxReader::VariantAssignments lookVariantAssigns;
         lookVariantAssigns.AddInherited(mtlxLook);
 
         for (auto& mtlxMaterialAssign: mtlxLook->getMaterialAssigns()) {
             // Get the material assign's variant assigns.
-            VariantAssignments variantAssigns;
+            pxrUsdPluginUsdMtlxReader::VariantAssignments variantAssigns;
             variantAssigns.Add(mtlxMaterialAssign);
 
             // Compose variantAssigns over lookVariantAssigns.
@@ -2425,7 +2425,7 @@ UsdMtlxRead(
 
     // Create the variants on each material.
     for (const auto& mtlxMaterialAssign: assignments.GetMaterialAssigns()) {
-        AddMaterialVariants(mtlxMaterialAssign, context, assignments);
+        pxrUsdPluginUsdMtlxReader::AddMaterialVariants(mtlxMaterialAssign, context, assignments);
     }
 
     // Make an internal path for looks.
@@ -2440,8 +2440,8 @@ UsdMtlxRead(
     for (auto& mtlxMostDerivedLook: mtlx->getLooks()) {
         // We rely on inherited looks to exist in USD so we do
         // those first.
-        for (auto& mtlxLook: _GetInheritanceStack(mtlxMostDerivedLook)) {
-            auto lookName = _Name(mtlxLook);
+        for (auto& mtlxLook: pxrUsdPluginUsdMtlxReader::_GetInheritanceStack(mtlxMostDerivedLook)) {
+            auto lookName = pxrUsdPluginUsdMtlxReader::_Name(mtlxLook);
 
             // Add the look prim.  If it already exists (because it was
             // inherited by a previously handled look) then skip it.
@@ -2452,7 +2452,7 @@ UsdMtlxRead(
             }
 
             // Read the look.
-            ReadLook(mtlxLook, usdLook, context, assignments, hasCollections);
+            pxrUsdPluginUsdMtlxReader::ReadLook(mtlxLook, usdLook, context, assignments, hasCollections);
 
             // Create a variant for this look in the external root.
             if (lookVariantSet.AddVariant(lookName)) {
@@ -2491,10 +2491,10 @@ UsdMtlxReadNodeGraphs(
         return;
     }
 
-    _Context context(stage, internalPath);
+    pxrUsdPluginUsdMtlxReader::_Context context(stage, internalPath);
 
-    ReadNodeGraphsWithDefs(mtlx, context);
-    ReadNodeGraphsWithoutDefs(mtlx, context);
+    pxrUsdPluginUsdMtlxReader::ReadNodeGraphsWithDefs(mtlx, context);
+    pxrUsdPluginUsdMtlxReader::ReadNodeGraphsWithoutDefs(mtlx, context);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

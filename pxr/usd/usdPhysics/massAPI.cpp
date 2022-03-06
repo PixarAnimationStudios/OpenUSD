@@ -193,7 +193,7 @@ UsdPhysicsMassAPI::CreatePrincipalAxesAttr(VtValue const &defaultValue, bool wri
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdPhysicsMassAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -217,7 +217,7 @@ UsdPhysicsMassAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdPhysicsTokens->physicsPrincipalAxes,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdPhysicsMassAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

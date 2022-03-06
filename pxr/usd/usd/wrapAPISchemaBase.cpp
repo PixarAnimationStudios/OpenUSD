@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapAPISchemaBase {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -75,7 +75,7 @@ void wrapUsdAPISchemaBase()
 
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdWrapAPISchemaBase::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -97,7 +97,7 @@ void wrapUsdAPISchemaBase()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdWrapAPISchemaBase {
 
 WRAP_CUSTOM {
 }

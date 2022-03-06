@@ -38,7 +38,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdPcpMapFunction {
     // Order PathPairs using FastLessThan.
     struct _PathPairOrder
     {
@@ -138,7 +138,7 @@ _Canonicalize(PairIter &begin, PairIter &end)
     }
 
     // Final sort to canonical order.
-    std::sort(begin, end, _PathPairOrder());
+    std::sort(begin, end, pxrUsdPcpMapFunction::_PathPairOrder());
 
     bool hasRootIdentity = false;
     if (begin != end) {

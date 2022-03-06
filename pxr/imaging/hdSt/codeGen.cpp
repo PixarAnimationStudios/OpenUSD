@@ -429,7 +429,7 @@ _GetFlatType(TfToken const &token)
     return token;
 }
 
-namespace {
+namespace pxrImagingHdStCodeGen {
     struct LayoutQualifier {
         LayoutQualifier(HdBinding const &binding) :
             binding(binding) {
@@ -1030,7 +1030,7 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
     uniforms << "// Uniform block\n";
 
     HdBinding uboBinding(HdBinding::UBO, 0);
-    uniforms << LayoutQualifier(uboBinding);
+    uniforms << pxrImagingHdStCodeGen::LayoutQualifier(uboBinding);
     uniforms << "uniform ubo_" << uboBinding.GetLocation() << " {\n";
 
     accessors << "// Read-Write Accessors & Mutators\n";
@@ -1168,7 +1168,7 @@ static void _EmitDeclaration(std::stringstream &str,
     }
 
     // layout qualifier (if exists)
-    str << LayoutQualifier(binding);
+    str << pxrImagingHdStCodeGen::LayoutQualifier(binding);
 
     switch (bindingType) {
     case HdBinding::VERTEX_ATTR:
@@ -3436,7 +3436,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                 /* isShadowSampler = */ isShadowTexture);
         } else if (bindingType == HdBinding::TEXTURE_2D) {
             declarations
-                << LayoutQualifier(it->first)
+                << pxrImagingHdStCodeGen::LayoutQualifier(it->first)
                 << "uniform sampler2D sampler2d_" << it->second.name << ";\n";
 
             _EmitTextureAccessors(
@@ -3455,12 +3455,12 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                 << it->second.arrayOfTexturesSize << "\n";
             if (isShadowTexture) {
                 declarations
-                    << LayoutQualifier(it->first)
+                    << pxrImagingHdStCodeGen::LayoutQualifier(it->first)
                     << "uniform sampler2DShadow sampler2d_" << it->second.name 
                     << "[" << it->second.name << "_SIZE];\n";
             } else {
                 declarations
-                    << LayoutQualifier(it->first)
+                    << pxrImagingHdStCodeGen::LayoutQualifier(it->first)
                     << "uniform sampler2D sampler2d_" << it->second.name 
                     << "[" << it->second.name << "_SIZE];\n";
             }
@@ -3487,7 +3487,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
         } else if (bindingType == HdBinding::TEXTURE_FIELD) {
 
             declarations
-                << LayoutQualifier(it->first)
+                << pxrImagingHdStCodeGen::LayoutQualifier(it->first)
                 << "uniform sampler3D sampler3d_" << it->second.name << ";\n";
 
             _EmitTextureAccessors(
@@ -3602,7 +3602,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                 << "#endif\n";
 
             declarations
-                << LayoutQualifier(it->first)
+                << pxrImagingHdStCodeGen::LayoutQualifier(it->first)
                 << "uniform sampler2DArray sampler2dArray_"
                 << it->second.name << ";\n";
 
@@ -3684,7 +3684,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
             }
         } else if (bindingType == HdBinding::TEXTURE_UDIM_LAYOUT) {
             declarations
-                << LayoutQualifier(it->first)
+                << pxrImagingHdStCodeGen::LayoutQualifier(it->first)
                 << "uniform sampler1D sampler1d_" << it->second.name << ";\n";
         } else if (bindingType == HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL) {
             accessors
@@ -3723,7 +3723,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
             }     
         } else if (bindingType == HdBinding::TEXTURE_PTEX_TEXEL) {
             declarations
-                << LayoutQualifier(it->first)
+                << pxrImagingHdStCodeGen::LayoutQualifier(it->first)
                 << "uniform sampler2DArray sampler2darray_"
                 << it->second.name << ";\n";
             accessors
@@ -3760,7 +3760,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
             //accessors << _GetUnpackedType(it->second.dataType) << "(0)";
         } else if (bindingType == HdBinding::TEXTURE_PTEX_LAYOUT) {
             declarations
-                << LayoutQualifier(HdBinding(it->first.GetType(),
+                << pxrImagingHdStCodeGen::LayoutQualifier(HdBinding(it->first.GetType(),
                                              it->first.GetLocation(),
                                              it->first.GetTextureUnit()))
                 << "uniform usampler1DArray usampler1darray_"

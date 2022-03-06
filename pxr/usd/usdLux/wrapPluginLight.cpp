@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdLuxWrapPluginLight {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -90,10 +90,10 @@ void wrapUsdLuxPluginLight()
         .def(!boost::python::self)
 
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdLuxWrapPluginLight::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdLuxWrapPluginLight::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -115,7 +115,7 @@ void wrapUsdLuxPluginLight()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdLuxWrapPluginLight {
 
 WRAP_CUSTOM {
     _class

@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdShadeWrapMaterial {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -114,28 +114,28 @@ void wrapUsdShadeMaterial()
         .def("GetSurfaceAttr",
              &This::GetSurfaceAttr)
         .def("CreateSurfaceAttr",
-             &_CreateSurfaceAttr,
+             &pxrUsdUsdShadeWrapMaterial::_CreateSurfaceAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetDisplacementAttr",
              &This::GetDisplacementAttr)
         .def("CreateDisplacementAttr",
-             &_CreateDisplacementAttr,
+             &pxrUsdUsdShadeWrapMaterial::_CreateDisplacementAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetVolumeAttr",
              &This::GetVolumeAttr)
         .def("CreateVolumeAttr",
-             &_CreateVolumeAttr,
+             &pxrUsdUsdShadeWrapMaterial::_CreateVolumeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdShadeWrapMaterial::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdShadeWrapMaterial::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -163,7 +163,7 @@ void wrapUsdShadeMaterial()
 
 #include <boost/python/tuple.hpp>
 
-namespace {
+namespace pxrUsdUsdShadeWrapMaterial {
 
 static UsdPyEditContext
 _GetEditContextForVariant(const UsdShadeMaterial &self,

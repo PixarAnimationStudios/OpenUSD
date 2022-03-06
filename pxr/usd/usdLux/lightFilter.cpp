@@ -120,7 +120,7 @@ UsdLuxLightFilter::CreateShaderIdAttr(VtValue const &defaultValue, bool writeSpa
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdLuxLightFilter {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -141,7 +141,7 @@ UsdLuxLightFilter::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->lightFilterShaderId,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdLuxLightFilter::_ConcatenateAttributeNames(
             UsdGeomXformable::GetSchemaAttributeNames(true),
             localNames);
 

@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBasePlugWrapNotice {
 
 TF_INSTANTIATE_NOTICE_WRAPPER(PlugNotice::Base, TfNotice);
 TF_INSTANTIATE_NOTICE_WRAPPER(PlugNotice::DidRegisterPlugins, PlugNotice::Base);

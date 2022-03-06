@@ -133,7 +133,7 @@ public:
     virtual ~HioOpenVDB_TextureData_DenseGridHolderBase() = default;
 };
 
-namespace {
+namespace pxrImagingHioOpenVDBVdbTextureData {
 
 // Extracts the transform associated with an OpenVDB grid
 GfMatrix4d
@@ -520,8 +520,8 @@ HioOpenVDB_TextureData::Read()
         _gridName.c_str());
 
     // Load grid from OpenVDB file
-    std::unique_ptr<_GridHolderBase> gridHolder(
-        _LoadGrid(_filePath, _gridName));
+    std::unique_ptr<pxrImagingHioOpenVDBVdbTextureData::_GridHolderBase> gridHolder(
+        pxrImagingHioOpenVDBVdbTextureData::_LoadGrid(_filePath, _gridName));
 
     if (!gridHolder) {
         // Runtime or coding errors already issued
@@ -569,9 +569,9 @@ HioOpenVDB_TextureData::Read()
         // There will be additional samples near the boundary
         // of the original voluem, so scale down a bit more.
         const double scale =
-            std::min({ _ResamplingAdjustment(nativeWidth,  approxScale),
-                       _ResamplingAdjustment(nativeHeight, approxScale),
-                       _ResamplingAdjustment(nativeDepth,  approxScale) });
+            std::min({ pxrImagingHioOpenVDBVdbTextureData::_ResamplingAdjustment(nativeWidth,  approxScale),
+                       pxrImagingHioOpenVDBVdbTextureData::_ResamplingAdjustment(nativeHeight, approxScale),
+                       pxrImagingHioOpenVDBVdbTextureData::_ResamplingAdjustment(nativeDepth,  approxScale) });
 
         TF_DEBUG(HIOOPENVDB_DEBUG_TEXTURE).Msg(
             "[VdbTextureData] Scaling by factor %f\n", scale);
@@ -603,7 +603,7 @@ HioOpenVDB_TextureData::Read()
     const openvdb::CoordBBox &treeBoundingBox =
         _denseGrid->GetTreeBoundingBox();
 
-    _boundingBox.Set(_ToRange3d(treeBoundingBox),
+    _boundingBox.Set(pxrImagingHioOpenVDBVdbTextureData::_ToRange3d(treeBoundingBox),
                      gridTransform);
 
     const openvdb::Coord dim = treeBoundingBox.dim();

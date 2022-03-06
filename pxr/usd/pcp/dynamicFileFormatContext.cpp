@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdPcpDynamicFileFormatContext {
 
 // Helper class for composing a field value from the context's inputs.
 class _ComposeValueHelper
@@ -188,7 +188,7 @@ PcpDynamicFileFormatContext::ComposeValue(
     // strongest to weakest opinions.
     if (fieldIsDictValued) {
         VtDictionary composedDict;
-        if (_ComposeValueHelper::ComposeValue(_parentNode, _previousStackFrame, 
+        if (pxrUsdPcpDynamicFileFormatContext::_ComposeValueHelper::ComposeValue(_parentNode, _previousStackFrame, 
                 field, /*findStrongestOnly = */ false,
                 [&composedDict](VtValue &&val){
                     if (val.IsHolding<VtDictionary>()) {
@@ -208,7 +208,7 @@ PcpDynamicFileFormatContext::ComposeValue(
     } else {
         // For all other value type we compose by just grabbing the strongest 
         // opinion if it exists.
-        return _ComposeValueHelper::ComposeValue(_parentNode, 
+        return pxrUsdPcpDynamicFileFormatContext::_ComposeValueHelper::ComposeValue(_parentNode, 
             _previousStackFrame, field, /*findStrongestOnly = */ true,
             [&value](VtValue &&val){
                 // Take advantage of VtValue's move assignment
@@ -233,7 +233,7 @@ PcpDynamicFileFormatContext::ComposeValueStack(
 
     // For the value stack, just add all opinions we can find for the field
     // in strength order.
-    return _ComposeValueHelper::ComposeValue(_parentNode, _previousStackFrame, 
+    return pxrUsdPcpDynamicFileFormatContext::_ComposeValueHelper::ComposeValue(_parentNode, _previousStackFrame, 
         field, /*findStrongestOnly = */ false,
         [&values](VtValue &&val){
              // Take advantage of VtValue's move assignment

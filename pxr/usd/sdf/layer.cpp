@@ -1341,7 +1341,7 @@ SdfLayer::SetTimeSample(const SdfPath& path, double time,
 }
 
 // cache the value of typeid(SdfValueBlock)
-namespace 
+namespace pxrUsdSdfLayer 
 {
     const TfType& _GetSdfValueBlockType() 
     {
@@ -1363,7 +1363,7 @@ SdfLayer::SetTimeSample(const SdfPath& path, double time,
         return;
     }
 
-    if (value.valueType == _GetSdfValueBlockType().GetTypeid()) {
+    if (value.valueType == pxrUsdSdfLayer::_GetSdfValueBlockType().GetTypeid()) {
         _PrimSetTimeSample(path, time, value);
         return;
     }

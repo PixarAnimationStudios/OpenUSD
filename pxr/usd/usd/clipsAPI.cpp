@@ -132,7 +132,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PUBLIC_TOKENS(UsdClipsAPIInfoKeys, USDCLIPS_INFO_KEYS);
 TF_DEFINE_PUBLIC_TOKENS(UsdClipsAPISetNames, USDCLIPS_SET_NAMES);
 
-namespace
+namespace pxrUsdUsdClipsAPI
 {
 
 TfToken
@@ -197,7 +197,7 @@ _ComputeClipSetDefinition(
         return false;                                                    \
     }                                                                    \
     return GetPrim().SetMetadataByDictKey(                               \
-        UsdTokens->clips, _MakeKeyPath(ClipSetArg, InfoKey), InArg);
+        UsdTokens->clips, pxrUsdUsdClipsAPI::_MakeKeyPath(ClipSetArg, InfoKey), InArg);
 
 #define USD_CLIPS_API_CLIPSET_GETTER(FnName, OutArg, ClipSetArg, InfoKey) \
     if (GetPath() == SdfPath::AbsoluteRootPath()) {                       \
@@ -214,7 +214,7 @@ _ComputeClipSetDefinition(
         return false;                                                     \
     }                                                                     \
     return GetPrim().GetMetadataByDictKey(                                \
-        UsdTokens->clips, _MakeKeyPath(ClipSetArg, InfoKey), OutArg);
+        UsdTokens->clips, pxrUsdUsdClipsAPI::_MakeKeyPath(ClipSetArg, InfoKey), OutArg);
 
 bool 
 UsdClipsAPI::GetClips(VtDictionary* clips) const
@@ -290,7 +290,7 @@ UsdClipsAPI::ComputeClipAssetPaths(const std::string& clipSet) const
     }
 
     Usd_ClipSetDefinition clipSetDef;
-    if (!_ComputeClipSetDefinition(GetPrim(), clipSet, &clipSetDef)
+    if (!pxrUsdUsdClipsAPI::_ComputeClipSetDefinition(GetPrim(), clipSet, &clipSetDef)
         || !clipSetDef.clipAssetPaths) {
         return {};
     }
@@ -374,7 +374,7 @@ UsdClipsAPI::GenerateClipManifest(
     }
 
     Usd_ClipSetDefinition clipSetDef;
-    if (!_ComputeClipSetDefinition(GetPrim(), clipSetName, &clipSetDef)) {
+    if (!pxrUsdUsdClipsAPI::_ComputeClipSetDefinition(GetPrim(), clipSetName, &clipSetDef)) {
         return SdfLayerRefPtr();
     }
 

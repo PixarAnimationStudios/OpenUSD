@@ -41,7 +41,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdUsdUtilsStitch {
 
 VtValue
 _Reduce(
@@ -402,10 +402,10 @@ UsdUtilsStitchInfo(
         weakObj->GetLayer(), weakObj->GetPath(),
         strongObj->GetLayer(), strongObj->GetPath(),
         /* shouldCopyValueFn = */ std::bind(
-            _MergeValueFn, 
+            pxrUsdUsdUtilsStitch::_MergeValueFn, 
             std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, 
             std::placeholders::_8, std::placeholders::_9, std::cref(stitchValueFn)),
-        /* shouldCopyChildrenFn = */ _DontCopyChildrenFn);
+        /* shouldCopyChildrenFn = */ pxrUsdUsdUtilsStitch::_DontCopyChildrenFn);
 }
 
 void 
@@ -427,10 +427,10 @@ UsdUtilsStitchLayers(
         weakLayer, SdfPath::AbsoluteRootPath(),
         strongLayer, SdfPath::AbsoluteRootPath(),
         /* shouldCopyValueFn = */ std::bind(
-            _MergeValueFn, 
+            pxrUsdUsdUtilsStitch::_MergeValueFn, 
             std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, 
             std::placeholders::_8, std::placeholders::_9, std::cref(stitchValueFn)),
-        /* shouldCopyChildrenFn = */ _MergeChildrenFn);
+        /* shouldCopyChildrenFn = */ pxrUsdUsdUtilsStitch::_MergeChildrenFn);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

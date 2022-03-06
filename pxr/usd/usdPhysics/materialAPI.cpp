@@ -176,7 +176,7 @@ UsdPhysicsMaterialAPI::CreateDensityAttr(VtValue const &defaultValue, bool write
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdPhysicsMaterialAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -199,7 +199,7 @@ UsdPhysicsMaterialAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdPhysicsTokens->physicsDensity,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdPhysicsMaterialAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

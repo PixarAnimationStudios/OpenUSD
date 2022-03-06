@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdRiWrapMaterialAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -100,7 +100,7 @@ void wrapUsdRiMaterialAPI()
 {
     typedef UsdRiMaterialAPI This;
 
-    UsdRiMaterialAPI_CanApplyResult::Wrap<UsdRiMaterialAPI_CanApplyResult>(
+    pxrUsdUsdRiWrapMaterialAPI::UsdRiMaterialAPI_CanApplyResult::Wrap<pxrUsdUsdRiWrapMaterialAPI::UsdRiMaterialAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -114,7 +114,7 @@ void wrapUsdRiMaterialAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdRiWrapMaterialAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -136,28 +136,28 @@ void wrapUsdRiMaterialAPI()
         .def("GetSurfaceAttr",
              &This::GetSurfaceAttr)
         .def("CreateSurfaceAttr",
-             &_CreateSurfaceAttr,
+             &pxrUsdUsdRiWrapMaterialAPI::_CreateSurfaceAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetDisplacementAttr",
              &This::GetDisplacementAttr)
         .def("CreateDisplacementAttr",
-             &_CreateDisplacementAttr,
+             &pxrUsdUsdRiWrapMaterialAPI::_CreateDisplacementAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetVolumeAttr",
              &This::GetVolumeAttr)
         .def("CreateVolumeAttr",
-             &_CreateVolumeAttr,
+             &pxrUsdUsdRiWrapMaterialAPI::_CreateVolumeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdRiWrapMaterialAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdRiWrapMaterialAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -179,7 +179,7 @@ void wrapUsdRiMaterialAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdRiWrapMaterialAPI {
 
 WRAP_CUSTOM {
     typedef UsdRiMaterialAPI This;

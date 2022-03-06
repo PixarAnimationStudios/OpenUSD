@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdLuxWrapMeshLightAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -79,7 +79,7 @@ void wrapUsdLuxMeshLightAPI()
 {
     typedef UsdLuxMeshLightAPI This;
 
-    UsdLuxMeshLightAPI_CanApplyResult::Wrap<UsdLuxMeshLightAPI_CanApplyResult>(
+    pxrUsdUsdLuxWrapMeshLightAPI::UsdLuxMeshLightAPI_CanApplyResult::Wrap<pxrUsdUsdLuxWrapMeshLightAPI::UsdLuxMeshLightAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -93,7 +93,7 @@ void wrapUsdLuxMeshLightAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdLuxWrapMeshLightAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -112,10 +112,10 @@ void wrapUsdLuxMeshLightAPI()
         .def(!boost::python::self)
 
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdLuxWrapMeshLightAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdLuxWrapMeshLightAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -137,7 +137,7 @@ void wrapUsdLuxMeshLightAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdLuxWrapMeshLightAPI {
 
 WRAP_CUSTOM {
 }

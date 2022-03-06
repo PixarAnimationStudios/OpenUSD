@@ -30,7 +30,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapCleanupEnabler {
 
 // This class and its wrapping allow a client to do this:
 // 
@@ -76,7 +76,7 @@ private :
 
 void wrapCleanupEnabler()
 {
-    typedef Sdf_PyCleanupEnabler This;
+    typedef pxrUsdSdfWrapCleanupEnabler::Sdf_PyCleanupEnabler This;
 
     boost::python::class_<This,boost::noncopyable>("CleanupEnabler",
         boost::python::init<>())

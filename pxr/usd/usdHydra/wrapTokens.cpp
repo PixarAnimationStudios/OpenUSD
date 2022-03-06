@@ -27,7 +27,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdHydraWrapTokens {
 
 // Helper to return a static token as a string.  We wrap tokens as Python
 // strings and for some reason simply wrapping the token using def_readonly
@@ -64,29 +64,29 @@ void wrapUsdHydraTokens()
 {
     boost::python::class_<UsdHydraTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
-    _AddToken(cls, "black", UsdHydraTokens->black);
-    _AddToken(cls, "clamp", UsdHydraTokens->clamp);
-    _AddToken(cls, "displayLookBxdf", UsdHydraTokens->displayLookBxdf);
-    _AddToken(cls, "faceIndex", UsdHydraTokens->faceIndex);
-    _AddToken(cls, "faceOffset", UsdHydraTokens->faceOffset);
-    _AddToken(cls, "frame", UsdHydraTokens->frame);
-    _AddToken(cls, "HwPrimvar_1", UsdHydraTokens->HwPrimvar_1);
-    _AddToken(cls, "HwPtexTexture_1", UsdHydraTokens->HwPtexTexture_1);
-    _AddToken(cls, "HwUvTexture_1", UsdHydraTokens->HwUvTexture_1);
-    _AddToken(cls, "infoFilename", UsdHydraTokens->infoFilename);
-    _AddToken(cls, "infoVarname", UsdHydraTokens->infoVarname);
-    _AddToken(cls, "linear", UsdHydraTokens->linear);
-    _AddToken(cls, "linearMipmapLinear", UsdHydraTokens->linearMipmapLinear);
-    _AddToken(cls, "linearMipmapNearest", UsdHydraTokens->linearMipmapNearest);
-    _AddToken(cls, "magFilter", UsdHydraTokens->magFilter);
-    _AddToken(cls, "minFilter", UsdHydraTokens->minFilter);
-    _AddToken(cls, "mirror", UsdHydraTokens->mirror);
-    _AddToken(cls, "nearest", UsdHydraTokens->nearest);
-    _AddToken(cls, "nearestMipmapLinear", UsdHydraTokens->nearestMipmapLinear);
-    _AddToken(cls, "nearestMipmapNearest", UsdHydraTokens->nearestMipmapNearest);
-    _AddToken(cls, "repeat", UsdHydraTokens->repeat);
-    _AddToken(cls, "textureMemory", UsdHydraTokens->textureMemory);
-    _AddToken(cls, "uv", UsdHydraTokens->uv);
-    _AddToken(cls, "wrapS", UsdHydraTokens->wrapS);
-    _AddToken(cls, "wrapT", UsdHydraTokens->wrapT);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "black", UsdHydraTokens->black);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "clamp", UsdHydraTokens->clamp);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "displayLookBxdf", UsdHydraTokens->displayLookBxdf);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "faceIndex", UsdHydraTokens->faceIndex);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "faceOffset", UsdHydraTokens->faceOffset);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "frame", UsdHydraTokens->frame);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "HwPrimvar_1", UsdHydraTokens->HwPrimvar_1);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "HwPtexTexture_1", UsdHydraTokens->HwPtexTexture_1);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "HwUvTexture_1", UsdHydraTokens->HwUvTexture_1);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "infoFilename", UsdHydraTokens->infoFilename);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "infoVarname", UsdHydraTokens->infoVarname);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "linear", UsdHydraTokens->linear);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "linearMipmapLinear", UsdHydraTokens->linearMipmapLinear);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "linearMipmapNearest", UsdHydraTokens->linearMipmapNearest);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "magFilter", UsdHydraTokens->magFilter);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "minFilter", UsdHydraTokens->minFilter);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "mirror", UsdHydraTokens->mirror);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "nearest", UsdHydraTokens->nearest);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "nearestMipmapLinear", UsdHydraTokens->nearestMipmapLinear);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "nearestMipmapNearest", UsdHydraTokens->nearestMipmapNearest);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "repeat", UsdHydraTokens->repeat);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "textureMemory", UsdHydraTokens->textureMemory);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "uv", UsdHydraTokens->uv);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "wrapS", UsdHydraTokens->wrapS);
+    pxrUsdUsdHydraWrapTokens::_AddToken(cls, "wrapT", UsdHydraTokens->wrapT);
 }

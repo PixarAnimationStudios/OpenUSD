@@ -167,7 +167,7 @@ UsdLuxDomeLight::CreatePortalsRel() const
                        /* custom = */ false);
 }
 
-namespace {
+namespace pxrUsdUsdLuxDomeLight {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -190,7 +190,7 @@ UsdLuxDomeLight::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->guideRadius,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdLuxDomeLight::_ConcatenateAttributeNames(
             UsdLuxNonboundableLightBase::GetSchemaAttributeNames(true),
             localNames);
 

@@ -44,7 +44,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapTransform {
 
 static GfVec3d _NoTranslation() { return GfVec3d(0,0,0); }
 static GfVec3d _IdentityScale() { return GfVec3d(1,1,1); }
@@ -87,11 +87,11 @@ void wrapTransform()
 
         .def(boost::python::init<const GfVec3d&, const GfRotation&, const GfVec3d&,
                   const GfVec3d&, const GfRotation&>
-             ((boost::python::args("translation") = _NoTranslation(),
-               boost::python::args("rotation") = _NoRotation(),
-               boost::python::args("scale") = _IdentityScale(),
-               boost::python::args("pivotPosition") = _NoTranslation(),
-               boost::python::args("pivotOrientation") = _NoRotation()),
+             ((boost::python::args("translation") = pxrBaseGfWrapTransform::_NoTranslation(),
+               boost::python::args("rotation") = pxrBaseGfWrapTransform::_NoRotation(),
+               boost::python::args("scale") = pxrBaseGfWrapTransform::_IdentityScale(),
+               boost::python::args("pivotPosition") = pxrBaseGfWrapTransform::_NoTranslation(),
+               boost::python::args("pivotOrientation") = pxrBaseGfWrapTransform::_NoRotation()),
               "Initializer used by 3x code."))
 
         // This is the constructor used by 2x code.  Leave the initial
@@ -115,11 +115,11 @@ void wrapTransform()
                                  const GfVec3d &, const GfVec3d &,
                                  const GfRotation & ))( &This::Set ),
               boost::python::return_self<>(),
-             (boost::python::args("translation") = _NoTranslation(),
-              boost::python::args("rotation") = _NoRotation(),
-              boost::python::args("scale") = _IdentityScale(),
-              boost::python::args("pivotPosition") = _NoTranslation(),
-              boost::python::args("pivotOrientation") = _NoRotation()))
+             (boost::python::args("translation") = pxrBaseGfWrapTransform::_NoTranslation(),
+              boost::python::args("rotation") = pxrBaseGfWrapTransform::_NoRotation(),
+              boost::python::args("scale") = pxrBaseGfWrapTransform::_IdentityScale(),
+              boost::python::args("pivotPosition") = pxrBaseGfWrapTransform::_NoTranslation(),
+              boost::python::args("pivotOrientation") = pxrBaseGfWrapTransform::_NoRotation()))
 
         .def( "Set",
               (This & (This::*)( const GfVec3d &, const GfRotation &,
@@ -190,7 +190,7 @@ void wrapTransform()
         .def( boost::python::self *= boost::python::self )
         .def( boost::python::self * boost::python::self )
         
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrBaseGfWrapTransform::_Repr)
 
         ;
     

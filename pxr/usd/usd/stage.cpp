@@ -566,7 +566,7 @@ UsdStage::_Close()
     //WorkSwapDestroyAsync(_layersAndNoticeKeys);
 }
 
-namespace {
+namespace pxrUsdUsdStage {
 
 // A predicate we pass to PcpCache::ComputePrimIndexesInParallel() to avoid
 // computing indexes for children of inactive prims or instance prims.
@@ -1316,7 +1316,7 @@ UsdStage::_ValidateEditPrimAtPath(const SdfPath &primPath,
     return true;
 }
 
-namespace {
+namespace pxrUsdUsdStage {
 
 SdfPrimSpecHandle
 _CreatePrimSpecAtEditTarget(const UsdEditTarget &editTarget, 
@@ -1336,7 +1336,7 @@ UsdStage::_CreatePrimSpecForEditing(const UsdPrim& prim)
         return TfNullPtr;
     }
 
-    return _CreatePrimSpecAtEditTarget(GetEditTarget(), prim.GetPath());
+    return pxrUsdUsdStage::_CreatePrimSpecAtEditTarget(GetEditTarget(), prim.GetPath());
 }
 
 static SdfAttributeSpecHandle
@@ -2482,7 +2482,7 @@ UsdStage::_InstantiatePrototypePrim(const SdfPath &primPath)
     return prototypePrim;
 }
 
-namespace {
+namespace pxrUsdUsdStage {
 // Less-than comparison for iterators that compares what they point to.
 struct _DerefIterLess {
     template <class Iter>
@@ -2678,11 +2678,11 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
     }
 
     // Sort the name order iterators *by name*.
-    std::sort(nameOrderIters.begin(), nameOrderIters.end(), _DerefIterLess());
+    std::sort(nameOrderIters.begin(), nameOrderIters.end(), pxrUsdUsdStage::_DerefIterLess());
 
     // Make a vector of the existing prim children and sort them by name.
     std::vector<Usd_PrimDataPtr> oldChildren(cur, end);
-    std::sort(oldChildren.begin(), oldChildren.end(), _PrimNameLess());
+    std::sort(oldChildren.begin(), oldChildren.end(), pxrUsdUsdStage::_PrimNameLess());
 
     std::vector<Usd_PrimDataPtr>::const_iterator
         oldChildIt = oldChildren.begin(),
@@ -2752,7 +2752,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
     // Now all the new children are in lexicographical order by name, paired
     // with their name's iterator in the original name order.  Recover the
     // original order by sorting by the iterators natural order.
-    std::sort(tempChildren.begin(), tempChildren.end(), _SecondLess());
+    std::sort(tempChildren.begin(), tempChildren.end(), pxrUsdUsdStage::_SecondLess());
 
     // Now all the new children are correctly ordered.  Set the 
     // sibling and parent links to add them to the prim's children.
@@ -3200,7 +3200,7 @@ UsdStage::IsSupportedFile(const std::string& filePath)
                                           UsdUsdFileFormatTokens->Target);
 }
 
-namespace {
+namespace pxrUsdUsdStage {
 
 void _SaveLayers(const SdfLayerHandleVector& layers)
 {
@@ -3244,7 +3244,7 @@ UsdStage::Save()
                      layers.end());
     }
 
-    _SaveLayers(layers);
+    pxrUsdUsdStage::_SaveLayers(layers);
 }
 
 void
@@ -3252,7 +3252,7 @@ UsdStage::SaveSessionLayers()
 {
     const PcpLayerStackPtr localLayerStack = _GetPcpCache()->GetLayerStack();
     if (TF_VERIFY(localLayerStack)) {
-        _SaveLayers(localLayerStack->GetSessionLayers());
+        pxrUsdUsdStage::_SaveLayers(localLayerStack->GetSessionLayers());
     }
 }
 
@@ -3341,7 +3341,7 @@ UsdStage::OverridePrim(const SdfPath &path)
             SdfChangeBlock block;
             TfErrorMark m;
             SdfPrimSpecHandle primSpec = 
-                _CreatePrimSpecAtEditTarget(GetEditTarget(), path);
+                pxrUsdUsdStage::_CreatePrimSpecAtEditTarget(GetEditTarget(), path);
             // If spec creation failed, return.  Issue an error if a more
             // specific error wasn't already issued.
             if (!primSpec) {
@@ -3390,7 +3390,7 @@ UsdStage::_DefinePrim(const SdfPath &path, const TfToken &typeName)
         {
             SdfChangeBlock block;
             SdfPrimSpecHandle primSpec = 
-                _CreatePrimSpecAtEditTarget(GetEditTarget(), path);
+                pxrUsdUsdStage::_CreatePrimSpecAtEditTarget(GetEditTarget(), path);
             // If spec creation failed, return.  Issue an error if a more
             // specific error wasn't already issued.
             if (!primSpec) {
@@ -4572,7 +4572,7 @@ UsdStage::_ComposePrimIndexesInParallel(
 
     _cache->ComputePrimIndexesInParallel(
         primIndexPaths, &errs, 
-        _NameChildrenPred(mask, &_loadRules, _instanceCache.get()),
+        pxrUsdUsdStage::_NameChildrenPred(mask, &_loadRules, _instanceCache.get()),
         _IncludePayloadsPredicate(this),
         "Usd", _mallocTagID);
 
@@ -4781,7 +4781,7 @@ public:
 
 };
 
-namespace {
+namespace pxrUsdUsdStage {
 
 // Map from path to replacement for remapping target paths during flattening.
 using _PathRemapping = std::map<SdfPath, SdfPath>;
@@ -5150,16 +5150,16 @@ UsdStage::Flatten(bool addSourceFileComment) const
     // Preemptively populate our mapping. This allows us to populate
     // nested instances in the destination layer much more simply.
     const auto prototypeToFlattened =
-        _GenerateFlattenedPrototypePath(GetPrototypes());
+        pxrUsdUsdStage::_GenerateFlattenedPrototypePath(GetPrototypes());
 
     // We author the prototype overs first to produce simpler 
     // assets which have them grouped at the top of the file.
     for (auto const& prototype : GetPrototypes()) {
-        _CopyPrototypePrim(prototype, flatLayer, prototypeToFlattened);
+        pxrUsdUsdStage::_CopyPrototypePrim(prototype, flatLayer, prototypeToFlattened);
     }
 
     for (UsdPrim prim: UsdPrimRange::AllPrims(GetPseudoRoot())) {
-        _CopyPrim(prim, flatLayer, prim.GetPath(), prototypeToFlattened);
+        pxrUsdUsdStage::_CopyPrim(prim, flatLayer, prim.GetPath(), prototypeToFlattened);
     }
 
     if (addSourceFileComment) {
@@ -5252,7 +5252,7 @@ UsdStage::_FlattenProperty(const UsdProperty &srcProp,
         // Set up a path remapping so that attribute connections or 
         // relationships targeting an object beneath the old parent prim
         // now target objects beneath the new parent prim.
-        _PathRemapping remapping;
+        pxrUsdUsdStage::_PathRemapping remapping;
         if (srcProp.GetPrim() != dstParent) {
             remapping[srcProp.GetPrimPath()] = dstParent.GetPath();
         }
@@ -5266,7 +5266,7 @@ UsdStage::_FlattenProperty(const UsdProperty &srcProp,
             GetTimeOffset().GetInverse();
 
         // Copy authored property values and metadata.
-        _CopyProperty(srcProp, primSpec, dstName, remapping, stageToLayerOffset);
+        pxrUsdUsdStage::_CopyProperty(srcProp, primSpec, dstName, remapping, stageToLayerOffset);
         SdfPropertySpecHandle dstPropSpec = 
             primSpec->GetProperties().get(dstName);
         if (!dstPropSpec) {
@@ -5276,7 +5276,7 @@ UsdStage::_FlattenProperty(const UsdProperty &srcProp,
         dstProp = dstParent.GetProperty(dstName);
 
         // Copy fallback property values and metadata if needed.
-        _CopyFallbacks(
+        pxrUsdUsdStage::_CopyFallbacks(
             _GetSchemaPropertySpec(srcProp),
             _GetSchemaPropertySpec(dstProp),
             dstPropSpec, dstPropStack);
@@ -5328,7 +5328,7 @@ void _UncheckedSwap(VtValue *value, T& val) {
     value->UncheckedSwap(val);
 }
 
-namespace {
+namespace pxrUsdUsdStage {
 
 // Helper for lazily computing and caching the layer to stage offset for the 
 // value resolution functions below. This allows to only resolve the layer 
@@ -5443,7 +5443,7 @@ _UncheckedApplyLayerOffsetToValue(Storage storage,
 template <class T, class Storage>
 static bool
 _TryApplyLayerOffsetToValue(Storage storage, 
-                            const LayerOffsetAccess &offsetAccess)
+                            const pxrUsdUsdStage::LayerOffsetAccess &offsetAccess)
 {
     if (_IsHolding<T>(storage)) {
         const SdfLayerOffset &offset = offsetAccess.Get();
@@ -5458,7 +5458,7 @@ _TryApplyLayerOffsetToValue(Storage storage,
 // type.
 template <class Storage>
 static bool 
-_TryResolveTimeCodes(Storage storage, const LayerOffsetAccess &offsetAccess)
+_TryResolveTimeCodes(Storage storage, const pxrUsdUsdStage::LayerOffsetAccess &offsetAccess)
 {
     return 
         _TryApplyLayerOffsetToValue<SdfTimeCode>(storage, offsetAccess) ||
@@ -5470,7 +5470,7 @@ _TryResolveTimeCodes(Storage storage, const LayerOffsetAccess &offsetAccess)
 static void
 _ResolveValuesInDictionary(const SdfLayerRefPtr &anchor,
                            const ArResolverContext &context,
-                           const LayerOffsetAccess *offsetAccess,
+                           const pxrUsdUsdStage::LayerOffsetAccess *offsetAccess,
                            VtDictionary *dict,
                            bool anchorAssetPathsOnly)
 {
@@ -5502,7 +5502,7 @@ static bool
 _TryResolveValuesInDictionary(Storage storage,
                               const SdfLayerRefPtr &anchor,
                               const ArResolverContext &context,
-                              const LayerOffsetAccess *offsetAccess,
+                              const pxrUsdUsdStage::LayerOffsetAccess *offsetAccess,
                               bool anchorAssetPathsOnly)
 {
     if (_IsHolding<VtDictionary>(storage)) {
@@ -5517,7 +5517,7 @@ _TryResolveValuesInDictionary(Storage storage,
 }
 
 
-namespace {
+namespace pxrUsdUsdStage {
 
 // Non-virtual value composer base class. Helps provide shared functionality 
 // amongst the different derived value composer classed. The derived classes
@@ -5967,7 +5967,7 @@ UsdStage::_SetValueImpl(
         // Do a type check.  Obtain typeName.
         TfToken typeName;
         SdfAbstractDataTypedValue<TfToken> abstrToken(&typeName);
-        TypeSpecificValueComposer<TfToken> composer(&abstrToken);
+        pxrUsdUsdStage::TypeSpecificValueComposer<TfToken> composer(&abstrToken);
         _GetMetadataImpl(attr, SdfFieldKeys->TypeName, TfToken(), 
                          /*useFallbacks=*/true, &composer);
 
@@ -6151,7 +6151,7 @@ UsdStage::_GetSpecifier(Usd_PrimDataConstPtr primData)
 {
     SdfSpecifier result = SdfSpecifierOver;
     SdfAbstractDataTypedValue<SdfSpecifier> resultVal(&result);
-    TypeSpecificValueComposer<SdfSpecifier> composer(&resultVal);
+    pxrUsdUsdStage::TypeSpecificValueComposer<SdfSpecifier> composer(&resultVal);
     _GetPrimSpecifierImpl(primData, /* useFallbacks = */ true, &composer);
     return result;
 }
@@ -6172,7 +6172,7 @@ UsdStage::_GetKind(Usd_PrimDataConstPtr primData)
 {
     TfToken kind;
     SdfAbstractDataTypedValue<TfToken> resultValue(&kind);
-    TypeSpecificValueComposer<TfToken> composer(&resultValue);
+    pxrUsdUsdStage::TypeSpecificValueComposer<TfToken> composer(&resultValue);
 
     // We don't allow fallbacks for kind.
     _GetPrimKindImpl(primData, /* useFallbacks = */ false, &composer);
@@ -6195,7 +6195,7 @@ UsdStage::_IsActive(Usd_PrimDataConstPtr primData)
 {
     bool active = true;
     SdfAbstractDataTypedValue<bool> resultValue(&active);
-    TypeSpecificValueComposer<bool> composer(&resultValue);
+    pxrUsdUsdStage::TypeSpecificValueComposer<bool> composer(&resultValue);
 
     // We don't allow fallbacks for active.
     _GetPrimActiveImpl(primData, /* useFallbacks = */ false, &composer);
@@ -6320,7 +6320,7 @@ UsdStage::_GetMetadata(const UsdObject &obj, const TfToken &fieldName,
         }
     }
 
-    UntypedValueComposer composer(result);
+    pxrUsdUsdStage::UntypedValueComposer composer(result);
     return _GetMetadataImpl(obj, fieldName, keyPath, useFallbacks, &composer);
 }
 
@@ -6331,7 +6331,7 @@ UsdStage::_GetStrongestResolvedMetadata(const UsdObject &obj,
                                         bool useFallbacks,
                                         SdfAbstractDataValue* result) const
 {
-    StrongestValueComposer composer(result);
+    pxrUsdUsdStage::StrongestValueComposer composer(result);
     return _GetMetadataImpl(obj, fieldName, keyPath, useFallbacks, &composer);
 }
 
@@ -6344,7 +6344,7 @@ UsdStage::_GetTypeSpecificResolvedMetadata(const UsdObject &obj,
                                            T* result) const
 {
     SdfAbstractDataTypedValue<T> out(result);
-    TypeSpecificValueComposer<T> composer(&out);
+    pxrUsdUsdStage::TypeSpecificValueComposer<T> composer(&out);
     return _GetMetadataImpl(obj, fieldName, keyPath, useFallbacks, &composer);
 }
 
@@ -6373,7 +6373,7 @@ UsdStage::_GetTypeSpecificResolvedMetadata(const UsdObject &obj,
     }
 
     SdfAbstractDataTypedValue<SdfTimeSampleMap> out(result);
-    TypeSpecificValueComposer<SdfTimeSampleMap> composer(&out);
+    pxrUsdUsdStage::TypeSpecificValueComposer<SdfTimeSampleMap> composer(&out);
     return _GetMetadataImpl(obj, fieldName, keyPath, useFallbacks, &composer);
 }
 
@@ -6629,7 +6629,7 @@ _GetListOpMetadataImpl(Usd_PrimDataConstPtr primData,
     if (useFallbacks) {
         ListOpType fallbackListOp;
         SdfAbstractDataTypedValue<ListOpType> out(&fallbackListOp);
-        TypeSpecificValueComposer<ListOpType> composer(&out);
+        pxrUsdUsdStage::TypeSpecificValueComposer<ListOpType> composer(&out);
         if (_GetFallbackMetadataImpl(
                 primData, propName, fieldName, TfToken(), &composer)) {
             listOps.emplace_back(fallbackListOp);
@@ -6821,7 +6821,7 @@ bool
 UsdStage::_HasMetadata(const UsdObject &obj, const TfToken& fieldName,
                        const TfToken &keyPath, bool useFallbacks) const
 {
-    ExistenceComposer composer;
+    pxrUsdUsdStage::ExistenceComposer composer;
     _GetMetadataImpl(obj, fieldName, keyPath, useFallbacks, &composer);
     return composer.IsDone();
 }
@@ -6964,7 +6964,7 @@ UsdStage::_GetAllMetadata(const UsdObject &obj,
     TfTokenVector fieldNames = _ListMetadataFields(obj, useFallbacks);
     for (const auto& fieldName : fieldNames) {
         VtValue val;
-        UntypedValueComposer composer(&val, anchorAssetPathsOnly);
+        pxrUsdUsdStage::UntypedValueComposer composer(&val, anchorAssetPathsOnly);
         _GetMetadataImpl(obj, fieldName, TfToken(), useFallbacks, &composer);
         result[fieldName] = val;
     }
@@ -7096,7 +7096,7 @@ public:
         // metadata. This value will be fully resolved already.
         if (time.IsDefault()) {
             SdfAbstractDataTypedValue<T> out(result);
-            TypeSpecificValueComposer<T> composer(&out);
+            pxrUsdUsdStage::TypeSpecificValueComposer<T> composer(&out);
             bool valueFound = stage._GetMetadataImpl(
                 attr, SdfFieldKeys->Default, TfToken(), 
                 /*useFallbacks=*/true, &composer);
@@ -7386,7 +7386,7 @@ UsdStage::_GetLayerWithStrongestValue(
 {
     SdfLayerRefPtr resultLayer;
     if (time.IsDefault()) {
-        ExistenceComposer getLayerComposer(&resultLayer);
+        pxrUsdUsdStage::ExistenceComposer getLayerComposer(&resultLayer);
         _GetMetadataImpl(attr, SdfFieldKeys->Default,
                          TfToken(), /*useFallbacks=*/false, &getLayerComposer);
     } else {

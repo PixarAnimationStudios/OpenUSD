@@ -154,7 +154,7 @@ UsdGeomBasisCurves::CreateWrapAttr(VtValue const &defaultValue, bool writeSparse
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomBasisCurves {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -176,7 +176,7 @@ UsdGeomBasisCurves::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->wrap,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomBasisCurves::_ConcatenateAttributeNames(
             UsdGeomCurves::GetSchemaAttributeNames(true),
             localNames);
 

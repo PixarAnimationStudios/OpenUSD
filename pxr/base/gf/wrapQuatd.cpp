@@ -49,7 +49,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapQuatd {
 
 static std::string __repr__(GfQuatd const &self) {
     return TF_PY_REPR_PREFIX + "Quatd(" +
@@ -99,7 +99,7 @@ void wrapQuatd()
         GfDot);
     
     boost::python::class_<GfQuatd>("Quatd", boost::python::no_init)
-        .def("__init__", boost::python::make_constructor(__init__))
+        .def("__init__", boost::python::make_constructor(pxrBaseGfWrapQuatd::__init__))
                           
         .def(TfTypePythonClass())
 
@@ -157,7 +157,7 @@ void wrapQuatd()
         .def("__itruediv__", __itruediv__ )
 #endif
 
-        .def("__repr__", __repr__)
+        .def("__repr__", pxrBaseGfWrapQuatd::__repr__)
 
         ;
 

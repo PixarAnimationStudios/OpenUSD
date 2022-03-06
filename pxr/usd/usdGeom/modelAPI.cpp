@@ -278,7 +278,7 @@ UsdGeomModelAPI::CreateModelCardTextureZNegAttr(VtValue const &defaultValue, boo
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomModelAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -307,7 +307,7 @@ UsdGeomModelAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->modelCardTextureZNeg,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomModelAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 
@@ -469,7 +469,7 @@ UsdGeomModelAPI::GetConstraintTargets() const
     return constraintTargets;
 }
 
-namespace {
+namespace pxrUsdUsdGeomModelAPI {
 static 
 bool
 _GetAuthoredDrawMode(const UsdPrim &prim, TfToken *drawMode)
@@ -490,7 +490,7 @@ UsdGeomModelAPI::ComputeModelDrawMode(const TfToken &parentDrawMode) const
 {
     TfToken drawMode = UsdGeomTokens->inherited;
 
-    if (_GetAuthoredDrawMode(GetPrim(), &drawMode) &&
+    if (pxrUsdUsdGeomModelAPI::_GetAuthoredDrawMode(GetPrim(), &drawMode) &&
         drawMode != UsdGeomTokens->inherited) {
         return drawMode;
     }
@@ -504,7 +504,7 @@ UsdGeomModelAPI::ComputeModelDrawMode(const TfToken &parentDrawMode) const
          curPrim; 
          curPrim = curPrim.GetParent()) {
 
-        if (_GetAuthoredDrawMode(curPrim, &drawMode) &&
+        if (pxrUsdUsdGeomModelAPI::_GetAuthoredDrawMode(curPrim, &drawMode) &&
             drawMode != UsdGeomTokens->inherited) {
             return drawMode;
         }

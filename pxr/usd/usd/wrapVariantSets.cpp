@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapVariantSets {
 
 static boost::python::object
 _HasAuthoredVariantSelection(const UsdVariantSet &self)
@@ -76,14 +76,14 @@ void wrapUsdVariantSets()
              boost::python::return_value_policy<TfPySequenceToList>())
         .def("HasAuthoredVariant", &UsdVariantSet::HasAuthoredVariant)
         .def("GetVariantSelection", &UsdVariantSet::GetVariantSelection)
-        .def("HasAuthoredVariantSelection", _HasAuthoredVariantSelection)
+        .def("HasAuthoredVariantSelection", pxrUsdUsdWrapVariantSets::_HasAuthoredVariantSelection)
         .def("SetVariantSelection", &UsdVariantSet::SetVariantSelection,
              boost::python::arg("variantName"))
         .def("ClearVariantSelection", &UsdVariantSet::ClearVariantSelection)
         .def("BlockVariantSelection", &UsdVariantSet::BlockVariantSelection)
         .def("GetVariantEditTarget", &UsdVariantSet::GetVariantEditTarget,
              boost::python::arg("layer")=SdfLayerHandle())
-        .def("GetVariantEditContext", _GetVariantEditContext,
+        .def("GetVariantEditContext", pxrUsdUsdWrapVariantSets::_GetVariantEditContext,
              boost::python::arg("layer")=SdfLayerHandle())
         .def("GetPrim", &UsdVariantSet::GetPrim, 
              boost::python::return_value_policy<boost::python::return_by_value>())
@@ -97,7 +97,7 @@ void wrapUsdVariantSets()
         .def("AddVariantSet", &UsdVariantSets::AddVariantSet,
              (boost::python::arg("variantSetName"),
               boost::python::arg("position")=UsdListPositionBackOfPrependList))
-        .def("GetNames", _GetNames, boost::python::return_value_policy<TfPySequenceToList>())
+        .def("GetNames", pxrUsdUsdWrapVariantSets::_GetNames, boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetVariantSet", &UsdVariantSets::GetVariantSet,
              boost::python::arg("variantSetName"))
         .def("HasVariantSet", &UsdVariantSets::HasVariantSet,

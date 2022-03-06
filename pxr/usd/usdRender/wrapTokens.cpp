@@ -27,7 +27,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdRenderWrapTokens {
 
 // Helper to return a static token as a string.  We wrap tokens as Python
 // strings and for some reason simply wrapping the token using def_readonly
@@ -64,33 +64,33 @@ void wrapUsdRenderTokens()
 {
     boost::python::class_<UsdRenderTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
-    _AddToken(cls, "adjustApertureHeight", UsdRenderTokens->adjustApertureHeight);
-    _AddToken(cls, "adjustApertureWidth", UsdRenderTokens->adjustApertureWidth);
-    _AddToken(cls, "adjustPixelAspectRatio", UsdRenderTokens->adjustPixelAspectRatio);
-    _AddToken(cls, "aspectRatioConformPolicy", UsdRenderTokens->aspectRatioConformPolicy);
-    _AddToken(cls, "camera", UsdRenderTokens->camera);
-    _AddToken(cls, "color3f", UsdRenderTokens->color3f);
-    _AddToken(cls, "cropAperture", UsdRenderTokens->cropAperture);
-    _AddToken(cls, "dataType", UsdRenderTokens->dataType);
-    _AddToken(cls, "dataWindowNDC", UsdRenderTokens->dataWindowNDC);
-    _AddToken(cls, "expandAperture", UsdRenderTokens->expandAperture);
-    _AddToken(cls, "full", UsdRenderTokens->full);
-    _AddToken(cls, "includedPurposes", UsdRenderTokens->includedPurposes);
-    _AddToken(cls, "instantaneousShutter", UsdRenderTokens->instantaneousShutter);
-    _AddToken(cls, "intrinsic", UsdRenderTokens->intrinsic);
-    _AddToken(cls, "lpe", UsdRenderTokens->lpe);
-    _AddToken(cls, "materialBindingPurposes", UsdRenderTokens->materialBindingPurposes);
-    _AddToken(cls, "orderedVars", UsdRenderTokens->orderedVars);
-    _AddToken(cls, "pixelAspectRatio", UsdRenderTokens->pixelAspectRatio);
-    _AddToken(cls, "preview", UsdRenderTokens->preview);
-    _AddToken(cls, "primvar", UsdRenderTokens->primvar);
-    _AddToken(cls, "productName", UsdRenderTokens->productName);
-    _AddToken(cls, "products", UsdRenderTokens->products);
-    _AddToken(cls, "productType", UsdRenderTokens->productType);
-    _AddToken(cls, "raster", UsdRenderTokens->raster);
-    _AddToken(cls, "raw", UsdRenderTokens->raw);
-    _AddToken(cls, "renderSettingsPrimPath", UsdRenderTokens->renderSettingsPrimPath);
-    _AddToken(cls, "resolution", UsdRenderTokens->resolution);
-    _AddToken(cls, "sourceName", UsdRenderTokens->sourceName);
-    _AddToken(cls, "sourceType", UsdRenderTokens->sourceType);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "adjustApertureHeight", UsdRenderTokens->adjustApertureHeight);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "adjustApertureWidth", UsdRenderTokens->adjustApertureWidth);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "adjustPixelAspectRatio", UsdRenderTokens->adjustPixelAspectRatio);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "aspectRatioConformPolicy", UsdRenderTokens->aspectRatioConformPolicy);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "camera", UsdRenderTokens->camera);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "color3f", UsdRenderTokens->color3f);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "cropAperture", UsdRenderTokens->cropAperture);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "dataType", UsdRenderTokens->dataType);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "dataWindowNDC", UsdRenderTokens->dataWindowNDC);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "expandAperture", UsdRenderTokens->expandAperture);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "full", UsdRenderTokens->full);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "includedPurposes", UsdRenderTokens->includedPurposes);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "instantaneousShutter", UsdRenderTokens->instantaneousShutter);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "intrinsic", UsdRenderTokens->intrinsic);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "lpe", UsdRenderTokens->lpe);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "materialBindingPurposes", UsdRenderTokens->materialBindingPurposes);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "orderedVars", UsdRenderTokens->orderedVars);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "pixelAspectRatio", UsdRenderTokens->pixelAspectRatio);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "preview", UsdRenderTokens->preview);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "primvar", UsdRenderTokens->primvar);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "productName", UsdRenderTokens->productName);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "products", UsdRenderTokens->products);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "productType", UsdRenderTokens->productType);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "raster", UsdRenderTokens->raster);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "raw", UsdRenderTokens->raw);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "renderSettingsPrimPath", UsdRenderTokens->renderSettingsPrimPath);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "resolution", UsdRenderTokens->resolution);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "sourceName", UsdRenderTokens->sourceName);
+    pxrUsdUsdRenderWrapTokens::_AddToken(cls, "sourceType", UsdRenderTokens->sourceType);
 }

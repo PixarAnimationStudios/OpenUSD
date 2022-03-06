@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapStageCacheContext {
 
 // Expose C++ RAII class as python context manager.
 struct Usd_PyStageCacheContext
@@ -92,14 +92,14 @@ void wrapUsdStageCacheContext()
     // The constructor needs to ensure that the wrapper arguments be kept alive
     // as long as the context is, to transitively keep their held cache objects
     // alive.
-    boost::python::class_<Usd_PyStageCacheContext>("StageCacheContext", boost::python::no_init)
+    boost::python::class_<pxrUsdUsdWrapStageCacheContext::Usd_PyStageCacheContext>("StageCacheContext", boost::python::no_init)
         .def(boost::python::init<Usd_NonPopulatingStageCacheWrapper>()[
                  boost::python::with_custodian_and_ward<1, 2>()])
         .def(boost::python::init<UsdStageCache &>()[
                  boost::python::with_custodian_and_ward<1, 2>()])
         .def(boost::python::init<UsdStageCacheContextBlockType>())
-        .def("__enter__", &Usd_PyStageCacheContext::__enter__)
-        .def("__exit__", &Usd_PyStageCacheContext::__exit__)
+        .def("__enter__", &pxrUsdUsdWrapStageCacheContext::Usd_PyStageCacheContext::__enter__)
+        .def("__exit__", &pxrUsdUsdWrapStageCacheContext::Usd_PyStageCacheContext::__exit__)
         ;
 
 }

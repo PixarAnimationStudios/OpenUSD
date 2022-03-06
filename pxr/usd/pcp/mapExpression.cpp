@@ -166,7 +166,7 @@ PcpMapExpression::NewVariable(Value && initialValue)
 ////////////////////////////////////////////////////////////////////////
 // Node
 
-namespace {
+namespace pxrUsdPcpMapExpression {
 
 template <class Key>
 struct _KeyHashEq
@@ -181,7 +181,7 @@ struct PcpMapExpression::_Node::_NodeMap
 {
     typedef PcpMapExpression::_Node::Key Key;
     typedef tbb::concurrent_hash_map<
-        Key, PcpMapExpression::_Node *, _KeyHashEq<Key> > MapType;
+        Key, PcpMapExpression::_Node *, pxrUsdPcpMapExpression::_KeyHashEq<Key> > MapType;
     typedef MapType::accessor accessor;
     MapType map;
 };

@@ -42,7 +42,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapAnyWeakPtr {
 
 struct Tf_AnyWeakPtrToPython {
 
@@ -59,7 +59,7 @@ struct Tf_AnyWeakPtrToPython {
 
 void wrapAnyWeakPtr()
 {
-    boost::python::to_python_converter<TfAnyWeakPtr, Tf_AnyWeakPtrToPython>();
+    boost::python::to_python_converter<TfAnyWeakPtr, pxrBaseTfWrapAnyWeakPtr::Tf_AnyWeakPtrToPython>();
 
     TfPyContainerConversions::from_python_sequence<
         std::set<TfAnyWeakPtr>,

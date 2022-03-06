@@ -116,7 +116,7 @@ UsdLuxGeometryLight::CreateGeometryRel() const
                        /* custom = */ false);
 }
 
-namespace {
+namespace pxrUsdUsdLuxGeometryLight {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -136,7 +136,7 @@ UsdLuxGeometryLight::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->lightShaderId,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdLuxGeometryLight::_ConcatenateAttributeNames(
             UsdLuxNonboundableLightBase::GetSchemaAttributeNames(true),
             localNames);
 

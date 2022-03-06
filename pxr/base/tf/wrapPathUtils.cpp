@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapPathUtils {
 
 static std::string
 _RealPath(std::string const &path, bool allowInaccessibleSuffix, bool raiseOnError)
@@ -66,10 +66,10 @@ _FindLongestAccessiblePrefix(std::string const &path)
 
 void wrapPathUtils()
 {
-    boost::python::def("RealPath", _RealPath,
+    boost::python::def("RealPath", pxrBaseTfWrapPathUtils::_RealPath,
         ( boost::python::arg("path"),
           boost::python::arg("allowInaccessibleSuffix") = false,
           boost::python::arg("raiseOnError") = false ));
 
-    boost::python::def("FindLongestAccessiblePrefix", _FindLongestAccessiblePrefix);
+    boost::python::def("FindLongestAccessiblePrefix", pxrBaseTfWrapPathUtils::_FindLongestAccessiblePrefix);
 }

@@ -67,7 +67,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 
-namespace {
+namespace pxrImagingHioGlslfx {
 
 // This is a private registry of paths to shader resources installed
 // within package bundles. Packages which install glslfx shader source
@@ -144,7 +144,7 @@ _ResolveResourcePath(const std::string& importFile, std::string *errorStr)
         std::vector<std::string>(pathTokens.begin() + 3, pathTokens.end()), "/");
 
     const std::string resourcePath =
-        _shaderResourceRegistry->GetShaderResourcePath(packageName,
+        pxrImagingHioGlslfx::_shaderResourceRegistry->GetShaderResourcePath(packageName,
                                                         assetPath);
     if (resourcePath.empty() && errorStr) {
         *errorStr = TfStringPrintf( "Can't find "

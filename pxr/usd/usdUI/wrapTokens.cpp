@@ -27,7 +27,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdUIWrapTokens {
 
 // Helper to return a static token as a string.  We wrap tokens as Python
 // strings and for some reason simply wrapping the token using def_readonly
@@ -64,16 +64,16 @@ void wrapUsdUITokens()
 {
     boost::python::class_<UsdUITokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
-    _AddToken(cls, "closed", UsdUITokens->closed);
-    _AddToken(cls, "minimized", UsdUITokens->minimized);
-    _AddToken(cls, "open", UsdUITokens->open);
-    _AddToken(cls, "uiDescription", UsdUITokens->uiDescription);
-    _AddToken(cls, "uiDisplayGroup", UsdUITokens->uiDisplayGroup);
-    _AddToken(cls, "uiDisplayName", UsdUITokens->uiDisplayName);
-    _AddToken(cls, "uiNodegraphNodeDisplayColor", UsdUITokens->uiNodegraphNodeDisplayColor);
-    _AddToken(cls, "uiNodegraphNodeExpansionState", UsdUITokens->uiNodegraphNodeExpansionState);
-    _AddToken(cls, "uiNodegraphNodeIcon", UsdUITokens->uiNodegraphNodeIcon);
-    _AddToken(cls, "uiNodegraphNodePos", UsdUITokens->uiNodegraphNodePos);
-    _AddToken(cls, "uiNodegraphNodeSize", UsdUITokens->uiNodegraphNodeSize);
-    _AddToken(cls, "uiNodegraphNodeStackingOrder", UsdUITokens->uiNodegraphNodeStackingOrder);
+    pxrUsdUsdUIWrapTokens::_AddToken(cls, "closed", UsdUITokens->closed);
+    pxrUsdUsdUIWrapTokens::_AddToken(cls, "minimized", UsdUITokens->minimized);
+    pxrUsdUsdUIWrapTokens::_AddToken(cls, "open", UsdUITokens->open);
+    pxrUsdUsdUIWrapTokens::_AddToken(cls, "uiDescription", UsdUITokens->uiDescription);
+    pxrUsdUsdUIWrapTokens::_AddToken(cls, "uiDisplayGroup", UsdUITokens->uiDisplayGroup);
+    pxrUsdUsdUIWrapTokens::_AddToken(cls, "uiDisplayName", UsdUITokens->uiDisplayName);
+    pxrUsdUsdUIWrapTokens::_AddToken(cls, "uiNodegraphNodeDisplayColor", UsdUITokens->uiNodegraphNodeDisplayColor);
+    pxrUsdUsdUIWrapTokens::_AddToken(cls, "uiNodegraphNodeExpansionState", UsdUITokens->uiNodegraphNodeExpansionState);
+    pxrUsdUsdUIWrapTokens::_AddToken(cls, "uiNodegraphNodeIcon", UsdUITokens->uiNodegraphNodeIcon);
+    pxrUsdUsdUIWrapTokens::_AddToken(cls, "uiNodegraphNodePos", UsdUITokens->uiNodegraphNodePos);
+    pxrUsdUsdUIWrapTokens::_AddToken(cls, "uiNodegraphNodeSize", UsdUITokens->uiNodegraphNodeSize);
+    pxrUsdUsdUIWrapTokens::_AddToken(cls, "uiNodegraphNodeStackingOrder", UsdUITokens->uiNodegraphNodeStackingOrder);
 }

@@ -137,7 +137,7 @@ UsdLuxDistantLight::CreateIntensityAttr(VtValue const &defaultValue, bool writeS
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdLuxDistantLight {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -159,7 +159,7 @@ UsdLuxDistantLight::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->inputsIntensity,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdLuxDistantLight::_ConcatenateAttributeNames(
             UsdLuxNonboundableLightBase::GetSchemaAttributeNames(true),
             localNames);
 

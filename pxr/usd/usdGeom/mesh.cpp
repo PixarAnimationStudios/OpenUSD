@@ -307,7 +307,7 @@ UsdGeomMesh::CreateCreaseSharpnessesAttr(VtValue const &defaultValue, bool write
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomMesh {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -338,7 +338,7 @@ UsdGeomMesh::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->creaseSharpnesses,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomMesh::_ConcatenateAttributeNames(
             UsdGeomPointBased::GetSchemaAttributeNames(true),
             localNames);
 

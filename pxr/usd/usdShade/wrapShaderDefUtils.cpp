@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdShadeWrapShaderDefUtils {
 
 static boost::python::object 
 _WrapSplitShaderIdentifier(const TfToken &identifier)
@@ -56,7 +56,7 @@ _WrapSplitShaderIdentifier(const TfToken &identifier)
 void wrapUsdShadeShaderDefUtils()
 {
     boost::python::scope thisScope = boost::python::class_<UsdShadeShaderDefUtils>("ShaderDefUtils", boost::python::no_init)
-        .def("SplitShaderIdentifier", _WrapSplitShaderIdentifier,
+        .def("SplitShaderIdentifier", pxrUsdUsdShadeWrapShaderDefUtils::_WrapSplitShaderIdentifier,
             boost::python::arg("identifier"))
         .staticmethod("SplitShaderIdentifier")
         .def("GetNodeDiscoveryResults", 

@@ -33,7 +33,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-namespace {
+namespace pxrUsdImagingUsdSkelImagingUtils {
 
 
 /*
@@ -94,16 +94,16 @@ UsdSkelImagingComputeBoneTopology(const UsdSkelTopology& skelTopology,
         return false;
     }
 
-    size_t numBones = _ComputeBoneCount(skelTopology);
+    size_t numBones = pxrUsdImagingUsdSkelImagingUtils::_ComputeBoneCount(skelTopology);
     
     VtIntArray faceVertexCounts;
-    faceVertexCounts.assign(numBones*_boneNumFaces, _boneNumVertsPerFace);
+    faceVertexCounts.assign(numBones*pxrUsdImagingUsdSkelImagingUtils::_boneNumFaces, pxrUsdImagingUsdSkelImagingUtils::_boneNumVertsPerFace);
 
-    VtIntArray faceVertexIndices(numBones*_boneNumVerts);
+    VtIntArray faceVertexIndices(numBones*pxrUsdImagingUsdSkelImagingUtils::_boneNumVerts);
     int* vertsData = faceVertexIndices.data();
     for(size_t i = 0; i < numBones; ++i) {
-        for(int j = 0; j < _boneNumVerts; ++j) {
-            vertsData[i*_boneNumVerts+j] = _boneVerts[j] + i*_boneNumPoints;
+        for(int j = 0; j < pxrUsdImagingUsdSkelImagingUtils::_boneNumVerts; ++j) {
+            vertsData[i*pxrUsdImagingUsdSkelImagingUtils::_boneNumVerts+j] = pxrUsdImagingUsdSkelImagingUtils::_boneVerts[j] + i*pxrUsdImagingUsdSkelImagingUtils::_boneNumPoints;
         }
     }
 
@@ -112,13 +112,13 @@ UsdSkelImagingComputeBoneTopology(const UsdSkelTopology& skelTopology,
                                    faceVertexCounts,
                                    faceVertexIndices);
 
-    *numPoints = numBones * _boneNumPoints;
+    *numPoints = numBones * pxrUsdImagingUsdSkelImagingUtils::_boneNumPoints;
 
     return true;
 }
 
 
-namespace {
+namespace pxrUsdImagingUsdSkelImagingUtils {
 
 
 /// Wrapper for parallel loops that execs in serial if \p count
@@ -246,7 +246,7 @@ UsdSkelImagingComputeBonePoints(const UsdSkelTopology& topology,
         int parent = topology.GetParent(i);
         if(parent >= 0 && parent < numJoints) {
             boneIndices[i] = boneIndex++;
-            actualNumPoints += _boneNumPoints;
+            actualNumPoints += pxrUsdImagingUsdSkelImagingUtils::_boneNumPoints;
         }
     }
     if(actualNumPoints != numPoints) {
@@ -258,21 +258,21 @@ UsdSkelImagingComputeBonePoints(const UsdSkelTopology& topology,
     // XXX: This is threaded for the sake of vectorized models,
     // where a bones are being computed for many skels.
     // (This is a known bottleneck in some imaging scenarios).
-    _ParallelForN(
+    pxrUsdImagingUsdSkelImagingUtils::_ParallelForN(
         topology.GetNumJoints(),
         [&](size_t start, size_t end) {
             for(size_t i = start; i < end; ++i) {
                 int boneIndex = boneIndices[i];
                 if(boneIndex >= 0) {
                     size_t offset =
-                        static_cast<size_t>(boneIndex)*_boneNumPoints;
+                        static_cast<size_t>(boneIndex)*pxrUsdImagingUsdSkelImagingUtils::_boneNumPoints;
                     
-                    TF_DEV_AXIOM((offset+_boneNumPoints) <= numPoints);
+                    TF_DEV_AXIOM((offset+pxrUsdImagingUsdSkelImagingUtils::_boneNumPoints) <= numPoints);
 
                     int parent = topology.GetParent(i);
                     TF_DEV_AXIOM(parent >= 0 && parent < numJoints);
 
-                    _ComputePointsForSingleBone(points + offset,
+                    pxrUsdImagingUsdSkelImagingUtils::_ComputePointsForSingleBone(points + offset,
                                                 jointSkelXforms[i],
                                                 jointSkelXforms[parent]);
                 }
@@ -316,7 +316,7 @@ UsdSkelImagingComputeBoneJointIndices(const UsdSkelTopology& topology,
         int parent = topology.GetParent(i);
         if(parent >= 0 && parent < numJoints) {
 
-            if((offset+_boneNumPoints) <= numPoints) {
+            if((offset+pxrUsdImagingUsdSkelImagingUtils::_boneNumPoints) <= numPoints) {
                 // Each bone is defined as a pyramid shaped object,
                 // with the tip at a joint, and a square base at
                 // the parent.
@@ -325,11 +325,11 @@ UsdSkelImagingComputeBoneJointIndices(const UsdSkelTopology& topology,
                 jointIndices[offset] = static_cast<int>(i);
 
                 // The rest of the points (the base) belong to the parent.
-                for(int j = 1; j < _boneNumPoints; ++j) {
+                for(int j = 1; j < pxrUsdImagingUsdSkelImagingUtils::_boneNumPoints; ++j) {
                     jointIndices[offset + j] = parent;
                 }
 
-                offset += _boneNumPoints;
+                offset += pxrUsdImagingUsdSkelImagingUtils::_boneNumPoints;
             } else {
                 TF_WARN("Incorrect number of points for bone "
                         "mesh [%zu].", numPoints);

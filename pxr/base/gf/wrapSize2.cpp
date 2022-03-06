@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapSize2 {
 
 static int
 normalizeIndex(int index) {
@@ -101,10 +101,10 @@ void wrapSize2()
 
         .def_readonly("dimension", dimension)
 
-        .def("__len__", __len__)
-        .def("__getitem__", __getitem__)
-        .def("__setitem__", __setitem__)
-        .def("__contains__", __contains__)
+        .def("__len__", pxrBaseGfWrapSize2::__len__)
+        .def("__getitem__", pxrBaseGfWrapSize2::__getitem__)
+        .def("__setitem__", pxrBaseGfWrapSize2::__setitem__)
+        .def("__contains__", pxrBaseGfWrapSize2::__contains__)
 
         .def( boost::python::self_ns::str(boost::python::self) )
         .def( boost::python::self == boost::python::self )
@@ -127,7 +127,7 @@ void wrapSize2()
         .def("__itruediv__", __itruediv__ )
 #endif
 
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrBaseGfWrapSize2::_Repr)
         
         ;
     boost::python::to_python_converter<std::vector<This>,

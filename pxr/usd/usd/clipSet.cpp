@@ -309,7 +309,7 @@ Usd_ClipSet::New(
     return Usd_ClipSetRefPtr(new Usd_ClipSet(name, clipDef));
 }
 
-namespace
+namespace pxrUsdUsdClipSet
 {
 struct Usd_ClipEntry {
 public:
@@ -332,7 +332,7 @@ Usd_ClipSet::Usd_ClipSet(
 
     // Generate a mapping of startTime -> clip entry. This allows us to
     // quickly determine the (startTime, endTime) for a given clip.
-    typedef std::map<double, Usd_ClipEntry> _TimeToClipMap;
+    typedef std::map<double, pxrUsdUsdClipSet::Usd_ClipEntry> _TimeToClipMap;
     _TimeToClipMap startTimeToClip;
 
     for (const auto& startFrameAndClipIndex : *clipDef.clipActive) {
@@ -340,7 +340,7 @@ Usd_ClipSet::Usd_ClipSet(
         const int clipIndex = (int)(startFrameAndClipIndex[1]);
         const SdfAssetPath& assetPath = (*clipDef.clipAssetPaths)[clipIndex];
 
-        Usd_ClipEntry entry;
+        pxrUsdUsdClipSet::Usd_ClipEntry entry;
         entry.startTime = startFrame;
         entry.clipAssetPath = assetPath;
 
@@ -366,7 +366,7 @@ Usd_ClipSet::Usd_ClipSet(
 
     _TimeToClipMap::const_iterator it = startTimeToClip.begin();
     while (it != itEnd) {
-        const Usd_ClipEntry& clipEntry = it->second;
+        const pxrUsdUsdClipSet::Usd_ClipEntry& clipEntry = it->second;
 
         const Usd_Clip::ExternalTime clipStartTime = 
             (it == itBegin ? Usd_ClipTimesEarliest : it->first);

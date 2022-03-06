@@ -252,7 +252,7 @@ HdSt_VolumeShader::GetSafeMax(const GfRange3d &range)
     return range.GetMax();
 }
 
-namespace {
+namespace pxrImagingHdStVolumeShader {
 
 // Square of length of a 3-vector
 float
@@ -357,7 +357,7 @@ HdSt_VolumeShader::AddResourcesFromTextures(ResourceContext &ctx) const
     if (_fillsPointsBar) {
         // Compute volume bounding box from field bounding boxes
         const std::pair<GfBBox3d, float> bboxAndSampleDistance =
-            _ComputeBBoxAndSampleDistance(GetNamedTextureHandles());
+            pxrImagingHdStVolumeShader::_ComputeBBoxAndSampleDistance(GetNamedTextureHandles());
 
         const GfBBox3d &bbox = bboxAndSampleDistance.first;
 
@@ -366,7 +366,7 @@ HdSt_VolumeShader::AddResourcesFromTextures(ResourceContext &ctx) const
             _pointsBar,
             std::make_shared<HdVtBufferSource>(
                 HdTokens->points,
-                _ComputePoints(bbox)));
+                pxrImagingHdStVolumeShader::_ComputePoints(bbox)));
 
         // And let the shader know for raymarching bounds.
         GetBufferSourcesForBBoxAndSampleDistance(

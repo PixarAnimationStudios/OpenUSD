@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapMassAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -114,7 +114,7 @@ void wrapUsdPhysicsMassAPI()
 {
     typedef UsdPhysicsMassAPI This;
 
-    UsdPhysicsMassAPI_CanApplyResult::Wrap<UsdPhysicsMassAPI_CanApplyResult>(
+    pxrUsdUsdPhysicsWrapMassAPI::UsdPhysicsMassAPI_CanApplyResult::Wrap<pxrUsdUsdPhysicsWrapMassAPI::UsdPhysicsMassAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -128,7 +128,7 @@ void wrapUsdPhysicsMassAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdPhysicsWrapMassAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -150,42 +150,42 @@ void wrapUsdPhysicsMassAPI()
         .def("GetMassAttr",
              &This::GetMassAttr)
         .def("CreateMassAttr",
-             &_CreateMassAttr,
+             &pxrUsdUsdPhysicsWrapMassAPI::_CreateMassAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetDensityAttr",
              &This::GetDensityAttr)
         .def("CreateDensityAttr",
-             &_CreateDensityAttr,
+             &pxrUsdUsdPhysicsWrapMassAPI::_CreateDensityAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetCenterOfMassAttr",
              &This::GetCenterOfMassAttr)
         .def("CreateCenterOfMassAttr",
-             &_CreateCenterOfMassAttr,
+             &pxrUsdUsdPhysicsWrapMassAPI::_CreateCenterOfMassAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetDiagonalInertiaAttr",
              &This::GetDiagonalInertiaAttr)
         .def("CreateDiagonalInertiaAttr",
-             &_CreateDiagonalInertiaAttr,
+             &pxrUsdUsdPhysicsWrapMassAPI::_CreateDiagonalInertiaAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetPrincipalAxesAttr",
              &This::GetPrincipalAxesAttr)
         .def("CreatePrincipalAxesAttr",
-             &_CreatePrincipalAxesAttr,
+             &pxrUsdUsdPhysicsWrapMassAPI::_CreatePrincipalAxesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdPhysicsWrapMassAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdPhysicsWrapMassAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -207,7 +207,7 @@ void wrapUsdPhysicsMassAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapMassAPI {
 
 WRAP_CUSTOM {
 }

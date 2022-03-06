@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapBasisCurves {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -114,28 +114,28 @@ void wrapUsdGeomBasisCurves()
         .def("GetTypeAttr",
              &This::GetTypeAttr)
         .def("CreateTypeAttr",
-             &_CreateTypeAttr,
+             &pxrUsdUsdGeomWrapBasisCurves::_CreateTypeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetBasisAttr",
              &This::GetBasisAttr)
         .def("CreateBasisAttr",
-             &_CreateBasisAttr,
+             &pxrUsdUsdGeomWrapBasisCurves::_CreateBasisAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetWrapAttr",
              &This::GetWrapAttr)
         .def("CreateWrapAttr",
-             &_CreateWrapAttr,
+             &pxrUsdUsdGeomWrapBasisCurves::_CreateWrapAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapBasisCurves::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapBasisCurves::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -157,7 +157,7 @@ void wrapUsdGeomBasisCurves()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdGeomWrapBasisCurves {
 
 static 
 TfToken

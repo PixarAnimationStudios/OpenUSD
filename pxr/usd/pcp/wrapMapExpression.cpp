@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdPcpWrapMapExpression {
 
 static std::string
 _Str(const PcpMapExpression& e)
@@ -47,7 +47,7 @@ wrapMapExpression()
     typedef PcpMapExpression This;
 
     boost::python::class_<This>("MapExpression")
-        .def("__str__", _Str)
+        .def("__str__", pxrUsdPcpWrapMapExpression::_Str)
 
         .def("Evaluate", &This::Evaluate,
              boost::python::return_value_policy<boost::python::return_by_value>())

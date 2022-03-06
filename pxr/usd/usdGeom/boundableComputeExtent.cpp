@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace
+namespace pxrUsdUsdGeomBoundableComputeExtent
 {
 
 class _FunctionRegistry
@@ -231,7 +231,7 @@ private:
 
 }
 
-TF_INSTANTIATE_SINGLETON(_FunctionRegistry);
+TF_INSTANTIATE_SINGLETON(pxrUsdUsdGeomBoundableComputeExtent::_FunctionRegistry);
 
 static bool
 _ComputeExtentFromPlugins(
@@ -247,7 +247,7 @@ _ComputeExtentFromPlugins(
         return false;
     }
 
-    const UsdGeomComputeExtentFunction fn = _FunctionRegistry::GetInstance()
+    const UsdGeomComputeExtentFunction fn = pxrUsdUsdGeomBoundableComputeExtent::_FunctionRegistry::GetInstance()
         .GetComputeFunction(boundable.GetPrim());
     return fn && (*fn)(boundable, time, transform, extent);
 }
@@ -290,7 +290,7 @@ UsdGeomRegisterComputeExtentFunction(
         return;
     }
 
-    _FunctionRegistry::GetInstance().RegisterComputeFunction(primType, fn);
+    pxrUsdUsdGeomBoundableComputeExtent::_FunctionRegistry::GetInstance().RegisterComputeFunction(primType, fn);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -60,7 +60,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_DEBUG_SCENE_DELEGATE_ID, "/",
                       "Default usdImaging scene delegate id");
 
-namespace {
+namespace pxrUsdImagingUsdImagingGLEngine {
 
 bool
 _GetHydraEnabledEnvVar()
@@ -131,7 +131,7 @@ _IsHydraEnabled()
 bool
 UsdImagingGLEngine::IsHydraEnabled()
 {
-    static bool isHydraEnabled = _IsHydraEnabled();
+    static bool isHydraEnabled = pxrUsdImagingUsdImagingGLEngine::_IsHydraEnabled();
     return isHydraEnabled;
 }
 
@@ -143,7 +143,7 @@ UsdImagingGLEngine::UsdImagingGLEngine(const HdDriver& driver)
     : UsdImagingGLEngine(SdfPath::AbsoluteRootPath(),
             {},
             {},
-            _GetUsdImagingDelegateId(),
+            pxrUsdImagingUsdImagingGLEngine::_GetUsdImagingDelegateId(),
             driver
         )
 {
@@ -165,7 +165,7 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     , _invisedPrimPaths(invisedPaths)
     , _isPopulated(false)
 {
-    _InitGL();
+    pxrUsdImagingUsdImagingGLEngine::_InitGL();
 
     if (IsHydraEnabled()) {
 
@@ -752,7 +752,7 @@ UsdImagingGLEngine::DecodeIntersection(
 TfTokenVector
 UsdImagingGLEngine::GetRendererPlugins()
 {
-    if (ARCH_UNLIKELY(!_GetHydraEnabledEnvVar())) {
+    if (ARCH_UNLIKELY(!pxrUsdImagingUsdImagingGLEngine::_GetHydraEnabledEnvVar())) {
         // No plugins if the legacy implementation is active.
         return std::vector<TfToken>();
     }
@@ -771,7 +771,7 @@ UsdImagingGLEngine::GetRendererPlugins()
 std::string
 UsdImagingGLEngine::GetRendererDisplayName(TfToken const &id)
 {
-    if (ARCH_UNLIKELY(!_GetHydraEnabledEnvVar() || id.IsEmpty())) {
+    if (ARCH_UNLIKELY(!pxrUsdImagingUsdImagingGLEngine::_GetHydraEnabledEnvVar() || id.IsEmpty())) {
         // No renderer name is returned if the user requested to disable Hydra, 
         // or if the machine does not support any of the available renderers 
         // and it automatically switches to our legacy engine.

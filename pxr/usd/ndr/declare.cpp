@@ -43,7 +43,7 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(NdrVersionFilterAllVersions, "AllVersions");
 }
 
-namespace {
+namespace pxrUsdNdrDeclare {
 
 NdrVersion
 _ParseVersionString(const std::string& x)
@@ -85,7 +85,7 @@ NdrVersion::NdrVersion(int major, int minor)
 }
 
 NdrVersion::NdrVersion(const std::string& x)
-    : NdrVersion(_ParseVersionString(x))
+    : NdrVersion(pxrUsdNdrDeclare::_ParseVersionString(x))
 {
     // Do nothing
 }

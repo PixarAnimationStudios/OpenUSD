@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdRenderWrapSettings {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -107,14 +107,14 @@ void wrapUsdRenderSettings()
         .def("GetIncludedPurposesAttr",
              &This::GetIncludedPurposesAttr)
         .def("CreateIncludedPurposesAttr",
-             &_CreateIncludedPurposesAttr,
+             &pxrUsdUsdRenderWrapSettings::_CreateIncludedPurposesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetMaterialBindingPurposesAttr",
              &This::GetMaterialBindingPurposesAttr)
         .def("CreateMaterialBindingPurposesAttr",
-             &_CreateMaterialBindingPurposesAttr,
+             &pxrUsdUsdRenderWrapSettings::_CreateMaterialBindingPurposesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
@@ -123,10 +123,10 @@ void wrapUsdRenderSettings()
              &This::GetProductsRel)
         .def("CreateProductsRel",
              &This::CreateProductsRel)
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdRenderWrapSettings::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdRenderWrapSettings::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -148,7 +148,7 @@ void wrapUsdRenderSettings()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdRenderWrapSettings {
 
 WRAP_CUSTOM {
     _class

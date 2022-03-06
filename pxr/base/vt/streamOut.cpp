@@ -83,7 +83,7 @@ VtStreamOut(double const &val, std::ostream &stream)
     return stream << TfStreamDouble(val);
 }
 
-namespace {
+namespace pxrBaseVtStreamOut {
 
 void
 _StreamArrayRecursive(
@@ -139,7 +139,7 @@ VtStreamOutArray(
     }
     
     size_t index = 0;
-    _StreamArrayRecursive(out, i, *shapeData, lastDimSize, &index, 0);
+    pxrBaseVtStreamOut::_StreamArrayRecursive(out, i, *shapeData, lastDimSize, &index, 0);
 }
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED

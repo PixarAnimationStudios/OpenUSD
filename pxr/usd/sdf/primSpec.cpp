@@ -886,7 +886,7 @@ _IsValidPath(const SdfPath& path)
     return true;
 }
 
-namespace {
+namespace pxrUsdSdfPrimSpec {
 
 // This structure exists so that we can support relative paths to
 // SdfCreatePrimInLayer/SdfJustCreatePrimInLayer without doing any path copies
@@ -967,7 +967,7 @@ Sdf_UncheckedCreatePrimInLayer(
 }
 
 static inline bool
-Sdf_CanCreatePrimInLayer(SdfLayer *layer, _AbsPathHelper const &absPath)
+Sdf_CanCreatePrimInLayer(SdfLayer *layer, pxrUsdSdfPrimSpec::_AbsPathHelper const &absPath)
 {
     SdfPath const &path = absPath.GetAbsPath();
     
@@ -990,7 +990,7 @@ Sdf_CanCreatePrimInLayer(SdfLayer *layer, _AbsPathHelper const &absPath)
 SdfPrimSpecHandle
 SdfCreatePrimInLayer(const SdfLayerHandle& layer, const SdfPath& primPath)
 {
-    const _AbsPathHelper abs(primPath);
+    const pxrUsdSdfPrimSpec::_AbsPathHelper abs(primPath);
     SdfLayer *layerPtr = get_pointer(layer);
     if (Sdf_CanCreatePrimInLayer(layerPtr, abs)) {
         SdfChangeBlock changeBlock;
@@ -1005,7 +1005,7 @@ SdfCreatePrimInLayer(const SdfLayerHandle& layer, const SdfPath& primPath)
 bool
 SdfJustCreatePrimInLayer(const SdfLayerHandle& layer, const SdfPath& primPath)
 {
-    const _AbsPathHelper abs(primPath);
+    const pxrUsdSdfPrimSpec::_AbsPathHelper abs(primPath);
     SdfLayer *layerPtr = get_pointer(layer);
     if (Sdf_CanCreatePrimInLayer(layerPtr, abs)) {
         SdfChangeBlock changeBlock;

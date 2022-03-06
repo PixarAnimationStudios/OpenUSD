@@ -39,7 +39,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-namespace {
+namespace pxrUsdUsdSkelSkinningQuery {
 
 
 enum UsdSkel_SkinningQueryFlags {
@@ -143,7 +143,7 @@ UsdSkelSkinningQuery::_InitializeJointInfluenceBindings(
     _numInfluencesPerComponent = indicesElementSize;
     _interpolation = indicesInterpolation;
 
-    _flags |= UsdSkel_HasJointInfluences;
+    _flags |= pxrUsdUsdSkelSkinningQuery::UsdSkel_HasJointInfluences;
 }
 
 
@@ -153,7 +153,7 @@ UsdSkelSkinningQuery::_InitializeBlendShapeBindings(
     const UsdRelationship& blendShapeTargets)
 {
     if (blendShapes && blendShapeTargets && _blendShapeMapper) {
-        _flags |= UsdSkel_HasBlendShapes;
+        _flags |= pxrUsdUsdSkelSkinningQuery::UsdSkel_HasBlendShapes;
     }
 }
 
@@ -161,14 +161,14 @@ UsdSkelSkinningQuery::_InitializeBlendShapeBindings(
 bool
 UsdSkelSkinningQuery::HasBlendShapes() const
 {
-    return _flags & UsdSkel_HasBlendShapes;
+    return _flags & pxrUsdUsdSkelSkinningQuery::UsdSkel_HasBlendShapes;
 }
 
 
 bool
 UsdSkelSkinningQuery::HasJointInfluences() const
 {
-    return _flags & UsdSkel_HasJointInfluences;
+    return _flags & pxrUsdUsdSkelSkinningQuery::UsdSkel_HasJointInfluences;
 }
 
 

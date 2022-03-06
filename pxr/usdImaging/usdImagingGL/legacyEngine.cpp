@@ -75,7 +75,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdImagingUsdImagingGLLegacyEngine {
 
 struct _HitData {
     int xMin;

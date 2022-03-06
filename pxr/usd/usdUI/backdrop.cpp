@@ -120,7 +120,7 @@ UsdUIBackdrop::CreateDescriptionAttr(VtValue const &defaultValue, bool writeSpar
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdUIBackdrop {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -140,7 +140,7 @@ UsdUIBackdrop::GetSchemaAttributeNames(bool includeInherited)
         UsdUITokens->uiDescription,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdUIBackdrop::_ConcatenateAttributeNames(
             UsdTyped::GetSchemaAttributeNames(true),
             localNames);
 

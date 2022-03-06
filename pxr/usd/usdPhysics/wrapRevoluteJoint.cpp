@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapRevoluteJoint {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -114,28 +114,28 @@ void wrapUsdPhysicsRevoluteJoint()
         .def("GetAxisAttr",
              &This::GetAxisAttr)
         .def("CreateAxisAttr",
-             &_CreateAxisAttr,
+             &pxrUsdUsdPhysicsWrapRevoluteJoint::_CreateAxisAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetLowerLimitAttr",
              &This::GetLowerLimitAttr)
         .def("CreateLowerLimitAttr",
-             &_CreateLowerLimitAttr,
+             &pxrUsdUsdPhysicsWrapRevoluteJoint::_CreateLowerLimitAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetUpperLimitAttr",
              &This::GetUpperLimitAttr)
         .def("CreateUpperLimitAttr",
-             &_CreateUpperLimitAttr,
+             &pxrUsdUsdPhysicsWrapRevoluteJoint::_CreateUpperLimitAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdPhysicsWrapRevoluteJoint::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdPhysicsWrapRevoluteJoint::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -157,7 +157,7 @@ void wrapUsdPhysicsRevoluteJoint()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapRevoluteJoint {
 
 WRAP_CUSTOM {
 }

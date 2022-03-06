@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapCube {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -107,21 +107,21 @@ void wrapUsdGeomCube()
         .def("GetSizeAttr",
              &This::GetSizeAttr)
         .def("CreateSizeAttr",
-             &_CreateSizeAttr,
+             &pxrUsdUsdGeomWrapCube::_CreateSizeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetExtentAttr",
              &This::GetExtentAttr)
         .def("CreateExtentAttr",
-             &_CreateExtentAttr,
+             &pxrUsdUsdGeomWrapCube::_CreateExtentAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapCube::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapCube::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -143,7 +143,7 @@ void wrapUsdGeomCube()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdGeomWrapCube {
 
 WRAP_CUSTOM {
 }

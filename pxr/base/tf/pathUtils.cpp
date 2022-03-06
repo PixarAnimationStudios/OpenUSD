@@ -50,7 +50,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrBaseTfPathUtils {
 
 #if defined(ARCH_OS_WINDOWS)
 // Expands symlinks in path.  Used on Windows as a partial replacement
@@ -190,20 +190,20 @@ TfFindLongestAccessiblePrefix(std::string const &path, std::string* error)
 
             // False if non-existent or if a symlink and the target is
             // non-existent.  Also false on any error.
-            _ClearError();
+            pxrBaseTfPathUtils::_ClearError();
             if (!TfPathExists(checkPath)) {
-                _GetError(err);
+                pxrBaseTfPathUtils::_GetError(err);
                 return false;
             }
             if (TfIsLink(checkPath) &&
                 !TfPathExists(checkPath, /* resolveSymlinks = */ true)) {
-                _GetError(err);
+                pxrBaseTfPathUtils::_GetError(err);
                 if (err->empty()) {
                     *err = "encountered dangling symbolic link";
                 }
             }
             else {
-                _GetError(err);
+                pxrBaseTfPathUtils::_GetError(err);
             }
             return err->empty();
         }

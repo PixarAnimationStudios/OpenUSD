@@ -716,7 +716,7 @@ TfMatchedStringTokenize(const std::string& source,
     return resultVec;
 }
 
-namespace { // helpers for DictionaryLess
+namespace pxrBaseTfStringUtils { // helpers for DictionaryLess
 
 inline bool IsDigit(char ch) { return '0' <= ch && ch <= '9'; }
 inline char Lower(char ch) { return ('A' <= ch && ch <= 'Z') ? ch | 32 : ch; }
@@ -740,9 +740,9 @@ DictionaryLess(char const *l, char const *r)
     int leadingZerosCmp = 0;
 
     while (*l && *r) {
-        if (ARCH_UNLIKELY(IsDigit(*l) && IsDigit(*r))) {
+        if (ARCH_UNLIKELY(pxrBaseTfStringUtils::IsDigit(*l) && pxrBaseTfStringUtils::IsDigit(*r))) {
             char const *oldL = l, *oldR = r;
-            long lval = AtoL(l), rval = AtoL(r);
+            long lval = pxrBaseTfStringUtils::AtoL(l), rval = pxrBaseTfStringUtils::AtoL(r);
             if (lval != rval)
                 return lval < rval;
             // Leading zeros difference only, record for later use.
@@ -752,7 +752,7 @@ DictionaryLess(char const *l, char const *r)
         }
 
         if (*l != *r) {
-            int lowL = Lower(*l), lowR = Lower(*r);
+            int lowL = pxrBaseTfStringUtils::Lower(*l), lowR = pxrBaseTfStringUtils::Lower(*r);
             if (lowL != lowR)
                 return lowL < lowR;
 

@@ -232,7 +232,7 @@ UsdSkelBindingAPI::CreateBlendShapeTargetsRel() const
                        /* custom = */ false);
 }
 
-namespace {
+namespace pxrUsdUsdSkelBindingAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -256,7 +256,7 @@ UsdSkelBindingAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdSkelTokens->skelBlendShapes,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdSkelBindingAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 
@@ -345,7 +345,7 @@ UsdSkelBindingAPI::SetRigidJointInfluence(int jointIndex, float weight) const
 }
 
 
-namespace {
+namespace pxrUsdUsdSkelBindingAPI {
 
 
 bool
@@ -407,7 +407,7 @@ UsdSkelBindingAPI::GetSkeleton(UsdSkelSkeleton* skel) const
         SdfPathVector targets;
         if (rel.GetForwardedTargets(&targets)) {
             if (!targets.empty() || rel.HasAuthoredTargets()) {
-                UsdPrim prim = _GetFirstTargetPrimForRel(rel, targets);
+                UsdPrim prim = pxrUsdUsdSkelBindingAPI::_GetFirstTargetPrimForRel(rel, targets);
                 *skel = UsdSkelSkeleton(prim);
 
                 if (prim && !*skel) {
@@ -453,7 +453,7 @@ UsdSkelBindingAPI::GetAnimationSource(UsdPrim* prim) const
         SdfPathVector targets;
         if (rel.GetForwardedTargets(&targets)) {
             if (!targets.empty() || rel.HasAuthoredTargets()) {
-                *prim = _GetFirstTargetPrimForRel(rel, targets);
+                *prim = pxrUsdUsdSkelBindingAPI::_GetFirstTargetPrimForRel(rel, targets);
 
                 if (*prim && !UsdSkelIsSkelAnimationPrim(*prim)) {
                     TF_WARN("%s -- target (<%s>) of relationship is not a valid "

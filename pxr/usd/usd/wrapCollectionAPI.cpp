@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapCollectionAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -100,7 +100,7 @@ void wrapUsdCollectionAPI()
 {
     typedef UsdCollectionAPI This;
 
-    UsdCollectionAPI_CanApplyResult::Wrap<UsdCollectionAPI_CanApplyResult>(
+    pxrUsdUsdWrapCollectionAPI::UsdCollectionAPI_CanApplyResult::Wrap<pxrUsdUsdWrapCollectionAPI::UsdCollectionAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -123,7 +123,7 @@ void wrapUsdCollectionAPI()
             (boost::python::arg("prim"), boost::python::arg("name")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim"), boost::python::arg("name")))
+        .def("CanApply", &pxrUsdUsdWrapCollectionAPI::_WrapCanApply, (boost::python::arg("prim"), boost::python::arg("name")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim"), boost::python::arg("name")))
@@ -151,14 +151,14 @@ void wrapUsdCollectionAPI()
         .def("GetExpansionRuleAttr",
              &This::GetExpansionRuleAttr)
         .def("CreateExpansionRuleAttr",
-             &_CreateExpansionRuleAttr,
+             &pxrUsdUsdWrapCollectionAPI::_CreateExpansionRuleAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetIncludeRootAttr",
              &This::GetIncludeRootAttr)
         .def("CreateIncludeRootAttr",
-             &_CreateIncludeRootAttr,
+             &pxrUsdUsdWrapCollectionAPI::_CreateIncludeRootAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
@@ -172,12 +172,12 @@ void wrapUsdCollectionAPI()
              &This::GetExcludesRel)
         .def("CreateExcludesRel",
              &This::CreateExcludesRel)
-        .def("IsCollectionAPIPath", _WrapIsCollectionAPIPath)
+        .def("IsCollectionAPIPath", pxrUsdUsdWrapCollectionAPI::_WrapIsCollectionAPIPath)
             .staticmethod("IsCollectionAPIPath")
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdWrapCollectionAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdWrapCollectionAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -203,7 +203,7 @@ void wrapUsdCollectionAPI()
 
 #include "pxr/usd/usd/collectionMembershipQuery.h"
 
-namespace {
+namespace pxrUsdUsdWrapCollectionAPI {
 
 static boost::python::object _WrapValidate(const UsdCollectionAPI &coll) {
     std::string reason; 

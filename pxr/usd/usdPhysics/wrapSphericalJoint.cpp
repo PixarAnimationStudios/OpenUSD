@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapSphericalJoint {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -114,28 +114,28 @@ void wrapUsdPhysicsSphericalJoint()
         .def("GetAxisAttr",
              &This::GetAxisAttr)
         .def("CreateAxisAttr",
-             &_CreateAxisAttr,
+             &pxrUsdUsdPhysicsWrapSphericalJoint::_CreateAxisAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetConeAngle0LimitAttr",
              &This::GetConeAngle0LimitAttr)
         .def("CreateConeAngle0LimitAttr",
-             &_CreateConeAngle0LimitAttr,
+             &pxrUsdUsdPhysicsWrapSphericalJoint::_CreateConeAngle0LimitAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetConeAngle1LimitAttr",
              &This::GetConeAngle1LimitAttr)
         .def("CreateConeAngle1LimitAttr",
-             &_CreateConeAngle1LimitAttr,
+             &pxrUsdUsdPhysicsWrapSphericalJoint::_CreateConeAngle1LimitAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdPhysicsWrapSphericalJoint::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdPhysicsWrapSphericalJoint::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -157,7 +157,7 @@ void wrapUsdPhysicsSphericalJoint()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapSphericalJoint {
 
 WRAP_CUSTOM {
 }

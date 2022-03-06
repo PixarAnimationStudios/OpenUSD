@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdRenderWrapSettingsBase {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -125,35 +125,35 @@ void wrapUsdRenderSettingsBase()
         .def("GetResolutionAttr",
              &This::GetResolutionAttr)
         .def("CreateResolutionAttr",
-             &_CreateResolutionAttr,
+             &pxrUsdUsdRenderWrapSettingsBase::_CreateResolutionAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetPixelAspectRatioAttr",
              &This::GetPixelAspectRatioAttr)
         .def("CreatePixelAspectRatioAttr",
-             &_CreatePixelAspectRatioAttr,
+             &pxrUsdUsdRenderWrapSettingsBase::_CreatePixelAspectRatioAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetAspectRatioConformPolicyAttr",
              &This::GetAspectRatioConformPolicyAttr)
         .def("CreateAspectRatioConformPolicyAttr",
-             &_CreateAspectRatioConformPolicyAttr,
+             &pxrUsdUsdRenderWrapSettingsBase::_CreateAspectRatioConformPolicyAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetDataWindowNDCAttr",
              &This::GetDataWindowNDCAttr)
         .def("CreateDataWindowNDCAttr",
-             &_CreateDataWindowNDCAttr,
+             &pxrUsdUsdRenderWrapSettingsBase::_CreateDataWindowNDCAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetInstantaneousShutterAttr",
              &This::GetInstantaneousShutterAttr)
         .def("CreateInstantaneousShutterAttr",
-             &_CreateInstantaneousShutterAttr,
+             &pxrUsdUsdRenderWrapSettingsBase::_CreateInstantaneousShutterAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
@@ -162,10 +162,10 @@ void wrapUsdRenderSettingsBase()
              &This::GetCameraRel)
         .def("CreateCameraRel",
              &This::CreateCameraRel)
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdRenderWrapSettingsBase::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdRenderWrapSettingsBase::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -187,7 +187,7 @@ void wrapUsdRenderSettingsBase()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdRenderWrapSettingsBase {
 
 WRAP_CUSTOM {
 }

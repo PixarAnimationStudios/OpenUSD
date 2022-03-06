@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapCone {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -121,35 +121,35 @@ void wrapUsdGeomCone()
         .def("GetHeightAttr",
              &This::GetHeightAttr)
         .def("CreateHeightAttr",
-             &_CreateHeightAttr,
+             &pxrUsdUsdGeomWrapCone::_CreateHeightAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetRadiusAttr",
              &This::GetRadiusAttr)
         .def("CreateRadiusAttr",
-             &_CreateRadiusAttr,
+             &pxrUsdUsdGeomWrapCone::_CreateRadiusAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetAxisAttr",
              &This::GetAxisAttr)
         .def("CreateAxisAttr",
-             &_CreateAxisAttr,
+             &pxrUsdUsdGeomWrapCone::_CreateAxisAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetExtentAttr",
              &This::GetExtentAttr)
         .def("CreateExtentAttr",
-             &_CreateExtentAttr,
+             &pxrUsdUsdGeomWrapCone::_CreateExtentAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapCone::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapCone::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -171,7 +171,7 @@ void wrapUsdGeomCone()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdGeomWrapCone {
 
 WRAP_CUSTOM {
 }

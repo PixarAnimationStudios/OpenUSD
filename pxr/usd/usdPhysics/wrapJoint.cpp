@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapJoint {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -156,63 +156,63 @@ void wrapUsdPhysicsJoint()
         .def("GetLocalPos0Attr",
              &This::GetLocalPos0Attr)
         .def("CreateLocalPos0Attr",
-             &_CreateLocalPos0Attr,
+             &pxrUsdUsdPhysicsWrapJoint::_CreateLocalPos0Attr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetLocalRot0Attr",
              &This::GetLocalRot0Attr)
         .def("CreateLocalRot0Attr",
-             &_CreateLocalRot0Attr,
+             &pxrUsdUsdPhysicsWrapJoint::_CreateLocalRot0Attr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetLocalPos1Attr",
              &This::GetLocalPos1Attr)
         .def("CreateLocalPos1Attr",
-             &_CreateLocalPos1Attr,
+             &pxrUsdUsdPhysicsWrapJoint::_CreateLocalPos1Attr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetLocalRot1Attr",
              &This::GetLocalRot1Attr)
         .def("CreateLocalRot1Attr",
-             &_CreateLocalRot1Attr,
+             &pxrUsdUsdPhysicsWrapJoint::_CreateLocalRot1Attr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetJointEnabledAttr",
              &This::GetJointEnabledAttr)
         .def("CreateJointEnabledAttr",
-             &_CreateJointEnabledAttr,
+             &pxrUsdUsdPhysicsWrapJoint::_CreateJointEnabledAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetCollisionEnabledAttr",
              &This::GetCollisionEnabledAttr)
         .def("CreateCollisionEnabledAttr",
-             &_CreateCollisionEnabledAttr,
+             &pxrUsdUsdPhysicsWrapJoint::_CreateCollisionEnabledAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetExcludeFromArticulationAttr",
              &This::GetExcludeFromArticulationAttr)
         .def("CreateExcludeFromArticulationAttr",
-             &_CreateExcludeFromArticulationAttr,
+             &pxrUsdUsdPhysicsWrapJoint::_CreateExcludeFromArticulationAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetBreakForceAttr",
              &This::GetBreakForceAttr)
         .def("CreateBreakForceAttr",
-             &_CreateBreakForceAttr,
+             &pxrUsdUsdPhysicsWrapJoint::_CreateBreakForceAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetBreakTorqueAttr",
              &This::GetBreakTorqueAttr)
         .def("CreateBreakTorqueAttr",
-             &_CreateBreakTorqueAttr,
+             &pxrUsdUsdPhysicsWrapJoint::_CreateBreakTorqueAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
@@ -226,10 +226,10 @@ void wrapUsdPhysicsJoint()
              &This::GetBody1Rel)
         .def("CreateBody1Rel",
              &This::CreateBody1Rel)
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdPhysicsWrapJoint::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdPhysicsWrapJoint::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -251,7 +251,7 @@ void wrapUsdPhysicsJoint()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapJoint {
 
 WRAP_CUSTOM {
 }

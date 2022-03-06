@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdShadeWrapMaterialBindingAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -79,7 +79,7 @@ void wrapUsdShadeMaterialBindingAPI()
 {
     typedef UsdShadeMaterialBindingAPI This;
 
-    UsdShadeMaterialBindingAPI_CanApplyResult::Wrap<UsdShadeMaterialBindingAPI_CanApplyResult>(
+    pxrUsdUsdShadeWrapMaterialBindingAPI::UsdShadeMaterialBindingAPI_CanApplyResult::Wrap<pxrUsdUsdShadeWrapMaterialBindingAPI::UsdShadeMaterialBindingAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -93,7 +93,7 @@ void wrapUsdShadeMaterialBindingAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdShadeWrapMaterialBindingAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -112,10 +112,10 @@ void wrapUsdShadeMaterialBindingAPI()
         .def(!boost::python::self)
 
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdShadeWrapMaterialBindingAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdShadeWrapMaterialBindingAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -139,7 +139,7 @@ void wrapUsdShadeMaterialBindingAPI()
 
 #include <boost/python/tuple.hpp>
 
-namespace {
+namespace pxrUsdUsdShadeWrapMaterialBindingAPI {
 
 static boost::python::object
 _WrapComputeBoundMaterial(const UsdShadeMaterialBindingAPI &bindingAPI,

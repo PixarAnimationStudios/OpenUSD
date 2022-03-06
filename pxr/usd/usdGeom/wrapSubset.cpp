@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapSubset {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -114,28 +114,28 @@ void wrapUsdGeomSubset()
         .def("GetElementTypeAttr",
              &This::GetElementTypeAttr)
         .def("CreateElementTypeAttr",
-             &_CreateElementTypeAttr,
+             &pxrUsdUsdGeomWrapSubset::_CreateElementTypeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetIndicesAttr",
              &This::GetIndicesAttr)
         .def("CreateIndicesAttr",
-             &_CreateIndicesAttr,
+             &pxrUsdUsdGeomWrapSubset::_CreateIndicesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetFamilyNameAttr",
              &This::GetFamilyNameAttr)
         .def("CreateFamilyNameAttr",
-             &_CreateFamilyNameAttr,
+             &pxrUsdUsdGeomWrapSubset::_CreateFamilyNameAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapSubset::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapSubset::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -159,7 +159,7 @@ void wrapUsdGeomSubset()
 
 #include <boost/python/tuple.hpp>
 
-namespace {
+namespace pxrUsdUsdGeomWrapSubset {
 
 static boost::python::object
 _WrapValidateFamily(const UsdGeomImageable &geom, 

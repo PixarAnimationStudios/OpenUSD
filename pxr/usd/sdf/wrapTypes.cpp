@@ -51,7 +51,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapTypes {
 
 struct Sdf_TimeSampleMapConverter {
 public:
@@ -311,14 +311,14 @@ void wrapTypes()
     TF_PY_WRAP_PUBLIC_TOKENS("ValueRoleNames",
                              SdfValueRoleNames, SDF_VALUE_ROLE_NAME_TOKENS);
 
-    boost::python::def( "DefaultUnit", _DefaultUnitWrapper1,
+    boost::python::def( "DefaultUnit", pxrUsdSdfWrapTypes::_DefaultUnitWrapper1,
         "For a given unit of measurement get the default compatible unit.");
 
-    boost::python::def( "DefaultUnit", _DefaultUnitWrapper2,
+    boost::python::def( "DefaultUnit", pxrUsdSdfWrapTypes::_DefaultUnitWrapper2,
         "For a given typeName ('Vector', 'Point' etc.) get the "
         "default unit of measurement.");
 
-    boost::python::def( "UnitCategory", _UnitCategoryWrapper,
+    boost::python::def( "UnitCategory", pxrUsdSdfWrapTypes::_UnitCategoryWrapper,
         "For a given unit of measurement get the unit category.");
 
     boost::python::def( "ConvertUnit", &SdfConvertUnit,
@@ -329,7 +329,7 @@ void wrapTypes()
     boost::python::def( "GetValueTypeNameForValue", &SdfGetValueTypeNameForValue );
 
     boost::python::def( "ConvertToValidMetadataDictionary",
-         &_ConvertToValidMetadataDictionary );
+         &pxrUsdSdfWrapTypes::_ConvertToValidMetadataDictionary );
 
     boost::python::def( "GetUnitFromName", &SdfGetUnitFromName,
          boost::python::return_value_policy<boost::python::return_by_value>() );
@@ -408,16 +408,16 @@ void wrapTypes()
     VtValueFromPython<SdfUnregisteredValueListOp>();
 
     // Modify class wrappers for special behaviors (see function comments).
-    _ModifyVariantSelectionProxy();
+    pxrUsdSdfWrapTypes::_ModifyVariantSelectionProxy();
 
     // Register to_python conversion for SdfRelocatesMap.
-    boost::python::to_python_converter<SdfRelocatesMap, Sdf_RelocatesMapConverter>();
+    boost::python::to_python_converter<SdfRelocatesMap, pxrUsdSdfWrapTypes::Sdf_RelocatesMapConverter>();
 
     // Register python conversions for SdfVariantSelectionMap.
-    Sdf_VariantSelectionMapConverter();
+    pxrUsdSdfWrapTypes::Sdf_VariantSelectionMapConverter();
 
     // Register python conversions for SdfTimeSampleMap.
-    boost::python::to_python_converter<SdfTimeSampleMap, Sdf_TimeSampleMapConverter>();
+    boost::python::to_python_converter<SdfTimeSampleMap, pxrUsdSdfWrapTypes::Sdf_TimeSampleMapConverter>();
 
     boost::python::class_<SdfUnregisteredValue>("UnregisteredValue")
         .def(boost::python::init<const std::string &>())
@@ -432,15 +432,15 @@ void wrapTypes()
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self != boost::python::self)
 
-        .def("__repr__", _UnregisteredValueRepr)
-        .def("__hash__", _UnregisteredValueHash)
+        .def("__repr__", pxrUsdSdfWrapTypes::_UnregisteredValueRepr)
+        .def("__hash__", pxrUsdSdfWrapTypes::_UnregisteredValueHash)
         ;
 
     VtValueFromPython<SdfUnregisteredValue>();
 
     boost::python::class_<Sdf_ValueTypeNamesType, boost::noncopyable>(
             "ValueTypeNames", boost::python::no_init)
-        .def( "Find", &_FindType )
+        .def( "Find", &pxrUsdSdfWrapTypes::_FindType )
         .staticmethod("Find")
         .def_readonly("Bool"    , SdfValueTypeNames->Bool)
         .def_readonly("UChar"   , SdfValueTypeNames->UChar)
@@ -554,7 +554,7 @@ void wrapTypes()
     boost::python::class_<SdfValueBlock>("ValueBlock")
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self != boost::python::self)
-        .def("__repr__", _SdfValueBlockRepr)
-        .def("__hash__", _SdfValueBlockHash);
+        .def("__repr__", pxrUsdSdfWrapTypes::_SdfValueBlockRepr)
+        .def("__hash__", pxrUsdSdfWrapTypes::_SdfValueBlockHash);
     VtValueFromPython<SdfValueBlock>();
 }

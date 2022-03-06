@@ -60,7 +60,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapStage {
 
 static bool
 _Export(const UsdStagePtr &self, const std::string& filename, 
@@ -208,7 +208,7 @@ void wrapUsdStage()
 
     cls
         .def(TfPyRefAndWeakPtr())
-        .def("__repr__", __repr__)
+        .def("__repr__", pxrUsdUsdWrapStage::__repr__)
 
         .def("CreateNew", (UsdStageRefPtr (*)(const std::string &,
                                               UsdStage::InitialLoadSet))
@@ -406,7 +406,7 @@ void wrapUsdStage()
              &UsdStage::GetGlobalVariantFallbacks,
              boost::python::return_value_policy<TfPyMapToDictionary>())
         .staticmethod("GetGlobalVariantFallbacks")
-        .def("SetGlobalVariantFallbacks", &_SetGlobalVariantFallbacks)
+        .def("SetGlobalVariantFallbacks", &pxrUsdUsdWrapStage::_SetGlobalVariantFallbacks)
         .staticmethod("SetGlobalVariantFallbacks")
 
         .def("Load", &UsdStage::Load,
@@ -433,7 +433,7 @@ void wrapUsdStage()
 
         .def("GetPopulationMask", &UsdStage::GetPopulationMask)
         .def("SetPopulationMask", &UsdStage::SetPopulationMask, boost::python::arg("mask"))
-        .def("ExpandPopulationMask", &_ExpandPopulationMask,
+        .def("ExpandPopulationMask", &pxrUsdUsdWrapStage::_ExpandPopulationMask,
              (boost::python::arg("relationshipPredicate")=boost::python::object(),
               boost::python::arg("attributePredicate")=boost::python::object()))
 
@@ -479,9 +479,9 @@ void wrapUsdStage()
 
         .def("GetEditTarget", &UsdStage::GetEditTarget,
              boost::python::return_value_policy<boost::python::return_by_value>())
-        .def("GetEditTargetForLocalLayer", &_GetEditTargetForLocalLayerIndex,
+        .def("GetEditTargetForLocalLayer", &pxrUsdUsdWrapStage::_GetEditTargetForLocalLayerIndex,
              boost::python::return_value_policy<boost::python::return_by_value>())
-        .def("GetEditTargetForLocalLayer", &_GetEditTargetForLocalLayer,
+        .def("GetEditTargetForLocalLayer", &pxrUsdUsdWrapStage::_GetEditTargetForLocalLayer,
              boost::python::return_value_policy<boost::python::return_by_value>())
         .def("SetEditTarget", &UsdStage::SetEditTarget, boost::python::arg("editTarget"))
 
@@ -497,29 +497,29 @@ void wrapUsdStage()
         .def("IsLayerMuted", &UsdStage::IsLayerMuted,
              (boost::python::arg("layerIdentifier")))
 
-        .def("Export", &_Export,
+        .def("Export", &pxrUsdUsdWrapStage::_Export,
              (boost::python::arg("filename"), 
               boost::python::arg("addSourceFileComment")=true,
               boost::python::arg("args") = boost::python::dict()))
 
-        .def("ExportToString", _ExportToString,
+        .def("ExportToString", pxrUsdUsdWrapStage::_ExportToString,
              boost::python::arg("addSourceFileComment")=true)
 
         .def("Flatten", &UsdStage::Flatten,
              (boost::python::arg("addSourceFileComment")=true),
              boost::python::return_value_policy<TfPyRefPtrFactory<SdfLayerHandle> >())
 
-        .def("GetMetadata", &_GetMetadata)
+        .def("GetMetadata", &pxrUsdUsdWrapStage::_GetMetadata)
         .def("HasMetadata", &UsdStage::HasMetadata)
         .def("HasAuthoredMetadata", &UsdStage::HasAuthoredMetadata)
         .def("ClearMetadata", &UsdStage::ClearMetadata)
-        .def("SetMetadata", &_SetMetadata)
+        .def("SetMetadata", &pxrUsdUsdWrapStage::_SetMetadata)
 
-        .def("GetMetadataByDictKey", &_GetMetadataByDictKey)
+        .def("GetMetadataByDictKey", &pxrUsdUsdWrapStage::_GetMetadataByDictKey)
         .def("HasMetadataDictKey", &UsdStage::HasMetadataDictKey)
         .def("HasAuthoredMetadataDictKey", &UsdStage::HasAuthoredMetadataDictKey)
         .def("ClearMetadataByDictKey", &UsdStage::ClearMetadataByDictKey)
-        .def("SetMetadataByDictKey", &_SetMetadataByDictKey)
+        .def("SetMetadataByDictKey", &pxrUsdUsdWrapStage::_SetMetadataByDictKey)
 
         .def("GetStartTimeCode", &UsdStage::GetStartTimeCode)
         .def("SetStartTimeCode", &UsdStage::SetStartTimeCode)
@@ -541,7 +541,7 @@ void wrapUsdStage()
         .def("GetColorManagementSystem", &UsdStage::GetColorManagementSystem)
         .def("SetColorManagementSystem", &UsdStage::SetColorManagementSystem)
 
-        .def("GetColorConfigFallbacks", &_GetColorConfigFallbacks)
+        .def("GetColorConfigFallbacks", &pxrUsdUsdWrapStage::_GetColorConfigFallbacks)
         .staticmethod("GetColorConfigFallbacks")
 
         .def("SetColorConfigFallbacks", &UsdStage::SetColorConfigFallbacks,

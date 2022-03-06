@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdShadeWrapInput {
 
 static bool
 _Set(const UsdShadeInput &self, boost::python::object val, const UsdTimeCode &time) 
@@ -134,8 +134,8 @@ void wrapUsdShadeInput()
         .def("GetBaseName", &Input::GetBaseName)
         .def("GetPrim", &Input::GetPrim)
         .def("GetTypeName", &Input::GetTypeName)
-        .def("Get", _Get, (boost::python::arg("time")=UsdTimeCode::Default()))
-        .def("Set", _Set, (boost::python::arg("value"), boost::python::arg("time")=UsdTimeCode::Default()))
+        .def("Get", pxrUsdUsdShadeWrapInput::_Get, (boost::python::arg("time")=UsdTimeCode::Default()))
+        .def("Set", pxrUsdUsdShadeWrapInput::_Set, (boost::python::arg("value"), boost::python::arg("time")=UsdTimeCode::Default()))
         .def("SetRenderType", &Input::SetRenderType,
              (boost::python::arg("renderType")))
         .def("GetRenderType", &Input::GetRenderType)
@@ -170,7 +170,7 @@ void wrapUsdShadeInput()
         .def("GetValueProducingAttributes",
             &Input::GetValueProducingAttributes,
             (boost::python::arg("shaderOutputsOnly")=false))
-        .def("GetValueProducingAttribute", _GetValueProducingAttribute)
+        .def("GetValueProducingAttribute", pxrUsdUsdShadeWrapInput::_GetValueProducingAttribute)
 
         .def("GetAttr", &Input::GetAttr,
              boost::python::return_value_policy<boost::python::return_by_value>())
@@ -194,9 +194,9 @@ void wrapUsdShadeInput()
 
         .def("SetConnectedSources", &Input::SetConnectedSources)
 
-        .def("GetConnectedSources", _GetConnectedSources)
-        .def("GetConnectedSource", _GetConnectedSource)
-        .def("GetRawConnectedSourcePaths", _GetRawConnectedSourcePaths,
+        .def("GetConnectedSources", pxrUsdUsdShadeWrapInput::_GetConnectedSources)
+        .def("GetConnectedSource", pxrUsdUsdShadeWrapInput::_GetConnectedSource)
+        .def("GetRawConnectedSourcePaths", pxrUsdUsdShadeWrapInput::_GetRawConnectedSourcePaths,
             boost::python::return_value_policy<TfPySequenceToList>())
         .def("HasConnectedSource", &Input::HasConnectedSource)
         .def("IsSourceConnectionFromBaseMaterial",

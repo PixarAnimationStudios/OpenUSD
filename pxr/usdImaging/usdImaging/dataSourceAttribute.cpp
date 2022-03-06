@@ -27,7 +27,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdImagingUsdImagingDataSourceAttribute {
 
 typedef HdSampledDataSourceHandle (*_DataSourceFactory)(
         const UsdAttributeQuery &usdAttrQuery,
@@ -90,12 +90,12 @@ UsdImagingDataSourceAttributeNew(
         return nullptr;
     }
 
-    static const _FactoryMap _factoryMap = _CreateFactoryMap();
+    static const pxrUsdImagingUsdImagingDataSourceAttribute::_FactoryMap _factoryMap = pxrUsdImagingUsdImagingDataSourceAttribute::_CreateFactoryMap();
 
-    _FactoryMap::const_iterator i = _factoryMap.find(
+    pxrUsdImagingUsdImagingDataSourceAttribute::_FactoryMap::const_iterator i = _factoryMap.find(
             usdAttrQuery.GetAttribute().GetTypeName());
     if (i != _factoryMap.end()) {
-        _DataSourceFactory factory = i->second;
+        pxrUsdImagingUsdImagingDataSourceAttribute::_DataSourceFactory factory = i->second;
         return factory(usdAttrQuery, stageGlobals,
                 sceneIndexPath, timeVaryingFlagLocator);
     } else {

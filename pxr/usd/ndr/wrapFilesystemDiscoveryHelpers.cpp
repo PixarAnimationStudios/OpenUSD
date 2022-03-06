@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdNdrWrapFilesystemDiscoveryHelpers {
 
 NdrNodeDiscoveryResultVec
 _WrapFsHelpersDiscoverNodes(
@@ -50,7 +50,7 @@ _WrapFsHelpersDiscoverNodes(
 
 void wrapFilesystemDiscoveryHelpers()
 {
-    boost::python::def("FsHelpersDiscoverNodes", _WrapFsHelpersDiscoverNodes,
+    boost::python::def("FsHelpersDiscoverNodes", pxrUsdNdrWrapFilesystemDiscoveryHelpers::_WrapFsHelpersDiscoverNodes,
         (boost::python::args("searchPaths"),
         boost::python::args("allowedExtensions"),
         boost::python::args("followSymlinks") = true,

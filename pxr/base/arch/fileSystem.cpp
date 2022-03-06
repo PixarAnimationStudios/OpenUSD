@@ -138,7 +138,7 @@ ArchGetModificationTime(const ArchStatType& st)
 #endif
 }
 
-namespace { // Helpers for ArchNormPath.
+namespace pxrBaseArchFileSystem { // Helpers for ArchNormPath.
 
 enum TokenType { Dot, DotDot, Elem };
 
@@ -328,7 +328,7 @@ ArchNormPath(const std::string& inPath, bool stripDriveSpecifier)
 std::string
 ArchNormPath(const std::string& inPath, bool /*stripDriveSpecifier*/)
 {
-    return _NormPath(inPath);
+    return pxrBaseArchFileSystem::_NormPath(inPath);
 }
 #endif // defined(ARCH_OS_WINDOWS)
 
@@ -778,7 +778,7 @@ ArchMapFileReadWrite(FILE *file, std::string *errMsg)
     return Arch_MapFileImpl<ArchMutableFileMapping>(file, errMsg);
 }
 
-namespace
+namespace pxrBaseArchFileSystem
 {
     
 struct _Fcloser
@@ -799,7 +799,7 @@ template <class Mapping>
 static inline Mapping
 Arch_MapFileImpl(std::string const& path, std::string *errMsg)
 {
-    _UniqueFILE f(ArchOpenFile(path.c_str(), "rb"));
+    pxrBaseArchFileSystem::_UniqueFILE f(ArchOpenFile(path.c_str(), "rb"));
     if (!f) {
         if (errMsg) {
             *errMsg = ArchStrerror();

@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdPcpWrapInstanceKey {
 
 static size_t
 __hash__(const PcpInstanceKey& key)
@@ -52,6 +52,6 @@ wrapInstanceKey()
         .def(boost::python::self != boost::python::self)
 
         .def("__str__", &PcpInstanceKey::GetString)
-        .def("__hash_", __hash__)
+        .def("__hash_", pxrUsdPcpWrapInstanceKey::__hash__)
         ;
 }

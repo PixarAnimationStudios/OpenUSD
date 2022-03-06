@@ -44,7 +44,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapRange3f {
 
 static const int _dimension = 3;
 
@@ -83,7 +83,7 @@ void wrapRange3f()
         
         .def(TfTypePythonClass())
 
-        .def_readonly("dimension", _dimension)
+        .def_readonly("dimension", pxrBaseGfWrapRange3f::_dimension)
         
         .add_property("min", getMin, &GfRange3f::SetMin)
         .add_property("max", getMax, &GfRange3f::SetMax)
@@ -144,8 +144,8 @@ void wrapRange3f()
         .def("__itruediv__", __itruediv__ )
 #endif
 
-        .def("__repr__", _Repr)
-        .def("__hash__", __hash__)
+        .def("__repr__", pxrBaseGfWrapRange3f::_Repr)
+        .def("__hash__", pxrBaseGfWrapRange3f::__hash__)
 
         .def("GetCorner", &GfRange3f::GetCorner)
         .def("GetOctant", &GfRange3f::GetOctant)

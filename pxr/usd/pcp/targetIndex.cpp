@@ -124,7 +124,7 @@ _TargetInClassAndTargetsInstance(
     return false;
 }
 
-namespace {
+namespace pxrUsdPcpTargetIndex {
 
 enum Pcp_PathTranslationError
 {
@@ -135,7 +135,7 @@ enum Pcp_PathTranslationError
 
 }
 
-static Pcp_PathTranslationError
+static pxrUsdPcpTargetIndex::Pcp_PathTranslationError
 _CheckTargetPermittedBeneathNode(
     const SdfPath& connectionPathInRootNS, const PcpNodeRef& node)
 {
@@ -148,7 +148,7 @@ _CheckTargetPermittedBeneathNode(
         // target is pointing at a restricted object, which is invalid.
         if (child.IsRestricted() ||
             child.GetPermission() == SdfPermissionPrivate) {
-            return PermissionDenied;
+            return pxrUsdPcpTargetIndex::PermissionDenied;
         }
 
         // Translate the path from the root namespace to this child's 
@@ -164,7 +164,7 @@ _CheckTargetPermittedBeneathNode(
         const SdfPath pathInChildNS = 
             PcpTranslatePathFromRootToNode(child, connectionPathInRootNS);
         if (pathInChildNS.IsEmpty()) {
-            return InvalidTarget;
+            return pxrUsdPcpTargetIndex::InvalidTarget;
         }
 
         if (targetObjectIsProperty) {
@@ -181,21 +181,21 @@ _CheckTargetPermittedBeneathNode(
                             (*layerIt)->GetPropertyAtPath(p);
                         if (propSpec &&
                             propSpec->GetPermission() == SdfPermissionPrivate) {
-                            return PermissionDenied;
+                            return pxrUsdPcpTargetIndex::PermissionDenied;
                         }
                     }
                 }
             }
         }
 
-        const Pcp_PathTranslationError errorUnderChild = 
+        const pxrUsdPcpTargetIndex::Pcp_PathTranslationError errorUnderChild = 
             _CheckTargetPermittedBeneathNode(connectionPathInRootNS, child);
-        if (errorUnderChild != NoError) {
+        if (errorUnderChild != pxrUsdPcpTargetIndex::NoError) {
             return errorUnderChild;
         }
     }
     
-    return NoError;
+    return pxrUsdPcpTargetIndex::NoError;
 }
 
 // Helper function to determine if the object indicated by the given paths
@@ -219,7 +219,7 @@ _CheckTargetPermittedBeneathNode(
 // is verified indirectly -- see comment in _CheckTargetPermittedBenaethNode.
 // See ErrorInvalidPreRelocateTargetPath for examples.
 //
-static Pcp_PathTranslationError
+static pxrUsdPcpTargetIndex::Pcp_PathTranslationError
 _TargetIsPermitted(
     const SdfPath& connectionPathInRootNS,
     const SdfPath& connectionPathInNodeNS,
@@ -286,7 +286,7 @@ _TargetIsPermitted(
             TfStringify(owningPrimSiteWhereConnectionWasAuthored).c_str(),
             owningPrimInRootNS.GetText());
 
-        return NoError;
+        return pxrUsdPcpTargetIndex::NoError;
     }
 
     return _CheckTargetPermittedBeneathNode(
@@ -399,7 +399,7 @@ _PathTranslateCallback(
         if (!cacheForValidation->IsUsd()) {
 
             switch (_TargetIsPermitted(translatedPath, inPath, node, context)) {
-            case PermissionDenied:
+            case pxrUsdPcpTargetIndex::PermissionDenied:
             {
                 PcpErrorTargetPermissionDeniedPtr err =
                     PcpErrorTargetPermissionDenied::New();
@@ -413,7 +413,7 @@ _PathTranslateCallback(
                 return boost::optional<SdfPath>();
             }
 
-            case InvalidTarget:
+            case pxrUsdPcpTargetIndex::InvalidTarget:
             {
                 PcpErrorInvalidTargetPathPtr err = 
                     PcpErrorInvalidTargetPath::New();
@@ -427,7 +427,7 @@ _PathTranslateCallback(
                 return boost::optional<SdfPath>();
             }
 
-            case NoError:
+            case pxrUsdPcpTargetIndex::NoError:
                 // Do nothing.
                 break;
             }

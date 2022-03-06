@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapImageable {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -104,14 +104,14 @@ void wrapUsdGeomImageable()
         .def("GetVisibilityAttr",
              &This::GetVisibilityAttr)
         .def("CreateVisibilityAttr",
-             &_CreateVisibilityAttr,
+             &pxrUsdUsdGeomWrapImageable::_CreateVisibilityAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetPurposeAttr",
              &This::GetPurposeAttr)
         .def("CreatePurposeAttr",
-             &_CreatePurposeAttr,
+             &pxrUsdUsdGeomWrapImageable::_CreatePurposeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
@@ -120,10 +120,10 @@ void wrapUsdGeomImageable()
              &This::GetProxyPrimRel)
         .def("CreateProxyPrimRel",
              &This::CreateProxyPrimRel)
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapImageable::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapImageable::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -147,7 +147,7 @@ void wrapUsdGeomImageable()
 
 #include "pxr/base/tf/pyObjWrapper.h"
 
-namespace {
+namespace pxrUsdUsdGeomWrapImageable {
 
 static TfPyObjWrapper
 _ComputeProxyPrim(UsdGeomImageable const &self)

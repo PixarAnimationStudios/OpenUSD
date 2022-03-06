@@ -37,7 +37,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdPcpWrapTestChangeProcessor {
 
 class Pcp_PyTestChangeProcessor
     : public TfWeakBase
@@ -117,8 +117,8 @@ private:
 void
 wrapTestChangeProcessor()
 {
-    typedef Pcp_PyTestChangeProcessor This;
-    typedef TfWeakPtr<Pcp_PyTestChangeProcessor> ThisPtr;
+    typedef pxrUsdPcpWrapTestChangeProcessor::Pcp_PyTestChangeProcessor This;
+    typedef TfWeakPtr<pxrUsdPcpWrapTestChangeProcessor::Pcp_PyTestChangeProcessor> ThisPtr;
 
     boost::python::class_<This, ThisPtr, boost::noncopyable>
         ("_TestChangeProcessor", boost::python::init<PcpCache*>())

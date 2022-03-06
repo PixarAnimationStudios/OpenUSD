@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapSingleton {
 
 // Need an empty class to serve as the singleton base class wrapped out to
 // python.
@@ -70,8 +70,8 @@ static boost::python::object _DummyInit(boost::python::tuple const &, boost::pyt
 } // anonymous namespace 
 
 void wrapSingleton() {
-    boost::python::class_<Tf_PySingleton>("Singleton", boost::python::no_init)
-        .def("__new__", _GetSingletonInstance).staticmethod("__new__")
-        .def("__init__", boost::python::raw_function(_DummyInit))
+    boost::python::class_<pxrBaseTfWrapSingleton::Tf_PySingleton>("Singleton", boost::python::no_init)
+        .def("__new__", pxrBaseTfWrapSingleton::_GetSingletonInstance).staticmethod("__new__")
+        .def("__init__", boost::python::raw_function(pxrBaseTfWrapSingleton::_DummyInit))
         ;
 }

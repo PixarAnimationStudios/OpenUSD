@@ -310,7 +310,7 @@ struct Tf_MallocCallSite
     bool _trace:1;
 };
 
-namespace {
+namespace pxrBaseTfMallocTag {
 
 typedef TfHashMap<const char*, struct Tf_MallocCallSite*,
                              TfHashCString,
@@ -355,7 +355,7 @@ struct Tf_MallocGlobalData
     }
 
     Tf_MallocCallSite* _GetOrCreateCallSite(const char* name) {
-        return Tf_GetOrCreateCallSite(&_callSiteTable, name,
+        return pxrBaseTfMallocTag::Tf_GetOrCreateCallSite(&_callSiteTable, name,
                                       &_captureCallSiteCount);
     }
 
@@ -390,7 +390,7 @@ struct Tf_MallocGlobalData
 
     tbb::spin_mutex _mutex;
     Tf_MallocPathNode* _rootNode;
-    Tf_MallocCallSiteTable _callSiteTable;
+    pxrBaseTfMallocTag::Tf_MallocCallSiteTable _callSiteTable;
 
     // Vector of path nodes indicating location of an allocated block. 
     // Implementations associate indices into this vector with a block.
@@ -619,7 +619,7 @@ static bool Tf_MatchesMallocTagDebugName(const std::string& name)
     return _mallocGlobalData->_MatchesDebugName(name);
 }
 
-namespace {
+namespace pxrBaseTfMallocTag {
 // Hash functor for a malloc stack.
 //
 struct _HashMallocStack
@@ -646,8 +646,8 @@ struct _MallocStackData
 //
 static bool
 _MallocStackDataLessThan(
-    const _MallocStackData *lhs,
-    const _MallocStackData *rhs)
+    const pxrBaseTfMallocTag::_MallocStackData *lhs,
+    const pxrBaseTfMallocTag::_MallocStackData *rhs)
 {
     return lhs->size < rhs->size;
 }
@@ -662,25 +662,25 @@ Tf_MallocGlobalData::_BuildUniqueMallocStacks(TfMallocTag::CallTree* tree)
     if (!_callStackTable.empty()) {
         // Create a map from malloc stacks to the malloc stack data.
         typedef TfHashMap<
-            std::vector<uintptr_t>, _MallocStackData, _HashMallocStack> _Map;
+            std::vector<uintptr_t>, pxrBaseTfMallocTag::_MallocStackData, pxrBaseTfMallocTag::_HashMallocStack> _Map;
         _Map map;
 
         TF_FOR_ALL(it, _callStackTable) {
             // Since _callStackTable does not change at this point it is
             // ok to store the address of the malloc stack in the data.
             const TfMallocTag::CallStackInfo &stackInfo = it->second;
-            _MallocStackData data = { &stackInfo.stack, 0, 0 };
+            pxrBaseTfMallocTag::_MallocStackData data = { &stackInfo.stack, 0, 0 };
 
             std::pair<_Map::iterator, bool> insertResult = map.insert(
                 std::make_pair(stackInfo.stack, data));
 
-            _MallocStackData &updateData = insertResult.first->second;
+            pxrBaseTfMallocTag::_MallocStackData &updateData = insertResult.first->second;
             updateData.size += stackInfo.size;
             updateData.numAllocations += stackInfo.numAllocations;
         }
 
         // Sort the malloc stack data by allocation size.
-        std::vector<const _MallocStackData *> sortedStackData;
+        std::vector<const pxrBaseTfMallocTag::_MallocStackData *> sortedStackData;
         sortedStackData.reserve(map.size());
         TF_FOR_ALL(it, map) {
             sortedStackData.push_back(&it->second);
@@ -693,7 +693,7 @@ Tf_MallocGlobalData::_BuildUniqueMallocStacks(TfMallocTag::CallTree* tree)
 
         tree->capturedCallStacks.reserve(sortedStackData.size());
         TF_REVERSE_FOR_ALL(it, sortedStackData) {
-            const _MallocStackData &data = **it;
+            const pxrBaseTfMallocTag::_MallocStackData &data = **it;
 
             tree->capturedCallStacks.push_back(TfMallocTag::CallStackInfo());
             TfMallocTag::CallStackInfo &stackInfo =
@@ -745,7 +745,7 @@ Tf_MallocPathNode::_BuildTree(TfMallocTag::CallTree::PathNode* node,
     }
 }
 
-namespace {
+namespace pxrBaseTfMallocTag {
 void Tf_GetCallSites(TfMallocTag::CallTree::PathNode* node, 
                      Tf_MallocCallSiteTable* table) {
     TF_AXIOM(node);
@@ -1339,8 +1339,8 @@ TfMallocTag::GetCallTree(CallTree* tree, bool skipRepeated)
         gd->_rootNode->_BuildTree(&tree->root, skipRepeated);
         
         // Build the snapshot callsites map based on the tree
-        Tf_MallocCallSiteTable callSiteTable;
-        Tf_GetCallSites(&tree->root, &callSiteTable);
+        pxrBaseTfMallocTag::Tf_MallocCallSiteTable callSiteTable;
+        pxrBaseTfMallocTag::Tf_GetCallSites(&tree->root, &callSiteTable);
 
         // Copy the callsites into the calltree
         tree->callSites.reserve(callSiteTable.size());

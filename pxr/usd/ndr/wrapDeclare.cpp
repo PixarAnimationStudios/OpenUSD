@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdNdrWrapDeclare {
 
 static
 std::string
@@ -89,7 +89,7 @@ wrapVersion()
 
 void wrapDeclare()
 {
-    wrapVersion();
+    pxrUsdNdrWrapDeclare::wrapVersion();
 
     TfPyWrapEnum<NdrVersionFilter>();
 }

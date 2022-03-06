@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdPcpWrapDependency {
 
 static std::string
 _DependencyRepr(const PcpDependency &dep)
@@ -61,8 +61,8 @@ wrapDependency()
         .def_readwrite("indexPath", &PcpDependency::indexPath)
         .def_readwrite("sitePath", &PcpDependency::sitePath)
         .def_readwrite("mapFunc", &PcpDependency::mapFunc)
-        .def("__repr__", &_DependencyRepr)
-        .def("__init__", boost::python::make_constructor(_DependencyInit))
+        .def("__repr__", &pxrUsdPcpWrapDependency::_DependencyRepr)
+        .def("__init__", boost::python::make_constructor(pxrUsdPcpWrapDependency::_DependencyInit))
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self != boost::python::self)
         ;

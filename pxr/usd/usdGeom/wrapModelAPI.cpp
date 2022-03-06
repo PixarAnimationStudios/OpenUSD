@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapModelAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -149,7 +149,7 @@ void wrapUsdGeomModelAPI()
 {
     typedef UsdGeomModelAPI This;
 
-    UsdGeomModelAPI_CanApplyResult::Wrap<UsdGeomModelAPI_CanApplyResult>(
+    pxrUsdUsdGeomWrapModelAPI::UsdGeomModelAPI_CanApplyResult::Wrap<pxrUsdUsdGeomWrapModelAPI::UsdGeomModelAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -163,7 +163,7 @@ void wrapUsdGeomModelAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdGeomWrapModelAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -185,77 +185,77 @@ void wrapUsdGeomModelAPI()
         .def("GetModelDrawModeAttr",
              &This::GetModelDrawModeAttr)
         .def("CreateModelDrawModeAttr",
-             &_CreateModelDrawModeAttr,
+             &pxrUsdUsdGeomWrapModelAPI::_CreateModelDrawModeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetModelApplyDrawModeAttr",
              &This::GetModelApplyDrawModeAttr)
         .def("CreateModelApplyDrawModeAttr",
-             &_CreateModelApplyDrawModeAttr,
+             &pxrUsdUsdGeomWrapModelAPI::_CreateModelApplyDrawModeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetModelDrawModeColorAttr",
              &This::GetModelDrawModeColorAttr)
         .def("CreateModelDrawModeColorAttr",
-             &_CreateModelDrawModeColorAttr,
+             &pxrUsdUsdGeomWrapModelAPI::_CreateModelDrawModeColorAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetModelCardGeometryAttr",
              &This::GetModelCardGeometryAttr)
         .def("CreateModelCardGeometryAttr",
-             &_CreateModelCardGeometryAttr,
+             &pxrUsdUsdGeomWrapModelAPI::_CreateModelCardGeometryAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetModelCardTextureXPosAttr",
              &This::GetModelCardTextureXPosAttr)
         .def("CreateModelCardTextureXPosAttr",
-             &_CreateModelCardTextureXPosAttr,
+             &pxrUsdUsdGeomWrapModelAPI::_CreateModelCardTextureXPosAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetModelCardTextureYPosAttr",
              &This::GetModelCardTextureYPosAttr)
         .def("CreateModelCardTextureYPosAttr",
-             &_CreateModelCardTextureYPosAttr,
+             &pxrUsdUsdGeomWrapModelAPI::_CreateModelCardTextureYPosAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetModelCardTextureZPosAttr",
              &This::GetModelCardTextureZPosAttr)
         .def("CreateModelCardTextureZPosAttr",
-             &_CreateModelCardTextureZPosAttr,
+             &pxrUsdUsdGeomWrapModelAPI::_CreateModelCardTextureZPosAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetModelCardTextureXNegAttr",
              &This::GetModelCardTextureXNegAttr)
         .def("CreateModelCardTextureXNegAttr",
-             &_CreateModelCardTextureXNegAttr,
+             &pxrUsdUsdGeomWrapModelAPI::_CreateModelCardTextureXNegAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetModelCardTextureYNegAttr",
              &This::GetModelCardTextureYNegAttr)
         .def("CreateModelCardTextureYNegAttr",
-             &_CreateModelCardTextureYNegAttr,
+             &pxrUsdUsdGeomWrapModelAPI::_CreateModelCardTextureYNegAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetModelCardTextureZNegAttr",
              &This::GetModelCardTextureZNegAttr)
         .def("CreateModelCardTextureZNegAttr",
-             &_CreateModelCardTextureZNegAttr,
+             &pxrUsdUsdGeomWrapModelAPI::_CreateModelCardTextureZNegAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapModelAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapModelAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -277,7 +277,7 @@ void wrapUsdGeomModelAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdGeomWrapModelAPI {
 
 static boost::python::object
 _GetExtentsHint(

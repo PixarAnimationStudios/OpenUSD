@@ -51,7 +51,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapType {
 
 ////////////////////////////////////////////////////////////////////////
 // Python -> C++ TfType conversion
@@ -266,21 +266,21 @@ void wrapType()
         .def( boost::python::self > boost::python::self )
         .def( boost::python::self <= boost::python::self )
         .def( boost::python::self >= boost::python::self )
-        .def( "__repr__", &_Repr)
-        .def( "__hash__", &_TypeHash)
+        .def( "__repr__", &pxrBaseTfWrapType::_Repr)
+        .def( "__hash__", &pxrBaseTfWrapType::_TypeHash)
 
-        .def( "GetRoot", &_GetRoot)
+        .def( "GetRoot", &pxrBaseTfWrapType::_GetRoot)
         .staticmethod("GetRoot")
 
-        .def( "Find", &_FindByPythonClass)
+        .def( "Find", &pxrBaseTfWrapType::_FindByPythonClass)
         .staticmethod("Find")
 
-        .def( "FindByName", &_FindByName)
+        .def( "FindByName", &pxrBaseTfWrapType::_FindByName)
         .staticmethod("FindByName")
 
-        .def("FindDerivedByName", &_FindDerivedByName)
+        .def("FindDerivedByName", &pxrBaseTfWrapType::_FindDerivedByName)
 
-        .def("IsA", &_IsA )
+        .def("IsA", &pxrBaseTfWrapType::_IsA )
 
         .add_property("isUnknown", &This::IsUnknown)
         .add_property("isEnumType", &This::IsEnumType)
@@ -302,9 +302,9 @@ void wrapType()
 
         .def("GetAliases", &This::GetAliases,
              boost::python::return_value_policy< TfPySequenceToTuple >() )
-        .def("GetAllDerivedTypes", &_GetAllDerivedTypes,
+        .def("GetAllDerivedTypes", &pxrBaseTfWrapType::_GetAllDerivedTypes,
              boost::python::return_value_policy< TfPySequenceToTuple >() )
-        .def("GetAllAncestorTypes", &_GetAllAncestorTypes,
+        .def("GetAllAncestorTypes", &pxrBaseTfWrapType::_GetAllAncestorTypes,
              boost::python::return_value_policy< TfPySequenceToTuple >() )
 
         .def("Define", &TfType_DefinePythonTypeAndBases)
@@ -313,7 +313,7 @@ void wrapType()
         .def("AddAlias", (void (TfType::*)(TfType, const std::string &) const)
                          &This::AddAlias)
 
-        .def("_DumpTypeHierarchy", &_DumpTypeHierarchy,
+        .def("_DumpTypeHierarchy", &pxrBaseTfWrapType::_DumpTypeHierarchy,
             "_DumpTypeHierarchy(TfType): "
             "Diagnostic method to print the type hierarchy beneath a given "
             "TfType.")
@@ -325,7 +325,7 @@ void wrapType()
     classDef.attr("Unknown") = TfType();
 
     // Register from-python conversions.
-    _TfTypeFromPython();
+    pxrBaseTfWrapType::_TfTypeFromPython();
 
     // Handle a sequence of TfTypes
     TfPyContainerConversions::from_python_sequence<

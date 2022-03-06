@@ -45,7 +45,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapToken {
 
 struct Tf_TokenFromPythonString
 {
@@ -91,8 +91,8 @@ void wrapToken()
         TfPySequenceToPython<std::vector<TfToken> > >();
 
     // Tokens are represented directly as Python strings in Python.
-    boost::python::to_python_converter<TfToken, Tf_TokenToPythonString>();
-    Tf_TokenFromPythonString();
+    boost::python::to_python_converter<TfToken, pxrBaseTfWrapToken::Tf_TokenToPythonString>();
+    pxrBaseTfWrapToken::Tf_TokenFromPythonString();
 
     // Stats.
     boost::python::def("DumpTokenStats", TfDumpTokenStats);

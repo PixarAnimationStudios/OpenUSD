@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapMesh {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -177,91 +177,91 @@ void wrapUsdGeomMesh()
         .def("GetFaceVertexIndicesAttr",
              &This::GetFaceVertexIndicesAttr)
         .def("CreateFaceVertexIndicesAttr",
-             &_CreateFaceVertexIndicesAttr,
+             &pxrUsdUsdGeomWrapMesh::_CreateFaceVertexIndicesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetFaceVertexCountsAttr",
              &This::GetFaceVertexCountsAttr)
         .def("CreateFaceVertexCountsAttr",
-             &_CreateFaceVertexCountsAttr,
+             &pxrUsdUsdGeomWrapMesh::_CreateFaceVertexCountsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetSubdivisionSchemeAttr",
              &This::GetSubdivisionSchemeAttr)
         .def("CreateSubdivisionSchemeAttr",
-             &_CreateSubdivisionSchemeAttr,
+             &pxrUsdUsdGeomWrapMesh::_CreateSubdivisionSchemeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetInterpolateBoundaryAttr",
              &This::GetInterpolateBoundaryAttr)
         .def("CreateInterpolateBoundaryAttr",
-             &_CreateInterpolateBoundaryAttr,
+             &pxrUsdUsdGeomWrapMesh::_CreateInterpolateBoundaryAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetFaceVaryingLinearInterpolationAttr",
              &This::GetFaceVaryingLinearInterpolationAttr)
         .def("CreateFaceVaryingLinearInterpolationAttr",
-             &_CreateFaceVaryingLinearInterpolationAttr,
+             &pxrUsdUsdGeomWrapMesh::_CreateFaceVaryingLinearInterpolationAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetTriangleSubdivisionRuleAttr",
              &This::GetTriangleSubdivisionRuleAttr)
         .def("CreateTriangleSubdivisionRuleAttr",
-             &_CreateTriangleSubdivisionRuleAttr,
+             &pxrUsdUsdGeomWrapMesh::_CreateTriangleSubdivisionRuleAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetHoleIndicesAttr",
              &This::GetHoleIndicesAttr)
         .def("CreateHoleIndicesAttr",
-             &_CreateHoleIndicesAttr,
+             &pxrUsdUsdGeomWrapMesh::_CreateHoleIndicesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetCornerIndicesAttr",
              &This::GetCornerIndicesAttr)
         .def("CreateCornerIndicesAttr",
-             &_CreateCornerIndicesAttr,
+             &pxrUsdUsdGeomWrapMesh::_CreateCornerIndicesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetCornerSharpnessesAttr",
              &This::GetCornerSharpnessesAttr)
         .def("CreateCornerSharpnessesAttr",
-             &_CreateCornerSharpnessesAttr,
+             &pxrUsdUsdGeomWrapMesh::_CreateCornerSharpnessesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetCreaseIndicesAttr",
              &This::GetCreaseIndicesAttr)
         .def("CreateCreaseIndicesAttr",
-             &_CreateCreaseIndicesAttr,
+             &pxrUsdUsdGeomWrapMesh::_CreateCreaseIndicesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetCreaseLengthsAttr",
              &This::GetCreaseLengthsAttr)
         .def("CreateCreaseLengthsAttr",
-             &_CreateCreaseLengthsAttr,
+             &pxrUsdUsdGeomWrapMesh::_CreateCreaseLengthsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetCreaseSharpnessesAttr",
              &This::GetCreaseSharpnessesAttr)
         .def("CreateCreaseSharpnessesAttr",
-             &_CreateCreaseSharpnessesAttr,
+             &pxrUsdUsdGeomWrapMesh::_CreateCreaseSharpnessesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapMesh::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapMesh::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -283,7 +283,7 @@ void wrapUsdGeomMesh()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdGeomWrapMesh {
 
 
 boost::python::tuple

@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdLuxWrapNonboundableLightBase {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -87,10 +87,10 @@ void wrapUsdLuxNonboundableLightBase()
         .def(!boost::python::self)
 
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdLuxWrapNonboundableLightBase::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdLuxWrapNonboundableLightBase::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -168,7 +168,7 @@ _CreateColorTemperatureAttr(UsdLuxNonboundableLightBase &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdLuxWrapNonboundableLightBase {
 
 WRAP_CUSTOM {
     typedef UsdLuxNonboundableLightBase This;

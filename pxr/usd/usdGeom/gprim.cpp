@@ -152,7 +152,7 @@ UsdGeomGprim::CreateOrientationAttr(VtValue const &defaultValue, bool writeSpars
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomGprim {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -175,7 +175,7 @@ UsdGeomGprim::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->orientation,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomGprim::_ConcatenateAttributeNames(
             UsdGeomBoundable::GetSchemaAttributeNames(true),
             localNames);
 

@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapCapsule {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -121,35 +121,35 @@ void wrapUsdGeomCapsule()
         .def("GetHeightAttr",
              &This::GetHeightAttr)
         .def("CreateHeightAttr",
-             &_CreateHeightAttr,
+             &pxrUsdUsdGeomWrapCapsule::_CreateHeightAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetRadiusAttr",
              &This::GetRadiusAttr)
         .def("CreateRadiusAttr",
-             &_CreateRadiusAttr,
+             &pxrUsdUsdGeomWrapCapsule::_CreateRadiusAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetAxisAttr",
              &This::GetAxisAttr)
         .def("CreateAxisAttr",
-             &_CreateAxisAttr,
+             &pxrUsdUsdGeomWrapCapsule::_CreateAxisAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetExtentAttr",
              &This::GetExtentAttr)
         .def("CreateExtentAttr",
-             &_CreateExtentAttr,
+             &pxrUsdUsdGeomWrapCapsule::_CreateExtentAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapCapsule::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapCapsule::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -171,7 +171,7 @@ void wrapUsdGeomCapsule()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdGeomWrapCapsule {
 
 WRAP_CUSTOM {
 }

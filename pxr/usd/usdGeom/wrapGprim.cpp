@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapGprim {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -118,35 +118,35 @@ void wrapUsdGeomGprim()
         .def("GetDisplayColorAttr",
              &This::GetDisplayColorAttr)
         .def("CreateDisplayColorAttr",
-             &_CreateDisplayColorAttr,
+             &pxrUsdUsdGeomWrapGprim::_CreateDisplayColorAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetDisplayOpacityAttr",
              &This::GetDisplayOpacityAttr)
         .def("CreateDisplayOpacityAttr",
-             &_CreateDisplayOpacityAttr,
+             &pxrUsdUsdGeomWrapGprim::_CreateDisplayOpacityAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetDoubleSidedAttr",
              &This::GetDoubleSidedAttr)
         .def("CreateDoubleSidedAttr",
-             &_CreateDoubleSidedAttr,
+             &pxrUsdUsdGeomWrapGprim::_CreateDoubleSidedAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetOrientationAttr",
              &This::GetOrientationAttr)
         .def("CreateOrientationAttr",
-             &_CreateOrientationAttr,
+             &pxrUsdUsdGeomWrapGprim::_CreateOrientationAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapGprim::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapGprim::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -168,7 +168,7 @@ void wrapUsdGeomGprim()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdGeomWrapGprim {
 
 WRAP_CUSTOM {
     _class

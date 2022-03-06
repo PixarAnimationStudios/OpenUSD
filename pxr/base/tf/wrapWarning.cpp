@@ -38,7 +38,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapWarning {
 
 static void
 _Warn(std::string const &msg, std::string const& moduleName, std::string const& functionName,
@@ -68,13 +68,13 @@ TfWarning__repr__(TfWarning const &self)
 } // anonymous namespace 
 
 void wrapWarning() {
-    boost::python::def("_Warn", &_Warn);
+    boost::python::def("_Warn", &pxrBaseTfWrapWarning::_Warn);
 
     typedef TfWarning This;
 
     boost::python::scope warningScope =
         boost::python::class_<This, boost::python::bases<TfDiagnosticBase> >("Warning", boost::python::no_init)
 
-        .def("__repr__", TfWarning__repr__)
+        .def("__repr__", pxrBaseTfWrapWarning::TfWarning__repr__)
         ;
 }

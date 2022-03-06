@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapTestPyContainerConversions {
 
 class Tf_TestPyContainerConversions {
 public:
@@ -65,7 +65,7 @@ public:
 
 void wrapTf_TestPyContainerConversions()
 {
-    typedef Tf_TestPyContainerConversions This;
+    typedef pxrBaseTfWrapTestPyContainerConversions::Tf_TestPyContainerConversions This;
 
     boost::python::class_<This, boost::noncopyable>("Tf_TestPyContainerConversions")
         .def("GetVectorTimesTwo", &This::GetVectorTimesTwo)

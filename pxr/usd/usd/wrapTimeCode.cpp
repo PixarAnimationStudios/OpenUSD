@@ -38,7 +38,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapTimeCode {
 
 static size_t __hash__(const UsdTimeCode &self) { return hash_value(self); }
 
@@ -92,10 +92,10 @@ void wrapUsdTimeCode()
         .def(boost::python::self > boost::python::self)
         .def(boost::python::self >= boost::python::self)
 
-        .def("__hash__", __hash__)
-        .def("__repr__", __repr__)
+        .def("__hash__", pxrUsdUsdWrapTimeCode::__hash__)
+        .def("__repr__", pxrUsdUsdWrapTimeCode::__repr__)
 //        .def(str(self))
-        .def("__str__", _Str)
+        .def("__str__", pxrUsdUsdWrapTimeCode::_Str)
         ;
 
     TF_PY_WRAP_PUBLIC_TOKENS("Tokens", UsdTimeCodeTokens, USD_TIME_CODE_TOKENS);

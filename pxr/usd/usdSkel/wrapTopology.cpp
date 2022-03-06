@@ -36,7 +36,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
-namespace {
+namespace pxrUsdUsdSkelWrapTopology {
 
 
 boost::python::tuple
@@ -71,6 +71,6 @@ void wrapUsdSkelTopology()
 
         .def("__len__", &This::size)
 
-        .def("Validate", &_Validate)
+        .def("Validate", &pxrUsdUsdSkelWrapTopology::_Validate)
         ;
 }

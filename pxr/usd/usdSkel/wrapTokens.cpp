@@ -27,7 +27,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdSkelWrapTokens {
 
 // Helper to return a static token as a string.  We wrap tokens as Python
 // strings and for some reason simply wrapping the token using def_readonly
@@ -64,25 +64,25 @@ void wrapUsdSkelTokens()
 {
     boost::python::class_<UsdSkelTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
-    _AddToken(cls, "bindTransforms", UsdSkelTokens->bindTransforms);
-    _AddToken(cls, "blendShapes", UsdSkelTokens->blendShapes);
-    _AddToken(cls, "blendShapeWeights", UsdSkelTokens->blendShapeWeights);
-    _AddToken(cls, "jointNames", UsdSkelTokens->jointNames);
-    _AddToken(cls, "joints", UsdSkelTokens->joints);
-    _AddToken(cls, "normalOffsets", UsdSkelTokens->normalOffsets);
-    _AddToken(cls, "offsets", UsdSkelTokens->offsets);
-    _AddToken(cls, "pointIndices", UsdSkelTokens->pointIndices);
-    _AddToken(cls, "primvarsSkelGeomBindTransform", UsdSkelTokens->primvarsSkelGeomBindTransform);
-    _AddToken(cls, "primvarsSkelJointIndices", UsdSkelTokens->primvarsSkelJointIndices);
-    _AddToken(cls, "primvarsSkelJointWeights", UsdSkelTokens->primvarsSkelJointWeights);
-    _AddToken(cls, "restTransforms", UsdSkelTokens->restTransforms);
-    _AddToken(cls, "rotations", UsdSkelTokens->rotations);
-    _AddToken(cls, "scales", UsdSkelTokens->scales);
-    _AddToken(cls, "skelAnimationSource", UsdSkelTokens->skelAnimationSource);
-    _AddToken(cls, "skelBlendShapes", UsdSkelTokens->skelBlendShapes);
-    _AddToken(cls, "skelBlendShapeTargets", UsdSkelTokens->skelBlendShapeTargets);
-    _AddToken(cls, "skelJoints", UsdSkelTokens->skelJoints);
-    _AddToken(cls, "skelSkeleton", UsdSkelTokens->skelSkeleton);
-    _AddToken(cls, "translations", UsdSkelTokens->translations);
-    _AddToken(cls, "weight", UsdSkelTokens->weight);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "bindTransforms", UsdSkelTokens->bindTransforms);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "blendShapes", UsdSkelTokens->blendShapes);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "blendShapeWeights", UsdSkelTokens->blendShapeWeights);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "jointNames", UsdSkelTokens->jointNames);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "joints", UsdSkelTokens->joints);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "normalOffsets", UsdSkelTokens->normalOffsets);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "offsets", UsdSkelTokens->offsets);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "pointIndices", UsdSkelTokens->pointIndices);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "primvarsSkelGeomBindTransform", UsdSkelTokens->primvarsSkelGeomBindTransform);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "primvarsSkelJointIndices", UsdSkelTokens->primvarsSkelJointIndices);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "primvarsSkelJointWeights", UsdSkelTokens->primvarsSkelJointWeights);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "restTransforms", UsdSkelTokens->restTransforms);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "rotations", UsdSkelTokens->rotations);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "scales", UsdSkelTokens->scales);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "skelAnimationSource", UsdSkelTokens->skelAnimationSource);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "skelBlendShapes", UsdSkelTokens->skelBlendShapes);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "skelBlendShapeTargets", UsdSkelTokens->skelBlendShapeTargets);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "skelJoints", UsdSkelTokens->skelJoints);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "skelSkeleton", UsdSkelTokens->skelSkeleton);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "translations", UsdSkelTokens->translations);
+    pxrUsdUsdSkelWrapTokens::_AddToken(cls, "weight", UsdSkelTokens->weight);
 }

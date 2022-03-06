@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdImagingUsdviewqWrapUtils {
 
 // We return primInfo by unrolling it into a single tuple.  This allows
 // python clients to extract the information 40% faster than if we were
@@ -72,7 +72,7 @@ void wrapUtils() {
             .staticmethod("_GetAllPrimsOfType")
 
         .def("GetPrimInfo",
-             _GetPrimInfo)
+             pxrUsdImagingUsdviewqWrapUtils::_GetPrimInfo)
             .staticmethod("GetPrimInfo")
         ;
 }

@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdShadeWrapCoordSysAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -87,10 +87,10 @@ void wrapUsdShadeCoordSysAPI()
         .def(!boost::python::self)
 
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdShadeWrapCoordSysAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdShadeWrapCoordSysAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -112,7 +112,7 @@ void wrapUsdShadeCoordSysAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdShadeWrapCoordSysAPI {
 
 struct _BindingToTuple {
     static PyObject*

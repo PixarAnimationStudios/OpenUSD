@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapPayload {
 
 static std::string
 _Repr(const SdfPayload &self)
@@ -104,7 +104,7 @@ void wrapPayload()
         .def(boost::python::self <= boost::python::self)
         .def(boost::python::self >= boost::python::self)
 
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrUsdSdfWrapPayload::_Repr)
 
         ;
 

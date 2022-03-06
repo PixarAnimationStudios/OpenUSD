@@ -138,7 +138,7 @@ UsdPhysicsCollisionAPI::CreateSimulationOwnerRel() const
                        /* custom = */ false);
 }
 
-namespace {
+namespace pxrUsdUsdPhysicsCollisionAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -158,7 +158,7 @@ UsdPhysicsCollisionAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdPhysicsTokens->physicsCollisionEnabled,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdPhysicsCollisionAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdSdfValueTypeName {
 
 template <typename C, typename V>
 bool
@@ -163,13 +163,13 @@ SdfValueTypeName::operator==(const SdfValueTypeName& rhs) const
 bool
 SdfValueTypeName::operator==(const std::string& rhs) const
 {
-    return IsValueIn(_impl->type->aliases, rhs);
+    return pxrUsdSdfValueTypeName::IsValueIn(_impl->type->aliases, rhs);
 }
 
 bool
 SdfValueTypeName::operator==(const TfToken& rhs) const
 {
-    return IsValueIn(_impl->type->aliases, rhs);
+    return pxrUsdSdfValueTypeName::IsValueIn(_impl->type->aliases, rhs);
 }
 
 size_t

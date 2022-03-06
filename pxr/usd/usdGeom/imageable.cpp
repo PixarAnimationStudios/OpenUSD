@@ -131,7 +131,7 @@ UsdGeomImageable::CreateProxyPrimRel() const
                        /* custom = */ false);
 }
 
-namespace {
+namespace pxrUsdUsdGeomImageable {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -152,7 +152,7 @@ UsdGeomImageable::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->purpose,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomImageable::_ConcatenateAttributeNames(
             UsdTyped::GetSchemaAttributeNames(true),
             localNames);
 

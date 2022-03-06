@@ -137,7 +137,7 @@ UsdGeomSphere::CreateExtentAttr(VtValue const &defaultValue, bool writeSparsely)
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomSphere {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -158,7 +158,7 @@ UsdGeomSphere::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->extent,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomSphere::_ConcatenateAttributeNames(
             UsdGeomGprim::GetSchemaAttributeNames(true),
             localNames);
 

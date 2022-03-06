@@ -37,7 +37,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBasePlugWrapPlugin {
 
 static boost::python::dict
 _ConvertDict( const JsObject & dictionary )
@@ -79,7 +79,7 @@ void wrapPlugin()
         .add_property("isPythonModule", &This::IsPythonModule)
         .add_property("isResource", &This::IsResource)
 
-        .add_property("metadata", _GetMetadata)
+        .add_property("metadata", pxrBasePlugWrapPlugin::_GetMetadata)
 
         .add_property("name",
                       boost::python::make_function(&This::GetName,
@@ -91,7 +91,7 @@ void wrapPlugin()
                       boost::python::make_function(&This::GetResourcePath,
                                     boost::python::return_value_policy<boost::python::return_by_value>()))
 
-        .def("GetMetadataForType", _GetMetadataForType)
+        .def("GetMetadataForType", pxrBasePlugWrapPlugin::_GetMetadataForType)
         .def("DeclaresType", &This::DeclaresType,
              (boost::python::arg("type"), 
               boost::python::arg("includeSubclasses") = false))

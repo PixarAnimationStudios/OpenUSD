@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapHermiteCurves {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -100,14 +100,14 @@ void wrapUsdGeomHermiteCurves()
         .def("GetTangentsAttr",
              &This::GetTangentsAttr)
         .def("CreateTangentsAttr",
-             &_CreateTangentsAttr,
+             &pxrUsdUsdGeomWrapHermiteCurves::_CreateTangentsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapHermiteCurves::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapHermiteCurves::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -129,7 +129,7 @@ void wrapUsdGeomHermiteCurves()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdGeomWrapHermiteCurves {
 
 static std::string _PointAndTangentsRepr(
     const UsdGeomHermiteCurves::PointAndTangentArrays &arrays) {

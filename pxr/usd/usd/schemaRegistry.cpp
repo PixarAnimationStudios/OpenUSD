@@ -99,7 +99,7 @@ using _TypeToTokenVecMap =
 using _TokenToTokenMap = 
     TfHashMap<TfToken, TfToken, TfToken::HashFunctor>;
 
-namespace {
+namespace pxrUsdUsdSchemaRegistry {
 // Helper struct for caching a bidirecional mapping between schema TfType and
 // USD type name token. This cache is used as a static local instance providing
 // this type mapping without having to build the entire schema registry
@@ -278,7 +278,7 @@ _GetSchemaKindFromPlugin(const TfType &schemaType)
 TfToken 
 UsdSchemaRegistry::GetSchemaTypeName(const TfType &schemaType) 
 {
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    const pxrUsdUsdSchemaRegistry::_TypeMapCache & typeMapCache = pxrUsdUsdSchemaRegistry::_GetTypeMapCache();
     auto it = typeMapCache.typeToName.find(schemaType);
     return it != typeMapCache.typeToName.end() ? it->second.name : TfToken();
 }
@@ -287,7 +287,7 @@ UsdSchemaRegistry::GetSchemaTypeName(const TfType &schemaType)
 TfToken 
 UsdSchemaRegistry::GetConcreteSchemaTypeName(const TfType &schemaType) 
 {
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    const pxrUsdUsdSchemaRegistry::_TypeMapCache & typeMapCache = pxrUsdUsdSchemaRegistry::_GetTypeMapCache();
     auto it = typeMapCache.typeToName.find(schemaType);
     if (it != typeMapCache.typeToName.end() &&
         it->second.isTyped && 
@@ -301,7 +301,7 @@ UsdSchemaRegistry::GetConcreteSchemaTypeName(const TfType &schemaType)
 TfToken 
 UsdSchemaRegistry::GetAPISchemaTypeName(const TfType &schemaType) 
 {
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    const pxrUsdUsdSchemaRegistry::_TypeMapCache & typeMapCache = pxrUsdUsdSchemaRegistry::_GetTypeMapCache();
     auto it = typeMapCache.typeToName.find(schemaType);
     return it != typeMapCache.typeToName.end() && !it->second.isTyped ? 
         it->second.name : TfToken();
@@ -311,7 +311,7 @@ UsdSchemaRegistry::GetAPISchemaTypeName(const TfType &schemaType)
 TfType 
 UsdSchemaRegistry::GetTypeFromSchemaTypeName(const TfToken &typeName) 
 {
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    const pxrUsdUsdSchemaRegistry::_TypeMapCache & typeMapCache = pxrUsdUsdSchemaRegistry::_GetTypeMapCache();
     auto it = typeMapCache.nameToType.find(typeName);
     return it != typeMapCache.nameToType.end() ? it->second.type : TfType();
 }
@@ -320,7 +320,7 @@ UsdSchemaRegistry::GetTypeFromSchemaTypeName(const TfToken &typeName)
 TfType 
 UsdSchemaRegistry::GetConcreteTypeFromSchemaTypeName(const TfToken &typeName) 
 {
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    const pxrUsdUsdSchemaRegistry::_TypeMapCache & typeMapCache = pxrUsdUsdSchemaRegistry::_GetTypeMapCache();
     auto it = typeMapCache.nameToType.find(typeName);
     if (it != typeMapCache.nameToType.end() && 
         it->second.isTyped && 
@@ -334,7 +334,7 @@ UsdSchemaRegistry::GetConcreteTypeFromSchemaTypeName(const TfToken &typeName)
 TfType 
 UsdSchemaRegistry::GetAPITypeFromSchemaTypeName(const TfToken &typeName) 
 {
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    const pxrUsdUsdSchemaRegistry::_TypeMapCache & typeMapCache = pxrUsdUsdSchemaRegistry::_GetTypeMapCache();
     auto it = typeMapCache.nameToType.find(typeName);
     return it != typeMapCache.nameToType.end() && !it->second.isTyped ? 
         it->second.type : TfType();
@@ -344,7 +344,7 @@ UsdSchemaRegistry::GetAPITypeFromSchemaTypeName(const TfToken &typeName)
 UsdSchemaKind 
 UsdSchemaRegistry::GetSchemaKind(const TfType &schemaType)
 {
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    const pxrUsdUsdSchemaRegistry::_TypeMapCache & typeMapCache = pxrUsdUsdSchemaRegistry::_GetTypeMapCache();
     auto it = typeMapCache.typeToName.find(schemaType);
     if (it == typeMapCache.typeToName.end()) {
         // No schema kind because it is not a schema type.
@@ -358,7 +358,7 @@ UsdSchemaRegistry::GetSchemaKind(const TfType &schemaType)
 UsdSchemaKind 
 UsdSchemaRegistry::GetSchemaKind(const TfToken &typeName)
 {
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    const pxrUsdUsdSchemaRegistry::_TypeMapCache & typeMapCache = pxrUsdUsdSchemaRegistry::_GetTypeMapCache();
     auto it = typeMapCache.nameToType.find(typeName);
     if (it == typeMapCache.nameToType.end()) {
         // No schema kind because it is not a schema type.
@@ -668,7 +668,7 @@ _GetTypeToAutoAppliedAPISchemaNames()
 {
     _TypeToTokenVecMap result;
 
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    const pxrUsdUsdSchemaRegistry::_TypeMapCache & typeMapCache = pxrUsdUsdSchemaRegistry::_GetTypeMapCache();
 
     for (const auto &valuePair : UsdSchemaRegistry::GetAutoApplyAPISchemas()) {
         const TfToken &apiSchemaName = valuePair.first;
@@ -803,7 +803,7 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
 {
     // Get all types that derive from UsdSchemaBase by getting the type map 
     // cache.
-    const _TypeMapCache &typeCache = _GetTypeMapCache();
+    const pxrUsdUsdSchemaRegistry::_TypeMapCache &typeCache = pxrUsdUsdSchemaRegistry::_GetTypeMapCache();
 
     // Gather the mapping of TfTypes to the schemas that are auto applied to
     // those types. We need this before initializing our prim definitions. Note
@@ -1427,7 +1427,7 @@ UsdSchemaRegistry::GetTypeNameAndInstance(const TfToken &apiSchemaName)
 const std::map<TfToken, TfTokenVector> &
 UsdSchemaRegistry::GetAutoApplyAPISchemas()
 {
-    return _GetAPISchemaApplyToInfoCache().autoApplyAPISchemasMap;
+    return pxrUsdUsdSchemaRegistry::_GetAPISchemaApplyToInfoCache().autoApplyAPISchemasMap;
 }
 
 /*static*/
@@ -1445,7 +1445,7 @@ UsdSchemaRegistry::IsAllowedAPISchemaInstanceName(
     // instance names exist or it is empty, then any valid instance name is 
     // allowed.
     const TfHashMap<TfToken, TfToken::Set, TfHash> &allowedInstanceNamesMap = 
-        _GetAPISchemaApplyToInfoCache().allowedInstanceNamesMap;
+        pxrUsdUsdSchemaRegistry::_GetAPISchemaApplyToInfoCache().allowedInstanceNamesMap;
     if (const TfToken::Set *allowedInstanceNames = 
             TfMapLookupPtr(allowedInstanceNamesMap, apiSchemaName)) {
         if (!allowedInstanceNames->empty() && 
@@ -1496,7 +1496,7 @@ UsdSchemaRegistry::GetAPISchemaCanOnlyApplyToTypeNames(
     const TfToken &apiSchemaName, const TfToken &instanceName)
 {
     const TfHashMap<TfToken, TfTokenVector, TfHash> &canOnlyApplyToMap = 
-        _GetAPISchemaApplyToInfoCache().canOnlyApplyAPISchemasMap;
+        pxrUsdUsdSchemaRegistry::_GetAPISchemaApplyToInfoCache().canOnlyApplyAPISchemasMap;
 
     if (!instanceName.IsEmpty()) {
         // It's possible that specific instance names of the schema can only be 

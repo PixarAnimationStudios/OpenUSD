@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdUtilsWrapIntrospection {
 
 VtDictionary 
 _WrapUsdUtilsComputeUsdStageStats_1(const std::string &rootLayerPath) {
@@ -55,6 +55,6 @@ void wrapIntrospection()
     TF_PY_WRAP_PUBLIC_TOKENS("UsdStageStatsKeys", UsdUtilsUsdStageStatsKeys, 
                              USDUTILS_USDSTAGE_STATS);
 
-    boost::python::def("ComputeUsdStageStats", _WrapUsdUtilsComputeUsdStageStats_1);
-    boost::python::def("ComputeUsdStageStats", _WrapUsdUtilsComputeUsdStageStats_2);
+    boost::python::def("ComputeUsdStageStats", pxrUsdUsdUtilsWrapIntrospection::_WrapUsdUtilsComputeUsdStageStats_1);
+    boost::python::def("ComputeUsdStageStats", pxrUsdUsdUtilsWrapIntrospection::_WrapUsdUtilsComputeUsdStageStats_2);
 }

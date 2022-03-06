@@ -56,7 +56,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapMatrix3f {
 
 ////////////////////////////////////////////////////////////////////////
 // Python buffer protocol support.
@@ -295,8 +295,8 @@ void wrapMatrix3f()
     
     boost::python::class_<This> cls( "Matrix3f", boost::python::no_init);
     cls
-        .def_pickle(GfMatrix3f_Pickle_Suite())
-	.def("__init__", boost::python::make_constructor(__init__))
+        .def_pickle(pxrBaseGfWrapMatrix3f::GfMatrix3f_Pickle_Suite())
+	.def("__init__", boost::python::make_constructor(pxrBaseGfWrapMatrix3f::__init__))
         .def(boost::python::init< const GfMatrix3d & >())
         .def(boost::python::init< const GfMatrix3f & >())
         .def(boost::python::init< int >())
@@ -314,15 +314,15 @@ void wrapMatrix3f()
 
         .def( TfTypePythonClass() )
 
-        .add_static_property("dimension", get_dimension)
-        .def( "__len__", __len__, "Return number of rows" )
+        .add_static_property("dimension", pxrBaseGfWrapMatrix3f::get_dimension)
+        .def( "__len__", pxrBaseGfWrapMatrix3f::__len__, "Return number of rows" )
 
-        .def( "__getitem__", __getitem__float )
-        .def( "__getitem__", __getitem__vector )
-        .def( "__setitem__", __setitem__float )
-        .def( "__setitem__", __setitem__vector )
-        .def( "__contains__", __contains__float )
-        .def( "__contains__", __contains__vector, "Check rows against GfVec"  )
+        .def( "__getitem__", pxrBaseGfWrapMatrix3f::__getitem__float )
+        .def( "__getitem__", pxrBaseGfWrapMatrix3f::__getitem__vector )
+        .def( "__setitem__", pxrBaseGfWrapMatrix3f::__setitem__float )
+        .def( "__setitem__", pxrBaseGfWrapMatrix3f::__setitem__vector )
+        .def( "__contains__", pxrBaseGfWrapMatrix3f::__contains__float )
+        .def( "__contains__", pxrBaseGfWrapMatrix3f::__contains__vector, "Check rows against GfVec"  )
 
         .def("Set", (This &(This::*)(float, float, float, 
                                      float, float, float, 
@@ -345,7 +345,7 @@ void wrapMatrix3f()
         .def("GetColumn", &This::GetColumn)
 
         .def("GetTranspose", &This::GetTranspose)
-        .def("GetInverse", GetInverseWrapper)
+        .def("GetInverse", pxrBaseGfWrapMatrix3f::GetInverseWrapper)
 
         .def("GetDeterminant", &This::GetDeterminant)
         .def("GetHandedness", &This::GetHandedness)
@@ -392,8 +392,8 @@ void wrapMatrix3f()
         .def("ExtractRotation", &This::ExtractRotation)
         .def("SetScale", (This & (This::*)( float ))&This::SetScale, boost::python::return_self<>())
 
-        .def("__repr__", _Repr)
-        .def("__hash__", __hash__)
+        .def("__repr__", pxrBaseGfWrapMatrix3f::_Repr)
+        .def("__hash__", pxrBaseGfWrapMatrix3f::__hash__)
 
         ;
     boost::python::to_python_converter<std::vector<This>,
@@ -404,7 +404,7 @@ void wrapMatrix3f()
     // this type, and set the type flags to indicate that this type supports the
     // buffer protocol.
     auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
-    typeObj->tp_as_buffer = &bufferProcs;
+    typeObj->tp_as_buffer = &pxrBaseGfWrapMatrix3f::bufferProcs;
     typeObj->tp_flags |= (TfPy_TPFLAGS_HAVE_NEWBUFFER |
                           TfPy_TPFLAGS_HAVE_GETCHARBUFFER);
 }

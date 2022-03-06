@@ -37,7 +37,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapFileFormat {
 
 // File format factory wrapper.  Python will give us a file format type
 // and we must provide a factory to return instances of it.
@@ -151,7 +151,7 @@ void wrapFileFormat()
                boost::python::arg("args") ))
         .staticmethod("FindByExtension")
 
-        .def("RegisterFileFormat", &_RegisterFileFormat)
+        .def("RegisterFileFormat", &pxrUsdSdfWrapFileFormat::_RegisterFileFormat)
         .staticmethod("RegisterFileFormat")
         ;
 

@@ -142,7 +142,7 @@ UsdRiTextureAPI::CreateRiTextureSaturationAttr(VtValue const &defaultValue, bool
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdRiTextureAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -163,7 +163,7 @@ UsdRiTextureAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdRiTokens->riTextureSaturation,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdRiTextureAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

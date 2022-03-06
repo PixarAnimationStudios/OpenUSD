@@ -215,7 +215,7 @@ struct _IsBitwiseReadWrite {
 };
 } // Usd_CrateFile
 
-namespace {
+namespace pxrUsdUsdCrateFile {
 
 // We use type char and a deleter for char[] instead of just using
 // type char[] due to a (now fixed) bug in libc++ in LLVM.  See
@@ -573,16 +573,16 @@ struct _MmapStream {
 
         if (ARCH_UNLIKELY(_debugPageMap)) {
             auto mapStart = _mapping->GetMapStart();
-            int64_t pageZero = GetPageNumber(mapStart);
-            int64_t firstPage = GetPageNumber(_cur) - pageZero;
-            int64_t lastPage = GetPageNumber(_cur + nBytes - 1) - pageZero;
+            int64_t pageZero = pxrUsdUsdCrateFile::GetPageNumber(mapStart);
+            int64_t firstPage = pxrUsdUsdCrateFile::GetPageNumber(_cur) - pageZero;
+            int64_t lastPage = pxrUsdUsdCrateFile::GetPageNumber(_cur + nBytes - 1) - pageZero;
             memset(_debugPageMap + firstPage, 1, lastPage - firstPage + 1);
         }
 
         if (_prefetchKB) {
             // Custom aligned chunk "prefetch".
             auto mapStart = _mapping->GetMapStart();
-            auto mapStartPage = RoundToPageAddr(mapStart);
+            auto mapStartPage = pxrUsdUsdCrateFile::RoundToPageAddr(mapStart);
             const auto chunkBytes = _prefetchKB * 1024;
             auto firstChunk = (_cur-mapStartPage) / chunkBytes;
             auto lastChunk = ((_cur-mapStartPage) + nBytes) / chunkBytes;
@@ -738,7 +738,7 @@ public:
         _Buffer(_Buffer &&) = default;
         _Buffer &operator=(_Buffer &&) = default;
 
-        RawDataPtr bytes { new char[BufferCap] };
+        pxrUsdUsdCrateFile::RawDataPtr bytes { new char[BufferCap] };
         int64_t size = 0;
     };
 
@@ -995,9 +995,9 @@ struct CrateFile::_PackingContext
 
     // Read the bytes of some unknown section into memory so we can rewrite them
     // out later (to preserve it).
-    RawDataPtr
+    pxrUsdUsdCrateFile::RawDataPtr
     _ReadSectionBytes(_Section const &sec, CrateFile *crate) const {
-        RawDataPtr result(new char[sec.size]);
+        pxrUsdUsdCrateFile::RawDataPtr result(new char[sec.size]);
         crate->_ReadRawBytes(sec.start, sec.size, result.get());
         return result;
     }
@@ -1013,7 +1013,7 @@ struct CrateFile::_PackingContext
                   FieldSetIndex, _Hasher> fieldsToFieldSetIndex;
     
     // Unknown sections we're moving to the new structural area.
-    std::vector<std::tuple<std::string, RawDataPtr, size_t>> unknownSections;
+    std::vector<std::tuple<std::string, pxrUsdUsdCrateFile::RawDataPtr, size_t>> unknownSections;
 
     // Filename we're writing to.
     std::string fileName;
@@ -1227,7 +1227,7 @@ public:
 
         // Reconstitute a rep for this very location in the file to be retained
         // in the TimeSamples result.
-        ret.valueRep = ValueRepFor<TimeSamples>(src.Tell());
+        ret.valueRep = pxrUsdUsdCrateFile::ValueRepFor<TimeSamples>(src.Tell());
 
         _RecursiveRead();
         auto timesRep = Read<ValueRep>();
@@ -1519,7 +1519,7 @@ struct CrateFile::_ScalarValueHandlerBase : _ValueHandlerBase
         // encoding that can exactly represent it in 4 bytes.
         uint32_t ival = 0;
         if (_EncodeInline(val, &ival)) {
-            auto ret = ValueRepFor<T>(ival);
+            auto ret = pxrUsdUsdCrateFile::ValueRepFor<T>(ival);
             ret.SetIsInlined();
             return ret;
         }
@@ -1534,7 +1534,7 @@ struct CrateFile::_ScalarValueHandlerBase : _ValueHandlerBase
         ValueRep &target = iresult.first->second;
         if (iresult.second) {
             // Not yet present.  Invoke the write function.
-            target = ValueRepFor<T>(writer.Tell());
+            target = pxrUsdUsdCrateFile::ValueRepFor<T>(writer.Tell());
             writer.Write(val);
         }
         return target;
@@ -1561,12 +1561,12 @@ struct CrateFile::_ScalarValueHandlerBase : _ValueHandlerBase
 // Scalar handler for inlined types -- no deduplication.
 template <class T>
 struct CrateFile::_ScalarValueHandlerBase<
-    T, typename std::enable_if<ValueTypeTraits<T>::isInlined>::type>
+    T, typename std::enable_if<pxrUsdUsdCrateFile::ValueTypeTraits<T>::isInlined>::type>
 : _ValueHandlerBase
 {
     inline ValueRep Pack(_Writer writer, T val) {
         // Inline it into the rep.
-        return ValueRepFor<T>(writer.GetInlinedValue(val));
+        return pxrUsdUsdCrateFile::ValueRepFor<T>(writer.GetInlinedValue(val));
     }
     template <class Reader>
     inline void Unpack(Reader reader, ValueRep rep, T *out) const {
@@ -1603,7 +1603,7 @@ _WriteUncompressedArray(
 {
     // We'll align the array to 8 bytes, so software can refer to mapped bytes
     // directly if possible.
-    auto result = ValueRepForArray<T>(w.Align(sizeof(uint64_t)));
+    auto result = pxrUsdUsdCrateFile::ValueRepForArray<T>(w.Align(sizeof(uint64_t)));
 
     (ver < CrateFile::Version(0,7,0)) ?
         w.template WriteAs<uint32_t>(array.size()) :
@@ -1651,7 +1651,7 @@ typename std::enable_if<
 _WritePossiblyCompressedArray(
     Writer w, VtArray<T> const &array, CrateFile::Version ver, int)
 {
-    auto result = ValueRepForArray<T>(w.Tell());
+    auto result = pxrUsdUsdCrateFile::ValueRepForArray<T>(w.Tell());
     // Total elements.
     (ver < CrateFile::Version(0,7,0)) ?
         w.template WriteAs<uint32_t>(array.size()) :
@@ -1690,7 +1690,7 @@ _WritePossiblyCompressedArray(
     };    
     if (std::all_of(array.cdata(), array.cdata() + array.size(), isIntegral)) {
         // Encode as integers.
-        auto result = ValueRepForArray<T>(w.Tell());
+        auto result = pxrUsdUsdCrateFile::ValueRepForArray<T>(w.Tell());
         (ver < CrateFile::Version(0,7,0)) ?
             w.template WriteAs<uint32_t>(array.size()) :
             w.template WriteAs<uint64_t>(array.size());
@@ -1728,7 +1728,7 @@ _WritePossiblyCompressedArray(
     if (!lut.empty()) {
         // Use the lookup table.  Lowercase 't' code indicates that floats are
         // written with a lookup table and indexes.
-        auto result = ValueRepForArray<T>(w.Tell());
+        auto result = pxrUsdUsdCrateFile::ValueRepForArray<T>(w.Tell());
         (ver < CrateFile::Version(0,7,0)) ?
             w.template WriteAs<uint32_t>(array.size()) :
             w.template WriteAs<uint64_t>(array.size());
@@ -1958,11 +1958,11 @@ _ReadPossiblyCompressedArray(
 // Array handler for types that support arrays -- does deduplication.
 template <class T>
 struct CrateFile::_ArrayValueHandlerBase<
-    T, typename std::enable_if<ValueTypeTraits<T>::supportsArray>::type>
+    T, typename std::enable_if<pxrUsdUsdCrateFile::ValueTypeTraits<T>::supportsArray>::type>
 : _ScalarValueHandlerBase<T>
 {
     ValueRep PackArray(_Writer w, VtArray<T> const &array) {
-        auto result = ValueRepForArray<T>(0);
+        auto result = pxrUsdUsdCrateFile::ValueRepForArray<T>(0);
 
         // If this is an empty array we inline it.
         if (array.empty())
@@ -2252,7 +2252,7 @@ CrateFile::_InitMMap() {
                        ArchRegex::GLOB).Match(_assetPath))) {
             auto pageAlignedMapSize =
                 (_mmapSrc->GetMapStart() + mapSize) -
-                RoundToPageAddr(_mmapSrc->GetMapStart());
+                pxrUsdUsdCrateFile::RoundToPageAddr(_mmapSrc->GetMapStart());
             int64_t npages =
                 (pageAlignedMapSize + CRATE_PAGESIZE-1) / CRATE_PAGESIZE;
             _debugPageMap.reset(new char[npages]);
@@ -2342,11 +2342,11 @@ CrateFile::~CrateFile()
     // Dump a debug page map if requested.
     if (_useMmap && _mmapSrc && _debugPageMap) {
         auto mapStart = _mmapSrc->GetMapStart();
-        int64_t startPage = GetPageNumber(mapStart);
-        int64_t endPage = GetPageNumber(mapStart + _mmapSrc->GetLength() - 1);
+        int64_t startPage = pxrUsdUsdCrateFile::GetPageNumber(mapStart);
+        int64_t endPage = pxrUsdUsdCrateFile::GetPageNumber(mapStart + _mmapSrc->GetLength() - 1);
         int64_t npages = 1 + endPage - startPage;
         std::unique_ptr<unsigned char []> mincoreMap(new unsigned char[npages]);
-        void const *p = static_cast<void const *>(RoundToPageAddr(mapStart));
+        void const *p = static_cast<void const *>(pxrUsdUsdCrateFile::RoundToPageAddr(mapStart));
         if (!ArchQueryMappedMemoryResidency(
                 p, npages*CRATE_PAGESIZE, mincoreMap.get())) {
             TF_WARN("failed to obtain memory residency information");
@@ -2711,14 +2711,14 @@ CrateFile::_Write()
         toc.sections.push_back(sec);
     }
 
-    _WriteSection(w, _TokensSectionName, toc, [this, &w]() {_WriteTokens(w);});
+    _WriteSection(w, pxrUsdUsdCrateFile::_TokensSectionName, toc, [this, &w]() {_WriteTokens(w);});
     _WriteSection(
-        w, _StringsSectionName, toc, [this, &w]() {w.Write(_strings);});
-    _WriteSection(w, _FieldsSectionName, toc, [this, &w]() {_WriteFields(w);});
+        w, pxrUsdUsdCrateFile::_StringsSectionName, toc, [this, &w]() {w.Write(_strings);});
+    _WriteSection(w, pxrUsdUsdCrateFile::_FieldsSectionName, toc, [this, &w]() {_WriteFields(w);});
     _WriteSection(
-        w, _FieldSetsSectionName, toc, [this, &w]() {_WriteFieldSets(w);});
-    _WriteSection(w, _PathsSectionName, toc, [this, &w]() {_WritePaths(w);});
-    _WriteSection(w, _SpecsSectionName, toc, [this, &w]() {_WriteSpecs(w);});
+        w, pxrUsdUsdCrateFile::_FieldSetsSectionName, toc, [this, &w]() {_WriteFieldSets(w);});
+    _WriteSection(w, pxrUsdUsdCrateFile::_PathsSectionName, toc, [this, &w]() {_WritePaths(w);});
+    _WriteSection(w, pxrUsdUsdCrateFile::_SpecsSectionName, toc, [this, &w]() {_WriteSpecs(w);});
 
     _BootStrap boot(_packCtx->writeVersion);
 
@@ -3316,7 +3316,7 @@ void
 CrateFile::_ReadFieldSets(Reader reader)
 {
     TfAutoMallocTag tag("_ReadFieldSets");
-    if (auto fieldSetsSection = _toc.GetSection(_FieldSetsSectionName)) {
+    if (auto fieldSetsSection = _toc.GetSection(pxrUsdUsdCrateFile::_FieldSetsSectionName)) {
         reader.Seek(fieldSetsSection->start);
 
         if (Version(_boot) < Version(0,4,0)) {
@@ -3345,7 +3345,7 @@ void
 CrateFile::_ReadFields(Reader reader)
 {
     TfAutoMallocTag tag("_ReadFields");
-    if (auto fieldsSection = _toc.GetSection(_FieldsSectionName)) {
+    if (auto fieldsSection = _toc.GetSection(pxrUsdUsdCrateFile::_FieldsSectionName)) {
         reader.Seek(fieldsSection->start);
         if (Version(_boot) < Version(0,4,0)) {
             _fields = reader.template Read<decltype(_fields)>();
@@ -3381,7 +3381,7 @@ void
 CrateFile::_ReadSpecs(Reader reader)
 {
     TfAutoMallocTag tag("_ReadSpecs");
-    if (auto specsSection = _toc.GetSection(_SpecsSectionName)) {
+    if (auto specsSection = _toc.GetSection(pxrUsdUsdCrateFile::_SpecsSectionName)) {
         reader.Seek(specsSection->start);
         // VERSIONING: Have to read either old or new style specs.
         if (Version(_boot) == Version(0,0,1)) {
@@ -3425,7 +3425,7 @@ void
 CrateFile::_ReadStrings(Reader reader)
 {
     TfAutoMallocTag tag("_ReadStrings");
-    if (auto stringsSection = _toc.GetSection(_StringsSectionName)) {
+    if (auto stringsSection = _toc.GetSection(pxrUsdUsdCrateFile::_StringsSectionName)) {
         reader.Seek(stringsSection->start);
         _strings = reader.template Read<decltype(_strings)>();
     }
@@ -3437,7 +3437,7 @@ CrateFile::_ReadTokens(Reader reader)
 {
     TfAutoMallocTag tag("_ReadTokens");
 
-    auto tokensSection = _toc.GetSection(_TokensSectionName);
+    auto tokensSection = _toc.GetSection(pxrUsdUsdCrateFile::_TokensSectionName);
     if (!tokensSection)
         return;
 
@@ -3446,7 +3446,7 @@ CrateFile::_ReadTokens(Reader reader)
     // Read number of tokens.
     auto numTokens = reader.template Read<uint64_t>();
 
-    RawDataPtr chars;
+    pxrUsdUsdCrateFile::RawDataPtr chars;
     char const *charsEnd = nullptr;
     
     Version fileVer(_boot);
@@ -3464,7 +3464,7 @@ CrateFile::_ReadTokens(Reader reader)
         uint64_t compressedSize = reader.template Read<uint64_t>();
         chars.reset(new char[uncompressedSize]);
         charsEnd = chars.get() + uncompressedSize;
-        RawDataPtr compressed(new char[compressedSize]);
+        pxrUsdUsdCrateFile::RawDataPtr compressed(new char[compressedSize]);
         reader.ReadContiguous(compressed.get(), compressedSize);
         TfFastCompression::DecompressFromBuffer(
             compressed.get(), chars.get(), compressedSize, uncompressedSize);
@@ -3509,7 +3509,7 @@ CrateFile::_ReadPaths(Reader reader)
 {
     TfAutoMallocTag tag("_ReadPaths");
 
-    auto pathsSection = _toc.GetSection(_PathsSectionName);
+    auto pathsSection = _toc.GetSection(pxrUsdUsdCrateFile::_PathsSectionName);
     if (!pathsSection)
         return;
 
@@ -3824,14 +3824,14 @@ template <class T>
 CrateFile::_ValueHandler<T> &
 CrateFile::_GetValueHandler() {
     return *static_cast<_ValueHandler<T> *>(
-        _valueHandlers[static_cast<int>(TypeEnumFor<T>())]);
+        _valueHandlers[static_cast<int>(pxrUsdUsdCrateFile::TypeEnumFor<T>())]);
 }
 
 template <class T>
 CrateFile::_ValueHandler<T> const &
 CrateFile::_GetValueHandler() const {
     return *static_cast<_ValueHandler<T> const *>(
-        _valueHandlers[static_cast<int>(TypeEnumFor<T>())]);
+        _valueHandlers[static_cast<int>(pxrUsdUsdCrateFile::TypeEnumFor<T>())]);
 }
 
 template <class T>
@@ -3979,7 +3979,7 @@ CrateFile::GetTypeid(ValueRep rep) const
 template <class T>
 void
 CrateFile::_DoTypeRegistration() {
-    auto typeEnumIndex = static_cast<int>(TypeEnumFor<T>());
+    auto typeEnumIndex = static_cast<int>(pxrUsdUsdCrateFile::TypeEnumFor<T>());
     auto valueHandler = new _ValueHandler<T>();
     _valueHandlers[typeEnumIndex] = valueHandler;
 
@@ -4047,7 +4047,7 @@ CrateFile::_ClearValueHandlerDedupTables() {
 /* static */
 bool
 CrateFile::_IsKnownSection(char const *name) {
-    for (auto const &secName: _KnownSections) {
+    for (auto const &secName: pxrUsdUsdCrateFile::_KnownSections) {
         if (secName == name)
             return true;
     }

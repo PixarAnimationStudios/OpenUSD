@@ -49,7 +49,7 @@ bool HdStIsSupportedUdimTexture(std::string const& imageFilePath)
 ///////////////////////////////////////////////////////////////////////////////
 // Udim texture
 
-namespace {
+namespace pxrImagingHdStUdimTextureObject {
 
 static const char UDIM_PATTERN[] = "<UDIM>";
 static const int UDIM_START_TILE = 1001;
@@ -170,7 +170,7 @@ void
 HdStUdimTextureObject::_Load()
 {
     const std::vector<std::tuple<int, TfToken>> tiles =
-        _FindUdimTiles(GetTextureIdentifier().GetFilePath());
+        pxrImagingHdStUdimTextureObject::_FindUdimTiles(GetTextureIdentifier().GetFilePath());
     if (tiles.empty()) {
         return;
     }

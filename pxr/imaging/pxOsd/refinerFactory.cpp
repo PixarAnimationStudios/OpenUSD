@@ -34,7 +34,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-namespace {
+namespace pxrImagingPxOsdRefinerFactory {
 
 struct Converter {
 
@@ -479,13 +479,13 @@ PxOsdRefinerFactory::Create(
     std::vector<VtIntArray> const &fvarTopologies,
     TfToken name) {
 
-    Converter converter(topology, fvarTopologies, name);
+    pxrImagingPxOsdRefinerFactory::Converter converter(topology, fvarTopologies, name);
 
-    OpenSubdiv::Far::TopologyRefinerFactory<Converter>::Options
+    OpenSubdiv::Far::TopologyRefinerFactory<pxrImagingPxOsdRefinerFactory::Converter>::Options
         options(converter.GetType(), converter.GetOptions());
 
     OpenSubdiv::Far::TopologyRefiner * refiner =
-        OpenSubdiv::Far::TopologyRefinerFactory<Converter>::Create(
+        OpenSubdiv::Far::TopologyRefinerFactory<pxrImagingPxOsdRefinerFactory::Converter>::Create(
             converter, options);
 
     return PxOsdTopologyRefinerSharedPtr(refiner);

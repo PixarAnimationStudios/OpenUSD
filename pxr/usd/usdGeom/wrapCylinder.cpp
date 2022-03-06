@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapCylinder {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -121,35 +121,35 @@ void wrapUsdGeomCylinder()
         .def("GetHeightAttr",
              &This::GetHeightAttr)
         .def("CreateHeightAttr",
-             &_CreateHeightAttr,
+             &pxrUsdUsdGeomWrapCylinder::_CreateHeightAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetRadiusAttr",
              &This::GetRadiusAttr)
         .def("CreateRadiusAttr",
-             &_CreateRadiusAttr,
+             &pxrUsdUsdGeomWrapCylinder::_CreateRadiusAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetAxisAttr",
              &This::GetAxisAttr)
         .def("CreateAxisAttr",
-             &_CreateAxisAttr,
+             &pxrUsdUsdGeomWrapCylinder::_CreateAxisAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetExtentAttr",
              &This::GetExtentAttr)
         .def("CreateExtentAttr",
-             &_CreateExtentAttr,
+             &pxrUsdUsdGeomWrapCylinder::_CreateExtentAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapCylinder::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapCylinder::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -171,7 +171,7 @@ void wrapUsdGeomCylinder()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdGeomWrapCylinder {
 
 WRAP_CUSTOM {
 }

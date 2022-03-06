@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapCollectionMembershipQuery {
 
 static bool _WrapIsPathIncluded_1(
     const UsdCollectionMembershipQuery &query,
@@ -67,8 +67,8 @@ wrapUsdCollectionMembershipQuery()
 
     boost::python::class_<UsdCollectionMembershipQuery>("UsdCollectionMembershipQuery")
         .def(boost::python::init<>())
-        .def("IsPathIncluded", _WrapIsPathIncluded_1, boost::python::arg("path"))
-        .def("IsPathIncluded", _WrapIsPathIncluded_2, 
+        .def("IsPathIncluded", pxrUsdUsdWrapCollectionMembershipQuery::_WrapIsPathIncluded_1, boost::python::arg("path"))
+        .def("IsPathIncluded", pxrUsdUsdWrapCollectionMembershipQuery::_WrapIsPathIncluded_2, 
              (boost::python::arg("path"), boost::python::arg("parentExpansionRule")))
         .def("HasExcludes", &UsdCollectionMembershipQuery::HasExcludes)
         .def("GetAsPathExpansionRuleMap",

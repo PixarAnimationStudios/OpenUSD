@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapVisibilityAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -100,7 +100,7 @@ void wrapUsdGeomVisibilityAPI()
 {
     typedef UsdGeomVisibilityAPI This;
 
-    UsdGeomVisibilityAPI_CanApplyResult::Wrap<UsdGeomVisibilityAPI_CanApplyResult>(
+    pxrUsdUsdGeomWrapVisibilityAPI::UsdGeomVisibilityAPI_CanApplyResult::Wrap<pxrUsdUsdGeomWrapVisibilityAPI::UsdGeomVisibilityAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -114,7 +114,7 @@ void wrapUsdGeomVisibilityAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdGeomWrapVisibilityAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -136,28 +136,28 @@ void wrapUsdGeomVisibilityAPI()
         .def("GetGuideVisibilityAttr",
              &This::GetGuideVisibilityAttr)
         .def("CreateGuideVisibilityAttr",
-             &_CreateGuideVisibilityAttr,
+             &pxrUsdUsdGeomWrapVisibilityAPI::_CreateGuideVisibilityAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetProxyVisibilityAttr",
              &This::GetProxyVisibilityAttr)
         .def("CreateProxyVisibilityAttr",
-             &_CreateProxyVisibilityAttr,
+             &pxrUsdUsdGeomWrapVisibilityAPI::_CreateProxyVisibilityAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetRenderVisibilityAttr",
              &This::GetRenderVisibilityAttr)
         .def("CreateRenderVisibilityAttr",
-             &_CreateRenderVisibilityAttr,
+             &pxrUsdUsdGeomWrapVisibilityAPI::_CreateRenderVisibilityAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapVisibilityAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapVisibilityAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -179,7 +179,7 @@ void wrapUsdGeomVisibilityAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdGeomWrapVisibilityAPI {
 
 WRAP_CUSTOM {
 }

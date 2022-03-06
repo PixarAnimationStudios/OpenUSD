@@ -44,7 +44,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapLayer {
 
 typedef SdfPyChildrenProxy<SdfLayer::RootPrimsView> RootPrimsProxy;
 
@@ -496,13 +496,13 @@ void wrapLayer()
     typedef SdfLayer       This;
     typedef SdfLayerHandle ThisHandle;
 
-    TfPyFunctionFromPython<::Py_SdfLayerTraversalFunctionSig>();
+    TfPyFunctionFromPython<pxrUsdSdfWrapLayer::Py_SdfLayerTraversalFunctionSig>();
 
     boost::python::def("ComputeAssetPathRelativeToLayer", &SdfComputeAssetPathRelativeToLayer,
         ( boost::python::arg("anchor"),
           boost::python::arg("assetPath")));
 
-    boost::python::def("_TestTakeOwnership", &_TestTakeOwnership);
+    boost::python::def("_TestTakeOwnership", &pxrUsdSdfWrapLayer::_TestTakeOwnership);
 
     boost::python::scope s = boost::python::class_<This,
                      ThisHandle,
@@ -510,14 +510,14 @@ void wrapLayer()
 
         .def(TfPyRefAndWeakPtr())
 
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrUsdSdfWrapLayer::_Repr)
 
         .def("GetFileFormat", &This::GetFileFormat,
              boost::python::return_value_policy<boost::python::return_by_value>())
         .def("GetFileFormatArguments", &This::GetFileFormatArguments,
              boost::python::return_value_policy<boost::python::return_by_value>())
 
-        .def("CreateNew", &_CreateNew,
+        .def("CreateNew", &pxrUsdSdfWrapLayer::_CreateNew,
              ( boost::python::arg("identifier"),
                boost::python::arg("args") = boost::python::dict()),
              boost::python::return_value_policy<TfPyRefPtrFactory<ThisHandle> >())
@@ -526,7 +526,7 @@ void wrapLayer()
         .def("CreateAnonymous", 
              (SdfLayerRefPtr (*)(const std::string &,
                                  const boost::python::dict &))
-             &_CreateAnonymous,
+             &pxrUsdSdfWrapLayer::_CreateAnonymous,
              boost::python::return_value_policy<TfPyRefPtrFactory<ThisHandle> >(),
              ( boost::python::arg("tag") = std::string(),
                boost::python::arg("args") = boost::python::dict()))
@@ -534,27 +534,27 @@ void wrapLayer()
              (SdfLayerRefPtr (*)(const std::string &,
                                  const SdfFileFormatConstPtr &,
                                  const boost::python::dict &))
-             &_CreateAnonymous,
+             &pxrUsdSdfWrapLayer::_CreateAnonymous,
              boost::python::return_value_policy<TfPyRefPtrFactory<ThisHandle> >(),
              ( boost::python::arg("tag"), 
                boost::python::arg("format"), 
                boost::python::arg("args") = boost::python::dict()))
         .staticmethod("CreateAnonymous")
 
-        .def("New", &_New,
+        .def("New", &pxrUsdSdfWrapLayer::_New,
              ( boost::python::arg("fileFormat"),
                boost::python::arg("identifier"),
                boost::python::arg("args") = boost::python::dict()),
              boost::python::return_value_policy<TfPyRefPtrFactory<ThisHandle> >())
         .staticmethod("New")
 
-        .def("FindOrOpen", &_FindOrOpen,
+        .def("FindOrOpen", &pxrUsdSdfWrapLayer::_FindOrOpen,
              ( boost::python::arg("identifier"),
                boost::python::arg("args") = boost::python::dict()),
              boost::python::return_value_policy<TfPyRefPtrFactory<ThisHandle> >())
         .staticmethod("FindOrOpen")
 
-        .def("FindOrOpenRelativeToLayer", &_FindOrOpenRelativeToLayer,
+        .def("FindOrOpenRelativeToLayer", &pxrUsdSdfWrapLayer::_FindOrOpenRelativeToLayer,
              ( boost::python::arg("anchor"),
                boost::python::arg("identifier"),
                boost::python::arg("args") = boost::python::dict()),
@@ -570,12 +570,12 @@ void wrapLayer()
 
         .def("Save", &This::Save,
              ( boost::python::arg("force") = false ))
-        .def("Export", &_Export,
+        .def("Export", &pxrUsdSdfWrapLayer::_Export,
              ( boost::python::arg("filename"),
                boost::python::arg("comment") = std::string(),
                boost::python::arg("args") = boost::python::dict()))
 
-        .def("ExportToString", &_ExportToString, 
+        .def("ExportToString", &pxrUsdSdfWrapLayer::_ExportToString, 
              "Returns the string representation of the layer.\n")
 
         .def("ImportFromString",
@@ -608,7 +608,7 @@ void wrapLayer()
              &This::GetDisplayNameFromIdentifier)
         .staticmethod("GetDisplayNameFromIdentifier")
 
-        .def("SplitIdentifier", &_SplitIdentifier)
+        .def("SplitIdentifier", &pxrUsdSdfWrapLayer::_SplitIdentifier)
         .staticmethod("SplitIdentifier")
 
         .def("CreateIdentifier", &This::CreateIdentifier)
@@ -671,7 +671,7 @@ void wrapLayer()
 
         .def("SetMuted", &This::SetMuted)
 
-        .def("IsMuted", &_WrapIsMuted)
+        .def("IsMuted", &pxrUsdSdfWrapLayer::_WrapIsMuted)
 
         .def("AddToMutedLayers", &This::AddToMutedLayers)
              .staticmethod("AddToMutedLayers")
@@ -806,7 +806,7 @@ void wrapLayer()
             "The pseudo-root of the layer.")
 
         .add_property("rootPrims",
-            &_WrapGetRootPrims,
+            &pxrUsdSdfWrapLayer::_WrapGetRootPrims,
             "The root prims of this layer, as an ordered dictionary.\n\n"
             "The prims may be accessed by index or by name.\n"
             "Although this property claims it is read only, you can modify "
@@ -828,7 +828,7 @@ void wrapLayer()
         .def("SetPermissionToEdit", &This::SetPermissionToEdit)
         .def("SetPermissionToSave", &This::SetPermissionToSave)
 
-        .def("CanApply", &_CanApplyNamespaceEdit)
+        .def("CanApply", &pxrUsdSdfWrapLayer::_CanApplyNamespaceEdit)
         .def("Apply", &This::Apply)
 
         .add_property("subLayerPaths",
@@ -839,7 +839,7 @@ void wrapLayer()
             "of this list.")
 
         .add_property("subLayerOffsets",
-            &_WrapGetSubLayerOffsets,
+            &pxrUsdSdfWrapLayer::_WrapGetSubLayerOffsets,
             "The sublayer offsets of this layer, as a list.  Although this "
             "property is claimed to be read only, you can modify the contents "
             "of this list by assigning new layer offsets to specific indices.")
@@ -850,7 +850,7 @@ void wrapLayer()
             "Return list of loaded layers.\n")
         .staticmethod("GetLoadedLayers")
 
-        .def("Find", &_Find,
+        .def("Find", &pxrUsdSdfWrapLayer::_Find,
             ( boost::python::arg("identifier"),
               boost::python::arg("args") = boost::python::dict()),
             "Find(filename) -> LayerPtr\n\n"
@@ -859,7 +859,7 @@ void wrapLayer()
             "Note that this is a static class method.")
         .staticmethod("Find")
 
-        .def("FindRelativeToLayer", &_FindRelativeToLayer,
+        .def("FindRelativeToLayer", &pxrUsdSdfWrapLayer::_FindRelativeToLayer,
             ( boost::python::arg("anchor"),
               boost::python::arg("assetPath"),
               boost::python::arg("args") = boost::python::dict()),
@@ -900,7 +900,7 @@ void wrapLayer()
         .add_property("permissionToEdit", &This::PermissionToEdit, 
               "Return true if permitted to be edited (modified), false otherwise.\n")
 
-        .def("ApplyRootPrimOrder", &_ApplyRootPrimOrder,
+        .def("ApplyRootPrimOrder", &pxrUsdSdfWrapLayer::_ApplyRootPrimOrder,
                  boost::python::return_value_policy<TfPySequenceToList>())
 
         .setattr("ColorConfigurationKey", SdfFieldKeys->ColorConfiguration)
@@ -922,17 +922,17 @@ void wrapLayer()
 
         .def("ListAllTimeSamples", &SdfLayer::ListAllTimeSamples,
              boost::python::return_value_policy<TfPySequenceToList>())
-        .def("ListTimeSamplesForPath", &_ListTimeSamplesForPath,
+        .def("ListTimeSamplesForPath", &pxrUsdSdfWrapLayer::_ListTimeSamplesForPath,
              boost::python::return_value_policy<TfPySequenceToList>())
-        .def("GetNumTimeSamplesForPath", &_GetNumTimeSamplesForPath)
+        .def("GetNumTimeSamplesForPath", &pxrUsdSdfWrapLayer::_GetNumTimeSamplesForPath)
         .def("GetBracketingTimeSamples",
-             &_GetBracketingTimeSamples)
+             &pxrUsdSdfWrapLayer::_GetBracketingTimeSamples)
         .def("GetBracketingTimeSamplesForPath",
-             &_GetBracketingTimeSamplesForPath)
+             &pxrUsdSdfWrapLayer::_GetBracketingTimeSamplesForPath)
         .def("QueryTimeSample",
-             &_QueryTimeSample)
-        .def("SetTimeSample", &_SetTimeSample)
-        .def("EraseTimeSample", &_EraseTimeSample)
+             &pxrUsdSdfWrapLayer::_QueryTimeSample)
+        .def("SetTimeSample", &pxrUsdSdfWrapLayer::_SetTimeSample)
+        .def("EraseTimeSample", &pxrUsdSdfWrapLayer::_EraseTimeSample)
         ;
 
     TfPyContainerConversions::from_python_sequence<

@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrImagingHdStTextureUtils {
 
 template<typename T>
 constexpr T
@@ -372,7 +372,7 @@ HdStTextureUtils::GetHgiFormat(
     const bool premultiplyAlpha)
 {
     return
-        _GetHgiFormatAndConversion(
+        pxrImagingHdStTextureUtils::_GetHgiFormatAndConversion(
             hioFormat,
             premultiplyAlpha).first;
 }
@@ -383,7 +383,7 @@ HdStTextureUtils::GetHioToHgiConversion(
     const bool premultiplyAlpha)
 {
     return
-        _GetHgiFormatAndConversion(
+        pxrImagingHdStTextureUtils::_GetHgiFormatAndConversion(
             hioFormat,
             premultiplyAlpha).second;
 }

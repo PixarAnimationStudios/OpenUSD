@@ -28,7 +28,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrBaseGfPyBufferUtils {
 
 template <class T> constexpr char PyFmtFor();
 template <> constexpr char PyFmtFor<bool>() { return '?'; }
@@ -48,7 +48,7 @@ template <> constexpr char PyFmtFor<double>() { return 'd'; }
 
 template <class T>
 char *Gf_GetPyBufferFmtFor() {
-    static char str[2] = { PyFmtFor<T>(), '\0' };
+    static char str[2] = { pxrBaseGfPyBufferUtils::PyFmtFor<T>(), '\0' };
     return str;
 }
 

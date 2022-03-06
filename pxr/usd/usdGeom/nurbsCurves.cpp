@@ -154,7 +154,7 @@ UsdGeomNurbsCurves::CreateRangesAttr(VtValue const &defaultValue, bool writeSpar
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomNurbsCurves {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -176,7 +176,7 @@ UsdGeomNurbsCurves::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->ranges,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomNurbsCurves::_ConcatenateAttributeNames(
             UsdGeomCurves::GetSchemaAttributeNames(true),
             localNames);
 

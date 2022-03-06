@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapCamera {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -191,105 +191,105 @@ void wrapUsdGeomCamera()
         .def("GetProjectionAttr",
              &This::GetProjectionAttr)
         .def("CreateProjectionAttr",
-             &_CreateProjectionAttr,
+             &pxrUsdUsdGeomWrapCamera::_CreateProjectionAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetHorizontalApertureAttr",
              &This::GetHorizontalApertureAttr)
         .def("CreateHorizontalApertureAttr",
-             &_CreateHorizontalApertureAttr,
+             &pxrUsdUsdGeomWrapCamera::_CreateHorizontalApertureAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetVerticalApertureAttr",
              &This::GetVerticalApertureAttr)
         .def("CreateVerticalApertureAttr",
-             &_CreateVerticalApertureAttr,
+             &pxrUsdUsdGeomWrapCamera::_CreateVerticalApertureAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetHorizontalApertureOffsetAttr",
              &This::GetHorizontalApertureOffsetAttr)
         .def("CreateHorizontalApertureOffsetAttr",
-             &_CreateHorizontalApertureOffsetAttr,
+             &pxrUsdUsdGeomWrapCamera::_CreateHorizontalApertureOffsetAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetVerticalApertureOffsetAttr",
              &This::GetVerticalApertureOffsetAttr)
         .def("CreateVerticalApertureOffsetAttr",
-             &_CreateVerticalApertureOffsetAttr,
+             &pxrUsdUsdGeomWrapCamera::_CreateVerticalApertureOffsetAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetFocalLengthAttr",
              &This::GetFocalLengthAttr)
         .def("CreateFocalLengthAttr",
-             &_CreateFocalLengthAttr,
+             &pxrUsdUsdGeomWrapCamera::_CreateFocalLengthAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetClippingRangeAttr",
              &This::GetClippingRangeAttr)
         .def("CreateClippingRangeAttr",
-             &_CreateClippingRangeAttr,
+             &pxrUsdUsdGeomWrapCamera::_CreateClippingRangeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetClippingPlanesAttr",
              &This::GetClippingPlanesAttr)
         .def("CreateClippingPlanesAttr",
-             &_CreateClippingPlanesAttr,
+             &pxrUsdUsdGeomWrapCamera::_CreateClippingPlanesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetFStopAttr",
              &This::GetFStopAttr)
         .def("CreateFStopAttr",
-             &_CreateFStopAttr,
+             &pxrUsdUsdGeomWrapCamera::_CreateFStopAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetFocusDistanceAttr",
              &This::GetFocusDistanceAttr)
         .def("CreateFocusDistanceAttr",
-             &_CreateFocusDistanceAttr,
+             &pxrUsdUsdGeomWrapCamera::_CreateFocusDistanceAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetStereoRoleAttr",
              &This::GetStereoRoleAttr)
         .def("CreateStereoRoleAttr",
-             &_CreateStereoRoleAttr,
+             &pxrUsdUsdGeomWrapCamera::_CreateStereoRoleAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetShutterOpenAttr",
              &This::GetShutterOpenAttr)
         .def("CreateShutterOpenAttr",
-             &_CreateShutterOpenAttr,
+             &pxrUsdUsdGeomWrapCamera::_CreateShutterOpenAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetShutterCloseAttr",
              &This::GetShutterCloseAttr)
         .def("CreateShutterCloseAttr",
-             &_CreateShutterCloseAttr,
+             &pxrUsdUsdGeomWrapCamera::_CreateShutterCloseAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetExposureAttr",
              &This::GetExposureAttr)
         .def("CreateExposureAttr",
-             &_CreateExposureAttr,
+             &pxrUsdUsdGeomWrapCamera::_CreateExposureAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapCamera::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapCamera::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -311,7 +311,7 @@ void wrapUsdGeomCamera()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdGeomWrapCamera {
 
 WRAP_CUSTOM {
     _class

@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapConstraintTarget {
 
 // The python wrapping of ComputeInWorldSpace does not take an xform cache.
 static GfMatrix4d
@@ -72,7 +72,7 @@ void wrapUsdGeomConstraintTarget()
         .def("GetConstraintAttrName", &ConstraintTarget::GetConstraintAttrName)
             .staticmethod("GetConstraintAttrName")
 
-        .def("ComputeInWorldSpace", _ComputeInWorldSpace,
+        .def("ComputeInWorldSpace", pxrUsdUsdGeomWrapConstraintTarget::_ComputeInWorldSpace,
              (boost::python::arg("time")=UsdTimeCode::Default()))
         ;
 

@@ -30,7 +30,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapCallContext {
 
 static std::string
 _GetFileString(TfCallContext const& cc) {
@@ -53,9 +53,9 @@ void wrapCallContext() {
     typedef TfCallContext This;
 
     boost::python::class_ <This> ("CallContext", boost::python::no_init)
-        .add_property("file", &_GetFileString)
-        .add_property("function", &_GetFunctionString)
+        .add_property("file", &pxrBaseTfWrapCallContext::_GetFileString)
+        .add_property("function", &pxrBaseTfWrapCallContext::_GetFunctionString)
         .add_property("line", &This::GetLine)
-        .add_property("prettyFunction", &_GetPrettyFunctionString)
+        .add_property("prettyFunction", &pxrBaseTfWrapCallContext::_GetPrettyFunctionString)
     ;
 }

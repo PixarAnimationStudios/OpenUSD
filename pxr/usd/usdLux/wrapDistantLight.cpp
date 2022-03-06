@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdLuxWrapDistantLight {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -107,21 +107,21 @@ void wrapUsdLuxDistantLight()
         .def("GetAngleAttr",
              &This::GetAngleAttr)
         .def("CreateAngleAttr",
-             &_CreateAngleAttr,
+             &pxrUsdUsdLuxWrapDistantLight::_CreateAngleAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetIntensityAttr",
              &This::GetIntensityAttr)
         .def("CreateIntensityAttr",
-             &_CreateIntensityAttr,
+             &pxrUsdUsdLuxWrapDistantLight::_CreateIntensityAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdLuxWrapDistantLight::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdLuxWrapDistantLight::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -143,7 +143,7 @@ void wrapUsdLuxDistantLight()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdLuxWrapDistantLight {
 
 WRAP_CUSTOM {
 }

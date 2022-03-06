@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapNurbsCurves {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -114,28 +114,28 @@ void wrapUsdGeomNurbsCurves()
         .def("GetOrderAttr",
              &This::GetOrderAttr)
         .def("CreateOrderAttr",
-             &_CreateOrderAttr,
+             &pxrUsdUsdGeomWrapNurbsCurves::_CreateOrderAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetKnotsAttr",
              &This::GetKnotsAttr)
         .def("CreateKnotsAttr",
-             &_CreateKnotsAttr,
+             &pxrUsdUsdGeomWrapNurbsCurves::_CreateKnotsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetRangesAttr",
              &This::GetRangesAttr)
         .def("CreateRangesAttr",
-             &_CreateRangesAttr,
+             &pxrUsdUsdGeomWrapNurbsCurves::_CreateRangesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapNurbsCurves::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapNurbsCurves::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -157,7 +157,7 @@ void wrapUsdGeomNurbsCurves()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdGeomWrapNurbsCurves {
 
 WRAP_CUSTOM {
 }

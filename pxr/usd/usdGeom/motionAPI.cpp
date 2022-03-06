@@ -125,7 +125,7 @@ UsdGeomMotionAPI::CreateVelocityScaleAttr(VtValue const &defaultValue, bool writ
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomMotionAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -145,7 +145,7 @@ UsdGeomMotionAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->motionVelocityScale,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomMotionAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

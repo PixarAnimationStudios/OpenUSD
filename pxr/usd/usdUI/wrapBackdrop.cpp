@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdUIWrapBackdrop {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -100,14 +100,14 @@ void wrapUsdUIBackdrop()
         .def("GetDescriptionAttr",
              &This::GetDescriptionAttr)
         .def("CreateDescriptionAttr",
-             &_CreateDescriptionAttr,
+             &pxrUsdUsdUIWrapBackdrop::_CreateDescriptionAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdUIWrapBackdrop::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdUIWrapBackdrop::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -129,7 +129,7 @@ void wrapUsdUIBackdrop()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdUIWrapBackdrop {
 
 WRAP_CUSTOM {
 }

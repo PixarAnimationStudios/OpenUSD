@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdVolWrapVolume {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -90,10 +90,10 @@ void wrapUsdVolVolume()
         .def(!boost::python::self)
 
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdVolWrapVolume::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdVolWrapVolume::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -115,7 +115,7 @@ void wrapUsdVolVolume()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdVolWrapVolume {
 
 WRAP_CUSTOM {
     _class

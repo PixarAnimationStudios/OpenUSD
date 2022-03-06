@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace
+namespace pxrUsdArWrapNotice
 {
 
 TF_INSTANTIATE_NOTICE_WRAPPER(

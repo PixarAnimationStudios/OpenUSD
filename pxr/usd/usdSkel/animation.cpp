@@ -205,7 +205,7 @@ UsdSkelAnimation::CreateBlendShapeWeightsAttr(VtValue const &defaultValue, bool 
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdSkelAnimation {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -230,7 +230,7 @@ UsdSkelAnimation::GetSchemaAttributeNames(bool includeInherited)
         UsdSkelTokens->blendShapeWeights,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdSkelAnimation::_ConcatenateAttributeNames(
             UsdTyped::GetSchemaAttributeNames(true),
             localNames);
 

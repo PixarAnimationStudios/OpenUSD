@@ -80,7 +80,7 @@ struct Sdf_PathNodePrivateAccess
 
 typedef Sdf_PathNodePrivateAccess Access;
 
-namespace {
+namespace pxrUsdSdfPathNode {
 
 template <class T=void>
 struct _ParentAnd { const Sdf_PathNode *parent; T value; };
@@ -316,14 +316,14 @@ Sdf_PropPartPathNode::operator delete(void *p)
         PoolHandle::GetHandle(reinterpret_cast<char *>(p)));
 }
 
-TF_MAKE_STATIC_DATA(_PropTargetTable, _mapperNodes) {}
-TF_MAKE_STATIC_DATA(_PropTargetTable, _targetNodes) {}
-TF_MAKE_STATIC_DATA(_PropTokenTable, _mapperArgNodes) {}
-TF_MAKE_STATIC_DATA(_PrimTokenTable, _primNodes) {}
-TF_MAKE_STATIC_DATA(_PropTokenTable, _primPropertyNodes) {}
-TF_MAKE_STATIC_DATA(_PropTokenTable, _relAttrNodes) {}
-TF_MAKE_STATIC_DATA(_PrimVarSelTable, _primVarSelNodes) {}
-TF_MAKE_STATIC_DATA(_PropVoidTable, _expressionNodes) {}
+TF_MAKE_STATIC_DATA(pxrUsdSdfPathNode::_PropTargetTable, _mapperNodes) {}
+TF_MAKE_STATIC_DATA(pxrUsdSdfPathNode::_PropTargetTable, _targetNodes) {}
+TF_MAKE_STATIC_DATA(pxrUsdSdfPathNode::_PropTokenTable, _mapperArgNodes) {}
+TF_MAKE_STATIC_DATA(pxrUsdSdfPathNode::_PrimTokenTable, _primNodes) {}
+TF_MAKE_STATIC_DATA(pxrUsdSdfPathNode::_PropTokenTable, _primPropertyNodes) {}
+TF_MAKE_STATIC_DATA(pxrUsdSdfPathNode::_PropTokenTable, _relAttrNodes) {}
+TF_MAKE_STATIC_DATA(pxrUsdSdfPathNode::_PrimVarSelTable, _primVarSelNodes) {}
+TF_MAKE_STATIC_DATA(pxrUsdSdfPathNode::_PropVoidTable, _expressionNodes) {}
 
 TF_MAKE_STATIC_DATA(Sdf_PathNode const *, _absoluteRootNode) {
     *_absoluteRootNode = Sdf_RootPathNode::New(true);
@@ -359,7 +359,7 @@ Sdf_PathNode::FindOrCreatePrim(Sdf_PathNode const *parent,
                                const TfToken &name,
                                TfFunctionRef<bool ()> isValid)
 {
-    return _FindOrCreate<Sdf_PrimPathNode>(*_primNodes, isValid, parent, name);
+    return pxrUsdSdfPathNode::_FindOrCreate<Sdf_PrimPathNode>(*_primNodes, isValid, parent, name);
 }
     
 Sdf_PathPropNodeHandle
@@ -370,7 +370,7 @@ Sdf_PathNode::FindOrCreatePrimProperty(Sdf_PathNode const *parent,
     // NOTE!  We explicitly set the parent to null here in order to create a
     // separate prefix tree for property-like paths.
 
-    return _FindOrCreate<Sdf_PrimPropertyPathNode>(
+    return pxrUsdSdfPathNode::_FindOrCreate<Sdf_PrimPropertyPathNode>(
         *_primPropertyNodes, isValid, nullptr, name);
 }
     
@@ -381,7 +381,7 @@ Sdf_PathNode::FindOrCreatePrimVariantSelection(
     const TfToken &variant,
     TfFunctionRef<bool ()> isValid)
 {
-    return _FindOrCreate<Sdf_PrimVariantSelectionNode>(
+    return pxrUsdSdfPathNode::_FindOrCreate<Sdf_PrimVariantSelectionNode>(
         *_primVarSelNodes, isValid, parent,
         VariantSelectionType(variantSet, variant));
 }
@@ -391,7 +391,7 @@ Sdf_PathNode::FindOrCreateTarget(Sdf_PathNode const *parent,
                                  SdfPath const &targetPath,
                                  TfFunctionRef<bool ()> isValid)
 {
-    return _FindOrCreate<Sdf_TargetPathNode>(
+    return pxrUsdSdfPathNode::_FindOrCreate<Sdf_TargetPathNode>(
         *_targetNodes, isValid, parent, targetPath);
 }
 
@@ -401,7 +401,7 @@ Sdf_PathNode
                                   const TfToken &name,
                                   TfFunctionRef<bool ()> isValid)
 {
-    return _FindOrCreate<Sdf_RelationalAttributePathNode>(
+    return pxrUsdSdfPathNode::_FindOrCreate<Sdf_RelationalAttributePathNode>(
         *_relAttrNodes, isValid, parent, name);
 }
 
@@ -411,7 +411,7 @@ Sdf_PathNode
                      SdfPath const &targetPath,
                      TfFunctionRef<bool ()> isValid)
 {
-    return _FindOrCreate<Sdf_MapperPathNode>(
+    return pxrUsdSdfPathNode::_FindOrCreate<Sdf_MapperPathNode>(
         *_mapperNodes, isValid, parent, targetPath);
 }
 
@@ -420,7 +420,7 @@ Sdf_PathNode::FindOrCreateMapperArg(Sdf_PathNode const *parent,
                                     const TfToken &name,
                                     TfFunctionRef<bool ()> isValid)
 {
-    return _FindOrCreate<Sdf_MapperArgPathNode>(
+    return pxrUsdSdfPathNode::_FindOrCreate<Sdf_MapperArgPathNode>(
         *_mapperArgNodes, isValid, parent, name);
 }
     
@@ -428,7 +428,7 @@ Sdf_PathPropNodeHandle
 Sdf_PathNode::FindOrCreateExpression(Sdf_PathNode const *parent,
                                      TfFunctionRef<bool ()> isValid)
 {
-    return _FindOrCreate<Sdf_ExpressionPathNode>(
+    return pxrUsdSdfPathNode::_FindOrCreate<Sdf_ExpressionPathNode>(
         *_expressionNodes, isValid, parent);
 }
 
@@ -449,7 +449,7 @@ Sdf_PathNode::_GetEmptyVariantSelection() const {
     return _emptyVariantSelection;
 }
 
-namespace {
+namespace pxrUsdSdfPathNode {
 // This "table" is a thread-safe mapping from property node to path token.  Each
 // entry in the _pathTokenTable points to one of these, and will have an entry
 // for the path string for the prim path itself (which will be keyed with a
@@ -495,7 +495,7 @@ private:
 } // anon
 
 using _PrimToPropTokenTables =
-    tbb::concurrent_hash_map<Sdf_PathNode const *, _PropToTokenTable>;
+    tbb::concurrent_hash_map<Sdf_PathNode const *, pxrUsdSdfPathNode::_PropToTokenTable>;
 
 static TfStaticData<_PrimToPropTokenTables> _pathTokenTable;
 
@@ -513,7 +513,7 @@ Sdf_PathNode::GetPathToken(Sdf_PathNode const *primPart,
 
     _PrimToPropTokenTables::accessor primAccessor;
     _pathTokenTable->insert(
-        primAccessor, std::make_pair(primPart, _PropToTokenTable()));
+        primAccessor, std::make_pair(primPart, pxrUsdSdfPathNode::_PropToTokenTable()));
     auto &propToTokenTable = primAccessor->second;
     // Release the primAccessor here, since the call to _CreatePathToken below
     // can cause reentry here (for embedded target paths).
@@ -532,7 +532,7 @@ Sdf_PathNode::GetPathAsToken(Sdf_PathNode const *primPart,
     return _CreatePathToken(primPart, propPart);
 }
 
-namespace {
+namespace pxrUsdSdfPathNode {
 
 struct _StringBuffer
 {
@@ -625,7 +625,7 @@ private:
 TfToken
 Sdf_PathNode::_GetElementImpl() const
 {
-    _StringBuffer buf;
+    pxrUsdSdfPathNode::_StringBuffer buf;
     _WriteText(buf);
     return TfToken(buf.GetString());
 }
@@ -634,7 +634,7 @@ TfToken
 Sdf_PathNode::_CreatePathToken(Sdf_PathNode const *primPart,
                                Sdf_PathNode const *propPart)
 {
-    _StringBuffer buf;
+    pxrUsdSdfPathNode::_StringBuffer buf;
     _WriteTextToBuffer(primPart, propPart, buf);
     return TfToken(buf.GetString());
 }
@@ -701,7 +701,7 @@ char const *
 Sdf_PathNode::GetDebugText(Sdf_PathNode const *primPart,
                            Sdf_PathNode const *propPart)
 {
-    _DebugBuffer buf;
+    pxrUsdSdfPathNode::_DebugBuffer buf;
     _WriteTextToBuffer(primPart, propPart, buf);
     return buf.GetText();
 }
@@ -766,11 +766,11 @@ Sdf_PathNode::_WriteText(Buffer &out) const
 }
 
 Sdf_PrimPathNode::~Sdf_PrimPathNode() {
-    _Remove(this, *_primNodes, GetParentNode(), _name);
+    pxrUsdSdfPathNode::_Remove(this, *_primNodes, GetParentNode(), _name);
 }
 
 Sdf_PrimPropertyPathNode::~Sdf_PrimPropertyPathNode() {
-    _Remove(this, *_primPropertyNodes, GetParentNode(), _name);
+    pxrUsdSdfPathNode::_Remove(this, *_primPropertyNodes, GetParentNode(), _name);
 }
 
 const TfToken &
@@ -791,7 +791,7 @@ Sdf_PrimVariantSelectionNode::_WriteTextImpl(Buffer &out) const
 }
 
 Sdf_PrimVariantSelectionNode::~Sdf_PrimVariantSelectionNode() {
-    _Remove(this, *_primVarSelNodes, GetParentNode(), *_variantSelection);
+    pxrUsdSdfPathNode::_Remove(this, *_primVarSelNodes, GetParentNode(), *_variantSelection);
 }
 
 template <class Buffer>
@@ -803,11 +803,11 @@ Sdf_TargetPathNode::_WriteTextImpl(Buffer &out) const {
 }
 
 Sdf_TargetPathNode::~Sdf_TargetPathNode() {
-    _Remove(this, *_targetNodes, GetParentNode(), _targetPath);
+    pxrUsdSdfPathNode::_Remove(this, *_targetNodes, GetParentNode(), _targetPath);
 }
 
 Sdf_RelationalAttributePathNode::~Sdf_RelationalAttributePathNode() {
-    _Remove(this, *_relAttrNodes, GetParentNode(), _name);
+    pxrUsdSdfPathNode::_Remove(this, *_relAttrNodes, GetParentNode(), _name);
 }
 
 template <class Buffer>
@@ -821,7 +821,7 @@ Sdf_MapperPathNode::_WriteTextImpl(Buffer &out) const {
 }
 
 Sdf_MapperPathNode::~Sdf_MapperPathNode() {
-    _Remove(this, *_mapperNodes, GetParentNode(), _targetPath);
+    pxrUsdSdfPathNode::_Remove(this, *_mapperNodes, GetParentNode(), _targetPath);
 }
 
 template <class Buffer>
@@ -831,7 +831,7 @@ Sdf_MapperArgPathNode::_WriteTextImpl(Buffer &out) const {
 }
 
 Sdf_MapperArgPathNode::~Sdf_MapperArgPathNode() {
-    _Remove(this, *_mapperArgNodes, GetParentNode(), _name);
+    pxrUsdSdfPathNode::_Remove(this, *_mapperArgNodes, GetParentNode(), _name);
 }
 
 template <class Buffer>
@@ -842,7 +842,7 @@ Sdf_ExpressionPathNode::_WriteTextImpl(Buffer &out) const {
 }
 
 Sdf_ExpressionPathNode::~Sdf_ExpressionPathNode() {
-    _Remove(this, *_expressionNodes, GetParentNode());
+    pxrUsdSdfPathNode::_Remove(this, *_expressionNodes, GetParentNode());
 }
 
 struct Sdf_Stats {
@@ -862,7 +862,7 @@ _GatherChildrenFrom(Sdf_PathNode const *parent,
                     Table const &table,
                     std::vector<Sdf_PathNodeConstRefPtr> *result)
 {
-    for (size_t outerIndex = 0; outerIndex != NumNodeMaps; ++outerIndex) {
+    for (size_t outerIndex = 0; outerIndex != pxrUsdSdfPathNode::NumNodeMaps; ++outerIndex) {
         auto &mapAndMutex = table._mapsAndMutexes[outerIndex];
         tbb::spin_mutex::scoped_lock lock(mapAndMutex.mutex);
         TF_FOR_ALL(i, mapAndMutex.map) {

@@ -69,7 +69,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 TF_DEFINE_ENV_SETTING(USD_ABC_READ_FLOAT2_AS_UV, true,
         "Turn to false to disable reading float2 arrays as uv sets");
 
-namespace {
+namespace pxrUsdPluginUsdAbcAlembicWriter {
 
 using namespace ::Alembic::AbcGeom;
 using namespace UsdAbc_AlembicUtil;
@@ -1345,7 +1345,7 @@ template <class T>
 static _SampleForAlembic
 _MakeSample(
     const _WriterSchema& schema,
-    const _WriterSchema::Converter& converter,
+    const pxrUsdPluginUsdAbcAlembicWriter::_WriterSchema::Converter& converter,
     const SdfValueTypeName& usdType,
     const VtValue& usdValue,
     bool skipAlembicTypeCheck = false)
@@ -1359,7 +1359,7 @@ template <class T, int N>
 static _SampleForAlembic
 _MakeSample(
     const _WriterSchema& schema,
-    const _WriterSchema::Converter& converter,
+    const pxrUsdPluginUsdAbcAlembicWriter::_WriterSchema::Converter& converter,
     const SdfValueTypeName& usdType,
     const VtValue& usdValue,
     bool skipAlembicTypeCheck = false)
@@ -1516,7 +1516,7 @@ template <class DST, class R, class T>
 void
 _Copy(
     const _WriterSchema& schema,
-    const _WriterSchema::Converter& converter,
+    const pxrUsdPluginUsdAbcAlembicWriter::_WriterSchema::Converter& converter,
     double time,
     const UsdSamples& samples,
     DST* dst,
@@ -1548,7 +1548,7 @@ template <class DST, class R, class T>
 _SampleForAlembic
 _Copy(
     const _WriterSchema& schema,
-    const _WriterSchema::Converter& converter,
+    const pxrUsdPluginUsdAbcAlembicWriter::_WriterSchema::Converter& converter,
     double time,
     const UsdSamples& samples,
     DST* dst,
@@ -1624,7 +1624,7 @@ _Copy(
     static const int extent = SampleValueTraits::extent;
 
     const SdfValueTypeName& usdType = valueSamples.GetTypeName();
-    const _WriterSchema::Converter& converter = schema.GetConverter(usdType);
+    const pxrUsdPluginUsdAbcAlembicWriter::_WriterSchema::Converter& converter = schema.GetConverter(usdType);
 
     // Make a sample holding an array of type PodType.
     _SampleForAlembic vals =
@@ -2143,7 +2143,7 @@ void
 _WriteGenericProperty(
     _PrimWriterContext* context,
     OCompoundProperty parent,
-    const _WriterSchema::Converter& converter,
+    const pxrUsdPluginUsdAbcAlembicWriter::_WriterSchema::Converter& converter,
     const DataType& alembicDataType,
     const TfToken& usdName,
     const std::string& alembicName)
@@ -3702,10 +3702,10 @@ _WriterSchemaBuilder::_WriterSchemaBuilder()
 } // anonymous namespace
 
 static
-const _WriterSchema&
+const pxrUsdPluginUsdAbcAlembicWriter::_WriterSchema&
 _GetSchema()
 {
-    static _WriterSchemaBuilder builder;
+    static pxrUsdPluginUsdAbcAlembicWriter::_WriterSchemaBuilder builder;
     return builder.schema;
 }
 
@@ -3713,7 +3713,7 @@ _GetSchema()
 // UsdAbc_AlembicDataWriter
 //
 
-class UsdAbc_AlembicDataWriterImpl : public _WriterContext { };
+class UsdAbc_AlembicDataWriterImpl : public pxrUsdPluginUsdAbcAlembicWriter::_WriterContext { };
 
 UsdAbc_AlembicDataWriter::UsdAbc_AlembicDataWriter() :
     _impl(new UsdAbc_AlembicDataWriterImpl)
@@ -3761,10 +3761,10 @@ UsdAbc_AlembicDataWriter::Write(const SdfAbstractDataConstPtr& data)
 
     try {
         if (_impl->GetArchive().valid() && data) {
-            const _WriterSchema& schema = _GetSchema();
+            const pxrUsdPluginUsdAbcAlembicWriter::_WriterSchema& schema = _GetSchema();
             _impl->SetSchema(&schema);
             _impl->SetData(data);
-            _WritePrim(*_impl, _Parent(), SdfPath::AbsoluteRootPath());
+            pxrUsdPluginUsdAbcAlembicWriter::_WritePrim(*_impl, pxrUsdPluginUsdAbcAlembicWriter::_Parent(), SdfPath::AbsoluteRootPath());
         }
         return true;
     }

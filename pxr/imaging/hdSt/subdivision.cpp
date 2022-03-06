@@ -820,7 +820,7 @@ HdSt_Subdivision::GetRefinedFvarIndices(int channel) const
     return fvarIndices;
 }
 
-namespace {
+namespace pxrImagingHdStSubdivision {
 
 void
 _EvalStencilsCPU(
@@ -884,7 +884,7 @@ HdSt_Subdivision::RefineCPU(HdBufferSourceSharedPtr const & source,
     std::copy(srcData, srcData + (numSrcElements * elementStride),
               primvarBuffer->begin());
 
-    _EvalStencilsCPU(
+    pxrImagingHdStSubdivision::_EvalStencilsCPU(
         primvarBuffer,
         elementStride,
         stencilTable->GetNumControlVertices(),
@@ -912,7 +912,7 @@ HdSt_Subdivision::RefineGPU(
     // just return here
     if (gpuStencilTable->numRefinedPoints == 0)  return;
 
-    _EvalStencilsGPU(
+    pxrImagingHdStSubdivision::_EvalStencilsGPU(
         primvarRange,
         primvarName,
         gpuStencilTable->numCoarsePoints,
@@ -1662,7 +1662,7 @@ HdSt_OsdBaseFaceToRefinedFacesMapComputation::_CheckValid() const
 
 // ---------------------------------------------------------------------------
 
-namespace {
+namespace pxrImagingHdStSubdivision {
 
 void
 _EvalStencilsCPU(

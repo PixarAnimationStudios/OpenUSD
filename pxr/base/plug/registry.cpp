@@ -229,7 +229,7 @@ PlugRegistry::GetAllDerivedTypes(TfType base, std::set<TfType> *result)
     base.GetAllDerivedTypes(result);
 }
 
-namespace {
+namespace pxrBasePlugRegistry {
 
 struct PathsInfo {
     std::vector<std::string> paths;
@@ -256,7 +256,7 @@ Plug_SetPaths(const std::vector<std::string>& paths,
               const std::vector<std::string>& debugMessages,
               bool pathsAreOrdered)
 {
-    auto& pathsInfo = Plug_GetPathsInfo();
+    auto& pathsInfo = pxrBasePlugRegistry::Plug_GetPathsInfo();
     pathsInfo.paths = paths;
     pathsInfo.debugMessages = debugMessages;
     pathsInfo.pathsAreOrdered = pathsAreOrdered;
@@ -275,13 +275,13 @@ PlugPlugin::_RegisterAllPlugins()
         if (!TfGetenvBool("PXR_DISABLE_STANDARD_PLUG_SEARCH_PATH", false)) {
             // Emit any debug messages first, then call _RegisterPlugins.
             for (std::string const &msg:
-                     Plug_GetPathsInfo().debugMessages) {
+                     pxrBasePlugRegistry::Plug_GetPathsInfo().debugMessages) {
                 TF_DEBUG(PLUG_INFO_SEARCH).Msg("%s", msg.c_str());
             }
             // Register plugins in the tree. This declares TfTypes.
             result = registry._RegisterPlugins(
-                Plug_GetPathsInfo().paths,
-                Plug_GetPathsInfo().pathsAreOrdered);
+                pxrBasePlugRegistry::Plug_GetPathsInfo().paths,
+                pxrBasePlugRegistry::Plug_GetPathsInfo().pathsAreOrdered);
         }
     });
 

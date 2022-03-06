@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapPointBased {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -118,35 +118,35 @@ void wrapUsdGeomPointBased()
         .def("GetPointsAttr",
              &This::GetPointsAttr)
         .def("CreatePointsAttr",
-             &_CreatePointsAttr,
+             &pxrUsdUsdGeomWrapPointBased::_CreatePointsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetVelocitiesAttr",
              &This::GetVelocitiesAttr)
         .def("CreateVelocitiesAttr",
-             &_CreateVelocitiesAttr,
+             &pxrUsdUsdGeomWrapPointBased::_CreateVelocitiesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetAccelerationsAttr",
              &This::GetAccelerationsAttr)
         .def("CreateAccelerationsAttr",
-             &_CreateAccelerationsAttr,
+             &pxrUsdUsdGeomWrapPointBased::_CreateAccelerationsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetNormalsAttr",
              &This::GetNormalsAttr)
         .def("CreateNormalsAttr",
-             &_CreateNormalsAttr,
+             &pxrUsdUsdGeomWrapPointBased::_CreateNormalsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapPointBased::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapPointBased::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -167,7 +167,7 @@ void wrapUsdGeomPointBased()
 //
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
-namespace {
+namespace pxrUsdUsdGeomWrapPointBased {
 
 static TfPyObjWrapper 
 _ComputeExtent(boost::python::object points) {

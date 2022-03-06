@@ -210,7 +210,7 @@ UsdUINodeGraphNodeAPI::CreateSizeAttr(VtValue const &defaultValue, bool writeSpa
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdUINodeGraphNodeAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -235,7 +235,7 @@ UsdUINodeGraphNodeAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdUITokens->uiNodegraphNodeSize,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdUINodeGraphNodeAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

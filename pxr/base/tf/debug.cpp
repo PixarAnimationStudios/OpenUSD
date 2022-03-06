@@ -73,18 +73,18 @@ static const char* _helpMsg =
 "enables debugging for any symbol in STAF, all symbols in SIC except for\n"
 "SIC_REGISTRY_ENUMS and the symbol GPT_IK.\n";
 
-namespace {
+namespace pxrBaseTfDebug {
 struct _CheckResult {
     bool matched = false;
     bool enabled = false;
 };
 }
 
-static _CheckResult
+static pxrBaseTfDebug::_CheckResult
 _CheckSymbolAgainstPatterns(char const *enumName,
                             TfSpan<const std::string> patterns)
 {
-    _CheckResult result;
+    pxrBaseTfDebug::_CheckResult result;
 
     for (std::string pattern: patterns) {
         if (pattern.empty()) {
@@ -202,7 +202,7 @@ public:
         // anything, set all the nodes accordingly, and also store the explicit
         // state into _namesToExplicitEnabledState.
         for (auto &nameAndNodes: _namesToNodes) {
-            _CheckResult check = _CheckSymbolAgainstPatterns(
+            pxrBaseTfDebug::_CheckResult check = _CheckSymbolAgainstPatterns(
                 nameAndNodes.first.c_str(), patterns);
             if (check.matched) {
                 changed = true;

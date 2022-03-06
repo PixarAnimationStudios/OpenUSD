@@ -211,7 +211,7 @@ private:
 // Helper functions for managing query objects
 // -------------------------------------------------------------------------- //
 
-namespace
+namespace pxrUsdUsdGeomBboxCache
 {
 // Enumeration of queries stored for each cached entry that varies
 // over time.
@@ -1175,14 +1175,14 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
         // If this cache doesn't use extents hints, we don't need the
         // corresponding query.
         const size_t numQueries =
-            (useExtentsHintForPrim ? NumQueries : NumQueries - 1);
+            (useExtentsHintForPrim ? pxrUsdUsdGeomBboxCache::NumQueries : pxrUsdUsdGeomBboxCache::NumQueries - 1);
         queries.reset(new UsdAttributeQuery[numQueries]);
     }
 
     if (useExtentsHintForPrim) {
         UsdGeomModelAPI geomModel(prim);
         const UsdAttributeQuery& extentsHintQuery =
-            _GetOrCreateExtentsHintQuery(geomModel, &queries[ExtentsHint]);
+            _GetOrCreateExtentsHintQuery(geomModel, &queries[pxrUsdUsdGeomBboxCache::ExtentsHint]);
 
         if (_GetBBoxFromExtentsHint(geomModel, extentsHintQuery, bboxes)) {
             entry->isComplete = true;
@@ -1209,7 +1209,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
         }
         
         const UsdAttributeQuery& extentQuery =
-            _GetOrCreateExtentQuery(prim, &queries[Extent]);
+            _GetOrCreateExtentQuery(prim, &queries[pxrUsdUsdGeomBboxCache::Extent]);
 
         UsdGeomXformable xformable(prim);
         entry->isVarying =
@@ -1234,7 +1234,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
         // Read the extent of the geometry, an axis-aligned bounding box in
         // local space.
         const UsdAttributeQuery& extentQuery =
-            _GetOrCreateExtentQuery(prim, &queries[Extent]);
+            _GetOrCreateExtentQuery(prim, &queries[pxrUsdUsdGeomBboxCache::Extent]);
 
         // If some extent is authored, check validity
         bool successGettingExtent = false;

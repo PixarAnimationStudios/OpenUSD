@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdRiWrapTextureAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -93,7 +93,7 @@ void wrapUsdRiTextureAPI()
 {
     typedef UsdRiTextureAPI This;
 
-    UsdRiTextureAPI_CanApplyResult::Wrap<UsdRiTextureAPI_CanApplyResult>(
+    pxrUsdUsdRiWrapTextureAPI::UsdRiTextureAPI_CanApplyResult::Wrap<pxrUsdUsdRiWrapTextureAPI::UsdRiTextureAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -107,7 +107,7 @@ void wrapUsdRiTextureAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdRiWrapTextureAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -129,21 +129,21 @@ void wrapUsdRiTextureAPI()
         .def("GetRiTextureGammaAttr",
              &This::GetRiTextureGammaAttr)
         .def("CreateRiTextureGammaAttr",
-             &_CreateRiTextureGammaAttr,
+             &pxrUsdUsdRiWrapTextureAPI::_CreateRiTextureGammaAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetRiTextureSaturationAttr",
              &This::GetRiTextureSaturationAttr)
         .def("CreateRiTextureSaturationAttr",
-             &_CreateRiTextureSaturationAttr,
+             &pxrUsdUsdRiWrapTextureAPI::_CreateRiTextureSaturationAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdRiWrapTextureAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdRiWrapTextureAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -165,7 +165,7 @@ void wrapUsdRiTextureAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdRiWrapTextureAPI {
 
 WRAP_CUSTOM {
 }

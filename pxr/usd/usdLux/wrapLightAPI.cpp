@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdLuxWrapLightAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -149,7 +149,7 @@ void wrapUsdLuxLightAPI()
 {
     typedef UsdLuxLightAPI This;
 
-    UsdLuxLightAPI_CanApplyResult::Wrap<UsdLuxLightAPI_CanApplyResult>(
+    pxrUsdUsdLuxWrapLightAPI::UsdLuxLightAPI_CanApplyResult::Wrap<pxrUsdUsdLuxWrapLightAPI::UsdLuxLightAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -163,7 +163,7 @@ void wrapUsdLuxLightAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdLuxWrapLightAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -185,70 +185,70 @@ void wrapUsdLuxLightAPI()
         .def("GetShaderIdAttr",
              &This::GetShaderIdAttr)
         .def("CreateShaderIdAttr",
-             &_CreateShaderIdAttr,
+             &pxrUsdUsdLuxWrapLightAPI::_CreateShaderIdAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetMaterialSyncModeAttr",
              &This::GetMaterialSyncModeAttr)
         .def("CreateMaterialSyncModeAttr",
-             &_CreateMaterialSyncModeAttr,
+             &pxrUsdUsdLuxWrapLightAPI::_CreateMaterialSyncModeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetIntensityAttr",
              &This::GetIntensityAttr)
         .def("CreateIntensityAttr",
-             &_CreateIntensityAttr,
+             &pxrUsdUsdLuxWrapLightAPI::_CreateIntensityAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetExposureAttr",
              &This::GetExposureAttr)
         .def("CreateExposureAttr",
-             &_CreateExposureAttr,
+             &pxrUsdUsdLuxWrapLightAPI::_CreateExposureAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetDiffuseAttr",
              &This::GetDiffuseAttr)
         .def("CreateDiffuseAttr",
-             &_CreateDiffuseAttr,
+             &pxrUsdUsdLuxWrapLightAPI::_CreateDiffuseAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetSpecularAttr",
              &This::GetSpecularAttr)
         .def("CreateSpecularAttr",
-             &_CreateSpecularAttr,
+             &pxrUsdUsdLuxWrapLightAPI::_CreateSpecularAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetNormalizeAttr",
              &This::GetNormalizeAttr)
         .def("CreateNormalizeAttr",
-             &_CreateNormalizeAttr,
+             &pxrUsdUsdLuxWrapLightAPI::_CreateNormalizeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetColorAttr",
              &This::GetColorAttr)
         .def("CreateColorAttr",
-             &_CreateColorAttr,
+             &pxrUsdUsdLuxWrapLightAPI::_CreateColorAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetEnableColorTemperatureAttr",
              &This::GetEnableColorTemperatureAttr)
         .def("CreateEnableColorTemperatureAttr",
-             &_CreateEnableColorTemperatureAttr,
+             &pxrUsdUsdLuxWrapLightAPI::_CreateEnableColorTemperatureAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetColorTemperatureAttr",
              &This::GetColorTemperatureAttr)
         .def("CreateColorTemperatureAttr",
-             &_CreateColorTemperatureAttr,
+             &pxrUsdUsdLuxWrapLightAPI::_CreateColorTemperatureAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
@@ -257,10 +257,10 @@ void wrapUsdLuxLightAPI()
              &This::GetFiltersRel)
         .def("CreateFiltersRel",
              &This::CreateFiltersRel)
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdLuxWrapLightAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdLuxWrapLightAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -297,7 +297,7 @@ _CreateShaderIdAttrForRenderContext(
         writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdLuxWrapLightAPI {
 
 WRAP_CUSTOM {
     _class

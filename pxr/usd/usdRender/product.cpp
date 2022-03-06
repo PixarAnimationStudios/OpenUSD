@@ -150,7 +150,7 @@ UsdRenderProduct::CreateOrderedVarsRel() const
                        /* custom = */ false);
 }
 
-namespace {
+namespace pxrUsdUsdRenderProduct {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -171,7 +171,7 @@ UsdRenderProduct::GetSchemaAttributeNames(bool includeInherited)
         UsdRenderTokens->productName,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdRenderProduct::_ConcatenateAttributeNames(
             UsdRenderSettingsBase::GetSchemaAttributeNames(true),
             localNames);
 

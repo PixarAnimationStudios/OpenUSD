@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdSkelWrapSkeleton {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -121,35 +121,35 @@ void wrapUsdSkelSkeleton()
         .def("GetJointsAttr",
              &This::GetJointsAttr)
         .def("CreateJointsAttr",
-             &_CreateJointsAttr,
+             &pxrUsdUsdSkelWrapSkeleton::_CreateJointsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetJointNamesAttr",
              &This::GetJointNamesAttr)
         .def("CreateJointNamesAttr",
-             &_CreateJointNamesAttr,
+             &pxrUsdUsdSkelWrapSkeleton::_CreateJointNamesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetBindTransformsAttr",
              &This::GetBindTransformsAttr)
         .def("CreateBindTransformsAttr",
-             &_CreateBindTransformsAttr,
+             &pxrUsdUsdSkelWrapSkeleton::_CreateBindTransformsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetRestTransformsAttr",
              &This::GetRestTransformsAttr)
         .def("CreateRestTransformsAttr",
-             &_CreateRestTransformsAttr,
+             &pxrUsdUsdSkelWrapSkeleton::_CreateRestTransformsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdSkelWrapSkeleton::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdSkelWrapSkeleton::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -171,7 +171,7 @@ void wrapUsdSkelSkeleton()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdSkelWrapSkeleton {
 
 WRAP_CUSTOM {
 }

@@ -44,7 +44,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdSdfPath {
 
 // This is a simple helper class that records but defers issuing diagnostics
 // until its destructor runs.  It's used in the 'isValid' callbacks below to
@@ -743,7 +743,7 @@ SdfPath::AppendPath(const SdfPath &newSuffix) const {
 // Use a simple per-thread cache for appending children to prim paths.  This
 // lets us avoid hitting the global table, reducing thread contention, for
 // appending children repeatedly to a node.
-namespace {
+namespace pxrUsdSdfPath {
 struct _PerThreadPrimPathCache
 {
     static constexpr unsigned Shift = 14;
@@ -792,7 +792,7 @@ struct _PerThreadPrimPathCache
 };
 }
 
-namespace {
+namespace pxrUsdSdfPath {
 // XXX: Workaround for Windows issue USD-5306 -- this avoids destroying the
 // per-thread caches to deal with static destruction order problems.
 template <class T>
@@ -812,7 +812,7 @@ struct _FastThreadLocalBase
     }
 };
 }
-using _PrimPathCache = _FastThreadLocalBase<_PerThreadPrimPathCache>;
+using _PrimPathCache = pxrUsdSdfPath::_FastThreadLocalBase<pxrUsdSdfPath::_PerThreadPrimPathCache>;
 static _PrimPathCache _primPathCache;
 
 SdfPath
@@ -828,7 +828,7 @@ SdfPath::AppendChild(TfToken const &childName) const {
     if (ret._primPart) {
        return ret;
     }
-    _DeferredDiagnostics dd;
+    pxrUsdSdfPath::_DeferredDiagnostics dd;
     auto isValid = [this, &childName, &dd]() {
         if (!IsAbsoluteRootOrPrimPath()
             && !IsPrimVariantSelectionPath()
@@ -865,7 +865,7 @@ SdfPath::AppendChild(TfToken const &childName) const {
 // speed.  We don't do this for the other property-type paths, like target paths
 // or relational attribute paths because those operations are done much less
 // frequently than appending properties to prim paths.
-namespace {
+namespace pxrUsdSdfPath {
 struct _PerThreadPropertyPathCache
 {
     static constexpr unsigned Shift = 10;
@@ -908,7 +908,7 @@ struct _PerThreadPropertyPathCache
 };
 }
 
-using _PropPathCache = Sdf_FastThreadLocalBase<_PerThreadPropertyPathCache>;
+using _PropPathCache = Sdf_FastThreadLocalBase<pxrUsdSdfPath::_PerThreadPropertyPathCache>;
 static _PropPathCache _propPathCache;
 
 SdfPath
@@ -920,7 +920,7 @@ SdfPath::AppendProperty(TfToken const &propName) const {
         return ret;
     }
 
-    _DeferredDiagnostics dd;
+    pxrUsdSdfPath::_DeferredDiagnostics dd;
     auto isValid = [this, &propName, &dd]() {
         if (!IsValidNamespacedIdentifier(propName.GetString())) {
             //TF_WARN("Invalid property name.");
@@ -959,7 +959,7 @@ SdfPath
 SdfPath::AppendVariantSelection(const std::string &variantSet,
                                 const std::string &variant) const
 {
-    _DeferredDiagnostics dd;
+    pxrUsdSdfPath::_DeferredDiagnostics dd;
     auto isValid = [this, &variantSet, &variant, &dd]() {
         if (!IsPrimOrPrimVariantSelectionPath()) {
             dd.CodingError("Cannot append variant selection %s = %s to <%s>; "
@@ -980,7 +980,7 @@ SdfPath::AppendVariantSelection(const std::string &variantSet,
 
 SdfPath
 SdfPath::AppendTarget(const SdfPath &targetPath) const {
-    _DeferredDiagnostics dd;
+    pxrUsdSdfPath::_DeferredDiagnostics dd;
     auto isValid = [this, &targetPath, &dd]() {
         if (!IsPropertyPath()) {
             dd.Warn("Can only append a target to a property path.");
@@ -1001,7 +1001,7 @@ SdfPath::AppendTarget(const SdfPath &targetPath) const {
 
 SdfPath
 SdfPath::AppendRelationalAttribute(TfToken const &attrName) const {
-    _DeferredDiagnostics dd;
+    pxrUsdSdfPath::_DeferredDiagnostics dd;
     auto isValid = [this, &attrName, &dd]() {
         if (!IsValidNamespacedIdentifier(attrName)) {
             dd.Warn("Invalid property name.");
@@ -1024,7 +1024,7 @@ SdfPath::AppendRelationalAttribute(TfToken const &attrName) const {
 
 SdfPath
 SdfPath::AppendMapper(const SdfPath &targetPath) const {
-    _DeferredDiagnostics dd;
+    pxrUsdSdfPath::_DeferredDiagnostics dd;
     auto isValid = [this, &targetPath, &dd]() {
         if (!IsPropertyPath()) {
             dd.Warn("Cannnot append mapper '%s' to non-property path <%s>.",
@@ -1047,7 +1047,7 @@ SdfPath::AppendMapper(const SdfPath &targetPath) const {
 
 SdfPath
 SdfPath::AppendMapperArg(TfToken const &argName) const {
-    _DeferredDiagnostics dd;
+    pxrUsdSdfPath::_DeferredDiagnostics dd;
     auto isValid = [this, &argName, &dd]() {
         if (!_IsValidIdentifier(argName)) {
             dd.Warn("Invalid arg name.");
@@ -1068,7 +1068,7 @@ SdfPath::AppendMapperArg(TfToken const &argName) const {
 
 SdfPath
 SdfPath::AppendExpression() const {
-    _DeferredDiagnostics dd;
+    pxrUsdSdfPath::_DeferredDiagnostics dd;
     auto isValid = [this, &dd]() {
         if (!IsPropertyPath()) {
             dd.Warn("Can only append an expression to a property path.");
@@ -1497,7 +1497,7 @@ SdfPath::GetCommonPrefix(const SdfPath &path2) const {
     return ret;
 }
 
-namespace {
+namespace pxrUsdSdfPath {
 struct _NodeEqual
 {
     template <class T>
@@ -1525,7 +1525,7 @@ SdfPath::RemoveCommonSuffix(const SdfPath& otherPath,
         Sdf_PathNode const *thisProp = _propPart.get();
         Sdf_PathNode const *otherProp = otherPath._propPart.get();
         while (thisProp && otherProp) {
-            if (!thisProp->Compare<_NodeEqual>(*otherProp)) {
+            if (!thisProp->Compare<pxrUsdSdfPath::_NodeEqual>(*otherProp)) {
                 return std::make_pair(
                     SdfPath(_primPart,
                             Sdf_PathPropNodeHandle(thisProp)),
@@ -1548,7 +1548,7 @@ SdfPath::RemoveCommonSuffix(const SdfPath& otherPath,
     
     while (thisPrim->GetElementCount() > 1 &&
            otherPrim->GetElementCount() > 1) {
-        if (!thisPrim->Compare<_NodeEqual>(*otherPrim)) {
+        if (!thisPrim->Compare<pxrUsdSdfPath::_NodeEqual>(*otherPrim)) {
             return std::make_pair(SdfPath(thisPrim, nullptr),
                                   SdfPath(otherPrim, nullptr));
         }
@@ -1561,7 +1561,7 @@ SdfPath::RemoveCommonSuffix(const SdfPath& otherPath,
     if (!stopAtRootPrim &&
         thisPrim->GetElementCount() >= 1 &&
         otherPrim->GetElementCount() >= 1 &&
-        thisPrim->Compare<_NodeEqual>(*otherPrim)) {
+        thisPrim->Compare<pxrUsdSdfPath::_NodeEqual>(*otherPrim)) {
         thisPrim = thisPrim->GetParentNode();
         otherPrim = otherPrim->GetParentNode();
     }

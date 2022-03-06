@@ -140,7 +140,7 @@ Usd_UsdzResolver::Resolve(
         packagedPath : std::string();
 }
 
-namespace
+namespace pxrUsdUsdUsdzResolver
 {
 
 #if AR_VERSION == 1
@@ -252,7 +252,7 @@ Usd_UsdzResolver::OpenAsset(
     }
 
     return std::shared_ptr<ArAsset>(
-        new _Asset(
+        new pxrUsdUsdUsdzResolver::_Asset(
             std::move(asset), std::move(zipFile),
             iter.GetFile(), info.dataOffset, info.size));
 }

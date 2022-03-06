@@ -169,7 +169,7 @@ UsdVolFieldAsset::CreateVectorDataRoleHintAttr(VtValue const &defaultValue, bool
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdVolFieldAsset {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -193,7 +193,7 @@ UsdVolFieldAsset::GetSchemaAttributeNames(bool includeInherited)
         UsdVolTokens->vectorDataRoleHint,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdVolFieldAsset::_ConcatenateAttributeNames(
             UsdVolFieldBase::GetSchemaAttributeNames(true),
             localNames);
 

@@ -125,7 +125,7 @@ UsdPhysicsMeshCollisionAPI::CreateApproximationAttr(VtValue const &defaultValue,
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdPhysicsMeshCollisionAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -145,7 +145,7 @@ UsdPhysicsMeshCollisionAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdPhysicsTokens->physicsApproximation,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdPhysicsMeshCollisionAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

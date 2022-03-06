@@ -141,7 +141,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrBaseTfRegistryManager {
 
 // Convenience for moving the contents of one list to the front of another.
 template <class L>
@@ -547,7 +547,7 @@ Tf_RegistryManagerImpl::_UnloadNoLock(const char* libraryName)
 
 } // anonymous namespace
 
-TF_INSTANTIATE_SINGLETON(Tf_RegistryManagerImpl);
+TF_INSTANTIATE_SINGLETON(pxrBaseTfRegistryManager::Tf_RegistryManagerImpl);
 
 TfRegistryManager::TfRegistryManager()
 {
@@ -574,41 +574,41 @@ TfRegistryManager::GetInstance()
 void 
 TfRegistryManager::RunUnloadersAtExit()
 {
-    Tf_RegistryManagerImpl::runUnloadersAtExit = true;
+    pxrBaseTfRegistryManager::Tf_RegistryManagerImpl::runUnloadersAtExit = true;
 }
 
 bool
 TfRegistryManager::AddFunctionForUnload(const UnloadFunctionType& func)
 {
-    return Tf_RegistryManagerImpl::GetInstance().AddFunctionForUnload(func);
+    return pxrBaseTfRegistryManager::Tf_RegistryManagerImpl::GetInstance().AddFunctionForUnload(func);
 }
 
 void 
 TfRegistryManager::_SubscribeTo(const std::type_info& ti)
 {
-    Tf_RegistryManagerImpl::GetInstance().SubscribeTo(ArchGetDemangled(ti));
+    pxrBaseTfRegistryManager::Tf_RegistryManagerImpl::GetInstance().SubscribeTo(ArchGetDemangled(ti));
 }
 
 void
 TfRegistryManager::_UnsubscribeFrom(const std::type_info& ti)
 {
-    Tf_RegistryManagerImpl::GetInstance().UnsubscribeFrom(ArchGetDemangled(ti));
+    pxrBaseTfRegistryManager::Tf_RegistryManagerImpl::GetInstance().UnsubscribeFrom(ArchGetDemangled(ti));
 }
 
 void
 Tf_RegistryInitCtor(char const *name)
 {
     // Finished registering functions.
-    if (TfSingleton<Tf_RegistryManagerImpl>::CurrentlyExists()) {
-        Tf_RegistryManagerImpl::GetInstance().ClearActiveLibrary(name);
+    if (TfSingleton<pxrBaseTfRegistryManager::Tf_RegistryManagerImpl>::CurrentlyExists()) {
+        pxrBaseTfRegistryManager::Tf_RegistryManagerImpl::GetInstance().ClearActiveLibrary(name);
     }
 }
 
 void
 Tf_RegistryInitDtor(char const *name)
 {
-    if (TfSingleton<Tf_RegistryManagerImpl>::CurrentlyExists()) {
-        Tf_RegistryManagerImpl::GetInstance().UnloadLibrary(name);
+    if (TfSingleton<pxrBaseTfRegistryManager::Tf_RegistryManagerImpl>::CurrentlyExists()) {
+        pxrBaseTfRegistryManager::Tf_RegistryManagerImpl::GetInstance().UnloadLibrary(name);
     }
 }
 
@@ -620,7 +620,7 @@ Tf_RegistryInit::Add(
 {
     // Note that we can't use _name because the instance hasn't been
     // created yet, which is why this function is static.
-    Tf_RegistryManagerImpl::GetInstance().
+    pxrBaseTfRegistryManager::Tf_RegistryManagerImpl::GetInstance().
             AddRegistrationFunction(libName, func, typeName);
 }
 

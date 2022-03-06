@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdLuxWrapGeometryLight {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -95,10 +95,10 @@ void wrapUsdLuxGeometryLight()
              &This::GetGeometryRel)
         .def("CreateGeometryRel",
              &This::CreateGeometryRel)
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdLuxWrapGeometryLight::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdLuxWrapGeometryLight::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -120,7 +120,7 @@ void wrapUsdLuxGeometryLight()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdLuxWrapGeometryLight {
 
 WRAP_CUSTOM {
 }

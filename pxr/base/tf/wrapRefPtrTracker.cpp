@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapRefPtrTracker {
 
 static
 std::string
@@ -76,8 +76,8 @@ wrapRefPtrTracker()
      boost::python::class_<This, ThisPtr, boost::noncopyable>("RefPtrTracker", boost::python::no_init)
         .def(TfPySingleton())
 
-        .def("GetAllWatchedCountsReport", _ReportAllWatchedCounts)
-        .def("GetAllTracesReport", _ReportAllTraces)
-        .def("GetTracesReportForWatched", _ReportTracesForWatched)
+        .def("GetAllWatchedCountsReport", pxrBaseTfWrapRefPtrTracker::_ReportAllWatchedCounts)
+        .def("GetAllTracesReport", pxrBaseTfWrapRefPtrTracker::_ReportAllTraces)
+        .def("GetTracesReportForWatched", pxrBaseTfWrapRefPtrTracker::_ReportTracesForWatched)
         ;
 }

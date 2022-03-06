@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapModelAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -87,10 +87,10 @@ void wrapUsdModelAPI()
         .def(!boost::python::self)
 
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdWrapModelAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdWrapModelAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -115,7 +115,7 @@ void wrapUsdModelAPI()
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 
-namespace {
+namespace pxrUsdUsdWrapModelAPI {
 
 static TfToken _GetKind(const UsdModelAPI &self) {
     TfToken result;

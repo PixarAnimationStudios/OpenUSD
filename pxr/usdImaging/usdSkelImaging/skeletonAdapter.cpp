@@ -813,7 +813,7 @@ UsdSkelImagingSkeletonAdapter::GetMaterialId(UsdPrim const& prim,
 }
 
 
-namespace {
+namespace pxrUsdImagingUsdSkelImagingSkeletonAdapter {
 
 void
 _TransformPoints(TfSpan<GfVec3f> points, const GfMatrix4d& xform)
@@ -910,7 +910,7 @@ UsdSkelImagingSkeletonAdapter::InvokeComputation(
     VtVec3fArray skinnedPoints = 
         restPoints.UncheckedGet<VtVec3fArray>();
 
-    _ApplyPackedBlendShapes(blendShapeOffsets.UncheckedGet<VtVec4fArray>(),
+    pxrUsdImagingUsdSkelImagingSkeletonAdapter::_ApplyPackedBlendShapes(blendShapeOffsets.UncheckedGet<VtVec4fArray>(),
                             blendShapeOffsetRanges.UncheckedGet<VtVec2iArray>(),
                             blendShapeWeights.UncheckedGet<VtFloatArray>(),
                             skinnedPoints);
@@ -930,7 +930,7 @@ UsdSkelImagingSkeletonAdapter::InvokeComputation(
             skelLocalToWorld.UncheckedGet<GfMatrix4d>() *
             primWorldToLocal.UncheckedGet<GfMatrix4d>();
 
-        _TransformPoints(skinnedPoints, skelToPrimLocal);
+        pxrUsdImagingUsdSkelImagingSkeletonAdapter::_TransformPoints(skinnedPoints, skelToPrimLocal);
 
     } else {
         // Have constant influences. Compute a rigid deformation.
@@ -955,7 +955,7 @@ UsdSkelImagingSkeletonAdapter::InvokeComputation(
             // rather than its underlying points (which is particularly
             // important if we want to preserve instancing!).
             // For now, bake the rigid deformation into the points.
-            _TransformPoints(skinnedPoints, restToPrimLocalSkinnedXf);
+            pxrUsdImagingUsdSkelImagingSkeletonAdapter::_TransformPoints(skinnedPoints, restToPrimLocalSkinnedXf);
 
         } else {
             // Nothing to do. We initialized skinnedPoints to the restPoints,
@@ -1363,7 +1363,7 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationPrimvars(
               interpolation, instancerContext);
 }
 
-namespace {
+namespace pxrUsdImagingUsdSkelImagingSkeletonAdapter {
 
 bool
 _GetInfluences(const UsdSkelSkinningQuery& skinningQuery,
@@ -1537,7 +1537,7 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
             bool usesConstantJointPrimvar = false;
             
             if (skinnedPrimData->hasJointInfluences) {
-                _GetInfluences(skinnedPrimData->skinningQuery,
+                pxrUsdImagingUsdSkelImagingSkeletonAdapter::_GetInfluences(skinnedPrimData->skinningQuery,
                                time, &influences,
                                &numInfluencesPerComponent,
                                &usesConstantJointPrimvar);
@@ -1605,7 +1605,7 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
         if (name == _tokens->skinningXforms) {
             VtMatrix4fArray skinningXforms;
             if (!skinnedPrimData->hasJointInfluences ||
-                !_ComputeSkinningTransforms(skelData->skelQuery,
+                !pxrUsdImagingUsdSkelImagingSkeletonAdapter::_ComputeSkinningTransforms(skelData->skelQuery,
                                             skinnedPrimData->skinningQuery,
                                             time, &skinningXforms)) {
                 skinningXforms.assign(
@@ -1621,7 +1621,7 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
         if (name == _tokens->blendShapeWeights) {
             VtFloatArray weights;
             if (!skinnedPrimData->blendShapeQuery ||
-                !_ComputeSubShapeWeights(skelData->skelQuery,
+                !pxrUsdImagingUsdSkelImagingSkeletonAdapter::_ComputeSubShapeWeights(skelData->skelQuery,
                                          *skinnedPrimData->blendShapeQuery,
                                          skinnedPrimData->skinningQuery,
                                          time, &weights)) {
@@ -1712,7 +1712,7 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForInputAggregator(
         bool usesConstantJointPrimvar = false;
             
         if (skinnedPrimData->hasJointInfluences) {
-            _GetInfluences(skinnedPrimData->skinningQuery,
+            pxrUsdImagingUsdSkelImagingSkeletonAdapter::_GetInfluences(skinnedPrimData->skinningQuery,
                            time, &influences,
                            &numInfluencesPerComponent,
                            &usesConstantJointPrimvar);
@@ -1898,7 +1898,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForSkinningComputation(
                     sampleTimes[i] = times[i] - time.GetValue();
 
                     VtMatrix4fArray skinningXforms;
-                    if (!_ComputeSkinningTransforms(
+                    if (!pxrUsdImagingUsdSkelImagingSkeletonAdapter::_ComputeSkinningTransforms(
                             skelData->skelQuery, skinnedPrimData->skinningQuery,
                             times[i], &skinningXforms)) {
                         _InitIdentityXforms(skelData->skelQuery,
@@ -1939,7 +1939,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForSkinningComputation(
                     sampleTimes[i] = times[i] - time.GetValue();
 
                     VtFloatArray weights;
-                    if (!_ComputeSubShapeWeights(
+                    if (!pxrUsdImagingUsdSkelImagingSkeletonAdapter::_ComputeSubShapeWeights(
                             skelData->skelQuery,
                             *skinnedPrimData->blendShapeQuery,
                             skinnedPrimData->skinningQuery, times[i],
@@ -2069,7 +2069,7 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForInputAggregator(
         bool usesConstantJointPrimvar = false;
 
         if (skinnedPrimData->hasJointInfluences) {
-            _GetInfluences(skinnedPrimData->skinningQuery, time, &influences,
+            pxrUsdImagingUsdSkelImagingSkeletonAdapter::_GetInfluences(skinnedPrimData->skinningQuery, time, &influences,
                            &numInfluencesPerComponent,
                            &usesConstantJointPrimvar);
         }

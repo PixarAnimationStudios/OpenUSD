@@ -137,7 +137,7 @@ UsdGeomPoints::CreateIdsAttr(VtValue const &defaultValue, bool writeSparsely) co
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomPoints {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -158,7 +158,7 @@ UsdGeomPoints::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->ids,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomPoints::_ConcatenateAttributeNames(
             UsdGeomPointBased::GetSchemaAttributeNames(true),
             localNames);
 

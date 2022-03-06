@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapBBox3d {
 
 std::string _Repr(GfBBox3d const &self) {
     return TF_PY_REPR_PREFIX + "BBox3d(" + TfPyRepr(self.GetRange()) + ", " +
@@ -125,7 +125,7 @@ void wrapBBox3d()
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self != boost::python::self)
 
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrBaseGfWrapBBox3d::_Repr)
         
         ;
     boost::python::to_python_converter<std::vector<This>,

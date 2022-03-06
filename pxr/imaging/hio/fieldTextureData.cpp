@@ -38,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_ENV_SETTING(HIO_FIELD_TEXTURE_DATA_PLUGIN_RESTRICTION, "",
       "Restricts HioFieldTextureData plugin loading to the specified plugin");
 
-namespace {
+namespace pxrImagingHioFieldTextureData {
 
 class _FieldTextureDataFactoryRegistry
 {
@@ -113,7 +113,7 @@ HioFieldTextureData::New(
         size_t targetMemory)
 {
     HioFieldTextureDataFactoryBase const * factory =
-            _factoryRegistry->GetFactory(filePath);
+            pxrImagingHioFieldTextureData::_factoryRegistry->GetFactory(filePath);
     if (!factory) {
         return nullptr;
     }

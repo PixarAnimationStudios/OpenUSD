@@ -37,7 +37,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapTestTfPyOptional {
 
 // ////////////////////////////////
 // // optional
@@ -73,35 +73,35 @@ struct Tf_TestPyOptional { };
 
 void wrapTf_TestTfPyOptional()
 {
-    boost::python::class_<Tf_TestPyOptional, boost::noncopyable>("Tf_TestPyOptional")
-        .def("TakesOptional", _TakesOptional,
+    boost::python::class_<pxrBaseTfWrapTestTfPyOptional::Tf_TestPyOptional, boost::noncopyable>("Tf_TestPyOptional")
+        .def("TakesOptional", pxrBaseTfWrapTestTfPyOptional::_TakesOptional,
             ( boost::python::arg("optString") = boost::optional<std::string>(),
               boost::python::arg("optStrvec") = boost::optional<std::vector<std::string> >() ))
         .staticmethod("TakesOptional")
 
-        .def("TestOptionalStringVector", _TestOptional<std::vector<std::string> >)
+        .def("TestOptionalStringVector", pxrBaseTfWrapTestTfPyOptional::_TestOptional<std::vector<std::string> >)
         .staticmethod("TestOptionalStringVector")
-        .def("TestOptionalString",       _TestOptional<std::string>)
+        .def("TestOptionalString",       pxrBaseTfWrapTestTfPyOptional::_TestOptional<std::string>)
         .staticmethod("TestOptionalString")
-        .def("TestOptionalDouble",       _TestOptional<double>)
+        .def("TestOptionalDouble",       pxrBaseTfWrapTestTfPyOptional::_TestOptional<double>)
         .staticmethod("TestOptionalDouble")
-        .def("TestOptionalFloat",        _TestOptional<float>)
+        .def("TestOptionalFloat",        pxrBaseTfWrapTestTfPyOptional::_TestOptional<float>)
         .staticmethod("TestOptionalFloat")
-        .def("TestOptionalLong",         _TestOptional<long>)
+        .def("TestOptionalLong",         pxrBaseTfWrapTestTfPyOptional::_TestOptional<long>)
         .staticmethod("TestOptionalLong")
-        .def("TestOptionalULong",        _TestOptional<unsigned long>)
+        .def("TestOptionalULong",        pxrBaseTfWrapTestTfPyOptional::_TestOptional<unsigned long>)
         .staticmethod("TestOptionalULong")
-        .def("TestOptionalInt",          _TestOptional<int>)
+        .def("TestOptionalInt",          pxrBaseTfWrapTestTfPyOptional::_TestOptional<int>)
         .staticmethod("TestOptionalInt")
-        .def("TestOptionalUInt",         _TestOptional<unsigned int>)
+        .def("TestOptionalUInt",         pxrBaseTfWrapTestTfPyOptional::_TestOptional<unsigned int>)
         .staticmethod("TestOptionalUInt")
-        .def("TestOptionalShort",        _TestOptional<short>)
+        .def("TestOptionalShort",        pxrBaseTfWrapTestTfPyOptional::_TestOptional<short>)
         .staticmethod("TestOptionalShort")
-        .def("TestOptionalUShort",       _TestOptional<unsigned short>)
+        .def("TestOptionalUShort",       pxrBaseTfWrapTestTfPyOptional::_TestOptional<unsigned short>)
         .staticmethod("TestOptionalUShort")
-        .def("TestOptionalChar",         _TestOptional<char>)
+        .def("TestOptionalChar",         pxrBaseTfWrapTestTfPyOptional::_TestOptional<char>)
         .staticmethod("TestOptionalChar")
-        .def("TestOptionalUChar",        _TestOptional<unsigned char>)
+        .def("TestOptionalUChar",        pxrBaseTfWrapTestTfPyOptional::_TestOptional<unsigned char>)
         .staticmethod("TestOptionalUChar")
         ;
 }

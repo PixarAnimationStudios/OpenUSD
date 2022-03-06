@@ -37,7 +37,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapXformOp {
 
 static bool
 _Set(const UsdGeomXformOp &self, TfPyObjWrapper pyVal, UsdTimeCode time)
@@ -168,28 +168,28 @@ void wrapUsdGeomXformOp()
              boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetTypeName", &XformOp::GetTypeName)
 
-        .def("Get", _Get, (boost::python::arg("time")=UsdTimeCode::Default()))
-        .def("Set", _Set, (boost::python::arg("value"), boost::python::arg("time")=UsdTimeCode::Default()))
+        .def("Get", pxrUsdUsdGeomWrapXformOp::_Get, (boost::python::arg("time")=UsdTimeCode::Default()))
+        .def("Set", pxrUsdUsdGeomWrapXformOp::_Set, (boost::python::arg("value"), boost::python::arg("time")=UsdTimeCode::Default()))
 
-        .def("GetTimeSamples", _GetTimeSamples,
+        .def("GetTimeSamples", pxrUsdUsdGeomWrapXformOp::_GetTimeSamples,
             boost::python::return_value_policy<TfPySequenceToList>())
 
-        .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval,
+        .def("GetTimeSamplesInInterval", pxrUsdUsdGeomWrapXformOp::_GetTimeSamplesInInterval,
             boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("GetNumTimeSamples", &XformOp::GetNumTimeSamples)
 
-        .def("GetOpTransform", _GetOpTransform)
-        .def("GetOpName", _GetOpName)
+        .def("GetOpTransform", pxrUsdUsdGeomWrapXformOp::_GetOpTransform)
+        .def("GetOpName", pxrUsdUsdGeomWrapXformOp::_GetOpName)
 
         .def("GetOpType", &XformOp::GetOpType)
 
         .def("GetPrecision", &XformOp::GetPrecision)
 
-        .def("GetOpTypeToken", _GetOpTypeToken)
+        .def("GetOpTypeToken", pxrUsdUsdGeomWrapXformOp::_GetOpTypeToken)
         .staticmethod("GetOpTypeToken")
 
-        .def("GetOpTypeEnum", _GetOpTypeEnum)
+        .def("GetOpTypeEnum", pxrUsdUsdGeomWrapXformOp::_GetOpTypeEnum)
         .staticmethod("GetOpTypeEnum")
 
         .def("MightBeTimeVarying", &XformOp::MightBeTimeVarying)

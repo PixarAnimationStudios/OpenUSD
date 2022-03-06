@@ -108,7 +108,7 @@ UsdLuxMeshLightAPI::_GetTfType() const
     return _GetStaticTfType();
 }
 
-namespace {
+namespace pxrUsdUsdLuxMeshLightAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -129,7 +129,7 @@ UsdLuxMeshLightAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->lightMaterialSyncMode,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdLuxMeshLightAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

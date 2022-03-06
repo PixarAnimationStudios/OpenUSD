@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdPcpWrapNode {
 
 #define PCP_GET_NODE_FN(nodeFn)                                         \
     static boost::python::api::object                                        \
@@ -72,10 +72,10 @@ wrapNode()
                       boost::python::make_function(&This::GetLayerStack, 
                                     boost::python::return_value_policy<boost::python::return_by_value>()))
 
-        .add_property("parent", &_GetParentNode)
-        .add_property("origin", &_GetOriginNode)
+        .add_property("parent", &pxrUsdPcpWrapNode::_GetParentNode)
+        .add_property("origin", &pxrUsdPcpWrapNode::_GetOriginNode)
         .add_property("children", 
-                      boost::python::make_function(&_GetChildren, 
+                      boost::python::make_function(&pxrUsdPcpWrapNode::_GetChildren, 
                                     boost::python::return_value_policy<TfPySequenceToList>()))
 
         .add_property("arcType", &This::GetArcType)
@@ -96,8 +96,8 @@ wrapNode()
         .add_property("isRestricted", &This::IsRestricted)
         .add_property("permission", &This::GetPermission)
 
-        .def("GetRootNode", &_GetRootNode)
-        .def("GetOriginRootNode", &_GetOriginRootNode)
+        .def("GetRootNode", &pxrUsdPcpWrapNode::_GetRootNode)
+        .def("GetOriginRootNode", &pxrUsdPcpWrapNode::_GetOriginRootNode)
 
         .def("IsRootNode", &This::IsRootNode)
         .def("IsDueToAncestor", &This::IsDueToAncestor)

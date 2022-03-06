@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrBasePlugInfo {
 
 typedef std::function<bool (const std::string&)> AddVisitedPathCallback;
 typedef std::function<void (const Plug_RegistrationMetadata&)> AddPluginCallback;
@@ -477,7 +477,7 @@ _TaskArenaImpl::Wait()
 
 } // anonymous namespace
 
-class Plug_TaskArena::_Impl : public _TaskArenaImpl { };
+class Plug_TaskArena::_Impl : public pxrBasePlugInfo::_TaskArenaImpl { };
 
 Plug_TaskArena::Plug_TaskArena() : _impl(new _Impl)
 {
@@ -534,7 +534,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     const JsObject& topInfo = value.GetJsObject();
 
     // Parse type.
-    key = &_Tokens->TypeKey;
+    key = &pxrBasePlugInfo::_Tokens->TypeKey;
     i = topInfo.find(*key);
     if (i != topInfo.end()) {
         if (!i->second.IsString()) {
@@ -566,7 +566,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     }
 
     // Parse name.
-    key = &_Tokens->NameKey;
+    key = &pxrBasePlugInfo::_Tokens->NameKey;
     i = topInfo.find(*key);
     if (i != topInfo.end()) {
         if (!i->second.IsString()) {
@@ -587,7 +587,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     }
 
     // Parse root.
-    key = &_Tokens->RootKey;
+    key = &pxrBasePlugInfo::_Tokens->RootKey;
     i = topInfo.find(*key);
     if (i != topInfo.end()) {
         if (!i->second.IsString()) {
@@ -595,7 +595,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
             goto error;
         }
         else {
-            pluginPath = _MergePaths(valuePathname, i->second.GetString());
+            pluginPath = pxrBasePlugInfo::_MergePaths(valuePathname, i->second.GetString());
             if (pluginPath.empty()) {
                 errorMessage = "doesn't hold a valid path";
                 goto error;
@@ -610,7 +610,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     // LibraryPath may be an empty string in the case where the "plugin"
     // isn't separately loadable, e.g. monolithic libraries or static 
     // libraries.
-    key = &_Tokens->LibraryPathKey;
+    key = &pxrBasePlugInfo::_Tokens->LibraryPathKey;
     i = topInfo.find(*key);
     if (i != topInfo.end()) {
         if (!i->second.IsString()) {
@@ -618,7 +618,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
             goto error;
         }
         else if (!i->second.GetString().empty()) {
-            libraryPath = _AppendToRootPath(pluginPath, i->second.GetString());
+            libraryPath = pxrBasePlugInfo::_AppendToRootPath(pluginPath, i->second.GetString());
             if (libraryPath.empty()) {
                 errorMessage = "doesn't hold a valid path";
                 goto error;
@@ -631,7 +631,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     }
 
     // Parse resource path (relative to pluginPath).
-    key = &_Tokens->ResourcePathKey;
+    key = &pxrBasePlugInfo::_Tokens->ResourcePathKey;
     i = topInfo.find(*key);
     if (i != topInfo.end()) {
         if (!i->second.IsString()) {
@@ -639,7 +639,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
             goto error;
         }
         else {
-            resourcePath = _AppendToRootPath(pluginPath, i->second.GetString());
+            resourcePath = pxrBasePlugInfo::_AppendToRootPath(pluginPath, i->second.GetString());
             if (resourcePath.empty()) {
                 errorMessage = "doesn't hold a valid path";
                 goto error;
@@ -651,7 +651,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     }
 
     // Parse info.
-    key = &_Tokens->InfoKey;
+    key = &pxrBasePlugInfo::_Tokens->InfoKey;
     i = topInfo.find(*key);
     if (i != topInfo.end()) {
         if (!i->second.IsObject()) {
@@ -670,12 +670,12 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     // Report unexpected keys.
     for (const auto& v : topInfo) {
         const JsObject::key_type& subkey = v.first;
-        if (subkey != _Tokens->TypeKey && 
-            subkey != _Tokens->NameKey && 
-            subkey != _Tokens->InfoKey && 
-            subkey != _Tokens->RootKey && 
-            subkey != _Tokens->LibraryPathKey &&
-            subkey != _Tokens->ResourcePathKey) {
+        if (subkey != pxrBasePlugInfo::_Tokens->TypeKey && 
+            subkey != pxrBasePlugInfo::_Tokens->NameKey && 
+            subkey != pxrBasePlugInfo::_Tokens->InfoKey && 
+            subkey != pxrBasePlugInfo::_Tokens->RootKey && 
+            subkey != pxrBasePlugInfo::_Tokens->LibraryPathKey &&
+            subkey != pxrBasePlugInfo::_Tokens->ResourcePathKey) {
             TF_RUNTIME_ERROR("Plugin info %s: ignoring unknown key '%s'",
                              locationForErrorReporting.c_str(),
                              subkey.c_str());
@@ -695,15 +695,15 @@ void
 Plug_ReadPlugInfo(
     const std::vector<std::string>& pathnames,
     bool pathsAreOrdered,
-    const AddVisitedPathCallback& addVisitedPath,
-    const AddPluginCallback& addPlugin,
+    const pxrBasePlugInfo::AddVisitedPathCallback& addVisitedPath,
+    const pxrBasePlugInfo::AddPluginCallback& addPlugin,
     Plug_TaskArena* taskArena)
 {
     TF_DEBUG(PLUG_INFO_SEARCH).Msg("Will check plugin info paths\n");
     TfStopwatch stopwatch;
     stopwatch.Start();
 
-    _ReadContext context(*taskArena, addVisitedPath, addPlugin);
+    pxrBasePlugInfo::_ReadContext context(*taskArena, addVisitedPath, addPlugin);
     for (const auto& pathname : pathnames) {
         if (pathname.empty()) {
             continue;
@@ -717,13 +717,13 @@ Plug_ReadPlugInfo(
         const bool resolveSymlinks = true;
         if (hasslash || TfIsDir(pathname, resolveSymlinks)) {
             context.taskArena.Run([&context, pathname, hasslash] {
-                _ReadPlugInfoWithWildcards(&context,
+                pxrBasePlugInfo::_ReadPlugInfoWithWildcards(&context,
                     hasslash ? pathname : pathname + "/");
             });
         }
         else {
             context.taskArena.Run([&context, pathname] {
-                _ReadPlugInfoWithWildcards(&context, pathname);
+                pxrBasePlugInfo::_ReadPlugInfoWithWildcards(&context, pathname);
             });
         }
         if (pathsAreOrdered) {

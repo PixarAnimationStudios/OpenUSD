@@ -97,7 +97,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 using HdStResourceRegistryWeakPtr =  std::weak_ptr<HdStResourceRegistry>;
 
-namespace {
+namespace pxrImagingHdStRenderDelegate {
 
 //
 // Map from Hgi instances to resource registries.
@@ -249,7 +249,7 @@ HdStRenderDelegate::SetDrivers(HdDriverVector const& drivers)
     }
     
     _resourceRegistry =
-        _HgiToResourceRegistryMap::GetInstance().GetOrCreateRegistry(_hgi);
+        pxrImagingHdStRenderDelegate::_HgiToResourceRegistryMap::GetInstance().GetOrCreateRegistry(_hgi);
 
     TF_VERIFY(_hgi, "HdSt requires Hgi HdDriver");
 }

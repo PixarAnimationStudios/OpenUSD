@@ -347,7 +347,7 @@ HdStRenderPassState::GetShaders() const
     return shaders;
 }
 
-namespace {
+namespace pxrImagingHdStRenderPassState {
 
 // Note: The geometric shader may override the state if necessary,
 // including disabling h/w culling altogether.
@@ -540,8 +540,8 @@ HdStRenderPassState::ApplyStateFromGeometricShader(
         HdSt_ResourceBinder const &binder,
         HdSt_GeometricShaderSharedPtr const &geometricShader)
 {
-    _SetGLCullState(_ResolveCullMode(_cullStyle, geometricShader));
-    _SetGLPolygonMode(_lineWidth, geometricShader);
+    pxrImagingHdStRenderPassState::_SetGLCullState(pxrImagingHdStRenderPassState::_ResolveCullMode(_cullStyle, geometricShader));
+    pxrImagingHdStRenderPassState::_SetGLPolygonMode(_lineWidth, geometricShader);
 }
 
 void
@@ -637,14 +637,14 @@ HdStRenderPassState::Bind()
 
     if (_colorMaskUseDefault) {
         // Enable color writes for all components for all attachments.
-        _SetGLColorMask(-1, ColorMaskRGBA);
+        pxrImagingHdStRenderPassState::_SetGLColorMask(-1, ColorMaskRGBA);
     } else {
         if (_colorMasks.size() == 1) {
             // Use the same color mask for all attachments.
-            _SetGLColorMask(-1, _colorMasks[0]);
+            pxrImagingHdStRenderPassState::_SetGLColorMask(-1, _colorMasks[0]);
         } else {
             for (size_t i = 0; i < _colorMasks.size(); i++) {
-                _SetGLColorMask(i, _colorMasks[i]);
+                pxrImagingHdStRenderPassState::_SetGLColorMask(i, _colorMasks[i]);
             }
         }
     }
@@ -848,9 +848,9 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
 
         if (!_colorMaskUseDefault) {
             if (_colorMasks.size() == 1) {
-                attachmentDesc.colorMask = _GetColorMask(_colorMasks[0]);
+                attachmentDesc.colorMask = pxrImagingHdStRenderPassState::_GetColorMask(_colorMasks[0]);
             } else if (aovIndex < _colorMasks.size()) {
-                attachmentDesc.colorMask = _GetColorMask(_colorMasks[aovIndex]);
+                attachmentDesc.colorMask = pxrImagingHdStRenderPassState::_GetColorMask(_colorMasks[aovIndex]);
             }
         }
 
@@ -995,7 +995,7 @@ HdStRenderPassState::_InitRasterizationState(
     }
 
     rasterizationState->cullMode =
-        _ResolveCullMode(_cullStyle, geometricShader);
+        pxrImagingHdStRenderPassState::_ResolveCullMode(_cullStyle, geometricShader);
 }
 
 void

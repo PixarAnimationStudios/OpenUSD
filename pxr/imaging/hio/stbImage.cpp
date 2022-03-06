@@ -572,7 +572,7 @@ Hio_StbImage::_OpenForWriting(std::string const & filename)
     return true;
 }
 
-namespace
+namespace pxrImagingHioStbImage
 {
 
 static
@@ -635,10 +635,10 @@ Hio_StbImage::Write(StorageSpec const & storageIn,
     const bool isSRGB = IsColorSpaceSRGB();
 
     if (type == HioTypeFloat && fileExtension != "hdr") {
-        quantizedSpec = _Quantize<float>(storageIn, quantizedData, isSRGB);
+        quantizedSpec = pxrImagingHioStbImage::_Quantize<float>(storageIn, quantizedData, isSRGB);
     }
     else if (type == HioTypeHalfFloat && fileExtension != "hdr") {
-        quantizedSpec = _Quantize<GfHalf>(storageIn, quantizedData, isSRGB);
+        quantizedSpec = pxrImagingHioStbImage::_Quantize<GfHalf>(storageIn, quantizedData, isSRGB);
     }
     else if (type != HioTypeUnsignedByte && fileExtension != "hdr") {
         TF_CODING_ERROR("stb expects unsigned byte data to write filetype %s",

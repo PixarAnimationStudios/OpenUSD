@@ -190,7 +190,7 @@ HdSt_PipelineDrawBatch::SetAllowGpuFrustumCulling(bool allowGpuFrustumCulling)
 // GPU Command Buffer Preparation
 ////////////////////////////////////////////////////////////
 
-namespace {
+namespace pxrImagingHdStPipelineDrawBatch {
 
 // Draw command dispatch buffers are built as arrays of uint32_t, but
 // we use these struct definitions to reason consistently about element
@@ -557,8 +557,8 @@ HdSt_PipelineDrawBatch::_CompileBatch(
         _drawItemInstances[0]->GetDrawItem()->GetInstancePrimvarNumLevels();
 
     // Get the layout of the command buffer we are building.
-    _DrawCommandTraits const traits =
-        _GetDrawCommandTraits(instancerNumLevels,
+    pxrImagingHdStPipelineDrawBatch::_DrawCommandTraits const traits =
+        pxrImagingHdStPipelineDrawBatch::_GetDrawCommandTraits(instancerNumLevels,
                               _useDrawIndexed, _useInstanceCulling);
 
     TF_DEBUG(HDST_DRAW).Msg("\nCompile Dispatch Buffer\n");
@@ -586,37 +586,37 @@ HdSt_PipelineDrawBatch::_CompileBatch(
             TfHash::Combine(_barElementOffsetsHash,
                             drawItem->GetElementOffsetsHash());
 
-        _DrawItemState const dc(drawItem);
+        pxrImagingHdStPipelineDrawBatch::_DrawItemState const dc(drawItem);
 
         // drawing coordinates.
         uint32_t const modelDC         = 0; // reserved for future extension
-        uint32_t const constantDC      = _GetElementOffset(dc.constantBar);
-        uint32_t const vertexDC        = _GetElementOffset(dc.vertexBar);
-        uint32_t const topVisDC        = _GetElementOffset(dc.topVisBar);
-        uint32_t const elementDC       = _GetElementOffset(dc.elementBar);
-        uint32_t const primitiveDC     = _GetElementOffset(dc.indexBar);
-        uint32_t const fvarDC          = _GetElementOffset(dc.fvarBar);
-        uint32_t const instanceIndexDC = _GetElementOffset(dc.instanceIndexBar);
-        uint32_t const shaderDC        = _GetElementOffset(dc.shaderBar);
-        uint32_t const varyingDC       = _GetElementOffset(dc.varyingBar);
+        uint32_t const constantDC      = pxrImagingHdStPipelineDrawBatch::_GetElementOffset(dc.constantBar);
+        uint32_t const vertexDC        = pxrImagingHdStPipelineDrawBatch::_GetElementOffset(dc.vertexBar);
+        uint32_t const topVisDC        = pxrImagingHdStPipelineDrawBatch::_GetElementOffset(dc.topVisBar);
+        uint32_t const elementDC       = pxrImagingHdStPipelineDrawBatch::_GetElementOffset(dc.elementBar);
+        uint32_t const primitiveDC     = pxrImagingHdStPipelineDrawBatch::_GetElementOffset(dc.indexBar);
+        uint32_t const fvarDC          = pxrImagingHdStPipelineDrawBatch::_GetElementOffset(dc.fvarBar);
+        uint32_t const instanceIndexDC = pxrImagingHdStPipelineDrawBatch::_GetElementOffset(dc.instanceIndexBar);
+        uint32_t const shaderDC        = pxrImagingHdStPipelineDrawBatch::_GetElementOffset(dc.shaderBar);
+        uint32_t const varyingDC       = pxrImagingHdStPipelineDrawBatch::_GetElementOffset(dc.varyingBar);
 
         // 3 for triangles, 4 for quads, 6 for triquads, n for patches
         uint32_t const numIndicesPerPrimitive =
             drawItem->GetGeometricShader()->GetPrimitiveIndexSize();
 
         uint32_t const firstVertex = vertexDC;
-        uint32_t const vertexCount = _GetElementCount(dc.vertexBar);
+        uint32_t const vertexCount = pxrImagingHdStPipelineDrawBatch::_GetElementCount(dc.vertexBar);
 
         // if delegate fails to get vertex primvars, it could be empty.
         // skip the drawitem to prevent drawing uninitialized vertices.
         uint32_t const numElements =
-            vertexCount != 0 ? _GetElementCount(dc.indexBar) : 0;
+            vertexCount != 0 ? pxrImagingHdStPipelineDrawBatch::_GetElementCount(dc.indexBar) : 0;
 
         uint32_t const firstIndex = primitiveDC * numIndicesPerPrimitive;
         uint32_t const indicesCount = numElements * numIndicesPerPrimitive;
 
         uint32_t const instanceCount =
-            _GetInstanceCount(drawItemInstance,
+            pxrImagingHdStPipelineDrawBatch::_GetInstanceCount(drawItemInstance,
                               dc.instanceIndexBar,
                               traits.instanceIndexWidth);
 
@@ -683,7 +683,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
 
         // drawingCoordI
         for (size_t i = 0; i < dc.instancePrimvarBars.size(); ++i) {
-            uint32_t instanceDC = _GetElementOffset(dc.instancePrimvarBars[i]);
+            uint32_t instanceDC = pxrImagingHdStPipelineDrawBatch::_GetElementOffset(dc.instancePrimvarBars[i]);
             *cmdIt++ = instanceDC;
         }
 
@@ -721,7 +721,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
                                                  traits.numUInt32);
 
     // add drawing resource views
-    _AddDrawResourceViews(_dispatchBuffer, traits);
+    pxrImagingHdStPipelineDrawBatch::_AddDrawResourceViews(_dispatchBuffer, traits);
 
     // copy data
     _dispatchBuffer->CopyData(_drawCommandBuffer);
@@ -739,9 +739,9 @@ HdSt_PipelineDrawBatch::_CompileBatch(
 
         // add culling resource views
         if (_useInstanceCulling) {
-            _AddInstanceCullResourceViews(_dispatchBufferCullInput, traits);
+            pxrImagingHdStPipelineDrawBatch::_AddInstanceCullResourceViews(_dispatchBufferCullInput, traits);
         } else {
-            _AddNonInstanceCullResourceViews(_dispatchBufferCullInput, traits);
+            pxrImagingHdStPipelineDrawBatch::_AddNonInstanceCullResourceViews(_dispatchBufferCullInput, traits);
         }
 
         // copy data
@@ -859,7 +859,7 @@ HdSt_PipelineDrawBatch::PrepareDraw(
 // GPU Resource Binding
 ////////////////////////////////////////////////////////////
 
-namespace {
+namespace pxrImagingHdStPipelineDrawBatch {
 
 // Resources to Bind/Unbind for a drawItem
 struct _BindingState : public _DrawItemState
@@ -1086,7 +1086,7 @@ HgiGraphicsPipelineSharedPtr
 _GetDrawPipeline(
     HdStRenderPassStateSharedPtr const & renderPassState,
     HdStResourceRegistrySharedPtr const & resourceRegistry,
-    _BindingState const & state)
+    pxrImagingHdStPipelineDrawBatch::_BindingState const & state)
 {
     // Drawing pipeline is compatible as long as the shader is the same.
     HgiShaderProgramHandle const & programHandle =
@@ -1103,7 +1103,7 @@ _GetDrawPipeline(
                                                   state.geometricShader);
 
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
-        pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
+        pipeDesc.vertexBuffers = pxrImagingHdStPipelineDrawBatch::_GetVertexBuffersForDrawing(state);
 
         Hgi* hgi = resourceRegistry->GetHgi();
         HgiGraphicsPipelineHandle pso = hgi->CreateGraphicsPipeline(pipeDesc);
@@ -1138,7 +1138,7 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
                                                    resourceRegistry);
     if (!TF_VERIFY(program.IsValid())) return;
 
-    _BindingState state(
+    pxrImagingHdStPipelineDrawBatch::_BindingState state(
             _drawItemInstances.front()->GetDrawItem(),
             _dispatchBuffer,
             program.GetBinder(),
@@ -1163,7 +1163,7 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
             hgi->CreateResourceBindings(bindingsDesc);
     gfxCmds->BindResources(resourceBindings);
 
-    _BindVertexBuffersForDrawing(gfxCmds, state);
+    pxrImagingHdStPipelineDrawBatch::_BindVertexBuffersForDrawing(gfxCmds, state);
 
     if (drawIndirect) {
         _ExecuteDrawIndirect(gfxCmds, _dispatchBuffer, state.indexBar);
@@ -1222,8 +1222,8 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
 
     if (!_useDrawIndexed) {
         for (uint32_t i = 0; i < batchCount; ++i) {
-            _DrawNonIndexedCommand const * cmd =
-                reinterpret_cast<_DrawNonIndexedCommand*>(
+            pxrImagingHdStPipelineDrawBatch::_DrawNonIndexedCommand const * cmd =
+                reinterpret_cast<pxrImagingHdStPipelineDrawBatch::_DrawNonIndexedCommand*>(
                     &_drawCommandBuffer[i*uintStride]);
 
             gfxCmds->Draw(
@@ -1238,8 +1238,8 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
         if (!TF_VERIFY(indexBuffer)) return;
 
         for (uint32_t i = 0; i < batchCount; ++i) {
-            _DrawIndexedCommand const * cmd =
-                reinterpret_cast<_DrawIndexedCommand*>(
+            pxrImagingHdStPipelineDrawBatch::_DrawIndexedCommand const * cmd =
+                reinterpret_cast<pxrImagingHdStPipelineDrawBatch::_DrawIndexedCommand*>(
                     &_drawCommandBuffer[i*uintStride]);
 
             gfxCmds->DrawIndexed(
@@ -1261,7 +1261,7 @@ static
 HgiGraphicsPipelineSharedPtr
 _GetCullPipeline(
     HdStResourceRegistrySharedPtr const & resourceRegistry,
-    _BindingState const & state,
+    pxrImagingHdStPipelineDrawBatch::_BindingState const & state,
     size_t byteSizeUniforms)
 {
     // Culling pipeline is compatible as long as the shader is the same.
@@ -1284,7 +1284,7 @@ _GetCullPipeline(
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
         pipeDesc.rasterizationState.rasterizerEnabled = false;
 
-        pipeDesc.vertexBuffers = _GetVertexBuffersForViewTransformation(state);
+        pipeDesc.vertexBuffers = pxrImagingHdStPipelineDrawBatch::_GetVertexBuffersForViewTransformation(state);
 
         Hgi* hgi = resourceRegistry->GetHgi();
         HgiGraphicsPipelineHandle pso = hgi->CreateGraphicsPipeline(pipeDesc);
@@ -1341,7 +1341,7 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
     // dispatch buffer to 0 for primitives that are culled, skipping
     // over other elements.
 
-    _BindingState state(
+    pxrImagingHdStPipelineDrawBatch::_BindingState state(
             _drawItemInstances.front()->GetDrawItem(),
             _dispatchBufferCullInput,
             cullingProgram.GetBinder(),
@@ -1394,7 +1394,7 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
             hgi->CreateResourceBindings(bindingsDesc);
     cullGfxCmds->BindResources(resourceBindings);
 
-    _BindVertexBuffersForViewTransformation(cullGfxCmds.get(), state);
+    pxrImagingHdStPipelineDrawBatch::_BindVertexBuffersForViewTransformation(cullGfxCmds.get(), state);
 
     GfMatrix4f const &cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
     GfVec2f const &drawRangeNdc = renderPassState->GetDrawingRangeNDC();
@@ -1500,7 +1500,7 @@ HdSt_PipelineDrawBatch::DrawItemInstanceChanged(
         std::static_pointer_cast<HdStBufferArrayRange>(instanceIndexBar_);
 
     uint32_t const newInstanceCount =
-        _GetInstanceCount(instance, instanceIndexBar, instanceIndexWidth);
+        pxrImagingHdStPipelineDrawBatch::_GetInstanceCount(instance, instanceIndexBar, instanceIndexWidth);
 
     TF_DEBUG(HDST_DRAW).Msg("\nInstance Count changed: %d -> %d\n",
             *instanceCountIt,

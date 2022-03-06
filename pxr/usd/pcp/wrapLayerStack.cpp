@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdPcpWrapLayerStack {
 
 static SdfLayerHandleVector
 _GetLayerStackLayers(const PcpLayerStack &layerStack)
@@ -68,10 +68,10 @@ void wrapLayerStack()
                       boost::python::make_function(&PcpLayerStack::GetIdentifier,
                                     boost::python::return_value_policy<boost::python::return_by_value>()))
         .add_property("layers", 
-                      boost::python::make_function(&_GetLayerStackLayers,
+                      boost::python::make_function(&pxrUsdPcpWrapLayerStack::_GetLayerStackLayers,
                                     boost::python::return_value_policy<TfPySequenceToList>()))
         .add_property("layerOffsets",
-                      boost::python::make_function(&_GetLayerOffsets,
+                      boost::python::make_function(&pxrUsdPcpWrapLayerStack::_GetLayerOffsets,
                                     boost::python::return_value_policy<TfPySequenceToList>()))
         .add_property("layerTree", 
                       boost::python::make_function(&PcpLayerStack::GetLayerTree,

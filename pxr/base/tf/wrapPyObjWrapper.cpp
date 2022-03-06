@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapPyObjWrapper {
 
 struct Tf_PyObjWrapperFromPython {
     Tf_PyObjWrapperFromPython() {
@@ -89,10 +89,10 @@ _RoundTripWrapperIndexTest(TfPyObjWrapper const &wrapper, int index)
 
 void wrapPyObjWrapper()
 {
-    boost::python::to_python_converter<TfPyObjWrapper, Tf_PyObjWrapperToPython>();
-    Tf_PyObjWrapperFromPython();
+    boost::python::to_python_converter<TfPyObjWrapper, pxrBaseTfWrapPyObjWrapper::Tf_PyObjWrapperToPython>();
+    pxrBaseTfWrapPyObjWrapper::Tf_PyObjWrapperFromPython();
 
-    boost::python::def("_RoundTripWrapperTest", _RoundTripWrapperTest);
-    boost::python::def("_RoundTripWrapperCallTest", _RoundTripWrapperCallTest);
-    boost::python::def("_RoundTripWrapperIndexTest", _RoundTripWrapperIndexTest);
+    boost::python::def("_RoundTripWrapperTest", pxrBaseTfWrapPyObjWrapper::_RoundTripWrapperTest);
+    boost::python::def("_RoundTripWrapperCallTest", pxrBaseTfWrapPyObjWrapper::_RoundTripWrapperCallTest);
+    boost::python::def("_RoundTripWrapperIndexTest", pxrBaseTfWrapPyObjWrapper::_RoundTripWrapperIndexTest);
 }

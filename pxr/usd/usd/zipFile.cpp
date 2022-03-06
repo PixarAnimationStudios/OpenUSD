@@ -43,7 +43,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace
+namespace pxrUsdUsdZipFile
 {
 
 // Metafunction that determines if a T instance can be read/written by simple
@@ -642,7 +642,7 @@ class UsdZipFile::Iterator::_IteratorData
 public:
     const _Impl* impl = nullptr;
     size_t offset = 0;
-    _LocalFileHeader fileHeader;
+    pxrUsdUsdZipFile::_LocalFileHeader fileHeader;
     size_t nextHeaderOffset = 0;
 };
 
@@ -650,8 +650,8 @@ UsdZipFile::Iterator::Iterator() = default;
 
 UsdZipFile::Iterator::Iterator(const _Impl* impl, size_t offset)
 {
-    _InputStream src(impl->buffer, impl->size, offset);
-    _LocalFileHeader fileHeader = _ReadLocalFileHeader(src);
+    pxrUsdUsdZipFile::_InputStream src(impl->buffer, impl->size, offset);
+    pxrUsdUsdZipFile::_LocalFileHeader fileHeader = pxrUsdUsdZipFile::_ReadLocalFileHeader(src);
     if (fileHeader.IsValid()) {
         _data.reset(new _IteratorData);
         _data->impl = impl;
@@ -685,7 +685,7 @@ UsdZipFile::Iterator::reference
 UsdZipFile::Iterator::operator*() const
 {
     if (_data) {
-        const _LocalFileHeader& h = _data->fileHeader;
+        const pxrUsdUsdZipFile::_LocalFileHeader& h = _data->fileHeader;
         return std::string(h.filenameStart, h.f.filenameLength);
     }
     return std::string();
@@ -703,9 +703,9 @@ UsdZipFile::Iterator::operator++()
     // See if we can read a header at the next header offset.
     // If not, we've hit the end.
     if (_data) {
-        _InputStream src(
+        pxrUsdUsdZipFile::_InputStream src(
             _data->impl->buffer, _data->impl->size, _data->nextHeaderOffset);
-        _LocalFileHeader nextHeader = _ReadLocalFileHeader(src);
+        pxrUsdUsdZipFile::_LocalFileHeader nextHeader = pxrUsdUsdZipFile::_ReadLocalFileHeader(src);
         if (nextHeader.IsValid()) {
             _data->offset = _data->nextHeaderOffset;
             _data->fileHeader = nextHeader;
@@ -755,7 +755,7 @@ UsdZipFile::Iterator::GetFileInfo() const
 {
     FileInfo f;
     if (_data) {
-        const _LocalFileHeader& h = _data->fileHeader;
+        const pxrUsdUsdZipFile::_LocalFileHeader& h = _data->fileHeader;
         f.dataOffset = h.dataStart - _data->impl->buffer;
         f.size = h.f.compressedSize;
         f.uncompressedSize = h.f.uncompressedSize;
@@ -767,7 +767,7 @@ UsdZipFile::Iterator::GetFileInfo() const
 
 // ------------------------------------------------------------
 
-namespace
+namespace pxrUsdUsdZipFile
 {
 // Compute last modified date and time for given file in MS-DOS format.
 std::pair<uint16_t, uint16_t>
@@ -849,7 +849,7 @@ public:
     //  - Fixed portion of local file header
     //  - Offset from beginning of zip file to start of local file header
     using _Record = 
-        std::tuple<std::string, _LocalFileHeader::Fixed, uint32_t>;
+        std::tuple<std::string, pxrUsdUsdZipFile::_LocalFileHeader::Fixed, uint32_t>;
     std::vector<_Record> addedFiles;
 };
 
@@ -911,7 +911,7 @@ UsdZipFileWriter::AddFile(
 
     // Conform the file path we're writing into the archive to make sure
     // it follows zip file specifications.
-    const std::string zipFilePath = _ZipFilePath(filePathInArchive);
+    const std::string zipFilePath = pxrUsdUsdZipFile::_ZipFilePath(filePathInArchive);
 
     // Check if this file has already been written to this zip archive; if so, 
     // just skip it.
@@ -923,7 +923,7 @@ UsdZipFileWriter::AddFile(
         return zipFilePath;
     }
 
-    _OutputStream outStream(_impl->outputFile.Get());
+    pxrUsdUsdZipFile::_OutputStream outStream(_impl->outputFile.Get());
 
     std::string err;
     ArchConstFileMapping mapping = ArchMapFileReadOnly(filePath, &err);
@@ -934,31 +934,31 @@ UsdZipFileWriter::AddFile(
     }
 
     // Set up local file header
-    _LocalFileHeader h;
-    h.f.signature = _LocalFileHeader::Signature;
+    pxrUsdUsdZipFile::_LocalFileHeader h;
+    h.f.signature = pxrUsdUsdZipFile::_LocalFileHeader::Signature;
     h.f.versionForExtract = 10; // Default value
     h.f.bits = 0;
     h.f.compressionMethod = 0; // No compression
-    std::tie(h.f.lastModTime, h.f.lastModDate) = _ModTimeAndDate(filePath);
-    h.f.crc32 = _Crc32(mapping);
+    std::tie(h.f.lastModTime, h.f.lastModDate) = pxrUsdUsdZipFile::_ModTimeAndDate(filePath);
+    h.f.crc32 = pxrUsdUsdZipFile::_Crc32(mapping);
     h.f.compressedSize = ArchGetFileMappingLength(mapping);
     h.f.uncompressedSize = ArchGetFileMappingLength(mapping);
     h.f.filenameLength = zipFilePath.length();
     
     const uint32_t offset = outStream.Tell();
     const size_t dataOffset = 
-        offset + _LocalFileHeader::FixedSize + h.f.filenameLength;
-    h.f.extraFieldLength = _ComputeExtraFieldPaddingSize(dataOffset);
+        offset + pxrUsdUsdZipFile::_LocalFileHeader::FixedSize + h.f.filenameLength;
+    h.f.extraFieldLength = pxrUsdUsdZipFile::_ComputeExtraFieldPaddingSize(dataOffset);
 
     h.filenameStart = zipFilePath.data();
 
-    char extraFieldBuffer[_PaddingBufferSize] = { 0 };
-    h.extraFieldStart = _PrepareExtraFieldPadding(
+    char extraFieldBuffer[pxrUsdUsdZipFile::_PaddingBufferSize] = { 0 };
+    h.extraFieldStart = pxrUsdUsdZipFile::_PrepareExtraFieldPadding(
         extraFieldBuffer, h.f.extraFieldLength);
 
     h.dataStart = mapping.get();
 
-    _WriteLocalFileHeader(outStream, h);
+    pxrUsdUsdZipFile::_WriteLocalFileHeader(outStream, h);
     _impl->addedFiles.emplace_back(zipFilePath, h.f, offset);
 
     return zipFilePath;
@@ -972,18 +972,18 @@ UsdZipFileWriter::Save()
         return false;
     }
 
-    _OutputStream outStream(_impl->outputFile.Get());
+    pxrUsdUsdZipFile::_OutputStream outStream(_impl->outputFile.Get());
 
     // Write central directory headers for each file added to the zip archive.
     const long centralDirectoryStart = outStream.Tell();
 
     for (const _Impl::_Record& record : _impl->addedFiles) {
         const std::string& fileToZip = std::get<0>(record);
-        const _LocalFileHeader::Fixed& localHeader = std::get<1>(record);
+        const pxrUsdUsdZipFile::_LocalFileHeader::Fixed& localHeader = std::get<1>(record);
         uint32_t offset = std::get<2>(record);
 
-        _CentralDirectoryHeader h;
-        h.f.signature = _CentralDirectoryHeader::Signature;
+        pxrUsdUsdZipFile::_CentralDirectoryHeader h;
+        h.f.signature = pxrUsdUsdZipFile::_CentralDirectoryHeader::Signature;
         h.f.versionMadeBy = 0;
         h.f.versionForExtract = localHeader.versionForExtract;
         h.f.bits = localHeader.bits;
@@ -1002,21 +1002,21 @@ UsdZipFileWriter::Save()
         h.f.localHeaderOffset = offset;
         h.filenameStart = fileToZip.data();
 
-        char extraFieldBuffer[_PaddingBufferSize] = { 0 };
-        h.extraFieldStart = _PrepareExtraFieldPadding(
+        char extraFieldBuffer[pxrUsdUsdZipFile::_PaddingBufferSize] = { 0 };
+        h.extraFieldStart = pxrUsdUsdZipFile::_PrepareExtraFieldPadding(
             extraFieldBuffer, h.f.extraFieldLength);
 
         h.commentStart = nullptr;
 
-        _WriteCentralDirectoryHeader(outStream, h);
+        pxrUsdUsdZipFile::_WriteCentralDirectoryHeader(outStream, h);
     }
 
     const long centralDirectoryEnd = outStream.Tell();
 
     // Write the end of central directory record.
     {
-        _EndOfCentralDirectoryRecord r;
-        r.f.signature = _EndOfCentralDirectoryRecord::Signature;
+        pxrUsdUsdZipFile::_EndOfCentralDirectoryRecord r;
+        r.f.signature = pxrUsdUsdZipFile::_EndOfCentralDirectoryRecord::Signature;
         r.f.diskNumber = 0;
         r.f.diskNumberForCentralDir = 0;
         r.f.numCentralDirEntriesOnDisk = _impl->addedFiles.size();
@@ -1026,7 +1026,7 @@ UsdZipFileWriter::Save()
         r.f.commentLength = 0;
         r.commentStart = nullptr;
 
-        _WriteEndOfCentralDirectoryRecord(outStream, r);
+        pxrUsdUsdZipFile::_WriteEndOfCentralDirectoryRecord(outStream, r);
     }
 
     _impl->outputFile.Close();

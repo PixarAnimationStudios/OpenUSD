@@ -341,7 +341,7 @@ UsdGeomCamera::CreateExposureAttr(VtValue const &defaultValue, bool writeSparsel
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomCamera {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -374,7 +374,7 @@ UsdGeomCamera::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->exposure,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomCamera::_ConcatenateAttributeNames(
             UsdGeomXformable::GetSchemaAttributeNames(true),
             localNames);
 

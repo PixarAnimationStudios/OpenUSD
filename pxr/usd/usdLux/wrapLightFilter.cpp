@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdLuxWrapLightFilter {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -100,14 +100,14 @@ void wrapUsdLuxLightFilter()
         .def("GetShaderIdAttr",
              &This::GetShaderIdAttr)
         .def("CreateShaderIdAttr",
-             &_CreateShaderIdAttr,
+             &pxrUsdUsdLuxWrapLightFilter::_CreateShaderIdAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdLuxWrapLightFilter::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdLuxWrapLightFilter::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -144,7 +144,7 @@ _CreateShaderIdAttrForRenderContext(
         writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdLuxWrapLightFilter {
 
 WRAP_CUSTOM {
     _class

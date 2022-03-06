@@ -28,7 +28,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace
+namespace pxrImagingHdMaterialFilteringSceneIndexBase
 {
 
 class _MaterialDataSource : public HdContainerDataSource
@@ -161,7 +161,7 @@ HdMaterialFilteringSceneIndexBase::GetPrim(const SdfPath &primPath) const
     if (auto input = _GetInputSceneIndex()) {
         HdSceneIndexPrim prim = input->GetPrim(primPath);
         if (prim.dataSource) {
-            prim.dataSource = _PrimDataSource::New(prim.dataSource,
+            prim.dataSource = pxrImagingHdMaterialFilteringSceneIndexBase::_PrimDataSource::New(prim.dataSource,
                 primPath, _GetFilteringFunction());
         }
 

@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdVolWrapField3DAsset {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -107,21 +107,21 @@ void wrapUsdVolField3DAsset()
         .def("GetFieldDataTypeAttr",
              &This::GetFieldDataTypeAttr)
         .def("CreateFieldDataTypeAttr",
-             &_CreateFieldDataTypeAttr,
+             &pxrUsdUsdVolWrapField3DAsset::_CreateFieldDataTypeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetFieldPurposeAttr",
              &This::GetFieldPurposeAttr)
         .def("CreateFieldPurposeAttr",
-             &_CreateFieldPurposeAttr,
+             &pxrUsdUsdVolWrapField3DAsset::_CreateFieldPurposeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdVolWrapField3DAsset::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdVolWrapField3DAsset::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -143,7 +143,7 @@ void wrapUsdVolField3DAsset()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdVolWrapField3DAsset {
 
 WRAP_CUSTOM {
 }

@@ -40,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Hash implementation which allows us to coalesce warnings
 // and statuses based on their file name, line number and 
 // function name.
-namespace {
+namespace pxrUsdUsdUtilsCoalescingDiagnosticDelegate {
     using _CoalescedItem = UsdUtilsCoalescingDiagnosticDelegateSharedItem;
 
     struct _CoalescedItemHash {
@@ -105,7 +105,7 @@ UsdUtilsCoalescingDiagnosticDelegateVector
 UsdUtilsCoalescingDiagnosticDelegate::TakeCoalescedDiagnostics()
 {
     std::unordered_map<UsdUtilsCoalescingDiagnosticDelegateSharedItem, size_t,
-         _CoalescedItemHash, _CoalescedItemEqualTo> existence;
+         pxrUsdUsdUtilsCoalescingDiagnosticDelegate::_CoalescedItemHash, pxrUsdUsdUtilsCoalescingDiagnosticDelegate::_CoalescedItemEqualTo> existence;
 
     UsdUtilsCoalescingDiagnosticDelegateVector result;
 

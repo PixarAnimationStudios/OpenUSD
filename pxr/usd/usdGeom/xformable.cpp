@@ -101,7 +101,7 @@ UsdGeomXformable::CreateXformOpOrderAttr(VtValue const &defaultValue, bool write
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomXformable {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -121,7 +121,7 @@ UsdGeomXformable::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->xformOpOrder,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomXformable::_ConcatenateAttributeNames(
             UsdGeomImageable::GetSchemaAttributeNames(true),
             localNames);
 

@@ -79,7 +79,7 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_PACKED_NORMALS, 1,
                       "Use packed normals");
 
 // Use more recognizable names for each compute queue the mesh computations use.
-namespace {
+namespace pxrImagingHdStMesh {
     constexpr HdStComputeQueue _CopyExtCompQueue = HdStComputeQueueZero;
     constexpr HdStComputeQueue _RefinePrimvarCompQueue = HdStComputeQueueOne;
     constexpr HdStComputeQueue _NormalsCompQueue = HdStComputeQueueTwo;
@@ -1108,7 +1108,7 @@ _QuadrangulatePrimvar(HdBufferSourceSharedPtr const &source,
             source->GetName(), source->GetTupleType().type, id);
     // computation can be null for all quad mesh.
     if (computation) {
-        computations->emplace_back(computation, _RefinePrimvarCompQueue);
+        computations->emplace_back(computation, pxrImagingHdStMesh::_RefinePrimvarCompQueue);
     }
 }
 
@@ -1171,7 +1171,7 @@ _RefinePrimvar(HdBufferSourceSharedPtr const &source,
             channel);
     // computation can be null for empty mesh
     if (computation) {
-        computations->emplace_back(computation, _RefinePrimvarCompQueue);
+        computations->emplace_back(computation, pxrImagingHdStMesh::_RefinePrimvarCompQueue);
     }
 }
 
@@ -1490,7 +1490,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                     _pointsDataType,
                     usePackedSmoothNormals);
             computations.emplace_back(
-                smoothNormalsComputation, _NormalsCompQueue);
+                smoothNormalsComputation, pxrImagingHdStMesh::_NormalsCompQueue);
 
             // note: we haven't had explicit dependency for GPU
             // computations just yet. Currently they are executed
@@ -1510,7 +1510,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 // computation can be null for empty mesh
                 if (computation) {
                     computations.emplace_back(
-                        computation, _RefineNormalsCompQueue);
+                        computation, pxrImagingHdStMesh::_RefineNormalsCompQueue);
                 }
             } else if (doQuadrangulate) {
                 HdComputationSharedPtr computation =
@@ -1521,7 +1521,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 // computation can be null for all-quad mesh
                 if (computation) {
                     computations.emplace_back(
-                        computation, _RefineNormalsCompQueue);
+                        computation, pxrImagingHdStMesh::_RefineNormalsCompQueue);
                 }
             }
         }
@@ -2002,7 +2002,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                     generatedNormalsName,
                     _pointsDataType,
                     usePackedNormals);
-            computations.emplace_back(flatNormalsComputation, _NormalsCompQueue);
+            computations.emplace_back(flatNormalsComputation, pxrImagingHdStMesh::_NormalsCompQueue);
         }
     }
 

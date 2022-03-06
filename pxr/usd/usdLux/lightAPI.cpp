@@ -291,7 +291,7 @@ UsdLuxLightAPI::CreateFiltersRel() const
                        /* custom = */ false);
 }
 
-namespace {
+namespace pxrUsdUsdLuxLightAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -322,7 +322,7 @@ UsdLuxLightAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->inputsColorTemperature,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdLuxLightAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

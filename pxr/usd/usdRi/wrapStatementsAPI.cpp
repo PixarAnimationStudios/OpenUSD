@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdRiWrapStatementsAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -79,7 +79,7 @@ void wrapUsdRiStatementsAPI()
 {
     typedef UsdRiStatementsAPI This;
 
-    UsdRiStatementsAPI_CanApplyResult::Wrap<UsdRiStatementsAPI_CanApplyResult>(
+    pxrUsdUsdRiWrapStatementsAPI::UsdRiStatementsAPI_CanApplyResult::Wrap<pxrUsdUsdRiWrapStatementsAPI::UsdRiStatementsAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -93,7 +93,7 @@ void wrapUsdRiStatementsAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdRiWrapStatementsAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -112,10 +112,10 @@ void wrapUsdRiStatementsAPI()
         .def(!boost::python::self)
 
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdRiWrapStatementsAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdRiWrapStatementsAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -137,7 +137,7 @@ void wrapUsdRiStatementsAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdRiWrapStatementsAPI {
 
 static SdfPathVector
 _GetModelCoordinateSystems(const UsdRiStatementsAPI &self)

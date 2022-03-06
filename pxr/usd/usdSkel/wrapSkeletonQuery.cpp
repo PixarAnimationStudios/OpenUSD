@@ -42,7 +42,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
-namespace {
+namespace pxrUsdUsdSkelWrapSkeletonQuery {
 
 
 VtMatrix4dArray
@@ -136,22 +136,22 @@ void wrapUsdSkelSkeletonQuery()
 
         .def("GetJointOrder", &This::GetJointOrder)
         
-        .def("GetJointWorldBindTransforms", &_GetJointWorldBindTransforms)
+        .def("GetJointWorldBindTransforms", &pxrUsdUsdSkelWrapSkeletonQuery::_GetJointWorldBindTransforms)
         
-        .def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
+        .def("ComputeJointLocalTransforms", &pxrUsdUsdSkelWrapSkeletonQuery::_ComputeJointLocalTransforms,
              (boost::python::arg("time")=UsdTimeCode::Default(), boost::python::arg("atRest")=false))
         
-        .def("ComputeJointSkelTransforms", &_ComputeJointSkelTransforms,
+        .def("ComputeJointSkelTransforms", &pxrUsdUsdSkelWrapSkeletonQuery::_ComputeJointSkelTransforms,
              (boost::python::arg("time")=UsdTimeCode::Default(), boost::python::arg("atRest")=false))
 
-        .def("ComputeJointWorldTransforms", &_ComputeJointWorldTransforms,
+        .def("ComputeJointWorldTransforms", &pxrUsdUsdSkelWrapSkeletonQuery::_ComputeJointWorldTransforms,
              (boost::python::arg("time")=UsdTimeCode::Default(), boost::python::arg("atRest")=false))
 
-        .def("ComputeSkinningTransforms", &_ComputeSkinningTransforms,
+        .def("ComputeSkinningTransforms", &pxrUsdUsdSkelWrapSkeletonQuery::_ComputeSkinningTransforms,
              (boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("ComputeJointRestRelativeTransforms",
-             &_ComputeJointRestRelativeTransforms,
+             &pxrUsdUsdSkelWrapSkeletonQuery::_ComputeJointRestRelativeTransforms,
              (boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("HasBindPose", &This::HasBindPose)

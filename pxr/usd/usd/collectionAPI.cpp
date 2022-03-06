@@ -263,7 +263,7 @@ UsdCollectionAPI::CreateExcludesRel() const
                        /* custom = */ false);
 }
 
-namespace {
+namespace pxrUsdUsdCollectionAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -284,7 +284,7 @@ UsdCollectionAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdTokens->collection_MultipleApplyTemplate_IncludeRoot,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdCollectionAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

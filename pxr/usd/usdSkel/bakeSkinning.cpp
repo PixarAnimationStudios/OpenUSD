@@ -118,7 +118,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 */
 
 
-namespace {
+namespace pxrUsdUsdSkelBakeSkinning {
 
 
 std::string
@@ -542,7 +542,7 @@ private:
 using _SkelAdapterRefPtr = std::shared_ptr<_SkelAdapter>;
 
 
-namespace {
+namespace pxrUsdUsdSkelBakeSkinning {
 
 
 bool
@@ -2252,7 +2252,7 @@ UsdSkelBakeSkinning(const UsdSkelCache& skelCache,
         "Deformation flags:\n%s",
         TfStringify(interval).c_str(),
         parms.bindings.size(), parms.layers.size(),
-        _DeformationFlagsToString(parms.deformationFlags, "    ").c_str());
+        pxrUsdUsdSkelBakeSkinning::_DeformationFlagsToString(parms.deformationFlags, "    ").c_str());
 
     UsdGeomXformCache xfCache;
 
@@ -2277,9 +2277,9 @@ UsdSkelBakeSkinning(const UsdSkelCache& skelCache,
     }
 
     // Create adapters to wrangle IO on skels and skinnable prims.
-    std::vector<_SkelAdapterRefPtr> skelAdapters;
-    std::vector<_SkinningAdapterRefPtr> skinningAdapters;
-    if (!_CreateAdapters(parms, skelCache, &skelAdapters,
+    std::vector<pxrUsdUsdSkelBakeSkinning::_SkelAdapterRefPtr> skelAdapters;
+    std::vector<pxrUsdUsdSkelBakeSkinning::_SkinningAdapterRefPtr> skinningAdapters;
+    if (!pxrUsdUsdSkelBakeSkinning::_CreateAdapters(parms, skelCache, &skelAdapters,
                          &skinningAdapters, &xfCache)) {
         return false;
     }
@@ -2288,7 +2288,7 @@ UsdSkelBakeSkinning(const UsdSkelCache& skelCache,
     // The skel adapters are additionally annotated with a mask indicating
     // whether or not each individual skel needs to be processed at each time.
     const std::vector<UsdTimeCode> times =
-        _ComputeTimeSamples(stage, interval, skelAdapters,
+        pxrUsdUsdSkelBakeSkinning::_ComputeTimeSamples(stage, interval, skelAdapters,
                             skinningAdapters, &xfCache);
 
     TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
@@ -2336,7 +2336,7 @@ UsdSkelBakeSkinning(const UsdSkelCache& skelCache,
             // Update all skel animations for this time.
             WorkParallelForEach(
                 skelAdapters.begin(), skelAdapters.end(),
-                [time,ti](const _SkelAdapterRefPtr& skelAdapter) {
+                [time,ti](const pxrUsdUsdSkelBakeSkinning::_SkelAdapterRefPtr& skelAdapter) {
                     skelAdapter->UpdateAnimation(time, ti);
                 });
 
@@ -2348,7 +2348,7 @@ UsdSkelBakeSkinning(const UsdSkelCache& skelCache,
             WorkParallelForEach(
                 skinningAdapters.begin(), skinningAdapters.end(),
                 [time,ti](
-                    const _SkinningAdapterRefPtr& skinningAdapter) {  
+                    const pxrUsdUsdSkelBakeSkinning::_SkinningAdapterRefPtr& skinningAdapter) {  
                     skinningAdapter->Update(time, ti);
                 });
 
@@ -2386,7 +2386,7 @@ UsdSkelBakeSkinning(const UsdSkelCache& skelCache,
 
                 // The values stored in Sdf have exceeded our memory limits.
                 // Save the layer to flush changes to disk.
-                if (!_SaveLayers(parms)) {
+                if (!pxrUsdUsdSkelBakeSkinning::_SaveLayers(parms)) {
                     return false;
                 }
 
@@ -2394,7 +2394,7 @@ UsdSkelBakeSkinning(const UsdSkelCache& skelCache,
             }
         }
 
-        _ConvertSkelRootsToXforms(parms);
+        pxrUsdUsdSkelBakeSkinning::_ConvertSkelRootsToXforms(parms);
     }
 
     // Expire the change block. Changes will be processed on the stage.
@@ -2408,12 +2408,12 @@ UsdSkelBakeSkinning(const UsdSkelCache& skelCache,
     }
 
     if (parms.updateExtents) {
-        _PostUpdateExtents(skinningAdapters, times);
+        pxrUsdUsdSkelBakeSkinning::_PostUpdateExtents(skinningAdapters, times);
     }
     if (parms.updateExtentHints) {
-        _UpdateExtentHints(skinningAdapters, times);
+        pxrUsdUsdSkelBakeSkinning::_UpdateExtentHints(skinningAdapters, times);
     }
-    return !parms.saveLayers || _SaveLayers(parms);
+    return !parms.saveLayers || pxrUsdUsdSkelBakeSkinning::_SaveLayers(parms);
 }
 
 

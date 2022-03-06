@@ -41,7 +41,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrBaseTfScopeDescription {
 
 // A 2 MB buffer for generating the crash message, and a lock.
 tbb::spin_mutex messageMutex;
@@ -321,7 +321,7 @@ TfScopeDescription::_Push()
 {
     // No other thread can modify head, so we can read it without the lock
     // safely here.
-    _Stack &stack = _LocalStack::Get();
+    pxrBaseTfScopeDescription::_Stack &stack = pxrBaseTfScopeDescription::_LocalStack::Get();
     _prev = stack.head;
     _localStack = &stack;
     tbb::spin_mutex::scoped_lock lock(stack.mutex);
@@ -333,7 +333,7 @@ TfScopeDescription::_Pop() const
 {
     // No other thread can modify head, so we can read it without the lock
     // safely here.
-    _Stack &stack = *static_cast<_Stack *>(_localStack);
+    pxrBaseTfScopeDescription::_Stack &stack = *static_cast<pxrBaseTfScopeDescription::_Stack *>(_localStack);
     TF_AXIOM(stack.head == this);
     tbb::spin_mutex::scoped_lock lock(stack.mutex);
     stack.head = _prev;
@@ -372,7 +372,7 @@ TfScopeDescription::~TfScopeDescription()
 void
 TfScopeDescription::SetDescription(std::string const &msg)
 {
-    _Stack &stack = *static_cast<_Stack *>(_localStack);
+    pxrBaseTfScopeDescription::_Stack &stack = *static_cast<pxrBaseTfScopeDescription::_Stack *>(_localStack);
     {
         tbb::spin_mutex::scoped_lock lock(stack.mutex);
         _description = msg.c_str();
@@ -383,7 +383,7 @@ TfScopeDescription::SetDescription(std::string const &msg)
 void
 TfScopeDescription::SetDescription(std::string &&msg)
 {
-    _Stack &stack = *static_cast<_Stack *>(_localStack);
+    pxrBaseTfScopeDescription::_Stack &stack = *static_cast<pxrBaseTfScopeDescription::_Stack *>(_localStack);
     tbb::spin_mutex::scoped_lock lock(stack.mutex);
     _ownedString = std::move(msg);
     _description = _ownedString->c_str();
@@ -392,7 +392,7 @@ TfScopeDescription::SetDescription(std::string &&msg)
 void
 TfScopeDescription::SetDescription(char const *msg)
 {
-    _Stack &stack = *static_cast<_Stack *>(_localStack);
+    pxrBaseTfScopeDescription::_Stack &stack = *static_cast<pxrBaseTfScopeDescription::_Stack *>(_localStack);
     {
         tbb::spin_mutex::scoped_lock lock(stack.mutex);
         _description = msg;
@@ -406,8 +406,8 @@ _GetScopeDescriptionStack(std::thread::id id)
 {
     std::vector<std::string> result;
     {
-        auto lock = GetRegistry().LockThread(id);
-        if (_Stack *stack = lock.Get()) {
+        auto lock = pxrBaseTfScopeDescription::GetRegistry().LockThread(id);
+        if (pxrBaseTfScopeDescription::_Stack *stack = lock.Get()) {
             tbb::spin_mutex::scoped_lock lock(stack->mutex);
             for (TfScopeDescription *cur = stack->head; cur;
                  cur = Tf_GetPreviousScopeDescription(cur)) {
@@ -435,13 +435,13 @@ TfGetThisThreadScopeDescriptionStack()
 // From scopeDescriptionPrivate.h
 
 Tf_ScopeDescriptionStackReportLock::Tf_ScopeDescriptionStackReportLock()
-    : _msg(_ComputeAndLockScopeDescriptionStackMsg())
+    : _msg(pxrBaseTfScopeDescription::_ComputeAndLockScopeDescriptionStackMsg())
 {
 }
 
 Tf_ScopeDescriptionStackReportLock::~Tf_ScopeDescriptionStackReportLock()
 {
-    messageMutex.unlock();
+    pxrBaseTfScopeDescription::messageMutex.unlock();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

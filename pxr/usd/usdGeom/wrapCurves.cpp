@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapCurves {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -104,21 +104,21 @@ void wrapUsdGeomCurves()
         .def("GetCurveVertexCountsAttr",
              &This::GetCurveVertexCountsAttr)
         .def("CreateCurveVertexCountsAttr",
-             &_CreateCurveVertexCountsAttr,
+             &pxrUsdUsdGeomWrapCurves::_CreateCurveVertexCountsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetWidthsAttr",
              &This::GetWidthsAttr)
         .def("CreateWidthsAttr",
-             &_CreateWidthsAttr,
+             &pxrUsdUsdGeomWrapCurves::_CreateWidthsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapCurves::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapCurves::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -140,7 +140,7 @@ void wrapUsdGeomCurves()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdGeomWrapCurves {
 
 static TfPyObjWrapper 
 _ComputeExtent(boost::python::object points, boost::python::object widths) {

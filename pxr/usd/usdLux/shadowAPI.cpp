@@ -193,7 +193,7 @@ UsdLuxShadowAPI::CreateShadowFalloffGammaAttr(VtValue const &defaultValue, bool 
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdLuxShadowAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -217,7 +217,7 @@ UsdLuxShadowAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->inputsShadowFalloffGamma,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdLuxShadowAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

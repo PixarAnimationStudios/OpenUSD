@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdPcpWrapPathTranslation {
 
 static SdfPath
 TranslatePathFromNodeToRoot(const PcpNodeRef& sourceNode,
@@ -53,9 +53,9 @@ TranslatePathFromRootToNode(const PcpNodeRef& destNode,
 
 void wrapPathTranslation()
 {
-    boost::python::def("TranslatePathFromNodeToRoot", TranslatePathFromNodeToRoot,
+    boost::python::def("TranslatePathFromNodeToRoot", pxrUsdPcpWrapPathTranslation::TranslatePathFromNodeToRoot,
         boost::python::arg("sourceNode"), boost::python::arg("pathInNodeNamespace"));
 
-    boost::python::def("TranslatePathFromRootToNode", TranslatePathFromRootToNode,
+    boost::python::def("TranslatePathFromRootToNode", pxrUsdPcpWrapPathTranslation::TranslatePathFromRootToNode,
         boost::python::arg("destNode"), boost::python::arg("pathInRootNamespace"));
 }

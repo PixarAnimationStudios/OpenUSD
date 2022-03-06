@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdUIWrapNodeGraphNodeAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -121,7 +121,7 @@ void wrapUsdUINodeGraphNodeAPI()
 {
     typedef UsdUINodeGraphNodeAPI This;
 
-    UsdUINodeGraphNodeAPI_CanApplyResult::Wrap<UsdUINodeGraphNodeAPI_CanApplyResult>(
+    pxrUsdUsdUIWrapNodeGraphNodeAPI::UsdUINodeGraphNodeAPI_CanApplyResult::Wrap<pxrUsdUsdUIWrapNodeGraphNodeAPI::UsdUINodeGraphNodeAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -135,7 +135,7 @@ void wrapUsdUINodeGraphNodeAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdUIWrapNodeGraphNodeAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -157,49 +157,49 @@ void wrapUsdUINodeGraphNodeAPI()
         .def("GetPosAttr",
              &This::GetPosAttr)
         .def("CreatePosAttr",
-             &_CreatePosAttr,
+             &pxrUsdUsdUIWrapNodeGraphNodeAPI::_CreatePosAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetStackingOrderAttr",
              &This::GetStackingOrderAttr)
         .def("CreateStackingOrderAttr",
-             &_CreateStackingOrderAttr,
+             &pxrUsdUsdUIWrapNodeGraphNodeAPI::_CreateStackingOrderAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetDisplayColorAttr",
              &This::GetDisplayColorAttr)
         .def("CreateDisplayColorAttr",
-             &_CreateDisplayColorAttr,
+             &pxrUsdUsdUIWrapNodeGraphNodeAPI::_CreateDisplayColorAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetIconAttr",
              &This::GetIconAttr)
         .def("CreateIconAttr",
-             &_CreateIconAttr,
+             &pxrUsdUsdUIWrapNodeGraphNodeAPI::_CreateIconAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetExpansionStateAttr",
              &This::GetExpansionStateAttr)
         .def("CreateExpansionStateAttr",
-             &_CreateExpansionStateAttr,
+             &pxrUsdUsdUIWrapNodeGraphNodeAPI::_CreateExpansionStateAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetSizeAttr",
              &This::GetSizeAttr)
         .def("CreateSizeAttr",
-             &_CreateSizeAttr,
+             &pxrUsdUsdUIWrapNodeGraphNodeAPI::_CreateSizeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdUIWrapNodeGraphNodeAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdUIWrapNodeGraphNodeAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -221,7 +221,7 @@ void wrapUsdUINodeGraphNodeAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdUIWrapNodeGraphNodeAPI {
 
 WRAP_CUSTOM {
 }

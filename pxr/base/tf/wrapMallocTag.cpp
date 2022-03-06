@@ -45,7 +45,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapMallocTag {
 
 static bool
 _Initialize()
@@ -171,17 +171,17 @@ void wrapMallocTag()
     typedef TfMallocTag This;
     
     boost::python::scope mallocTag = boost::python::class_<This>("MallocTag", boost::python::no_init)
-        .def("Initialize", _Initialize2)
-        .def("Initialize", _Initialize).staticmethod("Initialize")
+        .def("Initialize", pxrBaseTfWrapMallocTag::_Initialize2)
+        .def("Initialize", pxrBaseTfWrapMallocTag::_Initialize).staticmethod("Initialize")
         .def("IsInitialized", This::IsInitialized).staticmethod("IsInitialized")
         .def("GetTotalBytes", This::GetTotalBytes).staticmethod("GetTotalBytes")
         .def("GetMaxTotalBytes", This::GetMaxTotalBytes).staticmethod("GetMaxTotalBytes")
-        .def("GetCallTree", _GetCallTree).staticmethod("GetCallTree")
+        .def("GetCallTree", pxrBaseTfWrapMallocTag::_GetCallTree).staticmethod("GetCallTree")
 
         .def("SetCapturedMallocStacksMatchList",
              This::SetCapturedMallocStacksMatchList)
             .staticmethod("SetCapturedMallocStacksMatchList")
-        .def("GetCallStacks", _GetCallStacks,
+        .def("GetCallStacks", pxrBaseTfWrapMallocTag::_GetCallStacks,
              boost::python::return_value_policy<TfPySequenceToList>())
             .staticmethod("GetCallStacks")
 
@@ -191,15 +191,15 @@ void wrapMallocTag()
 
     {
     boost::python::scope callTree = boost::python::class_<This::CallTree>("CallTree", boost::python::no_init)
-        .def("GetPrettyPrintString", _GetPrettyPrintString)
-        .def("GetCallSites", _GetCallSites,
+        .def("GetPrettyPrintString", pxrBaseTfWrapMallocTag::_GetPrettyPrintString)
+        .def("GetCallSites", pxrBaseTfWrapMallocTag::_GetCallSites,
              boost::python::return_value_policy<TfPySequenceToList>())
-        .def("GetRoot", _GetRoot)
-        .def("Report", _Report,
+        .def("GetRoot", pxrBaseTfWrapMallocTag::_GetRoot)
+        .def("Report", pxrBaseTfWrapMallocTag::_Report,
             (boost::python::arg("rootName")=std::string()))
-        .def("Report", _ReportToFile,
+        .def("Report", pxrBaseTfWrapMallocTag::_ReportToFile,
              (boost::python::arg("fileName"), boost::python::arg("rootName")=std::string()))
-        .def("LogReport", _LogReport,
+        .def("LogReport", pxrBaseTfWrapMallocTag::_LogReport,
              (boost::python::arg("rootName")=std::string()))
         ;
 
@@ -208,7 +208,7 @@ void wrapMallocTag()
         .def_readonly("nBytesDirect", &This::CallTree::PathNode::nBytesDirect)
         .def_readonly("nAllocations", &This::CallTree::PathNode::nAllocations)
         .def_readonly("siteName", &This::CallTree::PathNode::siteName)
-        .def("GetChildren", _GetChildren,
+        .def("GetChildren", pxrBaseTfWrapMallocTag::_GetChildren,
              boost::python::return_value_policy<TfPySequenceToList>())
         ;
 

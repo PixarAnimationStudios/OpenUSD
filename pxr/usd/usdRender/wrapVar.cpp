@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdRenderWrapVar {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -114,28 +114,28 @@ void wrapUsdRenderVar()
         .def("GetDataTypeAttr",
              &This::GetDataTypeAttr)
         .def("CreateDataTypeAttr",
-             &_CreateDataTypeAttr,
+             &pxrUsdUsdRenderWrapVar::_CreateDataTypeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetSourceNameAttr",
              &This::GetSourceNameAttr)
         .def("CreateSourceNameAttr",
-             &_CreateSourceNameAttr,
+             &pxrUsdUsdRenderWrapVar::_CreateSourceNameAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetSourceTypeAttr",
              &This::GetSourceTypeAttr)
         .def("CreateSourceTypeAttr",
-             &_CreateSourceTypeAttr,
+             &pxrUsdUsdRenderWrapVar::_CreateSourceTypeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdRenderWrapVar::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdRenderWrapVar::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -157,7 +157,7 @@ void wrapUsdRenderVar()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdRenderWrapVar {
 
 WRAP_CUSTOM {
 }

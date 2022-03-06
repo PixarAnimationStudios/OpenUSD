@@ -162,7 +162,7 @@ HdExtComputationUtils::_InvokeComputation(
 }
 
 
-namespace {
+namespace pxrImagingHdExtComputationUtils {
 
 static HdExtComputationUtils::ValueStore
 _ExecuteComputations(HdExtComputationConstPtrVector computations,
@@ -247,7 +247,7 @@ HdExtComputationUtils::GetComputedPrimvarValues(
 
     // Execution
     HdExtComputationUtils::ValueStore valueStore =
-        _ExecuteComputations(sortedComputations, sceneDelegate);
+        pxrImagingHdExtComputationUtils::_ExecuteComputations(sortedComputations, sceneDelegate);
 
     // Output extraction
     HdExtComputationUtils::ValueStore computedPrimvarValueStore;

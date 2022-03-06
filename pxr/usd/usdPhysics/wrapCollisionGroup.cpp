@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapCollisionGroup {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -95,10 +95,10 @@ void wrapUsdPhysicsCollisionGroup()
              &This::GetFilteredGroupsRel)
         .def("CreateFilteredGroupsRel",
              &This::CreateFilteredGroupsRel)
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdPhysicsWrapCollisionGroup::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdPhysicsWrapCollisionGroup::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -120,7 +120,7 @@ void wrapUsdPhysicsCollisionGroup()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapCollisionGroup {
 
 WRAP_CUSTOM {
     _class

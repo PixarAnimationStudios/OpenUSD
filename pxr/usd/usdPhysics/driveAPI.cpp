@@ -321,7 +321,7 @@ UsdPhysicsDriveAPI::CreateStiffnessAttr(VtValue const &defaultValue, bool writeS
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdPhysicsDriveAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -346,7 +346,7 @@ UsdPhysicsDriveAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdPhysicsTokens->drive_MultipleApplyTemplate_PhysicsStiffness,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdPhysicsDriveAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

@@ -49,7 +49,7 @@ HdPrimvarSchema::IsIndexed()
     return false;
 }
 
-namespace {
+namespace pxrImagingHdPrimvarSchema {
 
 template<typename T>
 VtValue 
@@ -187,7 +187,7 @@ HdPrimvarSchema::GetPrimvarValue()
                 HdPrimvarSchemaTokens->primvarValue);
         } else if (_container->Has(HdPrimvarSchemaTokens->indexedPrimvarValue) && 
                    _container->Has(HdPrimvarSchemaTokens->indices)) {
-            return _HdDataSourceFlattenedPrimvarValue::New(
+            return pxrImagingHdPrimvarSchema::_HdDataSourceFlattenedPrimvarValue::New(
                 _GetTypedDataSource<HdSampledDataSource>(
                     HdPrimvarSchemaTokens->indexedPrimvarValue),
                 _GetTypedDataSource<HdTypedSampledDataSource<VtIntArray>>(

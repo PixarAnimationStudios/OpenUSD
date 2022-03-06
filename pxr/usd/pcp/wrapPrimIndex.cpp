@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdPcpWrapPrimIndex {
 
 static SdfPrimSpecHandleVector
 _GetPrimStack(const PcpPrimIndex& self)
@@ -74,7 +74,7 @@ void wrapPrimIndex()
 
     boost::python::class_<This>("PrimIndex", "", boost::python::no_init)
         .add_property("primStack", 
-                      boost::python::make_function(&_GetPrimStack,
+                      boost::python::make_function(&pxrUsdPcpWrapPrimIndex::_GetPrimStack,
                                     boost::python::return_value_policy<TfPySequenceToList>()))
         .add_property("rootNode", &This::GetRootNode)
         .add_property("hasAnyPayloads", &This::HasAnyPayloads)
@@ -85,9 +85,9 @@ void wrapPrimIndex()
         .def("IsValid", &This::IsValid)
         .def("IsInstanceable", &This::IsInstanceable)
 
-        .def("ComputePrimChildNames", &_ComputePrimChildNames)
+        .def("ComputePrimChildNames", &pxrUsdPcpWrapPrimIndex::_ComputePrimChildNames)
         .def("ComputePrimPropertyNames",
-            &_ComputePrimPropertyNames,
+            &pxrUsdPcpWrapPrimIndex::_ComputePrimPropertyNames,
             boost::python::return_value_policy<TfPySequenceToList>())
         .def("ComposeAuthoredVariantSelections",
              &This::ComposeAuthoredVariantSelections,

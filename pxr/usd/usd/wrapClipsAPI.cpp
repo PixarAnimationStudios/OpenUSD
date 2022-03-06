@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapClipsAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -87,10 +87,10 @@ void wrapUsdClipsAPI()
         .def(!boost::python::self)
 
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdWrapClipsAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdWrapClipsAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -114,7 +114,7 @@ void wrapUsdClipsAPI()
 
 #include "pxr/base/tf/makePyConstructor.h"
 
-namespace {
+namespace pxrUsdUsdWrapClipsAPI {
 
 static VtDictionary _GetClips(const UsdClipsAPI &self)
 {

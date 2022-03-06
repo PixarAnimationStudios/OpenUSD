@@ -142,7 +142,7 @@ UsdShadeNodeDefAPI::CreateIdAttr(VtValue const &defaultValue, bool writeSparsely
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdShadeNodeDefAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -163,7 +163,7 @@ UsdShadeNodeDefAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdShadeTokens->infoId,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdShadeNodeDefAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrBaseArchRegex {
 
 std::string
 _Replace(std::string&& s, const std::string& from, const std::string& to)
@@ -164,7 +164,7 @@ ArchRegex::ArchRegex(const std::string& pattern, unsigned int flags) :
             _error = "empty pattern";
         }
         else if (flags & GLOB) {
-            _impl.reset(new _Impl(_GlobToRegex(pattern), _flags, &_error));
+            _impl.reset(new _Impl(pxrBaseArchRegex::_GlobToRegex(pattern), _flags, &_error));
         }
         else {
             _impl.reset(new _Impl(pattern, _flags, &_error));

@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrImagingCameraUtilWrapFraming {
 
 std::string _Repr(const CameraUtilFraming &self)
 {
@@ -82,6 +82,6 @@ wrapFraming()
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self != boost::python::self)
 
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrImagingCameraUtilWrapFraming::_Repr)
     ;
 }

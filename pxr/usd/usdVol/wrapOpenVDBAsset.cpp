@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdVolWrapOpenVDBAsset {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -107,21 +107,21 @@ void wrapUsdVolOpenVDBAsset()
         .def("GetFieldDataTypeAttr",
              &This::GetFieldDataTypeAttr)
         .def("CreateFieldDataTypeAttr",
-             &_CreateFieldDataTypeAttr,
+             &pxrUsdUsdVolWrapOpenVDBAsset::_CreateFieldDataTypeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetFieldClassAttr",
              &This::GetFieldClassAttr)
         .def("CreateFieldClassAttr",
-             &_CreateFieldClassAttr,
+             &pxrUsdUsdVolWrapOpenVDBAsset::_CreateFieldClassAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdVolWrapOpenVDBAsset::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdVolWrapOpenVDBAsset::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -143,7 +143,7 @@ void wrapUsdVolOpenVDBAsset()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdVolWrapOpenVDBAsset {
 
 WRAP_CUSTOM {
 }

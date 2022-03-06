@@ -27,7 +27,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdMediaWrapTokens {
 
 // Helper to return a static token as a string.  We wrap tokens as Python
 // strings and for some reason simply wrapping the token using def_readonly
@@ -64,18 +64,18 @@ void wrapUsdMediaTokens()
 {
     boost::python::class_<UsdMediaTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
-    _AddToken(cls, "auralMode", UsdMediaTokens->auralMode);
-    _AddToken(cls, "endTime", UsdMediaTokens->endTime);
-    _AddToken(cls, "filePath", UsdMediaTokens->filePath);
-    _AddToken(cls, "gain", UsdMediaTokens->gain);
-    _AddToken(cls, "loopFromStage", UsdMediaTokens->loopFromStage);
-    _AddToken(cls, "loopFromStart", UsdMediaTokens->loopFromStart);
-    _AddToken(cls, "loopFromStartToEnd", UsdMediaTokens->loopFromStartToEnd);
-    _AddToken(cls, "mediaOffset", UsdMediaTokens->mediaOffset);
-    _AddToken(cls, "nonSpatial", UsdMediaTokens->nonSpatial);
-    _AddToken(cls, "onceFromStart", UsdMediaTokens->onceFromStart);
-    _AddToken(cls, "onceFromStartToEnd", UsdMediaTokens->onceFromStartToEnd);
-    _AddToken(cls, "playbackMode", UsdMediaTokens->playbackMode);
-    _AddToken(cls, "spatial", UsdMediaTokens->spatial);
-    _AddToken(cls, "startTime", UsdMediaTokens->startTime);
+    pxrUsdUsdMediaWrapTokens::_AddToken(cls, "auralMode", UsdMediaTokens->auralMode);
+    pxrUsdUsdMediaWrapTokens::_AddToken(cls, "endTime", UsdMediaTokens->endTime);
+    pxrUsdUsdMediaWrapTokens::_AddToken(cls, "filePath", UsdMediaTokens->filePath);
+    pxrUsdUsdMediaWrapTokens::_AddToken(cls, "gain", UsdMediaTokens->gain);
+    pxrUsdUsdMediaWrapTokens::_AddToken(cls, "loopFromStage", UsdMediaTokens->loopFromStage);
+    pxrUsdUsdMediaWrapTokens::_AddToken(cls, "loopFromStart", UsdMediaTokens->loopFromStart);
+    pxrUsdUsdMediaWrapTokens::_AddToken(cls, "loopFromStartToEnd", UsdMediaTokens->loopFromStartToEnd);
+    pxrUsdUsdMediaWrapTokens::_AddToken(cls, "mediaOffset", UsdMediaTokens->mediaOffset);
+    pxrUsdUsdMediaWrapTokens::_AddToken(cls, "nonSpatial", UsdMediaTokens->nonSpatial);
+    pxrUsdUsdMediaWrapTokens::_AddToken(cls, "onceFromStart", UsdMediaTokens->onceFromStart);
+    pxrUsdUsdMediaWrapTokens::_AddToken(cls, "onceFromStartToEnd", UsdMediaTokens->onceFromStartToEnd);
+    pxrUsdUsdMediaWrapTokens::_AddToken(cls, "playbackMode", UsdMediaTokens->playbackMode);
+    pxrUsdUsdMediaWrapTokens::_AddToken(cls, "spatial", UsdMediaTokens->spatial);
+    pxrUsdUsdMediaWrapTokens::_AddToken(cls, "startTime", UsdMediaTokens->startTime);
 }

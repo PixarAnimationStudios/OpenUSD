@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapStagePopulationMask {
 
 static std::string __str__(UsdStagePopulationMask const &self)
 {
@@ -120,7 +120,7 @@ void wrapUsdStagePopulationMask()
              &UsdStagePopulationMask::Add,
              boost::python::return_self<>())
 
-        .def("GetIncludedChildNames", &_GetIncludedChildNames,
+        .def("GetIncludedChildNames", &pxrUsdUsdWrapStagePopulationMask::_GetIncludedChildNames,
              boost::python::arg("path"),
              boost::python::return_value_policy<TfPyPairToTuple>())
 
@@ -129,9 +129,9 @@ void wrapUsdStagePopulationMask()
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self != boost::python::self)
 
-        .def("__str__", __str__)
-        .def("__repr__", __repr__)
-        .def("__hash__", __hash__)
+        .def("__str__", pxrUsdUsdWrapStagePopulationMask::__str__)
+        .def("__repr__", pxrUsdUsdWrapStagePopulationMask::__repr__)
+        .def("__hash__", pxrUsdUsdWrapStagePopulationMask::__hash__)
 
         ;
 }

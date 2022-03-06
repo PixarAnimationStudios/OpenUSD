@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapLine {
 
 static std::string _Repr(GfLine const &self) {
     return TF_PY_REPR_PREFIX + "Line(" + TfPyRepr(self.GetPoint(0.0)) + ", " +
@@ -77,7 +77,7 @@ void wrapLine()
 {    
     typedef GfLine This;
 
-    boost::python::def("FindClosestPoints", FindClosestPointsHelper, 
+    boost::python::def("FindClosestPoints", pxrBaseGfWrapLine::FindClosestPointsHelper, 
         "FindClosestPoints( l1, l2 ) -> tuple<intersects = bool, p1 = GfVec3d, p2 = GfVec3d,"
         " t1 = double, t2 = double>\n"
         "\n"
@@ -107,15 +107,15 @@ void wrapLine()
                        boost::python::make_function(&This::GetDirection,
                                      boost::python::return_value_policy
                                      <boost::python::copy_const_reference>()),
-                       SetDirectionHelper )
+                       pxrBaseGfWrapLine::SetDirectionHelper )
 
-        .def( "FindClosestPoint", FindClosestPointHelper )
+        .def( "FindClosestPoint", pxrBaseGfWrapLine::FindClosestPointHelper )
 
         .def( boost::python::self_ns::str(boost::python::self) )
         .def( boost::python::self == boost::python::self )
         .def( boost::python::self != boost::python::self )
 
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrBaseGfWrapLine::_Repr)
 
         ;
     

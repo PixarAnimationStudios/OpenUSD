@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrImagingGlfWrapDrawTarget {
 
 static GlfDrawTargetRefPtr _NewDrawTarget(
     GfVec2i const & size)
@@ -58,8 +58,8 @@ void wrapDrawTarget()
     
     boost::python::class_<This, ThisPtr, boost::noncopyable>("DrawTarget", boost::python::no_init)
         .def(TfPyRefAndWeakPtr())
-        .def("__init__",TfMakePyConstructor(&_NewDrawTarget))
-        .def("__init__",TfMakePyConstructor(&_NewDrawTarget2))
+        .def("__init__",TfMakePyConstructor(&pxrImagingGlfWrapDrawTarget::_NewDrawTarget))
+        .def("__init__",TfMakePyConstructor(&pxrImagingGlfWrapDrawTarget::_NewDrawTarget2))
         .def("AddAttachment", &This::AddAttachment)
         .def("Bind", &This::Bind)
         .def("Unbind", &This::Unbind)

@@ -259,7 +259,7 @@ _HasDuplicates(const std::vector<T> &v)
     return _GeneralHasDuplicates(v);
 }
 
-namespace
+namespace pxrUsdSdfTextFileFormat
 {
 template <class T> 
 const std::vector<T>& _ToItemVector(const std::vector<T>& v)
@@ -283,7 +283,7 @@ _SetListOpItems(const TfToken &key, SdfListOpType type,
     typedef SdfListOp<typename T::value_type> ListOpType;
     typedef typename ListOpType::ItemVector ItemVector;
 
-    const ItemVector& items = _ToItemVector(itemList);
+    const ItemVector& items = pxrUsdSdfTextFileFormat::_ToItemVector(itemList);
 
     if (_HasDuplicates(items)) {
         Err(context, "Duplicate items exist for field '%s' at '%s'",
@@ -6459,7 +6459,7 @@ extern int yydebug;
 static int yydebug;
 #endif // SDF_PARSER_DEBUG_MODE
 
-namespace {
+namespace pxrUsdSdfTextFileFormat {
 struct _DebugContext {
     explicit _DebugContext(bool state=true) : _old(yydebug) { yydebug = state; }
     ~_DebugContext() { yydebug = _old; }
@@ -6484,7 +6484,7 @@ Sdf_ParseLayer(
     TRACE_FUNCTION();
 
     // Turn on debugging, if enabled.
-    _DebugContext debugCtx;
+    pxrUsdSdfTextFileFormat::_DebugContext debugCtx;
 
     // Configure for input file.
     Sdf_TextParserContext context;

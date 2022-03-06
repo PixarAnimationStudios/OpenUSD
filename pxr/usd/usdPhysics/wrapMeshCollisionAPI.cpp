@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapMeshCollisionAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -86,7 +86,7 @@ void wrapUsdPhysicsMeshCollisionAPI()
 {
     typedef UsdPhysicsMeshCollisionAPI This;
 
-    UsdPhysicsMeshCollisionAPI_CanApplyResult::Wrap<UsdPhysicsMeshCollisionAPI_CanApplyResult>(
+    pxrUsdUsdPhysicsWrapMeshCollisionAPI::UsdPhysicsMeshCollisionAPI_CanApplyResult::Wrap<pxrUsdUsdPhysicsWrapMeshCollisionAPI::UsdPhysicsMeshCollisionAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -100,7 +100,7 @@ void wrapUsdPhysicsMeshCollisionAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdPhysicsWrapMeshCollisionAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -122,14 +122,14 @@ void wrapUsdPhysicsMeshCollisionAPI()
         .def("GetApproximationAttr",
              &This::GetApproximationAttr)
         .def("CreateApproximationAttr",
-             &_CreateApproximationAttr,
+             &pxrUsdUsdPhysicsWrapMeshCollisionAPI::_CreateApproximationAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdPhysicsWrapMeshCollisionAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdPhysicsWrapMeshCollisionAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -151,7 +151,7 @@ void wrapUsdPhysicsMeshCollisionAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapMeshCollisionAPI {
 
 WRAP_CUSTOM {
 }

@@ -140,7 +140,7 @@ static const char* const* _sessionCrashLogArgv = nullptr;
 // Arch_InitConfig() to ArchGetExecutablePath()
 static char * _progNameForErrors = NULL;
 
-namespace {
+namespace pxrBaseArchStackTrace {
 // Key-value map for program info. Stores additional
 // program info to be used when displaying error information.
 class Arch_ProgInfo
@@ -225,16 +225,16 @@ Arch_ProgInfo::PrintInfoForErrors() const
 
 } // anon-namespace
 
-static Arch_ProgInfo &
+static pxrBaseArchStackTrace::Arch_ProgInfo &
 ArchStackTrace_GetProgInfo()
 {
-    static Arch_ProgInfo progInfo;
+    static pxrBaseArchStackTrace::Arch_ProgInfo progInfo;
     return progInfo;
 }
 
 
 
-namespace {
+namespace pxrBaseArchStackTrace {
 
 // Key-value map for extra log info.  Stores unowned pointers to text to be
 // emitted in stack trace logs in case of fatal errors or crashes.
@@ -288,10 +288,10 @@ Arch_LogInfo::EmitAnyExtraLogInfo(FILE *outFile, size_t max) const
 
 } // anon-namespace
 
-static Arch_LogInfo &
+static pxrBaseArchStackTrace::Arch_LogInfo &
 ArchStackTrace_GetLogInfo()
 {
-    static Arch_LogInfo logInfo;
+    static pxrBaseArchStackTrace::Arch_LogInfo logInfo;
     return logInfo;
 }
 
@@ -315,7 +315,7 @@ static const char* const* stackTraceArgv = nullptr;
 
 static long _GetAppElapsedTime();
 
-namespace {
+namespace pxrBaseArchStackTrace {
 
 // Return the length of s.
 size_t asstrlen(const char* s)
@@ -706,7 +706,7 @@ static
 int _LogStackTraceForPid(const char *logfile)
 {
     // Get the command to run.
-    const char* cmd = asgetenv("ARCH_POSTMORTEM");
+    const char* cmd = pxrBaseArchStackTrace::asgetenv("ARCH_POSTMORTEM");
     if (!cmd) {
         cmd = stackTraceCmd;
     }
@@ -716,9 +716,9 @@ int _LogStackTraceForPid(const char *logfile)
     }
 
     // Construct the substitutions.
-    char pidBuffer[numericBufferSize], timeBuffer[numericBufferSize];
-    asitoa(pidBuffer, getpid());
-    asitoa(timeBuffer, _GetAppElapsedTime());
+    char pidBuffer[pxrBaseArchStackTrace::numericBufferSize], timeBuffer[pxrBaseArchStackTrace::numericBufferSize];
+    pxrBaseArchStackTrace::asitoa(pidBuffer, getpid());
+    pxrBaseArchStackTrace::asitoa(timeBuffer, _GetAppElapsedTime());
     const char* const substitutions[3][2] = {
         { "$pid", pidBuffer }, { "$log", logfile }, { "$time", timeBuffer }
     };
@@ -726,9 +726,9 @@ int _LogStackTraceForPid(const char *logfile)
     // Build the argument list.
     static constexpr size_t maxArgs = 32;
     const char* argv[maxArgs];
-    if (!_MakeArgv(argv, maxArgs, cmd, stackTraceArgv, substitutions, 2)) {
+    if (!pxrBaseArchStackTrace::_MakeArgv(argv, maxArgs, cmd, stackTraceArgv, substitutions, 2)) {
         static const char msg[] = "Too many arguments to postmortem command\n";
-        aswrite(2, msg);
+        pxrBaseArchStackTrace::aswrite(2, msg);
         return 0;
     }
 
@@ -831,7 +831,7 @@ ArchSetProgramNameForErrors( const char *progName )
         free(_progNameForErrors);
     
     if (progName)
-        _progNameForErrors = strdup(getBase(progName).c_str());
+        _progNameForErrors = strdup(pxrBaseArchStackTrace::getBase(progName).c_str());
     else
         _progNameForErrors = NULL;
 }
@@ -897,7 +897,7 @@ static void
 _InvokeSessionLogger(const char* progname, const char *stackTrace)
 {
     // Get the command to run.
-    const char* cmd = asgetenv("ARCH_LOGSESSION");
+    const char* cmd = pxrBaseArchStackTrace::asgetenv("ARCH_LOGSESSION");
     const char* const* srcArgv =
         stackTrace ? _sessionCrashLogArgv : _sessionLogArgv;
     if (!cmd) {
@@ -909,9 +909,9 @@ _InvokeSessionLogger(const char* progname, const char *stackTrace)
     }
 
     // Construct the substitutions.
-    char pidBuffer[numericBufferSize], timeBuffer[numericBufferSize];
-    asitoa(pidBuffer, getpid());
-    asitoa(timeBuffer, _GetAppElapsedTime());
+    char pidBuffer[pxrBaseArchStackTrace::numericBufferSize], timeBuffer[pxrBaseArchStackTrace::numericBufferSize];
+    pxrBaseArchStackTrace::asitoa(pidBuffer, getpid());
+    pxrBaseArchStackTrace::asitoa(timeBuffer, _GetAppElapsedTime());
     const char* const substitutions[4][2] = {
         {"$pid", pidBuffer}, {"$time", timeBuffer},
         {"$prog", progname}, {"$stack", stackTrace}
@@ -920,9 +920,9 @@ _InvokeSessionLogger(const char* progname, const char *stackTrace)
     // Build the argument list.
     static constexpr size_t maxArgs = 32;
     const char* argv[maxArgs];
-    if (!_MakeArgv(argv, maxArgs, cmd, srcArgv, substitutions, 4)) {
+    if (!pxrBaseArchStackTrace::_MakeArgv(argv, maxArgs, cmd, srcArgv, substitutions, 4)) {
         static const char msg[] = "Too many arguments to log session command\n";
-        aswrite(2, msg);
+        pxrBaseArchStackTrace::aswrite(2, msg);
         return;
     }
 
@@ -1013,10 +1013,10 @@ ArchLogPostMortem(const char* reason,
 
     /* Could use tmpnam but we're trying to be minimalist here. */
     char logfile[1024];
-    if (_GetStackTraceName(logfile, sizeof(logfile)) == -1) {
+    if (pxrBaseArchStackTrace::_GetStackTraceName(logfile, sizeof(logfile)) == -1) {
         // Cannot create the logfile.
         static const char msg[] = "Cannot create a log file\n";
-        aswrite(2, msg);
+        pxrBaseArchStackTrace::aswrite(2, msg);
         busy.clear(std::memory_order_release);
         return;
     }
@@ -1520,14 +1520,14 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
     struct sigaction act, oldact;
     int retval = 0;
     int savedErrno;
-    pid_t pid = nonLockingFork(); /* use non-locking fork */
+    pid_t pid = pxrBaseArchStackTrace::nonLockingFork(); /* use non-locking fork */
     if (pid == -1) {
         /* fork() failed */
-        char errBuffer[numericBufferSize];
-        asitoa(errBuffer, errno);
-        aswrite(2, "FAIL: Unable to fork() crash handler: errno=");
-        aswrite(2, errBuffer);
-        aswrite(2, "\n");
+        char errBuffer[pxrBaseArchStackTrace::numericBufferSize];
+        pxrBaseArchStackTrace::asitoa(errBuffer, errno);
+        pxrBaseArchStackTrace::aswrite(2, "FAIL: Unable to fork() crash handler: errno=");
+        pxrBaseArchStackTrace::aswrite(2, errBuffer);
+        pxrBaseArchStackTrace::aswrite(2, "\n");
         return -1;
     }
     else if (pid == 0) {
@@ -1545,16 +1545,16 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
         }
 
         // Exec the handler.
-        nonLockingExecv(pathname, argv);
+        pxrBaseArchStackTrace::nonLockingExecv(pathname, argv);
 
         /* Exec failed */
-        char errBuffer[numericBufferSize];
-        asitoa(errBuffer, errno);
-        aswrite(2, "FAIL: Unable to exec crash handler ");
-        aswrite(2, pathname);
-        aswrite(2, ": errno=");
-        aswrite(2, errBuffer);
-        aswrite(2, "\n");
+        char errBuffer[pxrBaseArchStackTrace::numericBufferSize];
+        pxrBaseArchStackTrace::asitoa(errBuffer, errno);
+        pxrBaseArchStackTrace::aswrite(2, "FAIL: Unable to exec crash handler ");
+        pxrBaseArchStackTrace::aswrite(2, pathname);
+        pxrBaseArchStackTrace::aswrite(2, ": errno=");
+        pxrBaseArchStackTrace::aswrite(2, errBuffer);
+        pxrBaseArchStackTrace::aswrite(2, "\n");
         _exit(127);
     }
     else {
@@ -1585,11 +1585,11 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
                 /* waitpid error.  return if not due to signal. */
                 if (errno != EINTR) {
                     retval = -1;
-                    char errBuffer[numericBufferSize];
-                    asitoa(errBuffer, errno);
-                    aswrite(2, "FAIL: Crash handler wait failed: errno=");
-                    aswrite(2, errBuffer);
-                    aswrite(2, "\n");
+                    char errBuffer[pxrBaseArchStackTrace::numericBufferSize];
+                    pxrBaseArchStackTrace::asitoa(errBuffer, errno);
+                    pxrBaseArchStackTrace::aswrite(2, "FAIL: Crash handler wait failed: errno=");
+                    pxrBaseArchStackTrace::aswrite(2, errBuffer);
+                    pxrBaseArchStackTrace::aswrite(2, "\n");
                     goto out;
                 }
                 /* continue below */
@@ -1604,7 +1604,7 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
                     retval = WEXITSTATUS(status);
                     if (retval == 127) {
                         errno = ENOENT;
-                        aswrite(2, "FAIL: Crash handler failed to exec\n");
+                        pxrBaseArchStackTrace::aswrite(2, "FAIL: Crash handler failed to exec\n");
                     }
                     goto out;
                 }
@@ -1613,21 +1613,21 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
                     /* child died due to uncaught signal */
                     errno = EINTR;
                     retval = -1;
-                    char sigBuffer[numericBufferSize];
-                    asitoa(sigBuffer, WTERMSIG(status));
-                    aswrite(2, "FAIL: Crash handler died: signal=");
-                    aswrite(2, sigBuffer);
-                    aswrite(2, "\n");
+                    char sigBuffer[pxrBaseArchStackTrace::numericBufferSize];
+                    pxrBaseArchStackTrace::asitoa(sigBuffer, WTERMSIG(status));
+                    pxrBaseArchStackTrace::aswrite(2, "FAIL: Crash handler died: signal=");
+                    pxrBaseArchStackTrace::aswrite(2, sigBuffer);
+                    pxrBaseArchStackTrace::aswrite(2, "\n");
                     goto out;
                 }
                 /* child died for an unknown reason */
                 errno = EINTR;
                 retval = -1;
-                char statusBuffer[numericBufferSize];
-                asitoa(statusBuffer, status);
-                aswrite(2, "FAIL: Crash handler unexpected wait status=");
-                aswrite(2, statusBuffer);
-                aswrite(2, "\n");
+                char statusBuffer[pxrBaseArchStackTrace::numericBufferSize];
+                pxrBaseArchStackTrace::asitoa(statusBuffer, status);
+                pxrBaseArchStackTrace::aswrite(2, "FAIL: Crash handler unexpected wait status=");
+                pxrBaseArchStackTrace::aswrite(2, statusBuffer);
+                pxrBaseArchStackTrace::aswrite(2, "\n");
                 goto out;
             }
 
@@ -1649,7 +1649,7 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
          */
         errno = EBUSY;
         retval = -1;
-        aswrite(2, "FAIL: Crash handler timed out\n");
+        pxrBaseArchStackTrace::aswrite(2, "FAIL: Crash handler timed out\n");
     }
 
   out:

@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdSdfChangeList {
 struct _PathFastLessThan {
     inline bool
     operator()(SdfChangeList::EntryList::value_type const &a,

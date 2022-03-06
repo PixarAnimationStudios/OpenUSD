@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdSkelWrapBindingAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -114,7 +114,7 @@ void wrapUsdSkelBindingAPI()
 {
     typedef UsdSkelBindingAPI This;
 
-    UsdSkelBindingAPI_CanApplyResult::Wrap<UsdSkelBindingAPI_CanApplyResult>(
+    pxrUsdUsdSkelWrapBindingAPI::UsdSkelBindingAPI_CanApplyResult::Wrap<pxrUsdUsdSkelWrapBindingAPI::UsdSkelBindingAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -128,7 +128,7 @@ void wrapUsdSkelBindingAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdSkelWrapBindingAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -150,35 +150,35 @@ void wrapUsdSkelBindingAPI()
         .def("GetGeomBindTransformAttr",
              &This::GetGeomBindTransformAttr)
         .def("CreateGeomBindTransformAttr",
-             &_CreateGeomBindTransformAttr,
+             &pxrUsdUsdSkelWrapBindingAPI::_CreateGeomBindTransformAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetJointsAttr",
              &This::GetJointsAttr)
         .def("CreateJointsAttr",
-             &_CreateJointsAttr,
+             &pxrUsdUsdSkelWrapBindingAPI::_CreateJointsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetJointIndicesAttr",
              &This::GetJointIndicesAttr)
         .def("CreateJointIndicesAttr",
-             &_CreateJointIndicesAttr,
+             &pxrUsdUsdSkelWrapBindingAPI::_CreateJointIndicesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetJointWeightsAttr",
              &This::GetJointWeightsAttr)
         .def("CreateJointWeightsAttr",
-             &_CreateJointWeightsAttr,
+             &pxrUsdUsdSkelWrapBindingAPI::_CreateJointWeightsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetBlendShapesAttr",
              &This::GetBlendShapesAttr)
         .def("CreateBlendShapesAttr",
-             &_CreateBlendShapesAttr,
+             &pxrUsdUsdSkelWrapBindingAPI::_CreateBlendShapesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
@@ -197,10 +197,10 @@ void wrapUsdSkelBindingAPI()
              &This::GetBlendShapeTargetsRel)
         .def("CreateBlendShapeTargetsRel",
              &This::CreateBlendShapeTargetsRel)
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdSkelWrapBindingAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdSkelWrapBindingAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -222,7 +222,7 @@ void wrapUsdSkelBindingAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdSkelWrapBindingAPI {
 
 
 boost::python::object

@@ -35,7 +35,7 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdPluginUsdMtlxBackdoor {
 
 /// Read a MaterialX document then convert it using UsdMtlxRead().
 template <typename R>
@@ -73,7 +73,7 @@ _MtlxTest(R&& reader, bool nodeGraphs)
 UsdStageRefPtr
 UsdMtlx_TestString(const std::string& buffer, bool nodeGraphs)
 {
-    return _MtlxTest(
+    return pxrUsdPluginUsdMtlxBackdoor::_MtlxTest(
         [&](){
             auto d = mx::createDocument();
             mx::readFromXmlString(d, buffer);
@@ -85,7 +85,7 @@ UsdMtlx_TestString(const std::string& buffer, bool nodeGraphs)
 UsdStageRefPtr
 UsdMtlx_TestFile(const std::string& pathname, bool nodeGraphs)
 {
-    return _MtlxTest(
+    return pxrUsdPluginUsdMtlxBackdoor::_MtlxTest(
         [&](){ return UsdMtlxReadDocument(pathname); },
         nodeGraphs);
 }

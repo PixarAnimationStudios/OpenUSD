@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdUsdCollectionMembershipQuery {
 
 /* static */
 void
@@ -203,7 +203,7 @@ std::set<UsdObject> UsdComputeIncludedObjectsFromCollection(
     const Usd_PrimFlagsPredicate &pred)
 {
     std::set<UsdObject> result;
-    _ComputeIncludedImpl(query, stage, pred, &result, nullptr);
+    pxrUsdUsdCollectionMembershipQuery::_ComputeIncludedImpl(query, stage, pred, &result, nullptr);
     return result;
 }
 
@@ -213,7 +213,7 @@ SdfPathSet UsdComputeIncludedPathsFromCollection(
     const Usd_PrimFlagsPredicate &pred)
 {
     SdfPathSet result;
-    _ComputeIncludedImpl(query, stage, pred, nullptr, &result);
+    pxrUsdUsdCollectionMembershipQuery::_ComputeIncludedImpl(query, stage, pred, nullptr, &result);
     return result;
 }
 

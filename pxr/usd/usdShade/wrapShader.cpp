@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdShadeWrapShader {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -90,10 +90,10 @@ void wrapUsdShadeShader()
         .def(!boost::python::self)
 
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdShadeWrapShader::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdShadeWrapShader::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -118,7 +118,7 @@ void wrapUsdShadeShader()
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include <boost/python/return_internal_reference.hpp>
 
-namespace {
+namespace pxrUsdUsdShadeWrapShader {
 
 static UsdAttribute
 _CreateImplementationSourceAttr(UsdShadeShader &self,

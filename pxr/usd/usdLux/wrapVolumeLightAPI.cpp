@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdLuxWrapVolumeLightAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -79,7 +79,7 @@ void wrapUsdLuxVolumeLightAPI()
 {
     typedef UsdLuxVolumeLightAPI This;
 
-    UsdLuxVolumeLightAPI_CanApplyResult::Wrap<UsdLuxVolumeLightAPI_CanApplyResult>(
+    pxrUsdUsdLuxWrapVolumeLightAPI::UsdLuxVolumeLightAPI_CanApplyResult::Wrap<pxrUsdUsdLuxWrapVolumeLightAPI::UsdLuxVolumeLightAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -93,7 +93,7 @@ void wrapUsdLuxVolumeLightAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdLuxWrapVolumeLightAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -112,10 +112,10 @@ void wrapUsdLuxVolumeLightAPI()
         .def(!boost::python::self)
 
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdLuxWrapVolumeLightAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdLuxWrapVolumeLightAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -137,7 +137,7 @@ void wrapUsdLuxVolumeLightAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdLuxWrapVolumeLightAPI {
 
 WRAP_CUSTOM {
 }

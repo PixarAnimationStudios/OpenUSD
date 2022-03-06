@@ -41,7 +41,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
-namespace {
+namespace pxrUsdUsdSkelWrapBinding {
 
 
 UsdSkelBinding*
@@ -66,7 +66,7 @@ void wrapUsdSkelBinding()
 
     boost::python::class_<This>("Binding", boost::python::init<>())
 
-        .def("__init__", boost::python::make_constructor(&_New))
+        .def("__init__", boost::python::make_constructor(&pxrUsdUsdSkelWrapBinding::_New))
 
         .def("GetSkeleton", &This::GetSkeleton,
              boost::python::return_value_policy<boost::python::return_by_value>())

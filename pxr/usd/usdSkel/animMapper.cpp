@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdUsdSkelAnimMapper {
 
 
 enum _MapFlags {
@@ -55,12 +55,12 @@ enum _MapFlags {
 
 
 UsdSkelAnimMapper::UsdSkelAnimMapper()
-    : _targetSize(0), _offset(0), _flags(_NullMap)
+    : _targetSize(0), _offset(0), _flags(pxrUsdUsdSkelAnimMapper::_NullMap)
 {}
 
 
 UsdSkelAnimMapper::UsdSkelAnimMapper(size_t size)
-    : _targetSize(size), _offset(0), _flags(_IdentityMap)
+    : _targetSize(size), _offset(0), _flags(pxrUsdUsdSkelAnimMapper::_IdentityMap)
 {}
 
 
@@ -78,7 +78,7 @@ UsdSkelAnimMapper::UsdSkelAnimMapper(const TfToken* sourceOrder,
     : _targetSize(targetOrderSize), _offset(0)
 {
     if(sourceOrderSize == 0 || targetOrderSize == 0) {
-        _flags = _NullMap;
+        _flags = pxrUsdUsdSkelAnimMapper::_NullMap;
         return;
     } 
 
@@ -95,10 +95,10 @@ UsdSkelAnimMapper::UsdSkelAnimMapper(const TfToken* sourceOrder,
             if(std::equal(sourceOrder, sourceOrder+sourceOrderSize, it)) {
                 _offset = pos;
 
-                _flags = _OrderedMap | _AllSourceValuesMapToTarget;
+                _flags = pxrUsdUsdSkelAnimMapper::_OrderedMap | pxrUsdUsdSkelAnimMapper::_AllSourceValuesMapToTarget;
 
                 if(pos == 0 && sourceOrderSize == targetOrderSize) {
-                    _flags |= _SourceOverridesAllTargetValues;
+                    _flags |= pxrUsdUsdSkelAnimMapper::_SourceOverridesAllTargetValues;
                 }
                 return;
             }
@@ -129,11 +129,11 @@ UsdSkelAnimMapper::UsdSkelAnimMapper(const TfToken* sourceOrder,
         }
     }
     _flags = mappedCount == sourceOrderSize ? 
-        _AllSourceValuesMapToTarget : _SomeSourceValuesMapToTarget;
+        pxrUsdUsdSkelAnimMapper::_AllSourceValuesMapToTarget : pxrUsdUsdSkelAnimMapper::_SomeSourceValuesMapToTarget;
 
     if(std::all_of(targetMapped.begin(), targetMapped.end(),
                    [](bool val) { return val; })) {
-        _flags |= _SourceOverridesAllTargetValues;
+        _flags |= pxrUsdUsdSkelAnimMapper::_SourceOverridesAllTargetValues;
     }
 }
 
@@ -141,27 +141,27 @@ UsdSkelAnimMapper::UsdSkelAnimMapper(const TfToken* sourceOrder,
 bool
 UsdSkelAnimMapper::IsIdentity() const
 {
-    return (_flags&_IdentityMap) == _IdentityMap;
+    return (_flags&pxrUsdUsdSkelAnimMapper::_IdentityMap) == pxrUsdUsdSkelAnimMapper::_IdentityMap;
 }
 
 bool
 UsdSkelAnimMapper::IsSparse() const
 {
-    return !(_flags&_SourceOverridesAllTargetValues);
+    return !(_flags&pxrUsdUsdSkelAnimMapper::_SourceOverridesAllTargetValues);
 }
 
 
 bool
 UsdSkelAnimMapper::IsNull() const
 {
-    return !(_flags&_NonNullMap);
+    return !(_flags&pxrUsdUsdSkelAnimMapper::_NonNullMap);
 }
 
 
 bool
 UsdSkelAnimMapper::_IsOrdered() const
 {
-    return _flags&_OrderedMap;
+    return _flags&pxrUsdUsdSkelAnimMapper::_OrderedMap;
 }
 
 

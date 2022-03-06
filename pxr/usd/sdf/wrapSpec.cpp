@@ -37,7 +37,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapSpec {
 
 static
 VtValue
@@ -119,7 +119,7 @@ void wrapSpec()
         .add_property("path", &This::GetPath,
             "The absolute scene path.")
 
-        .def("GetAsText", &_GetAsText)
+        .def("GetAsText", &pxrUsdSdfWrapSpec::_GetAsText)
 
         .def("ListInfoKeys", &This::ListInfoKeys,
             boost::python::return_value_policy<TfPySequenceToList>())
@@ -128,8 +128,8 @@ void wrapSpec()
 
         .def("GetMetaDataDisplayGroup", &This::GetMetaDataDisplayGroup)
 
-        .def("GetInfo", &_WrapGetInfo)
-        .def("SetInfo", &_WrapSetInfo)
+        .def("GetInfo", &pxrUsdSdfWrapSpec::_WrapGetInfo)
+        .def("SetInfo", &pxrUsdSdfWrapSpec::_WrapSetInfo)
         .def("SetInfoDictionaryValue", &This::SetInfoDictionaryValue)
         .def("HasInfo", &This::HasInfo,
              "HasInfo(key) -> bool\n\n"
@@ -181,7 +181,7 @@ void wrapSpec()
 
              "Returns the fallback value for the given key. ")
 
-        .add_property("isInert", &_WrapIsInertProperty,
+        .add_property("isInert", &pxrUsdSdfWrapSpec::_WrapIsInertProperty,
               "Indicates whether this spec has any significant data. This is "
               "for backwards compatibility, use IsInert instead.\n\n"
 

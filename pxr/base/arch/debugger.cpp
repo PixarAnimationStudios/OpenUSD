@@ -105,7 +105,7 @@ Arch_DebuggerInitPosix()
         _archDebuggerEnabled = true;
     }
 }
-namespace {
+namespace pxrBaseArchDebugger {
 struct InitPosix {
     InitPosix() { Arch_DebuggerInitPosix(); }
 };
@@ -137,7 +137,7 @@ Arch_DebuggerInit()
 #endif
 
     // Initialize once.
-    static InitPosix initPosix;
+    static pxrBaseArchDebugger::InitPosix initPosix;
 
 #if defined(ARCH_CPU_INTEL) && defined(ARCH_BITS_64)
     // Restore the saved registers.
@@ -604,7 +604,7 @@ ArchDebuggerWait(bool wait)
     _archDebuggerWait = wait;
 }
 
-namespace {
+namespace pxrBaseArchDebugger {
 bool
 _ArchAvoidJIT()
 {
@@ -615,7 +615,7 @@ _ArchAvoidJIT()
 bool
 ArchDebuggerAttach()
 {
-    return !_ArchAvoidJIT() &&
+    return !pxrBaseArchDebugger::_ArchAvoidJIT() &&
             (ArchDebuggerIsAttached() || Arch_DebuggerAttach());
 }
 
@@ -636,7 +636,7 @@ ArchDebuggerIsAttached()
 void
 ArchAbort(bool logging)
 {
-    if (!_ArchAvoidJIT() || ArchDebuggerIsAttached()) {
+    if (!pxrBaseArchDebugger::_ArchAvoidJIT() || ArchDebuggerIsAttached()) {
         if (!logging) {
 #if !defined(ARCH_OS_WINDOWS)
             // Remove signal handler.

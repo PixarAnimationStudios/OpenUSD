@@ -37,7 +37,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapStatus {
 
 static void
 _Status(std::string const &msg, std::string const& moduleName, std::string const& functionName,
@@ -67,7 +67,7 @@ TfStatus__repr__(TfStatus const &self)
 } // anonymous namespace 
 
 void wrapStatus() {
-    boost::python::def("_Status", &_Status);
+    boost::python::def("_Status", &pxrBaseTfWrapStatus::_Status);
 
     typedef TfStatus This;
 
@@ -76,6 +76,6 @@ void wrapStatus() {
     boost::python::scope statusScope =
         boost::python::class_<This, boost::python::bases<TfDiagnosticBase> >("StatusObject", boost::python::no_init)
 
-        .def("__repr__", TfStatus__repr__)
+        .def("__repr__", pxrBaseTfWrapStatus::TfStatus__repr__)
         ;
 }

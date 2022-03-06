@@ -137,7 +137,7 @@ UsdLuxSphereLight::CreateTreatAsPointAttr(VtValue const &defaultValue, bool writ
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdLuxSphereLight {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -159,7 +159,7 @@ UsdLuxSphereLight::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->treatAsPoint,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdLuxSphereLight::_ConcatenateAttributeNames(
             UsdLuxBoundableLightBase::GetSchemaAttributeNames(true),
             localNames);
 

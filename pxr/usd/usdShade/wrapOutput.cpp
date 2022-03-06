@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdShadeWrapOutput {
 
 static bool
 _Set(const UsdShadeOutput &self, boost::python::object val, const UsdTimeCode &time) 
@@ -120,7 +120,7 @@ void wrapUsdShadeOutput()
         .def("GetBaseName", &Output::GetBaseName)
         .def("GetPrim", &Output::GetPrim)
         .def("GetTypeName", &Output::GetTypeName)
-        .def("Set", _Set, (boost::python::arg("value"), boost::python::arg("time")=UsdTimeCode::Default()))
+        .def("Set", pxrUsdUsdShadeWrapOutput::_Set, (boost::python::arg("value"), boost::python::arg("time")=UsdTimeCode::Default()))
         .def("SetRenderType", &Output::SetRenderType,
              (boost::python::arg("renderType")))
         .def("GetRenderType", &Output::GetRenderType)
@@ -164,9 +164,9 @@ void wrapUsdShadeOutput()
 
         .def("SetConnectedSources", &Output::SetConnectedSources)
 
-        .def("GetConnectedSources", _GetConnectedSources)
-        .def("GetConnectedSource", _GetConnectedSource)
-        .def("GetRawConnectedSourcePaths", _GetRawConnectedSourcePaths,
+        .def("GetConnectedSources", pxrUsdUsdShadeWrapOutput::_GetConnectedSources)
+        .def("GetConnectedSource", pxrUsdUsdShadeWrapOutput::_GetConnectedSource)
+        .def("GetRawConnectedSourcePaths", pxrUsdUsdShadeWrapOutput::_GetRawConnectedSourcePaths,
             boost::python::return_value_policy<TfPySequenceToList>())
         .def("HasConnectedSource", &Output::HasConnectedSource)
         .def("IsSourceConnectionFromBaseMaterial", 

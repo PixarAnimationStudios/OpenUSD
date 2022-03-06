@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapVariantSetSpec {
 
 static
 SdfVariantSetSpecHandle
@@ -65,8 +65,8 @@ void wrapVariantSetSpec()
            boost::python::bases<SdfSpec>, boost::noncopyable>
         ("VariantSetSpec", boost::python::no_init)
         .def(SdfPySpec())
-        .def(SdfMakePySpecConstructor(&_NewUnderPrim))
-        .def(SdfMakePySpecConstructor(&_NewUnderVariant))
+        .def(SdfMakePySpecConstructor(&pxrUsdSdfWrapVariantSetSpec::_NewUnderPrim))
+        .def(SdfMakePySpecConstructor(&pxrUsdSdfWrapVariantSetSpec::_NewUnderVariant))
 
         .add_property("name",
             boost::python::make_function(&This::GetName,

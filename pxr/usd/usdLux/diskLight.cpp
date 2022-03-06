@@ -120,7 +120,7 @@ UsdLuxDiskLight::CreateRadiusAttr(VtValue const &defaultValue, bool writeSparsel
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdLuxDiskLight {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -141,7 +141,7 @@ UsdLuxDiskLight::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->inputsRadius,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdLuxDiskLight::_ConcatenateAttributeNames(
             UsdLuxBoundableLightBase::GetSchemaAttributeNames(true),
             localNames);
 

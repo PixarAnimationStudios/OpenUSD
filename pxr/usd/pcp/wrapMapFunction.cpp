@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdPcpWrapMapFunction {
 
 static std::string
 _Repr(const PcpMapFunction &f)
@@ -103,13 +103,13 @@ void wrapMapFunction()
         .def(boost::python::init<const This &>())
         .def("__init__",
              boost::python::make_constructor(
-                &_Create,
+                &pxrUsdPcpWrapMapFunction::_Create,
                 boost::python::default_call_policies(),
                 (boost::python::arg("sourceToTargetMap"),
                  boost::python::arg("timeOffset") = SdfLayerOffset())))
 
-        .def("__repr__", _Repr)
-        .def("__str__", _Str)
+        .def("__repr__", pxrUsdPcpWrapMapFunction::_Repr)
+        .def("__str__", pxrUsdPcpWrapMapFunction::_Str)
 
         .def("Identity", &This::Identity,
              boost::python::return_value_policy<boost::python::return_by_value>())

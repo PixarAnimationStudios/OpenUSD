@@ -115,7 +115,7 @@ HdxDrawTargetTask::HdxDrawTargetTask(HdSceneDelegate* delegate,
 
 HdxDrawTargetTask::~HdxDrawTargetTask() = default;
 
-namespace {
+namespace pxrImagingHdxDrawTargetTask {
 
 //
 // Topological sorting of the draw targets based on their
@@ -279,12 +279,12 @@ HdxDrawTargetTask::_ComputeRenderPassInfos(HdRenderIndex * const renderIndex)
 {
     HdxDrawTargetTask::_RenderPassInfoVector result;
 
-    _DrawTargetEntryVector drawTargetEntries;
-    _GetSortedDrawTargets(renderIndex, &drawTargetEntries);
+    pxrImagingHdxDrawTargetTask::_DrawTargetEntryVector drawTargetEntries;
+    pxrImagingHdxDrawTargetTask::_GetSortedDrawTargets(renderIndex, &drawTargetEntries);
                               
     result.reserve(drawTargetEntries.size());
 
-    for (_DrawTargetEntry const &entry : drawTargetEntries) {
+    for (pxrImagingHdxDrawTargetTask::_DrawTargetEntry const &entry : drawTargetEntries) {
         if (HdStDrawTarget * const drawTarget = entry.drawTarget) {
             if (drawTarget->IsEnabled()) {
                 result.push_back(

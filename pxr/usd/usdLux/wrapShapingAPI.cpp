@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdLuxWrapShapingAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -128,7 +128,7 @@ void wrapUsdLuxShapingAPI()
 {
     typedef UsdLuxShapingAPI This;
 
-    UsdLuxShapingAPI_CanApplyResult::Wrap<UsdLuxShapingAPI_CanApplyResult>(
+    pxrUsdUsdLuxWrapShapingAPI::UsdLuxShapingAPI_CanApplyResult::Wrap<pxrUsdUsdLuxWrapShapingAPI::UsdLuxShapingAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -142,7 +142,7 @@ void wrapUsdLuxShapingAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdLuxWrapShapingAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -164,56 +164,56 @@ void wrapUsdLuxShapingAPI()
         .def("GetShapingFocusAttr",
              &This::GetShapingFocusAttr)
         .def("CreateShapingFocusAttr",
-             &_CreateShapingFocusAttr,
+             &pxrUsdUsdLuxWrapShapingAPI::_CreateShapingFocusAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetShapingFocusTintAttr",
              &This::GetShapingFocusTintAttr)
         .def("CreateShapingFocusTintAttr",
-             &_CreateShapingFocusTintAttr,
+             &pxrUsdUsdLuxWrapShapingAPI::_CreateShapingFocusTintAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetShapingConeAngleAttr",
              &This::GetShapingConeAngleAttr)
         .def("CreateShapingConeAngleAttr",
-             &_CreateShapingConeAngleAttr,
+             &pxrUsdUsdLuxWrapShapingAPI::_CreateShapingConeAngleAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetShapingConeSoftnessAttr",
              &This::GetShapingConeSoftnessAttr)
         .def("CreateShapingConeSoftnessAttr",
-             &_CreateShapingConeSoftnessAttr,
+             &pxrUsdUsdLuxWrapShapingAPI::_CreateShapingConeSoftnessAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetShapingIesFileAttr",
              &This::GetShapingIesFileAttr)
         .def("CreateShapingIesFileAttr",
-             &_CreateShapingIesFileAttr,
+             &pxrUsdUsdLuxWrapShapingAPI::_CreateShapingIesFileAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetShapingIesAngleScaleAttr",
              &This::GetShapingIesAngleScaleAttr)
         .def("CreateShapingIesAngleScaleAttr",
-             &_CreateShapingIesAngleScaleAttr,
+             &pxrUsdUsdLuxWrapShapingAPI::_CreateShapingIesAngleScaleAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetShapingIesNormalizeAttr",
              &This::GetShapingIesNormalizeAttr)
         .def("CreateShapingIesNormalizeAttr",
-             &_CreateShapingIesNormalizeAttr,
+             &pxrUsdUsdLuxWrapShapingAPI::_CreateShapingIesNormalizeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdLuxWrapShapingAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdLuxWrapShapingAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -237,7 +237,7 @@ void wrapUsdLuxShapingAPI()
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 
-namespace {
+namespace pxrUsdUsdLuxWrapShapingAPI {
 
 WRAP_CUSTOM {
     _class

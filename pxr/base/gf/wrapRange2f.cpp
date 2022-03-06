@@ -44,7 +44,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapRange2f {
 
 static const int _dimension = 2;
 
@@ -83,7 +83,7 @@ void wrapRange2f()
         
         .def(TfTypePythonClass())
 
-        .def_readonly("dimension", _dimension)
+        .def_readonly("dimension", pxrBaseGfWrapRange2f::_dimension)
         
         .add_property("min", getMin, &GfRange2f::SetMin)
         .add_property("max", getMax, &GfRange2f::SetMax)
@@ -144,8 +144,8 @@ void wrapRange2f()
         .def("__itruediv__", __itruediv__ )
 #endif
 
-        .def("__repr__", _Repr)
-        .def("__hash__", __hash__)
+        .def("__repr__", pxrBaseGfWrapRange2f::_Repr)
+        .def("__hash__", pxrBaseGfWrapRange2f::__hash__)
 
         .def("GetCorner", &GfRange2f::GetCorner)
         .def("GetQuadrant", &GfRange2f::GetQuadrant)

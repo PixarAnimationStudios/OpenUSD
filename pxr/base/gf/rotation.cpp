@@ -261,7 +261,7 @@ static void _ShiftGimbalLock(
     }
 }
 
-namespace
+namespace pxrBaseGfRotation
 {
     // Enum of which angle is being zeroed out when selecting the closest roatation.
     enum _ZeroAngle {
@@ -297,29 +297,29 @@ GfRotation::MatchClosestEulerRotation(
     // angles.  We do the miniscule combinatorial optimization
     // exhaustively.
 
-    _ZeroAngle zeroAngle = ZERO_NONE;
+    pxrBaseGfRotation::_ZeroAngle zeroAngle = pxrBaseGfRotation::ZERO_NONE;
     double angleStandin = 0.0f;
     unsigned int numAngles = 4;
 
     if (thetaTw == nullptr) {
         thetaTw = &angleStandin;
         numAngles--;
-        zeroAngle = ZERO_TW;
+        zeroAngle = pxrBaseGfRotation::ZERO_TW;
     }
     if (thetaFB == nullptr) {
         thetaFB = &angleStandin;
         numAngles--;
-        zeroAngle = ZERO_FB;
+        zeroAngle = pxrBaseGfRotation::ZERO_FB;
     }
     if (thetaLR == nullptr) {
         thetaLR = &angleStandin;
         numAngles--;
-        zeroAngle = ZERO_LR;
+        zeroAngle = pxrBaseGfRotation::ZERO_LR;
     }
     if (thetaSw == nullptr) {
         thetaSw = &angleStandin;
         numAngles--;
-        zeroAngle = ZERO_SW;
+        zeroAngle = pxrBaseGfRotation::ZERO_SW;
     }
 
     if (numAngles == 0) {
@@ -368,20 +368,20 @@ GfRotation::MatchClosestEulerRotation(
     // options, the ones that don't flip the zeroed angle by pi.
     switch (zeroAngle)
     {
-    case ZERO_TW:
+    case pxrBaseGfRotation::ZERO_TW:
         //  1 - transform last 3
         vals[1] = GfVec4d( *thetaTw,   thetaFBp,  -thetaLRp, thetaSwp );
         break;
-    case ZERO_FB:
-    case ZERO_LR:
+    case pxrBaseGfRotation::ZERO_FB:
+    case pxrBaseGfRotation::ZERO_LR:
         //  1 - 1 & 3 composed
         vals[1] = GfVec4d( thetaTwp,  -*thetaFB,  -*thetaLR,  thetaSwp );
         break;
-    case ZERO_SW:
+    case pxrBaseGfRotation::ZERO_SW:
         //  1 - transform 1st 3
         vals[1] = GfVec4d( thetaTwp,  -thetaFBp, thetaLRp,  *thetaSw );
         break;
-    case ZERO_NONE:
+    case pxrBaseGfRotation::ZERO_NONE:
         //  1 - transform 1st 3
         //  2 - 1 & 3 composed
         //  3 - transform last 3
@@ -434,39 +434,39 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
 {
     // Enum of which angle is being zeroed out when decomposing the roatation.
     // This is determined by which angle output (if any) is nullptr.
-    _ZeroAngle zeroAngle = ZERO_NONE;
+    pxrBaseGfRotation::_ZeroAngle zeroAngle = pxrBaseGfRotation::ZERO_NONE;
 
     double angleStandin = 0.0f, hintTw=0.0f, hintFB=0.0f, hintLR=0.0f, hintSw=0.0f;
     if (thetaTw == nullptr) {
-        zeroAngle = ZERO_TW;
+        zeroAngle = pxrBaseGfRotation::ZERO_TW;
         thetaTw = &angleStandin;
     }
     if (thetaFB == nullptr) {
-        if (zeroAngle != ZERO_NONE) {
+        if (zeroAngle != pxrBaseGfRotation::ZERO_NONE) {
             TF_CODING_ERROR("Need three angles to correctly decompose rotation");
             return;
         }
-        zeroAngle = ZERO_FB;
+        zeroAngle = pxrBaseGfRotation::ZERO_FB;
         thetaFB = &angleStandin;
     }
     if (thetaLR == nullptr) {
-        if (zeroAngle != ZERO_NONE) {
+        if (zeroAngle != pxrBaseGfRotation::ZERO_NONE) {
             TF_CODING_ERROR("Need three angles to correctly decompose rotation");
             return;
         }
-        zeroAngle = ZERO_LR;
+        zeroAngle = pxrBaseGfRotation::ZERO_LR;
         thetaLR = &angleStandin;
     }
     if (thetaSw == nullptr) {
-        if (zeroAngle != ZERO_NONE) {
+        if (zeroAngle != pxrBaseGfRotation::ZERO_NONE) {
             TF_CODING_ERROR("Need three angles to correctly decompose rotation");
             return;
         }
-        zeroAngle = ZERO_SW;
+        zeroAngle = pxrBaseGfRotation::ZERO_SW;
         thetaSw = &angleStandin;
     }
 
-    if (swShift && zeroAngle != ZERO_NONE) {
+    if (swShift && zeroAngle != pxrBaseGfRotation::ZERO_NONE) {
         TF_WARN("A swing shift was provided but we're not decomposing into"
                 " four angles.  The swing shift will be ignored.");
     }
@@ -494,8 +494,8 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
     // angle we're not decomposing into.
     switch (zeroAngle)
     {
-    case ZERO_SW:
-    case ZERO_NONE:
+    case pxrBaseGfRotation::ZERO_SW:
+    case pxrBaseGfRotation::ZERO_NONE:
         r = r * _RotateOntoProjected
             (r.TransformDir(TwAxisR), TwAxis, LRAxis, thetaLR);
         r = r * _RotateOntoProjected
@@ -512,7 +512,7 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
         *thetaSw = swShift ? *swShift : 0.0;
         break;
 
-    case ZERO_TW:
+    case pxrBaseGfRotation::ZERO_TW:
         r = r * _RotateOntoProjected
             (r.TransformDir(FBAxisR), FBAxis, TwAxis, thetaSw);
         r = r * _RotateOntoProjected
@@ -525,7 +525,7 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
         *thetaLR *= -handedness;
         break;
 
-    case ZERO_FB:
+    case pxrBaseGfRotation::ZERO_FB:
         r = r * _RotateOntoProjected
             (r.TransformDir(TwAxisR), FBAxis, TwAxis, thetaSw);
         r = r * _RotateOntoProjected
@@ -538,7 +538,7 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
         *thetaTw *= -handedness;
         break;
 
-    case ZERO_LR:
+    case pxrBaseGfRotation::ZERO_LR:
         r = r * _RotateOntoProjected
             (r.TransformDir(TwAxisR), LRAxis, TwAxis, thetaSw);
         r = r * _RotateOntoProjected
@@ -555,10 +555,10 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
     // The decomposition isn't unique. Find the closest rotation to the hint.
     MatchClosestEulerRotation(
         hintTw, hintFB, hintLR, hintSw,
-        zeroAngle == ZERO_TW ? nullptr : thetaTw,
-        zeroAngle == ZERO_FB ? nullptr : thetaFB,
-        zeroAngle == ZERO_LR ? nullptr : thetaLR,
-        zeroAngle == ZERO_SW ? nullptr : thetaSw);
+        zeroAngle == pxrBaseGfRotation::ZERO_TW ? nullptr : thetaTw,
+        zeroAngle == pxrBaseGfRotation::ZERO_FB ? nullptr : thetaFB,
+        zeroAngle == pxrBaseGfRotation::ZERO_LR ? nullptr : thetaLR,
+        zeroAngle == pxrBaseGfRotation::ZERO_SW ? nullptr : thetaSw);
     
 
     // Oh, but there's more: Take the example of when we're decomposing
@@ -584,17 +584,17 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
     basis.SetRow(2, LRAxis);
     switch (zeroAngle)
     {
-    case ZERO_NONE:
-    case ZERO_SW:
+    case pxrBaseGfRotation::ZERO_NONE:
+    case pxrBaseGfRotation::ZERO_SW:
         _ShiftGimbalLock(*thetaFB + M_PI/2 * basis.GetHandedness(), thetaTw, thetaLR);
         break;
-    case ZERO_TW:
+    case pxrBaseGfRotation::ZERO_TW:
         _ShiftGimbalLock(*thetaLR + M_PI/2 * basis.GetHandedness(), thetaFB, thetaSw);
         break;
-    case ZERO_FB:
+    case pxrBaseGfRotation::ZERO_FB:
         _ShiftGimbalLock(*thetaLR, thetaTw, thetaSw);
         break;
-    case ZERO_LR:
+    case pxrBaseGfRotation::ZERO_LR:
         _ShiftGimbalLock(*thetaFB, thetaTw, thetaSw);
         break;
     };

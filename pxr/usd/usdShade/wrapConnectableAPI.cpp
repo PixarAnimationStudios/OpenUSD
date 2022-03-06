@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdShadeWrapConnectableAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -87,10 +87,10 @@ void wrapUsdShadeConnectableAPI()
         .def(!boost::python::self)
 
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdShadeWrapConnectableAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdShadeWrapConnectableAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -114,7 +114,7 @@ void wrapUsdShadeConnectableAPI()
 
 #include "pxr/usd/usdShade/utils.h"
 
-namespace {
+namespace pxrUsdUsdShadeWrapConnectableAPI {
 
 #include <boost/python/tuple.hpp>
 

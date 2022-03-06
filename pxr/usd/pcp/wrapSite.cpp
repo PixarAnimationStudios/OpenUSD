@@ -30,7 +30,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdPcpWrapSite {
 
 static std::string
 _PcpSiteStr(const PcpSite& x)
@@ -58,7 +58,7 @@ void wrapSite()
                       boost::python::make_getter(&PcpSite::path,
                                   boost::python::return_value_policy<boost::python::return_by_value>()),
                       boost::python::make_setter(&PcpSite::path))
-        .def("__str__", &_PcpSiteStr)
+        .def("__str__", &pxrUsdPcpWrapSite::_PcpSiteStr)
         ;
 
     boost::python::class_<PcpLayerStackSite>
@@ -71,6 +71,6 @@ void wrapSite()
                       boost::python::make_getter(&PcpLayerStackSite::path,
                                   boost::python::return_value_policy<boost::python::return_by_value>()),
                       boost::python::make_setter(&PcpLayerStackSite::path))
-        .def("__str__", &_PcpLayerStackSiteStr)
+        .def("__str__", &pxrUsdPcpWrapSite::_PcpLayerStackSiteStr)
         ;
 }

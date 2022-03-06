@@ -33,7 +33,7 @@
 #include <string>
 
 
-namespace {
+namespace pxrBaseTfPyCallContext {
     struct _Cache {
         tbb::spin_mutex lock;
         std::set<std::string> data;
@@ -53,7 +53,7 @@ Tf_PythonCallContext(char const *fileName,
                      char const *functionName,
                      size_t line)
 {
-    static _Cache cache;
+    static pxrBaseTfPyCallContext::_Cache cache;
 
     std::string const& fullName = TfStringPrintf("%s.%s", moduleName, functionName);
 

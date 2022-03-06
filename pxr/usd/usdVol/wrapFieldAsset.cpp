@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdVolWrapFieldAsset {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -125,42 +125,42 @@ void wrapUsdVolFieldAsset()
         .def("GetFilePathAttr",
              &This::GetFilePathAttr)
         .def("CreateFilePathAttr",
-             &_CreateFilePathAttr,
+             &pxrUsdUsdVolWrapFieldAsset::_CreateFilePathAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetFieldNameAttr",
              &This::GetFieldNameAttr)
         .def("CreateFieldNameAttr",
-             &_CreateFieldNameAttr,
+             &pxrUsdUsdVolWrapFieldAsset::_CreateFieldNameAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetFieldIndexAttr",
              &This::GetFieldIndexAttr)
         .def("CreateFieldIndexAttr",
-             &_CreateFieldIndexAttr,
+             &pxrUsdUsdVolWrapFieldAsset::_CreateFieldIndexAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetFieldDataTypeAttr",
              &This::GetFieldDataTypeAttr)
         .def("CreateFieldDataTypeAttr",
-             &_CreateFieldDataTypeAttr,
+             &pxrUsdUsdVolWrapFieldAsset::_CreateFieldDataTypeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetVectorDataRoleHintAttr",
              &This::GetVectorDataRoleHintAttr)
         .def("CreateVectorDataRoleHintAttr",
-             &_CreateVectorDataRoleHintAttr,
+             &pxrUsdUsdVolWrapFieldAsset::_CreateVectorDataRoleHintAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdVolWrapFieldAsset::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdVolWrapFieldAsset::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -182,7 +182,7 @@ void wrapUsdVolFieldAsset()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdVolWrapFieldAsset {
 
 WRAP_CUSTOM {
 }

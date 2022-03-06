@@ -44,7 +44,7 @@ TF_REGISTRY_FUNCTION(VtValue)
     VtRegisterValueCastsFromPythonSequencesToArray<SdfAssetPath>();
 }
 
-namespace {
+namespace pxrUsdSdfWrapAssetPath {
 
 static std::string _Str(SdfAssetPath const &self)
 {
@@ -89,14 +89,14 @@ void wrapAssetPath()
         .def(boost::python::init<const std::string &>())
         .def(boost::python::init<const std::string &, const std::string &>())
 
-        .def("__repr__", _Repr)
-        .def(TfPyBoolBuiltinFuncName, _Nonzero)
-        .def("__hash__", _Hash)
+        .def("__repr__", pxrUsdSdfWrapAssetPath::_Repr)
+        .def(TfPyBoolBuiltinFuncName, pxrUsdSdfWrapAssetPath::_Nonzero)
+        .def("__hash__", pxrUsdSdfWrapAssetPath::_Hash)
 
         .def( boost::python::self == boost::python::self )
         .def( boost::python::self != boost::python::self )
 //        .def( str(self) )
-        .def("__str__", _Str)
+        .def("__str__", pxrUsdSdfWrapAssetPath::_Str)
 
         .add_property("path", 
                       boost::python::make_function(&This::GetAssetPath,

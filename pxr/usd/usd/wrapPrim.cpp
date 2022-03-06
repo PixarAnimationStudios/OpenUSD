@@ -62,7 +62,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapPrim {
 
 static SdfPathVector
 _FindAllAttributeConnectionPaths(
@@ -176,7 +176,7 @@ _UnsafeGetStageForTesting(UsdObject const &obj)
 
 void wrapUsdPrim()
 {
-    Usd_PrimCanApplyAPIResult::Wrap<Usd_PrimCanApplyAPIResult>(
+    pxrUsdUsdWrapPrim::Usd_PrimCanApplyAPIResult::Wrap<pxrUsdUsdWrapPrim::Usd_PrimCanApplyAPIResult>(
         "_CanApplyAPIResult", "whyNot");
 
     // Predicate signature for FindAllRelationshipTargetPaths().
@@ -191,7 +191,7 @@ void wrapUsdPrim()
 
     boost::python::class_<UsdPrim, boost::python::bases<UsdObject> >("Prim")
         .def(Usd_ObjectSubclass())
-        .def("__repr__", __repr__)
+        .def("__repr__", pxrUsdUsdWrapPrim::__repr__)
 
         .def("GetPrimTypeInfo", &UsdPrim::GetPrimTypeInfo,
              boost::python::return_internal_reference<>())
@@ -220,18 +220,18 @@ void wrapUsdPrim()
         .def("IsDefined", &UsdPrim::IsDefined)
         .def("HasDefiningSpecifier", &UsdPrim::HasDefiningSpecifier)
 
-        .def("GetPropertyNames", &_WrapGetPropertyNames,
+        .def("GetPropertyNames", &pxrUsdUsdWrapPrim::_WrapGetPropertyNames,
              (boost::python::arg("predicate")=boost::python::object()),
              boost::python::return_value_policy<TfPySequenceToList>())
-        .def("GetAuthoredPropertyNames", &_WrapGetAuthoredPropertyNames,
+        .def("GetAuthoredPropertyNames", &pxrUsdUsdWrapPrim::_WrapGetAuthoredPropertyNames,
              (boost::python::arg("predicate")=boost::python::object()),
              boost::python::return_value_policy<TfPySequenceToList>())
         
-        .def("GetProperties", &_WrapGetProperties,
+        .def("GetProperties", &pxrUsdUsdWrapPrim::_WrapGetProperties,
              boost::python::arg("predicate")=boost::python::object(),
              boost::python::return_value_policy<TfPySequenceToList>())
 
-        .def("GetAuthoredProperties", &_WrapGetAuthoredProperties,
+        .def("GetAuthoredProperties", &pxrUsdUsdWrapPrim::_WrapGetAuthoredProperties,
              boost::python::arg("predicate")=boost::python::object(),
              boost::python::return_value_policy<TfPySequenceToList>())
 
@@ -275,10 +275,10 @@ void wrapUsdPrim()
             &UsdPrim::HasAPI,
             (boost::python::arg("schemaType"), boost::python::arg("instanceName")=TfToken()))
         .def("CanApplyAPI", 
-            &_WrapCanApplyAPI,
+            &pxrUsdUsdWrapPrim::_WrapCanApplyAPI,
             (boost::python::arg("schemaType")))
         .def("CanApplyAPI", 
-            &_WrapCanApplyAPI_2,
+            &pxrUsdUsdWrapPrim::_WrapCanApplyAPI_2,
             (boost::python::arg("schemaType"), boost::python::arg("instanceName")))
         .def("ApplyAPI", 
             (bool (UsdPrim::*)(const TfType&) const)
@@ -365,7 +365,7 @@ void wrapUsdPrim()
         .def("HasAttribute", &UsdPrim::HasAttribute, boost::python::arg("attrName"))
 
         .def("FindAllAttributeConnectionPaths",
-             &_FindAllAttributeConnectionPaths,
+             &pxrUsdUsdWrapPrim::_FindAllAttributeConnectionPaths,
              (boost::python::arg("predicate")=boost::python::object(), boost::python::arg("recurseOnSources")=false))
         
         .def("CreateRelationship",
@@ -385,7 +385,7 @@ void wrapUsdPrim()
         .def("HasRelationship", &UsdPrim::HasRelationship, boost::python::arg("relName"))
 
         .def("FindAllRelationshipTargetPaths",
-             &_FindAllRelationshipTargetPaths,
+             &pxrUsdUsdWrapPrim::_FindAllRelationshipTargetPaths,
              (boost::python::arg("predicate")=boost::python::object(), boost::python::arg("recurseOnTargets")=false))
 
         .def("HasPayload", &UsdPrim::HasPayload)
@@ -460,6 +460,6 @@ void wrapUsdPrim()
     // our usual Python API guards to access an invalid prim and throw an
     // exception.
     boost::python::def(
-        "_UnsafeGetStageForTesting", &_UnsafeGetStageForTesting);
+        "_UnsafeGetStageForTesting", &pxrUsdUsdWrapPrim::_UnsafeGetStageForTesting);
     
 }

@@ -93,7 +93,7 @@ UsdSkelCache::GetSkinningQuery(const UsdPrim& prim) const
 }
 
 
-namespace {
+namespace pxrUsdUsdSkelCache {
 
 struct _CompareSkels
 {
@@ -130,7 +130,7 @@ UsdSkelCache::ComputeSkelBindings(const UsdSkelRoot& skelRoot,
 
     std::map<UsdSkelSkeleton,
              VtArray<UsdSkelSkinningQuery>, 
-             _CompareSkels> bindingMap;
+             pxrUsdUsdSkelCache::_CompareSkels> bindingMap;
 
     // Traverse over the prims beneath the skelRoot.
     // While traversing, we maintain a stack of 'bound' skeletons,

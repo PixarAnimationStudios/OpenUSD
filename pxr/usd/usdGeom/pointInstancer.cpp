@@ -269,7 +269,7 @@ UsdGeomPointInstancer::CreatePrototypesRel() const
                        /* custom = */ false);
 }
 
-namespace {
+namespace pxrUsdUsdGeomPointInstancer {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -297,7 +297,7 @@ UsdGeomPointInstancer::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->invisibleIds,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomPointInstancer::_ConcatenateAttributeNames(
             UsdGeomBoundable::GetSchemaAttributeNames(true),
             localNames);
 

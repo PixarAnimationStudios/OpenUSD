@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdPcpLayerPrefetchRequest {
 
 struct _Opener
 {
@@ -113,7 +113,7 @@ PcpLayerPrefetchRequest::Run(const Pcp_MutedLayers& mutedLayers)
 
     // Open all the sublayers in the request.
     WorkWithScopedParallelism([&]() {
-            _Opener opener(mutedLayers, &_retainedLayers);
+            pxrUsdPcpLayerPrefetchRequest::_Opener opener(mutedLayers, &_retainedLayers);
             TF_FOR_ALL(req, requests)
                 opener.OpenSublayers(req->first, req->second);
         });

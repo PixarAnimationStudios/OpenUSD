@@ -41,7 +41,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapLineSeg {
 
 static std::string _Repr(GfLineSeg const &self) {
     return TF_PY_REPR_PREFIX + "LineSeg(" + TfPyRepr(self.GetPoint(0.0)) + ", " +
@@ -81,7 +81,7 @@ void wrapLineSeg()
 {    
     typedef GfLineSeg This;
 
-    boost::python::def("FindClosestPoints", FindClosestPointsHelper1, 
+    boost::python::def("FindClosestPoints", pxrBaseGfWrapLineSeg::FindClosestPointsHelper1, 
         "FindClosestPoints( l1, s2 ) -> tuple< intersects = bool, "
         "p1 = GfVec3d, p2 = GfVec3d, t1 = double, t2 = double>"
         "\n\n"
@@ -94,7 +94,7 @@ void wrapLineSeg()
         "p1 and p2.  The parametric distance of each point on the "
         "line and line segment is returned in t1 and t2.\n"
         "----------------------------------------------------------------------");
-    boost::python::def("FindClosestPoints", FindClosestPointsHelper2, 
+    boost::python::def("FindClosestPoints", pxrBaseGfWrapLineSeg::FindClosestPointsHelper2, 
         "FindClosestPoints( s1, s2 ) -> tuple<result = bool,"
         "p1 = GfVec3d, p2 = GfVec3d, t1 = double, t2 = double>"
         "\n\n"
@@ -123,13 +123,13 @@ void wrapLineSeg()
         .add_property("direction", getDirection)
         .add_property("length", &This::GetLength)
 
-        .def( "FindClosestPoint", FindClosestPointHelper )
+        .def( "FindClosestPoint", pxrBaseGfWrapLineSeg::FindClosestPointHelper )
 
         .def( boost::python::self_ns::str(boost::python::self) )
         .def( boost::python::self == boost::python::self )
         .def( boost::python::self != boost::python::self )
 
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrBaseGfWrapLineSeg::_Repr)
         ;
     
 }

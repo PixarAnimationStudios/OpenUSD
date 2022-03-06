@@ -31,7 +31,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-namespace {
+namespace pxrUsdUsdSkelSkelDefinition {
 
 
 enum _Flags {
@@ -111,7 +111,7 @@ UsdSkel_SkelDefinition::_Init(const UsdSkelSkeleton& skel)
 
     skel.GetBindTransformsAttr().Get(&_jointWorldBindXforms);
     if (_jointWorldBindXforms.size() == _jointOrder.size()) {
-        _flags = _flags|_HaveBindPose;
+        _flags = _flags|pxrUsdUsdSkelSkelDefinition::_HaveBindPose;
     } else {
         TF_WARN("%s -- size of 'bindTransforms' attr [%zu] does not "
                 "match the number of joints in the 'joints' attr [%zu].",
@@ -121,7 +121,7 @@ UsdSkel_SkelDefinition::_Init(const UsdSkelSkeleton& skel)
 
     skel.GetRestTransformsAttr().Get(&_jointLocalRestXforms);
     if (_jointLocalRestXforms.size() == _jointOrder.size()) {
-        _flags = _flags|_HaveRestPose;
+        _flags = _flags|pxrUsdUsdSkelSkelDefinition::_HaveRestPose;
     } else {
         TF_WARN("%s -- size of 'restTransforms' attr [%zu] does not "
                 "match the number of joints in the 'joints' attr [%zu].",
@@ -160,7 +160,7 @@ bool
 UsdSkel_SkelDefinition::GetJointLocalRestTransforms(VtMatrix4dArray* xforms)
 {
     const int flags = _flags;
-    if (flags&_HaveRestPose) {
+    if (flags&pxrUsdUsdSkelSkelDefinition::_HaveRestPose) {
 
         if (!xforms) {
             TF_CODING_ERROR("'xforms' pointer is null.");
@@ -187,7 +187,7 @@ UsdSkel_SkelDefinition::GetJointLocalRestTransforms(VtMatrix4fArray* xforms)
     // float-precision uses uncached conversion from double-precision.
     VtMatrix4dArray xforms4d;
     if (GetJointLocalRestTransforms(&xforms4d)) {
-        _Convert4dXformsTo4f(xforms4d, xforms);
+        pxrUsdUsdSkelSkelDefinition::_Convert4dXformsTo4f(xforms4d, xforms);
         return true;
     }
     return false;
@@ -199,7 +199,7 @@ bool
 UsdSkel_SkelDefinition::_GetJointSkelRestTransforms(VtArray<Matrix4>* xforms)
 {
     const int flags = _flags;
-    if (flags&_HaveRestPose) {
+    if (flags&pxrUsdUsdSkelSkelDefinition::_HaveRestPose) {
 
         if (!xforms) {
             TF_CODING_ERROR("'xforms' pointer is null.");
@@ -222,7 +222,7 @@ template <>
 bool
 UsdSkel_SkelDefinition::GetJointSkelRestTransforms(VtMatrix4dArray* xforms)
 {
-    return _GetJointSkelRestTransforms<_SkelRestXforms4dComputed>(xforms);
+    return _GetJointSkelRestTransforms<pxrUsdUsdSkelSkelDefinition::_SkelRestXforms4dComputed>(xforms);
 }
 
 
@@ -230,7 +230,7 @@ template <>
 bool
 UsdSkel_SkelDefinition::GetJointSkelRestTransforms(VtMatrix4fArray* xforms)
 {
-    return _GetJointSkelRestTransforms<_SkelRestXforms4fComputed>(xforms);
+    return _GetJointSkelRestTransforms<pxrUsdUsdSkelSkelDefinition::_SkelRestXforms4fComputed>(xforms);
 }
 
 
@@ -269,7 +269,7 @@ bool
 UsdSkel_SkelDefinition::GetJointWorldBindTransforms(VtMatrix4dArray* xforms)
 {
     const int flags = _flags;
-    if (flags&_HaveBindPose) {
+    if (flags&pxrUsdUsdSkelSkelDefinition::_HaveBindPose) {
 
         if (!xforms) {
             TF_CODING_ERROR("'xforms' pointer is null.");
@@ -296,7 +296,7 @@ UsdSkel_SkelDefinition::GetJointWorldBindTransforms(VtMatrix4fArray* xforms)
     // float-precision uses uncached conversion from double-precision.
     VtMatrix4dArray xforms4d;
     if (GetJointWorldBindTransforms(&xforms4d)) {
-        _Convert4dXformsTo4f(xforms4d, xforms);
+        pxrUsdUsdSkelSkelDefinition::_Convert4dXformsTo4f(xforms4d, xforms);
         return true;
     }
     return false;
@@ -309,7 +309,7 @@ UsdSkel_SkelDefinition::_GetJointWorldInverseBindTransforms(
     VtArray<Matrix4>* xforms)
 {
     const int flags = _flags;
-    if (flags&_HaveBindPose) {
+    if (flags&pxrUsdUsdSkelSkelDefinition::_HaveBindPose) {
 
         if (!xforms) {
             TF_CODING_ERROR("'xforms' pointer is null.");
@@ -335,7 +335,7 @@ UsdSkel_SkelDefinition::GetJointWorldInverseBindTransforms(
     VtMatrix4dArray* xforms)
 {
     return _GetJointWorldInverseBindTransforms<
-        _WorldInverseBindXforms4dComputed>(xforms);
+        pxrUsdUsdSkelSkelDefinition::_WorldInverseBindXforms4dComputed>(xforms);
 }
 
 
@@ -345,7 +345,7 @@ UsdSkel_SkelDefinition::GetJointWorldInverseBindTransforms(
     VtMatrix4fArray* xforms)
 {
     return _GetJointWorldInverseBindTransforms<
-        _WorldInverseBindXforms4fComputed>(xforms);
+        pxrUsdUsdSkelSkelDefinition::_WorldInverseBindXforms4fComputed>(xforms);
 }
 
 
@@ -360,7 +360,7 @@ UsdSkel_SkelDefinition::_ComputeJointWorldInverseBindTransforms()
 
         std::lock_guard<std::mutex> lock(_mutex);
 
-        _InvertTransforms<Matrix4>(
+        pxrUsdUsdSkelSkelDefinition::_InvertTransforms<Matrix4>(
             jointWorldBindXforms,
             &_jointWorldInverseBindXforms.Get<Matrix4>());
 
@@ -377,7 +377,7 @@ UsdSkel_SkelDefinition::_GetJointLocalInverseRestTransforms(
     VtArray<Matrix4>* xforms)
 {
     const int flags = _flags;
-    if (flags&_HaveRestPose) {
+    if (flags&pxrUsdUsdSkelSkelDefinition::_HaveRestPose) {
 
         if (!xforms) {
             TF_CODING_ERROR("'xforms' pointer is null.");
@@ -403,7 +403,7 @@ UsdSkel_SkelDefinition::GetJointLocalInverseRestTransforms(
     VtMatrix4dArray* xforms)
 {
     return _GetJointLocalInverseRestTransforms<
-        _LocalInverseRestXforms4dComputed>(xforms);
+        pxrUsdUsdSkelSkelDefinition::_LocalInverseRestXforms4dComputed>(xforms);
     return false;
 }
 
@@ -414,7 +414,7 @@ UsdSkel_SkelDefinition::GetJointLocalInverseRestTransforms(
     VtMatrix4fArray* xforms)
 {
     return _GetJointLocalInverseRestTransforms<
-        _LocalInverseRestXforms4fComputed>(xforms);
+        pxrUsdUsdSkelSkelDefinition::_LocalInverseRestXforms4fComputed>(xforms);
     return false;
 }
 
@@ -430,7 +430,7 @@ UsdSkel_SkelDefinition::_ComputeJointLocalInverseRestTransforms()
 
         std::lock_guard<std::mutex> lock(_mutex);
 
-        _InvertTransforms<Matrix4>(
+        pxrUsdUsdSkelSkelDefinition::_InvertTransforms<Matrix4>(
             jointLocalRestXforms,
             &_jointLocalInverseRestXforms.Get<Matrix4>());
 
@@ -445,13 +445,13 @@ UsdSkel_SkelDefinition::_ComputeJointLocalInverseRestTransforms()
 bool 
 UsdSkel_SkelDefinition::HasBindPose()
 {
-    return _flags&_HaveBindPose;
+    return _flags&pxrUsdUsdSkelSkelDefinition::_HaveBindPose;
 }
 
 bool
 UsdSkel_SkelDefinition::HasRestPose()
 {
-    return _flags&_HaveRestPose;
+    return _flags&pxrUsdUsdSkelSkelDefinition::_HaveRestPose;
 }
 
 

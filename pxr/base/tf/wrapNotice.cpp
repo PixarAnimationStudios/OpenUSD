@@ -64,7 +64,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapNotice {
 
 // TfNotice is passed for both the type and the base to indicate the root of the
 // hierarchy.
@@ -217,7 +217,7 @@ class Tf_PyNoticeInternal
 void wrapNotice()
 {
     // Make sure we can pass callbacks from python.
-    TfPyFunctionFromPython<Tf_PyNoticeInternal::Listener::CallbackSig>();
+    TfPyFunctionFromPython<pxrBaseTfWrapNotice::Tf_PyNoticeInternal::Listener::CallbackSig>();
 
     // Passing TfNotice for both T and its base indicates that this is the root
     // of the notice hierarchy.
@@ -228,7 +228,7 @@ void wrapNotice()
         // the last overload that will be tried.  Thus, it will only be invoked
         // if the python object is not already weak-pointable.
         .def("Register",
-             Tf_PyNoticeInternal::RegisterWithPythonSender,
+             pxrBaseTfWrapNotice::Tf_PyNoticeInternal::RegisterWithPythonSender,
              boost::python::return_value_policy<boost::python::manage_new_object>(),
          "Register( noticeType, callback, sender ) -> Listener \n\n"
          "noticeType : Tf.Notice\n"
@@ -248,12 +248,12 @@ void wrapNotice()
          "object returned by this call. "
              )
         .def("Register",
-             Tf_PyNoticeInternal::RegisterWithAnyWeakPtrSender,
+             pxrBaseTfWrapNotice::Tf_PyNoticeInternal::RegisterWithAnyWeakPtrSender,
              boost::python::return_value_policy<boost::python::manage_new_object>())
         .staticmethod("Register")
         
         .def("RegisterGlobally",
-             Tf_PyNoticeInternal::RegisterGlobally,
+             pxrBaseTfWrapNotice::Tf_PyNoticeInternal::RegisterGlobally,
              boost::python::return_value_policy<boost::python::manage_new_object>(), 
              "RegisterGlobally( noticeType, callback ) -> Listener \n\n"
              "noticeType : Tf.Notice\n"
@@ -268,7 +268,7 @@ void wrapNotice()
         // We register the method that takes any python object first, as this is
         // the last overload that will be tried.  Thus, it will only be invoked
         // if the python object is not already weak-pointable.
-        .def("Send", &Tf_PyNoticeInternal::SendWithPythonSender,
+        .def("Send", &pxrBaseTfWrapNotice::Tf_PyNoticeInternal::SendWithPythonSender,
              "Send(sender) \n\n"
              "sender : object \n\n"
              "Deliver the notice to interested listeners, returning the number "
@@ -277,8 +277,8 @@ void wrapNotice()
              "argument. "
              "Listeners that registered for the given sender AND listeners "
              "that registered globally will get the notice. ")
-        .def("Send", &Tf_PyNoticeInternal::SendWithAnyWeakPtrSender)
-        .def("SendGlobally", &Tf_PyNoticeInternal::SendGlobally,
+        .def("Send", &pxrBaseTfWrapNotice::Tf_PyNoticeInternal::SendWithAnyWeakPtrSender)
+        .def("SendGlobally", &pxrBaseTfWrapNotice::Tf_PyNoticeInternal::SendGlobally,
              "SendGlobally() \n\n"
              "Deliver the notice to interested listeners.   "
              "For most clients it is recommended to use the Send(sender) "
@@ -297,9 +297,9 @@ void wrapNotice()
     "You can also use the Revoke() function to break the connection. "
     "A Listener object is returned from the Register() and  "
     "RegisterGlobally() functions. ";
-    boost::python::class_<Tf_PyNoticeInternal::Listener,
+    boost::python::class_<pxrBaseTfWrapNotice::Tf_PyNoticeInternal::Listener,
            boost::noncopyable>("Listener", Listener_string, boost::python::no_init)
-        .def("Revoke", &Tf_PyNoticeInternal::Listener::Revoke,
+        .def("Revoke", &pxrBaseTfWrapNotice::Tf_PyNoticeInternal::Listener::Revoke,
             "Revoke() \n\n"
             "Revoke interest by a notice listener. "
             " "

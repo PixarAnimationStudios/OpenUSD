@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapBoundable {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -97,14 +97,14 @@ void wrapUsdGeomBoundable()
         .def("GetExtentAttr",
              &This::GetExtentAttr)
         .def("CreateExtentAttr",
-             &_CreateExtentAttr,
+             &pxrUsdUsdGeomWrapBoundable::_CreateExtentAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapBoundable::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapBoundable::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -126,7 +126,7 @@ void wrapUsdGeomBoundable()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdGeomWrapBoundable {
 
 static boost::python::object
 _ComputeExtentFromPlugins(

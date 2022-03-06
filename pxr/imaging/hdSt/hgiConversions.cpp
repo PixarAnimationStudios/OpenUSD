@@ -26,7 +26,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrImagingHdStHgiConversions {
 
 struct _FormatDesc {
     HdFormat hdFormat;
@@ -309,7 +309,7 @@ HdStHgiConversions::GetHgiFormat(const HdFormat hdFormat)
         return HgiFormatInvalid;
     }
 
-    HgiFormat hgiFormat = FORMAT_DESC[hdFormat].hgiFormat;
+    HgiFormat hgiFormat = pxrImagingHdStHgiConversions::FORMAT_DESC[hdFormat].hgiFormat;
     if (ARCH_UNLIKELY(hgiFormat == HgiFormatInvalid)) {
         TF_CODING_ERROR("Unsupported format");
     }
@@ -326,7 +326,7 @@ HdStHgiConversions::GetHgiVertexFormat(const HdType hdType)
         return HgiFormatInvalid;
     }
 
-    HgiFormat hgiFormat = VERTEX_FORMAT_FROM_TYPE_DESC[hdType].hgiFormat;
+    HgiFormat hgiFormat = pxrImagingHdStHgiConversions::VERTEX_FORMAT_FROM_TYPE_DESC[hdType].hgiFormat;
     if (ARCH_UNLIKELY(hgiFormat == HgiFormatInvalid)) {
         TF_CODING_ERROR("Unsupported type");
     }
@@ -343,7 +343,7 @@ HdStHgiConversions::GetHgiSamplerAddressMode(const HdWrap hdWrap)
         return HgiSamplerAddressModeClampToBorderColor;
     }
 
-    return WRAP_DESC[hdWrap].hgiSamplerAddressMode;
+    return pxrImagingHdStHgiConversions::WRAP_DESC[hdWrap].hgiSamplerAddressMode;
 }
 
 HgiSamplerFilter
@@ -353,7 +353,7 @@ HdStHgiConversions::GetHgiMagFilter(const HdMagFilter hdMagFilter)
         TF_CODING_ERROR("Unexpected HdMagFilter %d", hdMagFilter);
         return HgiSamplerFilterLinear;
     }
-    return MAG_DESC[hdMagFilter].hgiSamplerFilter;
+    return pxrImagingHdStHgiConversions::MAG_DESC[hdMagFilter].hgiSamplerFilter;
 }
 
 void
@@ -367,8 +367,8 @@ HdStHgiConversions::GetHgiMinAndMipFilter(
         *hgiSamplerFilter = HgiSamplerFilterLinear;
         *hgiMipFilter = HgiMipFilterNotMipmapped;
     }
-    *hgiSamplerFilter = MIN_DESC[hdMinFilter].hgiSamplerFilter;
-    *hgiMipFilter     = MIN_DESC[hdMinFilter].hgiMipFilter;
+    *hgiSamplerFilter = pxrImagingHdStHgiConversions::MIN_DESC[hdMinFilter].hgiSamplerFilter;
+    *hgiMipFilter     = pxrImagingHdStHgiConversions::MIN_DESC[hdMinFilter].hgiMipFilter;
 }
 
 HgiBorderColor
@@ -379,7 +379,7 @@ HdStHgiConversions::GetHgiBorderColor(HdBorderColor hdBorderColor)
         return HgiBorderColorTransparentBlack;
     }
     
-    return BORDER_COLOR_DESC[hdBorderColor].hgiBorderColor;  
+    return pxrImagingHdStHgiConversions::BORDER_COLOR_DESC[hdBorderColor].hgiBorderColor;  
 }
 
 HgiCompareFunction
@@ -390,7 +390,7 @@ HdStHgiConversions::GetHgiCompareFunction(HdCompareFunction hdCompareFunc)
         TF_CODING_ERROR("Unexpected HdCompareFunction %d", hdCompareFunc);
         return HgiCompareFunctionAlways;
     }
-    return _COMPARE_FUNCTION_DESC[hdCompareFunc].hgiCompareFunction;
+    return pxrImagingHdStHgiConversions::_COMPARE_FUNCTION_DESC[hdCompareFunc].hgiCompareFunction;
 }
 
 HgiStencilOp
@@ -401,7 +401,7 @@ HdStHgiConversions::GetHgiStencilOp(HdStencilOp hdStencilOp)
         TF_CODING_ERROR("Unexpected HdStencilOp %d", hdStencilOp);
         return HgiStencilOpKeep;
     }
-    return _STENCIL_OP_DESC[hdStencilOp].hgiStencilOp;
+    return pxrImagingHdStHgiConversions::_STENCIL_OP_DESC[hdStencilOp].hgiStencilOp;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

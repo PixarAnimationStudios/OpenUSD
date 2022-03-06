@@ -77,7 +77,7 @@ UsdSkelIsSkinnablePrim(const UsdPrim& prim)
 }
 
 
-namespace {
+namespace pxrUsdUsdSkelUtils {
 
 
 /// Wrapper for parallel loops that execs in serial based on the
@@ -166,7 +166,7 @@ UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
                              TfSpan<GfMatrix4d> xforms,
                              const GfMatrix4d* rootXform)
 {
-    return UsdSkel_ConcatJointTransforms(topology, jointLocalXforms,
+    return pxrUsdUsdSkelUtils::UsdSkel_ConcatJointTransforms(topology, jointLocalXforms,
                                          xforms, rootXform);
 }
 
@@ -177,7 +177,7 @@ UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
                              TfSpan<GfMatrix4f> xforms,
                              const GfMatrix4f* rootXform)
 {
-    return UsdSkel_ConcatJointTransforms(topology, jointLocalXforms,
+    return pxrUsdUsdSkelUtils::UsdSkel_ConcatJointTransforms(topology, jointLocalXforms,
                                          xforms, rootXform);
 }
 
@@ -214,7 +214,7 @@ UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
 }
 
 
-namespace {
+namespace pxrUsdUsdSkelUtils {
 
 
 template <typename Matrix4>
@@ -301,7 +301,7 @@ UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
                                    TfSpan<GfMatrix4d> jointLocalXforms,
                                    const GfMatrix4d* rootInverseXform)
 {
-    return UsdSkel_ComputeJointLocalTransforms(
+    return pxrUsdUsdSkelUtils::UsdSkel_ComputeJointLocalTransforms(
         topology, xforms, inverseXforms, jointLocalXforms, rootInverseXform);
 }
 
@@ -313,7 +313,7 @@ UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
                                    TfSpan<GfMatrix4f> jointLocalXforms,
                                    const GfMatrix4f* rootInverseXform)
 {
-    return UsdSkel_ComputeJointLocalTransforms(
+    return pxrUsdUsdSkelUtils::UsdSkel_ComputeJointLocalTransforms(
         topology, xforms, inverseXforms, jointLocalXforms, rootInverseXform);
 }
 
@@ -324,7 +324,7 @@ UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
                                    TfSpan<GfMatrix4d> jointLocalXforms,
                                    const GfMatrix4d* rootInverseXform)
 {
-    return UsdSkel_ComputeJointLocalTransforms(
+    return pxrUsdUsdSkelUtils::UsdSkel_ComputeJointLocalTransforms(
         topology, xforms, jointLocalXforms, rootInverseXform);
 }
 
@@ -335,7 +335,7 @@ UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
                                    TfSpan<GfMatrix4f> jointLocalXforms,
                                    const GfMatrix4f* rootInverseXform)
 {
-    return UsdSkel_ComputeJointLocalTransforms(
+    return pxrUsdUsdSkelUtils::UsdSkel_ComputeJointLocalTransforms(
         topology, xforms, jointLocalXforms, rootInverseXform);
 }
 
@@ -392,7 +392,7 @@ UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
 }
 
 
-namespace {
+namespace pxrUsdUsdSkelUtils {
 
 
 /// Helper to return the GfVec3 type with the same precision
@@ -484,7 +484,7 @@ UsdSkelDecomposeTransform(const Matrix4& xform,
         return false;
     }
     Matrix4 rotateMx;
-    if (_DecomposeTransform(xform, translate, &rotateMx, scale)) {
+    if (pxrUsdUsdSkelUtils::_DecomposeTransform(xform, translate, &rotateMx, scale)) {
         *rotate = rotateMx.ExtractRotation();
         return true;
     }
@@ -523,7 +523,7 @@ UsdSkelDecomposeTransform(const Matrix4& xform,
         return false;
     }
     Matrix4 rotateMx;
-    if (_DecomposeTransform(xform, translate, &rotateMx, scale)) {
+    if (pxrUsdUsdSkelUtils::_DecomposeTransform(xform, translate, &rotateMx, scale)) {
         *rotate = GfQuatf(rotateMx.ExtractRotationQuat());
         return true;
     }
@@ -540,7 +540,7 @@ USDSKEL_API bool UsdSkelDecomposeTransform(const GfMatrix4f&,
                                            GfVec3f*, GfQuatf*, GfVec3h*);
 
 
-namespace {
+namespace pxrUsdUsdSkelUtils {
 
 
 template <typename Matrix4>
@@ -603,7 +603,7 @@ UsdSkelDecomposeTransforms(TfSpan<const GfMatrix4d> xforms,
                            TfSpan<GfQuatf> rotations,
                            TfSpan<GfVec3h> scales)
 {
-    return UsdSkel_DecomposeTransforms(xforms, translations, rotations, scales);
+    return pxrUsdUsdSkelUtils::UsdSkel_DecomposeTransforms(xforms, translations, rotations, scales);
 }
 
 
@@ -613,7 +613,7 @@ UsdSkelDecomposeTransforms(TfSpan<const GfMatrix4f> xforms,
                            TfSpan<GfQuatf> rotations,
                            TfSpan<GfVec3h> scales)
 {
-    return UsdSkel_DecomposeTransforms(xforms, translations, rotations, scales);
+    return pxrUsdUsdSkelUtils::UsdSkel_DecomposeTransforms(xforms, translations, rotations, scales);
 }
 
 
@@ -720,7 +720,7 @@ UsdSkelMakeTransform(const GfVec3f&, const GfQuatf&,
                                  const GfVec3h&, GfMatrix4f*);
 
 
-namespace {
+namespace pxrUsdUsdSkelUtils {
 
 
 template <typename Matrix4>
@@ -765,7 +765,7 @@ UsdSkelMakeTransforms(TfSpan<const GfVec3f> translations,
                       TfSpan<const GfVec3h> scales,
                       TfSpan<GfMatrix4d> xforms)
 {
-    return UsdSkel_MakeTransforms(translations, rotations, scales, xforms);
+    return pxrUsdUsdSkelUtils::UsdSkel_MakeTransforms(translations, rotations, scales, xforms);
 }
 
 
@@ -775,7 +775,7 @@ UsdSkelMakeTransforms(TfSpan<const GfVec3f> translations,
                       TfSpan<const GfVec3h> scales,
                       TfSpan<GfMatrix4f> xforms)
 {
-    return UsdSkel_MakeTransforms(translations, rotations, scales, xforms);
+    return pxrUsdUsdSkelUtils::UsdSkel_MakeTransforms(translations, rotations, scales, xforms);
 }
 
 
@@ -891,7 +891,7 @@ UsdSkelComputeJointsExtent(const GfMatrix4d* xforms,
 }
 
 
-namespace {
+namespace pxrUsdUsdSkelUtils {
 
 /// Validate the size of a weight/index array for a given
 /// number of influences per component.
@@ -924,13 +924,13 @@ UsdSkelNormalizeWeights(TfSpan<float> weights,
 {
     TRACE_FUNCTION();
     
-    if (!_ValidateArrayShape(weights.size(), numInfluencesPerComponent)) {
+    if (!pxrUsdUsdSkelUtils::_ValidateArrayShape(weights.size(), numInfluencesPerComponent)) {
         return false;
     }
 
     const size_t numComponents = weights.size()/numInfluencesPerComponent;
 
-    _ParallelForN(
+    pxrUsdUsdSkelUtils::_ParallelForN(
         numComponents, /* inSerial = */ false,
         [&](size_t start, size_t end)
         {
@@ -983,7 +983,7 @@ UsdSkelSortInfluences(TfSpan<int> indices,
                 indices.size(), weights.size());
         return false;
     }
-    if (!_ValidateArrayShape(indices.size(), numInfluencesPerComponent)) {
+    if (!pxrUsdUsdSkelUtils::_ValidateArrayShape(indices.size(), numInfluencesPerComponent)) {
         return false;
     }
 
@@ -994,7 +994,7 @@ UsdSkelSortInfluences(TfSpan<int> indices,
 
     const size_t numComponents = indices.size()/numInfluencesPerComponent;
 
-    _ParallelForN(
+    pxrUsdUsdSkelUtils::_ParallelForN(
         numComponents, /* inSerial = */ false,
         [&](size_t start, size_t end)
         {
@@ -1041,7 +1041,7 @@ UsdSkelSortInfluences(VtIntArray* indices,
 }
 
 
-namespace {
+namespace pxrUsdUsdSkelUtils {
 
 template <typename T>
 bool
@@ -1073,18 +1073,18 @@ _ExpandConstantArray(T* array, size_t size)
 bool
 UsdSkelExpandConstantInfluencesToVarying(VtIntArray* indices, size_t size)
 {
-    return _ExpandConstantArray(indices, size);
+    return pxrUsdUsdSkelUtils::_ExpandConstantArray(indices, size);
 }
 
 
 bool
 UsdSkelExpandConstantInfluencesToVarying(VtFloatArray* weights, size_t size)
 {
-    return _ExpandConstantArray(weights, size);
+    return pxrUsdUsdSkelUtils::_ExpandConstantArray(weights, size);
 }
 
 
-namespace {
+namespace pxrUsdUsdSkelUtils {
 
 template <typename T>
 bool
@@ -1157,7 +1157,7 @@ UsdSkelResizeInfluences(VtIntArray* indices,
                         int newNumInfluencesPerComponent)
 {
     TRACE_FUNCTION();
-    return _ResizeInfluences(indices, srcNumInfluencesPerComponent,
+    return pxrUsdUsdSkelUtils::_ResizeInfluences(indices, srcNumInfluencesPerComponent,
                              newNumInfluencesPerComponent, 0);
 }
 
@@ -1169,7 +1169,7 @@ UsdSkelResizeInfluences(VtFloatArray* weights,
 {
     TRACE_FUNCTION();
 
-    if (_ResizeInfluences(weights, srcNumInfluencesPerComponent,
+    if (pxrUsdUsdSkelUtils::_ResizeInfluences(weights, srcNumInfluencesPerComponent,
                          newNumInfluencesPerComponent, 0.0f)) {
         if (newNumInfluencesPerComponent < srcNumInfluencesPerComponent) {
             // Some weights have been stripped off. Need to renormalize.
@@ -1209,7 +1209,7 @@ UsdSkelInterleaveInfluences(const TfSpan<const int>& indices,
 }
 
 
-namespace {
+namespace pxrUsdUsdSkelUtils {
 
 
 /// Functor for extracting influence indices and weights from influences
@@ -1381,7 +1381,7 @@ UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
                      TfSpan<GfVec3f> points,
                      bool inSerial)
 {
-    return _NonInterleavedSkinPointsLBS(
+    return pxrUsdUsdSkelUtils::_NonInterleavedSkinPointsLBS(
         geomBindTransform, jointXforms,
         jointIndices, jointWeights, numInfluencesPerPoint,
         points, inSerial);
@@ -1397,7 +1397,7 @@ UsdSkelSkinPointsLBS(const GfMatrix4f& geomBindTransform,
                      TfSpan<GfVec3f> points,
                      bool inSerial)
 {
-    return _NonInterleavedSkinPointsLBS(
+    return pxrUsdUsdSkelUtils::_NonInterleavedSkinPointsLBS(
         geomBindTransform, jointXforms,
         jointIndices, jointWeights, numInfluencesPerPoint,
         points, inSerial);
@@ -1412,7 +1412,7 @@ UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
                      TfSpan<GfVec3f> points,
                      bool inSerial)
 {
-    return _InterleavedSkinPointsLBS(geomBindTransform, jointXforms,
+    return pxrUsdUsdSkelUtils::_InterleavedSkinPointsLBS(geomBindTransform, jointXforms,
                                      influences, numInfluencesPerPoint,
                                      points, inSerial);
 }
@@ -1426,7 +1426,7 @@ UsdSkelSkinPointsLBS(const GfMatrix4f& geomBindTransform,
                      TfSpan<GfVec3f> points,
                      bool inSerial)
 {
-    return _InterleavedSkinPointsLBS(geomBindTransform, jointXforms,
+    return pxrUsdUsdSkelUtils::_InterleavedSkinPointsLBS(geomBindTransform, jointXforms,
                                      influences, numInfluencesPerPoint,
                                      points, inSerial);
 }
@@ -1477,7 +1477,7 @@ UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
 }
 
 
-namespace {
+namespace pxrUsdUsdSkelUtils {
 
 
 template <typename Matrix3, typename InfluenceFn>
@@ -1608,7 +1608,7 @@ UsdSkelSkinNormalsLBS(const GfMatrix3d& geomBindTransform,
                      TfSpan<GfVec3f> normals,
                      bool inSerial)
 {
-    return _NonInterleavedSkinNormalsLBS(
+    return pxrUsdUsdSkelUtils::_NonInterleavedSkinNormalsLBS(
         geomBindTransform, jointXforms,
         jointIndices, jointWeights, numInfluencesPerPoint,
         normals, inSerial);
@@ -1624,7 +1624,7 @@ UsdSkelSkinNormalsLBS(const GfMatrix3f& geomBindTransform,
                      TfSpan<GfVec3f> normals,
                      bool inSerial)
 {
-    return _NonInterleavedSkinNormalsLBS(
+    return pxrUsdUsdSkelUtils::_NonInterleavedSkinNormalsLBS(
         geomBindTransform, jointXforms,
         jointIndices, jointWeights, numInfluencesPerPoint,
         normals, inSerial);
@@ -1639,7 +1639,7 @@ UsdSkelSkinNormalsLBS(const GfMatrix3d& geomBindTransform,
                       TfSpan<GfVec3f> points,
                       bool inSerial)
 {
-    return _InterleavedSkinNormalsLBS(geomBindTransform, jointXforms,
+    return pxrUsdUsdSkelUtils::_InterleavedSkinNormalsLBS(geomBindTransform, jointXforms,
                                       influences, numInfluencesPerPoint,
                                       points, inSerial);
 }
@@ -1653,14 +1653,14 @@ UsdSkelSkinNormalsLBS(const GfMatrix3f& geomBindTransform,
                       TfSpan<GfVec3f> points,
                       bool inSerial)
 {
-    return _InterleavedSkinNormalsLBS(geomBindTransform, jointXforms,
+    return pxrUsdUsdSkelUtils::_InterleavedSkinNormalsLBS(geomBindTransform, jointXforms,
                                       influences, numInfluencesPerPoint,
                                       points, inSerial);
 }
 
 
 
-namespace {
+namespace pxrUsdUsdSkelUtils {
 
 
 template <typename Matrix4, typename InfluencesFn>
@@ -1778,7 +1778,7 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
                         TfSpan<const float> jointWeights,
                         GfMatrix4d* xform)
 {
-    return UsdSkel_NonInterleavedSkinTransformLBS(
+    return pxrUsdUsdSkelUtils::UsdSkel_NonInterleavedSkinTransformLBS(
         geomBindTransform, jointXforms, jointIndices, jointWeights, xform);
 }
 
@@ -1790,7 +1790,7 @@ UsdSkelSkinTransformLBS(const GfMatrix4f& geomBindTransform,
                         TfSpan<const float> jointWeights,
                         GfMatrix4f* xform)
 {
-    return UsdSkel_NonInterleavedSkinTransformLBS(
+    return pxrUsdUsdSkelUtils::UsdSkel_NonInterleavedSkinTransformLBS(
         geomBindTransform, jointXforms, jointIndices, jointWeights, xform);
 }
 
@@ -1801,8 +1801,8 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
                         TfSpan<const GfVec2f> influences,
                         GfMatrix4d* xform)
 {
-    const _InterleavedInfluencesFn influencesFn{influences};
-    return UsdSkel_SkinTransformLBS(geomBindTransform, jointXforms,
+    const pxrUsdUsdSkelUtils::_InterleavedInfluencesFn influencesFn{influences};
+    return pxrUsdUsdSkelUtils::UsdSkel_SkinTransformLBS(geomBindTransform, jointXforms,
                                     influencesFn, xform);
 }
 
@@ -1813,8 +1813,8 @@ UsdSkelSkinTransformLBS(const GfMatrix4f& geomBindTransform,
                         TfSpan<const GfVec2f> influences,
                         GfMatrix4f* xform)
 {
-    const _InterleavedInfluencesFn influencesFn{influences};
-    return UsdSkel_SkinTransformLBS(geomBindTransform, jointXforms,
+    const pxrUsdUsdSkelUtils::_InterleavedInfluencesFn influencesFn{influences};
+    return pxrUsdUsdSkelUtils::UsdSkel_SkinTransformLBS(geomBindTransform, jointXforms,
                                     influencesFn, xform);
 }
 
@@ -1829,7 +1829,7 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
                         size_t numInfluences,
                         GfMatrix4d* xform)
 {
-    return UsdSkel_NonInterleavedSkinTransformLBS(
+    return pxrUsdUsdSkelUtils::UsdSkel_NonInterleavedSkinTransformLBS(
         geomBindTransform,
         TfSpan<const GfMatrix4d>(jointXforms, numJoints),
         TfSpan<const int>(jointIndices, numInfluences),
@@ -1838,7 +1838,7 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
 }
 
 
-namespace {
+namespace pxrUsdUsdSkelUtils {
 
 
 /// Apply indexed offsets to \p points.
@@ -1913,7 +1913,7 @@ UsdSkelApplyBlendShape(const float weight,
     if (indices.empty()) {
 
         if (offsets.size() == points.size()) {
-            UsdSkel_ApplyNonIndexedBlendShape(weight, offsets, points);
+            pxrUsdUsdSkelUtils::UsdSkel_ApplyNonIndexedBlendShape(weight, offsets, points);
         } else {
             TF_WARN("Size of non-indexed offsets [%zu] != size of points [%zu]",
                     offsets.size(), points.size());
@@ -1924,7 +1924,7 @@ UsdSkelApplyBlendShape(const float weight,
         
         if (offsets.size() == indices.size()) {
             
-            return UsdSkel_ApplyIndexedBlendShape(
+            return pxrUsdUsdSkelUtils::UsdSkel_ApplyIndexedBlendShape(
                 weight, offsets, indices, points);
         } else {
             TF_WARN("Size of indexed offsets [%zu] != size of indices [%zu]",

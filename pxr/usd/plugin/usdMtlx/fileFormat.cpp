@@ -37,7 +37,7 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdPluginUsdMtlxFileFormat {
 
 template <typename R>
 static
@@ -119,7 +119,7 @@ UsdMtlxFileFormat::Read(
     TRACE_FUNCTION();
 
     auto stage = UsdStage::CreateInMemory();
-    if (!_Read(stage, 
+    if (!pxrUsdPluginUsdMtlxFileFormat::_Read(stage, 
                [&resolvedPath]() { 
                    return UsdMtlxReadDocument(resolvedPath);
                })) {
@@ -148,7 +148,7 @@ UsdMtlxFileFormat::ReadFromString(
     TRACE_FUNCTION();
 
     auto stage = UsdStage::CreateInMemory();
-    if (!_Read(stage,
+    if (!pxrUsdPluginUsdMtlxFileFormat::_Read(stage,
                [&str]() {
                     auto d = mx::createDocument();
                     mx::readFromXmlString(d, str);

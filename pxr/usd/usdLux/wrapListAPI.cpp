@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdLuxWrapListAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -86,7 +86,7 @@ void wrapUsdLuxListAPI()
 {
     typedef UsdLuxListAPI This;
 
-    UsdLuxListAPI_CanApplyResult::Wrap<UsdLuxListAPI_CanApplyResult>(
+    pxrUsdUsdLuxWrapListAPI::UsdLuxListAPI_CanApplyResult::Wrap<pxrUsdUsdLuxWrapListAPI::UsdLuxListAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -100,7 +100,7 @@ void wrapUsdLuxListAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdLuxWrapListAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -122,7 +122,7 @@ void wrapUsdLuxListAPI()
         .def("GetLightListCacheBehaviorAttr",
              &This::GetLightListCacheBehaviorAttr)
         .def("CreateLightListCacheBehaviorAttr",
-             &_CreateLightListCacheBehaviorAttr,
+             &pxrUsdUsdLuxWrapListAPI::_CreateLightListCacheBehaviorAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
@@ -131,10 +131,10 @@ void wrapUsdLuxListAPI()
              &This::GetLightListRel)
         .def("CreateLightListRel",
              &This::CreateLightListRel)
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdLuxWrapListAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdLuxWrapListAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -159,7 +159,7 @@ void wrapUsdLuxListAPI()
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/base/tf/pyEnum.h"
 
-namespace {
+namespace pxrUsdUsdLuxWrapListAPI {
 
 WRAP_CUSTOM {
     _class

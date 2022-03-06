@@ -37,7 +37,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapPrimvar {
 
 static boost::python::tuple
 _GetDeclarationInfo(const UsdGeomPrimvar &self)
@@ -156,7 +156,7 @@ void wrapUsdGeomPrimvar()
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self != boost::python::self)
         .def(!boost::python::self)
-        .def("__hash__", __hash__)
+        .def("__hash__", pxrUsdUsdGeomWrapPrimvar::__hash__)
 
         .def("GetInterpolation", &Primvar::GetInterpolation)
         .def("SetInterpolation", &Primvar::SetInterpolation,
@@ -181,7 +181,7 @@ void wrapUsdGeomPrimvar()
              boost::python::arg("interpolation"))
         .staticmethod("IsValidInterpolation")
 
-        .def("GetDeclarationInfo", _GetDeclarationInfo)
+        .def("GetDeclarationInfo", pxrUsdUsdGeomWrapPrimvar::_GetDeclarationInfo)
         .def("GetAttr", &Primvar::GetAttr,
              boost::python::return_value_policy<boost::python::return_by_value>())
         .def("IsDefined", &Primvar::IsDefined)
@@ -196,18 +196,18 @@ void wrapUsdGeomPrimvar()
         .def("SplitName", &Primvar::SplitName,
              boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetTypeName", &Primvar::GetTypeName)
-        .def("Get", _Get, (boost::python::arg("time")=UsdTimeCode::Default()))
-        .def("Set", _Set, (boost::python::arg("value"), boost::python::arg("time")=UsdTimeCode::Default()))
+        .def("Get", pxrUsdUsdGeomWrapPrimvar::_Get, (boost::python::arg("time")=UsdTimeCode::Default()))
+        .def("Set", pxrUsdUsdGeomWrapPrimvar::_Set, (boost::python::arg("value"), boost::python::arg("time")=UsdTimeCode::Default()))
 
-        .def("GetTimeSamples", _GetTimeSamples)
-        .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval)
+        .def("GetTimeSamples", pxrUsdUsdGeomWrapPrimvar::_GetTimeSamples)
+        .def("GetTimeSamplesInInterval", pxrUsdUsdGeomWrapPrimvar::_GetTimeSamplesInInterval)
         .def("ValueMightBeTimeVarying", &Primvar::ValueMightBeTimeVarying)
 
         .def("SetIndices", &Primvar::SetIndices, 
             (boost::python::arg("indices"),
              boost::python::arg("time")=UsdTimeCode::Default()))
         .def("BlockIndices", &Primvar::BlockIndices)
-        .def("GetIndices", _GetIndices, 
+        .def("GetIndices", pxrUsdUsdGeomWrapPrimvar::_GetIndices, 
             (boost::python::arg("time")=UsdTimeCode::Default()))
         .def("GetIndicesAttr", &Primvar::GetIndicesAttr)
         .def("CreateIndicesAttr", &Primvar::GetIndicesAttr)
@@ -217,7 +217,7 @@ void wrapUsdGeomPrimvar()
         .def("SetUnauthoredValuesIndex", &Primvar::SetUnauthoredValuesIndex,
             boost::python::arg("unauthoredValuesIndex"))
 
-        .def("ComputeFlattened", _ComputeFlattened,
+        .def("ComputeFlattened", pxrUsdUsdGeomWrapPrimvar::_ComputeFlattened,
             (boost::python::arg("time")=UsdTimeCode::Default()))
     
         .def("IsIdTarget", &Primvar::IsIdTarget)
@@ -230,7 +230,7 @@ void wrapUsdGeomPrimvar()
     boost::python::implicitly_convertible<Primvar, UsdAttribute>();
 
     // Save existing __getattribute__ and replace.
-    *_object__getattribute__ = boost::python::object(clsObj.attr("__getattribute__"));
-    clsObj.def("__getattribute__", __getattribute__);
+    *pxrUsdUsdGeomWrapPrimvar::_object__getattribute__ = boost::python::object(clsObj.attr("__getattribute__"));
+    clsObj.def("__getattribute__", pxrUsdUsdGeomWrapPrimvar::__getattribute__);
 }
 

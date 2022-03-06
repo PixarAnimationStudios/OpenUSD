@@ -81,7 +81,7 @@ TF_REGISTRY_FUNCTION(TfType)
     SDF_DEFINE_FILE_FORMAT(SdfFilterPseudoFileFormat, SdfTextFileFormat);
 }
 
-namespace {
+namespace pxrUsdBinSdffilterSdffilter {
 
 // the basename of the executable.
 std::string progName;
@@ -700,17 +700,17 @@ main(int argc, char const *argv[])
     namespace po = boost::program_options;
     PXR_NAMESPACE_USING_DIRECTIVE
 
-    progName = TfGetBaseName(argv[0]);
+    pxrUsdBinSdffilterSdffilter::progName = TfGetBaseName(argv[0]);
 
     std::string pathRegex = ".*", fieldRegex = ".*";
-    OutputType outputType = OutputOutline;
+    pxrUsdBinSdffilterSdffilter::OutputType outputType = pxrUsdBinSdffilterSdffilter::OutputOutline;
     std::string outputFile, outputFormat;
     std::vector<std::string> timeSpecs;
     std::vector<std::string> inputFiles;
     std::vector<double> literalTimes;
     std::vector<std::pair<double, double>> timeRanges;
     double timeTolerance = 1.25e-4; // ugh -- chosen to print well in help.
-    SortKey sortKey = SortByPath;
+    pxrUsdBinSdffilterSdffilter::SortKey sortKey = pxrUsdBinSdffilterSdffilter::SortByPath;
     int64_t arraySizeLimit = -2;
     int64_t timeSamplesSizeLimit = -2;
     bool noValues = false;
@@ -748,7 +748,7 @@ main(int argc, char const *argv[])
          "'outputFormat' for finer control over the underlying format for "
          "output formats that are not uniquely determined by file extension.")
         ("outputType",
-         po::value<OutputType>(&outputType)->default_value(outputType)->
+         po::value<pxrUsdBinSdffilterSdffilter::OutputType>(&outputType)->default_value(outputType)->
          value_name("validity|summary|outline|pseudoLayer|layer"),
          "Specify output format; 'summary' reports overall statistics, "
          "'outline' is a flat text report of paths and fields, "
@@ -761,7 +761,7 @@ main(int argc, char const *argv[])
          "Supply this as the 'format' entry of SdfFileFormatArguments for "
          "'layer' output to a file.  Requires both 'layer' output and a "
          "specified 'outputFile'.")
-        ("sortBy", po::value<SortKey>(&sortKey)->default_value(sortKey)->
+        ("sortBy", po::value<pxrUsdBinSdffilterSdffilter::SortKey>(&sortKey)->default_value(sortKey)->
          value_name("path|field"),
          "Group 'outline' output by either path or field.  Ignored for other "
          "output types.")
@@ -784,14 +784,14 @@ main(int argc, char const *argv[])
         po::store(po::command_line_parser(argc, argv).
                   options(allOpts).positional(p).run(), vm);
         po::notify(vm);
-        ParseTimes(timeSpecs, &literalTimes, &timeRanges);
+        pxrUsdBinSdffilterSdffilter::ParseTimes(timeSpecs, &literalTimes, &timeRanges);
     } catch (std::exception const &e) {
-        ErrExit("%s", e.what());
+        pxrUsdBinSdffilterSdffilter::ErrExit("%s", e.what());
     }
 
     if (vm.count("help") || inputFiles.empty()) {
         fprintf(stderr, "Usage: %s [options] <input files>\n",
-                progName.c_str());
+                pxrUsdBinSdffilterSdffilter::progName.c_str());
         fprintf(stderr, "%s\n", TfStringify(argOpts).c_str());
         exit(1);
     }
@@ -799,14 +799,14 @@ main(int argc, char const *argv[])
     std::shared_ptr<TfPatternMatcher> pathMatcher(
         pathRegex != ".*" ? new TfPatternMatcher(pathRegex) : nullptr);
     if (pathMatcher && !pathMatcher->IsValid()) {
-        ErrExit("path regex '%s' : %s", pathRegex.c_str(),
+        pxrUsdBinSdffilterSdffilter::ErrExit("path regex '%s' : %s", pathRegex.c_str(),
                 pathMatcher->GetInvalidReason().c_str());
     }
 
     std::shared_ptr<TfPatternMatcher> fieldMatcher(
         fieldRegex != ".*" ? new TfPatternMatcher(fieldRegex) : nullptr);
     if (fieldMatcher && !fieldMatcher->IsValid()) {
-        ErrExit("field regex '%s' : %s", fieldRegex.c_str(),
+        pxrUsdBinSdffilterSdffilter::ErrExit("field regex '%s' : %s", fieldRegex.c_str(),
                 fieldMatcher->GetInvalidReason().c_str());
     }
 
@@ -817,28 +817,28 @@ main(int argc, char const *argv[])
     // Sdf file format.
     if (!outputFile.empty()) {
         if (TfIsFile(outputFile) && !TfIsWritable(outputFile)) {
-            ErrExit("no write permission for existing output file '%s'",
+            pxrUsdBinSdffilterSdffilter::ErrExit("no write permission for existing output file '%s'",
                     outputFile.c_str());
         }
         // Using --out With 'layer' outputType there must be exactly one input
         // file, and the output file must have a known Sdf file format.
-        if (outputType == OutputLayer) {
+        if (outputType == pxrUsdBinSdffilterSdffilter::OutputLayer) {
             if (inputFiles.size() > 1) {
-                ErrExit("must supply exactly one input file with "
+                pxrUsdBinSdffilterSdffilter::ErrExit("must supply exactly one input file with "
                         "'--outputType layer'");
             }
             if (!SdfFileFormat::FindByExtension(
                     TfStringGetSuffix(outputFile))) {
-                ErrExit("no known Sdf file format for output file '%s'",
+                pxrUsdBinSdffilterSdffilter::ErrExit("no known Sdf file format for output file '%s'",
                         outputFile.c_str());
             }
         }
         // On the other hand, using --out with any other output type must not
         // correspond to an Sdf format.
-        if (outputType != OutputLayer) {
+        if (outputType != pxrUsdBinSdffilterSdffilter::OutputLayer) {
             if (SdfFileFormat::FindByExtension(
                     TfStringGetSuffix(outputFile))) {
-                ErrExit("output type '%s' does not produce content compatible "
+                pxrUsdBinSdffilterSdffilter::ErrExit("output type '%s' does not produce content compatible "
                         "with the format for output file '%s'",
                         TfStringify(outputType).c_str(), outputFile.c_str());
             }
@@ -847,7 +847,7 @@ main(int argc, char const *argv[])
         // Truncate the output file to start.
         FILE *f = fopen(outputFile.c_str(), "w");
         if (!f) {
-            ErrExit("Failed to truncate output file '%s'", outputFile.c_str());
+            pxrUsdBinSdffilterSdffilter::ErrExit("Failed to truncate output file '%s'", outputFile.c_str());
         }
         fclose(f);
     }
@@ -855,16 +855,16 @@ main(int argc, char const *argv[])
     // Set defaults for arraySizeLimit and timeSamplesSizeLimit.
     if (arraySizeLimit == -2 /* unset */) {
         arraySizeLimit =
-            outputType == OutputPseudoLayer ? 8 :
-            outputType == OutputLayer ? -1 : 0;
+            outputType == pxrUsdBinSdffilterSdffilter::OutputPseudoLayer ? 8 :
+            outputType == pxrUsdBinSdffilterSdffilter::OutputLayer ? -1 : 0;
     }
     if (timeSamplesSizeLimit == -2 /* unset */) {
         timeSamplesSizeLimit =
-            outputType == OutputPseudoLayer ? 8 :
-            outputType == OutputLayer ? -1 : 0;
+            outputType == pxrUsdBinSdffilterSdffilter::OutputPseudoLayer ? 8 :
+            outputType == pxrUsdBinSdffilterSdffilter::OutputLayer ? -1 : 0;
     }
 
-    ReportParams params;
+    pxrUsdBinSdffilterSdffilter::ReportParams params;
     params.pathMatcher = pathMatcher;
     params.fieldMatcher = fieldMatcher;
 
@@ -885,10 +885,10 @@ main(int argc, char const *argv[])
         TF_DESCRIBE_SCOPE("Opening layer @%s@", file.c_str());
         auto layer = SdfLayer::FindOrOpen(file);
         if (!layer) {
-            Err("failed to open layer <%s>", file.c_str());
+            pxrUsdBinSdffilterSdffilter::Err("failed to open layer <%s>", file.c_str());
         }
         else {
-            Process(layer, params);
+            pxrUsdBinSdffilterSdffilter::Process(layer, params);
         }
     }
 

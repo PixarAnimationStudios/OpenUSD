@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapAttribute {
 
 static std::vector<double>
 _GetTimeSamples(const UsdAttribute &self) {
@@ -118,7 +118,7 @@ void wrapUsdAttribute()
 {
     boost::python::class_<UsdAttribute, boost::python::bases<UsdProperty> >("Attribute")
         .def(Usd_ObjectSubclass())
-        .def("__repr__", __repr__)
+        .def("__repr__", pxrUsdUsdWrapAttribute::__repr__)
 
         .def("GetVariability", &UsdAttribute::GetVariability)
         .def("SetVariability", &UsdAttribute::SetVariability,
@@ -134,28 +134,28 @@ void wrapUsdAttribute()
         .def("HasColorSpace", &UsdAttribute::HasColorSpace)
         .def("ClearColorSpace", &UsdAttribute::ClearColorSpace)
 
-        .def("GetTimeSamples", _GetTimeSamples,
+        .def("GetTimeSamples", pxrUsdUsdWrapAttribute::_GetTimeSamples,
              boost::python::return_value_policy<TfPySequenceToList>())
 
-        .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval,
+        .def("GetTimeSamplesInInterval", pxrUsdUsdWrapAttribute::_GetTimeSamplesInInterval,
              boost::python::arg("interval"),
              boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("GetUnionedTimeSamples", 
-             _GetUnionedTimeSamples,
+             pxrUsdUsdWrapAttribute::_GetUnionedTimeSamples,
              boost::python::arg("attrs"),
              boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetUnionedTimeSamples")
 
         .def("GetUnionedTimeSamplesInInterval", 
-             _GetUnionedTimeSamplesInInterval,
+             pxrUsdUsdWrapAttribute::_GetUnionedTimeSamplesInInterval,
              (boost::python::arg("attrs"), boost::python::arg("interval")),
              boost::python::return_value_policy<TfPySequenceToList>())
         .staticmethod("GetUnionedTimeSamplesInInterval")
 
         .def("GetNumTimeSamples", &UsdAttribute::GetNumTimeSamples)
 
-        .def("GetBracketingTimeSamples", _GetBracketingTimeSamples,
+        .def("GetBracketingTimeSamples", pxrUsdUsdWrapAttribute::_GetBracketingTimeSamples,
              boost::python::arg("desiredTime"))
 
         .def("HasValue", &UsdAttribute::HasValue)
@@ -165,8 +165,8 @@ void wrapUsdAttribute()
 
         .def("ValueMightBeTimeVarying", &UsdAttribute::ValueMightBeTimeVarying)
 
-        .def("Get", _Get, boost::python::arg("time")=UsdTimeCode::Default())
-        .def("Set", _Set, (boost::python::arg("value"), boost::python::arg("time")=UsdTimeCode::Default()))
+        .def("Get", pxrUsdUsdWrapAttribute::_Get, boost::python::arg("time")=UsdTimeCode::Default())
+        .def("Set", pxrUsdUsdWrapAttribute::_Set, (boost::python::arg("value"), boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("GetResolveInfo", &UsdAttribute::GetResolveInfo,
              boost::python::arg("time")=UsdTimeCode::Default())
@@ -183,7 +183,7 @@ void wrapUsdAttribute()
         .def("RemoveConnection", &UsdAttribute::RemoveConnection, boost::python::arg("source"))
         .def("SetConnections", &UsdAttribute::SetConnections, boost::python::arg("sources"))
         .def("ClearConnections", &UsdAttribute::ClearConnections)
-        .def("GetConnections", _GetConnections,
+        .def("GetConnections", pxrUsdUsdWrapAttribute::_GetConnections,
              boost::python::return_value_policy<TfPySequenceToList>())
         .def("HasAuthoredConnections", &UsdAttribute::HasAuthoredConnections)
         ;

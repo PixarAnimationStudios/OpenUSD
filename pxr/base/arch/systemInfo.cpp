@@ -78,7 +78,7 @@ ArchGetCwd()
     return ".";
 }
 
-namespace {
+namespace pxrBaseArchSystemInfo {
 
 // Getting the executable path requires a dynamically allocated buffer
 // on all platforms.  This helper function handles the allocation.
@@ -117,7 +117,7 @@ ArchGetExecutablePath()
     // On Linux the executable path is retrieved from the /proc/self/exe
     // symlink.
     return
-        _DynamicSizedRead(ARCH_PATH_MAX,
+        pxrBaseArchSystemInfo::_DynamicSizedRead(ARCH_PATH_MAX,
             [](char* buffer, size_t* size) {
                 const ssize_t n = readlink("/proc/self/exe", buffer, *size);
                 if (n == -1) {

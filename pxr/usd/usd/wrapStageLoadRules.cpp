@@ -38,7 +38,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapStageLoadRules {
 
 static std::string __str__(UsdStageLoadRules const &self)
 {
@@ -116,9 +116,9 @@ void wrapUsdStageLoadRules()
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self != boost::python::self)
 
-        .def("__str__", __str__)
-        .def("__repr__", __repr__)
-        .def("__hash__", __hash__)
+        .def("__str__", pxrUsdUsdWrapStageLoadRules::__str__)
+        .def("__repr__", pxrUsdUsdWrapStageLoadRules::__repr__)
+        .def("__hash__", pxrUsdUsdWrapStageLoadRules::__hash__)
         
         ;
 

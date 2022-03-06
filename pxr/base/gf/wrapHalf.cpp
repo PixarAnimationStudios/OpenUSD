@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapHalf {
 
 // Registers to and from python conversions with boost.python for half.
 struct HalfPythonConversions
@@ -86,6 +86,6 @@ static GfHalf _HalfRoundTrip(GfHalf in) { return in; }
 
 void wrapHalf()
 {
-    HalfPythonConversions::Register();
-    boost::python::def("_HalfRoundTrip", _HalfRoundTrip);
+    pxrBaseGfWrapHalf::HalfPythonConversions::Register();
+    boost::python::def("_HalfRoundTrip", pxrBaseGfWrapHalf::_HalfRoundTrip);
 }

@@ -154,7 +154,7 @@ UsdRenderVar::CreateSourceTypeAttr(VtValue const &defaultValue, bool writeSparse
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdRenderVar {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -176,7 +176,7 @@ UsdRenderVar::GetSchemaAttributeNames(bool includeInherited)
         UsdRenderTokens->sourceType,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdRenderVar::_ConcatenateAttributeNames(
             UsdTyped::GetSchemaAttributeNames(true),
             localNames);
 

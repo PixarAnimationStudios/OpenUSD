@@ -81,7 +81,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseVtWrapValue {
 
 // This is only for testing and hitting code coverage.
 static std::string _test_ValueTypeName(VtValue const &val) {
@@ -258,15 +258,15 @@ struct Vt_ValueFromPython {
 
 void wrapValue()
 {
-    boost::python::def("_test_ValueTypeName", _test_ValueTypeName);
-    boost::python::def("_test_Ident", _test_Ident);
-    boost::python::def("_test_Str", _test_Str);
+    boost::python::def("_test_ValueTypeName", pxrBaseVtWrapValue::_test_ValueTypeName);
+    boost::python::def("_test_Ident", pxrBaseVtWrapValue::_test_Ident);
+    boost::python::def("_test_Str", pxrBaseVtWrapValue::_test_Str);
 
-    boost::python::to_python_converter<VtValue, Vt_ValueToPython>();
-    Vt_ValueFromPython();
-    Vt_ValueWrapperFromPython();
+    boost::python::to_python_converter<VtValue, pxrBaseVtWrapValue::Vt_ValueToPython>();
+    pxrBaseVtWrapValue::Vt_ValueFromPython();
+    pxrBaseVtWrapValue::Vt_ValueWrapperFromPython();
 
-    boost::python::class_<Vt_ValueWrapper>("_ValueWrapper", boost::python::no_init);
+    boost::python::class_<pxrBaseVtWrapValue::Vt_ValueWrapper>("_ValueWrapper", boost::python::no_init);
 
     static char const *funcDocString = "%s(value) -> _ValueWrapper\n\n"
         "value : %s\n\n"
@@ -274,38 +274,38 @@ void wrapValue()
         "when calling a C++ wrapped function that expects a VtValue. (There are "
         "some C++ types that have no equivalents in Python, such as short.)";
 
-    boost::python::def("Bool", Vt_ValueWrapper::Create<bool>, 
+    boost::python::def("Bool", pxrBaseVtWrapValue::Vt_ValueWrapper::Create<bool>, 
         TfStringPrintf(funcDocString, "Bool","bool","bool").c_str());
-    boost::python::def("UChar", Vt_ValueWrapper::Create<unsigned char>, 
+    boost::python::def("UChar", pxrBaseVtWrapValue::Vt_ValueWrapper::Create<unsigned char>, 
         TfStringPrintf(funcDocString, "UChar","unsigned char","unsigned char").c_str());
-    boost::python::def("Short", Vt_ValueWrapper::Create<short>, 
+    boost::python::def("Short", pxrBaseVtWrapValue::Vt_ValueWrapper::Create<short>, 
         TfStringPrintf(funcDocString, "Short","short","short").c_str());
-    boost::python::def("UShort", Vt_ValueWrapper::Create<unsigned short>, 
+    boost::python::def("UShort", pxrBaseVtWrapValue::Vt_ValueWrapper::Create<unsigned short>, 
         TfStringPrintf(funcDocString, "UShort","unsigned short","unsigned short").c_str());
-    boost::python::def("Int", Vt_ValueWrapper::Create<int>, 
+    boost::python::def("Int", pxrBaseVtWrapValue::Vt_ValueWrapper::Create<int>, 
         TfStringPrintf(funcDocString, "Int","int","int").c_str());
-    boost::python::def("UInt", Vt_ValueWrapper::Create<unsigned int>, 
+    boost::python::def("UInt", pxrBaseVtWrapValue::Vt_ValueWrapper::Create<unsigned int>, 
         TfStringPrintf(funcDocString, "UInt","unsigned int","unsigned int").c_str());
-    boost::python::def("Long", Vt_ValueWrapper::Create<long>, 
+    boost::python::def("Long", pxrBaseVtWrapValue::Vt_ValueWrapper::Create<long>, 
         TfStringPrintf(funcDocString, "Long","long","long").c_str());
-    boost::python::def("ULong", Vt_ValueWrapper::Create<unsigned long>, 
+    boost::python::def("ULong", pxrBaseVtWrapValue::Vt_ValueWrapper::Create<unsigned long>, 
         TfStringPrintf(funcDocString, "ULong","unsigned long","unsigned long").c_str());
 
-    boost::python::def("Int64", Vt_ValueWrapper::Create<int64_t>, 
+    boost::python::def("Int64", pxrBaseVtWrapValue::Vt_ValueWrapper::Create<int64_t>, 
         TfStringPrintf(funcDocString, "Int64","int64_t","int64_t").c_str());
-    boost::python::def("UInt64", Vt_ValueWrapper::Create<uint64_t>, 
+    boost::python::def("UInt64", pxrBaseVtWrapValue::Vt_ValueWrapper::Create<uint64_t>, 
         TfStringPrintf(funcDocString, "UInt64","uint64_t","uint64_t").c_str());
 
-    boost::python::def("Half", Vt_ValueWrapper::Create<GfHalf>, 
+    boost::python::def("Half", pxrBaseVtWrapValue::Vt_ValueWrapper::Create<GfHalf>, 
         TfStringPrintf(funcDocString, "Half","half","GfHalf").c_str());
-    boost::python::def("Float", Vt_ValueWrapper::Create<float>, 
+    boost::python::def("Float", pxrBaseVtWrapValue::Vt_ValueWrapper::Create<float>, 
         TfStringPrintf(funcDocString, "Float","float","float").c_str());
-    boost::python::def("Double", Vt_ValueWrapper::Create<double>, 
+    boost::python::def("Double", pxrBaseVtWrapValue::Vt_ValueWrapper::Create<double>, 
         TfStringPrintf(funcDocString, "Double","double","double").c_str());
 
     // Since strings and tokens are indistiguishable in Python-land, users need to
     // manually declare when they want a VtValue with a token
-    boost::python::def("Token", Vt_ValueWrapper::Create<TfToken>,
+    boost::python::def("Token", pxrBaseVtWrapValue::Vt_ValueWrapper::Create<TfToken>,
         TfStringPrintf(funcDocString, "TfToken","TfToken","TfToken").c_str());
 
     // Register conversions for VtValue from python, but first make sure that

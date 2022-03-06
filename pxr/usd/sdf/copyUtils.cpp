@@ -41,7 +41,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdSdfCopyUtils {
 
     // A _CopyStackEntry is a (source path, destination path) pair indicating
     // a spec that should be copied.
@@ -113,7 +113,7 @@ _ProcessChildren(
     const VtValue& srcChildrenValue, const VtValue& dstChildrenValue,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool childrenInSrc,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool childrenInDst,
-    _CopyStack* copyStack)
+    pxrUsdSdfCopyUtils::_CopyStack* copyStack)
 {
     typedef typename ChildPolicy::FieldType FieldType;
     typedef std::vector<FieldType> ChildrenVector;
@@ -172,7 +172,7 @@ _ProcessChildField(
     const TfToken& childField, 
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool childrenInSrc,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool childrenInDst,
-    const SdfShouldCopyChildrenFn& shouldCopyChildren, _CopyStack* copyStack)
+    const SdfShouldCopyChildrenFn& shouldCopyChildren, pxrUsdSdfCopyUtils::_CopyStack* copyStack)
 {
     boost::optional<VtValue> srcChildrenToCopy, dstChildrenToCopy;
     if (!shouldCopyChildren(
@@ -260,7 +260,7 @@ _ProcessChildField(
 // Helpers to add a new spec to the given layer.
 template <class ChildPolicy>
 static void
-_DoAddNewSpec(const SdfLayerHandle& destLayer, const _SpecDataEntry& specData)
+_DoAddNewSpec(const SdfLayerHandle& destLayer, const pxrUsdSdfCopyUtils::_SpecDataEntry& specData)
 {
     Sdf_ChildrenUtils<ChildPolicy>::CreateSpec(destLayer, specData.dstPath,
         specData.specType);
@@ -268,14 +268,14 @@ _DoAddNewSpec(const SdfLayerHandle& destLayer, const _SpecDataEntry& specData)
 
 static
 void _DoAddNewPrimSpec(
-    const SdfLayerHandle& destLayer, const _SpecDataEntry& specData)
+    const SdfLayerHandle& destLayer, const pxrUsdSdfCopyUtils::_SpecDataEntry& specData)
 {
     // Need to determine whether this property is considered inert when
     // being initially created based on fields being copied in. This mimics
     // what's done in the SdfPrimSpec constructor.
     TfToken type;
     SdfSpecifier specifier = SdfSpecifierOver;
-    for (const _FieldValuePair& fieldValue : specData.dataToCopy) {
+    for (const pxrUsdSdfCopyUtils::_FieldValuePair& fieldValue : specData.dataToCopy) {
         if (fieldValue.second.IsEmpty()) {
             continue;
         }
@@ -297,14 +297,14 @@ void _DoAddNewPrimSpec(
 template <class ChildPolicy>
 static void
 _DoAddNewPropertySpec(
-    const SdfLayerHandle& destLayer, const _SpecDataEntry& specData)
+    const SdfLayerHandle& destLayer, const pxrUsdSdfCopyUtils::_SpecDataEntry& specData)
 {
     // Need to determine whether this property is considered to have only 
     // required fields when being initially created based on fields being 
     // copied in. This mimics what's done in the 
     // SdfAttributeSpec/SdfRelationshipSpec constructors.
     bool custom = false;
-    for (const _FieldValuePair& fieldValue : specData.dataToCopy) {
+    for (const pxrUsdSdfCopyUtils::_FieldValuePair& fieldValue : specData.dataToCopy) {
         if (fieldValue.first == SdfFieldKeys->Custom) {
             custom = fieldValue.second.template Get<bool>();
             break;
@@ -319,7 +319,7 @@ _DoAddNewPropertySpec(
 
 static void
 _AddNewSpecToLayer(
-    const SdfLayerHandle& destLayer, const _SpecDataEntry& specData)
+    const SdfLayerHandle& destLayer, const pxrUsdSdfCopyUtils::_SpecDataEntry& specData)
 {
     if (destLayer->HasSpec(specData.dstPath)) {
         return;
@@ -426,7 +426,7 @@ _AddFieldValueToCopy(
     SdfSpecType specType, const TfToken& field,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
-    const SdfShouldCopyValueFn& shouldCopyValue, _FieldValueList* valueList)
+    const SdfShouldCopyValueFn& shouldCopyValue, pxrUsdSdfCopyUtils::_FieldValueList* valueList)
 {
     boost::optional<VtValue> value;
     if (shouldCopyValue(
@@ -535,9 +535,9 @@ SdfCopySpec(
     // Create a stack of source/dest copy requests, initially populated with
     // the passed parameters.  The copy routine will add additional requests
     // as needed to handle children etc... and runs until the stack is empty.
-    _CopyStack copyStack(1, _CopyStackEntry(srcPath, dstPath));
+    pxrUsdSdfCopyUtils::_CopyStack copyStack(1, pxrUsdSdfCopyUtils::_CopyStackEntry(srcPath, dstPath));
     while (!copyStack.empty()) {
-        const _CopyStackEntry toCopy = copyStack.front();
+        const pxrUsdSdfCopyUtils::_CopyStackEntry toCopy = copyStack.front();
         copyStack.pop_front();
 
         // If the source path is empty, it indicates that the spec at the
@@ -556,7 +556,7 @@ SdfCopySpec(
             return false;
         }
 
-        _SpecDataEntry copyEntry(toCopy.dstPath, specType);
+        pxrUsdSdfCopyUtils::_SpecDataEntry copyEntry(toCopy.dstPath, specType);
 
         // Determine what data is present for the current source and dest specs
         // and what needs to be copied. Divide the present fields into those
@@ -599,7 +599,7 @@ SdfCopySpec(
             copyEntry.dataToCopy.erase(
                 std::remove_if(
                     copyEntry.dataToCopy.begin(), copyEntry.dataToCopy.end(),
-                    [](const _FieldValuePair& fv) {
+                    [](const pxrUsdSdfCopyUtils::_FieldValuePair& fv) {
                         return fv.first == SdfFieldKeys->Specifier ||
                             fv.first == SdfFieldKeys->TypeName;
                     }),
@@ -644,7 +644,7 @@ SdfCopySpec(
 
         // Create the new spec and copy all of the specified fields over.
         _AddNewSpecToLayer(dstLayer, copyEntry);
-        for (const _FieldValuePair& fieldValue : copyEntry.dataToCopy) {
+        for (const pxrUsdSdfCopyUtils::_FieldValuePair& fieldValue : copyEntry.dataToCopy) {
             if (fieldValue.second.IsHolding<SdfCopySpecsValueEdit>()) {
                 const SdfCopySpecsValueEdit::EditFunction& edit = 
                     fieldValue.second.UncheckedGet<SdfCopySpecsValueEdit>()

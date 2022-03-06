@@ -101,7 +101,7 @@ UsdGeomBoundable::CreateExtentAttr(VtValue const &defaultValue, bool writeSparse
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomBoundable {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -121,7 +121,7 @@ UsdGeomBoundable::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->extent,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomBoundable::_ConcatenateAttributeNames(
             UsdGeomXformable::GetSchemaAttributeNames(true),
             localNames);
 

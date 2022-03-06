@@ -41,7 +41,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapTestPyStaticTokens {
 struct _DummyScope {
 };
 }
@@ -52,7 +52,7 @@ wrapTf_TestPyStaticTokens()
     TF_PY_WRAP_PUBLIC_TOKENS("_testStaticTokens",
                              tfTestStaticTokens, TF_TEST_TOKENS);
 
-    boost::python::class_<_DummyScope, boost::noncopyable>
+    boost::python::class_<pxrBaseTfWrapTestPyStaticTokens::_DummyScope, boost::noncopyable>
         cls("_TestStaticTokens", boost::python::no_init);
     boost::python::scope testScope = cls;
 

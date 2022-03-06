@@ -30,7 +30,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-namespace {
+namespace pxrBaseArchFunction {
 
 // Returns the start of the type name in s that ends at i.
 // For example, given:
@@ -241,19 +241,19 @@ ArchGetPrettierFunctionName(const std::string &function,
                             const std::string &prettyFunction)
 {
     // Get the function signature and template list, respectively.
-    const std::pair<std::string, std::string> parts = _Split(prettyFunction);
+    const std::pair<std::string, std::string> parts = pxrBaseArchFunction::_Split(prettyFunction);
 
     // Get just the function name.
-    const auto functionName = _GetFunctionName(function, parts.first);
+    const auto functionName = pxrBaseArchFunction::_GetFunctionName(function, parts.first);
 
     // Get the types from the template list.
-    auto templateList = _GetTemplateList(parts.second);
+    auto templateList = pxrBaseArchFunction::_GetTemplateList(parts.second);
 
     // Discard types from the template list that aren't in functionName.
-    templateList = _FilterTemplateList(functionName, templateList);
+    templateList = pxrBaseArchFunction::_FilterTemplateList(functionName, templateList);
 
     // Construct the prettier function name.
-    return functionName + _FormatTemplateList(templateList);
+    return functionName + pxrBaseArchFunction::_FormatTemplateList(templateList);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

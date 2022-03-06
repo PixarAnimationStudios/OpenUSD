@@ -123,7 +123,7 @@ private:
 TF_API void Tf_RegistryInitCtor(char const *name);
 TF_API void Tf_RegistryInitDtor(char const *name);
 
-namespace {
+namespace pxrBaseTfRegistryManager {
 struct Tf_RegistryStaticInit {
     Tf_RegistryStaticInit() {
         Tf_RegistryInitCtor(TF_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME));

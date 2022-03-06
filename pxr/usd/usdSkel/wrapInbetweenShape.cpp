@@ -37,7 +37,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
-namespace {
+namespace pxrUsdUsdSkelWrapInbetweenShape {
 
 
 VtVec3fArray
@@ -108,18 +108,18 @@ void wrapUsdSkelInbetweenShape()
         .def(!boost::python::self)
         .def(boost::python::self == boost::python::self)
 
-        .def("GetWeight", &_GetWeight)
+        .def("GetWeight", &pxrUsdUsdSkelWrapInbetweenShape::_GetWeight)
         .def("SetWeight", &This::SetWeight, boost::python::arg("weight"))
         .def("HasAuthoredWeight", &This::HasAuthoredWeight)
 
-        .def("GetOffsets", &_GetOffsets)
-        .def("SetOffsets", &_SetOffsets, boost::python::arg("offsets"))
+        .def("GetOffsets", &pxrUsdUsdSkelWrapInbetweenShape::_GetOffsets)
+        .def("SetOffsets", &pxrUsdUsdSkelWrapInbetweenShape::_SetOffsets, boost::python::arg("offsets"))
 
         .def("GetNormalOffsetsAttr", &This::GetNormalOffsetsAttr)
-        .def("CreateNormalOffsetsAttr", &_CreateNormalOffsetsAttr)
+        .def("CreateNormalOffsetsAttr", &pxrUsdUsdSkelWrapInbetweenShape::_CreateNormalOffsetsAttr)
 
-        .def("GetNormalOffsets", &_GetNormalOffsets)
-        .def("SetNormalOffsets", &_SetNormalOffsets, boost::python::arg("offsets"))
+        .def("GetNormalOffsets", &pxrUsdUsdSkelWrapInbetweenShape::_GetNormalOffsets)
+        .def("SetNormalOffsets", &pxrUsdUsdSkelWrapInbetweenShape::_SetNormalOffsets, boost::python::arg("offsets"))
 
         .def("IsInbetween", &This::IsInbetween, boost::python::arg("attr"))
         .staticmethod("IsInbetween")

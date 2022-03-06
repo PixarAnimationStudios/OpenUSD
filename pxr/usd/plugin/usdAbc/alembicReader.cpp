@@ -94,7 +94,7 @@ TF_DEFINE_ENV_SETTING(
     "Use mmap when reading from an Ogawa archive.");
 #endif
 
-namespace {
+namespace pxrUsdPluginUsdAbcAlembicReader {
 
 using namespace ::Alembic::AbcGeom;
 using namespace UsdAbc_AlembicUtil;
@@ -3979,10 +3979,10 @@ _ReaderSchemaBuilder::_ReaderSchemaBuilder()
 } // anonymous namespace
 
 static
-const _ReaderSchema&
+const pxrUsdPluginUsdAbcAlembicReader::_ReaderSchema&
 _GetSchema()
 {
-    static _ReaderSchemaBuilder builder;
+    static pxrUsdPluginUsdAbcAlembicReader::_ReaderSchemaBuilder builder;
     return builder.schema;
 }
 
@@ -4021,10 +4021,10 @@ UsdAbc_AlembicDataReader::TimeSamples::GetSize() const
     return _times.size();
 }
 
-UsdAbc_TimeSamples
+pxrUsdPluginUsdAbcAlembicReader::UsdAbc_TimeSamples
 UsdAbc_AlembicDataReader::TimeSamples::GetTimes() const
 {
-    return UsdAbc_TimeSamples(_times.begin(), _times.end());
+    return pxrUsdPluginUsdAbcAlembicReader::UsdAbc_TimeSamples(_times.begin(), _times.end());
 }
 
 double
@@ -4034,7 +4034,7 @@ UsdAbc_AlembicDataReader::TimeSamples::operator[](size_t index) const
 }
 
 void
-UsdAbc_AlembicDataReader::TimeSamples::AddTo(UsdAbc_TimeSamples* samples) const
+UsdAbc_AlembicDataReader::TimeSamples::AddTo(pxrUsdPluginUsdAbcAlembicReader::UsdAbc_TimeSamples* samples) const
 {
     samples->insert(_times.begin(), _times.end());
 }
@@ -4114,7 +4114,7 @@ UsdAbc_AlembicDataReader::TimeSamples::Bracket(
 // UsdAbc_AlembicDataReader
 //
 
-class UsdAbc_AlembicDataReaderImpl : public _ReaderContext { };
+class UsdAbc_AlembicDataReaderImpl : public pxrUsdPluginUsdAbcAlembicReader::_ReaderContext { };
 
 UsdAbc_AlembicDataReader::UsdAbc_AlembicDataReader() :
     _impl(new UsdAbc_AlembicDataReaderImpl)

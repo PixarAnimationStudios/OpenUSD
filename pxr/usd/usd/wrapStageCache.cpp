@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapStageCache {
 
 static size_t __hash__(UsdStageCache::Id id) { return hash_value(id); }
 
@@ -115,10 +115,10 @@ void wrapUsdStageCache()
                                                 boost::python::arg("pathResolverContext")),
              boost::python::return_value_policy<TfPySequenceToList>())
 
-        .def("Contains", Contains, boost::python::arg("stage"))
+        .def("Contains", pxrUsdUsdWrapStageCache::Contains, boost::python::arg("stage"))
         .def("Contains", (bool (UsdStageCache::*)(UsdStageCache::Id) const)
              &UsdStageCache::Contains, boost::python::arg("id"))
-        .def("GetId", GetId, boost::python::arg("stage"))
+        .def("GetId", pxrUsdUsdWrapStageCache::GetId, boost::python::arg("stage"))
         .def("Insert", &UsdStageCache::Insert, boost::python::arg("stage"))
 
         .def("Erase", (bool (UsdStageCache::*)(UsdStageCache::Id))
@@ -162,6 +162,6 @@ void wrapUsdStageCache()
         .def(boost::python::self >= boost::python::self)
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self != boost::python::self)
-        .def("__hash__", __hash__)
+        .def("__hash__", pxrUsdUsdWrapStageCache::__hash__)
         ;
 }

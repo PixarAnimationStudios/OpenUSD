@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrImagingHioOpenVDBUtils {
 
 /// Classes for converting a char buffer to a std::istream, similar to the
 /// functionality of boost::iostreams.
@@ -122,7 +122,7 @@ HioOpenVDBGridFromAsset(const std::string& name, const std::string& assetPath)
         // As a fallback, attempt to read the vdb grids from asset's buffer.
         TRACE_FUNCTION_SCOPE("Reading VDB grids from ArAsset buffer.");
         if (openvdb::GridPtrVecPtr grids =
-                _ReadVDBGridsFromAssetBuffer(asset)) {
+                pxrImagingHioOpenVDBUtils::_ReadVDBGridsFromAssetBuffer(asset)) {
 
             // Find the first grid that matches name in grids vector.
             for (const openvdb::GridBase::Ptr grid : *grids) {
@@ -153,7 +153,7 @@ HioOpenVDBGridsFromAsset(const std::string& assetPath)
     } else {
         // As a fallback, attempt to read the vdb grids from asset's buffer.
         TRACE_FUNCTION_SCOPE("Reading VDB grids from ArAsset buffer");   
-        return _ReadVDBGridsFromAssetBuffer(asset);
+        return pxrImagingHioOpenVDBUtils::_ReadVDBGridsFromAssetBuffer(asset);
     }
 }
 

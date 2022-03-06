@@ -154,7 +154,7 @@ UsdLuxCylinderLight::CreateTreatAsLineAttr(VtValue const &defaultValue, bool wri
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdLuxCylinderLight {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -177,7 +177,7 @@ UsdLuxCylinderLight::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->treatAsLine,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdLuxCylinderLight::_ConcatenateAttributeNames(
             UsdLuxBoundableLightBase::GetSchemaAttributeNames(true),
             localNames);
 

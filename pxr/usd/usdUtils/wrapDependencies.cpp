@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdUtilsWrapDependencies {
 
 static boost::python::tuple
 _ExtractExternalReferences(
@@ -79,7 +79,7 @@ _ComputeAllDependencies(const SdfAssetPath &assetPath)
 
 void wrapDependencies()
 {
-    boost::python::def("ExtractExternalReferences", _ExtractExternalReferences,
+    boost::python::def("ExtractExternalReferences", pxrUsdUsdUtilsWrapDependencies::_ExtractExternalReferences,
             boost::python::arg("filePath"));
 
     boost::python::def("CreateNewUsdzPackage", UsdUtilsCreateNewUsdzPackage,
@@ -92,7 +92,7 @@ void wrapDependencies()
              boost::python::arg("usdzFilePath"),
              boost::python::arg("firstLayerName") = std::string()));
 
-    boost::python::def("ComputeAllDependencies", _ComputeAllDependencies,
+    boost::python::def("ComputeAllDependencies", pxrUsdUsdUtilsWrapDependencies::_ComputeAllDependencies,
             (boost::python::arg("assetPath")));
 
     using Py_UsdUtilsModifyAssetPathFn = std::string(const std::string&);

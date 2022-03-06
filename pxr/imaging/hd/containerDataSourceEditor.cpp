@@ -95,7 +95,7 @@ HdContainerDataSourceEditor:: Set(
     return (*this);
 }
 
-namespace
+namespace pxrImagingHdContainerDataSourceEditor
 {
     bool
     _LongerLocatorIsLess(
@@ -133,7 +133,7 @@ HdContainerDataSourceEditor::Finish()
             // Sort so that longer locators are set first in case a shallower
             // block exists (which would be otherwise replaced with a group)
             std::sort(_directContainerSets.begin(), _directContainerSets.end(),
-                _LongerLocatorIsLess);
+                pxrImagingHdContainerDataSourceEditor::_LongerLocatorIsLess);
 
             HdContainerDataSourceEditor blocksEditor;
             for (const HdDataSourceLocator &loc : _directContainerSets) {

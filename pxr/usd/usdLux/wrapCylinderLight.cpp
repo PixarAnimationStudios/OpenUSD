@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdLuxWrapCylinderLight {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -114,28 +114,28 @@ void wrapUsdLuxCylinderLight()
         .def("GetLengthAttr",
              &This::GetLengthAttr)
         .def("CreateLengthAttr",
-             &_CreateLengthAttr,
+             &pxrUsdUsdLuxWrapCylinderLight::_CreateLengthAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetRadiusAttr",
              &This::GetRadiusAttr)
         .def("CreateRadiusAttr",
-             &_CreateRadiusAttr,
+             &pxrUsdUsdLuxWrapCylinderLight::_CreateRadiusAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetTreatAsLineAttr",
              &This::GetTreatAsLineAttr)
         .def("CreateTreatAsLineAttr",
-             &_CreateTreatAsLineAttr,
+             &pxrUsdUsdLuxWrapCylinderLight::_CreateTreatAsLineAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdLuxWrapCylinderLight::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdLuxWrapCylinderLight::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -157,7 +157,7 @@ void wrapUsdLuxCylinderLight()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdLuxWrapCylinderLight {
 
 WRAP_CUSTOM {
 }

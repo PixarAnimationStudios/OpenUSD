@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapPyContainerConversions {
 
 template <typename CONTAINER_TYPE>
 struct Set_ToPython
@@ -159,8 +159,8 @@ void wrapPyContainerConversions()
     TfPyContainerConversions::from_python_tuple_pair< _DoublePair >();
     TfPyContainerConversions::from_python_tuple_pair< _StringPair >();
 
-    _RegisterToAndFromSetConversions<int>();
-    _RegisterToAndFromSetConversions<float>();
-    _RegisterToAndFromSetConversions<double>();
-    _RegisterToAndFromSetConversions<std::string>();
+    pxrBaseTfWrapPyContainerConversions::_RegisterToAndFromSetConversions<int>();
+    pxrBaseTfWrapPyContainerConversions::_RegisterToAndFromSetConversions<float>();
+    pxrBaseTfWrapPyContainerConversions::_RegisterToAndFromSetConversions<double>();
+    pxrBaseTfWrapPyContainerConversions::_RegisterToAndFromSetConversions<std::string>();
 }

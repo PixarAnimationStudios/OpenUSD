@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapCamera {
 
 static float
 _GetHorizontalFieldOfView(const GfCamera &camera) {
@@ -153,7 +153,7 @@ wrapCamera()
                       &This::GetClippingRange,
                       &This::SetClippingRange)
         .add_property("clippingPlanes",
-                      &_GetClippingPlanes,
+                      &pxrBaseGfWrapCamera::_GetClippingPlanes,
                       &This::SetClippingPlanes)
         .add_property("frustum",
                       &This::GetFrustum)
@@ -164,9 +164,9 @@ wrapCamera()
                       &This::GetFocusDistance,
                       &This::SetFocusDistance)
         .add_property("horizontalFieldOfView",
-                      &_GetHorizontalFieldOfView)
+                      &pxrBaseGfWrapCamera::_GetHorizontalFieldOfView)
         .add_property("verticalFieldOfView",
-                      &_GetVerticalFieldOfView)
+                      &pxrBaseGfWrapCamera::_GetVerticalFieldOfView)
         .def("GetFieldOfView",
                       &This::GetFieldOfView)
         .def("SetPerspectiveFromAspectRatioAndFieldOfView",
@@ -197,6 +197,6 @@ wrapCamera()
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self != boost::python::self)
 
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrBaseGfWrapCamera::_Repr)
             ;
 }

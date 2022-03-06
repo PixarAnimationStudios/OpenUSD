@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE;
 
-namespace {
+namespace pxrUsdUsdSkelWrapBlendShapeQuery {
 
 
 boost::python::tuple
@@ -106,9 +106,9 @@ void wrapUsdSkelBlendShapeQuery()
              &This::ComputeSubShapePointOffsets,
              boost::python::return_value_policy<TfPySequenceToList>())
 
-        .def("ComputeSubShapeWeights", &_ComputeSubShapeWeights)
+        .def("ComputeSubShapeWeights", &pxrUsdUsdSkelWrapBlendShapeQuery::_ComputeSubShapeWeights)
 
-        .def("ComputeDeformedPoints", &_ComputeDeformedPoints,
+        .def("ComputeDeformedPoints", &pxrUsdUsdSkelWrapBlendShapeQuery::_ComputeDeformedPoints,
              (boost::python::arg("subShapeWeights"),
               boost::python::arg("blendShapeIndices"),
               boost::python::arg("subShapeIndices"),

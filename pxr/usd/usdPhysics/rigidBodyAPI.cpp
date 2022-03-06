@@ -206,7 +206,7 @@ UsdPhysicsRigidBodyAPI::CreateSimulationOwnerRel() const
                        /* custom = */ false);
 }
 
-namespace {
+namespace pxrUsdUsdPhysicsRigidBodyAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -230,7 +230,7 @@ UsdPhysicsRigidBodyAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdPhysicsTokens->physicsAngularVelocity,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdPhysicsRigidBodyAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

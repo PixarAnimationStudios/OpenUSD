@@ -29,7 +29,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrBaseTraceEventData {
 
 // Boost variant visitor to convert TraceEventData to JsValue
 class JsValue_visitor : public boost::static_visitor<void>
@@ -101,7 +101,7 @@ public:
 
 TraceEvent::DataType TraceEventData::GetType() const
 {
-    return boost::apply_visitor(Type_visitor(), _data);
+    return boost::apply_visitor(pxrBaseTraceEventData::Type_visitor(), _data);
 }
 
 const int64_t* TraceEventData::GetInt() const
@@ -136,7 +136,7 @@ const std::string* TraceEventData::GetString() const
 
 void TraceEventData::WriteJson(JsWriter& writer) const
 {
-    boost::apply_visitor(JsValue_visitor(writer), _data);
+    boost::apply_visitor(pxrBaseTraceEventData::JsValue_visitor(writer), _data);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

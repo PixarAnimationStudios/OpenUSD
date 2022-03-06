@@ -154,7 +154,7 @@ UsdPhysicsRevoluteJoint::CreateUpperLimitAttr(VtValue const &defaultValue, bool 
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdPhysicsRevoluteJoint {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -176,7 +176,7 @@ UsdPhysicsRevoluteJoint::GetSchemaAttributeNames(bool includeInherited)
         UsdPhysicsTokens->physicsUpperLimit,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdPhysicsRevoluteJoint::_ConcatenateAttributeNames(
             UsdPhysicsJoint::GetSchemaAttributeNames(true),
             localNames);
 

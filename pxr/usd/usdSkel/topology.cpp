@@ -30,7 +30,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdUsdSkelTopology {
 
 
 using _PathIndexMap = std::unordered_map<SdfPath,int,SdfPath::Hash>;
@@ -96,12 +96,12 @@ _ComputeParentIndicesFromTokens(TfSpan<const TfToken> tokens)
 /// do we require any common methods to handle the token->path
 /// conversion?
 UsdSkelTopology::UsdSkelTopology(TfSpan<const TfToken> paths)
-    : UsdSkelTopology(_ComputeParentIndicesFromTokens(paths))
+    : UsdSkelTopology(pxrUsdUsdSkelTopology::_ComputeParentIndicesFromTokens(paths))
 {}
 
 
 UsdSkelTopology::UsdSkelTopology(TfSpan<const SdfPath> paths)
-    : UsdSkelTopology(_ComputeParentIndicesFromPaths(paths))
+    : UsdSkelTopology(pxrUsdUsdSkelTopology::_ComputeParentIndicesFromPaths(paths))
 {}
 
 

@@ -46,7 +46,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
-namespace {
+namespace pxrUsdUsdUtilsWrapTimeCodeRange {
 
 
 static
@@ -145,7 +145,7 @@ void wrapTimeCodeRange()
         .add_property("startTimeCode", &This::GetStartTimeCode)
         .add_property("endTimeCode", &This::GetEndTimeCode)
         .add_property("stride", &This::GetStride)
-        .add_property("frameSpec", _FrameSpec)
+        .add_property("frameSpec", pxrUsdUsdUtilsWrapTimeCodeRange::_FrameSpec)
 
         .def("empty", &This::empty)
         .def("IsValid", &This::IsValid)
@@ -153,8 +153,8 @@ void wrapTimeCodeRange()
         .def(!boost::python::self)
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self != boost::python::self)
-        .def("__repr__", _Repr)
-        .def("__iter__", &UsdUtils_PyTimeCodeRangeIteratorCreate,
+        .def("__repr__", pxrUsdUsdUtilsWrapTimeCodeRange::_Repr)
+        .def("__iter__", &pxrUsdUsdUtilsWrapTimeCodeRange::UsdUtils_PyTimeCodeRangeIteratorCreate,
             boost::python::with_custodian_and_ward_postcall<0, 1>())
         ;
 
@@ -163,10 +163,10 @@ void wrapTimeCodeRange()
         UsdUtilsTimeCodeRangeTokens,
         USDUTILS_TIME_CODE_RANGE_TOKENS);
 
-    boost::python::class_<UsdUtils_PyTimeCodeRangeIterator>("_Iterator", boost::python::no_init)
-        .def("__iter__", &UsdUtils_PyTimeCodeRangeIterator::iter,
+    boost::python::class_<pxrUsdUsdUtilsWrapTimeCodeRange::UsdUtils_PyTimeCodeRangeIterator>("_Iterator", boost::python::no_init)
+        .def("__iter__", &pxrUsdUsdUtilsWrapTimeCodeRange::UsdUtils_PyTimeCodeRangeIterator::iter,
             boost::python::return_self<>())
-        .def(TfPyIteratorNextMethodName, &UsdUtils_PyTimeCodeRangeIterator::next,
+        .def(TfPyIteratorNextMethodName, &pxrUsdUsdUtilsWrapTimeCodeRange::UsdUtils_PyTimeCodeRangeIterator::next,
             boost::python::return_value_policy<boost::python::return_by_value>())
         ;
 }

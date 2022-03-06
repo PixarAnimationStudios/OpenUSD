@@ -53,7 +53,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapVec2i {
 
 ////////////////////////////////////////////////////////////////////////
 // Python buffer protocol support.
@@ -389,12 +389,12 @@ void wrapVec2i()
  
     boost::python::class_<GfVec2i> cls("Vec2i", boost::python::no_init);
     cls
-        .def("__init__", boost::python::make_constructor(__init__<Vec>))
+        .def("__init__", boost::python::make_constructor(pxrBaseGfWrapVec2i::__init__<Vec>))
 
         // A tag indicating that this is a GfVec class, for internal use.
         .def_readonly("__isGfVec", _true)
 
-        .def_pickle(PickleSuite())
+        .def_pickle(pxrBaseGfWrapVec2i::PickleSuite())
 
         
         .def(boost::python::init<Vec>())
@@ -403,12 +403,12 @@ void wrapVec2i()
 
         .def(TfTypePythonClass())
 
-        .def("__len__", __len__ )
-        .def("__getitem__", __getitem__ )
-        .def("__getitem__", __getslice__ )
-        .def("__setitem__", __setitem__ )
-        .def("__setitem__", __setslice__ )
-        .def("__contains__", __contains__ )
+        .def("__len__", pxrBaseGfWrapVec2i::__len__ )
+        .def("__getitem__", pxrBaseGfWrapVec2i::__getitem__ )
+        .def("__getitem__", pxrBaseGfWrapVec2i::__getslice__ )
+        .def("__setitem__", pxrBaseGfWrapVec2i::__setitem__ )
+        .def("__setitem__", pxrBaseGfWrapVec2i::__setslice__ )
+        .def("__contains__", pxrBaseGfWrapVec2i::__contains__ )
 
         .def_readonly("dimension", _dimension)
         
@@ -443,8 +443,8 @@ void wrapVec2i()
         .def("GetDot", (Scalar (*)(const Vec &, const Vec &))GfDot)
         
 
-        .def("__repr__", __repr__)
-        .def("__hash__", __hash__)
+        .def("__repr__", pxrBaseGfWrapVec2i::__repr__)
+        .def("__hash__", pxrBaseGfWrapVec2i::__hash__)
         ;
     boost::python::to_python_converter<std::vector<GfVec2i>,
         TfPySequenceToPython<std::vector<GfVec2i> > >();
@@ -454,12 +454,12 @@ void wrapVec2i()
     // this type, and set the type flags to indicate that this type supports the
     // buffer protocol.
     auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
-    typeObj->tp_as_buffer = &bufferProcs;
+    typeObj->tp_as_buffer = &pxrBaseGfWrapVec2i::bufferProcs;
     typeObj->tp_flags |= (TfPy_TPFLAGS_HAVE_NEWBUFFER |
                           TfPy_TPFLAGS_HAVE_GETCHARBUFFER);
 
     // Allow appropriate tuples to be passed where Vecs are expected.
-    FromPythonTuple();
+    pxrBaseGfWrapVec2i::FromPythonTuple();
 
     // Allow conversion of lists of GfVec2i to std::vector<GfVec2i>
     TfPyContainerConversions::from_python_sequence<

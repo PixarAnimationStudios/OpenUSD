@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdMediaWrapSpatialAudio {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -142,56 +142,56 @@ void wrapUsdMediaSpatialAudio()
         .def("GetFilePathAttr",
              &This::GetFilePathAttr)
         .def("CreateFilePathAttr",
-             &_CreateFilePathAttr,
+             &pxrUsdUsdMediaWrapSpatialAudio::_CreateFilePathAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetAuralModeAttr",
              &This::GetAuralModeAttr)
         .def("CreateAuralModeAttr",
-             &_CreateAuralModeAttr,
+             &pxrUsdUsdMediaWrapSpatialAudio::_CreateAuralModeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetPlaybackModeAttr",
              &This::GetPlaybackModeAttr)
         .def("CreatePlaybackModeAttr",
-             &_CreatePlaybackModeAttr,
+             &pxrUsdUsdMediaWrapSpatialAudio::_CreatePlaybackModeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetStartTimeAttr",
              &This::GetStartTimeAttr)
         .def("CreateStartTimeAttr",
-             &_CreateStartTimeAttr,
+             &pxrUsdUsdMediaWrapSpatialAudio::_CreateStartTimeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetEndTimeAttr",
              &This::GetEndTimeAttr)
         .def("CreateEndTimeAttr",
-             &_CreateEndTimeAttr,
+             &pxrUsdUsdMediaWrapSpatialAudio::_CreateEndTimeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetMediaOffsetAttr",
              &This::GetMediaOffsetAttr)
         .def("CreateMediaOffsetAttr",
-             &_CreateMediaOffsetAttr,
+             &pxrUsdUsdMediaWrapSpatialAudio::_CreateMediaOffsetAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetGainAttr",
              &This::GetGainAttr)
         .def("CreateGainAttr",
-             &_CreateGainAttr,
+             &pxrUsdUsdMediaWrapSpatialAudio::_CreateGainAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdMediaWrapSpatialAudio::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdMediaWrapSpatialAudio::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -213,7 +213,7 @@ void wrapUsdMediaSpatialAudio()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdMediaWrapSpatialAudio {
 
 WRAP_CUSTOM {
 }

@@ -58,7 +58,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdUsdUtilsStitchClips {
     // typedefs
     // ------------------------------------------------------------------------
     using _SdfAssetArray = VtArray<SdfAssetPath>;
@@ -846,7 +846,7 @@ namespace {
 // ----------------------------------------------------------------------------
 bool
 UsdUtilsStitchClipsTopology(const SdfLayerHandle& topologyLayer,
-                            const _ClipFileVector& clipLayerFiles)
+                            const pxrUsdUsdUtilsStitchClips::_ClipFileVector& clipLayerFiles)
 {
     // XXX: This is necessary for any C++ API which may be called though
     // python. Since this will spawn workers(in WorkParallelForN) which 
@@ -854,7 +854,7 @@ UsdUtilsStitchClipsTopology(const SdfLayerHandle& topologyLayer,
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
     // Prepare topology layer for editing
-    if (!_LayerIsWritable(topologyLayer)) {
+    if (!pxrUsdUsdUtilsStitchClips::_LayerIsWritable(topologyLayer)) {
         return false;
     } else {
         topologyLayer->Clear();
@@ -862,11 +862,11 @@ UsdUtilsStitchClipsTopology(const SdfLayerHandle& topologyLayer,
 
     // Open all clip layers and validate clipPath
     SdfLayerRefPtrVector clipLayers;
-    const bool clipLayersAreValid = _OpenClipLayers(&clipLayers, 
+    const bool clipLayersAreValid = pxrUsdUsdUtilsStitchClips::_OpenClipLayers(&clipLayers, 
         clipLayerFiles, SdfPath::AbsoluteRootPath());
 
     if (!clipLayersAreValid
-        || !_UsdUtilsStitchClipsTopologyImpl(topologyLayer, clipLayers)) {
+        || !pxrUsdUsdUtilsStitchClips::_UsdUtilsStitchClipsTopologyImpl(topologyLayer, clipLayers)) {
         return false;
     }
 
@@ -878,7 +878,7 @@ UsdUtilsStitchClipsTopology(const SdfLayerHandle& topologyLayer,
 bool
 UsdUtilsStitchClipsManifest(const SdfLayerHandle& manifestLayer,
                             const SdfLayerHandle& topologyLayer,
-                            const _ClipFileVector& clipLayerFiles,
+                            const pxrUsdUsdUtilsStitchClips::_ClipFileVector& clipLayerFiles,
                             const SdfPath& clipPath)
 {
     // XXX: This is necessary for any C++ API which may be called though
@@ -887,7 +887,7 @@ UsdUtilsStitchClipsManifest(const SdfLayerHandle& manifestLayer,
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
     // Prepare manifest layer for editing
-    if (!_LayerIsWritable(manifestLayer)) {
+    if (!pxrUsdUsdUtilsStitchClips::_LayerIsWritable(manifestLayer)) {
         return false;
     } else {
         manifestLayer->Clear();
@@ -895,11 +895,11 @@ UsdUtilsStitchClipsManifest(const SdfLayerHandle& manifestLayer,
 
     // Open all clip layers and validate clipPath
     SdfLayerRefPtrVector clipLayers;
-    const bool clipLayersAreValid = _OpenClipLayers(&clipLayers, 
+    const bool clipLayersAreValid = pxrUsdUsdUtilsStitchClips::_OpenClipLayers(&clipLayers, 
         clipLayerFiles, SdfPath::AbsoluteRootPath());
 
     if (!clipLayersAreValid
-        || !_UsdUtilsStitchClipsManifestImpl(
+        || !pxrUsdUsdUtilsStitchClips::_UsdUtilsStitchClipsManifestImpl(
             manifestLayer, topologyLayer, clipLayers, clipPath)) {
         return false;
     }
@@ -911,7 +911,7 @@ UsdUtilsStitchClipsManifest(const SdfLayerHandle& manifestLayer,
 
 bool 
 UsdUtilsStitchClips(const SdfLayerHandle& resultLayer, 
-                    const _ClipFileVector& clipLayerFiles,
+                    const pxrUsdUsdUtilsStitchClips::_ClipFileVector& clipLayerFiles,
                     const SdfPath& clipPath, 
                     const double startTimeCode,
                     const double endTimeCode,
@@ -922,7 +922,7 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
     // Prepare result layer for editing
-    if (!_LayerIsWritable(resultLayer)) {
+    if (!pxrUsdUsdUtilsStitchClips::_LayerIsWritable(resultLayer)) {
         return false;
     } else {
         resultLayer->Clear();
@@ -938,7 +938,7 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
         topologyLayer = SdfLayer::CreateNew(topologyLayerId);
     } 
 
-    if (!_LayerIsWritable(topologyLayer)) {
+    if (!pxrUsdUsdUtilsStitchClips::_LayerIsWritable(topologyLayer)) {
         return false;
     } else {
         topologyLayer->Clear();
@@ -954,7 +954,7 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
         manifestLayer = SdfLayer::CreateNew(manifestLayerId);
     } 
 
-    if (!_LayerIsWritable(manifestLayer)) {
+    if (!pxrUsdUsdUtilsStitchClips::_LayerIsWritable(manifestLayer)) {
         return false;
     } else {
         manifestLayer->Clear();
@@ -963,10 +963,10 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
     // Open all clip layers and validate clipPath
     SdfLayerRefPtrVector clipLayers;
     const bool clipLayersAreValid 
-        = _OpenClipLayers(&clipLayers, clipLayerFiles, clipPath);
+        = pxrUsdUsdUtilsStitchClips::_OpenClipLayers(&clipLayers, clipLayerFiles, clipPath);
 
     if (!clipLayersAreValid
-        || !_UsdUtilsStitchClipsImpl(resultLayer, topologyLayer, manifestLayer,
+        || !pxrUsdUsdUtilsStitchClips::_UsdUtilsStitchClipsImpl(resultLayer, topologyLayer, manifestLayer,
                                      clipLayers, clipPath, 
                                      startTimeCode, endTimeCode,
                                      interpolateMissingClipValues,
@@ -1032,7 +1032,7 @@ UsdUtilsStitchClipsTemplate(const SdfLayerHandle& resultLayer,
     // XXX: See comment in UsdUtilsStitchClipsTopology above.
     TF_PY_ALLOW_THREADS_IN_SCOPE();  
 
-    if (!_LayerIsWritable(resultLayer)) {
+    if (!pxrUsdUsdUtilsStitchClips::_LayerIsWritable(resultLayer)) {
         return false;
     } else {
         resultLayer->Clear();
@@ -1049,16 +1049,16 @@ UsdUtilsStitchClipsTemplate(const SdfLayerHandle& resultLayer,
     // set prim level metadata
     auto prim = SdfCreatePrimInLayer(resultLayer, clipPath);
     const std::string topologyId 
-        = _GetRelativePathIfPossible(topologyLayer->GetIdentifier(),
+        = pxrUsdUsdUtilsStitchClips::_GetRelativePathIfPossible(topologyLayer->GetIdentifier(),
                                      topologyLayer->GetRealPath(),
                                      resultLayer->GetRealPath());
     const std::string manifestId 
-        = _GetRelativePathIfPossible(manifestLayer->GetIdentifier(),
+        = pxrUsdUsdUtilsStitchClips::_GetRelativePathIfPossible(manifestLayer->GetIdentifier(),
                                      manifestLayer->GetRealPath(),
                                      resultLayer->GetRealPath());
 
     // set root layer metadata
-    _StitchClipsTopologySubLayerPath(resultLayer, topologyId);
+    pxrUsdUsdUtilsStitchClips::_StitchClipsTopologySubLayerPath(resultLayer, topologyId);
     VtDictionary clipSetDict;
     clipSetDict[UsdClipsAPIInfoKeys->primPath] = clipPath.GetString();
     clipSetDict[UsdClipsAPIInfoKeys->templateAssetPath] = templatePath;

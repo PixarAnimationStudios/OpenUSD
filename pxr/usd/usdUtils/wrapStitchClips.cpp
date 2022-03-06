@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdUtilsWrapStitchClips {
 
 template <typename T>
 T
@@ -112,7 +112,7 @@ _ConvertStitchClipTemplate(const SdfLayerHandle& resultLayer,
 void wrapStitchClips()
 {
     boost::python::def("StitchClips",
-        _ConvertStitchClips, 
+        pxrUsdUsdUtilsWrapStitchClips::_ConvertStitchClips, 
         (boost::python::arg("resultLayer"), 
          boost::python::arg("clipLayerFiles"), 
          boost::python::arg("clipPath"), 
@@ -122,7 +122,7 @@ void wrapStitchClips()
          boost::python::arg("clipSet")=boost::python::object()));
 
     boost::python::def("StitchClipsTopology",
-        _ConvertStitchClipsTopology,
+        pxrUsdUsdUtilsWrapStitchClips::_ConvertStitchClipsTopology,
         (boost::python::arg("topologyLayer"),
          boost::python::arg("clipLayerFiles")));
 
@@ -134,7 +134,7 @@ void wrapStitchClips()
          boost::python::arg("clipLayerFiles")));
 
     boost::python::def("StitchClipsTemplate",
-        _ConvertStitchClipTemplate,
+        pxrUsdUsdUtilsWrapStitchClips::_ConvertStitchClipTemplate,
         (boost::python::arg("resultLayer"),
          boost::python::arg("topologyLayer"),
          boost::python::arg("manifestLayer"),
@@ -148,7 +148,7 @@ void wrapStitchClips()
          boost::python::arg("clipSet")=boost::python::object()));
 
     boost::python::def("GenerateClipTopologyName",
-        _ConvertGenerateClipTopologyName,
+        pxrUsdUsdUtilsWrapStitchClips::_ConvertGenerateClipTopologyName,
         (boost::python::arg("rootLayerName")));
 
     boost::python::def("GenerateClipManifestName",

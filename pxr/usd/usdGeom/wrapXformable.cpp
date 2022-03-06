@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapXformable {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -97,14 +97,14 @@ void wrapUsdGeomXformable()
         .def("GetXformOpOrderAttr",
              &This::GetXformOpOrderAttr)
         .def("CreateXformOpOrderAttr",
-             &_CreateXformOpOrderAttr,
+             &pxrUsdUsdGeomWrapXformable::_CreateXformOpOrderAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapXformable::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapXformable::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -129,7 +129,7 @@ void wrapUsdGeomXformable()
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/usd/usd/timeCode.h"
 
-namespace {
+namespace pxrUsdUsdGeomWrapXformable {
 
 static GfMatrix4d
 _GetLocalTransformation1(const UsdGeomXformable &self,

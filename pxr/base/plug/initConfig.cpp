@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrBasePlugInitConfig {
 
 const char* pathEnvVarName      = TF_PP_STRINGIZE(PXR_PLUGINPATH_NAME);
 const char* buildLocation       = TF_PP_STRINGIZE(PXR_BUILD_LOCATION);

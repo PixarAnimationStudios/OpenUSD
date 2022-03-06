@@ -227,7 +227,7 @@ UsdLuxShapingAPI::CreateShapingIesNormalizeAttr(VtValue const &defaultValue, boo
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdLuxShapingAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -253,7 +253,7 @@ UsdLuxShapingAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->inputsShapingIesNormalize,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdLuxShapingAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

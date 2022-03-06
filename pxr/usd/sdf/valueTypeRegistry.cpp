@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdSdfValueTypeRegistry {
 
 const Sdf_ValueTypePrivate::CoreType*
 GetEmptyCoreType()
@@ -77,12 +77,12 @@ Sdf_ValueTypePrivate::GetEmptyTypeName()
 
 Sdf_ValueTypeImpl::Sdf_ValueTypeImpl()
 {
-    type   = GetEmptyCoreType();
+    type   = pxrUsdSdfValueTypeRegistry::GetEmptyCoreType();
     scalar = this;
     array  = this;
 }
 
-namespace {
+namespace pxrUsdSdfValueTypeRegistry {
 
 //
 // Registry -- The implementation of the value type name registry.
@@ -512,7 +512,7 @@ Registry::_AddCoreType(
 // Sdf_ValueTypeRegistry
 //
 
-class Sdf_ValueTypeRegistry::_Impl : public Registry { };
+class Sdf_ValueTypeRegistry::_Impl : public pxrUsdSdfValueTypeRegistry::Registry { };
 
 Sdf_ValueTypeRegistry::Sdf_ValueTypeRegistry() : _impl(new _Impl)
 {

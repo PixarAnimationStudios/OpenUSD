@@ -45,7 +45,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
-namespace {
+namespace pxrUsdUsdSkelWrapCache {
 
 
 std::vector<UsdSkelBinding>
@@ -98,11 +98,11 @@ void wrapUsdSkelCache()
              &This::GetAnimQuery,
              (boost::python::arg("anim")))
 
-        .def("ComputeSkelBindings", &_ComputeSkelBindings,
+        .def("ComputeSkelBindings", &pxrUsdUsdSkelWrapCache::_ComputeSkelBindings,
              boost::python::return_value_policy<TfPySequenceToList>(),
              (boost::python::arg("skelRoot"), boost::python::arg("predicate")))
 
-        .def("ComputeSkelBinding", &_ComputeSkelBinding,
+        .def("ComputeSkelBinding", &pxrUsdUsdSkelWrapCache::_ComputeSkelBinding,
              (boost::python::arg("skelRoot"), boost::python::arg("skel"), boost::python::arg("predicate")))
         ;
 }            

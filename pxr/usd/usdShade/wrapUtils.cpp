@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdShadeWrapUtils {
 
 static boost::python::object 
 _GetBaseNameAndType(const TfToken &fullName)
@@ -61,7 +61,7 @@ void wrapUsdShadeUtils()
             UsdShadeUtils::GetPrefixForAttributeType)
         .staticmethod("GetPrefixForAttributeType")
 
-        .def("GetBaseNameAndType", _GetBaseNameAndType)
+        .def("GetBaseNameAndType", pxrUsdUsdShadeWrapUtils::_GetBaseNameAndType)
         .staticmethod("GetBaseNameAndType")
 
         .def("GetType", UsdShadeUtils::GetType)

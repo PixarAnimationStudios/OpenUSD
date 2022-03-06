@@ -73,7 +73,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (topologyVisibility)
 );
 
-namespace {
+namespace pxrImagingHdStResourceBinder {
     struct BindingLocator {
         BindingLocator() :
             uniformLocation(0), uboLocation(0),
@@ -230,7 +230,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     }
 
     // binding assignments
-    BindingLocator locator;
+    pxrImagingHdStResourceBinder::BindingLocator locator;
 
     int bindlessTextureLocation = 0;
     // Note that these locations are used for hash keys only and
@@ -670,7 +670,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             std::string const& glSwizzle = param.swizzle;                    
             HdTupleType valueType = param.GetTupleType();
             TfToken glType =
-                HdStGLConversions::GetGLSLTypename(_AdjustHdType(valueType.type,
+                HdStGLConversions::GetGLSLTypename(pxrImagingHdStResourceBinder::_AdjustHdType(valueType.type,
                                                                  glSwizzle));
             TfToken const& name = param.name;
             TfToken glName =  HdStGLConversions::GetGLSLIdentifier(name);
@@ -959,7 +959,7 @@ HdSt_ResourceBinder::ResolveComputeBindings(
             HdBinding::BINDLESS_SSBO_RANGE : HdBinding::SSBO;
 
     // binding assignments
-    BindingLocator locator;
+    pxrImagingHdStResourceBinder::BindingLocator locator;
 
     // clear all
     _bindingMap.clear();
@@ -1193,9 +1193,9 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
     case HdBinding::VERTEX_ATTR:
         glBindBuffer(GL_ARRAY_BUFFER, buffer->GetHandle()->GetRawResource());
         glVertexAttribPointer(loc,
-                  _GetNumComponents(tupleType.type),
+                  pxrImagingHdStResourceBinder::_GetNumComponents(tupleType.type),
                   HdStGLConversions::GetGLAttribType(tupleType.type),
-                  _ShouldBeNormalized(tupleType.type),
+                  pxrImagingHdStResourceBinder::_ShouldBeNormalized(tupleType.type),
                               buffer->GetStride(),
                               offsetPtr);
         glBindBuffer(GL_ARRAY_BUFFER, 0);

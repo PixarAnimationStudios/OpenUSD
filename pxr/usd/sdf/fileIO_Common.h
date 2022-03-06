@@ -507,7 +507,7 @@ Sdf_WritePrimMetadata(
     return true;
 }
 
-namespace {
+namespace pxrUsdSdfFileIO_Common {
 struct _SortByNameThenType {
     template <class T>
     bool operator()(T const &lhs, T const &rhs) const {
@@ -527,7 +527,7 @@ Sdf_WritePrimProperties(
 {
     std::vector<SdfPropertySpecHandle> properties =
         prim.GetProperties().values_as<std::vector<SdfPropertySpecHandle> >();
-    std::sort(properties.begin(), properties.end(), _SortByNameThenType());
+    std::sort(properties.begin(), properties.end(), pxrUsdSdfFileIO_Common::_SortByNameThenType());
 
     for (const SdfPropertySpecHandle& specHandle : properties) {
         const SdfPropertySpec& spec = specHandle.GetSpec();

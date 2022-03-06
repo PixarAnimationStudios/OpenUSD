@@ -106,7 +106,7 @@ NdrRegistry_ValidateProperty(
     return true;
 }
 
-namespace {
+namespace pxrUsdNdrRegistry {
 
 // Helpers to allow template functions to treat discovery results and
 // nodes equally.
@@ -401,7 +401,7 @@ NdrRegistry::GetNodeFromAsset(const SdfAssetPath &asset,
     }
 
     NdrIdentifier identifier =
-        _GetIdentifierForAsset(asset, metadata, subIdentifier, sourceType);
+        pxrUsdNdrRegistry::_GetIdentifierForAsset(asset, metadata, subIdentifier, sourceType);
 
     // Use given sourceType if there is one, else use sourceType from the parser
     // plugin.
@@ -443,7 +443,7 @@ NdrRegistry::GetNodeFromAsset(const SdfAssetPath &asset,
 
     NdrNodeUniquePtr newNode = parserIt->second->Parse(dr);
 
-    if (!_ValidateNode(newNode, dr)) {
+    if (!pxrUsdNdrRegistry::_ValidateNode(newNode, dr)) {
         return nullptr;
     }
 
@@ -489,7 +489,7 @@ NdrRegistry::GetNodeFromSourceCode(const std::string &sourceCode,
         return nullptr;
     }
 
-    NdrIdentifier identifier = _GetIdentifierForSourceCode(sourceCode, 
+    NdrIdentifier identifier = pxrUsdNdrRegistry::_GetIdentifierForSourceCode(sourceCode, 
             metadata);
     NodeMapKey key{identifier, sourceType};
 
@@ -576,7 +576,7 @@ NdrRegistry::GetNodeIdentifiers(
 
     NdrIdentifierSet visited;
     for (const NdrNodeDiscoveryResult& dr : _discoveryResults) {
-        if (_MatchesFamilyAndFilter(dr, family, filter)) {
+        if (pxrUsdNdrRegistry::_MatchesFamilyAndFilter(dr, family, filter)) {
             // Avoid duplicates.
             if (visited.insert(dr.identifier).second) {
                 result.push_back(dr.identifier);
@@ -819,7 +819,7 @@ NdrRegistry::GetNodesByFamily(const TfToken& family, NdrVersionFilter filter)
                 [&](size_t begin, size_t end) {
                     for (size_t i = begin; i < end; ++i) {
                         const NdrNodeDiscoveryResult& dr = _discoveryResults.at(i);
-                        if (_MatchesFamilyAndFilter(dr, family, filter)) {
+                        if (pxrUsdNdrRegistry::_MatchesFamilyAndFilter(dr, family, filter)) {
                             _InsertNodeIntoCache(dr);
                         }
                     }
@@ -1006,7 +1006,7 @@ NdrRegistry::_InsertNodeIntoCache(const NdrNodeDiscoveryResult& dr)
     NdrNodeUniquePtr newNode = i->second->Parse(dr);
 
     // Validate the node.
-    if (!_ValidateNode(newNode, dr)) {
+    if (!pxrUsdNdrRegistry::_ValidateNode(newNode, dr)) {
         return nullptr;
     }
     
@@ -1026,7 +1026,7 @@ NdrRegistry::_GetNodeMapAsNodePtrVec(
     NdrNodeConstPtrVec _nodeVec;
 
     for (const auto& nodePair : _nodeMap) {
-        if (_MatchesFamilyAndFilter(nodePair.second, family, filter)) {
+        if (pxrUsdNdrRegistry::_MatchesFamilyAndFilter(nodePair.second, family, filter)) {
             _nodeVec.emplace_back(nodePair.second.get());
         }
     }

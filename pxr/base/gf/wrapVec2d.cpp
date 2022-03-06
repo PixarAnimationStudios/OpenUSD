@@ -58,7 +58,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapVec2d {
 
 ////////////////////////////////////////////////////////////////////////
 // Python buffer protocol support.
@@ -410,25 +410,25 @@ void wrapVec2d()
     boost::python::def("CompMult", (Vec (*)(const Vec &v1, const Vec&v2))GfCompMult);
     boost::python::def("GetLength", (Scalar (*)(const Vec &v))GfGetLength);
     boost::python::def("GetNormalized", (Vec (*)(const Vec &v, Scalar eps))
-        GfGetNormalized, GetNormalized_overloads());
+        GfGetNormalized, pxrBaseGfWrapVec2d::GetNormalized_overloads());
     boost::python::def("GetProjection", (Vec (*)(const Vec &a, const Vec &b))
         GfGetProjection);
     boost::python::def("GetComplement", (Vec (*)(const Vec &a, const Vec &b))
         GfGetComplement);
     boost::python::def("IsClose", (bool (*)(const Vec &v1, const Vec &v2, double))
         GfIsClose);
-    boost::python::def("Normalize", NormalizeHelper, Normalize_overloads());
+    boost::python::def("Normalize", pxrBaseGfWrapVec2d::NormalizeHelper, pxrBaseGfWrapVec2d::Normalize_overloads());
         
 
  
     boost::python::class_<GfVec2d> cls("Vec2d", boost::python::no_init);
     cls
-        .def("__init__", boost::python::make_constructor(__init__<Vec>))
+        .def("__init__", boost::python::make_constructor(pxrBaseGfWrapVec2d::__init__<Vec>))
 
         // A tag indicating that this is a GfVec class, for internal use.
         .def_readonly("__isGfVec", _true)
 
-        .def_pickle(PickleSuite())
+        .def_pickle(pxrBaseGfWrapVec2d::PickleSuite())
 
         // Conversion from other vec types.
         .def(boost::python::init<GfVec2f>())
@@ -441,12 +441,12 @@ void wrapVec2d()
 
         .def(TfTypePythonClass())
 
-        .def("__len__", __len__ )
-        .def("__getitem__", __getitem__ )
-        .def("__getitem__", __getslice__ )
-        .def("__setitem__", __setitem__ )
-        .def("__setitem__", __setslice__ )
-        .def("__contains__", __contains__ )
+        .def("__len__", pxrBaseGfWrapVec2d::__len__ )
+        .def("__getitem__", pxrBaseGfWrapVec2d::__getitem__ )
+        .def("__getitem__", pxrBaseGfWrapVec2d::__getslice__ )
+        .def("__setitem__", pxrBaseGfWrapVec2d::__setitem__ )
+        .def("__setitem__", pxrBaseGfWrapVec2d::__setslice__ )
+        .def("__contains__", pxrBaseGfWrapVec2d::__contains__ )
 
         .def_readonly("dimension", _dimension)
         
@@ -489,12 +489,12 @@ void wrapVec2d()
         
         .def("GetComplement", &Vec::GetComplement)
         .def("GetLength", &Vec::GetLength)
-        .def("GetNormalized", &Vec::GetNormalized, VecGetNormalized_overloads())
+        .def("GetNormalized", &Vec::GetNormalized, pxrBaseGfWrapVec2d::VecGetNormalized_overloads())
         .def("GetProjection", &Vec::GetProjection)
-        .def("Normalize", &Vec::Normalize, VecNormalize_overloads())
+        .def("Normalize", &Vec::Normalize, pxrBaseGfWrapVec2d::VecNormalize_overloads())
 
-        .def("__repr__", __repr__)
-        .def("__hash__", __hash__)
+        .def("__repr__", pxrBaseGfWrapVec2d::__repr__)
+        .def("__hash__", pxrBaseGfWrapVec2d::__hash__)
         ;
     boost::python::to_python_converter<std::vector<GfVec2d>,
         TfPySequenceToPython<std::vector<GfVec2d> > >();
@@ -504,12 +504,12 @@ void wrapVec2d()
     // this type, and set the type flags to indicate that this type supports the
     // buffer protocol.
     auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
-    typeObj->tp_as_buffer = &bufferProcs;
+    typeObj->tp_as_buffer = &pxrBaseGfWrapVec2d::bufferProcs;
     typeObj->tp_flags |= (TfPy_TPFLAGS_HAVE_NEWBUFFER |
                           TfPy_TPFLAGS_HAVE_GETCHARBUFFER);
 
     // Allow appropriate tuples to be passed where Vecs are expected.
-    FromPythonTuple();
+    pxrBaseGfWrapVec2d::FromPythonTuple();
 
     // Allow conversion of lists of GfVec2d to std::vector<GfVec2d>
     TfPyContainerConversions::from_python_sequence<

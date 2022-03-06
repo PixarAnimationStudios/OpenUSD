@@ -27,7 +27,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapTokens {
 
 // Helper to return a static token as a string.  We wrap tokens as Python
 // strings and for some reason simply wrapping the token using def_readonly
@@ -64,17 +64,17 @@ void wrapUsdTokens()
 {
     boost::python::class_<UsdTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
-    _AddToken(cls, "apiSchemas", UsdTokens->apiSchemas);
-    _AddToken(cls, "clips", UsdTokens->clips);
-    _AddToken(cls, "clipSets", UsdTokens->clipSets);
-    _AddToken(cls, "collection", UsdTokens->collection);
-    _AddToken(cls, "collection_MultipleApplyTemplate_Excludes", UsdTokens->collection_MultipleApplyTemplate_Excludes);
-    _AddToken(cls, "collection_MultipleApplyTemplate_ExpansionRule", UsdTokens->collection_MultipleApplyTemplate_ExpansionRule);
-    _AddToken(cls, "collection_MultipleApplyTemplate_IncludeRoot", UsdTokens->collection_MultipleApplyTemplate_IncludeRoot);
-    _AddToken(cls, "collection_MultipleApplyTemplate_Includes", UsdTokens->collection_MultipleApplyTemplate_Includes);
-    _AddToken(cls, "exclude", UsdTokens->exclude);
-    _AddToken(cls, "expandPrims", UsdTokens->expandPrims);
-    _AddToken(cls, "expandPrimsAndProperties", UsdTokens->expandPrimsAndProperties);
-    _AddToken(cls, "explicitOnly", UsdTokens->explicitOnly);
-    _AddToken(cls, "fallbackPrimTypes", UsdTokens->fallbackPrimTypes);
+    pxrUsdUsdWrapTokens::_AddToken(cls, "apiSchemas", UsdTokens->apiSchemas);
+    pxrUsdUsdWrapTokens::_AddToken(cls, "clips", UsdTokens->clips);
+    pxrUsdUsdWrapTokens::_AddToken(cls, "clipSets", UsdTokens->clipSets);
+    pxrUsdUsdWrapTokens::_AddToken(cls, "collection", UsdTokens->collection);
+    pxrUsdUsdWrapTokens::_AddToken(cls, "collection_MultipleApplyTemplate_Excludes", UsdTokens->collection_MultipleApplyTemplate_Excludes);
+    pxrUsdUsdWrapTokens::_AddToken(cls, "collection_MultipleApplyTemplate_ExpansionRule", UsdTokens->collection_MultipleApplyTemplate_ExpansionRule);
+    pxrUsdUsdWrapTokens::_AddToken(cls, "collection_MultipleApplyTemplate_IncludeRoot", UsdTokens->collection_MultipleApplyTemplate_IncludeRoot);
+    pxrUsdUsdWrapTokens::_AddToken(cls, "collection_MultipleApplyTemplate_Includes", UsdTokens->collection_MultipleApplyTemplate_Includes);
+    pxrUsdUsdWrapTokens::_AddToken(cls, "exclude", UsdTokens->exclude);
+    pxrUsdUsdWrapTokens::_AddToken(cls, "expandPrims", UsdTokens->expandPrims);
+    pxrUsdUsdWrapTokens::_AddToken(cls, "expandPrimsAndProperties", UsdTokens->expandPrimsAndProperties);
+    pxrUsdUsdWrapTokens::_AddToken(cls, "explicitOnly", UsdTokens->explicitOnly);
+    pxrUsdUsdWrapTokens::_AddToken(cls, "fallbackPrimTypes", UsdTokens->fallbackPrimTypes);
 }

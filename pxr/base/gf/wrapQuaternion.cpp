@@ -41,7 +41,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapQuaternion {
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( GetNormalized_overloads,
                                         GetNormalized, 0, 1 );
@@ -97,9 +97,9 @@ void wrapQuaternion()
         .def("GetLength", &This::GetLength)
         .def("GetReal", &This::GetReal)
 
-        .def("GetNormalized", &This::GetNormalized, GetNormalized_overloads())
+        .def("GetNormalized", &This::GetNormalized, pxrBaseGfWrapQuaternion::GetNormalized_overloads())
         .def("Normalize", &This::Normalize,
-             Normalize_overloads()[boost::python::return_self<>()])
+             pxrBaseGfWrapQuaternion::Normalize_overloads()[boost::python::return_self<>()])
 
         .def( boost::python::self_ns::str(boost::python::self) )
         .def( boost::python::self == boost::python::self )
@@ -123,8 +123,8 @@ void wrapQuaternion()
         .def("__itruediv__", __itruediv__ )
 #endif
 
-        .def("__repr__", _Repr)
-        .def("__hash__", __hash__)
+        .def("__repr__", pxrBaseGfWrapQuaternion::_Repr)
+        .def("__hash__", pxrBaseGfWrapQuaternion::__hash__)
 
         ;
     boost::python::to_python_converter<std::vector<This>,

@@ -46,7 +46,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapRay {
 
 static void
 SetStartPointHelper( GfRay &self, const GfVec3d &startPoint ) {
@@ -162,7 +162,7 @@ void wrapRay()
 {    
     typedef GfRay This;
 
-    boost::python::def("FindClosestPoints", FindClosestPointsHelper1, 
+    boost::python::def("FindClosestPoints", pxrBaseGfWrapRay::FindClosestPointsHelper1, 
         "FindClosestPoints( r1, l2 ) -> tuple<intersects=bool, "
         "p1 = GfVec3d, p2 = GfVec3d, t1 = double, t2 = double>\n"
         "\n"
@@ -176,7 +176,7 @@ void wrapRay()
         "returned in t1 and t2.\n"
         "----------------------------------------------------------------------"
         );
-    boost::python::def("FindClosestPoints", FindClosestPointsHelper2, 
+    boost::python::def("FindClosestPoints", pxrBaseGfWrapRay::FindClosestPointsHelper2, 
         "FindClosestPoints( r1, s2 ) -> tuple<intersects = bool, "
         "p1 = GfVec3d, p2 = GfVec3d, t1 = double, t2 = double>\n"
         "\n"
@@ -203,19 +203,19 @@ void wrapRay()
         .add_property( "startPoint", boost::python::make_function
                        (&This::GetStartPoint,
                         boost::python::return_value_policy<boost::python::copy_const_reference>()),
-                       SetStartPointHelper )
+                       pxrBaseGfWrapRay::SetStartPointHelper )
         .add_property( "direction", boost::python::make_function
                        (&This::GetDirection,
                         boost::python::return_value_policy<boost::python::copy_const_reference>()),
-                       SetDirectionHelper )
+                       pxrBaseGfWrapRay::SetDirectionHelper )
 
         .def("GetPoint", &This::GetPoint )
 
-        .def("FindClosestPoint", FindClosestPointHelper)
+        .def("FindClosestPoint", pxrBaseGfWrapRay::FindClosestPointHelper)
 
         .def("Transform", &This::Transform, boost::python::return_self<>())
         
-        .def("Intersect", IntersectHelper1,
+        .def("Intersect", pxrBaseGfWrapRay::IntersectHelper1,
              "Intersect( p0, p1, p2 ) -> tuple<intersects = bool, dist =\n"
              "float, barycentric = GfVec3d, frontFacing = bool>\n"
              "\n"
@@ -238,7 +238,7 @@ void wrapRay()
              "                         barycentricCoords[2] * p2);\n"
              "----------------------------------------------------------------------"
             )
-        .def( "Intersect", IntersectHelper2,
+        .def( "Intersect", pxrBaseGfWrapRay::IntersectHelper2,
               "Intersect( plane ) -> tuple<intersects = bool, dist = float,\n"
               "frontFacing = bool>\n"
               "\n"
@@ -249,7 +249,7 @@ void wrapRay()
               "of the plane toward which the plane's normal points.\n"
              "----------------------------------------------------------------------"
             )
-        .def( "Intersect", IntersectHelper3,
+        .def( "Intersect", pxrBaseGfWrapRay::IntersectHelper3,
               "Intersect( range3d ) -> tuple<intersects = bool, enterDist\n"
               "= float, exitDist = float>\n"
               //\n"
@@ -260,7 +260,7 @@ void wrapRay()
               "intersection points.\n"
               "----------------------------------------------------------------------"
             )
-        .def( "Intersect", IntersectHelper4,
+        .def( "Intersect", pxrBaseGfWrapRay::IntersectHelper4,
               "Intersect( bbox3d ) -> tuple<intersects = bool, enterDist\n"
               "= float, exitDist = float>\n"
               //\n"
@@ -271,7 +271,7 @@ void wrapRay()
               "intersection points.\n"
               "----------------------------------------------------------------------"
             )
-        .def( "Intersect", IntersectHelper5,
+        .def( "Intersect", pxrBaseGfWrapRay::IntersectHelper5,
               "Intersect( center, radius ) -> tuple<intersects = bool,\n"
               "enterDist = float, exitDist = float>\n"
               "\n"
@@ -281,7 +281,7 @@ void wrapRay()
               "parametric distances to the two intersection points.\n"
               "----------------------------------------------------------------------"
             )
-        .def( "Intersect", IntersectHelper6,
+        .def( "Intersect", pxrBaseGfWrapRay::IntersectHelper6,
               "Intersect( origin, axis, radius ) -> tuple<intersects = bool,\n"
               "enterDist = float, exitDist = float>\n"
               "\n"
@@ -292,7 +292,7 @@ void wrapRay()
               "intersection points.\n"
               "----------------------------------------------------------------------"
             )
-        .def( "Intersect", IntersectHelper7,
+        .def( "Intersect", pxrBaseGfWrapRay::IntersectHelper7,
               "Intersect( origin, axis, radius, height ) -> \n"
               "tuple<intersects = bool, enterDist = float, exitDist = float>\n"
               "\n"
@@ -308,7 +308,7 @@ void wrapRay()
         .def( boost::python::self == boost::python::self )
         .def( boost::python::self != boost::python::self )
 
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrBaseGfWrapRay::_Repr)
 
         ;
     

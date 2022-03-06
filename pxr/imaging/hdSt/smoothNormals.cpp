@@ -49,7 +49,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrImagingHdStSmoothNormals {
 
 enum {
     BufferBinding_Uniforms,
@@ -207,13 +207,13 @@ HdSt_SmoothNormalsComputationGPU::Execute(
             }
             HgiShaderFunctionAddBuffer(&computeDesc,
                 "points", srcType,
-                BufferBinding_Points, HgiBindingTypePointer);
+                pxrImagingHdStSmoothNormals::BufferBinding_Points, HgiBindingTypePointer);
             HgiShaderFunctionAddWritableBuffer(&computeDesc,
                 "normals", dstType,
-                BufferBinding_Normals);
+                pxrImagingHdStSmoothNormals::BufferBinding_Normals);
             HgiShaderFunctionAddBuffer(&computeDesc,
                 "entry", HdStTokens->_int,
-                BufferBinding_Adjacency, HgiBindingTypePointer);
+                pxrImagingHdStSmoothNormals::BufferBinding_Adjacency, HgiBindingTypePointer);
 
             static const std::string params[] = {
                 "vertexOffset",       // offset in aggregated buffer
@@ -300,7 +300,7 @@ HdSt_SmoothNormalsComputationGPU::Execute(
         hdStResourceRegistry->RegisterResourceBindings(rbHash);
     if (resourceBindingsInstance.IsFirstInstance()) {
         HgiResourceBindingsSharedPtr rb =
-            _CreateResourceBindings(hgi,
+            pxrImagingHdStSmoothNormals::_CreateResourceBindings(hgi,
                                     points->GetHandle(),
                                     normals->GetHandle(),
                                     adjacency->GetHandle());
@@ -315,7 +315,7 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     HdInstance<HgiComputePipelineSharedPtr> computePipelineInstance =
         hdStResourceRegistry->RegisterComputePipeline(pHash);
     if (computePipelineInstance.IsFirstInstance()) {
-        HgiComputePipelineSharedPtr pipe = _CreatePipeline(
+        HgiComputePipelineSharedPtr pipe = pxrImagingHdStSmoothNormals::_CreatePipeline(
             hgi, sizeof(uniform), computeProgram->GetProgram());
         computePipelineInstance.SetValue(pipe);
     }
@@ -331,7 +331,7 @@ HdSt_SmoothNormalsComputationGPU::Execute(
 
     // transfer uniform buffer
     computeCmds->SetConstantValues(
-        pipeline, BufferBinding_Uniforms, sizeof(uniform), &uniform);
+        pipeline, pxrImagingHdStSmoothNormals::BufferBinding_Uniforms, sizeof(uniform), &uniform);
 
     // dispatch compute kernel
     computeCmds->Dispatch(numPoints, 1);

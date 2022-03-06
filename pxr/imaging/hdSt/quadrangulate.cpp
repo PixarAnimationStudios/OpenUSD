@@ -50,7 +50,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrImagingHdStQuadrangulate {
 
 enum {
     BufferBinding_Uniforms,
@@ -533,15 +533,15 @@ HdSt_QuadrangulateComputationGPU::Execute(
             if (shaderToken == HdStGLSLProgramTokens->quadrangulateFloat) {
                 HgiShaderFunctionAddWritableBuffer(
                     &computeDesc, "primvar", HdStTokens->_float,
-                    BufferBinding_Primvar);
+                    pxrImagingHdStQuadrangulate::BufferBinding_Primvar);
             } else {
                 HgiShaderFunctionAddWritableBuffer(
                     &computeDesc, "primvar", HdStTokens->_double,
-                    BufferBinding_Primvar);
+                    pxrImagingHdStQuadrangulate::BufferBinding_Primvar);
             }
             HgiShaderFunctionAddBuffer(
                     &computeDesc, "quadInfo", HdStTokens->_int,
-                    BufferBinding_Quadinfo, HgiBindingTypePointer);
+                    pxrImagingHdStQuadrangulate::BufferBinding_Quadinfo, HgiBindingTypePointer);
 
             static const std::string params[] = {
                 "vertexOffset",       // offset in aggregated buffer
@@ -621,7 +621,7 @@ HdSt_QuadrangulateComputationGPU::Execute(
     HdInstance<HgiResourceBindingsSharedPtr> resourceBindingsInstance =
         hdStResourceRegistry->RegisterResourceBindings(rbHash);
     if (resourceBindingsInstance.IsFirstInstance()) {
-        HgiResourceBindingsSharedPtr rb = _CreateResourceBindings(
+        HgiResourceBindingsSharedPtr rb = pxrImagingHdStQuadrangulate::_CreateResourceBindings(
             hgi, primvar->GetHandle(), quadrangulateTable->GetHandle());
         resourceBindingsInstance.SetValue(rb);
     }
@@ -634,7 +634,7 @@ HdSt_QuadrangulateComputationGPU::Execute(
     HdInstance<HgiComputePipelineSharedPtr> computePipelineInstance =
         hdStResourceRegistry->RegisterComputePipeline(pHash);
     if (computePipelineInstance.IsFirstInstance()) {
-        HgiComputePipelineSharedPtr pipe = _CreatePipeline(
+        HgiComputePipelineSharedPtr pipe = pxrImagingHdStQuadrangulate::_CreatePipeline(
             hgi, sizeof(uniform), computeProgram->GetProgram());
         computePipelineInstance.SetValue(pipe);
     }
@@ -650,7 +650,7 @@ HdSt_QuadrangulateComputationGPU::Execute(
 
     // Queue transfer uniform buffer
     computeCmds->SetConstantValues(
-        pipeline, BufferBinding_Uniforms, sizeof(uniform), &uniform);
+        pipeline, pxrImagingHdStQuadrangulate::BufferBinding_Uniforms, sizeof(uniform), &uniform);
 
     // Queue compute work
     computeCmds->Dispatch(numNonQuads, 1);

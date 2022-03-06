@@ -137,7 +137,7 @@ UsdPhysicsScene::CreateGravityMagnitudeAttr(VtValue const &defaultValue, bool wr
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdPhysicsScene {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -158,7 +158,7 @@ UsdPhysicsScene::GetSchemaAttributeNames(bool includeInherited)
         UsdPhysicsTokens->physicsGravityMagnitude,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdPhysicsScene::_ConcatenateAttributeNames(
             UsdTyped::GetSchemaAttributeNames(true),
             localNames);
 

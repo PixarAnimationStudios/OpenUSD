@@ -47,7 +47,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseVtWrapDictionary {
 
 // Converter from std::vector<VtValue> to python list
 struct VtValueArrayToPython
@@ -295,12 +295,12 @@ _ReturnDictionary(VtDictionary const &x) {
 
 void wrapDictionary()
 {
-    boost::python::def("_ReturnDictionary", _ReturnDictionary);
+    boost::python::def("_ReturnDictionary", pxrBaseVtWrapDictionary::_ReturnDictionary);
 
-    boost::python::to_python_converter<VtDictionary, VtDictionaryToPython>();
-    boost::python::to_python_converter<std::vector<VtValue>, VtValueArrayToPython>();
-    _VtValueArrayFromPython();
-    _VtDictionaryFromPython();
-    _VtValueHoldingVtValueArrayFromPython();
-    _VtValueHoldingVtDictionaryFromPython();
+    boost::python::to_python_converter<VtDictionary, pxrBaseVtWrapDictionary::VtDictionaryToPython>();
+    boost::python::to_python_converter<std::vector<VtValue>, pxrBaseVtWrapDictionary::VtValueArrayToPython>();
+    pxrBaseVtWrapDictionary::_VtValueArrayFromPython();
+    pxrBaseVtWrapDictionary::_VtDictionaryFromPython();
+    pxrBaseVtWrapDictionary::_VtValueHoldingVtValueArrayFromPython();
+    pxrBaseVtWrapDictionary::_VtValueHoldingVtDictionaryFromPython();
 }

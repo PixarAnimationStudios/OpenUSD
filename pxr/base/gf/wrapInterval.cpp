@@ -37,7 +37,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapInterval {
 
 static std::string
 _Repr(GfInterval const &self)
@@ -157,7 +157,7 @@ void wrapInterval()
         .def(boost::python::self >= boost::python::self)
 
         .def(boost::python::self_ns::str(boost::python::self))
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrBaseGfWrapInterval::_Repr)
         .def("__hash__", &This::Hash)
         ;
 

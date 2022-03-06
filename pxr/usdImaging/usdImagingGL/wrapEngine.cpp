@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdImagingUsdImagingGLWrapEngine {
 
 static boost::python::tuple
 _TestIntersection(
@@ -114,14 +114,14 @@ void wrapEngine()
             .def("SetCameraState", &UsdImagingGLEngine::SetCameraState)
             .def("SetLightingStateFromOpenGL",
                     &UsdImagingGLEngine::SetLightingStateFromOpenGL)
-            .def("SetLightingState", &_SetLightingState)
+            .def("SetLightingState", &pxrUsdImagingUsdImagingGLWrapEngine::_SetLightingState)
             .def("SetCameraStateFromOpenGL", 
                     &UsdImagingGLEngine::SetCameraStateFromOpenGL)
             .def("SetSelected", &UsdImagingGLEngine::SetSelected)
             .def("ClearSelected", &UsdImagingGLEngine::ClearSelected)
             .def("AddSelected", &UsdImagingGLEngine::AddSelected)
             .def("SetSelectionColor", &UsdImagingGLEngine::SetSelectionColor)
-            .def("TestIntersection", &_TestIntersection)
+            .def("TestIntersection", &pxrUsdImagingUsdImagingGLWrapEngine::_TestIntersection)
             .def("IsHydraEnabled", &UsdImagingGLEngine::IsHydraEnabled)
                 .staticmethod("IsHydraEnabled")
             .def("IsConverged", &UsdImagingGLEngine::IsConverged)
@@ -169,7 +169,7 @@ void wrapEngine()
             .def("RestartRenderer", &UsdImagingGLEngine::RestartRenderer)
             .def("SetRenderBufferSize", &UsdImagingGLEngine::SetRenderBufferSize)
             .def("SetFraming", &UsdImagingGLEngine::SetFraming)
-            .def("SetOverrideWindowPolicy", _SetOverrideWindowPolicy)
+            .def("SetOverrideWindowPolicy", pxrUsdImagingUsdImagingGLWrapEngine::_SetOverrideWindowPolicy)
         ;
 
     }

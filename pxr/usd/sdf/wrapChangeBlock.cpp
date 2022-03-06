@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapChangeBlock {
 
 class Sdf_PythonChangeBlock {
 public:
@@ -67,7 +67,7 @@ wrapChangeBlock()
 {
     // This allows SdfChangeBlocks to be used in an RAII fashion in Python 
     // with the 'with' statement.
-    typedef Sdf_PythonChangeBlock This;
+    typedef pxrUsdSdfWrapChangeBlock::Sdf_PythonChangeBlock This;
     boost::python::class_<This, boost::noncopyable>("ChangeBlock",
                                      boost::python::init<bool>(boost::python::arg("enabled")=true))
         .def("__enter__", &This::Open)

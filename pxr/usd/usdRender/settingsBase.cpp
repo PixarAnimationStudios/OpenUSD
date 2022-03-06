@@ -182,7 +182,7 @@ UsdRenderSettingsBase::CreateCameraRel() const
                        /* custom = */ false);
 }
 
-namespace {
+namespace pxrUsdUsdRenderSettingsBase {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -206,7 +206,7 @@ UsdRenderSettingsBase::GetSchemaAttributeNames(bool includeInherited)
         UsdRenderTokens->instantaneousShutter,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdRenderSettingsBase::_ConcatenateAttributeNames(
             UsdTyped::GetSchemaAttributeNames(true),
             localNames);
 

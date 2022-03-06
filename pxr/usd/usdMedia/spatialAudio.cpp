@@ -222,7 +222,7 @@ UsdMediaSpatialAudio::CreateGainAttr(VtValue const &defaultValue, bool writeSpar
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdMediaSpatialAudio {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -248,7 +248,7 @@ UsdMediaSpatialAudio::GetSchemaAttributeNames(bool includeInherited)
         UsdMediaTokens->gain,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdMediaSpatialAudio::_ConcatenateAttributeNames(
             UsdGeomXformable::GetSchemaAttributeNames(true),
             localNames);
 

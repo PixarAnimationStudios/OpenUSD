@@ -27,7 +27,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdRiWrapTokens {
 
 // Helper to return a static token as a string.  We wrap tokens as Python
 // strings and for some reason simply wrapping the token using def_readonly
@@ -64,18 +64,18 @@ void wrapUsdRiTokens()
 {
     boost::python::class_<UsdRiTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
-    _AddToken(cls, "bspline", UsdRiTokens->bspline);
-    _AddToken(cls, "catmullRom", UsdRiTokens->catmullRom);
-    _AddToken(cls, "constant", UsdRiTokens->constant);
-    _AddToken(cls, "interpolation", UsdRiTokens->interpolation);
-    _AddToken(cls, "linear", UsdRiTokens->linear);
-    _AddToken(cls, "outputsRiDisplacement", UsdRiTokens->outputsRiDisplacement);
-    _AddToken(cls, "outputsRiSurface", UsdRiTokens->outputsRiSurface);
-    _AddToken(cls, "outputsRiVolume", UsdRiTokens->outputsRiVolume);
-    _AddToken(cls, "positions", UsdRiTokens->positions);
-    _AddToken(cls, "renderContext", UsdRiTokens->renderContext);
-    _AddToken(cls, "riTextureGamma", UsdRiTokens->riTextureGamma);
-    _AddToken(cls, "riTextureSaturation", UsdRiTokens->riTextureSaturation);
-    _AddToken(cls, "spline", UsdRiTokens->spline);
-    _AddToken(cls, "values", UsdRiTokens->values);
+    pxrUsdUsdRiWrapTokens::_AddToken(cls, "bspline", UsdRiTokens->bspline);
+    pxrUsdUsdRiWrapTokens::_AddToken(cls, "catmullRom", UsdRiTokens->catmullRom);
+    pxrUsdUsdRiWrapTokens::_AddToken(cls, "constant", UsdRiTokens->constant);
+    pxrUsdUsdRiWrapTokens::_AddToken(cls, "interpolation", UsdRiTokens->interpolation);
+    pxrUsdUsdRiWrapTokens::_AddToken(cls, "linear", UsdRiTokens->linear);
+    pxrUsdUsdRiWrapTokens::_AddToken(cls, "outputsRiDisplacement", UsdRiTokens->outputsRiDisplacement);
+    pxrUsdUsdRiWrapTokens::_AddToken(cls, "outputsRiSurface", UsdRiTokens->outputsRiSurface);
+    pxrUsdUsdRiWrapTokens::_AddToken(cls, "outputsRiVolume", UsdRiTokens->outputsRiVolume);
+    pxrUsdUsdRiWrapTokens::_AddToken(cls, "positions", UsdRiTokens->positions);
+    pxrUsdUsdRiWrapTokens::_AddToken(cls, "renderContext", UsdRiTokens->renderContext);
+    pxrUsdUsdRiWrapTokens::_AddToken(cls, "riTextureGamma", UsdRiTokens->riTextureGamma);
+    pxrUsdUsdRiWrapTokens::_AddToken(cls, "riTextureSaturation", UsdRiTokens->riTextureSaturation);
+    pxrUsdUsdRiWrapTokens::_AddToken(cls, "spline", UsdRiTokens->spline);
+    pxrUsdUsdRiWrapTokens::_AddToken(cls, "values", UsdRiTokens->values);
 }

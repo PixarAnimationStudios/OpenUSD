@@ -29,7 +29,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-namespace
+namespace pxrImagingHdPrefixingSceneIndex
 {
 
 class Hd_PrefixingSceneIndexPathDataSource
@@ -172,7 +172,7 @@ HdPrefixingSceneIndex::GetPrim(const SdfPath &primPath) const
             _RemovePathPrefix(primPath));
 
     if (prim.dataSource) {
-        prim.dataSource = Hd_PrefixingSceneIndexContainerDataSource::New(
+        prim.dataSource = pxrImagingHdPrefixingSceneIndex::Hd_PrefixingSceneIndexContainerDataSource::New(
                 _prefix, prim.dataSource);
     }
 

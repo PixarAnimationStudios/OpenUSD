@@ -44,7 +44,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapPath {
 
 static std::vector<SdfPath> GetPrefixesHelper( const SdfPath &path ) {
     return path.GetPrefixes();
@@ -243,7 +243,7 @@ void wrapPath() {
     typedef SdfPath This;
 
     boost::python::def("_PathGetDebuggerPathText", Sdf_PathGetDebuggerPathText);
-    boost::python::def("_PathStress", &_PathStress);
+    boost::python::def("_PathStress", &pxrUsdSdfWrapPath::_PathStress);
     boost::python::def("_DumpPathStats", &Sdf_DumpPathStats);
 
     boost::python::scope s = boost::python::class_<This> ( "Path", boost::python::init< const std::string & >() )
@@ -283,7 +283,7 @@ void wrapPath() {
             "The relational attribute target path for this path.\n\n"
             "EmptyPath if this is not a relational attribute path.")
 
-        .def("GetAllTargetPathsRecursively", &_WrapGetAllTargetPathsRecursively,
+        .def("GetAllTargetPathsRecursively", &pxrUsdSdfWrapPath::_WrapGetAllTargetPathsRecursively,
              boost::python::return_value_policy<TfPySequenceToList>())
 
         .def("GetVariantSelection", &This::GetVariantSelection,
@@ -314,7 +314,7 @@ void wrapPath() {
         .def("MakeAbsolutePath", &This::MakeAbsolutePath)
         .def("MakeRelativePath", &This::MakeRelativePath)
 
-        .def("GetPrefixes", GetPrefixesHelper,
+        .def("GetPrefixes", pxrUsdSdfWrapPath::GetPrefixesHelper,
               boost::python::return_value_policy< TfPySequenceToList >(), 
             "Returns the prefix paths of this path.")
 
@@ -354,10 +354,10 @@ void wrapPath() {
             boost::python::return_value_policy< TfPySequenceToList >())
             .staticmethod("GetConciseRelativePaths")
 
-        .def("RemoveDescendentPaths", _RemoveDescendentPaths,
+        .def("RemoveDescendentPaths", pxrUsdSdfWrapPath::_RemoveDescendentPaths,
              boost::python::return_value_policy< TfPySequenceToList >())
             .staticmethod("RemoveDescendentPaths")
-        .def("RemoveAncestorPaths", _RemoveAncestorPaths,
+        .def("RemoveAncestorPaths", pxrUsdSdfWrapPath::_RemoveAncestorPaths,
              boost::python::return_value_policy< TfPySequenceToList >())
             .staticmethod("RemoveAncestorPaths")
 
@@ -386,21 +386,21 @@ void wrapPath() {
                 boost::python::return_value_policy<TfPyPairToTuple>())
             .staticmethod("StripPrefixNamespace")
 
-        .def("IsValidPathString", &_IsValidPathString)
+        .def("IsValidPathString", &pxrUsdSdfWrapPath::_IsValidPathString)
              .staticmethod("IsValidPathString")
 
-        .def("FindPrefixedRange", _FindPrefixedRange)
+        .def("FindPrefixedRange", pxrUsdSdfWrapPath::_FindPrefixedRange)
             .staticmethod("FindPrefixedRange")
 
-        .def("FindLongestPrefix", _FindLongestPrefix)
+        .def("FindLongestPrefix", pxrUsdSdfWrapPath::_FindLongestPrefix)
             .staticmethod("FindLongestPrefix")
 
-        .def("FindLongestStrictPrefix", _FindLongestStrictPrefix)
+        .def("FindLongestStrictPrefix", pxrUsdSdfWrapPath::_FindLongestStrictPrefix)
             .staticmethod("FindLongestStrictPrefix")
 
         .def("__str__", boost::python::make_function(&This::GetAsString))
 
-        .def(TfPyBoolBuiltinFuncName, __nonzero__)
+        .def(TfPyBoolBuiltinFuncName, pxrUsdSdfWrapPath::__nonzero__)
 
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self != boost::python::self)
@@ -408,7 +408,7 @@ void wrapPath() {
         .def(boost::python::self > boost::python::self)
         .def(boost::python::self <= boost::python::self)
         .def(boost::python::self >= boost::python::self)
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrUsdSdfWrapPath::_Repr)
         .def("__hash__", &This::GetHash)
         ;
 
@@ -440,9 +440,9 @@ void wrapPath() {
 
     VtValueFromPython<SdfPath>();
 
-    Sdf_PathIsValidPathStringResult::
-        Wrap<Sdf_PathIsValidPathStringResult>("_IsValidPathStringResult",
+    pxrUsdSdfWrapPath::Sdf_PathIsValidPathStringResult::
+        Wrap<pxrUsdSdfWrapPath::Sdf_PathIsValidPathStringResult>("_IsValidPathStringResult",
                                             "errorMessage");
 
-    Sdf_wrapAncestorsRange();
+    pxrUsdSdfWrapPath::Sdf_wrapAncestorsRange();
 }

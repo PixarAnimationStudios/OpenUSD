@@ -825,7 +825,7 @@ Usd_Clip::GetLayerIfOpen() const
     return GetLayer();
 }
 
-namespace { // Anonymous namespace
+namespace pxrUsdUsdClip { // Anonymous namespace
 
 // SdfTimeCode values from clips need to be converted from internal time to
 // external time. We treat time code values as relative to the internal time
@@ -958,13 +958,13 @@ Usd_Clip::QueryTimeSample(
 
     if (!clip->QueryTimeSample(clipPath, clipTime, value)) {
         // See comment in Usd_Clip::GetBracketingTimeSamples.
-        if (!_Interpolate(clip, clipPath, clipTime, interpolator, value)) {
+        if (!pxrUsdUsdClip::_Interpolate(clip, clipPath, clipTime, interpolator, value)) {
             return false;
         }
     }
 
     // Convert values containing SdfTimeCodes if necessary.
-    _ConvertValueForTime(time, clipTime, value);
+    pxrUsdUsdClip::_ConvertValueForTime(time, clipTime, value);
     return true;
 }
 

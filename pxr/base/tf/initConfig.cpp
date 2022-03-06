@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 extern void Tf_DebugInitFromEnvironment();
 
-namespace {
+namespace pxrBaseTfInitConfig {
 
 ARCH_CONSTRUCTOR(Tf_InitConfig, 2, void)
 {

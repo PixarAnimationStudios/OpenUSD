@@ -154,7 +154,7 @@ UsdShadeMaterial::CreateVolumeAttr(VtValue const &defaultValue, bool writeSparse
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdShadeMaterial {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -176,7 +176,7 @@ UsdShadeMaterial::GetSchemaAttributeNames(bool includeInherited)
         UsdShadeTokens->outputsVolume,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdShadeMaterial::_ConcatenateAttributeNames(
             UsdShadeNodeGraph::GetSchemaAttributeNames(true),
             localNames);
 

@@ -566,7 +566,7 @@ UsdImagingDelegate::_SetStateForPopulation(
         TfNotice::Register(self, &This::_OnUsdObjectsChanged, _stage);
 }
 
-namespace {
+namespace pxrUsdImagingUsdImagingDelegate {
     struct _PopulateMaterialBindingCache {
         UsdPrim primToBind;
         UsdImaging_MaterialBindingCache const* materialBindingCache;
@@ -690,7 +690,7 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
                 // If we are using full networks, we will populate the 
                 // binding cache that has the strategy to compute the correct
                 // bindings.
-                _PopulateMaterialBindingCache wu = 
+                pxrUsdImagingUsdImagingDelegate::_PopulateMaterialBindingCache wu = 
                     { *iter, &_materialBindingCache};
                  bindingDispatcher.Run(wu);
                 
@@ -747,7 +747,7 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
                 // If we are using full networks, we will populate the 
                 // binding cache that has the strategy to compute the correct
                 // bindings.
-                _PopulateMaterialBindingCache wu = 
+                pxrUsdImagingUsdImagingDelegate::_PopulateMaterialBindingCache wu = 
                     { *iter, &_materialBindingCache};
                  bindingDispatcher.Run(wu);
                 

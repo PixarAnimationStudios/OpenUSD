@@ -120,7 +120,7 @@ UsdGeomHermiteCurves::CreateTangentsAttr(VtValue const &defaultValue, bool write
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomHermiteCurves {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -140,7 +140,7 @@ UsdGeomHermiteCurves::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->tangents,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomHermiteCurves::_ConcatenateAttributeNames(
             UsdGeomCurves::GetSchemaAttributeNames(true),
             localNames);
 

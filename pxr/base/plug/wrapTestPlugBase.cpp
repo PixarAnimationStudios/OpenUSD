@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBasePlugWrapTestPlugBase {
 
 template <class T>
 void wrap_TestPlugBase(const std::string & name)
@@ -57,10 +57,10 @@ void wrap_TestPlugBase(const std::string & name)
 
 void wrap_TestPlugBase()
 {
-    wrap_TestPlugBase<_TestPlugBase1>("_TestPlugBase1");
-    wrap_TestPlugBase<_TestPlugBase2>("_TestPlugBase2");
-    wrap_TestPlugBase<_TestPlugBase3>("_TestPlugBase3");
-    wrap_TestPlugBase<_TestPlugBase4>("_TestPlugBase4");
+    pxrBasePlugWrapTestPlugBase::wrap_TestPlugBase<_TestPlugBase1>("_TestPlugBase1");
+    pxrBasePlugWrapTestPlugBase::wrap_TestPlugBase<_TestPlugBase2>("_TestPlugBase2");
+    pxrBasePlugWrapTestPlugBase::wrap_TestPlugBase<_TestPlugBase3>("_TestPlugBase3");
+    pxrBasePlugWrapTestPlugBase::wrap_TestPlugBase<_TestPlugBase4>("_TestPlugBase4");
 }
 
 TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase1)

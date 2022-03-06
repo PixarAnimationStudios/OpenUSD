@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapArticulationRootAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -79,7 +79,7 @@ void wrapUsdPhysicsArticulationRootAPI()
 {
     typedef UsdPhysicsArticulationRootAPI This;
 
-    UsdPhysicsArticulationRootAPI_CanApplyResult::Wrap<UsdPhysicsArticulationRootAPI_CanApplyResult>(
+    pxrUsdUsdPhysicsWrapArticulationRootAPI::UsdPhysicsArticulationRootAPI_CanApplyResult::Wrap<pxrUsdUsdPhysicsWrapArticulationRootAPI::UsdPhysicsArticulationRootAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -93,7 +93,7 @@ void wrapUsdPhysicsArticulationRootAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdPhysicsWrapArticulationRootAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -112,10 +112,10 @@ void wrapUsdPhysicsArticulationRootAPI()
         .def(!boost::python::self)
 
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdPhysicsWrapArticulationRootAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdPhysicsWrapArticulationRootAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -137,7 +137,7 @@ void wrapUsdPhysicsArticulationRootAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapArticulationRootAPI {
 
 WRAP_CUSTOM {
 }

@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdArWrapResolverContextBinder {
 
 class _PyResolverContextBinder
     : public boost::noncopyable
@@ -68,7 +68,7 @@ private:
 void
 wrapResolverContextBinder()
 {
-    typedef _PyResolverContextBinder This;
+    typedef pxrUsdArWrapResolverContextBinder::_PyResolverContextBinder This;
 
     boost::python::class_<This, boost::noncopyable>
         ("ResolverContextBinder", boost::python::init<const ArResolverContext&>())

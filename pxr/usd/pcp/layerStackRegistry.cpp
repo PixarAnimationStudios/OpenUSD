@@ -353,7 +353,7 @@ Pcp_LayerStackRegistry::_GetMutedLayers() const
 
 // ------------------------------------------------------------
 
-namespace
+namespace pxrUsdPcpLayerStackRegistry
 {
 std::string 
 _GetCanonicalLayerId(const SdfLayerHandle& anchorLayer, 
@@ -413,7 +413,7 @@ Pcp_MutedLayers::MuteAndUnmuteLayers(const SdfLayerHandle& anchorLayer,
 
     for (const auto& layerToMute : *layersToMute) {
         const std::string canonicalId = 
-            _GetCanonicalLayerId(anchorLayer, layerToMute);
+            pxrUsdPcpLayerStackRegistry::_GetCanonicalLayerId(anchorLayer, layerToMute);
 
         const auto layerIt = std::lower_bound(
             _layers.begin(), _layers.end(), canonicalId);
@@ -425,7 +425,7 @@ Pcp_MutedLayers::MuteAndUnmuteLayers(const SdfLayerHandle& anchorLayer,
 
     for (const auto& layerToUnmute : *layersToUnmute) {
         const std::string canonicalId = 
-            _GetCanonicalLayerId(anchorLayer, layerToUnmute);
+            pxrUsdPcpLayerStackRegistry::_GetCanonicalLayerId(anchorLayer, layerToUnmute);
 
         const auto layerIt = std::lower_bound(
             _layers.begin(), _layers.end(), canonicalId);
@@ -448,7 +448,7 @@ Pcp_MutedLayers::IsLayerMuted(const SdfLayerHandle& anchorLayer,
         return false;
     }
 
-    std::string canonicalId = _GetCanonicalLayerId(anchorLayer, layerId);
+    std::string canonicalId = pxrUsdPcpLayerStackRegistry::_GetCanonicalLayerId(anchorLayer, layerId);
     if (std::binary_search(_layers.begin(), _layers.end(), canonicalId)) {
         if (canonicalLayerId) {
             canonicalLayerId->swap(canonicalId);

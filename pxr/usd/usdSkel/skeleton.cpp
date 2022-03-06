@@ -171,7 +171,7 @@ UsdSkelSkeleton::CreateRestTransformsAttr(VtValue const &defaultValue, bool writ
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdSkelSkeleton {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -194,7 +194,7 @@ UsdSkelSkeleton::GetSchemaAttributeNames(bool includeInherited)
         UsdSkelTokens->restTransforms,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdSkelSkeleton::_ConcatenateAttributeNames(
             UsdGeomBoundable::GetSchemaAttributeNames(true),
             localNames);
 

@@ -109,7 +109,7 @@ SdfTextFileFormat::~SdfTextFileFormat()
     // Do Nothing.
 }
 
-namespace
+namespace pxrUsdSdfTextFileFormat
 {
 
 bool
@@ -141,7 +141,7 @@ SdfTextFileFormat::CanRead(const std::string& filePath) const
 
     std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
         ArResolvedPath(filePath));
-    return asset && _CanReadImpl(asset, GetFileCookie());
+    return asset && pxrUsdSdfTextFileFormat::_CanReadImpl(asset, GetFileCookie());
 }
 
 bool
@@ -149,7 +149,7 @@ SdfTextFileFormat::_CanReadFromAsset(
     const std::string& resolvedPath,
     const std::shared_ptr<ArAsset>& asset) const
 {
-    return _CanReadImpl(asset, GetFileCookie());
+    return pxrUsdSdfTextFileFormat::_CanReadImpl(asset, GetFileCookie());
 }
 
 bool
@@ -178,7 +178,7 @@ SdfTextFileFormat::_ReadFromAsset(
 {
     // Quick check to see if the file has the magic cookie before spinning up
     // the parser.
-    if (!_CanReadImpl(asset, GetFileCookie())) {
+    if (!pxrUsdSdfTextFileFormat::_CanReadImpl(asset, GetFileCookie())) {
         TF_RUNTIME_ERROR("<%s> is not a valid %s layer",
                          resolvedPath.c_str(),
                          GetFormatId().GetText());

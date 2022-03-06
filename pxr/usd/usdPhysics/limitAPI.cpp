@@ -221,7 +221,7 @@ UsdPhysicsLimitAPI::CreateHighAttr(VtValue const &defaultValue, bool writeSparse
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdPhysicsLimitAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -242,7 +242,7 @@ UsdPhysicsLimitAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdPhysicsTokens->limit_MultipleApplyTemplate_PhysicsHigh,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdPhysicsLimitAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

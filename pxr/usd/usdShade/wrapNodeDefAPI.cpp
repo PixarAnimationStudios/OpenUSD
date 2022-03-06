@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdShadeWrapNodeDefAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -93,7 +93,7 @@ void wrapUsdShadeNodeDefAPI()
 {
     typedef UsdShadeNodeDefAPI This;
 
-    UsdShadeNodeDefAPI_CanApplyResult::Wrap<UsdShadeNodeDefAPI_CanApplyResult>(
+    pxrUsdUsdShadeWrapNodeDefAPI::UsdShadeNodeDefAPI_CanApplyResult::Wrap<pxrUsdUsdShadeWrapNodeDefAPI::UsdShadeNodeDefAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -107,7 +107,7 @@ void wrapUsdShadeNodeDefAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdShadeWrapNodeDefAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -129,21 +129,21 @@ void wrapUsdShadeNodeDefAPI()
         .def("GetImplementationSourceAttr",
              &This::GetImplementationSourceAttr)
         .def("CreateImplementationSourceAttr",
-             &_CreateImplementationSourceAttr,
+             &pxrUsdUsdShadeWrapNodeDefAPI::_CreateImplementationSourceAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetIdAttr",
              &This::GetIdAttr)
         .def("CreateIdAttr",
-             &_CreateIdAttr,
+             &pxrUsdUsdShadeWrapNodeDefAPI::_CreateIdAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdShadeWrapNodeDefAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdShadeWrapNodeDefAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -165,7 +165,7 @@ void wrapUsdShadeNodeDefAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdShadeWrapNodeDefAPI {
 
 static boost::python::object 
 _WrapGetShaderId(const UsdShadeNodeDefAPI &shader)

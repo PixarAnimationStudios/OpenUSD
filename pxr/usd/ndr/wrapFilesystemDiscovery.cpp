@@ -38,7 +38,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 using namespace TfPyContainerConversions;
 
-namespace {
+namespace pxrUsdNdrWrapFilesystemDiscovery {
 
 static _NdrFilesystemDiscoveryPluginRefPtr New()
 {
@@ -102,12 +102,12 @@ void wrapFilesystemDiscovery()
     boost::python::class_<This, ThisPtr, boost::python::bases<NdrDiscoveryPlugin>, boost::noncopyable>(
         "_FilesystemDiscoveryPlugin", boost::python::no_init)
         .def(TfPyRefAndWeakPtr())
-        .def(TfMakePyConstructor(New))
-        .def(TfMakePyConstructor(NewWithFilter))
+        .def(TfMakePyConstructor(pxrUsdNdrWrapFilesystemDiscovery::New))
+        .def(TfMakePyConstructor(pxrUsdNdrWrapFilesystemDiscovery::NewWithFilter))
         .def("DiscoverNodes", &This::DiscoverNodes,
             boost::python::return_value_policy<TfPySequenceToList>())
         .def("GetSearchURIs", &This::GetSearchURIs, copyRefPolicy)
         ;
 
-    wrapFilesystemDiscoveryContext();
+    pxrUsdNdrWrapFilesystemDiscovery::wrapFilesystemDiscoveryContext();
 }

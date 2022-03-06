@@ -45,7 +45,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapObject {
 
 static TfPyObjWrapper
 _GetMetadata(const UsdObject &self, const TfToken &key)
@@ -179,7 +179,7 @@ void wrapUsdObject()
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self != boost::python::self)
         .def(!boost::python::self)
-        .def("__hash__", __hash__)
+        .def("__hash__", pxrUsdUsdWrapObject::__hash__)
 
         .def("GetStage", &UsdObject::GetStage)
         .def("GetPath", &UsdObject::GetPath)
@@ -190,16 +190,16 @@ void wrapUsdObject()
              boost::python::return_value_policy<boost::python::return_by_value>())
         .def("GetDescription", &UsdObject::GetDescription)
 
-        .def("GetMetadata", _GetMetadata, boost::python::arg("key"))
-        .def("SetMetadata", _SetMetadata, (boost::python::arg("key"), boost::python::arg("value")))
+        .def("GetMetadata", pxrUsdUsdWrapObject::_GetMetadata, boost::python::arg("key"))
+        .def("SetMetadata", pxrUsdUsdWrapObject::_SetMetadata, (boost::python::arg("key"), boost::python::arg("value")))
 
         .def("ClearMetadata", &UsdObject::ClearMetadata, boost::python::arg("key"))
         .def("HasMetadata", &UsdObject::HasMetadata, boost::python::arg("key"))
         .def("HasAuthoredMetadata", &UsdObject::HasAuthoredMetadata, boost::python::arg("key"))
 
-        .def("GetMetadataByDictKey", _GetMetadataByDictKey,
+        .def("GetMetadataByDictKey", pxrUsdUsdWrapObject::_GetMetadataByDictKey,
              (boost::python::arg("key"), boost::python::arg("keyPath")))
-        .def("SetMetadataByDictKey", _SetMetadataByDictKey,
+        .def("SetMetadataByDictKey", pxrUsdUsdWrapObject::_SetMetadataByDictKey,
              (boost::python::arg("key"), boost::python::arg("keyPath"), boost::python::arg("value")))
 
         .def("ClearMetadataByDictKey", &UsdObject::ClearMetadataByDictKey,
@@ -220,11 +220,11 @@ void wrapUsdObject()
         .def("ClearHidden", &UsdObject::ClearHidden)
         .def("HasAuthoredHidden", &UsdObject::HasAuthoredHidden)
 
-        .def("GetCustomData", _GetCustomData)
-        .def("GetCustomDataByKey", _GetCustomDataByKey,
+        .def("GetCustomData", pxrUsdUsdWrapObject::_GetCustomData)
+        .def("GetCustomDataByKey", pxrUsdUsdWrapObject::_GetCustomDataByKey,
              boost::python::arg("keyPath"))
-        .def("SetCustomData", _SetCustomData, boost::python::arg("customData"))
-        .def("SetCustomDataByKey", _SetCustomDataByKey,
+        .def("SetCustomData", pxrUsdUsdWrapObject::_SetCustomData, boost::python::arg("customData"))
+        .def("SetCustomDataByKey", pxrUsdUsdWrapObject::_SetCustomDataByKey,
              (boost::python::arg("keyPath"), boost::python::arg("value")))
         .def("ClearCustomData", &UsdObject::ClearCustomData)
         .def("ClearCustomDataByKey", &UsdObject::ClearCustomDataByKey,
@@ -236,11 +236,11 @@ void wrapUsdObject()
         .def("HasAuthoredCustomDataKey", &UsdObject::HasAuthoredCustomDataKey,
              boost::python::arg("keyPath"))
 
-        .def("GetAssetInfo", _GetAssetInfo)
-        .def("GetAssetInfoByKey", _GetAssetInfoByKey,
+        .def("GetAssetInfo", pxrUsdUsdWrapObject::_GetAssetInfo)
+        .def("GetAssetInfoByKey", pxrUsdUsdWrapObject::_GetAssetInfoByKey,
              boost::python::arg("keyPath"))
-        .def("SetAssetInfo", _SetAssetInfo, boost::python::arg("assetInfo"))
-        .def("SetAssetInfoByKey", _SetAssetInfoByKey,
+        .def("SetAssetInfo", pxrUsdUsdWrapObject::_SetAssetInfo, boost::python::arg("assetInfo"))
+        .def("SetAssetInfoByKey", pxrUsdUsdWrapObject::_SetAssetInfoByKey,
              (boost::python::arg("keyPath"), boost::python::arg("value")))
         .def("ClearAssetInfo", &UsdObject::ClearAssetInfo)
         .def("ClearAssetInfoByKey", &UsdObject::ClearAssetInfoByKey,
@@ -263,8 +263,8 @@ void wrapUsdObject()
         ;
 
     // Save existing __getattribute__ and replace.
-    *_object__getattribute__ = boost::python::object(clsObj.attr("__getattribute__"));
-    clsObj.def("__getattribute__", __getattribute__);
+    *pxrUsdUsdWrapObject::_object__getattribute__ = boost::python::object(clsObj.attr("__getattribute__"));
+    clsObj.def("__getattribute__", pxrUsdUsdWrapObject::__getattribute__);
 
     TfPyRegisterStlSequencesFromPython<UsdObject>();
 }

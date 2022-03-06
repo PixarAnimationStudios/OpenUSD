@@ -37,7 +37,7 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdPluginUsdMtlxDiscovery {
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -215,13 +215,13 @@ UsdMtlxDiscoveryPlugin::DiscoverNodes(const Context& context)
                 NdrVersion(),   // version unused
                 "",             // name unused
                 TfToken(),      // family unused
-                _tokens->discoveryType,
-                _tokens->discoveryType,
+                pxrUsdPluginUsdMtlxDiscovery::_tokens->discoveryType,
+                pxrUsdPluginUsdMtlxDiscovery::_tokens->discoveryType,
                 "mtlx",
                 "mtlx"          // identify as the standard library
             );
-        _DiscoverNodes(&result, document, standardResult,
-                       _ComputeNameMapping(document));
+        pxrUsdPluginUsdMtlxDiscovery::_DiscoverNodes(&result, document, standardResult,
+                       pxrUsdPluginUsdMtlxDiscovery::_ComputeNameMapping(document));
     }
 
     // Find the mtlx files from other search paths.
@@ -231,8 +231,8 @@ UsdMtlxDiscoveryPlugin::DiscoverNodes(const Context& context)
                 UsdMtlxStandardFileExtensions(),
                 TfGetenvBool("USDMTLX_PLUGIN_FOLLOW_SYMLINKS", false))) {
         if (auto document = UsdMtlxGetDocument(fileResult.resolvedUri)) {
-            _DiscoverNodes(&result, document, fileResult,
-                           _ComputeNameMapping(document));
+            pxrUsdPluginUsdMtlxDiscovery::_DiscoverNodes(&result, document, fileResult,
+                           pxrUsdPluginUsdMtlxDiscovery::_ComputeNameMapping(document));
         }
     }
 

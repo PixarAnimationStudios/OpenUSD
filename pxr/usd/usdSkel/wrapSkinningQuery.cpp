@@ -43,7 +43,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
-namespace {
+namespace pxrUsdUsdSkelWrapSkinningQuery {
 
 
 boost::python::object
@@ -187,33 +187,33 @@ void wrapUsdSkelSkinningQuery()
         .def("GetBlendShapeMapper", &This::GetBlendShapeMapper,
              boost::python::return_value_policy<boost::python::return_by_value>())
 
-        .def("GetJointOrder", &_GetJointOrder)
+        .def("GetJointOrder", &pxrUsdUsdSkelWrapSkinningQuery::_GetJointOrder)
 
-        .def("GetBlendShapeOrder", &_GetBlendShapeOrder)
+        .def("GetBlendShapeOrder", &pxrUsdUsdSkelWrapSkinningQuery::_GetBlendShapeOrder)
 
-        .def("GetTimeSamples", &_GetTimeSamples)
+        .def("GetTimeSamples", &pxrUsdUsdSkelWrapSkinningQuery::_GetTimeSamples)
 
-        .def("GetTimeSamplesInInterval", &_GetTimeSamplesInInterval)
+        .def("GetTimeSamplesInInterval", &pxrUsdUsdSkelWrapSkinningQuery::_GetTimeSamplesInInterval)
 
-        .def("ComputeJointInfluences", &_ComputeJointInfluences,
+        .def("ComputeJointInfluences", &pxrUsdUsdSkelWrapSkinningQuery::_ComputeJointInfluences,
              (boost::python::arg("time")=UsdTimeCode::Default()))
 
-        .def("ComputeVaryingJointInfluences", &_ComputeVaryingJointInfluences,
+        .def("ComputeVaryingJointInfluences", &pxrUsdUsdSkelWrapSkinningQuery::_ComputeVaryingJointInfluences,
              (boost::python::arg("numPoints"), boost::python::arg("time")=UsdTimeCode::Default()))
 
-        .def("ComputeSkinnedPoints", &_ComputeSkinnedPoints<GfMatrix4d>,
+        .def("ComputeSkinnedPoints", &pxrUsdUsdSkelWrapSkinningQuery::_ComputeSkinnedPoints<GfMatrix4d>,
              (boost::python::arg("xforms"), boost::python::arg("points"),
               boost::python::arg("time")=UsdTimeCode::Default()))
 
-        .def("ComputeSkinnedPoints", &_ComputeSkinnedPoints<GfMatrix4f>,
+        .def("ComputeSkinnedPoints", &pxrUsdUsdSkelWrapSkinningQuery::_ComputeSkinnedPoints<GfMatrix4f>,
              (boost::python::arg("xforms"), boost::python::arg("points"),
               boost::python::arg("time")=UsdTimeCode::Default()))
 
-        .def("ComputeSkinnedTransform", &_ComputeSkinnedTransform<GfMatrix4d>,
+        .def("ComputeSkinnedTransform", &pxrUsdUsdSkelWrapSkinningQuery::_ComputeSkinnedTransform<GfMatrix4d>,
              (boost::python::arg("xforms"),
               boost::python::arg("time")=UsdTimeCode::Default()))
 
-        .def("ComputeSkinnedTransform", &_ComputeSkinnedTransform<GfMatrix4f>,
+        .def("ComputeSkinnedTransform", &pxrUsdUsdSkelWrapSkinningQuery::_ComputeSkinnedTransform<GfMatrix4f>,
              (boost::python::arg("xforms"),
               boost::python::arg("time")=UsdTimeCode::Default()))
 

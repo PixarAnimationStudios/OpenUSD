@@ -822,7 +822,7 @@ UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
     }
 }
 
-namespace {
+namespace pxrUsdImagingUsdImagingPrimAdapter {
 
 // The types of primvar changes expected
 enum PrimvarChange {
@@ -939,11 +939,11 @@ UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
     HdPrimvarDescriptorVector& primvarDescs =
         _GetPrimvarDescCache()->GetPrimvars(cachePath);  
     
-    PrimvarChange changeType =
-        _ProcessPrimvarChange(primvarOnPrim, primvarInterp,
+    pxrUsdImagingUsdImagingPrimAdapter::PrimvarChange changeType =
+        pxrUsdImagingUsdImagingPrimAdapter::_ProcessPrimvarChange(primvarOnPrim, primvarInterp,
                               primvarName, &primvarDescs, cachePath);
 
-    return _GetDirtyBitsForPrimvarChange(changeType, valueChangeDirtyBit);
+    return pxrUsdImagingUsdImagingPrimAdapter::_GetDirtyBitsForPrimvarChange(changeType, valueChangeDirtyBit);
 }
 
 HdDirtyBits
@@ -981,11 +981,11 @@ UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
     HdPrimvarDescriptorVector& primvarDescs =
         _GetPrimvarDescCache()->GetPrimvars(cachePath);  
     
-    PrimvarChange changeType = _ProcessPrimvarChange(primvarOnPrim,
+    pxrUsdImagingUsdImagingPrimAdapter::PrimvarChange changeType = pxrUsdImagingUsdImagingPrimAdapter::_ProcessPrimvarChange(primvarOnPrim,
                                  hdInterpOnPrim,
                                  primvarName, &primvarDescs, cachePath);
 
-    return _GetDirtyBitsForPrimvarChange(changeType, valueChangeDirtyBit);          
+    return pxrUsdImagingUsdImagingPrimAdapter::_GetDirtyBitsForPrimvarChange(changeType, valueChangeDirtyBit);          
 }
 
 UsdImaging_CollectionCache&

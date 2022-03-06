@@ -84,7 +84,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (activeTexCard)
 );
 
-namespace {
+namespace pxrUsdImagingUsdImagingGLDrawModeAdapter {
     enum AxesMask : uint8_t {
         xPos = (1 << 0),
         yPos = (1 << 1),
@@ -418,7 +418,7 @@ UsdImagingGLDrawModeAdapter::_ComputeGeometryData(
                 UsdGeomTokens->modelCardTextureZNeg,
             };
             const uint8_t mask[6] = {
-                xPos, yPos, zPos, xNeg, yNeg, zNeg,
+                pxrUsdImagingUsdImagingGLDrawModeAdapter::xPos, pxrUsdImagingUsdImagingGLDrawModeAdapter::yPos, pxrUsdImagingUsdImagingGLDrawModeAdapter::zPos, pxrUsdImagingUsdImagingGLDrawModeAdapter::xNeg, pxrUsdImagingUsdImagingGLDrawModeAdapter::yNeg, pxrUsdImagingUsdImagingGLDrawModeAdapter::zNeg,
             };
             for (int i = 0; i < 6; ++i) {
                 SdfAssetPath asset;
@@ -429,7 +429,7 @@ UsdImagingGLDrawModeAdapter::_ComputeGeometryData(
             }
 
             // If no textures are bound, generate the full geometry.
-            if (axes_mask == 0) { axes_mask = xAxis | yAxis | zAxis; }
+            if (axes_mask == 0) { axes_mask = pxrUsdImagingUsdImagingGLDrawModeAdapter::xAxis | pxrUsdImagingUsdImagingGLDrawModeAdapter::yAxis | pxrUsdImagingUsdImagingGLDrawModeAdapter::zAxis; }
     
             // Generate UVs.
             _GenerateTextureCoordinates(uv, assign, axes_mask);
@@ -1035,9 +1035,9 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsCrossGeometry(
         uint8_t axes_mask) const
 {
     // Generate one face per axis direction, for included axes.
-    const int numFaces = ((axes_mask & xAxis) ? 2 : 0) +
-                         ((axes_mask & yAxis) ? 2 : 0) +
-                         ((axes_mask & zAxis) ? 2 : 0);
+    const int numFaces = ((axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::xAxis) ? 2 : 0) +
+                         ((axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::yAxis) ? 2 : 0) +
+                         ((axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::zAxis) ? 2 : 0);
 
     // Cards (Cross) vertices:
     // - +/-X vertices (CCW wrt +X)
@@ -1050,7 +1050,7 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsCrossGeometry(
     VtVec3fArray pt = VtVec3fArray(numFaces * 4);
     int ptIdx = 0;
 
-    if (axes_mask & xAxis) {
+    if (axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::xAxis) {
         // +X
         pt[ptIdx++] = GfVec3f(mid[0], max[1], max[2]);
         pt[ptIdx++] = GfVec3f(mid[0], min[1], max[2]);
@@ -1064,7 +1064,7 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsCrossGeometry(
         pt[ptIdx++] = GfVec3f(mid[0], min[1], min[2]);
     }
 
-    if (axes_mask & yAxis) {
+    if (axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::yAxis) {
         // +Y
         pt[ptIdx++] = GfVec3f(min[0], mid[1], max[2]);
         pt[ptIdx++] = GfVec3f(max[0], mid[1], max[2]);
@@ -1078,7 +1078,7 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsCrossGeometry(
         pt[ptIdx++] = GfVec3f(max[0], mid[1], min[2]);
     }
 
-    if (axes_mask & zAxis) {
+    if (axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::zAxis) {
         // +Z
         pt[ptIdx++] = GfVec3f(max[0], max[1], mid[2]);
         pt[ptIdx++] = GfVec3f(min[0], max[1], mid[2]);
@@ -1122,17 +1122,17 @@ UsdImagingGLDrawModeAdapter::_SanityCheckFaceSizes(SdfPath const& cachePath,
     bool zeroY = (min[1] == max[1]);
     bool zeroZ = (min[2] == max[2]);
 
-    if ((axes_mask & xAxis) && (zeroY || zeroZ)) {
+    if ((axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::xAxis) && (zeroY || zeroZ)) {
         // XXX: validation
         TF_WARN("Cards rendering for <%s>: X+/X- faces have zero area.",
                 cachePath.GetText());
     }
-    if ((axes_mask & yAxis) && (zeroX || zeroZ)) {
+    if ((axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::yAxis) && (zeroX || zeroZ)) {
         // XXX: validation
         TF_WARN("Cards rendering for <%s>: Y+/Y- faces have zero area.",
                 cachePath.GetText());
     }
-    if ((axes_mask & zAxis) && (zeroX || zeroY)) {
+    if ((axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::zAxis) && (zeroX || zeroY)) {
         // XXX: validation
         TF_WARN("Cards rendering for <%s>: Z+/Z- faces have zero area.",
                 cachePath.GetText());
@@ -1145,9 +1145,9 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsBoxGeometry(
         uint8_t axes_mask) const
 {
     // Generate one face per axis direction, for included axes.
-    const int numFaces = ((axes_mask & xAxis) ? 2 : 0) +
-                         ((axes_mask & yAxis) ? 2 : 0) +
-                         ((axes_mask & zAxis) ? 2 : 0);
+    const int numFaces = ((axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::xAxis) ? 2 : 0) +
+                         ((axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::yAxis) ? 2 : 0) +
+                         ((axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::zAxis) ? 2 : 0);
 
     // Bounding box: vertices are for(i: 0 -> 7) {
     //   ((i & 1) ? z : -z) +
@@ -1167,7 +1167,7 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsBoxGeometry(
                              (i & 1) ? max[2] : min[2]);
     }
 
-    if (axes_mask & xAxis) {
+    if (axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::xAxis) {
         // +X
         pt[ptIdx++] = corners[7];
         pt[ptIdx++] = corners[5];
@@ -1181,7 +1181,7 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsBoxGeometry(
         pt[ptIdx++] = corners[0];
     }
 
-    if (axes_mask & yAxis) {
+    if (axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::yAxis) {
         // +Y
         pt[ptIdx++] = corners[3];
         pt[ptIdx++] = corners[7];
@@ -1195,7 +1195,7 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsBoxGeometry(
         pt[ptIdx++] = corners[4];
     }
 
-    if (axes_mask & zAxis) {
+    if (axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::zAxis) {
         // +Z
         pt[ptIdx++] = corners[7];
         pt[ptIdx++] = corners[3];
@@ -1243,22 +1243,22 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsFromTextureGeometry(
     GfMatrix4d mat;
     if (_GetMatrixFromImageMetadata(
             model.GetModelCardTextureXPosAttr(), &mat))
-        faces.push_back(std::make_pair(mat, xPos));
+        faces.push_back(std::make_pair(mat, pxrUsdImagingUsdImagingGLDrawModeAdapter::xPos));
     if (_GetMatrixFromImageMetadata(
             model.GetModelCardTextureYPosAttr(), &mat))
-        faces.push_back(std::make_pair(mat, yPos));
+        faces.push_back(std::make_pair(mat, pxrUsdImagingUsdImagingGLDrawModeAdapter::yPos));
     if (_GetMatrixFromImageMetadata(
             model.GetModelCardTextureZPosAttr(), &mat))
-        faces.push_back(std::make_pair(mat, zPos));
+        faces.push_back(std::make_pair(mat, pxrUsdImagingUsdImagingGLDrawModeAdapter::zPos));
     if (_GetMatrixFromImageMetadata(
             model.GetModelCardTextureXNegAttr(), &mat))
-        faces.push_back(std::make_pair(mat, xNeg));
+        faces.push_back(std::make_pair(mat, pxrUsdImagingUsdImagingGLDrawModeAdapter::xNeg));
     if (_GetMatrixFromImageMetadata(
             model.GetModelCardTextureYNegAttr(), &mat))
-        faces.push_back(std::make_pair(mat, yNeg));
+        faces.push_back(std::make_pair(mat, pxrUsdImagingUsdImagingGLDrawModeAdapter::yNeg));
     if (_GetMatrixFromImageMetadata(
             model.GetModelCardTextureZNegAttr(), &mat))
-        faces.push_back(std::make_pair(mat, zNeg));
+        faces.push_back(std::make_pair(mat, pxrUsdImagingUsdImagingGLDrawModeAdapter::zNeg));
 
     // Generate points, UV, and assignment primvars, plus index data.
     VtVec3fArray arr_pt = VtVec3fArray(faces.size() * 4);
@@ -1303,7 +1303,7 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsFromTextureGeometry(
     }
 }
 
-namespace
+namespace pxrUsdImagingUsdImagingGLDrawModeAdapter
 {
 
 template <class Vec>
@@ -1360,11 +1360,11 @@ UsdImagingGLDrawModeAdapter::_GetMatrixFromImageMetadata(
     VtValue worldtoscreen;
     if (img->GetMetadata(_tokens->worldtoscreen, &worldtoscreen)) {
         if (worldtoscreen.IsHolding<std::vector<float>>()) {
-            return _ConvertToMatrix(
+            return pxrUsdImagingUsdImagingGLDrawModeAdapter::_ConvertToMatrix(
                 worldtoscreen.UncheckedGet<std::vector<float>>(), mat);
         }
         else if (worldtoscreen.IsHolding<std::vector<double>>()) {
-            return _ConvertToMatrix(
+            return pxrUsdImagingUsdImagingGLDrawModeAdapter::_ConvertToMatrix(
                 worldtoscreen.UncheckedGet<std::vector<double>>(), mat);
         }
         else if (worldtoscreen.IsHolding<GfMatrix4f>()) {
@@ -1416,31 +1416,31 @@ UsdImagingGLDrawModeAdapter::_GenerateTextureCoordinates(
 
     std::vector<const GfVec2f *> uv_faces;
     std::vector<int> face_assign;
-    if (axes_mask & xAxis) {
+    if (axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::xAxis) {
         uv_faces.push_back(
-            (axes_mask & xPos) ? uv_normal.data() : uv_flipped_s.data());
-        face_assign.push_back((axes_mask & xPos) ? xPos : xNeg);
+            (axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::xPos) ? uv_normal.data() : uv_flipped_s.data());
+        face_assign.push_back((axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::xPos) ? pxrUsdImagingUsdImagingGLDrawModeAdapter::xPos : pxrUsdImagingUsdImagingGLDrawModeAdapter::xNeg);
         uv_faces.push_back(
-            (axes_mask & xNeg) ? uv_normal.data() : uv_flipped_s.data());
-        face_assign.push_back((axes_mask & xNeg) ? xNeg : xPos);
+            (axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::xNeg) ? uv_normal.data() : uv_flipped_s.data());
+        face_assign.push_back((axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::xNeg) ? pxrUsdImagingUsdImagingGLDrawModeAdapter::xNeg : pxrUsdImagingUsdImagingGLDrawModeAdapter::xPos);
     }
-    if (axes_mask & yAxis) {
+    if (axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::yAxis) {
         uv_faces.push_back(
-            (axes_mask & yPos) ? uv_normal.data() : uv_flipped_s.data());
-        face_assign.push_back((axes_mask & yPos) ? yPos : yNeg);
+            (axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::yPos) ? uv_normal.data() : uv_flipped_s.data());
+        face_assign.push_back((axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::yPos) ? pxrUsdImagingUsdImagingGLDrawModeAdapter::yPos : pxrUsdImagingUsdImagingGLDrawModeAdapter::yNeg);
         uv_faces.push_back(
-            (axes_mask & yNeg) ? uv_normal.data() : uv_flipped_s.data());
-        face_assign.push_back((axes_mask & yNeg) ? yNeg : yPos);
+            (axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::yNeg) ? uv_normal.data() : uv_flipped_s.data());
+        face_assign.push_back((axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::yNeg) ? pxrUsdImagingUsdImagingGLDrawModeAdapter::yNeg : pxrUsdImagingUsdImagingGLDrawModeAdapter::yPos);
     }
-    if (axes_mask & zAxis) {
+    if (axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::zAxis) {
         // (Z+) and (Z-) need to be flipped on the (t) axis instead of the (s)
         // axis when we're borrowing a texture from the other side of the axis.
         uv_faces.push_back(
-            (axes_mask & zPos) ? uv_normal.data() : uv_flipped_t.data());
-        face_assign.push_back((axes_mask & zPos) ? zPos : zNeg);
+            (axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::zPos) ? uv_normal.data() : uv_flipped_t.data());
+        face_assign.push_back((axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::zPos) ? pxrUsdImagingUsdImagingGLDrawModeAdapter::zPos : pxrUsdImagingUsdImagingGLDrawModeAdapter::zNeg);
         uv_faces.push_back(
-            (axes_mask & zNeg) ? uv_flipped_st.data() : uv_flipped_s.data());
-        face_assign.push_back((axes_mask & zNeg) ? zNeg : zPos);
+            (axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::zNeg) ? uv_flipped_st.data() : uv_flipped_s.data());
+        face_assign.push_back((axes_mask & pxrUsdImagingUsdImagingGLDrawModeAdapter::zNeg) ? pxrUsdImagingUsdImagingGLDrawModeAdapter::zNeg : pxrUsdImagingUsdImagingGLDrawModeAdapter::zPos);
     }
 
     VtVec2fArray faceUV = VtVec2fArray(uv_faces.size() * 4);

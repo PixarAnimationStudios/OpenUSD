@@ -32,7 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(SdrRegistry);
 
-namespace {
+namespace pxrUsdSdrRegistry {
     SdrShaderNodeConstPtr NdrNodeToShaderNode(NdrNodeConstPtr node)
     {
         return dynamic_cast<SdrShaderNodeConstPtr>(node);
@@ -77,7 +77,7 @@ SdrRegistry::GetShaderNodeByIdentifier(
     // XXX Remove trace function when function performance has improved
     TRACE_FUNCTION();
 
-    return NdrNodeToShaderNode(
+    return pxrUsdSdrRegistry::NdrNodeToShaderNode(
         GetInstance().GetNodeByIdentifier(identifier, typePriority)
     );
 }
@@ -89,7 +89,7 @@ SdrRegistry::GetShaderNodeByIdentifierAndType(
     // XXX Remove trace function when function performance has improved
     TRACE_FUNCTION();
 
-    return NdrNodeToShaderNode(
+    return pxrUsdSdrRegistry::NdrNodeToShaderNode(
         GetInstance().GetNodeByIdentifierAndType(identifier, nodeType)
     );
 }
@@ -104,7 +104,7 @@ SdrRegistry::GetShaderNodeFromAsset(
     // XXX Remove trace function when function performance has improved
     TRACE_FUNCTION();
 
-    return NdrNodeToShaderNode(
+    return pxrUsdSdrRegistry::NdrNodeToShaderNode(
         GetInstance().GetNodeFromAsset(shaderAsset,
                                        metadata,
                                        subIdentifier,
@@ -120,7 +120,7 @@ SdrRegistry::GetShaderNodeFromSourceCode(
     // XXX Remove trace function when function performance has improved
     TRACE_FUNCTION();
 
-    return NdrNodeToShaderNode(GetInstance().GetNodeFromSourceCode(
+    return pxrUsdSdrRegistry::NdrNodeToShaderNode(GetInstance().GetNodeFromSourceCode(
         sourceCode, sourceType, metadata));
 }
 
@@ -132,7 +132,7 @@ SdrRegistry::GetShaderNodeByName(
     // XXX Remove trace function when function performance has improved
     TRACE_FUNCTION();
 
-    return NdrNodeToShaderNode(
+    return pxrUsdSdrRegistry::NdrNodeToShaderNode(
         GetInstance().GetNodeByName(name, typePriority, filter)
     );
 }
@@ -145,7 +145,7 @@ SdrRegistry::GetShaderNodeByNameAndType(
     // XXX Remove trace function when function performance has improved
     TRACE_FUNCTION();
 
-    return NdrNodeToShaderNode(
+    return pxrUsdSdrRegistry::NdrNodeToShaderNode(
         GetInstance().GetNodeByNameAndType(name, nodeType, filter)
     );
 }
@@ -156,7 +156,7 @@ SdrRegistry::GetShaderNodesByIdentifier(const NdrIdentifier& identifier)
     // XXX Remove trace function when function performance has improved
     TRACE_FUNCTION();
 
-    return NdrNodeVecToShaderNodeVec(
+    return pxrUsdSdrRegistry::NdrNodeVecToShaderNodeVec(
         GetInstance().GetNodesByIdentifier(identifier)
     );
 }
@@ -169,7 +169,7 @@ SdrRegistry::GetShaderNodesByName(
     // XXX Remove trace function when function performance has improved
     TRACE_FUNCTION();
 
-    return NdrNodeVecToShaderNodeVec(
+    return pxrUsdSdrRegistry::NdrNodeVecToShaderNodeVec(
         GetInstance().GetNodesByName(name, filter)
     );
 }
@@ -182,7 +182,7 @@ SdrRegistry::GetShaderNodesByFamily(
     // XXX Remove trace function when function performance has improved
     TRACE_FUNCTION();
 
-    return NdrNodeVecToShaderNodeVec(
+    return pxrUsdSdrRegistry::NdrNodeVecToShaderNodeVec(
         GetInstance().GetNodesByFamily(family, filter)
     );
 }

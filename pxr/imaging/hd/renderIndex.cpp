@@ -950,7 +950,7 @@ HdRenderIndex::GetRprimSubtree(SdfPath const& rootPath)
     return paths;
 }
 
-namespace {
+namespace pxrImagingHdRenderIndex {
     // A struct that captures (just) the repr opinion of a collection.
     struct _CollectionReprSpec {
         _CollectionReprSpec(HdReprSelector const &repr, bool forced) :
@@ -1375,11 +1375,11 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
     //
 
     // a. Gather render tags and reprSpecs.
-    TfTokenVector taskRenderTags = _GatherRenderTags(tasks);
+    TfTokenVector taskRenderTags = pxrImagingHdRenderIndex::_GatherRenderTags(tasks);
     
     // NOTE: This list of reprSpecs is used to sync every dirty rprim.
-    _CollectionReprSpecVector reprSpecs = _GatherReprSpecs(_collectionsToSync);
-    HdReprSelectorVector reprSelectors = _GetReprSelectors(reprSpecs);
+    pxrImagingHdRenderIndex::_CollectionReprSpecVector reprSpecs = pxrImagingHdRenderIndex::_GatherReprSpecs(_collectionsToSync);
+    HdReprSelectorVector reprSelectors = pxrImagingHdRenderIndex::_GetReprSelectors(reprSpecs);
 
     // b. Update dirty list params, if needed sync render tags, 
     // and get dirty rprim ids
@@ -1393,13 +1393,13 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
  
     // c. Bucket rprims by their scene delegate to help build the the list
     //    of rprims to sync for each scene delegate.
-    _SceneDelegateRprimSyncRequestMap sdRprimSyncMap;
+    pxrImagingHdRenderIndex::_SceneDelegateRprimSyncRequestMap sdRprimSyncMap;
     bool resetVaryingState = false;
     bool pruneDirtyList = false;
     {
         HF_TRACE_FUNCTION_SCOPE("Build Sync Map: Rprims");
         HdSceneDelegate* curDel = nullptr;
-        _RprimSyncRequestVector* curVec = nullptr;
+        pxrImagingHdRenderIndex::_RprimSyncRequestVector* curVec = nullptr;
         int numSkipped = 0;
         int numNonVarying = 0;
         for (SdfPath const &rprimId : dirtyRprimIds) {
@@ -1495,9 +1495,9 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
 
             for (auto &entry : sdRprimSyncMap) {
                 HdSceneDelegate *sceneDelegate = entry.first;
-                _RprimSyncRequestVector *r = &entry.second;
+                pxrImagingHdRenderIndex::_RprimSyncRequestVector *r = &entry.second;
                 preSyncDispatcher.Run(
-                    std::bind(&_PreSyncRequestVector,
+                    std::bind(&pxrImagingHdRenderIndex::_PreSyncRequestVector,
                               sceneDelegate,
                               &_tracker,
                               r,
@@ -1512,9 +1512,9 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
     {
         HF_TRACE_FUNCTION_SCOPE("Scene Delegate Sync");
         // Dispatch synchronization work to each delegate.
-        _SceneDelegateSyncWorker worker(&sdRprimSyncMap);
+        pxrImagingHdRenderIndex::_SceneDelegateSyncWorker worker(&sdRprimSyncMap);
         WorkParallelForN(sdRprimSyncMap.size(),
-                         std::bind(&_SceneDelegateSyncWorker::Process,
+                         std::bind(&pxrImagingHdRenderIndex::_SceneDelegateSyncWorker::Process,
                                    std::ref(worker),
                                    std::placeholders::_1,
                                    std::placeholders::_2));
@@ -1525,10 +1525,10 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
         WorkDispatcher dispatcher;
         for (auto &entry : sdRprimSyncMap) {
             HdSceneDelegate* sceneDelegate = entry.first;
-            _RprimSyncRequestVector& r = entry.second;
+            pxrImagingHdRenderIndex::_RprimSyncRequestVector& r = entry.second;
             
             {
-                _SyncRPrims workerState(
+                pxrImagingHdRenderIndex::_SyncRPrims workerState(
                     sceneDelegate, r, reprSpecs, _tracker, renderParam);
 
                 if (!TfDebug::IsEnabled(HD_DISABLE_MULTITHREADED_RPRIM_SYNC) &&
@@ -1542,7 +1542,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
                     dispatcher.Run([&r, workerState]() {
                         WorkParallelForN(r.rprims.size(),
                                          std::bind(
-                                             &_SyncRPrims::Sync, workerState,
+                                             &pxrImagingHdRenderIndex::_SyncRPrims::Sync, workerState,
                                              std::placeholders::_1,
                                              std::placeholders::_2));
                     });
@@ -1905,7 +1905,7 @@ HdRenderIndex::_AppendDrawItems(
 
                 // Append the draw items for each valid repr in the resolved
                 // composite representation to the command buffer.
-                HdReprSelector reprSelector = _GetResolvedReprSelector(
+                HdReprSelector reprSelector = pxrImagingHdRenderIndex::_GetResolvedReprSelector(
                                                     rprim->GetReprSelector(),
                                                     colReprSelector,
                                                     forceColRepr);
@@ -1936,7 +1936,7 @@ HdRenderIndex::_AppendDrawItems(
 
                 // Append the draw items for each valid repr in the resolved
                 // composite representation to the command buffer.
-                HdReprSelector reprSelector = _GetResolvedReprSelector(
+                HdReprSelector reprSelector = pxrImagingHdRenderIndex::_GetResolvedReprSelector(
                                                     rprim->GetReprSelector(),
                                                     colReprSelector,
                                                     forceColRepr);

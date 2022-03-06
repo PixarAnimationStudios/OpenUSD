@@ -955,7 +955,7 @@ HdUnitTestDelegate::GetVisible(SdfPath const& id)
     return _visibility;
 }
 
-namespace {
+namespace pxrImagingHdUnitTestDelegate {
 
 template<typename T>
 VtValue 
@@ -1072,7 +1072,7 @@ HdUnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
                 // Flatten primvar
                 value = pvIt->value;
                 if (value.IsArrayValued()) {
-                    value = _ComputeFlattenedValue(value, pvIt->indices);
+                    value = pxrImagingHdUnitTestDelegate::_ComputeFlattenedValue(value, pvIt->indices);
                 }
             }
               

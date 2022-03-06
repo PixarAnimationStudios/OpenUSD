@@ -41,7 +41,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapNamespaceEdit {
 
 static
 std::string
@@ -303,13 +303,13 @@ wrapNamespaceEdit()
         .def(boost::python::init<>())
         .def(boost::python::init<const This::Path&, const This::Path&,
                   boost::python::optional<This::Index> >())
-        .def("__str__", &_StringifyEdit)
-        .def("__repr__", &_ReprEdit)
+        .def("__str__", &pxrUsdSdfWrapNamespaceEdit::_StringifyEdit)
+        .def("__repr__", &pxrUsdSdfWrapNamespaceEdit::_ReprEdit)
         .def_readwrite("currentPath", &This::currentPath)
         .def_readwrite("newPath", &This::newPath)
         .def_readwrite("index", &This::index)
-        .def_readonly("atEnd", &_atEnd)
-        .def_readonly("same", &_same)
+        .def_readonly("atEnd", &pxrUsdSdfWrapNamespaceEdit::_atEnd)
+        .def_readonly("same", &pxrUsdSdfWrapNamespaceEdit::_same)
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self != boost::python::self)
 
@@ -332,6 +332,6 @@ wrapNamespaceEdit()
         SdfNamespaceEditVector,
         TfPyContainerConversions::variable_capacity_policy>();
 
-    wrapNamespaceEditDetail();
-    wrapBatchNamespaceEdit();
+    pxrUsdSdfWrapNamespaceEdit::wrapNamespaceEditDetail();
+    pxrUsdSdfWrapNamespaceEdit::wrapBatchNamespaceEdit();
 }

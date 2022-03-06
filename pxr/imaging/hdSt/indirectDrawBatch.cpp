@@ -191,7 +191,7 @@ HdSt_IndirectDrawBatch::IsEnabledGPUInstanceFrustumCulling()
 // GPU Command Buffer Preparation
 ////////////////////////////////////////////////////////////
 
-namespace {
+namespace pxrImagingHdStIndirectDrawBatch {
 
 // Draw command dispatch buffers are built as arrays of uint32_t, but
 // we use these struct definitions to reason consistently about element
@@ -552,8 +552,8 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         _drawItemInstances[0]->GetDrawItem()->GetInstancePrimvarNumLevels();
 
     // Get the layout of the command buffer we are building.
-    _DrawCommandTraits const traits =
-        _GetDrawCommandTraits(instancerNumLevels,
+    pxrImagingHdStIndirectDrawBatch::_DrawCommandTraits const traits =
+        pxrImagingHdStIndirectDrawBatch::_GetDrawCommandTraits(instancerNumLevels,
                               _useDrawIndexed, _useInstanceCulling);
 
     TF_DEBUG(HD_MDI).Msg("\nCompile Dispatch Buffer\n");
@@ -581,37 +581,37 @@ HdSt_IndirectDrawBatch::_CompileBatch(
             TfHash::Combine(_barElementOffsetsHash,
                             drawItem->GetElementOffsetsHash());
 
-        _DrawItemState const dc(drawItem);
+        pxrImagingHdStIndirectDrawBatch::_DrawItemState const dc(drawItem);
 
         // drawing coordinates.
         uint32_t const modelDC         = 0; // reserved for future extension
-        uint32_t const constantDC      = _GetElementOffset(dc.constantBar);
-        uint32_t const vertexDC        = _GetElementOffset(dc.vertexBar);
-        uint32_t const topVisDC        = _GetElementOffset(dc.topVisBar);
-        uint32_t const elementDC       = _GetElementOffset(dc.elementBar);
-        uint32_t const primitiveDC     = _GetElementOffset(dc.indexBar);
-        uint32_t const fvarDC          = _GetElementOffset(dc.fvarBar);
-        uint32_t const instanceIndexDC = _GetElementOffset(dc.instanceIndexBar);
-        uint32_t const shaderDC        = _GetElementOffset(dc.shaderBar);
-        uint32_t const varyingDC       = _GetElementOffset(dc.varyingBar);
+        uint32_t const constantDC      = pxrImagingHdStIndirectDrawBatch::_GetElementOffset(dc.constantBar);
+        uint32_t const vertexDC        = pxrImagingHdStIndirectDrawBatch::_GetElementOffset(dc.vertexBar);
+        uint32_t const topVisDC        = pxrImagingHdStIndirectDrawBatch::_GetElementOffset(dc.topVisBar);
+        uint32_t const elementDC       = pxrImagingHdStIndirectDrawBatch::_GetElementOffset(dc.elementBar);
+        uint32_t const primitiveDC     = pxrImagingHdStIndirectDrawBatch::_GetElementOffset(dc.indexBar);
+        uint32_t const fvarDC          = pxrImagingHdStIndirectDrawBatch::_GetElementOffset(dc.fvarBar);
+        uint32_t const instanceIndexDC = pxrImagingHdStIndirectDrawBatch::_GetElementOffset(dc.instanceIndexBar);
+        uint32_t const shaderDC        = pxrImagingHdStIndirectDrawBatch::_GetElementOffset(dc.shaderBar);
+        uint32_t const varyingDC       = pxrImagingHdStIndirectDrawBatch::_GetElementOffset(dc.varyingBar);
 
         // 3 for triangles, 4 for quads, 6 for triquads, n for patches
         uint32_t const numIndicesPerPrimitive =
             drawItem->GetGeometricShader()->GetPrimitiveIndexSize();
 
         uint32_t const firstVertex = vertexDC;
-        uint32_t const vertexCount = _GetElementCount(dc.vertexBar);
+        uint32_t const vertexCount = pxrImagingHdStIndirectDrawBatch::_GetElementCount(dc.vertexBar);
 
         // if delegate fails to get vertex primvars, it could be empty.
         // skip the drawitem to prevent drawing uninitialized vertices.
         uint32_t const numElements =
-            vertexCount != 0 ? _GetElementCount(dc.indexBar) : 0;
+            vertexCount != 0 ? pxrImagingHdStIndirectDrawBatch::_GetElementCount(dc.indexBar) : 0;
 
         uint32_t const firstIndex = primitiveDC * numIndicesPerPrimitive;
         uint32_t const indicesCount = numElements * numIndicesPerPrimitive;
 
         uint32_t const instanceCount =
-            _GetInstanceCount(drawItemInstance,
+            pxrImagingHdStIndirectDrawBatch::_GetInstanceCount(drawItemInstance,
                               dc.instanceIndexBar,
                               traits.instanceIndexWidth);
 
@@ -678,7 +678,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
 
         // drawingCoordI
         for (size_t i = 0; i < dc.instancePrimvarBars.size(); ++i) {
-            uint32_t instanceDC = _GetElementOffset(dc.instancePrimvarBars[i]);
+            uint32_t instanceDC = pxrImagingHdStIndirectDrawBatch::_GetElementOffset(dc.instancePrimvarBars[i]);
             *cmdIt++ = instanceDC;
         }
 
@@ -716,7 +716,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                                                  traits.numUInt32);
 
     // add drawing resource views
-    _AddDrawResourceViews(_dispatchBuffer, traits);
+    pxrImagingHdStIndirectDrawBatch::_AddDrawResourceViews(_dispatchBuffer, traits);
 
     // copy data
     _dispatchBuffer->CopyData(_drawCommandBuffer);
@@ -734,9 +734,9 @@ HdSt_IndirectDrawBatch::_CompileBatch(
 
         // add culling resource views
         if (_useInstanceCulling) {
-            _AddInstanceCullResourceViews(_dispatchBufferCullInput, traits);
+            pxrImagingHdStIndirectDrawBatch::_AddInstanceCullResourceViews(_dispatchBufferCullInput, traits);
         } else {
-            _AddNonInstanceCullResourceViews(_dispatchBufferCullInput, traits);
+            pxrImagingHdStIndirectDrawBatch::_AddNonInstanceCullResourceViews(_dispatchBufferCullInput, traits);
         }
 
         // copy data
@@ -918,7 +918,7 @@ HdSt_IndirectDrawBatch::PrepareDraw(
 // GPU Resource Binding
 ////////////////////////////////////////////////////////////
 
-namespace {
+namespace pxrImagingHdStIndirectDrawBatch {
 
 // Resources to Bind/Unbind for a drawItem
 struct _BindingState : public _DrawItemState
@@ -1094,7 +1094,7 @@ HdSt_IndirectDrawBatch::_ExecuteDraw(
                                                    resourceRegistry);
     if (!TF_VERIFY(program.IsValid())) return;
 
-    _BindingState state(
+    pxrImagingHdStIndirectDrawBatch::_BindingState state(
             _drawItemInstances.front()->GetDrawItem(),
             _dispatchBuffer,
             program.GetBinder(),
@@ -1250,7 +1250,7 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
     // dispatch buffer to 0 for primitives that are culled, skipping
     // over other elements.
 
-    _BindingState state(
+    pxrImagingHdStIndirectDrawBatch::_BindingState state(
             _drawItemInstances.front()->GetDrawItem(),
             _dispatchBufferCullInput,
             cullingProgram.GetBinder(),
@@ -1398,7 +1398,7 @@ HdSt_IndirectDrawBatch::DrawItemInstanceChanged(
             std::static_pointer_cast<HdStBufferArrayRange>(instanceIndexBar_);
 
         uint32_t const newInstanceCount =
-            _GetInstanceCount(instance, instanceIndexBar, instanceIndexWidth);
+            pxrImagingHdStIndirectDrawBatch::_GetInstanceCount(instance, instanceIndexBar, instanceIndexWidth);
 
         TF_DEBUG(HD_MDI).Msg("\nInstance Count changed: %d -> %d\n",
                 *instanceCountIt, 

@@ -730,7 +730,7 @@ _ScanArcs(PcpNodeRef const& node)
 
 ////////////////////////////////////////////////////////////////////////
 
-namespace {
+namespace pxrUsdPcpPrimIndex {
 
 /// A task to perform on a particular node.
 struct Task {
@@ -872,19 +872,19 @@ struct Task {
 }
 
 TF_REGISTRY_FUNCTION(TfEnum) {
-    TF_ADD_ENUM_NAME(Task::EvalNodeRelocations);
-    TF_ADD_ENUM_NAME(Task::EvalImpliedRelocations);
-    TF_ADD_ENUM_NAME(Task::EvalNodeReferences);
-    TF_ADD_ENUM_NAME(Task::EvalNodePayload);
-    TF_ADD_ENUM_NAME(Task::EvalNodeInherits);
-    TF_ADD_ENUM_NAME(Task::EvalImpliedClasses);
-    TF_ADD_ENUM_NAME(Task::EvalNodeSpecializes);
-    TF_ADD_ENUM_NAME(Task::EvalImpliedSpecializes);
-    TF_ADD_ENUM_NAME(Task::EvalNodeVariantSets);
-    TF_ADD_ENUM_NAME(Task::EvalNodeVariantAuthored);
-    TF_ADD_ENUM_NAME(Task::EvalNodeVariantFallback);
-    TF_ADD_ENUM_NAME(Task::EvalNodeVariantNoneFound);
-    TF_ADD_ENUM_NAME(Task::None);
+    TF_ADD_ENUM_NAME(pxrUsdPcpPrimIndex::Task::EvalNodeRelocations);
+    TF_ADD_ENUM_NAME(pxrUsdPcpPrimIndex::Task::EvalImpliedRelocations);
+    TF_ADD_ENUM_NAME(pxrUsdPcpPrimIndex::Task::EvalNodeReferences);
+    TF_ADD_ENUM_NAME(pxrUsdPcpPrimIndex::Task::EvalNodePayload);
+    TF_ADD_ENUM_NAME(pxrUsdPcpPrimIndex::Task::EvalNodeInherits);
+    TF_ADD_ENUM_NAME(pxrUsdPcpPrimIndex::Task::EvalImpliedClasses);
+    TF_ADD_ENUM_NAME(pxrUsdPcpPrimIndex::Task::EvalNodeSpecializes);
+    TF_ADD_ENUM_NAME(pxrUsdPcpPrimIndex::Task::EvalImpliedSpecializes);
+    TF_ADD_ENUM_NAME(pxrUsdPcpPrimIndex::Task::EvalNodeVariantSets);
+    TF_ADD_ENUM_NAME(pxrUsdPcpPrimIndex::Task::EvalNodeVariantAuthored);
+    TF_ADD_ENUM_NAME(pxrUsdPcpPrimIndex::Task::EvalNodeVariantFallback);
+    TF_ADD_ENUM_NAME(pxrUsdPcpPrimIndex::Task::EvalNodeVariantNoneFound);
+    TF_ADD_ENUM_NAME(pxrUsdPcpPrimIndex::Task::None);
 }
 
 // Pcp_PrimIndexer is used during prim cache population to track which
@@ -940,7 +940,7 @@ struct Pcp_PrimIndexer
     PcpPrimIndex_StackFrame* const previousFrame;
 
     // Open tasks, in priority order
-    using _TaskQueue = std::vector<Task>;
+    using _TaskQueue = std::vector<pxrUsdPcpPrimIndex::Task>;
     _TaskQueue tasks;
     bool tasksSorted;
 
@@ -974,7 +974,7 @@ struct Pcp_PrimIndexer
         return _GetOriginatingIndex(previousFrame, outputs);
     }
 
-    void AddTask(Task &&task) {
+    void AddTask(pxrUsdPcpPrimIndex::Task &&task) {
         if (tasks.empty()) {
             tasks.reserve(8); // Typically we have about this many tasks, and
                               // this results in a single 256 byte allocation.
@@ -988,7 +988,7 @@ struct Pcp_PrimIndexer
                     // Check if we've violated the order.  We've violated it if
                     // the comparator says the new task is less than the
                     // previously last task.
-                    Task::PriorityOrder comp;
+                    pxrUsdPcpPrimIndex::Task::PriorityOrder comp;
                     tasksSorted =
                         !comp(tasks[tasks.size()-1], tasks[tasks.size()-2]);
                 }
@@ -1000,11 +1000,11 @@ struct Pcp_PrimIndexer
     }
 
     // Select the next task to perform.
-    Task PopTask() {
-        Task task(Task::Type::None);
+    pxrUsdPcpPrimIndex::Task PopTask() {
+        pxrUsdPcpPrimIndex::Task task(pxrUsdPcpPrimIndex::Task::Type::None);
         if (!tasks.empty()) {
             if (!tasksSorted) {
-                Task::PriorityOrder comp;
+                pxrUsdPcpPrimIndex::Task::PriorityOrder comp;
                 std::sort(tasks.begin(), tasks.end(), comp);
                 tasks.erase(
                     std::unique(tasks.begin(), tasks.end()), tasks.end());
@@ -1054,37 +1054,37 @@ struct Pcp_PrimIndexer
             // In this case, we only need to add tasks that come after 
             // implied specializes.
             if (evaluateVariants && (arcMask & _ArcFlagVariants)) {
-                AddTask(Task(Task::Type::EvalNodeVariantSets, n));
+                AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalNodeVariantSets, n));
             }
         } else {
             // Payloads and variants have expensive
             // sorting semantics, so do a preflight check
             // to see if there is any work to do.
             if (evaluateVariants && (arcMask & _ArcFlagVariants)) {
-                AddTask(Task(Task::Type::EvalNodeVariantSets, n));
+                AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalNodeVariantSets, n));
             }
             if (!skipCompletedNodesForAncestralOpinions) {
                 // In this case, we only need to add tasks that weren't
                 // evaluated during the recursive prim indexing for
                 // ancestral opinions.
                 if (arcMask & _ArcFlagSpecializes) {
-                    AddTask(Task(Task::Type::EvalNodeSpecializes, n));
+                    AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalNodeSpecializes, n));
                 }
                 if (arcMask & _ArcFlagInherits) {
-                    AddTask(Task(Task::Type::EvalNodeInherits, n));
+                    AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalNodeInherits, n));
                 }
                 if (arcMask & _ArcFlagPayloads) {
-                    AddTask(Task(Task::Type::EvalNodePayload, n));
+                    AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalNodePayload, n));
                 }
                 if (arcMask & _ArcFlagReferences) {
-                    AddTask(Task(Task::Type::EvalNodeReferences, n));
+                    AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalNodeReferences, n));
                 }
                 if (!isUsd) {
-                    AddTask(Task(Task::Type::EvalNodeRelocations, n));
+                    AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalNodeRelocations, n));
                 }
             }
             if (!isUsd && n.GetArcType() == PcpArcTypeRelocate) {
-                AddTask(Task(Task::Type::EvalImpliedRelocations, n));
+                AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalImpliedRelocations, n));
             }
         }
     }
@@ -1102,7 +1102,7 @@ struct Pcp_PrimIndexer
                 // prim of the chain of classes the node is a part of, and 
                 // propagate the entire chain as a single unit.
                 if (PcpNodeRef base = _FindStartingNodeForImpliedClasses(n)) {
-                    AddTask(Task(Task::Type::EvalImpliedClasses, base));
+                    AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalImpliedClasses, base));
                 }
             } else if (_HasClassBasedChild(n)) {
                 // The new node is not class-based -- but it has class-based
@@ -1110,7 +1110,7 @@ struct Pcp_PrimIndexer
                 // recursive computation of the node's subgraph.  We need to
                 // pick them up and continue propagating them now that we are
                 // merging the subgraph into the parent graph.
-                AddTask(Task(Task::Type::EvalImpliedClasses, n));
+                AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalImpliedClasses, n));
             }
             if (evaluateImpliedSpecializes) {
                 if (PcpNodeRef base = 
@@ -1118,7 +1118,7 @@ struct Pcp_PrimIndexer
                     // We're adding a new specializes node or a node beneath
                     // a specializes node.  Add a task to propagate the subgraph
                     // beneath this node to the appropriate location.
-                    AddTask(Task(Task::Type::EvalImpliedSpecializes, base));
+                    AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalImpliedSpecializes, base));
                 }
                 else if (_HasSpecializesChild(n)) {
                     // The new node is not a specializes node or beneath a
@@ -1127,7 +1127,7 @@ struct Pcp_PrimIndexer
                     // computation of the node's subgraph.  We need to pick them 
                     // up and continue propagating them now that we are
                     // merging the subgraph into the parent graph.
-                    AddTask(Task(Task::Type::EvalImpliedSpecializes, n));
+                    AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalImpliedSpecializes, n));
                 }
             }
         }
@@ -1164,9 +1164,9 @@ struct Pcp_PrimIndexer
         // with any existing authored tasks.
         auto nonAuthVariantsEnd = std::find_if_not(
             tasks.begin(), tasks.end(),
-            [](Task const &t) {
-                return t.type == Task::Type::EvalNodeVariantFallback ||
-                       t.type == Task::Type::EvalNodeVariantNoneFound;
+            [](pxrUsdPcpPrimIndex::Task const &t) {
+                return t.type == pxrUsdPcpPrimIndex::Task::Type::EvalNodeVariantFallback ||
+                       t.type == pxrUsdPcpPrimIndex::Task::Type::EvalNodeVariantNoneFound;
             });
 
         if (nonAuthVariantsEnd == tasks.begin()) {
@@ -1176,8 +1176,8 @@ struct Pcp_PrimIndexer
 
         auto authVariantsEnd = std::find_if_not(
             nonAuthVariantsEnd, tasks.end(),
-            [](Task const &t) {
-                return t.type == Task::Type::EvalNodeVariantAuthored;
+            [](pxrUsdPcpPrimIndex::Task const &t) {
+                return t.type == pxrUsdPcpPrimIndex::Task::Type::EvalNodeVariantAuthored;
             });
 
         // Now we've split tasks into three ranges:
@@ -1191,12 +1191,12 @@ struct Pcp_PrimIndexer
 
         // Change types.
         std::for_each(tasks.begin(), nonAuthVariantsEnd,
-                      [](Task &t) {
-                          t.type = Task::Type::EvalNodeVariantAuthored;
+                      [](pxrUsdPcpPrimIndex::Task &t) {
+                          t.type = pxrUsdPcpPrimIndex::Task::Type::EvalNodeVariantAuthored;
                       });
 
         // Sort and merge.
-        Task::PriorityOrder comp;
+        pxrUsdPcpPrimIndex::Task::PriorityOrder comp;
         std::sort(tasks.begin(), nonAuthVariantsEnd, comp);
         std::inplace_merge(
             tasks.begin(), nonAuthVariantsEnd, authVariantsEnd, comp);
@@ -2888,7 +2888,7 @@ _EvalImpliedClassTree(
         // instead, we have to explicitly add a task to ensure this occurs.
         // See TrickyInheritsAndRelocates5 for a test case where this is
         // important.
-        indexer->AddTask(Task(Task::Type::EvalImpliedClasses, destNode));
+        indexer->AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalImpliedClasses, destNode));
         return;
     }
 
@@ -3902,7 +3902,7 @@ _EvalNodeVariantSets(
 
     for (int vsetNum=0, numVsets=vsetNames.size();
          vsetNum < numVsets; ++vsetNum) {
-        indexer->AddTask(Task(Task::Type::EvalNodeVariantAuthored,
+        indexer->AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalNodeVariantAuthored,
                               node, std::move(vsetNames[vsetNum]), vsetNum));
     }
 }
@@ -3962,7 +3962,7 @@ _EvalNodeAuthoredVariant(
     if (_ShouldUseVariantFallback(indexer, vset, vsel, vselFallback,
                                   nodeWithVsel)) {
         PCP_INDEXING_MSG(indexer, node, "Deferring to variant fallback");
-        indexer->AddTask(Task(Task::Type::EvalNodeVariantFallback,
+        indexer->AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalNodeVariantFallback,
                               node, vset, vsetNum));
         return;
     }
@@ -3971,7 +3971,7 @@ _EvalNodeAuthoredVariant(
         PCP_INDEXING_MSG(indexer, node,
                          "No variant selection found for set '%s'",
                          vset.c_str());
-        indexer->AddTask(Task(Task::Type::EvalNodeVariantNoneFound,
+        indexer->AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalNodeVariantNoneFound,
                               node, vset, vsetNum));
         return;
     }
@@ -4008,7 +4008,7 @@ _EvalNodeFallbackVariant(
     if (vsel.empty()) {
         PCP_INDEXING_MSG(indexer, node,
                       "No variant fallback found for set '%s'", vset.c_str());
-        indexer->AddTask(Task(Task::Type::EvalNodeVariantNoneFound,
+        indexer->AddTask(pxrUsdPcpPrimIndex::Task(pxrUsdPcpPrimIndex::Task::Type::EvalNodeVariantNoneFound,
                               node, vset, vsetNum));
         return;
     }
@@ -4648,47 +4648,47 @@ Pcp_BuildPrimIndex(
     // Process task list.
     bool tasksAreLeft = true;
     while (tasksAreLeft) {
-        Task task = indexer.PopTask();
+        pxrUsdPcpPrimIndex::Task task = indexer.PopTask();
         switch (task.type) {
-        case Task::Type::EvalNodeRelocations:
+        case pxrUsdPcpPrimIndex::Task::Type::EvalNodeRelocations:
             _EvalNodeRelocations(&outputs->primIndex, task.node, &indexer);
             break;
-        case Task::Type::EvalImpliedRelocations:
+        case pxrUsdPcpPrimIndex::Task::Type::EvalImpliedRelocations:
             _EvalImpliedRelocations(&outputs->primIndex, task.node, &indexer);
             break;
-        case Task::Type::EvalNodeReferences:
+        case pxrUsdPcpPrimIndex::Task::Type::EvalNodeReferences:
             _EvalNodeReferences(&outputs->primIndex, task.node, &indexer);
             break;
-        case Task::Type::EvalNodePayload:
+        case pxrUsdPcpPrimIndex::Task::Type::EvalNodePayload:
             _EvalNodePayloads(&outputs->primIndex, task.node, &indexer);
             break;
-        case Task::Type::EvalNodeInherits:
+        case pxrUsdPcpPrimIndex::Task::Type::EvalNodeInherits:
             _EvalNodeInherits(&outputs->primIndex, task.node, &indexer);
             break;
-        case Task::Type::EvalImpliedClasses:
+        case pxrUsdPcpPrimIndex::Task::Type::EvalImpliedClasses:
             _EvalImpliedClasses(&outputs->primIndex, task.node, &indexer);
             break;
-        case Task::Type::EvalNodeSpecializes:
+        case pxrUsdPcpPrimIndex::Task::Type::EvalNodeSpecializes:
             _EvalNodeSpecializes(&outputs->primIndex, task.node, &indexer);
             break;
-        case Task::Type::EvalImpliedSpecializes:
+        case pxrUsdPcpPrimIndex::Task::Type::EvalImpliedSpecializes:
             _EvalImpliedSpecializes(&outputs->primIndex, task.node, &indexer);
             break;
-        case Task::Type::EvalNodeVariantSets:
+        case pxrUsdPcpPrimIndex::Task::Type::EvalNodeVariantSets:
             _EvalNodeVariantSets(&outputs->primIndex, task.node, &indexer);
             break;
-        case Task::Type::EvalNodeVariantAuthored:
+        case pxrUsdPcpPrimIndex::Task::Type::EvalNodeVariantAuthored:
             _EvalNodeAuthoredVariant(&outputs->primIndex, task.node, &indexer,
                                      task.vsetName, task.vsetNum);
             break;
-        case Task::Type::EvalNodeVariantFallback:
+        case pxrUsdPcpPrimIndex::Task::Type::EvalNodeVariantFallback:
             _EvalNodeFallbackVariant(&outputs->primIndex, task.node, &indexer,
                                      task.vsetName, task.vsetNum);
             break;
-        case Task::Type::EvalNodeVariantNoneFound:
+        case pxrUsdPcpPrimIndex::Task::Type::EvalNodeVariantNoneFound:
             // No-op.  These tasks are just markers for RetryVariantTasks().
             break;
-        case Task::Type::None:
+        case pxrUsdPcpPrimIndex::Task::Type::None:
             tasksAreLeft = false;
             break;
         }

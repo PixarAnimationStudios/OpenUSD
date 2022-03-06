@@ -181,7 +181,7 @@ UsdSkel_CacheImpl::ReadScope::_FindOrCreateSkinningQuery(
 }
 
 
-namespace {
+namespace pxrUsdUsdSkelCacheImpl {
 
 /// Create a string representing an indent.
 std::string
@@ -260,7 +260,7 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root,
             TF_DEBUG(USDSKEL_CACHE).Msg(
                 "[UsdSkelCache]  %sPruning traversal at <%s> "
                 "(prim is not UsdGeomImageable)\n",
-                _MakeIndent(stack.size()).c_str(), it->GetPath().GetText());
+                pxrUsdUsdSkelCacheImpl::_MakeIndent(stack.size()).c_str(), it->GetPath().GetText());
 
             it.PruneChildren();
             continue;
@@ -285,34 +285,34 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root,
         // properties that have an authored value. Properties with
         // no authored value are treated as if they do not exist.
 
-        if (UsdAttribute attr = _GetAttrInPrototype(
+        if (UsdAttribute attr = pxrUsdUsdSkelCacheImpl::_GetAttrInPrototype(
                 binding.GetJointIndicesAttr())) {
             if (attr.HasAuthoredValue()) {
-                _DeprecatedBindingCheck(hasBindingAPI, attr);
+                pxrUsdUsdSkelCacheImpl::_DeprecatedBindingCheck(hasBindingAPI, attr);
                 key.jointIndicesAttr = std::move(attr);
             }
         }
 
-        if (UsdAttribute attr = _GetAttrInPrototype(
+        if (UsdAttribute attr = pxrUsdUsdSkelCacheImpl::_GetAttrInPrototype(
                 binding.GetJointWeightsAttr())) {
             if (attr.HasAuthoredValue()) {
-                _DeprecatedBindingCheck(hasBindingAPI, attr);
+                pxrUsdUsdSkelCacheImpl::_DeprecatedBindingCheck(hasBindingAPI, attr);
                 key.jointWeightsAttr = std::move(attr);
             }
         }
         
-        if (UsdAttribute attr = _GetAttrInPrototype(
+        if (UsdAttribute attr = pxrUsdUsdSkelCacheImpl::_GetAttrInPrototype(
                 binding.GetGeomBindTransformAttr())) {
             if (attr.HasAuthoredValue()) {
-                _DeprecatedBindingCheck(hasBindingAPI, attr);
+                pxrUsdUsdSkelCacheImpl::_DeprecatedBindingCheck(hasBindingAPI, attr);
                 key.geomBindTransformAttr = std::move(attr);
             }
         }
 
-        if (UsdAttribute attr = _GetAttrInPrototype(
+        if (UsdAttribute attr = pxrUsdUsdSkelCacheImpl::_GetAttrInPrototype(
                 binding.GetJointsAttr())) {
             if (attr.HasAuthoredValue()) {
-                _DeprecatedBindingCheck(hasBindingAPI, attr);
+                pxrUsdUsdSkelCacheImpl::_DeprecatedBindingCheck(hasBindingAPI, attr);
                 key.jointsAttr = std::move(attr);
             }
         }
@@ -323,18 +323,18 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root,
         // skel:blendShapeTargets are *not* inherited, so we only check
         // for them on skinnable prims.
         if (isSkinnable) {
-            if (UsdAttribute attr = _GetAttrInPrototype(
+            if (UsdAttribute attr = pxrUsdUsdSkelCacheImpl::_GetAttrInPrototype(
                     binding.GetBlendShapesAttr())) {
                 if (attr.HasAuthoredValue()) {
-                    _DeprecatedBindingCheck(hasBindingAPI, attr);
+                    pxrUsdUsdSkelCacheImpl::_DeprecatedBindingCheck(hasBindingAPI, attr);
                     key.blendShapesAttr = std::move(attr);
                 }
             }
 
-            if (UsdRelationship rel = _GetRelInPrototype(
+            if (UsdRelationship rel = pxrUsdUsdSkelCacheImpl::_GetRelInPrototype(
                     binding.GetBlendShapeTargetsRel())) {
                 if (rel.HasAuthoredTargets()) {
-                    _DeprecatedBindingCheck(hasBindingAPI, rel);
+                    pxrUsdUsdSkelCacheImpl::_DeprecatedBindingCheck(hasBindingAPI, rel);
                     key.blendShapeTargetsRel = std::move(rel);
                 }
             }
@@ -350,7 +350,7 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root,
 
             TF_DEBUG(USDSKEL_CACHE).Msg(
                 "[UsdSkelCache] %sAdded skinning query for prim <%s>\n",
-                _MakeIndent(stack.size()).c_str(),
+                pxrUsdUsdSkelCacheImpl::_MakeIndent(stack.size()).c_str(),
                 it->GetPath().GetText());
 
             // Don't allow skinnable prims to be nested.

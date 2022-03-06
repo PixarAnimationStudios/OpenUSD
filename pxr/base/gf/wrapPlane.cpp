@@ -43,7 +43,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapPlane {
 
 static std::string _Repr(GfPlane const &self) {
     return TF_PY_REPR_PREFIX + "Plane(" + TfPyRepr(self.GetNormal()) + ", " +
@@ -64,7 +64,7 @@ void wrapPlane()
     boost::python::object getNormal = boost::python::make_function(&This::GetNormal,
                                      boost::python::return_value_policy<boost::python::return_by_value>());
 
-    boost::python::def( "FitPlaneToPoints", _FitPlaneToPoints );
+    boost::python::def( "FitPlaneToPoints", pxrBaseGfWrapPlane::_FitPlaneToPoints );
 
     boost::python::class_<This>( "Plane", boost::python::init<>() )
         .def(boost::python::init< const GfVec3d &, double >())
@@ -109,7 +109,7 @@ void wrapPlane()
         .def( boost::python::self == boost::python::self )
         .def( boost::python::self != boost::python::self )
 
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrBaseGfWrapPlane::_Repr)
         
         ;
     boost::python::to_python_converter<std::vector<This>,

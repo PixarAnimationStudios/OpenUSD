@@ -190,7 +190,7 @@ HdStVolume::_UpdateRepr(HdSceneDelegate *sceneDelegate,
     *dirtyBits &= ~HdChangeTracker::NewRepr;
 }
 
-namespace {
+namespace pxrImagingHdStVolume {
 
 // Fallback volume data created from shaders/fallbackVolume.glslfx
 HdStMaterial::VolumeMaterialData
@@ -543,10 +543,10 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         // to evaluate physical properties of a volume at the point p.
         
         drawItem->SetMaterialNetworkShader(
-            _ComputeMaterialNetworkShader(
+            pxrImagingHdStVolume::_ComputeMaterialNetworkShader(
                 sceneDelegate,
                 GetId(),
-                _ComputeVolumeMaterialData(material),
+                pxrImagingHdStVolume::_ComputeVolumeMaterialData(material),
                 _sharedData.bounds.GetRange()));
         updatedTextureHandles = true;
     }        
@@ -605,7 +605,7 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                 drawItem->GetVertexPrimvarRange(),
                 std::make_shared<HdVtBufferSource>(
                     HdTokens->points,
-                    _ComputeBBoxVertices(
+                    pxrImagingHdStVolume::_ComputeBBoxVertices(
                         _sharedData.bounds.GetRange())));
         }
     }
@@ -625,7 +625,7 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
             // once and shared across all volumes?
             HdBufferSourceSharedPtr const source =
                 std::make_shared<HdVtBufferSource>(
-                    HdTokens->indices, _GetCubeTriangleIndices());
+                    HdTokens->indices, pxrImagingHdStVolume::_GetCubeTriangleIndices());
             
             HdBufferSourceSharedPtrVector sources = { source };
             

@@ -38,7 +38,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace
+namespace pxrUsdSdfLayerUtils
 {
 
 // Anchor the given relativePath to the same path as the layer 
@@ -138,14 +138,14 @@ SdfComputeAssetPathRelativeToLayer(
             packagePath.second = anchor->GetFileFormat()->
                 GetPackageRootLayerPath(anchor->GetRealPath());
 
-            packagePath = _ExpandPackagePath(packagePath);
+            packagePath = pxrUsdSdfLayerUtils::_ExpandPackagePath(packagePath);
         }
         else {
             packagePath = ArSplitPackageRelativePathInner(anchorPackagePath);
         }
 
         const std::string normAssetPath = TfNormPath(assetPath);
-        packagePath.second = _AnchorRelativePath(
+        packagePath.second = pxrUsdSdfLayerUtils::_AnchorRelativePath(
             packagePath.second, normAssetPath);
 
         std::string finalLayerPath = ArJoinPackageRelativePath(packagePath);
@@ -171,9 +171,9 @@ SdfComputeAssetPathRelativeToLayer(
         if (packageFormat && packageFormat->IsPackage()) {
             packagePath.second = 
                 packageFormat->GetPackageRootLayerPath(packagePath.first);
-            packagePath = _ExpandPackagePath(packagePath);
+            packagePath = pxrUsdSdfLayerUtils::_ExpandPackagePath(packagePath);
 
-            packagePath.second = _AnchorRelativePath(
+            packagePath.second = pxrUsdSdfLayerUtils::_AnchorRelativePath(
                 packagePath.second, normAssetPath);
         }
         else {

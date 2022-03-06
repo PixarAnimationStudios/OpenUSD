@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrImagingHdxUnitTestUtils {
 struct AggregatedHit {
     AggregatedHit(HdxPickHit const& h) : hit(h) {}
 
@@ -173,9 +173,9 @@ TranslateHitsToSelection(
 {
     HdSelectionSharedPtr selection(new HdSelection);
 
-    AggregatedHits aggrHits = _AggregateHits(allHits);
+    pxrImagingHdxUnitTestUtils::AggregatedHits aggrHits = pxrImagingHdxUnitTestUtils::_AggregateHits(allHits);
     for(const auto& pair : aggrHits) {
-        _ProcessHit(pair.second, pickTarget, highlightMode, selection);
+        pxrImagingHdxUnitTestUtils::_ProcessHit(pair.second, pickTarget, highlightMode, selection);
     }
 
     return selection;

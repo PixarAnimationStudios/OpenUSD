@@ -44,7 +44,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace
+namespace pxrImagingHdTimeSampleArray
 {
 /// Returns the result of HdResampleNeighbors() for the enclosed values, if
 /// they are of type T.
@@ -116,12 +116,12 @@ HdResampleNeighbors(float alpha, const VtValue& v0, const VtValue& v1)
 
     // The list of supported types to interpolate.
     using _InterpTypes =
-        _TypeList<float, double, GfHalf, GfMatrix2d, GfMatrix3d, GfMatrix4d,
+        pxrImagingHdTimeSampleArray::_TypeList<float, double, GfHalf, GfMatrix2d, GfMatrix3d, GfMatrix4d,
                   GfVec2d, GfVec2f, GfVec2h, GfVec3d, GfVec3f, GfVec3h, GfVec4d,
                   GfVec4f, GfVec4h, GfQuatd, GfQuatf, GfQuath>;
 
     VtValue result;
-    _Resample(alpha, v0, v1, t0, &result, _InterpTypes());
+    pxrImagingHdTimeSampleArray::_Resample(alpha, v0, v1, t0, &result, _InterpTypes());
     return result;
 }
 

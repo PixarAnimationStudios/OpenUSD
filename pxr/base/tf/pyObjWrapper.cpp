@@ -41,7 +41,7 @@ TF_REGISTRY_FUNCTION(TfType)
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-namespace {
+namespace pxrBaseTfPyObjWrapper {
 
 // A custom deleter for shared_ptr<boost::python::object> that takes the
 // python lock before deleting the python object.  This is necessary since it's
@@ -65,7 +65,7 @@ TfPyObjWrapper::TfPyObjWrapper()
 }
 
 TfPyObjWrapper::TfPyObjWrapper(boost::python::object obj)
-    : _objectPtr(new boost::python::object(obj), _DeleteObjectWithLock())
+    : _objectPtr(new boost::python::object(obj), pxrBaseTfPyObjWrapper::_DeleteObjectWithLock())
 {
 }
 

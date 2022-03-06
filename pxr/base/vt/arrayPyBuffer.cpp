@@ -51,7 +51,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////////////////
 // Producer side: Implement the buffer protocol on VtArrays.
-namespace {
+namespace pxrBaseVtArrayPyBuffer {
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -139,25 +139,25 @@ using Vt_PyShape = std::array<Py_ssize_t, N>;
 constexpr Vt_PyShape<0> Vt_GetElementShapeImpl(...) { return {}; }
 
 template <class T>
-constexpr typename std::enable_if<GfIsGfVec<T>::value, Vt_PyShape<1> >::type
+constexpr typename std::enable_if<GfIsGfVec<T>::value, pxrBaseVtArrayPyBuffer::Vt_PyShape<1> >::type
 Vt_GetElementShapeImpl(T *) { return { T::dimension }; }
 
 template <class T>
-constexpr typename std::enable_if<GfIsGfMatrix<T>::value, Vt_PyShape<2> >::type
+constexpr typename std::enable_if<GfIsGfMatrix<T>::value, pxrBaseVtArrayPyBuffer::Vt_PyShape<2> >::type
 Vt_GetElementShapeImpl(T *) { return { T::numRows, T::numColumns }; }
 
 template <class T>
-constexpr typename std::enable_if<GfIsGfQuat<T>::value, Vt_PyShape<1> >::type
+constexpr typename std::enable_if<GfIsGfQuat<T>::value, pxrBaseVtArrayPyBuffer::Vt_PyShape<1> >::type
 Vt_GetElementShapeImpl(T *) { return { 4 }; }
 
 template <class T>
 constexpr typename std::enable_if<
-    GfIsGfRange<T>::value && T::dimension == 1, Vt_PyShape<1> >::type
+    GfIsGfRange<T>::value && T::dimension == 1, pxrBaseVtArrayPyBuffer::Vt_PyShape<1> >::type
 Vt_GetElementShapeImpl(T *) { return { 2 }; }
 
 template <class T>
 constexpr typename std::enable_if<
-    GfIsGfRange<T>::value && T::dimension != 1, Vt_PyShape<2> >::type
+    GfIsGfRange<T>::value && T::dimension != 1, pxrBaseVtArrayPyBuffer::Vt_PyShape<2> >::type
 Vt_GetElementShapeImpl(T *) { return { 2, T::dimension }; }
 
 constexpr Vt_PyShape<2>
@@ -586,7 +586,7 @@ VtArrayFromPyBuffer(TfPyObjWrapper const &obj, std::string *err)
 {
     VtArray<T> array;
     boost::optional<VtArray<T> > result;
-    if (Vt_ArrayFromBuffer(obj, &array, err))
+    if (pxrBaseVtArrayPyBuffer::Vt_ArrayFromBuffer(obj, &array, err))
         result = array;
     return result;
 }
@@ -602,14 +602,14 @@ VT_API void Vt_AddBufferProtocolSupportToVtArrays()
 
 // Add the buffer protocol support to every array type that we support it for.
 #define VT_ADD_BUFFER_PROTOCOL(r, unused, elem)                      \
-    Vt_AddBufferProtocol<VtArray<VT_TYPE(elem)> >();                 \
+    pxrBaseVtArrayPyBuffer::Vt_AddBufferProtocol<VtArray<VT_TYPE(elem)> >();                 \
     VtValue::RegisterCast<TfPyObjWrapper, VtArray<VT_TYPE(elem)> >(  \
-        Vt_CastPyObjToArray<VT_TYPE(elem)>);                         \
+        pxrBaseVtArrayPyBuffer::Vt_CastPyObjToArray<VT_TYPE(elem)>);                         \
     VtValue::RegisterCast<std::vector<VtValue>, VtArray<VT_TYPE(elem)> >( \
-        Vt_CastVectorToArray<VT_TYPE(elem)>);                        \
+        pxrBaseVtArrayPyBuffer::Vt_CastVectorToArray<VT_TYPE(elem)>);                        \
     boost::python::def(TF_PP_STRINGIZE(VT_TYPE_NAME(elem))           \
                         "ArrayFromBuffer",                           \
-                        Vt_WrapArrayFromBuffer<VT_TYPE(elem)>);
+                        pxrBaseVtArrayPyBuffer::Vt_WrapArrayFromBuffer<VT_TYPE(elem)>);
 
 BOOST_PP_SEQ_FOR_EACH(VT_ADD_BUFFER_PROTOCOL, ~, VT_ARRAY_PYBUFFER_TYPES)
 

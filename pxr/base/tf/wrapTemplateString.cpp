@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapTemplateString {
 
 static std::string __repr__(TfTemplateString const &self)
 {
@@ -75,12 +75,12 @@ void wrapTemplateString()
 
     boost::python::class_<This>("TemplateString")
         .def(boost::python::init<std::string>())
-        .def("__repr__", __repr__)
+        .def("__repr__", pxrBaseTfWrapTemplateString::__repr__)
         .add_property("template",
                       boost::python::make_function(&This::GetTemplate,
                                     boost::python::return_value_policy<boost::python::return_by_value>()))
-        .def("Substitute", _Substitute)
-        .def("SafeSubstitute", _SafeSubstitute)
+        .def("Substitute", pxrBaseTfWrapTemplateString::_Substitute)
+        .def("SafeSubstitute", pxrBaseTfWrapTemplateString::_SafeSubstitute)
         .def("GetEmptyMapping", &This::GetEmptyMapping,
              boost::python::return_value_policy<TfPyMapToDictionary>())
         .def("GetParseErrors", &This::GetParseErrors,

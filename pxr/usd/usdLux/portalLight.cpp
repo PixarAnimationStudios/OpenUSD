@@ -103,7 +103,7 @@ UsdLuxPortalLight::_GetTfType() const
     return _GetStaticTfType();
 }
 
-namespace {
+namespace pxrUsdUsdLuxPortalLight {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -124,7 +124,7 @@ UsdLuxPortalLight::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->extent,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdLuxPortalLight::_ConcatenateAttributeNames(
             UsdLuxBoundableLightBase::GetSchemaAttributeNames(true),
             localNames);
 

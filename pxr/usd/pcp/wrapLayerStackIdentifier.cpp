@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdPcpWrapLayerStackIdentifier {
 
 static
 std::string
@@ -73,7 +73,7 @@ void wrapLayerStackIdentifier()
                       boost::python::make_getter(&This::pathResolverContext, 
                                   boost::python::return_value_policy<boost::python::return_by_value>()))
 
-        .def("__repr__", &_Repr)
+        .def("__repr__", &pxrUsdPcpWrapLayerStackIdentifier::_Repr)
         .def("__hash__", &This::GetHash)
         .def(!boost::python::self)
         .def(boost::python::self == boost::python::self)

@@ -46,7 +46,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 
-namespace {
+namespace pxrUsdBinSdfdumpSdfdump {
 
 std::string progName;
 
@@ -424,11 +424,11 @@ main(int argc, char const *argv[])
     namespace po = boost::program_options;
     PXR_NAMESPACE_USING_DIRECTIVE
 
-    progName = TfGetBaseName(argv[0]);
+    pxrUsdBinSdfdumpSdfdump::progName = TfGetBaseName(argv[0]);
 
     bool showSummary = false, validate = false,
         fullArrays = false, noValues = false;
-    SortKey sortKey("path");
+    pxrUsdBinSdfdumpSdfdump::SortKey sortKey("path");
     std::string pathRegex = ".*", fieldRegex = ".*";
     std::vector<std::string> timeSpecs, inputFiles;
     std::vector<double> literalTimes;
@@ -453,7 +453,7 @@ main(int argc, char const *argv[])
          default_value(timeTolerance)->value_name("tol"),
          "Report times that are close to those requested within this "
          "relative tolerance.")
-        ("sortBy", po::value<SortKey>(&sortKey)->default_value(sortKey)->
+        ("sortBy", po::value<pxrUsdBinSdfdumpSdfdump::SortKey>(&sortKey)->default_value(sortKey)->
          value_name("path|field"),
          "Group output by either path or field.")
         ("noValues", po::bool_switch(&noValues),
@@ -476,30 +476,30 @@ main(int argc, char const *argv[])
         po::store(po::command_line_parser(argc, argv).
                   options(allOpts).positional(p).run(), vm);
         po::notify(vm);
-        ParseTimes(timeSpecs, &literalTimes, &timeRanges);
+        pxrUsdBinSdfdumpSdfdump::ParseTimes(timeSpecs, &literalTimes, &timeRanges);
     } catch (std::exception const &e) {
-        ErrExit("%s", e.what());
+        pxrUsdBinSdfdumpSdfdump::ErrExit("%s", e.what());
     }
 
     if (vm.count("help") || inputFiles.empty()) {
-        fprintf(stderr, "Usage: %s [options] <input file>\n", progName.c_str());
+        fprintf(stderr, "Usage: %s [options] <input file>\n", pxrUsdBinSdfdumpSdfdump::progName.c_str());
         fprintf(stderr, "%s\n", TfStringify(argOpts).c_str());
         exit(1);
     }
 
     TfPatternMatcher pathMatcher(pathRegex);
     if (!pathMatcher.IsValid()) {
-        ErrExit("path regex '%s' : %s", pathRegex.c_str(),
+        pxrUsdBinSdfdumpSdfdump::ErrExit("path regex '%s' : %s", pathRegex.c_str(),
                 pathMatcher.GetInvalidReason().c_str());
     }
 
     TfPatternMatcher fieldMatcher(fieldRegex);
     if (!fieldMatcher.IsValid()) {
-        ErrExit("field regex '%s' : %s", fieldRegex.c_str(),
+        pxrUsdBinSdfdumpSdfdump::ErrExit("field regex '%s' : %s", fieldRegex.c_str(),
                 fieldMatcher.GetInvalidReason().c_str());
     }
                 
-    ReportParams params;
+    pxrUsdBinSdfdumpSdfdump::ReportParams params;
     params.showSummary = showSummary;
     params.validate = validate;
     params.pathMatcher = &pathMatcher;
@@ -515,10 +515,10 @@ main(int argc, char const *argv[])
         TF_DESCRIBE_SCOPE("Opening layer @%s@", file.c_str());
         auto layer = SdfLayer::FindOrOpen(file);
         if (!layer) {
-            Err("failed to open layer <%s>", file.c_str());
+            pxrUsdBinSdfdumpSdfdump::Err("failed to open layer <%s>", file.c_str());
             continue;
         }
-        Report(layer, params);
+        pxrUsdBinSdfdumpSdfdump::Report(layer, params);
     }
     
     return 0;

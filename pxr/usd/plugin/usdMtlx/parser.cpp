@@ -41,7 +41,7 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrUsdPluginUsdMtlxParser {
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -401,8 +401,8 @@ UsdMtlxParserPlugin::Parse(
         return GetInvalidNode(discoveryResult);
     }
 
-    ShaderBuilder builder(discoveryResult);
-    ParseElement(&builder, nodeDef);
+    pxrUsdPluginUsdMtlxParser::ShaderBuilder builder(discoveryResult);
+    pxrUsdPluginUsdMtlxParser::ParseElement(&builder, nodeDef);
 
     return builder.Build();
 }
@@ -411,7 +411,7 @@ const NdrTokenVec&
 UsdMtlxParserPlugin::GetDiscoveryTypes() const
 {
     static const NdrTokenVec discoveryTypes = {
-        _tokens->discoveryType
+        pxrUsdPluginUsdMtlxParser::_tokens->discoveryType
     };
     return discoveryTypes;
 }
@@ -419,7 +419,7 @@ UsdMtlxParserPlugin::GetDiscoveryTypes() const
 const TfToken&
 UsdMtlxParserPlugin::GetSourceType() const
 {
-    return _tokens->sourceType;
+    return pxrUsdPluginUsdMtlxParser::_tokens->sourceType;
 }
 
 NDR_REGISTER_PARSER_PLUGIN(UsdMtlxParserPlugin)

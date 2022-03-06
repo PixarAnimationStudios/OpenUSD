@@ -64,7 +64,7 @@ typedef  uint32_t  uint32;
 typedef  uint16_t  uint16;
 typedef  uint8_t   uint8;
 
-namespace {
+namespace pxrBaseArchHash {
 
 class SpookyHash
 {
@@ -656,22 +656,22 @@ void SpookyHash::Final(uint64 *hash1, uint64 *hash2)
 
 uint32_t ArchHash(const char *data, size_t len)
 {
-    return SpookyHash::Hash32(data, len, /*seed=*/0);
+    return pxrBaseArchHash::SpookyHash::Hash32(data, len, /*seed=*/0);
 }
 
 uint32_t ArchHash(const char *data, size_t len, uint32_t seed)
 {
-    return SpookyHash::Hash32(data, len, seed);
+    return pxrBaseArchHash::SpookyHash::Hash32(data, len, seed);
 }
 
 uint64_t ArchHash64(const char *data, size_t len)
 {
-    return SpookyHash::Hash64(data, len, /*seed=*/0);
+    return pxrBaseArchHash::SpookyHash::Hash64(data, len, /*seed=*/0);
 }
 
 uint64_t ArchHash64(const char *data, size_t len, uint64_t seed)
 {
-    return SpookyHash::Hash64(data, len, seed);
+    return pxrBaseArchHash::SpookyHash::Hash64(data, len, seed);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

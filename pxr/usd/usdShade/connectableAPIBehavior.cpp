@@ -333,7 +333,7 @@ UsdShadeConnectableAPIBehavior::RequiresEncapsulation() const
 // UsdShadeConnectableAPIBehavior registry
 //
 
-namespace
+namespace pxrUsdUsdShadeConnectableAPIBehavior
 {
 
 // This registry is closely modeled after the one in UsdGeomBoundableComputeExtent.
@@ -789,7 +789,7 @@ private:
 
 }
 
-TF_INSTANTIATE_SINGLETON(_BehaviorRegistry);
+TF_INSTANTIATE_SINGLETON(pxrUsdUsdShadeConnectableAPIBehavior::_BehaviorRegistry);
 
 void
 UsdShadeRegisterConnectableAPIBehavior(
@@ -803,7 +803,7 @@ UsdShadeRegisterConnectableAPIBehavior(
         return;
     }
 
-    _BehaviorRegistry::GetInstance().RegisterBehaviorForType(
+    pxrUsdUsdShadeConnectableAPIBehavior::_BehaviorRegistry::GetInstance().RegisterBehaviorForType(
             connectablePrimType, behavior);
 }
 
@@ -820,7 +820,7 @@ UsdShadeConnectableAPI::_IsCompatible() const
         return false;
 
     // The API is compatible as long as its behavior has been defined.
-    return bool(_BehaviorRegistry::GetInstance().GetBehavior(GetPrim()));
+    return bool(pxrUsdUsdShadeConnectableAPIBehavior::_BehaviorRegistry::GetInstance().GetBehavior(GetPrim()));
 }
 
 bool
@@ -833,7 +833,7 @@ UsdShadeConnectableAPI::CanConnect(
     // validation in USD.
     std::string reason;
     if (const UsdShadeConnectableAPIBehavior *behavior =
-        _BehaviorRegistry::GetInstance().GetBehavior(input.GetPrim())) {
+        pxrUsdUsdShadeConnectableAPIBehavior::_BehaviorRegistry::GetInstance().GetBehavior(input.GetPrim())) {
         return behavior->CanConnectInputToSource(input, source, &reason);
     }
     return false;
@@ -849,7 +849,7 @@ UsdShadeConnectableAPI::CanConnect(
     // validation in USD.
     std::string reason;
     if (const UsdShadeConnectableAPIBehavior *behavior =
-        _BehaviorRegistry::GetInstance().GetBehavior(output.GetPrim())) {
+        pxrUsdUsdShadeConnectableAPIBehavior::_BehaviorRegistry::GetInstance().GetBehavior(output.GetPrim())) {
         return behavior->CanConnectOutputToSource(output, source, &reason);
     }
     return false;
@@ -859,14 +859,14 @@ UsdShadeConnectableAPI::CanConnect(
 bool
 UsdShadeConnectableAPI::HasConnectableAPI(const TfType& schemaType)
 {
-    return _BehaviorRegistry::GetInstance().HasBehaviorForType(schemaType);
+    return pxrUsdUsdShadeConnectableAPIBehavior::_BehaviorRegistry::GetInstance().HasBehaviorForType(schemaType);
 }
 
 bool
 UsdShadeConnectableAPI::IsContainer() const
 {
     if (const UsdShadeConnectableAPIBehavior *behavior =
-        _BehaviorRegistry::GetInstance().GetBehavior(GetPrim())) {
+        pxrUsdUsdShadeConnectableAPIBehavior::_BehaviorRegistry::GetInstance().GetBehavior(GetPrim())) {
         return behavior->IsContainer();
     }
     return false;
@@ -876,7 +876,7 @@ bool
 UsdShadeConnectableAPI::RequiresEncapsulation() const
 {
     if (const UsdShadeConnectableAPIBehavior *behavior =
-        _BehaviorRegistry::GetInstance().GetBehavior(GetPrim())) {
+        pxrUsdUsdShadeConnectableAPIBehavior::_BehaviorRegistry::GetInstance().GetBehavior(GetPrim())) {
         return behavior->RequiresEncapsulation();
     }
     return false;

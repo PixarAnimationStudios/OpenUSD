@@ -42,7 +42,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapStringUtils {
 
 static int DictionaryStrcmp(std::string const &l, std::string const &r) {
     TfDictionaryLessThan lt;
@@ -111,19 +111,19 @@ _GetLongMin() {
 
 void wrapStringUtils() {
     boost::python::def("StringSplit", TfStringSplit, boost::python::return_value_policy<TfPySequenceToList>());
-    boost::python::def("DictionaryStrcmp", DictionaryStrcmp);
+    boost::python::def("DictionaryStrcmp", pxrBaseTfWrapStringUtils::DictionaryStrcmp);
 
     boost::python::def("IsValidIdentifier", TfIsValidIdentifier);
     boost::python::def("MakeValidIdentifier", TfMakeValidIdentifier);
 
     boost::python::def("StringToDouble",
         (double (*)(const std::string &))TfStringToDouble);
-    boost::python::def("StringToLong", _StringToLong);
-    boost::python::def("StringToULong", _StringToULong);
+    boost::python::def("StringToLong", pxrBaseTfWrapStringUtils::_StringToLong);
+    boost::python::def("StringToULong", pxrBaseTfWrapStringUtils::_StringToULong);
 
-    boost::python::def("_GetULongMax", _GetULongMax);
-    boost::python::def("_GetLongMax", _GetLongMax);
-    boost::python::def("_GetLongMin", _GetLongMin);
+    boost::python::def("_GetULongMax", pxrBaseTfWrapStringUtils::_GetULongMax);
+    boost::python::def("_GetLongMax", pxrBaseTfWrapStringUtils::_GetLongMax);
+    boost::python::def("_GetLongMin", pxrBaseTfWrapStringUtils::_GetLongMin);
     
-    Tf_StdStringFromPythonUnicode();
+    pxrBaseTfWrapStringUtils::Tf_StdStringFromPythonUnicode();
 }

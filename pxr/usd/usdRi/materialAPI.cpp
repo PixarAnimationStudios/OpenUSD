@@ -159,7 +159,7 @@ UsdRiMaterialAPI::CreateVolumeAttr(VtValue const &defaultValue, bool writeSparse
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdRiMaterialAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -181,7 +181,7 @@ UsdRiMaterialAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdRiTokens->outputsRiVolume,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdRiMaterialAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

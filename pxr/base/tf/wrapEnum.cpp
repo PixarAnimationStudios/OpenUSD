@@ -27,7 +27,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapEnum {
 
 static size_t __hash__(Tf_PyEnumWrapper const &self)
 {
@@ -49,7 +49,7 @@ static boost::python::object _GetValueFromFullName(const std::string &fullName)
 void wrapEnum()
 {
     boost::python::class_<Tf_PyEnum>("Enum", boost::python::no_init)
-        .def("GetValueFromFullName", _GetValueFromFullName)
+        .def("GetValueFromFullName", pxrBaseTfWrapEnum::_GetValueFromFullName)
         .staticmethod("GetValueFromFullName")
         ;
 
@@ -60,7 +60,7 @@ void wrapEnum()
         .add_property("fullName", &Tf_PyEnumWrapper::GetFullName)
         .add_property("displayName", &Tf_PyEnumWrapper::GetDisplayName)
         .def("__repr__", Tf_PyEnumRepr)
-        .def("__hash__", __hash__)
+        .def("__hash__", pxrBaseTfWrapEnum::__hash__)
         .def(boost::python::self == long())
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self < boost::python::self)

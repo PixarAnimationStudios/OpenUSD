@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrImagingHgiGLFramebufferCache {
 
 struct _FramebufferDesc
 {
@@ -94,13 +94,13 @@ std::ostream& operator<<(
 
 struct HgiGLDescriptorCacheItem
 {
-    _FramebufferDesc descriptor;
+    pxrImagingHgiGLFramebufferCache::_FramebufferDesc descriptor;
     uint32_t framebuffer = 0;
 };
 
 static void
 _CreateFramebuffer(
-    const _FramebufferDesc &desc,
+    const pxrImagingHgiGLFramebufferCache::_FramebufferDesc &desc,
     uint32_t * const framebuffer)
 {
     // Create framebuffer
@@ -173,7 +173,7 @@ _CreateFramebuffer(
     
 
 static HgiGLDescriptorCacheItem*
-_CreateDescriptorCacheItem(const _FramebufferDesc& desc)
+_CreateDescriptorCacheItem(const pxrImagingHgiGLFramebufferCache::_FramebufferDesc& desc)
 {
     TRACE_FUNCTION();
 
@@ -222,7 +222,7 @@ HgiGLFramebufferCache::AcquireFramebuffer(
 
     HgiGLDescriptorCacheItem* dci = nullptr;
 
-    _FramebufferDesc desc(graphicsCmdsDesc, resolved);
+    pxrImagingHgiGLFramebufferCache::_FramebufferDesc desc(graphicsCmdsDesc, resolved);
 
     // Look for our framebuffer in cache
     for (size_t i=0; i<_descriptorCache.size(); i++) {

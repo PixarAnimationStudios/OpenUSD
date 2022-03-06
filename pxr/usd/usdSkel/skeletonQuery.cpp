@@ -203,7 +203,7 @@ UsdSkelSkeletonQuery::_ComputeJointSkelTransforms(VtArray<Matrix4>* xforms,
 }
 
 
-namespace {
+namespace pxrUsdUsdSkelSkeletonQuery {
 
 /// Compute `out = a * b`.
 template <typename Matrix4>
@@ -252,7 +252,7 @@ UsdSkelSkeletonQuery::ComputeJointRestRelativeTransforms(
                         
                         xforms->resize(localXforms.size());
 
-                        _MultTransforms<Matrix4>(localXforms,
+                        pxrUsdUsdSkelSkeletonQuery::_MultTransforms<Matrix4>(localXforms,
                                                  invRestXforms, *xforms);
                         return true;
                     }
@@ -374,7 +374,7 @@ UsdSkelSkeletonQuery::_ComputeSkinningTransforms(VtArray<Matrix4>* xforms,
 
         if (xforms->size() == inverseBindXforms.size()) {
             // xforms = inverseBindXforms * xforms
-            _MultTransforms<Matrix4>(inverseBindXforms, *xforms, *xforms);
+            pxrUsdUsdSkelSkeletonQuery::_MultTransforms<Matrix4>(inverseBindXforms, *xforms, *xforms);
             return true;
         } else {
             TF_WARN("%s -- Size of computed joints transforms [%zu] does not "

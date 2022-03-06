@@ -34,7 +34,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-namespace {
+namespace pxrUsdUsdUtilsStageCache {
 
 // Cache of string keys (currently representing variant selections) to session
 // layers.
@@ -80,8 +80,8 @@ UsdUtilsStageCache::GetSessionLayerForVariantSelections(
         static std::mutex sessionLayerMapLock;
         std::lock_guard<std::mutex> lock(sessionLayerMapLock);
 
-        _SessionLayerMap& sessionLayerMap = GetSessionLayerMap();
-        _SessionLayerMap::iterator itr = sessionLayerMap.find(sessionKey);
+        pxrUsdUsdUtilsStageCache::_SessionLayerMap& sessionLayerMap = pxrUsdUsdUtilsStageCache::GetSessionLayerMap();
+        pxrUsdUsdUtilsStageCache::_SessionLayerMap::iterator itr = sessionLayerMap.find(sessionKey);
         if (itr == sessionLayerMap.end()) {
             SdfLayerRefPtr layer = SdfLayer::CreateAnonymous();
             if (!variantSelections.empty()) {

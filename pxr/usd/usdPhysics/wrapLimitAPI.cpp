@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapLimitAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -100,7 +100,7 @@ void wrapUsdPhysicsLimitAPI()
 {
     typedef UsdPhysicsLimitAPI This;
 
-    UsdPhysicsLimitAPI_CanApplyResult::Wrap<UsdPhysicsLimitAPI_CanApplyResult>(
+    pxrUsdUsdPhysicsWrapLimitAPI::UsdPhysicsLimitAPI_CanApplyResult::Wrap<pxrUsdUsdPhysicsWrapLimitAPI::UsdPhysicsLimitAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -123,7 +123,7 @@ void wrapUsdPhysicsLimitAPI()
             (boost::python::arg("prim"), boost::python::arg("name")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim"), boost::python::arg("name")))
+        .def("CanApply", &pxrUsdUsdPhysicsWrapLimitAPI::_WrapCanApply, (boost::python::arg("prim"), boost::python::arg("name")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim"), boost::python::arg("name")))
@@ -151,23 +151,23 @@ void wrapUsdPhysicsLimitAPI()
         .def("GetLowAttr",
              &This::GetLowAttr)
         .def("CreateLowAttr",
-             &_CreateLowAttr,
+             &pxrUsdUsdPhysicsWrapLimitAPI::_CreateLowAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetHighAttr",
              &This::GetHighAttr)
         .def("CreateHighAttr",
-             &_CreateHighAttr,
+             &pxrUsdUsdPhysicsWrapLimitAPI::_CreateHighAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("IsPhysicsLimitAPIPath", _WrapIsPhysicsLimitAPIPath)
+        .def("IsPhysicsLimitAPIPath", pxrUsdUsdPhysicsWrapLimitAPI::_WrapIsPhysicsLimitAPIPath)
             .staticmethod("IsPhysicsLimitAPIPath")
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdPhysicsWrapLimitAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdPhysicsWrapLimitAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -189,7 +189,7 @@ void wrapUsdPhysicsLimitAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapLimitAPI {
 
 WRAP_CUSTOM {
 }

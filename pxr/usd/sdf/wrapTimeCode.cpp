@@ -44,7 +44,7 @@ TF_REGISTRY_FUNCTION(VtValue)
     VtRegisterValueCastsFromPythonSequencesToArray<SdfTimeCode>();
 }
 
-namespace {
+namespace pxrUsdSdfWrapTimeCode {
 
 static std::string _Str(SdfTimeCode const &self)
 {
@@ -80,11 +80,11 @@ void wrapTimeCode()
 
         .def("GetValue", &This::GetValue)
 
-        .def("__repr__", _Repr)
-        .def("__str__", _Str)
-        .def(TfPyBoolBuiltinFuncName, _Nonzero)
+        .def("__repr__", pxrUsdSdfWrapTimeCode::_Repr)
+        .def("__str__", pxrUsdSdfWrapTimeCode::_Str)
+        .def(TfPyBoolBuiltinFuncName, pxrUsdSdfWrapTimeCode::_Nonzero)
         .def("__hash__", &This::GetHash)
-        .def("__float__", _Float)
+        .def("__float__", pxrUsdSdfWrapTimeCode::_Float)
 
         .def( boost::python::self == boost::python::self )
         .def( double() == boost::python::self )

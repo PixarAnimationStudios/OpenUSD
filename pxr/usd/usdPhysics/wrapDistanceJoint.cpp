@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapDistanceJoint {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -107,21 +107,21 @@ void wrapUsdPhysicsDistanceJoint()
         .def("GetMinDistanceAttr",
              &This::GetMinDistanceAttr)
         .def("CreateMinDistanceAttr",
-             &_CreateMinDistanceAttr,
+             &pxrUsdUsdPhysicsWrapDistanceJoint::_CreateMinDistanceAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetMaxDistanceAttr",
              &This::GetMaxDistanceAttr)
         .def("CreateMaxDistanceAttr",
-             &_CreateMaxDistanceAttr,
+             &pxrUsdUsdPhysicsWrapDistanceJoint::_CreateMaxDistanceAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdPhysicsWrapDistanceJoint::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdPhysicsWrapDistanceJoint::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -143,7 +143,7 @@ void wrapUsdPhysicsDistanceJoint()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdPhysicsWrapDistanceJoint {
 
 WRAP_CUSTOM {
 }

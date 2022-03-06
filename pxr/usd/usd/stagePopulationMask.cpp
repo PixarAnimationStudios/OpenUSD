@@ -167,7 +167,7 @@ UsdStagePopulationMask::Includes(SdfPath const &path) const
     return (prev && path.HasPrefix(*prev)) || (cur && cur->HasPrefix(path));
 }
 
-namespace
+namespace pxrUsdUsdStagePopulationMask
 {
 // Return pair where the first element is true if the mask represented by
 // paths includes the subtree rooted at path, false otherwise. The second
@@ -192,10 +192,10 @@ _IncludesSubtree(std::vector<SdfPath> const& paths, SdfPath const& path)
 bool
 UsdStagePopulationMask::IncludesSubtree(SdfPath const &path) const
 {
-    return _IncludesSubtree(_paths, path).first;
+    return pxrUsdUsdStagePopulationMask::_IncludesSubtree(_paths, path).first;
 }    
 
-namespace
+namespace pxrUsdUsdStagePopulationMask
 {
 // Return the name of the child prim that appears in \p fullPath
 // immediately after the prefix \p path.
@@ -217,7 +217,7 @@ UsdStagePopulationMask::GetIncludedChildNames(SdfPath const &path,
 {
     names->clear();
 
-    auto includesSubtree = _IncludesSubtree(_paths, path);
+    auto includesSubtree = pxrUsdUsdStagePopulationMask::_IncludesSubtree(_paths, path);
     if (includesSubtree.first)
         return true;
 
@@ -225,7 +225,7 @@ UsdStagePopulationMask::GetIncludedChildNames(SdfPath const &path,
          it != _paths.end() && it->HasPrefix(path); ++it) {
 
         const SdfPath& maskPath = *it;
-        const TfToken& childName = _GetChildNameBeneathPath(maskPath, path);
+        const TfToken& childName = pxrUsdUsdStagePopulationMask::_GetChildNameBeneathPath(maskPath, path);
         if (!TF_VERIFY(!childName.IsEmpty())) {
             // Should never happen because all paths in the range are prefixed
             // by path, and if path was in the range then the earlier call to

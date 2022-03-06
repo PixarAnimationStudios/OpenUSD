@@ -53,7 +53,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrBaseTfDiagnosticMgr {
 // Helper RAII struct for ensuring we protect functions
 // that we wish to not have reentrant behaviors from delegates
 // that we call out to.
@@ -256,7 +256,7 @@ TfDiagnosticMgr::PostError(const TfDiagnosticBase& diagnostic)
 void
 TfDiagnosticMgr::_ReportError(const TfError &err)
 {
-    _ReentrancyGuard guard(&_reentrantGuard.local());
+    pxrBaseTfDiagnosticMgr::_ReentrancyGuard guard(&_reentrantGuard.local());
     if (guard.ScopeWasReentered()) {
         return;
     }
@@ -287,7 +287,7 @@ TfDiagnosticMgr::PostWarning(
     TfCallContext const &context, std::string const &commentary,
     TfDiagnosticInfo info, bool quiet) const
 {
-    _ReentrancyGuard guard(&_reentrantGuard.local());
+    pxrBaseTfDiagnosticMgr::_ReentrancyGuard guard(&_reentrantGuard.local());
     if (guard.ScopeWasReentered()) {
         return;
     }
@@ -338,7 +338,7 @@ void TfDiagnosticMgr::PostStatus(
     TfCallContext const &context, std::string const &commentary,
     TfDiagnosticInfo info, bool quiet) const
 {
-    _ReentrancyGuard guard(&_reentrantGuard.local());
+    pxrBaseTfDiagnosticMgr::_ReentrancyGuard guard(&_reentrantGuard.local());
     if (guard.ScopeWasReentered()) {
         return;
     }
@@ -377,7 +377,7 @@ void TfDiagnosticMgr::PostFatal(TfCallContext const &context,
                                 TfEnum statusCode,
                                 std::string const &msg) const
 {
-    _ReentrancyGuard guard(&_reentrantGuard.local());
+    pxrBaseTfDiagnosticMgr::_ReentrancyGuard guard(&_reentrantGuard.local());
     if (guard.ScopeWasReentered()) {
         return;
     }

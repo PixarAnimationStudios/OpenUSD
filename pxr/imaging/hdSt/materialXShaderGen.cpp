@@ -35,7 +35,7 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrImagingHdStMaterialXShaderGen {
     // Create a customized version of the class mx::SurfaceNodeGlsl
     // to be able to notify the shader generator when we start/end
     // emitting the code for the SurfaceNode
@@ -137,7 +137,7 @@ HdStMaterialXShaderGen::HdStMaterialXShaderGen(
 
     // Register the customized version of the Surface node generator
     registerImplementation("IM_surface_" + GlslShaderGenerator::TARGET, 
-        HdStMaterialXSurfaceNodeGen::create);
+        pxrImagingHdStMaterialXShaderGen::HdStMaterialXSurfaceNodeGen::create);
 }
 
 // Based on GlslShaderGenerator::generate()

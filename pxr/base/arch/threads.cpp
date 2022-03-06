@@ -33,7 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // as possible, so we actually capture the main thread's id.  We assume that
 // we're not starting threads before main().
 
-namespace {
+namespace pxrBaseArchThreads {
 
 const std::thread::id _mainThreadId = std::this_thread::get_id();
 
@@ -41,13 +41,13 @@ const std::thread::id _mainThreadId = std::this_thread::get_id();
 
 bool ArchIsMainThread()
 {
-    return std::this_thread::get_id() == _mainThreadId;
+    return std::this_thread::get_id() == pxrBaseArchThreads::_mainThreadId;
 }
 
 std::thread::id
 ArchGetMainThreadId()
 {
-    return _mainThreadId;
+    return pxrBaseArchThreads::_mainThreadId;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

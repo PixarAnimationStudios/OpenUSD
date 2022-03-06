@@ -142,7 +142,7 @@ UsdUISceneGraphPrimAPI::CreateDisplayGroupAttr(VtValue const &defaultValue, bool
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdUISceneGraphPrimAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -163,7 +163,7 @@ UsdUISceneGraphPrimAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdUITokens->uiDisplayGroup,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdUISceneGraphPrimAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

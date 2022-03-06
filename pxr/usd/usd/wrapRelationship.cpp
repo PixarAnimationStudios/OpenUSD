@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapRelationship {
 
 static SdfPathVector
 _GetTargets(const UsdRelationship &self)
@@ -72,16 +72,16 @@ void wrapUsdRelationship()
 {
     boost::python::class_<UsdRelationship, boost::python::bases<UsdProperty> >("Relationship")
         .def(Usd_ObjectSubclass())
-        .def("__repr__", __repr__)
+        .def("__repr__", pxrUsdUsdWrapRelationship::__repr__)
         .def("AddTarget", &UsdRelationship::AddTarget,
              (boost::python::arg("target"),
               boost::python::arg("position")=UsdListPositionBackOfPrependList))
         .def("RemoveTarget", &UsdRelationship::RemoveTarget, boost::python::arg("target"))
         .def("SetTargets", &UsdRelationship::SetTargets, boost::python::arg("targets"))
         .def("ClearTargets", &UsdRelationship::ClearTargets, boost::python::arg("removeSpec"))
-        .def("GetTargets", _GetTargets,
+        .def("GetTargets", pxrUsdUsdWrapRelationship::_GetTargets,
              boost::python::return_value_policy<TfPySequenceToList>())
-        .def("GetForwardedTargets", _GetForwardedTargets,
+        .def("GetForwardedTargets", pxrUsdUsdWrapRelationship::_GetForwardedTargets,
              boost::python::return_value_policy<TfPySequenceToList>())
         .def("HasAuthoredTargets", &UsdRelationship::HasAuthoredTargets)
         ;

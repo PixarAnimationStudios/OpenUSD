@@ -30,7 +30,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapNotice {
 
 TF_INSTANTIATE_NOTICE_WRAPPER(UsdNotice::StageNotice, 
                                 TfNotice);
@@ -76,9 +76,9 @@ void wrapUsdNotice()
             .def("AffectedObject", &UsdNotice::ObjectsChanged::AffectedObject)
             .def("ResyncedObject", &UsdNotice::ObjectsChanged::ResyncedObject)
             .def("ChangedInfoOnly", &UsdNotice::ObjectsChanged::ChangedInfoOnly)
-            .def("GetResyncedPaths", &_GetResyncedPaths,
+            .def("GetResyncedPaths", &pxrUsdUsdWrapNotice::_GetResyncedPaths,
                  boost::python::return_value_policy<boost::python::return_by_value>())
-            .def("GetChangedInfoOnlyPaths", &_GetChangedInfoOnlyPaths,
+            .def("GetChangedInfoOnlyPaths", &pxrUsdUsdWrapNotice::_GetChangedInfoOnlyPaths,
                  boost::python::return_value_policy<boost::python::return_by_value>())
             .def("GetChangedFields", 
                  (TfTokenVector (UsdNotice::ObjectsChanged::*)

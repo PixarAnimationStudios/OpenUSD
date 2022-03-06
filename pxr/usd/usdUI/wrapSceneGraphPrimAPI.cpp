@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdUIWrapSceneGraphPrimAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -93,7 +93,7 @@ void wrapUsdUISceneGraphPrimAPI()
 {
     typedef UsdUISceneGraphPrimAPI This;
 
-    UsdUISceneGraphPrimAPI_CanApplyResult::Wrap<UsdUISceneGraphPrimAPI_CanApplyResult>(
+    pxrUsdUsdUIWrapSceneGraphPrimAPI::UsdUISceneGraphPrimAPI_CanApplyResult::Wrap<pxrUsdUsdUIWrapSceneGraphPrimAPI::UsdUISceneGraphPrimAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -107,7 +107,7 @@ void wrapUsdUISceneGraphPrimAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdUIWrapSceneGraphPrimAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -129,21 +129,21 @@ void wrapUsdUISceneGraphPrimAPI()
         .def("GetDisplayNameAttr",
              &This::GetDisplayNameAttr)
         .def("CreateDisplayNameAttr",
-             &_CreateDisplayNameAttr,
+             &pxrUsdUsdUIWrapSceneGraphPrimAPI::_CreateDisplayNameAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetDisplayGroupAttr",
              &This::GetDisplayGroupAttr)
         .def("CreateDisplayGroupAttr",
-             &_CreateDisplayGroupAttr,
+             &pxrUsdUsdUIWrapSceneGraphPrimAPI::_CreateDisplayGroupAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdUIWrapSceneGraphPrimAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdUIWrapSceneGraphPrimAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -165,7 +165,7 @@ void wrapUsdUISceneGraphPrimAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdUIWrapSceneGraphPrimAPI {
 
 WRAP_CUSTOM {
 }

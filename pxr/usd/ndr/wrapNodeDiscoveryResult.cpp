@@ -34,7 +34,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
-namespace {
+namespace pxrUsdNdrWrapNodeDiscoveryResult {
 
 
 static
@@ -152,7 +152,7 @@ struct MapConverter
 
 void wrapNodeDiscoveryResult()
 {
-    MapConverter<NdrTokenMap>();
+    pxrUsdNdrWrapNodeDiscoveryResult::MapConverter<NdrTokenMap>();
 
 
     typedef NdrNodeDiscoveryResult This;
@@ -190,7 +190,7 @@ void wrapNodeDiscoveryResult()
         .add_property("blindData", &This::blindData)
         .add_property("subIdentifier", boost::python::make_getter(&This::subIdentifier, 
                           boost::python::return_value_policy<boost::python::return_by_value>()))
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrUsdNdrWrapNodeDiscoveryResult::_Repr)
         ;
 
     TfPyContainerConversions::from_python_sequence<

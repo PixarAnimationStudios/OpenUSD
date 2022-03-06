@@ -154,7 +154,7 @@ UsdLuxRectLight::CreateTextureFileAttr(VtValue const &defaultValue, bool writeSp
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdLuxRectLight {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -177,7 +177,7 @@ UsdLuxRectLight::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->inputsTextureFile,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdLuxRectLight::_ConcatenateAttributeNames(
             UsdLuxBoundableLightBase::GetSchemaAttributeNames(true),
             localNames);
 

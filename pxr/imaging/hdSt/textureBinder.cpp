@@ -110,7 +110,7 @@ HdSt_TextureBinder::GetBufferSpecs(
     }
 }
 
-namespace {
+namespace pxrImagingHdStTextureBinder {
 
 // A bindless GL sampler buffer.
 // This identifies a texture as a 64-bit handle, passed to GLSL as "uvec2".
@@ -468,7 +468,7 @@ HdSt_TextureBinder::ComputeBufferSources(
     const bool useBindlessHandles = textures.empty() ? false :
         textures[0].handle->UseBindlessHandles();
 
-    _Dispatch<_ComputeBufferSourcesFunctor>(textures, sources, 
+    pxrImagingHdStTextureBinder::_Dispatch<pxrImagingHdStTextureBinder::_ComputeBufferSourcesFunctor>(textures, sources, 
         useBindlessHandles);
 }
 
@@ -477,7 +477,7 @@ HdSt_TextureBinder::BindResources(
     HdSt_ResourceBinder const &binder,
     const NamedTextureHandleVector &textures)
 {
-    _Dispatch<_BindFunctor>(textures, binder, /* bind = */ true);
+    pxrImagingHdStTextureBinder::_Dispatch<pxrImagingHdStTextureBinder::_BindFunctor>(textures, binder, /* bind = */ true);
 }
 
 void
@@ -485,7 +485,7 @@ HdSt_TextureBinder::UnbindResources(
     HdSt_ResourceBinder const &binder,
     const NamedTextureHandleVector &textures)
 {
-    _Dispatch<_BindFunctor>(textures, binder, /* bind = */ false);
+    pxrImagingHdStTextureBinder::_Dispatch<pxrImagingHdStTextureBinder::_BindFunctor>(textures, binder, /* bind = */ false);
 }
 
 void
@@ -494,7 +494,7 @@ HdSt_TextureBinder::GetBindingDescs(
         HgiResourceBindingsDesc * bindingsDesc,
         const NamedTextureHandleVector &textures)
 {
-    _Dispatch<_BindingDescsFunctor>(textures, binder, bindingsDesc);
+    pxrImagingHdStTextureBinder::_Dispatch<pxrImagingHdStTextureBinder::_BindingDescsFunctor>(textures, binder, bindingsDesc);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

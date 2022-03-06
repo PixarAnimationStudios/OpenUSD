@@ -152,7 +152,7 @@ UsdGeomPointBased::CreateNormalsAttr(VtValue const &defaultValue, bool writeSpar
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomPointBased {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -175,7 +175,7 @@ UsdGeomPointBased::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->normals,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomPointBased::_ConcatenateAttributeNames(
             UsdGeomGprim::GetSchemaAttributeNames(true),
             localNames);
 
@@ -235,7 +235,7 @@ UsdGeomPointBased::SetNormalsInterpolation(TfToken const &interpolation)
     return false;
 }
 
-namespace {
+namespace pxrUsdUsdGeomPointBased {
 template <typename Reduction>
 bool 
 _ComputeExtentImpl(const VtVec3fArray& points, VtVec3fArray* extent,
@@ -265,7 +265,7 @@ bool
 UsdGeomPointBased::ComputeExtent(const VtVec3fArray& points,
     VtVec3fArray* extent)
 {
-    return _ComputeExtentImpl(points, extent,
+    return pxrUsdUsdGeomPointBased::_ComputeExtentImpl(points, extent,
         [&points](size_t b, size_t e, GfRange3d init){
             for (size_t i = b; i != e; ++i) {
                 init.UnionWith(points[i]);
@@ -279,7 +279,7 @@ bool
 UsdGeomPointBased::ComputeExtent(const VtVec3fArray& points,
     const GfMatrix4d& transform, VtVec3fArray* extent)
 {
-    return _ComputeExtentImpl(points, extent,
+    return pxrUsdUsdGeomPointBased::_ComputeExtentImpl(points, extent,
         [&points, &transform](size_t b, size_t e, GfRange3d init){
             for (size_t i = b; i != e; ++i) {
                 init.UnionWith(transform.Transform(points[i]));

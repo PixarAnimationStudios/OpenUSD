@@ -36,7 +36,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-namespace {
+namespace pxrUsdUsdSkelBlendShapeQuery {
 
 const float EPS = 1e-6;
 
@@ -92,7 +92,7 @@ UsdSkelBlendShapeQuery::UsdSkelBlendShapeQuery(
                 continue;
             }
             
-            if (GfIsClose(weight, 0.0, EPS) || GfIsClose(weight, 1.0, EPS)) {
+            if (GfIsClose(weight, 0.0, pxrUsdUsdSkelBlendShapeQuery::EPS) || GfIsClose(weight, 1.0, pxrUsdUsdSkelBlendShapeQuery::EPS)) {
                 TF_WARN("%s -- skipping inbetween with invalid weight (%f)",
                         inbetween.GetAttr().GetPath().GetText(), weight);
                 continue;
@@ -343,11 +343,11 @@ UsdSkelBlendShapeQuery::ComputeSubShapeWeights(
 
         TF_DEV_AXIOM(weightDelta >= 0);
 
-        if (weightDelta > EPS) {
+        if (weightDelta > pxrUsdUsdSkelBlendShapeQuery::EPS) {
             // Compute normalized pos between shapes.
             const float alpha = (w - lower->GetWeight())/weightDelta;
             
-            if (!lower->IsNullShape() && !GfIsClose(alpha, 1.0, EPS)) {
+            if (!lower->IsNullShape() && !GfIsClose(alpha, 1.0, pxrUsdUsdSkelBlendShapeQuery::EPS)) {
                 const size_t subShapeIndex =
                     std::distance(_subShapes.data(), lower);
 
@@ -355,7 +355,7 @@ UsdSkelBlendShapeQuery::ComputeSubShapeWeights(
                 blendShapeIndices->push_back(i);
                 subShapeIndices->push_back(subShapeIndex);
             }
-            if (!upper->IsNullShape() && !GfIsClose(alpha, 0.0, EPS)) {
+            if (!upper->IsNullShape() && !GfIsClose(alpha, 0.0, pxrUsdUsdSkelBlendShapeQuery::EPS)) {
                 const size_t subShapeIndex = 
                     std::distance(_subShapes.data(), upper);
 
@@ -476,7 +476,7 @@ UsdSkelBlendShapeQuery::ComputeDeformedNormals(
 }
 
 
-namespace {
+namespace pxrUsdUsdSkelBlendShapeQuery {
 
 
 /// Compute a span of (start,end) ranges for a set of contiguous
@@ -554,7 +554,7 @@ UsdSkelBlendShapeQuery::ComputePackedShapeTable(
         ComputeSubShapePointOffsets();
 
     const size_t numPoints =
-        _ComputeApproximateNumPointsForShapes(indicesPerBlendShape,
+        pxrUsdUsdSkelBlendShapeQuery::_ComputeApproximateNumPointsForShapes(indicesPerBlendShape,
                                               offsetsPerSubShape);
 
     if (numPoints == 0) {
@@ -598,7 +598,7 @@ UsdSkelBlendShapeQuery::ComputePackedShapeTable(
     // Use the per-point offset count to compute the ranges.
     ranges->resize(numPoints);
     const unsigned numOffsets =
-        _ComputeRangesFromCounts(numOffsetsPerPoint, *ranges);
+        pxrUsdUsdSkelBlendShapeQuery::_ComputeRangesFromCounts(numOffsetsPerPoint, *ranges);
 
     // Create a vector storing the start index of the offsets for every point.
     /// This will be incremented per-point while filling offset.

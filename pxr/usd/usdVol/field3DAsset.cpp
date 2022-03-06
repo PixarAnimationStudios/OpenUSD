@@ -137,7 +137,7 @@ UsdVolField3DAsset::CreateFieldPurposeAttr(VtValue const &defaultValue, bool wri
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdVolField3DAsset {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -158,7 +158,7 @@ UsdVolField3DAsset::GetSchemaAttributeNames(bool includeInherited)
         UsdVolTokens->fieldPurpose,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdVolField3DAsset::_ConcatenateAttributeNames(
             UsdVolFieldAsset::GetSchemaAttributeNames(true),
             localNames);
 

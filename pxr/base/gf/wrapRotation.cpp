@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapRotation {
 
 void SetAxisHelper( GfRotation &rotation, const GfVec3d &axis )
 {
@@ -187,8 +187,8 @@ void wrapRotation()
         .def("SetIdentity", &This::SetIdentity, boost::python::return_self<>())
 
         .add_property("axis", boost::python::make_function(&This::GetAxis, boost::python::return_value_policy<boost::python::copy_const_reference>()),
-                      SetAxisHelper )
-        .add_property("angle", &This::GetAngle, SetAngleHelper)
+                      pxrBaseGfWrapRotation::SetAxisHelper )
+        .add_property("angle", &This::GetAngle, pxrBaseGfWrapRotation::SetAngleHelper)
 
         .def("GetAxis", &This::GetAxis, boost::python::return_value_policy<boost::python::copy_const_reference>())
         .def("GetAngle", &This::GetAngle)
@@ -200,7 +200,7 @@ void wrapRotation()
 
         .def("Decompose", &This::Decompose)
 
-        .def("DecomposeRotation3", _DecomposeRotation3,
+        .def("DecomposeRotation3", pxrBaseGfWrapRotation::_DecomposeRotation3,
              (boost::python::arg("rot"),
               boost::python::arg("twAxis"),
               boost::python::arg("fbAxis"),
@@ -213,7 +213,7 @@ void wrapRotation()
              )
         .staticmethod("DecomposeRotation3")
 
-        .def("DecomposeRotation", _DecomposeRotation,
+        .def("DecomposeRotation", pxrBaseGfWrapRotation::_DecomposeRotation,
              (boost::python::arg("rot"),
               boost::python::arg("twAxis"),
               boost::python::arg("fbAxis"),
@@ -228,7 +228,7 @@ void wrapRotation()
              )
         .staticmethod("DecomposeRotation")
 
-        .def("MatchClosestEulerRotation", _MatchClosestEulerRotation)
+        .def("MatchClosestEulerRotation", pxrBaseGfWrapRotation::_MatchClosestEulerRotation)
         .staticmethod("MatchClosestEulerRotation")
 
         .def("RotateOntoProjected", &This::RotateOntoProjected)
@@ -255,7 +255,7 @@ void wrapRotation()
         .def("__itruediv__", __itruediv__ )
 #endif
 
-       .def("__repr__", _Repr)
+       .def("__repr__", pxrBaseGfWrapRotation::_Repr)
         
         ;
     boost::python::to_python_converter<std::vector<This>,

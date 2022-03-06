@@ -74,7 +74,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapPrimFlags {
 
 // Hash implementations.
 size_t __hash__Term(const Usd_Term &t) {
@@ -102,7 +102,7 @@ void wrapUsdPrimFlags()
         .def(boost::python::self != boost::python::self)
         .def(boost::python::self & boost::python::self)
         .def(boost::python::self | boost::python::self)
-        .def("__hash__", __hash__Term)
+        .def("__hash__", pxrUsdUsdWrapPrimFlags::__hash__Term)
         ;
     boost::python::implicitly_convertible<Usd_Term, Usd_PrimFlagsPredicate>();
     boost::python::implicitly_convertible<Usd_Term, Usd_PrimFlagsConjunction>();
@@ -115,8 +115,8 @@ void wrapUsdPrimFlags()
         .staticmethod("Contradiction")
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self != boost::python::self)
-        .def("__hash__", __hash__Predicate)
-        .def("__call__", __call__Predicate)
+        .def("__hash__", pxrUsdUsdWrapPrimFlags::__hash__Predicate)
+        .def("__call__", pxrUsdUsdWrapPrimFlags::__call__Predicate)
         ;
 
     boost::python::class_<Usd_PrimFlagsConjunction, boost::python::bases<Usd_PrimFlagsPredicate> >

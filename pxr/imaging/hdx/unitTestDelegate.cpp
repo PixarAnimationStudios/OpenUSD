@@ -83,7 +83,7 @@ _CreateGrid(int nx, int ny, VtVec3fArray *points,
     }
 }
 
-namespace {
+namespace pxrImagingHdxUnitTestDelegate {
 class ShadowMatrix : public HdxShadowMatrixComputation
 {
 public:
@@ -235,7 +235,7 @@ Hdx_UnitTestDelegate::AddLight(SdfPath const &id, GlfSimpleLight const &light)
     shadowParams.enabled = light.HasShadow();
     shadowParams.resolution = 512;
     shadowParams.shadowMatrix
-        = HdxShadowMatrixComputationSharedPtr(new ShadowMatrix(light));
+        = HdxShadowMatrixComputationSharedPtr(new pxrImagingHdxUnitTestDelegate::ShadowMatrix(light));
     shadowParams.bias = -0.001;
     shadowParams.blur = 0.1;
 
@@ -258,7 +258,7 @@ Hdx_UnitTestDelegate::SetLight(SdfPath const &id, TfToken const &key,
         HdxShadowParams shadowParams
             = cache[HdLightTokens->shadowParams].Get<HdxShadowParams>();
         shadowParams.shadowMatrix
-            = HdxShadowMatrixComputationSharedPtr(new ShadowMatrix(light));
+            = HdxShadowMatrixComputationSharedPtr(new pxrImagingHdxUnitTestDelegate::ShadowMatrix(light));
 
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
             id, HdLight::DirtyParams|HdLight::DirtyShadowParams);

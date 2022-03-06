@@ -159,7 +159,7 @@ UsdGeomVisibilityAPI::CreateRenderVisibilityAttr(VtValue const &defaultValue, bo
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomVisibilityAPI {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -181,7 +181,7 @@ UsdGeomVisibilityAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->renderVisibility,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomVisibilityAPI::_ConcatenateAttributeNames(
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 

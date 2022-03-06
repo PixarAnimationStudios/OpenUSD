@@ -42,7 +42,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
-namespace {
+namespace pxrUsdUsdSkelWrapAnimQuery {
 
 
 VtMatrix4dArray
@@ -130,29 +130,29 @@ void wrapUsdSkelAnimQuery()
 
         .def("GetPrim", &This::GetPrim)
 
-        .def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
+        .def("ComputeJointLocalTransforms", &pxrUsdUsdSkelWrapAnimQuery::_ComputeJointLocalTransforms,
              (boost::python::arg("time")=UsdTimeCode::Default()))
 
         .def("ComputeJointLocalTransformComponents",
-             &_ComputeJointLocalTransformComponents,
+             &pxrUsdUsdSkelWrapAnimQuery::_ComputeJointLocalTransformComponents,
              (boost::python::arg("time")=UsdTimeCode::Default()))
 
-        .def("ComputeBlendShapeWeights", &_ComputeBlendShapeWeights,
+        .def("ComputeBlendShapeWeights", &pxrUsdUsdSkelWrapAnimQuery::_ComputeBlendShapeWeights,
              (boost::python::arg("time")=UsdTimeCode::Default()))
 
-        .def("GetJointTransformTimeSamples", &_GetJointTransformTimeSamples)
+        .def("GetJointTransformTimeSamples", &pxrUsdUsdSkelWrapAnimQuery::_GetJointTransformTimeSamples)
 
         .def("GetJointTransformTimeSamplesInInterval",
-             &_GetJointTransformTimeSamplesInInterval,
+             &pxrUsdUsdSkelWrapAnimQuery::_GetJointTransformTimeSamplesInInterval,
              (boost::python::arg("interval")))
         
         .def("JointTransformsMightBeTimeVarying",
              &This::JointTransformsMightBeTimeVarying)
 
-        .def("GetBlendShapeWeightTimeSamples", &_GetBlendShapeWeightTimeSamples)
+        .def("GetBlendShapeWeightTimeSamples", &pxrUsdUsdSkelWrapAnimQuery::_GetBlendShapeWeightTimeSamples)
 
         .def("GetBlendShapeWeightTimeSamplesInInterval",
-             &_GetBlendShapeWeightTimeSamplesInInterval,
+             &pxrUsdUsdSkelWrapAnimQuery::_GetBlendShapeWeightTimeSamplesInInterval,
              (boost::python::arg("interval")))
 
         .def("BlendShapeWeightsMightBeTimeVarying",

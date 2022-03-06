@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapXformCommonAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -87,10 +87,10 @@ void wrapUsdGeomXformCommonAPI()
         .def(!boost::python::self)
 
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapXformCommonAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapXformCommonAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -114,7 +114,7 @@ void wrapUsdGeomXformCommonAPI()
 
 #include "pxr/base/tf/pyEnum.h"
 
-namespace {
+namespace pxrUsdUsdGeomWrapXformCommonAPI {
 
 static boost::python::tuple 
 _GetXformVectors(

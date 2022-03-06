@@ -41,7 +41,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapFrustum {
 
 static std::string _Repr(GfFrustum const &self)
 {
@@ -149,7 +149,7 @@ void wrapFrustum()
              (void (This::*)(double, bool, double, double, double))&This::SetPerspective,
              (boost::python::args("fov"), "isFovVertical", "aspectRatio", "nearDist", "farDist"))
 
-        .def("GetPerspective", GetPerspectiveHelper,
+        .def("GetPerspective", pxrBaseGfWrapFrustum::GetPerspectiveHelper,
              (boost::python::args("isFovVertical") = true),
              "Returns the current perspective frustum values suitable\n"
              "for use by SetPerspective.  If the current frustum is a\n"
@@ -170,7 +170,7 @@ void wrapFrustum()
              "returned FOV will be 0.0.")
 
         .def("SetOrthographic", &This::SetOrthographic)
-        .def("GetOrthographic", GetOrthographicHelper)
+        .def("GetOrthographic", pxrBaseGfWrapFrustum::GetOrthographicHelper)
 
         .def("GetPosition", getPositionFunc)
         .def("SetPosition", &This::SetPosition)
@@ -190,14 +190,14 @@ void wrapFrustum()
         .def("GetViewDistance", &This::GetViewDistance)
         .def("SetViewDistance", &This::SetViewDistance)
 
-        .def("FitToSphere", &This::FitToSphere, FitToSphere_overloads())
+        .def("FitToSphere", &This::FitToSphere, pxrBaseGfWrapFrustum::FitToSphere_overloads())
 
         .def("Transform", &This::Transform, boost::python::return_self<>())
 
         .def("ComputeViewDirection", &This::ComputeViewDirection )
         .def("ComputeUpVector", &This::ComputeUpVector )
 
-        .def("ComputeViewFrame", ComputeViewFrameHelper )
+        .def("ComputeViewFrame", pxrBaseGfWrapFrustum::ComputeViewFrameHelper )
 
         .def("ComputeLookAtPoint", &This::ComputeLookAtPoint)
 
@@ -255,7 +255,7 @@ void wrapFrustum()
         .def(boost::python::self == boost::python::self)
         .def(boost::python::self != boost::python::self)
 
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrBaseGfWrapFrustum::_Repr)
         ;
 
     TfPyWrapEnum<This::ProjectionType>();

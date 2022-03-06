@@ -49,7 +49,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
-namespace {
+namespace pxrUsdUsdSkelWrapUtils {
 
 
 // deprecated
@@ -314,34 +314,34 @@ void _WrapUtilsT()
 void wrapUsdSkelUtils()
 {
     // Wrap methods supporting different matrix precisions.
-    _WrapUtilsT<GfMatrix3d, GfMatrix4d>();
-    _WrapUtilsT<GfMatrix3f, GfMatrix4f>();
+    pxrUsdUsdSkelWrapUtils::_WrapUtilsT<GfMatrix3d, GfMatrix4d>();
+    pxrUsdUsdSkelWrapUtils::_WrapUtilsT<GfMatrix3f, GfMatrix4f>();
 
     boost::python::def("IsSkelAnimationPrim", &UsdSkelIsSkelAnimationPrim, (boost::python::arg("prim")));
 
     boost::python::def("IsSkinnablePrim", &UsdSkelIsSkinnablePrim, (boost::python::arg("prim")));
 
     // deprecated
-    boost::python::def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
+    boost::python::def("ComputeJointLocalTransforms", &pxrUsdUsdSkelWrapUtils::_ComputeJointLocalTransforms,
         (boost::python::arg("topology"), boost::python::arg("xforms"), boost::python::arg("inverseXforms"),
          boost::python::arg("rootInverseXform")=boost::python::object()));
 
     // deprecated
     boost::python::def("ComputeJointLocalTransforms",
-        &_ComputeJointLocalTransforms_NoInvXforms,
+        &pxrUsdUsdSkelWrapUtils::_ComputeJointLocalTransforms_NoInvXforms,
         (boost::python::arg("topology"), boost::python::arg("xforms"),
          boost::python::arg("rootInverseXform")=boost::python::object()));
 
     // deprecated
-    boost::python::def("ConcatJointTransforms", &_ConcatJointTransforms,
+    boost::python::def("ConcatJointTransforms", &pxrUsdUsdSkelWrapUtils::_ConcatJointTransforms,
         (boost::python::arg("topology"), boost::python::arg("jointLocalXforms"),
          boost::python::arg("rootXform")=boost::python::object()));
 
-    boost::python::def("MakeTransform", &_MakeTransform,
+    boost::python::def("MakeTransform", &pxrUsdUsdSkelWrapUtils::_MakeTransform,
         (boost::python::arg("translate"), boost::python::arg("rotate"), boost::python::arg("scale")));
 
     // deprecated
-    boost::python::def("MakeTransforms", &_MakeTransforms,
+    boost::python::def("MakeTransforms", &pxrUsdUsdSkelWrapUtils::_MakeTransforms,
         (boost::python::arg("translations"), boost::python::arg("rotations"), boost::python::arg("scales")));
 
     boost::python::def("NormalizeWeights",
@@ -355,19 +355,19 @@ void wrapUsdSkelUtils()
         (boost::python::arg("indices"), boost::python::arg("weights"), boost::python::arg("numInfluencesPerComponent")));
 
     boost::python::def("ExpandConstantInfluencesToVarying",
-        &_ExpandConstantInfluencesToVarying<int>,
+        &pxrUsdUsdSkelWrapUtils::_ExpandConstantInfluencesToVarying<int>,
         (boost::python::arg("array"), boost::python::arg("size")));
 
     boost::python::def("ExpandConstantInfluencesToVarying",
-        &_ExpandConstantInfluencesToVarying<float>,
+        &pxrUsdUsdSkelWrapUtils::_ExpandConstantInfluencesToVarying<float>,
         (boost::python::arg("array"), boost::python::arg("size")));
 
-    boost::python::def("ResizeInfluences", &_ResizeInfluences<int>,
+    boost::python::def("ResizeInfluences", &pxrUsdUsdSkelWrapUtils::_ResizeInfluences<int>,
         (boost::python::arg("array"),
          boost::python::arg("srcNumInfluencesPerComponent"),
          boost::python::arg("newNumInfluencesPerComponent")));
 
-    boost::python::def("ResizeInfluences", &_ResizeInfluences<float>,
+    boost::python::def("ResizeInfluences", &pxrUsdUsdSkelWrapUtils::_ResizeInfluences<float>,
         (boost::python::arg("array"),
          boost::python::arg("srcNumInfluencesPerComponent"),
          boost::python::arg("newNumInfluencesPerComponent")));

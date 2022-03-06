@@ -46,7 +46,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapPrimSpec {
 
 ////////////////////////////////////////////////////////////////////////
 // Wrappers for constructors and proxy constructors
@@ -225,15 +225,15 @@ void wrapPrimSpec()
         ("PrimSpec", boost::python::no_init)
         .def(SdfPySpec())
 
-        .def(SdfMakePySpecConstructor(&_NewFromLayer))
-        .def(SdfMakePySpecConstructor(&_NewTypelessFromLayer))
-        .def(SdfMakePySpecConstructor(&_NewPrim))
-        .def(SdfMakePySpecConstructor(&_NewTypelessPrim))
+        .def(SdfMakePySpecConstructor(&pxrUsdSdfWrapPrimSpec::_NewFromLayer))
+        .def(SdfMakePySpecConstructor(&pxrUsdSdfWrapPrimSpec::_NewTypelessFromLayer))
+        .def(SdfMakePySpecConstructor(&pxrUsdSdfWrapPrimSpec::_NewPrim))
+        .def(SdfMakePySpecConstructor(&pxrUsdSdfWrapPrimSpec::_NewTypelessPrim))
 
         .add_property("name",
             boost::python::make_function(&This::GetName,
                           boost::python::return_value_policy<boost::python::return_by_value>()),
-            &_WrapSetName,
+            &pxrUsdSdfWrapPrimSpec::_WrapSetName,
             "The prim's name.")
 
         .add_property("comment",
@@ -292,7 +292,7 @@ void wrapPrimSpec()
 
         .add_property("symmetryArguments",
             &This::GetSymmetryArguments,
-            &_SetSymmetryArguments,
+            &pxrUsdSdfWrapPrimSpec::_SetSymmetryArguments,
             "Dictionary with prim symmetry arguments.\n\n"
             "Although this property is marked read-only, you can "
             "modify the contents to add, change, and clear symmetry "
@@ -305,7 +305,7 @@ void wrapPrimSpec()
 
         .add_property("customData",
             &This::GetCustomData,
-            &_SetCustomData,
+            &pxrUsdSdfWrapPrimSpec::_SetCustomData,
             "The custom data for this prim.\n\n"
             "The default value for custom data is an empty dictionary.\n\n"
             "Custom data is for use by plugins or other non-tools supplied \n"
@@ -318,7 +318,7 @@ void wrapPrimSpec()
 
         .add_property("assetInfo",
             &This::GetAssetInfo,
-            &_SetAssetInfo,
+            &pxrUsdSdfWrapPrimSpec::_SetAssetInfo,
             "Returns the asset info dictionary for this prim.\n\n"
             "The default value is an empty dictionary.\n\n"
             "The asset info dictionary is used to annotate prims representing "
@@ -402,7 +402,7 @@ void wrapPrimSpec()
             "is modifiable.")
 
         .add_property("variantSets",
-            &_WrapGetVariantSetsProxy,
+            &pxrUsdSdfWrapPrimSpec::_WrapGetVariantSetsProxy,
             "The VariantSetSpecs for this prim indexed by name.\n\n"
             "Although this property is marked as read-only, you can \n"
             "modify the contents to remove variant sets.  New variant sets \n"
@@ -416,7 +416,7 @@ void wrapPrimSpec()
             "The type of this prim.")
 
         .add_property("nameChildren",
-            &_WrapGetNameChildrenProxy,
+            &pxrUsdSdfWrapPrimSpec::_WrapGetNameChildrenProxy,
             "The prim name children of this prim, as an ordered "
             "dictionary.\n\n"
             "Note that although this property is described as being "
@@ -430,7 +430,7 @@ void wrapPrimSpec()
             "nameChildren' statement.")
 
         .add_property("properties",
-            &_WrapGetPropertiesProxy,
+            &pxrUsdSdfWrapPrimSpec::_WrapGetPropertiesProxy,
             "The properties of this prim, as an ordered dictionary.\n\n"
             "Note that although this property is described as being "
             "read-only, you can modify the contents to add, "
@@ -496,7 +496,7 @@ void wrapPrimSpec()
 
         .add_property("relocates",
             &This::GetRelocates,
-            &_SetRelocates,
+            &pxrUsdSdfWrapPrimSpec::_SetRelocates,
             "An editing proxy for the prim's map of relocation paths.\n\n"
             "The map of source-to-target paths specifying namespace "
             "relocation may be set or cleared whole, or individual map "
@@ -510,11 +510,11 @@ void wrapPrimSpec()
             &This::ClearPayloadList,
             "Clears the payloads for this prim.")
 
-        .def("CanSetName", &_WrapCanSetName)
+        .def("CanSetName", &pxrUsdSdfWrapPrimSpec::_WrapCanSetName)
 
-        .def("ApplyNameChildrenOrder", &_ApplyNameChildrenOrder,
+        .def("ApplyNameChildrenOrder", &pxrUsdSdfWrapPrimSpec::_ApplyNameChildrenOrder,
              boost::python::return_value_policy<TfPySequenceToList>())
-        .def("ApplyPropertyOrder", &_ApplyPropertyOrder,
+        .def("ApplyPropertyOrder", &pxrUsdSdfWrapPrimSpec::_ApplyPropertyOrder,
              boost::python::return_value_policy<TfPySequenceToList>())
 
         .setattr("ActiveKey", SdfFieldKeys->Active)

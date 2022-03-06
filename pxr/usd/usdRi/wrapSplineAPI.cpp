@@ -40,7 +40,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdRiWrapSplineAPI {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -79,7 +79,7 @@ void wrapUsdRiSplineAPI()
 {
     typedef UsdRiSplineAPI This;
 
-    UsdRiSplineAPI_CanApplyResult::Wrap<UsdRiSplineAPI_CanApplyResult>(
+    pxrUsdUsdRiWrapSplineAPI::UsdRiSplineAPI_CanApplyResult::Wrap<pxrUsdUsdRiWrapSplineAPI::UsdRiSplineAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     boost::python::class_<This, boost::python::bases<UsdAPISchemaBase> >
@@ -93,7 +93,7 @@ void wrapUsdRiSplineAPI()
         .def("Get", &This::Get, (boost::python::arg("stage"), boost::python::arg("path")))
         .staticmethod("Get")
 
-        .def("CanApply", &_WrapCanApply, (boost::python::arg("prim")))
+        .def("CanApply", &pxrUsdUsdRiWrapSplineAPI::_WrapCanApply, (boost::python::arg("prim")))
         .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (boost::python::arg("prim")))
@@ -112,10 +112,10 @@ void wrapUsdRiSplineAPI()
         .def(!boost::python::self)
 
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdRiWrapSplineAPI::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdRiWrapSplineAPI::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -137,7 +137,7 @@ void wrapUsdRiSplineAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdRiWrapSplineAPI {
 
 static UsdAttribute
 _CreateInterpolationAttr(UsdRiSplineAPI &self,

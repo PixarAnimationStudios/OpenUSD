@@ -38,7 +38,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseGfWrapMultiInterval {
 
 static std::string
 _Repr(GfMultiInterval const &self)
@@ -122,7 +122,7 @@ void wrapMultiInterval()
         .def(boost::python::self >= boost::python::self)
 
         .def(boost::python::self_ns::str(boost::python::self))
-        .def("__repr__", _Repr)
+        .def("__repr__", pxrBaseGfWrapMultiInterval::_Repr)
         .def("__hash__", &This::Hash)
         .def("__iter__", boost::python::iterator<This>())
         ;

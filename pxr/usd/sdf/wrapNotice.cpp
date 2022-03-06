@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdSdfWrapNotice {
 
 TF_INSTANTIATE_NOTICE_WRAPPER(
     SdfNotice::Base, TfNotice);

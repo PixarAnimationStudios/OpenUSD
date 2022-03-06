@@ -154,7 +154,7 @@ UsdGeomSubset::CreateFamilyNameAttr(VtValue const &defaultValue, bool writeSpars
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomSubset {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -176,7 +176,7 @@ UsdGeomSubset::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->familyName,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomSubset::_ConcatenateAttributeNames(
             UsdTyped::GetSchemaAttributeNames(true),
             localNames);
 

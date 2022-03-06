@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdLuxWrapDomeLight {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -114,21 +114,21 @@ void wrapUsdLuxDomeLight()
         .def("GetTextureFileAttr",
              &This::GetTextureFileAttr)
         .def("CreateTextureFileAttr",
-             &_CreateTextureFileAttr,
+             &pxrUsdUsdLuxWrapDomeLight::_CreateTextureFileAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetTextureFormatAttr",
              &This::GetTextureFormatAttr)
         .def("CreateTextureFormatAttr",
-             &_CreateTextureFormatAttr,
+             &pxrUsdUsdLuxWrapDomeLight::_CreateTextureFormatAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetGuideRadiusAttr",
              &This::GetGuideRadiusAttr)
         .def("CreateGuideRadiusAttr",
-             &_CreateGuideRadiusAttr,
+             &pxrUsdUsdLuxWrapDomeLight::_CreateGuideRadiusAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
@@ -137,10 +137,10 @@ void wrapUsdLuxDomeLight()
              &This::GetPortalsRel)
         .def("CreatePortalsRel",
              &This::CreatePortalsRel)
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdLuxWrapDomeLight::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdLuxWrapDomeLight::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -162,7 +162,7 @@ void wrapUsdLuxDomeLight()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdLuxWrapDomeLight {
 
 WRAP_CUSTOM {
     _class

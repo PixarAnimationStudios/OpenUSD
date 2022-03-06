@@ -154,7 +154,7 @@ UsdPhysicsSphericalJoint::CreateConeAngle1LimitAttr(VtValue const &defaultValue,
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdPhysicsSphericalJoint {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -176,7 +176,7 @@ UsdPhysicsSphericalJoint::GetSchemaAttributeNames(bool includeInherited)
         UsdPhysicsTokens->physicsConeAngle1Limit,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdPhysicsSphericalJoint::_ConcatenateAttributeNames(
             UsdPhysicsJoint::GetSchemaAttributeNames(true),
             localNames);
 

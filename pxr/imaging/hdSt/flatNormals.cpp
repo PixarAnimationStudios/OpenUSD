@@ -48,7 +48,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace pxrImagingHdStFlatNormals {
 
 enum {
     BufferBinding_Uniforms,
@@ -270,16 +270,16 @@ HdSt_FlatNormalsComputationGPU::Execute(
             }
             HgiShaderFunctionAddBuffer(
                 &computeDesc, "points", srcType,
-                BufferBinding_Points, HgiBindingTypePointer);
+                pxrImagingHdStFlatNormals::BufferBinding_Points, HgiBindingTypePointer);
             HgiShaderFunctionAddWritableBuffer(
                 &computeDesc, "normals", dstType,
-                BufferBinding_Normals);
+                pxrImagingHdStFlatNormals::BufferBinding_Normals);
             HgiShaderFunctionAddBuffer(
                 &computeDesc, "indices", HdStTokens->_int,
-                BufferBinding_Indices, HgiBindingTypePointer);
+                pxrImagingHdStFlatNormals::BufferBinding_Indices, HgiBindingTypePointer);
             HgiShaderFunctionAddBuffer(
                 &computeDesc, "primitiveParam", HdStTokens->_int,
-                BufferBinding_PrimitiveParam, HgiBindingTypePointer);
+                pxrImagingHdStFlatNormals::BufferBinding_PrimitiveParam, HgiBindingTypePointer);
 
             static const std::string params[] = {
                 "vertexOffset",       // offset in aggregated buffer
@@ -366,7 +366,7 @@ HdSt_FlatNormalsComputationGPU::Execute(
         hdStResourceRegistry->RegisterResourceBindings(rbHash);
     if (resourceBindingsInstance.IsFirstInstance()) {
         HgiResourceBindingsSharedPtr rb =
-            _CreateResourceBindings(hgi,
+            pxrImagingHdStFlatNormals::_CreateResourceBindings(hgi,
                                     points->GetHandle(),
                                     normals->GetHandle(),
                                     indices->GetHandle(),
@@ -382,7 +382,7 @@ HdSt_FlatNormalsComputationGPU::Execute(
     HdInstance<HgiComputePipelineSharedPtr> computePipelineInstance =
         hdStResourceRegistry->RegisterComputePipeline(pHash);
     if (computePipelineInstance.IsFirstInstance()) {
-        HgiComputePipelineSharedPtr pipe = _CreatePipeline(
+        HgiComputePipelineSharedPtr pipe = pxrImagingHdStFlatNormals::_CreatePipeline(
             hgi, sizeof(uniform), computeProgram->GetProgram());
         computePipelineInstance.SetValue(pipe);
     }
@@ -398,7 +398,7 @@ HdSt_FlatNormalsComputationGPU::Execute(
 
     // transfer uniform buffer
     computeCmds->SetConstantValues(
-        pipeline, BufferBinding_Uniforms, sizeof(uniform), &uniform);
+        pipeline, pxrImagingHdStFlatNormals::BufferBinding_Uniforms, sizeof(uniform), &uniform);
 
     // Queue compute work
     computeCmds->Dispatch(numPrims, 1);

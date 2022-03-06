@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace
+namespace pxrUsdArPackageUtils
 {
 // Returns iterator in \p path pointing to outermost ']' delimiter.
 std::string::const_iterator
@@ -160,10 +160,10 @@ ArIsPackageRelativePath(
     const std::string& path)
 {
     return !path.empty() && path.back() == ']' && 
-        _FindMatchingOpeningDelimiter(path, path.end() - 1) != path.end();
+        pxrUsdArPackageUtils::_FindMatchingOpeningDelimiter(path, path.end() - 1) != path.end();
 }
 
-namespace
+namespace pxrUsdArPackageUtils
 {
 
 template <class Iter>
@@ -231,7 +231,7 @@ std::string
 ArJoinPackageRelativePath(
     const std::vector<std::string>& paths)
 {
-    return _JoinPackageRelativePath(paths.begin(), paths.end());
+    return pxrUsdArPackageUtils::_JoinPackageRelativePath(paths.begin(), paths.end());
 }
 
 std::string
@@ -239,7 +239,7 @@ ArJoinPackageRelativePath(
     const std::pair<std::string, std::string>& paths)
 {
     const std::string* const arr[2] = { &paths.first, &paths.second };
-    return _JoinPackageRelativePath(arr, arr + 2);
+    return pxrUsdArPackageUtils::_JoinPackageRelativePath(arr, arr + 2);
 }
 
 std::string
@@ -247,7 +247,7 @@ ArJoinPackageRelativePath(
     const std::string& packagePath, const std::string& packagedPath)
 {
     const std::string* const arr[2] = { &packagePath, &packagedPath };
-    return _JoinPackageRelativePath(arr, arr + 2);
+    return pxrUsdArPackageUtils::_JoinPackageRelativePath(arr, arr + 2);
 }
 
 std::pair<std::string, std::string>
@@ -257,11 +257,11 @@ ArSplitPackageRelativePathOuter(
     // For example, given a path like "/dir/foo.package[bar.package[baz.file]]",
     // find the range [outermostOpenIt, outermostCloseIt] containing 
     // "[bar.package[baz.file]]"
-    auto outermostCloseIt = _FindOutermostClosingDelimiter(path);
+    auto outermostCloseIt = pxrUsdArPackageUtils::_FindOutermostClosingDelimiter(path);
     if (outermostCloseIt == path.end()) {
         return std::make_pair(path, std::string());
     }
-    auto outermostOpenIt = _FindMatchingOpeningDelimiter(path, outermostCloseIt);
+    auto outermostOpenIt = pxrUsdArPackageUtils::_FindMatchingOpeningDelimiter(path, outermostCloseIt);
     if (outermostOpenIt == path.end()) {
         return std::make_pair(path, std::string());
     }
@@ -272,7 +272,7 @@ ArSplitPackageRelativePathOuter(
     // Drop the opening and closing delimiters to create the packaged path,
     // making sure to unescape delimiters now that this path has been split.
     std::string packagedPath(outermostOpenIt + 1, outermostCloseIt);
-    packagedPath = _UnescapeDelimiters(packagedPath);
+    packagedPath = pxrUsdArPackageUtils::_UnescapeDelimiters(packagedPath);
 
     return std::make_pair(std::move(packagePath), std::move(packagedPath));
 }
@@ -284,11 +284,11 @@ ArSplitPackageRelativePathInner(
     // For example, given a path like "/dir/foo.package[bar.package[baz.file]]",
     // find the range [innermostOpenIt, innermostCloseIt] containing 
     // "[baz.file]"
-    auto innermostCloseIt = _FindInnermostClosingDelimiter(path);
+    auto innermostCloseIt = pxrUsdArPackageUtils::_FindInnermostClosingDelimiter(path);
     if (innermostCloseIt == path.end()) {
         return std::make_pair(path, std::string());
     }
-    auto innermostOpenIt = _FindMatchingOpeningDelimiter(path, innermostCloseIt);
+    auto innermostOpenIt = pxrUsdArPackageUtils::_FindMatchingOpeningDelimiter(path, innermostCloseIt);
     if (innermostOpenIt == path.end()) {
         return std::make_pair(path, std::string());
     }        
@@ -302,7 +302,7 @@ ArSplitPackageRelativePathInner(
     // Drop the opening and closing delimiters to create the packaged path,
     // making sure to unescape delimiters now that this path has been split.
     std::string packagedPath(innermostOpenIt + 1, innermostCloseIt);
-    packagedPath = _UnescapeDelimiters(packagedPath);
+    packagedPath = pxrUsdArPackageUtils::_UnescapeDelimiters(packagedPath);
 
     return std::make_pair(std::move(packagePath), std::move(packagedPath));
 }

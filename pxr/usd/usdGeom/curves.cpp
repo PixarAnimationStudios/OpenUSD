@@ -118,7 +118,7 @@ UsdGeomCurves::CreateWidthsAttr(VtValue const &defaultValue, bool writeSparsely)
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomCurves {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -139,7 +139,7 @@ UsdGeomCurves::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->widths,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomCurves::_ConcatenateAttributeNames(
             UsdGeomPointBased::GetSchemaAttributeNames(true),
             localNames);
 

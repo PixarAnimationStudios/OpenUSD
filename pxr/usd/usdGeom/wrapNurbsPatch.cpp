@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdGeomWrapNurbsPatch {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -212,126 +212,126 @@ void wrapUsdGeomNurbsPatch()
         .def("GetUVertexCountAttr",
              &This::GetUVertexCountAttr)
         .def("CreateUVertexCountAttr",
-             &_CreateUVertexCountAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreateUVertexCountAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetVVertexCountAttr",
              &This::GetVVertexCountAttr)
         .def("CreateVVertexCountAttr",
-             &_CreateVVertexCountAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreateVVertexCountAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetUOrderAttr",
              &This::GetUOrderAttr)
         .def("CreateUOrderAttr",
-             &_CreateUOrderAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreateUOrderAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetVOrderAttr",
              &This::GetVOrderAttr)
         .def("CreateVOrderAttr",
-             &_CreateVOrderAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreateVOrderAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetUKnotsAttr",
              &This::GetUKnotsAttr)
         .def("CreateUKnotsAttr",
-             &_CreateUKnotsAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreateUKnotsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetVKnotsAttr",
              &This::GetVKnotsAttr)
         .def("CreateVKnotsAttr",
-             &_CreateVKnotsAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreateVKnotsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetUFormAttr",
              &This::GetUFormAttr)
         .def("CreateUFormAttr",
-             &_CreateUFormAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreateUFormAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetVFormAttr",
              &This::GetVFormAttr)
         .def("CreateVFormAttr",
-             &_CreateVFormAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreateVFormAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetURangeAttr",
              &This::GetURangeAttr)
         .def("CreateURangeAttr",
-             &_CreateURangeAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreateURangeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetVRangeAttr",
              &This::GetVRangeAttr)
         .def("CreateVRangeAttr",
-             &_CreateVRangeAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreateVRangeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetPointWeightsAttr",
              &This::GetPointWeightsAttr)
         .def("CreatePointWeightsAttr",
-             &_CreatePointWeightsAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreatePointWeightsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetTrimCurveCountsAttr",
              &This::GetTrimCurveCountsAttr)
         .def("CreateTrimCurveCountsAttr",
-             &_CreateTrimCurveCountsAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreateTrimCurveCountsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetTrimCurveOrdersAttr",
              &This::GetTrimCurveOrdersAttr)
         .def("CreateTrimCurveOrdersAttr",
-             &_CreateTrimCurveOrdersAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreateTrimCurveOrdersAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetTrimCurveVertexCountsAttr",
              &This::GetTrimCurveVertexCountsAttr)
         .def("CreateTrimCurveVertexCountsAttr",
-             &_CreateTrimCurveVertexCountsAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreateTrimCurveVertexCountsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetTrimCurveKnotsAttr",
              &This::GetTrimCurveKnotsAttr)
         .def("CreateTrimCurveKnotsAttr",
-             &_CreateTrimCurveKnotsAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreateTrimCurveKnotsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetTrimCurveRangesAttr",
              &This::GetTrimCurveRangesAttr)
         .def("CreateTrimCurveRangesAttr",
-             &_CreateTrimCurveRangesAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreateTrimCurveRangesAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetTrimCurvePointsAttr",
              &This::GetTrimCurvePointsAttr)
         .def("CreateTrimCurvePointsAttr",
-             &_CreateTrimCurvePointsAttr,
+             &pxrUsdUsdGeomWrapNurbsPatch::_CreateTrimCurvePointsAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdGeomWrapNurbsPatch::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdGeomWrapNurbsPatch::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -353,7 +353,7 @@ void wrapUsdGeomNurbsPatch()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdGeomWrapNurbsPatch {
 
 WRAP_CUSTOM {
 }

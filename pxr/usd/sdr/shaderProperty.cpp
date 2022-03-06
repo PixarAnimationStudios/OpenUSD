@@ -56,7 +56,7 @@ using ShaderMetadataHelpers::TokenVecVal;
 typedef std::unordered_map<TfToken, SdfValueTypeName, TfToken::HashFunctor>
         TokenToSdfTypeMap;
 
-namespace {
+namespace pxrUsdSdrShaderProperty {
     // This only establishes EXACT mappings. If a mapping is not included here,
     // a one-to-one mapping isn't possible.
     const TokenToSdfTypeMap& _GetTokenTypeToSdfType()
@@ -631,21 +631,21 @@ SdrShaderProperty::SdrShaderProperty(
     const NdrOptionVec& options)
     : NdrProperty(
         name,
-        /* type= */ _ConvertSdrPropertyTypeAndArraySize(
+        /* type= */ pxrUsdSdrShaderProperty::_ConvertSdrPropertyTypeAndArraySize(
             type, arraySize, metadata).first,
         // Note, that the default value might be modified after creation in
         // SdrShaderNode::_PostProcessProperties. Hence we check and conform the
         // default value in _FinalizeProperty.
         defaultValue,
         isOutput,
-        /* arraySize= */ _ConvertSdrPropertyTypeAndArraySize(
+        /* arraySize= */ pxrUsdSdrShaderProperty::_ConvertSdrPropertyTypeAndArraySize(
             type, arraySize, metadata).second,
         /* isDynamicArray= */false,
         metadata),
 
       _hints(hints),
       _options(options),
-      _usdEncodingVersion(_UsdEncodingVersionsCurrent)
+      _usdEncodingVersion(pxrUsdSdrShaderProperty::_UsdEncodingVersionsCurrent)
 {
     _isDynamicArray =
         IsTruthy(SdrPropertyMetadata->IsDynamicArray, _metadata);
@@ -724,10 +724,10 @@ SdrShaderProperty::CanConnectTo(const NdrProperty& other) const
 
     // Convert input/output types to Sdf types
     const NdrSdfTypeIndicator& sdfInputTypeInd =
-        _GetTypeAsSdfType(inputType, inputArraySize, inputMetadata,
+        pxrUsdSdrShaderProperty::_GetTypeAsSdfType(inputType, inputArraySize, inputMetadata,
                           _usdEncodingVersion);
     const NdrSdfTypeIndicator& sdfOutputTypeInd =
-        _GetTypeAsSdfType(outputType, outputArraySize, outputMetadata,
+        pxrUsdSdrShaderProperty::_GetTypeAsSdfType(outputType, outputArraySize, outputMetadata,
                           _usdEncodingVersion);
     const SdfValueTypeName& sdfInputType = sdfInputTypeInd.first;
     const SdfValueTypeName& sdfOutputType = sdfOutputTypeInd.first;
@@ -777,20 +777,20 @@ SdrShaderProperty::IsVStruct() const
 const NdrSdfTypeIndicator
 SdrShaderProperty::GetTypeAsSdfType() const
 {
-    return _GetTypeAsSdfType(_type, _arraySize, _metadata,
+    return pxrUsdSdrShaderProperty::_GetTypeAsSdfType(_type, _arraySize, _metadata,
                              _usdEncodingVersion);
 }
 
 bool
 SdrShaderProperty::IsAssetIdentifier() const
 {
-    return _IsAssetIdentifier(_metadata);
+    return pxrUsdSdrShaderProperty::_IsAssetIdentifier(_metadata);
 }
 
 bool
 SdrShaderProperty::IsDefaultInput() const
 {
-    return _IsDefaultInput(_metadata);
+    return pxrUsdSdrShaderProperty::_IsDefaultInput(_metadata);
 }
 
 void
@@ -813,10 +813,10 @@ SdrShaderProperty::_ConvertToVStruct()
 void
 SdrShaderProperty::_FinalizeProperty()
 {
-    _sdfTypeDefaultValue = _ConformSdfTypeDefaultValue(_defaultValue, 
+    _sdfTypeDefaultValue = pxrUsdSdrShaderProperty::_ConformSdfTypeDefaultValue(_defaultValue, 
             _type, _arraySize, _metadata, _usdEncodingVersion);
 
-    _defaultValue = _ConformSdrDefaultValue(_defaultValue, _type, _arraySize, 
+    _defaultValue = pxrUsdSdrShaderProperty::_ConformSdrDefaultValue(_defaultValue, _type, _arraySize, 
             _metadata, _name);
     // XXX: Note that until all the codesites using GetDefaultValue() are
     // updated, we need to set the _defaultValue to _sdfTypeDefaultValue.

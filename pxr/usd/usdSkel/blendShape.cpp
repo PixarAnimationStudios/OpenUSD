@@ -154,7 +154,7 @@ UsdSkelBlendShape::CreatePointIndicesAttr(VtValue const &defaultValue, bool writ
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdSkelBlendShape {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -176,7 +176,7 @@ UsdSkelBlendShape::GetSchemaAttributeNames(bool includeInherited)
         UsdSkelTokens->pointIndices,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdSkelBlendShape::_ConcatenateAttributeNames(
             UsdTyped::GetSchemaAttributeNames(true),
             localNames);
 

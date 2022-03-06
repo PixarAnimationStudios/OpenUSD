@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBaseTfWrapStackTrace {
 
 static void
 _PrintStackTrace(boost::python::object &obj, const std::string &reason)
@@ -71,7 +71,7 @@ wrapStackTrace()
         "GetStackTrace()\n\n"
         "Return both the C++ and the python stack as a string.");
     
-    boost::python::def("PrintStackTrace", _PrintStackTrace,
+    boost::python::def("PrintStackTrace", pxrBaseTfWrapStackTrace::_PrintStackTrace,
         "PrintStackTrace(file, str)\n\n"
         "Prints both the C++ and the python stack to the file provided.");
 

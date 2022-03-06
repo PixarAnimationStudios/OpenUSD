@@ -731,7 +731,7 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
     }
 }
 
-namespace {
+namespace pxrImagingHdStBasisCurves {
 
 template <typename T> 
 void 
@@ -878,7 +878,7 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         //assert name not in range.bufferArray.GetResources()
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
         if (!value.IsEmpty()) {
-            ProcessVertexOrVaryingPrimvar(primvar.name, HdInterpolationVertex, 
+            pxrImagingHdStBasisCurves::ProcessVertexOrVaryingPrimvar(primvar.name, HdInterpolationVertex, 
                 value, _topology, &sources);
 
             if (primvar.name == HdTokens->displayOpacity) {
@@ -998,7 +998,7 @@ HdStBasisCurves::_PopulateVaryingPrimvars(HdSceneDelegate *sceneDelegate,
         //assert name not in range.bufferArray.GetResources()
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
         if (!value.IsEmpty()) {
-            ProcessVertexOrVaryingPrimvar(primvar.name, 
+            pxrImagingHdStBasisCurves::ProcessVertexOrVaryingPrimvar(primvar.name, 
                 HdInterpolationVarying, value, _topology, &sources);
 
             if (primvar.name == HdTokens->displayOpacity) {

@@ -171,7 +171,7 @@ UsdGeomCylinder::CreateExtentAttr(VtValue const &defaultValue, bool writeSparsel
                        writeSparsely);
 }
 
-namespace {
+namespace pxrUsdUsdGeomCylinder {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
@@ -194,7 +194,7 @@ UsdGeomCylinder::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->extent,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
+        pxrUsdUsdGeomCylinder::_ConcatenateAttributeNames(
             UsdGeomGprim::GetSchemaAttributeNames(true),
             localNames);
 

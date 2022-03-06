@@ -110,14 +110,14 @@ _ClipDerivationMsg(const TfToken& metadataName,
         TfStringify(v).c_str());
 }
 
-namespace {
+namespace pxrUsdUsdClipSetDefinition {
     struct _ClipTimeString {
         std::string integerPortion;
         std::string decimalPortion;
     };
 }
 
-static _ClipTimeString
+static pxrUsdUsdClipSetDefinition::_ClipTimeString
 _DeriveClipTimeString(const double currentClipTime,
                       const size_t numIntegerHashes,
                       const size_t numDecimalHashes) 
@@ -309,7 +309,7 @@ _DeriveClipInfo(const std::string& templateAssetPath,
         UsdClipsAPIInfoKeys->active, **clipActive, usdPrimPath);
 }
 
-namespace 
+namespace pxrUsdUsdClipSetDefinition 
 {
 struct _ClipSet {
     explicit _ClipSet(const std::string& name_) : name(name_) { }
@@ -350,7 +350,7 @@ _GetInfo(const VtDictionary& dict, const TfToken& key)
 static void
 _RecordAnchorInfo(
     const PcpNodeRef& node, size_t layerIdx,
-    const VtDictionary& clipInfo, _ClipSet* clipSet)
+    const VtDictionary& clipInfo, pxrUsdUsdClipSetDefinition::_ClipSet* clipSet)
 {
     // A clip set is anchored to the strongest site containing opinions
     // about asset paths.
@@ -362,7 +362,7 @@ _RecordAnchorInfo(
         const SdfPath& path = node.GetPath();
         const PcpLayerStackRefPtr& layerStack = node.GetLayerStack();
         const SdfLayerRefPtr& layer = layerStack->GetLayers()[layerIdx];
-        clipSet->anchorInfo = _ClipSet::_AnchorInfo {
+        clipSet->anchorInfo = pxrUsdUsdClipSetDefinition::_ClipSet::_AnchorInfo {
             layerStack, path, layerIdx, 0, // This will get filled in later
             _GetLayerOffsetToRoot(node, layer)
         };
@@ -387,7 +387,7 @@ _ApplyLayerOffsetToClipInfo(
 static void
 _ResolveClipSetsInNode(
     const PcpNodeRef& node,
-    std::map<std::string, _ClipSet>* result)
+    std::map<std::string, pxrUsdUsdClipSetDefinition::_ClipSet>* result)
 {
     const SdfPath& primPath = node.GetPath();
     const SdfLayerRefPtrVector& layers = node.GetLayerStack()->GetLayers();
@@ -411,7 +411,7 @@ _ResolveClipSetsInNode(
     // Iterate from weak-to-strong to build up the composed clip info
     // dictionaries for each clip set, as well as the list of clip sets 
     // that should be added from this layer stack.
-    std::map<std::string, _ClipSet> clipSetsInNode;
+    std::map<std::string, pxrUsdUsdClipSetDefinition::_ClipSet> clipSetsInNode;
     std::vector<std::string> addedClipSets;
     for (size_t i = weakestLayerWithClips + 1; i-- != 0;) {
         const SdfLayerRefPtr& layer = layers[i];
@@ -444,7 +444,7 @@ _ResolveClipSetsInNode(
                     continue;
                 }
 
-                _ClipSet& clipSet = clipSetsInNode.emplace(
+                pxrUsdUsdClipSetDefinition::_ClipSet& clipSet = clipSetsInNode.emplace(
                     clipSetName, clipSetName).first->second;
 
                 VtDictionary clipInfoForLayer;
@@ -512,18 +512,18 @@ Usd_ComputeClipSetDefinitionsForPrimIndex(
     std::vector<Usd_ClipSetDefinition>* clipSetDefinitions,
     std::vector<std::string>* clipSetNames)
 {
-    std::map<std::string, _ClipSet> composedClipSets;
+    std::map<std::string, pxrUsdUsdClipSetDefinition::_ClipSet> composedClipSets;
 
     // Iterate over all nodes from strong to weak to compose all clip sets
     for (Usd_Resolver res(&primIndex); res.IsValid(); res.NextNode()) {
-        std::map<std::string, _ClipSet> clipSetsInNode;
+        std::map<std::string, pxrUsdUsdClipSetDefinition::_ClipSet> clipSetsInNode;
         _ResolveClipSetsInNode(res.GetNode(), &clipSetsInNode);
 
         for (const auto& entry : clipSetsInNode) {
             const std::string& clipSetName = entry.first;
-            const _ClipSet& nodeClipSet = entry.second;
+            const pxrUsdUsdClipSetDefinition::_ClipSet& nodeClipSet = entry.second;
 
-            _ClipSet& composedClipSet = composedClipSets.emplace(
+            pxrUsdUsdClipSetDefinition::_ClipSet& composedClipSet = composedClipSets.emplace(
                 clipSetName, clipSetName).first->second;
             if (!composedClipSet.anchorInfo.layerStack) {
                 composedClipSet.anchorInfo = nodeClipSet.anchorInfo;
@@ -551,13 +551,13 @@ Usd_ComputeClipSetDefinitionsForPrimIndex(
     // Collapse the composed clip sets into a sorted list to ensure 
     // ordering as specified by the clipSets list-op is taken into 
     // account.
-    std::vector<_ClipSet> sortedClipSets;
+    std::vector<pxrUsdUsdClipSetDefinition::_ClipSet> sortedClipSets;
     sortedClipSets.reserve(composedClipSets.size());
     for (auto& entry : composedClipSets) {
         sortedClipSets.emplace_back(std::move(entry.second));
     }
     std::sort(sortedClipSets.begin(), sortedClipSets.end(),
-        [](const _ClipSet& x, const _ClipSet& y) {
+        [](const pxrUsdUsdClipSetDefinition::_ClipSet& x, const pxrUsdUsdClipSetDefinition::_ClipSet& y) {
             return std::tie(x.anchorInfo.layerStack, x.anchorInfo.primPath,
                             x.anchorInfo.layerStackOrder) <
                 std::tie(y.anchorInfo.layerStack, y.anchorInfo.primPath,
@@ -571,7 +571,7 @@ Usd_ComputeClipSetDefinitionsForPrimIndex(
         clipSetNames->reserve(sortedClipSets.size());
     }
 
-    for (const _ClipSet& clipSet : sortedClipSets) {
+    for (const pxrUsdUsdClipSetDefinition::_ClipSet& clipSet : sortedClipSets) {
         clipSetDefinitions->push_back(Usd_ClipSetDefinition());
         Usd_ClipSetDefinition& out = clipSetDefinitions->back();
 

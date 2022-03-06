@@ -343,7 +343,7 @@ _TraceEventFromJSON(
     }
 }
 
-namespace {
+namespace pxrBaseTraceJsonSerialization {
 
 // This class writes a JSON array of JSON objects per thread in the collection
 // which has Counter events and Data events. This data is need in addition to 
@@ -413,7 +413,7 @@ _WriteTraceEventsToJson(
 {
     using CollectionPtr = std::shared_ptr<TraceCollection>;
     // Convert Counter and Data events to JSON.
-    _WriteCollectionEventsToJson eventsToJson;
+    pxrBaseTraceJsonSerialization::_WriteCollectionEventsToJson eventsToJson;
     for (const CollectionPtr& collection : collections) {
         if (collection) {
             collection->Iterate(eventsToJson);

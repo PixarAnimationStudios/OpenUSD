@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace
+namespace pxrImagingHdRetainedDataSource
 {
 
 class Hd_EmptyContainerDataSource : public HdRetainedContainerDataSource
@@ -197,60 +197,60 @@ HdRetainedContainerDataSource::New(
     case 0:
     {
         static const HdRetainedContainerDataSourceHandle emptyContainer(
-            new Hd_EmptyContainerDataSource);
+            new pxrImagingHdRetainedDataSource::Hd_EmptyContainerDataSource);
         return emptyContainer;
     }
     case 1:
-        return Hd_SmallRetainedContainerDataSource<1>::New(
+        return pxrImagingHdRetainedDataSource::Hd_SmallRetainedContainerDataSource<1>::New(
             count, names, values);
     case 2:
-        return Hd_SmallRetainedContainerDataSource<2>::New(
+        return pxrImagingHdRetainedDataSource::Hd_SmallRetainedContainerDataSource<2>::New(
             count, names, values);
     case 3:
-        return Hd_SmallRetainedContainerDataSource<3>::New(
+        return pxrImagingHdRetainedDataSource::Hd_SmallRetainedContainerDataSource<3>::New(
             count, names, values);
     case 4:
-        return Hd_SmallRetainedContainerDataSource<4>::New(
+        return pxrImagingHdRetainedDataSource::Hd_SmallRetainedContainerDataSource<4>::New(
             count, names, values);
     case 5:
-        return Hd_SmallRetainedContainerDataSource<5>::New(
+        return pxrImagingHdRetainedDataSource::Hd_SmallRetainedContainerDataSource<5>::New(
             count, names, values);
     case 6:
-        return Hd_SmallRetainedContainerDataSource<6>::New(
+        return pxrImagingHdRetainedDataSource::Hd_SmallRetainedContainerDataSource<6>::New(
             count, names, values);
     case 7:
-        return Hd_SmallRetainedContainerDataSource<7>::New(
+        return pxrImagingHdRetainedDataSource::Hd_SmallRetainedContainerDataSource<7>::New(
             count, names, values);
     case 8:
-        return Hd_SmallRetainedContainerDataSource<8>::New(
+        return pxrImagingHdRetainedDataSource::Hd_SmallRetainedContainerDataSource<8>::New(
             count, names, values);
     case 9:
-        return Hd_SmallRetainedContainerDataSource<9>::New(
+        return pxrImagingHdRetainedDataSource::Hd_SmallRetainedContainerDataSource<9>::New(
             count, names, values);
     case 10:
-        return Hd_SmallRetainedContainerDataSource<10>::New(
+        return pxrImagingHdRetainedDataSource::Hd_SmallRetainedContainerDataSource<10>::New(
             count, names, values);
     case 11:
-        return Hd_SmallRetainedContainerDataSource<11>::New(
+        return pxrImagingHdRetainedDataSource::Hd_SmallRetainedContainerDataSource<11>::New(
             count, names, values);
     case 12:
-        return Hd_SmallRetainedContainerDataSource<12>::New(
+        return pxrImagingHdRetainedDataSource::Hd_SmallRetainedContainerDataSource<12>::New(
             count, names, values);
     case 13:
-        return Hd_SmallRetainedContainerDataSource<13>::New(
+        return pxrImagingHdRetainedDataSource::Hd_SmallRetainedContainerDataSource<13>::New(
             count, names, values);
     case 14:
-        return Hd_SmallRetainedContainerDataSource<14>::New(
+        return pxrImagingHdRetainedDataSource::Hd_SmallRetainedContainerDataSource<14>::New(
             count, names, values);
     case 15:
-        return Hd_SmallRetainedContainerDataSource<15>::New(
+        return pxrImagingHdRetainedDataSource::Hd_SmallRetainedContainerDataSource<15>::New(
             count, names, values);
     case 16:
-        return Hd_SmallRetainedContainerDataSource<16>::New(
+        return pxrImagingHdRetainedDataSource::Hd_SmallRetainedContainerDataSource<16>::New(
             count, names, values);
     default:
         // any-sized via dense hash map
-        return Hd_MappedRetainedContainerDataSource<32>::New(
+        return pxrImagingHdRetainedDataSource::Hd_MappedRetainedContainerDataSource<32>::New(
             count, names, values);
     }
 }

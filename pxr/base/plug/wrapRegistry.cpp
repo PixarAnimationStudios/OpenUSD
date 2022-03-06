@@ -47,7 +47,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrBasePlugWrapRegistry {
 
 typedef TfWeakPtr<PlugRegistry> PlugRegistryPtr;
 
@@ -200,13 +200,13 @@ void wrapRegistry()
     boost::python::class_<This, TfWeakPtr<This>, boost::noncopyable>
         ("Registry", boost::python::no_init)
         .def(TfPySingleton())
-        .def("RegisterPlugins", &_RegisterPlugins,
+        .def("RegisterPlugins", &pxrBasePlugWrapRegistry::_RegisterPlugins,
             boost::python::return_value_policy<TfPySequenceToList>())
-        .def("RegisterPlugins", &_RegisterPluginsList,
+        .def("RegisterPlugins", &pxrBasePlugWrapRegistry::_RegisterPluginsList,
             boost::python::return_value_policy<TfPySequenceToList>())
-        .def("GetStringFromPluginMetaData", &_GetStringFromPluginMetaData)
+        .def("GetStringFromPluginMetaData", &pxrBasePlugWrapRegistry::_GetStringFromPluginMetaData)
         .def("GetPluginWithName", &This::GetPluginWithName)
-        .def("GetPluginForType", &_GetPluginForType)
+        .def("GetPluginForType", &pxrBasePlugWrapRegistry::_GetPluginForType)
         .def("GetAllPlugins", &This::GetAllPlugins,
              boost::python::return_value_policy<TfPySequenceToList>())
 
@@ -222,14 +222,14 @@ void wrapRegistry()
              boost::python::return_value_policy<TfPySequenceToTuple>())
         .staticmethod("GetDirectlyDerivedTypes")
 
-        .def("GetAllDerivedTypes", _GetAllDerivedTypes,
+        .def("GetAllDerivedTypes", pxrBasePlugWrapRegistry::_GetAllDerivedTypes,
              boost::python::return_value_policy<TfPySequenceToTuple>())
         .staticmethod("GetAllDerivedTypes")
 
         ;
 
-    TfPyFunctionFromPython<PluginPredicateSig>();
+    TfPyFunctionFromPython<pxrBasePlugWrapRegistry::PluginPredicateSig>();
     boost::python::def("_LoadPluginsConcurrently",
-        _LoadPluginsConcurrently,
+        pxrBasePlugWrapRegistry::_LoadPluginsConcurrently,
         (boost::python::arg("predicate"), boost::python::arg("numThreads")=0, boost::python::arg("verbose")=false));
 }

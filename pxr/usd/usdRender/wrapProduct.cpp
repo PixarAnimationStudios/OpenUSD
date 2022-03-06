@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdRenderWrapProduct {
 
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
@@ -107,14 +107,14 @@ void wrapUsdRenderProduct()
         .def("GetProductTypeAttr",
              &This::GetProductTypeAttr)
         .def("CreateProductTypeAttr",
-             &_CreateProductTypeAttr,
+             &pxrUsdUsdRenderWrapProduct::_CreateProductTypeAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
         
         .def("GetProductNameAttr",
              &This::GetProductNameAttr)
         .def("CreateProductNameAttr",
-             &_CreateProductNameAttr,
+             &pxrUsdUsdRenderWrapProduct::_CreateProductNameAttr,
              (boost::python::arg("defaultValue")=boost::python::object(),
               boost::python::arg("writeSparsely")=false))
 
@@ -123,10 +123,10 @@ void wrapUsdRenderProduct()
              &This::GetOrderedVarsRel)
         .def("CreateOrderedVarsRel",
              &This::CreateOrderedVarsRel)
-        .def("__repr__", ::_Repr)
+        .def("__repr__", pxrUsdUsdRenderWrapProduct::_Repr)
     ;
 
-    _CustomWrapCode(cls);
+    pxrUsdUsdRenderWrapProduct::_CustomWrapCode(cls);
 }
 
 // ===================================================================== //
@@ -148,7 +148,7 @@ void wrapUsdRenderProduct()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace pxrUsdUsdRenderWrapProduct {
 
 WRAP_CUSTOM {
 }

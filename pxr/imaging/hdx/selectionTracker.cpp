@@ -62,7 +62,7 @@ HdxSelectionTracker::_IncrementVersion()
     ++_version;
 }
 
-namespace {
+namespace pxrImagingHdxSelectionTracker {
     template <class T>
     void _DebugPrintArray(std::string const& name,
                     T const& array,
@@ -147,7 +147,7 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
                  mode++) {
             (*offsets)[mode + 1] = SELECT_NONE;
         }
-        _DebugPrintArray("nothing selected", *offsets);
+        pxrImagingHdxSelectionTracker::_DebugPrintArray("nothing selected", *offsets);
         return false;
     }
 
@@ -180,7 +180,7 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
         }
     }
 
-    _DebugPrintArray("final output", *offsets);
+    pxrImagingHdxSelectionTracker::_DebugPrintArray("final output", *offsets);
     return hasSelection;
 }
 
@@ -320,7 +320,7 @@ bool _FillPointSelOffsets(int type,
     return hasSelectedPoints;
 }
 
-namespace {
+namespace pxrImagingHdxSelectionTracker {
 
 constexpr int INVALID = -1;
 
@@ -355,7 +355,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
                 ids[i] = rprim->GetPrimId();
             } else {
                 // silently ignore non-existing prim
-                ids[i] = INVALID;
+                ids[i] = pxrImagingHdxSelectionTracker::INVALID;
             }
         }
     });
@@ -366,7 +366,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
         max = std::numeric_limits<int>::lowest();
 
     for (int id : ids) {
-        if (id == INVALID) continue;
+        if (id == pxrImagingHdxSelectionTracker::INVALID) continue;
         min = std::min(id, min);
         max = std::max(id, max);
     }
@@ -433,7 +433,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
         INSTANCE = 3
     };
 
-    _DebugPrintArray("ids", ids);
+    pxrImagingHdxSelectionTracker::_DebugPrintArray("ids", ids);
     // For initialization, use offset=0 in the seloffset encoding.
     // This will be updated as need be once we process subprims and instances.
     output->insert(output->end(), PRIM_SELOFFSETS_HEADER_SIZE + (max - min + 1),
@@ -441,12 +441,12 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
     (*output)[0] = min;
     (*output)[1] = max+1;
 
-    _DebugPrintArray("prims", *output);
+    pxrImagingHdxSelectionTracker::_DebugPrintArray("prims", *output);
 
     for (size_t primIndex = 0; primIndex < ids.size(); primIndex++) {
         // TODO: store ID and path in "ids" vector
         int id = ids[primIndex];
-        if (id == INVALID) continue;
+        if (id == pxrImagingHdxSelectionTracker::INVALID) continue;
 
         SdfPath const& objPath = selectedPrims[primIndex];
         TF_DEBUG(HDX_SELECTION_SETUP).Msg("Processing: %d - %s\n",
@@ -472,7 +472,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
                                  primSelState->pointColorIndices,
                                  output)) {
             netSubprimOffset = curOffset + modeOffset;
-            _DebugPrintArray("points", *output);
+            pxrImagingHdxSelectionTracker::_DebugPrintArray("points", *output);
         }
 
         //------------------------------------------------------------------- //
@@ -482,7 +482,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
         if (_FillSubprimSelOffsets(EDGE,  primSelState->edgeIndices,
                                 netSubprimOffset, output)) {
             netSubprimOffset = curOffset + modeOffset;
-            _DebugPrintArray("edges", *output);
+            pxrImagingHdxSelectionTracker::_DebugPrintArray("edges", *output);
         }
 
         // ------------------------------------------------------------------ //
@@ -493,7 +493,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
         if (_FillSubprimSelOffsets(ELEMENT,  primSelState->elementIndices,
                                 netSubprimOffset, output)) {
             netSubprimOffset = curOffset + modeOffset;
-            _DebugPrintArray("elements", *output);
+            pxrImagingHdxSelectionTracker::_DebugPrintArray("elements", *output);
         }
 
         // ------------------------------------------------------------------ //
@@ -503,7 +503,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
         if (_FillSubprimSelOffsets(INSTANCE, primSelState->instanceIndices,
                                 netSubprimOffset, output)) {
             netSubprimOffset = curOffset + modeOffset;
-            _DebugPrintArray("instances", *output);
+            pxrImagingHdxSelectionTracker::_DebugPrintArray("instances", *output);
         }
 
         // Finally, put the prim selection state in.
@@ -511,7 +511,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
             primSelState->fullySelected);
     }
 
-    _DebugPrintArray("final output", *output);
+    pxrImagingHdxSelectionTracker::_DebugPrintArray("final output", *output);
 
     return true;
 }

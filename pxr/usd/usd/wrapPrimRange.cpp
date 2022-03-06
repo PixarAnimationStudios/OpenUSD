@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace pxrUsdUsdWrapPrimRange {
 
 class Usd_PyPrimRangeIterator;
 
@@ -213,37 +213,37 @@ void wrapUsdPrimRange()
 {
     {
         boost::python::scope s =
-            boost::python::class_<Usd_PyPrimRange>("PrimRange", boost::python::no_init)
+            boost::python::class_<pxrUsdUsdWrapPrimRange::Usd_PyPrimRange>("PrimRange", boost::python::no_init)
             .def(boost::python::init<UsdPrim>(boost::python::arg("root")))
             .def(boost::python::init<UsdPrim, Usd_PrimFlagsPredicate>(
                      (boost::python::arg("root"), boost::python::arg("predicate"))))
             
             .def("PreAndPostVisit",
-                 (Usd_PyPrimRange (*)(UsdPrim))
-                 &Usd_PyPrimRange::PreAndPostVisit, boost::python::arg("root"))
+                 (pxrUsdUsdWrapPrimRange::Usd_PyPrimRange (*)(UsdPrim))
+                 &pxrUsdUsdWrapPrimRange::Usd_PyPrimRange::PreAndPostVisit, boost::python::arg("root"))
             .def("PreAndPostVisit",
-                 (Usd_PyPrimRange (*)(UsdPrim, Usd_PrimFlagsPredicate))
-                 &Usd_PyPrimRange::PreAndPostVisit,
+                 (pxrUsdUsdWrapPrimRange::Usd_PyPrimRange (*)(UsdPrim, Usd_PrimFlagsPredicate))
+                 &pxrUsdUsdWrapPrimRange::Usd_PyPrimRange::PreAndPostVisit,
                  (boost::python::arg("root"), boost::python::arg("predicate")))
             .staticmethod("PreAndPostVisit")
              
-            .def("AllPrims", &Usd_PyPrimRange::AllPrims, boost::python::arg("root"))
+            .def("AllPrims", &pxrUsdUsdWrapPrimRange::Usd_PyPrimRange::AllPrims, boost::python::arg("root"))
             .staticmethod("AllPrims")
 
             .def("AllPrimsPreAndPostVisit",
-                 &Usd_PyPrimRange::AllPrimsPreAndPostVisit, boost::python::arg("root"))
+                 &pxrUsdUsdWrapPrimRange::Usd_PyPrimRange::AllPrimsPreAndPostVisit, boost::python::arg("root"))
             .staticmethod("AllPrimsPreAndPostVisit")
 
             .def("Stage",
-                 (Usd_PyPrimRange (*)(const UsdStagePtr &))
-                 &Usd_PyPrimRange::Stage, boost::python::arg("stage"))
+                 (pxrUsdUsdWrapPrimRange::Usd_PyPrimRange (*)(const UsdStagePtr &))
+                 &pxrUsdUsdWrapPrimRange::Usd_PyPrimRange::Stage, boost::python::arg("stage"))
             .def("Stage",
-                 (Usd_PyPrimRange (*)(
+                 (pxrUsdUsdWrapPrimRange::Usd_PyPrimRange (*)(
                      const UsdStagePtr &, const Usd_PrimFlagsPredicate &))
-                 &Usd_PyPrimRange::Stage, (boost::python::arg("stage"), boost::python::arg("predicate")))
+                 &pxrUsdUsdWrapPrimRange::Usd_PyPrimRange::Stage, (boost::python::arg("stage"), boost::python::arg("predicate")))
             .staticmethod("Stage")
 
-            .def("IsValid", &Usd_PyPrimRange::IsValid,
+            .def("IsValid", &pxrUsdUsdWrapPrimRange::Usd_PyPrimRange::IsValid,
                  "true if the iterator is not yet exhausted")
 
             .def(!boost::python::self)
@@ -254,28 +254,28 @@ void wrapUsdPrimRange()
             // returned iterator will prevent the source range (this) from
             // expiring until the iterator expires itself.  We need that since
             // the iterator stores a pointer to its range.
-            .def("__iter__", &Usd_PyPrimRange::__iter__,
+            .def("__iter__", &pxrUsdUsdWrapPrimRange::Usd_PyPrimRange::__iter__,
                  boost::python::with_custodian_and_ward_postcall<0, 1>())
             ;
 
-        boost::python::class_<Usd_PyPrimRangeIterator>("_Iterator", boost::python::no_init)
+        boost::python::class_<pxrUsdUsdWrapPrimRange::Usd_PyPrimRangeIterator>("_Iterator", boost::python::no_init)
             // This is a lambda that does nothing cast to a function pointer.
             // All we want is to return 'self'.
-            .def("__iter__", static_cast<void (*)(Usd_PyPrimRangeIterator)>
-                     ([](Usd_PyPrimRangeIterator){}), boost::python::return_self<>())
-            .def(TfPyIteratorNextMethodName, &Usd_PyPrimRangeIterator::next)
-            .def("IsPostVisit", &Usd_PyPrimRangeIterator::IsPostVisit)
-            .def("PruneChildren", &Usd_PyPrimRangeIterator::PruneChildren)
-            .def("IsValid", &Usd_PyPrimRangeIterator::IsValid,
+            .def("__iter__", static_cast<void (*)(pxrUsdUsdWrapPrimRange::Usd_PyPrimRangeIterator)>
+                     ([](pxrUsdUsdWrapPrimRange::Usd_PyPrimRangeIterator){}), boost::python::return_self<>())
+            .def(TfPyIteratorNextMethodName, &pxrUsdUsdWrapPrimRange::Usd_PyPrimRangeIterator::next)
+            .def("IsPostVisit", &pxrUsdUsdWrapPrimRange::Usd_PyPrimRangeIterator::IsPostVisit)
+            .def("PruneChildren", &pxrUsdUsdWrapPrimRange::Usd_PyPrimRangeIterator::PruneChildren)
+            .def("IsValid", &pxrUsdUsdWrapPrimRange::Usd_PyPrimRangeIterator::IsValid,
                  "true if the iterator is not yet exhausted")
-            .def("GetCurrentPrim", &Usd_PyPrimRangeIterator::GetCurrentPrim,
+            .def("GetCurrentPrim", &pxrUsdUsdWrapPrimRange::Usd_PyPrimRangeIterator::GetCurrentPrim,
                  "Since an iterator cannot be dereferenced in python, "
                  "GetCurrentPrim()\n performs the same function: yielding "
                  "the currently visited prim.")
             ;
     }
 
-    Usd_PyPrimRange::RegisterConversions();
+    pxrUsdUsdWrapPrimRange::Usd_PyPrimRange::RegisterConversions();
 
-    boost::python::def("_TestPrimRangeRoundTrip", _TestPrimRangeRoundTrip);
+    boost::python::def("_TestPrimRangeRoundTrip", pxrUsdUsdWrapPrimRange::_TestPrimRangeRoundTrip);
 }
