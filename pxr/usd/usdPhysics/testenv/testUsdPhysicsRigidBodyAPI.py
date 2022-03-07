@@ -452,6 +452,49 @@ class TestUsdPhysicsRigidBodyAPI(unittest.TestCase):
                         
         self.compare_mass_information(rigidBodyAPI, 1000.0, expectedInertia=Gf.Vec3f(2.0))
 
+    # inertia test, test compound body
+    def test_mass_rigid_body_cube_rigid_body_compound(self):
+        self.setup_scene()
+
+        # top level xform - rigid body
+        self.xform = UsdGeom.Xform.Define(self.stage, "/xform")
+        rigidBodyAPI = UsdPhysics.RigidBodyAPI.Apply(self.xform.GetPrim())        
+
+        size = 1.0
+        scale = Gf.Vec3f(3.0, 2.0, 3.0)        
+
+        # Create test collider cube0
+        cube = UsdGeom.Cube.Define(self.stage, "/xform/cube0")
+        cube.CreateSizeAttr(size)
+        cube.AddTranslateOp().Set(Gf.Vec3f(100.0, 20.0, 10.0))
+        cube0RotateOp = cube.AddRotateXYZOp()
+        cube0RotateOp.Set(Gf.Vec3f(0.0,0.0,45.0))
+        cube.AddScaleOp().Set(scale)
+        UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+
+        # Create test collider cube1
+        cube = UsdGeom.Cube.Define(self.stage, "/xform/cube1")
+        cube.CreateSizeAttr(size)
+        cube.AddTranslateOp().Set(Gf.Vec3f(-100.0, 20.0, 10.0))
+        cube1RotateOp = cube.AddRotateXYZOp()
+        cube1RotateOp.Set(Gf.Vec3f(0.0,0.0,45.0))
+        cube.AddScaleOp().Set(scale)
+        UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+
+        self.rigidBodyWorldTransform = UsdGeom.Xformable(self.xform.GetPrim()).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        self.rigidBodyPrim = self.xform.GetPrim()
+                        
+        mass, inertia_compare, centerOfMass, principalAxes = rigidBodyAPI.ComputeMassProperties(self.mass_information_fn)
+
+        cube0RotateOp.Set(Gf.Vec3f(0.0,90.0,45.0))
+        cube1RotateOp.Set(Gf.Vec3f(0.0,0.0,45.0))
+
+        mass, inertia, centerOfMass, principalAxes = rigidBodyAPI.ComputeMassProperties(self.mass_information_fn)
+
+        toleranceEpsilon = 1
+        self.assertTrue(Gf.IsClose(inertia, inertia_compare, toleranceEpsilon))
+
+
     # principal axes tests
     # principal axes test, applied principal axis to a body
     def test_mass_rigid_body_cube_rigid_body_principal_axes(self):
