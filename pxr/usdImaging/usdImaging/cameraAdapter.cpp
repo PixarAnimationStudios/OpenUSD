@@ -199,6 +199,24 @@ UsdImagingCameraAdapter::TrackVariability(UsdPrim const& prim,
                    false)) {
         return;
     }
+
+    if ((*timeVaryingBits & HdCamera::DirtyParams) != 0)
+        return;
+
+    // If any other camera attributes are time varying
+    // we will assume all camera params are time-varying.
+    const std::vector<UsdAttribute> &attrs = prim.GetAttributes();
+    for (UsdAttribute const& attr : attrs) {
+        // Don't double-count transform attrs.
+        if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(
+                attr.GetBaseName())) {
+            continue;
+        }
+        if (attr.GetNumTimeSamples() > 1) {
+            *timeVaryingBits |= HdCamera::DirtyParams;
+            break;
+        }
+    }
 }
 
 void 
