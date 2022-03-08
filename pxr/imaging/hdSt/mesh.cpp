@@ -2849,6 +2849,9 @@ HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
 
     HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader;
 
+    const bool materialIsFinal = GetDisplayStyle(sceneDelegate).materialIsFinal;
+    bool materialIsFinalChanged = false;
+
     for (auto const& reprPair : _reprs) {
         const TfToken &reprToken = reprPair.first;
         _MeshReprConfig::DescArray descs = _GetReprDesc(reprToken);
@@ -2866,6 +2869,11 @@ HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
             {
                 HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
                     repr->GetDrawItem(drawItemIndex++));
+
+                if (materialIsFinal != drawItem->GetMaterialIsFinal()) {
+                    materialIsFinalChanged = true;
+                }
+                drawItem->SetMaterialIsFinal(materialIsFinal);
 
                 if (updateMaterialNetworkShader) {
                     materialNetworkShader =
@@ -2894,6 +2902,9 @@ HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                 if (!TF_VERIFY(drawItem)) {
                     continue;
                 }
+
+                drawItem->SetMaterialIsFinal(materialIsFinal);
+
                 if (updateMaterialNetworkShader) {
                     materialNetworkShader = HdStGetMaterialNetworkShader(
                         this, sceneDelegate, materialId);
@@ -2906,6 +2917,13 @@ HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
             }
             geomSubsetDescIndex++;
         }
+    }
+
+    if (materialIsFinalChanged) {
+        HdStMarkDrawBatchesDirty(renderParam);
+        TF_DEBUG(HD_RPRIM_UPDATED).Msg(
+            "%s: Marking all batches dirty to trigger deep validation because "
+            "the materialIsFinal was updated.\n", GetId().GetText());
     }
 }
 

@@ -538,6 +538,8 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                 HdStGetMaterialNetworkShader(this, sceneDelegate);
     }
 
+    const bool materialIsFinal = GetDisplayStyle(sceneDelegate).materialIsFinal;
+    bool materialIsFinalChanged = false;
     for (auto const& reprPair : _reprs) {
         const TfToken &reprToken = reprPair.first;
         _BasisCurvesReprConfig::DescArray const &descs =
@@ -548,8 +550,13 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
             if (descs[descIdx].geomStyle == HdBasisCurvesGeomStyleInvalid) {
                 continue;
             }
+
             HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
                 repr->GetDrawItem(drawItemIndex++));
+            if (materialIsFinal != drawItem->GetMaterialIsFinal()) {
+                materialIsFinalChanged = true;
+            }
+            drawItem->SetMaterialIsFinal(materialIsFinal);
 
             if (updateMaterialNetworkShader) {
                 drawItem->SetMaterialNetworkShader(materialNetworkShader);
@@ -559,6 +566,13 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                     sceneDelegate, renderParam, drawItem, descs[descIdx]);
             }
         }
+    }
+
+    if (materialIsFinalChanged) {
+        HdStMarkDrawBatchesDirty(renderParam);
+        TF_DEBUG(HD_RPRIM_UPDATED).Msg(
+            "%s: Marking all batches dirty to trigger deep validation because "
+            "the materialIsFinal was updated.\n", GetId().GetText());
     }
 }
 

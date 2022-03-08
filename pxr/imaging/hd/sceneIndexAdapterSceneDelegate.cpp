@@ -2101,6 +2101,11 @@ HdSceneIndexAdapterSceneDelegate::GetDisplayStyle(SdfPath const &id)
                 styleSchema.GetPointsShadingEnabled()) {
             result.pointsShadingEnabled = ds->GetTypedValue(0.0f);
         }
+
+        if (HdBoolDataSourceHandle ds =
+                styleSchema.GetMaterialIsFinal()) {
+            result.materialIsFinal = ds->GetTypedValue(0.0f);
+        }
     }
 
     return result;

@@ -133,6 +133,11 @@ HdSt_DrawBatch::_IsAggregated(HdStDrawItem const *drawItem0,
         return false;
     }
 
+    if (drawItem0->GetMaterialIsFinal() != 
+        drawItem1->GetMaterialIsFinal()) {
+        return false;
+    }
+
     if (drawItem0->GetGeometricShader() == drawItem1->GetGeometricShader()
         && drawItem0->GetInstancePrimvarNumLevels() ==
             drawItem1->GetInstancePrimvarNumLevels()
@@ -239,10 +244,10 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
 
     HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader =
         firstDrawItem->GetMaterialNetworkShader();
-    if (materialNetworkShader && materialNetworkShader->IsSceneMaterial()) {
-        if (!state->GetUseSceneMaterials()) {
-            materialNetworkShader = _GetFallbackMaterialNetworkShader();
-        }
+    
+    if (!state->GetUseSceneMaterials() &&
+        !firstDrawItem->GetMaterialIsFinal() ) {
+        materialNetworkShader = _GetFallbackMaterialNetworkShader();
     }
 
     size_t materialNetworkShaderHash =
