@@ -6,6 +6,7 @@
 
   <standard_surface name="SR_default" type="surfaceshader">
     <input name="base_color" type="color3" value="0.2, 0.4, 0.2" />
+    <input name="thin_walled" type="boolean" value="false" />
   </standard_surface>
   <surfacematerial name="Default" type="material">
     <input name="surfaceshader" type="surfaceshader" nodename="SR_default" />
