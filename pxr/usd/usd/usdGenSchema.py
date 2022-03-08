@@ -31,8 +31,9 @@ generated that will compile and work with USD Core successfully:
     
     * Must specify the libraryName as layer metadata.
     * Schema typenames must be unique across all libraries.
-    * Attribute names and tokens must be camelCased valid identifiers, else
-      provide the useLiteralIdentifier metadata in the library's schema.usda.
+    * Attribute names and tokens should be camelCased valid identifiers.
+      However, useLiteralIdentifier can be provided to use literals as-is. Any
+      invalid token will be converted using TfMakeValidIdentifier. 
     * usd/schema.usda must exist in the LayerStack, not necessarily as a 
         directly subLayer.
 """
