@@ -513,7 +513,7 @@ pxr_register_test(testUsdviewAnimatedBounds
     EXPECTED_RETURN_CODE 0
 )
 
-if (MACOS)
+if (APPLE)
     message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on macOS")
     return()
 endif()
