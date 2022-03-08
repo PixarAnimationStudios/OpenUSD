@@ -145,6 +145,7 @@ HdSt_GenMaterialXShader(
     if (typedElem) {
         return _GenMaterialXShader(mxContext, typedElem);
     }
+    TF_CODING_ERROR("Unable to generate a shader from the MaterialX Document");
     return nullptr;
 }
 
@@ -612,14 +613,15 @@ HdSt_ApplyMaterialXFilter(
         // Load MaterialX Document and generate the glslfxShader
         mx::ShaderPtr glslfxShader = HdSt_GenMaterialXShader(mtlxDoc,
                                     searchPath, mxHdInfo);
-
+        if (!glslfxShader) {
+            return;
+        }
         // Add material parameters from the glslfxShader to the materialParams
         _AddMaterialXParams(glslfxShader, materialParams);
 
         // Create a new terminal node with the new glslfxSource
-        const std::string glslfxSource = glslfxShader
-            ? glslfxShader->getSourceCode(mx::Stage::PIXEL)
-            : mx::EMPTY_STRING;
+        const std::string glslfxSource =
+            glslfxShader->getSourceCode(mx::Stage::PIXEL);
         SdrShaderNodeConstPtr sdrNode = 
             sdrRegistry.GetShaderNodeFromSourceCode(glslfxSource, 
                                                     HioGlslfxTokens->glslfx,
