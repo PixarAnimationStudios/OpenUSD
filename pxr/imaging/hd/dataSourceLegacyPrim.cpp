@@ -2470,13 +2470,13 @@ _ConvertHdMaterialNetworkToHdDataSources(
 
     for (auto const &iter: hdNetworkMap.map) {
         const TfToken &terminalName = iter.first;
-        terminalsNames.push_back(terminalName);
-
         const HdMaterialNetwork &hdNetwork = iter.second;
 
         if (hdNetwork.nodes.empty()) {
             continue;
         }
+
+        terminalsNames.push_back(terminalName);
 
         // Transfer over individual nodes.
         // Note that the same nodes may be shared by multiple terminals.
