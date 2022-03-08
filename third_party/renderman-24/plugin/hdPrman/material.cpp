@@ -715,11 +715,8 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
         VtValue hdMatVal = sceneDelegate->GetMaterialResource(id);
         if (hdMatVal.IsHolding<HdMaterialNetworkMap>()) {
             // Convert HdMaterial to HdMaterialNetwork2 form.
-            HdMaterialNetwork2 matNetwork2;
-            HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
-                hdMatVal.UncheckedGet<HdMaterialNetworkMap>(), 
-                &matNetwork2);
-            _materialNetwork = std::move(matNetwork2);
+            _materialNetwork = HdConvertToHdMaterialNetwork2(
+                    hdMatVal.UncheckedGet<HdMaterialNetworkMap>());
             // Apply material filter chain to the network conditionally.
             // NOTE: When use scene index plugins for matfilt transformations,
             // the matfilt operations are triggered by the GetMaterialResource()

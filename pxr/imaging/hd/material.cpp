@@ -35,13 +35,13 @@ HdMaterial::HdMaterial(SdfPath const& id)
 
 HdMaterial::~HdMaterial() = default;
 
-void
-HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
+HdMaterialNetwork2
+HdConvertToHdMaterialNetwork2(
     const HdMaterialNetworkMap & hdNetworkMap,
-    HdMaterialNetwork2 *result,
     bool *isVolume)
 {
     HD_TRACE_FUNCTION();
+    HdMaterialNetwork2 result;
 
     for (auto const& iter: hdNetworkMap.map) {
         const TfToken & terminalName = iter.first;
@@ -60,22 +60,22 @@ HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
             continue;
         }
         for (const HdMaterialNode & node : hdNetwork.nodes) {
-            HdMaterialNode2 & materialNode2 = result->nodes[node.path];
+            HdMaterialNode2 & materialNode2 = result.nodes[node.path];
             materialNode2.nodeTypeId = node.identifier;
             materialNode2.parameters = node.parameters;
         }
         // Assume that the last entry is the terminal 
-        result->terminals[terminalName].upstreamNode = 
+        result.terminals[terminalName].upstreamNode = 
                 hdNetwork.nodes.back().path;
 
         // Transfer relationships to inputConnections on receiving/downstream nodes.
         for (const HdMaterialRelationship & rel : hdNetwork.relationships) {
             
             // outputId (in hdMaterial terms) is the input of the receiving node
-            auto iter = result->nodes.find(rel.outputId);
+            auto iter = result.nodes.find(rel.outputId);
 
             // skip connection if the destination node doesn't exist
-            if (iter == result->nodes.end()) {
+            if (iter == result.nodes.end()) {
                 continue;
             }
 
@@ -91,8 +91,9 @@ HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
         }
 
         // Transfer primvars:
-        result->primvars = hdNetwork.primvars;
+        result.primvars = hdNetwork.primvars;
     }
+    return result;
 }
 
 

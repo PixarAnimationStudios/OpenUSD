@@ -530,9 +530,8 @@ _PopulateNodesFromMaterialResource(HdSceneDelegate *sceneDelegate,
     }
 
     // Convert HdMaterial to HdMaterialNetwork2 form.
-    HdMaterialNetwork2 matNetwork2;
-    HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
-        hdMatVal.UncheckedGet<HdMaterialNetworkMap>(), &matNetwork2);
+    const HdMaterialNetwork2 matNetwork2 = HdConvertToHdMaterialNetwork2(
+            hdMatVal.UncheckedGet<HdMaterialNetworkMap>());
 
     SdfPath nodePath;
     for (auto const& terminal: matNetwork2.terminals) {
