@@ -161,6 +161,14 @@ pxr_library(sdf
 
     DOXYGEN_FILES
         overview.dox
+
+    UNITY_BUILD_EXCLUDE_FILES
+        path.cpp
+        path.lex.cpp
+        path.tab.cpp
+        textFileFormat.cpp
+        textFileFormat.lex.cpp
+        textFileFormat.tab.cpp
 )
 
 # Validate that the checked in generated code matches the sources. This requires

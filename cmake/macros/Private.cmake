@@ -696,6 +696,34 @@ function(_pxr_transitive_internal_libraries libs transitive_libs)
     set(${transitive_libs} "${result}" PARENT_SCOPE)
 endfunction()
 
+# Write a .cpp file that includes other files describing a new compilation unit.
+function(_pxr_setup_unity_build out name files exclude)
+    set(includes "")
+    set(excludes "")
+    foreach (file ${files})
+        list(FIND exclude ${file} excluded)
+        if (${excluded} GREATER "-1")
+            set(
+                excludes
+                "${excludes}${file};"
+            )
+        else()
+            set(
+                includes
+                "${includes}#include <${CMAKE_CURRENT_SOURCE_DIR}/${file}>\n"
+            )
+        endif()
+    endforeach()
+
+    set(file "${CMAKE_CURRENT_BINARY_DIR}/${name}.cpp")
+    file(
+        WRITE ${file}
+        ${includes}
+    )
+
+    set(${out} "${file};${excludes}" PARENT_SCOPE)
+endfunction()
+
 # This function is equivalent to target_link_libraries except it does
 # a few extra things:
 #

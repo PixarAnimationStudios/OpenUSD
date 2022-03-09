@@ -51,6 +51,7 @@ option(PXR_PREFER_SAFETY_OVER_SPEED
        "Enable certain checks designed to avoid crashes or out-of-bounds memory reads with malformed input files.  These checks may negatively impact performance."
         ON)
 option(PXR_USE_AR_2 "Use Asset Resolver (Ar) 2.0" ON)
+option(PXR_ENABLE_UNITY_BUILD "Unity build" ON)
 
 # Determine GFX api
 # Metal only valid on Apple platforms
