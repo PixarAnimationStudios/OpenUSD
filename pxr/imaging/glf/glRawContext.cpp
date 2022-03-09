@@ -23,6 +23,8 @@
 //
 /// \file glRawContext.cpp
 
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/glf/glRawContext.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

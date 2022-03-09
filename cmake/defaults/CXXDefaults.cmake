@@ -41,6 +41,8 @@ endif()
 _add_define(GL_GLEXT_PROTOTYPES)
 _add_define(GLX_GLXEXT_PROTOTYPES)
 
+_add_define("BOOST_PYTHON_MAX_ARITY=20")
+
 # Python bindings for tf require this define.
 _add_define(BOOST_PYTHON_NO_PY_SIGNATURES)
 

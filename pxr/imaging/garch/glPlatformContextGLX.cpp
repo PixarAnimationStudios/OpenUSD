@@ -23,6 +23,8 @@
 //
 /// \file glPlatformContext.cpp
 
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/garch/glPlatformContext.h"
 #include <boost/functional/hash.hpp>
 

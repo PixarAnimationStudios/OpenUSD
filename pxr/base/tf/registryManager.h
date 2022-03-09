@@ -162,7 +162,7 @@ public:
 // the body of the function inside braces.  KEY_TYPE and TAG must be types.
 #define TF_REGISTRY_DEFINE_WITH_TYPE(KEY_TYPE, TAG)                            \
     static void _Tf_RegistryFunction(KEY_TYPE*, TAG*);                         \
-    ARCH_CONSTRUCTOR(TF_PP_CAT(_Tf_RegistryAdd, __LINE__),                     \
+    ARCH_CONSTRUCTOR(TF_PP_CAT(_Tf_RegistryAdd, __COUNTER__),                  \
                      TF_REGISTRY_PRIORITY, KEY_TYPE*, TAG*)                    \
     {                                                                          \
         Tf_RegistryInit::Add(TF_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME),            \
@@ -194,9 +194,8 @@ public:
 /// Define a function that is called on demand by \c TfRegistryManager.
 ///
 /// This is a simpler form of TF_REGISTRY_FUNCTION_WITH_TAG() that provides
-/// a tag for you, based on the MFB package, file name, and line number being
-/// compiled.  For most cases (private registry functions inside .cpp files)
-/// this should do.
+/// a tag for you, based on the MFB package, file name, and a unique
+/// compile-time counter.
 ///
 /// A very common use is to symbolically define enum names (see \c TfEnum):
 /// \code
@@ -219,7 +218,7 @@ public:
 ///
 /// \hideinitializer
 #define TF_REGISTRY_FUNCTION(KEY_TYPE) \
-    TF_REGISTRY_DEFINE(KEY_TYPE, __LINE__)
+    TF_REGISTRY_DEFINE(KEY_TYPE, __COUNTER__)
 
 /// Define a function that is called on demand by \c TfRegistryManager.
 ///
@@ -260,7 +259,7 @@ public:
 ///
 /// \hideinitializer
 #define TF_REGISTRY_FUNCTION_WITH_TAG(KEY_TYPE, TAG) \
-    TF_REGISTRY_DEFINE(KEY_TYPE, TF_PP_CAT(TAG, __LINE__))
+    TF_REGISTRY_DEFINE(KEY_TYPE, TF_PP_CAT(TAG, __COUNTER__))
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

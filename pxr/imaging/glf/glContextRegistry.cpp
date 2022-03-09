@@ -23,6 +23,8 @@
 //
 /// \file glContextRegistry.cpp
 
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/glf/glContextRegistry.h"
 #include "pxr/imaging/glf/glRawContext.h"
 #include "pxr/imaging/garch/glPlatformContext.h"

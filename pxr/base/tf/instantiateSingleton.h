@@ -26,10 +26,7 @@
  * Complain if we see this header twice through.
  */
 
-#ifdef PXR_BASE_TF_INSTANTIATE_SINGLETON_H
-#error This file should only be included once in any given source (.cpp) file.
-#endif
-
+#ifndef PXR_BASE_TF_INSTANTIATE_SINGLETON_H
 #define PXR_BASE_TF_INSTANTIATE_SINGLETON_H
 
 /// \file tf/instantiateSingleton.h
@@ -102,3 +99,5 @@ TfSingleton<T>::_DestroyInstance()
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_BASE_TF_INSTANTIATE_SINGLETON_H

@@ -805,41 +805,24 @@ std::ostream & operator<<( std::ostream &out, const SdfListOp<ITEM_TYPE> &op)
 ////////////////////////////////////////////////////////////////////////
 // Traits
 
-template<>
-struct Sdf_ListOpTraits<TfToken>
+bool Sdf_ListOpTraits<SdfUnregisteredValue>::LessThan::operator()(
+    const SdfUnregisteredValue& x,
+    const SdfUnregisteredValue& y) const
 {
-    typedef TfTokenFastArbitraryLessThan ItemComparator;
-};
+    const size_t xHash = hash_value(x);
+    const size_t yHash = hash_value(y);
+    if (xHash < yHash) {
+        return true;
+    }
+    else if (xHash > yHash || x == y) {
+        return false;
+    }
 
-template<>
-struct Sdf_ListOpTraits<SdfPath>
-{
-    typedef SdfPath::FastLessThan ItemComparator;
-};
+    // Fall back to comparing the string representations if
+    // the hashes of x and y are equal but x and y are not.
+    return TfStringify(x) < TfStringify(y);
+}
 
-template<>
-struct Sdf_ListOpTraits<SdfUnregisteredValue>
-{
-    struct LessThan {
-        bool operator()(const SdfUnregisteredValue& x,
-                        const SdfUnregisteredValue& y) const {
-            const size_t xHash = hash_value(x);
-            const size_t yHash = hash_value(y);
-            if (xHash < yHash) {
-                return true;
-            }
-            else if (xHash > yHash || x == y) {
-                return false;
-            }
-
-            // Fall back to comparing the string representations if
-            // the hashes of x and y are equal but x and y are not.
-            return TfStringify(x) < TfStringify(y);
-        }
-    };
-
-    typedef LessThan ItemComparator;
-};
 
 ////////////////////////////////////////////////////////////////////////
 // Template instantiation.

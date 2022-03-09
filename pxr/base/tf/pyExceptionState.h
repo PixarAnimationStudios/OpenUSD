@@ -22,6 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#ifndef PXR_BASE_TF_PY_EXCEPTION_STATE_H
+#define PXR_BASE_TF_PY_EXCEPTION_STATE_H
+
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/api.h"
@@ -52,3 +55,5 @@ struct TfPyExceptionState {
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_BASE_TF_PY_EXCEPTION_STATE_H

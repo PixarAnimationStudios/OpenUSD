@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/glContextRegistry.h"
 #include "pxr/imaging/garch/glPlatformContext.h"

@@ -29,6 +29,7 @@
 #include "pxr/pxr.h"
 
 #include <atomic>
+#include <cstddef>
 #include <functional>
 #include <type_traits>
 

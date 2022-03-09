@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/garch/glPlatformDebugWindowWindows.h"
 #include "pxr/imaging/garch/glDebugWindow.h"
 #include "pxr/base/arch/defines.h"

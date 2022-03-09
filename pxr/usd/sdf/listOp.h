@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/functional/hash.hpp>
@@ -39,6 +40,8 @@
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class SdfUnregisteredValue;
 
 /// \enum SdfListOpType
 ///
@@ -63,6 +66,30 @@ struct Sdf_ListOpTraits
 {
     typedef std::less<T> ItemComparator;
 };
+
+template<>
+struct Sdf_ListOpTraits<TfToken>
+{
+    typedef TfTokenFastArbitraryLessThan ItemComparator;
+};
+
+template<>
+struct Sdf_ListOpTraits<SdfPath>
+{
+    typedef SdfPath::FastLessThan ItemComparator;
+};
+
+template<>
+struct Sdf_ListOpTraits<SdfUnregisteredValue>
+{
+    struct LessThan {
+        bool operator()(const SdfUnregisteredValue& x,
+                        const SdfUnregisteredValue& y) const;
+    };
+
+    typedef LessThan ItemComparator;
+};
+
 
 /// \class SdfListOp
 ///
