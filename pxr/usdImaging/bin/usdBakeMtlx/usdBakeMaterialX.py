@@ -107,6 +107,8 @@ def main():
         bakedFilename = UsdBakeMtlx.BakeMaterial(
             mtlxMaterial, os.path.dirname(opts.outputUsdFilename),
             opts.width, opts.height, opts.hdr, opts.average)
+        if not bakedFilename:
+            continue
 
         # Read the Baked MaterialX Document into the existing USD Stage
         UsdBakeMtlx.ReadFileToStage(bakedFilename, usdStage)
