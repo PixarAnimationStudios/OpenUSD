@@ -63,19 +63,25 @@ struct Sdf_AssetInfo;
 
 /// \class SdfLayer 
 ///
-/// A unit of scene description that you combine with other units of scene
-/// description to form a shot, model, set, shader, and so on.
+/// A scene description container that can combine with other such containers
+/// to form simple component assets, and successively larger aggregates.  The
+/// contents of an SdfLayer adhere to the SdfData data model.  A layer can be
+/// ephemeral, or be an asset accessed and serialized through the ArAsset and
+/// ArResolver interfaces.
 ///
-/// SdfLayer objects provide a persistent way to store layers on the
-/// filesystem in .menva files.  Currently the supported file format is 
-/// <c>.menva</c>, the ASCII file format. 
+/// The SdfLayer class provides a consistent API for accesing and serializing
+/// scene description, using any data store provided by Ar plugins.  Sdf
+/// itself provides a UTF-8 text format for layers identified by the ".sdf"
+/// identifier extension, but via the SdfFileFormat abstraction, allows
+/// downstream modules and plugins to adapt arbitrary data formats to the
+/// SdfData/SdfLayer model.
 ///
-/// The FindOrOpen() method returns a new SdfLayer object with scene description
-/// from a <c>.menva</c> file. Once read, a layer remembers which asset it was
-/// read from. The Save() method saves the layer back out to the original file.
-/// You can use the Export() method to write the layer to a different
-/// location. You can use the GetIdentifier() method to get the layer's Id or
-/// GetRealPath() to get the resolved, full file path.
+/// The FindOrOpen() method returns a new SdfLayer object with scene
+/// description from any supported asset format. Once read, a layer
+/// remembers which asset it was read from. The Save() method saves the layer
+/// back out to the original asset.  You can use the Export() method to write
+/// the layer to a different location. You can use the GetIdentifier() method
+/// to get the layer's Id or GetRealPath() to get the resolved, full URI.
 ///
 /// Layers can have a timeCode range (startTimeCode and endTimeCode). This range
 /// represents the suggested playback range, but has no impact on the extent of 
@@ -85,15 +91,6 @@ struct Sdf_AssetInfo;
 /// is 24, then a sample at time ordinate 24 should be viewed exactly one second
 /// after the sample at time ordinate 0.
 /// 
-/// Compared to Menv2x, layers are most closely analogous to 
-/// hooksets, <c>.hook</c> files, and <c>.cue</c> files.
-///
-/// \todo 
-/// \li Insert a discussion of subLayers semantics here.
-///
-/// \todo
-/// \li Should have validate... methods for rootPrims
-///
 class SdfLayer 
     : public TfRefBase
     , public TfWeakBase
