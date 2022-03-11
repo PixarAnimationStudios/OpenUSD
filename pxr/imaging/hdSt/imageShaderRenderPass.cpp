@@ -29,7 +29,7 @@
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
-#include "pxr/imaging/hdSt/immediateDrawBatch.h"
+#include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/pipelineDrawBatch.h"
 #include "pxr/imaging/hd/drawingCoord.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -44,14 +44,11 @@ static
 HdSt_DrawBatchSharedPtr
 _NewDrawBatch(HdStDrawItemInstance * drawItemInstance)
 {
+    // We don't want or need frustum culling of our fullscreen triangle.
     if (HdSt_PipelineDrawBatch::IsEnabled()) {
-        std::shared_ptr<HdSt_PipelineDrawBatch> pipelineDrawBatch =
-            std::make_shared<HdSt_PipelineDrawBatch>(drawItemInstance);
-        // We don't want or need frustum culling of our fullscreen triangle.
-        pipelineDrawBatch->SetAllowGpuFrustumCulling(false);
-        return pipelineDrawBatch;
+        return std::make_shared<HdSt_PipelineDrawBatch>(drawItemInstance,false);
     } else {
-        return std::make_shared<HdSt_ImmediateDrawBatch>(drawItemInstance);
+        return std::make_shared<HdSt_IndirectDrawBatch>(drawItemInstance,false);
     }
 }
 

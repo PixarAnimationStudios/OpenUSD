@@ -48,7 +48,8 @@ class HdSt_PipelineDrawBatch : public HdSt_DrawBatch
 {
 public:
     HDST_API
-    HdSt_PipelineDrawBatch(HdStDrawItemInstance * drawItemInstance);
+    HdSt_PipelineDrawBatch(HdStDrawItemInstance * drawItemInstance,
+                           bool const allowGpuFrustumCulling = true);
     HDST_API
     ~HdSt_PipelineDrawBatch() override;
 
@@ -93,11 +94,6 @@ public:
     /// Returns whether to do per-instance culling on the GPU
     HDST_API
     static bool IsEnabledGPUInstanceFrustumCulling();
-
-    /// Sets whether to allow GPU frustum culling for this instance,
-    /// unlike the methods above which are global switches.
-    HDST_API
-    void SetAllowGpuFrustumCulling(bool allowGpuFrustumCulling);
 
 protected:
     HDST_API
@@ -178,7 +174,7 @@ private:
     bool _useInstancing;
     bool _useGpuCulling;
     bool _useInstanceCulling;
-    bool _allowGpuFrustumCulling;
+    bool const _allowGpuFrustumCulling;
 
     int _instanceCountOffset;
     int _cullInstanceCountOffset;

@@ -81,7 +81,8 @@ TF_DEFINE_ENV_SETTING(HDST_ENABLE_PIPELINE_DRAW_BATCHING, false,
                       "Enable pipeline draw batching");
 
 HdSt_PipelineDrawBatch::HdSt_PipelineDrawBatch(
-    HdStDrawItemInstance * drawItemInstance)
+    HdStDrawItemInstance * drawItemInstance,
+    bool const allowGpuFrustumCulling)
     : HdSt_DrawBatch(drawItemInstance)
     , _drawCommandBufferDirty(false)
     , _bufferArraysHash(0)
@@ -98,7 +99,7 @@ HdSt_PipelineDrawBatch::HdSt_PipelineDrawBatch(
     , _useInstancing(false)
     , _useGpuCulling(false)
     , _useInstanceCulling(false)
-    , _allowGpuFrustumCulling(true)
+    , _allowGpuFrustumCulling(allowGpuFrustumCulling)
 
     , _instanceCountOffset(0)
     , _cullInstanceCountOffset(0)
@@ -125,7 +126,7 @@ HdSt_PipelineDrawBatch::_Init(HdStDrawItemInstance * drawItemInstance)
     // determine drawing and culling config according to the first drawitem
     _useDrawIndexed = static_cast<bool>(drawItem->GetTopologyRange());
     _useInstancing  = static_cast<bool>(drawItem->GetInstanceIndexRange());
-    _useGpuCulling  = IsEnabledGPUFrustumCulling();
+    _useGpuCulling  = _allowGpuFrustumCulling && IsEnabledGPUFrustumCulling();
 
     // note: _useInstancing condition is not necessary. it can be removed
     //       if we decide always to use instance culling.
@@ -178,12 +179,6 @@ bool
 HdSt_PipelineDrawBatch::IsEnabledGPUInstanceFrustumCulling()
 {
     return HdSt_IndirectDrawBatch::IsEnabledGPUInstanceFrustumCulling();
-}
-
-void
-HdSt_PipelineDrawBatch::SetAllowGpuFrustumCulling(bool allowGpuFrustumCulling)
-{
-    _allowGpuFrustumCulling = allowGpuFrustumCulling;
 }
 
 ////////////////////////////////////////////////////////////
@@ -849,7 +844,7 @@ HdSt_PipelineDrawBatch::PrepareDraw(
         _drawCommandBufferDirty = false;
     }
 
-    if (_allowGpuFrustumCulling && _useGpuCulling) {
+    if (_useGpuCulling) {
         _ExecuteFrustumCull(updateBufferData,
                             renderPassState, resourceRegistry);
     }
@@ -1133,10 +1128,14 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
 
     if (_HasNothingToDraw()) return;
 
+    HgiCapabilities const *capabilities =
+        resourceRegistry->GetHgi()->GetCapabilities();
+
     // Drawing can be either direct or indirect. For either case,
     // the drawing batch and drawing program are prepared to resolve
     // drawing coordinate state indirectly, i.e. from buffer data.
-    bool const drawIndirect = true;
+    bool const drawIndirect =
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
     _DrawingProgram & program = _GetDrawingProgram(renderPassState,
                                                    /*indirect=*/true,
                                                    resourceRegistry);

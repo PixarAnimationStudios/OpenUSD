@@ -86,7 +86,8 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_INSTANCE_FRUSTUM_CULLING, true,
                       "Enable GPU per-instance frustum culling");
 
 HdSt_IndirectDrawBatch::HdSt_IndirectDrawBatch(
-    HdStDrawItemInstance * drawItemInstance)
+    HdStDrawItemInstance * drawItemInstance,
+    bool const allowGpuFrustumCulling)
     : HdSt_DrawBatch(drawItemInstance)
     , _drawCommandBufferDirty(false)
     , _bufferArraysHash(0)
@@ -103,6 +104,7 @@ HdSt_IndirectDrawBatch::HdSt_IndirectDrawBatch(
     , _useInstancing(false)
     , _useGpuCulling(false)
     , _useInstanceCulling(false)
+    , _allowGpuFrustumCulling(allowGpuFrustumCulling)
 
     , _instanceCountOffset(0)
     , _cullInstanceCountOffset(0)
@@ -129,7 +131,7 @@ HdSt_IndirectDrawBatch::_Init(HdStDrawItemInstance * drawItemInstance)
     // determine drawing and culling config according to the first drawitem
     _useDrawIndexed = static_cast<bool>(drawItem->GetTopologyRange());
     _useInstancing  = static_cast<bool>(drawItem->GetInstanceIndexRange());
-    _useGpuCulling  = IsEnabledGPUFrustumCulling();
+    _useGpuCulling  = _allowGpuFrustumCulling && IsEnabledGPUFrustumCulling();
 
     // note: _useInstancing condition is not necessary. it can be removed
     //       if we decide always to use instance culling.
@@ -463,6 +465,12 @@ _AddNonInstanceCullResourceViews(HdStDispatchBufferSharedPtr const & cullInput,
         traits.instanceCount_offset);
 }
 
+HdBufferArrayRangeSharedPtr
+_GetShaderBar(HdSt_MaterialNetworkShaderSharedPtr const & shader)
+{
+    return shader ? shader->GetShaderData() : nullptr;
+}
+
 // Collection of resources for a drawItem
 struct _DrawItemState
 {
@@ -482,7 +490,7 @@ struct _DrawItemState
         , vertexBar(std::static_pointer_cast<HdStBufferArrayRange>(
                     drawItem->GetVertexPrimvarRange()))
         , shaderBar(std::static_pointer_cast<HdStBufferArrayRange>(
-                    drawItem->GetMaterialNetworkShader()->GetShaderData()))
+                    _GetShaderBar(drawItem->GetMaterialNetworkShader())))
         , instanceIndexBar(std::static_pointer_cast<HdStBufferArrayRange>(
                     drawItem->GetInstanceIndexRange()))
     {
@@ -556,11 +564,11 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         _GetDrawCommandTraits(instancerNumLevels,
                               _useDrawIndexed, _useInstanceCulling);
 
-    TF_DEBUG(HD_MDI).Msg("\nCompile Dispatch Buffer\n");
-    TF_DEBUG(HD_MDI).Msg(" - numUInt32: %zd\n", traits.numUInt32);
-    TF_DEBUG(HD_MDI).Msg(" - useDrawIndexed: %d\n", _useDrawIndexed);
-    TF_DEBUG(HD_MDI).Msg(" - useInstanceCulling: %d\n", _useInstanceCulling);
-    TF_DEBUG(HD_MDI).Msg(" - num draw items: %zu\n", numDrawItemInstances);
+    TF_DEBUG(HDST_DRAW).Msg("\nCompile Dispatch Buffer\n");
+    TF_DEBUG(HDST_DRAW).Msg(" - numUInt32: %zd\n", traits.numUInt32);
+    TF_DEBUG(HDST_DRAW).Msg(" - useDrawIndexed: %d\n", _useDrawIndexed);
+    TF_DEBUG(HDST_DRAW).Msg(" - useInstanceCulling: %d\n", _useInstanceCulling);
+    TF_DEBUG(HDST_DRAW).Msg(" - num draw items: %zu\n", numDrawItemInstances);
 
     _drawCommandBuffer.resize(numDrawItemInstances * traits.numUInt32);
     std::vector<uint32_t>::iterator cmdIt = _drawCommandBuffer.begin();
@@ -571,7 +579,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
     _numTotalElements = 0;
     _numTotalVertices = 0;
 
-    TF_DEBUG(HD_MDI).Msg(" - Processing Items:\n");
+    TF_DEBUG(HDST_DRAW).Msg(" - Processing Items:\n");
     _barElementOffsetsHash = 0;
     for (size_t item = 0; item < numDrawItemInstances; ++item) {
         HdStDrawItemInstance const *drawItemInstance = _drawItemInstances[item];
@@ -682,7 +690,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
             *cmdIt++ = instanceDC;
         }
 
-        if (TfDebug::IsEnabled(HD_MDI)) {
+        if (TfDebug::IsEnabled(HDST_DRAW)) {
             std::vector<uint32_t>::iterator cmdIt2 = cmdIt - traits.numUInt32;
             std::cout << "   - ";
             while (cmdIt2 != cmdIt) {
@@ -697,9 +705,9 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         _numTotalVertices += vertexCount;
     }
 
-    TF_DEBUG(HD_MDI).Msg(" - Num Visible: %zu\n", _numVisibleItems);
-    TF_DEBUG(HD_MDI).Msg(" - Total Elements: %zu\n", _numTotalElements);
-    TF_DEBUG(HD_MDI).Msg(" - Total Verts: %zu\n", _numTotalVertices);
+    TF_DEBUG(HDST_DRAW).Msg(" - Num Visible: %zu\n", _numVisibleItems);
+    TF_DEBUG(HDST_DRAW).Msg(" - Total Elements: %zu\n", _numTotalElements);
+    TF_DEBUG(HDST_DRAW).Msg(" - Total Verts: %zu\n", _numTotalVertices);
 
     // make sure we filled all
     TF_VERIFY(cmdIt == _drawCommandBuffer.end());
@@ -780,8 +788,8 @@ HdSt_IndirectDrawBatch::Validate(bool deepValidation)
         size_t barElementOffsetsHash = 0;
 
         for (size_t item = 0; item < numDrawItemInstances; ++item) {
-            HdStDrawItem const * drawItem
-                = _drawItemInstances[item]->GetDrawItem();
+            HdStDrawItem const * drawItem =
+                _drawItemInstances[item]->GetDrawItem();
 
             if (!TF_VERIFY(drawItem->GetGeometricShader())) {
                 return ValidationResult::RebuildAllBatches;
@@ -1093,6 +1101,14 @@ HdSt_IndirectDrawBatch::_ExecuteDraw(
 
     if (_HasNothingToDraw()) return;
 
+    HgiCapabilities const *capabilities =
+        resourceRegistry->GetHgi()->GetCapabilities();
+
+    // Drawing can be either direct or indirect. For either case,
+    // the drawing batch and drawing program are prepared to resolve
+    // drawing coordinate state indirectly, i.e. from buffer data.
+    bool const drawIndirect =
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
     _DrawingProgram & program = _GetDrawingProgram(renderPassState,
                                                    /*indirect=*/true,
                                                    resourceRegistry);
@@ -1119,56 +1135,137 @@ HdSt_IndirectDrawBatch::_ExecuteDraw(
                                state.instancePrimvarBars);
     }
 
-    state.BindResourcesForDrawing(renderPassState, 
-        *(resourceRegistry->GetHgi()->GetCapabilities()));
+    state.BindResourcesForDrawing(renderPassState, *capabilities);
 
-    HdSt_GeometricShader const * geometricShader = state.geometricShader.get();
+    HdSt_GeometricShaderSharedPtr geometricShader = state.geometricShader;
     if (geometricShader->IsPrimTypePatches()) {
         glPatchParameteri(GL_PATCH_VERTICES,
                           geometricShader->GetPrimitiveIndexSize());
     }
 
-    uint32_t batchCount = _dispatchBuffer->GetCount();
-
-    if (!_useDrawIndexed) {
-        TF_DEBUG(HD_MDI).Msg("MDI Drawing Arrays:\n"
-                " - primitive mode: %d\n"
-                " - indirect: %d\n"
-                " - drawCount: %d\n"
-                " - stride: %zu\n",
-               HdStGLConversions::GetPrimitiveMode(geometricShader),
-               0, batchCount,
-               _dispatchBuffer->GetCommandNumUints()*sizeof(uint32_t));
-
-        glMultiDrawArraysIndirect(
-            HdStGLConversions::GetPrimitiveMode(geometricShader),
-            0, // draw command always starts with 0
-            batchCount,
-            _dispatchBuffer->GetCommandNumUints()*sizeof(uint32_t));
+    if (drawIndirect) {
+        _ExecuteDrawIndirect(
+            geometricShader, _dispatchBuffer, state.indexBar);
     } else {
-        TF_DEBUG(HD_MDI).Msg("MDI Drawing Elements:\n"
-                " - primitive mode: %d\n"
-                " - buffer type: GL_UNSIGNED_INT\n"
-                " - indirect: %d\n"
-                " - drawCount: %d\n"
-                " - stride: %zu\n",
-               HdStGLConversions::GetPrimitiveMode(geometricShader),
-               0, batchCount,
-               _dispatchBuffer->GetCommandNumUints()*sizeof(uint32_t));
-
-        glMultiDrawElementsIndirect(
-            HdStGLConversions::GetPrimitiveMode(geometricShader),
-            GL_UNSIGNED_INT,
-            0, // draw command always starts with 0
-            batchCount,
-            _dispatchBuffer->GetCommandNumUints()*sizeof(uint32_t));
+        _ExecuteDrawImmediate(
+            geometricShader, _dispatchBuffer, state.indexBar);
     }
 
-    state.UnbindResourcesForDrawing(renderPassState,
-        *(resourceRegistry->GetHgi()->GetCapabilities()));
+    state.UnbindResourcesForDrawing(renderPassState, *capabilities);
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->drawCalls);
     HD_PERF_COUNTER_ADD(HdTokens->itemsDrawn, _numVisibleItems);
+}
+
+void
+HdSt_IndirectDrawBatch::_ExecuteDrawIndirect(
+    HdSt_GeometricShaderSharedPtr const & geometricShader,
+    HdStDispatchBufferSharedPtr const & dispatchBuffer,
+    HdStBufferArrayRangeSharedPtr const & indexBar)
+{
+    TRACE_FUNCTION();
+
+    GLenum const primitiveMode =
+        HdStGLConversions::GetPrimitiveMode(geometricShader.get());
+    uint32_t const stride =
+        dispatchBuffer->GetCommandNumUints() * sizeof(uint32_t);
+    uint32_t const drawCount = dispatchBuffer->GetCount();
+
+    if (!_useDrawIndexed) {
+        TF_DEBUG(HDST_DRAW).Msg("MDI Drawing Arrays:\n"
+                " - primitive mode: %d\n"
+                " - drawCount: %d\n"
+                " - stride: %d\n",
+               primitiveMode,
+               drawCount,
+               stride);
+
+        glMultiDrawArraysIndirect(
+            primitiveMode,
+            0, drawCount,
+            stride);
+    } else {
+        TF_DEBUG(HDST_DRAW).Msg("MDI Drawing Elements:\n"
+                " - primitive mode: %d\n"
+                " - buffer type: GL_UNSIGNED_INT\n"
+                " - drawCount: %d\n"
+                " - stride: %d\n",
+               primitiveMode,
+               drawCount,
+               stride);
+
+        glMultiDrawElementsIndirect(
+            primitiveMode,
+            GL_UNSIGNED_INT,
+            0, drawCount,
+            stride);
+    }
+}
+
+void
+HdSt_IndirectDrawBatch::_ExecuteDrawImmediate(
+    HdSt_GeometricShaderSharedPtr const & geometricShader,
+    HdStDispatchBufferSharedPtr const & dispatchBuffer,
+    HdStBufferArrayRangeSharedPtr const & indexBar)
+{
+    TRACE_FUNCTION();
+
+    GLenum const primitiveMode =
+        HdStGLConversions::GetPrimitiveMode(geometricShader.get());
+    uint32_t const strideUInt32 = dispatchBuffer->GetCommandNumUints();
+    uint32_t const stride = strideUInt32 * sizeof(uint32_t);
+    uint32_t const drawCount = dispatchBuffer->GetCount();
+
+    if (!_useDrawIndexed) {
+        TF_DEBUG(HDST_DRAW).Msg("Drawing Arrays:\n"
+                " - primitive mode: %d\n"
+                " - drawCount: %d\n"
+                " - stride: %d\n",
+               primitiveMode,
+               drawCount,
+               stride);
+
+        for (uint32_t i = 0; i < drawCount; ++i) {
+            _DrawNonIndexedCommand const * cmd =
+                reinterpret_cast<_DrawNonIndexedCommand*>(
+                    &_drawCommandBuffer[i*strideUInt32]);
+
+            glDrawArraysInstancedBaseInstance(
+                primitiveMode,
+                cmd->firstVertex,
+                cmd->count,
+                cmd->instanceCount,
+                cmd->baseInstance);
+        }
+    } else {
+        TF_DEBUG(HDST_DRAW).Msg("Drawing Elements:\n"
+                " - primitive mode: %d\n"
+                " - buffer type: GL_UNSIGNED_INT\n"
+                " - drawCount: %d\n"
+                " - stride: %d\n",
+               primitiveMode,
+               drawCount,
+               stride);
+
+        for (uint32_t i = 0; i < drawCount; ++i) {
+            _DrawIndexedCommand const * cmd =
+                reinterpret_cast<_DrawIndexedCommand*>(
+                    &_drawCommandBuffer[i*strideUInt32]);
+
+            uint32_t const indexBufferByteOffset =
+                static_cast<uint32_t>(cmd->firstVertex * sizeof(uint32_t));
+
+            glDrawElementsInstancedBaseVertexBaseInstance(
+                primitiveMode,
+                cmd->count,
+                GL_UNSIGNED_INT,
+                reinterpret_cast<const void*>(
+                    static_cast<uintptr_t>(indexBufferByteOffset)),
+                cmd->instanceCount,
+                cmd->baseVertex,
+                cmd->baseInstance);
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////
@@ -1406,7 +1503,7 @@ HdSt_IndirectDrawBatch::DrawItemInstanceChanged(
         uint32_t const newInstanceCount =
             _GetInstanceCount(instance, instanceIndexBar, instanceIndexWidth);
 
-        TF_DEBUG(HD_MDI).Msg("\nInstance Count changed: %d -> %d\n",
+        TF_DEBUG(HDST_DRAW).Msg("\nInstance Count changed: %d -> %d\n",
                 *instanceCountIt, 
                 newInstanceCount);
 
