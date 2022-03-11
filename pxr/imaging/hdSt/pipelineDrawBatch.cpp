@@ -1137,7 +1137,6 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
     bool const drawIndirect =
         capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
     _DrawingProgram & program = _GetDrawingProgram(renderPassState,
-                                                   /*indirect=*/true,
                                                    resourceRegistry);
     if (!TF_VERIFY(program.IsValid())) return;
 
@@ -1592,7 +1591,6 @@ HdSt_PipelineDrawBatch::_GetCullingProgram(
         _cullingProgram.SetGeometricShader(cullShader);
 
         _cullingProgram.CompileShader(_drawItemInstances.front()->GetDrawItem(),
-                                      /*indirect=*/true,
                                        resourceRegistry);
 
         _dirtyCullingProgram = false;

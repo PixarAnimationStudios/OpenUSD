@@ -132,7 +132,6 @@ pxr_library(hdSt
         extCompComputeShader
         fieldTextureCpuData
         imageShaderShaderKey
-        immediateDrawBatch
         indirectDrawBatch
         materialNetworkShader
         materialParam

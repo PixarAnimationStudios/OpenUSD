@@ -321,7 +321,6 @@ public:
     void ResolveBindings(HdStDrawItem const *drawItem,
                          HdStShaderCodeSharedPtrVector const &shaders,
                          MetaData *metaDataOut,
-                         bool indirect,
                          bool instanceDraw,
                          HdBindingRequestVector const &customBindings,
                          HgiCapabilities const *capabilities);

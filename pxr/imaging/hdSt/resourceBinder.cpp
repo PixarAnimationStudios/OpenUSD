@@ -191,7 +191,6 @@ void
 HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                                    HdStShaderCodeSharedPtrVector const &shaders,
                                    HdSt_ResourceBinder::MetaData *metaDataOut,
-                                   bool indirect,
                                    bool instanceDraw,
                                    HdBindingRequestVector const &customBindings,
                                    HgiCapabilities const *capabilities)
@@ -218,14 +217,10 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         structBufferBindingType = HdBinding::SSBO;             // 4.3
     }
 
-    HdBinding::Type drawingCoordBindingType = HdBinding::UNIFORM;
-    if (indirect) {
-        if (instanceDraw) {
-            drawingCoordBindingType = HdBinding::DRAW_INDEX_INSTANCE;
-        } else {
-            drawingCoordBindingType = HdBinding::DRAW_INDEX;
-        }
-    }
+    HdBinding::Type drawingCoordBindingType =
+        instanceDraw
+            ? HdBinding::DRAW_INDEX_INSTANCE
+            : HdBinding::DRAW_INDEX;
 
     // binding assignments
     BindingLocator locator;
@@ -547,16 +542,13 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                                      /*binding=*/drawingCoord2Binding);
 
     if (instancerNumLevels > 0) {
-        HdBinding drawingCoordIBinding = indirect
-            ? HdBinding(HdBinding::DRAW_INDEX_INSTANCE_ARRAY, locator.attribLocation)
-            : HdBinding(HdBinding::UNIFORM_ARRAY, locator.uniformLocation);
-        if (indirect) {
-            // each vertex attribute takes 1 location
-            locator.attribLocation += instancerNumLevels;
-        } else {
-            // int[N] may consume more than 1 location
-            locator.uniformLocation += instancerNumLevels;
-        }
+        HdBinding drawingCoordIBinding =
+            HdBinding(HdBinding::DRAW_INDEX_INSTANCE_ARRAY,
+                      locator.attribLocation);
+
+        // each vertex attribute takes 1 location
+        locator.attribLocation += instancerNumLevels;
+
         _bindingMap[HdTokens->drawingCoordI] = drawingCoordIBinding;
         metaDataOut->drawingCoordIBinding =
             MetaData::BindingDeclaration(/*name=*/HdTokens->drawingCoordI,
@@ -611,11 +603,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         }
     }
 
-    // indirect dispatch
-    if (indirect) {
-        HdBinding dispatchBinding(HdBinding::DISPATCH, /*location=(not used)*/0);
-        _bindingMap[HdTokens->drawDispatch] = dispatchBinding;
-    }
+    HdBinding dispatchBinding(HdBinding::DISPATCH, /*location=(not used)*/0);
+    _bindingMap[HdTokens->drawDispatch] = dispatchBinding;
 
     // shader parameter bindings
     TF_FOR_ALL(shader, shaders) {
