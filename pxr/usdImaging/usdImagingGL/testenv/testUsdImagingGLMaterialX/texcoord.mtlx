@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+
+  <nodegraph name="NG_image_texcoord">
+    <texcoord name="stcoords" type="vector2">
+      <input name="index" type="integer" value="0" />
+    </texcoord>
+    <tiledimage name="image_color" type="color3">
+      <input name="file" type="filename" value="wood_color.jpg" colorspace="srgb_texture" />
+      <input name="uvtiling" type="vector2" value="4.0, 4.0" />
+      <input name="texcoord" type="vector2" nodename="stcoords" />
+    </tiledimage>
+    <tiledimage name="image_roughness" type="float">
+      <input name="file" type="filename" value="wood_roughness.jpg" />
+      <input name="uvtiling" type="vector2" value="4.0, 4.0" />
+    </tiledimage>
+    <output name="out_color" type="color3" nodename="image_color" />
+    <output name="out_roughness" type="float" nodename="image_roughness" />
+      <input name="texcoord" type="vector2" nodename="stcoords" />
+  </nodegraph>
+  <standard_surface name="SR_image_texcoord" type="surfaceshader">
+    <input name="base" type="float" value="1" />
+    <input name="base_color" type="color3" nodegraph="NG_image_texcoord" output="out_color" />
+    <input name="specular" type="float" value="0.4" />
+    <input name="specular_roughness" type="float" nodegraph="NG_image_texcoord" output="out_roughness" />
+    <input name="specular_anisotropy" type="float" value="0.5" />
+    <input name="coat" type="float" value="0.1" />
+    <input name="coat_roughness" type="float" value="0.2" />
+    <input name="coat_anisotropy" type="float" value="0.5" />
+  </standard_surface>
+  <surfacematerial name="image_texcoord" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_image_texcoord" />
+  </surfacematerial>
+
+  <nodegraph name="NG_texcoord">
+    <texcoord name="texcoord1" type="vector2" />
+    <multiply name="mult1" type="vector2">
+      <input name="in1" type="vector2" nodename="texcoord1" />
+      <input name="in2" type="vector2" value="24, 12" />
+    </multiply>
+    <swizzle name="swizz_x" type="float">
+      <input name="in" type="vector2" nodename="mult1" />
+      <input name="channels" type="string" value="x" />
+    </swizzle>
+    <swizzle name="swizz_y" type="float">
+      <input name="in" type="vector2" nodename="mult1" />
+      <input name="channels" type="string" value="y" />
+    </swizzle>
+    <floor name="floor1" type="float">
+      <input name="in" type="float" nodename="swizz_x" />
+    </floor>
+    <floor name="floor2" type="float">
+      <input name="in" type="float" nodename="swizz_y" />
+    </floor>
+    <add name="add1" type="float">
+      <input name="in1" type="float" nodename="floor1" />
+      <input name="in2" type="float" nodename="floor2" />
+    </add>
+    <modulo name="mod1" type="float">
+      <input name="in1" type="float" nodename="add1" />
+      <input name="in2" type="float" value="2.0" />
+    </modulo>
+    <swizzle name="swizz_xxx" type="color3">
+      <input name="in" type="float" nodename="mod1" />
+      <input name="channels" type="string" value="xxx" />
+    </swizzle>  
+    <output name="diffuse_output" type="color3" nodename="swizz_xxx" />
+  </nodegraph>
+  <UsdPreviewSurface name="SR_texcoord" type="surfaceshader">
+    <input name="diffuseColor" type="color3" output="diffuse_output" nodegraph="NG_texcoord" />
+    <input name="useSpecularWorkflow" type="integer" value="0" />
+    <input name="specularColor" type="color3" value=".9, .9, .9" />
+    <input name="roughness" type="float" value="0.25" />
+    <input name="ior" type="float" value=".9" />
+  </UsdPreviewSurface>
+  <surfacematerial name="texcoord" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_texcoord" />
+  </surfacematerial>
+</materialx>

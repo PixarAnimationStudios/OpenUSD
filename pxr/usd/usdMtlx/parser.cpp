@@ -329,6 +329,12 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
     if (TfStringStartsWith(nodeDef->getName(), "ND_geompropvalue")) {
         primvars.push_back("$geomprop");
     }
+    // If the nodeDef name is ND_texcoord_vector2, it is using texture 
+    // coordinates and we want to add the default texturecoordinate name 
+    // to the list of referenced primvars.
+    if (nodeDef->getName() == "ND_texcoord_vector2") {
+        primvars.push_back(_GetPrimaryUvSetName());
+    }
 
     // Also check internalgeomprops.
     static const std::string internalgeompropsName("internalgeomprops");

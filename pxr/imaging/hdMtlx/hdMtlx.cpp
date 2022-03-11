@@ -48,6 +48,11 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (index)
+);
+
 static mx::FileSearchPath
 _ComputeSearchPaths()
 {
@@ -219,25 +224,39 @@ _AddMaterialXNode(
             netInterface->GetNodeParameterValue(hdNodeName, paramName));
                 
         mxNode->setInputValue(mxInputName, mxInputValue, mxInputType);
+    }
 
-        // If this is a MaterialX Texture node
-        if (mxNodeCategory == "image" || mxNodeCategory == "tiledimage") {
-            // Save the corresponding MaterialX and Hydra names for ShaderGen
-            if (mxHdTextureMap) {
-                (*mxHdTextureMap)[mxNodeName] = connectionName;
-            }
-
-            // Save the path to adjust the parameters after traversing the network
-            if (hdTextureNodes) {
-                hdTextureNodes->insert(hdNodePath);
-            }
+    // If this is a MaterialX Texture node
+    if (mxNodeCategory == "image" || mxNodeCategory == "tiledimage") {
+        // Save the corresponding MaterialX and Hydra names for ShaderGen
+        if (mxHdTextureMap) {
+            (*mxHdTextureMap)[mxNodeName] = connectionName;
         }
 
-        // If this is a MaterialX primvar node
-        if (mxNodeCategory == "geompropvalue") {
-            if (hdPrimvarNodes) {
-                hdPrimvarNodes->insert(hdNodePath);
+        // Save the path to adjust the parameters after traversing the network
+        if (hdTextureNodes) {
+            hdTextureNodes->insert(hdNodePath);
+        }
+    }
+
+    // If this is a MaterialX primvar node
+    if (mxNodeCategory == "geompropvalue") {
+        // Save the path to have the primvarName declared in ShaderGen
+        if (hdPrimvarNodes) {
+            hdPrimvarNodes->insert(hdNodePath);
+        }
+    }
+    // If this is a MaterialX texture coordinate node
+    if (mxNodeCategory == "texcoord") {
+        if (hdPrimvarNodes) {
+            // Make sure it has the index parameter set.
+            if (std::find(hdNodeParamNames.begin(), hdNodeParamNames.end(), 
+                _tokens->index) == hdNodeParamNames.end()) {
+                netInterface->SetNodeParameterValue(
+                    hdNodeName, _tokens->index, VtValue(0));
             }
+            // Save the path to have the textureCoord name declared in ShaderGen
+            hdPrimvarNodes->insert(hdNodePath);
         }
     }
     return mxNode;

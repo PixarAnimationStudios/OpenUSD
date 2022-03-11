@@ -52,6 +52,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (st)
     (texcoord)
     (geomprop)
+    (index)
 
     // Opacity Parameters
     (opacity)
@@ -280,7 +281,6 @@ _GetTextureCoordinateName(
                     HdMtlxConvertToString(coordNameIt->second);
                 
                 // Set the 'st' parameter as a TfToken
-                // hdTextureNode->parameters[_tokens->st] = 
                 hdNetwork->nodes[hdTextureNodePath].parameters[_tokens->st] = 
                                 TfToken(texcoordName.c_str());
 
@@ -400,6 +400,30 @@ _UpdatePrimvarNodes(
                     hdPrimvarNode.nodeTypeId.GetString());
             if (mxNodeDef) {
                 (*mxHdPrimvarMap)[primvarName] = mxNodeDef->getType();
+            }
+        }
+
+        // Texcoord nodes will have an index parameter set
+        primvarNameIt = hdPrimvarNode.parameters.find(_tokens->index);
+        if (primvarNameIt != hdPrimvarNode.parameters.end()) {
+            // Get the sdr node for the texcoord node
+            SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
+            const SdrShaderNodeConstPtr sdrTexCoordNode = 
+                sdrRegistry.GetShaderNodeByIdentifierAndType(
+                    hdPrimvarNode.nodeTypeId, _tokens->mtlx);
+
+            // Get the default texture coordinate name from the sdr metadata
+            std::string texCoordName;
+            if (sdrTexCoordNode) {
+                auto metadata = sdrTexCoordNode->GetMetadata();
+                texCoordName = metadata[SdrNodeMetadata->Primvars];
+            }
+
+            // Figure out the mx typename
+            mx::NodeDefPtr mxNodeDef = mxDoc->getNodeDef(
+                    hdPrimvarNode.nodeTypeId.GetString());
+            if (mxNodeDef) {
+                (*mxHdPrimvarMap)[texCoordName] = mxNodeDef->getType();
             }
         }
 
