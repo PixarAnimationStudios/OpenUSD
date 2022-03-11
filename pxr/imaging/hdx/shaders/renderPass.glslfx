@@ -50,17 +50,24 @@ void RenderOutputImpl(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     #if defined(HD_HAS_hdxOitDataBuffer)
 
-    int screenWidth = int(HdGet_oitScreenSize().x);
+    const int screenWidth = int(HdGet_oitScreenSize().x);
+    const int screenHeight = int(HdGet_oitScreenSize().y);
+    // Must match the per-pixel sample count used when creating the OIT buffers.
+    // (See HdxOitResolveTask::_PrepareOitBuffers)
+    const int numSamples = 8;
+        
+    const int dataBufferSize = screenWidth * screenHeight * numSamples;
+    const int counterBufferSize = screenWidth * screenHeight + 1;
 
     // +1 because the counter buffer is cleared with -1, but we want the
     // first index to start at 0.
     int writeIndex = atomicAdd(hdxOitCounterBuffer[0], 1) + 1;
     
-    if (writeIndex < hdxOitDataBuffer.length()) {
+    if (writeIndex < dataBufferSize) {
         int screenIndex =
             int(gl_FragCoord.x) + int(gl_FragCoord.y) * screenWidth;
-        
-        if (screenIndex < hdxOitCounterBuffer.length()) {
+
+        if (screenIndex < counterBufferSize) {
             int prevIndex =
                 atomicExchange(hdxOitCounterBuffer[screenIndex+1], writeIndex);
             hdxOitDataBuffer[writeIndex] = color;
