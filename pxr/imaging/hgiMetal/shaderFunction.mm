@@ -49,7 +49,13 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
 
         MTLCompileOptions *options = [[MTLCompileOptions alloc] init];
         options.fastMathEnabled = YES;
-        options.languageVersion = MTLLanguageVersion2_2;
+
+        if (@available(macOS 10.15, ios 13.0, *)) {
+            options.languageVersion = MTLLanguageVersion2_2;
+        } else {
+            options.languageVersion = MTLLanguageVersion2_1;
+        }
+
         options.preprocessorMacros = @{
                 @"ARCH_GFX_METAL": @1,
         };
