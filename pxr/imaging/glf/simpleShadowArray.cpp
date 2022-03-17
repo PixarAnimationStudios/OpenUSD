@@ -337,7 +337,7 @@ void
 GlfSimpleShadowArray::SetTextures(std::vector<GLuint> textureIds)
 {
     _textures = textureIds;
-    _texturesAllocatedExternally = true;
+    _texturesAllocatedExternally = !textureIds.empty();
 }
 
 void
@@ -426,8 +426,13 @@ GlfSimpleShadowArray::_BindFramebuffer(size_t index)
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
-    glFramebufferTexture(GL_FRAMEBUFFER,
-        GL_DEPTH_ATTACHMENT, _textures[index], 0);
+
+    if (index < _textures.size()) {
+        glFramebufferTexture(GL_FRAMEBUFFER,
+            GL_DEPTH_ATTACHMENT, _textures[index], 0);
+    } else {
+        TF_CODING_WARNING("Texture index is out of bounds");
+    }
 
     GLF_POST_PENDING_GL_ERRORS();
 }
