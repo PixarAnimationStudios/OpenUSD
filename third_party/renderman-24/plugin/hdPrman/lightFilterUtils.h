@@ -47,8 +47,7 @@ void HdPrmanLightFilterGenerateCoordSysAndLinks(
     std::vector<TfToken> *filterLinks,
     HdSceneDelegate *sceneDelegate,
     HdPrman_RenderParam *renderParam,
-    riley::Riley *riley,
-    const riley::ShadingNode &lightNode);
+    riley::Riley *riley);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

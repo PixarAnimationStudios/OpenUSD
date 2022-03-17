@@ -600,7 +600,6 @@ _AddLightFilterCombiner(std::vector<riley::ShadingNode>* lightFilterNodes)
 static void
 _PopulateLightFilterNodes(
         const SdfPath &lightId,
-        const riley::ShadingNode &lightNode,
         const SdfPathVector &lightFilterPaths,
         HdSceneDelegate *sceneDelegate,
         HdRenderParam *renderParam,
@@ -659,8 +658,7 @@ _PopulateLightFilterNodes(
             lightFilterLinks,
             sceneDelegate,
             param,
-            riley,
-            lightNode);
+            riley);
     }
 
     // Multiple filters requires a PxrCombinerLightFilter to combine results.
@@ -799,7 +797,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     std::vector<riley::ShadingNode> filterNodes;
     std::vector<riley::CoordinateSystemId> coordsysIds;
     _PopulateLightFilterNodes(
-        id, lightNode, _lightFilterPaths, sceneDelegate, renderParam, riley,
+        id, _lightFilterPaths, sceneDelegate, renderParam, riley,
         &filterNodes, &coordsysIds, &_lightFilterLinks);
 
     // TODO: portals
