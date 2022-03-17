@@ -105,7 +105,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 bool HdPrmanLightFilterPopulateNodesFromLightParams(
     std::vector<riley::ShadingNode> *filterNodes,
-    SdfPath &filterPath,
+    const SdfPath &filterPath,
     HdSceneDelegate *sceneDelegate)
 {
     HD_TRACE_FUNCTION();
@@ -767,7 +767,7 @@ bool HdPrmanLightFilterPopulateNodesFromLightParams(
 
 void HdPrmanLightFilterGenerateCoordSysAndLinks(
     riley::ShadingNode *filter,
-    SdfPath &filterPath,
+    const SdfPath &filterPath,
     std::vector<riley::CoordinateSystemId> *coordsysIds,
     std::vector<TfToken> *filterLinks,
     HdSceneDelegate *sceneDelegate,
