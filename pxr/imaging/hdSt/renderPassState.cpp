@@ -990,6 +990,13 @@ HdStRenderPassState::_InitPrimitiveState(
     if (pipeDesc->primitiveType == HgiPrimitiveTypePatchList) {
         pipeDesc->tessellationState.primitiveIndexSize =
                             geometricShader->GetPrimitiveIndexSize();
+
+        if (geometricShader->GetUseMetalTessellation()) {
+            pipeDesc->tessellationState.patchType =
+                geometricShader->IsPrimTypeTriangles()
+                    ? HgiTessellationState::PatchType::Triangle
+                    : HgiTessellationState::PatchType::Quad;
+        }
     }
 }
 

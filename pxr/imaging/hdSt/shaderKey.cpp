@@ -237,6 +237,13 @@ HdSt_ShaderKey::IsDoubleSided() const
 }
 
 /*virtual*/
+bool
+HdSt_ShaderKey::UseMetalTessellation() const
+{
+    return false;
+}
+
+/*virtual*/
 HdPolygonMode 
 HdSt_ShaderKey::GetPolygonMode() const
 {

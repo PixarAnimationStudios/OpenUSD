@@ -227,9 +227,9 @@ HgiTessellationLevel::HgiTessellationLevel()
 }
 
 HgiTessellationState::HgiTessellationState()
-    : tessellationLevel()
+    : patchType(Triangle)
     , primitiveIndexSize(0)
-    , tessEnabled(false)
+    , tessellationLevel()
 {
 }
 

@@ -43,6 +43,8 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
     , _renderPassDescriptor(nil)
     , _encoder(nil)
     , _descriptor(desc)
+    , _primitiveType(HgiPrimitiveTypeTriangleList)
+    , _primitiveIndexSize(0)
     , _debugLabel(nil)
     , _viewportSet(false)
 {
@@ -59,6 +61,10 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
         TF_CODING_ERROR("DepthResolve texture without depth texture.");
         return;
     }
+    
+    static const size_t _maxStepFunctionDescs = 4;
+    _vertexBufferStepFunctionDescs.reserve(_maxStepFunctionDescs);
+    _patchBaseVertexBufferStepFunctionDescs.reserve(_maxStepFunctionDescs);
 
     _renderPassDescriptor = [[MTLRenderPassDescriptor alloc] init];
 
@@ -316,6 +322,7 @@ HgiMetalGraphicsCmds::_InitVertexBufferStepFunction(
     HgiGraphicsPipelineDesc const & descriptor = pipeline->GetDescriptor();
 
     _vertexBufferStepFunctionDescs.clear();
+    _patchBaseVertexBufferStepFunctionDescs.clear();
 
     for (size_t index = 0; index < descriptor.vertexBuffers.size(); index++) {
         auto const & vbo = descriptor.vertexBuffers[index];
@@ -323,6 +330,10 @@ HgiMetalGraphicsCmds::_InitVertexBufferStepFunction(
                     HgiVertexBufferStepFunctionPerDrawCommand) {
             _vertexBufferStepFunctionDescs.emplace_back(
                         index, 0, vbo.vertexStride);
+        } else if (vbo.vertexStepFunction ==
+                    HgiVertexBufferStepFunctionPerPatchControlPoint) {
+            _patchBaseVertexBufferStepFunctionDescs.emplace_back(
+                index, 0, vbo.vertexStride);
         }
     }
 }
@@ -337,53 +348,74 @@ HgiMetalGraphicsCmds::_BindVertexBufferStepFunction(
             stepFunction.byteOffset = byteOffset;
         }
     }
+    for (auto & stepFunction : _patchBaseVertexBufferStepFunctionDescs) {
+        if (stepFunction.bindingIndex == bindingIndex) {
+            stepFunction.byteOffset = byteOffset;
+        }
+    }
 }
 
 void
 HgiMetalGraphicsCmds::_SetVertexBufferStepFunctionOffsets(
-    uint32_t firstInstance)
+    id<MTLRenderCommandEncoder> encoder,
+    uint32_t baseInstance)
 {
     for (auto const & stepFunction : _vertexBufferStepFunctionDescs) {
-        uint32_t const offset = stepFunction.vertexStride * firstInstance +
+        uint32_t const offset = stepFunction.vertexStride * baseInstance +
                                 stepFunction.byteOffset;
-        [_encoder setVertexBufferOffset:offset
-                                atIndex:stepFunction.bindingIndex];
+
+        [encoder setVertexBufferOffset:offset
+                               atIndex:stepFunction.bindingIndex];
+     }
+}
+
+void
+HgiMetalGraphicsCmds::_SetPatchBaseVertexBufferStepFunctionOffsets(
+    id<MTLRenderCommandEncoder> encoder,
+    uint32_t baseVertex)
+{
+    for (auto const & stepFunction : _patchBaseVertexBufferStepFunctionDescs) {
+        uint32_t const offset = stepFunction.vertexStride * baseVertex +
+                                stepFunction.byteOffset;
+
+        [encoder setVertexBufferOffset:offset
+                               atIndex:stepFunction.bindingIndex];
     }
 }
 
 void
 HgiMetalGraphicsCmds::Draw(
     uint32_t vertexCount,
-    uint32_t firstVertex,
+    uint32_t baseVertex,
     uint32_t instanceCount,
-    uint32_t firstInstance)
+    uint32_t baseInstance)
 {
     _CreateEncoder();
     
     MTLPrimitiveType type=HgiMetalConversions::GetPrimitiveType(_primitiveType);
 
-    _SetVertexBufferStepFunctionOffsets(firstInstance);
+    _SetVertexBufferStepFunctionOffsets(_encoder, baseInstance);
 
     if (_primitiveType == HgiPrimitiveTypePatchList) {
         const NSUInteger controlPointCount = _primitiveIndexSize;
         [_encoder drawPatches:controlPointCount
-                                   patchStart:0
-                                   patchCount:vertexCount/controlPointCount
-                                   patchIndexBuffer:NULL
-                                   patchIndexBufferOffset:0
-                                   instanceCount:instanceCount
-                                   baseInstance:firstInstance];
+                   patchStart:0
+                   patchCount:vertexCount/controlPointCount
+             patchIndexBuffer:NULL
+       patchIndexBufferOffset:0
+                instanceCount:instanceCount
+                 baseInstance:baseInstance];
     } else {
         if (instanceCount == 1) {
             [_encoder drawPrimitives:type
-                         vertexStart:firstVertex
+                         vertexStart:baseVertex
                          vertexCount:vertexCount];
         } else {
             [_encoder drawPrimitives:type
-                         vertexStart:firstVertex
+                         vertexStart:baseVertex
                          vertexCount:vertexCount
                        instanceCount:instanceCount
-                        baseInstance:firstInstance];
+                        baseInstance:baseInstance];
         }
     }
 
@@ -393,7 +425,7 @@ HgiMetalGraphicsCmds::Draw(
 void
 HgiMetalGraphicsCmds::DrawIndirect(
     HgiBufferHandle const& drawParameterBuffer,
-    uint32_t bufferOffset,
+    uint32_t drawBufferByteOffset,
     uint32_t drawCount,
     uint32_t stride)
 {
@@ -407,22 +439,26 @@ HgiMetalGraphicsCmds::DrawIndirect(
     if (_primitiveType == HgiPrimitiveTypePatchList) {
         const NSUInteger controlPointCount = _primitiveIndexSize;
         for (uint32_t i = 0; i < drawCount; i++) {
-            _SetVertexBufferStepFunctionOffsets(i);
+            _SetVertexBufferStepFunctionOffsets(_encoder, i);
 
+            const uint32_t bufferOffset = drawBufferByteOffset
+                                        + (i * stride);
             [_encoder drawPatches:controlPointCount
                  patchIndexBuffer:NULL
-                 patchIndexBufferOffset:0
-                 indirectBuffer:drawBuf->GetBufferId()
-                 indirectBufferOffset:bufferOffset + (i * stride)];
+           patchIndexBufferOffset:0
+                   indirectBuffer:drawBuf->GetBufferId()
+             indirectBufferOffset:bufferOffset];
         }
     }
     else {
         for (uint32_t i = 0; i < drawCount; i++) {
-            _SetVertexBufferStepFunctionOffsets(i);
+            _SetVertexBufferStepFunctionOffsets(_encoder, i);
 
+            const uint32_t bufferOffset = drawBufferByteOffset
+                                        + (i * stride);
             [_encoder drawPrimitives:type
                       indirectBuffer:drawBuf->GetBufferId()
-                indirectBufferOffset:bufferOffset + (i * stride)];
+                indirectBufferOffset:bufferOffset];
         }
     }
 }
@@ -432,9 +468,9 @@ HgiMetalGraphicsCmds::DrawIndexed(
     HgiBufferHandle const& indexBuffer,
     uint32_t indexCount,
     uint32_t indexBufferByteOffset,
-    uint32_t vertexOffset,
+    uint32_t baseVertex,
     uint32_t instanceCount,
-    uint32_t firstInstance)
+    uint32_t baseInstance)
 {
     _CreateEncoder();
 
@@ -442,16 +478,32 @@ HgiMetalGraphicsCmds::DrawIndexed(
 
     MTLPrimitiveType type=HgiMetalConversions::GetPrimitiveType(_primitiveType);
 
-    _SetVertexBufferStepFunctionOffsets(firstInstance);
+    _SetVertexBufferStepFunctionOffsets(_encoder, baseInstance);
 
-    [_encoder drawIndexedPrimitives:type
-                         indexCount:indexCount
-                          indexType:MTLIndexTypeUInt32
-                        indexBuffer:indexBuf->GetBufferId()
-                  indexBufferOffset:indexBufferByteOffset
-                      instanceCount:instanceCount
-                         baseVertex:vertexOffset
-                       baseInstance:firstInstance];
+    if (_primitiveType == HgiPrimitiveTypePatchList) {
+        const NSUInteger controlPointCount = _primitiveIndexSize;
+
+        _SetPatchBaseVertexBufferStepFunctionOffsets(_encoder, baseVertex);
+
+        [_encoder drawIndexedPatches:controlPointCount
+                          patchStart:indexBufferByteOffset / sizeof(uint32_t)
+                          patchCount:indexCount
+                    patchIndexBuffer:nil
+              patchIndexBufferOffset:0
+             controlPointIndexBuffer:indexBuf->GetBufferId()
+       controlPointIndexBufferOffset:0
+                       instanceCount:instanceCount
+                        baseInstance:baseInstance];
+    } else {
+        [_encoder drawIndexedPrimitives:type
+                             indexCount:indexCount
+                              indexType:MTLIndexTypeUInt32
+                            indexBuffer:indexBuf->GetBufferId()
+                      indexBufferOffset:indexBufferByteOffset
+                          instanceCount:instanceCount
+                             baseVertex:baseVertex
+                           baseInstance:baseInstance];
+    }
 
     _hasWork = true;
 }
@@ -460,28 +512,61 @@ void
 HgiMetalGraphicsCmds::DrawIndexedIndirect(
     HgiBufferHandle const& indexBuffer,
     HgiBufferHandle const& drawParameterBuffer,
-    uint32_t drawBufferOffset,
+    uint32_t drawBufferByteOffset,
     uint32_t drawCount,
-    uint32_t stride)
+    uint32_t stride,
+    std::vector<uint32_t> const& drawParameterBufferUInt32,
+    uint32_t patchBaseVertexByteOffset)
 {
     _CreateEncoder();
-    
-    HgiMetalBuffer* indexBuf = static_cast<HgiMetalBuffer*>(indexBuffer.Get());
 
-    HgiMetalBuffer* drawBuf =
-        static_cast<HgiMetalBuffer*>(drawParameterBuffer.Get());
+    id<MTLBuffer> indexBufferId =
+        static_cast<HgiMetalBuffer*>(indexBuffer.Get())->GetBufferId();
+    id<MTLBuffer> drawBufferId =
+        static_cast<HgiMetalBuffer*>(drawParameterBuffer.Get())->GetBufferId();
 
-    MTLPrimitiveType type=HgiMetalConversions::GetPrimitiveType(_primitiveType);
+    MTLPrimitiveType type =
+        HgiMetalConversions::GetPrimitiveType(_primitiveType);
 
-    for (uint32_t i = 0; i < drawCount; i++) {
-        _SetVertexBufferStepFunctionOffsets(i);
+    if (_primitiveType == HgiPrimitiveTypePatchList) {
+        const NSUInteger controlPointCount = _primitiveIndexSize;
+        
+        for (uint32_t i = 0; i < drawCount; i++) {
+            _SetVertexBufferStepFunctionOffsets(_encoder, i);
 
-        [_encoder drawIndexedPrimitives:type
-                              indexType:MTLIndexTypeUInt32
-                            indexBuffer:indexBuf->GetBufferId()
-                      indexBufferOffset:0
-                         indirectBuffer:drawBuf->GetBufferId()
-                   indirectBufferOffset:drawBufferOffset + (i * stride)];
+            const uint32_t baseVertexIndex =
+                (patchBaseVertexByteOffset +
+                 i * stride) / sizeof(uint32_t);
+            const uint32_t baseVertex =
+                drawParameterBufferUInt32[baseVertexIndex];
+
+            _SetPatchBaseVertexBufferStepFunctionOffsets(
+                _encoder, baseVertex);
+
+            const uint32_t bufferOffset = drawBufferByteOffset
+                                        + (i * stride);
+            [_encoder drawIndexedPatches:controlPointCount
+                        patchIndexBuffer:nil
+                  patchIndexBufferOffset:0
+                 controlPointIndexBuffer:indexBufferId
+           controlPointIndexBufferOffset:0
+                          indirectBuffer:drawBufferId
+                    indirectBufferOffset:bufferOffset];
+        }
+    }
+    else {
+        for (uint32_t i = 0; i < drawCount; i++) {
+            _SetVertexBufferStepFunctionOffsets(_encoder, i);
+
+            const uint32_t bufferOffset = drawBufferByteOffset
+                                        + (i * stride);
+            [_encoder drawIndexedPrimitives:type
+                                  indexType:MTLIndexTypeUInt32
+                                indexBuffer:indexBufferId
+                          indexBufferOffset:0
+                             indirectBuffer:drawBufferId
+                       indirectBufferOffset:bufferOffset];
+        }
     }
 }
 

@@ -614,6 +614,10 @@ enum HgiPrimitiveType
 ///   New attribute data is fetched for each vertex.</li>
 /// <li>HgiVertexBufferStepFunctionPerInstance:
 ///   New attribute data is fetched for each instance.</li>
+/// <li>HgiVertexBufferStepFunctionPerPatch:
+///   New attribute data is fetched for each patch.</li>
+/// <li>HgiVertexBufferStepFunctionPerPatchControlPoint:
+///   New attribute data is fetched for each patch control point.</li>
 /// <li>HgiVertexBufferStepFunctionPerDrawCommand:
 ///   New attribute data is fetched for each draw in a multi-draw command.</li>
 /// </ul>
@@ -623,6 +627,8 @@ enum HgiVertexBufferStepFunction
     HgiVertexBufferStepFunctionConstant = 0,
     HgiVertexBufferStepFunctionPerVertex,
     HgiVertexBufferStepFunctionPerInstance,
+    HgiVertexBufferStepFunctionPerPatch,
+    HgiVertexBufferStepFunctionPerPatchControlPoint,
     HgiVertexBufferStepFunctionPerDrawCommand,
 
     HgiVertexBufferStepFunctionCount

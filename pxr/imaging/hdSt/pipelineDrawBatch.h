@@ -176,8 +176,9 @@ private:
     bool _useInstanceCulling;
     bool const _allowGpuFrustumCulling;
 
-    int _instanceCountOffset;
-    int _cullInstanceCountOffset;
+    size_t _instanceCountOffset;
+    size_t _cullInstanceCountOffset;
+    size_t _patchBaseVertexByteOffset;
 };
 
 
