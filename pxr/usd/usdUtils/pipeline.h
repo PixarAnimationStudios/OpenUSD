@@ -60,13 +60,15 @@ USDUTILS_API
 TfToken UsdUtilsGetModelNameFromRootLayer(const SdfLayerHandle& rootLayer);
 
 /// Certain variant sets can be registered with the system.
-/// \sa UsdUtilsRegisteredVariantSet
 ///
-
 /// Returns the set of UsdUtilsRegisteredVariantSet objects that are registered
 /// with the pipeline. 
 ///
-/// This list will be empty until one or more plugInfo.json files
+/// Variant sets can be registered through direct enumeration inside a
+/// `plugInfo.json`, or via a plugin for situations that require dynamic
+/// configuration at runtime.
+///
+/// This list will be empty until one or more `plugInfo.json` files
 /// discoverable by your USD installation contain an entry in the
 /// UsdUtilsPipeline group like the following:
 /// \code{json}
@@ -85,8 +87,38 @@ TfToken UsdUtilsGetModelNameFromRootLayer(const SdfLayerHandle& rootLayer);
 ///        ]
 ///    }
 /// \endcode
+///
+/// After the above variantSets are registered, this will then load any plugin 
+/// that has a `plugInfo.json` with:
+///
+/// \code{json}
+///     "UsdUtilsPipeline": {
+///         "RegistersVariantSets": true
+///     }
+/// \endcode
+///
+/// This plugin should then have code that registers code to run for
+/// `UsdUtilsRegisteredVariantSet`:
+/// \code{cpp}
+/// TF_REGISTRY_FUNCTION(UsdUtilsRegisteredVariantSet) {
+///   std::string variantSetName = ...;
+///   UsdUtilsRegisteredVariantSet::SelectionExportPolicy exportPolicy = ...;
+///   UsdUtilsRegisterVariantSet(variantSetName, exportPolicy);
+/// }
+/// \endcode
+///
+/// \sa UsdUtilsRegisterVariantSet 
 USDUTILS_API
 const std::set<UsdUtilsRegisteredVariantSet>& UsdUtilsGetRegisteredVariantSets();
+
+/// Registers \p variantSetName with \p selectionExportPolicy.
+///
+/// \sa UsdUtilsGetRegisteredVariantSets
+USDUTILS_API
+void UsdUtilsRegisterVariantSet(
+    const std::string& variantSetName,
+    const UsdUtilsRegisteredVariantSet::SelectionExportPolicy&
+        selectionExportPolicy);
 
 /// If a valid UsdPrim already exists at \p path on the USD stage \p stage, 
 /// returns it. It not, it checks to see if the path belongs to a prim 
