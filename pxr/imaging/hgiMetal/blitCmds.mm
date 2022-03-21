@@ -68,9 +68,9 @@ HgiMetalBlitCmds::_CreateEncoder()
         _blitEncoder = [_commandBuffer blitCommandEncoder];
 
         if (_label) {
-            if (HgiMetalDebugEnabled()) {
-                _blitEncoder.label = _label;
-            }
+            [_blitEncoder pushDebugGroup:_label];
+            [_label release];
+            _label = nil;
         }
     }
 }
@@ -78,10 +78,14 @@ HgiMetalBlitCmds::_CreateEncoder()
 void
 HgiMetalBlitCmds::PushDebugGroup(const char* label)
 {
-    if (_blitEncoder) {
-        HGIMETAL_DEBUG_LABEL(_blitEncoder, label)
+    if (!HgiMetalDebugEnabled()) {
+        return;
     }
-    else if (HgiMetalDebugEnabled()) {
+
+    if (_blitEncoder) {
+        HGIMETAL_DEBUG_PUSH_GROUP(_blitEncoder, label)
+    }
+    else  {
         _label = [@(label) copy];
     }
 }
@@ -89,6 +93,9 @@ HgiMetalBlitCmds::PushDebugGroup(const char* label)
 void
 HgiMetalBlitCmds::PopDebugGroup()
 {
+    if (_blitEncoder) {
+        HGIMETAL_DEBUG_POP_GROUP(_blitEncoder)
+    }
 }
 
 void 

@@ -124,12 +124,15 @@ void
 HgiMetalComputeCmds::PushDebugGroup(const char* label)
 {
     _CreateEncoder();
-    HGIMETAL_DEBUG_LABEL(_encoder, label)
+    HGIMETAL_DEBUG_PUSH_GROUP(_encoder, label)
 }
 
 void
 HgiMetalComputeCmds::PopDebugGroup()
 {
+    if (_encoder) {
+        HGIMETAL_DEBUG_POP_GROUP(_encoder)
+    }
 }
 
 void

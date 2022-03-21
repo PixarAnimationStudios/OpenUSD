@@ -195,7 +195,9 @@ HgiMetalGraphicsCmds::_CreateEncoder()
             renderCommandEncoderWithDescriptor:_renderPassDescriptor];
         
         if (_debugLabel) {
-            [_encoder setLabel:_debugLabel];
+            [_encoder pushDebugGroup:_debugLabel];
+            [_debugLabel release];
+            _debugLabel = nil;
         }
         if (_viewportSet) {
             [_encoder setViewport:_viewport];
@@ -573,10 +575,14 @@ HgiMetalGraphicsCmds::DrawIndexedIndirect(
 void
 HgiMetalGraphicsCmds::PushDebugGroup(const char* label)
 {
-    if (_encoder) {
-        HGIMETAL_DEBUG_LABEL(_encoder, label)
+    if (!HgiMetalDebugEnabled()) {
+        return;
     }
-    else if (HgiMetalDebugEnabled()) {
+
+    if (_encoder) {
+        HGIMETAL_DEBUG_PUSH_GROUP(_encoder, label)
+    }
+    else {
         _debugLabel = [@(label) copy];
     }
 }
@@ -584,6 +590,9 @@ HgiMetalGraphicsCmds::PushDebugGroup(const char* label)
 void
 HgiMetalGraphicsCmds::PopDebugGroup()
 {
+    if (_encoder) {
+        HGIMETAL_DEBUG_POP_GROUP(_encoder);
+    }
     if (_debugLabel) {
         [_debugLabel release];
         _debugLabel = nil;
