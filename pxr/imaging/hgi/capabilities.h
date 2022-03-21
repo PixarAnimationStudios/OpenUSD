@@ -28,6 +28,7 @@
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/enums.h"
 
+#include <cstddef>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -71,12 +72,19 @@ public:
         return _maxClipDistances;
     }
 
+    HGI_API
+    size_t GetPageSizeAlignment() const {
+        return _pageSizeAlignment;
+    }
+
 protected:
     HgiCapabilities()
         : _maxUniformBlockSize(0)
         , _maxShaderStorageBlockSize(0)
         , _uniformBufferOffsetAlignment(0)
-        , _flags(0) {}
+        , _pageSizeAlignment(1)
+        , _flags(0)
+    {}
 
     void _SetFlag(HgiDeviceCapabilities mask, bool value) {
         if (value) {
@@ -90,6 +98,7 @@ protected:
     int _maxShaderStorageBlockSize;
     int _uniformBufferOffsetAlignment;
     int _maxClipDistances;
+    size_t _pageSizeAlignment;
 
 private:
     HgiCapabilities & operator=(const HgiCapabilities&) = delete;

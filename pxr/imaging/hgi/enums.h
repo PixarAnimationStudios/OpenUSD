@@ -67,6 +67,10 @@ using HgiBits = uint32_t;
 ///   Supports reading back the stencil buffer from GPU to CPU.</li>
 /// <li>HgiDeviceCapabilitiesBitsCustomDepthRange:
 ///   The device supports setting a custom depth range.</li>
+/// <li>HgiDeviceCapabilitiesBitsMetalTessellation:
+///   Supports Metal tessellation shaders</li>
+/// <li>HgiDeviceCapabilitiesBitsBasePrimitiveOffset:
+///   The device requires workaround for base primitive offset</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
@@ -84,7 +88,9 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsCppShaderPadding        = 1 << 10,
     HgiDeviceCapabilitiesBitsConservativeRaster      = 1 << 11,
     HgiDeviceCapabilitiesBitsStencilReadback         = 1 << 12,
-    HgiDeviceCapabilitiesBitsCustomDepthRange        = 1 << 13
+    HgiDeviceCapabilitiesBitsCustomDepthRange        = 1 << 13,
+    HgiDeviceCapabilitiesBitsMetalTessellation       = 1 << 14,
+    HgiDeviceCapabilitiesBasePrimitiveOffset         = 1 << 15,
 };
 
 using HgiDeviceCapabilities = HgiBits;
