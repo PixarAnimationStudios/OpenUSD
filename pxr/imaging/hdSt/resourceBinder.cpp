@@ -512,7 +512,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     }
 
     // draw parameter
-    // assigned to draw index (vertex attributeI w/divisor) (indiect)
+    // assigned to draw index (vertex attributeI w/divisor) (indirect)
     // assigned to uniform          (immediate)
     //
     // note that instanceDraw may be true even for non-instance drawing,

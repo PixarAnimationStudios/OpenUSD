@@ -501,7 +501,7 @@ HdxTaskController::_CreateSkydomeTask()
     SdfPath skydomeTaskId = GetControllerId().AppendChild(_tokens->skydomeTask);
     GetRenderIndex()->InsertTask<HdxSkydomeTask>(&_delegate, skydomeTaskId);
 
-    // This task wil be added to the _renderTaskIds so that the AOV's are 
+    // This task will be added to the _renderTaskIds so that the AOV's are
     // properly cleared. This means that we need to set the parameter and
     // collection values. (Following HdxTaskController::_CreateRenderTask())
     HdxRenderTaskParams renderParams;

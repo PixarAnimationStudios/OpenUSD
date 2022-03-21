@@ -1428,7 +1428,7 @@ static void _EmitComputeAccessor(
         }
     }
     // GLSL spec doesn't allow default parameter. use function overload instead.
-    // default to locaIndex=0
+    // default to localIndex=0
     str << _GetUnpackedType(type, false) << " HdGet_" << name << "()"
         << " { return HdGet_" << name << "(0); }\n";
     
@@ -1473,7 +1473,7 @@ static void _EmitComputeMutator(
     // XXX Don't output a default mutator as we don't want accidental overwrites
     // of compute read-write data.
     // GLSL spec doesn't allow default parameter. use function overload instead.
-    // default to locaIndex=0
+    // default to localIndex=0
     //str << "void HdSet_" << name << "(" << type << " value)"
     //    << " { HdSet_" << name << "(0, value); }\n";
     
@@ -1501,7 +1501,7 @@ static void _EmitAccessor(std::stringstream &str,
         }
     }
     // GLSL spec doesn't allow default parameter. use function overload instead.
-    // default to locaIndex=0
+    // default to localIndex=0
     str << _GetUnpackedType(type, false) << " HdGet_" << name << "()"
         << " { return HdGet_" << name << "(0); }\n";
     
