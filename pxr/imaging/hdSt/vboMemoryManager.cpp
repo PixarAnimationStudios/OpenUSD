@@ -26,6 +26,7 @@
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/bufferUtils.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/stagingBuffer.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -547,7 +548,7 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::IsImmutable() const
 bool
 HdStVBOMemoryManager::_StripedBufferArrayRange::RequiresStaging() const
 {
-    return false;
+    return true;
 }
 
 bool
@@ -663,7 +664,7 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
         srcSize = dstSize;
     }
     size_t vboOffset = bytesPerElement * _elementOffset;
-    
+
     HD_PERF_COUNTER_INCR(HdStPerfTokens->copyBufferCpuToGpu);
 
     HgiBufferCpuToGpuOp blitOp;
@@ -674,10 +675,9 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
     blitOp.byteSize = srcSize;
     blitOp.destinationByteOffset = vboOffset;
 
-    HgiBlitCmds* blitCmds = GetResourceRegistry()->GetGlobalBlitCmds();
-    blitCmds->PushDebugGroup(__ARCH_PRETTY_FUNCTION__);
-    blitCmds->CopyBufferCpuToGpu(blitOp);
-    blitCmds->PopDebugGroup();
+    HdStStagingBuffer *stagingBuffer = 
+        GetResourceRegistry()->GetStagingBuffer();
+    stagingBuffer->StageCopy(blitOp);
 }
 
 int
