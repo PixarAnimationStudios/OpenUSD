@@ -32,6 +32,8 @@
 #include "pxr/usd/ndr/declare.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
 
+#include <functional>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class NdrDiscoveryPluginContext;
