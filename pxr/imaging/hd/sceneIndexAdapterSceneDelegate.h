@@ -135,6 +135,11 @@ public:
     SdfPathVector GetInstancerPrototypes(SdfPath const &instancerId) override;
 
     // ------------------------------------------------------------------------
+    // Path Translation API
+
+    SdfPath GetDataSharingId(SdfPath const& primId) override;
+
+    // ------------------------------------------------------------------------
     // Material API
 
     SdfPath GetMaterialId(SdfPath const &id) override;

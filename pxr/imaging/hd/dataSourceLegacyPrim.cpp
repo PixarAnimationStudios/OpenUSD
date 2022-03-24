@@ -36,6 +36,7 @@
 #include "pxr/imaging/hd/cameraSchema.h"
 #include "pxr/imaging/hd/categoriesSchema.h"
 #include "pxr/imaging/hd/coordSysBindingSchema.h"
+#include "pxr/imaging/hd/dataSharingSchema.h"
 #include "pxr/imaging/hd/extComputationInputComputationSchema.h"
 #include "pxr/imaging/hd/extComputationOutputSchema.h"
 #include "pxr/imaging/hd/extComputationPrimvarSchema.h"
@@ -2274,6 +2275,7 @@ HdDataSourceLegacyPrim::Has(const TfToken &name)
             name == HdPurposeSchemaTokens->purpose ||
             name == HdVisibilitySchemaTokens->visibility ||
             name == HdInstancedBySchemaTokens->instancedBy ||
+            name == HdDataSharingSchemaTokens->dataSharing ||
             name == HdCategoriesSchemaTokens->categories ||
             name == HdXformSchemaTokens->xform ||
             name == HdExtentSchemaTokens->extent) {
@@ -2305,6 +2307,7 @@ HdDataSourceLegacyPrim::Has(const TfToken &name)
     if (_type == HdPrimTypeTokens->instancer) {
         if (name == HdXformSchemaTokens->xform ||
             name == HdInstancedBySchemaTokens->instancedBy ||
+            name == HdDataSharingSchemaTokens->dataSharing ||
             name == HdInstancerTopologySchemaTokens->instancerTopology ||
             name == HdPrimvarsSchemaTokens->primvars ||
             name == HdInstanceCategoriesSchemaTokens->instanceCategories) {
@@ -2390,6 +2393,7 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdPurposeSchemaTokens->purpose);
         result.push_back(HdVisibilitySchemaTokens->visibility);
         result.push_back(HdInstancedBySchemaTokens->instancedBy);
+        result.push_back(HdDataSharingSchemaTokens->dataSharing);
         result.push_back(HdCategoriesSchemaTokens->categories);
         result.push_back(HdXformSchemaTokens->xform);
         result.push_back(HdExtentSchemaTokens->extent);
@@ -2413,6 +2417,7 @@ HdDataSourceLegacyPrim::GetNames()
     if (_type == HdPrimTypeTokens->instancer) {
         result.push_back(HdXformSchemaTokens->xform);
         result.push_back(HdInstancedBySchemaTokens->instancedBy);
+        result.push_back(HdDataSharingSchemaTokens->dataSharing);
         result.push_back(HdInstancerTopologySchemaTokens->instancerTopology);
         result.push_back(HdPrimvarsSchemaTokens->primvars);
         result.push_back(HdInstanceCategoriesSchemaTokens->instanceCategories);
@@ -2723,6 +2728,17 @@ HdDataSourceLegacyPrim::_GetInstancedByDataSource()
 }
 
 HdDataSourceBaseHandle
+HdDataSourceLegacyPrim::_GetDataSharingDataSource()
+{
+    SdfPath sharingId = _sceneDelegate->GetDataSharingId(_id);
+    if (sharingId.IsEmpty()) {
+        return nullptr;
+    }
+    return HdDataSharingSchema::BuildRetained(
+        HdRetainedTypedSampledDataSource<SdfPath>::New(sharingId));
+}
+
+HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetInstancerTopologyDataSource()
 {
     TRACE_FUNCTION();
@@ -2917,6 +2933,8 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
             _sceneDelegate);
     } else if (name == HdInstancedBySchemaTokens->instancedBy) {
         return _GetInstancedByDataSource();
+    } else if (name == HdDataSharingSchemaTokens->dataSharing) {
+        return _GetDataSharingDataSource();
     } else if (name == HdInstancerTopologySchemaTokens->instancerTopology) {
         return _GetInstancerTopologyDataSource();
     } else if (name == HdVolumeFieldBindingSchemaTokens->volumeFieldBinding) {

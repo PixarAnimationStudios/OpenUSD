@@ -43,6 +43,7 @@ pxr_library(hd
         containerDataSourceEditor
         coordSys
         coordSysBindingSchema
+        dataSharingSchema
         dataSource
         dataSourceLegacyPrim
         dataSourceLocator

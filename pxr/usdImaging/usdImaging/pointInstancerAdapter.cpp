@@ -1359,6 +1359,65 @@ UsdImagingPointInstancerAdapter::GetScenePrimPath(
     return _GetPrimPathFromInstancerChain(paths);
 }
 
+/* virtual */
+SdfPath
+UsdImagingPointInstancerAdapter::GetDataSharingId(
+    SdfPath const& cachePath) const
+{
+    SdfPath instancerPath;
+
+    // If the prototype is an rprim, the instancer path is just the parent path.
+    if (IsChildPath(cachePath)) {
+        instancerPath = cachePath.GetParentPath();
+    } else {
+        // If the prototype is a PI, then cache path will be in the prim map
+        // of one of the instancers.  If it's a UsdGeomPointInstancer, we can
+        // look it up directly, and get the parent path that way. Otherwise,
+        // we need to loop all instancers.
+        _InstancerDataMap::const_iterator it =
+            _instancerData.find(cachePath);
+        if (it != _instancerData.end()) {
+            instancerPath = it->second.parentInstancerCachePath;
+        } else {
+            for (auto const& pair : _instancerData) {
+                if (pair.second.protoPrimMap.count(cachePath) > 0) {
+                    instancerPath = pair.first;
+                    break;
+                }
+            }
+        }
+    }
+
+    // If we couldn't determine instancerPath, bail.
+    if (instancerPath == SdfPath()) {
+        return SdfPath();
+    }
+
+    _ProtoPrim const& proto = _GetProtoPrim(instancerPath, cachePath);
+    if (!proto.adapter) {
+        // If proto.adapter is null, _GetProtoPrim failed.
+        return SdfPath();
+    }
+
+    SdfPath protoPath = _GetPrimPathFromInstancerChain(proto.paths);
+    // If we couldn't determine the point instancer prototype path, bail.
+    if (protoPath == SdfPath()) {
+        return SdfPath();
+    }
+
+    UsdPrim protoPrim = _GetPrim(protoPath);
+    if (protoPrim.IsInstance()) {
+        return protoPrim.GetPrototype().GetPath();
+    }
+    if (protoPrim.IsInstanceProxy()) {
+        return protoPrim.GetPrimInPrototype().GetPath();
+    }
+
+    // If the point instancer prototype primitive isn't an instance or an
+    // instance proxy, there can be no data sharing.
+    return SdfPath();
+}
+
 static 
 size_t
 _GatherAuthoredTransformTimeSamples(
