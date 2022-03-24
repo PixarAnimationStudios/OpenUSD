@@ -659,7 +659,13 @@ private:
     _DependencyMap _dependencyInfo;
 
     void _GatherDependencies(SdfPath const& subtree,
-                             SdfPathVector *affectedCachePaths);
+                             SdfPathVector& affectedCachePaths);
+
+    typedef TfHashMap<SdfPath, SdfPathVector, SdfPath::Hash> _DependenciesCacheMap;
+    _DependenciesCacheMap _dependenciesCacheMap;
+
+    void _GatherDependenciesCache(SdfPath const &subtree,
+                                  SdfPathVector& affectedCachePaths);
 
     // SdfPath::ReplacePrefix() is used frequently to convert between
     // cache path and Hydra render index path and is a performance bottleneck.
