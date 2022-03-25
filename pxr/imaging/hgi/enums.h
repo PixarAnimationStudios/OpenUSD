@@ -682,11 +682,19 @@ using HgiMemoryBarrier = HgiBits;
 /// <ul>
 /// <li>HgiBindingTypeValue:
 ///   Shader declares binding as a value.
-///   Glsl example: uniform int parameter;
+///   Glsl example: buffer { int parameter; };
+///   Msl example: int parameter;</li>
+/// <li>HgiBindingTypeUniformValue:
+///   Shader declares binding as a uniform block value.
+///   Glsl example: uniform { int parameter; };
 ///   Msl example: int parameter;</li>
 /// <li>HgiBindingTypeArray:
 ///   Shader declares binding as array value.
-///   Glsl example: uniform int parameter[n];
+///   Glsl example: buffer { int parameter[n]; };
+///   Msl example: int parameter[n];</li>
+/// <li>HgiBindingTypeUniformArray:
+///   Shader declares binding as uniform block array value.
+///   Glsl example: uniform { int parameter[n]; };
 ///   Msl example: int parameter[n];</li>
 /// <li>HgiBindingTypePointer:
 ///   Shader declares binding as pointer value.
@@ -697,7 +705,9 @@ using HgiMemoryBarrier = HgiBits;
 enum HgiBindingType
 {
     HgiBindingTypeValue = 0,
+    HgiBindingTypeUniformValue,
     HgiBindingTypeArray,
+    HgiBindingTypeUniformArray,
     HgiBindingTypePointer,
 };
 

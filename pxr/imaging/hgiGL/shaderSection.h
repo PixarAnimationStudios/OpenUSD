@@ -222,6 +222,8 @@ public:
         const std::string &identifier,
         const uint32_t layoutIndex,
         const std::string &type,
+        const HgiBindingType binding,
+        const std::string arraySize,
         const HgiShaderSectionAttributeVector &attributes);
 
     HGIGL_API
@@ -240,6 +242,8 @@ private:
     HgiGLBufferShaderSection(const HgiGLBufferShaderSection&) = delete;
 
     const std::string _type;
+    const HgiBindingType _binding;
+    const std::string _arraySize;
 };
 
 /// \class HgiGLKeywordShaderSection

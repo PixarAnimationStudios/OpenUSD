@@ -397,12 +397,16 @@ HgiGLBufferShaderSection::HgiGLBufferShaderSection(
     const std::string &identifier,
     const uint32_t layoutIndex,
     const std::string &type,
+    const HgiBindingType binding,
+    const std::string arraySize,
     const HgiShaderSectionAttributeVector &attributes)
   : HgiGLShaderSection( identifier,
                         attributes,
                         "buffer",
                         "")
   , _type(type)
+  , _binding(binding)
+  , _arraySize(arraySize)
 {
 }
 
@@ -437,13 +441,25 @@ HgiGLBufferShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
         ss << ") ";
     }
     //If it has a storage qualifier, declare it
-    ss << " buffer _";
+    if (_binding == HgiBindingTypeUniformValue ||
+        _binding == HgiBindingTypeUniformArray) {
+        ss << "uniform ubo_";
+    } else {
+        ss << "buffer ssbo_";
+    }
     WriteIdentifier(ss);
     ss << " { ";
     WriteType(ss);
     ss << " ";
     WriteIdentifier(ss);
-    ss << "[]; };";
+
+    if (_binding == HgiBindingTypeValue ||
+        _binding == HgiBindingTypeUniformValue) {
+        ss << "; };\n";
+    }
+    else {
+        ss << "[" << _arraySize << "]; };\n";
+    }
 
     return true;
 }

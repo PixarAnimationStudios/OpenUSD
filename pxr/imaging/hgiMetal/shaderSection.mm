@@ -668,9 +668,11 @@ HgiMetalBufferShaderSection::WriteParameter(std::ostream& ss) const
     
     switch (_binding) {
     case HgiBindingTypeValue:
+    case HgiBindingTypeUniformValue:
         ss << "& ";
         break;
     case HgiBindingTypeArray:
+    case HgiBindingTypeUniformArray:
     case HgiBindingTypePointer:
         ss << "* ";
         break;
@@ -692,9 +694,11 @@ HgiMetalBufferShaderSection::VisitScopeMemberDeclarations(std::ostream &ss)
 
     switch (_binding) {
     case HgiBindingTypeValue:
+    case HgiBindingTypeUniformValue:
         ss << "& ";
         break;
     case HgiBindingTypeArray:
+    case HgiBindingTypeUniformArray:
     case HgiBindingTypePointer:
         ss << "* ";
         break;
@@ -730,9 +734,11 @@ HgiMetalBufferShaderSection::VisitScopeConstructorInitialization(
     WriteIdentifier(ss);
     switch (_binding) {
     case HgiBindingTypeValue:
+    case HgiBindingTypeUniformValue:
         ss << "(*_";
         break;
     case HgiBindingTypeArray:
+    case HgiBindingTypeUniformArray:
     case HgiBindingTypePointer:
         ss << "(_";
         break;
@@ -749,7 +755,8 @@ HgiMetalBufferShaderSection::VisitScopeConstructorInstantiation(
     if (_unused) return false;
 
     if (!_parentScopeIdentifier.empty()) {
-        if (_binding == HgiBindingTypeValue) {
+        if (_binding == HgiBindingTypeValue ||
+            _binding == HgiBindingTypeUniformValue) {
             ss << "&";
         }
         ss << _parentScopeIdentifier << "->";

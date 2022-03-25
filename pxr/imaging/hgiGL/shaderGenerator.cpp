@@ -200,16 +200,45 @@ HgiGLShaderGenerator::_WriteBuffers(
     //Extract buffer descriptors and add appropriate buffer sections
     for(size_t i=0; i<buffers.size(); i++) {
         const HgiShaderFunctionBufferDesc &bufferDescription = buffers[i];
-        const HgiShaderSectionAttributeVector attrs = {
-            HgiShaderSectionAttribute{"std430", ""},
-            HgiShaderSectionAttribute{"binding", std::to_string(i + 1)}};
 
-        GetShaderSections()->push_back(
-            std::make_unique<HgiGLBufferShaderSection>(
-                bufferDescription.nameInShader,
-                i + 1,
-                bufferDescription.type,
-                attrs));
+        const bool isUniformBufferBinding =
+            (bufferDescription.binding == HgiBindingTypeUniformValue) ||
+            (bufferDescription.binding == HgiBindingTypeUniformArray);
+
+        const std::string arraySize =
+            (bufferDescription.arraySize > 0)
+                ? std::to_string(bufferDescription.arraySize)
+                : std::string();
+
+        if (isUniformBufferBinding) {
+            const HgiShaderSectionAttributeVector attrs = {
+                HgiShaderSectionAttribute{"std140", ""},
+                HgiShaderSectionAttribute{"binding",
+                    std::to_string(bufferDescription.bindIndex)}};
+
+            GetShaderSections()->push_back(
+                std::make_unique<HgiGLBufferShaderSection>(
+                    bufferDescription.nameInShader,
+                    bufferDescription.bindIndex,
+                    bufferDescription.type,
+                    bufferDescription.binding,
+                    arraySize,
+                    attrs));
+        } else {
+            const HgiShaderSectionAttributeVector attrs = {
+                HgiShaderSectionAttribute{"std430", ""},
+                HgiShaderSectionAttribute{"binding",
+                    std::to_string(bufferDescription.bindIndex)}};
+
+            GetShaderSections()->push_back(
+                std::make_unique<HgiGLBufferShaderSection>(
+                    bufferDescription.nameInShader,
+                    bufferDescription.bindIndex,
+                    bufferDescription.type,
+                    bufferDescription.binding,
+                    arraySize,
+                    attrs));
+        }
     }
 }
 
