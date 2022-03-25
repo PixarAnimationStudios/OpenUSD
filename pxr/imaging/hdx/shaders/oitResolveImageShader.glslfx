@@ -35,6 +35,15 @@
     }
 }
 
+--- --------------------------------------------------------------------------
+-- layout OitResolve.Image
+
+[
+    ["buffer readWrite", "CounterBuffer", "hdxOitCounterBuffer",
+        ["atomic_int", "hdxOitCounterBuffer"]
+    ]
+]
+
 -- glsl OitResolve.Image
 
 vec4 imageShader(vec2 uv)

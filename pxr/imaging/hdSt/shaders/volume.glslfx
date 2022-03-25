@@ -31,13 +31,25 @@
 #import $TOOLS/hdSt/shaders/pointId.glslfx
 
 --- --------------------------------------------------------------------------
+-- layout Volume.Vertex
+
+[
+    ["out block", "VertexData", "outData",
+        # Relying on perspectively correct interpolation.
+        ["vec3", "Peye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Volume.Vertex
 
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
 out VertexData
 {
     // Relying on perspectively correct interpolation.
     vec3 Peye;
 } outData;
+#endif
 
 void main(void)
 {
@@ -57,7 +69,23 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Volume.Fragment
+
+[
+    ["in block", "VertexData", "inData",
+        ["vec3", "Peye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Volume.Fragment
+
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
+in VertexData
+{
+    vec3 Peye;
+} inData;
+#endif
 
 // Quality knobs, should eventually be configurable.
 //
@@ -72,11 +100,6 @@ const float minTransmittance = 0.002;
 
 // Minimal scattering amount to ray march to light
 const float minScattering = 0.002;
-
-in VertexData
-{
-    vec3 Peye;
-} inData;
 
 // Eye space to local space.
 // Used frequently per ray-marching step in both volumeIntegrator

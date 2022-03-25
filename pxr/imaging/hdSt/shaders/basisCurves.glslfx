@@ -110,12 +110,23 @@ vec3 getNormal(MAT4 transform)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Curves.Vertex.Wire
+
+[
+    ["out block", "CurveVertexData", "outData",
+        ["vec4", "Peye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Curves.Vertex.Wire
 
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
 out CurveVertexData
 {
     vec4 Peye;
 } outData;
+#endif
 
 // Fwd declare methods defined in pointId.glslfx, that are used below.
 int GetPointId();
@@ -872,12 +883,23 @@ Coeffs evaluateBasis(float u, float u2, float u3)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Curves.Fragment.Wire
+
+[
+    ["in block", "CurveVertexData", "inData",
+        ["vec4", "Peye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Curves.Fragment.Wire
 
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
 in CurveVertexData
 {
     vec4 Peye;
 } inData;
+#endif
 
 void main(void)
 {

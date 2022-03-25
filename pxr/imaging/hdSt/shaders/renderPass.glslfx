@@ -227,22 +227,40 @@ vec4 ApplyColorOverridesPostLighting(vec4 color)
     return color;
 }
 
+-- layout RenderPass.RenderColor
+
+[
+    ["out", "vec4", "colorOut"]
+]
+
 -- glsl RenderPass.RenderColor
 
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
 layout (location = 0) out vec4 colorOut;
+#endif
 
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     colorOut = color;
 }
 
+-- layout RenderPass.RenderId
+
+[
+    ["out", "vec4", "primIdOut"],
+    ["out", "vec4", "instanceIdOut"]
+]
+
 -- glsl RenderPass.RenderId
+
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
+layout (location = 0) out vec4 primIdOut;
+layout (location = 1) out vec4 instanceIdOut;
+#endif
 
 // XXX: This whole snippet is a little sketchy and should ideally be replaced
 // with AoVs.  We generate "primId" and "instanceId", and depending on how
 // the client called glDrawBuffers, they will get one or both.
-layout (location = 0) out vec4 primIdOut;
-layout (location = 1) out vec4 instanceIdOut;
 
 vec4 IntToVec4(int id)
 {

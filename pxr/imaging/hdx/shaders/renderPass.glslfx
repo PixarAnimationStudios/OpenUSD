@@ -29,9 +29,17 @@
 
 --- --------------------------------------------------------------------------
 
+-- layout HdxRenderPass.RenderOitOpaquePixels
+
+[
+    ["out", "vec4", "colorOut"]
+]
+
 -- glsl HdxRenderPass.RenderOitOpaquePixels
 
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
 layout (location = 0) out vec4 colorOut;
+#endif
 
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
@@ -42,9 +50,20 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     }
 }
 
+-- layout HdxRenderPass.WriteOitLayersToBufferCommon
+
+[
+    ["in", "early_fragment_tests"],
+    ["buffer readWrite", "CounterBuffer", "hdxOitCounterBuffer",
+        ["atomic_int", "hdxOitCounterBuffer"]
+    ]
+]
+
 -- glsl HdxRenderPass.WriteOitLayersToBufferCommon
 
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
 layout (early_fragment_tests) in;
+#endif
 
 void RenderOutputImpl(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
@@ -127,14 +146,27 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     }
 }
 
+-- layout HdxRenderPass.RenderPick
+
+[
+    ["out", "vec4", "primIdOut"],
+    ["out", "vec4", "instanceIdOut"],
+    ["out", "vec4", "elementIdOut"],
+    ["out", "vec4", "edgeIdOut"],
+    ["out", "vec4", "pointIdOut"],
+    ["out", "vec4", "neyeOut"]
+]
+
 -- glsl HdxRenderPass.RenderPick
 
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
 layout (location = 0) out vec4 primIdOut;
 layout (location = 1) out vec4 instanceIdOut;
 layout (location = 2) out vec4 elementIdOut;
 layout (location = 3) out vec4 edgeIdOut;
 layout (location = 4) out vec4 pointIdOut;
 layout (location = 5) out vec4 neyeOut;
+#endif
 
 vec4 IntToVec4(int id)
 {
@@ -167,15 +199,25 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
 }
 
+-- layout HdxRenderPass.RenderColorAndSelection
+
+[
+    ["out", "vec4", "colorOut"],
+    ["out", "float", "selectedOut"]
+]
+
 -- glsl HdxRenderPass.RenderColorAndSelection
+
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
+layout (location = 0) out vec4 colorOut;
+layout (location = 1) out float selectedOut;
+#endif
+
 // Note: This mixin expects color and selected color attachments in the bound
 // FBO. It writes out the computed fragment color and whether it is selected
 // (as a float, so, 1.0 or 0.0).
 
 bool IsSelected(); // defined in selection.glslfx
-
-layout (location = 0) out vec4 colorOut;
-layout (location = 1) out float selectedOut;
 
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
@@ -183,7 +225,18 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     selectedOut = float(IsSelected());
 }
 
+-- layout HdxRenderPass.RenderColorWithOccludedSelection
+
+[
+    ["out", "vec4", "colorOut"]
+]
+
 -- glsl HdxRenderPass.RenderColorWithOccludedSelection
+
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
+layout (location = 0) out vec4 colorOut;
+#endif
+
 // Note: This mixin expects color and selected color attachments in the bound
 // FBO. The alpha component of the computed fragment color is adjusted to blend
 // the existing (destination) fragment color if it is selected.
@@ -213,8 +266,6 @@ GetShowThroughOpacity()
     return 0.5;
 #endif
 }
-
-layout (location = 0) out vec4 colorOut;
 
 // Input AOV textures are provided by the task.
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)

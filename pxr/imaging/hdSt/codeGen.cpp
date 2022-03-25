@@ -550,6 +550,10 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // we need new versions of Storm shading. 
     _genCommon << "#define HD_SHADER_API " << HD_SHADER_API << "\n";
 
+    // Used in glslfx files to support backward compatible
+    // declaration of resource layouts.
+    //_genCommon << "#define HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS\n";
+
     // XXX: this macro is still used in GlobalUniform.
     _genCommon << "#define MAT4 " <<
         HdStGLConversions::GetGLSLTypename(
