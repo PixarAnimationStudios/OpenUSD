@@ -40,7 +40,6 @@
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hdSt/textureUtils.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/volume.h"
 
@@ -380,9 +379,8 @@ HdxPickTask::_UseWidgetPass() const
 }
 
 template<typename T>
-T const *
-HdxPickTask::_ReadAovBuffer(TfToken const & aovName,
-                            std::vector<uint8_t> * buffer) const
+HdStTextureUtils::CPUBuffer<T>
+HdxPickTask::_ReadAovBuffer(TfToken const & aovName) const
 {
     HdRenderBuffer const * renderBuffer = _FindAovBuffer(aovName);
 
@@ -391,11 +389,16 @@ HdxPickTask::_ReadAovBuffer(TfToken const & aovName,
         HgiTextureHandle texture = aov.Get<HgiTextureHandle>();
 
         if (texture) {
-            HdStTextureUtils::HgiTextureReadback(_hgi, texture, buffer);
+            size_t size = 0;
+            HdStTextureUtils::CPUBuffer<uint8_t> buffer =
+                HdStTextureUtils::HgiTextureReadback(_hgi, texture, &size);
+            
+            T * typedData = reinterpret_cast<T *>(buffer.release());
+            return HdStTextureUtils::CPUBuffer<T>(typedData, ArchAlignedFree);
         }
     }
 
-    return reinterpret_cast<T const *>(buffer->data());
+    return HdStTextureUtils::CPUBuffer<T>(nullptr, ArchAlignedFree);
 }
 
 HdRenderBuffer const *
@@ -643,33 +646,20 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     }
 
     // Capture the result buffers and cast to the appropriate types.
-    std::vector<uint8_t> primIds;
-    int const * primIdPtr =
-        _ReadAovBuffer<int>(HdAovTokens->primId, &primIds);
-
-    std::vector<uint8_t> instanceIds;
-    int const * instanceIdPtr =
-        _ReadAovBuffer<int>(HdAovTokens->instanceId, &instanceIds);
-
-    std::vector<uint8_t> elementIds;
-    int const * elementIdPtr =
-        _ReadAovBuffer<int>(HdAovTokens->elementId, &elementIds);
-
-    std::vector<uint8_t> edgeIds;
-    int const * edgeIdPtr =
-        _ReadAovBuffer<int>(HdAovTokens->edgeId, &edgeIds);
-
-    std::vector<uint8_t> pointIds;
-    int const * pointIdPtr =
-        _ReadAovBuffer<int>(HdAovTokens->pointId, &pointIds);
-
-    std::vector<uint8_t> neyes;
-    int const * neyePtr =
-        _ReadAovBuffer<int>(HdAovTokens->Neye, &neyes);
-
-    std::vector<uint8_t> depths;
-    float const * depthPtr =
-        _ReadAovBuffer<float>(_depthToken, &depths);
+    HdStTextureUtils::CPUBuffer<int> primIds =
+        _ReadAovBuffer<int>(HdAovTokens->primId);
+    HdStTextureUtils::CPUBuffer<int> instanceIds =
+        _ReadAovBuffer<int>(HdAovTokens->instanceId);
+    HdStTextureUtils::CPUBuffer<int> elementIds =
+        _ReadAovBuffer<int>(HdAovTokens->elementId);
+    HdStTextureUtils::CPUBuffer<int> edgeIds =
+        _ReadAovBuffer<int>(HdAovTokens->edgeId);
+    HdStTextureUtils::CPUBuffer<int> pointIds =
+        _ReadAovBuffer<int>(HdAovTokens->pointId);
+    HdStTextureUtils::CPUBuffer<int> neyes =
+        _ReadAovBuffer<int>(HdAovTokens->Neye);
+    HdStTextureUtils::CPUBuffer<float> depths =
+        _ReadAovBuffer<float>(_depthToken);
 
     // For un-projection, get the depth range at time of drawing.
     GfVec2f depthRange(0, 1);
@@ -680,10 +670,10 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     }
 
     HdxPickResult result(
-            primIdPtr, instanceIdPtr, elementIdPtr,
-            edgeIdPtr, pointIdPtr, neyePtr, depthPtr,
-            _index, _contextParams.pickTarget, _contextParams.viewMatrix,
-            _contextParams.projectionMatrix, depthRange, dimensions, viewport);
+        primIds.get(), instanceIds.get(), elementIds.get(),
+        edgeIds.get(), pointIds.get(), neyes.get(), depths.get(),
+        _index, _contextParams.pickTarget, _contextParams.viewMatrix,
+        _contextParams.projectionMatrix, depthRange, dimensions, viewport);
 
     // Resolve!
     if (_contextParams.resolveMode ==

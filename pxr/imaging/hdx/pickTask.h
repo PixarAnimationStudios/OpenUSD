@@ -27,12 +27,14 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 
+#include "pxr/imaging/hdSt/textureUtils.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
 
+#include "pxr/base/arch/align.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2i.h"
@@ -237,8 +239,8 @@ private:
     bool _UseWidgetPass() const;
 
     template<typename T>
-    T const *  _ReadAovBuffer(TfToken const & aovName,
-                              std::vector<uint8_t> * buffer) const;
+    HdStTextureUtils::CPUBuffer<T>
+    _ReadAovBuffer(TfToken const & aovName) const;
 
     HdRenderBuffer const * _FindAovBuffer(TfToken const & aovName) const;
 

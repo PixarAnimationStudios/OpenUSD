@@ -468,14 +468,15 @@ HdxVisualizeAovTask::_UpdateMinMaxDepth(HgiTextureHandle const &inputAovTexture)
          return;
     }
 
-    std::vector<uint8_t> buffer;
-    HdStTextureUtils::HgiTextureReadback(_GetHgi(), inputAovTexture, &buffer);
+    size_t size = 0;
+    HdStTextureUtils::CPUBuffer<uint8_t> buffer =
+        HdStTextureUtils::HgiTextureReadback(_GetHgi(), inputAovTexture, &size);
 
     {
         const HgiTextureDesc& textureDesc = inputAovTexture.Get()->GetDescriptor();
         const size_t width = textureDesc.dimensions[0];
         const size_t height = textureDesc.dimensions[1];
-        float *ptr = reinterpret_cast<float*>(&buffer[0]);
+        float const *ptr = reinterpret_cast<float const *>(buffer.get());
         float min = std::numeric_limits<float>::max();
         float max = std::numeric_limits<float>::min();
         for (size_t ii = 0; ii < width * height; ii++) {

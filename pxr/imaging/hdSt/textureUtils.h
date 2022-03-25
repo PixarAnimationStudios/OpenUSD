@@ -32,6 +32,8 @@
 #include "pxr/imaging/hgi/handle.h"
 #include "pxr/imaging/hgi/types.h"
 
+#include "pxr/base/arch/align.h"
+
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -115,16 +117,18 @@ public:
         size_t layer,
         void * bufferStart);
 
-    // Read back the GPU contents of the HgiTexture to the CPU using the memory
-    // in the buffer vector.
-    // The vector is resized to accommodate the required memory.
-    // Returns true if the process was successful.
+    template <typename T>
+    using CPUBuffer = std::unique_ptr<T[], decltype(ArchAlignedFree)*>;
+
+    // Read back the GPU contents of the HgiTexture to the CPU.
+    // The CPUBuffer unique_ptr will be aligned to the memory requirements of 
+    // the underlying graphics API.
     HDST_API
     static
-    bool
+    CPUBuffer<uint8_t>
     HgiTextureReadback(Hgi * const hgi,
                        HgiTextureHandle const & texture,
-                       std::vector<uint8_t> * buffer);
+                       size_t * bufferSize);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

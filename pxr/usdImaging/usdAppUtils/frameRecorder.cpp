@@ -128,7 +128,8 @@ _ComputeCameraToFrameStage(const UsdStagePtr& stage, UsdTimeCode timeCode,
 
 static bool
 _WriteTextureToFile(HgiTextureDesc const& textureDesc,
-                    std::vector<uint8_t> const& buffer,
+                    uint8_t * buffer,
+                    size_t bufferSize,
                     std::string const& filename,
                     const bool flipped)
 {
@@ -137,7 +138,7 @@ _WriteTextureToFile(HgiTextureDesc const& textureDesc,
     const size_t height = textureDesc.dimensions[1];
     const size_t dataByteSize = width * height * formatByteSize;
     
-    if (buffer.size() < dataByteSize) {
+    if (bufferSize < dataByteSize) {
         return false;
     }
     
@@ -150,7 +151,7 @@ _WriteTextureToFile(HgiTextureDesc const& textureDesc,
     storage.height = height;
     storage.format = HdxGetHioFormat(textureDesc.format);
     storage.flipped = flipped;
-    storage.data = (void*)buffer.data();
+    storage.data = buffer;
 
     {
         TRACE_FUNCTION_SCOPE("writing image");
@@ -266,12 +267,14 @@ UsdAppUtilsFrameRecorder::Record(
         return false;
     }
     
-    std::vector<uint8_t> buffer;
-    HdStTextureUtils::HgiTextureReadback(
-        _imagingEngine.GetHgi(), handle, &buffer);
+    size_t bufferSize = 0;
+    HdStTextureUtils::CPUBuffer<uint8_t> buffer =
+        HdStTextureUtils::HgiTextureReadback(
+            _imagingEngine.GetHgi(), handle, &bufferSize);
 
     return _WriteTextureToFile(handle.Get()->GetDescriptor(),
-                               buffer,
+                               buffer.get(),
+                               bufferSize,
                                outputImagePath,
                                true);
 }

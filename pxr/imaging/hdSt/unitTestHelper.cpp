@@ -403,9 +403,10 @@ HdSt_TextureTestDriver::WriteToFile(HgiTextureHandle const &texture,
     storage.format = HioFormatFloat32Vec4;
     storage.flipped = true;
 
-    std::vector<uint8_t> buffer;
-    HdStTextureUtils::HgiTextureReadback(_hgi.get(), texture, &buffer);
-    storage.data = buffer.data();
+    size_t size = 0;
+    HdStTextureUtils::CPUBuffer<uint8_t> buffer =
+        HdStTextureUtils::HgiTextureReadback(_hgi.get(), texture, &size);
+    storage.data = buffer.get();
 
     if (storage.format == HioFormatInvalid) {
         TF_CODING_ERROR("Hgi texture has format not corresponding to a"

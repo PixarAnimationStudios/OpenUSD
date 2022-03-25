@@ -55,8 +55,8 @@ public:
     void Draw(GfVec4d const &viewport, PickParam const * pickParam);
 
     template<typename T>
-    T const * ReadAovBuffer(TfToken const &aovName,
-                            std::vector<uint8_t> * buffer);
+    HdStTextureUtils::CPUBuffer<T>
+    ReadAovBuffer(TfToken const &aovName);
 
 protected:
     void _Init(HdReprSelector const &reprSelector) override;
@@ -180,9 +180,8 @@ Hdx_TestDriver::_FindAovBuffer(TfToken const &aovName) const
 }
 
 template<typename T>
-T const *
-Hdx_TestDriver::ReadAovBuffer(TfToken const &aovName, 
-    std::vector<uint8_t> * buffer)
+HdStTextureUtils::CPUBuffer<T>
+Hdx_TestDriver::ReadAovBuffer(TfToken const &aovName)
 {
     HdRenderBuffer const * renderBuffer = _FindAovBuffer(aovName);
     
@@ -191,11 +190,16 @@ Hdx_TestDriver::ReadAovBuffer(TfToken const &aovName,
         HgiTextureHandle texture = aov.UncheckedGet<HgiTextureHandle>();
 
         if (texture) {
-            HdStTextureUtils::HgiTextureReadback(_GetHgi(), texture, buffer);
+            size_t size = 0;
+            HdStTextureUtils::CPUBuffer<uint8_t> buffer = 
+                HdStTextureUtils::HgiTextureReadback(_GetHgi(), texture, &size);
+
+            T * typedData = reinterpret_cast<T *>(buffer.release());
+            return HdStTextureUtils::CPUBuffer<T>(typedData, ArchAlignedFree);
         }
     }
 
-    return reinterpret_cast<T const *>(buffer->data());
+    return HdStTextureUtils::CPUBuffer<T>(nullptr, ArchAlignedFree);
 }
 
 void
@@ -441,25 +445,22 @@ My_TestGLDrawing::PickScene(int pickX, int pickY, int * outInstanceIndex)
 
     DrawScene(&pickParam);
 
-    std::vector<uint8_t> primId;
-    unsigned char const *primIdPtr = _driver->ReadAovBuffer<unsigned char>(
-        HdAovTokens->primId, &primId);
+    HdStTextureUtils::CPUBuffer<unsigned char> primId =
+        _driver->ReadAovBuffer<unsigned char>(HdAovTokens->primId);
 
-    std::vector<uint8_t> instanceId;
-    unsigned char const *instanceIdPtr = _driver->ReadAovBuffer<unsigned char>(
-        HdAovTokens->instanceId, &instanceId);
+    HdStTextureUtils::CPUBuffer<unsigned char> instanceId =
+        _driver->ReadAovBuffer<unsigned char>(HdAovTokens->instanceId);
 
-    std::vector<uint8_t> depths;
-    float const *depthPtr = _driver->ReadAovBuffer<float>(
-        HdAovTokens->depth, &depths);
+    HdStTextureUtils::CPUBuffer<float> depths =
+        _driver->ReadAovBuffer<float>(HdAovTokens->depth);
 
     double zMin = 1.0;
     int zMinIndex = -1;
     for (int y=0, i=0; y<height; y++) {
         for (int x=0; x<width; x++, i++) {
-            if (depthPtr[i] < zMin) {
-                    zMin = depthPtr[i];
-                    zMinIndex = i;
+            if (depths.get()[i] < zMin) {
+                zMin = depths.get()[i];
+                zMinIndex = i;
             }
         }
     }
@@ -471,10 +472,10 @@ My_TestGLDrawing::PickScene(int pickX, int pickY, int * outInstanceIndex)
         int idIndex = zMinIndex*4;
 
         result = _driver->GetDelegate().GetRenderIndex().GetRprimPathFromPrimId(
-                HdxPickTask::DecodeIDRenderColor(&primIdPtr[idIndex]));
+                HdxPickTask::DecodeIDRenderColor(primId.get() + idIndex));
         if (outInstanceIndex) {
             *outInstanceIndex = HdxPickTask::DecodeIDRenderColor(
-                    &instanceIdPtr[idIndex]);
+                instanceId.get() + idIndex);
         }
     }
 
