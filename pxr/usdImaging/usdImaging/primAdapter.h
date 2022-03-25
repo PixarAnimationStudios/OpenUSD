@@ -362,8 +362,13 @@ public:
 
     USDIMAGING_API
     virtual SdfPath GetScenePrimPath(SdfPath const& cachePath,
-                                     int instanceIndex,
-                                     HdInstancerContext *instancerCtx) const;
+        int instanceIndex,
+        HdInstancerContext *instancerCtx) const;
+
+    USDIMAGING_API
+    virtual SdfPathVector GetScenePrimPaths(SdfPath const& cachePath,
+        std::vector<int> const& instanceIndices,
+        std::vector<HdInstancerContext> *instancerCtxs) const;
 
     // Add the given usdPrim to the HdSelection object, to mark it for
     // selection highlighting. cachePath is the path of the object referencing

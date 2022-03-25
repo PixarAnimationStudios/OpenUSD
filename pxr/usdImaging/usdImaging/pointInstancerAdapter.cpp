@@ -1359,6 +1359,29 @@ UsdImagingPointInstancerAdapter::GetScenePrimPath(
     return _GetPrimPathFromInstancerChain(paths);
 }
 
+/* virtual */
+SdfPathVector
+UsdImagingPointInstancerAdapter::GetScenePrimPaths(
+    SdfPath const& cachePath,
+    std::vector<int> const& instanceIndices,
+    std::vector<HdInstancerContext> *instancerCtxs) const
+{
+    SdfPathVector result;
+    HdInstancerContext instanceCtx;
+
+    result.reserve(instanceIndices.size());
+    if (instancerCtxs)
+        instancerCtxs->reserve(instanceIndices.size());
+    for (size_t i = 0; i < instanceIndices.size(); i++) {
+        result.push_back(
+            GetScenePrimPath(cachePath, instanceIndices[i], &instanceCtx));
+        if (instancerCtxs)
+            instancerCtxs->push_back(std::move(instanceCtx));
+    }
+
+    return result;
+}
+
 static 
 size_t
 _GatherAuthoredTransformTimeSamples(

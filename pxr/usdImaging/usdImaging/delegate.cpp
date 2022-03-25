@@ -2261,6 +2261,23 @@ UsdImagingDelegate::GetScenePrimPath(SdfPath const& rprimId,
     return protoPath;
 }
 
+SdfPathVector
+UsdImagingDelegate::GetScenePrimPaths(SdfPath const& rprimId,
+                      std::vector<int> instanceIndices,
+                      std::vector<HdInstancerContext> *instancerContexts)
+{
+    SdfPath cachePath = ConvertIndexPathToCachePath(rprimId);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (!primInfo || !primInfo->adapter) {
+        TF_WARN("GetScenePrimPaths: Couldn't find rprim <%s>",
+                rprimId.GetText());
+        return SdfPathVector(instanceIndices.size(), cachePath);
+    }
+
+    return primInfo->adapter->GetScenePrimPaths(
+        cachePath, instanceIndices, instancerContexts);
+}
+
 bool
 UsdImagingDelegate::PopulateSelection(
               HdSelection::HighlightMode const& highlightMode,
