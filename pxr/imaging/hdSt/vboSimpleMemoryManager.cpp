@@ -286,16 +286,17 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
         size_t bytesPerElement = HdDataSizeOfTupleType(bres->GetTupleType());
         size_t bufferSize = bytesPerElement * numElements;
 
+        // Clamp for 0-sized buffers, Metal doesn't support them.
+        bufferSize = std::max(bufferSize, static_cast<size_t>(256));
+
         HgiBufferHandle oldBuf = bres->GetHandle();
         HgiBufferHandle newBuf;
 
-        if(bufferSize > 0) {
-            HgiBufferDesc bufDesc;
-            bufDesc.byteSize = bufferSize;
-            bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageVertex;
-            bufDesc.vertexStride = bytesPerElement;
-            newBuf = hgi->CreateBuffer(bufDesc);
-        }
+        HgiBufferDesc bufDesc;
+        bufDesc.byteSize = bufferSize;
+        bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageVertex;
+        bufDesc.vertexStride = bytesPerElement;
+        newBuf = hgi->CreateBuffer(bufDesc);
 
         // copy the range. There are three cases:
         //
