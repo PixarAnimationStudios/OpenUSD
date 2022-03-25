@@ -325,10 +325,15 @@ lightDistanceAttenuation(vec4 Peye, int index)
     float distAtten = 1.0;
     LightSource light = GetLightSource(index);
     if (light.position.w != 0.0) {
-        float d = distance(light.position, Peye);
-        distAtten = 1.0 / (light.attenuation[0] +
-                           light.attenuation[1] * d +
-                           light.attenuation[2] * d*d);
+        const float d = distance(light.position, Peye);
+        const float atten = light.attenuation[0] +
+                            light.attenuation[1] * d +
+                            light.attenuation[2] * d*d;
+        if (atten == 0) {
+            distAtten = 0.0;
+        } else {
+            distAtten = 1.0 / atten;
+        }
     }
     return distAtten;
 }
