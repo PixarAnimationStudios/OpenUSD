@@ -654,12 +654,27 @@ private:
         // providing a c++ Behavior implementation, for such applied schemas, 
         // a default UsdShadeConnectableAPIBehavior is created and 
         // registered/cached with the appliedSchemaType and the primTypeId.
-        if (prim) {
-            for (auto& appliedSchema : prim.GetAppliedSchemas()) {
-                if (_FindBehaviorForApiSchema(appliedSchema, behavior)) {
-                    RegisterBehaviorForPrimTypeId(primTypeId, behavior);
-                    return behavior.get();
-                }
+        auto appliedSchemas = [&prim, &primSchemaType] {
+            if (prim) {
+                return prim.GetAppliedSchemas();
+            } else {
+                // Get built-in schemas for primSchemaType
+                const UsdSchemaRegistry &usdSchemaReg =
+                    UsdSchemaRegistry::GetInstance();
+                const TfToken &typeName =
+                    usdSchemaReg.GetSchemaTypeName(primSchemaType);
+                const UsdPrimDefinition *primDefinition =
+                    UsdSchemaRegistry::IsConcrete(primSchemaType) ?
+                    usdSchemaReg.FindConcretePrimDefinition(typeName) :
+                    usdSchemaReg.FindAppliedAPIPrimDefinition(typeName);
+                return primDefinition->GetAppliedAPISchemas();
+            }
+        }();
+
+        for (auto& appliedSchema : appliedSchemas) {
+            if (_FindBehaviorForApiSchema(appliedSchema, behavior)) {
+                RegisterBehaviorForPrimTypeId(primTypeId, behavior);
+                return behavior.get();
             }
         }
 

@@ -43,6 +43,12 @@ class TestUsdLuxLight(unittest.TestCase):
         assert cool_color[2] > cool_color[1]
 
     def test_BasicConnectableLights(self):
+        # Try checking connectableAPI on core lux types first before going
+        # through the prim.
+        self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
+            UsdLux.RectLight))
+        self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
+            UsdLux.PluginLightFilter))
         stage = Usd.Stage.CreateInMemory()
         rectLight = UsdLux.RectLight.Define(stage, '/RectLight')
         self.assertTrue(rectLight)
