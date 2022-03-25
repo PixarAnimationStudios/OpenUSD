@@ -351,6 +351,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
             bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageVertex;
             bufDesc.byteSize = bufferSize;
             bufDesc.vertexStride = bytesPerElement;
+            bufDesc.debugName = resources[bresIdx].first.GetText();
             newBuf = hgi->CreateBuffer(bufDesc);
         }
 

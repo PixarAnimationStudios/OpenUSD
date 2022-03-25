@@ -296,6 +296,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
         bufDesc.byteSize = bufferSize;
         bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageVertex;
         bufDesc.vertexStride = bytesPerElement;
+        bufDesc.debugName = bresIt->first.GetText();
         newBuf = hgi->CreateBuffer(bufDesc);
 
         // copy the range. There are three cases:
@@ -437,8 +438,6 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
 
     if (!TF_VERIFY(_bufferArray)) return;
 
-    int offset = 0;
-
     HdStBufferResourceSharedPtr VBO =
         _bufferArray->GetResource(bufferSource->GetName());
 
@@ -461,8 +460,6 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
         srcSize = dstSize;
     }
 
-    size_t vboOffset = bytesPerElement * offset;
-
     HD_PERF_COUNTER_INCR(HdStPerfTokens->copyBufferCpuToGpu);
 
     HgiBufferCpuToGpuOp blitOp;
@@ -471,7 +468,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
     
     blitOp.sourceByteOffset = 0;
     blitOp.byteSize = srcSize;
-    blitOp.destinationByteOffset = vboOffset;
+    blitOp.destinationByteOffset = 0;
 
     HgiBlitCmds* blitCmds = GetResourceRegistry()->GetGlobalBlitCmds();
     blitCmds->CopyBufferCpuToGpu(blitOp);
