@@ -580,6 +580,29 @@ namespace {
     };
 };
 
+namespace
+{
+
+class _NoticeBatchingContext
+{
+public:
+    _NoticeBatchingContext(HdRenderIndex *renderIndex)
+    : _renderIndex(renderIndex)
+    {
+        _renderIndex->SceneIndexEmulationNoticeBatchBegin();
+    }
+
+    ~_NoticeBatchingContext()
+    {
+        _renderIndex->SceneIndexEmulationNoticeBatchEnd();
+    }
+
+private:
+    HdRenderIndex * const _renderIndex;
+};
+
+} // namespace anonymous
+
 void
 UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
 {
@@ -606,6 +629,12 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
         .Msg("[Repopulate] Populating <%s> on stage %s\n",
              _rootPrimPath.GetString().c_str(),
              _stage->GetRootLayer()->GetDisplayName().c_str());
+
+    // Batch all population-driven scene index notices (PrimsAdded) until this
+    // goes out of scope so that downstream consumers which may want
+    // immediate information about prims need not be concerned with the order
+    // in which prims are populated.
+    _NoticeBatchingContext batchingContext(&GetRenderIndex());
 
     WorkDispatcher bindingDispatcher;
 
@@ -2586,7 +2615,27 @@ UsdImagingDelegate::GetPrimvarDescriptors(SdfPath const& id,
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
 
     HdPrimvarDescriptorVector allPrimvars;
-    _primvarDescCache.FindPrimvars(cachePath, &allPrimvars);
+    if (!_primvarDescCache.FindPrimvars(cachePath, &allPrimvars)) {
+
+        // NOTE: One possible reason for not having an entry in the primvar
+        //       cache is if something downstream is querying for this during
+        //       the traditional "population" phase. In that case, allow it to
+        //       fill that cache by calling UpdateForTime early.
+        //
+        _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+        if (TF_VERIFY(primInfo)) {
+            primInfo->adapter->UpdateForTime(
+                primInfo->usdPrim, cachePath,
+                GetTime(),
+                HdChangeTracker::Clean
+                    // primvars + built-ins tracked as primvars
+                    | HdChangeTracker::DirtyPrimvar 
+                    | HdChangeTracker::DirtyPoints
+                    | HdChangeTracker::DirtyNormals
+                    | HdChangeTracker::DirtyWidths);
+            _primvarDescCache.FindPrimvars(cachePath, &allPrimvars);
+        }
+    }
 
     // Filter to only primvars of the right interpolation.
     // Note: it's valid to have no authored primvars (they could be computed)
