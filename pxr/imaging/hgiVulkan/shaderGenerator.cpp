@@ -127,6 +127,9 @@ HgiVulkanShaderGenerator::_WriteTextures(
                 desc.nameInShader,
                 _bindIndex,
                 desc.dimensions,
+                desc.format,
+                desc.textureType,
+                desc.arraySize,
                 desc.writable,
                 attrs));
 

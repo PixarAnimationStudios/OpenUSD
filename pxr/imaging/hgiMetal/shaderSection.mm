@@ -124,17 +124,24 @@ HgiMetalMemberShaderSection::VisitScopeMemberDeclarations(std::ostream &ss)
 
 HgiMetalSamplerShaderSection::HgiMetalSamplerShaderSection(
     const std::string &textureSharedIdentifier,
+    const uint32_t arrayOfSamplersSize,
     const HgiShaderSectionAttributeVector &attributes)
   : HgiMetalShaderSection(
       "samplerBind_" + textureSharedIdentifier,
       attributes)
+  , _textureSharedIdentifier(textureSharedIdentifier)
+  , _arrayOfSamplersSize(arrayOfSamplersSize)
 {
 }
 
 void
 HgiMetalSamplerShaderSection::WriteType(std::ostream& ss) const
 {
-    ss << "sampler";
+    if (_arrayOfSamplersSize > 0) {
+        ss << "array<sampler, " << _textureSharedIdentifier << "_SIZE>";
+    } else {
+        ss << "sampler";
+    }
 }
 
 bool
@@ -151,6 +158,9 @@ HgiMetalTextureShaderSection::HgiMetalTextureShaderSection(
     const HgiMetalSamplerShaderSection *samplerShaderSectionDependency,
     uint32_t dimensions,
     HgiFormat format,
+    bool textureArray,
+    uint32_t arrayOfTexturesSize,
+    bool shadow,
     bool writable,
     const std::string &defaultValue)
   : HgiMetalShaderSection(
@@ -161,6 +171,9 @@ HgiMetalTextureShaderSection::HgiMetalTextureShaderSection(
   , _samplerShaderSectionDependency(samplerShaderSectionDependency)
   , _dimensionsVar(dimensions)
   , _format(format)
+  , _textureArray(textureArray)
+  , _arrayOfTexturesSize(arrayOfTexturesSize)
+  , _shadow(shadow)
   , _writable(writable)
 {
     HgiFormat baseFormat = HgiGetComponentBaseFormat(_format);
@@ -192,17 +205,49 @@ HgiMetalTextureShaderSection::HgiMetalTextureShaderSection(
         _returnType = "vec";
         break;
     }
+
+    if (shadow) {
+        _baseType = "float";
+        _returnType = "float";
+    }
 }
 
 void
 HgiMetalTextureShaderSection::WriteType(std::ostream& ss) const
 {
-    ss << "texture" << _dimensionsVar << "d";
-    ss << "<" << _baseType;
-    if (_writable) {
-        ss << ", access::write";
+    if (_arrayOfTexturesSize > 0) {
+        if (_shadow) {
+            ss << "array<depth" << _dimensionsVar << "d";
+            ss << "<" << _baseType;
+            ss << ">, " << _samplerSharedIdentifier << "_SIZE>";
+        } else {
+            ss << "array<texture" << _dimensionsVar << "d";
+            ss << "<" << _baseType;
+            ss << ">, " << _samplerSharedIdentifier << "_SIZE>";
+        }
+    } else {
+        if (_shadow) {
+            ss << "depth" << _dimensionsVar << "d";
+            if (_textureArray) {
+                ss << "_array";
+            }
+            ss << "<" << _baseType;
+            if (_writable) {
+                ss  << ", access::write";
+            }
+            ss << ">";
+        } else {
+            ss << "texture" << _dimensionsVar << "d";
+            if (_textureArray) {
+                ss << "_array";
+            }
+            ss << "<" << _baseType;
+            if (_writable) {
+                ss  << ", access::write";
+            }
+            ss << ">";
+        }
     }
-    ss << ">";
 }
 
 bool
@@ -216,110 +261,267 @@ HgiMetalTextureShaderSection::VisitScopeMemberDeclarations(std::ostream &ss)
 bool
 HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
 {
-    const std::string intType = _dimensionsVar == 1 ? 
-        "uint" : "uint" + std::to_string(_dimensionsVar);
+    const std::string defValue = _GetDefaultValue().empty()
+        ? "0"
+        : _GetDefaultValue();
 
-    if (_writable) {
-        // Write a function that lets you write to the texture with 
-        // HdSet_texName(uv, data).
-        ss << "void HdSet_" << _samplerSharedIdentifier;
-        ss << "(" << intType << " coord, float4 data) {\n";
-        ss << "    ";
-        WriteIdentifier(ss);
-        ss << ".write(data, coord);\n";
-        ss << "}\n";
-
-        // HdGetSize_texName()
-        ss << intType;
-        ss << " HdGet_" << _samplerSharedIdentifier << "Size() { \n";
-        ss << "    ";
-        if (_dimensionsVar == 1) {
-            ss << "return ";
-            WriteIdentifier(ss);
-            ss << ".get_width();\n";
-        } else if (_dimensionsVar == 2) {
-            ss << "return " << intType << "(";
-            WriteIdentifier(ss);
-            ss << ".get_width(), ";
-            WriteIdentifier(ss);
-            ss << ".get_height());\n";
-        } else if (_dimensionsVar == 3) {
-            ss << "return " << intType << "(";
-            WriteIdentifier(ss);
-            ss << ".get_width(), ";
-            WriteIdentifier(ss);
-            ss << ".get_height(), ";
-            WriteIdentifier(ss);
-            ss << ".get_depth());\n";   
+    if (_arrayOfTexturesSize > 0) {
+        if (_shadow) {
+            ss << "depth" << _dimensionsVar << "d";
+            ss << "<" << _baseType;
+            ss << ">";
+        } else {
+            ss << "texture" << _dimensionsVar << "d";
+            ss << "<" << _baseType;
+            ss << ">";
         }
-        ss << "}\n";
+        ss << " HdGetSampler_" << _samplerSharedIdentifier
+        << "(uint index) {\n"
+        << "    return ";
+        WriteIdentifier(ss);
+        ss << "[index];\n}\n";
     } else {
-        const std::string defValue = _GetDefaultValue().empty()
-            ? "0.0f"
-            : _GetDefaultValue();
-
         ss << "#define HdGetSampler_" << _samplerSharedIdentifier
         << "() ";
         WriteIdentifier(ss);
         ss << "\n";
+    }
+   
+    uint32_t dimensions = _textureArray ? (_dimensionsVar + 1) : _dimensionsVar;
+   
+    const std::string intType = _dimensionsVar == 1 ?
+        "int" :
+        "ivec" + std::to_string(_dimensionsVar);
 
-        ss << "vec4 HdGet_" << _samplerSharedIdentifier
-        << "(vec2 coord) {\n";
-        ss << "    vec4 result = is_null_texture(";
+    if (_writable) {
+        // Write a function that lets you write to the texture with
+        // HdSet_texName(uv, data).
+        ss << "void HdSet_";
+        ss << _samplerSharedIdentifier;
+        ss << "(" << intType << " uv, vec4 data) {\n";
+        ss << "    ";
+        ss << "imageStore(";
         WriteIdentifier(ss);
-        ss << ") ? "<< defValue << ": ";
-        WriteIdentifier(ss);
-        ss << ".sample(";
-        _samplerShaderSectionDependency->WriteIdentifier(ss);
-            ss << ", coord);\n";
-        ss << "    return result;\n";
+        ss << ", uv, ";
+        ss << _baseType;
+        ss << "4(data));\n";
         ss << "}\n";
 
         // HdGetSize_texName()
-        ss << intType;
-        ss << " HdGetSize_" << _samplerSharedIdentifier << "() { \n";
+        ss << intType << " HdGetSize_";
+        ss << _samplerSharedIdentifier;
+        ss << "() {\n";
         ss << "    ";
-        if (_dimensionsVar == 1) {
-            ss << "return ";
-            WriteIdentifier(ss);
-            ss << ".get_width();\n";
-        } else if (_dimensionsVar == 2) {
-            ss << "return " << intType << "(";
-            WriteIdentifier(ss);
-            ss << ".get_width(), ";
-            WriteIdentifier(ss);
-            ss << ".get_height());\n";
-        } else if (_dimensionsVar == 3) {
-            ss << "return " << intType << "(";
-            WriteIdentifier(ss);
-            ss << ".get_width(), ";
-            WriteIdentifier(ss);
-            ss << ".get_height(), ";
-            WriteIdentifier(ss);
-            ss << ".get_depth());\n";   
-        }
+        ss << "return imageSize";
+        ss << _dimensionsVar;
+        ss << "d(";
+        WriteIdentifier(ss);
+        ss << ");\n";
         ss << "}\n";
+        return true;
+    }
+   
+    // Generated code looks like this for texture 'diffuse':
+    //
+    // vec4 HdGet_diffuse(vec2 coord) {
+    //     vec4 result = is_null_texture(textureBind_diffuse) ? 0 :
+    //           textureBind_diffuse.sample(samplerBind_diffuse, coord);
+    //     return result;
+    // }
+   
+    const std::string returnType = _shadow ? "float" : _returnType + "4";
+    const std::string coordType = 
+        dimensions > 1 ? "vec" + std::to_string(dimensions) : "float";
+    const std::string shadowCoordType = "vec" + std::to_string(dimensions + 1);
 
-        // HdTextureLod_texName()
-        ss << "vec4 HdTextureLod_" << _samplerSharedIdentifier
-        << "(vec2 coord, float lod) {\n";
-        ss << "    vec4 result = is_null_texture(";
-        WriteIdentifier(ss);
-        ss << ") ? "<< defValue << ": ";
-        WriteIdentifier(ss);
+    if (_shadow) {
+        if (_arrayOfTexturesSize > 0) {
+            ss << returnType << " HdGet_" << _samplerSharedIdentifier;
+            ss << "(uint index, ";
+            ss << shadowCoordType << " coord) {\n";
+            ss << "    " << returnType << " result = is_null_texture(";
+            WriteIdentifier(ss);
+            ss << "[index]) ? " << defValue << " : "
+               << returnType << "(";
+            WriteIdentifier(ss);
+            ss << "[index].sample_compare(";
+            _samplerShaderSectionDependency->WriteIdentifier(ss);
+            ss << "[index], coord.xy, coord.z" << "));\n";
+        } else {
+            ss << returnType << " HdGet_" << _samplerSharedIdentifier;
+            ss << "(" << shadowCoordType << " coord) {\n";
+            ss << "    " << returnType << " result = is_null_texture(";
+            WriteIdentifier(ss);
+            ss << ") ? " << defValue << " : "
+               << returnType << "(";
+            WriteIdentifier(ss);
+            ss << ".sample_compare(";
+            _samplerShaderSectionDependency->WriteIdentifier(ss);
+            ss << ", coord.xy, coord.z));\n";
+        }
+    } else {
+        if (_arrayOfTexturesSize > 0) {
+            ss << returnType << " HdGet_" << _samplerSharedIdentifier;
+            ss << "(uint index, ";
+            ss << coordType << " coord) {\n";
+            ss << "    " << returnType << " result = is_null_texture(";
+            WriteIdentifier(ss);
+            ss << "[index]) ? " << defValue << " : "
+               << returnType << "(";
+            WriteIdentifier(ss);
+            ss << "[index].sample(";
+            _samplerShaderSectionDependency->WriteIdentifier(ss);
+            ss << "[index], coord));\n";
+        } else {
+            ss << returnType << " HdGet_" << _samplerSharedIdentifier;
+            ss << "(" << coordType << " coord) {\n";
+            ss << "    " << returnType << " result = is_null_texture(";
+            WriteIdentifier(ss);
+            ss << ") ? " << defValue << " : "
+               << returnType << "(";
+            WriteIdentifier(ss);
+            ss << ".sample(";
+            _samplerShaderSectionDependency->WriteIdentifier(ss);
+            if (_textureArray) {
+                if (_dimensionsVar == 2) {
+                    ss << ", coord.xy, coord.z));\n";
+                }
+                else {
+                    ss << ", coord.x, coord.y));\n";
+                }
+            }
+            else {
+                ss << ", coord));\n";
+            }
+        }
+    }
+    ss << "    return result;\n";
+    ss << "}\n";
+
+    // HdGetSize_texName()
+    ss << intType << " HdGetSize_";
+    ss << _samplerSharedIdentifier;
+    if (_arrayOfTexturesSize > 0) {
+        ss << "(uint index) {\n";
+    } else {
+        ss << "() {\n";
+    }
+    ss << "    ";
+    ss << "return textureSize";
+    ss << _dimensionsVar;
+    ss << "d(";
+    WriteIdentifier(ss);
+    if (_arrayOfTexturesSize > 0) {
+        ss << "[index]";
+    }
+    ss << ", 0);\n";
+    ss << "}\n";
+   
+    // Generated code looks like this for texture 'diffuse':
+    //
+    // vec4 HdTexelFetch_diffuse(ivec2 coord) {
+    //     vec4 result =  textureBind_diffuse.read(ushort2(coord.x, coord.y));
+    //     return result;
+    // }
+    const std::string intCoordType = 
+        dimensions > 1 ? "ivec" + std::to_string(dimensions) : "int";
+    ss << returnType << " HdTexelFetch_" << _samplerSharedIdentifier;
+    if (_arrayOfTexturesSize > 0) {
+        ss << "(uint index, " << intCoordType << " coord) {\n";
+    } else {
+        ss << "(" << intCoordType << " coord) {\n";
+    }
+    ss << "    " << returnType
+       << " result = " << returnType << "(textureBind_"
+       << _samplerSharedIdentifier;
+    if (_arrayOfTexturesSize > 0) {
+        ss << "[index]";
+    }
+    if (_textureArray) {
+        if (_dimensionsVar == 2) {
+            ss << ".read(ushort2(coord.x, coord.y), coord.z));\n";
+        }
+        else {
+            ss << ".read(ushort(coord.x), coord.y));\n";
+        }
+    }
+    else {
+        if (_dimensionsVar == 3) {
+            ss << ".read(ushort3(coord.x, coord.y, coord.z)));\n";
+        }
+        else if (_dimensionsVar == 2) {
+            ss << ".read(ushort2(coord.x, coord.y)));\n";
+        }
+        else {
+            ss << ".read(ushort(coord)));\n";
+        }
+    }
+    ss << "    return result;\n";
+    ss << "}\n";
+   
+    // Generated code looks like this for texture 'diffuse':
+    //
+    // vec4 HdTextureLod_diffuse(vec2 coord, float lod) {
+    //     vec4 result =  textureBind_diffuse.sample(coord, level(lod));
+    //     return result;
+    // }
+    if (_shadow) {
+        ss << returnType << " HdTextureLod_" << _samplerSharedIdentifier;
+        if (_arrayOfTexturesSize > 0) {
+            ss << "(uint index, " << shadowCoordType << " coord";
+        } else {
+            ss << "(" << shadowCoordType << " coord";
+        }
+        ss << ", float lod) {\n"
+           << "    " << returnType << " result = "
+           << returnType << "(textureBind_"
+           << _samplerSharedIdentifier;
+        if (_arrayOfTexturesSize > 0) {
+            ss << "[index]";
+        }
         ss << ".sample(";
         _samplerShaderSectionDependency->WriteIdentifier(ss);
-        ss << ", coord, level(lod));\n";
-        ss << "    return result;\n";
-        ss << "}\n";
-
-        // HdTexelFetch_texName()
-        ss << "vec4 HdTexelFetch_"
-        << _samplerSharedIdentifier << "(ivec2 coord) {\n";
-        ss << "    vec4 result =  " << "textureBind_" << _samplerSharedIdentifier
-        << ".read(ushort2(coord.x, coord.y));\n";
-        ss << "    return result;\n";
-        ss << "}\n";
+        if (_arrayOfTexturesSize > 0) {
+            ss << "[index]";
+        }
+        ss << ", coord.xy, level(lod)));\n"
+           << "    return result;\n"
+           << "}\n";
+    } else {
+        ss << returnType << " HdTextureLod_" << _samplerSharedIdentifier;
+        if (_arrayOfTexturesSize > 0) {
+            ss << "(uint index, " << coordType << " coord";
+        } else {
+            ss << "(" << coordType << " coord";
+        }
+        ss << ", float lod) {\n"
+           << "    " << returnType << " result = "
+           << returnType << "(textureBind_"
+           << _samplerSharedIdentifier;
+        if (_arrayOfTexturesSize > 0) {
+            ss << "[index]";
+        }
+        ss << ".sample(";
+        _samplerShaderSectionDependency->WriteIdentifier(ss);
+        if (_arrayOfTexturesSize > 0) {
+            ss << "[index]";
+        }
+        if (_textureArray) {
+            if (_dimensionsVar == 2) {
+                ss << ", coord.xy, coord.z";
+            }
+            else {
+                ss << ", coord.x, coord.y";
+            }
+        } else {
+            ss << ", coord";
+        }
+        if (_dimensionsVar > 1) {
+            ss << ", level(lod)";
+        }
+        ss << "));\n"
+           << "    return result;\n"
+           << "}\n";
     }
 
     return true;

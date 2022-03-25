@@ -411,12 +411,70 @@ _ComputeHeader(id<MTLDevice> device)
     << "}\n\n"
 
     << "template <typename T>\n"
-    << "ivec2 textureSize(T texture, int lod) {\n"
-    << "    return ivec2(texture.get_width(lod), texture.get_height(lod));\n"
+    << "int imageSize1d(T texture) {\n"
+    << "    return int(texture.get_width());\n"
+    << "}\n"
+    << "template <typename T>\n"
+    << "ivec2 imageSize2d(T texture) {\n"
+    << "    return ivec2(texture.get_width(), texture.get_height());\n"
+    << "}\n"
+    << "template <typename T>\n"
+    << "ivec3 imageSize3d(T texture) {\n"
+    << "    return ivec3(texture.get_width(),\n"
+    << "        texture.get_height(), texture.get_depth());\n"
     << "}\n\n"
 
-    << "constexpr sampler texelSampler(address::clamp_to_edge,\n"
-    << "                               filter::linear);\n";
+    << "template <typename T>\n"
+    << "ivec2 textureSize(T texture, uint lod = 0) {\n"
+    << "    return ivec2(texture.get_width(lod), texture.get_height(lod));\n"
+    << "}\n"
+    << "ivec2 textureSize(texture1d_array<uint16_t> texture, uint lod = 0) {\n"
+    << "    return ivec2(texture.get_width(),\n"
+    << "        texture.get_array_size());\n"
+    << "}\n"
+    << "ivec3 textureSize(texture2d_array<float> texture, uint lod = 0) {\n"
+    << "    return ivec3(texture.get_width(lod),\n"
+    << "        texture.get_height(lod), texture.get_array_size());\n"
+    << "}\n\n"
+
+    << "template <typename T>\n"
+    << "int textureSize1d(T texture, uint lod = 0) {\n"
+    << "    return int(texture.get_width());\n"
+    << "}\n"
+    << "template <typename T>\n"
+    << "ivec2 textureSize2d(T texture, uint lod = 0) {\n"
+    << "    return ivec2(texture.get_width(lod), texture.get_height(lod));\n"
+    << "}\n"
+    << "template <typename T>\n"
+    << "ivec3 textureSize3d(T texture, uint lod = 0) {\n"
+    << "    return ivec3(texture.get_width(lod),\n"
+    << "        texture.get_height(lod), texture.get_depth(lod));\n"
+    << "}\n\n"
+
+    << "template<typename T, typename Tc>\n"
+    << "float4 texelFetch(T texture, Tc coords, uint lod = 0) {\n"
+    << "    return texture.read(uint2(coords), lod);\n"
+    << "}\n"
+    << "template<typename Tc>\n"
+    << "uint4 texelFetch(texture1d_array<uint16_t> texture, Tc coords, uint lod = 0) {\n"
+    << "    return uint4(texture.read((uint)coords.x, (uint)coords.y, 0));\n"
+    << "}\n"
+    << "template<typename Tc>\n"
+    << "vec4 texelFetch(texture2d_array<float> texture, Tc coords, uint lod = 0) {\n"
+    << "    return texture.read(uint2(coords.xy), (uint)coords.z, 0);\n"
+    << "}\n"
+
+    << "#define textureQueryLevels(texture) texture.get_num_mip_levels()\n"
+
+    << "template <typename T, typename Tv>\n"
+    << "void imageStore(T texture, short2 coords, Tv color) {\n"
+    << "    return texture.write(color, ushort2(coords.x, coords.y));\n"
+    << "}\n"
+    << "template <typename T, typename Tv>\n"
+    << "void imageStore(T texture, int2 coords, Tv color) {\n"
+    << "    return texture.write(color, uint2(coords.x, coords.y));\n"
+    << "}\n\n"
+    ;
 
     // wrapper for type float and int to deal with .x accessors and the
     // like that are valid in GLSL
@@ -769,7 +827,9 @@ void HgiMetalShaderGenerator::_BuildTextureShaderSections(
         // owns all sections, point to it in the vector
         HgiMetalSamplerShaderSection * const samplerSection =
             CreateShaderSection<HgiMetalSamplerShaderSection>(
-                texName, samplerAttributes);
+                texName,
+                textures[i].arraySize,
+                samplerAttributes);
 
         //fx texturing struct depends on the sampler
         structMembers.push_back(samplerSection);
@@ -785,6 +845,9 @@ void HgiMetalShaderGenerator::_BuildTextureShaderSections(
                 samplerSection,
                 textures[i].dimensions,
                 textures[i].format,
+                textures[i].textureType == HgiShaderTextureTypeArrayTexture,
+                textures[i].arraySize,
+                textures[i].textureType == HgiShaderTextureTypeShadowTexture,
                 textures[i].writable,
                 std::string());
 

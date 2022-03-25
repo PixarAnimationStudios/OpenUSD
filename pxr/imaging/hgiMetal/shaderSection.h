@@ -147,6 +147,7 @@ public:
     HGIMETAL_API
     HgiMetalSamplerShaderSection(
         const std::string &textureSharedIdentifier,
+        const uint32_t arrayOfSamplersSize,
         const HgiShaderSectionAttributeVector &attributes = {});
 
     HGIMETAL_API
@@ -160,6 +161,9 @@ private:
     HgiMetalSamplerShaderSection & operator=(
         const HgiMetalSamplerShaderSection&) = delete;
     HgiMetalSamplerShaderSection(const HgiMetalSamplerShaderSection&) = delete;
+
+    const std::string _textureSharedIdentifier;
+    const uint32_t _arrayOfSamplersSize;
 };
 
 /// \class HgiMetalTextureShaderSection
@@ -178,6 +182,9 @@ public:
         const HgiMetalSamplerShaderSection *samplerShaderSectionDependency,
         uint32_t dimensions,
         HgiFormat format,
+        bool textureArray,
+        uint32_t arrayOfTexturesSize,
+        bool shadow,
         bool writable,
         const std::string &defaultValue = std::string());
 
@@ -199,6 +206,9 @@ private:
     const HgiMetalSamplerShaderSection* const _samplerShaderSectionDependency;
     const uint32_t _dimensionsVar;
     const HgiFormat _format;
+    const bool _textureArray;
+    const uint32_t _arrayOfTexturesSize;
+    const bool _shadow;
     const bool _writable;
     std::string _baseType;
     std::string _returnType;
