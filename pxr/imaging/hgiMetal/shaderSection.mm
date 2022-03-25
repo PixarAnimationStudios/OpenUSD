@@ -254,6 +254,10 @@ HgiMetalTextureShaderSection::HgiMetalTextureShaderSection(
         _baseType = "uint16_t";
         _returnType = "uvec";
         break;
+    case HgiFormatUNorm8:
+        _baseType = "float";
+        _returnType = "vec";
+        break;
     default:
         TF_CODING_ERROR("Invalid Format");
         _baseType = "float";
