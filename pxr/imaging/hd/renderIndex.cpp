@@ -113,9 +113,11 @@ HdRenderIndex::HdRenderIndex(
     // data structures now.
     if (_IsEnabledSceneIndexEmulation()) {
         _emulationSceneIndex = HdLegacyPrimSceneIndex::New();
+        _emulationNoticeBatchingSceneIndex =
+            HdNoticeBatchingSceneIndex::New(_emulationSceneIndex);
         _mergingSceneIndex = HdMergingSceneIndex::New();
         _mergingSceneIndex->AddInputScene(
-            _emulationSceneIndex, SdfPath::AbsoluteRootPath());
+            _emulationNoticeBatchingSceneIndex, SdfPath::AbsoluteRootPath());
 
         HdSceneIndexBaseRefPtr terminalSceneIndex = _mergingSceneIndex;
 
@@ -720,6 +722,22 @@ HdResourceRegistrySharedPtr
 HdRenderIndex::GetResourceRegistry() const
 {
     return _renderDelegate->GetResourceRegistry();
+}
+
+void
+HdRenderIndex::SceneIndexEmulationNoticeBatchBegin()
+{
+    if (_emulationNoticeBatchingSceneIndex) {
+        _emulationNoticeBatchingSceneIndex->SetBatchingEnabled(true);
+    }
+}
+
+void
+HdRenderIndex::SceneIndexEmulationNoticeBatchEnd()
+{
+    if (_emulationNoticeBatchingSceneIndex) {
+        _emulationNoticeBatchingSceneIndex->SetBatchingEnabled(false);
+    }
 }
 
 bool
