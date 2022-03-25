@@ -84,8 +84,6 @@ private:
     _BuildShaderStageEntryPoints(
         const HgiShaderFunctionDesc &descriptor);
 
-    void _BuildTextureShaderSections(const HgiShaderFunctionDesc &descriptor);
-    void _BuildBufferShaderSections(const HgiShaderFunctionDesc &descriptor);
     void _BuildKeywordInputShaderSections(const HgiShaderFunctionDesc &descriptor);
 
     HgiMetalShaderSectionUniquePtrVector _shaderSections;

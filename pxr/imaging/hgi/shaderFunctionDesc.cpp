@@ -123,6 +123,39 @@ bool operator!=(
 }
 
 bool operator==(
+    const HgiShaderFunctionParamBlockDesc& lhs,
+    const HgiShaderFunctionParamBlockDesc& rhs)
+{
+    return lhs.blockName == rhs.blockName &&
+           lhs.instanceName == rhs.instanceName &&
+           lhs.members == rhs.members &&
+           lhs.arraySize == rhs.arraySize &&
+           lhs.interstageSlot == rhs.interstageSlot;
+}
+
+bool operator!=(
+    const HgiShaderFunctionParamBlockDesc& lhs,
+    const HgiShaderFunctionParamBlockDesc& rhs)
+{
+    return !(lhs == rhs);
+}
+
+bool operator==(
+    const HgiShaderFunctionParamBlockDesc::Member& lhs,
+    const HgiShaderFunctionParamBlockDesc::Member& rhs)
+{
+    return lhs.name == rhs.name &&
+           lhs.type == rhs.type;
+}
+
+bool operator!=(
+    const HgiShaderFunctionParamBlockDesc::Member& lhs,
+    const HgiShaderFunctionParamBlockDesc::Member& rhs)
+{
+    return !(lhs == rhs);
+}
+
+bool operator==(
         const HgiShaderFunctionComputeDesc& lhs,
         const HgiShaderFunctionComputeDesc& rhs)
 {

@@ -121,7 +121,9 @@ public:
     HgiMetalMemberShaderSection(
         const std::string &identifier,
         const std::string &type,
-        const HgiShaderSectionAttributeVector &attributes = {});
+        const HgiShaderSectionAttributeVector &attributes = {},
+        const std::string arraySize = std::string(),
+        const std::string &blockInstanceIdentifier = std::string());
 
     HGIMETAL_API
     ~HgiMetalMemberShaderSection() override;
@@ -479,6 +481,43 @@ public:
     HGIMETAL_API
     bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
 };
+
+/// \class HgiMetalInterstageBlockShaderSection
+///
+/// Defines and writes out an interstage interface block
+///
+class HgiMetalInterstageBlockShaderSection final
+    : public HgiMetalShaderSection
+{
+public:
+    HGIMETAL_API
+    explicit HgiMetalInterstageBlockShaderSection(
+        const std::string &blockIdentifier,
+        const std::string &blockInstanceIdentifier,
+        const HgiMetalStructTypeDeclarationShaderSection *structTypeDeclaration);
+
+    HGIMETAL_API
+    const HgiMetalStructTypeDeclarationShaderSection*
+    GetStructTypeDeclaration() const;
+
+    HGIMETAL_API
+    bool VisitScopeStructs(std::ostream &ss) override;
+
+    HGIMETAL_API
+    bool VisitScopeMemberDeclarations(std::ostream &ss) override;
+
+private:
+    HgiMetalInterstageBlockShaderSection() = delete;
+    HgiMetalInterstageBlockShaderSection & operator=(
+        const HgiMetalInterstageBlockShaderSection&) = delete;
+    HgiMetalInterstageBlockShaderSection(const HgiMetalInterstageBlockShaderSection&) = delete;
+
+private:
+    const HgiMetalStructTypeDeclarationShaderSection * const _structTypeDeclaration;
+};
+
+using HgiMetalInterstageBlockShaderSectionPtrVector =
+    std::vector<HgiMetalInterstageBlockShaderSection*>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

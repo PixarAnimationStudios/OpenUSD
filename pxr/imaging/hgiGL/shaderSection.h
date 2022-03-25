@@ -47,7 +47,8 @@ public:
         const HgiShaderSectionAttributeVector &attributes = {},
         const std::string &storageQualifier = std::string(),
         const std::string &defaultValue = std::string(),
-        const std::string &arraySize = std::string());
+        const std::string &arraySize = std::string(),
+        const std::string &blockInstanceIdentifier = std::string());
 
     HGIGL_API
     ~HgiGLShaderSection() override;
@@ -76,6 +77,9 @@ private:
     const std::string _storageQualifier;
     const std::string _arraySize;
 };
+
+using HgiGLShaderSectionPtrVector = 
+    std::vector<HgiGLShaderSection*>;
 
 /// \class HgiGLMacroShaderSection
 ///
@@ -119,7 +123,9 @@ public:
         const std::string &typeName,
         const HgiShaderSectionAttributeVector &attributes,
         const std::string &storageQualifier = std::string(),
-        const std::string &defaultValue = std::string());
+        const std::string &defaultValue = std::string(),
+        const std::string &arraySize = std::string(),
+        const std::string &blockInstanceIdentifier = std::string());
 
     HGIGL_API
     ~HgiGLMemberShaderSection() override;
@@ -276,6 +282,34 @@ private:
 
     const std::string _type;
     const std::string _keyword;
+};
+
+/// \class HgiGLInterstageBlockShaderSection
+///
+/// Defines and writes out an interstage interface block
+///
+class HgiGLInterstageBlockShaderSection final: public HgiGLShaderSection
+{
+public:
+    HGIGL_API
+    explicit HgiGLInterstageBlockShaderSection(
+        const std::string &blockIdentifier,
+        const std::string &blockInstanceIdentifier,
+        const std::string &qualifier,
+        const std::string &arraySize,
+        const HgiGLShaderSectionPtrVector &members);
+
+    HGIGL_API
+    bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
+
+private:
+    HgiGLInterstageBlockShaderSection() = delete;
+    HgiGLInterstageBlockShaderSection & operator=(
+        const HgiGLInterstageBlockShaderSection&) = delete;
+    HgiGLInterstageBlockShaderSection(const HgiGLInterstageBlockShaderSection&) = delete;
+
+    const std::string _qualifier;
+    const HgiGLShaderSectionPtrVector _members;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

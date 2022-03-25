@@ -100,8 +100,12 @@ HgiMetalShaderSection::WriteAttributesWithIndex(std::ostream& ss) const
 HgiMetalMemberShaderSection::HgiMetalMemberShaderSection(
     const std::string &identifier,
     const std::string &type,
-    const HgiShaderSectionAttributeVector &attributes)
-  : HgiMetalShaderSection(identifier, attributes)
+    const HgiShaderSectionAttributeVector &attributes,
+    const std::string arraySize,
+    const std::string &blockInstanceIdentifier)
+  : HgiMetalShaderSection(identifier, attributes,
+                          std::string(), arraySize,
+                          blockInstanceIdentifier)
   , _type{type}
 {
 }
@@ -117,8 +121,10 @@ HgiMetalMemberShaderSection::WriteType(std::ostream &ss) const
 bool
 HgiMetalMemberShaderSection::VisitScopeMemberDeclarations(std::ostream &ss)
 {
-    WriteDeclaration(ss);
-    ss << std::endl;
+    if (!HasBlockInstanceIdentifier()) {
+        WriteDeclaration(ss);
+        ss << std::endl;
+    }
     return true;
 }
 
@@ -791,13 +797,15 @@ HgiMetalStructTypeDeclarationShaderSection::WriteDeclaration(
     WriteType(ss);
     ss << " ";
     WriteIdentifier(ss);
-    ss << "{\n";
+    ss << " {\n";
     for (HgiMetalShaderSection* member : _members) {
         member->WriteParameter(ss);
-        member->WriteAttributesWithIndex(ss);
+        if (!member->HasBlockInstanceIdentifier()) {
+            member->WriteAttributesWithIndex(ss);
+        }
         ss << ";\n";
     }
-    ss << "};";
+    ss << "};\n";
 }
 
 void
@@ -905,6 +913,10 @@ HgiMetalParameterInputShaderSection::VisitEntryPointFunctionExecutions(
         }
         HgiShaderSection *member = structDeclMembers[i];
         ss << scopeInstanceName << ".";
+        if (member->HasBlockInstanceIdentifier()) {
+            member->WriteBlockInstanceIdentifier(ss);
+            ss << ".";
+        }
         member->WriteIdentifier(ss);
         ss << " = ";
         WriteIdentifier(ss);
@@ -1069,6 +1081,10 @@ HgiMetalStageOutputShaderSection::VisitEntryPointFunctionExecutions(
         ss << ".";
         member->WriteIdentifier(ss);
         ss << " = " << scopeInstanceName << ".";
+        if (member->HasBlockInstanceIdentifier()) {
+            member->WriteBlockInstanceIdentifier(ss);
+            ss << ".";
+        }
         member->WriteIdentifier(ss);
         ss << ";";
     }
@@ -1110,5 +1126,45 @@ HgiMetalMacroShaderSection::VisitGlobalMacros(std::ostream &ss)
     WriteIdentifier(ss);
     return true;
 }
+
+HgiMetalInterstageBlockShaderSection::HgiMetalInterstageBlockShaderSection(
+        const std::string &blockIdentifier,
+        const std::string &blockInstanceIdentifier,
+        const HgiMetalStructTypeDeclarationShaderSection *structTypeDeclaration)
+  : HgiMetalShaderSection(
+      blockIdentifier,
+      /* attributes = */HgiShaderSectionAttributeVector(),
+      /* defaultValue = */std::string(),
+      /* arraySize = */std::string(),
+      blockInstanceIdentifier)
+  , _structTypeDeclaration(structTypeDeclaration)
+{
+}
+
+const HgiMetalStructTypeDeclarationShaderSection*
+HgiMetalInterstageBlockShaderSection::GetStructTypeDeclaration() const
+{
+    return _structTypeDeclaration;
+}
+
+bool
+HgiMetalInterstageBlockShaderSection::VisitScopeStructs(
+    std::ostream &ss)
+{
+    _structTypeDeclaration->WriteDeclaration(ss);
+    return true;
+}
+
+bool
+HgiMetalInterstageBlockShaderSection::VisitScopeMemberDeclarations(
+    std::ostream &ss)
+{
+    _structTypeDeclaration->WriteIdentifier(ss);
+    ss << " ";
+    WriteBlockInstanceIdentifier(ss);
+    ss << ";\n";
+    return true;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

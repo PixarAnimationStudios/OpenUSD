@@ -63,7 +63,12 @@ public:
     HgiMetalShaderSectionPtrVector AccumulateParams(
         const HgiShaderFunctionParamDescVector &params,
         HgiMetalShaderGenerator *generator,
-        bool iterateAttrs=false);
+        HgiShaderStage stage,
+        bool iterateAttrs);
+    HgiMetalInterstageBlockShaderSectionPtrVector AccumulateParamBlocks(
+        const HgiShaderFunctionParamBlockDescVector &params,
+        HgiMetalShaderGenerator *generator,
+        HgiShaderStage stage);
     HgiMetalShaderSectionPtrVector AccumulateBufferBindings(
         const HgiShaderFunctionBufferDescVector &buffers,
         HgiMetalShaderGenerator *generator);
@@ -87,6 +92,8 @@ private:
     ShaderStageData(const ShaderStageData&) = delete;
 
     const HgiMetalShaderSectionPtrVector _constantParams;
+    const HgiMetalInterstageBlockShaderSectionPtrVector _inputBlocks;
+    const HgiMetalInterstageBlockShaderSectionPtrVector _outputBlocks;
     const HgiMetalShaderSectionPtrVector _inputs;
     const HgiMetalShaderSectionPtrVector _outputs;
     const HgiMetalShaderSectionPtrVector _bufferBindings;
@@ -552,26 +559,61 @@ _GetHeader(id<MTLDevice> device)
     return header;
 }
 
+HgiMetalShaderSectionPtrVector
+_AccumulateParamsAndBlockParams(
+    const HgiMetalInterstageBlockShaderSectionPtrVector &blocks,
+    const HgiMetalShaderSectionPtrVector &params)
+{
+    HgiMetalShaderSectionPtrVector result = params;
+    for (const HgiMetalInterstageBlockShaderSection *block : blocks) {
+        const HgiMetalShaderSectionPtrVector &members =
+            block->GetStructTypeDeclaration()->GetMembers();
+        result.insert(result.end(), members.begin(), members.end());
+    }
+    return result;
+}
+
 ShaderStageData::ShaderStageData(
     const HgiShaderFunctionDesc &descriptor,
     HgiMetalShaderGenerator *generator)
-  : _constantParams(
-          AccumulateParams(
-              descriptor.constantParams,
-              generator))
-  , _inputs(
-          AccumulateParams(
-              descriptor.stageInputs,
-              generator,
-              descriptor.shaderStage == HgiShaderStageVertex))
-  , _outputs(
-          AccumulateParams(
-              descriptor.stageOutputs,
-              generator))
-  , _bufferBindings(
-          AccumulateBufferBindings(
-              descriptor.buffers,
-              generator))
+    : _constantParams(
+        AccumulateParams(
+            descriptor.constantParams,
+            generator,
+            descriptor.shaderStage,
+            false))
+    , _inputBlocks(
+        AccumulateParamBlocks(
+            descriptor.stageInputBlocks,
+            generator,
+            descriptor.shaderStage))
+    , _outputBlocks(
+        AccumulateParamBlocks(
+            descriptor.stageOutputBlocks,
+            generator,
+            descriptor.shaderStage))
+    , _inputs(
+        _AccumulateParamsAndBlockParams(
+            _inputBlocks,
+            AccumulateParams(
+                descriptor.stageInputs,
+                generator,
+                descriptor.shaderStage,
+                descriptor.shaderStage == HgiShaderStageVertex
+                || descriptor.shaderStage ==
+                  HgiShaderStagePostTessellationVertex)))
+    , _outputs(
+        _AccumulateParamsAndBlockParams(
+            _outputBlocks,
+            AccumulateParams(
+                descriptor.stageOutputs,
+                generator,
+                descriptor.shaderStage,
+                false)))
+    , _bufferBindings(
+        AccumulateBufferBindings(
+            descriptor.buffers,
+            generator))
 {
     // Also populates _samplerBindings
     _textureBindings = AccumulateTextureBindings(
@@ -584,6 +626,7 @@ HgiMetalShaderSectionPtrVector
 ShaderStageData::AccumulateParams(
     const HgiShaderFunctionParamDescVector &params,
     HgiMetalShaderGenerator *generator,
+    HgiShaderStage stage,
     bool iterateAttrs)
 {
     HgiMetalShaderSectionPtrVector stageShaderSections;
@@ -635,6 +678,52 @@ ShaderStageData::AccumulateParams(
                         attributes);
             stageShaderSections.push_back(section);
         }
+    }
+    return stageShaderSections;
+}
+
+HgiMetalInterstageBlockShaderSectionPtrVector 
+ShaderStageData::AccumulateParamBlocks(
+    const HgiShaderFunctionParamBlockDescVector &params,
+    HgiMetalShaderGenerator *generator,
+    HgiShaderStage stage)
+{
+    HgiMetalInterstageBlockShaderSectionPtrVector stageShaderSections;
+    for(const HgiShaderFunctionParamBlockDesc &p : params) {
+
+        HgiMetalShaderSectionPtrVector blockMembers;
+        for (size_t i = 0; i < p.members.size(); ++i) {
+            const HgiShaderFunctionParamBlockDesc::Member &m = p.members[i];
+            const size_t slotIndex = p.interstageSlot + i;
+
+            const std::string role =
+                "user(slot" + std::to_string(slotIndex) + ")";
+            const HgiShaderSectionAttributeVector attributes = { {role, ""} };
+
+            HgiMetalMemberShaderSection * const memberSection =
+                generator->CreateShaderSection<
+                        HgiMetalMemberShaderSection>(
+                            m.name,
+                            m.type,
+                            attributes,
+                            std::string(),
+                            p.instanceName);
+            blockMembers.push_back(memberSection);
+        }
+
+        HgiMetalStructTypeDeclarationShaderSection * const blockStruct =
+            generator->CreateShaderSection<
+                HgiMetalStructTypeDeclarationShaderSection>(
+                    p.blockName + "_" + p.instanceName,
+                    blockMembers);
+
+        HgiMetalInterstageBlockShaderSection * const blockSection =
+            generator->CreateShaderSection<
+                HgiMetalInterstageBlockShaderSection>(
+                    p.blockName,
+                    p.instanceName,
+                    blockStruct);
+        stageShaderSections.push_back(blockSection);
     }
     return stageShaderSections;
 }

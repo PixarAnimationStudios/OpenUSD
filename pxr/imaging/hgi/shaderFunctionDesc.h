@@ -173,6 +173,65 @@ bool operator!=(
     const HgiShaderFunctionParamDesc& lhs,
     const HgiShaderFunctionParamDesc& rhs);
 
+/// \struct HgiShaderFunctionParamBlockDesc
+///
+/// Describes an interstage param block between shader stages
+///
+/// <ul>
+/// <li>blockName:
+///   The name used to match blocks between shader stages.</li>
+/// <li>instanceName:
+///   The name used to scope access to block members.</li>
+/// <li>members:
+///   The members of the block.</li>
+/// <li>arraySize:
+///   If specified, generates a block with given size.</li>
+/// <li>interstageSlot:
+///   The interstage slot index of the first member of the block,
+///   subsequent members are assigned sequential interstage slot indices.</li>
+/// </ul>
+///
+struct HgiShaderFunctionParamBlockDesc
+{
+    HGI_API
+    HgiShaderFunctionParamBlockDesc();
+
+    struct Member {
+        std::string name;
+        std::string type;
+    };
+    using MemberVector = std::vector<Member>;
+
+    std::string blockName;
+    std::string instanceName;
+    MemberVector members;
+    std::string arraySize;
+    int32_t interstageSlot;
+};
+
+using HgiShaderFunctionParamBlockDescVector =
+    std::vector<HgiShaderFunctionParamBlockDesc>;
+
+HGI_API
+bool operator==(
+    const HgiShaderFunctionParamBlockDesc& lhs,
+    const HgiShaderFunctionParamBlockDesc& rhs);
+
+HGI_API
+bool operator!=(
+    const HgiShaderFunctionParamBlockDesc& lhs,
+    const HgiShaderFunctionParamBlockDesc& rhs);
+
+HGI_API
+bool operator==(
+    const HgiShaderFunctionParamBlockDesc::Member& lhs,
+    const HgiShaderFunctionParamBlockDesc::Member& rhs);
+
+HGI_API
+bool operator!=(
+    const HgiShaderFunctionParamBlockDesc::Member& lhs,
+    const HgiShaderFunctionParamBlockDesc::Member& rhs);
+
 /// \struct HgiShaderFunctionComputeDesc
 ///
 /// Describes a compute function's description
@@ -268,6 +327,10 @@ bool operator!=(
 ///   List of descriptions of the inputs of the shader.</li>
 /// <li>stageOutputs:
 ///   List of descriptions of the outputs of the shader.</li>
+/// <li>stageInputBlocks:
+///   List of descriptions of the input blocks of the shader.</li>
+/// <li>stageOutputsBlocks:
+///   List of descriptions of the output blocks of the shader.</li>
 /// <li>tessellationDesc:
 ///   Description of tessellation shader function.</li>
 /// <li>computeDescriptor:
@@ -288,6 +351,8 @@ struct HgiShaderFunctionDesc
     std::vector<HgiShaderFunctionParamDesc> constantParams;
     std::vector<HgiShaderFunctionParamDesc> stageInputs;
     std::vector<HgiShaderFunctionParamDesc> stageOutputs;
+    std::vector<HgiShaderFunctionParamBlockDesc> stageInputBlocks;
+    std::vector<HgiShaderFunctionParamBlockDesc> stageOutputBlocks;
     HgiShaderFunctionTessellationDesc tessellationDescriptor;
     HgiShaderFunctionComputeDesc computeDescriptor;
 };

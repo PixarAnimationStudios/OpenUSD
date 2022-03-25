@@ -29,10 +29,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiShaderSection::HgiShaderSection(
     const std::string &identifier,
     const HgiShaderSectionAttributeVector& attributes,
-    const std::string &defaultValue)
+    const std::string &defaultValue,
+    const std::string &arraySize,
+    const std::string &blockInstanceIdentifier)
   : _identifierVar(identifier)
   , _attributes(attributes)
   , _defaultValue(defaultValue)
+  , _arraySize(arraySize)
+  , _blockInstanceIdentifier(blockInstanceIdentifier)
 {
 }
 
@@ -50,11 +54,18 @@ HgiShaderSection::WriteIdentifier(std::ostream& ss) const
 }
 
 void
+HgiShaderSection::WriteBlockInstanceIdentifier(std::ostream& ss) const
+{
+    ss << _blockInstanceIdentifier;
+}
+
+void
 HgiShaderSection::WriteDeclaration(std::ostream& ss) const
 {
     WriteType(ss);
     ss << " ";
     WriteIdentifier(ss);
+    WriteArraySize(ss);
     ss << ";";
 }
 
@@ -64,6 +75,14 @@ HgiShaderSection::WriteParameter(std::ostream& ss) const
     WriteType(ss);
     ss << " ";
     WriteIdentifier(ss);
+}
+
+void
+HgiShaderSection::WriteArraySize(std::ostream& ss) const
+{
+    if (!_arraySize.empty()) {
+        ss << "[" << _arraySize << "]";
+    }
 }
 
 const HgiShaderSectionAttributeVector&

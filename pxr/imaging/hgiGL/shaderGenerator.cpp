@@ -45,6 +45,17 @@ _GetMacroBlob()
     return header;
 }
 
+template<typename SectionType, typename ...T>
+SectionType *
+HgiGLShaderGenerator::CreateShaderSection(T && ...t)
+{
+    std::unique_ptr<SectionType> p =
+        std::make_unique<SectionType>(std::forward<T>(t)...);
+    SectionType * const result = p.get();
+    GetShaderSections()->push_back(std::move(p));
+    return result;
+}
+
 HgiGLShaderGenerator::HgiGLShaderGenerator(
     Hgi const *hgi,
     const HgiShaderFunctionDesc &descriptor)
@@ -101,8 +112,10 @@ HgiGLShaderGenerator::HgiGLShaderGenerator(
     _WriteTextures(descriptor.textures);
     _WriteBuffers(descriptor.buffers);
     _WriteInOuts(descriptor.stageInputs, "in");
+    _WriteInOutBlocks(descriptor.stageInputBlocks, "in");
     _WriteConstantParams(descriptor.constantParams);
     _WriteInOuts(descriptor.stageOutputs, "out");
+    _WriteInOutBlocks(descriptor.stageOutputBlocks, "out");
 }
 
 void
@@ -216,28 +229,26 @@ HgiGLShaderGenerator::_WriteBuffers(
                 HgiShaderSectionAttribute{"binding",
                     std::to_string(bufferDescription.bindIndex)}};
 
-            GetShaderSections()->push_back(
-                std::make_unique<HgiGLBufferShaderSection>(
-                    bufferDescription.nameInShader,
-                    bufferDescription.bindIndex,
-                    bufferDescription.type,
-                    bufferDescription.binding,
-                    arraySize,
-                    attrs));
+            CreateShaderSection<HgiGLBufferShaderSection>(
+                bufferDescription.nameInShader,
+                bufferDescription.bindIndex,
+                bufferDescription.type,
+                bufferDescription.binding,
+                arraySize,
+                attrs);
         } else {
             const HgiShaderSectionAttributeVector attrs = {
                 HgiShaderSectionAttribute{"std430", ""},
                 HgiShaderSectionAttribute{"binding",
                     std::to_string(bufferDescription.bindIndex)}};
 
-            GetShaderSections()->push_back(
-                std::make_unique<HgiGLBufferShaderSection>(
-                    bufferDescription.nameInShader,
-                    bufferDescription.bindIndex,
-                    bufferDescription.type,
-                    bufferDescription.binding,
-                    arraySize,
-                    attrs));
+            CreateShaderSection<HgiGLBufferShaderSection>(
+                bufferDescription.nameInShader,
+                bufferDescription.bindIndex,
+                bufferDescription.type,
+                bufferDescription.binding,
+                arraySize,
+                attrs);
         }
     }
 }
@@ -249,11 +260,10 @@ HgiGLShaderGenerator::_WriteConstantParams(
     if (parameters.size() < 1) {
         return;
     }
-    GetShaderSections()->push_back(
-        std::make_unique<HgiGLBlockShaderSection>(
-            "ParamBuffer",
-            parameters,
-            0));
+    CreateShaderSection<HgiGLBlockShaderSection>(
+        "ParamBuffer",
+        parameters,
+        0);
 }
 
 void
@@ -289,11 +299,10 @@ HgiGLShaderGenerator::_WriteInOuts(
             const std::string &role = param.role;
             auto const& keyword = takenInParams.find(role);
             if (keyword != takenInParams.end()) {
-                GetShaderSections()->push_back(
-                    std::make_unique<HgiGLKeywordShaderSection>(
-                        paramName,
-                        param.type,
-                        keyword->second));
+                CreateShaderSection<HgiGLKeywordShaderSection>(
+                    paramName,
+                    param.type,
+                    keyword->second);
                 continue;
             }
         }
@@ -309,6 +318,37 @@ HgiGLShaderGenerator::_WriteInOuts(
                 attrs,
                 qualifier));
         counter++;
+    }
+}
+
+void
+HgiGLShaderGenerator::_WriteInOutBlocks(
+    const HgiShaderFunctionParamBlockDescVector &parameterBlocks,
+    const std::string &qualifier)
+{
+    for(const HgiShaderFunctionParamBlockDesc &p : parameterBlocks) {
+
+        HgiGLShaderSectionPtrVector members;
+        for(const HgiShaderFunctionParamBlockDesc::Member &member : p.members) {
+
+            HgiGLMemberShaderSection *memberSection =
+                CreateShaderSection<HgiGLMemberShaderSection>(
+                    member.name,
+                    member.type,
+                    HgiShaderSectionAttributeVector(),
+                    qualifier,
+                    std::string(),
+                    std::string(),
+                    p.instanceName);
+            members.push_back(memberSection);
+        }
+
+        CreateShaderSection<HgiGLInterstageBlockShaderSection>(
+            p.blockName,
+            p.instanceName,
+            qualifier,
+            p.arraySize,
+            members);
     }
 }
 

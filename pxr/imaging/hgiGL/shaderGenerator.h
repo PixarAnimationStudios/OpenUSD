@@ -54,6 +54,9 @@ public:
     HGIGL_API
     HgiGLShaderSectionUniquePtrVector* GetShaderSections();
 
+    template<typename SectionType, typename ...T>
+    SectionType *CreateShaderSection(T && ...t);
+
 protected:
     HGIGL_API
     void _Execute(std::ostream &ss) override;
@@ -76,6 +79,9 @@ private:
     //For writing shader inputs and outputs who are very similarly written
     void _WriteInOuts(
         const HgiShaderFunctionParamDescVector &parameters,
+        const std::string &qualifier);
+    void _WriteInOutBlocks(
+        const HgiShaderFunctionParamBlockDescVector &parameterBlocks,
         const std::string &qualifier);
     
     Hgi const *_hgi;

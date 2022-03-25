@@ -31,8 +31,10 @@ HgiGLShaderSection::HgiGLShaderSection(
     const HgiShaderSectionAttributeVector &attributes,
     const std::string &storageQualifier,
     const std::string &defaultValue,
-    const std::string &arraySize)
-  : HgiShaderSection(identifier, attributes, defaultValue)
+    const std::string &arraySize,
+    const std::string &blockInstanceIdentifier)
+  : HgiShaderSection(identifier, attributes, defaultValue,
+                     arraySize, blockInstanceIdentifier)
   , _storageQualifier(storageQualifier)
   , _arraySize(arraySize)
 {
@@ -134,12 +136,16 @@ HgiGLMemberShaderSection::HgiGLMemberShaderSection(
     const std::string &typeName,
     const HgiShaderSectionAttributeVector &attributes,
     const std::string &storageQualifier,
-    const std::string &defaultValue)
-  : HgiGLShaderSection(identifier,
-                       attributes,
-                       storageQualifier,
-                       defaultValue)
-  , _typeName(typeName)
+    const std::string &defaultValue,
+    const std::string &arraySize,
+    const std::string &blockInstanceIdentifier)
+    : HgiGLShaderSection(identifier,
+                         attributes,
+                         storageQualifier,
+                         defaultValue,
+                         arraySize,
+                         blockInstanceIdentifier)
+    , _typeName(typeName)
 {
 }
 
@@ -181,7 +187,7 @@ HgiGLBlockShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
     for(const HgiShaderFunctionParamDesc &param : _parameters) {
         ss << "        " << param.type << " " << param.nameInShader << ";\n";
     }
-    ss << "\n};";
+    ss << "\n};\n";
     return true;
 }
 
@@ -490,8 +496,46 @@ HgiGLKeywordShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
     WriteIdentifier(ss);
     ss << " = ";
     ss << _keyword;
-    ss << ";";
+    ss << ";\n";
 
+    return true;
+}
+
+HgiGLInterstageBlockShaderSection::HgiGLInterstageBlockShaderSection(
+    const std::string &blockIdentifier,
+    const std::string &blockInstanceIdentifier,
+    const std::string &qualifier,
+    const std::string &arraySize,
+    const HgiGLShaderSectionPtrVector &members)
+    : HgiGLShaderSection(blockIdentifier,
+                         HgiShaderSectionAttributeVector(),
+                         qualifier,
+                         std::string(),
+                         arraySize,
+                         blockInstanceIdentifier)
+    , _qualifier(qualifier)
+    , _members(members)
+{
+}
+
+bool
+HgiGLInterstageBlockShaderSection::VisitGlobalMemberDeclarations(
+    std::ostream &ss)
+{
+    ss << _qualifier << " ";
+    WriteIdentifier(ss);
+    ss << " {\n";
+    for (const HgiGLShaderSection* member : _members) {
+        ss << "  ";
+        member->WriteType(ss);
+        ss << " ";
+        member->WriteIdentifier(ss);
+        ss << ";\n";
+    }
+    ss << "} ";
+    WriteBlockInstanceIdentifier(ss);
+    WriteArraySize(ss);
+    ss << ";\n";
     return true;
 }
 
