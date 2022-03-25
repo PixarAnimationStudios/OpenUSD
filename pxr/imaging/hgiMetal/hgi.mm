@@ -77,6 +77,27 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
 
     _capabilities.reset(new HgiMetalCapabilities(_device));
 
+    MTLArgumentDescriptor *argumentDescBuffer =
+        [[MTLArgumentDescriptor alloc] init];
+    argumentDescBuffer.dataType = MTLDataTypePointer;
+    _argEncoderBuffer = [_device newArgumentEncoderWithArguments:
+                        @[argumentDescBuffer]];
+    [argumentDescBuffer release];
+
+    MTLArgumentDescriptor *argumentDescSampler =
+        [[MTLArgumentDescriptor alloc] init];
+    argumentDescSampler.dataType = MTLDataTypeSampler;
+    _argEncoderSampler = [_device newArgumentEncoderWithArguments:
+                         @[argumentDescSampler]];
+    [argumentDescSampler release];
+
+    MTLArgumentDescriptor *argumentDescTexture =
+        [[MTLArgumentDescriptor alloc] init];
+    argumentDescTexture.dataType = MTLDataTypeTexture;
+    _argEncoderTexture = [_device newArgumentEncoderWithArguments:
+                         @[argumentDescTexture]];
+    [argumentDescTexture release];
+
     HgiMetalSetupMetalDebug();
     
     _captureScopeFullFrame =
@@ -92,9 +113,17 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
 HgiMetal::~HgiMetal()
 {
     [_commandBuffer commit];
+    [_commandBuffer waitUntilCompleted];
     [_commandBuffer release];
     [_captureScopeFullFrame release];
     [_commandQueue release];
+    [_argEncoderBuffer release];
+    [_argEncoderTexture release];
+    
+    while(_freeArgBuffers.size()) {
+        [_freeArgBuffers.top() release];
+        _freeArgBuffers.pop();
+    }
 }
 
 bool
@@ -176,7 +205,16 @@ HgiMetal::DestroyTextureView(HgiTextureViewHandle* viewHandle)
 {
     // Trash the texture inside the view and invalidate the view handle.
     HgiTextureHandle texHandle = (*viewHandle)->GetViewTexture();
-    _TrashObject(&texHandle);
+
+    if (_workToFlush) {
+        [_commandBuffer
+         addCompletedHandler:[texHandle](id<MTLCommandBuffer> cmdBuffer)
+         {
+            delete texHandle.Get();
+        }];
+    } else {
+        _TrashObject(&texHandle);
+    }
     (*viewHandle)->SetViewTexture(HgiTextureHandle());
     delete viewHandle->Get();
     *viewHandle = HgiTextureViewHandle();
@@ -374,6 +412,56 @@ void
 HgiMetal::ReleaseSecondaryCommandBuffer(id<MTLCommandBuffer> commandBuffer)
 {
     [commandBuffer release];
+}
+
+id<MTLArgumentEncoder>
+HgiMetal::GetBufferArgumentEncoder() const
+{
+    return _argEncoderBuffer;
+}
+
+id<MTLArgumentEncoder>
+HgiMetal::GetSamplerArgumentEncoder() const
+{
+    return _argEncoderSampler;
+}
+
+id<MTLArgumentEncoder>
+HgiMetal::GetTextureArgumentEncoder() const
+{
+    return _argEncoderTexture;
+}
+
+id<MTLBuffer>
+HgiMetal::GetArgBuffer()
+{
+    MTLResourceOptions options = _capabilities->defaultStorageMode;
+    id<MTLBuffer> buffer;
+
+    {
+        std::lock_guard<std::mutex> lock(_freeArgMutex);
+        if (_freeArgBuffers.empty()) {
+            buffer = [_device newBufferWithLength:4096 options:options];
+        }
+        else {
+            buffer = _freeArgBuffers.top();
+            _freeArgBuffers.pop();
+            memset(buffer.contents, 0x00, buffer.length);
+        }
+    }
+
+    if (!_commandBuffer) {
+        TF_CODING_ERROR("_commandBuffer is null");
+    }
+
+    [_commandBuffer
+     addCompletedHandler:^(id<MTLCommandBuffer> cmdBuffer)
+     {
+        std::lock_guard<std::mutex> lock(_freeArgMutex);
+        _freeArgBuffers.push(buffer);
+     }];
+
+    return buffer;
 }
 
 bool

@@ -133,6 +133,8 @@ private:
 
     void _CreateEncoder();
 
+    void _CreateArgumentBuffer();
+    void _SyncArgumentBuffer();
 
     // We implement multi-draw indirect commands on Metal by encoding
     // separate draw commands for each draw.
@@ -192,6 +194,7 @@ private:
     HgiMetal* _hgi;
     MTLRenderPassDescriptor* _renderPassDescriptor;
     id<MTLRenderCommandEncoder> _encoder;
+    id<MTLBuffer> _argumentBuffer;
     HgiGraphicsCmdsDesc _descriptor;
     HgiPrimitiveType _primitiveType;
     uint32_t _primitiveIndexSize;

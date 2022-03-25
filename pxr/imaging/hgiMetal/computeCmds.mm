@@ -39,6 +39,7 @@ HgiMetalComputeCmds::HgiMetalComputeCmds(HgiMetal* hgi)
     , _hgi(hgi)
     , _pipelineState(nullptr)
     , _commandBuffer(nil)
+    , _argumentBuffer(nil)
     , _encoder(nil)
     , _secondaryCommandBuffer(false)
 {
@@ -64,6 +65,14 @@ HgiMetalComputeCmds::_CreateEncoder()
 }
 
 void
+HgiMetalComputeCmds::_CreateArgumentBuffer()
+{
+    if (!_argumentBuffer) {
+        _argumentBuffer = _hgi->GetArgBuffer();
+    }
+}
+
+void
 HgiMetalComputeCmds::BindPipeline(HgiComputePipelineHandle pipeline)
 {
     _CreateEncoder();
@@ -78,7 +87,9 @@ HgiMetalComputeCmds::BindResources(HgiResourceBindingsHandle r)
         static_cast<HgiMetalResourceBindings*>(r.Get()))
     {
         _CreateEncoder();
-        rb->BindResources(_encoder);
+        _CreateArgumentBuffer();
+
+        rb->BindResources(_hgi, _encoder, _argumentBuffer);
     }
 }
 
@@ -90,9 +101,10 @@ HgiMetalComputeCmds::SetConstantValues(
     const void* data)
 {
     _CreateEncoder();
-    [_encoder setBytes:data
-                length:byteSize
-               atIndex:bindIndex];
+    _CreateArgumentBuffer();
+
+    HgiMetalResourceBindings::SetConstantValues(
+        _argumentBuffer, HgiShaderStageCompute, bindIndex, byteSize, data);
 }
 
 void
@@ -113,11 +125,22 @@ HgiMetalComputeCmds::Dispatch(int dimX, int dimY)
         thread_height = maxTotalThreads / exeWidth;
     }
 
+    if (_argumentBuffer.storageMode != MTLStorageModeShared &&
+        [_argumentBuffer respondsToSelector:@selector(didModifyRange:)]) {
+        NSRange range = NSMakeRange(0, _argumentBuffer.length);
+
+        ARCH_PRAGMA_PUSH
+        ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND
+        [_argumentBuffer didModifyRange:range];
+        ARCH_PRAGMA_POP
+    }
+
     [_encoder dispatchThreads:MTLSizeMake(dimX, dimY, 1)
        threadsPerThreadgroup:MTLSizeMake(MIN(thread_width, dimX),
                                          MIN(thread_height, dimY), 1)];
 
     _hasWork = true;
+    _argumentBuffer = nil;
 }
 
 void
@@ -174,6 +197,7 @@ HgiMetalComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
         _hgi->ReleaseSecondaryCommandBuffer(_commandBuffer);
     }
     _commandBuffer = nil;
+    _argumentBuffer = nil;
 
     return submittedWork;
 }

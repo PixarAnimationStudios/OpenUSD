@@ -42,6 +42,7 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
     , _hgi(hgi)
     , _renderPassDescriptor(nil)
     , _encoder(nil)
+    , _argumentBuffer(nil)
     , _descriptor(desc)
     , _primitiveType(HgiPrimitiveTypeTriangleList)
     , _primitiveIndexSize(0)
@@ -172,8 +173,8 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
     
     if (hasClear) {
         _CreateEncoder();
+        _CreateArgumentBuffer();
     }
-
 }
 
 HgiMetalGraphicsCmds::~HgiMetalGraphicsCmds()
@@ -201,7 +202,32 @@ HgiMetalGraphicsCmds::_CreateEncoder()
         }
         if (_viewportSet) {
             [_encoder setViewport:_viewport];
+    }
+    }
+}
+
+void
+HgiMetalGraphicsCmds::_CreateArgumentBuffer()
+{
+    if (!_argumentBuffer) {
+        _argumentBuffer = _hgi->GetArgBuffer();
+    }
+}
+
+void
+HgiMetalGraphicsCmds::_SyncArgumentBuffer()
+{
+    if (_argumentBuffer) {
+        if (_argumentBuffer.storageMode != MTLStorageModeShared &&
+            [_argumentBuffer respondsToSelector:@selector(didModifyRange:)]) {
+            NSRange range = NSMakeRange(0, _argumentBuffer.length);
+
+            ARCH_PRAGMA_PUSH
+            ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND
+            [_argumentBuffer didModifyRange:range];
+            ARCH_PRAGMA_POP
         }
+        _argumentBuffer = nil;
     }
 }
 
@@ -259,11 +285,12 @@ void
 HgiMetalGraphicsCmds::BindResources(HgiResourceBindingsHandle r)
 {
     _CreateEncoder();
+    _CreateArgumentBuffer();
 
     if (HgiMetalResourceBindings* rb=
         static_cast<HgiMetalResourceBindings*>(r.Get()))
     {
-        rb->BindResources(_encoder);
+        rb->BindResources(_hgi, _encoder, _argumentBuffer);
     }
 }
 
@@ -275,18 +302,10 @@ HgiMetalGraphicsCmds::SetConstantValues(
     uint32_t byteSize,
     const void* data)
 {
-    _CreateEncoder();
+    _CreateArgumentBuffer();
 
-    if (stages & HgiShaderStageVertex) {
-        [_encoder setVertexBytes:data
-                          length:byteSize
-                         atIndex:bindIndex];
-    }
-    if (stages & HgiShaderStageFragment) {
-        [_encoder setFragmentBytes:data
-                            length:byteSize
-                           atIndex:bindIndex];
-    }
+    HgiMetalResourceBindings::SetConstantValues(
+        _argumentBuffer, stages, bindIndex, byteSize, data);
 }
 
 void
@@ -393,7 +412,8 @@ HgiMetalGraphicsCmds::Draw(
     uint32_t baseInstance)
 {
     _CreateEncoder();
-    
+    _SyncArgumentBuffer();
+
     MTLPrimitiveType type=HgiMetalConversions::GetPrimitiveType(_primitiveType);
 
     _SetVertexBufferStepFunctionOffsets(_encoder, baseInstance);
@@ -432,7 +452,8 @@ HgiMetalGraphicsCmds::DrawIndirect(
     uint32_t stride)
 {
     _CreateEncoder();
-    
+    _SyncArgumentBuffer();
+
     HgiMetalBuffer* drawBuf =
         static_cast<HgiMetalBuffer*>(drawParameterBuffer.Get());
 
@@ -475,6 +496,7 @@ HgiMetalGraphicsCmds::DrawIndexed(
     uint32_t baseInstance)
 {
     _CreateEncoder();
+    _SyncArgumentBuffer();
 
     HgiMetalBuffer* indexBuf = static_cast<HgiMetalBuffer*>(indexBuffer.Get());
 
@@ -521,7 +543,8 @@ HgiMetalGraphicsCmds::DrawIndexedIndirect(
     uint32_t patchBaseVertexByteOffset)
 {
     _CreateEncoder();
-
+    _SyncArgumentBuffer();
+    
     id<MTLBuffer> indexBufferId =
         static_cast<HgiMetalBuffer*>(indexBuffer.Get())->GetBufferId();
     id<MTLBuffer> drawBufferId =
@@ -641,6 +664,8 @@ HgiMetalGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 
         _hgi->CommitPrimaryCommandBuffer(_ToHgiMetal(wait));
     }
+
+    _argumentBuffer = nil;
 
     return _hasWork;
 }
