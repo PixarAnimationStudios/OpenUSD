@@ -50,6 +50,7 @@ public:
 
     MTLResourceOptions defaultStorageMode;
     bool hasVertexMemoryBarrier;
+    bool useParallelEncoder;
     bool requiresIndirectDrawFix;
 
 protected:

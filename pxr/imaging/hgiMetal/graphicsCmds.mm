@@ -31,9 +31,62 @@
 #include "pxr/imaging/hgiMetal/resourceBindings.h"
 #include "pxr/imaging/hgiMetal/texture.h"
 
+#include "pxr/base/work/dispatcher.h"
+#include "pxr/base/work/loops.h"
+#include "pxr/base/work/withScopedParallelism.h"
+
 #include "pxr/base/arch/defines.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+static void
+_VegaIndirectFix(HgiMetal* hgi,
+                 id<MTLRenderCommandEncoder> encoder,
+                 MTLPrimitiveType primType)
+{
+    if (hgi->GetCapabilities()->requiresIndirectDrawFix) {
+        // Fix for Vega in macOS before 12.0.  There is state leakage between
+        // indirect draw of different prim types which results in a GPU crash.
+        // Flush with a null draw through the direct path.
+        [encoder drawPrimitives:primType
+                vertexStart:0
+                vertexCount:0];
+    }
+}
+
+HgiMetalGraphicsCmds::CachedEncoderState::CachedEncoderState()
+{
+    numVertexBufferBindings = MAX_METAL_VERTEX_BUFFER_BINDINGS;
+    ResetCachedEncoderState();
+}
+
+void
+HgiMetalGraphicsCmds::CachedEncoderState::ResetCachedEncoderState()
+{
+    for (uint32_t i = 0; i < numVertexBufferBindings; i++) {
+        VertexBufferBindingDesc[i].vertexBuffer = nil;
+        VertexBufferBindingDesc[i].byteOffset = 0;
+        
+    }
+
+    resourceBindings = nil;
+    graphicsPipeline = nil;
+    argumentBuffer = nil;
+    numVertexBufferBindings = 0;
+}
+
+void
+HgiMetalGraphicsCmds::CachedEncoderState::AddVertexBinding(
+    uint32_t bindingIndex, id<MTLBuffer> buffer, uint32_t byteOffset)
+{
+    if (bindingIndex >= MAX_METAL_VERTEX_BUFFER_BINDINGS) {
+        TF_CODING_ERROR("Binding index exceeds space for cached state");
+        return;
+    }
+    VertexBufferBindingDesc[bindingIndex].vertexBuffer = buffer;
+    VertexBufferBindingDesc[bindingIndex].byteOffset = byteOffset;
+    numVertexBufferBindings = std::max(numVertexBufferBindings, bindingIndex+1);
+}
 
 HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
     HgiMetal* hgi,
@@ -41,13 +94,18 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
     : HgiGraphicsCmds()
     , _hgi(hgi)
     , _renderPassDescriptor(nil)
-    , _encoder(nil)
+    , _parallelEncoder(nil)
     , _argumentBuffer(nil)
     , _descriptor(desc)
     , _primitiveType(HgiPrimitiveTypeTriangleList)
     , _primitiveIndexSize(0)
     , _debugLabel(nil)
+    , _hasWork(false)
     , _viewportSet(false)
+    , _scissorRectSet(false)
+    , _enableParallelEncoder(false)
+    , _primitiveTypeChanged(false)
+    , _maxNumEncoders(1)
 {
     TF_VERIFY(desc.colorTextures.size() == desc.colorAttachmentDescs.size());
     
@@ -171,15 +229,24 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
         }
     }
     
+    _enableParallelEncoder = _hgi->GetCapabilities()->useParallelEncoder;
+    
+    if (_enableParallelEncoder) {
+        _maxNumEncoders = WorkGetPhysicalConcurrencyLimit() / 2;
+    }
+    else {
+        _maxNumEncoders = 1;
+    }
+    
     if (hasClear) {
-        _CreateEncoder();
+        _GetEncoder();
         _CreateArgumentBuffer();
     }
 }
 
 HgiMetalGraphicsCmds::~HgiMetalGraphicsCmds()
 {
-    TF_VERIFY(_encoder == nil, "Encoder created, but never commited.");
+    TF_VERIFY(_encoders.empty(), "Encoder created, but never commited.");
     
     [_renderPassDescriptor release];
     if (_debugLabel) {
@@ -188,22 +255,123 @@ HgiMetalGraphicsCmds::~HgiMetalGraphicsCmds()
 }
 
 void
-HgiMetalGraphicsCmds::_CreateEncoder()
+HgiMetalGraphicsCmds::EnableParallelEncoder(bool enable)
 {
-    if (!_encoder) {
-        _encoder = [
-            _hgi->GetPrimaryCommandBuffer(this, false)
-            renderCommandEncoderWithDescriptor:_renderPassDescriptor];
-        
-        if (_debugLabel) {
-            [_encoder pushDebugGroup:_debugLabel];
-            [_debugLabel release];
-            _debugLabel = nil;
+    _enableParallelEncoder = enable;
+}
+
+uint32_t
+HgiMetalGraphicsCmds::_GetNumEncoders()
+{
+    return (uint32_t)_encoders.size();
+}
+
+void
+HgiMetalGraphicsCmds::_SetCachedEncoderState(id<MTLRenderCommandEncoder> encoder)
+{
+    if (_viewportSet) {
+        [encoder setViewport:_CachedEncState.viewport];
+    }
+    if (_scissorRectSet) {
+        [encoder setScissorRect:_CachedEncState.scissorRect];
+    }
+    if (_CachedEncState.graphicsPipeline) {
+        _CachedEncState.graphicsPipeline->BindPipeline(encoder);
+    }
+    if (_CachedEncState.resourceBindings) {
+        _CachedEncState.resourceBindings->BindResources(_hgi,
+                                                        encoder,
+                                                        _CachedEncState.argumentBuffer);
+    }
+    
+    for (uint32_t j = 0; j < _CachedEncState.numVertexBufferBindings; j++)
+    {
+        if (_CachedEncState.VertexBufferBindingDesc[j].vertexBuffer != nil) {
+            [encoder setVertexBuffer:_CachedEncState.VertexBufferBindingDesc[j].vertexBuffer
+                              offset:_CachedEncState.VertexBufferBindingDesc[j].byteOffset
+                             atIndex:j];
         }
-        if (_viewportSet) {
-            [_encoder setViewport:_viewport];
     }
+}
+
+void
+HgiMetalGraphicsCmds::_SetNumberParallelEncoders(uint32_t numEncoders)
+{
+    // Put a lock around the creation to prevent two requests colliding
+    // (this should never happen...)
+    std::lock_guard<std::mutex> lock(_encoderLock);
+    
+    uint32_t const numActiveEncoders = _GetNumEncoders();
+    
+    // Check if we already have enough
+    if (numEncoders <= numActiveEncoders) {
+        return;
     }
+    
+    if (_enableParallelEncoder) {
+        // Do we need to create a parallel encoder
+        if (!_parallelEncoder) {
+            _parallelEncoder = [
+                _hgi->GetPrimaryCommandBuffer(this, false)
+                parallelRenderCommandEncoderWithDescriptor:_renderPassDescriptor];
+            
+                if (_debugLabel) {
+                    [_parallelEncoder pushDebugGroup:_debugLabel];
+                }
+        }
+        // Create any missing encoders
+        for (uint32_t i = numActiveEncoders; i < numEncoders; i++) {
+            id<MTLRenderCommandEncoder> encoder =
+                [_parallelEncoder renderCommandEncoder];
+            _encoders.push_back(encoder);
+        }
+    }
+    else {
+        if (numEncoders > 1) {
+            TF_CODING_ERROR("Only 1 encoder supported");
+        }
+        if (numActiveEncoders >= 1) {
+            return;
+        }
+        
+        id<MTLRenderCommandEncoder> encoder = 
+            [_hgi->GetPrimaryCommandBuffer(this, false)
+             renderCommandEncoderWithDescriptor:_renderPassDescriptor];
+        if (_debugLabel) {
+            [encoder pushDebugGroup:_debugLabel];
+        }
+        _encoders.push_back(encoder);
+    }
+    
+    for (uint32_t i = numActiveEncoders; i < numEncoders; i++) {
+        // Setup any relevant state for the new encoder(s)
+        _SetCachedEncoderState(_encoders[i]);
+    }
+    
+    if (_debugLabel) {
+        [_debugLabel release];
+        _debugLabel = nil;
+    }
+}
+
+id<MTLRenderCommandEncoder>
+HgiMetalGraphicsCmds::_GetEncoder(uint32_t encoderIndex)
+{
+    uint32_t numActiveEncoders = _GetNumEncoders();
+    
+    // Do we need to create an intial encoder
+    if (!numActiveEncoders) {
+        _SetNumberParallelEncoders(1);
+        numActiveEncoders = _GetNumEncoders();
+    }
+    
+    // Check if we have this encoder (it's OK not to have it)
+    if (encoderIndex >= numActiveEncoders) {
+        TF_CODING_ERROR("Invalid render encoder index specified");
+        return nil;
+    }
+    
+    return _encoders[encoderIndex];
 }
 
 void
@@ -238,16 +406,17 @@ HgiMetalGraphicsCmds::SetViewport(GfVec4i const& vp)
     double y = vp[1];
     double w = vp[2];
     double h = vp[3];
+    
     // Viewport is inverted in the y. Along with the front face winding order
     // being inverted.
     // This combination allows us to emulate the OpenGL coordinate space on
     // Metal
-    if (_encoder) {
-        [_encoder setViewport:(MTLViewport){x, h-y, w, -h, 0.0, 1.0}];
+    _CachedEncState.viewport = (MTLViewport){x, h-y, w, -h, 0.0, 1.0};
+    
+    for (auto& encoder : _encoders) {
+        [encoder setViewport:_CachedEncState.viewport];
     }
-    else {
-        _viewport = (MTLViewport){x, h-y, w, -h, 0.0, 1.0};
-    }
+    
     _viewportSet = true;
 }
 
@@ -259,38 +428,51 @@ HgiMetalGraphicsCmds::SetScissor(GfVec4i const& sc)
     uint32_t w = sc[2];
     uint32_t h = sc[3];
     
-    _CreateEncoder();
+    _CachedEncState.scissorRect = (MTLScissorRect){x, y, w, h};
     
-    [_encoder setScissorRect:(MTLScissorRect){x, y, w, h}];
+    for (auto& encoder : _encoders) {
+        [encoder setScissorRect:_CachedEncState.scissorRect];
+    }
+    
+    _scissorRectSet = true;
 }
 
 void
 HgiMetalGraphicsCmds::BindPipeline(HgiGraphicsPipelineHandle pipeline)
 {
-    _CreateEncoder();
-
+    _primitiveTypeChanged =
+        (_primitiveType != pipeline->GetDescriptor().primitiveType);
     _primitiveType = pipeline->GetDescriptor().primitiveType;
+
     _primitiveIndexSize =
         pipeline->GetDescriptor().tessellationState.primitiveIndexSize;
-
     _InitVertexBufferStepFunction(pipeline.Get());
 
-    if (HgiMetalGraphicsPipeline* p =
-        static_cast<HgiMetalGraphicsPipeline*>(pipeline.Get())) {
-        p->BindPipeline(_encoder);
+    _CachedEncState.graphicsPipeline =
+        static_cast<HgiMetalGraphicsPipeline*>(pipeline.Get());
+    
+    if (_CachedEncState.graphicsPipeline) {
+        for (auto& encoder : _encoders) {
+            _CachedEncState.graphicsPipeline->BindPipeline(encoder);
+        }
     }
 }
 
 void
 HgiMetalGraphicsCmds::BindResources(HgiResourceBindingsHandle r)
 {
-    _CreateEncoder();
     _CreateArgumentBuffer();
 
-    if (HgiMetalResourceBindings* rb=
-        static_cast<HgiMetalResourceBindings*>(r.Get()))
-    {
-        rb->BindResources(_hgi, _encoder, _argumentBuffer);
+    _CachedEncState.resourceBindings =
+        static_cast<HgiMetalResourceBindings*>(r.Get());
+    _CachedEncState.argumentBuffer = _argumentBuffer;
+    
+    if (_CachedEncState.resourceBindings) {
+        for (auto& encoder : _encoders) {
+            _CachedEncState.resourceBindings->BindResources(_hgi,
+                                                            encoder,
+                                                            _argumentBuffer);
+        }
     }
 }
 
@@ -316,9 +498,7 @@ HgiMetalGraphicsCmds::BindVertexBuffers(
 {
     TF_VERIFY(byteOffsets.size() == vertexBuffers.size());
 
-    _CreateEncoder();
-
-    for (size_t i=0; i<vertexBuffers.size(); i++) {
+    for (size_t i = 0; i < vertexBuffers.size(); i++) {
         HgiBufferHandle bufHandle = vertexBuffers[i];
         HgiMetalBuffer* buf = static_cast<HgiMetalBuffer*>(bufHandle.Get());
         HgiBufferDesc const& desc = buf->GetDescriptor();
@@ -328,11 +508,16 @@ HgiMetalGraphicsCmds::BindVertexBuffers(
 
         TF_VERIFY(desc.usage & HgiBufferUsageVertex);
         
-        [_encoder setVertexBuffer:buf->GetBufferId()
-                           offset:byteOffset
-                          atIndex:bindingIndex];
-
+        for (auto& encoder : _encoders) {
+            [encoder setVertexBuffer:buf->GetBufferId()
+                              offset:byteOffset
+                             atIndex:bindingIndex];
+        }
         _BindVertexBufferStepFunction(byteOffset, bindingIndex);
+        
+        _CachedEncState.AddVertexBinding(bindingIndex,
+                                         buf->GetBufferId(),
+                                         byteOffset);
     }
 }
 
@@ -411,33 +596,33 @@ HgiMetalGraphicsCmds::Draw(
     uint32_t instanceCount,
     uint32_t baseInstance)
 {
-    _CreateEncoder();
     _SyncArgumentBuffer();
 
     MTLPrimitiveType type=HgiMetalConversions::GetPrimitiveType(_primitiveType);
-
-    _SetVertexBufferStepFunctionOffsets(_encoder, baseInstance);
+    id<MTLRenderCommandEncoder> encoder = _GetEncoder();
+    
+    _SetVertexBufferStepFunctionOffsets(encoder, baseInstance);
 
     if (_primitiveType == HgiPrimitiveTypePatchList) {
         const NSUInteger controlPointCount = _primitiveIndexSize;
-        [_encoder drawPatches:controlPointCount
-                   patchStart:0
-                   patchCount:vertexCount/controlPointCount
-             patchIndexBuffer:NULL
-       patchIndexBufferOffset:0
-                instanceCount:instanceCount
-                 baseInstance:baseInstance];
+        [encoder drawPatches:controlPointCount
+                  patchStart:0
+                  patchCount:vertexCount/controlPointCount
+            patchIndexBuffer:NULL
+      patchIndexBufferOffset:0
+               instanceCount:instanceCount
+                baseInstance:baseInstance];
     } else {
         if (instanceCount == 1) {
-            [_encoder drawPrimitives:type
-                         vertexStart:baseVertex
-                         vertexCount:vertexCount];
+            [encoder drawPrimitives:type
+                        vertexStart:baseVertex
+                        vertexCount:vertexCount];
         } else {
-            [_encoder drawPrimitives:type
-                         vertexStart:baseVertex
-                         vertexCount:vertexCount
-                       instanceCount:instanceCount
-                        baseInstance:baseInstance];
+            [encoder drawPrimitives:type
+                        vertexStart:baseVertex
+                        vertexCount:vertexCount
+                      instanceCount:instanceCount
+                       baseInstance:baseInstance];
         }
     }
 
@@ -451,39 +636,68 @@ HgiMetalGraphicsCmds::DrawIndirect(
     uint32_t drawCount,
     uint32_t stride)
 {
-    _CreateEncoder();
     _SyncArgumentBuffer();
 
     HgiMetalBuffer* drawBuf =
         static_cast<HgiMetalBuffer*>(drawParameterBuffer.Get());
 
     MTLPrimitiveType type=HgiMetalConversions::GetPrimitiveType(_primitiveType);
+    
+    static const uint32_t _drawCallsPerThread = 256;
+    const uint32_t numEncoders = std::min(
+                                 std::max(drawCount / _drawCallsPerThread, 1U),
+                                 _maxNumEncoders);
+    const uint32_t normalCount = drawCount / numEncoders;
+    const uint32_t finalCount = normalCount
+                              + (drawCount - normalCount * numEncoders);
 
-    if (_primitiveType == HgiPrimitiveTypePatchList) {
-        const NSUInteger controlPointCount = _primitiveIndexSize;
-        for (uint32_t i = 0; i < drawCount; i++) {
-            _SetVertexBufferStepFunctionOffsets(_encoder, i);
+    _SetNumberParallelEncoders(numEncoders);
 
-            const uint32_t bufferOffset = drawBufferByteOffset
-                                        + (i * stride);
-            [_encoder drawPatches:controlPointCount
-                 patchIndexBuffer:NULL
-           patchIndexBufferOffset:0
-                   indirectBuffer:drawBuf->GetBufferId()
-             indirectBufferOffset:bufferOffset];
+    WorkWithScopedParallelism([&]() {
+        WorkDispatcher wd;
+        
+        for (uint32_t i = 0; i < numEncoders; ++i) {
+            const uint32_t encoderOffset = normalCount * i;
+            // If this is the last encoder then ensure that we have all prims.
+            const uint32_t encoderCount = (i == numEncoders - 1)
+                                        ? finalCount : normalCount;
+            wd.Run([&, i, encoderOffset, encoderCount]() {
+                id<MTLRenderCommandEncoder> encoder = _GetEncoder(i);
+                
+                if (_primitiveType == HgiPrimitiveTypePatchList) {
+                    const NSUInteger controlPointCount = _primitiveIndexSize;
+                    for (uint32_t offset = encoderOffset;
+                         offset < encoderOffset + encoderCount;
+                         ++offset) {
+                        _SetVertexBufferStepFunctionOffsets(encoder, offset);
+                        const uint32_t bufferOffset = drawBufferByteOffset
+                                                    + (offset * stride);
+                        [encoder drawPatches:controlPointCount
+                            patchIndexBuffer:NULL
+                      patchIndexBufferOffset:0
+                              indirectBuffer:drawBuf->GetBufferId()
+                        indirectBufferOffset:bufferOffset];
+                    }
+                }
+                else {
+                    if (_primitiveTypeChanged) {
+                        _VegaIndirectFix(_hgi, encoder, type);
+                    }
+                    for (uint32_t offset = encoderOffset;
+                         offset < encoderOffset + encoderCount;
+                         ++offset) {
+                        _SetVertexBufferStepFunctionOffsets(encoder, offset);
+                        const uint32_t bufferOffset = drawBufferByteOffset
+                                                    + (offset * stride);
+                        
+                        [encoder drawPrimitives:type
+                                 indirectBuffer:drawBuf->GetBufferId()
+                           indirectBufferOffset:bufferOffset];
+                    }
+                }
+            });
         }
-    }
-    else {
-        for (uint32_t i = 0; i < drawCount; i++) {
-            _SetVertexBufferStepFunctionOffsets(_encoder, i);
-
-            const uint32_t bufferOffset = drawBufferByteOffset
-                                        + (i * stride);
-            [_encoder drawPrimitives:type
-                      indirectBuffer:drawBuf->GetBufferId()
-                indirectBufferOffset:bufferOffset];
-        }
-    }
+    });
 }
 
 void
@@ -495,38 +709,39 @@ HgiMetalGraphicsCmds::DrawIndexed(
     uint32_t instanceCount,
     uint32_t baseInstance)
 {
-    _CreateEncoder();
     _SyncArgumentBuffer();
 
     HgiMetalBuffer* indexBuf = static_cast<HgiMetalBuffer*>(indexBuffer.Get());
 
     MTLPrimitiveType type=HgiMetalConversions::GetPrimitiveType(_primitiveType);
 
-    _SetVertexBufferStepFunctionOffsets(_encoder, baseInstance);
+    id<MTLRenderCommandEncoder> encoder = _GetEncoder();
+        
+    _SetVertexBufferStepFunctionOffsets(encoder, baseInstance);
 
     if (_primitiveType == HgiPrimitiveTypePatchList) {
         const NSUInteger controlPointCount = _primitiveIndexSize;
 
-        _SetPatchBaseVertexBufferStepFunctionOffsets(_encoder, baseVertex);
+        _SetPatchBaseVertexBufferStepFunctionOffsets(encoder, baseVertex);
 
-        [_encoder drawIndexedPatches:controlPointCount
-                          patchStart:indexBufferByteOffset / sizeof(uint32_t)
-                          patchCount:indexCount
-                    patchIndexBuffer:nil
-              patchIndexBufferOffset:0
-             controlPointIndexBuffer:indexBuf->GetBufferId()
-       controlPointIndexBufferOffset:0
-                       instanceCount:instanceCount
-                        baseInstance:baseInstance];
+        [encoder drawIndexedPatches:controlPointCount
+                         patchStart:indexBufferByteOffset / sizeof(uint32_t)
+                         patchCount:indexCount
+                   patchIndexBuffer:nil
+             patchIndexBufferOffset:0
+            controlPointIndexBuffer:indexBuf->GetBufferId()
+      controlPointIndexBufferOffset:0
+                      instanceCount:instanceCount
+                       baseInstance:baseInstance];
     } else {
-        [_encoder drawIndexedPrimitives:type
-                             indexCount:indexCount
-                              indexType:MTLIndexTypeUInt32
-                            indexBuffer:indexBuf->GetBufferId()
-                      indexBufferOffset:indexBufferByteOffset
-                          instanceCount:instanceCount
-                             baseVertex:baseVertex
-                           baseInstance:baseInstance];
+        [encoder drawIndexedPrimitives:type
+                            indexCount:indexCount
+                             indexType:MTLIndexTypeUInt32
+                           indexBuffer:indexBuf->GetBufferId()
+                     indexBufferOffset:indexBufferByteOffset
+                         instanceCount:instanceCount
+                            baseVertex:baseVertex
+                          baseInstance:baseInstance];
     }
 
     _hasWork = true;
@@ -542,7 +757,6 @@ HgiMetalGraphicsCmds::DrawIndexedIndirect(
     std::vector<uint32_t> const& drawParameterBufferUInt32,
     uint32_t patchBaseVertexByteOffset)
 {
-    _CreateEncoder();
     _SyncArgumentBuffer();
     
     id<MTLBuffer> indexBufferId =
@@ -552,47 +766,80 @@ HgiMetalGraphicsCmds::DrawIndexedIndirect(
 
     MTLPrimitiveType type =
         HgiMetalConversions::GetPrimitiveType(_primitiveType);
+    
+    static const uint32_t _drawCallsPerThread = 256;
+    const uint32_t numEncoders = std::min(
+                                 std::max(drawCount / _drawCallsPerThread, 1U),
+                                 _maxNumEncoders);
+    const uint32_t normalCount = drawCount / numEncoders;
+    const uint32_t finalCount = normalCount
+                              + (drawCount - normalCount * numEncoders);
 
-    if (_primitiveType == HgiPrimitiveTypePatchList) {
-        const NSUInteger controlPointCount = _primitiveIndexSize;
+    _SetNumberParallelEncoders(numEncoders);
+
+    WorkWithScopedParallelism([&]() {
+        WorkDispatcher wd;
         
-        for (uint32_t i = 0; i < drawCount; i++) {
-            _SetVertexBufferStepFunctionOffsets(_encoder, i);
+        for (uint32_t i = 0; i < numEncoders; ++i) {
+            const uint32_t encoderOffset = normalCount * i;
+            // If this is the last encoder then ensure that we have all prims.
+            const uint32_t encoderCount = (i == numEncoders - 1)
+                                        ? finalCount : normalCount;
+            wd.Run([&, i, encoderOffset, encoderCount]() {
+                id<MTLRenderCommandEncoder> encoder = _GetEncoder(i);
+                
+                if (_primitiveType == HgiPrimitiveTypePatchList) {
+                    const NSUInteger controlPointCount = _primitiveIndexSize;
+                    
+                    for (uint32_t offset = encoderOffset;
+                         offset < encoderOffset + encoderCount;
+                         ++offset) {
+                            _SetVertexBufferStepFunctionOffsets(
+                                encoder, offset);
 
-            const uint32_t baseVertexIndex =
-                (patchBaseVertexByteOffset +
-                 i * stride) / sizeof(uint32_t);
-            const uint32_t baseVertex =
-                drawParameterBufferUInt32[baseVertexIndex];
+                            const uint32_t baseVertexIndex =
+                                (patchBaseVertexByteOffset +
+                                 offset * stride) / sizeof(uint32_t);
+                            const uint32_t baseVertex =
+                                drawParameterBufferUInt32[baseVertexIndex];
 
-            _SetPatchBaseVertexBufferStepFunctionOffsets(
-                _encoder, baseVertex);
+                            _SetPatchBaseVertexBufferStepFunctionOffsets(
+                                encoder, baseVertex);
 
-            const uint32_t bufferOffset = drawBufferByteOffset
-                                        + (i * stride);
-            [_encoder drawIndexedPatches:controlPointCount
-                        patchIndexBuffer:nil
-                  patchIndexBufferOffset:0
-                 controlPointIndexBuffer:indexBufferId
-           controlPointIndexBufferOffset:0
-                          indirectBuffer:drawBufferId
-                    indirectBufferOffset:bufferOffset];
+                            const uint32_t bufferOffset = drawBufferByteOffset
+                                                        + (offset * stride);
+                        [encoder drawIndexedPatches:controlPointCount
+                                   patchIndexBuffer:nil
+                             patchIndexBufferOffset:0
+                            controlPointIndexBuffer:indexBufferId
+                      controlPointIndexBufferOffset:0
+                                     indirectBuffer:drawBufferId
+                               indirectBufferOffset:bufferOffset];
+                    }
+                }
+                else {
+                    if (_primitiveTypeChanged) {
+                        _VegaIndirectFix(_hgi, encoder, type);
+                    }
+                    for (uint32_t offset = encoderOffset;
+                         offset < encoderOffset + encoderCount;
+                         ++offset) {
+                        _SetVertexBufferStepFunctionOffsets(encoder, offset);
+
+                        const uint32_t bufferOffset = drawBufferByteOffset
+                                                    + (offset * stride);
+                        
+                        [encoder drawIndexedPrimitives:type
+                                             indexType:MTLIndexTypeUInt32
+                                           indexBuffer:indexBufferId
+                                     indexBufferOffset:0
+                                        indirectBuffer:drawBufferId
+                                  indirectBufferOffset:bufferOffset];
+                    }
+                }
+            });
         }
-    }
-    else {
-        for (uint32_t i = 0; i < drawCount; i++) {
-            _SetVertexBufferStepFunctionOffsets(_encoder, i);
-
-            const uint32_t bufferOffset = drawBufferByteOffset
-                                        + (i * stride);
-            [_encoder drawIndexedPrimitives:type
-                                  indexType:MTLIndexTypeUInt32
-                                indexBuffer:indexBufferId
-                          indexBufferOffset:0
-                             indirectBuffer:drawBufferId
-                       indirectBufferOffset:bufferOffset];
-        }
-    }
+    });
 }
 
 void
@@ -601,9 +848,11 @@ HgiMetalGraphicsCmds::PushDebugGroup(const char* label)
     if (!HgiMetalDebugEnabled()) {
         return;
     }
-
-    if (_encoder) {
-        HGIMETAL_DEBUG_PUSH_GROUP(_encoder, label)
+    if (_parallelEncoder) {
+        HGIMETAL_DEBUG_PUSH_GROUP(_parallelEncoder, label)
+    }
+    else if (!_encoders.empty()) {
+        HGIMETAL_DEBUG_PUSH_GROUP(_GetEncoder(), label)
     }
     else {
         _debugLabel = [@(label) copy];
@@ -613,8 +862,11 @@ HgiMetalGraphicsCmds::PushDebugGroup(const char* label)
 void
 HgiMetalGraphicsCmds::PopDebugGroup()
 {
-    if (_encoder) {
-        HGIMETAL_DEBUG_POP_GROUP(_encoder);
+    if (_parallelEncoder) {
+        HGIMETAL_DEBUG_POP_GROUP(_parallelEncoder)
+    }
+    else if (!_encoders.empty()) {
+        HGIMETAL_DEBUG_POP_GROUP(_GetEncoder());
     }
     if (_debugLabel) {
         [_debugLabel release];
@@ -626,18 +878,20 @@ void
 HgiMetalGraphicsCmds::MemoryBarrier(HgiMemoryBarrier barrier)
 {
     TF_VERIFY(barrier==HgiMemoryBarrierAll, "Unknown barrier");
+    
+    // Apple Silicon only support memory barriers between vertex stages after
+    // macOS 12.3.
+    if (@available(macOS 12.3, *)) {
+        MTLBarrierScope scope = MTLBarrierScopeBuffers;
+        MTLRenderStages srcStages = MTLRenderStageVertex;
+        MTLRenderStages dstStages = MTLRenderStageVertex;
 
-    MTLBarrierScope scope =
-        MTLBarrierScopeBuffers |
-        MTLBarrierScopeTextures |
-        MTLBarrierScopeRenderTargets;
-
-    MTLRenderStages srcStages = MTLRenderStageVertex | MTLRenderStageFragment;
-    MTLRenderStages dstStages = MTLRenderStageVertex | MTLRenderStageFragment;
-
-    [_encoder memoryBarrierWithScope:scope
-                         afterStages:srcStages
-                         beforeStages:dstStages];
+        for (auto& encoder : _encoders) {
+            [encoder memoryBarrierWithScope:scope
+                                afterStages:srcStages
+                               beforeStages:dstStages];
+        }
+    }
 }
 
 static
@@ -658,15 +912,31 @@ _ToHgiMetal(const HgiSubmitWaitType wait)
 bool
 HgiMetalGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {
-    if (_encoder) {
-        [_encoder endEncoding];
-        _encoder = nil;
+    if (_parallelEncoder) {
+        WorkParallelForEach(_encoders.begin(),
+                            _encoders.end(),
+                            [](auto& encoder) {
+                                [encoder endEncoding];
+                            });
+        [_parallelEncoder endEncoding];
+        _parallelEncoder = nil;
 
         _hgi->CommitPrimaryCommandBuffer(_ToHgiMetal(wait));
     }
+    else if (!_encoders.empty()) {
+        for (auto &encoder : _encoders) {
+            [encoder endEncoding];
+        }
+        
+        _hgi->CommitPrimaryCommandBuffer(_ToHgiMetal(wait));
+    }
 
+    std::lock_guard<std::mutex> lock(_encoderLock);
+    
     _argumentBuffer = nil;
-
+    _encoders.clear();
+    _CachedEncState.ResetCachedEncoderState();
+    
     return _hasWork;
 }
 

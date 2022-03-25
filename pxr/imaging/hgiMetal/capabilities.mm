@@ -105,6 +105,8 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
             requiresIndirectDrawFix = true;
         }
     }
+
+    useParallelEncoder = true;
 }
 
 HgiMetalCapabilities::~HgiMetalCapabilities() = default;

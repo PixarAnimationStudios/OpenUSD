@@ -35,7 +35,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HgiGraphicsCmdsDesc;
-
+class HgiMetalGraphicsPipeline;
+class HgiMetalResourceBindings;
 
 /// \class HgiMetalGraphicsCmds
 ///
@@ -114,6 +115,9 @@ public:
 
     HGIMETAL_API
     void MemoryBarrier(HgiMemoryBarrier barrier) override;
+    
+    HGIMETAL_API
+    void EnableParallelEncoder(bool enable);
 
 protected:
     friend class HgiMetal;
@@ -131,8 +135,12 @@ private:
     HgiMetalGraphicsCmds & operator=(const HgiMetalGraphicsCmds&) = delete;
     HgiMetalGraphicsCmds(const HgiMetalGraphicsCmds&) = delete;
 
-    void _CreateEncoder();
-
+    uint32_t _GetNumEncoders();
+    id<MTLRenderCommandEncoder> _GetEncoder(uint32_t encoderIndex = 0);
+    void _SetNumberParallelEncoders(uint32_t numEncoders);
+    void _SetCachedEncoderState(id<MTLRenderCommandEncoder> encoder);
+    mutable std::mutex _encoderLock;
+    
     void _CreateArgumentBuffer();
     void _SyncArgumentBuffer();
 
@@ -191,17 +199,48 @@ private:
         id<MTLRenderCommandEncoder> encoder,
         uint32_t baseVertex);
 
+    struct CachedEncoderState {
+        CachedEncoderState();
+
+        void ResetCachedEncoderState();
+        
+        // This is based on the size aclocated for HgiMetalArgumentOffsetBufferVS->FS
+        // But ideally we'd pick it up from a common header
+        #define MAX_METAL_VERTEX_BUFFER_BINDINGS 64
+        
+        void AddVertexBinding(
+            uint32_t bindingIndex, id<MTLBuffer> buffer, uint32_t byteOffset);
+        
+        MTLViewport viewport;
+        MTLScissorRect scissorRect;
+        
+        HgiMetalResourceBindings* resourceBindings;
+        HgiMetalGraphicsPipeline* graphicsPipeline;
+        id<MTLBuffer> argumentBuffer;
+        
+        struct {
+            id<MTLBuffer> vertexBuffer;
+            uint32_t      byteOffset;
+        } VertexBufferBindingDesc[MAX_METAL_VERTEX_BUFFER_BINDINGS];
+        
+        uint32_t numVertexBufferBindings;
+    } _CachedEncState;
+    
     HgiMetal* _hgi;
     MTLRenderPassDescriptor* _renderPassDescriptor;
-    id<MTLRenderCommandEncoder> _encoder;
+    id<MTLParallelRenderCommandEncoder> _parallelEncoder;
+    std::vector<id<MTLRenderCommandEncoder>> _encoders;
     id<MTLBuffer> _argumentBuffer;
     HgiGraphicsCmdsDesc _descriptor;
     HgiPrimitiveType _primitiveType;
     uint32_t _primitiveIndexSize;
-    bool _hasWork;
-    MTLViewport _viewport;
     NSString* _debugLabel;
+    bool _hasWork;
     bool _viewportSet;
+    bool _scissorRectSet;
+    bool _enableParallelEncoder;
+    bool _primitiveTypeChanged;
+    uint32 _maxNumEncoders;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

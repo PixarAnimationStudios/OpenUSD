@@ -68,8 +68,9 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
             _device = MTLCreateSystemDefaultDevice();
         }
     }
-    
+
     static int const commandBufferPoolSize = 256;
+
     _commandQueue = [_device newCommandQueueWithMaxCommandBufferCount:
                      commandBufferPoolSize];
     _commandBuffer = [_commandQueue commandBuffer];
@@ -108,6 +109,10 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
     
     [[MTLCaptureManager sharedCaptureManager]
         setDefaultCaptureScope:_captureScopeFullFrame];
+
+#if !__has_feature(objc_arc)
+    _pool = nil;
+#endif
 }
 
 HgiMetal::~HgiMetal()
@@ -324,6 +329,10 @@ HgiMetal::GetCapabilities() const
 void
 HgiMetal::StartFrame()
 {
+#if !__has_feature(objc_arc)
+    _pool = [[NSAutoreleasePool alloc] init];
+#endif
+
     if (_frameDepth++ == 0) {
         [_captureScopeFullFrame beginScope];
 
@@ -342,6 +351,13 @@ HgiMetal::EndFrame()
     if (--_frameDepth == 0) {
         [_captureScopeFullFrame endScope];
     }
+
+#if !__has_feature(objc_arc)
+    if (_pool) {
+        [_pool drain];
+        _pool = nil;
+    }
+#endif
 }
 
 id<MTLCommandQueue>
