@@ -404,7 +404,7 @@ HdSt_TextureTestDriver::WriteToFile(HgiTextureHandle const &texture,
     storage.flipped = true;
 
     size_t size = 0;
-    HdStTextureUtils::CPUBuffer<uint8_t> buffer =
+    HdStTextureUtils::AlignedBuffer<uint8_t> buffer =
         HdStTextureUtils::HgiTextureReadback(_hgi.get(), texture, &size);
     storage.data = buffer.get();
 

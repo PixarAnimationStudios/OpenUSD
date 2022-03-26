@@ -54,7 +54,7 @@ HdStRenderBuffer::HdStRenderBuffer(
     , _format(HdFormatInvalid)
     , _msaaSampleCount(4)
     , _mappers(0)
-    , _mappedBuffer(nullptr, ArchAlignedFree)
+    , _mappedBuffer()
 {
 }
 

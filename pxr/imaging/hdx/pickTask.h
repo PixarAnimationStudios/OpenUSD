@@ -239,7 +239,7 @@ private:
     bool _UseWidgetPass() const;
 
     template<typename T>
-    HdStTextureUtils::CPUBuffer<T>
+    HdStTextureUtils::AlignedBuffer<T>
     _ReadAovBuffer(TfToken const & aovName) const;
 
     HdRenderBuffer const * _FindAovBuffer(TfToken const & aovName) const;

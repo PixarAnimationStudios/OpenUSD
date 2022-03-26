@@ -541,20 +541,20 @@ HdStTextureUtils::ReadAndConvertImage(
     return true;
 }
 
-HdStTextureUtils::CPUBuffer<uint8_t>
+HdStTextureUtils::AlignedBuffer<uint8_t>
 HdStTextureUtils::HgiTextureReadback(
     Hgi * const hgi,
     HgiTextureHandle const & texture,
     size_t * bufferSize)
 {
     if (!bufferSize) {
-        return CPUBuffer<uint8_t>(nullptr, ArchAlignedFree);
+        return AlignedBuffer<uint8_t>();
     }
 
     *bufferSize = 0;
 
     if (!texture) {
-        return CPUBuffer<uint8_t>(nullptr, ArchAlignedFree);
+        return AlignedBuffer<uint8_t>();
     }
 
     const HgiTextureDesc& textureDesc = texture.Get()->GetDescriptor();
@@ -564,7 +564,7 @@ HdStTextureUtils::HgiTextureReadback(
     const size_t dataByteSize = width * height * formatByteSize;
 
     if (dataByteSize == 0) {
-        return CPUBuffer<uint8_t>(nullptr, ArchAlignedFree);
+        return AlignedBuffer<uint8_t>();
     }
 
     // For Metal the CPU buffer has to be rounded up to a multiple of the page
@@ -574,7 +574,7 @@ HdStTextureUtils::HgiTextureReadback(
     *bufferSize = (dataByteSize + bitMask) & (~bitMask);
 
     uint8_t* rawBuffer = (uint8_t*)ArchAlignedAlloc(alignment, *bufferSize);
-    CPUBuffer<uint8_t> buffer(rawBuffer, ArchAlignedFree);
+    AlignedBuffer<uint8_t> buffer(rawBuffer);
 
     HgiBlitCmdsUniquePtr const blitCmds = hgi->CreateBlitCmds();
     HgiTextureGpuToCpuOp copyOp;

@@ -141,7 +141,7 @@ private:
     // The number of callers mapping this buffer.
     std::atomic<int> _mappers;
     // Texels are temp captured into this buffer between map and unmap.
-    HdStTextureUtils::CPUBuffer<uint8_t> _mappedBuffer;
+    HdStTextureUtils::AlignedBuffer<uint8_t> _mappedBuffer;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

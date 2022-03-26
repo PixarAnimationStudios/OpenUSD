@@ -469,7 +469,7 @@ HdxVisualizeAovTask::_UpdateMinMaxDepth(HgiTextureHandle const &inputAovTexture)
     }
 
     size_t size = 0;
-    HdStTextureUtils::CPUBuffer<uint8_t> buffer =
+    HdStTextureUtils::AlignedBuffer<uint8_t> buffer =
         HdStTextureUtils::HgiTextureReadback(_GetHgi(), inputAovTexture, &size);
 
     {

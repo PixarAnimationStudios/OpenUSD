@@ -268,7 +268,7 @@ UsdAppUtilsFrameRecorder::Record(
     }
     
     size_t bufferSize = 0;
-    HdStTextureUtils::CPUBuffer<uint8_t> buffer =
+    HdStTextureUtils::AlignedBuffer<uint8_t> buffer =
         HdStTextureUtils::HgiTextureReadback(
             _imagingEngine.GetHgi(), handle, &bufferSize);
 

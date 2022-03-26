@@ -55,7 +55,7 @@ public:
     void Draw(GfVec4d const &viewport, PickParam const * pickParam);
 
     template<typename T>
-    HdStTextureUtils::CPUBuffer<T>
+    HdStTextureUtils::AlignedBuffer<T>
     ReadAovBuffer(TfToken const &aovName);
 
 protected:
@@ -180,7 +180,7 @@ Hdx_TestDriver::_FindAovBuffer(TfToken const &aovName) const
 }
 
 template<typename T>
-HdStTextureUtils::CPUBuffer<T>
+HdStTextureUtils::AlignedBuffer<T>
 Hdx_TestDriver::ReadAovBuffer(TfToken const &aovName)
 {
     HdRenderBuffer const * renderBuffer = _FindAovBuffer(aovName);
@@ -190,16 +190,13 @@ Hdx_TestDriver::ReadAovBuffer(TfToken const &aovName)
         HgiTextureHandle texture = aov.UncheckedGet<HgiTextureHandle>();
 
         if (texture) {
-            size_t size = 0;
-            HdStTextureUtils::CPUBuffer<uint8_t> buffer = 
-                HdStTextureUtils::HgiTextureReadback(_GetHgi(), texture, &size);
-
-            T * typedData = reinterpret_cast<T *>(buffer.release());
-            return HdStTextureUtils::CPUBuffer<T>(typedData, ArchAlignedFree);
+            size_t bufferSize = 0;
+            return HdStTextureUtils::HgiTextureReadback<T>(
+                                        _GetHgi(), texture, &bufferSize);
         }
     }
 
-    return HdStTextureUtils::CPUBuffer<T>(nullptr, ArchAlignedFree);
+    return HdStTextureUtils::AlignedBuffer<T>();
 }
 
 void
@@ -445,13 +442,13 @@ My_TestGLDrawing::PickScene(int pickX, int pickY, int * outInstanceIndex)
 
     DrawScene(&pickParam);
 
-    HdStTextureUtils::CPUBuffer<unsigned char> primId =
+    HdStTextureUtils::AlignedBuffer<unsigned char> primId =
         _driver->ReadAovBuffer<unsigned char>(HdAovTokens->primId);
 
-    HdStTextureUtils::CPUBuffer<unsigned char> instanceId =
+    HdStTextureUtils::AlignedBuffer<unsigned char> instanceId =
         _driver->ReadAovBuffer<unsigned char>(HdAovTokens->instanceId);
 
-    HdStTextureUtils::CPUBuffer<float> depths =
+    HdStTextureUtils::AlignedBuffer<float> depths =
         _driver->ReadAovBuffer<float>(HdAovTokens->depth);
 
     double zMin = 1.0;

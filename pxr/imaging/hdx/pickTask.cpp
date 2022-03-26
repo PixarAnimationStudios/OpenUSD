@@ -379,7 +379,7 @@ HdxPickTask::_UseWidgetPass() const
 }
 
 template<typename T>
-HdStTextureUtils::CPUBuffer<T>
+HdStTextureUtils::AlignedBuffer<T>
 HdxPickTask::_ReadAovBuffer(TfToken const & aovName) const
 {
     HdRenderBuffer const * renderBuffer = _FindAovBuffer(aovName);
@@ -389,16 +389,13 @@ HdxPickTask::_ReadAovBuffer(TfToken const & aovName) const
         HgiTextureHandle texture = aov.Get<HgiTextureHandle>();
 
         if (texture) {
-            size_t size = 0;
-            HdStTextureUtils::CPUBuffer<uint8_t> buffer =
-                HdStTextureUtils::HgiTextureReadback(_hgi, texture, &size);
-            
-            T * typedData = reinterpret_cast<T *>(buffer.release());
-            return HdStTextureUtils::CPUBuffer<T>(typedData, ArchAlignedFree);
+            size_t bufferSize = 0;
+            return HdStTextureUtils::HgiTextureReadback<T>(
+                                        _hgi, texture, &bufferSize);
         }
     }
 
-    return HdStTextureUtils::CPUBuffer<T>(nullptr, ArchAlignedFree);
+    return HdStTextureUtils::AlignedBuffer<T>();
 }
 
 HdRenderBuffer const *
@@ -646,19 +643,19 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     }
 
     // Capture the result buffers and cast to the appropriate types.
-    HdStTextureUtils::CPUBuffer<int> primIds =
+    HdStTextureUtils::AlignedBuffer<int> primIds =
         _ReadAovBuffer<int>(HdAovTokens->primId);
-    HdStTextureUtils::CPUBuffer<int> instanceIds =
+    HdStTextureUtils::AlignedBuffer<int> instanceIds =
         _ReadAovBuffer<int>(HdAovTokens->instanceId);
-    HdStTextureUtils::CPUBuffer<int> elementIds =
+    HdStTextureUtils::AlignedBuffer<int> elementIds =
         _ReadAovBuffer<int>(HdAovTokens->elementId);
-    HdStTextureUtils::CPUBuffer<int> edgeIds =
+    HdStTextureUtils::AlignedBuffer<int> edgeIds =
         _ReadAovBuffer<int>(HdAovTokens->edgeId);
-    HdStTextureUtils::CPUBuffer<int> pointIds =
+    HdStTextureUtils::AlignedBuffer<int> pointIds =
         _ReadAovBuffer<int>(HdAovTokens->pointId);
-    HdStTextureUtils::CPUBuffer<int> neyes =
+    HdStTextureUtils::AlignedBuffer<int> neyes =
         _ReadAovBuffer<int>(HdAovTokens->Neye);
-    HdStTextureUtils::CPUBuffer<float> depths =
+    HdStTextureUtils::AlignedBuffer<float> depths =
         _ReadAovBuffer<float>(_depthToken);
 
     // For un-projection, get the depth range at time of drawing.
