@@ -76,7 +76,7 @@ struct UsdGeomTokensType {
     const TfToken angularVelocities;
     /// \brief "axis"
     /// 
-    /// UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder
+    /// UsdGeomPlane, UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder
     const TfToken axis;
     /// \brief "basis"
     /// 
@@ -184,7 +184,7 @@ struct UsdGeomTokensType {
     const TfToken default_;
     /// \brief "doubleSided"
     /// 
-    /// UsdGeomGprim
+    /// UsdGeomPlane, UsdGeomGprim
     const TfToken doubleSided;
     /// \brief "edgeAndCorner"
     /// 
@@ -208,7 +208,7 @@ struct UsdGeomTokensType {
     const TfToken exposure;
     /// \brief "extent"
     /// 
-    /// UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder, UsdGeomSphere, UsdGeomCube, UsdGeomBoundable
+    /// UsdGeomPlane, UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder, UsdGeomSphere, UsdGeomCube, UsdGeomBoundable
     const TfToken extent;
     /// \brief "extentsHint"
     /// 
@@ -326,6 +326,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomGprim::GetOrientationAttr()
     const TfToken leftHanded;
+    /// \brief "length"
+    /// 
+    /// UsdGeomPlane
+    const TfToken length;
     /// \brief "linear"
     /// 
     /// Possible value for UsdGeomBasisCurves::GetTypeAttr()
@@ -478,6 +482,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomGprim
     const TfToken primvarsDisplayOpacity;
+    /// \brief "primvars:st"
+    /// 
+    /// UsdGeomPlane
+    const TfToken primvarsSt;
     /// \brief "projection"
     /// 
     /// UsdGeomCamera
@@ -678,6 +686,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomNurbsPatch
     const TfToken vVertexCount;
+    /// \brief "width"
+    /// 
+    /// UsdGeomPlane
+    const TfToken width;
     /// \brief "widths"
     /// 
     /// UsdGeomPoints, UsdGeomCurves
@@ -688,7 +700,7 @@ struct UsdGeomTokensType {
     const TfToken wrap;
     /// \brief "X"
     /// 
-    /// Possible value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCylinder::GetAxisAttr()
+    /// Possible value for UsdGeomPlane::GetAxisAttr(), Possible value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCylinder::GetAxisAttr()
     const TfToken x;
     /// \brief "xformOpOrder"
     /// 
@@ -696,11 +708,11 @@ struct UsdGeomTokensType {
     const TfToken xformOpOrder;
     /// \brief "Y"
     /// 
-    /// Possible value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCylinder::GetAxisAttr()
+    /// Possible value for UsdGeomPlane::GetAxisAttr(), Possible value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCylinder::GetAxisAttr()
     const TfToken y;
     /// \brief "Z"
     /// 
-    /// Possible value for UsdGeomCone::GetAxisAttr(), Default value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Default value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCylinder::GetAxisAttr(), Default value for UsdGeomCylinder::GetAxisAttr()
+    /// Possible value for UsdGeomPlane::GetAxisAttr(), Default value for UsdGeomPlane::GetAxisAttr(), Possible value for UsdGeomCone::GetAxisAttr(), Default value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Default value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCylinder::GetAxisAttr(), Default value for UsdGeomCylinder::GetAxisAttr()
     const TfToken z;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

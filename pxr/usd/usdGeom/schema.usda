@@ -803,6 +803,66 @@ class Cone "Cone" (
     )
 }
 
+class Plane "Plane" (
+    inherits = </Gprim>
+    doc = """Defines a primitive plane, centered at the origin, and is defined by
+    a cardinal axis, width, and length. It is also double-sided.
+
+    The axis of width and length are perpendicular to the plane's \\em axis:
+
+    axis  | width  | length
+    ----- | ------ | -------
+    X     | z-axis | y-axis
+    Y     | x-axis | z-axis
+    Z     | x-axis | y-axis
+
+    """
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+    }
+) {
+    uniform bool doubleSided = true (
+        doc = """Planes are double-sided by default, clients may also supported
+        single-sided planes.
+
+        \\sa UsdGeomGprim::GetDoubleSidedAttr()"""
+        )
+    double width = 2.0 (
+        doc = """The width of the plane, which aligns to the x-axis when \\em axis is
+        'Z' or 'Y', or to the z-axis when \\em axis is 'X'.  If you author \\em width 
+        you must also author \\em extent.
+
+        \\sa UsdGeomGprim::GetExtentAttr()"""
+    )
+    double length = 2.0 (
+        doc = """The length of the plane, which aligns to the y-axis when \\em axis is
+        'Z' or 'X', or to the z-axis when \\em axis is 'Y'.  If you author \\em length 
+        you must also author \\em extent.
+
+        \\sa UsdGeomGprim::GetExtentAttr()"""
+    )
+    uniform token axis = "Z" (
+        allowedTokens = ["X", "Y", "Z"]
+        doc = """The axis along which the surface of the plane is aligned. When set
+        to 'Z' the plane is in the xy-plane; when \\em axis is 'X' the plane is in 
+        the yz-plane, and when \\em axis is 'Y' the plane is in the xz-plane.
+
+        \\sa UsdGeomGprim::GetAxisAttr()."""
+    )
+    float3[] extent = [(-1.0, -1.0, 0.0), (1.0, 1.0, 0.0)] (
+        doc = """Extent is re-defined on Plane only to provide a fallback
+        value. \\sa UsdGeomGprim::GetExtentAttr()."""
+    )
+    texCoord2d[] primvars:st = [(1.0,1.0),(0.0,1.0),(0.0,0.0),(1.0,0.0)] (
+        doc = """The default st coordinates for texture maps.
+
+        \\sa UsdGeomGprim::GetPrimvarsStAttr()"""
+        interpolation = "varying"
+    )
+}
+
 class "PointBased" (
     doc = """Base class for all UsdGeomGprims that possess points,
     providing common attributes such as normals and velocities."""

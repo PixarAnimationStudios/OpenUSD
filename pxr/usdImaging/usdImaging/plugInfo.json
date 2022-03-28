@@ -111,6 +111,13 @@
                         "isInternal": true,
                         "primTypeName": "NurbsPatch"
                     },
+                    "UsdImagingPlaneAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "Plane"
+                    },
                     "UsdImagingPointsAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"
