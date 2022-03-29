@@ -228,18 +228,6 @@ computeShadowFilterWidth(int index, vec4 Peye)
 #endif  // NUM_SHADOWS == 0
 
 // ---------------------------------------------------------------------------
-// textures
-// ---------------------------------------------------------------------------
-
-#if NUM_SHADOWS > 0
-
-sampler2DShadow GetShadowCompareTexture(int shadowIndex) {
-    return HdGetSampler_shadowCompareTextures(shadowIndex);
-}
-
-#endif // NUM_SHADOWS > 0
-
-// ---------------------------------------------------------------------------
 // lighting functions
 // ---------------------------------------------------------------------------
 
@@ -283,14 +271,14 @@ shadowCompare(int shadowIndex, vec4 coord)
     // XXX: sample the next cascade over?
     coord.xy = clamp(coord.xy, vec2(0), vec2(1));
 
-    return texture(GetShadowCompareTexture(shadowIndex), coord.xyz);
+    return HdGet_shadowCompareTextures(shadowIndex, coord.xyz).x;
 }
 
 #ifndef SHADOW_FILTER
 float
 shadowFilter(int shadowIndex, vec4 coord, vec4 Peye)
 {
-    return shadowCompare(index, coord);
+    return shadowCompare(shadowIndex, coord);
 }
 #endif // SHADOW_FILTER
 #endif // NUM_SHADOWS > 0
