@@ -54,7 +54,8 @@ public:
     ///
     T GetTypedValue(HdSampledDataSource::Time shutterOffset) override
     {
-        T result;
+        // Zero-initialization for numerical types.
+        T result{};
         UsdTimeCode time = _stageGlobals.GetTime();
         if (time.IsNumeric()) {
             time = UsdTimeCode(time.GetValue() + shutterOffset);
