@@ -110,19 +110,23 @@ HgiMetalComputeCmds::SetConstantValues(
 void
 HgiMetalComputeCmds::Dispatch(int dimX, int dimY)
 {
+    if (dimX == 0 || dimY == 0) {
+        return;
+    }
+
     uint32_t maxTotalThreads =
         [_pipelineState->GetMetalPipelineState() maxTotalThreadsPerThreadgroup];
     uint32_t exeWidth =
         [_pipelineState->GetMetalPipelineState() threadExecutionWidth];
 
     uint32_t thread_width, thread_height;
+    thread_width = MIN(maxTotalThreads, exeWidth);
     if (dimY == 1) {
-        thread_width = (maxTotalThreads / exeWidth) * exeWidth;
         thread_height = 1;
     }
     else {
         thread_width = exeWidth;
-        thread_height = maxTotalThreads / exeWidth;
+        thread_height = maxTotalThreads / thread_width;
     }
 
     if (_argumentBuffer.storageMode != MTLStorageModeShared &&
@@ -136,8 +140,8 @@ HgiMetalComputeCmds::Dispatch(int dimX, int dimY)
     }
 
     [_encoder dispatchThreads:MTLSizeMake(dimX, dimY, 1)
-       threadsPerThreadgroup:MTLSizeMake(MIN(thread_width, dimX),
-                                         MIN(thread_height, dimY), 1)];
+        threadsPerThreadgroup:MTLSizeMake(MIN(thread_width, dimX),
+                                          MIN(thread_height, dimY), 1)];
 
     _hasWork = true;
     _argumentBuffer = nil;
