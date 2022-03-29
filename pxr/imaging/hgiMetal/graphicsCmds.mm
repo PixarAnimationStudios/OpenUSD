@@ -127,6 +127,15 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
 
     _renderPassDescriptor = [[MTLRenderPassDescriptor alloc] init];
 
+    // The GPU culling pass is only a vertex shader, so it doesn't have any
+    // render targets bound to it.  To prevent an API validation error, set
+    // some default values for the target.
+    if (!desc.HasAttachments()) {
+        _renderPassDescriptor.renderTargetWidth = 256;
+        _renderPassDescriptor.renderTargetHeight = 256;
+        _renderPassDescriptor.defaultRasterSampleCount = 1;
+    }
+
     // Color attachments
     bool resolvingColor = !desc.colorResolveTextures.empty();
     bool hasClear = false;
