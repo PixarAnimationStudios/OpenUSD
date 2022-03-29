@@ -168,6 +168,9 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
         metalColorAttachment.pixelFormat = HgiMetalConversions::GetPixelFormat(
             hgiColorAttachment.format);
 
+        metalColorAttachment.writeMask = HgiMetalConversions::GetColorWriteMask(
+            hgiColorAttachment.colorMask);
+
         if (hgiColorAttachment.blendEnabled) {
             metalColorAttachment.blendingEnabled = YES;
             

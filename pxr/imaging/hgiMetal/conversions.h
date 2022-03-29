@@ -103,6 +103,9 @@ public:
 
     HGIMETAL_API
     static MTLPrimitiveType GetPrimitiveType(HgiPrimitiveType pt);
+
+    HGIMETAL_API
+    static MTLColorWriteMask GetColorWriteMask(HgiColorMask mask);
 };
 
 

@@ -589,4 +589,17 @@ HgiMetalConversions::GetPrimitiveType(HgiPrimitiveType pt)
     return _primitiveTypeTable[pt].metalPT;
 }
 
+MTLColorWriteMask
+HgiMetalConversions::GetColorWriteMask(HgiColorMask mask)
+{
+    MTLColorWriteMask mtlMask;
+    
+    mtlMask = ((mask & HgiColorMaskRed) ? MTLColorWriteMaskRed : 0)
+            | ((mask & HgiColorMaskGreen) ? MTLColorWriteMaskGreen : 0)
+            | ((mask & HgiColorMaskBlue) ? MTLColorWriteMaskBlue : 0)
+            | ((mask & HgiColorMaskAlpha) ? MTLColorWriteMaskAlpha : 0);
+    
+    return mtlMask;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
