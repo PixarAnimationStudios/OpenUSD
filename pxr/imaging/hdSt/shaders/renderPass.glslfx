@@ -208,7 +208,7 @@ vec4 ApplyColorOverrides(vec4 color)
 
 vec3 ApplyMaskColor(vec3 color, float weight, vec4 maskColor)
 {
-    float strength = maskColor.a * clamp(weight, 0, 1);
+    float strength = maskColor.a * clamp(weight, 0.0, 1.0);
     return mix(color, maskColor.rgb, strength);
 }
 

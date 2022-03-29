@@ -135,7 +135,7 @@ FrustumCullIsVisible(MAT4 toClip, vec4 localMin, vec4 localMax, vec2 drawRangeND
         clipFlags |= ivec3(clip0) /* bit 0 */ + 2*ivec3(clip1) /*bit 1*/;
     }
 
-    return clipFlags == ivec3(3);
+    return all(equal(clipFlags, ivec3(3)));;
 }
 
 --- --------------------------------------------------------------------------

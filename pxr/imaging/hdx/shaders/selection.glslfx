@@ -121,6 +121,23 @@ struct SubprimSelectionResult {
     bool pointSelected;
     int  pointColorId;
 };
+
+SubprimSelectionResult InitSubprimSelectionResult(
+    bool _elementSelected,
+    bool _edgeSelected,
+    bool _pointSelected,
+    int _pointColorId)
+{
+    SubprimSelectionResult res;
+
+    res.elementSelected = _elementSelected;
+    res.edgeSelected = _edgeSelected;
+    res.pointSelected = _pointSelected;
+    res.pointColorId = _pointColorId;
+
+    return res;
+}
+
 bool IsAnySubprimSelected(SubprimSelectionResult s)
 {
     return (s.elementSelected || s.edgeSelected || s.pointSelected);
@@ -141,7 +158,8 @@ bool HasCustomizedPointColor(SubprimSelectionResult s)
 SubprimSelectionResult GetSubprimSel(int offset,
                                      int elementId, int edgeId, int pointId)
 {
-    SubprimSelectionResult s = SubprimSelectionResult(false, false, false, 0);
+    SubprimSelectionResult s = InitSubprimSelectionResult(false, false, false, 0);
+
     int nextSubprimOffset = 0;
     SubprimHeader header = DecodeSubprimHeader(offset);
 
@@ -209,13 +227,31 @@ struct SelectionResult {
     bool primOrInstanceSel;
     SubprimSelectionResult subprimSel;
 };
+
+SelectionResult InitSelectionResult(
+    bool _primOrInstanceSel,
+    bool _elementSelected,
+    bool _edgeSelected,
+    bool _pointSelected,
+    int _pointColorId)
+{
+    SelectionResult res;
+
+    res.primOrInstanceSel = _primOrInstanceSel;
+    res.subprimSel = InitSubprimSelectionResult(
+                        _elementSelected, _edgeSelected,
+                        _pointSelected, _pointColorId);
+
+    return res;
+}
+
+
 // Decodes the selection buffer encoding scheme for a given mode, and returns
 // the selection result.
 SelectionResult GetSelectionResult(int mode,
                                    int elementId, int edgeId, int pointId)
 {
-    SelectionResult res =
-        SelectionResult(false, SubprimSelectionResult(false, false, false, 0));
+    SelectionResult res = InitSelectionResult(false, false, false, false, 0);
 
 #if defined(HD_HAS_hdxSelectionBuffer)
     // The hdxSelectionBuffer layout is:
@@ -273,8 +309,7 @@ SelectionResult GetSelectionResult(int mode,
 SelectionResult
 _CombineWithOr(SelectionResult a, SelectionResult b)
 {
-    SelectionResult res =
-        SelectionResult(false, SubprimSelectionResult(false, false, false, 0));
+    SelectionResult res = InitSelectionResult(false, false, false, false, 0);
 
     res.primOrInstanceSel = a.primOrInstanceSel || b.primOrInstanceSel;
     res.subprimSel.elementSelected = a.subprimSel.elementSelected ||
@@ -291,8 +326,7 @@ _CombineWithOr(SelectionResult a, SelectionResult b)
 // mode.
 SelectionResult GetNetSelectionResult(int elementId, int edgeId, int pointId)
 {
-    SelectionResult netResult =
-        SelectionResult(false, SubprimSelectionResult(false, false, false, 0));
+    SelectionResult netResult = InitSelectionResult(false, false, false, false, 0);
 
 #if defined(HD_HAS_hdxSelectionBuffer)
     const int numSelectionModes = GetNumSelectionHighlightModes();

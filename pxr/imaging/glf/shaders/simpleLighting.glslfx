@@ -276,7 +276,7 @@ float
 shadowCompare(int shadowIndex, vec4 coord)
 {
     coord /= coord.w;
-    coord.z = min(1, coord.z + GetShadow(shadowIndex).bias);
+    coord.z = min(1.0, coord.z + GetShadow(shadowIndex).bias);
 
     // Cascade selection (in shadowing()) ensures Pshadow.xy is in [0,1],
     // but shadowFilter() can throw that off so we need to clamp.
@@ -414,7 +414,7 @@ evaluateIndirectLight(vec3 Neye, vec3 Reye, float NdotE, float EdotH,
     return result;
 }
 
-// for the comaptibility, turn on shadowing by default.
+// for the compatibility, turn on shadowing by default.
 #ifndef USE_SHADOWS
 #define USE_SHADOWS 1
 #endif
