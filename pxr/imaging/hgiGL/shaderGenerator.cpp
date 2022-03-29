@@ -439,34 +439,34 @@ HgiGLShaderGenerator::_Execute(std::ostream &ss)
     //section, capabilities to define macros in global space,
     //and abilities to declare some members or functions there
     
+    ss << "\n// //////// Global Includes ////////\n";
     for (const std::unique_ptr<HgiGLShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalIncludes(ss);
-        ss << "\n";
     }
 
+    ss << "\n// //////// Global Macros ////////\n";
     for (const std::unique_ptr<HgiGLShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalMacros(ss);
-        ss << "\n";
     }
 
+    ss << "\n// //////// Global Structs ////////\n";
     for (const std::unique_ptr<HgiGLShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalStructs(ss);
-        ss << "\n";
     }
 
+    ss << "\n// //////// Global Member Declarations ////////\n";
     for (const std::unique_ptr<HgiGLShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalMemberDeclarations(ss);
-        ss << "\n";
     }
 
+    ss << "\n// //////// Global Function Definitions ////////\n";
     for (const std::unique_ptr<HgiGLShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalFunctionDefinitions(ss);
-        ss << "\n";
     }
 
     ss << "\n";

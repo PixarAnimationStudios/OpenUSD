@@ -1401,6 +1401,8 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
 {
     HgiMetalShaderSectionUniquePtrVector * const shaderSections =
         GetShaderSections();
+
+    ss << "\n// //////// Global Macros ////////\n";
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         section->VisitGlobalMacros(ss);
         ss << "\n";
@@ -1408,6 +1410,7 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
 
     ss << _GetShaderCodeDeclarations();
 
+    ss << "\n// //////// Global Member Declarations ////////\n";
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         section->VisitGlobalMemberDeclarations(ss);
         ss << "\n";
@@ -1420,15 +1423,18 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
     //as members of that instance
     ss << "struct " << _generatorShaderSections->GetScopeTypeName() << " { \n";
 
-    //Metal extends the global scope into a "scope" embedder,
-    //which simulates a global scope for some member variables
-    for(const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
+    // Metal extends the global scope into a "scope" embedder,
+    // which simulates a global scope for some member variables
+    ss << "\n// //////// Scope Structs ////////\n";
+    for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         section->VisitScopeStructs(ss);
     }
-    for(const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
+    ss << "\n// //////// Scope Member Declarations ////////\n";
+    for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         section->VisitScopeMemberDeclarations(ss);
     }
-    for(const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
+    ss << "\n// //////// Scope Function Definitions ////////\n";
+    for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         section->VisitScopeFunctionDefinitions(ss);
     }
 
@@ -1436,7 +1442,8 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
     ss << _generatorShaderSections->GetScopeTypeName() << "(\n";
     bool firstParam = true;
     bool hasContructorParams = false;
-    for(const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
+    ss << "\n// //////// Scope Constructor Declarations ////////\n";
+    for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         std::stringstream paramDecl;
         if (section->VisitScopeConstructorDeclarations(paramDecl)) {
             if(!firstParam) {
@@ -1454,7 +1461,8 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
     if (hasContructorParams) {
         ss << ":\n";
         firstParam = true;
-        for(const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
+        ss << "\n// //////// Scope Constructor Initialization ////////\n";
+        for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
             std::stringstream paramDecl;
             if (section->VisitScopeConstructorInitialization(paramDecl)) {
                 if(!firstParam) {
@@ -1492,9 +1500,10 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
     ss << " " << returnSS.str() << " "
        << _generatorShaderSections->GetEntryPointFunctionName() << "(\n";
 
-    //Pass in all parameters declared by interested code sections into the
-    //entry point of the shader
+    // Pass in all parameters declared by interested code sections into the
+    // entry point of the shader
     firstParam = true;
+    ss << "\n// //////// Entry Point Parameter Declarations ////////\n";
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         std::stringstream paramDecl;
         if (section->VisitEntryPointParameterDeclarations(paramDecl)) {
@@ -1514,6 +1523,7 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
     if (hasContructorParams) {
         ss << "(\n";
         firstParam = true;
+        ss << "\n// //////// Scope Constructor Instantiation ////////\n";
         for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
             std::stringstream paramDecl;
             if (section->VisitScopeConstructorInstantiation(paramDecl)) {
@@ -1530,7 +1540,8 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
     }
     ss << ";\n";
 
-    //Execute all code that hooks into the entry point function
+    // Execute all code that hooks into the entry point function
+    ss << "\n// //////// Entry Point Function Executions ////////\n";
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         if (section->VisitEntryPointFunctionExecutions(
                 ss, _generatorShaderSections->GetScopeInstanceName())) {
