@@ -165,9 +165,12 @@ HgiMetalComputeCmds::PopDebugGroup()
 void
 HgiMetalComputeCmds::MemoryBarrier(HgiMemoryBarrier barrier)
 {
-    TF_VERIFY(barrier==HgiMemoryBarrierAll, "Unknown barrier");
-    // Do nothing. All resource writes performed in a given kernel function
-    // are visible in the next kernel function.
+    if (TF_VERIFY(barrier == HgiMemoryBarrierAll)) {
+        _CreateEncoder();
+        MTLBarrierScope scope = MTLBarrierScopeBuffers|
+                                MTLBarrierScopeTextures;
+        [_encoder memoryBarrierWithScope:scope];
+    }
 }
 
 bool
