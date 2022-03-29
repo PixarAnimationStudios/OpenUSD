@@ -507,6 +507,19 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
+    // Capabilities.
+    const HgiCapabilities *capabilities = registry->GetHgi()->GetCapabilities();
+    const bool bindlessTextureEnabled =
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsBindlessTextures);
+    const bool shaderDrawParametersEnabled =
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsShaderDrawParameters);
+    const bool builtinBarycentricsEnabled =
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+    const bool doublePrecisionEnabled =
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsShaderDoublePrecision);
+    const bool minusOneToOneDepth =
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne);
+
     // shader sources
     // geometric shader owns main()
     std::string vertexShader =
@@ -526,40 +539,42 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _hasGS  = (!geometryShader.empty());
     _hasFS  = (!fragmentShader.empty());
 
-    // initialize autogen source buckets
-    _genCommon.str(""); _genVS.str(""); _genTCS.str(""); _genTES.str("");
+    // Initialize source buckets
+    _genDefines.str(""); _genDecl.str(""); _genAccessors.str("");
+    _genVS.str(""); _genTCS.str(""); _genTES.str("");
     _genGS.str(""); _genFS.str(""); _genCS.str("");
-    _procVS.str(""); _procTCS.str(""), _procTES.str(""), _procGS.str("");
+    _procVS.str(""); _procTCS.str(""); _procTES.str(""); _procGS.str("");
 
-    // GL capabilities.
-    const bool bindlessTextureEnabled = registry->GetHgi()->
-        GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsBindlessTextures);
-    const bool shaderDrawParametersEnabled = registry->GetHgi()->
-        GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsShaderDrawParameters);
-    const bool builtinBarycentricsEnabled = registry->GetHgi()->
-        GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
-    const bool doublePrecisionEnabled = registry->GetHgi()->
-        GetCapabilities()->IsSet(
-            HgiDeviceCapabilitiesBitsShaderDoublePrecision);
-    const bool minusOneToOneDepth = registry->GetHgi()->
-        GetCapabilities()->IsSet(
-            HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne);
+    _genDefines << "\n// //////// Codegen Defines //////// \n";
+    _genDecl << "\n// //////// Codegen Decl //////// \n";
+    _genAccessors << "\n// //////// Codegen Accessors //////// \n";
+    _genVS << "\n// //////// Codegen VS Source //////// \n";
+    _genTCS << "\n// //////// Codegen TCS Source //////// \n";
+    _genTES << "\n// //////// Codegen TES Source //////// \n";
+    _genGS << "\n// //////// Codegen GS Source //////// \n";
+    _genFS << "\n// //////// Codegen FS Source //////// \n";
+    _genCS << "\n// //////// Codegen CS Source //////// \n";
+    _procVS << "\n// //////// Codegen Proc VS //////// \n";
+    _procTCS << "\n// //////// Codegen Proc TCS //////// \n";
+    _procTES << "\n// //////// Codegen Proc TES //////// \n";
+    _procGS << "\n// //////// Codegen Proc GS //////// \n";
 
     // Used in glslfx files to determine if it is using new/old
     // imaging system. It can also be used as API guards when
     // we need new versions of Storm shading. 
-    _genCommon << "#define HD_SHADER_API " << HD_SHADER_API << "\n";
+    _genDefines << "#define HD_SHADER_API " << HD_SHADER_API << "\n";
 
     // Used in glslfx files to support backward compatible
     // declaration of resource layouts.
-    //_genCommon << "#define HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS\n";
+    //_genDefines << "#define HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS\n";
 
     // XXX: this macro is still used in GlobalUniform.
-    _genCommon << "#define MAT4 " <<
+    _genDefines << "#define MAT4 " <<
         HdStGLConversions::GetGLSLTypename(
             HdVtBufferSource::GetDefaultMatrixType()) << "\n";
+
     // a trick to tightly pack unaligned data (vec3, etc) into SSBO/UBO.
-    _genCommon << _GetPackedTypeDefinitions();
+    _genDefines << _GetPackedTypeDefinitions();
 
     if (_materialTag == HdStMaterialTagTokens->masked) {
         _genFS << "#define HD_MATERIAL_TAG_MASKED 1\n";
@@ -577,19 +592,19 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // For custom buffer bindings, more code can be generated; a full spec is
     // emitted based on the binding declaration.
     TF_FOR_ALL(binDecl, _metaData.customBindings) {
-        _genCommon << "#define "
-                   << binDecl->name << "_Binding " 
-                   << binDecl->binding.GetLocation() << "\n";
-        _genCommon << "#define HD_HAS_" << binDecl->name << " 1\n";
+        _genDefines << "#define "
+                    << binDecl->name << "_Binding " 
+                    << binDecl->binding.GetLocation() << "\n";
+        _genDefines << "#define HD_HAS_" << binDecl->name << " 1\n";
 
         // typeless binding doesn't need declaration nor accessor.
         if (binDecl->dataType.IsEmpty()) continue;
 
-        _EmitDeclaration(_genCommon,
+        _EmitDeclaration(_genDecl,
                      binDecl->name,
                      binDecl->dataType,
                      binDecl->binding);
-        _EmitAccessor(_genCommon,
+        _EmitAccessor(_genAccessors,
                       binDecl->name,
                       binDecl->dataType,
                       binDecl->binding,
@@ -597,8 +612,6 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                       ? NULL : "localIndex");
     }
 
-    std::stringstream declarations;
-    std::stringstream accessors;
     TF_FOR_ALL(it, _metaData.customInterleavedBindings) {
         // note: _constantData has been sorted by offset in HdSt_ResourceBinder.
         // XXX: not robust enough, should consider padding and layouting rules
@@ -609,61 +622,59 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         TfToken typeName(TfStringPrintf("CustomBlockData%d", binding.GetValue()));
         TfToken varName = it->second.blockName;
 
-        declarations << "struct " << typeName << " {\n";
-
+        _genDecl << "struct " << typeName << " {\n";
         // dbIt is StructEntry { name, dataType, offset, numElements }
         TF_FOR_ALL (dbIt, it->second.entries) {
-            _genCommon << "#define HD_HAS_" << dbIt->name << " 1\n";
-            declarations << "  " << _GetPackedType(dbIt->dataType, false)
-                         << " " << dbIt->name;
+            _genDefines << "#define HD_HAS_" << dbIt->name << " 1\n";
+            _genDecl << "  " << _GetPackedType(dbIt->dataType, false)
+                     << " " << dbIt->name;
+
             if (dbIt->arraySize > 1) {
-                _genCommon << "#define HD_NUM_" << dbIt->name
-                           << " " << dbIt->arraySize << "\n";
-                declarations << "[" << dbIt->arraySize << "]";
+                _genDefines << "#define HD_NUM_" << dbIt->name
+                            << " " << dbIt->arraySize << "\n";
+                _genDecl << "[" << dbIt->arraySize << "]";
             }
-            declarations <<  ";\n";
+            _genDecl <<  ";\n";
 
             if (it->second.arraySize > 0) {
-                _EmitStructAccessor(accessors, varName, 
+                _EmitStructAccessor(_genAccessors, varName, 
                                     dbIt->name, dbIt->dataType, dbIt->arraySize,
                                     "localIndex", dbIt->concatenateNames);
             } else {
-                _EmitStructAccessor(accessors, varName, 
+                _EmitStructAccessor(_genAccessors, varName, 
                                     dbIt->name, dbIt->dataType, dbIt->arraySize,
                                     NULL,  dbIt->concatenateNames);
             }
         }
 
-        declarations << "};\n";
-        _EmitDeclaration(declarations, varName, typeName, binding, it->second.arraySize);
+        _genDecl << "};\n";
+        _EmitDeclaration(_genDecl, varName, typeName, binding, it->second.arraySize);
     }
-    _genCommon << declarations.str()
-               << accessors.str();
 
     // HD_NUM_PATCH_VERTS, HD_NUM_PRIMTIIVE_VERTS
     if (_geometricShader->IsPrimTypePatches()) {
-        _genCommon << "#define HD_NUM_PATCH_VERTS "
-                   << _geometricShader->GetPrimitiveIndexSize() << "\n";
-        _genCommon << "#define HD_NUM_PATCH_EVAL_VERTS "
-                   << _geometricShader->GetNumPatchEvalVerts() << "\n";
+        _genDefines << "#define HD_NUM_PATCH_VERTS "
+                    << _geometricShader->GetPrimitiveIndexSize() << "\n";
+        _genDefines << "#define HD_NUM_PATCH_EVAL_VERTS "
+                    << _geometricShader->GetNumPatchEvalVerts() << "\n";
     }
-    _genCommon << "#define HD_NUM_PRIMITIVE_VERTS "
-               << _geometricShader->GetNumPrimitiveVertsForGeometryShader()
-               << "\n";
+    _genDefines << "#define HD_NUM_PRIMITIVE_VERTS "
+                << _geometricShader->GetNumPrimitiveVertsForGeometryShader()
+                << "\n";
 
     // include ptex utility (if needed)
     TF_FOR_ALL (it, _metaData.shaderParameterBinding) {
         HdBinding::Type bindingType = it->first.GetType();
         if (bindingType == HdBinding::TEXTURE_PTEX_TEXEL ||
             bindingType == HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL) {
-            _genCommon << _GetPtexTextureShaderSource();
+            _genDecl << _GetPtexTextureShaderSource();
             break;
         }
     }
 
     TF_FOR_ALL (it, _metaData.topologyVisibilityData) {
         TF_FOR_ALL (pIt, it->second.entries) {
-            _genCommon << "#define HD_HAS_" << pIt->name  << " 1\n";
+            _genDefines << "#define HD_HAS_" << pIt->name  << " 1\n";
         }
     }
 
@@ -677,31 +688,31 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // added separately, at least in current usage.
     TF_FOR_ALL (it, _metaData.constantData) {
         TF_FOR_ALL (pIt, it->second.entries) {
-            _genCommon << "#define HD_HAS_" << pIt->name << " 1\n";
+            _genDefines << "#define HD_HAS_" << pIt->name << " 1\n";
         }
     }
     TF_FOR_ALL (it, _metaData.instanceData) {
-        _genCommon << "#define HD_HAS_INSTANCE_" << it->second.name << " 1\n";
-        _genCommon << "#define HD_HAS_"
-                   << it->second.name << "_" << it->second.level << " 1\n";
+        _genDefines << "#define HD_HAS_INSTANCE_" << it->second.name << " 1\n";
+        _genDefines << "#define HD_HAS_"
+                    << it->second.name << "_" << it->second.level << " 1\n";
     }
-    _genCommon << "#define HD_INSTANCER_NUM_LEVELS "
-               << _metaData.instancerNumLevels << "\n"
-               << "#define HD_INSTANCE_INDEX_WIDTH "
-               << (_metaData.instancerNumLevels+1) << "\n"; 
+    _genDefines << "#define HD_INSTANCER_NUM_LEVELS "
+                << _metaData.instancerNumLevels << "\n"
+                << "#define HD_INSTANCE_INDEX_WIDTH "
+                << (_metaData.instancerNumLevels+1) << "\n";
     if (!_geometricShader->IsPrimTypePoints()) {
         TF_FOR_ALL (it, _metaData.elementData) {
-            _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
+            _genDefines << "#define HD_HAS_" << it->second.name << " 1\n";
         }
         TF_FOR_ALL (it, _metaData.fvarData) {
-            _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
+            _genDefines << "#define HD_HAS_" << it->second.name << " 1\n";
         }
     }
     TF_FOR_ALL (it, _metaData.vertexData) {
-        _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
+        _genDefines << "#define HD_HAS_" << it->second.name << " 1\n";
     }
     TF_FOR_ALL (it, _metaData.varyingData) {
-        _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
+        _genDefines << "#define HD_HAS_" << it->second.name << " 1\n";
     }
     TF_FOR_ALL (it, _metaData.shaderParameterBinding) {
         // XXX: HdBinding::PRIMVAR_REDIRECT won't define an accessor if it's
@@ -726,7 +737,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         // 
         HdBinding::Type bindingType = it->first.GetType();
         if (bindingType != HdBinding::PRIMVAR_REDIRECT) {
-            _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
+            _genDefines << "#define HD_HAS_" << it->second.name << " 1\n";
         }
 
         // For any texture shader parameter we also emit the texture 
@@ -737,15 +748,9 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             bindingType == HdBinding::BINDLESS_ARRAY_OF_TEXTURE_2D ||
             bindingType == HdBinding::TEXTURE_UDIM_ARRAY || 
             bindingType == HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY) {
-            _genCommon
+            _genDefines
                 << "#define HD_HAS_COORD_" << it->second.name << " 1\n";
         }
-    }
-
-    // mixin shaders
-    _genCommon << _geometricShader->GetSource(HdShaderTokens->commonShaderSource);
-    TF_FOR_ALL(it, _shaders) {
-        _genCommon << (*it)->GetSource(HdShaderTokens->commonShaderSource);
     }
 
     // Needed for patch-based face-varying primvar refinement
@@ -894,21 +899,25 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _genTES << _procTES.str();
     _genGS  << _procGS.str();
 
-
-    // other shaders (renderpass, lighting, surface) first
+    // other shaders (renderPass, lighting, surface) first
     TF_FOR_ALL(it, _shaders) {
         HdStShaderCodeSharedPtr const &shader = *it;
-        if (_hasVS)
+        if (_hasVS) {
             _genVS  << shader->GetSource(HdShaderTokens->vertexShader);
-        if (_hasTCS)
+        }
+        if (_hasTCS) {
             _genTCS << shader->GetSource(HdShaderTokens->tessControlShader);
-        if (_hasTES)
+        }
+        if (_hasTES) {
             _genTES << shader->GetSource(HdShaderTokens->tessEvalShader);
-        if (_hasGS)
+        }
+        if (_hasGS) {
             _genGS  << shader->GetSource(HdShaderTokens->geometryShader);
             _genGS  << shader->GetSource(HdShaderTokens->displacementShader);
-        if (_hasFS)
+        }
+        if (_hasFS) {
             _genFS  << shader->GetSource(HdShaderTokens->fragmentShader);
+        }
     }
 
     // OpenSubdiv tessellation shader (if required)
@@ -959,37 +968,38 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // initialize autogen source buckets
-    _genCommon.str(""); _genVS.str(""); _genTCS.str(""); _genTES.str("");
+    // Initialize source buckets
+    _genDefines.str(""); _genDecl.str(""); _genAccessors.str("");
+    _genVS.str(""); _genTCS.str(""); _genTES.str("");
     _genGS.str(""); _genFS.str(""); _genCS.str("");
-    _procVS.str(""); _procTCS.str(""), _procTES.str(""), _procGS.str("");
-    
-    // GL capabilities 
-    const bool bindlessBufferEnabled = registry->GetHgi()->GetCapabilities()->
-        IsSet(HgiDeviceCapabilitiesBitsBindlessBuffers);
-    const bool bindlessTextureEnabled = registry->GetHgi()->GetCapabilities()->
-        IsSet(HgiDeviceCapabilitiesBitsBindlessTextures);
-    
-    if (bindlessBufferEnabled) {
-        _genCommon << "#extension GL_NV_shader_buffer_load : require\n"
-                   << "#extension GL_NV_gpu_shader5 : require\n";
-    }
-    if (bindlessTextureEnabled) {
-        _genCommon << "#extension GL_ARB_bindless_texture : require\n";
-    }
+    _procVS.str(""); _procTCS.str(""); _procTES.str(""); _procGS.str("");
+
+    _genDefines << "\n// //////// Codegen Defines //////// \n";
+    _genDecl << "\n// //////// Codegen Decl //////// \n";
+    _genAccessors << "\n// //////// Codegen Accessors //////// \n";
+    _genVS << "\n// //////// Codegen VS Source //////// \n";
+    _genTCS << "\n// //////// Codegen TCS Source //////// \n";
+    _genTES << "\n// //////// Codegen TES Source //////// \n";
+    _genGS << "\n// //////// Codegen GS Source //////// \n";
+    _genFS << "\n// //////// Codegen FS Source //////// \n";
+    _genCS << "\n// //////// Codegen CS Source //////// \n";
+    _procVS << "\n// //////// Codegen Proc VS //////// \n";
+    _procTCS << "\n// //////// Codegen Proc TCS //////// \n";
+    _procTES << "\n// //////// Codegen Proc TES //////// \n";
+    _procGS << "\n// //////// Codegen Proc GS //////// \n";
 
     // Used in glslfx files to determine if it is using new/old
     // imaging system. It can also be used as API guards when
     // we need new versions of Storm shading. 
-    _genCommon << "#define HD_SHADER_API " << HD_SHADER_API << "\n";    
+    _genDefines << "#define HD_SHADER_API " << HD_SHADER_API << "\n";
 
     // a trick to tightly pack unaligned data (vec3, etc) into SSBO/UBO.
-    _genCommon << _GetPackedTypeDefinitions();
-    
+    _genDefines << _GetPackedTypeDefinitions();
+
     std::stringstream uniforms;
     std::stringstream declarations;
     std::stringstream accessors;
-    
+
     uniforms << "// Uniform block\n";
 
     HdBinding uboBinding(HdBinding::UBO, 0);
@@ -1059,9 +1069,9 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
     }
     uniforms << "};\n";
     
-    _genCommon << uniforms.str()
-               << declarations.str()
-               << accessors.str();
+    _genDecl << uniforms.str()
+             << declarations.str();
+    _genAccessors << accessors.str();
     
     // other shaders (renderpass, lighting, surface) first
     TF_FOR_ALL(it, _shaders) {
@@ -1081,7 +1091,7 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
     
     // compile shaders
     {
-        _csSource = _genCommon.str() + _genCS.str();
+        _csSource = _genDecl.str() + _genAccessors.str() + _genCS.str();
         if (!glslProgram->CompileShader(HgiShaderStageCompute, _csSource)) {
             return HdStGLSLProgramSharedPtr();
         }
@@ -1099,10 +1109,13 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         std::make_shared<HdStGLSLProgram>(HdTokens->drawingShader, registry);
 
     bool shaderCompiled = false;
+
     // compile shaders
     // note: _vsSource, _fsSource etc are used for diagnostics (see header)
     if (_hasVS) {
-        std::string const source = _genCommon.str() + _genVS.str();
+        std::string const source =
+            _genDefines.str() + _genDecl.str() +
+            _genAccessors.str() + _genVS.str();
 
         HgiShaderFunctionDesc desc;
         desc.shaderStage = HgiShaderStageVertex;
@@ -1115,7 +1128,9 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         shaderCompiled = true;
     }
     if (_hasFS) {
-        std::string const source = _genCommon.str() + _genFS.str();
+        std::string const source =
+            _genDefines.str() + _genDecl.str() +
+            _genAccessors.str() + _genFS.str();
 
         HgiShaderFunctionDesc desc;
         desc.shaderStage = HgiShaderStageFragment;
@@ -1128,7 +1143,9 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         shaderCompiled = true;
     }
     if (_hasTCS) {
-        std::string const source = _genCommon.str() + _genTCS.str();
+        std::string const source =
+            _genDefines.str() + _genDecl.str() +
+            _genAccessors.str() + _genTCS.str();
 
         HgiShaderFunctionDesc desc;
         desc.shaderStage = HgiShaderStageTessellationControl;
@@ -1141,7 +1158,9 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         shaderCompiled = true;
     }
     if (_hasTES) {
-        std::string const source = _genCommon.str() + _genTES.str();
+        std::string const source =
+            _genDefines.str() + _genDecl.str() +
+            _genAccessors.str() + _genTES.str();
 
         HgiShaderFunctionDesc desc;
         desc.shaderStage = HgiShaderStageTessellationEval;
@@ -1154,7 +1173,9 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         shaderCompiled = true;
     }
     if (_hasGS) {
-        std::string const source = _genCommon.str() + _genGS.str();
+        std::string const source =
+            _genDefines.str() + _genDecl.str() +
+            _genAccessors.str() + _genGS.str();
 
         HgiShaderFunctionDesc desc;
         desc.shaderStage = HgiShaderStageGeometry;
@@ -1508,7 +1529,7 @@ static void _EmitAccessor(std::stringstream &str,
     // default to localIndex=0
     str << _GetUnpackedType(type, false) << " HdGet_" << name << "()"
         << " { return HdGet_" << name << "(0); }\n";
-    
+
 }
 
 static void _EmitTextureAccessors(
@@ -1789,7 +1810,7 @@ static void _EmitTextureAccessors(
     accessors
         << _GetUnpackedType(dataType, false)
         << " HdGet_" << name
-        << "() { return HdGet_" << name << "(0);\n }\n";
+        << "() { return HdGet_" << name << "(0);\n}\n";
 
     // Emit pre-multiplication by alpha indicator
     if (acc.isPremultiplied) {
@@ -2115,21 +2136,21 @@ HdSt_CodeGen::_GenerateDrawingCoord()
     // note: instanceCoords should be [HD_INSTANCER_NUM_LEVELS], but since
     //       GLSL doesn't allow [0] declaration, we use +1 value (WIDTH)
     //       for the sake of simplicity.
-    _genCommon << "struct hd_drawingCoord {                       \n"
-               << "  int modelCoord;                              \n"
-               << "  int constantCoord;                           \n"
-               << "  int vertexCoord;                             \n"
-               << "  int elementCoord;                            \n"
-               << "  int primitiveCoord;                          \n"
-               << "  int fvarCoord;                               \n"
-               << "  int shaderCoord;                             \n"
-               << "  int topologyVisibilityCoord;                 \n"
-               << "  int varyingCoord;                            \n"
-               << "  int instanceIndex[HD_INSTANCE_INDEX_WIDTH];  \n"
-               << "  int instanceCoords[HD_INSTANCE_INDEX_WIDTH]; \n"
-               << "};\n";
+    _genDecl << "struct hd_drawingCoord {                       \n"
+             << "  int modelCoord;                              \n"
+             << "  int constantCoord;                           \n"
+             << "  int vertexCoord;                             \n"
+             << "  int elementCoord;                            \n"
+             << "  int primitiveCoord;                          \n"
+             << "  int fvarCoord;                               \n"
+             << "  int shaderCoord;                             \n"
+             << "  int topologyVisibilityCoord;                 \n"
+             << "  int varyingCoord;                            \n"
+             << "  int instanceIndex[HD_INSTANCE_INDEX_WIDTH];  \n"
+             << "  int instanceCoords[HD_INSTANCE_INDEX_WIDTH]; \n"
+             << "};\n";
 
-    _genCommon << "FORWARD_DECL(hd_drawingCoord GetDrawingCoord());\n";
+    _genDecl << "FORWARD_DECL(hd_drawingCoord GetDrawingCoord());\n";
 
     // vertex shader
 
@@ -2170,14 +2191,14 @@ HdSt_CodeGen::_GenerateDrawingCoord()
     _genFS << primitiveID.str();
 
     // instance index indirection
-    _genCommon << "struct hd_instanceIndex { int indices[HD_INSTANCE_INDEX_WIDTH]; };\n";
+    _genDecl << "struct hd_instanceIndex { int indices[HD_INSTANCE_INDEX_WIDTH]; };\n";
 
     if (_metaData.instanceIndexArrayBinding.binding.IsValid()) {
         // << layout (location=x) uniform (int|ivec[234]) *instanceIndices;
-        _EmitDeclaration(_genCommon, _metaData.instanceIndexArrayBinding);
+        _EmitDeclaration(_genDecl, _metaData.instanceIndexArrayBinding);
 
         // << layout (location=x) uniform (int|ivec[234]) *culledInstanceIndices;
-        _EmitDeclaration(_genCommon,  _metaData.culledInstanceIndexArrayBinding);
+        _EmitDeclaration(_genDecl,  _metaData.culledInstanceIndexArrayBinding);
 
         /// if \p cullingPass is true, CodeGen generates GetInstanceIndex()
         /// such that it refers instanceIndices buffer (before culling).
@@ -2303,6 +2324,7 @@ HdSt_CodeGen::_GenerateDrawingCoord()
     _procGS  << "  gsDrawingCoord = vsDrawingCoord[0];\n";
 
 }
+
 void
 HdSt_CodeGen::_GenerateConstantPrimvar()
 {
@@ -2332,8 +2354,6 @@ HdSt_CodeGen::_GenerateConstantPrimvar()
 
     */
 
-    std::stringstream declarations;
-    std::stringstream accessors;
     TF_FOR_ALL (it, _metaData.constantData) {
         // note: _constantData has been sorted by offset in HdSt_ResourceBinder.
         // XXX: not robust enough, should consider padding and layouting rules
@@ -2344,7 +2364,7 @@ HdSt_CodeGen::_GenerateConstantPrimvar()
         TfToken typeName(TfStringPrintf("ConstantData%d", binding.GetValue()));
         TfToken varName = it->second.blockName;
 
-        declarations << "struct " << typeName << " {\n";
+        _genDecl << "struct " << typeName << " {\n";
 
         TF_FOR_ALL (dbIt, it->second.entries) {
             if (!TF_VERIFY(!dbIt->dataType.IsEmpty(),
@@ -2353,26 +2373,24 @@ HdSt_CodeGen::_GenerateConstantPrimvar()
                 continue;
             }
 
-            declarations << "  " << _GetPackedType(dbIt->dataType, false)
+            _genDecl << "  " << _GetPackedType(dbIt->dataType, false)
                          << " " << dbIt->name;
             if (dbIt->arraySize > 1) {
-                declarations << "[" << dbIt->arraySize << "]";
+                _genDecl << "[" << dbIt->arraySize << "]";
             }
 
-            declarations << ";\n";
+            _genDecl << ";\n";
 
-            _EmitStructAccessor(accessors, varName, dbIt->name, dbIt->dataType,
+            _EmitStructAccessor(_genAccessors, varName, dbIt->name, dbIt->dataType,
                                 dbIt->arraySize,
                                 "GetDrawingCoord().constantCoord");
         }
-        declarations << "};\n";
+        _genDecl << "};\n";
 
         // XXX: passing arraySize=2 to cheat driver to not tell actual size.
         //      we should compute the actual size or maximum size if possible.
-        _EmitDeclaration(declarations, varName, typeName, binding, /*arraySize=*/1);
+        _EmitDeclaration(_genDecl, varName, typeName, binding, /*arraySize=*/1);
     }
-    _genCommon << declarations.str()
-               << accessors.str();
 }
 
 void
@@ -2419,7 +2437,6 @@ HdSt_CodeGen::_GenerateInstancePrimvar()
         // << layout (location=x) uniform float *translate_0;
         _EmitDeclaration(declarations, name, dataType, binding);
         _EmitAccessor(accessors, name, dataType, binding, n.str().c_str());
-
     }
 
     /*
@@ -2476,10 +2493,9 @@ HdSt_CodeGen::_GenerateInstancePrimvar()
                   << it->first << "(0); }\n"
                   << "#endif\n";
     }
-        
 
-    _genCommon << declarations.str()
-               << accessors.str();
+    _genDecl << declarations.str();
+    _genAccessors << accessors.str();
 }
 
 void
@@ -2812,8 +2828,8 @@ HdSt_CodeGen::_GenerateElementPrimvar()
     }
 
     if (_metaData.coarseFaceIndexBinding.binding.IsValid()) {
-        _genCommon << "#define HD_HAS_" 
-            << _metaData.coarseFaceIndexBinding.name << " 1\n";
+        _genDefines << "#define HD_HAS_" 
+                    << _metaData.coarseFaceIndexBinding.name << " 1\n";
 
         const HdBinding &binding = _metaData.coarseFaceIndexBinding.binding;
 
@@ -3467,7 +3483,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                 /* hasTextureScaleAndBias = */ true,
                 /* isBindless = */ true,
                 bindlessTextureEnabled);
-        } else if (bindingType == HdBinding::BINDLESS_ARRAY_OF_TEXTURE_2D) {      
+        } else if (bindingType == HdBinding::BINDLESS_ARRAY_OF_TEXTURE_2D) {
             // Handle special case for shadow textures.
             bool const isShadowTexture = 
                 (it->second.name == HdStTokens->shadowCompareTextures);
@@ -3828,7 +3844,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                 accessors
                     << "#if !defined(HD_HAS_" << it->second.name << ")\n";
             }
-            
+
             accessors
                 << _GetUnpackedType(it->second.dataType, false)
                 << " HdGet_" << it->second.name << "() {\n"
@@ -4011,8 +4027,9 @@ HdSt_CodeGen::_GenerateTopologyVisibilityParameters()
         _EmitDeclaration(declarations, varName, typeName, binding,
                          /*arraySize=*/1);
     }
-    _genCommon << declarations.str()
-               << accessors.str();
+
+    _genDecl << declarations.str();
+    _genAccessors << accessors.str();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

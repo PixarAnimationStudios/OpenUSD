@@ -130,7 +130,10 @@ private:
     TfToken _materialTag;
 
     // source buckets
-    std::stringstream _genCommon, _genVS, _genTCS, _genTES;
+    std::stringstream _genDefines;
+    std::stringstream _genDecl;
+    std::stringstream _genAccessors;
+    std::stringstream _genVS, _genTCS, _genTES;
     std::stringstream _genGS, _genFS, _genCS;
     std::stringstream _procVS, _procTCS, _procTES, _procGS;
 
