@@ -25,6 +25,7 @@
 #include "pxr/imaging/hgiMetal/shaderGenerator.h"
 #include "pxr/imaging/hgiMetal/resourceBindings.h"
 #include "pxr/imaging/hgi/tokens.h"
+
 #include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -133,6 +134,40 @@ T* _BuildStructInstance(
         addressSpace,
         isPointer,
         section);
+}
+
+bool
+_GetBuiltinKeyword(HgiShaderFunctionParamDesc const &param,
+                   std::string *keyword = nullptr)
+{
+    //possible metal attributes on shader inputs.
+    // Map from descriptor to Metal
+    const static std::unordered_map<std::string, std::string> roleIndexM {
+       {HgiShaderKeywordTokens->hdVertexID, "vertex_id"},
+       {HgiShaderKeywordTokens->hdInstanceID, "instance_id"},
+       {HgiShaderKeywordTokens->hdBaseVertex, "base_vertex"},
+       {HgiShaderKeywordTokens->hdBaseInstance, "base_instance"},
+       {HgiShaderKeywordTokens->hdGlobalInvocationID, "thread_position_in_grid"},
+       {HgiShaderKeywordTokens->hdPatchID, "patch_id"},
+       {HgiShaderKeywordTokens->hdPositionInPatch, "position_in_patch"},
+       {HgiShaderKeywordTokens->hdPrimitiveID, "primitive_id"},
+       {HgiShaderKeywordTokens->hdFrontFacing, "front_facing"},
+       {HgiShaderKeywordTokens->hdPosition, "position"},
+       {HgiShaderKeywordTokens->hdBaryCoordNoPerspNV, "barycentric_coord"}
+    };
+
+    //check if has a role
+    if(!param.role.empty()) {
+        auto it = roleIndexM.find(param.role);
+        if (it != roleIndexM.end()) {
+            if (keyword) {
+                *keyword = it->second;
+            }
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 } // anonymous namespace
@@ -577,10 +612,18 @@ _AccumulateParamsAndBlockParams(
     return result;
 }
 
+bool
+_IsTessFunction(const HgiShaderFunctionDesc &descriptor)
+{
+    return descriptor.shaderStage == HgiShaderStagePostTessellationVertex;
+}
+
 ShaderStageData::ShaderStageData(
     const HgiShaderFunctionDesc &descriptor,
     HgiMetalShaderGenerator *generator)
-    : _constantParams(
+    : inputsGenericWrapper(
+        _IsTessFunction(descriptor) ? "patch_control_point" : "")
+    , _constantParams(
         AccumulateParams(
             descriptor.constantParams,
             generator,
@@ -643,6 +686,7 @@ ShaderStageData::AccumulateParams(
         };
 
         for(const HgiShaderFunctionParamDesc &p : params) {
+            if (_GetBuiltinKeyword(p)) continue;
             //For metal, the role is the actual attribute so far
             std::string indexAsStr;
             //check if has a role
@@ -656,30 +700,59 @@ ShaderStageData::AccumulateParams(
                 }
             }
 
-            const HgiShaderSectionAttributeVector attributes = {
-                HgiShaderSectionAttribute{p.role, indexAsStr} };
+            HgiShaderSectionAttributeVector attributes = {};
+            if (!p.role.empty()) {
+                attributes.push_back(HgiShaderSectionAttribute{p.role, indexAsStr});
+            }
+            else if (p.interstageSlot != -1) {
+                std::string role = "user(slot" + std::to_string(p.interstageSlot) + ")";
+                attributes.push_back(HgiShaderSectionAttribute{role, indexAsStr});
+            }
+
+            switch (p.interpolation) {
+            case HgiInterpolationDefault:
+                break;
+            case HgiInterpolationFlat:
+                attributes.push_back(
+                    HgiShaderSectionAttribute{"flat", ""});
+                break;
+            case HgiInterpolationNoPerspective:
+                attributes.push_back(
+                    HgiShaderSectionAttribute{"center_no_perspective", ""});
+                break;
+            }
 
             HgiMetalMemberShaderSection * const section =
                 generator->CreateShaderSection<
                     HgiMetalMemberShaderSection>(
                         p.nameInShader,
                         p.type,
-                        attributes);
+                        attributes,
+                        p.arraySize);
             stageShaderSections.push_back(section);
         }
     } else {
+        int nextLocation = 0;
         for (size_t i = 0; i < params.size(); i++) {
             const HgiShaderFunctionParamDesc &p = params[i];
-            //For metal, the role is the actual attribute so far
+            if (_GetBuiltinKeyword(p)) continue;
+
+            const int location =
+                (p.location != -1) ? p.location : nextLocation;
+
+            nextLocation = location + 1;
+
             const HgiShaderSectionAttributeVector attributes = {
-                HgiShaderSectionAttribute{"attribute", std::to_string(i)}};
+                HgiShaderSectionAttribute{"attribute", std::to_string(location)}
+            };
 
             HgiMetalMemberShaderSection * const section =
                 generator->CreateShaderSection<
                     HgiMetalMemberShaderSection>(
                         p.nameInShader,
                         p.type,
-                        attributes);
+                        attributes,
+                        p.arraySize);
             stageShaderSections.push_back(section);
         }
     }
@@ -1158,24 +1231,19 @@ void HgiMetalShaderGenerator::_BuildKeywordInputShaderSections(
     for (size_t i = 0; i < inputs.size(); ++i) {
         const HgiShaderFunctionParamDesc &p(inputs[i]);
 
-        //check if has a role
-        if(!p.role.empty()) {
-            auto it = roleIndexM.find(p.role);
-            if (it != roleIndexM.end()) {
-                //Create the keyword shader section
-                const std::string &keywordName = p.nameInShader;
+        std::string msl_attrib;
+        if(_GetBuiltinKeyword(p, &msl_attrib)) {
+            const std::string &keywordName = p.nameInShader;
 
-                const HgiShaderSectionAttributeVector attributes = {
-                    HgiShaderSectionAttribute{it->second, "" }};
+            const HgiShaderSectionAttributeVector attributes = {
+                HgiShaderSectionAttribute{msl_attrib, "" }};
 
-                //Shader section vector on the generator
-                // owns all sections, point to it in the vector
-                CreateShaderSection<HgiMetalKeywordInputShaderSection>(
-                    keywordName,
-                    p.type,
-                    attributes);
-
-            }
+            //Shader section vector on the generator
+            // owns all sections, point to it in the vector
+            CreateShaderSection<HgiMetalKeywordInputShaderSection>(
+                keywordName,
+                p.type,
+                attributes);
         }
     }
 }
@@ -1304,8 +1372,25 @@ HgiMetalShaderGenerator::HgiMetalShaderGenerator(
   : HgiShaderGenerator(descriptor)
   , _generatorShaderSections(_BuildShaderStageEntryPoints(descriptor))
 {
+    for (const auto &member: descriptor.stageGlobalMembers) {
+        HgiShaderSectionAttributeVector attrs;
+        CreateShaderSection<
+            HgiMetalMemberShaderSection>(
+                member.nameInShader,
+                member.type,
+                attrs,
+                member.arraySize);
+    }
+    std::stringstream macroSection;
+    macroSection << _GetHeader(device);
+    if (_IsTessFunction(descriptor)) {
+        macroSection << "#define VERTEX_CONTROL_POINTS_PER_PATCH "
+        << descriptor.tessellationDescriptor.numVertsPerPatchIn
+        << "\n";
+    }
+    
     CreateShaderSection<HgiMetalMacroShaderSection>(
-        _GetHeader(device),
+        macroSection.str(),
         "Headers");
 
 }

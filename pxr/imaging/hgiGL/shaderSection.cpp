@@ -134,6 +134,7 @@ HgiGLMacroShaderSection::VisitGlobalMacros(std::ostream &ss)
 HgiGLMemberShaderSection::HgiGLMemberShaderSection(
     const std::string &identifier,
     const std::string &typeName,
+    const HgiInterpolationType interpolation,
     const HgiShaderSectionAttributeVector &attributes,
     const std::string &storageQualifier,
     const std::string &defaultValue,
@@ -146,6 +147,7 @@ HgiGLMemberShaderSection::HgiGLMemberShaderSection(
                          arraySize,
                          blockInstanceIdentifier)
     , _typeName(typeName)
+    , _interpolation(interpolation)
 {
 }
 
@@ -154,6 +156,20 @@ HgiGLMemberShaderSection::~HgiGLMemberShaderSection() = default;
 bool
 HgiGLMemberShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
 {
+    if (HasBlockInstanceIdentifier()) {
+        return true;
+    }
+
+    switch (_interpolation) {
+    case HgiInterpolationDefault:
+        break;
+    case HgiInterpolationFlat:
+        ss << "flat ";
+        break;
+    case HgiInterpolationNoPerspective:
+        ss << "noperspective ";
+        break;
+    }
     WriteDeclaration(ss);
     return true;
 }

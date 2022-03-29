@@ -41,8 +41,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_PUBLIC_TOKENS(HgiTokens, HGI_API, HGI_TOKENS);
 
 #define HGI_SHADER_KEYWORD_TOKENS    \
+    (hdPosition) \
+    (hdPointCoord) \
+    (hdClipDistance) \
+    (hdCullDistance) \
+    (hdVertexID) \
+    (hdInstanceID) \
+    (hdPrimitiveID) \
+    (hdSampleID) \
+    (hdSamplePosition) \
+    (hdFragCoord) \
+    (hdFrontFacing) \
+    (hdLayer) \
+    (hdBaseVertex) \
+    (hdBaseInstance) \
+    (hdViewportIndex) \
+    (hdPositionInPatch) \
+    (hdPatchID) \
     (hdGlobalInvocationID) \
-    (hdPosition)
+    (hdBaryCoordNoPerspNV)
 
 TF_DECLARE_PUBLIC_TOKENS(
     HgiShaderKeywordTokens, HGI_API, HGI_SHADER_KEYWORD_TOKENS);

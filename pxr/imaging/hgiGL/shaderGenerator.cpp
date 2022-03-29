@@ -29,6 +29,8 @@
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
+#include <unordered_map>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 static const char *
@@ -299,21 +301,38 @@ HgiGLShaderGenerator::_WriteConstantParams(
 void
 HgiGLShaderGenerator::_WriteInOuts(
     const HgiShaderFunctionParamDescVector &parameters,
-    const std::string &qualifier) 
+    const std::string &qualifier)
 {
-    uint32_t counter = 0;
-
     //To unify glslfx across different apis, other apis
     //may want these to be defined, but since they are
     //taken in opengl we ignore them
     const static std::set<std::string> takenOutParams {
         "gl_Position",
         "gl_FragColor",
-        "gl_FragDepth"
+        "gl_FragDepth",
+        "gl_PointSize",
+        "gl_ClipDistance",
+        "gl_CullDistance",
     };
-    const static std::map<std::string, std::string> takenInParams {
+
+    const static std::unordered_map<std::string, std::string> takenInParams {
         { HgiShaderKeywordTokens->hdPosition, "gl_Position"},
-        { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"}
+        { HgiShaderKeywordTokens->hdPointCoord, "gl_PointCoord"},
+        { HgiShaderKeywordTokens->hdClipDistance, "gl_ClipDistance"},
+        { HgiShaderKeywordTokens->hdCullDistance, "gl_CullDistance"},
+        { HgiShaderKeywordTokens->hdVertexID, "gl_VertexID"},
+        { HgiShaderKeywordTokens->hdInstanceID, "gl_InstanceID"},
+        { HgiShaderKeywordTokens->hdPrimitiveID, "gl_PrimitiveID"},
+        { HgiShaderKeywordTokens->hdSampleID, "gl_SampleID"},
+        { HgiShaderKeywordTokens->hdSamplePosition, "gl_SamplePosition"},
+        { HgiShaderKeywordTokens->hdFragCoord, "gl_FragCoord"},
+        { HgiShaderKeywordTokens->hdBaseVertex, "gl_BaseVertex"},
+        { HgiShaderKeywordTokens->hdBaseInstance, "gl_BaseInstance"},
+        { HgiShaderKeywordTokens->hdFrontFacing, "gl_FrontFacing"},
+        { HgiShaderKeywordTokens->hdLayer, "gl_Layer"},
+        { HgiShaderKeywordTokens->hdViewportIndex, "gl_ViewportIndex"},
+        { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"},
+        { HgiShaderKeywordTokens->hdBaryCoordNoPerspNV, "gl_BaryCoordNoPerspNV"},
     };
 
     const bool in_qualifier = qualifier == "in";
@@ -322,32 +341,44 @@ HgiGLShaderGenerator::_WriteInOuts(
         //Skip writing out taken parameter names
         const std::string &paramName = param.nameInShader;
         if (out_qualifier &&
-                takenOutParams.find(paramName) != takenOutParams.end()) {
+                takenOutParams.find(param.role) != takenOutParams.end()) {
             continue;
         }
         if (in_qualifier) {
             const std::string &role = param.role;
             auto const& keyword = takenInParams.find(role);
             if (keyword != takenInParams.end()) {
-                CreateShaderSection<HgiGLKeywordShaderSection>(
-                    paramName,
-                    param.type,
-                    keyword->second);
+                if (role == HgiShaderKeywordTokens->hdGlobalInvocationID) {
+                    CreateShaderSection<HgiGLKeywordShaderSection>(
+                        paramName,
+                        param.type,
+                        keyword->second);
+                }
                 continue;
             }
         }
 
-        const HgiShaderSectionAttributeVector attrs {
-            HgiShaderSectionAttribute{"location", std::to_string(counter)}
-        };
+        HgiShaderSectionAttributeVector attrs;
 
-        GetShaderSections()->push_back(
-            std::make_unique<HgiGLMemberShaderSection>(
-                paramName,
-                param.type,
-                attrs,
-                qualifier));
-        counter++;
+        // Currently, all interstage variables and blocks are matched by name
+        const bool useInterstageSlot = false;
+
+        if (param.location != -1) {
+            // If a location has been specified then add it to the attributes.
+            attrs.push_back({"location", std::to_string(param.location)});
+        } else if (useInterstageSlot && (param.interstageSlot != -1)) {
+            // For interstage parameters use the interstageSlot for location.
+            attrs.push_back({"location", std::to_string(param.interstageSlot)});
+        }
+
+        CreateShaderSection<HgiGLMemberShaderSection>(
+            paramName,
+            param.type,
+            param.interpolation,
+            attrs,
+            qualifier,
+            std::string(),
+            param.arraySize);
     }
 }
 
@@ -365,6 +396,7 @@ HgiGLShaderGenerator::_WriteInOutBlocks(
                 CreateShaderSection<HgiGLMemberShaderSection>(
                     member.name,
                     member.type,
+                    HgiInterpolationDefault,
                     HgiShaderSectionAttributeVector(),
                     qualifier,
                     std::string(),

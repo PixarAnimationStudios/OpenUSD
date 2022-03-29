@@ -920,17 +920,32 @@ HgiMetalParameterInputShaderSection::VisitEntryPointFunctionExecutions(
             ss << "\n";
         }
         HgiShaderSection *member = structDeclMembers[i];
-        ss << scopeInstanceName << ".";
-        if (member->HasBlockInstanceIdentifier()) {
-            member->WriteBlockInstanceIdentifier(ss);
-            ss << ".";
+        const std::string &arraySize = member->GetArraySize();
+        if (!arraySize.empty()) {
+            ss << "for (int arrInd = 0; arrInd < ";
+            ss << arraySize;
+            ss << "; arrInd++) {\n";
+            ss << scopeInstanceName << ".";
+            member->WriteIdentifier(ss);
+            ss << "[arrInd] = ";
+            WriteIdentifier(ss);
+            ss << "[arrInd]"
+               << (_isPointer ? "->" : ".");
+            member->WriteIdentifier(ss);
+            ss << ";\n}";
+        } else {
+            ss << scopeInstanceName << ".";
+            if (member->HasBlockInstanceIdentifier()) {
+                member->WriteBlockInstanceIdentifier(ss);
+                ss << ".";
+            }
+            member->WriteIdentifier(ss);
+            ss << " = ";
+            WriteIdentifier(ss);
+            ss << (_isPointer ? "->" : ".");
+            member->WriteIdentifier(ss);
+            ss << ";";
         }
-        member->WriteIdentifier(ss);
-        ss << " = ";
-        WriteIdentifier(ss);
-        ss << (_isPointer ? "->" : ".");
-        member->WriteIdentifier(ss);
-        ss << ";";
     }
     return true;
 }

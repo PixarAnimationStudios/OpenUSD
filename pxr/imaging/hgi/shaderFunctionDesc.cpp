@@ -42,11 +42,21 @@ HgiShaderFunctionBufferDesc::HgiShaderFunctionBufferDesc()
 {
 }
 
-HgiShaderFunctionParamDesc::HgiShaderFunctionParamDesc() = default;
-
 HgiShaderFunctionComputeDesc::HgiShaderFunctionComputeDesc()
     : localSize(GfVec3i(0, 0, 0))
 { 
+}
+
+HgiShaderFunctionParamDesc::HgiShaderFunctionParamDesc()
+  : location(-1)
+  , interstageSlot(-1)
+  , interpolation(HgiInterpolationDefault)
+{
+}
+
+HgiShaderFunctionParamBlockDesc::HgiShaderFunctionParamBlockDesc()
+  : interstageSlot(-1)
+{
 }
 
 HgiShaderFunctionTessellationDesc::HgiShaderFunctionTessellationDesc()
@@ -131,9 +141,11 @@ bool operator==(
 {
     return lhs.nameInShader == rhs.nameInShader &&
            lhs.type == rhs.type && 
+           lhs.location == rhs.location &&
+           lhs.interstageSlot == rhs.interstageSlot &&
+           lhs.interpolation == rhs.interpolation &&
            lhs.role == rhs.role &&
-           lhs.attribute == rhs.attribute &&
-           lhs.attributeIndex == rhs.attributeIndex;
+           lhs.arraySize == rhs.arraySize;
 }
 
 bool operator!=(
@@ -221,7 +233,8 @@ bool operator==(
            lhs.stageInputs == rhs.stageInputs &&
            lhs.stageOutputs == rhs.stageOutputs &&
            lhs.computeDescriptor == rhs.computeDescriptor &&
-           lhs.tessellationDescriptor == rhs.tessellationDescriptor;
+           lhs.tessellationDescriptor == rhs.tessellationDescriptor &&
+           lhs.fragmentDescriptor == rhs.fragmentDescriptor;
 }
 
 bool operator!=(
@@ -233,7 +246,7 @@ bool operator!=(
 
 void
 HgiShaderFunctionAddTexture(
-    HgiShaderFunctionDesc * const desc,
+    HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const uint32_t dimensions /* = 2 */,
     const HgiFormat &format /* = HgiFormatFloat32Vec4*/,
@@ -252,7 +265,7 @@ HgiShaderFunctionAddTexture(
 
 void
 HgiShaderFunctionAddArrayOfTextures(
-    HgiShaderFunctionDesc * const desc,
+    HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const uint32_t arraySize,
     const uint32_t dimensions /* = 2 */,
@@ -272,7 +285,7 @@ HgiShaderFunctionAddArrayOfTextures(
 
 void
 HgiShaderFunctionAddWritableTexture(
-    HgiShaderFunctionDesc * const desc,
+    HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const uint32_t dimensions /* = 2 */,
     const HgiFormat &format /* = HgiFormatFloat32Vec4*/,
@@ -291,12 +304,12 @@ HgiShaderFunctionAddWritableTexture(
 
 void
 HgiShaderFunctionAddBuffer(
-    HgiShaderFunctionDesc * const desc,
+    HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const std::string &type,
     const uint32_t bindIndex,
-    HgiBindingType binding,
-    uint32_t arraySize)
+    const HgiBindingType binding,
+    const uint32_t arraySize)
 {
     HgiShaderFunctionBufferDesc bufDesc;
     bufDesc.nameInShader = nameInShader;
@@ -311,7 +324,7 @@ HgiShaderFunctionAddBuffer(
 
 void
 HgiShaderFunctionAddWritableBuffer(
-    HgiShaderFunctionDesc * const desc,
+    HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const std::string &type,
     const uint32_t bindIndex)
@@ -328,59 +341,92 @@ HgiShaderFunctionAddWritableBuffer(
 
 void
 HgiShaderFunctionAddConstantParam(
-    HgiShaderFunctionDesc * const desc,
+    HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const std::string &type,
-    const std::string &role,
-    const std::string &attribute,
-    const std::string &attributeIndex)
+    const std::string &role)
 {
     HgiShaderFunctionParamDesc paramDesc;
     paramDesc.nameInShader = nameInShader;
     paramDesc.type = type;
     paramDesc.role = role;
-    paramDesc.attribute = attribute;
-    paramDesc.attributeIndex = attributeIndex;
     
     desc->constantParams.push_back(std::move(paramDesc));
 }
 
 void
 HgiShaderFunctionAddStageInput(
-    HgiShaderFunctionDesc * const desc,
+    HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const std::string &type,
-    const std::string &role,
-    const std::string &attribute,
-    const std::string &attributeIndex)
+    const std::string &role)
 {
     HgiShaderFunctionParamDesc paramDesc;
     paramDesc.nameInShader = nameInShader;
     paramDesc.type = type;
     paramDesc.role = role;
-    paramDesc.attribute = attribute;
-    paramDesc.attributeIndex = attributeIndex;
-    
+
     desc->stageInputs.push_back(std::move(paramDesc));
 }
 
 void
+HgiShaderFunctionAddStageInput(
+        HgiShaderFunctionDesc *functionDesc,
+        HgiShaderFunctionParamDesc const &paramDesc)
+{
+    functionDesc->stageInputs.push_back(paramDesc);
+}
+
+void
+HgiShaderFunctionAddGlobalVariable(
+   HgiShaderFunctionDesc *desc,
+   const std::string &nameInShader,
+   const std::string &type,
+   const std::string &arraySize)
+{
+    HgiShaderFunctionParamDesc paramDesc;
+    paramDesc.nameInShader = nameInShader;
+    paramDesc.type = type;
+    paramDesc.arraySize = arraySize;
+    desc->stageGlobalMembers.push_back(std::move(paramDesc));
+}
+
+void
 HgiShaderFunctionAddStageOutput(
-    HgiShaderFunctionDesc * const desc,
+    HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const std::string &type,
-    const std::string &role,
-    const std::string &attribute,
-    const std::string &attributeIndex)
+    const std::string &role)
 {
     HgiShaderFunctionParamDesc paramDesc;
     paramDesc.nameInShader = nameInShader;
     paramDesc.type = type;
     paramDesc.role = role;
-    paramDesc.attribute = attribute;
-    paramDesc.attributeIndex = attributeIndex;
-    
+
     desc->stageOutputs.push_back(std::move(paramDesc));
+}
+
+void
+HgiShaderFunctionAddStageOutput(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    const std::string &type,
+    const uint32_t location)
+{
+    HgiShaderFunctionParamDesc paramDesc;
+    paramDesc.nameInShader = nameInShader;
+    paramDesc.type = type;
+    paramDesc.location = location;
+
+    desc->stageOutputs.push_back(std::move(paramDesc));
+}
+
+void
+HgiShaderFunctionAddStageOutput(
+        HgiShaderFunctionDesc *functionDesc,
+        HgiShaderFunctionParamDesc const &paramDesc)
+{
+    functionDesc->stageOutputs.push_back(paramDesc);
 }
 
 

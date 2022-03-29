@@ -121,6 +121,7 @@ public:
     explicit HgiGLMemberShaderSection(
         const std::string &identifier,
         const std::string &typeName,
+        const HgiInterpolationType interpolation,
         const HgiShaderSectionAttributeVector &attributes,
         const std::string &storageQualifier = std::string(),
         const std::string &defaultValue = std::string(),
@@ -143,6 +144,7 @@ private:
     HgiGLMemberShaderSection(const HgiGLMemberShaderSection&) = delete;
 
     std::string _typeName;
+    HgiInterpolationType _interpolation;
 };
 
 /// \class HgiGLBlockShaderSection
