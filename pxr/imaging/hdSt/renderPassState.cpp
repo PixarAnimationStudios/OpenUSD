@@ -1142,7 +1142,7 @@ uint64_t
 HdStRenderPassState::GetGraphicsPipelineHash() const
 {
     // Hash all of the state that is captured in the pipeline state object.
-    return TfHash::Combine(
+    uint64_t hash = TfHash::Combine(
         _depthBiasUseDefault,
         _depthBiasEnabled,
         _depthBiasConstantFactor,
@@ -1176,6 +1176,22 @@ HdStRenderPassState::GetGraphicsPipelineHash() const
         _conservativeRasterizationEnabled,
         GetClipPlanes().size(),
         _multiSampleEnabled);
+    
+    // Hash the aov bindings by name and format.
+    for (HdRenderPassAovBinding const& binding : GetAovBindings()) {
+        HdStRenderBuffer *renderBuffer =
+            static_cast<HdStRenderBuffer*>(binding.renderBuffer);
+        
+        const uint32_t msaaCount = renderBuffer->IsMultiSampled() ?
+            renderBuffer->GetMSAASampleCount() : 1;
+
+        hash = TfHash::Combine(hash,
+                               binding.aovName,
+                               renderBuffer->GetFormat(),
+                               msaaCount);
+    }
+    
+    return hash;
 }
 
 
