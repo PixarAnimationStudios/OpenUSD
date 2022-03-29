@@ -1873,10 +1873,10 @@ static void _EmitFVarAccessor(
                 << "();\n"
                 << "  return mix("
                 << "mix(" << "HdGet_" << name << "_Coarse(indices[0]),"
-                <<           "HdGet_" << name << "_Coarse(indices[1]), st.s),"
+                <<           "HdGet_" << name << "_Coarse(indices[1]), st.x),"
                 << "mix(" << "HdGet_" << name << "_Coarse(indices[3]),"
-                <<           "HdGet_" << name << "_Coarse(indices[2]), st.s), "
-                << "st.t);\n}\n"; 
+                <<           "HdGet_" << name << "_Coarse(indices[2]), st.x), "
+                << "st.y);\n}\n";
             break;
         }
         case HdSt_GeometricShader::FvarPatchType::PATCH_REFINED_TRIANGLES:
@@ -1885,9 +1885,9 @@ static void _EmitFVarAccessor(
             str << "  ivec3 indices = HdGet_fvarIndices" << fvarChannel 
                 << "();\n"
                 << "  return ("
-                << "HdGet_" << name << "_Coarse(indices[0]) * (1-st.s-st.t)"
-                << " + HdGet_" << name << "_Coarse(indices[1]) * st.s"
-                << " + HdGet_" << name << "_Coarse(indices[2]) * st.t);\n}\n";
+                << "HdGet_" << name << "_Coarse(indices[0]) * (1-st.x-st.y)"
+                << " + HdGet_" << name << "_Coarse(indices[1]) * st.x"
+                << " + HdGet_" << name << "_Coarse(indices[2]) * st.y);\n}\n";
             break;
         }
         case HdSt_GeometricShader::FvarPatchType::PATCH_BSPLINE:
@@ -1901,7 +1901,7 @@ static void _EmitFVarAccessor(
                 << "  float wP[20], wDu[20], wDv[20], wDuu[20], wDuv[20], "
                 << "wDvv[20];\n"
                 << "  OsdEvaluatePatchBasisNormalized(patchType, param,"
-                << " st.s, st.t, wP, wDu, wDv, wDuu, wDuv, wDvv);\n"
+                << " st.x, st.y, wP, wDu, wDv, wDuu, wDuv, wDvv);\n"
                 << "  " << _GetUnpackedType(type, false) << " result = " 
                 << _GetUnpackedType(type, false) << "(0);\n"
                 << "  for (int i = 0; i < HD_NUM_PATCH_VERTS; ++i) {\n"
