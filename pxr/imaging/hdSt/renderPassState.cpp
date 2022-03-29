@@ -832,6 +832,31 @@ GfVec4f _ToVec4f(const VtValue &v)
     return GfVec4f(0.0);
 }
 
+void
+HdStRenderPassState::_InitAttachmentDesc(
+    HgiAttachmentDesc &attachmentDesc,
+    int aovIndex) const
+{
+    // HdSt expresses blending per RenderPassState, where Hgi expresses
+    // blending per-attachment. Transfer pass blend state to attachments.
+    attachmentDesc.blendEnabled = _blendEnabled;
+    attachmentDesc.srcColorBlendFactor = HgiBlendFactor(_blendColorSrcFactor);
+    attachmentDesc.dstColorBlendFactor = HgiBlendFactor(_blendColorDstFactor);
+    attachmentDesc.colorBlendOp = HgiBlendOp(_blendColorOp);
+    attachmentDesc.srcAlphaBlendFactor = HgiBlendFactor(_blendAlphaSrcFactor);
+    attachmentDesc.dstAlphaBlendFactor = HgiBlendFactor(_blendAlphaDstFactor);
+    attachmentDesc.alphaBlendOp = HgiBlendOp(_blendAlphaOp);
+    attachmentDesc.blendConstantColor = _blendConstantColor;
+
+    if (!_colorMaskUseDefault) {
+        if (aovIndex > 0 && aovIndex < (int)_colorMasks.size()) {
+            attachmentDesc.colorMask = _GetColorMask(_colorMasks[aovIndex]);
+        } else if (_colorMasks.size() == 1) {
+            attachmentDesc.colorMask = _GetColorMask(_colorMasks[0]);
+        }
+    }
+}
+
 HgiGraphicsCmdsDesc
 HdStRenderPassState::MakeGraphicsCmdsDesc(
     const HdRenderIndex * const renderIndex) const
@@ -906,24 +931,7 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
             attachmentDesc.clearValue = _ToVec4f(aov.clearValue);
         }
 
-        if (!_colorMaskUseDefault) {
-            if (_colorMasks.size() == 1) {
-                attachmentDesc.colorMask = _GetColorMask(_colorMasks[0]);
-            } else if (aovIndex < _colorMasks.size()) {
-                attachmentDesc.colorMask = _GetColorMask(_colorMasks[aovIndex]);
-            }
-        }
-
-        // HdSt expresses blending per RenderPassState, where Hgi expresses
-        // blending per-attachment. Transfer pass blend state to attachments.
-        attachmentDesc.blendEnabled = _blendEnabled;
-        attachmentDesc.srcColorBlendFactor=HgiBlendFactor(_blendColorSrcFactor);
-        attachmentDesc.dstColorBlendFactor=HgiBlendFactor(_blendColorDstFactor);
-        attachmentDesc.colorBlendOp = HgiBlendOp(_blendColorOp);
-        attachmentDesc.srcAlphaBlendFactor=HgiBlendFactor(_blendAlphaSrcFactor);
-        attachmentDesc.dstAlphaBlendFactor=HgiBlendFactor(_blendAlphaDstFactor);
-        attachmentDesc.alphaBlendOp = HgiBlendOp(_blendAlphaOp);
-        attachmentDesc.blendConstantColor = _blendConstantColor;
+        _InitAttachmentDesc(attachmentDesc, aovIndex);
 
         if (HdAovHasDepthSemantic(aov.aovName) ||
             HdAovHasDepthStencilSemantic(aov.aovName)) {
@@ -998,6 +1006,51 @@ HdStRenderPassState::_InitPrimitiveState(
                     : HgiTessellationState::PatchType::Quad;
         }
     }
+}
+
+void
+HdStRenderPassState::_InitAttachmentState(
+    HgiGraphicsPipelineDesc * pipeDesc) const
+{
+    // For Metal we have to pass the color and depth descriptors down so
+    // that they are available when creating the Render Pipeline State for
+    // the fragment shaders.
+    HdRenderPassAovBindingVector const& aovBindings = GetAovBindings();
+
+    for (size_t aovIndex = 0; aovIndex < aovBindings.size(); ++aovIndex) {
+        HdRenderPassAovBinding const & binding = aovBindings[aovIndex];
+        if (HdAovHasDepthSemantic(binding.aovName) ||
+            HdAovHasDepthStencilSemantic(binding.aovName)) {
+            HdFormat const hdFormat = binding.renderBuffer->GetFormat();
+            HgiFormat const format = HdStHgiConversions::GetHgiFormat(hdFormat);
+            pipeDesc->depthAttachmentDesc.format = format;
+            pipeDesc->depthAttachmentDesc.usage =
+                HgiTextureUsageBitsDepthTarget;
+
+            if (HdAovHasDepthStencilSemantic(binding.aovName)) {
+                pipeDesc->depthAttachmentDesc.usage |=
+                    HgiTextureUsageBitsStencilTarget;
+            }
+        } else {
+            HdFormat const hdFormat = binding.renderBuffer->GetFormat();
+            HgiFormat const format = HdStHgiConversions::GetHgiFormat(hdFormat);
+            HgiAttachmentDesc attachment;
+            attachment.format = format;
+            _InitAttachmentDesc(attachment, aovIndex);
+            pipeDesc->colorAttachmentDescs.push_back(attachment);
+        }
+    }
+
+    // Assume all the aovs have the same multisample settings.
+    HgiSampleCount sampleCount = HgiSampleCount1;
+    if (!aovBindings.empty() && GetUseAovMultiSample()) {
+        HdStRenderBuffer *firstRenderBuffer =
+            static_cast<HdStRenderBuffer*>(aovBindings.front().renderBuffer);
+
+        sampleCount = HgiSampleCount(firstRenderBuffer->GetMSAASampleCount());
+    }
+
+    pipeDesc->multiSampleState.sampleCount = sampleCount;
 }
 
 void
@@ -1082,6 +1135,7 @@ HdStRenderPassState::InitGraphicsPipelineDesc(
     _InitDepthStencilState(&pipeDesc->depthState);
     _InitMultiSampleState(&pipeDesc->multiSampleState);
     _InitRasterizationState(&pipeDesc->rasterizationState, geometricShader);
+    _InitAttachmentState(pipeDesc);
 }
 
 uint64_t
