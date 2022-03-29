@@ -1062,6 +1062,9 @@ HdStRenderPassState::_InitDepthStencilState(
         depthState->depthCompareFn =
             HdStHgiConversions::GetHgiCompareFunction(_depthFunc);
         depthState->depthWriteEnabled = GetEnableDepthMask();
+    } else {
+        depthState->depthTestEnabled = false;
+        depthState->depthWriteEnabled = false;
     }
 
     if (!GetDepthBiasUseDefault() && GetDepthBiasEnabled()) {
