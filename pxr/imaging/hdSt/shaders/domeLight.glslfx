@@ -56,7 +56,7 @@ vec2 GetTexCoords(ivec2 outCoords)
 {
     vec2 outDims = HdGetSize_outTexture();
     // apply a (0.5, 0.5) offset to use pixel centers and not pixel corners
-    vec2 texCoords = (vec2(outCoords + vec2(0.5, 0.5)) / outDims;
+    vec2 texCoords = (vec2(outCoords) + vec2(0.5, 0.5)) / outDims;
     return texCoords;
 }
 
