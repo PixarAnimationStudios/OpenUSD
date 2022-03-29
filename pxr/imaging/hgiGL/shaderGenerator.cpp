@@ -67,6 +67,13 @@ HgiGLShaderGenerator::HgiGLShaderGenerator(
         std::make_unique<HgiGLMacroShaderSection>(
             _GetMacroBlob(), ""));
 
+    if (descriptor.shaderStage == HgiShaderStageFragment) {
+        if (descriptor.fragmentDescriptor.earlyFragmentTests) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (early_fragment_tests) in;\n");
+        }
+    }
+
     if (descriptor.shaderStage == HgiShaderStageCompute) {
 
         int workSizeX = descriptor.computeDescriptor.localSize[0];

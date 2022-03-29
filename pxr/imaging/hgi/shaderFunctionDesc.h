@@ -300,6 +300,34 @@ bool operator!=(
         const HgiShaderFunctionTessellationDesc& lhs,
         const HgiShaderFunctionTessellationDesc& rhs);
 
+///
+/// Describes a fragment function's description
+///
+/// <ul>
+/// <li>earlyFragmentTests:
+///   Fragment shader tests will be performed before fragment
+///   shader execution when enabled.</li>
+/// </ul>
+///
+struct HgiShaderFunctionFragmentDesc
+{
+    HGI_API
+    HgiShaderFunctionFragmentDesc();
+
+    bool earlyFragmentTests;
+
+};
+
+HGI_API
+bool operator==(
+        const HgiShaderFunctionFragmentDesc& lhs,
+        const HgiShaderFunctionFragmentDesc& rhs);
+
+HGI_API
+bool operator!=(
+        const HgiShaderFunctionFragmentDesc& lhs,
+        const HgiShaderFunctionFragmentDesc& rhs);
+
 /// \struct HgiShaderFunctionDesc
 ///
 /// Describes the properties needed to create a GPU shader function.
@@ -355,6 +383,7 @@ struct HgiShaderFunctionDesc
     std::vector<HgiShaderFunctionParamBlockDesc> stageOutputBlocks;
     HgiShaderFunctionTessellationDesc tessellationDescriptor;
     HgiShaderFunctionComputeDesc computeDescriptor;
+    HgiShaderFunctionFragmentDesc fragmentDescriptor;
 };
 
 using HgiShaderFunctionDescVector =

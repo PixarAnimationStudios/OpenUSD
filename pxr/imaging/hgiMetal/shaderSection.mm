@@ -82,17 +82,21 @@ void
 HgiMetalShaderSection::WriteAttributesWithIndex(std::ostream& ss) const
 {
     const HgiShaderSectionAttributeVector &attributes = GetAttributes();
-
+    if (attributes.size() > 0) {
+        ss << "[[";
+    }
     for (size_t i = 0; i < attributes.size(); i++) {
         if (i > 0) {
-            ss << " ";
+            ss << ", ";
         }
         
         const HgiShaderSectionAttribute &a = attributes[i];
-        ss << "[[" << a.identifier;
+        ss << a.identifier;
         if (!a.index.empty()) {
             ss << "(" << a.index << ")";
         }
+    }
+    if (attributes.size() > 0) {
         ss << "]]";
     }
 }

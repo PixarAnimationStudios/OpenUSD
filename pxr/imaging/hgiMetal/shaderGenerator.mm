@@ -151,7 +151,8 @@ public:
           const std::string &scopePostfix,
           const std::string &entryPointStageName,
           const std::string &outputTypeName,
-          const std::string &entryPointFunctionName);
+          const std::string &entryPointFunctionName,
+          const std::string &entryPointAttributes);
     
     HgiMetalShaderStageEntryPoint(
           const ShaderStageData &stageData,
@@ -159,11 +160,13 @@ public:
           const std::string &outputShortHandPrefix,
           const std::string &scopePostfix,
           const std::string &entryPointStageName,
-          const std::string &inputInstanceName);
+          const std::string &inputInstanceName,
+          const std::string &entryPointAttributes);
 
     const std::string& GetOutputShortHandPrefix() const;
     const std::string& GetScopePostfix() const;
     const std::string& GetEntryPointStageName() const;
+    const std::string& GetEntryPointAttributes() const;
     const std::string& GetEntryPointFunctionName() const;
     const std::string& GetOutputTypeName() const;
     const std::string& GetInputsInstanceName() const;
@@ -211,6 +214,7 @@ private:
     const std::string _entryPointStageName;
     const std::string _outputTypeName;
     const std::string _entryPointFunctionName;
+    const std::string _entryPointAttributes;
     const std::string _inputInstanceName;
 };
 
@@ -878,13 +882,15 @@ HgiMetalShaderStageEntryPoint::HgiMetalShaderStageEntryPoint(
       const std::string &outputShortHandPrefix,
       const std::string &scopePostfix,
       const std::string &entryPointStageName,
-      const std::string &inputInstanceName)
+      const std::string &inputInstanceName,
+      const std::string &entryPointAttributes)
     : _inputsGenericWrapper(stageData.inputsGenericWrapper),
       _outputShortHandPrefix(outputShortHandPrefix),
       _scopePostfix(scopePostfix),
       _entryPointStageName(entryPointStageName),
       _outputTypeName(_BuildOutputTypeName(*this)),
       _entryPointFunctionName(entryPointStageName + "EntryPoint"),
+      _entryPointAttributes(entryPointAttributes),
       _inputInstanceName(inputInstanceName)
 {
     _Init(
@@ -904,13 +910,13 @@ HgiMetalShaderStageEntryPoint::HgiMetalShaderStageEntryPoint(
     const std::string &scopePostfix,
     const std::string &entryPointStageName,
     const std::string &outputTypeName,
-    const std::string &entryPointFunctionName)
+    const std::string &entryPointFunctionName,
+    const std::string &entryPointAttributes)
   : _outputShortHandPrefix(outputShortHandPrefix),
     _scopePostfix(scopePostfix),
     _entryPointStageName(entryPointStageName),
     _outputTypeName(outputTypeName),
-    _entryPointFunctionName(entryPointFunctionName),
-    _inputInstanceName()
+    _entryPointFunctionName(entryPointFunctionName)
 {
     _Init(
         stageData.GetConstantParams(),
@@ -963,6 +969,12 @@ const std::string&
 HgiMetalShaderStageEntryPoint::GetEntryPointStageName() const
 {
     return _entryPointStageName;
+}
+
+const std::string&
+HgiMetalShaderStageEntryPoint::GetEntryPointAttributes() const
+{
+    return _entryPointAttributes;
 }
 
 const std::string&
@@ -1168,6 +1180,51 @@ void HgiMetalShaderGenerator::_BuildKeywordInputShaderSections(
     }
 }
 
+void
+_BuildTessAttribute(
+        std::stringstream &ss,
+        const HgiShaderFunctionTessellationDesc &tessDesc)
+{
+    ss << "[[patch(";
+    switch (tessDesc.patchType) {
+        case HgiShaderFunctionTessellationDesc::PatchType::Triangle:
+            ss << "triangle, ";
+            break;
+        case HgiShaderFunctionTessellationDesc::PatchType::Quad:
+            ss << "quad, ";
+            break;
+            default:
+                TF_CODING_ERROR("Unknown patch type");
+            break;
+    }
+    ss << tessDesc.numVertsPerPatchIn << ")]]";
+}
+
+void
+_BuildFragmentAttribute(
+        std::stringstream &ss,
+        const HgiShaderFunctionFragmentDesc &fragmentDesc)
+{
+    if (fragmentDesc.earlyFragmentTests) {
+        ss << "[[early_fragment_tests]]\n";
+    }
+}
+
+void
+_BuildComputeAttribute(
+        std::stringstream &ss,
+        const HgiShaderFunctionComputeDesc &computeDesc)
+{
+    if (computeDesc.localSize[0] > 0 &&
+        computeDesc.localSize[1] > 0 &&
+        computeDesc.localSize[2] > 0) {
+        ss << "[[max_total_threads_per_threadgroup("
+           << computeDesc.localSize[0] << " * "
+           << computeDesc.localSize[1] << " * "
+           << computeDesc.localSize[2] << ")]]\n";
+    }
+}
+
 std::unique_ptr<HgiMetalShaderStageEntryPoint>
 HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
     const HgiShaderFunctionDesc &descriptor)
@@ -1176,6 +1233,8 @@ HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
 
     //Create differing shader function signature based on stage
     const ShaderStageData stageData(descriptor, this);
+
+    std::stringstream functionAttributesSS = std::stringstream();
     
     switch (descriptor.shaderStage) {
         case HgiShaderStageVertex: {
@@ -1186,9 +1245,13 @@ HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
                         "vsInput",
                         "vsInput",
                         "vertex",
-                        "vsInput");
+                        "vsInput",
+                        functionAttributesSS.str());
         }
         case HgiShaderStageFragment: {
+            _BuildFragmentAttribute(functionAttributesSS,
+                                    descriptor.fragmentDescriptor);
+
             return std::make_unique
                     <HgiMetalShaderStageEntryPoint>(
                         stageData,
@@ -1196,9 +1259,13 @@ HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
                         "fs",
                         "Frag",
                         "fragment",
-                        "vsOutput");
+                        "vsOutput",
+                        functionAttributesSS.str());
         }
         case HgiShaderStageCompute: {
+            _BuildComputeAttribute(functionAttributesSS,
+                                   descriptor.computeDescriptor);
+
             return std::make_unique
                     <HgiMetalShaderStageEntryPoint>(
                         stageData,
@@ -1207,7 +1274,22 @@ HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
                         "Compute",
                         "kernel",
                         "void",
-                        "computeEntryPoint");
+                        "computeEntryPoint",
+                        functionAttributesSS.str());
+        }
+        case HgiShaderStagePostTessellationVertex: {
+            _BuildTessAttribute(functionAttributesSS,
+                                descriptor.tessellationDescriptor);
+
+            return std::make_unique
+                    <HgiMetalShaderStageEntryPoint>(
+                            stageData,
+                            this,
+                            "tv",
+                            "TessVert",
+                            "vertex",
+                            "tvInput",
+                            functionAttributesSS.str());
         }
         default: {
             TF_CODING_ERROR("Unknown shader stage");
@@ -1221,15 +1303,11 @@ HgiMetalShaderGenerator::HgiMetalShaderGenerator(
     id<MTLDevice> device)
   : HgiShaderGenerator(descriptor)
   , _generatorShaderSections(_BuildShaderStageEntryPoints(descriptor))
-  , _computeThreadGroupSize(GfVec3i(0))
 {
     CreateShaderSection<HgiMetalMacroShaderSection>(
         _GetHeader(device),
         "Headers");
 
-    if (descriptor.shaderStage == HgiShaderStageCompute) {
-        _computeThreadGroupSize = descriptor.computeDescriptor.localSize;
-    }
 }
 
 HgiMetalShaderGenerator::~HgiMetalShaderGenerator() = default;
@@ -1323,14 +1401,7 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
         returnSS << "void";
     }
 
-    if (_computeThreadGroupSize[0] > 0 &&
-        _computeThreadGroupSize[1] > 0 &&
-        _computeThreadGroupSize[2] > 0) {
-        ss << "[[max_total_threads_per_threadgroup("
-           << _computeThreadGroupSize[0] << " * "
-           << _computeThreadGroupSize[1] << " * "
-           << _computeThreadGroupSize[2] << ")]]\n";
-    }
+    ss << _generatorShaderSections->GetEntryPointAttributes();
 
     ss << _generatorShaderSections->GetEntryPointStageName();
     ss << " " << returnSS.str() << " "

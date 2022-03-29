@@ -85,6 +85,27 @@ bool operator!=(
     return !(lhs == rhs);
 }
 
+
+HgiShaderFunctionFragmentDesc::HgiShaderFunctionFragmentDesc()
+    : earlyFragmentTests(false)
+{
+}
+
+bool operator==(
+    const HgiShaderFunctionFragmentDesc& lhs,
+    const HgiShaderFunctionFragmentDesc& rhs)
+{
+    return lhs.earlyFragmentTests == rhs.earlyFragmentTests;
+}
+
+bool operator!=(
+    const HgiShaderFunctionFragmentDesc& lhs,
+    const HgiShaderFunctionFragmentDesc& rhs)
+{
+    return !(lhs == rhs);
+}
+
+
 bool operator==(
     const HgiShaderFunctionBufferDesc& lhs,
     const HgiShaderFunctionBufferDesc& rhs)
