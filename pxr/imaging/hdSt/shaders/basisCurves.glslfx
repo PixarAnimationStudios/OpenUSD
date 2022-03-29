@@ -60,11 +60,11 @@ out CurveVertexData
 } outData;
 
 // We will either generate a camera facing normal or use the authored normal.
-vec3 getNormal(MAT4 transform);
+FORWARD_DECL(vec3 getNormal(MAT4 transform));
 // Fwd declare methods defined in pointId.glslfx, that are used below.
-int GetPointId();
-float GetPointRasterSize(int);
-void ProcessPointId(int);
+FORWARD_DECL(int GetPointId());
+FORWARD_DECL(float GetPointRasterSize(int));
+FORWARD_DECL(void ProcessPointId(int));
 
 void main(void)
 {
@@ -129,9 +129,9 @@ out CurveVertexData
 #endif
 
 // Fwd declare methods defined in pointId.glslfx, that are used below.
-int GetPointId();
-float GetPointRasterSize(int);
-void ProcessPointId(int);
+FORWARD_DECL(int GetPointId());
+FORWARD_DECL(float GetPointRasterSize(int));
+FORWARD_DECL(void ProcessPointId(int));
 
 void main(void)
 {
@@ -447,7 +447,7 @@ out CurveVertexData
     vec4 Peye;
 } outData;
 
-Coeffs evaluateBasis(float u, float u2, float u3);
+FORWARD_DECL(Coeffs evaluateBasis(float u, float u2, float u3));
 
 void main()
 {
@@ -503,10 +503,11 @@ out float v;
 // Predefine so that we can later swap in the correct one depending
 // on what type of curve we have
 
-void evaluate(float u, float v, out vec4 position, out vec4 tangent, 
-              out float width, out vec3 normal);
-
-Coeffs evaluateBasis(float u, float u2, float u3);
+FORWARD_DECL(
+    void evaluate(float u, float v, REF(thread, vec4) position,
+                  REF(thread, vec4) tangent, REF(thread, float) width,
+                  REF(thread, vec3) normal));
+FORWARD_DECL(Coeffs evaluateBasis(float u, float u2, float u3));
 
 // it's the responsibility of orient to store Neye, usually with either
 // the computed normal or the tangent (from which the normal will be computed
@@ -598,8 +599,9 @@ vec3 evaluateNormal(float u)
     return mix(inData[1].Neye, inData[0].Neye, u);
 }
 
-void evaluate(float u, float v, out vec4 position, out vec4 tangent, 
-              out float width, out vec3 normal){
+void evaluate(float u, float v, REF(thread, vec4) position,
+              REF(thread, vec4) tangent, REF(thread, float) width, 
+              REF(thread, vec3) normal) {
     vec4 p0 = inData[0].Peye;
     vec4 p1 = inData[1].Peye;
 
@@ -620,12 +622,13 @@ struct Coeffs
   vec4 tangent_basis;
 };
 
-Coeffs evaluateBasis(float u, float u2, float u3);
-float evaluateWidths(vec4 basis, float u);
-vec3 evaluateNormal(vec4 basis, float u);
+FORWARD_DECL(Coeffs evaluateBasis(float u, float u2, float u3));
+FORWARD_DECL(float evaluateWidths(vec4 basis, float u));
+FORWARD_DECL(vec3 evaluateNormal(vec4 basis, float u));
 
-void evaluate(float u, float v, out vec4 position, out vec4 tangent, 
-              out float width, out vec3 normal){
+void evaluate(float u, float v, REF(thread, vec4) position,
+              REF(thread, vec4) tangent, REF(thread, float) width,
+              REF(thread, vec3) normal) {
     vec4 p0 = inData[0].Peye;
     vec4 p1 = inData[1].Peye;
     vec4 p2 = inData[2].Peye;
@@ -949,7 +952,7 @@ in CurveVertexData
 centroid in float u;
 centroid in float v;
 
-vec3 fragmentNormal(vec3 position, vec3 normal, float v);
+FORWARD_DECL(vec3 fragmentNormal(vec3 position, vec3 normal, float v));
 void main(void)
 {
     DiscardBasedOnTopologicalVisibility();

@@ -31,18 +31,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static const std::string &
-_GetMacroBlob()
+static const char *
+_GetPackedTypeDefinitions()
 {
-    // Allows metal and GL to both handle out function params.
-    // On the metal side, the ref(space,type) parameter defines
-    // if items are in device or thread domain.
-    const static std::string header =
-        "#define REF(space,type) inout type\n"
-        "#define HD_NEEDS_FORWARD_DECL\n"
-        "#define HD_FWD_DECL(decl) decl\n"
-        ;
-    return header;
+    return
+        "\n"
+        "struct hgi_ivec3 { int    x, y, z; };\n"
+        "struct hgi_vec3  { float  x, y, z; };\n"
+        "struct hgi_dvec3 { double x, y, z; };\n"
+        "struct hgi_mat3  { float  m00, m01, m02,\n"
+        "                          m10, m11, m12,\n"
+        "                          m20, m21, m22; };\n"
+        "struct hgi_dmat3 { double m00, m01, m02,\n"
+        "                          m10, m11, m12,\n"
+        "                          m20, m21, m22; };\n";
 }
 
 template<typename SectionType, typename ...T>
@@ -63,9 +65,6 @@ HgiGLShaderGenerator::HgiGLShaderGenerator(
   , _hgi(hgi)
 {
     // Write out all GL shaders and add to shader sections
-    GetShaderSections()->push_back(
-        std::make_unique<HgiGLMacroShaderSection>(
-            _GetMacroBlob(), ""));
 
     if (descriptor.shaderStage == HgiShaderStageFragment) {
         if (descriptor.fragmentDescriptor.earlyFragmentTests) {
@@ -174,6 +173,30 @@ HgiGLShaderGenerator::_WriteExtensions(std::ostream &ss)
             ss << "#extension GL_NV_fragment_shader_barycentric: require\n";
         }
     }
+}
+
+void
+HgiGLShaderGenerator::_WriteMacros(std::ostream &ss)
+{
+    // Allows Metal and GL to both handle out function params.
+    // On the Metal side, the ref(space,type) parameter defines
+    // if items are in device or thread domain.
+    ss << "#define REF(space,type) inout type\n"
+          "#define FORWARD_DECL(func_decl) func_decl;\n"
+          "#define ATOMIC_LOAD(a) (a)\n"
+          "#define ATOMIC_STORE(a, v) (a) = (v)\n"
+          "#define ATOMIC_ADD(a, v) atomicAdd(a, v)\n"
+          "#define ATOMIC_EXCHANGE(a, v) atomicExchange(a, v)\n"
+          "#define atomic_int int\n"
+          "#define atomic_uint uint\n";
+
+    // Advertise to shader code that we support double precision math
+    ss << "\n"
+        << "#define HGI_HAS_DOUBLE_TYPE 1\n"
+        << "\n";
+
+    // Define platform independent baseInstance as 0
+    ss << "#define gl_BaseInstance 0\n";
 }
 
 void
@@ -366,6 +389,11 @@ HgiGLShaderGenerator::_Execute(std::ostream &ss)
     _WriteVersion(ss);
 
     _WriteExtensions(ss);
+
+    // Write out all GL shaders and add to shader sections
+    _WriteMacros(ss);
+
+    ss << _GetPackedTypeDefinitions() << "\n";
 
     ss << _GetShaderCodeDeclarations() << "\n";
 

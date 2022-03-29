@@ -44,8 +44,8 @@
 #define JITTER_NUM_SAMPLES 16
 #define PCF_NUM_SAMPLES JITTER_NUM_SAMPLES 
 
-float shadowSample(int index, vec4 coord);
-float shadowCompare(int index, vec4 coord);
+FORWARD_DECL(float shadowSample(int index, vec4 coord));
+FORWARD_DECL(float shadowCompare(int index, vec4 coord));
 
 vec2 jitter[JITTER_NUM_SAMPLES] = {
     vec2(-0.94201624, -0.39906216),
@@ -97,8 +97,8 @@ shadowFilter(int index, vec4 Pshadow, vec4 Peye)
 #define JITTER_NUM_SAMPLES 16
 #define PCF_NUM_SAMPLES JITTER_NUM_SAMPLES 
 
-float shadowSample(int index, vec4 coord);
-float shadowCompare(int index, vec4 coord);
+FORWARD_DECL(float shadowSample(int index, vec4 coord));
+FORWARD_DECL(float shadowCompare(int index, vec4 coord));
 
 vec2 jitter[JITTER_NUM_SAMPLES] = {
     vec2(-0.94201624, -0.39906216),
@@ -119,7 +119,8 @@ vec2 jitter[JITTER_NUM_SAMPLES] = {
     vec2( 0.14383161, -0.14100790)
 };
 
-vec2 computeShadowFilterWidth(int index, vec4 Peye); // defined in simpleLighting.glslfx
+// defined in simpleLighting.glslfx
+FORWARD_DECL(vec2 computeShadowFilterWidth(int index, vec4 Peye));
 
 float
 shadowFilter(int index, vec4 Pshadow, vec4 Peye)

@@ -45,8 +45,8 @@ struct ShadowMatrix {
     float padding1;
 };
 
-MAT4 GetWorldToViewMatrix();
-MAT4 GetWorldToViewInverseMatrix();
+FORWARD_DECL(mat4 GetWorldToViewMatrix());
+FORWARD_DECL(mat4 GetWorldToViewInverseMatrix());
 
 ShadowMatrix GetShadow(int shadowIndex) {
     ShadowMatrix shadowMat;
@@ -168,8 +168,8 @@ bool GetUseColorMaterialDiffuse() {
     return HdGet_useColorMaterialDiffuse();
 }
 
-MAT4 GetWorldToViewMatrix();
-MAT4 GetWorldToViewInverseMatrix();
+FORWARD_DECL(mat4 GetWorldToViewMatrix());
+FORWARD_DECL(mat4 GetWorldToViewInverseMatrix());
 
 LightSource GetLightSource(int lightIndex) {
     LightSource light;
@@ -504,8 +504,8 @@ integrateLightsConstant(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 // lighting functions
 // ---------------------------------------------------------------------------
 
-LightingContribution
-integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props);
+FORWARD_DECL(LightingContribution integrateLights(vec4 Peye, vec3 Neye, 
+    LightingInterfaceProperties props));
 
 vec4
 simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint,

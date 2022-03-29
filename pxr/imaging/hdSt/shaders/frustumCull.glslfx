@@ -39,7 +39,7 @@ layout (std430, binding = drawIndirectResult_Binding) buffer ResultData {
 void
 FrustumCullCountVisibleInstances(int resultInstanceCount)
 {
-    atomicAdd(numVisibleInstances, resultInstanceCount);
+    ATOMIC_ADD(numVisibleInstances, resultInstanceCount);
 }
 
 --- --------------------------------------------------------------------------
@@ -281,7 +281,7 @@ void main()
     if (isVisible) {
         // increment the instance count and store instanceIndex to culledInstanceIndices.
 
-        uint id = atomicAdd(drawCommands[
+        uint id = ATOMIC_ADD(drawCommands[
             drawCommandIndex * cullParams.drawCommandNumUints +
             instanceCountOffset], 1);
 

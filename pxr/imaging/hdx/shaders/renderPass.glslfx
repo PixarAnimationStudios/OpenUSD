@@ -80,7 +80,7 @@ void RenderOutputImpl(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 
     // +1 because the counter buffer is cleared with -1, but we want the
     // first index to start at 0.
-    int writeIndex = atomicAdd(hdxOitCounterBuffer[0], 1) + 1;
+    int writeIndex = ATOMIC_ADD(hdxOitCounterBuffer[0], 1) + 1;
     
     if (writeIndex < dataBufferSize) {
         int screenIndex =
@@ -88,7 +88,7 @@ void RenderOutputImpl(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 
         if (screenIndex < counterBufferSize) {
             int prevIndex =
-                atomicExchange(hdxOitCounterBuffer[screenIndex+1], writeIndex);
+                ATOMIC_EXCHANGE(hdxOitCounterBuffer[screenIndex+1], writeIndex);
             hdxOitDataBuffer[writeIndex] = color;
 
             // Note that we have a choice here to either pick gl_FragCoord.z or
@@ -117,7 +117,7 @@ void RenderOutputImpl(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     } else {
         // We may overrun the counter buffer integer and wrap back to 0 if
         // we have a lot of OIT samples.
-        atomicAdd(hdxOitCounterBuffer[0], -1);
+        ATOMIC_ADD(hdxOitCounterBuffer[0], -1);
     }
 
     #endif
@@ -177,9 +177,9 @@ vec4 IntToVec4(int id)
 }
 
 // Fwd declare necessary methods to determine the subprim id of a fragment.
-int GetElementID(); // generated via codeGen
-int GetPrimitiveEdgeId(); // defined in edgeId.glslfx, or generated via codeGen
-int GetPointId(); // defined in pointId.glslfx
+FORWARD_DECL(int GetElementID()); // generated via codeGen
+FORWARD_DECL(int GetPrimitiveEdgeId()); // defined in edgeId.glslfx, or generated via codeGen
+FORWARD_DECL(int GetPointId()); // defined in pointId.glslfx
 
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {

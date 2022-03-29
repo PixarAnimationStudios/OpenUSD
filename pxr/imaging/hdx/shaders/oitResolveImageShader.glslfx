@@ -63,7 +63,7 @@ vec4 imageShader(vec2 uv)
     int screenIndex = int(gl_FragCoord.x) + int(gl_FragCoord.y) * screenWidth;
     screenIndex += 1;
 
-    int nodeIndex = hdxOitCounterBuffer[screenIndex];
+    int nodeIndex = ATOMIC_LOAD(hdxOitCounterBuffer[screenIndex]);
     int numDepths = 0;
 
     // XXX renderPass.WriteOitLayersToBuffer does not clamp the number of

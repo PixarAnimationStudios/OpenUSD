@@ -814,7 +814,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIQUADS:
         {
-            _procGS << "vec4 GetPatchCoord(int index);\n"
+            _procGS << "FORWARD_DECL(vec4 GetPatchCoord(int index));\n"
                     << "void ProcessPrimvarsOut(int index) {\n"
                     << "  vec2 localST = GetPatchCoord(index).xy;\n";
             break;
@@ -914,9 +914,9 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // OpenSubdiv tessellation shader (if required)
     if (tessControlShader.find("OsdPerPatchVertexBezier") != std::string::npos) {
         _genTCS << OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
-        _genTCS << "MAT4 GetWorldToViewMatrix();\n";
-        _genTCS << "MAT4 GetProjectionMatrix();\n";
-        _genTCS << "float GetTessLevel();\n";
+        _genTCS << "FORWARD_DECL(MAT4 GetWorldToViewMatrix());\n";
+        _genTCS << "FORWARD_DECL(MAT4 GetProjectionMatrix());\n";
+        _genTCS << "FORWARD_DECL(float GetTessLevel());\n";
         // we apply modelview in the vertex shader, so the osd shaders doesn't need
         // to apply again.
         _genTCS << "mat4 OsdModelViewMatrix() { return mat4(1); }\n";
@@ -1534,10 +1534,12 @@ static void _EmitTextureAccessors(
     if (hasTextureScaleAndBias) {
         accessors 
             << "#ifdef HD_HAS_" << name << "_" << HdStTokens->scale << "\n"
-            << "vec4 HdGet_" << name << "_" << HdStTokens->scale  << "();\n"
+            << "FORWARD_DECL(vec4 HdGet_" << name << "_" << HdStTokens->scale 
+            << "());\n"
             << "#endif\n"
             << "#ifdef HD_HAS_" << name << "_" << HdStTokens->bias  << "\n"
-            << "vec4 HdGet_" << name << "_" << HdStTokens->bias  << "();\n"
+            << "FORWARD_DECL(vec4 HdGet_" << name << "_" << HdStTokens->bias 
+            << "());\n"
             << "#endif\n";
     }
 
@@ -1740,7 +1742,8 @@ static void _EmitTextureAccessors(
     if (!inPrimvars.empty()) {
         accessors
             << "#if defined(HD_HAS_" << inPrimvars[0] << ")\n"
-            << "vec" << dim << " HdGet_" << inPrimvars[0] << "(int localIndex);\n"
+            << "FORWARD_DECL(vec" << dim << " HdGet_" << inPrimvars[0] 
+            << "(int localIndex));\n"
             << "#endif\n";
     }
 
@@ -1931,8 +1934,8 @@ static void _EmitFVarAccessor(
         }
     }
 
-    str << "vec4 GetPatchCoord(int index);\n"
-        << "vec2 GetPatchCoordLocalST();\n"
+    str << "FORWARD_DECL(vec4 GetPatchCoord(int index));\n"
+        << "FORWARD_DECL(vec2 GetPatchCoordLocalST());\n"
         << _GetUnpackedType(type, false)
         << " HdGet_" << name << "(int localIndex) {\n";         
 
@@ -2126,7 +2129,7 @@ HdSt_CodeGen::_GenerateDrawingCoord()
                << "  int instanceCoords[HD_INSTANCE_INDEX_WIDTH]; \n"
                << "};\n";
 
-    _genCommon << "hd_drawingCoord GetDrawingCoord();\n"; // forward declaration
+    _genCommon << "FORWARD_DECL(hd_drawingCoord GetDrawingCoord());\n";
 
     // vertex shader
 
@@ -2684,7 +2687,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                     // per subset draw item containing the coarse face indices. 
                     accessors
                         << "#if defined(HD_HAS_coarseFaceIndex)\n"
-                        << "int HdGet_coarseFaceIndex();\n"
+                        << "FORWARD_DECL(int HdGet_coarseFaceIndex());\n"
                         << "#endif\n"
                         << "ivec3 GetPatchParam() {\n"
                         << "#if defined(HD_HAS_coarseFaceIndex)\n "
@@ -2856,8 +2859,8 @@ HdSt_CodeGen::_GenerateElementPrimvar()
     }
 
     declarations
-        << "int GetPrimitiveEdgeId();\n"
-        << "float GetSelectedEdgeOpacity();\n";
+        << "FORWARD_DECL(int GetPrimitiveEdgeId());\n"
+        << "FORWARD_DECL(float GetSelectedEdgeOpacity());\n";
 
     // Uniform primvar data declarations & accessors
     if (!_geometricShader->IsPrimTypePoints()) {
@@ -3297,10 +3300,10 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
     _genFS  << accessorsFS.str();
 
     // ---------
-    _genFS << "vec4 GetPatchCoord(int index);\n";
+    _genFS << "FORWARD_DECL(vec4 GetPatchCoord(int index));\n";
     _genFS << "vec4 GetPatchCoord() { return GetPatchCoord(0); }\n";
 
-    _genGS << "vec4 GetPatchCoord(int localIndex);\n";
+    _genGS << "FORWARD_DECL(vec4 GetPatchCoord(int localIndex));\n";
 }
 
 void

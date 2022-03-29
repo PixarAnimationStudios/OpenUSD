@@ -51,8 +51,8 @@ out VertexData
 #endif
 
 // Fwd declare methods defined in pointId.glslfx, that are used below.
-int GetPointId();
-void ProcessPointId(int);
+FORWARD_DECL(int GetPointId());
+FORWARD_DECL(void ProcessPointId(int));
 
 void main(void)
 {

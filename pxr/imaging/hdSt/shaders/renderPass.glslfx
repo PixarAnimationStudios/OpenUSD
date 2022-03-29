@@ -191,7 +191,7 @@ vec4 ApplySelectionColor(vec4 color)
 
 // Forward declare selection functionality.
 // XXX: Currently, the non-empty implementation of this is in hdx.
-vec4 ApplySelectionColor(vec4 color);
+FORWARD_DECL(vec4 ApplySelectionColor(vec4 color));
 
 // XXX: Make sure to update hdx/shaders/renderPass.glslfx when editing these
 // color override methods, since they're currently duplicated. This is because
