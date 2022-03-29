@@ -379,13 +379,13 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
             ss << "<" << _baseType;
             ss << ">";
         }
-        ss << " HdGetSampler_" << _samplerSharedIdentifier
+        ss << " HgiGetSampler_" << _samplerSharedIdentifier
         << "(uint index) {\n"
         << "    return ";
         WriteIdentifier(ss);
         ss << "[index];\n}\n";
     } else {
-        ss << "#define HdGetSampler_" << _samplerSharedIdentifier
+        ss << "#define HgiGetSampler_" << _samplerSharedIdentifier
         << "() ";
         WriteIdentifier(ss);
         ss << "\n";
@@ -399,8 +399,8 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
 
     if (_writable) {
         // Write a function that lets you write to the texture with
-        // HdSet_texName(uv, data).
-        ss << "void HdSet_";
+        // HgiSet_texName(uv, data).
+        ss << "void HgiSet_";
         ss << _samplerSharedIdentifier;
         ss << "(" << intType << " uv, vec4 data) {\n";
         ss << "    ";
@@ -411,8 +411,8 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
         ss << "4(data));\n";
         ss << "}\n";
 
-        // HdGetSize_texName()
-        ss << intType << " HdGetSize_";
+        // HgiGetSize_texName()
+        ss << intType << " HgiGetSize_";
         ss << _samplerSharedIdentifier;
         ss << "() {\n";
         ss << "    ";
@@ -427,7 +427,7 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
    
     // Generated code looks like this for texture 'diffuse':
     //
-    // vec4 HdGet_diffuse(vec2 coord) {
+    // vec4 HgiGet_diffuse(vec2 coord) {
     //     vec4 result = is_null_texture(textureBind_diffuse) ? 0 :
     //           textureBind_diffuse.sample(samplerBind_diffuse, coord);
     //     return result;
@@ -440,7 +440,7 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
 
     if (_shadow) {
         if (_arrayOfTexturesSize > 0) {
-            ss << returnType << " HdGet_" << _samplerSharedIdentifier;
+            ss << returnType << " HgiGet_" << _samplerSharedIdentifier;
             ss << "(uint index, ";
             ss << shadowCoordType << " coord) {\n";
             ss << "    " << returnType << " result = is_null_texture(";
@@ -452,7 +452,7 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
             _samplerShaderSectionDependency->WriteIdentifier(ss);
             ss << "[index], coord.xy, coord.z" << "));\n";
         } else {
-            ss << returnType << " HdGet_" << _samplerSharedIdentifier;
+            ss << returnType << " HgiGet_" << _samplerSharedIdentifier;
             ss << "(" << shadowCoordType << " coord) {\n";
             ss << "    " << returnType << " result = is_null_texture(";
             WriteIdentifier(ss);
@@ -465,7 +465,7 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
         }
     } else {
         if (_arrayOfTexturesSize > 0) {
-            ss << returnType << " HdGet_" << _samplerSharedIdentifier;
+            ss << returnType << " HgiGet_" << _samplerSharedIdentifier;
             ss << "(uint index, ";
             ss << coordType << " coord) {\n";
             ss << "    " << returnType << " result = is_null_texture(";
@@ -477,7 +477,7 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
             _samplerShaderSectionDependency->WriteIdentifier(ss);
             ss << "[index], coord));\n";
         } else {
-            ss << returnType << " HdGet_" << _samplerSharedIdentifier;
+            ss << returnType << " HgiGet_" << _samplerSharedIdentifier;
             ss << "(" << coordType << " coord) {\n";
             ss << "    " << returnType << " result = is_null_texture(";
             WriteIdentifier(ss);
@@ -502,8 +502,8 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
     ss << "    return result;\n";
     ss << "}\n";
 
-    // HdGetSize_texName()
-    ss << intType << " HdGetSize_";
+    // HgiGetSize_texName()
+    ss << intType << " HgiGetSize_";
     ss << _samplerSharedIdentifier;
     if (_arrayOfTexturesSize > 0) {
         ss << "(uint index) {\n";
@@ -523,13 +523,13 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
    
     // Generated code looks like this for texture 'diffuse':
     //
-    // vec4 HdTexelFetch_diffuse(ivec2 coord) {
+    // vec4 HgiTexelFetch_diffuse(ivec2 coord) {
     //     vec4 result =  textureBind_diffuse.read(ushort2(coord.x, coord.y));
     //     return result;
     // }
     const std::string intCoordType = 
         dimensions > 1 ? "ivec" + std::to_string(dimensions) : "int";
-    ss << returnType << " HdTexelFetch_" << _samplerSharedIdentifier;
+    ss << returnType << " HgiTexelFetch_" << _samplerSharedIdentifier;
     if (_arrayOfTexturesSize > 0) {
         ss << "(uint index, " << intCoordType << " coord) {\n";
     } else {
@@ -565,12 +565,12 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
    
     // Generated code looks like this for texture 'diffuse':
     //
-    // vec4 HdTextureLod_diffuse(vec2 coord, float lod) {
+    // vec4 HgiTextureLod_diffuse(vec2 coord, float lod) {
     //     vec4 result =  textureBind_diffuse.sample(coord, level(lod));
     //     return result;
     // }
     if (_shadow) {
-        ss << returnType << " HdTextureLod_" << _samplerSharedIdentifier;
+        ss << returnType << " HgiTextureLod_" << _samplerSharedIdentifier;
         if (_arrayOfTexturesSize > 0) {
             ss << "(uint index, " << shadowCoordType << " coord";
         } else {
@@ -592,7 +592,7 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
            << "    return result;\n"
            << "}\n";
     } else {
-        ss << returnType << " HdTextureLod_" << _samplerSharedIdentifier;
+        ss << returnType << " HgiTextureLod_" << _samplerSharedIdentifier;
         if (_arrayOfTexturesSize > 0) {
             ss << "(uint index, " << coordType << " coord";
         } else {

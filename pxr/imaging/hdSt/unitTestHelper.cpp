@@ -469,7 +469,7 @@ static const std::string fragShaderStr =
 "void main(void)\n"
 "{\n"
 "    vec2 coord = (uvOut * screenSize) / 100.f;\n"
-"    vec4 color = vec4(HdGet_colorIn(coord).xyz, 1.0);\n"
+"    vec4 color = vec4(HgiGet_colorIn(coord).xyz, 1.0);\n"
 "    hd_FragColor = color;\n"
 "}\n";
 

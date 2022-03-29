@@ -322,14 +322,14 @@ HgiGLTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
 
     if (_arraySize > 0) {
         WriteType(ss);
-        ss << " HdGetSampler_";
+        ss << " HgiGetSampler_";
         WriteIdentifier(ss);
         ss << "(uint index) {\n";
         ss << "    return ";
         WriteIdentifier(ss);
         ss << "[index];\n}\n";
     } else {
-        ss << "#define HdGetSampler_";
+        ss << "#define HgiGetSampler_";
         WriteIdentifier(ss);
         ss << "() ";
         WriteIdentifier(ss);
@@ -338,8 +338,8 @@ HgiGLTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
 
     if (_writable) {
         // Write a function that lets you write to the texture with 
-        // HdSet_texName(uv, data).
-        ss << "void HdSet_";
+        // HgiSet_texName(uv, data).
+        ss << "void HgiSet_";
         WriteIdentifier(ss);
         ss << "(" << intCoordType << " uv, vec4 data) {\n";
         ss << "    ";
@@ -348,8 +348,8 @@ HgiGLTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
         ss << ", uv, data);\n";
         ss << "}\n";
 
-        // HdGetSize_texName()
-        ss << sizeType << " HdGetSize_";
+        // HgiGetSize_texName()
+        ss << sizeType << " HgiGetSize_";
         WriteIdentifier(ss);
         ss << "() {\n";
         ss << "    ";
@@ -362,9 +362,9 @@ HgiGLTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
         const std::string arrayIndex = (_arraySize > 0) ? "[index]" : "";
         
         // Write a function that lets you query the texture with 
-        // HdGet_texName(uv).
+        // HgiGet_texName(uv).
         _WriteSampledDataType(ss); // e.g., vec4, ivec4, uvec4
-        ss << " HdGet_";
+        ss << " HgiGet_";
         WriteIdentifier(ss);
         ss << "(" << arrayInput << floatCoordType << " uv) {\n";
         ss << "    ";
@@ -375,8 +375,8 @@ HgiGLTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
         ss << "    return result;\n";
         ss << "}\n";
         
-        // HdGetSize_texName()
-        ss << sizeType << " HdGetSize_";
+        // HgiGetSize_texName()
+        ss << sizeType << " HgiGetSize_";
         WriteIdentifier(ss);
         ss << "(" << ((_arraySize > 0) ? "uint index" : "")  << ") {\n";
         ss << "    ";
@@ -385,9 +385,9 @@ HgiGLTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
         ss << arrayIndex << ", 0);\n";
         ss << "}\n";
 
-        // HdTextureLod_texName()
+        // HgiTextureLod_texName()
         _WriteSampledDataType(ss);
-        ss << " HdTextureLod_";
+        ss << " HgiTextureLod_";
         WriteIdentifier(ss);
         ss << "(" << arrayInput << floatCoordType << " coord, float lod) {\n";
         ss << "    ";
@@ -396,10 +396,10 @@ HgiGLTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
         ss << arrayIndex << ", coord, lod);\n";
         ss << "}\n";
         
-        // HdTexelFetch_texName()
+        // HgiTexelFetch_texName()
         if (_textureType != HgiShaderTextureTypeShadowTexture) {
             _WriteSampledDataType(ss);
-            ss << " HdTexelFetch_";
+            ss << " HgiTexelFetch_";
             WriteIdentifier(ss);
             ss << "(" << arrayInput << intCoordType << " coord) {\n";
             ss << "    ";
