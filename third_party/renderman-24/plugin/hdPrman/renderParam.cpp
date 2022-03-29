@@ -297,7 +297,7 @@ _SetParamValue(RtUString const& name,
     } else if (val.IsHolding<VtArray<GfVec2f>>()) {
         const VtArray<GfVec2f>& v = val.UncheckedGet<VtArray<GfVec2f>>();
         params.SetFloatArray(name,
-            reinterpret_cast<const float*>(v.cdata()), 2);
+            reinterpret_cast<const float*>(v.cdata()), 2 * v.size());
     } else if (val.IsHolding<GfVec2d>()) {
         GfVec2d vd = val.UncheckedGet<GfVec2d>();
         float v[2] = {float(vd[0]), float(vd[1])};
@@ -311,7 +311,7 @@ _SetParamValue(RtUString const& name,
             v[i] = GfVec2f(vd[i]);
         }
         params.SetFloatArray(name,
-            reinterpret_cast<const float*>(v.cdata()), 2);
+            reinterpret_cast<const float*>(v.cdata()), 2 * v.size());
     } else if (val.IsHolding<GfVec3f>()) {
         GfVec3f v = val.UncheckedGet<GfVec3f>();
         if (role == HdPrimvarRoleTokens->color) {
@@ -329,21 +329,20 @@ _SetParamValue(RtUString const& name,
     } else if (val.IsHolding<VtArray<GfVec3f>>()) {
         const VtArray<GfVec3f>& v = val.UncheckedGet<VtArray<GfVec3f>>();
         if (role == HdPrimvarRoleTokens->color) {
-            params.SetColor(
-                name, *reinterpret_cast<const RtColorRGB*>(v.cdata()));
+            params.SetColorArray(
+                name, reinterpret_cast<const RtColorRGB*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->point) {
-            params.SetPoint(
-                name, *reinterpret_cast<const RtPoint3*>(v.cdata()));
+            params.SetPointArray(
+                name, reinterpret_cast<const RtPoint3*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->normal) {
-            params.SetNormal(
-                name, *reinterpret_cast<const RtNormal3*>(v.cdata()));
+            params.SetNormalArray(
+                name, reinterpret_cast<const RtNormal3*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->vector) {
-            params.SetVector(
-                name, *reinterpret_cast<const RtVector3*>(v.cdata()));
+            params.SetVectorArray(
+                name, reinterpret_cast<const RtVector3*>(v.cdata()), v.size());
         } else {
             params.SetFloatArray(
-                name, reinterpret_cast<const float*>(v.cdata()),
-                3);
+                name, reinterpret_cast<const float*>(v.cdata()), 3 * v.size());
         }
     } else if (val.IsHolding<GfVec3d>()) {
         // double->float
@@ -369,21 +368,20 @@ _SetParamValue(RtUString const& name,
             v[i] = GfVec3f(vd[i]);
         }
         if (role == HdPrimvarRoleTokens->color) {
-            params.SetColor(
-                name, *reinterpret_cast<const RtColorRGB*>(v.cdata()));
+            params.SetColorArray(
+                name, reinterpret_cast<const RtColorRGB*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->point) {
-            params.SetPoint(
-                name, *reinterpret_cast<const RtPoint3*>(v.cdata()));
+            params.SetPointArray(
+                name, reinterpret_cast<const RtPoint3*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->normal) {
-            params.SetNormal(
-                name, *reinterpret_cast<const RtNormal3*>(v.cdata()));
+            params.SetNormalArray(
+                name, reinterpret_cast<const RtNormal3*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->vector) {
-            params.SetVector(
-                name, *reinterpret_cast<const RtVector3*>(v.cdata()));
+            params.SetVectorArray(
+                name, reinterpret_cast<const RtVector3*>(v.cdata()), v.size());
         } else {
             params.SetFloatArray(
-                name, reinterpret_cast<const float*>(v.cdata()),
-                3);
+                name, reinterpret_cast<const float*>(v.cdata()), 3 * v.size());
         }
     } else if (val.IsHolding<GfVec4f>()) {
         GfVec4f v = val.UncheckedGet<GfVec4f>();
@@ -392,7 +390,7 @@ _SetParamValue(RtUString const& name,
     } else if (val.IsHolding<VtArray<GfVec4f>>()) {
         const VtArray<GfVec4f>& v = val.UncheckedGet<VtArray<GfVec4f>>();
         params.SetFloatArray(
-            name, reinterpret_cast<const float*>(v.cdata()), 4);
+            name, reinterpret_cast<const float*>(v.cdata()), 4 * v.size());
     } else if (val.IsHolding<GfVec4d>()) {
         // double->float
         GfVec4f v(val.UncheckedGet<GfVec4d>());
@@ -407,7 +405,7 @@ _SetParamValue(RtUString const& name,
             v[i] = GfVec4f(vd[i]);
         }
         params.SetFloatArray(
-            name, reinterpret_cast<const float*>(v.cdata()), 4);
+            name, reinterpret_cast<const float*>(v.cdata()), 4 * v.size());
     } else if (val.IsHolding<GfMatrix4d>()) {
         GfMatrix4d v = val.UncheckedGet<GfMatrix4d>();
         params.SetMatrix(name, HdPrman_GfMatrixToRtMatrix(v));
@@ -417,7 +415,7 @@ _SetParamValue(RtUString const& name,
     } else if (val.IsHolding<VtArray<int>>()) {
         const VtArray<int>& v = val.UncheckedGet<VtArray<int>>();
         params.SetIntegerArray(
-            name, reinterpret_cast<const int*>(v.cdata()), 1);
+            name, reinterpret_cast<const int*>(v.cdata()), v.size());
     } else if (val.IsHolding<bool>()) {
         // bool->integer
         int v = val.UncheckedGet<bool>();
@@ -431,7 +429,7 @@ _SetParamValue(RtUString const& name,
             v[i] = int(vb[i]);
         }
         params.SetIntegerArray(
-            name, reinterpret_cast<const int*>(v.cdata()), 1);
+            name, reinterpret_cast<const int*>(v.cdata()), v.size());
     } else if (val.IsHolding<TfToken>()) {
         TfToken v = val.UncheckedGet<TfToken>();
         params.SetString(name, RtUString(v.GetText()));
