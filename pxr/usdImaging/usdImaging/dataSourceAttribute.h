@@ -26,6 +26,7 @@
 
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/attributeQuery.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
@@ -144,6 +145,7 @@ private:
 /// Returns an instance of UsdImagingDataSourceAttribute with a given T 
 /// inferred from the usd attribute's sdf type
 ///
+USDIMAGING_API
 HdSampledDataSourceHandle
 UsdImagingDataSourceAttributeNew(
         const UsdAttribute &usdAttr,
@@ -153,6 +155,7 @@ UsdImagingDataSourceAttributeNew(
                 HdDataSourceLocator::EmptyLocator());
 
 /// Override taking an attribute query
+USDIMAGING_API
 HdSampledDataSourceHandle
 UsdImagingDataSourceAttributeNew(
         const UsdAttributeQuery &usdAttrQuery,

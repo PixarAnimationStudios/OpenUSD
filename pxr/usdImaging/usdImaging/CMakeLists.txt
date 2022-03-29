@@ -36,6 +36,7 @@ pxr_library(usdImaging
         dataSourcePrimvars
         dataSourceRelationship
         dataSourceStageGlobals
+        dataSourceVolume
         debugCodes
         delegate
         indexProxy
