@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
+#include "pxr/imaging/hdSt/resourceLayout.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 
 #include <map>
@@ -115,7 +116,17 @@ public:
 
     /// Return the generated compute shader source
     const std::string &GetComputeShaderSource() const { return _csSource; }
-    
+
+    /// Return the generated post tess control shader source
+    const std::string &GetPostTessControlShaderSource() const {
+        return _ptcsSource;
+    }
+
+    /// Return the generated post tess vertex shader source
+    const std::string &GetPostTessVertexShaderSource() const {
+        return _ptvsSource;
+    }
+
     /// Return the pointer of metadata to be populated by resource binder.
     HdSt_ResourceBinder::MetaData *GetMetaData() { return &_metaData; }
 
@@ -129,7 +140,15 @@ private:
     void _GenerateShaderParameters(bool bindlessTextureEnabled);
     void _GenerateTopologyVisibilityParameters();
 
+    void _GetShaderResourceLayouts(
+        HdStShaderCodeSharedPtrVector const & shaders);
+
+    void _PlumbInterstageElements(TfToken const &name, TfToken const &dataType);
+
     HdStGLSLProgramSharedPtr _CompileWithGeneratedGLSLResources(
+        HdStResourceRegistry * const registry);
+
+    HdStGLSLProgramSharedPtr _CompileWithGeneratedHgiResources(
         HdStResourceRegistry * const registry);
 
     HdSt_ResourceBinder::MetaData _metaData;
@@ -142,8 +161,30 @@ private:
     std::stringstream _genDecl;
     std::stringstream _genAccessors;
     std::stringstream _genVS, _genTCS, _genTES;
+    std::stringstream _genPTCS, _genPTVS;
     std::stringstream _genGS, _genFS, _genCS;
     std::stringstream _procVS, _procTCS, _procTES, _procGS;
+    std::stringstream _procPTCS, _procPTVSIn, _procPTVSOut;
+    std::stringstream _osdFS, _osdPTCS, _osdPTVS;
+
+    // resource buckets
+    using ElementVector = HdSt_ResourceLayout::ElementVector;
+    ElementVector _resVS;
+    ElementVector _resTCS;
+    ElementVector _resTES;
+    ElementVector _resGS;
+    ElementVector _resFS;
+    ElementVector _resPTCS;
+    ElementVector _resPTVS;
+
+    ElementVector _resInterstage;
+
+    ElementVector _resCommon;
+    ElementVector _resAttrib;
+    ElementVector _resMaterial;
+
+    using TextureElementVector = HdSt_ResourceLayout::TextureElementVector;
+    TextureElementVector _resTextures;
 
     // generated sources (for diagnostics)
     std::string _vsSource;
@@ -152,6 +193,8 @@ private:
     std::string _gsSource;
     std::string _fsSource;
     std::string _csSource;
+    std::string _ptcsSource;
+    std::string _ptvsSource;
 
     bool _hasVS;
     bool _hasTCS;
@@ -159,6 +202,8 @@ private:
     bool _hasGS;
     bool _hasFS;
     bool _hasCS;
+    bool _hasPTCS;
+    bool _hasPTVS;
 };
 
 
