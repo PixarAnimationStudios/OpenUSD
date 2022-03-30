@@ -151,6 +151,7 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
         }
 
         // Setup the transformation we need to apply
+#if OCIO_VERSION_HEX < 0x02000000
         OCIO::DisplayTransformRcPtr transform =
             OCIO::DisplayTransform::Create();
         transform->setDisplay(display);
@@ -162,20 +163,35 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
         } else {
             transform->setLooksOverrideEnabled(false);
         }
+#else
+        OCIO::DisplayViewTransformRcPtr transform =
+            OCIO::DisplayViewTransform::Create();
+        transform->setDisplay(display);
+        transform->setView(view);
+        transform->setSrc(inputColorSpace.c_str());
+#endif
 
         OCIO::ConstProcessorRcPtr processor = config->getProcessor(transform);
 
         // Create a GPU Shader Description
+#if OCIO_VERSION_HEX < 0x02000000
         OCIO::GpuShaderDesc shaderDesc;
         shaderDesc.setLanguage(OCIO::GPU_LANGUAGE_GLSL_1_3);
         shaderDesc.setFunctionName("OCIODisplay");
         shaderDesc.setLut3DEdgeLen(_lut3dSizeOCIO);
+#else
+        OCIO::GpuShaderDescRcPtr shaderDesc = OCIO::GpuShaderDesc::CreateShaderDesc();
+        shaderDesc->setLanguage(OCIO::GPU_LANGUAGE_GLSL_1_3);
+        shaderDesc->setFunctionName("OCIODisplay");
+#endif
 
         // Compute and the 3D LUT
         const int num3Dentries =
             3 * _lut3dSizeOCIO * _lut3dSizeOCIO * _lut3dSizeOCIO;
         std::vector<float> lut3d(num3Dentries);
+#if OCIO_VERSION_HEX < 0x02000000
         processor->getGpuLut3D(lut3d.data(), shaderDesc);
+#endif
 
         // Load the data into an OpenGL 3D Texture
         if (_texture3dLUT) {
@@ -195,7 +211,13 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
         lutDesc.usage = HgiTextureUsageBitsShaderRead;
         _texture3dLUT = _GetHgi()->CreateTexture(lutDesc);
 
+#if OCIO_VERSION_HEX < 0x02000000
         const char* gpuShaderText = processor->getGpuShaderText(shaderDesc);
+#else
+        OCIO::ConstGPUProcessorRcPtr gpuProcessor = processor->getDefaultGPUProcessor();
+        gpuProcessor->extractGpuShaderInfo(shaderDesc);
+        const char* gpuShaderText = shaderDesc->getShaderText();
+#endif
 
         return std::string(gpuShaderText);
     #else
