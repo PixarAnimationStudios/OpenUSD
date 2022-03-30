@@ -394,17 +394,13 @@ class TestUsdLuxLight(unittest.TestCase):
         _VerifyExtentAndBBox(sphereLight, [(-3.0, -3.0, -3.0), (3.0, 3.0, 3.0)])
 
         # Special case for portal light. Portal lights don't have any attributes
-        # that affect their extent, but they do have a constant extent defined
-        # for a unit rectangle in the XY plane.
+        # that affect their extent. Extent values are used only when
+        # explicitly authored but portal lights' do register a
+        # ComputeExtentFuction, which sets the extent as default from the
+        # schema.
         portalLight = UsdLux.PortalLight.Define(stage, "/PortalLight")
         self.assertTrue(portalLight)
-        self.assertIsNone(
-            UsdGeom.Boundable.ComputeExtentFromPlugins(portalLight, time))
-        self.assertEqual(
-            portalLight.ComputeLocalBound(time, "default"),
-            Gf.BBox3d(
-                Gf.Range3d(Gf.Vec3d(-0.5, -0.5, 0.0), Gf.Vec3d(0.5, 0.5, 0.0)), 
-                Gf.Matrix4d(1.0)))
+        _VerifyExtentAndBBox(portalLight, [(-0.5, -0.5, 0.0), (0.5, 0.5, 0.0)])
 
         # For completeness verify that distant and dome lights are not 
         # boundable.

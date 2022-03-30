@@ -211,6 +211,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdviewMeshBounds
+    DEST testUsdviewMeshBounds
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdviewColorManagement
     DEST testUsdviewColorManagement
 )
@@ -510,6 +515,12 @@ pxr_register_test(testUsdviewPrimTreeExpansion
 pxr_register_test(testUsdviewAnimatedBounds
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewAnimatedBounds.py test.usda"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewMeshBounds
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewMeshBounds.py meshBounds.usda"
     EXPECTED_RETURN_CODE 0
 )
 
