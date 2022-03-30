@@ -360,6 +360,7 @@ public:
     /// \name Selection
     // ---------------------------------------------------------------------- //
 
+    /// \deprecated Call and implement GetScenePrimPaths instead.
     USDIMAGING_API
     virtual SdfPath GetScenePrimPath(SdfPath const& cachePath,
         int instanceIndex,

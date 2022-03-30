@@ -641,6 +641,7 @@ public:
     /// Returns the scene address of the prim corresponding to the given
     /// rprim/instance index. This is designed to give paths in scene namespace,
     /// rather than hydra namespace, so it always strips the delegate ID.
+    /// \deprecated use GetScenePrimPaths
     HD_API
     virtual SdfPath GetScenePrimPath(SdfPath const& rprimId,
                                      int instanceIndex,

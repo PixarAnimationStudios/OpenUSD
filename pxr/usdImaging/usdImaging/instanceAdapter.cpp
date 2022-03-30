@@ -2495,13 +2495,13 @@ UsdImagingInstanceAdapter::GetScenePrimPaths(
             cachePath, &instancerContext);
 
         if (!proto.adapter) {
-            return SdfPathVector(instanceIndices.size(), cachePath);
+            return SdfPathVector(instanceIndices.size());
         }
 
         _InstancerData const* instrData =
             TfMapLookupPtr(_instancerData, instancerContext.instancerCachePath);
         if (!instrData) {
-            return SdfPathVector(instanceIndices.size(), cachePath);
+            return SdfPathVector(instanceIndices.size());
         }
 
         UsdPrim instancerPrim = _GetPrim(instancerContext.instancerCachePath);
@@ -2531,12 +2531,12 @@ UsdImagingInstanceAdapter::GetScenePrimPaths(
         SdfPath const* instancerPath =
             TfMapLookupPtr(_instanceToInstancerMap, cachePath);
         if (instancerPath == nullptr) {
-            return SdfPathVector(instanceIndices.size(), cachePath);
+            return SdfPathVector(instanceIndices.size());
         }
         _InstancerData const* instrData =
             TfMapLookupPtr(_instancerData, *instancerPath);
         if (instrData == nullptr) {
-            return SdfPathVector(instanceIndices.size(), cachePath);
+            return SdfPathVector(instanceIndices.size());
         }
 
         SdfPathVector result;
@@ -2549,7 +2549,7 @@ UsdImagingInstanceAdapter::GetScenePrimPaths(
         return result;
     }
 
-    return SdfPathVector(instanceIndices.size(), cachePath);
+    return SdfPathVector(instanceIndices.size());
 }
 
 struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
