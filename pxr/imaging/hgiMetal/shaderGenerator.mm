@@ -262,93 +262,53 @@ const char *
 _GetDeclarationDefinitions()
 {
     return
-    "#define REF(space,type) space type &\n"
-    "#undef HD_NEEDS_FORWARD_DECL\n"
-    "#define HD_FWD_DECL(decl)\n";
+        "#define REF(space,type) space type &\n"
+        "#define FORWARD_DECL(...)\n"
+        "#define ATOMIC_LOAD(a)"
+        " atomic_load_explicit(&a, memory_order_relaxed)\n"
+        "#define ATOMIC_STORE(a, v)"
+        " atomic_store_explicit(&a, v, memory_order_relaxed)\n"
+        "#define ATOMIC_ADD(a, v)"
+        " atomic_fetch_add_explicit(&a, v, memory_order_relaxed)\n"
+        "#define ATOMIC_EXCHANGE(a, desired)"
+        " atomic_exchange_explicit(&a, desired, memory_order_relaxed)\n"
+        "\n";
 }
 
-const char *
+static const char *
 _GetPackedTypeDefinitions()
 {
     return
-    "#define hd_ivec2 packed_int2\n"
-    "#define hd_ivec3 packed_int3\n"
-    "#define hd_vec2 packed_float2\n"
-    "#define hd_dvec2 packed_float2\n"
-    "#define hd_vec3 packed_float3\n"
-    "#define hd_dvec3 packed_float3\n"
-    "struct hd_mat3  { float m00, m01, m02,\n"
+    "struct hgi_ivec3 { int    x, y, z;\n"
+    "  hgi_ivec3(int _x, int _y, int _z): x(_x), y(_y), z(_z) {}\n"
+    "};\n"
+    "struct hgi_vec3  { float  x, y, z;\n"
+    "  hgi_vec3(float _x, float _y, float _z): x(_x), y(_y), z(_z) {}\n"
+    "};\n"
+    "struct hgi_dvec3 { double x, y, z;\n"
+    "  hgi_dvec3(double _x, double _y, double _z): x(_x), y(_y), z(_z) {}\n"
+    "};\n"
+    "struct hgi_mat3 { float m00, m01, m02,\n"
     "                        m10, m11, m12,\n"
     "                        m20, m21, m22;\n"
-    "                    hd_mat3(float _00, float _01, float _02,\n"
-    "                            float _10, float _11, float _12,\n"
-    "                            float _20, float _21, float _22)\n"
-    "                              : m00(_00), m01(_01), m02(_02)\n"
-    "                              , m10(_10), m11(_11), m12(_12)\n"
-    "                              , m20(_20), m21(_21), m22(_22) {}\n"
-    "                };\n"
-    "struct hd_dmat3  { float m00, m01, m02,\n"
-    "                         m10, m11, m12,\n"
-    "                         m20, m21, m22;\n"
-    "                    hd_dmat3(float _00, float _01, float _02,\n"
-    "                            float _10, float _11, float _12,\n"
-    "                            float _20, float _21, float _22)\n"
-    "                              : m00(_00), m01(_01), m02(_02)\n"
-    "                              , m10(_10), m11(_11), m12(_12)\n"
-    "                              , m20(_20), m21(_21), m22(_22) {}\n"
-    "                };\n"
-    "#define hd_ivec3_get(v) packed_int3(v)\n"
-    "#define hd_vec3_get(v)  packed_float3(v)\n"
-    "#define hd_dvec3_get(v) packed_float3(v)\n"
-    "mat3  hd_mat3_get(hd_mat3 v)   { return mat3(v.m00, v.m01, v.m02,\n"
-    "                                             v.m10, v.m11, v.m12,\n"
-    "                                             v.m20, v.m21, v.m22); }\n"
-    "mat3  hd_mat3_get(mat3 v)      { return v; }\n"
-    "dmat3 hd_dmat3_get(hd_dmat3 v) { return dmat3(v.m00, v.m01, v.m02,\n"
-    "                                              v.m10, v.m11, v.m12,\n"
-    "                                              v.m20, v.m21, v.m22); }\n"
-    "dmat3 hd_dmat3_get(dmat3 v)    { return v; }\n"
-    "hd_ivec3 hd_ivec3_set(hd_ivec3 v) { return v; }\n"
-    "hd_ivec3 hd_ivec3_set(ivec3 v)    { return v; }\n"
-    "hd_vec3 hd_vec3_set(hd_vec3 v)    { return v; }\n"
-    "hd_vec3 hd_vec3_set(vec3 v)       { return v; }\n"
-    "hd_dvec3 hd_dvec3_set(hd_dvec3 v) { return v; }\n"
-    "hd_dvec3 hd_dvec3_set(dvec3 v)    { return v; }\n"
-    "hd_mat3  hd_mat3_set(hd_mat3 v)   { return v; }\n"
-    "hd_mat3  hd_mat3_set(mat3 v)      {\n"
-    "   return hd_mat3(v[0][0], v[0][1], v[0][2],\n"
-    "                  v[1][0], v[1][1], v[1][2],\n"
-    "                  v[2][0], v[2][1], v[2][2]); }\n"
-    "hd_dmat3 hd_dmat3_set(hd_dmat3 v) { return v; }\n"
-    "hd_dmat3 hd_dmat3_set(dmat3 v)    {\n"
-    "   return hd_dmat3(v[0][0], v[0][1], v[0][2],\n"
-    "                   v[1][0], v[1][1], v[1][2],\n"
-    "                   v[2][0], v[2][1], v[2][2]); }\n"
-    "int hd_int_get(int v)          { return v; }\n"
-    "int hd_int_get(ivec2 v)        { return v[0]; }\n"
-    "int hd_int_get(ivec3 v)        { return v[0]; }\n"
-    "int hd_int_get(ivec4 v)        { return v[0]; }\n"
-
-    // udim helper function
-    "vec3 hd_sample_udim(vec2 v) {\n"
-    "vec2 vf = floor(v);\n"
-    "return vec3(v.x-vf.x, v.y-vf.y, clamp(vf.x, 0.0, 10.0) + 10.0 * vf.y);\n"
-    "}\n"
-
-    // -------------------------------------------------------------------
-    // Packed HdType implementation.
-
-    "struct packedint1010102 { int x:10, y:10, z:10, w:2; };\n"
-    "#define packed_2_10_10_10 int\n"
-    "vec4 hd_vec4_2_10_10_10_get(int v) {\n"
-    "    packedint1010102 pi = *(thread packedint1010102*)&v;\n"
-    "    return vec4(vec3(pi.x, pi.y, pi.z) / 511.0f, pi.w); }\n"
-    "int hd_vec4_2_10_10_10_set(vec4 v) {\n"
-    "    packedint1010102 pi;\n"
-    "    pi.x = v.x * 511.0; pi.y = v.y * 511.0; pi.z = v.z * 511.0; pi.w = 0;\n"
-    "    return *(thread int*)&pi;\n"
-    "}\n"
-
+    "  hgi_mat3(float _00, float _01, float _02, \\\n"
+    "           float _10, float _11, float _12, \\\n"
+    "           float _20, float _21, float _22) \\\n"
+    "             : m00(_00), m01(_01), m02(_02) \\\n"
+    "             , m10(_10), m11(_11), m12(_12) \\\n"
+    "             , m20(_20), m21(_21), m22(_22) {}\n"
+    "};\n"
+    "struct hgi_dmat3 { double m00, m01, m02,\n"
+    "                          m10, m11, m12,\n"
+    "                          m20, m21, m22;\n"
+    "  hgi_dmat3(double _00, double _01, double _02, \\\n"
+    "            double _10, double _11, double _12, \\\n"
+    "            double _20, double _21, double _22) \\\n"
+    "              : m00(_00), m01(_01), m02(_02) \\\n"
+    "              , m10(_10), m11(_11), m12(_12) \\\n"
+    "              , m20(_20), m21(_21), m22(_22) {}\n"
+    "};\n"
+    "\n"
     "mat4 inverse_fast(float4x4 a) { return transpose(a); }\n"
     "mat4 inverse(float4x4 a) {\n"
     "    float b00 = a[0][0] * a[1][1] - a[0][1] * a[1][0];\n"
@@ -387,7 +347,7 @@ _GetPackedTypeDefinitions()
 }
 
 std::string
-_ComputeHeader(id<MTLDevice> device)
+_ComputeHeader(id<MTLDevice> device, HgiShaderStage stage)
 {
     std::stringstream header;
 
@@ -433,6 +393,7 @@ _ComputeHeader(id<MTLDevice> device)
             << "#pragma clang diagnostic ignored \"-Wsign-compare\"\n"
             << "using namespace metal;\n";
 
+    // Basic types
     header  << "#define double float\n"
             << "#define vec2 float2\n"
             << "#define vec3 float3\n"
@@ -454,7 +415,10 @@ _ComputeHeader(id<MTLDevice> device)
             << "#define dvec4 float4\n"
             << "#define dmat2 float2x2\n"
             << "#define dmat3 float3x3\n"
-            << "#define dmat4 float4x4\n";
+            << "#define dmat4 float4x4\n"
+            << "#define usampler1DArray texture1d_array<uint16_t>\n"
+            << "#define sampler2DArray texture2d_array<float>\n"
+            << "#define sampler2DShadow depth2d<float>\n";
 
     // XXX: this macro is still used in GlobalUniform.
     header  << "#define MAT4 mat4\n";
@@ -465,136 +429,137 @@ _ComputeHeader(id<MTLDevice> device)
     // a trick to tightly pack vec3 into SSBO/UBO.
     header  << _GetPackedTypeDefinitions();
 
-    header  << "#define in /*in*/\n"
-    << "#define discard discard_fragment();\n"
-    << "#define radians(d) (d * 0.01745329252)\n"
-    << "#define noperspective /*center_no_perspective MTL_FIXME*/\n"
-    << "#define dFdx    dfdx\n"
-    << "#define dFdy    dfdy\n"
+    header << "#define in /*in*/\n"
+              "#define discard discard_fragment();\n"
+              "#define radians(d) (d * 0.01745329252)\n"
+              "#define noperspective /*center_no_perspective MTL_FIXME*/\n"
+              "#define dFdx    dfdx\n"
+              "#define dFdy    dfdy\n"
 
-    << "#define lessThan(a, b) ((a) < (b))\n"
-    << "#define lessThanEqual(a, b) ((a) <= (b))\n"
-    << "#define greaterThan(a, b) ((a) > (b))\n"
-    << "#define greaterThanEqual(a, b) ((a) >= (b))\n"
-    << "#define equal(a, b) ((a) == (b))\n"
-    << "#define notEqual(a, b) ((a) != (b))\n"
+              "#define lessThan(a, b) ((a) < (b))\n"
+              "#define lessThanEqual(a, b) ((a) <= (b))\n"
+              "#define greaterThan(a, b) ((a) > (b))\n"
+              "#define greaterThanEqual(a, b) ((a) >= (b))\n"
+              "#define equal(a, b) ((a) == (b))\n"
+              "#define notEqual(a, b) ((a) != (b))\n"
+    
+              "union HgiPackedf16 { uint i; half2 h; };\n"
+              "vec2 unpackHalf2x16(uint val)\n"
+              "{\n"
+              "    HgiPackedf16 v;\n"
+              "    v.i = val;\n"
+              "    return vec2(v.h.x, v.h.y);\n"
+              "}\n"
+              "uint packHalf2x16(vec2 val)\n"
+              "{\n"
+              "    HgiPackedf16 v;\n"
+              "    v.h = half2(val.x, val.y);\n"
+              "    return v.i;\n"
+              "}\n"
 
-    << "template <typename T>\n"
-    << "T mod(T y, T x) { return fmod(y, x); }\n\n"
-    << "template <typename T>\n"
-    << "T atan(T y, T x) { return atan2(y, x); }\n\n"
-    << "template <typename T>\n"
-    << "T bitfieldReverse(T x) { return reverse_bits(x); }\n\n"
-    << "template <typename T>\n"
-    << "T bitfieldExtract(T value, int offset, int bits) {\n"
-    << "  return extract_bits(value, offset, bits); }\n"
-    << "template <typename T>\n"
-    << "ivec2 imageSize(T texture) {\n"
-    << "    return ivec2(texture.get_width(), texture.get_height());\n"
-    << "}\n\n"
+              "template <typename T>\n"
+              "T mod(T y, T x) { return fmod(y, x); }\n\n"
+              "template <typename T>\n"
+              "T atan(T y, T x) { return atan2(y, x); }\n\n"
+              "template <typename T>\n"
+              "T bitfieldReverse(T x) { return reverse_bits(x); }\n\n"
+              "template <typename T>\n"
+              "T bitfieldExtract(T value, int offset, int bits) {\n"
+              "  return extract_bits(value, offset, bits); }\n\n"
+    
+              "template <typename T>\n"
+              "int imageSize1d(T texture) {\n"
+              "    return int(texture.get_width());\n"
+              "}\n"
+              "template <typename T>\n"
+              "ivec2 imageSize2d(T texture) {\n"
+              "    return ivec2(texture.get_width(), texture.get_height());\n"
+              "}\n"
+              "template <typename T>\n"
+              "ivec3 imageSize3d(T texture) {\n"
+              "    return ivec3(texture.get_width(),\n"
+              "        texture.get_height(), texture.get_depth());\n"
+              "}\n"
+    
+              "template <typename T>\n"
+              "ivec2 textureSize(T texture, uint lod = 0) {\n"
+              "    return ivec2(texture.get_width(lod), texture.get_height(lod));\n"
+              "}\n"
+              "ivec2 textureSize(texture1d_array<uint16_t> texture, uint lod = 0) {\n"
+              "    return ivec2(texture.get_width(),\n"
+              "        texture.get_array_size());\n"
+              "}\n"
+              "ivec3 textureSize(texture2d_array<float> texture, uint lod = 0) {\n"
+              "    return ivec3(texture.get_width(lod),\n"
+              "        texture.get_height(lod), texture.get_array_size());\n"
+              "}\n"
+    
+              "template <typename T>\n"
+              "int textureSize1d(T texture, uint lod = 0) {\n"
+              "    return int(texture.get_width());\n"
+              "}\n"
+              "template <typename T>\n"
+              "ivec2 textureSize2d(T texture, uint lod = 0) {\n"
+              "    return ivec2(texture.get_width(lod), texture.get_height(lod));\n"
+              "}\n"
+              "template <typename T>\n"
+              "ivec3 textureSize3d(T texture, uint lod = 0) {\n"
+              "    return ivec3(texture.get_width(lod),\n"
+              "        texture.get_height(lod), texture.get_depth(lod));\n"
+              "}\n\n"
+    
+              "template<typename T, typename Tc>\n"
+              "float4 texelFetch(T texture, Tc coords, uint lod = 0) {\n"
+              "    return texture.read(uint2(coords), lod);\n"
+              "}\n"
+              "template<typename Tc>\n"
+              "uint4 texelFetch(texture1d_array<uint16_t> texture, Tc coords, uint lod = 0) {\n"
+              "    return uint4(texture.read((uint)coords.x, (uint)coords.y, 0));\n"
+              "}\n"
+              "template<typename Tc>\n"
+              "vec4 texelFetch(texture2d_array<float> texture, Tc coords, uint lod = 0) {\n"
+              "    return texture.read(uint2(coords.xy), (uint)coords.z, 0);\n"
+              "}\n"
+    
+              "#define textureQueryLevels(texture) texture.get_num_mip_levels()\n"
 
-    << "template <typename T>\n"
-    << "int imageSize1d(T texture) {\n"
-    << "    return int(texture.get_width());\n"
-    << "}\n"
-    << "template <typename T>\n"
-    << "ivec2 imageSize2d(T texture) {\n"
-    << "    return ivec2(texture.get_width(), texture.get_height());\n"
-    << "}\n"
-    << "template <typename T>\n"
-    << "ivec3 imageSize3d(T texture) {\n"
-    << "    return ivec3(texture.get_width(),\n"
-    << "        texture.get_height(), texture.get_depth());\n"
-    << "}\n\n"
+              "template <typename T, typename Tv>\n"
+              "void imageStore(T texture, short2 coords, Tv color) {\n"
+              "    return texture.write(color, ushort2(coords.x, coords.y));\n"
+              "}\n"
+              "template <typename T, typename Tv>\n"
+              "void imageStore(T texture, int2 coords, Tv color) {\n"
+              "    return texture.write(color, uint2(coords.x, coords.y));\n"
+              "}\n\n"
 
-    << "template <typename T>\n"
-    << "ivec2 textureSize(T texture, uint lod = 0) {\n"
-    << "    return ivec2(texture.get_width(lod), texture.get_height(lod));\n"
-    << "}\n"
-    << "ivec2 textureSize(texture1d_array<uint16_t> texture, uint lod = 0) {\n"
-    << "    return ivec2(texture.get_width(),\n"
-    << "        texture.get_array_size());\n"
-    << "}\n"
-    << "ivec3 textureSize(texture2d_array<float> texture, uint lod = 0) {\n"
-    << "    return ivec3(texture.get_width(lod),\n"
-    << "        texture.get_height(lod), texture.get_array_size());\n"
-    << "}\n\n"
+              "constexpr sampler texelSampler(address::clamp_to_edge,\n"
+              "                               filter::linear);\n"
+    
+              "template<typename T, typename Tc>\n"
+              "float4 texture(T texture, Tc coords) {\n"
+              "    return texture.sample(texelSampler, coords);\n"
+              "}\n"
+              "template<typename Tc>\n"
+              "vec4 texture(texture2d_array<float> texture, Tc coords) {\n"
+              "    return texture.sample(texelSampler, coords.xy, coords.z);\n"
+              "}\n"
 
-    << "template <typename T>\n"
-    << "int textureSize1d(T texture, uint lod = 0) {\n"
-    << "    return int(texture.get_width());\n"
-    << "}\n"
-    << "template <typename T>\n"
-    << "ivec2 textureSize2d(T texture, uint lod = 0) {\n"
-    << "    return ivec2(texture.get_width(lod), texture.get_height(lod));\n"
-    << "}\n"
-    << "template <typename T>\n"
-    << "ivec3 textureSize3d(T texture, uint lod = 0) {\n"
-    << "    return ivec3(texture.get_width(lod),\n"
-    << "        texture.get_height(lod), texture.get_depth(lod));\n"
-    << "}\n\n"
-
-    << "template<typename T, typename Tc>\n"
-    << "float4 texelFetch(T texture, Tc coords, uint lod = 0) {\n"
-    << "    return texture.read(uint2(coords), lod);\n"
-    << "}\n"
-    << "template<typename Tc>\n"
-    << "uint4 texelFetch(texture1d_array<uint16_t> texture, Tc coords, uint lod = 0) {\n"
-    << "    return uint4(texture.read((uint)coords.x, (uint)coords.y, 0));\n"
-    << "}\n"
-    << "template<typename Tc>\n"
-    << "vec4 texelFetch(texture2d_array<float> texture, Tc coords, uint lod = 0) {\n"
-    << "    return texture.read(uint2(coords.xy), (uint)coords.z, 0);\n"
-    << "}\n"
-
-    << "#define textureQueryLevels(texture) texture.get_num_mip_levels()\n"
-
-    << "template <typename T, typename Tv>\n"
-    << "void imageStore(T texture, short2 coords, Tv color) {\n"
-    << "    return texture.write(color, ushort2(coords.x, coords.y));\n"
-    << "}\n"
-    << "template <typename T, typename Tv>\n"
-    << "void imageStore(T texture, int2 coords, Tv color) {\n"
-    << "    return texture.write(color, uint2(coords.x, coords.y));\n"
-    << "}\n\n"
     ;
 
-    // wrapper for type float and int to deal with .x accessors and the
-    // like that are valid in GLSL
-    header  << "struct wrapped_float {\n"
-            << "    union {\n"
-            << "        float x, xx, xxx, xxxx, y, z, w;\n"
-            << "        float r, rr, rrr, rrrr, g, b, a;\n"
-            << "    };\n"
-            << "    wrapped_float(float _x) { x = _x;}\n"
-            << "    wrapped_float(const thread wrapped_float &_x) { x = _x.x;}\n"
-            << "    wrapped_float(const device wrapped_float &_x) { x = _x.x;}\n"
-            << "    operator float () {\n"
-            << "        return x;\n"
-            << "    }\n"
-            << "};\n";
-
-    header  << "struct wrapped_int {\n"
-            << "    union {\n"
-            << "        int x, xx, xxx, xxxx, y, z, w;\n"
-            << "        int r, rr, rrr, rrrr, g, b, a;\n"
-            << "    };\n"
-            << "    wrapped_int(int _x) { x = _x;}\n"
-            << "    wrapped_int(const thread wrapped_int &_x) { x = _x.x;}\n"
-            << "    wrapped_int(const device wrapped_int &_x) { x = _x.x;}\n"
-            << "    operator int () {\n"
-            << "        return x;\n"
-            << "    }\n"
-            << "};\n";
+    if (stage & HgiShaderStageVertex) {
+        header << "int HgiGetBaseVertex() {\n"
+                    "  return 0;\n"
+                    "}\n";
+    }
 
     return header.str();
 }
 
 std::string const&
-_GetHeader(id<MTLDevice> device)
+_GetHeader(id<MTLDevice> device, HgiShaderStage stage)
 {
     // This assumes that there is only ever one MTLDevice.
-    static std::string header = _ComputeHeader(device);
+    static std::string header = _ComputeHeader(device, stage);
     return header;
 }
 
@@ -1382,7 +1347,7 @@ HgiMetalShaderGenerator::HgiMetalShaderGenerator(
                 member.arraySize);
     }
     std::stringstream macroSection;
-    macroSection << _GetHeader(device);
+    macroSection << _GetHeader(device, descriptor.shaderStage);
     if (_IsTessFunction(descriptor)) {
         macroSection << "#define VERTEX_CONTROL_POINTS_PER_PATCH "
         << descriptor.tessellationDescriptor.numVertsPerPatchIn
@@ -1405,7 +1370,6 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
     ss << "\n// //////// Global Macros ////////\n";
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         section->VisitGlobalMacros(ss);
-        ss << "\n";
     }
 
     ss << _GetShaderCodeDeclarations();
@@ -1413,7 +1377,6 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
     ss << "\n// //////// Global Member Declarations ////////\n";
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         section->VisitGlobalMemberDeclarations(ss);
-        ss << "\n";
     }
 
     //generate scope area in metal.
