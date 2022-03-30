@@ -164,17 +164,17 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
                                    texDesc.dimensions[1])
                           options:blitOptions];
 
-    if (@available(macOS 10.11, ios 100.100, *)) {
-        if ([cpuBuffer storageMode] == MTLStorageModeManaged) {
-            [_blitEncoder performSelector:@selector(synchronizeResource:)
-                               withObject:cpuBuffer];
-        }
+#if defined(ARCH_OS_OSX)
+    if ([cpuBuffer storageMode] == MTLStorageModeManaged) {
+        [_blitEncoder performSelector:@selector(synchronizeResource:)
+                           withObject:cpuBuffer];
     }
+#endif
     
     // Offset into the dst buffer
     char* dst = ((char*) copyOp.cpuDestinationBuffer) +
         copyOp.destinationByteOffset;
-    
+
     // Offset into the src buffer
     const char* src = (const char*) [cpuBuffer contents];
 
@@ -262,7 +262,7 @@ HgiMetalBlitCmds::CopyBufferGpuToGpu(
                destinationOffset:copyOp.destinationByteOffset
                             size:copyOp.byteSize];
 
-#if defined(ARCH_OS_MACOS)
+#if defined(ARCH_OS_OSX)
     // APPLE METAL: We need to do this copy host side, otherwise later
     // cpu copies into OTHER parts of this destination buffer see some of
     // our GPU copied range trampled by alignment of the blit. The Metal
