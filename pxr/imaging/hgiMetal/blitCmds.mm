@@ -117,15 +117,12 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
 
     HgiTextureDesc const& texDesc = srcTexture->GetDescriptor();
 
-    MTLPixelFormat metalFormat = MTLPixelFormatInvalid;
-
-    if (texDesc.usage & HgiTextureUsageBitsColorTarget) {
-        metalFormat = HgiMetalConversions::GetPixelFormat(texDesc.format);
-    } else if (texDesc.usage & HgiTextureUsageBitsDepthTarget) {
-        TF_VERIFY(texDesc.format == HgiFormatFloat32);
-        metalFormat = MTLPixelFormatDepth32Float;
-    } else {
-        TF_CODING_ERROR("Unknown HgTextureUsage bit");
+    MTLPixelFormat metalFormat = HgiMetalConversions::GetPixelFormat(
+        texDesc.format, texDesc.usage);
+    
+    if (metalFormat == MTLPixelFormatDepth32Float_Stencil8) {
+        TF_WARN("Cannot read back depth stencil on Metal.");
+        return;
     }
 
     id<MTLDevice> device = _hgi->GetPrimaryDevice();

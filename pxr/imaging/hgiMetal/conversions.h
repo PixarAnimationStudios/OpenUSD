@@ -45,7 +45,8 @@ public:
     //
 
     HGIMETAL_API
-    static MTLPixelFormat GetPixelFormat(HgiFormat inFormat);
+    static MTLPixelFormat GetPixelFormat(HgiFormat inFormat,
+                                         HgiTextureUsage inUsage);
 
     HGIMETAL_API
     static MTLVertexFormat GetVertexFormat(HgiFormat inFormat);

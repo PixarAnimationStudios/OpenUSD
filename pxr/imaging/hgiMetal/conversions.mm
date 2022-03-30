@@ -445,7 +445,7 @@ struct {
 };
 
 MTLPixelFormat
-HgiMetalConversions::GetPixelFormat(HgiFormat inFormat)
+HgiMetalConversions::GetPixelFormat(HgiFormat inFormat, HgiTextureUsage inUsage)
 {
     if (inFormat == HgiFormatInvalid) {
         return MTLPixelFormatInvalid;
@@ -457,6 +457,14 @@ HgiMetalConversions::GetPixelFormat(HgiFormat inFormat)
         return MTLPixelFormatRGBA8Unorm;
     }
 
+    if (inUsage & HgiTextureUsageBitsDepthTarget) {
+        if (inFormat == HgiFormatFloat32UInt8) {
+            return MTLPixelFormatDepth32Float_Stencil8;
+        } else {
+            return MTLPixelFormatDepth32Float;
+        }
+    }
+    
     MTLPixelFormat outFormat = _PIXEL_FORMAT_DESC[inFormat];
     if (outFormat == MTLPixelFormatInvalid)
     {

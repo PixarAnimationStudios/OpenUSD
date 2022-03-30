@@ -38,32 +38,20 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
     , _textureId(nil)
 {
     MTLResourceOptions resourceOptions = MTLResourceStorageModePrivate;
-    MTLTextureUsage usage = MTLTextureUsageUnknown;
+    MTLTextureUsage usage = MTLTextureUsageShaderRead;
 
     if (desc.initialData && desc.pixelsByteSize > 0) {
         resourceOptions = MTLResourceStorageModeManaged;
     }
 
-    MTLPixelFormat mtlFormat = HgiMetalConversions::GetPixelFormat(desc.format);
+    MTLPixelFormat mtlFormat = HgiMetalConversions::GetPixelFormat(
+        desc.format, desc.usage);
 
-    if (desc.usage & HgiTextureUsageBitsColorTarget) {
-        usage = MTLTextureUsageRenderTarget;
-    } else if (desc.usage & HgiTextureUsageBitsDepthTarget) {
-        TF_VERIFY(desc.format == HgiFormatFloat32 ||
-                  desc.format == HgiFormatFloat32UInt8);
-        
-        // XXX: MTLPixelFormatDepth32Float isn't in the conversions table..
-        if (desc.usage & HgiTextureUsageBitsStencilTarget) {
-            mtlFormat = MTLPixelFormatDepth32Float_Stencil8;
-        } else {
-            mtlFormat = MTLPixelFormatDepth32Float;
-        }
-        usage = MTLTextureUsageRenderTarget;
+    if (desc.usage &
+        (HgiTextureUsageBitsColorTarget | HgiTextureUsageBitsDepthTarget)) {
+        usage |= MTLTextureUsageRenderTarget;
     }
 
-//    if (desc.usage & HgiTextureUsageBitsShaderRead) {
-        usage |= MTLTextureUsageShaderRead;
-//    }
     if (desc.usage & HgiTextureUsageBitsShaderWrite) {
         usage |= MTLTextureUsageShaderWrite;
     }
@@ -208,6 +196,14 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
             }
         }
     }
+    
+    if (!(usage & MTLTextureUsageRenderTarget)) {
+        id <MTLCommandBuffer> commandBuffer = [hgi->GetQueue() commandBuffer];
+        id <MTLBlitCommandEncoder> blitCommandEncoder = [commandBuffer blitCommandEncoder];
+        [blitCommandEncoder optimizeContentsForGPUAccess:_textureId];
+        [blitCommandEncoder endEncoding];
+        [commandBuffer commit];
+    }
 
     HGIMETAL_DEBUG_LABEL(_textureId, _descriptor.debugName.c_str());
 }
@@ -222,7 +218,8 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureViewDesc const & desc)
         desc.sourceFirstMip, desc.mipLevels);
     NSRange slices = NSMakeRange(
         desc.sourceFirstLayer, desc.layerCount);
-    MTLPixelFormat mtlFormat = HgiMetalConversions::GetPixelFormat(desc.format);
+    MTLPixelFormat mtlFormat = HgiMetalConversions::GetPixelFormat(
+        desc.format, HgiTextureUsageBitsColorTarget);
 
     _textureId = [srcTexture->GetTextureId()
                   newTextureViewWithPixelFormat:mtlFormat

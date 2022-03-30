@@ -166,7 +166,7 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
             stateDesc.colorAttachments[i];
         
         metalColorAttachment.pixelFormat = HgiMetalConversions::GetPixelFormat(
-            hgiColorAttachment.format);
+            hgiColorAttachment.format, hgiColorAttachment.usage);
 
         metalColorAttachment.writeMask = HgiMetalConversions::GetColorWriteMask(
             hgiColorAttachment.colorMask);
@@ -203,8 +203,15 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
     HgiAttachmentDesc const &hgiDepthAttachment =
         _descriptor.depthAttachmentDesc;
 
-    stateDesc.depthAttachmentPixelFormat =
-        HgiMetalConversions::GetPixelFormat(hgiDepthAttachment.format);
+    MTLPixelFormat depthPixelFormat = HgiMetalConversions::GetPixelFormat(
+        hgiDepthAttachment.format, hgiDepthAttachment.usage);
+
+    stateDesc.depthAttachmentPixelFormat = depthPixelFormat;
+    
+    if (_descriptor.depthAttachmentDesc.usage & 
+        HgiTextureUsageBitsStencilTarget) {
+        stateDesc.stencilAttachmentPixelFormat = depthPixelFormat;
+    }
 
     stateDesc.sampleCount = _descriptor.multiSampleState.sampleCount;
     if (_descriptor.multiSampleState.alphaToCoverageEnable) {

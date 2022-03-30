@@ -236,6 +236,25 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
                     MTLStoreActionMultisampleResolve;
             }
         }
+        
+        // Stencil attachment
+        if (depthTexture->GetDescriptor().format == HgiFormatFloat32UInt8) {
+            MTLRenderPassStencilAttachmentDescriptor *stencilAttachment =
+                _renderPassDescriptor.stencilAttachment;
+            stencilAttachment.loadAction = metalDepthAttachment.loadAction;
+            stencilAttachment.storeAction = metalDepthAttachment.storeAction;
+            stencilAttachment.clearStencil = hgiDepthAttachment.clearValue[0];
+            stencilAttachment.texture = metalDepthAttachment.texture;
+            
+            if (desc.depthResolveTexture) {
+                stencilAttachment.resolveTexture =
+                    metalDepthAttachment.resolveTexture;
+                stencilAttachment.stencilResolveFilter =
+                    MTLMultisampleStencilResolveFilterDepthResolvedSample;
+                stencilAttachment.storeAction =
+                    metalDepthAttachment.storeAction;
+            }
+        }
     }
     
     _enableParallelEncoder = _hgi->GetCapabilities()->useParallelEncoder;
