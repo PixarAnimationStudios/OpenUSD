@@ -55,7 +55,7 @@ ArchAlignedAlloc(size_t alignment, size_t size)
 #elif defined(ARCH_OS_WINDOWS)
     return _aligned_malloc(size, alignment);
 #else
-    return std::aligned_alloc(alignment, size);
+    return aligned_alloc(alignment, size);
 #endif
 }
 
@@ -68,7 +68,7 @@ ArchAlignedFree(void* ptr)
 #elif defined(ARCH_OS_WINDOWS)
     _aligned_free(ptr);
 #else
-    std::free(ptr);
+    free(ptr);
 #endif
 }
 
