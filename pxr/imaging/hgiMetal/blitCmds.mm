@@ -334,7 +334,9 @@ HgiMetalBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
     HgiMetalBuffer* metalBuffer = static_cast<HgiMetalBuffer*>(
         copyOp.gpuSourceBuffer.Get());
 
-    if (@available(macOS 10.11, ios 100.100, *)) {
+    _CreateEncoder();
+
+    if ([metalBuffer->GetBufferId() storageMode] == MTLStorageModeManaged) {
         [_blitEncoder performSelector:@selector(synchronizeResource:)
                            withObject:metalBuffer->GetBufferId()];
     }
