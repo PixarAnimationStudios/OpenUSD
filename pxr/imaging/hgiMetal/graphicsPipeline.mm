@@ -125,7 +125,7 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
 
     // Create a new render pipeline state object
     HGIMETAL_DEBUG_LABEL(stateDesc, _descriptor.debugName.c_str());
-    stateDesc.rasterSampleCount = 1;
+    stateDesc.rasterSampleCount = _descriptor.multiSampleState.sampleCount;
 
     stateDesc.inputPrimitiveTopology =
         HgiMetalConversions::GetPrimitiveClass(_descriptor.primitiveType);
