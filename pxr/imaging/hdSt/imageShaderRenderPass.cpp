@@ -33,6 +33,7 @@
 #include "pxr/imaging/hdSt/pipelineDrawBatch.h"
 #include "pxr/imaging/hd/drawingCoord.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+#include "pxr/imaging/hgi/capabilities.h"
 #include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/hgi.h"
@@ -40,12 +41,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 static
 HdSt_DrawBatchSharedPtr
-_NewDrawBatch(HdStDrawItemInstance * drawItemInstance)
+_NewDrawBatch(HdStDrawItemInstance *drawItemInstance,
+              HdRenderIndex const *index)
 {
+    HdStResourceRegistrySharedPtr const &resourceRegistry =
+        std::static_pointer_cast<HdStResourceRegistry>(
+            index->GetResourceRegistry());
+    HgiCapabilities const *hgiCapabilities =
+        resourceRegistry->GetHgi()->GetCapabilities();
+
     // We don't want or need frustum culling of our fullscreen triangle.
-    if (HdSt_PipelineDrawBatch::IsEnabled()) {
+    if (HdSt_PipelineDrawBatch::IsEnabled(hgiCapabilities)) {
         return std::make_shared<HdSt_PipelineDrawBatch>(drawItemInstance,false);
     } else {
         return std::make_shared<HdSt_IndirectDrawBatch>(drawItemInstance,false);
@@ -63,7 +72,7 @@ HdSt_ImageShaderRenderPass::HdSt_ImageShaderRenderPass(
 {
     _sharedData.instancerLevels = 0;
     _sharedData.rprimID = SdfPath("/imageShaderRenderPass");
-    _drawBatch = _NewDrawBatch(&_drawItemInstance);
+    _drawBatch = _NewDrawBatch(&_drawItemInstance, index);
 
     HdStRenderDelegate* renderDelegate =
         static_cast<HdStRenderDelegate*>(index->GetRenderDelegate());

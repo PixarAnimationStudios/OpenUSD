@@ -24,6 +24,7 @@
 #include "pxr/imaging/hdSt/pipelineDrawBatch.h"
 
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
+#include "pxr/imaging/hdSt/codeGen.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/cullingShaderKey.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
@@ -77,8 +78,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 
-TF_DEFINE_ENV_SETTING(HDST_ENABLE_PIPELINE_DRAW_BATCHING, false,
-                      "Enable pipeline draw batching");
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_PIPELINE_DRAW_BATCH_GPU_FRUSTUM_CULLING,false,
+                      "Enable pipeline draw batching GPU frustum culling");
 
 HdSt_PipelineDrawBatch::HdSt_PipelineDrawBatch(
     HdStDrawItemInstance * drawItemInstance,
@@ -154,17 +155,22 @@ HdSt_PipelineDrawBatch::SetEnableTinyPrimCulling(bool tinyPrimCulling)
 
 /* static */
 bool
-HdSt_PipelineDrawBatch::IsEnabled()
+HdSt_PipelineDrawBatch::IsEnabled(HgiCapabilities const *hgiCapabilities)
 {
-    static bool isEnabled = TfGetEnvSetting(HDST_ENABLE_PIPELINE_DRAW_BATCHING);
-    return isEnabled;
+    // We require Hgi resource generation.
+    return HdSt_CodeGen::IsEnabledHgiResourceGeneration(hgiCapabilities);
 }
 
 /* static */
 bool
 HdSt_PipelineDrawBatch::IsEnabledGPUFrustumCulling()
 {
-    return HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling();
+    // Allow GPU frustum culling for PipelineDrawBatch to be disabled even
+    // when other GPU frustum culling is enabled. Both switches must be true
+    // for PipelineDrawBatch to use GPU frustum culling.
+    static bool isEnabled =
+        TfGetEnvSetting(HDST_ENABLE_PIPELINE_DRAW_BATCH_GPU_FRUSTUM_CULLING);
+    return isEnabled && HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling();
 }
 
 /* static */

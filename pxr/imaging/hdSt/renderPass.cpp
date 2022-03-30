@@ -404,7 +404,8 @@ HdSt_RenderPass::_UpdateCommandBuffer(TfTokenVector const& renderTags)
     const int batchVersion = _GetDrawBatchesVersion(GetRenderIndex());
     // Rebuild draw batches based on new draw items
     if (_drawItemsChanged) {
-        _cmdBuffer.SetDrawItems(_drawItems, batchVersion);
+        _cmdBuffer.SetDrawItems(_drawItems, batchVersion,
+            _hgi->GetCapabilities());
 
         _drawItemsChanged = false;
         size_t itemCount = _cmdBuffer.GetTotalSize();
@@ -412,7 +413,8 @@ HdSt_RenderPass::_UpdateCommandBuffer(TfTokenVector const& renderTags)
     } else {
         // validate command buffer to not include expired drawItems,
         // which could be produced by migrating BARs at the new repr creation.
-        _cmdBuffer.RebuildDrawBatchesIfNeeded(batchVersion);
+        _cmdBuffer.RebuildDrawBatchesIfNeeded(batchVersion,
+            _hgi->GetCapabilities());
     }
 
     // -------------------------------------------------------------------

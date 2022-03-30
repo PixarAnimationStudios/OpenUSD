@@ -42,6 +42,7 @@
 
 #include "pxr/imaging/hio/glslfx.h"
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -106,6 +107,24 @@ TF_DEFINE_PRIVATE_TOKENS(
     (isamplerBuffer)
     (samplerBuffer)
 );
+
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_HGI_RESOURCE_GENERATION, false,
+                      "Enable Hgi resource generation for codeGen");
+
+/* static */
+bool
+HdSt_CodeGen::IsEnabledHgiResourceGeneration(
+    HgiCapabilities const *hgiCapabilities)
+{
+    static bool const isEnabled =
+        TfGetEnvSetting(HDST_ENABLE_HGI_RESOURCE_GENERATION);
+
+    // Hgi resource generation is required for Metal
+    bool const isMetal =
+        hgiCapabilities->IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
+
+    return isEnabled || isMetal;
+}
 
 HdSt_CodeGen::HdSt_CodeGen(HdSt_GeometricShaderPtr const &geometricShader,
                        HdStShaderCodeSharedPtrVector const &shaders,

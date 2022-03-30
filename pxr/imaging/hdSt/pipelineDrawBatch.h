@@ -34,6 +34,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HgiCapabilities;
 using HdBindingRequestVector = std::vector<HdBindingRequest>;
 
 /// \class HdSt_PipelineDrawBatch
@@ -80,7 +81,7 @@ public:
 
     /// Returns whether pipeline draw batching is enabled.
     HDST_API
-    static bool IsEnabled();
+    static bool IsEnabled(HgiCapabilities const *hgiCapabilities);
 
     /// Returns whether to do frustum culling on the GPU
     HDST_API

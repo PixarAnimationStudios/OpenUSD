@@ -30,6 +30,8 @@
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 
+#include "pxr/imaging/hgi/capabilities.h"
+
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -62,9 +64,10 @@ HdStCommandBuffer::~HdStCommandBuffer() = default;
 
 static
 HdSt_DrawBatchSharedPtr
-_NewDrawBatch(HdStDrawItemInstance * drawItemInstance)
+_NewDrawBatch(HdStDrawItemInstance * drawItemInstance, 
+              HgiCapabilities const * hgiCapabilities)
 {
-    if (HdSt_PipelineDrawBatch::IsEnabled()) {
+    if (HdSt_PipelineDrawBatch::IsEnabled(hgiCapabilities)) {
         return std::make_shared<HdSt_PipelineDrawBatch>(drawItemInstance);
     } else {
         return std::make_shared<HdSt_IndirectDrawBatch>(drawItemInstance);
@@ -111,19 +114,21 @@ HdStCommandBuffer::ExecuteDraw(
 void
 HdStCommandBuffer::SetDrawItems(
     HdDrawItemConstPtrVectorSharedPtr const &drawItems,
-    unsigned currentDrawBatchesVersion)
+    unsigned currentDrawBatchesVersion,
+    HgiCapabilities const *hgiCapabilities)
 {
     if (drawItems == _drawItems &&
         currentDrawBatchesVersion == _drawBatchesVersion) {
         return;
     }
     _drawItems = drawItems;
-    _RebuildDrawBatches();
+    _RebuildDrawBatches(hgiCapabilities);
     _drawBatchesVersion = currentDrawBatchesVersion;
 }
 
 void
-HdStCommandBuffer::RebuildDrawBatchesIfNeeded(unsigned currentBatchesVersion)
+HdStCommandBuffer::RebuildDrawBatchesIfNeeded(unsigned currentBatchesVersion,
+    HgiCapabilities const *hgiCapabilities)
 {
     HD_TRACE_FUNCTION();
 
@@ -181,12 +186,12 @@ HdStCommandBuffer::RebuildDrawBatchesIfNeeded(unsigned currentBatchesVersion)
     }
 
     if (rebuildAllDrawBatches) {
-        _RebuildDrawBatches();
+        _RebuildDrawBatches(hgiCapabilities);
     }   
 }
 
 void
-HdStCommandBuffer::_RebuildDrawBatches()
+HdStCommandBuffer::_RebuildDrawBatches(HgiCapabilities const *hgiCapabilities)
 {
     HD_TRACE_FUNCTION();
 
@@ -277,7 +282,8 @@ HdStCommandBuffer::_RebuildDrawBatches()
         }
 
         if (!batched) {
-            HdSt_DrawBatchSharedPtr batch = _NewDrawBatch(drawItemInstance);
+            HdSt_DrawBatchSharedPtr batch =
+                _NewDrawBatch(drawItemInstance, hgiCapabilities);
             _drawBatches.emplace_back(batch);
             prevBatch.Update(key, batch);
 
