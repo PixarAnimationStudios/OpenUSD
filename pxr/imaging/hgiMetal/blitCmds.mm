@@ -174,18 +174,16 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
     // Offset into the dst buffer
     char* dst = ((char*) copyOp.cpuDestinationBuffer) +
         copyOp.destinationByteOffset;
-
-    // Offset into the src buffer
-    const char* src = (const char*) [cpuBuffer contents];
-
+    
     // bytes to copy
     size_t byteSize = copyOp.destinationBufferByteSize;
 
     [_commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer)
         {
+            const char* src = (const char*) [cpuBuffer contents];
             memcpy(dst, src, byteSize);
+            [cpuBuffer release];
         }];
-    [cpuBuffer release];
 }
 
 void
@@ -268,6 +266,9 @@ HgiMetalBlitCmds::CopyBufferGpuToGpu(
     // our GPU copied range trampled by alignment of the blit. The Metal
     // spec says bytes outside of the range may be copied when calling
     // didModifyRange
+
+    // We still need this for the staging buffer on AMD GPUs, so I'd like
+    // to investigate further.
     if ([srcBuffer->GetBufferId() storageMode] == MTLStorageModeManaged) {
         memcpy((char*)dstBuffer->GetCPUStagingAddress() + copyOp.destinationByteOffset,
                (char*)srcBuffer->GetCPUStagingAddress() + copyOp.sourceByteOffset,
@@ -340,7 +341,7 @@ HgiMetalBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
         [_blitEncoder performSelector:@selector(synchronizeResource:)
                            withObject:metalBuffer->GetBufferId()];
     }
-    
+
     // Offset into the dst buffer
     char* dst = ((char*) copyOp.cpuDestinationBuffer) +
         copyOp.destinationByteOffset;
@@ -425,6 +426,13 @@ HgiMetalBlitCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
             _hgi->CommitSecondaryCommandBuffer(_commandBuffer, waitType);
         }
         else {
+            if (waitType != HgiMetal::CommitCommandBuffer_WaitUntilCompleted) {
+                // Ordering problems between CPU updates and GPU updates to a buffer
+                // result in incorrect buffer contents. This is avoided by waiting
+                // until work is scheduled, before future calls to didModifyRange
+                // are made
+                waitType = HgiMetal::CommitCommandBuffer_WaitUntilScheduled;
+            }
             _hgi->CommitPrimaryCommandBuffer(waitType);
         }
     }
