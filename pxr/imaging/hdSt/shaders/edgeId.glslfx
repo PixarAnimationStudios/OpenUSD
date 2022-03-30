@@ -44,6 +44,8 @@ float SelectedEdgeFalloff(float d) {
 --- --------------------------------------------------------------------------
 -- glsl EdgeId.Fragment.TriangleSurface
 
+FORWARD_DECL(vec3 GetEdgeDistanceTriangle());
+
 vec3 ComputeBaseFaceEdgeDistanceTriangle()
 {
     return GetEdgeDistanceTriangle();

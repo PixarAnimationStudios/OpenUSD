@@ -2505,9 +2505,9 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
         if (hasGeneratedFlatNormals) {
             normalsSource = HdSt_MeshShaderKey::NormalSourceFlat;
         } else if (_CanUseTriangulatedFlatNormals(_topology)) {
-            normalsSource = HdSt_MeshShaderKey::NormalSourceScreenSpace;
+            normalsSource = HdSt_MeshShaderKey::NormalSourceFlatScreenSpace;
         } else {
-            normalsSource = HdSt_MeshShaderKey::NormalSourceGeometryShader;
+            normalsSource = HdSt_MeshShaderKey::NormalSourceFlatGeometric;
         }
     } else if (_limitNormals) {
         normalsSource = HdSt_MeshShaderKey::NormalSourceLimit;
@@ -2516,7 +2516,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     } else if (_sceneNormals) {
         normalsSource = HdSt_MeshShaderKey::NormalSourceScene;
     } else {
-        normalsSource = HdSt_MeshShaderKey::NormalSourceGeometryShader;
+        normalsSource = HdSt_MeshShaderKey::NormalSourceFlatGeometric;
     }
 
     // if the repr doesn't have an opinion about cullstyle, use the
@@ -2573,6 +2573,10 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
         resourceRegistry->GetHgi()->GetCapabilities()->
             IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
 
+    bool const hasMetalTessellation =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+            IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
+
     // create a shaderKey and set to the geometric shader.
     HdSt_MeshShaderKey shaderKey(primType,
                                  shadingTerminal,
@@ -2584,6 +2588,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  desc.lineWidth,
                                  _doubleSided || desc.doubleSided,
                                  hasBuiltinBarycentrics,
+                                 hasMetalTessellation,
                                  hasCustomDisplacement,
                                  hasPerFaceInterpolation,
                                  hasTopologicalVisibility,

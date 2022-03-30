@@ -48,6 +48,17 @@ vec3 GetPrimitiveEdgeMask()
 }
 
 --- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeMaskPTVSTriQuad
+
+vec4 GetFlaggedPrimitiveEdgeDistance(vec4 edgeDistance)
+{
+    if (GetEdgeFlag() != 0) {
+        edgeDistance.yz += vec2(2.0);
+    } 
+    return edgeDistance;
+}
+
+--- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.EdgeMaskTriQuad
 
 vec3 GetPrimitiveEdgeMask()
@@ -62,6 +73,14 @@ vec3 GetPrimitiveEdgeMask()
 }
 
 --- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeMaskMetalRefinedTriQuad
+
+vec3 GetPrimitiveEdgeMask()
+{
+    return vec3(0, 1, 0);
+}
+
+--- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.EdgeMaskRefinedQuad
 
 vec3 GetPrimitiveEdgeMask()
@@ -71,12 +90,11 @@ vec3 GetPrimitiveEdgeMask()
 }
 
 --- --------------------------------------------------------------------------
--- glsl MeshWire.Fragment.EdgeMaskRefinedTriQuad
+-- glsl MeshWire.Fragment.EdgeMaskPTVSRefinedTriQuad
 
-vec3 GetPrimitiveEdgeMask()
+vec4 GetFlaggedPrimitiveEdgeDistance(vec4 edgeDistance)
 {
-    // Hide the common edge between the pair of rasterized triangles.
-    return vec3(0,1,0);
+    return edgeDistance;
 }
 
 --- --------------------------------------------------------------------------
@@ -95,7 +113,7 @@ vec3 GetPrimitiveEdgeMask()
 float GetMinEdgeDistance()
 {
     // Hide triangle edges by adding edge mask.
-    vec3 param = GetBarycentricCoord() + GetPrimitiveEdgeMask();
+    vec3 param = GetEdgeCoord() + GetPrimitiveEdgeMask();
     vec3 edgeDistance = max(vec3(0.0), param / fwidth(param));
     return min(edgeDistance.x,
                min(edgeDistance.y,
@@ -112,7 +130,36 @@ float GetEdgeOpacity() {
 }
 
 --- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeRefinedTriquad
+
+// Returns the distance of the current fragment (in viewport pixel units) from
+// the nearest edge.
+float GetMinEdgeDistance()
+{
+    vec2 leftBottom = GetEdgeCoord();
+    vec2 rightTop = vec2(1.0) - leftBottom;
+    vec4 param = vec4(leftBottom.y, rightTop.x, rightTop.y, leftBottom.x);
+    vec4 edgeDistance = max(vec4(0.0), param / fwidth(param));
+    edgeDistance = GetFlaggedPrimitiveEdgeDistance(edgeDistance);
+    return min(
+        min(edgeDistance.x, edgeDistance.y),
+        min(edgeDistance.z, edgeDistance.w)
+    );
+}
+
+// Use edge distance to compute a smooth opacity falloff for good looking edges.
+float GetEdgeFalloff(float d) {
+    return exp2(-4 * d * d);
+}
+
+float GetEdgeOpacity() {
+    return GetEdgeFalloff(GetMinEdgeDistance());
+}
+
+--- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.EdgeParam
+
+FORWARD_DECL(vec4 GetPatchCoord(int));
 
 vec3 GetEdgeParamTriangle()
 {
@@ -252,6 +299,30 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 
     Cfill.a = 1.0; // edges ignore input opacity and are opaque.
     return Cfill;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeCoord.Barycentric
+
+vec3 GetEdgeCoord()
+{
+    return GetBarycentricCoord();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeCoord.PostTessPositionInPatch.Triangle
+
+vec3 GetEdgeCoord()
+{
+    return ptvsBarycentricCoord;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeCoord.PostTessPositionInPatch.Quad
+
+vec2 GetEdgeCoord()
+{
+    return ptvsBarycentricCoord;
 }
 
 --- --------------------------------------------------------------------------
