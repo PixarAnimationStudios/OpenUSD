@@ -94,7 +94,7 @@ vec3 IntToVec3(int id)
 void main(void)
 {
     vec2 fragCoord = uvOut * screenSize;
-    int id = HgiTexelFetch_idIn(ivec2(fragCoord)).x;
+    int id = int(HgiTexelFetch_idIn(ivec2(fragCoord)).x);
     int vizId = id * 11629091; // prime number near ln(2) * 2^24
     hd_FragColor = vec4(IntToVec3(vizId), 1.0);
 }
