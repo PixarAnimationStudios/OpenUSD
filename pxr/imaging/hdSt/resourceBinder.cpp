@@ -599,7 +599,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 MetaData::BindingDeclaration(
                     /*name=*/HdInstancerTokens->culledInstanceIndices,
                     /*type=*/glType,
-                    /*binding=*/culledInstanceIndexArrayBinding);
+                    /*binding=*/culledInstanceIndexArrayBinding,
+                    /*isWritable=*/true);
         }
     }
 
@@ -865,7 +866,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                                                    it->GetName());
             bool const concatenateNames = it->ConcatenateNames();
 
-            MetaData::StructBlock sblock(it->GetName());
+            MetaData::StructBlock sblock(it->GetName(), it->GetArraySize());
 
             HdBufferArrayRangeSharedPtr bar_ = it->GetBar();
             HdStBufferArrayRangeSharedPtr bar =
@@ -901,7 +902,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     BindingDeclaration b(nameRes.first,
                         HdStGLConversions::GetGLSLTypename(
                             nameRes.second->GetTupleType().type),
-                        binding);
+                        binding,
+                        it->isWritable());
                     metaDataOut->customBindings.push_back(b);
                     _bindingMap[nameRes.first] = binding;
                 }
@@ -910,7 +912,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 BindingDeclaration b(it->GetName(),
                                      HdStGLConversions::GetGLSLTypename(
                                                     it->GetDataType()),
-                                     binding);
+                                     binding,
+                                     it->isWritable());
 
                 // note that GetDataType() may return HdTypeInvalid,
                 // in case it's a typeless binding. CodeGen generates
@@ -987,7 +990,9 @@ HdSt_ResourceBinder::GetBufferBindingDesc(
 
     HdBinding binding = GetBinding(name, level);
 
-    HgiShaderStage stageUsage = HgiShaderStageVertex | HgiShaderStageFragment;
+    HgiShaderStage stageUsage =
+        HgiShaderStageVertex | HgiShaderStageFragment |
+        HgiShaderStagePostTessellationVertex;
     HgiBufferBindDesc desc;
 
     switch (binding.GetType()) {
@@ -1111,6 +1116,9 @@ HdSt_ResourceBinder::GetTextureBindingDesc(
     HdBinding const binding = GetBinding(name);
 
     HgiTextureBindDesc texelDesc;
+    texelDesc.stageUsage =
+        HgiShaderStageGeometry | HgiShaderStageFragment |
+        HgiShaderStagePostTessellationVertex;
     texelDesc.textures = { texelTexture };
     texelDesc.samplers = { texelSampler };
     texelDesc.resourceType = HgiBindResourceTypeSampledImage;

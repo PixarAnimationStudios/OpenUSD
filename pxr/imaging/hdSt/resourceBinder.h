@@ -186,7 +186,8 @@ public:
         };
         struct StructBlock {
             StructBlock(TfToken const &name, int arraySize = 1)
-                : blockName(name) {}
+                : blockName(name)
+                , arraySize(arraySize) {}
             TfToken blockName;
             std::vector<StructEntry> entries;
             int arraySize;
@@ -270,12 +271,18 @@ public:
         struct BindingDeclaration {
             BindingDeclaration() {}
             BindingDeclaration(TfToken const &name,
-                         TfToken const &dataType,
-                         HdBinding binding)
-                : name(name), dataType(dataType), binding(binding) {}
+                               TfToken const &dataType,
+                               HdBinding binding,
+                               bool isWritable = false)
+                : name(name)
+                , dataType(dataType)
+                , binding(binding)
+                , isWritable(isWritable) { }
+
             TfToken name;
             TfToken dataType;
             HdBinding binding;
+            bool isWritable;
         };
 
         // -------------------------------------------------------------------
