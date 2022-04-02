@@ -238,6 +238,8 @@ HdxSkydomeTask::_SetFragmentShader()
     HgiShaderFunctionAddStageInput(&fragDesc, "uvOut", "vec2");
     HgiShaderFunctionAddTexture(&fragDesc, "skydomeTexture");
     HgiShaderFunctionAddStageOutput(&fragDesc, "hd_FragColor", "vec4", "color");
+    HgiShaderFunctionAddStageOutput(
+        &fragDesc, "gl_FragDepth", "float", "depth(any)");
 
     // The order of the constant parameters has to match the order in the 
     // _ParameterBuffer struct
