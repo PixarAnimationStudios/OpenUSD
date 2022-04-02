@@ -54,7 +54,7 @@ const float PI = 3.1415926536;
 // compute texture coords based on the size of the output image/texture
 vec2 GetTexCoords(ivec2 outCoords)
 {
-    vec2 outDims = HgiGetSize_outTexture();
+    vec2 outDims = vec2(HgiGetSize_outTexture());
     // apply a (0.5, 0.5) offset to use pixel centers and not pixel corners
     vec2 texCoords = (vec2(outCoords) + vec2(0.5, 0.5)) / outDims;
     return texCoords;
@@ -179,7 +179,7 @@ vec3 PrefilterEnvMap(vec3 R, float roughness)
     vec3 V = R;
     vec3 color = vec3(0.0);
     float totalWeight = 0.0;
-    float envMapDim = float(HgiGetSize_inTexture().s);
+    float envMapDim = float(HgiGetSize_inTexture().x);
     const uint numSamples = 1024u;
     for (uint i = 0u; i < numSamples; i++) {
         vec2 Xi = Hammersley2d(i, numSamples);
