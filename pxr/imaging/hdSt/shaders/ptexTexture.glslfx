@@ -375,21 +375,14 @@ vec4 PtexMipmapLookupQuadratic(vec4 patchCoord,
 
 // ----------------------------------------------------------------------------
 
-#ifndef HD_PTEX_TEXTURE_FACEOFFSET
-#define HD_PTEX_TEXTURE_FACEOFFSET
-uniform int ptexFaceOffset;
-#endif
-
 vec4
 PtexTextureLookup(sampler2DArray data,
                   usampler1DArray packings,
                   vec4 patchCoord)
 {
-    patchCoord.w += ptexFaceOffset;
     return PtexLookup(patchCoord,
                       /*level = */0,
                       data,
                       packings);
 }
-
 
