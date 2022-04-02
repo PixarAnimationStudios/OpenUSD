@@ -587,7 +587,9 @@ scaleOfMatrix(MAT4 m)
     // A more general, coordinate independent implementation would take
     // the minimum singular value from the singular value decomposition.
     //
-    const mat3 affinePart = mat3(m);
+    const mat3 affinePart = mat3(m[0][0], m[0][1], m[0][2], 
+                                 m[1][0], m[1][1], m[1][2],
+                                 m[2][0], m[2][1], m[2][2]);
     return max3(length(affinePart[0]),
                 length(affinePart[1]),
                 length(affinePart[2]));
