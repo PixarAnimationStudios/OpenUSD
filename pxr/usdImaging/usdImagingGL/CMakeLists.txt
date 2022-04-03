@@ -1854,8 +1854,8 @@ pxr_register_test(testUsdImagingGLPurpose
         world_1.png
         world_2.png
         world_3.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .1
+    FAIL_PERCENT 10
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPurpose
