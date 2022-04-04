@@ -159,8 +159,6 @@ float GetEdgeOpacity() {
 --- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.EdgeParam
 
-FORWARD_DECL(vec4 GetPatchCoord(int));
-
 vec3 GetEdgeParamTriangle()
 {
     // Expand barycentric coordinates

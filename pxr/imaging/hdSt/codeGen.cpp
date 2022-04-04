@@ -4016,8 +4016,6 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
 
     // ---------
     _genFS << "FORWARD_DECL(vec4 GetPatchCoord(int index));\n";
-    _genFS << "vec4 GetPatchCoord() { return GetPatchCoord(0); }\n";
-
     _genGS << "FORWARD_DECL(vec4 GetPatchCoord(int localIndex));\n";
 }
 

@@ -595,6 +595,15 @@ scaleOfMatrix(MAT4 m)
                 length(affinePart[2]));
 }
 
+#ifdef HD_HAS_integrateLights
+#ifndef HD_HAS_definedIntegrateLights
+#define HD_HAS_definedIntegrateLights
+LightingContribution
+integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props) {
+    return integrateLightsDefault(Peye, Neye, props);
+}
+#endif
+#endif
 
 void main(void)
 {

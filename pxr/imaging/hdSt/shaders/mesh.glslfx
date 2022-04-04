@@ -1128,6 +1128,11 @@ vec4 GetPatchCoord(int localIndex)
     return vec4(patchCoord.xyz, patchCoord.w + HdGet_ptexFaceOffset());
 }
 
+vec4 GetPatchCoord()
+{
+    return GetPatchCoord(0);
+}
+
 vec3 ComputeScreenSpacePeye()
 {
     return inData.Peye.xyz / inData.Peye.w;

@@ -120,6 +120,16 @@ in VertexData
 layout (location = 0) out vec4 colorOut;
 #endif
 
+#ifdef HD_HAS_integrateLights
+#ifndef HD_HAS_definedIntegrateLights
+#define HD_HAS_definedIntegrateLights
+LightingContribution
+integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props) {
+    return integrateLightsDefault(Peye, Neye, props);
+}
+#endif
+#endif
+
 void main(void)
 {
     colorOut = imageShader(inData.uv);
