@@ -145,6 +145,8 @@ private:
 
     void _PlumbInterstageElements(TfToken const &name, TfToken const &dataType);
 
+    void _GenerateComputeParameters(HgiShaderFunctionDesc *const csDesc);
+
     HdStGLSLProgramSharedPtr _CompileWithGeneratedGLSLResources(
         HdStResourceRegistry * const registry);
 

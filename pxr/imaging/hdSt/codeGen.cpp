@@ -1418,10 +1418,13 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
+    _GetShaderResourceLayouts(_shaders);
+
     // Initialize source buckets
     _genDefines.str(""); _genDecl.str(""); _genAccessors.str("");
     _genVS.str(""); _genTCS.str(""); _genTES.str("");
     _genGS.str(""); _genFS.str(""); _genCS.str("");
+    _genPTCS.str(""); _genPTVS.str("");
     _procVS.str(""); _procTCS.str(""); _procTES.str(""); _procGS.str("");
 
     _genDefines << "\n// //////// Codegen Defines //////// \n";
@@ -1446,18 +1449,28 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
     // a trick to tightly pack unaligned data (vec3, etc) into SSBO/UBO.
     _genDefines << _GetPackedTypeDefinitions();
 
-    std::stringstream uniforms;
+    _genDecl << "FORWARD_DECL(void compute(int index));\n";
+
+    // main
+    _genCS << "void main() {\n";
+    _genCS << "  int computeCoordinate = int(hd_GlobalInvocationID.x);\n";
+    _genCS << "  compute(computeCoordinate);\n";
+    _genCS << "}\n";
+
+    _hasCS = true;
+
+    return _CompileWithGeneratedHgiResources(registry);
+}
+
+void
+HdSt_CodeGen::_GenerateComputeParameters(HgiShaderFunctionDesc * const csDesc)
+{
     std::stringstream declarations;
     std::stringstream accessors;
 
-    uniforms << "// Uniform block\n";
-
-    HdBinding uboBinding(HdBinding::UBO, 0);
-    uniforms << LayoutQualifier(uboBinding);
-    uniforms << "uniform ubo_" << uboBinding.GetLocation() << " {\n";
-
     accessors << "// Read-Write Accessors & Mutators\n";
-    uniforms << "    int vertexOffset;       // offset in aggregated buffer\n";
+    HgiShaderFunctionAddConstantParam(
+        csDesc, "vertexOffset", _tokens->_int);
     TF_FOR_ALL(it, _metaData.computeReadWriteData) {
         TfToken const &name = it->second.name;
         HdBinding const &binding = it->first;
@@ -1468,13 +1481,15 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
             (binding.GetType() == HdBinding::SSBO
                 ? _GetFlatType(dataType) : dataType);
         
-        uniforms << "    int " << name << "Offset;\n";
-        uniforms << "    int " << name << "Stride;\n";
+        HgiShaderFunctionAddConstantParam(
+            csDesc, name.GetString() + "Offset", _tokens->_int);
+        HgiShaderFunctionAddConstantParam(
+            csDesc, name.GetString() + "Stride", _tokens->_int);
         
         _EmitDeclaration(declarations,
                 name,
                 declDataType,
-                binding, 0);
+                binding);
         // getter & setter
         {
             std::stringstream indexing;
@@ -1499,8 +1514,10 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
             (binding.GetType() == HdBinding::SSBO
                 ? _GetFlatType(dataType) : dataType);
 
-        uniforms << "    int " << name << "Offset;\n";
-        uniforms << "    int " << name << "Stride;\n";
+        HgiShaderFunctionAddConstantParam(
+            csDesc, name.GetString() + "Offset", _tokens->_int);
+        HgiShaderFunctionAddConstantParam(
+            csDesc, name.GetString() + "Stride", _tokens->_int);
 
         _EmitDeclaration(declarations,
                 name,
@@ -1517,10 +1534,8 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
                     indexing.str().c_str());
         }
     }
-    uniforms << "};\n";
-    
-    _genDecl << uniforms.str()
-             << declarations.str();
+
+    _genDecl << declarations.str();
     _genAccessors << accessors.str();
     
     // other shaders (renderpass, lighting, surface) first
@@ -1529,25 +1544,10 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
         _genCS  << shader->GetSource(HdShaderTokens->computeShader);
     }
 
-    // main
-    _genCS << "void main() {\n";
-    _genCS << "  int computeCoordinate = int(gl_GlobalInvocationID.x);\n";
-    _genCS << "  compute(computeCoordinate);\n";
-    _genCS << "}\n";
-    
-    // create GLSL program.
-    HdStGLSLProgramSharedPtr glslProgram =
-        std::make_shared<HdStGLSLProgram>(HdTokens->computeShader, registry);
-    
-    // compile shaders
-    {
-        _csSource = _genDecl.str() + _genAccessors.str() + _genCS.str();
-        if (!glslProgram->CompileShader(HgiShaderStageCompute, _csSource)) {
-            return HdStGLSLProgramSharedPtr();
-        }
-    }
-    
-    return glslProgram;
+    // thread indexing id
+    HgiShaderFunctionAddStageInput(
+        csDesc, "hd_GlobalInvocationID", "uvec3",
+        HgiShaderKeywordTokens->hdGlobalInvocationID);
 }
 
 HdStGLSLProgramSharedPtr
@@ -1867,6 +1867,8 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
     if (_hasCS) {
         HgiShaderFunctionDesc csDesc;
         csDesc.shaderStage = HgiShaderStageCompute;
+
+        _GenerateComputeParameters(&csDesc);
 
         resourceGen._GenerateHgiResources(&csDesc,
             HdShaderTokens->computeShader, _resAttrib, _metaData);
