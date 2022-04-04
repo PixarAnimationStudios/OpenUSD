@@ -49,6 +49,7 @@ pxr_library(hd
         dataSourceMaterialNetworkInterface
         debugCodes
         dependenciesSchema
+        dependencyForwardingSceneIndex
         dependencySchema
         dirtyBitsTranslator
         dirtyList
