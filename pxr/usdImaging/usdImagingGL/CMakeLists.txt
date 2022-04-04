@@ -488,6 +488,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLClippingPlanes
+    DEST testUsdImagingGLClippingPlanes
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdImagingGLAnimatedLights
     DEST testUsdImagingGLAnimatedLights
 )

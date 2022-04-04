@@ -164,7 +164,6 @@ UsdImagingDataSourceCamera::Get(const TfToken &name)
     // Note that scene index emulation calls this method with
     // "shutterOpen" (Usd attribute is shutter:open)
     // "shutterClose" (Usd attribute is shutter:close)
-    // "clipPlanes" (Usd attribute is clippingPlanes)
     // "windowPolicy" - does not exist on UsdGeomCamera
     //
     // We need to either do the right translation/ignore these values here

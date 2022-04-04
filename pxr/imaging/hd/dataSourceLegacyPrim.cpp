@@ -1222,7 +1222,12 @@ public:
 
     bool Has(const TfToken &name) override
     {
-        VtValue v = _sceneDelegate->GetCameraParamValue(_id, name);
+        TfToken key = name;
+        if (name == HdCameraSchemaTokens->clippingPlanes) {
+            key = HdCameraTokens->clipPlanes;
+        }
+
+        VtValue v = _sceneDelegate->GetCameraParamValue(_id, key);
         return !v.IsEmpty();
     }
 
@@ -1242,6 +1247,7 @@ public:
         results.push_back(HdCameraSchemaTokens->verticalApertureOffset);
         results.push_back(HdCameraSchemaTokens->focalLength);
         results.push_back(HdCameraSchemaTokens->clippingRange);
+        results.push_back(HdCameraSchemaTokens->clippingPlanes);
 
         return results;
     }
@@ -1280,16 +1286,20 @@ public:
             }
             return HdRetainedTypedSampledDataSource<
                         CameraUtilConformWindowPolicy>::New(wp);
-        } else if (name == HdCameraTokens->clipPlanes) {
-            VtValue v = _sceneDelegate->GetCameraParamValue(_id, name);
-        
-            // XXX: this should probably be in the schema, and a vec4f array.
-            std::vector<GfVec4d> cp;
+        } else if (name == HdCameraSchemaTokens->clippingPlanes) {
+            const VtValue v = _sceneDelegate->GetCameraParamValue(
+                _id, HdCameraTokens->clipPlanes);
+            VtArray<GfVec4d> array;
             if (v.IsHolding<std::vector<GfVec4d>>()) {
-                cp = v.UncheckedGet<std::vector<GfVec4d>>();
+                const std::vector<GfVec4d> &vec =
+                    v.UncheckedGet<std::vector<GfVec4d>>();
+                array.resize(vec.size());
+                for (size_t i = 0; i < vec.size(); i++) {
+                    array[i] = vec[i];
+                }
             }
-            return HdRetainedTypedSampledDataSource<std::vector<GfVec4d>>::New(
-                        cp);
+            return HdRetainedTypedSampledDataSource<VtArray<GfVec4d>>::New(
+                array);
         } else if (std::find(HdCameraSchemaTokens->allTokens.begin(),
                 HdCameraSchemaTokens->allTokens.end(), name)
                     != HdCameraSchemaTokens->allTokens.end()) {

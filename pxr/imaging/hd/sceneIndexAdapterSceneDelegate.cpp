@@ -1039,9 +1039,14 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
         return VtValue();
     }
 
+    TfToken cameraSchemaToken = paramName;
+    if (paramName == HdCameraTokens->clipPlanes) {
+        cameraSchemaToken = HdCameraSchemaTokens->clippingPlanes;
+    }
+
     HdSampledDataSourceHandle valueDs =
         HdSampledDataSource::Cast(
-            camera->Get(paramName));
+            camera->Get(cameraSchemaToken));
     if (!valueDs) {
         return VtValue();
     }
@@ -1063,6 +1068,17 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
             range = value.UncheckedGet<GfVec2f>();
         }
         return VtValue(GfRange1f(range[0], range[1]));
+    } else if (paramName == HdCameraTokens->clipPlanes) {
+        std::vector<GfVec4d> vec;
+        if (value.IsHolding<VtArray<GfVec4d>>()) {
+            const VtArray<GfVec4d> array =
+                value.UncheckedGet<VtArray<GfVec4d>>();
+            vec.reserve(array.size());
+            for (const GfVec4d &p : array) {
+                vec.push_back(p);
+            }
+        }
+        return VtValue(vec);
     } else {
         return value;
     }

@@ -87,6 +87,13 @@ HdCameraSchema::GetClippingRange()
         HdCameraSchemaTokens->clippingRange);
 }
 
+HdVec4dArrayDataSourceHandle
+HdCameraSchema::GetClippingPlanes()
+{
+    return _GetTypedDataSource<HdVec4dArrayDataSource>(
+        HdCameraSchemaTokens->clippingPlanes);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdCameraSchema::BuildRetained(
@@ -96,11 +103,12 @@ HdCameraSchema::BuildRetained(
         const HdFloatDataSourceHandle &horizontalApertureOffset,
         const HdFloatDataSourceHandle &verticalApertureOffset,
         const HdFloatDataSourceHandle &focalLength,
-        const HdVec2fDataSourceHandle &clippingRange
+        const HdVec2fDataSourceHandle &clippingRange,
+        const HdVec4dArrayDataSourceHandle &clippingPlanes
 )
 {
-    TfToken names[7];
-    HdDataSourceBaseHandle values[7];
+    TfToken names[8];
+    HdDataSourceBaseHandle values[8];
 
     size_t count = 0;
     if (projection) {
@@ -136,6 +144,11 @@ HdCameraSchema::BuildRetained(
     if (clippingRange) {
         names[count] = HdCameraSchemaTokens->clippingRange;
         values[count++] = clippingRange;
+    }
+
+    if (clippingPlanes) {
+        names[count] = HdCameraSchemaTokens->clippingPlanes;
+        values[count++] = clippingPlanes;
     }
 
     return HdRetainedContainerDataSource::New(count, names, values);
@@ -239,6 +252,14 @@ HdCameraSchema::Builder::SetClippingRange(
     return *this;
 }
 
+HdCameraSchema::Builder &
+HdCameraSchema::Builder::SetClippingPlanes(
+    const HdVec4dArrayDataSourceHandle &clippingPlanes)
+{
+    _clippingPlanes = clippingPlanes;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdCameraSchema::Builder::Build()
 {
@@ -249,7 +270,8 @@ HdCameraSchema::Builder::Build()
         _horizontalApertureOffset,
         _verticalApertureOffset,
         _focalLength,
-        _clippingRange
+        _clippingRange,
+        _clippingPlanes
     );
 }
 
