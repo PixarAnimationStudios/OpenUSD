@@ -1047,7 +1047,10 @@ HdStRenderPassState::_InitAttachmentState(
         HdStRenderBuffer *firstRenderBuffer =
             static_cast<HdStRenderBuffer*>(aovBindings.front().renderBuffer);
 
-        sampleCount = HgiSampleCount(firstRenderBuffer->GetMSAASampleCount());
+        if (firstRenderBuffer->IsMultiSampled()) {
+            sampleCount = HgiSampleCount(
+                firstRenderBuffer->GetMSAASampleCount());
+        }
     }
 
     pipeDesc->multiSampleState.sampleCount = sampleCount;
