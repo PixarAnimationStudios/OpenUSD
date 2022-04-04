@@ -256,15 +256,14 @@ _ComputeNonTransitiveInputConsumersMap(
 
         std::vector<UsdShadeInput> internalInputs = connectable.GetInputs();
         for (const auto &internalInput: internalInputs) {
-            UsdShadeConnectableAPI source;
-            TfToken sourceName;
-            UsdShadeAttributeType sourceType;
-            if (UsdShadeConnectableAPI::GetConnectedSource(internalInput,
-                    &source, &sourceName, &sourceType)) {
-                if (source.GetPrim() == nodeGraph.GetPrim() && 
-                    _IsValidInput(source, sourceType))
+            UsdShadeSourceInfoVector sources = 
+                UsdShadeConnectableAPI::GetConnectedSources(internalInput);
+
+            for (const auto& sourceInfo : sources) {
+                if (sourceInfo.source.GetPrim() == nodeGraph.GetPrim() && 
+                    _IsValidInput(sourceInfo.source, sourceInfo.sourceType))
                 {
-                    result[nodeGraph.GetInput(sourceName)].push_back(
+                    result[nodeGraph.GetInput(sourceInfo.sourceName)].push_back(
                         internalInput);
                 }
             }
