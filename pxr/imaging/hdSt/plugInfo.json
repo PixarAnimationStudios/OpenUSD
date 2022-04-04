@@ -2,6 +2,14 @@
     "Plugins": [
         {
             "Info": {
+                "Types": {
+                    "HdSt_DependencySceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "GL",
+                        "priority": 0,
+                        "displayName": "Storm Dependency Scene Index"
+                    }
+                },
                 "ShaderResources": "shaders"
             },
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",

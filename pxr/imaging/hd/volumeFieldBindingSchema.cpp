@@ -36,6 +36,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PUBLIC_TOKENS(HdVolumeFieldBindingSchemaTokens,
     HDVOLUMEFIELDBINDING_SCHEMA_TOKENS);
 
+TfTokenVector
+HdVolumeFieldBindingSchema::GetVolumeFieldBindingNames()
+{
+    HdContainerDataSourceHandle container = GetContainer();
+    if (!container) {
+        return {};
+    }
+    return container->GetNames();
+}
 
 HdPathDataSourceHandle
 HdVolumeFieldBindingSchema::GetVolumeFieldBinding(TfToken const &name)

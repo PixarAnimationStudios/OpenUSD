@@ -57,6 +57,10 @@ public:
         TfToken *names,
         HdDataSourceBaseHandle *values);
 
+    HD_API
+    TfTokenVector GetVolumeFieldBindingNames();
+
+    HD_API
     HdPathDataSourceHandle GetVolumeFieldBinding(TfToken const &name);
 
 

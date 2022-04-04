@@ -52,6 +52,7 @@ pxr_library(hdSt
         commandBuffer
         copyComputation
         debugCodes
+        dependencySceneIndexPlugin
         dispatchBuffer
         domeLightComputations
         drawItem
