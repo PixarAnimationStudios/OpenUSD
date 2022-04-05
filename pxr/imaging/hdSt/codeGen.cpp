@@ -1449,14 +1449,6 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
     // a trick to tightly pack unaligned data (vec3, etc) into SSBO/UBO.
     _genDefines << _GetPackedTypeDefinitions();
 
-    _genDecl << "FORWARD_DECL(void compute(int index));\n";
-
-    // main
-    _genCS << "void main() {\n";
-    _genCS << "  int computeCoordinate = int(hd_GlobalInvocationID.x);\n";
-    _genCS << "  compute(computeCoordinate);\n";
-    _genCS << "}\n";
-
     _hasCS = true;
 
     return _CompileWithGeneratedHgiResources(registry);
@@ -1548,6 +1540,13 @@ HdSt_CodeGen::_GenerateComputeParameters(HgiShaderFunctionDesc * const csDesc)
     HgiShaderFunctionAddStageInput(
         csDesc, "hd_GlobalInvocationID", "uvec3",
         HgiShaderKeywordTokens->hdGlobalInvocationID);
+
+    // main
+    _genCS << "void main() {\n";
+    _genCS << "  int computeCoordinate = int(hd_GlobalInvocationID.x);\n";
+    _genCS << "  compute(computeCoordinate);\n";
+    _genCS << "}\n";
+
 }
 
 HdStGLSLProgramSharedPtr
