@@ -118,13 +118,18 @@ _ToLower(const std::string &s)
 HdPrmanRenderDelegate::HdPrmanRenderDelegate(
     HdRenderSettingsMap const& settingsMap)
   : HdRenderDelegate(settingsMap)
-  , _renderParam(
-      std::make_unique<HdPrman_RenderParam>(
-          _ToLower(
+{
+    std::string rileyVariant = _ToLower(
               GetRenderSetting<std::string>(
                   HdPrmanRenderSettingsTokens->rileyVariant,
-                  TfGetenv("RILEY_VARIANT")))))
-{
+                  TfGetenv("RILEY_VARIANT")));
+
+    std::string xpuDevices = GetRenderSetting<std::string>(
+        HdPrmanRenderSettingsTokens->xpuDevices, std::string());
+
+    _renderParam = std::make_unique<HdPrman_RenderParam>(
+        rileyVariant, xpuDevices);
+
     _Initialize();
 }
 

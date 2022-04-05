@@ -94,7 +94,8 @@ TF_MAKE_STATIC_DATA(std::vector<HdPrman_RenderParam::IntegratorCameraCallback>,
     _integratorCameraCallbacks->clear();
 }
 
-HdPrman_RenderParam::HdPrman_RenderParam(const std::string &rileyVariant) :
+HdPrman_RenderParam::HdPrman_RenderParam(const std::string &rileyVariant,
+        const std::string &xpuVariant) :
     resolution(0),
     _rix(nullptr),
     _ri(nullptr),
@@ -104,7 +105,7 @@ HdPrman_RenderParam::HdPrman_RenderParam(const std::string &rileyVariant) :
     _lastSettingsVersion(0)
 {
     TfRegistryManager::GetInstance().SubscribeTo<HdPrman_RenderParam>();
-    _CreateRiley(rileyVariant);
+    _CreateRiley(rileyVariant, xpuVariant);
     
     // Register RenderMan display driver
     HdPrmanFramebuffer::Register(_rix);
@@ -1538,7 +1539,8 @@ HdPrman_RenderParam::SetParamFromVtValue(
 }
 
 void
-HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant)
+HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
+    const std::string &xpuDevices)
 {
     _rix = RixGetContext();
     if (!_rix) {
@@ -1578,14 +1580,34 @@ HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant)
 
     // Acquire Riley instance.
     _mgr = (RixRileyManager*)_rix->GetRixInterface(k_RixRileyManager);
-    _riley = _mgr->CreateRiley(RtUString(rileyVariant.c_str()), RtParamList());
+
+    _xpu = (!rileyVariant.empty() ||
+            (rileyVariant.find("xpu") != std::string::npos));
+
+    // Decide whether to use the CPU, GPU, or both
+    RtParamList paramList;
+    if (_xpu) {
+        static const RtUString cpuConfig("xpu:cpuconfig");
+        static const RtUString gpuConfig("xpu:gpuconfig");
+        static const int defaultGPUId = 0;
+
+        const bool useCpu = xpuDevices.find("cpu") != std::string::npos;
+        paramList.SetInteger(cpuConfig, useCpu ? 1 : 0);
+
+        const bool useGpu = xpuDevices.find("gpu") != std::string::npos;
+        if (useGpu) {
+            // Currently XPU only supports a single GPU
+            // Set the 0th GPU as being used
+            paramList.SetIntegerArray(gpuConfig, &defaultGPUId, 1);    
+        }
+    }
+
+    _riley = _mgr->CreateRiley(RtUString(rileyVariant.c_str()), paramList);
+
     if(!_riley) {
         TF_RUNTIME_ERROR("Could not initialize riley API.");
         return;
     }
-
-    _xpu = (!rileyVariant.empty() ||
-            (rileyVariant.find("xpu") != std::string::npos));
 }
 
 
