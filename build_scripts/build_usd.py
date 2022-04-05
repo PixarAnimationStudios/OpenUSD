@@ -998,10 +998,12 @@ OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/v2.3
 
 def InstallOpenEXR(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OPENEXR_URL, context, force)):
-        RunCMake(context, force, 
-                 ['-DOPENEXR_BUILD_PYTHON_LIBS=OFF',
-                  '-DOPENEXR_PACKAGE_PREFIX="{}"'.format(context.instDir),
-                  '-DOPENEXR_ENABLE_TESTS=OFF'] + buildArgs)
+        extraArgs = ['-DOPENEXR_BUILD_PYTHON_LIBS=OFF',
+                     '-DOPENEXR_PACKAGE_PREFIX="{}"'.format(context.instDir),
+                     '-DOPENEXR_ENABLE_TESTS=OFF']
+
+        extraArgs += buildArgs
+        RunCMake(context, force, extraArgs)
 
 OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
 
@@ -1317,7 +1319,7 @@ HDF5 = Dependency("HDF5", InstallHDF5, "include/hdf5.h")
 ############################################################
 # Alembic
 
-ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.7.10.zip"
+ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.7.16.zip"
 
 def InstallAlembic(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ALEMBIC_URL, context, force)):
