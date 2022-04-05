@@ -270,15 +270,14 @@ static void _EmitAccessor(std::stringstream &str,
 static const char *
 _GetPackedTypeDefinitions()
 {
-    return "struct hd_ivec3 { int    x, y, z; };\n"
-           "struct hd_vec3  { float  x, y, z; };\n"
-           "struct hd_dvec3 { double x, y, z; };\n"
-           "struct hd_mat3  { float  m00, m01, m02,\n"
-           "                         m10, m11, m12,\n"
-           "                         m20, m21, m22; };\n"
-           "struct hd_dmat3 { double m00, m01, m02,\n"
-           "                         m10, m11, m12,\n"
-           "                         m20, m21, m22; };\n"
+    return
+           "// Alias hgi vec and matrix types to hd.\n"
+           "#define hd_ivec3 hgi_ivec3\n"
+           "#define hd_vec3 hgi_vec3\n"
+           "#define hd_dvec3 hgi_dvec3\n"
+           "#define hd_mat3 hgi_mat3\n"
+           "#define hd_dmat3 hgi_dmat3\n"
+           "\n"
            "ivec3 hd_ivec3_get(hd_ivec3 v) { return ivec3(v.x, v.y, v.z); }\n"
            "ivec3 hd_ivec3_get(ivec3 v)    { return v; }\n"
            "vec3  hd_vec3_get(hd_vec3 v)   { return vec3(v.x, v.y, v.z); }\n"
