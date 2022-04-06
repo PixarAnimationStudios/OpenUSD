@@ -43,9 +43,7 @@ static const char * const _pluginDisplayName = "GL";
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    HdSceneIndexPluginRegistry::Define<
-        HdSt_DependencySceneIndexPlugin,
-        HdSceneIndexPlugin>();
+    HdSceneIndexPluginRegistry::Define<HdSt_DependencySceneIndexPlugin>();
 }
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
