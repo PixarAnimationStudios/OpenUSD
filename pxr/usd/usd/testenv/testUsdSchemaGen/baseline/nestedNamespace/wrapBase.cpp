@@ -720,6 +720,27 @@ _CreateFrame4dArrayAttr(UsdContrivedBase &self,
     return self.CreateFrame4dArrayAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Frame4dArray), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateOverrideBaseFalseDerivedFalseAttr(UsdContrivedBase &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateOverrideBaseFalseDerivedFalseAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateOverrideBaseFalseDerivedNoneAttr(UsdContrivedBase &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateOverrideBaseFalseDerivedNoneAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateOverrideBaseNoneDerivedFalseAttr(UsdContrivedBase &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateOverrideBaseNoneDerivedFalseAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
+}
 
 static std::string
 _Repr(const UsdContrivedBase &self)
@@ -1429,6 +1450,27 @@ void wrapUsdContrivedBase()
              &This::GetFrame4dArrayAttr)
         .def("CreateFrame4dArrayAttr",
              &_CreateFrame4dArrayAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetOverrideBaseFalseDerivedFalseAttr",
+             &This::GetOverrideBaseFalseDerivedFalseAttr)
+        .def("CreateOverrideBaseFalseDerivedFalseAttr",
+             &_CreateOverrideBaseFalseDerivedFalseAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetOverrideBaseFalseDerivedNoneAttr",
+             &This::GetOverrideBaseFalseDerivedNoneAttr)
+        .def("CreateOverrideBaseFalseDerivedNoneAttr",
+             &_CreateOverrideBaseFalseDerivedNoneAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetOverrideBaseNoneDerivedFalseAttr",
+             &This::GetOverrideBaseNoneDerivedFalseAttr)
+        .def("CreateOverrideBaseNoneDerivedFalseAttr",
+             &_CreateOverrideBaseNoneDerivedFalseAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

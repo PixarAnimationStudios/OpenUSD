@@ -263,6 +263,73 @@ class "Base" (
     matrix4d[] matrix4dArray
 
     frame4d[] frame4dArray
+    
+    int overrideBaseTrueDerivedTrue = 1 (
+        doc = """API schema override explicitly set to True in Base.
+        API schema override explicitly set to True in Derived.
+        Does not generate API functions in Base.
+        """
+        customData = {
+            bool apiSchemaOverride = true
+        }
+    )
+    int overrideBaseTrueDerivedFalse = 1 (
+        doc = """API schema override explicitly set to True in Base.
+        API schema override explicitly set to False in Derived.
+        Does not generate API functions in Base.
+        """
+        customData = {
+            bool apiSchemaOverride = true
+        }
+    )
+    int overrideBaseTrueDerivedNone = 1 (
+        doc = """API schema override explicitly set to True in Base.
+        API schema override has no opinion in Derived.
+        Does not generate API functions in Base.
+        """
+        customData = {
+            bool apiSchemaOverride = true
+        }
+    )
+#    int overrideBaseFalseDerivedTrue = 1 (
+#        doc = """API schema override explicitly set to False in Base.
+#        API schema override explicitly set to True in Derived.
+#        This is an illegal specification and would cause usdGenSchema to fail.
+#        """
+#        customData = {
+#            bool apiSchemaOverride = false
+#        }
+#    )
+    int overrideBaseFalseDerivedFalse = 1 (
+        doc = """API schema override explicitly set to False in Base.
+        API schema override explicitly set to False in Derived.
+        Generates API functions in Base. (1/3)
+        """
+        customData = {
+            bool apiSchemaOverride = false
+        }
+    )
+    int overrideBaseFalseDerivedNone = 1 (
+        doc = """API schema override explicitly set to False in Base.
+        API schema override has no opinion in Derived.
+        Generates API functions in Base. (2/3)
+        """
+        customData = {
+            bool apiSchemaOverride = false
+        }
+    )
+#    int overrideBaseNoneDerivedTrue = 1 (
+#        doc = """API schema override has no opinion in Base.
+#        API schema override explicitly set to True in Derived.
+#        This is an illegal specification and would cause usdGenSchema to fail.
+#        """
+#    )
+    int overrideBaseNoneDerivedFalse = 1 (
+        doc = """API schema override has no opinion in Base.
+        API schema override explicitly set to False in Derived.
+        Generates API functions in Base. (3/3)
+        """
+    )
 }
 
 class Derived "Derived" (
@@ -315,6 +382,73 @@ class Derived "Derived" (
 
     token justDefault = "newToken" (
         doc = """newToken should be included in the global token set.""")
+        
+    int overrideBaseTrueDerivedTrue = 1 (
+        doc = """API schema override explicitly set to True in Base.
+        API schema override explicitly set to True in Derived.
+        Does not generate API functions in Derived.
+        """
+        customData = {
+            bool apiSchemaOverride = true
+        }
+    )
+    int overrideBaseTrueDerivedFalse = 1 (
+        doc = """API schema override explicitly set to True in Base.
+        API schema override explicitly set to False in Derived.
+        Generates API functions in Derived. (1/4)
+        """
+        customData = {
+            bool apiSchemaOverride = false
+        }
+    )
+    int overrideBaseTrueDerivedNone = 1 (
+        doc = """API schema override explicitly set to True in Base.
+        API schema override has no opinion in Derived.
+        Does not generate API functions in Derived.
+        """
+    )
+#    int overrideBaseFalseDerivedTrue = 1 (
+#        doc = """API schema override explicitly set to False in Base.
+#        API schema override explicitly set to True in Derived.
+#        This is an illegal specification and would cause usdGenSchema to fail.
+#        """
+#        customData = {
+#            bool apiSchemaOverride = true
+#        }
+#    )
+    int overrideBaseFalseDerivedFalse = 1 (
+        doc = """API schema override explicitly set to False in Base.
+        API schema override explicitly set to False in Derived.
+        Generates API functions in Derived. (2/4)
+        """
+        customData = {
+            bool apiSchemaOverride = false
+        }
+    )
+    int overrideBaseFalseDerivedNone = 1 (
+        doc = """API schema override explicitly set to False in Base.
+        API schema override has no opinion in Derived.
+        Generates API functions in Derived. (3/4)
+        """
+    )
+#    int overrideBaseNoneDerivedTrue = 1 (
+#        doc = """API schema override has no opinion in Base.
+#        API schema override explicitly set to True in Derived.
+#        This is an illegal specification and would cause usdGenSchema to fail.
+#        """
+#        customData = {
+#            bool apiSchemaOverride = true
+#        }
+#    )
+    int overrideBaseNoneDerivedFalse = 1 (
+        doc = """API schema override has no opinion in Base.
+        API schema override explicitly set to False in Derived.
+        Generates API functions in Derived. (4/4)
+        """
+        customData = {
+            bool apiSchemaOverride = false
+        }
+    )
 }
 
 class TestPxHairman "TestPxHairman" (

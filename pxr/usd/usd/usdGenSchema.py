@@ -287,6 +287,74 @@ def _CamelCase(aString):
     
 Token = namedtuple('Token', ['id', 'value', 'desc'])
 
+# To correctly determine if a property is going to be an API schema override,
+# we need to look at the USD property and how the apiSchemaOverride custom data
+# will be composed.
+def _GetIsAPISchemaOverride(usdProp):
+    # We need the property stack because we need to compose the customData value
+    # to determine if the composition is valid
+    propStack = usdProp.GetPropertyStack(Usd.TimeCode.Default())
+    # Query 'apiSchemaOverride' from the last spec in the prop stack which will
+    # be the most inherited opinion and then go back up the prop stack querying
+    # whether each closer inherited spec has a stronger opinion. We do this 
+    # because we need to insure that once a class defines a property as not 
+    # being an API schema override property (it is a concrete property of the 
+    # class) that no class that derives from the class is allowed to change that
+    # property into being an API schema override. This is important since API 
+    # schema overrides will only be added to a schema's prim definition if an
+    # included API schema actually defines the property. Changing a property 
+    # from a base class into an API schema override may have the effect of 
+    # deleting that base class property from the derived class if that property
+    # isn't defined in one of its built-in API schemas. We don't want a to 
+    # introduce a backdoor way of deleting properties in derived classes.
+    # 
+    # Note that we do allow derived classes to convert an API schema override
+    # into a concrete defined property.
+    isAPISchemaOverride = propStack[-1].customData.get(
+        'apiSchemaOverride', False)
+    for prop in reversed(propStack[:-1]):
+        newIsAPISchemaOverride = prop.customData.get(
+            'apiSchemaOverride', isAPISchemaOverride)
+        if not isAPISchemaOverride and newIsAPISchemaOverride:
+            raise _GetSchemaDefException(
+                "Invalid schema property definition encountered while "
+                "processing property %s.\n"
+                "Property declarations in schema classes cannot set "
+                "'apiSchemaOverride=true' on properties which exist in their "
+                "inherited classes but are not already defined as API schemas "
+                "overrides." 
+                % usdProp.GetPath(), 
+                 prop.path)
+        isAPISchemaOverride = newIsAPISchemaOverride
+    return isAPISchemaOverride
+
+def _GetNameAndRawNameForPropInfo(sdfProp, classInfo):
+    if classInfo.propertyNamespacePrefix:
+        # A property namespace prefix will only exist for multiple apply API
+        # schemas and is used to create the instanceable namespace prefix 
+        # prepended to all its properties. We prepend this instanceable 
+        # prefix to the raw name here.
+        rawName = Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
+            classInfo.propertyNamespacePrefix, sdfProp.name)
+        # Since the property info's name is used to create the identifier 
+        # used for tokens and such, we make it from the instanced property 
+        # name with the instance name placeholder replaced with 
+        # "_MultipleApplyTemplate_". This is so we don't end up with an
+        # the implementation detail of "__INSTANCE_NAME__" in the identifier
+        # itself.
+        name = _CamelCase(
+            Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+                rawName, "_MultipleApplyTemplate_"))
+    else:
+        rawName = sdfProp.name
+        # For property names, camelCase all tokens irrespective of
+        # useLiteralIdentifier, so that we are consistent in our attribute
+        # naming when namespace prefix are provided and respect our coding
+        # convention. (Example: namespacePrefix:attrName ->
+        # namespacePrefixAttrName)
+        name = _MakeValidToken(rawName, False)
+    return (name, rawName)
+
 class PropInfo(object):
     class CodeGen:
         """Specifies how code gen constructs get methods for a property
@@ -299,40 +367,28 @@ class PropInfo(object):
         Generated = 'generated'
         Custom = 'custom'
         
-    def __init__(self, sdfProp, classInfo):
+    def __init__(self, sdfProp, usdProp, classInfo):
         # Allow user to specify custom naming through customData metadata.
         self.customData = dict(sdfProp.customData)
+        self.name, self.rawName = _GetNameAndRawNameForPropInfo(
+            sdfProp, classInfo)
 
-        if classInfo.propertyNamespacePrefix:
-            # A property namespace prefix will only exist for multiple apply API
-            # schemas and is used to create the instanceable namespace prefix 
-            # prepended to all its properties. We prepend this instanceable 
-            # prefix to the raw name here.
-            self.rawName = Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
-                classInfo.propertyNamespacePrefix, sdfProp.name)
-            # Since the property info's name is used to create the identifier 
-            # used for tokens and such, we make it from the instanced property 
-            # name with the instance name placeholder replaced with 
-            # "_MultipleApplyTemplate_". This is so we don't end up with an
-            # the implementation detail of "__INSTANCE_NAME__" in the identifier
-            # itself.
-            self.name = _CamelCase(
-                Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
-                    self.rawName, "_MultipleApplyTemplate_"))
+        # Determine if this property will be an API schema override in the 
+        # flattened stage.
+        self.isAPISchemaOverride = _GetIsAPISchemaOverride(usdProp)
+
+        # If the property is an API schema override, force the apiName to
+        # empty so it isn't added to any of the C++ API
+        if self.isAPISchemaOverride:
+            self.apiName = ''
         else:
-            self.rawName = sdfProp.name
-            # For property names, camelCase all tokens irrespective of
-            # useLiteralIdentifier, so that we are consistent in our attribute
-            # naming when namespace prefix are provided and respect our coding
-            # convention. (Example: namespacePrefix:attrName ->
-            # namespacePrefixAttrName)
-            self.name = _MakeValidToken(self.rawName, False)
-
-        self.apiName    = self.customData.get('apiName', _CamelCase(sdfProp.name))
-        self.apiGet     = self.customData.get('apiGetImplementation', self.CodeGen.Generated)
+            self.apiName = self.customData.get(
+                'apiName', _CamelCase(sdfProp.name))
+        self.apiGet = self.customData.get(
+            'apiGetImplementation', self.CodeGen.Generated)
         if self.apiGet not in [self.CodeGen.Generated, self.CodeGen.Custom]:
             Print.Err("Token '%s' is not valid." % self.apiGet)
-        self.doc        = _SanitizeDoc(sdfProp.documentation, '\n    /// ')
+        self.doc = _SanitizeDoc(sdfProp.documentation, '\n    /// ')
         # Keep around the property spec so that we can pull any other data we
         # may need from it.
         self._sdfPropSpec = sdfProp
@@ -346,8 +402,8 @@ class PropInfo(object):
         return getattr(self._sdfPropSpec, attr)
 
 class RelInfo(PropInfo):
-    def __init__(self, sdfProp, classInfo):
-        super(RelInfo, self).__init__(sdfProp, classInfo)
+    def __init__(self, sdfProp, usdProp, classInfo):
+        super(RelInfo, self).__init__(sdfProp, usdProp, classInfo)
 
 # Map an Sdf.ValueTypeName.XXX object to the 'XXX' token string -- we use this
 # to go from sdf attribute types to their symbolic tokens, for example:
@@ -368,8 +424,8 @@ def _GetSchemaDefException(msg, path):
     return Exception(errorMsg(msg))
 
 class AttrInfo(PropInfo):
-    def __init__(self, sdfProp, classInfo):
-        super(AttrInfo, self).__init__(sdfProp, classInfo)
+    def __init__(self, sdfProp, usdProp, classInfo):
+        super(AttrInfo, self).__init__(sdfProp, usdProp, classInfo)
         self.allowedTokens = sdfProp.GetInfo('allowedTokens')
         
         self.variability = str(sdfProp.variability).replace('Sdf.', 'Sdf')
@@ -786,9 +842,11 @@ def ParseUsd(usdFilePath):
             if not _ValidateFields(sdfProp):
                 hasInvalidFields = True
 
+            usdProp = stage.GetPropertyAtPath(sdfProp.path)
+
             # Attribute
             if isinstance(sdfProp, Sdf.AttributeSpec):
-                attrInfo = AttrInfo(sdfProp, classInfo)
+                attrInfo = AttrInfo(sdfProp, usdProp, classInfo)
 
                 # Assert unique attribute names
                 if (attrInfo.apiName != ''):
@@ -810,7 +868,7 @@ def ParseUsd(usdFilePath):
 
             # Relationship
             else:
-                relInfo = RelInfo(sdfProp, classInfo)
+                relInfo = RelInfo(sdfProp, usdProp, classInfo)
 
                 # Assert unique relationship names
                 if (relInfo.apiName != ''):
@@ -1485,8 +1543,20 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
                           Sdf.TokenListOp.CreateExplicit(appliedAPISchemas))
 
         p.ClearCustomData()
+        # Properties may have customData indicating that they are an 
+        # 'apiSchemaOverride'. We don't leave this data on the property in 
+        # in the generatedSchema, but rather we use it to collect the names of
+        # all API schema override properties for the schema prim. We then store
+        # this list of API schema override properties as custom data on the 
+        # prim spec and delete the custom data on the property.
+        apiSchemaOverridePropertyNames = []
         for myproperty in p.GetAuthoredProperties():
+            if myproperty.GetCustomDataByKey('apiSchemaOverride'):
+                apiSchemaOverridePropertyNames.append(myproperty.GetName())
             myproperty.ClearCustomData()
+        if apiSchemaOverridePropertyNames:
+            p.SetCustomDataByKey('apiSchemaOverridePropertyNames', 
+                                 Vt.TokenArray(apiSchemaOverridePropertyNames))
 
     for p in pathsToDelete:
         flatStage.RemovePrim(p)

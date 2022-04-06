@@ -144,6 +144,12 @@ void wrapUsdContrivedTokens()
     _AddToken(cls, "normal3fArray", UsdContrivedTokens->normal3fArray);
     _AddToken(cls, "normal3h", UsdContrivedTokens->normal3h);
     _AddToken(cls, "normal3hArray", UsdContrivedTokens->normal3hArray);
+    _AddToken(cls, "overrideBaseFalseDerivedFalse", UsdContrivedTokens->overrideBaseFalseDerivedFalse);
+    _AddToken(cls, "overrideBaseFalseDerivedNone", UsdContrivedTokens->overrideBaseFalseDerivedNone);
+    _AddToken(cls, "overrideBaseNoneDerivedFalse", UsdContrivedTokens->overrideBaseNoneDerivedFalse);
+    _AddToken(cls, "overrideBaseTrueDerivedFalse", UsdContrivedTokens->overrideBaseTrueDerivedFalse);
+    _AddToken(cls, "overrideBaseTrueDerivedNone", UsdContrivedTokens->overrideBaseTrueDerivedNone);
+    _AddToken(cls, "overrideBaseTrueDerivedTrue", UsdContrivedTokens->overrideBaseTrueDerivedTrue);
     _AddToken(cls, "pivotPosition", UsdContrivedTokens->pivotPosition);
     _AddToken(cls, "point3d", UsdContrivedTokens->point3d);
     _AddToken(cls, "point3dArray", UsdContrivedTokens->point3dArray);

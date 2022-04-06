@@ -382,6 +382,30 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedBase
     const TfToken normal3hArray;
+    /// \brief "overrideBaseFalseDerivedFalse"
+    /// 
+    /// UsdContrivedDerived, UsdContrivedBase
+    const TfToken overrideBaseFalseDerivedFalse;
+    /// \brief "overrideBaseFalseDerivedNone"
+    /// 
+    /// UsdContrivedDerived, UsdContrivedBase
+    const TfToken overrideBaseFalseDerivedNone;
+    /// \brief "overrideBaseNoneDerivedFalse"
+    /// 
+    /// UsdContrivedDerived, UsdContrivedBase
+    const TfToken overrideBaseNoneDerivedFalse;
+    /// \brief "overrideBaseTrueDerivedFalse"
+    /// 
+    /// UsdContrivedDerived, UsdContrivedBase
+    const TfToken overrideBaseTrueDerivedFalse;
+    /// \brief "overrideBaseTrueDerivedNone"
+    /// 
+    /// UsdContrivedDerived, UsdContrivedBase
+    const TfToken overrideBaseTrueDerivedNone;
+    /// \brief "overrideBaseTrueDerivedTrue"
+    /// 
+    /// UsdContrivedDerived, UsdContrivedBase
+    const TfToken overrideBaseTrueDerivedTrue;
     /// \brief "pivotPosition"
     /// 
     /// UsdContrivedDerived

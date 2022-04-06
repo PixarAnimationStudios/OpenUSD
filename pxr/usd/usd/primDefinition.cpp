@@ -87,48 +87,15 @@ UsdPrimDefinition::_ListMetadataFields(const TfToken &propName) const
 }
 
 void 
-UsdPrimDefinition::_ComposePropertiesFromPrimSpec(
-    const SdfLayerRefPtr &layer,
-    const SdfPath &weakerPrimSpecPath, 
-    const std::string &instanceName)
+UsdPrimDefinition::_AddProperties(
+    std::vector<std::pair<TfToken, SdfPath>> &&propNameToPathVec)
 {
-    // Get the names of the all the properties found at the prim spec path.
-    TfTokenVector specProperties;
-    if (!layer->HasField<TfTokenVector>(
-            weakerPrimSpecPath, 
-            SdfChildrenKeys->PropertyChildren, 
-            &specProperties)) {
-        // While its possible for the spec to have no properties, we expect 
-        // the prim spec itself to exist.
-        if (!layer->HasSpec(weakerPrimSpecPath)) {
-            TF_WARN("No prim spec exists at path '%s' in schematics layer.",
-                    weakerPrimSpecPath.GetText());
-        }
-        return;
-    }
-    _properties.reserve(_properties.size() + specProperties.size());
+    _properties.reserve(_properties.size() + propNameToPathVec.size());
 
-    // Map each spec property name to the property spec path and add it to the
-    // list of properties if it hasn't already been added.
-    if (instanceName.empty()) {
-        for (const TfToken &propName : specProperties) {
-            const SdfPath propPath = 
-                weakerPrimSpecPath.AppendProperty(propName);
-            if (_propPathMap.emplace(propName, propPath).second) {
-                _properties.push_back(propName);
-            }
-        }
-    } else {
-        for (const TfToken &propName : specProperties) {
-            const SdfPath propPath = 
-                weakerPrimSpecPath.AppendProperty(propName);
-            // Apply the prefix to each property name before adding it.
-            const TfToken instancedPropName = 
-                UsdSchemaRegistry::MakeMultipleApplyNameInstance(
-                    propName, instanceName);
-            if (_propPathMap.emplace(instancedPropName, propPath).second) {
-                _properties.push_back(instancedPropName);
-            }
+    for (auto &propNameAndPath : propNameToPathVec) {
+        auto insertIt = _propPathMap.insert(std::move(propNameAndPath));
+        if (insertIt.second) {
+            _properties.push_back(insertIt.first->first);
         }
     }
 }

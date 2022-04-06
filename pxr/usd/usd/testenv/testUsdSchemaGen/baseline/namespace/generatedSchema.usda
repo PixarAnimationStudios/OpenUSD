@@ -40,6 +40,9 @@ class "PublicMultipleApplyAPI" (
 
 class "Base" (
     apiSchemas = ["BuiltinAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["overrideBaseTrueDerivedFalse", "overrideBaseTrueDerivedNone", "overrideBaseTrueDerivedTrue"]
+    }
     doc = 'This doc should only exist on the "Base" class.'
 )
 {
@@ -119,6 +122,42 @@ class "Base" (
     normal3f[] normal3fArray
     normal3h normal3h = (0, 0, 0)
     normal3h[] normal3hArray
+    int overrideBaseFalseDerivedFalse = 1 (
+        doc = """API schema override explicitly set to False in Base.
+        API schema override explicitly set to False in Derived.
+        Generates API functions in Base. (1/3)
+        """
+    )
+    int overrideBaseFalseDerivedNone = 1 (
+        doc = """API schema override explicitly set to False in Base.
+        API schema override has no opinion in Derived.
+        Generates API functions in Base. (2/3)
+        """
+    )
+    int overrideBaseNoneDerivedFalse = 1 (
+        doc = """API schema override has no opinion in Base.
+        API schema override explicitly set to False in Derived.
+        Generates API functions in Base. (3/3)
+        """
+    )
+    int overrideBaseTrueDerivedFalse = 1 (
+        doc = """API schema override explicitly set to True in Base.
+        API schema override explicitly set to False in Derived.
+        Does not generate API functions in Base.
+        """
+    )
+    int overrideBaseTrueDerivedNone = 1 (
+        doc = """API schema override explicitly set to True in Base.
+        API schema override has no opinion in Derived.
+        Does not generate API functions in Base.
+        """
+    )
+    int overrideBaseTrueDerivedTrue = 1 (
+        doc = """API schema override explicitly set to True in Base.
+        API schema override explicitly set to True in Derived.
+        Does not generate API functions in Base.
+        """
+    )
     point3d point3d = (0, 0, 0)
     point3d[] point3dArray
     point3f point3f = (0, 0, 0)
@@ -151,6 +190,9 @@ class "Base" (
 
 class Derived "Derived" (
     apiSchemas = ["BuiltinAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["overrideBaseTrueDerivedNone", "overrideBaseTrueDerivedTrue"]
+    }
     doc = "Emphasized! Test Section"
 )
 {
@@ -258,6 +300,42 @@ class Derived "Derived" (
     normal3f[] normal3fArray
     normal3h normal3h = (0, 0, 0)
     normal3h[] normal3hArray
+    int overrideBaseFalseDerivedFalse = 1 (
+        doc = """API schema override explicitly set to False in Base.
+        API schema override explicitly set to False in Derived.
+        Generates API functions in Derived. (2/4)
+        """
+    )
+    int overrideBaseFalseDerivedNone = 1 (
+        doc = """API schema override explicitly set to False in Base.
+        API schema override has no opinion in Derived.
+        Generates API functions in Derived. (3/4)
+        """
+    )
+    int overrideBaseNoneDerivedFalse = 1 (
+        doc = """API schema override has no opinion in Base.
+        API schema override explicitly set to False in Derived.
+        Generates API functions in Derived. (4/4)
+        """
+    )
+    int overrideBaseTrueDerivedFalse = 1 (
+        doc = """API schema override explicitly set to True in Base.
+        API schema override explicitly set to False in Derived.
+        Generates API functions in Derived. (1/4)
+        """
+    )
+    int overrideBaseTrueDerivedNone = 1 (
+        doc = """API schema override explicitly set to True in Base.
+        API schema override has no opinion in Derived.
+        Does not generate API functions in Derived.
+        """
+    )
+    int overrideBaseTrueDerivedTrue = 1 (
+        doc = """API schema override explicitly set to True in Base.
+        API schema override explicitly set to True in Derived.
+        Does not generate API functions in Derived.
+        """
+    )
     float3 pivotPosition = (0, 0, 0) (
         doc = """Rotation pivot position for this prim's transformation. 
          Provided as advisory data only for use by authoring applications,
