@@ -55,7 +55,11 @@
 #include <sstream>
 #include <unordered_map>
 
+#if defined(__APPLE__)
+#include <opensubdiv/osd/mtlPatchShaderSource.h>
+#else
 #include <opensubdiv/osd/glslPatchShaderSource.h>
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -934,6 +938,50 @@ HdSt_CodeGen::_PlumbInterstageElements(
     }
 }
 
+static
+std::string
+_GetOSDCommonShaderSource()
+{
+#if defined(__APPLE__)
+    std::stringstream ss;
+    ss << "#define CONTROL_INDICES_BUFFER_INDEX 0\n"
+       << "#define OSD_PATCHPARAM_BUFFER_INDEX 0\n"
+       << "#define OSD_PERPATCHVERTEX_BUFFER_INDEX 0\n"
+       << "#define OSD_PERPATCHTESSFACTORS_BUFFER_INDEX 0\n"
+       << "#define OSD_KERNELLIMIT_BUFFER_INDEX 0\n"
+       << "#define OSD_PATCHPARAM_BUFFER_INDEX 0\n"
+       << "#define VERTEX_BUFFER_INDEX 0\n"
+
+       // The ifdef for this in OSD is AFTER the first usage.
+       << "#define OSD_MAX_VALENCE 4\n"
+
+       << "\n"
+       << "struct OsdInputVertexType {\n"
+       << "    vec3 position;\n"
+       << "};\n"
+       << "\n";
+    ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetCommonShaderSource();
+    return ss.str();
+#else
+    return OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
+#endif
+}
+
+static
+std::string
+_GetOSDPatchBasisShaderSource()
+{
+    std::stringstream ss;
+#if defined(__APPLE__)
+    ss << "#define OSD_PATCH_BASIS_METAL\n";
+    ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchBasisShaderSource();
+#else
+    ss << "#define OSD_PATCH_BASIS_GLSL\n";
+    ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchBasisShaderSource();
+#endif
+    return ss.str();
+}
+
 HdStGLSLProgramSharedPtr
 HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
 {
@@ -1203,14 +1251,10 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         HdSt_GeometricShader::FvarPatchType::PATCH_BSPLINE ||
         _geometricShader->GetFvarPatchType() == 
         HdSt_GeometricShader::FvarPatchType::PATCH_BOXSPLINETRIANGLE) {
-        using PatchShaderSource = OpenSubdiv::Osd::GLSLPatchShaderSource;
-
         if (_hasGS) {
-            _genGS << "#define OSD_PATCH_BASIS_GLSL\n";
-            _genGS << PatchShaderSource::GetPatchBasisShaderSource();
+            _genGS << _GetOSDPatchBasisShaderSource();
         } else {
-            _genFS << "#define OSD_PATCH_BASIS_GLSL\n";
-            _genFS << PatchShaderSource::GetPatchBasisShaderSource();
+            _genFS << _GetOSDPatchBasisShaderSource();
         }
     }
 
@@ -1367,7 +1411,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
 
     // OpenSubdiv tessellation shader (if required)
     if (tessControlShader.find("OsdPerPatchVertexBezier") != std::string::npos) {
-        _genTCS << OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
+        _genTCS << _GetOSDCommonShaderSource();
         _genTCS << "FORWARD_DECL(MAT4 GetWorldToViewMatrix());\n";
         _genTCS << "FORWARD_DECL(MAT4 GetProjectionMatrix());\n";
         _genTCS << "FORWARD_DECL(float GetTessLevel());\n";
@@ -1379,14 +1423,14 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         _genTCS << "float OsdTessLevel() { return GetTessLevel(); }\n";
     }
     if (tessEvalShader.find("OsdPerPatchVertexBezier") != std::string::npos) {
-        _genTES << OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
+        _genTES << _GetOSDCommonShaderSource();
         _genTES << "mat4 OsdModelViewMatrix() { return mat4(1); }\n";
     }
     if (geometryShader.find("OsdInterpolatePatchCoord") != std::string::npos) {
-        _genGS <<  OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
+        _genGS << _GetOSDCommonShaderSource();
     }
     if (fragmentShader.find("OsdInterpolatePatchCoord") != std::string::npos) {
-        _genFS <<  OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
+        _genFS << _GetOSDCommonShaderSource();
     }
 
     // geometric shader
