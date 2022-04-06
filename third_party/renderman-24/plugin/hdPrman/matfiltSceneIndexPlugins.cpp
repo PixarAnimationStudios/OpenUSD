@@ -64,16 +64,13 @@ static const bool _resolveVstructsWithConditionals = true;
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdSceneIndexPluginRegistry::Define<
-        HdPrman_PreviewMaterialFilteringSceneIndexPlugin,
-        HdSceneIndexPlugin>();
+        HdPrman_PreviewMaterialFilteringSceneIndexPlugin>();
     
     HdSceneIndexPluginRegistry::Define<
-        HdPrman_MaterialXFilteringSceneIndexPlugin,
-        HdSceneIndexPlugin>();
+        HdPrman_MaterialXFilteringSceneIndexPlugin>();
     
     HdSceneIndexPluginRegistry::Define<
-        HdPrman_VirtualStructResolvingSceneIndexPlugin,
-        HdSceneIndexPlugin>();
+        HdPrman_VirtualStructResolvingSceneIndexPlugin>();
 }
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
