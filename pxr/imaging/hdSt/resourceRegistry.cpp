@@ -872,6 +872,13 @@ HdStResourceRegistry::_Commit()
             _uniformSsboAggregationStrategy.get());
         _singleBufferArrayRegistry.ReallocateAll(
             _singleAggregationStrategy.get());
+        
+        // APPLE METAL: The above creates a set of GPU to GPU copies. However
+        // the next phase may create some CPU to GPU copies to the same memory.
+        // Ideally we wouldn't have requested the GPU copy at all (as it's
+        // redundant) but we did, so we need to ensure these operations are
+        // completed before we issue the CPU to GPU updates.
+        SubmitBlitWork(HgiSubmitWaitTypeWaitUntilCompleted);
     }
 
     {
