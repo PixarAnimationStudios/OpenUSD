@@ -1824,6 +1824,35 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         vsDesc.shaderCode = source.c_str();
         vsDesc.generatedShaderCodeOut = &_vsSource;
 
+        // builtins
+
+        HgiShaderFunctionAddStageInput(
+            &vsDesc, "gl_VertexID", "uint",
+            HgiShaderKeywordTokens->hdVertexID);
+        HgiShaderFunctionAddStageInput(
+            &vsDesc, "gl_InstanceID", "uint",
+            HgiShaderKeywordTokens->hdInstanceID);
+        HgiShaderFunctionAddStageInput(
+            &vsDesc, "gl_BaseInstance", "uint",
+            HgiShaderKeywordTokens->hdBaseInstance);
+        HgiShaderFunctionAddStageInput(
+            &vsDesc, "gl_BaseVertex", "uint",
+            HgiShaderKeywordTokens->hdBaseVertex);
+
+        if (!_geometricShader->IsFrustumCullingPass()) {
+            HgiShaderFunctionAddStageOutput(
+                &vsDesc, "gl_Position", "vec4", "position");
+            
+            // For Metal, only set the role for the point size
+            // if the primitive is a point list.
+            char const* pointRole =
+                (_geometricShader->GetPrimitiveType() ==
+                HdSt_GeometricShader::PrimitiveType::PRIM_POINTS)
+                ? "point_size" : "";
+            HgiShaderFunctionAddStageOutput(
+                &vsDesc, "gl_PointSize", "float", pointRole);
+        }
+
         if (!glslProgram->CompileShader(vsDesc)) {
             return nullptr;
         }
@@ -1853,6 +1882,22 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         fsDesc.shaderCodeDeclarations = declarations.c_str();
         fsDesc.shaderCode = source.c_str();
         fsDesc.generatedShaderCodeOut = &_fsSource;
+
+        // builtins
+
+        HgiShaderFunctionAddStageInput(
+            &fsDesc, "gl_BaryCoordNoPerspNV", "vec3",
+            HgiShaderKeywordTokens->hdBaryCoordNoPerspNV);
+
+        HgiShaderFunctionAddStageInput(
+            &fsDesc, "gl_PrimitiveID", "uint",
+            HgiShaderKeywordTokens->hdPrimitiveID);
+        HgiShaderFunctionAddStageInput(
+            &fsDesc, "gl_FrontFacing", "bool",
+            HgiShaderKeywordTokens->hdFrontFacing);
+        HgiShaderFunctionAddStageInput(
+            &fsDesc, "gl_FragCoord", "vec4",
+            HgiShaderKeywordTokens->hdPosition);
 
         if (!glslProgram->CompileShader(fsDesc)) {
             return nullptr;
@@ -1929,6 +1974,18 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         ptcsDesc.shaderCode = source.c_str();
         ptcsDesc.generatedShaderCodeOut = &_ptcsSource;
 
+        // builtins
+
+        HgiShaderFunctionAddStageInput(
+                &ptcsDesc, "thread_position_in_grid", "unsigned",
+                "thread_position_in_grid");
+        HgiShaderFunctionAddStageInput(
+                &ptcsDesc, "thread_position_in_threadgroup", "unsigned",
+                "thread_position_in_threadgroup");
+        HgiShaderFunctionAddStageInput(
+                &ptcsDesc, "threadgroup_position_in_grid", "unsigned",
+                "threadgroup_position_in_grid");
+
         if (!glslProgram->CompileShader(ptcsDesc)) {
             return nullptr;
         }
@@ -1969,6 +2026,40 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         ptvsDesc.shaderCodeDeclarations = declarations.c_str();
         ptvsDesc.shaderCode = source.c_str();
         ptvsDesc.generatedShaderCodeOut = &_ptvsSource;
+
+        // builtins
+
+        HgiShaderFunctionAddStageInput(
+            &ptvsDesc, "gl_BaseInstance", "uint",
+            HgiShaderKeywordTokens->hdBaseInstance);
+        HgiShaderFunctionAddStageInput(
+            &ptvsDesc, "patch_id", "uint",
+            HgiShaderKeywordTokens->hdPatchID);
+        
+        std::string tessCoordType =
+            _geometricShader->IsPrimTypeTriangles() ?
+            "vec3" : "vec2";
+        
+        HgiShaderFunctionAddStageInput(
+            &ptvsDesc, "gl_TessCoord", tessCoordType,
+            HgiShaderKeywordTokens->hdPositionInPatch);
+        
+        HgiShaderFunctionAddStageInput(
+            &ptvsDesc, "gl_InstanceID", "uint",
+            HgiShaderKeywordTokens->hdInstanceID);
+
+        HgiShaderFunctionAddStageOutput(
+                &ptvsDesc, "gl_Position", "vec4",
+                "position");
+
+        char const* pointRole =
+            (_geometricShader->GetPrimitiveType() ==
+            HdSt_GeometricShader::PrimitiveType::PRIM_POINTS)
+            ? "point_size" : "";
+        
+        HgiShaderFunctionAddStageOutput(
+            &ptvsDesc, "gl_PointSize", "float",
+                pointRole);
 
         if (!glslProgram->CompileShader(ptvsDesc)) {
             return nullptr;
