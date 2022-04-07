@@ -131,12 +131,13 @@ public:
     HdSt_ResourceBinder::MetaData *GetMetaData() { return &_metaData; }
 
 private:
-    void _GenerateDrawingCoord();
+    void _GenerateDrawingCoord(
+        bool const shaderDrawParametersEnabled,
+        bool const requiresBasePrimitiveOffset);
     void _GenerateConstantPrimvar();
     void _GenerateInstancePrimvar();
     void _GenerateElementPrimvar();
-    void _GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
-        bool shaderDrawParametersEnabled);
+    void _GenerateVertexAndFaceVaryingPrimvar();
     void _GenerateShaderParameters(bool bindlessTextureEnabled);
     void _GenerateTopologyVisibilityParameters();
 
@@ -166,7 +167,7 @@ private:
     std::stringstream _genPTCS, _genPTVS;
     std::stringstream _genGS, _genFS, _genCS;
     std::stringstream _procVS, _procTCS, _procTES, _procGS;
-    std::stringstream _procPTCS, _procPTVSIn, _procPTVSOut;
+    std::stringstream _procPTCS, _procPTVSDecl, _procPTVSIn, _procPTVSOut;
     std::stringstream _osdFS, _osdPTCS, _osdPTVS;
 
     // resource buckets
