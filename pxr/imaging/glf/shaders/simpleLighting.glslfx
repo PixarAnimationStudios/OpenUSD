@@ -388,8 +388,7 @@ evaluateIndirectLight(vec3 Neye, vec3 Reye, float NdotE, float EdotH,
     const float lod = roughness * MAX_REFLECTION_LOD;
     vec3 Rdir = normalize((transformationMatrix * vec4(Reye,0.0)).xyz);
     vec2 Rcoord = projectSphericalToLatLong(Rdir);
-    vec3 prefilter = textureLod(HdGetSampler_domeLightPrefilter(),
-                                Rcoord, lod).rgb;
+    vec3 prefilter = HdTextureLod_domeLightPrefilter(Rcoord, lod).rgb;
     vec2 brdf = HdGet_domeLightBRDF(vec2(NdotE, roughness)).rg;
     vec3 specular = prefilter * (F * brdf.x + brdf.y);
 

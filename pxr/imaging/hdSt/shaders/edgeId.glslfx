@@ -108,7 +108,7 @@ int GetPrimitiveEdgeId()
     }
 
     const int edgeFlag = GetEdgeFlag();
-    const int meshEdgeIndex = HdGet_edgeIndices().x;
+    const int meshEdgeIndex = HdGetScalar_edgeIndices();
 
     // Translate face-edge to authored mesh-edge
     if (edgeFlag == 0) {
