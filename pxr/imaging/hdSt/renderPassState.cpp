@@ -926,6 +926,9 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
         attachmentDesc.storeOp = (multiSampled && resolveMultiSample) ?
             HgiAttachmentStoreOpDontCare :
             HgiAttachmentStoreOpStore;
+        
+        // APPLE METAL: The logic above needs revisiting!
+        attachmentDesc.storeOp = HgiAttachmentStoreOpStore;
 
         if (!aov.clearValue.IsEmpty()) {
             attachmentDesc.clearValue = _ToVec4f(aov.clearValue);
