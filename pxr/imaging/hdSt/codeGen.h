@@ -144,9 +144,12 @@ private:
     void _GetShaderResourceLayouts(
         HdStShaderCodeSharedPtrVector const & shaders);
 
+    std::string _GetFallbackScalarSwizzleString(TfToken const &returnType,
+                                                TfToken const &paramName);
+
     void _PlumbInterstageElements(TfToken const &name, TfToken const &dataType);
 
-    void _GenerateComputeParameters(HgiShaderFunctionDesc *const csDesc);
+    void _GenerateComputeParameters(HgiShaderFunctionDesc *csDesc);
 
     HdStGLSLProgramSharedPtr _CompileWithGeneratedGLSLResources(
         HdStResourceRegistry * const registry);
