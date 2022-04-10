@@ -351,6 +351,10 @@ def AppendCXX11ABIArg(buildFlag, context, buildArgs):
     buildArgs.append('{flag}="{flags}"'.format(
         flag=buildFlag, flags=" ".join(cxxFlags)))
 
+def AppendEnableMallocHookArg(buildFlag, context, buildArgs):
+    if context.enableMallocHook is None:
+        return
+
 def FormatMultiProcs(numJobs, generator):
     tag = "-j"
     if generator:
@@ -1559,6 +1563,10 @@ def InstallUSD(context, force, buildArgs):
         else:
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=OFF')
 
+        if context.enableMallocHook is not None:
+            support = 'ON' if context.enableMallocHook else 'OFF'
+            extraArgs.append('-DPXR_ENABLE_MALLOCHOOK_SUPPORT={}'.format(support))
+
         if Windows():
             # Increase the precompiled header buffer limit.
             extraArgs.append('-DCMAKE_CXX_FLAGS="/Zm150"')
@@ -1696,6 +1704,8 @@ group.add_argument("--toolset", type=str,
 if Linux():
     group.add_argument("--use-cxx11-abi", type=int, choices=[0, 1],
                        help=("Use C++11 ABI for libstdc++. (see docs above)"))
+    group.add_argument("--enable-malloc-hook", type=int, choices=[0, 1],
+                       help=("Enable specifying memory allocators on Linux with PXR_MALLOC_LIBRARY"))
 
 group = parser.add_argument_group(title="3rd Party Dependency Build Options")
 group.add_argument("--src", type=str,
@@ -1941,6 +1951,8 @@ class InstallContext:
         # Build options
         self.useCXX11ABI = \
             (args.use_cxx11_abi if hasattr(args, "use_cxx11_abi") else None)
+        self.enableMallocHook = \
+            (args.enable_malloc_hook if hasattr(args, "enable_malloc_hook") else None)
         self.safetyFirst = args.safety_first
 
         # Dependencies that are forced to be built
@@ -2193,6 +2205,11 @@ if context.useCXX11ABI is not None:
     Use C++11 ABI               {useCXX11ABI}
 """
 
+if context.enableMallocHook is not None:
+    summaryMsg += """\
+    Enable malloc hook          {enableMallocHook}
+"""
+
 summaryMsg += """\
     Variant                     {buildVariant}
     Imaging                     {buildImaging}
@@ -2247,6 +2264,7 @@ summaryMsg = summaryMsg.format(
                   ", ".join([d.name for d in dependenciesToBuild])),
     buildArgs=FormatBuildArguments(context.buildArgs),
     useCXX11ABI=("On" if context.useCXX11ABI else "Off"),
+    enableMallocHook=("On" if context.enableMallocHook else "Off"),
     buildType=("Shared libraries" if context.buildShared
                else "Monolithic shared library" if context.buildMonolithic
                else ""),

@@ -413,7 +413,7 @@ There are certain optimizations that can be enabled in the build.
 ##### Malloc Library
 
 We've found that USD performs best with allocators such as [Jemalloc](https://github.com/jemalloc/jemalloc).
-In support of this, you can specify your own allocator through ```PXR_MALLOC_LIBRARY```.
+In support of this, for Linux systems you can specify your own allocator through ```PXR_MALLOC_LIBRARY```.
 This variable should be set to a path to a shared object for the allocator. For example,
 
 ```bash
@@ -422,6 +422,13 @@ This variable should be set to a path to a shared object for the allocator. For 
 
 If none are specified, the default allocator will be used. More information on getting the most out of
 USD can be found [Getting the Best Performance with USD](http://openusd.org/docs/Maximizing-USD-Performance.html).
+
+However glibc 2.34 removed the deprecated memory allocation hooks, preventing USD to correctly build. Custom memory
+allocation code can be compiled out with the ```PXR_ENABLE_MALLOCHOOK_SUPPORT``` option.
+
+```bash
+-DPXR_ENABLE_MALLOCHOOK_SUPPORT=OFF
+```
 
 ## Linker Options
 

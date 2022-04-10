@@ -28,7 +28,7 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/env.h"
 
-#if !defined(ARCH_OS_WINDOWS)
+#if defined(ARCH_MALLOC_HOOK) && !defined(ARCH_OS_WINDOWS)
 #   include <dlfcn.h>
 #endif
 #include <cstring>
@@ -88,7 +88,7 @@ static bool
 _MallocProvidedBySameLibraryAs(const char* functionName,
                                bool skipMallocCheck)
 {
-#if !defined(ARCH_OS_WINDOWS)
+#if defined(ARCH_MALLOC_HOOK) && !defined(ARCH_OS_WINDOWS)
     const void* function = dlsym(RTLD_DEFAULT, functionName);
     if (!function) {
         return false;
@@ -151,8 +151,9 @@ ArchIsJemallocActive()
 bool
 ArchIsStlAllocatorOff()
 {
-#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_ICC) || \
-    defined(ARCH_COMPILER_CLANG)
+#if defined(ARCH_MALLOC_HOOK) && \
+    (defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_ICC) || \
+    defined(ARCH_COMPILER_CLANG))
     // I'm assuming that ICC compiles will use the gcc STL library.
 
     /*
@@ -177,7 +178,7 @@ ArchMallocHook::IsInitialized()
        _underlyingMemalignFunc || _underlyingFreeFunc;
 }
 
-#if defined(ARCH_OS_LINUX)
+#if defined(ARCH_MALLOC_HOOK) && defined(ARCH_OS_LINUX)
 template <typename T>
 static bool _GetSymbol(T* addr, const char* name, string* errMsg) {
     if (void* symbol = dlsym(RTLD_DEFAULT, name)) {
@@ -241,8 +242,12 @@ ArchMallocHook::Initialize(
     ARCH_UNUSED_ARG void  (*freeWrapper)(void*, const void*),
     string* errMsg)
 {
-#if !defined(ARCH_OS_LINUX)
+#if !defined(ARCH_MALLOC_HOOK) || !defined(ARCH_OS_LINUX)
+    #if !defined(ARCH_MALLOC_HOOK)
+    *errMsg = "ArchMallocHook functionality deactivated at build time";
+    #else
     *errMsg = "ArchMallocHook functionality not implemented for non-linux systems";
+    #endif
     return false;
 #else
     if (IsInitialized()) {

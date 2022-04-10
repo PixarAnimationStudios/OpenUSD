@@ -59,6 +59,11 @@ pxr_library(arch
     DOXYGEN_FILES
         overview.dox
 )
+if (PXR_ENABLE_MALLOCHOOK_SUPPORT)
+    target_compile_definitions(arch
+        PRIVATE target_compile_definition ARCH_MALLOC_HOOK
+    )
+endif()
 
 pxr_build_test_shared_lib(testArchAbiPlugin
     CPPFILES
