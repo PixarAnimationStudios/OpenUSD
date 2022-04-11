@@ -341,7 +341,7 @@ HgiGLShaderGenerator::_WriteInOuts(
         //Skip writing out taken parameter names
         const std::string &paramName = param.nameInShader;
         if (out_qualifier &&
-                takenOutParams.find(param.role) != takenOutParams.end()) {
+                takenOutParams.find(paramName) != takenOutParams.end()) {
             continue;
         }
         if (in_qualifier) {

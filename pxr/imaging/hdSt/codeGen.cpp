@@ -533,6 +533,7 @@ public:
         , _nextInterstageSlot(0)
         , _outputSlotTable()
         , _nextOutputSlot(0)
+        , _nextOutputLocation(0)
         { }
     ~_ResourceGenerator() = default;
 
@@ -575,7 +576,8 @@ private:
                 return custom.binding.GetLocation();
             }
         }
-        return -1;
+
+        return _nextOutputLocation++;
     }
 
     int32_t _GetSlot(TfToken const & name, uint32_t const count = 1)
@@ -633,6 +635,7 @@ private:
     uint32_t _nextInterstageSlot;
     _SlotTable _outputSlotTable;
     uint32_t _nextOutputSlot;
+    uint32_t _nextOutputLocation;
 };
 
 bool
@@ -830,6 +833,10 @@ _ResourceGenerator::_GenerateGLSLResources(
                         str << "in ";
                         break;
                     case HdSt_ResourceLayout::InOut::STAGE_OUT:
+                        if (shaderStage == HdShaderTokens->fragmentShader) {
+                            str << "layout (location = "
+                                << _GetLocation(element, metaData) << ") ";
+                        }
                         str << "out ";
                         break;
                     case HdSt_ResourceLayout::InOut::NONE:
