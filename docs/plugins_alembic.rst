@@ -13,7 +13,7 @@ Alembic USD Plugin
 
   For more information see our page on `Advanced Build Configuration <https://github.com/PixarAnimationStudios/USD/blob/release/BUILDING.md>`_.
 
-As shipped, USD supports its own ASCII (usda) and binary (usdc) file
+As shipped, USD supports its own text (usda) and binary (usdc) file
 formats. However, it is possible for USD to support additional formats by
 providing it with a custom file format plugin. One of these plugins, usdAbc,
 which provides the ability to interact with Alembic files, is included in the
@@ -33,8 +33,9 @@ Let's start by creating a simple USD file (save it as :filename:`hello.usda`):
       }
   }
 
-The previous snippet defined a simple sphere in an ASCII-backed USD file. Now,
-let's use :ref:`toolset:usdcat` to convert it to an Alembic file!
+The previous snippet defined a simple sphere in the :filename:`.usda` file
+format. Now, let's use :ref:`toolset:usdcat` to convert it to an Alembic
+file!
 
 .. code-block:: sh
 
