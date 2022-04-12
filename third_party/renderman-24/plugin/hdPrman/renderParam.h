@@ -271,6 +271,10 @@ public:
     // immediately set it as riley option.
     void UpdateRileyShutterInterval(const HdRenderIndex * renderIndex);
 
+    void AddSampleFilter(riley::SampleFilterId const& filterId);
+    void RemoveSampleFilter(riley::SampleFilterId const& filterId);
+    riley::SampleFilterList GetSampleFilterList();
+
 private:
     void _CreateRiley(const std::string &rileyVariant, 
         const std::string &xpuVariant);
@@ -365,6 +369,10 @@ private:
     RtParamList _options;
     HdPrman_CameraContext _cameraContext;
     HdPrman_RenderViewContext _renderViewContext;
+
+    // SampleFilter
+    riley::SampleFilterList _sampleFilterList;
+    std::vector<riley::SampleFilterId> _sampleFilterIds;
 
     // RIX or XPU
     bool _xpu;

@@ -259,6 +259,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (coordSys)                                  \
     (instancer)                                 \
     (instance)                                  \
+    (renderSettings)                            \
+    (sampleFilter)                              \
     /* Sprims Lights */                         \
     (simpleLight)                               \
     (cylinderLight)                             \

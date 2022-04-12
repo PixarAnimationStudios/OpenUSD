@@ -74,7 +74,9 @@ pxr_plugin(${PXR_PACKAGE}
         paramsSetter
         points
         renderDelegate
+        renderSettings
         rixStrings
+        sampleFilter
         volume
         xcpt
         ${optionalPublicClasses}

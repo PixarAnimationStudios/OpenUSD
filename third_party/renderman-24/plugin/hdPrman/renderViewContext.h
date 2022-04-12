@@ -42,6 +42,7 @@ struct HdPrman_RenderViewDesc
 {
     riley::CameraId cameraId;
     riley::IntegratorId integratorId;
+    riley::SampleFilterList sampleFilterList;
     GfVec2i resolution;
     
     struct RenderOutputDesc

@@ -109,6 +109,8 @@ HdPrman_RenderParam::HdPrman_RenderParam(const std::string &rileyVariant,
     
     // Register RenderMan display driver
     HdPrmanFramebuffer::Register(_rix);
+    
+    _sampleFilterList = {0, nullptr};
 }
 
 HdPrman_RenderParam::~HdPrman_RenderParam()
@@ -1667,6 +1669,7 @@ _ComputeRenderViewDesc(
     const VtDictionary &renderSpec,
     const riley::CameraId cameraId,
     const riley::IntegratorId integratorId,
+    const riley::SampleFilterList &sampleFilterList,
     const GfVec2i &resolution)
 {
     HdPrman_RenderViewDesc renderViewDesc;
@@ -1674,6 +1677,7 @@ _ComputeRenderViewDesc(
     renderViewDesc.cameraId = cameraId;
     renderViewDesc.integratorId = integratorId;
     renderViewDesc.resolution = resolution;
+    renderViewDesc.sampleFilterList = sampleFilterList;
 
     const std::vector<VtValue> &renderVars =
         VtDictionaryGet<std::vector<VtValue>>(
@@ -1764,6 +1768,7 @@ HdPrman_RenderParam::CreateRenderViewFromSpec(
             renderSpec,
             GetCameraContext().GetCameraId(),
             GetActiveIntegratorId(),
+            GetSampleFilterList(),
             GfVec2i(512, 512));
 
     GetRenderViewContext().CreateRenderView(
@@ -2491,6 +2496,7 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
 
     renderViewDesc.cameraId = GetCameraContext().GetCameraId();
     renderViewDesc.integratorId = GetActiveIntegratorId();
+    renderViewDesc.sampleFilterList = GetSampleFilterList();
 
     GetRenderViewContext().CreateRenderView(
         renderViewDesc, riley);
@@ -2660,6 +2666,36 @@ HdPrman_RenderParam::UpdateRileyShutterInterval(
     
     riley::Riley * riley = AcquireRiley();
     riley->SetOptions(_GetDeprecatedOptionsPrunedList());
+}
+
+void
+HdPrman_RenderParam::AddSampleFilter(riley::SampleFilterId const& filterId)
+{
+    const auto filterIt = std::find(
+        _sampleFilterIds.begin(), _sampleFilterIds.end(), filterId);
+    if (filterIt == _sampleFilterIds.end()) {
+        _sampleFilterIds.push_back(filterId);
+        _sampleFilterList.count = _sampleFilterIds.size();
+        _sampleFilterList.ids = &_sampleFilterIds.front();
+    }
+}
+
+void
+HdPrman_RenderParam::RemoveSampleFilter(riley::SampleFilterId const& filterId)
+{
+    const auto filterIt = std::find(
+        _sampleFilterIds.begin(), _sampleFilterIds.end(), filterId);
+    if (filterIt != _sampleFilterIds.end()) {
+        _sampleFilterIds.erase(filterIt);
+        _sampleFilterList.count = _sampleFilterIds.size();
+        _sampleFilterList.ids = &_sampleFilterIds.front();
+    }
+}
+
+riley::SampleFilterList
+HdPrman_RenderParam::GetSampleFilterList()
+{
+    return _sampleFilterList;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

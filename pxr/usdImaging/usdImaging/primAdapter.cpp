@@ -32,6 +32,7 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usd/collectionAPI.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
+#include "pxr/usd/usdRender/settingsBase.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderDelegate.h"
@@ -115,6 +116,10 @@ UsdImagingPrimAdapter::GetImagingSubprimData(
 bool
 UsdImagingPrimAdapter::ShouldCullSubtree(UsdPrim const& prim)
 {
+    // Do not skip RenderSettings prims even though they are non-imageable
+    if (prim.IsA<UsdRenderSettingsBase>() && !prim.GetTypeName().IsEmpty()) {
+        return false;
+    }
     // Skip population of non-imageable prims during population traversal
     // (although they can still be populated by reference).
     return (!prim.IsA<UsdGeomImageable>() && !prim.GetTypeName().IsEmpty());

@@ -15,6 +15,7 @@ pxr_library(usdImaging
         usd
         usdGeom
         usdLux
+        usdRender
         usdShade
         usdVol
         ar
@@ -76,6 +77,8 @@ pxr_library(usdImaging
         primAdapter
         primvarDescCache
         rectLightAdapter
+        renderSettingsAdapter
+        sampleFilterAdapter
         sphereAdapter
         sphereLightAdapter
         textureUtils
