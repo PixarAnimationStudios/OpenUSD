@@ -95,10 +95,17 @@ class GLSLProgram():
         self._glMajorVersion = int(versionNumberString.split('.')[0])
         self._glMinorVersion = int(versionNumberString.split('.')[1])
 
+        # Apple's OpenGL renderer for Apple Silicon is emulated on top of
+        # Metal and issues performance warnings if line stipple is enabled.
+        self._glRenderer = GL.glGetString(GL.GL_RENDERER).decode()
+        isAppleMetalRenderer = self._glRenderer.startswith('Apple')
+        supportsLineStipple = not isAppleMetalRenderer
+
         # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
         self.useVAO = (self._glMajorVersion >= 3 and
                         hasattr(GL, 'glGenVertexArrays'))
         self.useSampleAlphaToCoverage = (self._glMajorVersion >= 4)
+        self.useLineStipple = supportsLineStipple
 
         self.program   = GL.glCreateProgram()
         vertexShader   = GL.glCreateShader(GL.GL_VERTEX_SHADER)
@@ -1651,8 +1658,9 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glEnableVertexAttribArray(0)
         GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, 0, ctypes.c_void_p(0))
 
-        GL.glEnable(GL.GL_LINE_STIPPLE)
-        GL.glLineStipple(2,0xAAAA)
+        if glslProgram.useLineStipple:
+            GL.glEnable(GL.GL_LINE_STIPPLE)
+            GL.glLineStipple(2,0xAAAA)
 
         GL.glUseProgram(glslProgram.program)
         matrix = (ctypes.c_float*16).from_buffer_copy(mvpMatrix)
@@ -1667,7 +1675,8 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         GL.glUseProgram(0)
 
-        GL.glDisable(GL.GL_LINE_STIPPLE)
+        if glslProgram.useLineStipple:
+            GL.glDisable(GL.GL_LINE_STIPPLE)
         if glslProgram.useVAO:
             GL.glBindVertexArray(0)
 
