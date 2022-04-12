@@ -86,6 +86,9 @@ pxr_library(usdImaging
         unitTestHelper.h
         version.h
 
+    PRIVATE_HEADERS
+        dataSourceImplicits-Impl.h
+
     RESOURCE_FILES
         plugInfo.json
 )

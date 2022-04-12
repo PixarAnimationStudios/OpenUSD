@@ -76,6 +76,7 @@ pxr_library(hdSt
         hgiConversions
         hioConversions
         imageShaderRenderPass
+        implicitSurfaceSceneIndexPlugin
         instancer
         interleavedMemoryManager
         light      

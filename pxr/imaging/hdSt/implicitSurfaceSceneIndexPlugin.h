@@ -1,5 +1,5 @@
 //
-// Copyright 2021 Pixar
+// Copyright 2022 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -20,44 +20,32 @@
 // distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
-//
-#ifndef PXR_IMAGING_HD_OVERLAY_CONTAINER_DATA_SOURCE_H
-#define PXR_IMAGING_HD_OVERLAY_CONTAINER_DATA_SOURCE_H
 
-#include "pxr/imaging/hd/dataSource.h"
+#ifndef PXR_IMAGING_HD_ST_IMPLICIT_SURFACE_SCENE_INDEX_PLUGIN_H
+#define PXR_IMAGING_HD_ST_IMPLICIT_SURFACE_SCENE_INDEX_PLUGIN_H
+
+#include "pxr/pxr.h"
+#include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hd/sceneIndexPlugin.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class HdOverlayContainerDataSource
+/// \class HdSt_ImplicitSurfaceSceneIndexPlugin
 ///
-/// Lazily composes two or more container source hierarchies
-/// Earlier entries on the containers array have stronger opinion strength
-/// for overlapping child names. Overlapping children which are all containers
-/// themselves are returned as another instance of this class
-class HdOverlayContainerDataSource : public HdContainerDataSource
+/// Plugin adds a scene index turning implicit surfaces into mesh's that
+/// Storm can consume. For now, only cube's are supported.
+///
+class HdSt_ImplicitSurfaceSceneIndexPlugin : public HdSceneIndexPlugin
 {
 public:
-    HD_DECLARE_DATASOURCE(HdOverlayContainerDataSource);
+    HdSt_ImplicitSurfaceSceneIndexPlugin();
 
-    HD_API
-    HdOverlayContainerDataSource(
-        size_t count,
-        HdContainerDataSourceHandle *containers);
-
-    HD_API
-    bool Has(const TfToken &name) override;
-    HD_API
-    TfTokenVector GetNames() override;
-    HD_API
-    HdDataSourceBaseHandle Get(const TfToken &name) override;
-
-private:
-    using _ContainerVector = TfSmallVector<HdContainerDataSourceHandle, 8>;
-    _ContainerVector _containers;
+protected:
+    HdSceneIndexBaseRefPtr _AppendSceneIndex(
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const HdContainerDataSourceHandle &inputArgs) override;
 };
-
-HD_DECLARE_DATASOURCE_HANDLES(HdOverlayContainerDataSource);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif
+#endif // PXR_IMAGING_HD_ST_IMPLICIT_SURFACE_SCENE_INDEX_PLUGIN_H

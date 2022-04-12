@@ -246,6 +246,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_PRIMTYPE_TOKENS                      \
     /* Rprims */                                \
+    (cube)                                      \
     (mesh)                                      \
     (basisCurves)                               \
     (points)                                    \

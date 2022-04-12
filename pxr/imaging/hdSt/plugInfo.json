@@ -8,6 +8,12 @@
                         "loadWithRenderer" : "GL",
                         "priority": 0,
                         "displayName": "Storm Dependency Scene Index"
+                    },
+                    "HdSt_ImplicitSurfaceSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "GL",
+                        "priority": 0,
+                        "displayName": "Scene Index to turn implicit surfaces into prims suitable for Storm"
                     }
                 },
                 "ShaderResources": "shaders"

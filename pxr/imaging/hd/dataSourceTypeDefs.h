@@ -51,6 +51,8 @@ using HdSizetDataSourceHandle = HdSizetDataSource::Handle;
 
 using HdFloatDataSource = HdTypedSampledDataSource<float>;
 using HdFloatDataSourceHandle = HdFloatDataSource::Handle;
+using HdDoubleDataSource = HdTypedSampledDataSource<double>;
+using HdDoubleDataSourceHandle = HdDoubleDataSource::Handle;
 using HdFloatArrayDataSource = HdTypedSampledDataSource<VtArray<float>>;
 using HdFloatArrayDataSourceHandle = HdFloatArrayDataSource::Handle;
 
