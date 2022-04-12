@@ -655,6 +655,18 @@ private:
         // a default UsdShadeConnectableAPIBehavior is created and 
         // registered/cached with the appliedSchemaType and the primTypeId.
         auto appliedSchemas = [&prim, &primSchemaType] {
+            // We do not register any primDefinition for Abstract types,
+            // Hence we can not query builtin api schemas on any of the abstract
+            // types. Return an empty vector here.
+            // XXX: Ideally this should be handled such that builtin applied
+            // schemas on an abstract types are consulted for
+            // UsdShadeConnectableAPIBehavior registry , but that involves
+            // much larger refactor, hence just ignoring the abstract types for
+            // now, and will be addressed in detail later.
+            if (UsdSchemaRegistry::IsAbstract(primSchemaType)) {
+                return TfTokenVector{};
+            }
+
             if (prim) {
                 return prim.GetAppliedSchemas();
             } else {
@@ -663,6 +675,7 @@ private:
                     UsdSchemaRegistry::GetInstance();
                 const TfToken &typeName =
                     usdSchemaReg.GetSchemaTypeName(primSchemaType);
+                
                 const UsdPrimDefinition *primDefinition =
                     UsdSchemaRegistry::IsConcrete(primSchemaType) ?
                     usdSchemaReg.FindConcretePrimDefinition(typeName) :

@@ -221,6 +221,13 @@ _IsConcreteSchemaKind(const UsdSchemaKind schemaKind)
     return schemaKind == UsdSchemaKind::ConcreteTyped;
 }
 
+static bool
+_IsAbstractSchemaKind(const UsdSchemaKind schemaKind)
+{
+    return (schemaKind == UsdSchemaKind::AbstractTyped) || 
+        (schemaKind == UsdSchemaKind::AbstractBase);
+}
+
 static bool 
 _IsAppliedAPISchemaKind(const UsdSchemaKind schemaKind)
 {
@@ -383,6 +390,20 @@ bool
 UsdSchemaRegistry::IsConcrete(const TfToken& primType)
 {
     return _IsConcreteSchemaKind(GetSchemaKind(primType));
+}
+
+/*static*/
+bool
+UsdSchemaRegistry::IsAbstract(const TfType& primType)
+{
+    return _IsAbstractSchemaKind(GetSchemaKind(primType));
+}
+
+/*static*/
+bool
+UsdSchemaRegistry::IsAbstract(const TfToken& primType)
+{
+    return _IsAbstractSchemaKind(GetSchemaKind(primType));
 }
 
 /*static*/

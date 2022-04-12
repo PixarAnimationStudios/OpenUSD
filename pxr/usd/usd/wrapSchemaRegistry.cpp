@@ -107,6 +107,14 @@ void wrapUsdSchemaRegistry()
              (arg("primType")))
         .staticmethod("IsConcrete")
 
+        .def("IsAbstract",
+             (bool (*)(const TfType &)) &This::IsAbstract,
+             (arg("primType")))
+        .def("IsAbstract",
+             (bool (*)(const TfToken&)) &This::IsAbstract,
+             (arg("primType")))
+        .staticmethod("IsAbstract")
+
         .def("IsAppliedAPISchema", 
              (bool (*)(const TfType &)) &This::IsAppliedAPISchema,
              (arg("apiSchemaType")))
