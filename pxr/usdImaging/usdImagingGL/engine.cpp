@@ -784,14 +784,13 @@ UsdImagingGLEngine::TestIntersection(
     return true;
 }
 
-
 bool
-UsdImagingGLEngine::TestIntersectionAll(
+UsdImagingGLEngine::TestIntersections(
     const GfMatrix4d& viewMatrix,
     const GfMatrix4d& projectionMatrix,
     const UsdPrim& root,
     const UsdImagingGLRenderParams& params,
-    SdfPathVector& outHitPrimPaths)
+    IntersectionResultVector& outResults)
 {
     TF_VERIFY(_sceneDelegate);
     TF_VERIFY(_taskController);
@@ -828,10 +827,16 @@ UsdImagingGLEngine::TestIntersectionAll(
 
     for(HdxPickHit& hit : allHits)
     {
+        IntersectionResult res;
         hit.objectId = _sceneDelegate->GetScenePrimPath(
             hit.objectId, hit.instanceIndex, nullptr);
-        if (hit.instanceIndex == 0)
-            outHitPrimPaths.push_back(hit.objectId);
+        hit.instancerId = _sceneDelegate->ConvertIndexPathToCachePath(
+            hit.instancerId).GetAbsoluteRootOrPrimPath();
+
+        res.hitPrimPath = hit.objectId;
+        res.hitInstanceIndex = hit.instanceIndex;
+        res.hitInstancerPath = hit.instancerId;
+        outResults.push_back(res);
     }
 
     return true;

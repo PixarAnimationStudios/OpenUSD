@@ -145,11 +145,6 @@ HdxPickTask::_InitIfNeeded()
                         HdBufferArrayUsageHint());
     }
 
-    // Resize draw target if needed
-    if (_drawTarget) {
-        if (size != _drawTarget->GetSize()) {
-            GlfSharedGLContextScopeHolder sharedContextHolder;
-
     if (_pickableAovBuffers.empty()) {
         _CreateAovBindings();
     }
@@ -754,60 +749,13 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     _pickableRenderPass->Execute(_pickableRenderPassState,
                                  _nonWidgetRenderTags);
 
-    // Restore
-    glBindVertexArray(0);
-    glDeleteVertexArrays(1, &vao);
-
     GLF_POST_PENDING_GL_ERRORS();
 
     // For 'resolveDeep' mode, read hits from the pick buffer.
     if (_contextParams.resolveMode == HdxPickTokens->resolveDeep) {
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFB);   //TODO Is this needed here?
         _ResolveDeep();
         return;
     }
-
-    // Capture the result buffers.
-    size_t len = size[0] * size[1];
-    std::unique_ptr<int[]> primIds(new int[len]);
-    std::unique_ptr<int[]> instanceIds(new int[len]);
-    std::unique_ptr<int[]> elementIds(new int[len]);
-    std::unique_ptr<int[]> edgeIds(new int[len]);
-    std::unique_ptr<int[]> pointIds(new int[len]);
-    std::unique_ptr<int[]> neyes(new int[len]);
-    std::unique_ptr<float[]> depths(new float[len]);
-
-    glBindTexture(GL_TEXTURE_2D,
-        drawTarget->GetAttachments().at("primId")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &primIds[0]);
-
-    glBindTexture(GL_TEXTURE_2D,
-        drawTarget->GetAttachments().at("instanceId")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &instanceIds[0]);
-
-    glBindTexture(GL_TEXTURE_2D,
-        drawTarget->GetAttachments().at("elementId")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &elementIds[0]);
-
-    glBindTexture(GL_TEXTURE_2D,
-        drawTarget->GetAttachments().at("edgeId")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &edgeIds[0]);
-    
-    glBindTexture(GL_TEXTURE_2D,
-        drawTarget->GetAttachments().at("pointId")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &pointIds[0]);
-
-    glBindTexture(GL_TEXTURE_2D,
-        drawTarget->GetAttachments().at("neye")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &neyes[0]);
-
-    glBindTexture(GL_TEXTURE_2D,
-        drawTarget->GetAttachments().at("depth")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT,
-                    &depths[0]);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-    drawTarget->Unbind();
 
     GLF_POST_PENDING_GL_ERRORS();
 

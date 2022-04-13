@@ -316,13 +316,23 @@ public:
         int *outHitInstanceIndex = NULL,
         HdInstancerContext *outInstancerContext = NULL);
 
+    struct IntersectionResult
+    {
+        SdfPath hitPrimPath;
+        SdfPath hitInstancerPath;
+        int hitInstanceIndex = 0;
+        HdInstancerContext* instancerContext = NULL;
+    };
+
+    typedef std::vector<struct IntersectionResult> IntersectionResultVector;
+
     USDIMAGINGGL_API
-        bool TestIntersectionAll(
-            const GfMatrix4d& viewMatrix,
-            const GfMatrix4d& projectionMatrix,
-            const UsdPrim& root,
-            const UsdImagingGLRenderParams& params,
-            SdfPathVector& outHitPrimPaths);
+    bool TestIntersections(
+        const GfMatrix4d& viewMatrix,
+        const GfMatrix4d& projectionMatrix,
+        const UsdPrim& root,
+        const UsdImagingGLRenderParams& params,
+        IntersectionResultVector& outResults);
 
     /// Decodes a pick result given hydra prim ID/instance ID (like you'd get
     /// from an ID render).

@@ -82,6 +82,26 @@ _CompareOutHit(OutHit const & lhs, OutHit const & rhs)
            lhs.outHitInstanceIndex == rhs.outHitInstanceIndex;
 }
 
+
+static bool
+_CompareDeepSelectionResults(UsdImagingGLEngine::IntersectionResultVector const& lhsVector, 
+    UsdImagingGLEngine::IntersectionResultVector const& rhsVector)
+{
+    bool res = lhsVector.size() == rhsVector.size();
+    if (!res) return false;
+
+    for (int i = 0; i < lhsVector.size(); ++i)
+    {
+        auto lhs = lhsVector[i];
+        auto rhs = rhsVector[i];
+        res &= (lhs.hitPrimPath == rhs.hitPrimPath &&
+            lhs.hitInstancerPath == rhs.hitInstancerPath &&
+            lhs.hitInstanceIndex == rhs.hitInstanceIndex);
+    }
+    return res;
+}
+
+
 class My_TestGLDrawing : public UsdImagingGL_UnitTestGLDrawing {
 public:
     My_TestGLDrawing() {
@@ -103,6 +123,7 @@ public:
     void Draw(bool render=true);
     void Pick(GfVec2i const &startPos, GfVec2i const &endPos);
     void Pick(GfVec2i const &startPos, GfVec2i const &endPos, OutHit* out);
+    void DeepSelect(GfVec2i const& startPos, GfVec2i const& endPos, UsdImagingGLEngine::IntersectionResultVector& out);
 
 private:
     UsdStageRefPtr _stage;
@@ -219,6 +240,45 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         }
     };
 
+    const UsdImagingGLEngine::IntersectionResultVector expectedOutputVector = {
+        {
+        SdfPath("/Group/GI1/I1/Mesh1/Plane1"),
+        _stage->GetPrimAtPath(SdfPath("/Group/GI1/I1")).GetPrototype().
+            GetPath().AppendPath(SdfPath("Mesh1")),
+        2
+        },
+        {
+        SdfPath("/Group/GI2/I1/Mesh1/Plane2"),
+        _stage->GetPrimAtPath(SdfPath("/Group/GI2/I1")).GetPrototype().
+            GetPath().AppendPath(SdfPath("Mesh1")),
+        3
+        },
+        {
+        SdfPath("/Instance/I1/Mesh1/Plane1"),
+        _stage->GetPrimAtPath(SdfPath("/Instance/I1")).GetPrototype().
+            GetPath().AppendPath(SdfPath("Mesh1")),
+        0
+        },
+        {
+        SdfPath("/Group/GI2/I1/Mesh1/Plane1"),
+        _stage->GetPrimAtPath(SdfPath("/Group/GI2/I1")).GetPrototype().
+            GetPath().AppendPath(SdfPath("Mesh1")),
+        3
+        },
+        {
+        SdfPath("/Group/GI1/I1/Mesh1/Plane2"),
+        _stage->GetPrimAtPath(SdfPath("/Group/GI1/I1")).GetPrototype().
+            GetPath().AppendPath(SdfPath("Mesh1")),
+        2
+        },
+        {
+        SdfPath("/Instance/I1/Mesh1/Plane2"),
+        _stage->GetPrimAtPath(SdfPath("/Instance/I1")).GetPrototype().
+            GetPath().AppendPath(SdfPath("Mesh1")),
+        0
+        }
+    };
+
     const OutHit& expectedOut = expectedOutputs.at(_GetRenderer());
     Draw(false);
     OutHit testOut;
@@ -238,6 +298,17 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     } else {
         Draw();
     }
+
+    // Test windowed deep selection
+    UsdImagingGLEngine::IntersectionResultVector testOutVector;
+    DeepSelect(GfVec2i(320, 130), GfVec2i(171, 131), testOutVector);
+    TF_VERIFY(_CompareDeepSelectionResults(testOutVector, expectedOutputVector));
+    Draw();
+
+    // Single pick deep selection
+    testOutVector.clear();
+    DeepSelect(GfVec2i(170, 130), GfVec2i(171, 131), testOutVector);
+    Draw();
 }
 
 void
@@ -364,6 +435,54 @@ My_TestGLDrawing::MouseMove(int x, int y, int modKeys)
 void
 My_TestGLDrawing::Pick(GfVec2i const &startPos, GfVec2i const &endPos) {
     Pick(startPos, endPos, nullptr);
+}
+
+void
+My_TestGLDrawing::DeepSelect(GfVec2i const& startPos, GfVec2i const& endPos,
+    UsdImagingGLEngine::IntersectionResultVector& outResults)
+{
+    GfFrustum frustum = _frustum;
+    float width = GetWidth(), height = GetHeight();
+
+    GfVec2d min(2 * startPos[0] / width - 1, 1 - 2 * startPos[1] / height);
+    GfVec2d max(2 * (endPos[0] + 1) / width - 1, 1 - 2 * (endPos[1] + 1) / height);
+    // scale window
+    GfVec2d origin = frustum.GetWindow().GetMin();
+    GfVec2d scale = frustum.GetWindow().GetMax() - frustum.GetWindow().GetMin();
+    min = origin + GfCompMult(scale, 0.5 * (GfVec2d(1.0, 1.0) + min));
+    max = origin + GfCompMult(scale, 0.5 * (GfVec2d(1.0, 1.0) + max));
+
+    frustum.SetWindow(GfRange2d(min, max));
+
+    // XXX: For a timevarying test need to set timecode for frame param
+    UsdImagingGLRenderParams params;
+    params.enableIdRender = true;
+
+    OutHit outHit;
+
+    SdfPathVector selection;
+
+    if (_engine->TestIntersections(
+        _viewMatrix,
+        frustum.ComputeProjectionMatrix(),
+        _stage->GetPseudoRoot(),
+        params,
+        outResults)) {
+
+        for (int i = 0; i < outResults.size(); ++i)
+        {
+            UsdImagingGLEngine::IntersectionResult outHit = outResults[i];
+            std::cout << "Hit "
+                << i << ": "
+                << outHit.hitPrimPath << ", "
+                << outHit.hitInstancerPath << ", "
+                << outHit.hitInstanceIndex << "\n";
+
+            selection.push_back(outHit.hitPrimPath);
+        }
+    }
+
+    _engine->SetSelected(selection);
 }
 
 void
