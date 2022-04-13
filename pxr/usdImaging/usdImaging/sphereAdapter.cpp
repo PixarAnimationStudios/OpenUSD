@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/sphereAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourceImplicits-Impl.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/implicitSurfaceMeshUtils.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
@@ -30,6 +31,7 @@
 
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
+#include "pxr/imaging/hd/sphereSchema.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -50,6 +52,37 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdImagingSphereAdapter::~UsdImagingSphereAdapter() 
 {
+}
+
+TfTokenVector
+UsdImagingSphereAdapter::GetImagingSubprims()
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingSphereAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->sphere;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingSphereAdapter::GetImagingSubprimData(
+        TfToken const& subprim,
+        UsdPrim const& prim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceImplicitsPrim<UsdGeomSphere>::New(
+            prim.GetPath(),
+            HdSphereSchemaTokens->sphere,
+            prim,
+            stageGlobals);
+    }
+    return nullptr;
 }
 
 bool

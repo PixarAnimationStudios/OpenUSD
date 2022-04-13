@@ -252,6 +252,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (mesh)                                      \
     (basisCurves)                               \
     (points)                                    \
+    (sphere)                                    \
     (volume)                                    \
                                                 \
     /* Sprims */                                \

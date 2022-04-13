@@ -144,6 +144,7 @@ pxr_library(hd
         selection
         smoothNormals
         sortedIds
+        sphereSchema
         sprim
         strategyBase
         subdivisionTagsSchema

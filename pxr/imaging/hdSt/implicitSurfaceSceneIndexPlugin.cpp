@@ -34,6 +34,7 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+#include "pxr/imaging/hd/sphereSchema.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
@@ -737,6 +738,226 @@ _ComputePrimDataSource(const HdContainerDataSourceHandle &primDataSource)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+// Sphere
+
+namespace _SphereToMesh
+{
+
+HdContainerDataSourceHandle
+_ComputeMeshDataSource()
+{
+    static const VtIntArray numVerts{
+        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
+    static const VtIntArray verts{
+        // Quads
+         0,  1, 11, 10,    1,  2, 12, 11,    2,  3, 13, 12,    3,  4, 14, 13,
+         4,  5, 15, 14,    5,  6, 16, 15,    6,  7, 17, 16,    7,  8, 18, 17,
+         8,  9, 19, 18,    9,  0, 10, 19,   10, 11, 21, 20,   11, 12, 22, 21,
+        12, 13, 23, 22,   13, 14, 24, 23,   14, 15, 25, 24,   15, 16, 26, 25,
+        16, 17, 27, 26,   17, 18, 28, 27,   18, 19, 29, 28,   19, 10, 20, 29,
+        20, 21, 31, 30,   21, 22, 32, 31,   22, 23, 33, 32,   23, 24, 34, 33,
+        24, 25, 35, 34,   25, 26, 36, 35,   26, 27, 37, 36,   27, 28, 38, 37,
+        28, 29, 39, 38,   29, 20, 30, 39,   30, 31, 41, 40,   31, 32, 42, 41,
+        32, 33, 43, 42,   33, 34, 44, 43,   34, 35, 45, 44,   35, 36, 46, 45,
+        36, 37, 47, 46,   37, 38, 48, 47,   38, 39, 49, 48,   39, 30, 40, 49,
+        40, 41, 51, 50,   41, 42, 52, 51,   42, 43, 53, 52,   43, 44, 54, 53,
+        44, 45, 55, 54,   45, 46, 56, 55,   46, 47, 57, 56,   47, 48, 58, 57,
+        48, 49, 59, 58,   49, 40, 50, 59,   50, 51, 61, 60,   51, 52, 62, 61,
+        52, 53, 63, 62,   53, 54, 64, 63,   54, 55, 65, 64,   55, 56, 66, 65,
+        56, 57, 67, 66,   57, 58, 68, 67,   58, 59, 69, 68,   59, 50, 60, 69,
+        60, 61, 71, 70,   61, 62, 72, 71,   62, 63, 73, 72,   63, 64, 74, 73,
+        64, 65, 75, 74,   65, 66, 76, 75,   66, 67, 77, 76,   67, 68, 78, 77,
+        68, 69, 79, 78,   69, 60, 70, 79,   70, 71, 81, 80,   71, 72, 82, 81,
+        72, 73, 83, 82,   73, 74, 84, 83,   74, 75, 85, 84,   75, 76, 86, 85,
+        76, 77, 87, 86,   77, 78, 88, 87,   78, 79, 89, 88,   79, 70, 80, 89,
+        // Tris
+         1,  0, 90,    2,  1, 90,    3,  2, 90,    4,  3, 90,    5,  4, 90,
+         6,  5, 90,    7,  6, 90,    8,  7, 90,    9,  8, 90,    0,  9, 90,
+        80, 81, 91,   81, 82, 91,   82, 83, 91,   83, 84, 91,   84, 85, 91,
+        85, 86, 91,   86, 87, 91,   87, 88, 91,   88, 89, 91,   89, 80, 91 };
+
+    return
+        HdMeshSchema::Builder()
+            .SetTopology(
+                HdMeshTopologySchema::Builder()
+                    .SetFaceVertexCounts(
+                        HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                            numVerts))
+                    .SetFaceVertexIndices(
+                        HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                            verts))
+                    .SetOrientation(
+                        HdRetainedTypedSampledDataSource<TfToken>::New(
+                            HdMeshTopologySchemaTokens->rightHanded))
+                    .Build())
+            .SetSubdivisionScheme(
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    PxOsdOpenSubdivTokens->catmullClark))
+            .SetDoubleSided(
+                HdRetainedTypedSampledDataSource<bool>::New(false))
+            .Build();
+}
+
+class _PointsDataSource : public HdVec3fArrayDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_PointsDataSource);
+
+    _PointsDataSource(const HdContainerDataSourceHandle &primDataSource)
+      : _primDataSource(primDataSource)
+    {
+    }
+
+    VtValue GetValue(const Time shutterOffset) override {
+        return VtValue(GetTypedValue(shutterOffset));
+    }
+
+    VtVec3fArray GetTypedValue(const Time shutterOffset) override {
+    static const VtVec3fArray points{
+        GfVec3f( 0.1250,  0.0908, -0.4755), GfVec3f( 0.0477,  0.1469, -0.4755),
+        GfVec3f(-0.0477,  0.1469, -0.4755), GfVec3f(-0.1250,  0.0908, -0.4755),
+        GfVec3f(-0.1545, -0.0000, -0.4755), GfVec3f(-0.1250, -0.0908, -0.4755),
+        GfVec3f(-0.0477, -0.1469, -0.4755), GfVec3f( 0.0477, -0.1469, -0.4755),
+        GfVec3f( 0.1250, -0.0908, -0.4755), GfVec3f( 0.1545, -0.0000, -0.4755),
+        GfVec3f( 0.2378,  0.1727, -0.4045), GfVec3f( 0.0908,  0.2795, -0.4045),
+        GfVec3f(-0.0908,  0.2795, -0.4045), GfVec3f(-0.2378,  0.1727, -0.4045),
+        GfVec3f(-0.2939, -0.0000, -0.4045), GfVec3f(-0.2378, -0.1727, -0.4045),
+        GfVec3f(-0.0908, -0.2795, -0.4045), GfVec3f( 0.0908, -0.2795, -0.4045),
+        GfVec3f( 0.2378, -0.1727, -0.4045), GfVec3f( 0.2939, -0.0000, -0.4045),
+        GfVec3f( 0.3273,  0.2378, -0.2939), GfVec3f( 0.1250,  0.3847, -0.2939),
+        GfVec3f(-0.1250,  0.3847, -0.2939), GfVec3f(-0.3273,  0.2378, -0.2939),
+        GfVec3f(-0.4045, -0.0000, -0.2939), GfVec3f(-0.3273, -0.2378, -0.2939),
+        GfVec3f(-0.1250, -0.3847, -0.2939), GfVec3f( 0.1250, -0.3847, -0.2939),
+        GfVec3f( 0.3273, -0.2378, -0.2939), GfVec3f( 0.4045, -0.0000, -0.2939),
+        GfVec3f( 0.3847,  0.2795, -0.1545), GfVec3f( 0.1469,  0.4523, -0.1545),
+        GfVec3f(-0.1469,  0.4523, -0.1545), GfVec3f(-0.3847,  0.2795, -0.1545),
+        GfVec3f(-0.4755, -0.0000, -0.1545), GfVec3f(-0.3847, -0.2795, -0.1545),
+        GfVec3f(-0.1469, -0.4523, -0.1545), GfVec3f( 0.1469, -0.4523, -0.1545),
+        GfVec3f( 0.3847, -0.2795, -0.1545), GfVec3f( 0.4755, -0.0000, -0.1545),
+        GfVec3f( 0.4045,  0.2939, -0.0000), GfVec3f( 0.1545,  0.4755, -0.0000),
+        GfVec3f(-0.1545,  0.4755, -0.0000), GfVec3f(-0.4045,  0.2939, -0.0000),
+        GfVec3f(-0.5000, -0.0000,  0.0000), GfVec3f(-0.4045, -0.2939,  0.0000),
+        GfVec3f(-0.1545, -0.4755,  0.0000), GfVec3f( 0.1545, -0.4755,  0.0000),
+        GfVec3f( 0.4045, -0.2939,  0.0000), GfVec3f( 0.5000,  0.0000,  0.0000),
+        GfVec3f( 0.3847,  0.2795,  0.1545), GfVec3f( 0.1469,  0.4523,  0.1545),
+        GfVec3f(-0.1469,  0.4523,  0.1545), GfVec3f(-0.3847,  0.2795,  0.1545),
+        GfVec3f(-0.4755, -0.0000,  0.1545), GfVec3f(-0.3847, -0.2795,  0.1545),
+        GfVec3f(-0.1469, -0.4523,  0.1545), GfVec3f( 0.1469, -0.4523,  0.1545),
+        GfVec3f( 0.3847, -0.2795,  0.1545), GfVec3f( 0.4755,  0.0000,  0.1545),
+        GfVec3f( 0.3273,  0.2378,  0.2939), GfVec3f( 0.1250,  0.3847,  0.2939),
+        GfVec3f(-0.1250,  0.3847,  0.2939), GfVec3f(-0.3273,  0.2378,  0.2939),
+        GfVec3f(-0.4045, -0.0000,  0.2939), GfVec3f(-0.3273, -0.2378,  0.2939),
+        GfVec3f(-0.1250, -0.3847,  0.2939), GfVec3f( 0.1250, -0.3847,  0.2939),
+        GfVec3f( 0.3273, -0.2378,  0.2939), GfVec3f( 0.4045,  0.0000,  0.2939),
+        GfVec3f( 0.2378,  0.1727,  0.4045), GfVec3f( 0.0908,  0.2795,  0.4045),
+        GfVec3f(-0.0908,  0.2795,  0.4045), GfVec3f(-0.2378,  0.1727,  0.4045),
+        GfVec3f(-0.2939, -0.0000,  0.4045), GfVec3f(-0.2378, -0.1727,  0.4045),
+        GfVec3f(-0.0908, -0.2795,  0.4045), GfVec3f( 0.0908, -0.2795,  0.4045),
+        GfVec3f( 0.2378, -0.1727,  0.4045), GfVec3f( 0.2939,  0.0000,  0.4045),
+        GfVec3f( 0.1250,  0.0908,  0.4755), GfVec3f( 0.0477,  0.1469,  0.4755),
+        GfVec3f(-0.0477,  0.1469,  0.4755), GfVec3f(-0.1250,  0.0908,  0.4755),
+        GfVec3f(-0.1545, -0.0000,  0.4755), GfVec3f(-0.1250, -0.0908,  0.4755),
+        GfVec3f(-0.0477, -0.1469,  0.4755), GfVec3f( 0.0477, -0.1469,  0.4755),
+        GfVec3f( 0.1250, -0.0908,  0.4755), GfVec3f( 0.1545,  0.0000,  0.4755),
+        GfVec3f( 0.0000, -0.0000, -0.5000), GfVec3f( 0.0000,  0.0000,  0.5000)};
+
+        const double diameter = 2.0 * _GetRadius(shutterOffset);
+
+        VtVec3fArray scaledPoints;
+        scaledPoints.resize(points.size());
+        for (size_t i = 0; i < points.size(); i++) {
+            scaledPoints[i] = diameter * points[i];
+        }
+        
+        return scaledPoints;
+    }
+
+    bool GetContributingSampleTimesForInterval(
+                            const Time startTime,
+                            const Time endTime,
+                            std::vector<Time> * const outSampleTimes) override {
+        if (HdDoubleDataSourceHandle const s = _GetRadiusSource()) {
+            return s->GetContributingSampleTimesForInterval(
+                startTime, endTime, outSampleTimes);
+        }
+        return false;
+    }
+
+private:
+    HdDoubleDataSourceHandle _GetRadiusSource() const {
+        static const HdDataSourceLocator radiusLocator(
+            HdSphereSchemaTokens->sphere, HdSphereSchemaTokens->radius);
+        return HdDoubleDataSource::Cast(
+            HdContainerDataSource::Get(_primDataSource, radiusLocator));
+    }
+
+    double _GetRadius(const Time shutterOffset) const {
+        if (HdDoubleDataSourceHandle const s = _GetRadiusSource()) {
+            return s->GetTypedValue(shutterOffset);
+        }
+        return 1.0;
+    }
+
+    HdContainerDataSourceHandle _primDataSource;
+};
+
+HdContainerDataSourceHandle
+_ComputePointsPrimvarDataSource(const HdContainerDataSourceHandle &primDataSource)
+{
+    static HdTokenDataSourceHandle const roleDataSource =
+        HdPrimvarSchema::BuildRoleDataSource(
+            HdPrimvarSchemaTokens->Point);
+    static HdTokenDataSourceHandle const interpolationDataSource =
+        HdPrimvarSchema::BuildInterpolationDataSource(
+            HdPrimvarSchemaTokens->vertex);
+
+    return
+        HdPrimvarSchema::Builder()
+            .SetRole(roleDataSource)
+            .SetInterpolation(interpolationDataSource)
+            .SetPrimvarValue(_PointsDataSource::New(primDataSource))
+            .Build();
+}
+
+HdContainerDataSourceHandle
+_ComputePrimvarsDataSource(const HdContainerDataSourceHandle &primDataSource)
+{
+    return
+        HdRetainedContainerDataSource::New(
+            HdPrimvarsSchemaTokens->points,
+                    _ComputePointsPrimvarDataSource(primDataSource));
+}
+
+HdContainerDataSourceHandle
+_ComputePrimDataSource(const HdContainerDataSourceHandle &primDataSource)
+{
+    static HdDataSourceBaseHandle const sphereDataSource =
+        HdBlockDataSource::New();
+    static HdDataSourceBaseHandle const meshDataSource =
+        _ComputeMeshDataSource();
+    HdDataSourceBaseHandle const primvarsDataSource =
+        _ComputePrimvarsDataSource(primDataSource);
+    
+    HdContainerDataSourceHandle sources[] = {
+        HdRetainedContainerDataSource::New(
+            HdSphereSchemaTokens->sphere, sphereDataSource,
+            HdMeshSchemaTokens->mesh, meshDataSource,
+            HdPrimvarsSchemaTokens->primvars, primvarsDataSource),
+        primDataSource
+    };
+    
+    return HdOverlayContainerDataSource::New(TfArraySize(sources), sources);
+}
+
+} // namespace _SphereToMesh
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 // Implementation of the scene index
 
 TF_DECLARE_REF_PTRS(_SceneIndex);
@@ -768,6 +989,11 @@ public:
                 HdPrimTypeTokens->mesh,
                 _CylinderToMesh::_ComputePrimDataSource(prim.dataSource) };
         }
+        if (prim.primType == HdPrimTypeTokens->sphere) {
+            return {
+                HdPrimTypeTokens->mesh,
+                _SphereToMesh::_ComputePrimDataSource(prim.dataSource) };
+        }
         return prim;
     }
 
@@ -795,7 +1021,8 @@ protected:
         for (size_t i = 0; i < entries.size(); i++) {
             if (entries[i].primType == HdPrimTypeTokens->cube ||
                 entries[i].primType == HdPrimTypeTokens->cone ||
-                entries[i].primType == HdPrimTypeTokens->cylinder) {
+                entries[i].primType == HdPrimTypeTokens->cylinder ||
+                entries[i].primType == HdPrimTypeTokens->sphere) {
                 indices.push_back(i);
             }
         }
@@ -839,7 +1066,8 @@ protected:
             static const HdDataSourceLocatorSet implicitsLocators
                 { HdCubeSchema::GetDefaultLocator(),
                   HdConeSchema::GetDefaultLocator(),
-                  HdCylinderSchema::GetDefaultLocator() };
+                  HdCylinderSchema::GetDefaultLocator(),
+                  HdSphereSchema::GetDefaultLocator()};
 
             if (locators.Intersects(implicitsLocators)) {
                 indices.push_back(i);
