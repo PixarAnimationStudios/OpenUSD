@@ -175,29 +175,6 @@ public:
     UsdAttribute CreateAngleAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
-    // --------------------------------------------------------------------- //
-    // INTENSITY 
-    // --------------------------------------------------------------------- //
-    /// Scales the emission of the light linearly.
-    /// The DistantLight has a high default intensity to approximate the Sun.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `float inputs:intensity = 50000` |
-    /// | C++ Type | float |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
-    USDLUX_API
-    UsdAttribute GetIntensityAttr() const;
-
-    /// See GetIntensityAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDLUX_API
-    UsdAttribute CreateIntensityAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 

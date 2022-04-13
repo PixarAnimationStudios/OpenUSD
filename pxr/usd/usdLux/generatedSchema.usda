@@ -5,6 +5,9 @@
 
 class "LightAPI" (
     apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:lightLink:includeRoot", "collection:shadowLink:includeRoot"]
+    }
     doc = """API schema that imparts the quality of being a light onto a prim. 
 
     A light is any prim that has this schema applied to it.  This is true 
@@ -129,6 +132,9 @@ class "LightAPI" (
 
 class "MeshLightAPI" (
     apiSchemas = ["LightAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["light:materialSyncMode", "light:shaderId"]
+    }
     doc = '''This is the preferred API schema to apply to 
     "Mesh" type prims when adding light behaviors to a mesh. 
     At its base, this API schema has the built-in behavior of applying LightAPI 
@@ -142,13 +148,14 @@ class "MeshLightAPI" (
 )
 {
     uniform token light:materialSyncMode = "materialGlowTintsLight"
-    uniform token light:shaderId = "MeshLight" (
-        displayGroup = "Internal"
-    )
+    uniform token light:shaderId = "MeshLight"
 }
 
 class "VolumeLightAPI" (
     apiSchemas = ["LightAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["light:materialSyncMode", "light:shaderId"]
+    }
     doc = '''This is the preferred API schema to apply to 
     "Volume" type prims when adding light behaviors to a 
     volume. At its base, this API schema has the built-in behavior of applying 
@@ -162,9 +169,7 @@ class "VolumeLightAPI" (
 )
 {
     uniform token light:materialSyncMode = "materialGlowTintsLight"
-    uniform token light:shaderId = "VolumeLight" (
-        displayGroup = "Internal"
-    )
+    uniform token light:shaderId = "VolumeLight"
 }
 
 class "LightListAPI" (
@@ -418,6 +423,9 @@ class "ShadowAPI" (
 
 class LightFilter "LightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
     doc = """A light filter modifies the effect of a light.
     Lights refer to filters via relationships so that filters may be
     shared.
@@ -643,6 +651,9 @@ class "NonboundableLightBase" (
 
 class DistantLight "DistantLight" (
     apiSchemas = ["LightAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["inputs:intensity", "light:shaderId"]
+    }
     doc = """Light emitted from a distant source along the -Z axis.
     Also known as a directional light."""
 )
@@ -657,9 +668,7 @@ class DistantLight "DistantLight" (
         doc = """Scales the emission of the light linearly.
         The DistantLight has a high default intensity to approximate the Sun."""
     )
-    uniform token light:shaderId = "DistantLight" (
-        displayGroup = "Internal"
-    )
+    uniform token light:shaderId = "DistantLight"
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -715,6 +724,9 @@ class DistantLight "DistantLight" (
 
 class DiskLight "DiskLight" (
     apiSchemas = ["LightAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["light:shaderId"]
+    }
     doc = """Light emitted from one side of a circular disk.
     The disk is centered in the XY plane and emits light along the -Z axis."""
 )
@@ -740,9 +752,7 @@ class DiskLight "DiskLight" (
     float inputs:radius = 0.5 (
         doc = "Radius of the disk."
     )
-    uniform token light:shaderId = "DiskLight" (
-        displayGroup = "Internal"
-    )
+    uniform token light:shaderId = "DiskLight"
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -798,6 +808,9 @@ class DiskLight "DiskLight" (
 
 class RectLight "RectLight" (
     apiSchemas = ["LightAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["light:shaderId"]
+    }
     doc = """Light emitted from one side of a rectangle.
     The rectangle is centered in the XY plane and emits light along the -Z axis.
     The rectangle is 1 unit in length in the X and Y axis.  In the default 
@@ -832,9 +845,7 @@ class RectLight "RectLight" (
     float inputs:width = 1 (
         doc = "Width of the rectangle, in the local X axis."
     )
-    uniform token light:shaderId = "RectLight" (
-        displayGroup = "Internal"
-    )
+    uniform token light:shaderId = "RectLight"
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -890,6 +901,9 @@ class RectLight "RectLight" (
 
 class SphereLight "SphereLight" (
     apiSchemas = ["LightAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["light:shaderId"]
+    }
     doc = "Light emitted outward from a sphere."
 )
 {
@@ -914,9 +928,7 @@ class SphereLight "SphereLight" (
     float inputs:radius = 0.5 (
         doc = "Radius of the sphere."
     )
-    uniform token light:shaderId = "SphereLight" (
-        displayGroup = "Internal"
-    )
+    uniform token light:shaderId = "SphereLight"
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -978,6 +990,9 @@ class SphereLight "SphereLight" (
 
 class CylinderLight "CylinderLight" (
     apiSchemas = ["LightAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["light:shaderId"]
+    }
     doc = """Light emitted outward from a cylinder.
     The cylinder is centered at the origin and has its major axis on the X axis.
     The cylinder does not emit light from the flat end-caps.
@@ -1008,9 +1023,7 @@ class CylinderLight "CylinderLight" (
     float inputs:radius = 0.5 (
         doc = "Radius of the cylinder."
     )
-    uniform token light:shaderId = "CylinderLight" (
-        displayGroup = "Internal"
-    )
+    uniform token light:shaderId = "CylinderLight"
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -1072,6 +1085,9 @@ class CylinderLight "CylinderLight" (
 
 class GeometryLight "GeometryLight" (
     apiSchemas = ["LightAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["light:shaderId"]
+    }
     doc = """\\deprecated
     Light emitted outward from a geometric prim (UsdGeomGprim),
     which is typically a mesh."""
@@ -1080,9 +1096,7 @@ class GeometryLight "GeometryLight" (
     rel geometry (
         doc = "Relationship to the geometry to use as the light source."
     )
-    uniform token light:shaderId = "GeometryLight" (
-        displayGroup = "Internal"
-    )
+    uniform token light:shaderId = "GeometryLight"
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -1138,6 +1152,9 @@ class GeometryLight "GeometryLight" (
 
 class DomeLight "DomeLight" (
     apiSchemas = ["LightAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["light:shaderId"]
+    }
     doc = """Light emitted inward from a distant external environment,
     such as a sky or IBL light probe.  The orientation of a dome light with a
     latlong texture is expected to match the OpenEXR specification for latlong 
@@ -1188,9 +1205,7 @@ class DomeLight "DomeLight" (
           vertical cross.
         """
     )
-    uniform token light:shaderId = "DomeLight" (
-        displayGroup = "Internal"
-    )
+    uniform token light:shaderId = "DomeLight"
     rel portals (
         doc = "Optional portals to guide light sampling."
     )
@@ -1249,6 +1264,9 @@ class DomeLight "DomeLight" (
 
 class PortalLight "PortalLight" (
     apiSchemas = ["LightAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["light:shaderId"]
+    }
     doc = """A rectangular portal in the local XY plane that guides sampling
     of a dome light.  Transmits light in the -Z direction.
     The rectangle is 1 unit in length."""
@@ -1258,9 +1276,7 @@ class PortalLight "PortalLight" (
         doc = """Boundary extent of the unit rectangle in the XY plane that 
         defines the portal."""
     )
-    uniform token light:shaderId = "PortalLight" (
-        displayGroup = "Internal"
-    )
+    uniform token light:shaderId = "PortalLight"
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -1380,6 +1396,9 @@ class PluginLight "PluginLight" (
 
 class PluginLightFilter "PluginLightFilter" (
     apiSchemas = ["NodeDefAPI", "CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
     doc = """Light filter that provides properties that allow it to identify an 
     external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
     provided to render delegates without the need to provide a schema 
