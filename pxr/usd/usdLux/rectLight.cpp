@@ -171,7 +171,6 @@ const TfTokenVector&
 UsdLuxRectLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLuxTokens->lightShaderId,
         UsdLuxTokens->inputsWidth,
         UsdLuxTokens->inputsHeight,
         UsdLuxTokens->inputsTextureFile,

@@ -55,11 +55,6 @@ class SdfAssetPath;
 /// Light emitted from one side of a circular disk.
 /// The disk is centered in the XY plane and emits light along the -Z axis.
 ///
-/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
-/// that are text/tokens, the actual token is published and defined in \ref UsdLuxTokens.
-/// So to set an attribute to the value "rightHanded", use UsdLuxTokens->rightHanded
-/// as the value.
-///
 class UsdLuxDiskLight : public UsdLuxBoundableLightBase
 {
 public:

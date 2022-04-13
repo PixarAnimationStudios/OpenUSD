@@ -291,6 +291,23 @@ UsdContrivedDerived::CreateOverrideBaseTrueDerivedFalseAttr(VtValue const &defau
 }
 
 UsdAttribute
+UsdContrivedDerived::GetOverrideBaseTrueDerivedNoneAttr() const
+{
+    return GetPrim().GetAttribute(UsdContrivedTokens->overrideBaseTrueDerivedNone);
+}
+
+UsdAttribute
+UsdContrivedDerived::CreateOverrideBaseTrueDerivedNoneAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->overrideBaseTrueDerivedNone,
+                       SdfValueTypeNames->Int,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdContrivedDerived::GetOverrideBaseFalseDerivedFalseAttr() const
 {
     return GetPrim().GetAttribute(UsdContrivedTokens->overrideBaseFalseDerivedFalse);
@@ -382,6 +399,7 @@ UsdContrivedDerived::GetSchemaAttributeNames(bool includeInherited)
         UsdContrivedTokens->namespacedProperty,
         UsdContrivedTokens->justDefault,
         UsdContrivedTokens->overrideBaseTrueDerivedFalse,
+        UsdContrivedTokens->overrideBaseTrueDerivedNone,
         UsdContrivedTokens->overrideBaseFalseDerivedFalse,
         UsdContrivedTokens->overrideBaseFalseDerivedNone,
         UsdContrivedTokens->overrideBaseNoneDerivedFalse,

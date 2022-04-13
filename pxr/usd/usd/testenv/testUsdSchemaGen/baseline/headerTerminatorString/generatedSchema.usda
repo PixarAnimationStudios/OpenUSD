@@ -191,7 +191,7 @@ class "Base" (
 class Derived "Derived" (
     apiSchemas = ["BuiltinAPI"]
     customData = {
-        token[] apiSchemaOverridePropertyNames = ["overrideBaseTrueDerivedNone", "overrideBaseTrueDerivedTrue"]
+        token[] apiSchemaOverridePropertyNames = ["overrideBaseTrueDerivedTrue"]
     }
     doc = "Emphasized! Test Section"
 )
@@ -303,31 +303,31 @@ class Derived "Derived" (
     int overrideBaseFalseDerivedFalse = 1 (
         doc = """API schema override explicitly set to False in Base.
         API schema override explicitly set to False in Derived.
-        Generates API functions in Derived. (2/4)
+        Generates API functions in Derived. (3/5)
         """
     )
     int overrideBaseFalseDerivedNone = 1 (
         doc = """API schema override explicitly set to False in Base.
-        API schema override has no opinion in Derived.
-        Generates API functions in Derived. (3/4)
+        API schema override has no opinion in Derived (defaults to False).
+        Generates API functions in Derived. (4/5)
         """
     )
     int overrideBaseNoneDerivedFalse = 1 (
         doc = """API schema override has no opinion in Base.
         API schema override explicitly set to False in Derived.
-        Generates API functions in Derived. (4/4)
+        Generates API functions in Derived. (5/5)
         """
     )
     int overrideBaseTrueDerivedFalse = 1 (
         doc = """API schema override explicitly set to True in Base.
         API schema override explicitly set to False in Derived.
-        Generates API functions in Derived. (1/4)
+        Generates API functions in Derived. (1/5)
         """
     )
     int overrideBaseTrueDerivedNone = 1 (
         doc = """API schema override explicitly set to True in Base.
-        API schema override has no opinion in Derived.
-        Does not generate API functions in Derived.
+        API schema override has no opinion in Derived (defaults to False).
+        Generates API functions in Derived. (2/5)
         """
     )
     int overrideBaseTrueDerivedTrue = 1 (

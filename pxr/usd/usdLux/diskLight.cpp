@@ -137,7 +137,6 @@ const TfTokenVector&
 UsdLuxDiskLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLuxTokens->lightShaderId,
         UsdLuxTokens->inputsRadius,
     };
     static TfTokenVector allNames =

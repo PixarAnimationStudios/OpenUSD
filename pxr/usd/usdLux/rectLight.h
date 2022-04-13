@@ -58,11 +58,6 @@ class SdfAssetPath;
 /// position, a texture file's min coordinates should be at (+X, +Y) and 
 /// max coordinates at (-X, -Y).
 ///
-/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
-/// that are text/tokens, the actual token is published and defined in \ref UsdLuxTokens.
-/// So to set an attribute to the value "rightHanded", use UsdLuxTokens->rightHanded
-/// as the value.
-///
 class UsdLuxRectLight : public UsdLuxBoundableLightBase
 {
 public:

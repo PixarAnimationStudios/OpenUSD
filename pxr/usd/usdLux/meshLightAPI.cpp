@@ -125,8 +125,6 @@ const TfTokenVector&
 UsdLuxMeshLightAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLuxTokens->lightShaderId,
-        UsdLuxTokens->lightMaterialSyncMode,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

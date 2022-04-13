@@ -184,7 +184,6 @@ const TfTokenVector&
 UsdLuxDomeLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLuxTokens->lightShaderId,
         UsdLuxTokens->inputsTextureFile,
         UsdLuxTokens->inputsTextureFormat,
         UsdLuxTokens->guideRadius,

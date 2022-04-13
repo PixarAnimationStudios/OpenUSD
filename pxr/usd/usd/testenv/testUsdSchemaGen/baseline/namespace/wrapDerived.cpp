@@ -127,6 +127,13 @@ _CreateOverrideBaseTrueDerivedFalseAttr(UsdContrivedDerived &self,
 }
         
 static UsdAttribute
+_CreateOverrideBaseTrueDerivedNoneAttr(UsdContrivedDerived &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateOverrideBaseTrueDerivedNoneAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateOverrideBaseFalseDerivedFalseAttr(UsdContrivedDerived &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateOverrideBaseFalseDerivedFalseAttr(
@@ -263,6 +270,13 @@ void wrapUsdContrivedDerived()
              &This::GetOverrideBaseTrueDerivedFalseAttr)
         .def("CreateOverrideBaseTrueDerivedFalseAttr",
              &_CreateOverrideBaseTrueDerivedFalseAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetOverrideBaseTrueDerivedNoneAttr",
+             &This::GetOverrideBaseTrueDerivedNoneAttr)
+        .def("CreateOverrideBaseTrueDerivedNoneAttr",
+             &_CreateOverrideBaseTrueDerivedNoneAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         

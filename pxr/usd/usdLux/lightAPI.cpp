@@ -308,8 +308,6 @@ const TfTokenVector&
 UsdLuxLightAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLuxTokens->collectionLightLinkIncludeRoot,
-        UsdLuxTokens->collectionShadowLinkIncludeRoot,
         UsdLuxTokens->lightShaderId,
         UsdLuxTokens->lightMaterialSyncMode,
         UsdLuxTokens->inputsIntensity,

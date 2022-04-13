@@ -391,7 +391,7 @@ public:
     // --------------------------------------------------------------------- //
     /// API schema override explicitly set to True in Base.
     /// API schema override explicitly set to False in Derived.
-    /// Generates API functions in Derived. (1/4)
+    /// Generates API functions in Derived. (1/5)
     /// 
     ///
     /// | ||
@@ -412,11 +412,36 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // OVERRIDEBASETRUEDERIVEDNONE 
+    // --------------------------------------------------------------------- //
+    /// API schema override explicitly set to True in Base.
+    /// API schema override has no opinion in Derived (defaults to False).
+    /// Generates API functions in Derived. (2/5)
+    /// 
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int overrideBaseTrueDerivedNone = 1` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
+    USDCONTRIVED_API
+    UsdAttribute GetOverrideBaseTrueDerivedNoneAttr() const;
+
+    /// See GetOverrideBaseTrueDerivedNoneAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDCONTRIVED_API
+    UsdAttribute CreateOverrideBaseTrueDerivedNoneAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // OVERRIDEBASEFALSEDERIVEDFALSE 
     // --------------------------------------------------------------------- //
     /// API schema override explicitly set to False in Base.
     /// API schema override explicitly set to False in Derived.
-    /// Generates API functions in Derived. (2/4)
+    /// Generates API functions in Derived. (3/5)
     /// 
     ///
     /// | ||
@@ -440,8 +465,8 @@ public:
     // OVERRIDEBASEFALSEDERIVEDNONE 
     // --------------------------------------------------------------------- //
     /// API schema override explicitly set to False in Base.
-    /// API schema override has no opinion in Derived.
-    /// Generates API functions in Derived. (3/4)
+    /// API schema override has no opinion in Derived (defaults to False).
+    /// Generates API functions in Derived. (4/5)
     /// 
     ///
     /// | ||
@@ -466,7 +491,7 @@ public:
     // --------------------------------------------------------------------- //
     /// API schema override has no opinion in Base.
     /// API schema override explicitly set to False in Derived.
-    /// Generates API functions in Derived. (4/4)
+    /// Generates API functions in Derived. (5/5)
     /// 
     ///
     /// | ||

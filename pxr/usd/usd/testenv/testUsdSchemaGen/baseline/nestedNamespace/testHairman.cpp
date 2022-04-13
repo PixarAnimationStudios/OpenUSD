@@ -169,7 +169,6 @@ UsdContrivedTestHairman::GetSchemaAttributeNames(bool includeInherited)
     static TfTokenVector localNames = {
         UsdContrivedTokens->temp,
         UsdContrivedTokens->riStatementsAttributesUserGofur_GeomOnHairdensity,
-        UsdContrivedTokens->attrWithoutGeneratedAccessorAPI,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
