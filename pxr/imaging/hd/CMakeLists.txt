@@ -40,10 +40,12 @@ pxr_library(hd
         command
         compExtCompInputSource
         computation
+        coneSchema
         containerDataSourceEditor
         coordSys
         coordSysBindingSchema
         cubeSchema
+        cylinderSchema
         dataSource
         dataSourceLegacyPrim
         dataSourceLocator

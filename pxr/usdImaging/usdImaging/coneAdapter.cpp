@@ -23,11 +23,13 @@
 //
 #include "pxr/usdImaging/usdImaging/coneAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourceImplicits-Impl.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/implicitSurfaceMeshUtils.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
+#include "pxr/imaging/hd/coneSchema.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -50,6 +52,37 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdImagingConeAdapter::~UsdImagingConeAdapter() 
 {
+}
+
+TfTokenVector
+UsdImagingConeAdapter::GetImagingSubprims()
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingConeAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->cone;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingConeAdapter::GetImagingSubprimData(
+        TfToken const& subprim,
+        UsdPrim const& prim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceImplicitsPrim<UsdGeomCone>::New(
+            prim.GetPath(),
+            HdConeSchemaTokens->cone,
+            prim,
+            stageGlobals);
+    }
+    return nullptr;
 }
 
 bool

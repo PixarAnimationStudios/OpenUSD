@@ -130,7 +130,7 @@ public:
             return UsdImagingDataSourceImplicits<U>::New(
                 _GetSceneIndexPath(),
                 _locatorToken,
-                UsdGeomCube(_GetUsdPrim()),
+                U(_GetUsdPrim()),
                 _GetStageGlobals());
         }
 
