@@ -772,6 +772,12 @@ HdxPickTask::Execute(HdTaskContext* ctx)
             {HdxRenderTagTokens->widget});
     }
 
+    // For 'resolveDeep' mode, read hits from the pick buffer.
+    if (_contextParams.resolveMode == HdxPickTokens->resolveDeep) {
+        _ResolveDeep();
+        return;
+    }
+
     // Capture the result buffers and cast to the appropriate types.
     HdStTextureUtils::AlignedBuffer<int> primIds =
         _ReadAovBuffer<int>(HdAovTokens->primId);

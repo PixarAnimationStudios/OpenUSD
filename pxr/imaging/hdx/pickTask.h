@@ -248,8 +248,8 @@ private:
     bool _UseWidgetPass() const;
 
     void _ClearPickBuffer();
-    void ResolveDeep();
-    
+    void _ResolveDeep();
+
     template<typename T>
     HdStTextureUtils::AlignedBuffer<T>
     _ReadAovBuffer(TfToken const & aovName) const;
@@ -277,6 +277,9 @@ private:
     TfToken _depthToken;
     std::unique_ptr<HdStRenderBuffer> _widgetDepthStencilBuffer;
     HdRenderPassAovBindingVector _widgetAovBindings;
+
+    // pick buffer used for deep selection
+    HdBufferArrayRangeSharedPtr _pickBuffer;
 
     // pick buffer used for deep selection
     HdBufferArrayRangeSharedPtr _pickBuffer;
