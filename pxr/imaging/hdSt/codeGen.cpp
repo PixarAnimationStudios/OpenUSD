@@ -3128,17 +3128,31 @@ static void _EmitTextureAccessors(
             << "#endif\n"
             << ")" << swizzle << ");\n";
     } else {
-        accessors
-            << "  " << _GetUnpackedType(dataType, false)
-            << " result = "
-            << _GetPackedTypeAccessor(dataType, false)
-            << "(texture(HdGetSampler_" << name;
-        if (isArray) {
-            accessors << "(index), sampleCoord)";
+        if (!isBindless) {
+            accessors
+                << "  " << _GetUnpackedType(dataType, false)
+                << " result = "
+                << _GetPackedTypeAccessor(dataType, false)
+                << "(HgiGet_" << name;
+            if (isArray) {
+                accessors << "(index, sampleCoord)\n";
+            } else {
+                accessors << "(sampleCoord)";
+            }
+            accessors << swizzle << ");\n";
         } else {
-            accessors << "(), sampleCoord)";
+            accessors
+                << "  " << _GetUnpackedType(dataType, false)
+                << " result = "
+                << _GetPackedTypeAccessor(dataType, false)
+                << "(texture(HdGetSampler_" << name;
+            if (isArray) {
+                accessors << "(index), sampleCoord)";
+            } else {
+                accessors << "(), sampleCoord)";
+            }
+            accessors << swizzle << ");\n";
         }
-        accessors << swizzle << ");\n";
     }
 
     if (acc.processTextureFallbackValue) {
