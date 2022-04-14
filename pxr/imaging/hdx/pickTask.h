@@ -281,9 +281,6 @@ private:
     // pick buffer used for deep selection
     HdBufferArrayRangeSharedPtr _pickBuffer;
 
-    // pick buffer used for deep selection
-    HdBufferArrayRangeSharedPtr _pickBuffer;
-
     HdxPickTask() = delete;
     HdxPickTask(const HdxPickTask &) = delete;
     HdxPickTask &operator =(const HdxPickTask &) = delete;

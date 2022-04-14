@@ -326,6 +326,15 @@ public:
 
     typedef std::vector<struct IntersectionResult> IntersectionResultVector;
 
+    /// Finds all objects intersecting a frustum by rendering.
+    ///	
+    /// This method uses Deep Selection to gather all paths within a region even 
+    /// if obscured by other visible objects.
+    ///
+    /// Returns whether a hit occurred and if so, \p outResults will point to all the 
+    /// gprims selected by the pick. \p outHitInstancerPath will point to the point 
+    /// instancer (if applicable) of each gprim. 
+    ///
     USDIMAGINGGL_API
     bool TestIntersections(
         const GfMatrix4d& viewMatrix,

@@ -617,7 +617,7 @@ HdxPickTask::Prepare(HdTaskContext* ctx,
         _occluderRenderPassState->Prepare(renderIndex->GetResourceRegistry());
     }
     _pickableRenderPassState->Prepare(renderIndex->GetResourceRegistry());
-        if (_UseWidgetPass()) {
+    if (_UseWidgetPass()) {
         _widgetRenderPassState->Prepare(renderIndex->GetResourceRegistry());
     }  
 
@@ -695,7 +695,6 @@ HdxPickTask::_ClearPickBuffer()
     }
 
     // set the source to the pick buffer
-
     HdBufferSourceSharedPtr bufferSource =
         std::make_shared<HdVtBufferSource>(
             HdxPickPrivateTokens->PickBuffer,
@@ -743,21 +742,11 @@ HdxPickTask::Execute(HdTaskContext* ctx)
         _pickableAovBindings[_pickableDepthIndex].clearValue =
             VtValue(GfVec4f(1.0f));
     }
-    
+
     // Push the changes to the clearValue into the renderPassState.
     _pickableRenderPassState->SetAovBindings(_pickableAovBindings);
     _pickableRenderPass->Execute(_pickableRenderPassState,
                                  _nonWidgetRenderTags);
-
-    GLF_POST_PENDING_GL_ERRORS();
-
-    // For 'resolveDeep' mode, read hits from the pick buffer.
-    if (_contextParams.resolveMode == HdxPickTokens->resolveDeep) {
-        _ResolveDeep();
-        return;
-    }
-
-    GLF_POST_PENDING_GL_ERRORS();
 
     if (_UseWidgetPass()) {
         if (needStencilConditioning) {
