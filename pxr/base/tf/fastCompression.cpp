@@ -101,6 +101,24 @@ TfFastCompression::CompressToBuffer(
     return compressed - origCompressed;
 }    
 
+/* usddoc lz4
+ * The first byte of any buffer passed to be decrypted stores the number of chunks used.
+ *
+ * If the number of chunks is 0, then the buffer is decompressed as a whole.
+ *
+ * If the number of chunks is specified as higher than zero, then the first byte of each chunk
+ * represent the size of the chunk, followed by the chunk data which can be decompressed.
+ *
+ * In the table below, chunkSize is not provided if numChunks is zero
+ *
+ * <usdbytelayout lz4_chunks_layout>
+ */
+/* usdbytelayout lz4_chunks_layout
+ *  numChunks 8
+ *  chunkSize 8
+ *  data ?
+ */
+
 size_t
 TfFastCompression::DecompressFromBuffer(
     char const *compressed, char *output,

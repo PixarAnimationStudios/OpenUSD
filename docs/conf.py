@@ -11,8 +11,22 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
-# import sys
+import sys
+
+sys.path.append(os.path.abspath("./_ext"))
 # sys.path.insert(0, os.path.abspath('.'))
+
+# -- Dev Configure -----------------------------------
+
+import subprocess
+files = ["spec_usdc"]
+for f in files:
+    f = os.path.join(os.path.dirname(__file__), f+".rst")
+    if not os.path.exists(f):
+        raise IOError("Path does not exist: "+f)
+
+    subprocess.call(["touch", f])
+
 
 # -- Utilities ---------------------------------------------------------------
 
@@ -77,7 +91,8 @@ release = version
 extensions = [
     'sphinx.ext.autosectionlabel',
     'sphinxcontrib.doxylink',
-    'sphinx_panels'
+    'sphinx_panels',
+    "usddoc"
 ]
 
 # Add any paths that contain templates here, relative to this directory.

@@ -79,13 +79,36 @@ template <class T> struct _IsBitwiseReadWrite;
 
 enum class TypeEnum : int32_t;
 
-// Value in file representation.  Consists of a 2 bytes of type information
-// (type enum value, array bit, and inlined-value bit) and 6 bytes of data.
-// If possible, we attempt to store certain values directly in the local
-// data, such as ints, floats, enums, and special-case values of other types
-// (zero vectors, identity matrices, etc).  For values that aren't stored
-// inline, the 6 data bytes are the offset from the start of the file to the
-// value's location.
+/* usddoc value_rep
+ * Crate stores Value Representations as data blobs that are read on demand.
+ * This allows large USD scenes to be read incredibly quickly by deferring all
+ * data reads to the latest point possible.
+ *
+ * Value reps are stored as an unsigned 64 bit integer.
+ *
+ * The first byte refers to the type enum value.
+ * The second byte has bit flags to represent characteristics of the type:
+ *
+ * * Array Bit Mask is `1ull << 63` or `0x8000000000000000`
+ * * Inlined Bit Mask is `1ull << 62` or `0x4000000000000000`
+ * * Compressed Bit Mask is `1ull << 61` or `0x2000000000000000`
+ *
+ * This is followed by 6 bytes of data.
+ *
+ * <usdbytelayout value_rep_layout>
+ *
+ * If possible, we attempt to store certain values directly in the local
+ * data, such as ints, floats, enums, and special-case values of other types
+ * like  zero vectors, identity matrices, etc...
+ *
+ * For values that aren't stored inline (offset types), the 6 data bytes are
+ * the offset from the start of the file to the value's location.
+ */
+/* usdbytelayout value_rep_layout
+ * type 1
+ * flags 1
+ * payload 6
+ */
 struct ValueRep {
 
     friend class CrateFile;
@@ -447,6 +470,13 @@ private:
 
     // _BootStrap structure.  Appears at start of file, houses version, file
     // identifier string and offset to _TableOfContents.
+
+    /* usdbytelayout bootstrap
+     * identifier 8
+     * version 8
+     * toc_offset 8
+     * reserved 8
+     */
     struct _BootStrap {
         _BootStrap();
         explicit _BootStrap(Version const &);
@@ -456,6 +486,11 @@ private:
         int64_t _reserved[8];
     };
 
+    /* usdbytelayout section
+     * name 16
+     * start 8
+     * size 8
+     */
     struct _Section {
         _Section() { memset(this, 0, sizeof(*this)); }
         _Section(char const *name, int64_t start, int64_t size);
@@ -960,7 +995,7 @@ private:
 
     // Deferred specs we write separately at the end. This is for specs that
     // have fields that we may not know how to write until we've looked at other
-    // specs (e.g. SdfPayload version upgrades) or spces with time samples that
+    // specs (e.g. SdfPayload version upgrades) or specs with time samples that
     // we write time-by-time so that time-sampled data is collocated by time.
     struct _DeferredSpec {
         _DeferredSpec() = default;

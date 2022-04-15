@@ -7,5 +7,5 @@ Specifications
    :titlesonly:
 
    spec_usdpreviewsurface
-   spec_usdz
+   spec_fileformats
 

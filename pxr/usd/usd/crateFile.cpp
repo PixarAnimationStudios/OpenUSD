@@ -430,6 +430,20 @@ struct _PathItemHeader {
 template <>
 struct _IsBitwiseReadWrite<_PathItemHeader> : std::true_type {};
 
+/* usddoc listop_header
+ * ListOps have an 8-byte bitmasked header that determine what type of operation
+ * is being run.
+ *
+ * In order, from least to most significant bit:
+ *
+ *  * **IsExplicit** : Removes all items and changes the list to be explicit
+ *  * **HasExcplicitItems** : Fills the list with the items included in this ListOp
+ *  * **HasAddedItems** : Adds the items included in this ListOp
+ *  * **HasDeletedItems** : Removes the items specified in this ListOp
+ *  * **HasOrderedItems** : Reorder the list based on the item order in this ListOp
+ *  * **HasPrependedItems** : Prepend the items from this ListOp
+ *  * **HasAppendedItems** : Append items from this ListOp
+ */
 struct _ListOpHeader {
     enum _Bits { IsExplicitBit = 1 << 0,
                  HasExplicitItemsBit = 1 << 1,
@@ -728,6 +742,14 @@ private:
 
 ////////////////////////////////////////////////////////////////////////
 // _TableOfContents
+
+/* usddoc section
+ * Sections define a name as well as their start location and size in bytes.
+ * Section names are 16 characters wide
+ *
+ * <usdbytelayout section>
+ */
+
 CrateFile::_Section const *
 CrateFile::_TableOfContents::GetSection(_SectionName name) const
 {
@@ -1164,6 +1186,18 @@ public:
         return SdfAssetPath(Read<string>());
     }
     SdfTimeCode Read(SdfTimeCode *) { return SdfTimeCode(Read<double>()); }
+
+    /* usddoc unregistered_value
+     * A representation of unregistered metadata field values.
+     *
+     * Read in the same way as a Value, as an indirection pointer to the real data.
+     * Possible value types are
+     * * Strings
+     * * Dictionaries
+     * * UnregisteredValueListOps
+     *
+     * If the type is something else, return an empty value.
+     */
     SdfUnregisteredValue Read(SdfUnregisteredValue *) {
         VtValue val = Read<VtValue>();
         if (val.IsHolding<string>())
@@ -1179,9 +1213,30 @@ public:
                         val.GetTypeName().c_str(), TfStringify(val).c_str());
         return SdfUnregisteredValue();
     }
+    /* usddoc variant_selection_map
+     * A string:string map of reference variant set names to variants in those sets.
+     *
+     * It starts with an unsigned 64-bit integer representing the number of elements.
+     *
+     * The following data block is filled with pairs of Indexes into the String section
+     * stored as contiguous key:value pairs.
+     */
     SdfVariantSelectionMap Read(SdfVariantSelectionMap *) {
         return ReadMap<SdfVariantSelectionMap>();
     }
+    /* usddoc layer_offset
+     * A layer offset represents a time offset and scale between layers.
+     * It is represented by two doubles.
+     *
+     * The first represents the time offset to be used , and the second the scale.
+     * Scale should always be applied before the offset.
+     *
+     * <usdbytelayout layer_offset_layout>
+     */
+    /* usdbytelayout layer_offset_layout
+     * timeOffset 8
+     * scale 8
+     */
     SdfLayerOffset Read(SdfLayerOffset *) {
         // Do not combine the following into one statement.  It must be separate
         // because the two modifications to 'src' must be correctly sequenced.
@@ -1189,6 +1244,27 @@ public:
         auto scale = Read<double>();
         return SdfLayerOffset(offset, scale);
     }
+
+    /* usddoc reference_type
+     * A reference type represents an SdfReference and all its metadata.
+     *
+     * The first field is an index into the strings section which represents the asset path for the reference.
+     * An empty string represents an internal reference.
+     *
+     * This is followed by an index into the Paths section for the path of the Prim to reference.
+     * If the PrimPath is empty, the recomendation is to use the defaultPrim, falling back on the first top level prim.
+     *
+     * Next is a layer offset value corresponding to an SdfLayerOffset represented by 16 bytes.
+     *
+     * Finally, it's followed by a data blob representing a Dictionary.
+     * <usdbytelayout reference_type_layout>
+     */
+    /* usdbytelayout reference_type_layout
+     * assetPathIndex 4
+     * primPathIndex 4
+     * layerOffset 16
+     * customData ?
+     */
     SdfReference Read(SdfReference *) {
         // Do not combine the following into one statement.  It must be separate
         // because the two modifications to 'src' must be correctly sequenced.
@@ -1199,6 +1275,24 @@ public:
         return SdfReference(std::move(assetPath), std::move(primPath),
                             std::move(layerOffset), std::move(customData));
     }
+    /* usddoc payload
+     * A payload represents a prim reference to an external layer. It is similar to a reference but allow for deferred loading.
+     *
+     * The first field is the asset layer path, represented by an index to an asset path in the Strings section.
+     * An empty string represents an internal reference.
+     *
+     * This is followed by an index into the Paths section representing the prim to use.
+     * If no prim is specified, then use the defaultPrim or fallback to the first top level prim.
+     *
+     * Finally, it is followed by 16-bytes that represent the layer offset.
+     *
+     * <usdbytelayout payload_layout>
+     */
+    /* usdbytelayout payload_layout
+     * assetPathIndex 4
+     * primPathIndex 4
+     * layerOffset 16
+     */
     SdfPayload Read(SdfPayload *) {
         // Do not combine the following into one statement.  It must be separate
         // because the two modifications to 'src' must be correctly sequenced.
@@ -1216,6 +1310,35 @@ public:
             return SdfPayload(assetPath, primPath);
         }
     }
+
+    /* usddoc listop
+     * List Operations (ListOps) are a value type representing an operation that edits a list.
+     * It can make modifications like:
+     *
+     * * Adding or removing items
+     * * Reordering Items
+     * * Replacing items
+     *
+     * <usdbytelayout listop_layout>
+     *
+     * Header
+     * ^^^^^^
+     * <usddoc listop_header>
+     *
+     * Contents
+     * ^^^^^^^^
+     * The header byte is then followed by an unsigned 64-bit integer representing
+     * the number of elements stored in the ListOp
+     *
+     * Following this is a contiguous array of uncompressed elements of the given
+     * ListOp type.
+     *
+     */
+    /* usdbytelayout listop_layout
+     * header 1
+     * size 8
+     * data ?
+     */
     template <class T>
     SdfListOp<T> Read(SdfListOp<T> *) {
         SdfListOp<T> listOp;
@@ -1232,6 +1355,18 @@ public:
         if (h.HasOrderedItems()) { listOp.SetOrderedItems(Read<vector<T>>()); }
         return listOp;
     }
+
+    /* usddoc vtvalue
+     * A Value type allows for an indirect pointer to another value somewhere
+     * else in the file.
+     *
+     * It is represented by signed 64-bit integer offset which points to a Value Representation
+     * stored at the offset from the current seek pointer in the file.
+     *
+     * It is important to guard against recursion here so that pointers don't
+     * create an infinite loop. The default behaviour is to return an empty value
+     * if a recursion is detected.
+     */
     VtValue Read(VtValue *) {
         _RecursiveReadAndPrefetch();
         auto rep = Read<ValueRep>();
@@ -1252,6 +1387,24 @@ public:
         return result;
     }
 
+    /* usddoc timesamples
+     * Timesamples store a series of time varying ValueReps
+     *
+     * It starts with a signed 64-bit integer that presents an offset from the current seek pointer in the file.
+     * This points to the location where time values are stored.
+     *
+     * At this offset you'll find a Value Representation that consists of an array of the time values.
+     *
+     * Following the original offset will be another signed 64-bit integer that represents an offset from its current seek
+     * position in the file.
+     *
+     * This offset will point to a block the values for the time samples are stored.
+     * The head of this block is an unsigned 64-bit integer representing the number of Value Representations
+     * that will be found after it.
+     *
+     * These values are index-mapped to the time samples that were read.
+     *
+     */
     TimeSamples Read(TimeSamples *) {
 
         TimeSamples ret;
@@ -1861,6 +2014,18 @@ _ReadPossiblyCompressedArray(
 
 struct _CompressedIntsReader
 {
+    /* usddoc compressed_int
+     *  Compressed integers are stored as a contiguous , homogenous array of
+     *  either 32-bit or 64-bit integers.
+     *
+     *  Once read, the array of integers can be decompressed using the LZ4 algorithm.
+     *
+     * <usdbytelayout compressed_int_layout>
+     */
+    /* usdbytelayout compressed_int_layout
+     * compressedSize 8
+     * data ?
+     */
     template <class Reader, class Int>
     void Read(Reader &reader, Int *out, size_t numInts) {
         using Compressor = typename std::conditional<
@@ -1909,6 +2074,12 @@ _ReadCompressedInts(Reader &reader, Int *out, size_t size)
     r.Read(reader, out, size);
 }
 
+/* usddoc compressed_integer_array
+ * Compressed integer arrays are stored with the element count as an unsigned 64bit integer.
+ * Data can then be read with the standard integer compression algorithm.
+ *
+ * Arrays that are 16 bytes or smaller are not compressed.
+ */
 template <class Reader, class T>
 static inline
 typename std::enable_if<
@@ -1936,6 +2107,21 @@ _ReadPossiblyCompressedArray(
     }
 }
 
+/* usddoc compressed_float_array
+ * Compressed float arrays start with an unsigned 64 bit integer to represent their element count.
+ *
+ * Arrays that are 16 bytes or smaller are not compressed.
+ *
+ * Following this, a char is used to represent the array encoding scheme:
+ *
+ * * **i** for integer compression (follow the compressed integer array logic)
+ * * **t** for lookup tables (described below)
+ *
+ * The size of the lookup table (LUT) is a 32bit unsigned integer.
+ * The LUT data is read as a contiguous array of the given type.
+ * Following that is a compressed array of integers representing the indexes that should be used
+ * to populate the output array by looking up the LUT indices in order.
+ */
 template <class Reader, class T>
 static inline
 typename std::enable_if<
@@ -2025,6 +2211,26 @@ struct CrateFile::_ArrayValueHandlerBase<
         return target;
     }
 
+    /* usddoc unpack_array_value
+     * Array values may be stored in multiple ways.
+     *
+     * If the payload of a Value Rep is 0, then the array can be assumed to be empty.
+     *
+     * Uncompressed arrays use an unsigned 64 bit integer at the head of the data to represent the number of elements.
+     * Elements are stored as a contiguous array of the singular type used.
+     *
+     * Array compression will vary based on the type of the value representation.
+     *
+     * Compressed Integer Arrays
+     * ^^^^^^^^^^^^^^^^^^^^^^^^^
+     *
+     * <usddoc compressed_integer_array>
+     *
+     * Compressed Floating Point Arrays
+     * ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     *
+     * <usddoc compressed_float_array>
+     */
     template <class Reader>
     void UnpackArray(Reader reader, ValueRep rep, VtArray<T> *out) const {
         // If payload is 0, it's an empty array.
@@ -2049,6 +2255,13 @@ struct CrateFile::_ArrayValueHandlerBase<
             this->Pack(w, v.UncheckedGet<T>());
     }
 
+    /* usddoc unpack_value
+     * If a value representation has the array bit set to False, it can be treated as a singular value.
+     * The data of non-inlined types are stored at the offset defined by the payload value.
+     *
+     * The bytes at the offset are a direct memory representation of each types' payload or are parsed
+     * based on the specifics of the types' implementation.
+     */
     template <class Reader>
     void UnpackVtValue(Reader r, ValueRep rep, VtValue *out) {
         if (rep.IsArray()) {
@@ -3235,6 +3448,16 @@ CrateFile::_ReadStructuralSections(Reader reader, int64_t fileSize)
     if (m.IsClean()) _ReadSpecs(reader);
 }
 
+/* usddoc bootstrap
+ * Every USD file starts with a Bootstrap that tells us information to parse the file.
+ *
+ * Files must start with an identifier (PXR-USDC), the version number and the offset to the Table of Contents.
+ * There is additional reserved space at the end of the bootstrap for future use.
+ *
+ * Version numbers are stored as Major , Minor and Patch followed by unused bytes.
+ *
+ * <usdbytelayout bootstrap>
+ */
 template <class ByteStream>
 /*static*/
 CrateFile::_BootStrap
@@ -3295,6 +3518,21 @@ CrateFile::_ReadTOC(Reader reader, _BootStrap const &b) const
     return reader.template Read<_TableOfContents>();
 }
 
+/* usddoc field_sets_section
+ * The FIELDSETS section stores a grouping of fields that are presented together.
+ *
+ * The section starts with an unsigned 64-bit integer representing the number of indexes.
+ *
+ * Field Sets are stored in a flat list of indexes into the FIELDS section, where
+ * groups are terminated by a default initialized FieldIndex (0).
+ *
+ * <usdbytelayout field_sets_layout>
+ *
+ */
+/* usdbytelayout field_sets_layout
+ * numFields 8
+ * compressedIndices ?
+ */
 template <class Reader>
 void
 CrateFile::_ReadFieldSets(Reader reader)
@@ -3324,6 +3562,26 @@ CrateFile::_ReadFieldSets(Reader reader)
     }
 }
 
+/* usddoc fields_section
+ * The FIELDS section stores the TfToken index and associated VtValue
+ * The indices are stored first as an LZ4 compressed set of Index values.
+ *
+ * <usdbytelayout fields_indices_layout>
+ *
+ * This is followed by an unsigned 64-bit integer representing the compressed size
+ * of the Value Representations.
+ * Following the size is the LZ4 compressed set of value representations.
+ *
+ * <usdbytelayout fields_values_layout>
+ */
+/* usdbytelayout fields_indices_layout
+ * numFields 8
+ * compressedIndices ?
+ */
+/* usdbytelayout fields_values_layout
+ * dataSize 8
+ * compressedData ?
+ */
 template <class Reader>
 void
 CrateFile::_ReadFields(Reader reader)
@@ -3360,6 +3618,27 @@ CrateFile::_ReadFields(Reader reader)
     }
 }
 
+/* usddoc specs_section
+ * The SPECS section combines the data from the previous sections
+ * and creates a resulting PrimSpec.
+ *
+ * The section starts with an unsigned 64-bit integer representing the number of specs.
+ *
+ * The section is then made up of 3 compressed integer arrays:
+ *
+ * * Path indexes consisting of Indexes into the Path section
+ * * Field Set indexes consisting of Indexes into the Field Sets section.
+ * * SpecTypes which are a series of unsigned 32-bit integers corresponding to the SpecType enum.
+ *
+ * <usdbytelayout specs_layout>
+ *
+ */
+/* usdbytelayout specs_layout
+ * numSpecs 8
+ * pathIndexes ?
+ * fieldSetIndexes ?
+ * specTypes ?
+ */
 template <class Reader>
 void
 CrateFile::_ReadSpecs(Reader reader)
@@ -3466,6 +3745,18 @@ CrateFile::_ReadSpecs(Reader reader)
 #endif // PXR_PREFER_SAFETY_OVER_SPEED
 }
 
+/* usddoc strings_section
+ * The STRINGS section is a vector of Indexes into the Tokens section.
+ *
+ * It starts with an unsigned 64-bit integer representing the number of strings.
+ * Following this is a contiguous array of index values.
+ *
+ * <usdbytelayout strings_layout>
+ */
+/* usdbytelayout strings_layout
+ * numIndices 8
+ * data ?
+ */
 template <class Reader>
 void
 CrateFile::_ReadStrings(Reader reader)
@@ -3476,6 +3767,30 @@ CrateFile::_ReadStrings(Reader reader)
         _strings = reader.template Read<decltype(_strings)>();
     }
 }
+
+/* usddoc tokens_section
+ * The TOKENS section defines all the tokens within the file in their compressed form.
+ * The section must be null terminated.
+ *
+ * It starts with an unsigned 64-bit integer representing the number of tokens.
+ * Following that are two unsigned 64-bit integers representing the uncompressed and compressed
+ * size respectively.
+ *
+ * The data section follows the compressedSize and is that many bytes long.
+ * It must be uncompressed using TfFastCompression::DecompressFromBuffer which uses
+ * an LZ4 decompressor.
+ *
+ * The uncompressed data section is a null delimited array of token strings.
+ *
+ * <usdbytelayout token_layout>
+ */
+
+/* usdbytelayout token_layout
+ * numTokens 8
+ * uncompressedSize 8
+ * compressedSize 8
+ * data ?
+ */
 
 template <class Reader>
 void
@@ -3549,6 +3864,19 @@ CrateFile::_ReadTokens(Reader reader)
     WorkSwapDestroyAsync(chars);
 }
 
+/* usddoc paths_section
+ * The PATHS section stores a list of compressed SdfPaths used in the file.
+ * To start , the section starts with an unsinged 64-bit integer for the number of total paths.
+ *
+ * See below for details on the path compression algorithm.
+ *
+ * <usdbytelayout paths_section_layout>
+ * <usddoc compressed_paths_section>
+ */
+/* usdbytelayout paths_section_layout
+ * numPaths 8
+ * compressedPaths ?
+ */
 template <class Reader>
 void
 CrateFile::_ReadPaths(Reader reader)
@@ -3630,6 +3958,36 @@ CrateFile::_ReadPathsImpl(Reader reader,
     } while (hasChild || hasSibling);
 }
 
+
+/* usddoc compressed_paths_section
+ * The compressed paths are stored as a series of indexed tokens that make up the path.
+ *
+ * To start is a 64 bit unsigned integer that represents the number of paths.
+ *
+ * Following this is a compressed integer array of Index's into the Tokens section that represent
+ * the path.
+ *
+ * Next is the Element Token Index array. It consists of a compresed integer array of signed 32-bit integers.
+ * Positive elements represent an index to which path element should be added to the parent to construct the full path.
+ * Negative elements are prim property path elements.
+ *
+ * Jumps define the hierarchy of this path. This optimizes storage for broad hierarchies over deep ones.
+ * They are stored as compressed array of signed 32-bit integers.
+ *
+ * * 0 represents only a sibling.
+ * * -1 represents only a child.
+ * * -2 represents a leaf.
+ * * Positive numbers define sibling offset relative to the current index.
+ *
+ *
+ * <usdbytelayout compressed_paths_section_layout>
+ */
+/* usdbytelayout compressed_paths_section_layout
+ * numPaths 8
+ * pathIndexes ?
+ * elementTokenIndexes ?
+ * jumps ?
+ */
 template <class Reader>
 void
 CrateFile::_ReadCompressedPaths(Reader reader,
@@ -3688,6 +4046,48 @@ CrateFile::_ReadCompressedPaths(Reader reader,
     dispatcher.Wait();
 }
 
+/* usddoc build_compressed_paths
+ * Once you've read the paths section, you should 3 arrays that will let you build the paths:
+ *
+ * * Path Indexes
+ * * Element Token Indexes
+ * * Jumps
+ *
+ * To build the `path array` we need to recurse over the data. Start with the current index (X) being 1,
+ * to represent the first iteration. This will reflect the implicit root ("/") of the layer.
+ *
+ * Once you have this element, add it to the path array at the index you find in the Path Index array at X.
+ * Use this path as your parent path for future iterations.
+ *
+ * Now check the Jumps array at Index N to see if the path has siblings or children.
+ *
+ * * It has children if the value is either greater than 0 or -1
+ * * It has siblings if the value is greater or equal to 0
+ *
+ * If it has siblings, you get the sibling index (S) by taking N and adding the value in the jumps array at X, then adding 1.
+ * Use the current element as the parent path and run this iteration again with the sibling index as X, and whatever
+ * parent path you've built thus far.
+ *
+ * Building siblings is designed to be a parallelizable algorithm.
+ *
+ * Once siblings are evaluated, or if the element had a child, you should then reset the
+ * parent path to whatever is stored in your Path array at the index from the Path Indexes array at X.
+ *
+ * Repeat the process with an incrementing index (X++) as long as Jumps shows the element has children or siblings to
+ * process.
+ *
+ * For any iterations (X), where a parent path has been calculated by a previous iteration (X-1),
+ * the new path is defined by looking up the Element Token Index array at X to get the element token index (E).
+ *
+ * If the value of E is less than 0, it is a prim property path, otherwise it is another prim path.
+ *
+ * Use the abs(value) of this index E to look up the token in your Tokens section at that index.
+ * Append this token to the parent path as either an element or a property to get your new path.
+ *
+ * As before with the root iteration, add this to your Paths array at the index derived from
+ * looking up the Path Indexes array at your current iteration value (X).
+ *
+ */
 void
 CrateFile::_BuildDecompressedPathsImpl(
     vector<uint32_t> const &pathIndexes,
@@ -3716,7 +4116,7 @@ CrateFile::_BuildDecompressedPathsImpl(
 
         // If we have either a child or a sibling but not both, then just
         // continue to the neighbor.  If we have both then spawn a task for the
-        // sibling and do the child ourself.  We think that our path trees tend
+        // sibling and do the child ourselves.  We think that our path trees tend
         // to be broader more often than deep.
 
         hasChild = (jumps[thisIndex] > 0) || (jumps[thisIndex] == -1);

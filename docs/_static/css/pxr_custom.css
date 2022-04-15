@@ -1,3 +1,69 @@
+:root {
+    --dotted-border-color: lightsteelblue;
+    --san-serif: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Lato", "proxima-nova", "Helvetica Neue", Arial, "Segoe UI", Roboto, Helvetica, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    --san-serif2: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Roboto Slab", "ff-tisa-web-pro", "Georgia", Arial, "Segoe UI", Roboto, Helvetica, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    --serif: ui-serif, -apple-system-ui-serif, 'Georgia', serif;
+    --monospace: ui-monospace, -apple-system-ui-serif, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", Courier, 'Andale Mono', 'Ubuntu Mono', monospace;
+}
+
+body, .rst-content {
+    font-family: var(--san-serif);
+}
+
+.rst-content .toctree-wrapper>p.caption, h1, h2, h3, h4, h5, h6, legend {
+    font-family: var(--serif);
+}
+
+h4 {
+    font-weight: 600;
+}
+
+
+.byte-table {
+    background:
+        /* TODO: Find a better way to set the table splitters...in the meantime these are hardcoded values */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 5.75% / 1px 100% no-repeat,   /* Left of 0x0 */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 11.72% / 1px 100% no-repeat,  /* Left of 0x1 */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 17.6% / 1px 100% no-repeat,   /* Left of 0x2 */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 23.46% / 1px 100% no-repeat,  /* Left of 0x3 */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 29.4% / 1px 100% no-repeat,  /* Left of 0x4 */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 35.3% / 1px 100% no-repeat,  /* Left of 0x5 */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 41.2% / 1px 100% no-repeat, /* Left of 0x6 */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 47.2% / 1px 100% no-repeat,  /* Left of 0x7 */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 53% / 1px 100% no-repeat, /* Left of 0x8 */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 58.8% / 1px 100% no-repeat,  /* Left of 0x9 */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 64.75% / 1px 100% no-repeat,  /* Left of 0xA */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 70.6% / 1px 100% no-repeat,  /* Left of 0xB */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 76.5% / 1px 100% no-repeat,  /* Left of 0xC */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 82.5% / 1px 100% no-repeat,  /* Left of 0xD */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 88.25% / 1px 100% no-repeat,  /* Left of 0xE */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 94.3% / 1px 100% no-repeat,  /* Left of 0xF */
+            repeating-linear-gradient(to bottom, transparent 0 1px, var(--dotted-border-color) 1px 2px) 100% / 1px 100% no-repeat;  /* End  */
+    border-collapse: collapse;
+    max-width: 1200px;
+    min-width: 650px;
+    padding: 0;
+    margin-bottom: 2rem;
+    table-layout: fixed;
+    width: 100%;
+}
+
+
+.byte-table th {
+    font-size: 0.75rem;
+    color: #888;
+}
+
+.byte-table th,
+.byte-table td {
+    background: transparent;
+    padding: 4px 8px;
+}
+.byte-table td {
+    border: solid 1px grey;
+    text-align: center;
+}
+
 .bolditalic {
   font-weight: bold;
   font-style: italic;
@@ -18,8 +84,8 @@
   text-decoration: underline;
 }
 
-.mono {
-  font-family: monospace
+.mono, .rst-content .linenodiv pre, .rst-content div[class^=highlight] pre, .rst-content pre.literal-block {
+  font-family: var(--monospace)
 }
 
 .underline {
@@ -49,7 +115,7 @@ img.usd-logo-image {
 }
 
 .usd-title-image-outer {
-    --title-image-width: calc
+    --title-image-width: calc;
     position: relative;
     float: left;
 }
@@ -65,7 +131,7 @@ img.usd-logo-image {
     left: 0;
     bottom: 0;
     width: 100%;
-    font-family: Roboto Slab,ff-tisa-web-pro,Georgia,Arial,sans-serif;
+    font-family: var(--san-serif);
     font-weight: 700;
     font-size: 3vw;
 }
@@ -118,7 +184,7 @@ div.usd-tutorial-admonition > p {
 }
 
 .version_warning {
-  padding: .5em; 
+  padding: .5em;
   text-align: center;
   background-color: #FFBABA;
   color: #6A0E0E;
