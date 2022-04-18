@@ -33,6 +33,7 @@ pxr_library(hdSt
         garch
         glf
         hd
+        hdsi
         hgiGL
         hgiInterop
         sdr
