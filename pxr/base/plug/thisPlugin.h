@@ -30,13 +30,21 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Returns a plugin registered with the name of the current library (uses the
-/// define for MFB_PACKAGE_NAME). Note that plugin registration occurs as a
+/// The name of the current library registered with the plugin system. This
+/// may be used to lookup the current library in the plugin registry.
+/// This uses the value of the MFB_PACKAGE_NAME macro defined at compile-time
+/// unless overridden.
+#ifndef PLUG_THIS_PLUGIN_NAME
+#define PLUG_THIS_PLUGIN_NAME MFB_PACKAGE_NAME
+#endif
+
+/// Returns a plugin registered with the name of the current library (as
+/// defined by PLUG_THIS_PLUGIN_NAME). Note that plugin registration occurs as a
 /// side effect of using this macro, at the point in time the code at the
 /// macro site is invoked.
 #define PLUG_THIS_PLUGIN \
     PlugRegistry::GetInstance().GetPluginWithName(\
-        TF_PP_STRINGIZE(MFB_PACKAGE_NAME))
+        TF_PP_STRINGIZE(PLUG_THIS_PLUGIN_NAME))
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
