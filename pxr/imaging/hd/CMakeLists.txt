@@ -35,6 +35,7 @@ pxr_library(hd
         bufferSpec
         camera
         cameraSchema
+        capsuleSchema
         categoriesSchema
         changeTracker
         command

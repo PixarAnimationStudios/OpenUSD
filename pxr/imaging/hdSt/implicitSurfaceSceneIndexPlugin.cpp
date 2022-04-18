@@ -23,6 +23,7 @@
 
 #include "pxr/imaging/hdSt/implicitSurfaceSceneIndexPlugin.h"
 
+#include "pxr/imaging/hd/capsuleSchema.h"
 #include "pxr/imaging/hd/coneSchema.h"
 #include "pxr/imaging/hd/cubeSchema.h"
 #include "pxr/imaging/hd/cylinderSchema.h"
@@ -958,6 +959,295 @@ _ComputePrimDataSource(const HdContainerDataSourceHandle &primDataSource)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+// Capsule
+
+namespace _CapsuleToMesh
+{
+
+// slices are segments around the mesh
+static constexpr int _capsuleSlices = 10;
+
+// stacks are segments along the spine axis
+static constexpr int _capsuleStacks = 1;
+
+// capsules have additional stacks along the spine for each capping hemisphere
+static constexpr int _capsuleCapStacks = 4;
+
+HdContainerDataSourceHandle
+_ComputeMeshDataSource()
+{
+    const int numCounts =
+        _capsuleSlices * (_capsuleStacks + 2 * _capsuleCapStacks);
+    const int numIndices =
+        4 * _capsuleSlices * _capsuleStacks             // cylinder quads
+        + 4 * 2 * _capsuleSlices * (_capsuleCapStacks-1)  // hemisphere quads
+        + 3 * 2 * _capsuleSlices;                         // end cap tris
+    
+    VtIntArray numVerts(numCounts);
+    VtIntArray verts(numIndices);
+
+    // populate face counts and face indices
+    int face = 0, index = 0, p = 0;
+
+    // base hemisphere end cap triangles
+    int base = p++;
+    for (int i=0; i<_capsuleSlices; ++i) {
+        numVerts[face++] = 3;
+        verts[index++] = p + (i+1)%_capsuleSlices;
+        verts[index++] = p + i;
+        verts[index++] = base;
+    }
+
+    // middle and hemisphere quads
+    for (int i=0; i<_capsuleStacks+2*(_capsuleCapStacks-1); ++i) {
+        for (int j=0; j<_capsuleSlices; ++j) {
+            float x0 = 0;
+            float x1 = x0 + _capsuleSlices;
+            float y0 = j;
+            float y1 = (j + 1) % _capsuleSlices;
+            numVerts[face++] = 4;
+            verts[index++] = p + x0 + y0;
+            verts[index++] = p + x0 + y1;
+            verts[index++] = p + x1 + y1;
+            verts[index++] = p + x1 + y0;
+        }
+        p += _capsuleSlices;
+    }
+    
+    // top hemisphere end cap triangles
+    int top = p + _capsuleSlices;
+    for (int i=0; i<_capsuleSlices; ++i) {
+        numVerts[face++] = 3;
+        verts[index++] = p + i;
+        verts[index++] = p + (i+1)%_capsuleSlices;
+        verts[index++] = top;
+    }
+    
+    TF_VERIFY(face == numCounts && index == numIndices);
+
+    return
+        HdMeshSchema::Builder()
+            .SetTopology(
+                HdMeshTopologySchema::Builder()
+                    .SetFaceVertexCounts(
+                        HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                            numVerts))
+                    .SetFaceVertexIndices(
+                        HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                            verts))
+                    .SetOrientation(
+                        HdRetainedTypedSampledDataSource<TfToken>::New(
+                            HdMeshTopologySchemaTokens->rightHanded))
+                    .Build())
+            .SetSubdivisionScheme(
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    PxOsdOpenSubdivTokens->catmullClark))
+            .SetDoubleSided(
+                HdRetainedTypedSampledDataSource<bool>::New(false))
+            .Build();
+}
+
+class _PointsDataSource : public HdVec3fArrayDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_PointsDataSource);
+
+    _PointsDataSource(const HdContainerDataSourceHandle &primDataSource)
+      : _primDataSource(primDataSource)
+    {
+    }
+
+    VtValue GetValue(const Time shutterOffset) override {
+        return VtValue(GetTypedValue(shutterOffset));
+    }
+
+    VtVec3fArray GetTypedValue(const Time shutterOffset) override {
+
+        const float heightf = _GetHeight(shutterOffset);
+        const float radiusf = _GetRadius(shutterOffset);
+        const TfToken &axis = _GetAxis(shutterOffset);
+
+            // choose basis vectors aligned with the spine axis
+        GfVec3f u, v, spine;
+        if (axis == HdCapsuleSchemaTokens->X) {
+            u = GfVec3f::YAxis();
+            v = GfVec3f::ZAxis();
+            spine = GfVec3f::XAxis();
+        } else if (axis == HdCapsuleSchemaTokens->Y) {
+            u = GfVec3f::ZAxis();
+            v = GfVec3f::XAxis();
+            spine = GfVec3f::YAxis();
+        } else { // (axis == HdCapsuleSchemaTokens->Z)
+            u = GfVec3f::XAxis();
+            v = GfVec3f::YAxis();
+            spine = GfVec3f::ZAxis();
+        }
+        
+        // compute a ring of points with unit radius in the uv plane
+        std::vector<GfVec3f> ring(_capsuleSlices);
+        for (int i=0; i<_capsuleSlices; ++i) {
+            float a = float(2 * M_PI * i) / _capsuleSlices;
+            ring[i] = u * cosf(a) + v * sinf(a);
+        }
+        
+        const int numPoints =
+            _capsuleSlices * (_capsuleStacks + 1)       // cylinder
+            + 2 * _capsuleSlices * (_capsuleCapStacks-1)  // hemispheres
+            + 2;                                          // end points
+        
+        // populate points
+        VtVec3fArray pointsArray(numPoints);
+        GfVec3f * p = pointsArray.data();
+        
+        // base hemisphere
+        *p++ = spine * (-heightf/2-radiusf);
+        for (int i=0; i<_capsuleCapStacks-1; ++i) {
+            float a = float(M_PI / 2) * (1.0f - float(i+1) / _capsuleCapStacks);
+            float r = radiusf * cosf(a);
+            float w = radiusf * sinf(a);
+            
+            for (int j=0; j<_capsuleSlices; ++j) {
+                *p++ = r * ring[j] + spine * (-heightf/2-w);
+            }
+        }
+        
+        // middle
+        for (int i=0; i<=_capsuleStacks; ++i) {
+            float t = float(i) / _capsuleStacks;
+            float w = heightf * (t - 0.5f);
+            
+            for (int j=0; j<_capsuleSlices; ++j) {
+                *p++ = radiusf * ring[j] + spine * w;
+            }
+        }
+        
+        // top hemisphere
+        for (int i=0; i<_capsuleCapStacks-1; ++i) {
+            float a = float(M_PI / 2) * (float(i+1) / _capsuleCapStacks);
+            float r = radiusf * cosf(a);
+            float w = radiusf * sinf(a);
+            
+            for (int j=0; j<_capsuleSlices; ++j) {
+                *p++ = r *  ring[j] + spine * (heightf/2+w);
+            }
+        }
+        *p++ = spine * (heightf/2.0f+radiusf);
+        
+        TF_VERIFY(p - pointsArray.data() == numPoints);
+        
+        return pointsArray;
+    }
+
+    bool GetContributingSampleTimesForInterval(
+                            const Time startTime,
+                            const Time endTime,
+                            std::vector<Time> * const outSampleTimes) override {
+        return _GetContributingSampleTimesForInterval<3>(
+            { _GetHeightSource(), _GetRadiusSource(), _GetAxisSource() },
+            startTime,
+            endTime,
+            outSampleTimes);
+    }
+
+private:
+    HdDoubleDataSourceHandle _GetHeightSource() const {
+        static const HdDataSourceLocator sizeLocator(
+            HdCapsuleSchemaTokens->capsule, HdCapsuleSchemaTokens->height);
+        return HdDoubleDataSource::Cast(
+            HdContainerDataSource::Get(_primDataSource, sizeLocator));
+    }
+
+    double _GetHeight(const Time shutterOffset) const {
+        if (HdDoubleDataSourceHandle const s = _GetHeightSource()) {
+            return s->GetTypedValue(shutterOffset);
+        }
+        return 1.0;
+    }
+
+    HdDoubleDataSourceHandle _GetRadiusSource() const {
+        static const HdDataSourceLocator sizeLocator(
+            HdCapsuleSchemaTokens->capsule, HdCapsuleSchemaTokens->radius);
+        return HdDoubleDataSource::Cast(
+            HdContainerDataSource::Get(_primDataSource, sizeLocator));
+    }
+
+    double _GetRadius(const Time shutterOffset) const {
+        if (HdDoubleDataSourceHandle const s = _GetRadiusSource()) {
+            return s->GetTypedValue(shutterOffset);
+        }
+        return 1.0;
+    }
+
+    HdTokenDataSourceHandle _GetAxisSource() const {
+        static const HdDataSourceLocator sizeLocator(
+            HdCapsuleSchemaTokens->capsule, HdCapsuleSchemaTokens->axis);
+        return HdTokenDataSource::Cast(
+            HdContainerDataSource::Get(_primDataSource, sizeLocator));
+    }
+
+    TfToken _GetAxis(const Time shutterOffset) const {
+        if (HdTokenDataSourceHandle const s = _GetAxisSource()) {
+            return s->GetTypedValue(shutterOffset);
+        }
+        return HdCapsuleSchemaTokens->X;
+    }
+
+    HdContainerDataSourceHandle _primDataSource;
+};
+
+HdContainerDataSourceHandle
+_ComputePointsPrimvarDataSource(const HdContainerDataSourceHandle &primDataSource)
+{
+    static HdTokenDataSourceHandle const roleDataSource =
+        HdPrimvarSchema::BuildRoleDataSource(
+            HdPrimvarSchemaTokens->Point);
+    static HdTokenDataSourceHandle const interpolationDataSource =
+        HdPrimvarSchema::BuildInterpolationDataSource(
+            HdPrimvarSchemaTokens->vertex);
+
+    return
+        HdPrimvarSchema::Builder()
+            .SetRole(roleDataSource)
+            .SetInterpolation(interpolationDataSource)
+            .SetPrimvarValue(_PointsDataSource::New(primDataSource))
+            .Build();
+}
+
+HdContainerDataSourceHandle
+_ComputePrimvarsDataSource(const HdContainerDataSourceHandle &primDataSource)
+{
+    return
+        HdRetainedContainerDataSource::New(
+            HdPrimvarsSchemaTokens->points,
+                    _ComputePointsPrimvarDataSource(primDataSource));
+}
+
+HdContainerDataSourceHandle
+_ComputePrimDataSource(const HdContainerDataSourceHandle &primDataSource)
+{
+    static HdDataSourceBaseHandle const capsuleDataSource =
+        HdBlockDataSource::New();
+    static HdDataSourceBaseHandle const meshDataSource =
+        _ComputeMeshDataSource();
+    HdDataSourceBaseHandle const primvarsDataSource =
+        _ComputePrimvarsDataSource(primDataSource);
+
+    HdContainerDataSourceHandle sources[] = {
+        HdRetainedContainerDataSource::New(
+            HdCapsuleSchemaTokens->capsule, capsuleDataSource,
+            HdMeshSchemaTokens->mesh, meshDataSource,
+            HdPrimvarsSchemaTokens->primvars, primvarsDataSource),
+        primDataSource
+    };
+
+    return HdOverlayContainerDataSource::New(TfArraySize(sources), sources);
+}
+
+} // namespace _CapsuleToMesh
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 // Implementation of the scene index
 
 TF_DECLARE_REF_PTRS(_SceneIndex);
@@ -994,6 +1284,11 @@ public:
                 HdPrimTypeTokens->mesh,
                 _SphereToMesh::_ComputePrimDataSource(prim.dataSource) };
         }
+        if (prim.primType == HdPrimTypeTokens->capsule) {
+            return {
+                HdPrimTypeTokens->mesh,
+                _CapsuleToMesh::_ComputePrimDataSource(prim.dataSource) };
+        }
         return prim;
     }
 
@@ -1022,7 +1317,8 @@ protected:
             if (entries[i].primType == HdPrimTypeTokens->cube ||
                 entries[i].primType == HdPrimTypeTokens->cone ||
                 entries[i].primType == HdPrimTypeTokens->cylinder ||
-                entries[i].primType == HdPrimTypeTokens->sphere) {
+                entries[i].primType == HdPrimTypeTokens->sphere ||
+                entries[i].primType == HdPrimTypeTokens->capsule) {
                 indices.push_back(i);
             }
         }
@@ -1067,7 +1363,8 @@ protected:
                 { HdCubeSchema::GetDefaultLocator(),
                   HdConeSchema::GetDefaultLocator(),
                   HdCylinderSchema::GetDefaultLocator(),
-                  HdSphereSchema::GetDefaultLocator()};
+                  HdSphereSchema::GetDefaultLocator(),
+                  HdCapsuleSchema::GetDefaultLocator() };
 
             if (locators.Intersects(implicitsLocators)) {
                 indices.push_back(i);
