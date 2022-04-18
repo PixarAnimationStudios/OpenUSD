@@ -1165,11 +1165,9 @@ pxr_register_test(testUsdImagingGLVaryingTopology
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLVaryingTopology
-    ENV
-        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
 )
 
-pxr_register_test(testUsdImagingGLVaryingSharedMeshTopologyImmediate
+pxr_register_test(testUsdImagingGLVaryingSharedMeshTopology
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -frameAll -offscreen -camlight -times 1 2 3 1 2 3 -stage meshVaryingTopologyWithSharing.usda -camera /MainCamera -write testUsdImagingGLVaryingSharedMeshTopology.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLVaryingSharedMeshTopology_001.png
@@ -1180,23 +1178,6 @@ pxr_register_test(testUsdImagingGLVaryingSharedMeshTopologyImmediate
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLVaryingSharedMeshTopology
-    ENV
-        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
-)
-
-pxr_register_test(testUsdImagingGLVaryingSharedMeshTopologyMDI
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -frameAll -offscreen -camlight -times 1 2 3 1 2 3 -stage meshVaryingTopologyWithSharing.usda -camera /MainCamera -write testUsdImagingGLVaryingSharedMeshTopology.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLVaryingSharedMeshTopology_001.png
-        testUsdImagingGLVaryingSharedMeshTopology_002.png
-        testUsdImagingGLVaryingSharedMeshTopology_003.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLVaryingSharedMeshTopology
-    ENV
-        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=1
 )
 
 pxr_register_test(testUsdImagingGLEmptyMesh
