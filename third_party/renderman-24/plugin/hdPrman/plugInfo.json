@@ -26,6 +26,12 @@
                         "loadWithRenderer": "Prman",
                         "priority": 0,
                         "displayName": "Prman Vstruct Resolving Scene Index"
+                    },
+                    "HdPrman_ImplicitSurfaceSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman Implicit Surfaces"
                     }
                 }
             },

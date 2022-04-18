@@ -45,6 +45,7 @@ pxr_plugin(${PXR_PACKAGE}
         vt
         gf
         hd
+        hdsi
         hio
         usdRi
         usdVol
@@ -58,6 +59,8 @@ pxr_plugin(${PXR_PACKAGE}
     PUBLIC_CLASSES
         basisCurves
         camera
+        cone
+        cylinder
         coordSys
         debugCodes
         gprim
@@ -86,6 +89,7 @@ pxr_plugin(${PXR_PACKAGE}
         cameraContext
         renderPass
         framebuffer
+        implicitSurfaceSceneIndexPlugin
         matfiltSceneIndexPlugins
         renderBuffer
         renderParam
