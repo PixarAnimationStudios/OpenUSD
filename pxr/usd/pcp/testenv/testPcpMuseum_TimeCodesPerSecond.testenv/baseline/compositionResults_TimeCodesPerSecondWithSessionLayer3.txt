@@ -59,46 +59,6 @@ Prim Stack:
     ref_s_48tcps.sdf     /Ref
     ref_s_24tcps_12fps.sdf /Ref
     ref_s_12fps.sdf      /Ref
-    ref.sdf              /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_48tcps.sdf       /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_24tcps_12fps.sdf /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_12fps.sdf        /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref.sdf              /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_48tcps.sdf       /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_24tcps_12fps.sdf /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_12fps.sdf        /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
 
 Time Offsets:
     session_24fps.sdf    /SS4            root       (offset=0.00, scale=1.00)
@@ -141,34 +101,6 @@ Time Offsets:
         ref_s.sdf                        sublayer   (offset=0.00, scale=0.50)
         ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.25)
         ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=0.50)
-    ref.sdf              /Ref            reference  (offset=110.00, scale=8.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_48tcps.sdf       /Ref            reference  (offset=110.00, scale=4.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=2.00)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=2.00)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=4.00)
-    ref_24tcps_12fps.sdf /Ref            reference  (offset=110.00, scale=8.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_12fps.sdf        /Ref            reference  (offset=110.00, scale=16.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=0.50)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.25)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=0.50)
-    ref.sdf              /Ref            reference  (offset=140.00, scale=8.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_48tcps.sdf       /Ref            reference  (offset=140.00, scale=4.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=2.00)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=2.00)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=4.00)
-    ref_24tcps_12fps.sdf /Ref            reference  (offset=140.00, scale=8.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_12fps.sdf        /Ref            reference  (offset=140.00, scale=16.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=0.50)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.25)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=0.50)
 
 ------------------------------------------------------------------------
 Results for composing </SS3>
@@ -178,46 +110,6 @@ Prim Stack:
     ss_24tcps_12fps.sdf  /SS3
     ss_24tcps_12fps.sdf  /SS3
     ss_24tcps_12fps.sdf  /SS3
-    ref.sdf              /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_48tcps.sdf       /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_24tcps_12fps.sdf /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_12fps.sdf        /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref.sdf              /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_48tcps.sdf       /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_24tcps_12fps.sdf /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_12fps.sdf        /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
     ref.sdf              /Ref
     ref_s.sdf            /Ref
     ref_s_48tcps.sdf     /Ref
@@ -280,34 +172,6 @@ Time Offsets:
         ref_s.sdf                        sublayer   (offset=0.00, scale=0.50)
         ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.25)
         ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=0.50)
-    ref.sdf              /Ref            reference  (offset=70.00, scale=8.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_48tcps.sdf       /Ref            reference  (offset=70.00, scale=4.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=2.00)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=2.00)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=4.00)
-    ref_24tcps_12fps.sdf /Ref            reference  (offset=70.00, scale=8.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_12fps.sdf        /Ref            reference  (offset=70.00, scale=16.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=0.50)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.25)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=0.50)
-    ref.sdf              /Ref            reference  (offset=100.00, scale=8.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_48tcps.sdf       /Ref            reference  (offset=100.00, scale=4.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=2.00)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=2.00)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=4.00)
-    ref_24tcps_12fps.sdf /Ref            reference  (offset=100.00, scale=8.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_12fps.sdf        /Ref            reference  (offset=100.00, scale=16.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=0.50)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.25)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=0.50)
 
 ------------------------------------------------------------------------
 Results for composing </SS2>
@@ -317,46 +181,6 @@ Prim Stack:
     ss_48tcps.sdf        /SS2
     ss_48tcps.sdf        /SS2
     ss_48tcps.sdf        /SS2
-    ref.sdf              /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_48tcps.sdf       /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_24tcps_12fps.sdf /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_12fps.sdf        /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref.sdf              /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_48tcps.sdf       /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_24tcps_12fps.sdf /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_12fps.sdf        /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
     ref.sdf              /Ref
     ref_s.sdf            /Ref
     ref_s_48tcps.sdf     /Ref
@@ -419,34 +243,6 @@ Time Offsets:
         ref_s.sdf                        sublayer   (offset=0.00, scale=0.50)
         ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.25)
         ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=0.50)
-    ref.sdf              /Ref            reference  (offset=50.00, scale=8.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_48tcps.sdf       /Ref            reference  (offset=50.00, scale=4.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=2.00)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=2.00)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=4.00)
-    ref_24tcps_12fps.sdf /Ref            reference  (offset=50.00, scale=8.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_12fps.sdf        /Ref            reference  (offset=50.00, scale=16.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=0.50)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.25)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=0.50)
-    ref.sdf              /Ref            reference  (offset=80.00, scale=8.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_48tcps.sdf       /Ref            reference  (offset=80.00, scale=4.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=2.00)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=2.00)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=4.00)
-    ref_24tcps_12fps.sdf /Ref            reference  (offset=80.00, scale=8.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_12fps.sdf        /Ref            reference  (offset=80.00, scale=16.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=0.50)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.25)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=0.50)
 
 ------------------------------------------------------------------------
 Results for composing </SS1>
@@ -456,46 +252,6 @@ Prim Stack:
     ss.sdf               /SS1
     ss.sdf               /SS1
     ss.sdf               /SS1
-    ref.sdf              /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_48tcps.sdf       /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_24tcps_12fps.sdf /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_12fps.sdf        /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref.sdf              /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_48tcps.sdf       /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_24tcps_12fps.sdf /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_12fps.sdf        /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
     ref.sdf              /Ref
     ref_s.sdf            /Ref
     ref_s_48tcps.sdf     /Ref
@@ -555,34 +311,6 @@ Time Offsets:
         ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
         ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
     ref_12fps.sdf        /Ref            reference  (offset=80.00, scale=16.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=0.50)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.25)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=0.50)
-    ref.sdf              /Ref            reference  (offset=70.00, scale=8.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_48tcps.sdf       /Ref            reference  (offset=70.00, scale=4.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=2.00)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=2.00)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=4.00)
-    ref_24tcps_12fps.sdf /Ref            reference  (offset=70.00, scale=8.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_12fps.sdf        /Ref            reference  (offset=70.00, scale=16.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=0.50)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.25)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=0.50)
-    ref.sdf              /Ref            reference  (offset=100.00, scale=8.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_48tcps.sdf       /Ref            reference  (offset=100.00, scale=4.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=2.00)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=2.00)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=4.00)
-    ref_24tcps_12fps.sdf /Ref            reference  (offset=100.00, scale=8.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_12fps.sdf        /Ref            reference  (offset=100.00, scale=16.00)
         ref_s.sdf                        sublayer   (offset=0.00, scale=0.50)
         ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.25)
         ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=0.50)

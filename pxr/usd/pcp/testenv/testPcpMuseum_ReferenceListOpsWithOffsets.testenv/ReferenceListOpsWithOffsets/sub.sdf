@@ -1,0 +1,47 @@
+#sdf 1.4.32
+(
+)
+
+over "AddRefs1" 
+(
+    prepend references = [
+        # This reference will resolve to the same layer offset during
+        # composition as @./ref.sdf@</Ref> (offset = 100.0) in the base.sdf
+        # layer, but its identity is different so it still gets added to this
+        # prim's prim index as a new reference.
+        @./ref.sdf@</Ref> (offset = 45.0; scale = 0.5),
+
+        # This matches the same reference in base.sdf, so this will move that
+        # reference in the list op during composition. However, this will also
+        # resolve to a different layer offset because of the layer offset on
+        # this sublayer in root.sdf.
+        @./ref.sdf@</Ref> (offset = 10.0; scale = 2.0)
+    ]
+    append references = [
+        # This matches the same reference in base.sdf, so this will move that
+        # reference in the list op during composition. However, this will also
+        # resolve to a different layer offset because of the layer offset on
+        # this sublayer in root.sdf.
+        @./ref.sdf@</Ref>
+    ]
+)
+{
+}
+
+over "DeleteRefs1" 
+(
+    delete references = [
+        # This reference will resolve to the same layer offset during
+        # composition as @./ref.sdf@</Ref> (offset = 100.0) in the base.sdf
+        # layer, but its identity is different so it will not remove that 
+        # reference during composition.
+        @./ref.sdf@</Ref> (offset = 45.0; scale = 0.5),
+        
+        # These match the same references in base.sdf, so they will be removed
+        # from list op during composition..
+        @./ref.sdf@</Ref> (offset = 10.0; scale = 2.0),
+        @./ref.sdf@</Ref>
+    ]
+)
+{
+}

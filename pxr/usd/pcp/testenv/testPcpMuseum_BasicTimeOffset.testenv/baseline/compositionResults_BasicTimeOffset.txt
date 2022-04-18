@@ -13,6 +13,7 @@ Prim Stack:
     B.sdf                /Model
 
 Time Offsets:
+    root.sdf             /Root           root       (offset=0.00, scale=1.00)
     A.sdf                /Model          reference  (offset=10.00, scale=1.00)
         B.sdf                            sublayer   (offset=20.00, scale=1.00)
 
@@ -26,6 +27,7 @@ Prim Stack:
     B.sdf                /Model/Anim
 
 Time Offsets:
+    root.sdf             /Root/Anim      root       (offset=0.00, scale=1.00)
     A.sdf                /Model/Anim     reference  (offset=10.00, scale=1.00)
         B.sdf                            sublayer   (offset=20.00, scale=1.00)
 
@@ -36,6 +38,7 @@ Prim Stack:
     B.sdf                /Model/Frame
 
 Time Offsets:
+    root.sdf             /Root/Frame     root       (offset=0.00, scale=1.00)
     A.sdf                /Model/Frame    reference  (offset=10.00, scale=1.00)
         B.sdf                            sublayer   (offset=20.00, scale=1.00)
 
@@ -48,6 +51,7 @@ Prim Stack:
     B.sdf                /Model
 
 Time Offsets:
+    root.sdf             /RefPayload     root       (offset=0.00, scale=1.00)
     ref.sdf              /Ref            reference  (offset=10.00, scale=1.00)
         ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
     B.sdf                /Model          payload    (offset=30.00, scale=1.00)
@@ -62,6 +66,7 @@ Prim Stack:
     B.sdf                /Model/Anim
 
 Time Offsets:
+    root.sdf             /RefPayload/Anim root       (offset=0.00, scale=1.00)
     ref.sdf              /Ref/Anim       reference  (offset=10.00, scale=1.00)
         ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
     B.sdf                /Model/Anim     payload    (offset=30.00, scale=1.00)
@@ -73,6 +78,7 @@ Prim Stack:
     B.sdf                /Model/Frame
 
 Time Offsets:
+    root.sdf             /RefPayload/Frame root       (offset=0.00, scale=1.00)
     ref.sdf              /Ref/Frame      reference  (offset=10.00, scale=1.00)
         ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
     B.sdf                /Model/Frame    payload    (offset=30.00, scale=1.00)
@@ -86,6 +92,7 @@ Prim Stack:
     B.sdf                /Model
 
 Time Offsets:
+    root.sdf             /MultiRef       root       (offset=0.00, scale=1.00)
     ref.sdf              /Ref2           reference  (offset=10.00, scale=1.00)
         ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
     B.sdf                /Model          reference  (offset=30.00, scale=1.00)
@@ -100,6 +107,7 @@ Prim Stack:
     B.sdf                /Model/Anim
 
 Time Offsets:
+    root.sdf             /MultiRef/Anim  root       (offset=0.00, scale=1.00)
     ref.sdf              /Ref2/Anim      reference  (offset=10.00, scale=1.00)
         ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
     B.sdf                /Model/Anim     reference  (offset=30.00, scale=1.00)
@@ -111,6 +119,7 @@ Prim Stack:
     B.sdf                /Model/Frame
 
 Time Offsets:
+    root.sdf             /MultiRef/Frame root       (offset=0.00, scale=1.00)
     ref.sdf              /Ref2/Frame     reference  (offset=10.00, scale=1.00)
         ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
     B.sdf                /Model/Frame    reference  (offset=30.00, scale=1.00)
@@ -124,6 +133,7 @@ Prim Stack:
     B.sdf                /Model
 
 Time Offsets:
+    root.sdf             /PayloadRoot    root       (offset=0.00, scale=1.00)
     A.sdf                /Model          payload    (offset=10.00, scale=2.00)
         B.sdf                            sublayer   (offset=20.00, scale=1.00)
 
@@ -137,6 +147,7 @@ Prim Stack:
     B.sdf                /Model/Anim
 
 Time Offsets:
+    root.sdf             /PayloadRoot/Anim root       (offset=0.00, scale=1.00)
     A.sdf                /Model/Anim     payload    (offset=10.00, scale=2.00)
         B.sdf                            sublayer   (offset=20.00, scale=1.00)
 
@@ -147,6 +158,7 @@ Prim Stack:
     B.sdf                /Model/Frame
 
 Time Offsets:
+    root.sdf             /PayloadRoot/Frame root       (offset=0.00, scale=1.00)
     A.sdf                /Model/Frame    payload    (offset=10.00, scale=2.00)
         B.sdf                            sublayer   (offset=20.00, scale=1.00)
 
@@ -159,6 +171,7 @@ Prim Stack:
     B.sdf                /Model
 
 Time Offsets:
+    root.sdf             /PayloadRefPayload root       (offset=0.00, scale=1.00)
     ref.sdf              /Ref            payload    (offset=10.00, scale=2.00)
         ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
     B.sdf                /Model          payload    (offset=50.00, scale=2.00)
@@ -173,6 +186,7 @@ Prim Stack:
     B.sdf                /Model/Anim
 
 Time Offsets:
+    root.sdf             /PayloadRefPayload/Anim root       (offset=0.00, scale=1.00)
     ref.sdf              /Ref/Anim       payload    (offset=10.00, scale=2.00)
         ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
     B.sdf                /Model/Anim     payload    (offset=50.00, scale=2.00)
@@ -184,6 +198,7 @@ Prim Stack:
     B.sdf                /Model/Frame
 
 Time Offsets:
+    root.sdf             /PayloadRefPayload/Frame root       (offset=0.00, scale=1.00)
     ref.sdf              /Ref/Frame      payload    (offset=10.00, scale=2.00)
         ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
     B.sdf                /Model/Frame    payload    (offset=50.00, scale=2.00)
@@ -197,6 +212,7 @@ Prim Stack:
     B.sdf                /Model
 
 Time Offsets:
+    root.sdf             /PayloadMultiRef root       (offset=0.00, scale=1.00)
     ref.sdf              /Ref2           payload    (offset=10.00, scale=2.00)
         ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
     B.sdf                /Model          reference  (offset=50.00, scale=2.00)
@@ -211,6 +227,7 @@ Prim Stack:
     B.sdf                /Model/Anim
 
 Time Offsets:
+    root.sdf             /PayloadMultiRef/Anim root       (offset=0.00, scale=1.00)
     ref.sdf              /Ref2/Anim      payload    (offset=10.00, scale=2.00)
         ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
     B.sdf                /Model/Anim     reference  (offset=50.00, scale=2.00)
@@ -222,6 +239,7 @@ Prim Stack:
     B.sdf                /Model/Frame
 
 Time Offsets:
+    root.sdf             /PayloadMultiRef/Frame root       (offset=0.00, scale=1.00)
     ref.sdf              /Ref2/Frame     payload    (offset=10.00, scale=2.00)
         ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
     B.sdf                /Model/Frame    reference  (offset=50.00, scale=2.00)

@@ -451,6 +451,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ReferenceListOpsWithOffsets.testenv
+    DEST testPcpMuseum_ReferenceListOpsWithOffsets
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_RelativePathPayloads.testenv
     DEST testPcpMuseum_RelativePathPayloads
 )
@@ -1088,6 +1093,13 @@ pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --payloads ^(?!/Root/UnloadedInheritedPayload) PayloadsAndAncestralArcs/root.sdf" 
     STDOUT_REDIRECT compositionResults_PayloadsAndAncestralArcs.txt
     DIFF_COMPARE compositionResults_PayloadsAndAncestralArcs.txt 
+)
+
+pxr_register_test(testPcpMuseum_ReferenceListOpsWithOffsets
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults ReferenceListOpsWithOffsets/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ReferenceListOpsWithOffsets.txt
+    DIFF_COMPARE compositionResults_ReferenceListOpsWithOffsets.txt 
 )
 
 pxr_register_test(testPcpMuseum_RelativePathPayloads
