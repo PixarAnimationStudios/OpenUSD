@@ -163,11 +163,22 @@ static void
 _DumpShaderSource(HgiShaderFunctionDesc const &desc)
 {
     const char *shaderType = _GetShaderType(desc.shaderStage);
-    std::cout << "--------- " << shaderType << " ----------\n"
-              << desc.shaderCodeDeclarations
-              << desc.shaderCode
-              << "---------------------------\n"
-              << std::flush;
+
+    std::cout << "--------- " << shaderType << " ----------\n";
+
+    if (desc.shaderCodeDeclarations) {
+        std::cout << desc.shaderCodeDeclarations;
+    } else {
+        std::cout << "(shaderCodeDeclarations empty)\n"; 
+    }
+
+    if (TF_VERIFY(desc.shaderCode)) {
+        std::cout << desc.shaderCode;
+    } else {
+        std::cout << "(shaderCode empty)\n"; 
+    }
+
+    std::cout << "---------------------------\n" << std::flush;
 }
 
 static bool
@@ -369,7 +380,11 @@ _DebugLinkSource(HgiShaderProgramHandle const& program)
         result.append("--------");
         result.append(_GetShaderType(desc.shaderStage));
         result.append("--------\n");
-        result.append(desc.shaderCode);
+        if (TF_VERIFY(desc.shaderCode)) {
+            result.append(desc.shaderCode);
+        } else {
+            result.append("(shaderCode empty)\n");
+        }
     }
 
     result += "END DUMP\n";
