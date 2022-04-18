@@ -24,6 +24,7 @@
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/basisCurves.h"
 #include "hdPrman/camera.h"
+#include "hdPrman/sphere.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/renderBuffer.h"
 #include "hdPrman/renderSettings.h"
@@ -75,6 +76,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanIntegratorTokens,
 
 const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
+    HdPrimTypeTokens->sphere,
     HdPrimTypeTokens->mesh,
     HdPrimTypeTokens->basisCurves,
     HdPrimTypeTokens->points,
@@ -301,6 +303,8 @@ HdPrmanRenderDelegate::CreateRprim(TfToken const& typeId,
         return new HdPrman_Mesh(rprimId);
     } else if (typeId == HdPrimTypeTokens->basisCurves) {
         return new HdPrman_BasisCurves(rprimId);
+    } if (typeId == HdPrimTypeTokens->sphere) {
+        return new HdPrman_Sphere(rprimId);
     } else if (typeId == HdPrimTypeTokens->points) {
         return new HdPrman_Points(rprimId);
     } else if (typeId == HdPrimTypeTokens->volume) {

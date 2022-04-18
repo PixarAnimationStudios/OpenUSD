@@ -77,6 +77,7 @@ pxr_plugin(${PXR_PACKAGE}
         renderSettings
         rixStrings
         sampleFilter
+        sphere
         volume
         xcpt
         ${optionalPublicClasses}
