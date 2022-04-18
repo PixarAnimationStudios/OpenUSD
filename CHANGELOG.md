@@ -1,6 +1,6 @@
 # Change Log
 
-## [22.05] - 2021-04-20
+## [22.05] - 2022-04-20
 
 This release enables Storm for macOS using Metal. Refer to notes under Storm for
 details. Many thanks to our collaborators at Apple for all of their work to make
