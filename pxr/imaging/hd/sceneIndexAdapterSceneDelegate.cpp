@@ -44,8 +44,12 @@
 #include "pxr/imaging/hd/basisCurvesSchema.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
 #include "pxr/imaging/hd/cameraSchema.h"
+#include "pxr/imaging/hd/capsuleSchema.h"
 #include "pxr/imaging/hd/categoriesSchema.h"
+#include "pxr/imaging/hd/coneSchema.h"
 #include "pxr/imaging/hd/coordSysBindingSchema.h"
+#include "pxr/imaging/hd/cubeSchema.h"
+#include "pxr/imaging/hd/cylinderSchema.h"
 #include "pxr/imaging/hd/dependenciesSchema.h"
 #include "pxr/imaging/hd/dependencySchema.h"
 #include "pxr/imaging/hd/extComputationInputComputationSchema.h"
@@ -73,6 +77,7 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/renderBufferSchema.h"
+#include "pxr/imaging/hd/sphereSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
@@ -1404,6 +1409,71 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         }
 
         return VtValue();
+    }
+
+    if (prim.primType == HdPrimTypeTokens->cube) {
+        if (HdContainerDataSourceHandle cubeSrc =
+                HdContainerDataSource::Cast(
+                    prim.dataSource->Get(HdCubeSchemaTokens->cube))) {
+            if (cubeSrc->Has(key)) {
+                if (HdSampledDataSourceHandle valueSrc =
+                        HdSampledDataSource::Cast(cubeSrc->Get(key))) {
+                    return valueSrc->GetValue(0);
+                }
+            }
+        }
+    }
+
+    if (prim.primType == HdPrimTypeTokens->sphere) {
+        if (HdContainerDataSourceHandle sphereSrc =
+                HdContainerDataSource::Cast(
+                    prim.dataSource->Get(HdSphereSchemaTokens->sphere))) {
+            if (sphereSrc->Has(key)) {
+                if (HdSampledDataSourceHandle valueSrc =
+                        HdSampledDataSource::Cast(sphereSrc->Get(key))) {
+                    return valueSrc->GetValue(0);
+                }
+            }
+        }
+    }
+
+    if (prim.primType == HdPrimTypeTokens->cylinder) {
+        if (HdContainerDataSourceHandle cylinderSrc =
+                HdContainerDataSource::Cast(
+                    prim.dataSource->Get(HdCylinderSchemaTokens->cylinder))) {
+            if (cylinderSrc->Has(key)) {
+                if (HdSampledDataSourceHandle valueSrc =
+                        HdSampledDataSource::Cast(cylinderSrc->Get(key))) {
+                    return valueSrc->GetValue(0);
+                }
+            }
+        }
+    }
+
+    if (prim.primType == HdPrimTypeTokens->cone) {
+        if (HdContainerDataSourceHandle coneSrc =
+                HdContainerDataSource::Cast(
+                    prim.dataSource->Get(HdConeSchemaTokens->cone))) {
+            if (coneSrc->Has(key)) {
+                if (HdSampledDataSourceHandle valueSrc =
+                        HdSampledDataSource::Cast(coneSrc->Get(key))) {
+                    return valueSrc->GetValue(0);
+                }
+            }
+        }
+    }
+
+    if (prim.primType == HdPrimTypeTokens->capsule) {
+        if (HdContainerDataSourceHandle capsuleSrc =
+                HdContainerDataSource::Cast(
+                    prim.dataSource->Get(HdCapsuleSchemaTokens->capsule))) {
+            if (capsuleSrc->Has(key)) {
+                if (HdSampledDataSourceHandle valueSrc =
+                        HdSampledDataSource::Cast(capsuleSrc->Get(key))) {
+                    return valueSrc->GetValue(0);
+                }
+            }
+        }
     }
 
     // "primvars" use of Get()
