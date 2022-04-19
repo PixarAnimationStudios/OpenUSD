@@ -273,7 +273,8 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     mx::ShaderStage& mxStage) const
 {
     // Add global constants and type definitions
-    emitInclude("stdlib/" + mx::GlslShaderGenerator::TARGET
+    // Starting from MaterialX 1.38.4 at PR 877, we must add the "libraries" part:
+    emitInclude("libraries/stdlib/" + mx::GlslShaderGenerator::TARGET
                 + "/lib/mx_math.glsl", mxContext, mxStage);
     emitLine("#if NUM_LIGHTS > 0", mxStage, false);
     emitLine("#define MAX_LIGHT_SOURCES NUM_LIGHTS", mxStage, false);
@@ -391,7 +392,8 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
         emitSpecularEnvironment(mxContext, mxStage);
     }
     if (shadowing) {
-        emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
+        // Starting from MaterialX 1.38.4 at PR 877, we must add the "libraries" part:
+        emitInclude("libraries/pbrlib/" + mx::GlslShaderGenerator::TARGET
                     + "/lib/mx_shadow.glsl", mxContext, mxStage);
     }
 
@@ -399,7 +401,8 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     if (mxContext.getOptions().hwDirectionalAlbedoMethod == 
             mx::HwDirectionalAlbedoMethod::DIRECTIONAL_ALBEDO_TABLE ||
         mxContext.getOptions().hwWriteAlbedoTable) {
-        emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
+        // Starting from MaterialX 1.38.4 at PR 877, we must add the "libraries" part:
+        emitInclude("libraries/pbrlib/" + mx::GlslShaderGenerator::TARGET
                     + "/lib/mx_table.glsl", mxContext, mxStage);
         emitLineBreak(mxStage);
     }
@@ -464,8 +467,25 @@ HdStMaterialXShaderGen::_EmitMxSurfaceShader(
                 mxStage);
     }
     else {
-        // Add all function calls
-        emitFunctionCalls(mxGraph, mxContext, mxStage);
+        // Surface shaders need special handling.
+        if (mxGraph.hasClassification(mx::ShaderNode::Classification::SHADER | 
+                                      mx::ShaderNode::Classification::SURFACE))
+        {
+            // Emit all texturing nodes. These are inputs to any
+            // closure/shader nodes and need to be emitted first.
+            emitFunctionCalls(mxGraph, mxContext, mxStage, mx::ShaderNode::Classification::TEXTURE);
+
+            // Emit function calls for all surface shader nodes.
+            // These will internally emit their closure function calls.
+            emitFunctionCalls(mxGraph, mxContext, mxStage, mx::ShaderNode::Classification::SHADER | 
+                                                           mx::ShaderNode::Classification::SURFACE);
+        }
+        else
+        {
+            // No surface shader graph so just generate all
+            // function calls in order.
+            emitFunctionCalls(mxGraph, mxContext, mxStage);
+        }
 
         // Emit final output
         std::string finalOutputReturn = "vec4 mxOut = " ;

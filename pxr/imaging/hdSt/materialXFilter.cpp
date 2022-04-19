@@ -103,8 +103,19 @@ HdSt_GenMaterialXShader(
 {
     // Initialize the Context for shaderGen. 
     mx::GenContext mxContext = HdStMaterialXShaderGen::create(mxHdInfo);
-    mxContext.registerSourceCodeSearchPath(searchPath);
-    
+
+    // Starting from MaterialX 1.38.4 at PR 877, we must remove the "libraries" part:
+    mx::FileSearchPath libSearchPaths;
+    for (const mx::FilePath &path : searchPath) {
+        if (path.getBaseName() == "libraries") {
+            libSearchPaths.append(path.getParentPath());
+        }
+        else {
+            libSearchPaths.append(path);
+        }
+    }
+    mxContext.registerSourceCodeSearchPath(libSearchPaths);
+
     // Add the Direct Light mtlx file to the mxDoc 
     mx::DocumentPtr lightDoc = mx::createDocument();
     mx::readFromXmlString(lightDoc, mxDirectLightString);
