@@ -103,6 +103,9 @@ _GenMaterialXShaderCode(
 {
     // Initialize the Context for shaderGen
     mx::GenContext mxContext = mx::OslShaderGenerator::create();
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && MATERIALX_BUILD_VERSION == 3
+    mxContext.registerSourceCodeSearchPath(searchPath);
+#else
     // Starting from MaterialX 1.38.4 at PR 877, we must remove the "libraries" part:
     mx::FileSearchPath libSearchPaths;
     for (const mx::FilePath &path : searchPath) {
@@ -114,6 +117,7 @@ _GenMaterialXShaderCode(
         }
     }
     mxContext.registerSourceCodeSearchPath(libSearchPaths);
+#endif
     mxContext.getOptions().fileTextureVerticalFlip = false;
 
     // Get the Node from the Nodegraph/mxDoc 
