@@ -35,7 +35,7 @@
 
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hgi/hgi.h"
-
+#include "pxr/imaging/hgi/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -157,17 +157,8 @@ HdxSkydomeTask::Execute(HdTaskContext* ctx)
     _compositor->BindTextures( {_tokens->skydomeTexture}, {_skydomeTexture} );
 
     // Get the viewport size
-    GfVec4i viewport;
-    const CameraUtilFraming &framing = renderPassState->GetFraming();
-    
-    if (framing.IsValid()) {
-        GfVec2i size = framing.dataWindow.GetSize();
-        viewport = GfVec4i(0, 0, size[0], size[1]);
-    } else {
-        GfVec4f rect = renderPassState->GetViewport();
-        viewport =
-            GfVec4i(int(rect[0]), int(rect[1]), int(rect[2]), int(rect[3]));
-    }
+    GfVec4i viewport = hdStRenderPassState->ComputeViewport(
+        gfxCmdsDesc, /* flip = */ _GetHgi()->GetAPIName() == HgiTokens->OpenGL);
 
     // Get the Color/Depth and Color/Depth Resolve Textures from the gfxCmdsDesc
     // so that the fullscreenShader can use them to create the appropriate
