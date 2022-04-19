@@ -86,7 +86,7 @@ public:
         _usdAttrQuery.GetTimeSamplesInInterval(interval, &timeSamples);
 
         // Add boundary timesamples, if necessary.
-        if (timeSamples[0] > interval.GetMin()) {
+        if (timeSamples.empty() || timeSamples[0] > interval.GetMin()) {
             timeSamples.insert(timeSamples.begin(), interval.GetMin());
         }
         if (timeSamples.back() < interval.GetMax()) {
@@ -97,7 +97,7 @@ public:
         // hydra (and prman) use float :/.
         outSampleTimes->resize(timeSamples.size());
         for (size_t i = 0; i < timeSamples.size(); ++i) {
-            (*outSampleTimes)[i] = timeSamples[i];
+            (*outSampleTimes)[i] = timeSamples[i] - time.GetValue();
         }
 
         return true;
