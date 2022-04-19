@@ -187,12 +187,7 @@ template<typename SceneDelegate>
 void
 HdSt_TestDriverBase<SceneDelegate>::_Init()
 {
-    if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
-        TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "GPU") {
-        _Init(HdReprSelector(HdReprTokens->smoothHull));
-    } else {
-        _Init(HdReprSelector(HdReprTokens->hull));
-    }
+    _Init(HdReprSelector(HdReprTokens->smoothHull));
 }
 
 template<typename SceneDelegate>
