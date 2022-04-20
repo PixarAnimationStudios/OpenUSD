@@ -57,8 +57,6 @@ HdNoticeBatchingSceneIndex::_PrimsAdded(
             if (_PrimsAddedBatchEntry *batchEntry =
                     dynamic_cast<_PrimsAddedBatchEntry*>(
                         _batches.back().get())) {
-                batchEntry->entries.reserve(
-                    batchEntry->entries.size() + entries.size());
                 batchEntry->entries.insert(
                     batchEntry->entries.end(), entries.begin(), entries.end());
                 return;
