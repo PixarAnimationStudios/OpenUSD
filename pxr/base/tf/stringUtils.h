@@ -343,7 +343,7 @@ std::string TfGetPathName(const std::string& fileName);
 
 /// Replaces all occurrences of string \p from with \p to in \p source
 ///
-/// Returns a new string which is created by copying \p string and replacing
+/// Returns a new string which is created by copying \p source and replacing
 /// every occurrence of \p from with \p to. Correctly handles the case in which
 /// \p to contains \p from.
 TF_API
