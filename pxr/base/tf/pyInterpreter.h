@@ -49,6 +49,10 @@ extern void TfPyInitialize();
 ///
 /// Starts the interpreter if necessary. Deals with necessary thread state
 /// setup.
+///
+/// Callers are not required to hold the GIL, though of course they may.
+///
+/// Returns zero on success, nonzero on failure.
 TF_API
 extern int TfPyRunSimpleString(const std::string & cmd);
 
@@ -61,6 +65,11 @@ extern int TfPyRunSimpleString(const std::string & cmd);
 ///
 /// Starts the interpreter if necessary. Deals with necessary thread state
 /// setup.
+///
+/// Callers must hold the GIL before calling; see TfPyLock.  This is true for
+/// any boost::python call, including constructing and destroying the default
+/// values of \p globals and \p locals.  Holding the GIL will also make it safe
+/// to inspect the returned boost::python::handle.
 TF_API
 extern boost::python::handle<>
 TfPyRunString(const std::string & cmd, int start,
@@ -77,6 +86,11 @@ TfPyRunString(const std::string & cmd, int start,
 ///
 /// Starts the interpreter if necessary. Deals with necessary thread state
 /// setup.
+///
+/// Callers must hold the GIL before calling; see TfPyLock.  This is true for
+/// any boost::python call, including constructing and destroying the default
+/// values of \p globals and \p locals.  Holding the GIL will also make it safe
+/// to inspect the returned boost::python::handle.
 TF_API
 extern boost::python::handle<>
 TfPyRunFile(const std::string &filename, int start,
