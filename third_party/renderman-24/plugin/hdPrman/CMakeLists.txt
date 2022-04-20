@@ -63,6 +63,7 @@ pxr_plugin(${PXR_PACKAGE}
         cylinder
         coordSys
         debugCodes
+        dependencyForwardingSceneIndexPlugin
         gprim
         gprimbase
         instancer
