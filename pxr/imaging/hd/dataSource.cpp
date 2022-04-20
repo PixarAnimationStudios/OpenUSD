@@ -67,6 +67,55 @@ HdContainerDataSource::Get(
 
 // ----------------------------------------------------------------------------
 
+// Wrapper around std::set_union to compute the set-wise union of two
+// sorted vectors of sample times.
+static std::vector<HdSampledDataSource::Time>
+_Union(const std::vector<HdSampledDataSource::Time> &a,
+       const std::vector<HdSampledDataSource::Time> &b)
+{
+    std::vector<HdSampledDataSource::Time> result;
+    std::set_union(a.begin(), a.end(),
+                   b.begin(), b.end(),
+                   std::back_inserter(result));
+    return result;
+}
+
+// Computes union of contributing sample times from several data sources.
+bool
+HdGetMergedContributingSampleTimesForInterval(
+    const size_t count,
+    const HdSampledDataSourceHandle * const inputDataSources,
+    const HdSampledDataSource::Time startTime,
+    const HdSampledDataSource::Time endTime,
+    std::vector<HdSampledDataSource::Time> * const outSampleTimes)
+{
+    bool result = false;
+    for (size_t i = 0; i < count; i++) {
+        if (!inputDataSources[i]) {
+            continue;
+        }
+        std::vector<HdSampledDataSource::Time> times;
+        if (!inputDataSources[i]->GetContributingSampleTimesForInterval(
+                startTime, endTime, &times)) {
+            continue;
+        }
+        if (times.empty()) {
+            continue;
+        }
+        result = true;
+        if (!outSampleTimes) {
+            continue;
+        }
+        if (outSampleTimes->empty()) {
+            *outSampleTimes = std::move(times);
+        } else {
+            *outSampleTimes = _Union(*outSampleTimes, times);
+        }
+    }
+
+    return result;
+}
+
 void
 HdDebugPrintDataSource(
     std::ostream &s,

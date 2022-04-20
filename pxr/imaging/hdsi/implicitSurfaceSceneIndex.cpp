@@ -77,52 +77,6 @@ _ConeAndCylinderTransform(const double height,
 
 using Time = HdSampledDataSource::Time;
 
-// Wrapper around std::set_union to compute the set-wise union of two
-// sorted vectors of sample times.
-std::vector<Time> _Union(const std::vector<Time> &a, const std::vector<Time> &b)
-{
-    std::vector<Time> result;
-    std::set_union(a.begin(), a.end(),
-                   b.begin(), b.end(),
-                   std::back_inserter(result));
-    return result;
-}
-
-// Computes union of contributing sample times from several data sources.
-template<size_t N>
-bool _GetContributingSampleTimesForInterval(
-    const std::array<HdSampledDataSourceHandle, N> &srcs,
-    const Time startTime,
-    const Time endTime,
-    std::vector<Time> * const outSampleTimes)
-{
-    bool result = false;
-    for (size_t i = 0; i < N; i++) {
-        if (!srcs[i]) {
-            continue;
-        }
-        std::vector<Time> times;
-        if (!srcs[i]->GetContributingSampleTimesForInterval(
-                startTime, endTime, &times)) {
-            continue;
-        }
-        if (times.empty()) {
-            continue;
-        }
-        result = true;
-        if (!outSampleTimes) {
-            continue;
-        }
-        if (outSampleTimes->empty()) {
-            *outSampleTimes = std::move(times);
-        } else {
-            *outSampleTimes = _Union(*outSampleTimes, times);
-        }
-    }
-
-    return result;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -383,11 +337,10 @@ public:
                             const Time startTime,
                             const Time endTime,
                             std::vector<Time> * const outSampleTimes) override {
-        return _GetContributingSampleTimesForInterval<3>(
-            { _GetHeightSource(), _GetRadiusSource(), _GetAxisSource() },
-            startTime,
-            endTime,
-            outSampleTimes);
+        HdSampledDataSourceHandle sources[] = {
+            _GetHeightSource(), _GetRadiusSource(), _GetAxisSource() };
+        return HdGetMergedContributingSampleTimesForInterval(
+            TfArraySize(sources), sources, startTime, endTime, outSampleTimes);
     }
 
 private:
@@ -612,11 +565,10 @@ public:
                             const Time startTime,
                             const Time endTime,
                             std::vector<Time> * const outSampleTimes) override {
-        return _GetContributingSampleTimesForInterval<3>(
-            { _GetHeightSource(), _GetRadiusSource(), _GetAxisSource() },
-            startTime,
-            endTime,
-            outSampleTimes);
+        HdSampledDataSourceHandle sources[] = {
+            _GetHeightSource(), _GetRadiusSource(), _GetAxisSource() };
+        return HdGetMergedContributingSampleTimesForInterval(
+            TfArraySize(sources), sources, startTime, endTime, outSampleTimes);
     }
 
 private:
@@ -1123,11 +1075,10 @@ public:
                             const Time startTime,
                             const Time endTime,
                             std::vector<Time> * const outSampleTimes) override {
-        return _GetContributingSampleTimesForInterval<3>(
-            { _GetHeightSource(), _GetRadiusSource(), _GetAxisSource() },
-            startTime,
-            endTime,
-            outSampleTimes);
+        HdSampledDataSourceHandle sources[] = {
+            _GetHeightSource(), _GetRadiusSource(), _GetAxisSource() };
+        return HdGetMergedContributingSampleTimesForInterval(
+            TfArraySize(sources), sources, startTime, endTime, outSampleTimes);
     }
 
 private:
@@ -1252,11 +1203,10 @@ public:
                             const Time startTime,
                             const Time endTime,
                             std::vector<Time> * const outSampleTimes) override {
-        return _GetContributingSampleTimesForInterval<2>(
-            { _GetMatrixSource(), _GetAxisSource() },
-            startTime,
-            endTime,
-            outSampleTimes);
+        HdSampledDataSourceHandle sources[] = {
+            _GetMatrixSource(), _GetAxisSource() };
+        return HdGetMergedContributingSampleTimesForInterval(
+            TfArraySize(sources), sources, startTime, endTime, outSampleTimes);
     }
     
 private:
@@ -1358,11 +1308,10 @@ public:
                             const Time endTime,
                             std::vector<Time> * const outSampleTimes) override {
 
-        return _GetContributingSampleTimesForInterval<3>(
-            { _GetMatrixSource(), _GetAxisSource(), _GetHeightSource() },
-            startTime,
-            endTime,
-            outSampleTimes);
+        HdSampledDataSourceHandle sources[] = {
+            _GetMatrixSource(), _GetAxisSource(), _GetHeightSource() };
+        return HdGetMergedContributingSampleTimesForInterval(
+            TfArraySize(sources), sources, startTime, endTime, outSampleTimes);
     }
 
 private:
