@@ -84,13 +84,6 @@ TfPyRunFile(const std::string &filename, int start,
             boost::python::object const &locals = boost::python::object()
             );
 
-/// Returns the disk path to the given module as an NSString.
-///
-/// Starts the interpreter if necessary. Deals with necessary thread state
-/// setup.
-TF_API
-extern std::string TfPyGetModulePath(const std::string & moduleName);
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_BASE_TF_PY_INTERPRETER_H

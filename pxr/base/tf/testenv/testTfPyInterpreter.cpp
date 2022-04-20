@@ -67,22 +67,6 @@ testInterpreter(bool verbose)
         printf("TfPyRunString, seems good.\n");
     }
     
-    std::string modPath = TfPyGetModulePath("os");
-    if (modPath.empty()) {
-        printf("ERROR: TfPyGetModulePath, no path returned.\n");
-        numErrors++;
-    } else if (verbose) {
-        printf("TfPyGetModulePath, module at path '%s', good.\n", modPath.c_str());
-    }
-
-    modPath = TfPyGetModulePath("badmodule");
-    if (!modPath.empty()) {
-        printf("ERROR: TfPyGetModulePath, bad module name returned result '%s'.\n", modPath.c_str());
-        numErrors++;
-    } else if (verbose) {
-        printf("TfPyGetModulePath, bad module name returned nil, good\n");
-    }
-    
     /*
     [[NSFileManager defaultManager] removeFileAtPath:@"/tmp/testTfPyInterpreter_Startup.py" handler:nil];
     */

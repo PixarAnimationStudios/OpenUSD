@@ -223,35 +223,4 @@ TfPyRunFile(const std::string &filename, int start,
     return handle<>();
 }
 
-std::string
-TfPyGetModulePath(const std::string & moduleName)
-{
-    TfPyInitialize();
-
-    // Make sure imp is imported.
-    static std::once_flag once;
-    std::call_once(once, [](){
-        TfPyRunSimpleString("import imp\n");
-    });
-    
-    // XXX
-    // If the module name is hierarchical (e.g. Animal.Primate.Chimp), then
-    // we have to walk the hierarchy and import all of the containing modules
-    // down the module we want to find.
-    // vector< string > pkgHierarchy = TfStringTokenize(moduleName, ".");
-
-    // Do the find_module.
-    std::string cmd =
-        TfStringPrintf("imp.find_module('%s')[1]\n", moduleName.c_str());
-    handle<> result = TfPyRunString(cmd, Py_eval_input);
-    if (!result)
-        return std::string();
-
-    // XXX close file
-
-    // Extract result string
-    extract<string> getString(result.get());
-    return getString.check() ? getString() : string();
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
