@@ -115,6 +115,11 @@ UsdImagingMeshAdapter::Populate(UsdPrim const& prim,
                 index->GetMaterialAdapter(materialPrim);
             if (materialAdapter) {
                 materialAdapter->Populate(materialPrim, index, nullptr);
+                // We need to register a dependency on the material prim so
+                // that geometry is updated when the material is
+                // (specifically, DirtyMaterialId).
+                // XXX: Eventually, it would be great to push this into hydra.
+                index->AddDependency(cachePath, materialPrim);
             }
         }
     }
