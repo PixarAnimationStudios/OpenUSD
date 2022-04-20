@@ -5,6 +5,7 @@
 ### Build
 
 ### USD
+- Removed support for Ar 1.0, which was deprecated in v21.11.
 
 ### Imaging
 

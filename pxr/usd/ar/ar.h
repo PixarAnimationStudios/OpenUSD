@@ -24,6 +24,6 @@
 #ifndef PXR_USD_AR_AR_H
 #define PXR_USD_AR_AR_H
 
-#define AR_VERSION @AR_VERSION@
+#define AR_VERSION 2
 
 #endif
