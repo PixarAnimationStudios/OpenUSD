@@ -24,7 +24,8 @@
 #include "pxr/imaging/hdSt/dependencySceneIndexPlugin.h"
 
 #include "pxr/imaging/hd/dependenciesSchema.h"
-#include "pxr/imaging/hd/dependencyForwardingSceneIndex.h"
+#include "pxr/imaging/hd/filteringSceneIndex.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
@@ -139,16 +140,18 @@ public:
             return nullptr;
         }
 
-        if (name == HdDependenciesSchemaTokens->__dependencies) {
-            // Note that this clobbers any __dependencies coming from the
-            // input scene index. If this turned out to be a problem,
-            // we can use an HdOverlayContainerDataSource created from the
-            // result of _primSource->Get(name) and
-            // _ComputeVolumeFieldBindingDependencies instead.
-            return _ComputeVolumeFieldBindingDependencies(_primSource);
-        }
+        HdDataSourceBaseHandle src = _primSource->Get(name);
 
-        return _primSource->Get(name);
+        if (name == HdDependenciesSchemaTokens->__dependencies) {
+            HdContainerDataSourceHandle sources[] = {
+                _ComputeVolumeFieldBindingDependencies(_primSource),
+                HdContainerDataSource::Cast(src) };
+
+            return HdOverlayContainerDataSource::New(
+                TfArraySize(sources),
+                sources);
+        }
+        return std::move(src);
     }
 
 private:
@@ -271,16 +274,7 @@ HdSt_DependencySceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {
-    // Chain the dependency forwarding scene index with the above scene
-    // index adding __dependencies. The __dependencies are consumed by
-    // the forwarding scene index and instruct the scene index to dirty
-    // the volumeFieldBinding locator of a volume prim if any of the
-    // fields targeted by the volume prim are dirtied.
-
-    return
-        HdDependencyForwardingSceneIndex::New(
-            _SceneIndex::New(
-                inputScene));
+    return _SceneIndex::New(inputScene);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

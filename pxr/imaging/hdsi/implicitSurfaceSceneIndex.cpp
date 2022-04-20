@@ -27,6 +27,8 @@
 #include "pxr/imaging/hd/coneSchema.h"
 #include "pxr/imaging/hd/cubeSchema.h"
 #include "pxr/imaging/hd/cylinderSchema.h"
+#include "pxr/imaging/hd/dependenciesSchema.h"
+#include "pxr/imaging/hd/dependencySchema.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hd/meshSchema.h"
 #include "pxr/imaging/hd/meshTopologySchema.h"
@@ -45,6 +47,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdsiImplicitSurfaceSceneIndexTokens,
      HDSI_IMPLICIT_SURFACE_SCENE_INDEX_TOKENS);
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (implicitToMesh)
+    (implicitToXform)
+);
 
 namespace
 {
@@ -76,6 +85,56 @@ _ConeAndCylinderTransform(const double height,
 }
 
 using Time = HdSampledDataSource::Time;
+
+template<typename S>
+HdContainerDataSourceHandle
+_ComputePointsDependenciesDataSource(const SdfPath &primPath)
+{
+    HdPathDataSourceHandle const dependedOnPrimPathDataSource =
+        HdRetainedTypedSampledDataSource<SdfPath>::New(
+            primPath);
+    static HdLocatorDataSourceHandle const dependedOnLocatorDataSource =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            S::GetDefaultLocator());
+    static HdLocatorDataSourceHandle const affectedLocatorDataSource =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            HdPrimvarsSchema::GetPointsLocator().Append(
+                HdPrimvarSchemaTokens->primvarValue));
+
+    return
+        HdRetainedContainerDataSource::New(
+            _tokens->implicitToMesh,
+            HdDependencySchema::Builder()
+                .SetDependedOnPrimPath(dependedOnPrimPathDataSource)
+                .SetDependedOnDataSourceLocator(dependedOnLocatorDataSource)
+                .SetAffectedDataSourceLocator(affectedLocatorDataSource)
+                .Build());
+}
+
+template<typename S>
+HdContainerDataSourceHandle
+_ComputeMatrixDependenciesDataSource(const SdfPath &primPath)
+{
+    HdPathDataSourceHandle const dependedOnPrimPathDataSource =
+        HdRetainedTypedSampledDataSource<SdfPath>::New(
+            primPath);
+    static HdLocatorDataSourceHandle const dependedOnLocatorDataSource =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            S::GetDefaultLocator());
+    static HdLocatorDataSourceHandle const affectedLocatorDataSource =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            HdXformSchema::GetDefaultLocator()
+                .Append(HdXformSchemaTokens->matrix));
+
+    return
+        HdRetainedContainerDataSource::New(
+            _tokens->implicitToXform,
+            HdDependencySchema::Builder()
+                .SetDependedOnPrimPath(dependedOnPrimPathDataSource)
+                .SetDependedOnDataSourceLocator(dependedOnLocatorDataSource)
+                .SetAffectedDataSourceLocator(affectedLocatorDataSource)
+                .Build());
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -210,7 +269,9 @@ _ComputePrimvarsDataSource(const HdContainerDataSourceHandle &primDataSource)
 }
 
 HdContainerDataSourceHandle
-_ComputePrimDataSource(const HdContainerDataSourceHandle &primDataSource)
+_ComputePrimDataSource(
+    const SdfPath &primPath,
+    const HdContainerDataSourceHandle &primDataSource)
 {
     static HdDataSourceBaseHandle const cubeDataSource =
         HdBlockDataSource::New();
@@ -218,12 +279,15 @@ _ComputePrimDataSource(const HdContainerDataSourceHandle &primDataSource)
         _ComputeMeshDataSource();
     HdDataSourceBaseHandle const primvarsDataSource =
         _ComputePrimvarsDataSource(primDataSource);
+    HdDataSourceBaseHandle const dependenciesDataSource =
+        _ComputePointsDependenciesDataSource<HdCubeSchema>(primPath);
 
     HdContainerDataSourceHandle sources[] = {
         HdRetainedContainerDataSource::New(
             HdCubeSchemaTokens->cube, cubeDataSource,
             HdMeshSchemaTokens->mesh, meshDataSource,
-            HdPrimvarsSchemaTokens->primvars, primvarsDataSource),
+            HdPrimvarsSchemaTokens->primvars, primvarsDataSource,
+            HdDependenciesSchemaTokens->__dependencies, dependenciesDataSource),
         primDataSource
     };
 
@@ -423,7 +487,9 @@ _ComputePrimvarsDataSource(const HdContainerDataSourceHandle &primDataSource)
 }
 
 HdContainerDataSourceHandle
-_ComputePrimDataSource(const HdContainerDataSourceHandle &primDataSource)
+_ComputePrimDataSource(
+    const SdfPath &primPath,
+    const HdContainerDataSourceHandle &primDataSource)
 {
     static HdDataSourceBaseHandle const coneDataSource =
         HdBlockDataSource::New();
@@ -431,12 +497,15 @@ _ComputePrimDataSource(const HdContainerDataSourceHandle &primDataSource)
         _ComputeMeshDataSource();
     HdDataSourceBaseHandle const primvarsDataSource =
         _ComputePrimvarsDataSource(primDataSource);
+    HdDataSourceBaseHandle const dependenciesDataSource =
+        _ComputePointsDependenciesDataSource<HdConeSchema>(primPath);
 
     HdContainerDataSourceHandle sources[] = {
         HdRetainedContainerDataSource::New(
             HdConeSchemaTokens->cone, coneDataSource,
             HdMeshSchemaTokens->mesh, meshDataSource,
-            HdPrimvarsSchemaTokens->primvars, primvarsDataSource),
+            HdPrimvarsSchemaTokens->primvars, primvarsDataSource,
+            HdDependenciesSchemaTokens->__dependencies, dependenciesDataSource),
         primDataSource
     };
 
@@ -651,7 +720,9 @@ _ComputePrimvarsDataSource(const HdContainerDataSourceHandle &primDataSource)
 }
 
 HdContainerDataSourceHandle
-_ComputePrimDataSource(const HdContainerDataSourceHandle &primDataSource)
+_ComputePrimDataSource(
+    const SdfPath &primPath,
+    const HdContainerDataSourceHandle &primDataSource)
 {
     static HdDataSourceBaseHandle const cylinderDataSource =
         HdBlockDataSource::New();
@@ -659,12 +730,15 @@ _ComputePrimDataSource(const HdContainerDataSourceHandle &primDataSource)
         _ComputeMeshDataSource();
     HdDataSourceBaseHandle const primvarsDataSource =
         _ComputePrimvarsDataSource(primDataSource);
+    HdDataSourceBaseHandle const dependenciesDataSource =
+        _ComputePointsDependenciesDataSource<HdCylinderSchema>(primPath);
 
     HdContainerDataSourceHandle sources[] = {
         HdRetainedContainerDataSource::New(
             HdCylinderSchemaTokens->cylinder, cylinderDataSource,
             HdMeshSchemaTokens->mesh, meshDataSource,
-            HdPrimvarsSchemaTokens->primvars, primvarsDataSource),
+            HdPrimvarsSchemaTokens->primvars, primvarsDataSource,
+            HdDependenciesSchemaTokens->__dependencies, dependenciesDataSource),
         primDataSource
     };
 
@@ -872,7 +946,9 @@ _ComputePrimvarsDataSource(const HdContainerDataSourceHandle &primDataSource)
 }
 
 HdContainerDataSourceHandle
-_ComputePrimDataSource(const HdContainerDataSourceHandle &primDataSource)
+_ComputePrimDataSource(
+    const SdfPath &primPath,
+    const HdContainerDataSourceHandle &primDataSource)
 {
     static HdDataSourceBaseHandle const sphereDataSource =
         HdBlockDataSource::New();
@@ -880,12 +956,15 @@ _ComputePrimDataSource(const HdContainerDataSourceHandle &primDataSource)
         _ComputeMeshDataSource();
     HdDataSourceBaseHandle const primvarsDataSource =
         _ComputePrimvarsDataSource(primDataSource);
-    
+    HdDataSourceBaseHandle const dependenciesDataSource =
+        _ComputePointsDependenciesDataSource<HdSphereSchema>(primPath);
+
     HdContainerDataSourceHandle sources[] = {
         HdRetainedContainerDataSource::New(
             HdSphereSchemaTokens->sphere, sphereDataSource,
             HdMeshSchemaTokens->mesh, meshDataSource,
-            HdPrimvarsSchemaTokens->primvars, primvarsDataSource),
+            HdPrimvarsSchemaTokens->primvars, primvarsDataSource,
+            HdDependenciesSchemaTokens->__dependencies, dependenciesDataSource),
         primDataSource
     };
     
@@ -1161,7 +1240,9 @@ _ComputePrimvarsDataSource(const HdContainerDataSourceHandle &primDataSource)
 }
 
 HdContainerDataSourceHandle
-_ComputePrimDataSource(const HdContainerDataSourceHandle &primDataSource)
+_ComputePrimDataSource(
+    const SdfPath &primPath,
+    const HdContainerDataSourceHandle &primDataSource)
 {
     static HdDataSourceBaseHandle const capsuleDataSource =
         HdBlockDataSource::New();
@@ -1169,12 +1250,15 @@ _ComputePrimDataSource(const HdContainerDataSourceHandle &primDataSource)
         _ComputeMeshDataSource();
     HdDataSourceBaseHandle const primvarsDataSource =
         _ComputePrimvarsDataSource(primDataSource);
+    HdDataSourceBaseHandle const dependenciesDataSource =
+        _ComputePointsDependenciesDataSource<HdCapsuleSchema>(primPath);
 
     HdContainerDataSourceHandle sources[] = {
         HdRetainedContainerDataSource::New(
             HdCapsuleSchemaTokens->capsule, capsuleDataSource,
             HdMeshSchemaTokens->mesh, meshDataSource,
-            HdPrimvarsSchemaTokens->primvars, primvarsDataSource),
+            HdPrimvarsSchemaTokens->primvars, primvarsDataSource,
+            HdDependenciesSchemaTokens->__dependencies, dependenciesDataSource),
         primDataSource
     };
 
@@ -1266,16 +1350,22 @@ private:
 };
 
 HdContainerDataSourceHandle
-_ComputePrimDataSource(const HdContainerDataSourceHandle &primDataSource)
+_ComputePrimDataSource(
+    const SdfPath &primPath,
+    const HdContainerDataSourceHandle &primDataSource)
 {
     HdContainerDataSourceHandle xformSrc =
         HdXformSchema::Builder()
             .SetMatrix(_MatrixDataSource::New(primDataSource))
             .Build();
+    HdDataSourceBaseHandle const dependenciesDataSource =
+        _ComputeMatrixDependenciesDataSource<HdCylinderSchema>(primPath);
+
     
     HdContainerDataSourceHandle sources[] = {
         HdRetainedContainerDataSource::New(
-            HdXformSchemaTokens->xform, std::move(xformSrc)),
+            HdXformSchemaTokens->xform, std::move(xformSrc),
+            HdDependenciesSchemaTokens->__dependencies, dependenciesDataSource),
         primDataSource
     };
 
@@ -1390,16 +1480,21 @@ private:
 };
 
 HdContainerDataSourceHandle
-_ComputePrimDataSource(const HdContainerDataSourceHandle &primDataSource)
+_ComputePrimDataSource(
+    const SdfPath &primPath,
+    const HdContainerDataSourceHandle &primDataSource)
 {
     HdContainerDataSourceHandle xformSrc =
         HdXformSchema::Builder()
             .SetMatrix(_MatrixDataSource::New(primDataSource))
             .Build();
+    HdDataSourceBaseHandle const dependenciesDataSource =
+        _ComputeMatrixDependenciesDataSource<HdConeSchema>(primPath);
     
     HdContainerDataSourceHandle sources[] = {
         HdRetainedContainerDataSource::New(
-            HdXformSchemaTokens->xform, std::move(xformSrc)),
+            HdXformSchemaTokens->xform, std::move(xformSrc),
+            HdDependenciesSchemaTokens->__dependencies, dependenciesDataSource),
         primDataSource
     };
 
@@ -1460,49 +1555,54 @@ HdsiImplicitSurfaceSceneIndex::GetPrim(const SdfPath &primPath) const
         if (_cubeMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) {
             return {
                 HdPrimTypeTokens->mesh,
-                _CubeToMesh::_ComputePrimDataSource(prim.dataSource) };
+                _CubeToMesh::_ComputePrimDataSource(
+                    primPath, prim.dataSource) };
         }
     }
     if (prim.primType == HdPrimTypeTokens->cone) {
         if (_coneMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) {
             return {
                 HdPrimTypeTokens->mesh,
-                _ConeToMesh::_ComputePrimDataSource(prim.dataSource) };
+                _ConeToMesh::_ComputePrimDataSource(
+                    primPath, prim.dataSource) };
         }
         if (_coneMode ==
                 HdsiImplicitSurfaceSceneIndexTokens->axisToTransform) {
             return {
                 prim.primType,
                 _ConeToTransformedCone::_ComputePrimDataSource(
-                    prim.dataSource) };
+                    primPath, prim.dataSource) };
         }
     }
     if (prim.primType == HdPrimTypeTokens->cylinder) {
         if (_cylinderMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) {
             return {
                 HdPrimTypeTokens->mesh,
-                _CylinderToMesh::_ComputePrimDataSource(prim.dataSource) };
+                _CylinderToMesh::_ComputePrimDataSource(
+                    primPath, prim.dataSource) };
         }
         if (_cylinderMode == 
                 HdsiImplicitSurfaceSceneIndexTokens->axisToTransform) {
             return {
                 prim.primType,
                 _CylinderToTransformedCylinder::_ComputePrimDataSource(
-                    prim.dataSource) };
+                    primPath, prim.dataSource) };
         }
     }
     if (prim.primType == HdPrimTypeTokens->sphere) {
         if (_sphereMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) {
             return {
                 HdPrimTypeTokens->mesh,
-                _SphereToMesh::_ComputePrimDataSource(prim.dataSource) };
+                _SphereToMesh::_ComputePrimDataSource(
+                    primPath, prim.dataSource) };
         }
     }
     if (prim.primType == HdPrimTypeTokens->capsule) {
         if (_capsuleMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) {
             return {
                 HdPrimTypeTokens->mesh,
-                _CapsuleToMesh::_ComputePrimDataSource(prim.dataSource) };
+                _CapsuleToMesh::_ComputePrimDataSource(
+                    primPath, prim.dataSource) };
         }
     }
     return prim;
@@ -1572,77 +1672,8 @@ HdsiImplicitSurfaceSceneIndex::_PrimsDirtied(
     if (!_IsObserved()) {
         return;
     }
-    
-    std::vector<size_t> indices;
-    for (size_t i = 0; i < entries.size(); i++) {
-        const HdDataSourceLocatorSet &locators = entries[i].dirtyLocators;
-        
-        static const HdDataSourceLocatorSet implicitsLocators
-            { HdCubeSchema::GetDefaultLocator(),
-              HdConeSchema::GetDefaultLocator(),
-              HdCylinderSchema::GetDefaultLocator(),
-              HdSphereSchema::GetDefaultLocator(),
-              HdCapsuleSchema::GetDefaultLocator() };
 
-        if (locators.Intersects(implicitsLocators)) {
-            indices.push_back(i);
-        }
-    }
-    
-    if (indices.empty()) {
-        _SendPrimsDirtied(entries);
-        return;
-    }
-
-    static const HdDataSourceLocator pointsValueLocator;/* =
-        HdPrimvarsSchema::GetPointsLocator()
-        .Append(HdPrimvarSchemaTokens->primvarValue); */
-    static const HdDataSourceLocator matrixLocator =
-        HdXformSchema::GetDefaultLocator()
-            .Append(HdXformSchemaTokens->matrix);
-    
-    HdSceneIndexObserver::DirtiedPrimEntries newEntries(entries);
-    for (const size_t i : indices) {
-        const HdDataSourceLocatorSet &locators = entries[i].dirtyLocators;
-
-        if (locators.Intersects(HdCubeSchema::GetDefaultLocator())) {
-            if (_cubeMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) {
-                // Should we remove HdCubeSchema::GetDefaultLocator, ... from
-                // dirtyLocators?
-                newEntries[i].dirtyLocators.insert(pointsValueLocator);
-            }
-        }
-        if (locators.Intersects(HdSphereSchema::GetDefaultLocator())) {
-            if (_sphereMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) {
-                newEntries[i].dirtyLocators.insert(pointsValueLocator);
-            }
-        }
-        if (locators.Intersects(HdCapsuleSchema::GetDefaultLocator())) {
-            if (_capsuleMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) {
-                newEntries[i].dirtyLocators.insert(pointsValueLocator);
-            }
-        }
-        if (locators.Intersects(HdConeSchema::GetDefaultLocator())) {
-            if (_coneMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) {
-                newEntries[i].dirtyLocators.insert(pointsValueLocator);
-            }
-            if (_coneMode ==
-                    HdsiImplicitSurfaceSceneIndexTokens->axisToTransform) {
-                newEntries[i].dirtyLocators.insert(matrixLocator);
-            }
-        }
-        if (locators.Intersects(HdCylinderSchema::GetDefaultLocator())) {
-            if (_cylinderMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) {
-                newEntries[i].dirtyLocators.insert(pointsValueLocator);
-            }
-            if (_cylinderMode ==
-                    HdsiImplicitSurfaceSceneIndexTokens->axisToTransform) {
-                newEntries[i].dirtyLocators.insert(matrixLocator);
-            }
-        }
-    }
-    
-    _SendPrimsDirtied(newEntries);
+    _SendPrimsDirtied(entries);
 }
 
 

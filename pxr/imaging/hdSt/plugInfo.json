@@ -9,6 +9,12 @@
                         "priority": 0,
                         "displayName": "Storm Dependency Scene Index"
                     },
+                    "HdSt_DependencyForwardingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "GL",
+                        "priority": 0,
+                        "displayName": "Storm Dependency Forwarding Scene Index"
+                    },
                     "HdSt_ImplicitSurfaceSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "GL",
