@@ -5592,12 +5592,12 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
 
             // Forward declare rotation, scale, and translation
             accessors 
-                << "float HdGet_" << it->second.name << "_" 
-                << HdStTokens->rotation  << "();\n"
-                << "vec2 HdGet_" << it->second.name << "_" 
-                << HdStTokens->scale  << "();\n"
-                << "vec2 HdGet_" << it->second.name << "_" 
-                << HdStTokens->translation  << "();\n";
+                << "FORWARD_DECL(float HdGet_" << it->second.name << "_" 
+                << HdStTokens->rotation  << "());\n"
+                << "FORWARD_DECL(vec2 HdGet_" << it->second.name << "_" 
+                << HdStTokens->scale  << "());\n"
+                << "FORWARD_DECL(vec2 HdGet_" << it->second.name << "_" 
+                << HdStTokens->translation  << "());\n";
 
             // vec2 HdGet_name(int localIndex)
             accessors
