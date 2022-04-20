@@ -39,13 +39,6 @@ testInterpreter(bool verbose)
 {
     unsigned int numErrors = 0;
     
-    /*
-    putenv("PYTHONSTARTUP=/tmp/testTfPyInterpreter_Startup.py");
-    NSString *startupStr = @"import sys\n";
-    [[NSFileManager defaultManager] removeFileAtPath:@"/tmp/testTfPyInterpreter_Startup.py" handler:nil];
-    [startupStr writeToFile:@"/tmp/testTfPyInterpreter_Startup.py" atomically:YES];
-    */
-    
     TfPyInitialize();
     TfPyRunSimpleString("2+2");
     
@@ -67,10 +60,6 @@ testInterpreter(bool verbose)
         printf("TfPyRunString, seems good.\n");
     }
     
-    /*
-    [[NSFileManager defaultManager] removeFileAtPath:@"/tmp/testTfPyInterpreter_Startup.py" handler:nil];
-    */
-
     return numErrors;
 }
 
