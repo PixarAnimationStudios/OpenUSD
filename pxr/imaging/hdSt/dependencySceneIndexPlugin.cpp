@@ -66,27 +66,58 @@ namespace
 /// prim. They need to be returned when the data source locator __dependencies
 /// is querried.
 HdRetainedContainerDataSourceHandle
-_ComputeVolumeFieldBindingDependencies(HdContainerDataSourceHandle &primSource)
+_ComputeVolumeFieldBindingDependencies(
+    const SdfPath &primPath,
+    const HdContainerDataSourceHandle &primSource)
 {
     HD_TRACE_FUNCTION();
 
     HdVolumeFieldBindingSchema schema =
         HdVolumeFieldBindingSchema::GetFromParent(primSource);
 
-    const TfTokenVector names = schema.GetVolumeFieldBindingNames(); 
+    TfTokenVector names = schema.GetVolumeFieldBindingNames(); 
     std::vector<HdDataSourceBaseHandle> dependencies;
-    dependencies.reserve(names.size());
+    dependencies.reserve(names.size() + 1);
 
     for (const TfToken &name : names) {
         HdDependencySchema::Builder builder;
         builder.SetDependedOnPrimPath(
             schema.GetVolumeFieldBinding(name));
+
+        static HdLocatorDataSourceHandle dependedOnLocatorDataSource =
+            HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+                HdVolumeFieldSchema::GetDefaultLocator());
         builder.SetDependedOnDataSourceLocator(
+            dependedOnLocatorDataSource);
+
+        static HdLocatorDataSourceHandle affectedLocatorDataSource =
             HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
-                HdVolumeFieldSchema::GetDefaultLocator()));
+                HdVolumeFieldBindingSchema::GetDefaultLocator());
         builder.SetAffectedDataSourceLocator(
+            affectedLocatorDataSource);
+        dependencies.push_back(builder.Build());
+    }
+
+    {
+        names.push_back(
+            HdVolumeFieldBindingSchemaTokens->volumeFieldBinding);
+
+        HdDependencySchema::Builder builder;
+        builder.SetDependedOnPrimPath(
+            HdRetainedTypedSampledDataSource<SdfPath>::New(
+                primPath));
+        static HdLocatorDataSourceHandle dependedOnLocatorDataSource =
             HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
-                HdVolumeFieldBindingSchema::GetDefaultLocator()));
+                HdVolumeFieldBindingSchema::GetDefaultLocator());
+        builder.SetDependedOnDataSourceLocator(
+            dependedOnLocatorDataSource);
+
+        static HdLocatorDataSourceHandle affectedLocatorDataSource =
+            HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+                HdDependenciesSchema::GetDefaultLocator());
+        builder.SetAffectedDataSourceLocator(
+            affectedLocatorDataSource);
+
         dependencies.push_back(builder.Build());
     }
     
@@ -102,8 +133,10 @@ public:
     HD_DECLARE_DATASOURCE(_VolumePrimDataSource);
 
     _VolumePrimDataSource(
+        const SdfPath &primPath,
         const HdContainerDataSourceHandle &primSource)
-      : _primSource(primSource)
+      : _primPath(primPath)
+      , _primSource(primSource)
     {
     }
 
@@ -144,7 +177,7 @@ public:
 
         if (name == HdDependenciesSchemaTokens->__dependencies) {
             HdContainerDataSourceHandle sources[] = {
-                _ComputeVolumeFieldBindingDependencies(_primSource),
+                _ComputeVolumeFieldBindingDependencies(_primPath, _primSource),
                 HdContainerDataSource::Cast(src) };
 
             return HdOverlayContainerDataSource::New(
@@ -155,6 +188,7 @@ public:
     }
 
 private:
+    SdfPath _primPath;
     HdContainerDataSourceHandle _primSource;
 };
 
@@ -184,7 +218,8 @@ public:
         const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
         if (prim.primType == HdPrimTypeTokens->volume) {
             return
-                { prim.primType, _VolumePrimDataSource::New(prim.dataSource) };
+                { prim.primType,
+                  _VolumePrimDataSource::New(primPath, prim.dataSource) };
         }
         return prim;
     }
@@ -233,30 +268,7 @@ protected:
             return;
         }
 
-        // If the volumeFieldBinding locator is dirtied, we also need to
-        // dirty the __dependencies locator.
-
-        std::vector<size_t> indices;
-        for (size_t i = 0; i < entries.size(); i++) {
-            const HdDataSourceLocatorSet &locators = entries[i].dirtyLocators;
-            if (locators.Intersects(
-                    HdVolumeFieldBindingSchema::GetDefaultLocator())) {
-                indices.push_back(i);
-            }
-        }
-        
-        if (indices.empty()) {
-            _SendPrimsDirtied(entries);
-            return;
-        }
-
-        HdSceneIndexObserver::DirtiedPrimEntries newEntries(entries);
-        for (const size_t i : indices) {
-            newEntries[i].dirtyLocators.insert(
-                HdDependenciesSchema::GetDefaultLocator());
-        }
-
-        _SendPrimsDirtied(newEntries);
+        _SendPrimsDirtied(entries);
     }
 };
 
