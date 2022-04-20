@@ -26,6 +26,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyInterpreter.h"
+#include "pxr/base/tf/pyLock.h"
 
 #include <boost/python/handle.hpp>
 
@@ -40,6 +41,7 @@ testInterpreter(bool verbose)
     unsigned int numErrors = 0;
     
     TfPyInitialize();
+    TfPyLock pyLock;
     TfPyRunSimpleString("2+2");
     
     handle<> result = TfPyRunString("'hello'\n", Py_eval_input);
