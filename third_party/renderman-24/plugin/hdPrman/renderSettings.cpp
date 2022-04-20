@@ -23,14 +23,21 @@
 //
 #include "hdPrman/renderSettings.h"
 
+#include "hdPrman/renderParam.h"
+
 #include "pxr/imaging/hd/sceneDelegate.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
+);
+
 HdPrman_RenderSettings::HdPrman_RenderSettings(
     SdfPath const& id)
-    : HdSprim(id)
+    : HdBprim(id)
 {
 }
 
@@ -43,12 +50,32 @@ void HdPrman_RenderSettings::Sync(
     HdRenderParam *renderParam,
     HdDirtyBits *dirtyBits)
 {
+    HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(renderParam);
+
+    if (*dirtyBits & HdChangeTracker::DirtyParams) {
+
+        VtValue filterPathValue =
+            sceneDelegate->Get(GetId(), _tokens->outputsRiSampleFilters);
+
+        if (filterPathValue.IsHolding<SdfPathVector>()) {
+            const SdfPathVector filterPathVector =
+                filterPathValue.UncheckedGet<SdfPathVector>();
+            const SdfPath connectedFilter = filterPathVector.empty() 
+                ? SdfPath()
+                : filterPathVector.at(0).GetPrimPath();
+            param->SetConnectedSampleFilterPath(sceneDelegate, connectedFilter);
+        }
+        if (filterPathValue.IsEmpty()) {
+            param->SetConnectedSampleFilterPath(sceneDelegate, SdfPath());
+        }
+    }
+
     *dirtyBits = HdChangeTracker::Clean;
 }
 
 HdDirtyBits HdPrman_RenderSettings::GetInitialDirtyBitsMask() const
 {
-    int mask = HdChangeTracker::Clean;
+    int mask = HdChangeTracker::Clean | HdChangeTracker::DirtyParams;
     return (HdDirtyBits)mask;
 }
 

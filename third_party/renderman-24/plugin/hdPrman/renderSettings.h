@@ -25,13 +25,13 @@
 #define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_SETTINGS_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/sprim.h"
+#include "pxr/imaging/hd/bprim.h"
 
 #include "Riley.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdPrman_RenderSettings : public HdSprim
+class HdPrman_RenderSettings : public HdBprim
 {
 public:
     HdPrman_RenderSettings(SdfPath const& id);

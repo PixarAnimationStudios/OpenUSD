@@ -2668,6 +2668,28 @@ HdPrman_RenderParam::UpdateRileyShutterInterval(
     riley->SetOptions(_GetDeprecatedOptionsPrunedList());
 }
 
+static
+void _MarkSampleFilterDirty(HdChangeTracker *tracker, SdfPath const &path)
+{
+    if (!path.IsEmpty()) {
+        tracker->MarkSprimDirty(path, HdChangeTracker::DirtyParams);
+    }
+}
+
+void
+HdPrman_RenderParam::SetConnectedSampleFilterPath(
+    HdSceneDelegate *sceneDelegate,
+    SdfPath const &connectedSampleFilterPath)
+{
+    if (_connectedSampleFilterPath != connectedSampleFilterPath) {
+        HdChangeTracker& tracker =
+            sceneDelegate->GetRenderIndex().GetChangeTracker();
+        _MarkSampleFilterDirty(&tracker, _connectedSampleFilterPath);
+        _MarkSampleFilterDirty(&tracker, connectedSampleFilterPath);
+        _connectedSampleFilterPath = connectedSampleFilterPath;
+    }
+}
+
 void
 HdPrman_RenderParam::AddSampleFilter(riley::SampleFilterId const& filterId)
 {

@@ -51,9 +51,13 @@ HdPrman_SampleFilter::HdPrman_SampleFilter(
 
 void HdPrman_SampleFilter::Finalize(HdRenderParam *renderParam)
 {
+    HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(renderParam);
+    _RemoveSampleFilter(param);
+}
+
+void HdPrman_SampleFilter::_RemoveSampleFilter(HdPrman_RenderParam *param)
+{
     if (_filterId != riley::SampleFilterId::InvalidId()) {
-        HdPrman_RenderParam *param =
-            static_cast<HdPrman_RenderParam*>(renderParam);
         riley::Riley *riley = param->AcquireRiley();
         param->RemoveSampleFilter(_filterId);
         riley->DeleteSampleFilter(_filterId);
@@ -81,7 +85,7 @@ HdPrman_SampleFilter::_CreateRmanSampleFilter(
     SdrShaderNodeConstPtr sdrEntry = sdrRegistry.GetShaderNodeByIdentifier(
         sampleFilterNode.nodeTypeId, *_sourceTypes);
     if (!sdrEntry) {
-        TF_WARN("Unknown shader ID %s for node <%s>\n",
+        TF_WARN("Unknown shader ID '%s' for node <%s>\n",
                 sampleFilterNode.nodeTypeId.GetText(), filterPrimPath.GetText());
         return;
     }
@@ -144,13 +148,19 @@ void HdPrman_SampleFilter::Sync(
 
     if (*dirtyBits & HdChangeTracker::DirtyParams) {
 
-        const VtValue sampleFilterNodeValue =
-            sceneDelegate->Get(id, _tokens->sampleFilterResource);
+        // Only Create the SampleFilter if connected to the RenderSettings
+        if (id == param->GetConnectedSampleFilterPath()) {
+            const VtValue sampleFilterResourceValue =
+                sceneDelegate->Get(id, _tokens->sampleFilterResource);
 
-        if (sampleFilterNodeValue.IsHolding<HdMaterialNode2>()) {
-            HdMaterialNode2 sampleFilterNode =
-                sampleFilterNodeValue.UncheckedGet<HdMaterialNode2>();
-            _CreateRmanSampleFilter(param, id, sampleFilterNode);
+            if (sampleFilterResourceValue.IsHolding<HdMaterialNode2>()) {
+                HdMaterialNode2 sampleFilterNode =
+                    sampleFilterResourceValue.UncheckedGet<HdMaterialNode2>();
+                _CreateRmanSampleFilter(param, id, sampleFilterNode);
+            }
+        }
+        else {
+            _RemoveSampleFilter(param);
         }
     }
 

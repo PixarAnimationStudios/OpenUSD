@@ -292,6 +292,12 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdExtComputation::DirtyOutputDesc) {
             set->append(HdExtComputationSchema::GetOutputsLocator());
         }
+    } else if (primType == HdPrimTypeTokens->sampleFilter) {
+        if (bits & HdChangeTracker::DirtyParams) {
+            const static HdDataSourceLocator locator(
+                HdPrimTypeTokens->sampleFilter);
+            set->append(locator);
+        }
     } else {
         // unknown prim type, use AllDirty for anything
         if (bits) {
@@ -350,6 +356,12 @@ HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(TfToken const& primType,
     if (primType == HdPrimTypeTokens->renderBuffer) {
         if (bits & HdRenderBuffer::DirtyDescription) {
             set->append(HdRenderBufferSchema::GetDefaultLocator());
+        }
+    } else if (primType == HdPrimTypeTokens->renderSettings) {
+        if (bits & HdChangeTracker::DirtyParams) {
+            const static HdDataSourceLocator locator(
+                HdPrimTypeTokens->renderSettings);
+            set->append(locator);
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (bits & HdField::DirtyParams) {
@@ -747,6 +759,11 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
                             HdExtComputationSchema::GetDefaultLocator()));
             }
         }
+    } else if (primType == HdPrimTypeTokens->sampleFilter) {
+        const static HdDataSourceLocator locator(HdPrimTypeTokens->sampleFilter);
+        if (_FindLocator(locator, end, &it)) {
+            bits |= HdChangeTracker::DirtyParams;
+        }
     } else {
         // unknown prim type, use AllDirty for anything
         if (_FindLocator(HdDataSourceLocator(), end, &it)) {
@@ -820,6 +837,11 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
     if (primType == HdPrimTypeTokens->renderBuffer) {
         if (_FindLocator(HdRenderBufferSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdRenderBuffer::DirtyDescription;
+        }
+    } else if (primType == HdPrimTypeTokens->renderSettings) {
+        const static HdDataSourceLocator locator(HdPrimTypeTokens->renderSettings);
+        if (_FindLocator(locator, end, &it)) {
+            bits |= HdChangeTracker::DirtyParams;
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (_FindLocator(HdVolumeFieldSchema::GetDefaultLocator(), end, &it)) {

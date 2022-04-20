@@ -52,7 +52,7 @@ bool
 UsdImagingRenderSettingsAdapter::IsSupported(
     UsdImagingIndexProxy const* index) const
 {
-    bool supported = index->IsSprimTypeSupported(HdPrimTypeTokens->renderSettings);
+    bool supported = index->IsBprimTypeSupported(HdPrimTypeTokens->renderSettings);
     return supported;
 }
 
@@ -62,7 +62,7 @@ UsdImagingRenderSettingsAdapter::Populate(
     UsdImagingIndexProxy* index,
     UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertSprim(HdPrimTypeTokens->renderSettings, prim.GetPath(), prim);
+    index->InsertBprim(HdPrimTypeTokens->renderSettings, prim.GetPath(), prim);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
     // Check for Sample Filter Connections
@@ -87,7 +87,7 @@ UsdImagingRenderSettingsAdapter::_RemovePrim(
     SdfPath const& cachePath,
     UsdImagingIndexProxy* index)
 {
-    index->RemoveSprim(HdPrimTypeTokens->renderSettings, cachePath);
+    index->RemoveBprim(HdPrimTypeTokens->renderSettings, cachePath);
 }
 
 void 
@@ -137,7 +137,7 @@ UsdImagingRenderSettingsAdapter::MarkDirty(
     HdDirtyBits dirty,
     UsdImagingIndexProxy* index)
 {
-    index->MarkSprimDirty(cachePath, dirty);
+    index->MarkBprimDirty(cachePath, dirty);
 }
 
 VtValue

@@ -263,7 +263,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (coordSys)                                  \
     (instancer)                                 \
     (instance)                                  \
-    (renderSettings)                            \
     (sampleFilter)                              \
     /* Sprims Lights */                         \
     (simpleLight)                               \
@@ -280,7 +279,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (extComputation)                            \
                                                 \
     /* Bprims */                                \
-    (renderBuffer)
+    (renderBuffer)                              \
+    (renderSettings)
 
 HD_API
 bool HdPrimTypeIsGprim(TfToken const& primType);

@@ -271,6 +271,12 @@ public:
     // immediately set it as riley option.
     void UpdateRileyShutterInterval(const HdRenderIndex * renderIndex);
 
+    // Path to the connected Sample Filter from the Render Settings Prim
+    void SetConnectedSampleFilterPath(HdSceneDelegate *sceneDelegate,
+        SdfPath const& connectedSampleFilterPath);
+    SdfPath GetConnectedSampleFilterPath() {return _connectedSampleFilterPath;}
+
+    // Riley Data from the Sample Filter Prim
     void AddSampleFilter(riley::SampleFilterId const& filterId);
     void RemoveSampleFilter(riley::SampleFilterId const& filterId);
     riley::SampleFilterList GetSampleFilterList();
@@ -371,6 +377,7 @@ private:
     HdPrman_RenderViewContext _renderViewContext;
 
     // SampleFilter
+    SdfPath _connectedSampleFilterPath;
     riley::SampleFilterList _sampleFilterList;
     std::vector<riley::SampleFilterId> _sampleFilterIds;
 
