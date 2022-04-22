@@ -2,6 +2,7 @@
 (
     endFrame = 24
     startFrame = 0
+    upAxis = "Z"
 )
 
 def PointInstancer "TopInstancer"

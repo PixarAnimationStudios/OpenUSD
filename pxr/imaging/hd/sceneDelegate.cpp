@@ -304,6 +304,15 @@ HdSceneDelegate::GetScenePrimPath(SdfPath const& rprimId,
     return rprimId.ReplacePrefix(_delegateID, SdfPath::AbsoluteRootPath());
 }
 
+/*virtual*/
+SdfPathVector
+HdSceneDelegate::GetScenePrimPaths(SdfPath const& rprimId,
+                                   std::vector<int> instanceIndices,
+                                   std::vector<HdInstancerContext> *instancerContexts)
+{
+    return SdfPathVector(instanceIndices.size(),
+            rprimId.ReplacePrefix(_delegateID, SdfPath::AbsoluteRootPath()));
+}
 
 
 // -----------------------------------------------------------------------//

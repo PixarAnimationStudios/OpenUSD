@@ -54,9 +54,9 @@ const float PI = 3.1415926536;
 // compute texture coords based on the size of the output image/texture
 vec2 GetTexCoords(ivec2 outCoords)
 {
-    vec2 outDims = HdGetSize_outTexture();
+    vec2 outDims = vec2(HgiGetSize_outTexture());
     // apply a (0.5, 0.5) offset to use pixel centers and not pixel corners
-    vec2 texCoords = (outCoords + vec2(0.5, 0.5)) / outDims;
+    vec2 texCoords = (vec2(outCoords) + vec2(0.5, 0.5)) / outDims;
     return texCoords;
 }
 
@@ -64,7 +64,7 @@ vec2 GetTexCoords(ivec2 outCoords)
 vec3 SampleEnvMapLod(vec3 sampleVec, float sampleLod) {
     vec2 coord = vec2((atan(sampleVec.z, sampleVec.x) + PI) / (2.0 * PI),
                       acos(sampleVec.y) / PI);
-    return HdTextureLod_inTexture(coord, sampleLod).rgb;
+    return HgiTextureLod_inTexture(coord, sampleLod).rgb;
 }
 
 // compute world position from texture coords
@@ -121,7 +121,7 @@ vec3 SampleEnvMap(vec3 sampleVec)
 {
     // sample from a mipmap level of the environment map determined by the
     // size of the environment map and the number of samples we are taking
-    ivec2 inDims = HdGetSize_inTexture();
+    ivec2 inDims = HgiGetSize_inTexture();
     float mipLevel = ceil(log2(inDims.x * deltaPhi/(2.0 * PI)) * 2.0f);
 
     return SampleEnvMapLod(sampleVec, mipLevel);
@@ -158,7 +158,7 @@ void main(void)
     vec3 pos3D = GetWorldPos(texCoords);
     vec4 outColor = vec4(ComputeIrradiance(pos3D), 1.0);
 
-    HdSet_outTexture(outCoords, outColor);
+    HgiSet_outTexture(outCoords, outColor);
 }
 
 --- --------------------------------------------------------------------------
@@ -179,7 +179,7 @@ vec3 PrefilterEnvMap(vec3 R, float roughness)
     vec3 V = R;
     vec3 color = vec3(0.0);
     float totalWeight = 0.0;
-    float envMapDim = float(HdGetSize_inTexture().s);
+    float envMapDim = float(HgiGetSize_inTexture().x);
     const uint numSamples = 1024u;
     for (uint i = 0u; i < numSamples; i++) {
         vec2 Xi = Hammersley2d(i, numSamples);
@@ -218,7 +218,7 @@ void main(void)
     vec3 R = normalize(pos3D);
     vec4 outColor = vec4(PrefilterEnvMap(R, inRoughness), 1.0);
 
-    HdSet_outTexture(outCoords, outColor);
+    HgiSet_outTexture(outCoords, outColor);
 }
 
 --- --------------------------------------------------------------------------
@@ -271,5 +271,5 @@ void main(void)
     // texCoords.x represents N dot E and texCoords.y represents roughness
     vec4 outColor = vec4(ComputeBRDF(texCoords.x, texCoords.y), 0.0, 1.0);
 
-    HdSet_outTexture(outCoords, outColor);
+    HgiSet_outTexture(outCoords, outColor);
 }

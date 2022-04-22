@@ -345,10 +345,10 @@ public:
     /// \name Metadata
     /// @{
 
-    /// Returns the typeName of the model prim.
+    /// Returns the typeName of the prim.
     ///
-    /// For prims this specifies the sub-class of MfPrim that
-    /// this prim describes.
+    /// The typeName should be meaningful to a higher level
+    /// prim definition system.
     ///
     /// The default value for typeName is the empty token.
     SDF_API

@@ -29,6 +29,7 @@
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
+#include <atomic>
 #include <string>
 #include <vector>
 
@@ -267,7 +268,15 @@ public:
     {
         /* NOTHING */
     }
-    
+
+    /// Copy construct.
+    USDGEOM_API
+    UsdGeomPrimvar(const UsdGeomPrimvar &other);
+
+    /// Copy assign.
+    USDGEOM_API
+    UsdGeomPrimvar &operator=(const UsdGeomPrimvar &other);
+
     /// Speculative constructor that will produce a valid UsdGeomPrimvar when
     /// \p attr already represents an attribute that is Primvar, and
     /// produces an \em invalid Primvar otherwise (i.e. 
@@ -735,11 +744,6 @@ private:
 
     UsdAttribute _attr;
 
-    // upon construction, we'll take note of the attrType.  If we're a type
-    // that could possibly have an Id associated with it, we'll store that name
-    // so we don't have to pay the cost of constructing that token per-Get().
-    void _SetIdTargetRelName();
-
     // Gets or creates the indices attribute corresponding to the primvar.
     UsdAttribute _GetIndicesAttr(bool create) const;
 
@@ -760,7 +764,22 @@ private:
 
     // Should only be called if _idTargetRelName is set
     UsdRelationship _GetIdTargetRel(bool create) const;
-    TfToken _idTargetRelName;
+
+    // Compute & cache whether or not this primvar can be an idtarget.  After a
+    // call to this function, _idTargetStatus will be either IdTargetImpossible
+    // or IdTargetPossible.  If the result is "possible" then _idTargetRelName
+    // will contain the relationship name.  This function returns true if
+    // _idTargetStatus was set to IdTargetPossible, else false.
+    bool _ComputeIdTargetPossibility() const;
+
+    enum _IdTargetStatus {
+        IdTargetUninitialized,
+        IdTargetInitializing,
+        IdTargetImpossible,
+        IdTargetPossible };
+
+    mutable TfToken _idTargetRelName;
+    mutable std::atomic<_IdTargetStatus> _idTargetStatus;
 };
 
 // We instantiate the following so we can check and provide the correct value

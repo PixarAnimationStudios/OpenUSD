@@ -63,6 +63,8 @@
 #include "RixShadingUtils.h"
 #include "RixPredefinedStrings.hpp"
 
+#include <thread>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -161,6 +163,72 @@ HdPrman_RenderParam::IsLightFilterUsed(TfToken const& name)
     return _lightFilterRefs.find(name) != _lightFilterRefs.end();
 }
 
+static
+size_t
+_ConvertPointsPrimvar(HdSceneDelegate *sceneDelegate, SdfPath const &id,
+                      RtPrimVarList& primvars, const size_t * npointsHint)
+{
+    HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES> points;
+    {
+        HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedPoints;
+        sceneDelegate->SamplePrimvar(id, HdTokens->points, &boxedPoints);
+        if (!points.UnboxFrom(boxedPoints)) {
+            TF_WARN("<%s> points did not have expected type vec3f[]",
+                    id.GetText());
+        }
+    }
+
+    size_t npoints = 0;
+    if (npointsHint) {
+        npoints = *npointsHint;
+    } else {
+        if (points.count > 0) {
+            npoints = points.values[0].size();
+        }
+        primvars.SetDetail(
+            1,        /* uniform */
+            npoints,  /* vertex */
+            npoints,  /* varying */
+            npoints   /* faceVarying */);
+    }
+        
+    primvars.SetTimes(points.count, &points.times[0]);
+    for (size_t i=0; i < points.count; ++i) {
+        if (points.values[i].size() == npoints) {
+            primvars.SetPointDetail(
+                RixStr.k_P, 
+                (RtPoint3*) points.values[i].cdata(),
+                RtDetailType::k_vertex, 
+                i);
+        } else {
+            TF_WARN("<%s> primvar 'points' size (%zu) dod not match "
+                    "expected (%zu)",
+                    id.GetText(), 
+                    points.values[i].size(),
+                    npoints);
+        }
+    }
+
+    return npoints;
+}
+
+void
+HdPrman_ConvertPointsPrimvar(HdSceneDelegate *sceneDelegate, SdfPath const &id,
+                             RtPrimVarList& primvars, const size_t npoints)
+
+{
+    _ConvertPointsPrimvar(sceneDelegate, id, primvars, &npoints);
+}
+
+size_t
+HdPrman_ConvertPointsPrimvarForPoints(
+    HdSceneDelegate *sceneDelegate, SdfPath const &id,
+    RtPrimVarList& primvars)
+{
+    return _ConvertPointsPrimvar(sceneDelegate, id, primvars, nullptr);
+}
+
+
 inline static RtDetailType
 _RixDetailForHdInterpolation(HdInterpolation interp)
 {
@@ -229,7 +297,7 @@ _SetParamValue(RtUString const& name,
     } else if (val.IsHolding<VtArray<GfVec2f>>()) {
         const VtArray<GfVec2f>& v = val.UncheckedGet<VtArray<GfVec2f>>();
         params.SetFloatArray(name,
-            reinterpret_cast<const float*>(v.cdata()), 2);
+            reinterpret_cast<const float*>(v.cdata()), 2 * v.size());
     } else if (val.IsHolding<GfVec2d>()) {
         GfVec2d vd = val.UncheckedGet<GfVec2d>();
         float v[2] = {float(vd[0]), float(vd[1])};
@@ -243,7 +311,7 @@ _SetParamValue(RtUString const& name,
             v[i] = GfVec2f(vd[i]);
         }
         params.SetFloatArray(name,
-            reinterpret_cast<const float*>(v.cdata()), 2);
+            reinterpret_cast<const float*>(v.cdata()), 2 * v.size());
     } else if (val.IsHolding<GfVec3f>()) {
         GfVec3f v = val.UncheckedGet<GfVec3f>();
         if (role == HdPrimvarRoleTokens->color) {
@@ -261,21 +329,20 @@ _SetParamValue(RtUString const& name,
     } else if (val.IsHolding<VtArray<GfVec3f>>()) {
         const VtArray<GfVec3f>& v = val.UncheckedGet<VtArray<GfVec3f>>();
         if (role == HdPrimvarRoleTokens->color) {
-            params.SetColor(
-                name, *reinterpret_cast<const RtColorRGB*>(v.cdata()));
+            params.SetColorArray(
+                name, reinterpret_cast<const RtColorRGB*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->point) {
-            params.SetPoint(
-                name, *reinterpret_cast<const RtPoint3*>(v.cdata()));
+            params.SetPointArray(
+                name, reinterpret_cast<const RtPoint3*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->normal) {
-            params.SetNormal(
-                name, *reinterpret_cast<const RtNormal3*>(v.cdata()));
+            params.SetNormalArray(
+                name, reinterpret_cast<const RtNormal3*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->vector) {
-            params.SetVector(
-                name, *reinterpret_cast<const RtVector3*>(v.cdata()));
+            params.SetVectorArray(
+                name, reinterpret_cast<const RtVector3*>(v.cdata()), v.size());
         } else {
             params.SetFloatArray(
-                name, reinterpret_cast<const float*>(v.cdata()),
-                3);
+                name, reinterpret_cast<const float*>(v.cdata()), 3 * v.size());
         }
     } else if (val.IsHolding<GfVec3d>()) {
         // double->float
@@ -301,21 +368,20 @@ _SetParamValue(RtUString const& name,
             v[i] = GfVec3f(vd[i]);
         }
         if (role == HdPrimvarRoleTokens->color) {
-            params.SetColor(
-                name, *reinterpret_cast<const RtColorRGB*>(v.cdata()));
+            params.SetColorArray(
+                name, reinterpret_cast<const RtColorRGB*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->point) {
-            params.SetPoint(
-                name, *reinterpret_cast<const RtPoint3*>(v.cdata()));
+            params.SetPointArray(
+                name, reinterpret_cast<const RtPoint3*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->normal) {
-            params.SetNormal(
-                name, *reinterpret_cast<const RtNormal3*>(v.cdata()));
+            params.SetNormalArray(
+                name, reinterpret_cast<const RtNormal3*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->vector) {
-            params.SetVector(
-                name, *reinterpret_cast<const RtVector3*>(v.cdata()));
+            params.SetVectorArray(
+                name, reinterpret_cast<const RtVector3*>(v.cdata()), v.size());
         } else {
             params.SetFloatArray(
-                name, reinterpret_cast<const float*>(v.cdata()),
-                3);
+                name, reinterpret_cast<const float*>(v.cdata()), 3 * v.size());
         }
     } else if (val.IsHolding<GfVec4f>()) {
         GfVec4f v = val.UncheckedGet<GfVec4f>();
@@ -324,7 +390,7 @@ _SetParamValue(RtUString const& name,
     } else if (val.IsHolding<VtArray<GfVec4f>>()) {
         const VtArray<GfVec4f>& v = val.UncheckedGet<VtArray<GfVec4f>>();
         params.SetFloatArray(
-            name, reinterpret_cast<const float*>(v.cdata()), 4);
+            name, reinterpret_cast<const float*>(v.cdata()), 4 * v.size());
     } else if (val.IsHolding<GfVec4d>()) {
         // double->float
         GfVec4f v(val.UncheckedGet<GfVec4d>());
@@ -339,7 +405,7 @@ _SetParamValue(RtUString const& name,
             v[i] = GfVec4f(vd[i]);
         }
         params.SetFloatArray(
-            name, reinterpret_cast<const float*>(v.cdata()), 4);
+            name, reinterpret_cast<const float*>(v.cdata()), 4 * v.size());
     } else if (val.IsHolding<GfMatrix4d>()) {
         GfMatrix4d v = val.UncheckedGet<GfMatrix4d>();
         params.SetMatrix(name, HdPrman_GfMatrixToRtMatrix(v));
@@ -349,7 +415,7 @@ _SetParamValue(RtUString const& name,
     } else if (val.IsHolding<VtArray<int>>()) {
         const VtArray<int>& v = val.UncheckedGet<VtArray<int>>();
         params.SetIntegerArray(
-            name, reinterpret_cast<const int*>(v.cdata()), 1);
+            name, reinterpret_cast<const int*>(v.cdata()), v.size());
     } else if (val.IsHolding<bool>()) {
         // bool->integer
         int v = val.UncheckedGet<bool>();
@@ -363,7 +429,7 @@ _SetParamValue(RtUString const& name,
             v[i] = int(vb[i]);
         }
         params.SetIntegerArray(
-            name, reinterpret_cast<const int*>(v.cdata()), 1);
+            name, reinterpret_cast<const int*>(v.cdata()), v.size());
     } else if (val.IsHolding<TfToken>()) {
         TfToken v = val.UncheckedGet<TfToken>();
         params.SetString(name, RtUString(v.GetText()));
@@ -1608,7 +1674,7 @@ _ComputeRenderViewDesc(
                     renderVar,
                     HdPrmanExperimentalRenderSpecTokens->type)));
         renderOutputDesc.sourceName = name;
-        renderOutputDesc.filterName = RixStr.k_filter;
+        renderOutputDesc.rule = RixStr.k_filter;
         renderOutputDesc.params = _ToRtParamList(
             VtDictionaryGet<VtDictionary>(
                 renderVar,
@@ -2037,22 +2103,20 @@ HdPrman_RenderParam::StopRender(bool blocking)
         return;
     }
 
-    // It is necessary to call riley->Stop() until it succeeds
-    // because it's possible for it to be skipped if called too early,
-    // before the render has gotten underway.
-    // Also keep checking if render thread is still active,
-    // in case it has somehow managed to stop already.
-    while((_riley->Stop() == riley::StopResult::k_NotRendering) &&
-          _renderThread->IsRendering())
-    {
+    // Note: if we were rendering, when the flag goes low we'll be back in
+    // render thread idle until another StartRender comes in, so we don't need
+    // to manually call renderThread->StopRender. Theoretically
+    // riley->Stop() is blocking, but we need the loop here because:
+    // 1. It's possible that IsRendering() is true because we're in the preamble
+    //    of the render loop, before calling into riley. In that case, Stop()
+    //    is a no-op and we need to call it again after we call into Riley.
+    // 2. We've occassionally seen cases where Stop() returns successfully,
+    //    but the riley threadpools don't shut down right away.
+    while (_renderThread->IsRendering()) {
+        _riley->Stop();
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(100us);
     }
-    _renderThread->StopRender();
-}
-
-bool
-HdPrman_RenderParam::IsRenderStopped()
-{
-    return !(_renderThread && _renderThread->IsThreadRunning());
 }
 
 bool
@@ -2071,7 +2135,7 @@ void
 HdPrman_RenderParam::DeleteRenderThread()
 {
     if (_renderThread) {
-        StopRender();
+        _renderThread->StopThread();
         _renderThread.reset();
     }
 }
@@ -2136,7 +2200,7 @@ _ComputeRenderOutputAndAovDescs(
         RtUString aovName(aovBinding.aovName.GetText());
         RtUString sourceName;
         riley::RenderOutputType rt = riley::RenderOutputType::k_Float;
-        RtUString filterName = RixStr.k_filter;
+        RtUString rule = RixStr.k_filter;
 
         HdFormat aovFormat = aovBinding.renderBuffer->GetFormat();
 
@@ -2262,9 +2326,10 @@ _ComputeRenderOutputAndAovDescs(
         }
 
         // z and integer types require zmin filter
-        if(sourceName == RixStr.k_z || rt == riley::RenderOutputType::k_Integer)
+        if(sourceName == RixStr.k_id || sourceName == RixStr.k_id2 ||
+           sourceName == RixStr.k_z || rt == riley::RenderOutputType::k_Integer)
         {
-            filterName = RixStr.k_zmin;
+            rule = RixStr.k_zmin;
         }
 
         if(!sourceName.Empty())
@@ -2288,7 +2353,7 @@ _ComputeRenderOutputAndAovDescs(
             renderOutputDesc.name = aovName;
             renderOutputDesc.type = rt;
             renderOutputDesc.sourceName = sourceName;
-            renderOutputDesc.filterName = filterName;
+            renderOutputDesc.rule = rule;
             
             renderOutputDescs->push_back(
                 std::move(renderOutputDesc));
@@ -2302,7 +2367,7 @@ _ComputeRenderOutputAndAovDescs(
             renderOutputDesc.name = RixStr.k_a;
             renderOutputDesc.type = riley::RenderOutputType::k_Float;
             renderOutputDesc.sourceName = RixStr.k_a;
-            renderOutputDesc.filterName = RixStr.k_filter;
+            renderOutputDesc.rule = RixStr.k_filter;
 
             renderOutputDescs->push_back(
                 std::move(renderOutputDesc));
@@ -2313,6 +2378,7 @@ _ComputeRenderOutputAndAovDescs(
             aovDesc.name = aovBinding.aovName;
             aovDesc.format = aovFormat;
             aovDesc.clearValue = aovBinding.clearValue;
+            aovDesc.rule = HdPrmanFramebuffer::ToAccumulationRule(rule);
             
             aovDescs->push_back(std::move(aovDesc));
         }
@@ -2523,7 +2589,7 @@ HdPrman_RenderParam::UpdateQuickIntegrator(
 }
 
 // Note that we only support motion blur with the correct shutter
-// interval if the the camera path and instantaneous shutter value
+// interval if the the camera path and disableMotionBlur value
 // have been set to the desired values before any syncing or rendering
 // has happened. We don't update the riley shutter interval in
 // response to setting these render settings. The only callee of
@@ -2549,12 +2615,22 @@ HdPrman_RenderParam::UpdateRileyShutterInterval(
         shutterInterval[1] = camera->GetShutterClose();
     }
 
+    // Deprecated.
     const bool instantaneousShutter =
         renderIndex->GetRenderDelegate()->GetRenderSetting<bool>(
             HdPrmanRenderSettingsTokens->instantaneousShutter, false);
     if (instantaneousShutter) {
         // Disable motion blur by making the interval a single point.
         shutterInterval[1] = shutterInterval[0];
+    }
+
+    const bool disableMotionBlur =
+        renderIndex->GetRenderDelegate()->GetRenderSetting<bool>(
+            HdPrmanRenderSettingsTokens->disableMotionBlur, false);
+    if (disableMotionBlur) {
+        // Disable motion blur by sampling at current frame only.
+        shutterInterval[0] = 0.0f;
+        shutterInterval[1] = 0.0f;
     }
     
     RtParamList &options = GetOptions();

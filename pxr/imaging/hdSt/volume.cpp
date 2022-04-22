@@ -410,14 +410,19 @@ _ComputeMaterialNetworkShader(
     // Get now allocated texture handles
     namedTextureHandles = result->GetNamedTextureHandles();
 
+    const bool doublesSupported = resourceRegistry->GetHgi()->
+        GetCapabilities()->IsSet(
+            HgiDeviceCapabilitiesBitsShaderDoublePrecision);
+
     // Get buffer specs for textures (i.e., for
     // field sampling transforms and bindless texture handles).
-    HdSt_TextureBinder::GetBufferSpecs(namedTextureHandles, &bufferSpecs);
+    HdSt_TextureBinder::GetBufferSpecs(namedTextureHandles, &bufferSpecs,
+        doublesSupported);
 
     // Create params (so that HdGet_... are created) and buffer specs,
     // to communicate volume bounding box and sample distance to shader.
     HdSt_VolumeShader::GetParamsAndBufferSpecsForBBoxAndSampleDistance(
-        &params, &bufferSpecs);
+        &params, &bufferSpecs, doublesSupported);
 
     const bool hasField = !namedTextureHandles.empty();
 
@@ -427,7 +432,8 @@ _ComputeMaterialNetworkShader(
     if (!hasField) {
         HdSt_VolumeShader::GetBufferSourcesForBBoxAndSampleDistance(
             { GfBBox3d(authoredExtents), 1.0f },
-            &bufferSources);
+            &bufferSources,
+            doublesSupported);
     }
 
     // Make volume shader responsible if we have fields with bounding

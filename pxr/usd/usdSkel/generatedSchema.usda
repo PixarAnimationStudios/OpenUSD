@@ -18,9 +18,14 @@ class SkelRoot "SkelRoot" (
         doc = """Extent is a three dimensional range measuring the geometric
         extent of the authored gprim in its own local space (i.e. its own
         transform not applied), without accounting for any shader-induced
-        displacement.  Whenever any geometry-affecting attribute is authored
-        for any gprim in a layer, extent must also be authored at the same
-        timesample; failure to do so will result in incorrect bounds-computation.
+        displacement. If __any__ extent value has been authored for a given 
+        Boundable, then it should be authored at every timeSample at which 
+        geometry-affecting properties are authored, to ensure correct 
+        evaluation via ComputeExtent(). If __no__ extent value has been 
+        authored, then ComputeExtent() will call the Boundable's registered 
+        ComputeExtentFunction(), which may be expensive, which is why we 
+        strongly encourage proper authoring of extent.
+        \\sa ComputeExtent()
         \\sa \\ref UsdGeom_Boundable_Extent.
         
         An authored extent on a prim which has children is expected to include
@@ -96,9 +101,14 @@ class Skeleton "Skeleton" (
         doc = """Extent is a three dimensional range measuring the geometric
         extent of the authored gprim in its own local space (i.e. its own
         transform not applied), without accounting for any shader-induced
-        displacement.  Whenever any geometry-affecting attribute is authored
-        for any gprim in a layer, extent must also be authored at the same
-        timesample; failure to do so will result in incorrect bounds-computation.
+        displacement. If __any__ extent value has been authored for a given 
+        Boundable, then it should be authored at every timeSample at which 
+        geometry-affecting properties are authored, to ensure correct 
+        evaluation via ComputeExtent(). If __no__ extent value has been 
+        authored, then ComputeExtent() will call the Boundable's registered 
+        ComputeExtentFunction(), which may be expensive, which is why we 
+        strongly encourage proper authoring of extent.
+        \\sa ComputeExtent()
         \\sa \\ref UsdGeom_Boundable_Extent.
         
         An authored extent on a prim which has children is expected to include

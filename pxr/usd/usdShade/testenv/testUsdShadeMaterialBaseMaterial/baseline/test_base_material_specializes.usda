@@ -1,4 +1,9 @@
 #usda 1.0
+(
+    defaultPrim = "ModelShading"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
 
 def "ModelShading"
 {

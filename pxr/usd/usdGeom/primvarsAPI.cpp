@@ -211,7 +211,7 @@ _MakePrimvars(std::vector<UsdProperty> const &props,
               bool (filterPass)(UsdGeomPrimvar const &))
 {
     std::vector<UsdGeomPrimvar> primvars;
-    
+    primvars.reserve(props.size());
     for (UsdProperty const &prop : props) {
         // All prefixed properties except the ones that contain extra
         // namespaces (eg. the ":indices" attributes belonging to indexed

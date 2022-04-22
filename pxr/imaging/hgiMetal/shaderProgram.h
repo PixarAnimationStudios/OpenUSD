@@ -80,6 +80,11 @@ public:
     id<MTLFunction> GetPostTessVertexFunction() const {
         return _postTessVertexFunction;
     }
+    
+    HGIMETAL_API
+    id<MTLFunction> GetPostTessControlFunction() const {
+        return _postTessControlFunction;
+    }
 
 protected:
     friend class HgiMetal;
@@ -99,6 +104,7 @@ private:
     id<MTLFunction> _fragmentFunction;
     id<MTLFunction> _computeFunction;
     id<MTLFunction> _postTessVertexFunction;
+    id<MTLFunction> _postTessControlFunction;
 };
 
 

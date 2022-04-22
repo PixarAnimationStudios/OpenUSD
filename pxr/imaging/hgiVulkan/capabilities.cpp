@@ -78,6 +78,16 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     if (HgiVulkanIsDebugEnabled()) {
         TF_WARN("Selected GPU %s", vkDeviceProperties.deviceName);
     }
+
+    _maxClipDistances = vkDeviceProperties.limits.maxClipDistances;
+    
+    const bool conservativeRasterEnabled = (device->IsSupportedExtension(
+        VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME));
+
+    _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne, false);
+    _SetFlag(HgiDeviceCapabilitiesBitsConservativeRaster, 
+        conservativeRasterEnabled);
+    _SetFlag(HgiDeviceCapabilitiesBitsStencilReadback, true);
 }
 
 HgiVulkanCapabilities::~HgiVulkanCapabilities() = default;

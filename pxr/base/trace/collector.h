@@ -37,9 +37,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pyTracing.h"
-#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/refBase.h"
@@ -605,13 +603,11 @@ private:
             //
             TraceThreadId _threadIndex;
 
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
             // When auto-tracing python frames, this stores the stack of scopes.
             struct PyScope {
                 Key key;
             };
             std::vector<PyScope> _pyScopes;
-#endif // PXR_PYTHON_SUPPORT_ENABLED
     };
 
     TRACE_API static std::atomic<int> _isEnabled;
@@ -623,10 +619,8 @@ private:
 
     TimeStamp _measuredScopeOverhead;
 
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
     std::atomic<int> _isPythonTracingEnabled;
     TfPyTraceFnId _pyTraceFnId;
-#endif // PXR_PYTHON_SUPPORT_ENABLED
 };
  
 TRACE_API_TEMPLATE_CLASS(TfSingleton<TraceCollector>);

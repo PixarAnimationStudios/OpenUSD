@@ -139,6 +139,13 @@ public:
     /// \deprecated
     GfVec4f const & GetViewport() const { return _viewport; }
 
+    /// Compute a transform from window relative coordinates (x,y,z,1) to
+    /// homogeneous world coordinates (x,y,z,w), using the HdCamera's 
+    /// attributes, framing, and viewport dimensions.
+    /// 
+    HD_API
+    GfMatrix4d GetImageToWorldMatrix() const;
+
     /// Returns HdCamera's clip planes.
     ///
     HD_API
@@ -321,6 +328,9 @@ public:
         return _conservativeRasterizationEnabled;
     }
 
+    HD_API
+    void SetVolumeRenderingConstants(float stepSize, float stepSizeLighting);
+
     enum ColorMask {
         ColorMaskNone,
         ColorMaskRGB,
@@ -330,6 +340,10 @@ public:
     HD_API
     void SetColorMasks(std::vector<ColorMask> const& masks);
     std::vector<ColorMask> const& GetColorMasks() const { return _colorMasks; }
+
+    HD_API
+    void SetMultiSampleEnabled(bool enabled);
+    bool GetMultiSampleEnabled() const { return _multiSampleEnabled; }
 
 protected:
     // ---------------------------------------------------------------------- //
@@ -406,6 +420,11 @@ protected:
     bool _useMultiSampleAov;
 
     bool _conservativeRasterizationEnabled;
+
+    float _stepSize;
+    float _stepSizeLighting;
+
+    bool _multiSampleEnabled;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

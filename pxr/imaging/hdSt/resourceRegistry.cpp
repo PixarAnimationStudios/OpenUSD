@@ -60,12 +60,32 @@ _CopyChainedBuffers(HdBufferSourceSharedPtr const&  src,
 {
     if (src->HasChainedBuffer()) {
         HdBufferSourceSharedPtrVector chainedSrcs = src->GetChainedBuffers();
-        // traverse the tree in a DFS fashion
+        // Traverse the tree in a depth-first fashion.
         for(auto& c : chainedSrcs) {
             range->CopyData(c);
             _CopyChainedBuffers(c, range);
         }
     }
+}
+
+static size_t
+_GetChainedStagingSize(HdBufferSourceSharedPtr const& src)
+{
+    size_t size = 0;
+
+    if (src->HasChainedBuffer()) {
+        HdBufferSourceSharedPtrVector chainedSrcs = src->GetChainedBuffers();
+        // Traverse the tree in a depth-first fashion.
+        for (auto& c : chainedSrcs) {
+            const size_t numElements = c->GetNumElements();
+            if (numElements > 0) {
+                size += numElements * HdDataSizeOfTupleType(c->GetTupleType());
+            }
+            size += _GetChainedStagingSize(c);
+        }
+    }
+
+    return size;
 }
 
 static bool
@@ -724,9 +744,6 @@ HdStResourceRegistry::_CommitTextures()
     for (HdStShaderCodeSharedPtr const & shaderCode : shaderCodes) {
         shaderCode->AddResourcesFromTextures(ctx);
     }
-
-    // MipMap generation for textures requires us to submit blit work.
-    SubmitBlitWork();
 }
 
 void
@@ -779,15 +796,21 @@ HdStResourceRegistry::_Commit()
                                     req.range->Resize(
                                         source->GetNumElements());
                                 }
-                            }
 
-                            // Calculate the size of the staging buffer.
-                            if (req.range && req.range->RequiresStaging()) {
-                                size_t srcSize =
-                                    source->GetNumElements() *
-                                    HdDataSizeOfTupleType(
+                                // Calculate the size of the staging buffer.
+                                if (req.range && req.range->RequiresStaging()) {
+                                    const size_t numElements =
+                                        source->GetNumElements();
+                                    // Avoid calling functions on 
+                                    // HdNullBufferSources
+                                    if (numElements > 0) {
+                                        stagingBufferSize += numElements *
+                                            HdDataSizeOfTupleType(
                                                 source->GetTupleType());
-                                stagingBufferSize += srcSize;
+                                    }
+                                    stagingBufferSize += 
+                                        _GetChainedStagingSize(source);
+                                }
                             }
                         }
                     }
@@ -795,7 +818,7 @@ HdStResourceRegistry::_Commit()
             }
             if (++numIterations > 100) {
                 TF_WARN("Too many iterations in resolving buffer source. "
-                        "It's likely due to incosistent dependency.");
+                        "It's likely due to inconsistent dependency.");
                 break;
             }
         }
@@ -849,6 +872,13 @@ HdStResourceRegistry::_Commit()
             _uniformSsboAggregationStrategy.get());
         _singleBufferArrayRegistry.ReallocateAll(
             _singleAggregationStrategy.get());
+        
+        // APPLE METAL: The above creates a set of GPU to GPU copies. However
+        // the next phase may create some CPU to GPU copies to the same memory.
+        // Ideally we wouldn't have requested the GPU copy at all (as it's
+        // redundant) but we did, so we need to ensure these operations are
+        // completed before we issue the CPU to GPU updates.
+        SubmitBlitWork(HgiSubmitWaitTypeWaitUntilCompleted);
     }
 
     {

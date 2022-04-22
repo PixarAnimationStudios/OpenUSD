@@ -37,6 +37,7 @@ struct HgiGraphicsPipelineDesc;
 struct HgiDepthStencilState;
 struct HgiMultiSampleState;
 struct HgiRasterizationState;
+class HgiCapabilities;
 
 using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
 using HdStRenderPassStateSharedPtr = std::shared_ptr<class HdStRenderPassState>;
@@ -96,9 +97,9 @@ public:
     ///   glStencilFunc()
     ///   glStencilOp()
     HDST_API
-    void Bind();
+    void Bind(HgiCapabilities const &hgiCapabilities);
     HDST_API
-    void Unbind();
+    void Unbind(HgiCapabilities const &hgiCapabilities);
 
     /// If set to true (default) and the render pass is rendering into a
     /// multi-sampled aovs, the aovs will be resolved at the end of the render
@@ -196,9 +197,16 @@ public:
 private:
     bool _UseAlphaMask() const;
 
+    // Helper to set up the aov attachment desc so that it matches the blend
+    // setting of the render pipeline state.
+    // If an aovIndex is specified then the color mask will be correlated.
+    void _InitAttachmentDesc(HgiAttachmentDesc &attachmentDesc,
+                             int aovIndex = -1) const;
+
     void _InitPrimitiveState(
                 HgiGraphicsPipelineDesc * pipeDesc,
                 HdSt_GeometricShaderSharedPtr const & geometricShader) const;
+    void _InitAttachmentState(HgiGraphicsPipelineDesc * pipeDesc) const;
     void _InitDepthStencilState(HgiDepthStencilState * depthState) const;
     void _InitMultiSampleState(HgiMultiSampleState * multisampleState) const;
     void _InitRasterizationState(

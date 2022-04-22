@@ -46,6 +46,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
                                        bool useHardwareFaceCulling,
                                        bool hasMirroredTransform,
                                        bool doubleSided,
+                                       bool useMetalTessellation,
                                        HdPolygonMode polygonMode,
                                        bool cullingPass,
                                        FvarPatchType fvarPatchType,
@@ -57,6 +58,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
     , _useHardwareFaceCulling(useHardwareFaceCulling)
     , _hasMirroredTransform(hasMirroredTransform)
     , _doubleSided(doubleSided)
+    , _useMetalTessellation(useMetalTessellation)
     , _polygonMode(polygonMode)
     , _lineWidth(lineWidth)
     , _frustumCullingPass(cullingPass)
@@ -82,6 +84,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
     boost::hash_combine(_hash, cullingPass);
     boost::hash_combine(_hash, primType);
     boost::hash_combine(_hash, cullStyle);
+    boost::hash_combine(_hash, useMetalTessellation);
     boost::hash_combine(_hash, fvarPatchType);
     //
     // note: Don't include polygonMode into the hash.
@@ -250,12 +253,22 @@ HdSt_GeometricShader::GetHgiPrimitiveType() const
         case PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
         case PrimitiveType::PRIM_MESH_COARSE_TRIQUADS:
         case PrimitiveType::PRIM_MESH_REFINED_TRIQUADS:
+            if (GetUseMetalTessellation()) {
+                primitiveType = HgiPrimitiveTypePatchList;
+            } else {
+                primitiveType = HgiPrimitiveTypeTriangleList;
+            }
+            break;
         case PrimitiveType::PRIM_VOLUME:
             primitiveType = HgiPrimitiveTypeTriangleList;
             break;
         case PrimitiveType::PRIM_MESH_COARSE_QUADS:
         case PrimitiveType::PRIM_MESH_REFINED_QUADS:
-            primitiveType = HgiPrimitiveTypeLineListWithAdjacency;
+            if (GetUseMetalTessellation()) {
+                primitiveType = HgiPrimitiveTypePatchList;
+            } else {
+                primitiveType = HgiPrimitiveTypeLineListWithAdjacency;
+            }
             break;
         case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
         case PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES:
@@ -287,6 +300,7 @@ HdSt_GeometricShader::GetHgiPrimitiveType() const
                 shaderKey.UseHardwareFaceCulling(),
                 shaderKey.HasMirroredTransform(),
                 shaderKey.IsDoubleSided(),
+                shaderKey.UseMetalTessellation(),
                 shaderKey.GetPolygonMode(),
                 shaderKey.IsFrustumCullingPass(),
                 shaderKey.GetFvarPatchType(),

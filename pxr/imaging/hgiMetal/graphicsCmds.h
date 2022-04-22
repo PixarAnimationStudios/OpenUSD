@@ -35,7 +35,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HgiGraphicsCmdsDesc;
-
+class HgiMetalGraphicsPipeline;
+class HgiMetalResourceBindings;
 
 /// \class HgiMetalGraphicsCmds
 ///
@@ -76,9 +77,9 @@ public:
     HGIMETAL_API
     void Draw(
         uint32_t vertexCount,
-        uint32_t firstVertex,
+        uint32_t baseVertex,
         uint32_t instanceCount,
-        uint32_t firstInstance) override;
+        uint32_t baseInstance) override;
 
     HGIMETAL_API
     void DrawIndirect(
@@ -92,17 +93,19 @@ public:
         HgiBufferHandle const& indexBuffer,
         uint32_t indexCount,
         uint32_t indexBufferByteOffset,
-        uint32_t vertexOffset,
+        uint32_t baseVertex,
         uint32_t instanceCount,
-        uint32_t firstInstance) override;
+        uint32_t baseInstance) override;
 
     HGIMETAL_API
     void DrawIndexedIndirect(
         HgiBufferHandle const& indexBuffer,
         HgiBufferHandle const& drawParameterBuffer,
-        uint32_t drawBufferOffset,
+        uint32_t drawBufferByteOffset,
         uint32_t drawCount,
-        uint32_t stride) override;
+        uint32_t stride,
+        std::vector<uint32_t> const& drawParameterBufferUInt32,
+        uint32_t patchBaseVertexByteOffset) override;
 
     HGIMETAL_API
     void PushDebugGroup(const char* label) override;
@@ -112,6 +115,9 @@ public:
 
     HGIMETAL_API
     void MemoryBarrier(HgiMemoryBarrier barrier) override;
+    
+    HGIMETAL_API
+    void EnableParallelEncoder(bool enable);
 
 protected:
     friend class HgiMetal;
@@ -129,14 +135,38 @@ private:
     HgiMetalGraphicsCmds & operator=(const HgiMetalGraphicsCmds&) = delete;
     HgiMetalGraphicsCmds(const HgiMetalGraphicsCmds&) = delete;
 
-    void _CreateEncoder();
+    uint32_t _GetNumEncoders();
+    id<MTLRenderCommandEncoder> _GetEncoder(uint32_t encoderIndex = 0);
+    void _SetNumberParallelEncoders(uint32_t numEncoders);
+    void _SetCachedEncoderState(id<MTLRenderCommandEncoder> encoder);
+    mutable std::mutex _encoderLock;
+    
+    void _CreateArgumentBuffer();
+    void _SyncArgumentBuffer();
 
-    // We implement multi-draw commands on Metal by iterating and encoding
-    // separate draw commands and we support per draw command data by
-    // setting vertex buffer offsets appropriately before each of these
-    // draw commands. We determine which vertex buffers are affected when
-    // binding the graphics pipeline and we capture the base byte offset
-    // when binding an affected vertex buffer.
+    // We implement multi-draw indirect commands on Metal by encoding
+    // separate draw commands for each draw.
+    //
+    // Some aspects of drawing command primitive input assembly work
+    // differently on Metal than other graphics APIs. There are two
+    // concerns that we need to account for while processing a buffer
+    // with multiple indirect draw commands.
+    //
+    // 1) Metal does not support a vertex attrib divisor, so in order to
+    // have vertex attributes which advance once per draw command we use
+    // a constant vertex buffer step function and advance the vertex buffer
+    // binding offset explicitly by executing setVertexBufferOffset for
+    // the vertex buffers associated with "perDrawCommand" vertex attributes.
+    //
+    // 2) Metal does not support a base vertex offset for control point
+    // vertex attributes when drawing patches. It is inconvenient and
+    // expensive to encode a distinct controlPointIndex buffer for each
+    // draw that shares a patch topology. Instead, we use a per patch
+    // control point vertex buffer step function, and explicitly advance
+    // the vertex buffer binding offset by executing setVertexBufferOffset
+    // for the vertex buffers associated with "perPatchControlPoint"
+    // vertex attributes.
+
     struct _VertexBufferStepFunctionDesc
     {
         _VertexBufferStepFunctionDesc(
@@ -149,25 +179,68 @@ private:
             { }
         uint32_t bindingIndex;
         uint32_t byteOffset;
-        uint32_t vertexStride;;
+        uint32_t vertexStride;
     };
-    std::vector<_VertexBufferStepFunctionDesc> _vertexBufferStepFunctionDescs;
+    
+    using _StepFunctionDescVector = std::vector<_VertexBufferStepFunctionDesc>;
+    
+    _StepFunctionDescVector _vertexBufferStepFunctionDescs;
+    _StepFunctionDescVector _patchBaseVertexBufferStepFunctionDescs;
 
     void _InitVertexBufferStepFunction(HgiGraphicsPipeline const * pipeline);
     void _BindVertexBufferStepFunction(uint32_t byteOffset,
                                        uint32_t bindingIndex);
-    void _SetVertexBufferStepFunctionOffsets(uint32_t firstInstance);
+
+    void _SetVertexBufferStepFunctionOffsets(
+        id<MTLRenderCommandEncoder> encoder,
+        uint32_t baseInstance);
+
+    void _SetPatchBaseVertexBufferStepFunctionOffsets(
+        id<MTLRenderCommandEncoder> encoder,
+        uint32_t baseVertex);
+
+    struct CachedEncoderState {
+        CachedEncoderState();
+
+        void ResetCachedEncoderState();
+        
+        // This is based on the size aclocated for HgiMetalArgumentOffsetBufferVS->FS
+        // But ideally we'd pick it up from a common header
+        #define MAX_METAL_VERTEX_BUFFER_BINDINGS 64
+        
+        void AddVertexBinding(
+            uint32_t bindingIndex, id<MTLBuffer> buffer, uint32_t byteOffset);
+        
+        MTLViewport viewport;
+        MTLScissorRect scissorRect;
+        
+        HgiMetalResourceBindings* resourceBindings;
+        HgiMetalGraphicsPipeline* graphicsPipeline;
+        id<MTLBuffer> argumentBuffer;
+        
+        struct {
+            id<MTLBuffer> vertexBuffer;
+            uint32_t      byteOffset;
+        } VertexBufferBindingDesc[MAX_METAL_VERTEX_BUFFER_BINDINGS];
+        
+        uint32_t numVertexBufferBindings;
+    } _CachedEncState;
     
     HgiMetal* _hgi;
     MTLRenderPassDescriptor* _renderPassDescriptor;
-    id<MTLRenderCommandEncoder> _encoder;
+    id<MTLParallelRenderCommandEncoder> _parallelEncoder;
+    std::vector<id<MTLRenderCommandEncoder>> _encoders;
+    id<MTLBuffer> _argumentBuffer;
     HgiGraphicsCmdsDesc _descriptor;
     HgiPrimitiveType _primitiveType;
     uint32_t _primitiveIndexSize;
-    bool _hasWork;
-    MTLViewport _viewport;
     NSString* _debugLabel;
+    bool _hasWork;
     bool _viewportSet;
+    bool _scissorRectSet;
+    bool _enableParallelEncoder;
+    bool _primitiveTypeChanged;
+    uint32 _maxNumEncoders;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

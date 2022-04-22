@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/imaging/hdx/oitBufferAccessor.h"
 
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
@@ -92,25 +90,29 @@ HdxOitBufferAccessor::AddOitBufferBindings(
             HdBindingRequest(HdBinding::SSBO,
                              HdxTokens->oitCounterBufferBar,
                              counterBar,
-                             /*interleave = */ false));
+                             /*interleave = */ false,
+                             /*writable = */ true));
 
         shader->AddBufferBinding(
             HdBindingRequest(HdBinding::SSBO,
                              HdxTokens->oitDataBufferBar,
                              dataBar,
-                             /*interleave = */ false));
+                             /*interleave = */ false,
+                             /*writable = */ true));
         
         shader->AddBufferBinding(
             HdBindingRequest(HdBinding::SSBO,
                              HdxTokens->oitDepthBufferBar,
                              depthBar,
-                             /*interleave = */ false));
+                             /*interleave = */ false,
+                             /*writable = */ true));
         
         shader->AddBufferBinding(
             HdBindingRequest(HdBinding::SSBO,
                              HdxTokens->oitIndexBufferBar,
                              indexBar,
-                             /*interleave = */ false));
+                             /*interleave = */ false,
+                             /*writable = */ true));
         
         shader->AddBufferBinding(
             HdBindingRequest(HdBinding::UBO, 
@@ -129,7 +131,7 @@ HdxOitBufferAccessor::AddOitBufferBindings(
 }
 
 void
-HdxOitBufferAccessor::InitializeOitBuffersIfNecessary() 
+HdxOitBufferAccessor::InitializeOitBuffersIfNecessary(Hgi *hgi) 
 {
     // If the OIT buffers were already cleared earlier, skip and do not
     // clear them again.
@@ -159,23 +161,17 @@ HdxOitBufferAccessor::InitializeOitBuffersIfNecessary()
     HdStBufferResourceSharedPtr stCounterResource = 
         stCounterBar->GetResource(HdxTokens->hdxOitCounterBuffer);
 
-    const GLint clearCounter = -1;
+    // We want to fill the buffer with int -1 but the FillBuffer interface 
+    // supports uint8_t (due to a limitation in the Metal API which we can later
+    // revisit to find a workaround). A buffer filled with uint8_t 0xff is the 
+    // same as a buffer filled with int 0xffffffff.
+    const uint8_t clearCounter = -1;
 
-    // XXX todo add a Clear() fn on HdStBufferResource so that we do not have
-    // to use direct gl calls. below.
-    HgiBufferHandle const & buffer = stCounterResource->GetHandle();
-    HgiGLBuffer const * glBuffer =
-        dynamic_cast<HgiGLBuffer const *>(buffer.Get());
-    if (!glBuffer) {
-        TF_CODING_ERROR("Todo: Add HdStBufferResource::Clear");
-        return;
-    }
-
-    glClearNamedBufferData(glBuffer->GetBufferId(),
-                           GL_R32I,
-                           GL_RED_INTEGER,
-                           GL_INT,
-                           &clearCounter);
+    HgiBlitCmdsUniquePtr blitCmds = hgi->CreateBlitCmds();
+    blitCmds->PushDebugGroup("Clear OIT buffers");
+    blitCmds->FillBuffer(stCounterResource->GetHandle(), clearCounter);
+    blitCmds->PopDebugGroup();
+    hgi->SubmitCmds(blitCmds.get());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

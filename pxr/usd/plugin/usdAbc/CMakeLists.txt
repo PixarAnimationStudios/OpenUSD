@@ -114,6 +114,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdAbcIndexedGeomArb
+    DEST testUsdAbcIndexedGeomArb
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdAbcInstancing
     DEST testUsdAbcInstancing
 )
@@ -200,6 +205,15 @@ pxr_register_test(testUsdAbcIndexedProperties
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcIndexedProperties"
     DIFF_COMPARE indexedTextureCoordinates.def.usda
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ABC_TESTSUFFIX=def
+)
+
+pxr_register_test(testUsdAbcIndexedGeomArb
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat hasColorSet.abc --out good_primvars_namespace_after_fix.usda"
+    DIFF_COMPARE good_primvars_namespace_after_fix.usda
     EXPECTED_RETURN_CODE 0
     ENV
         USD_ABC_TESTSUFFIX=def

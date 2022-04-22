@@ -33,6 +33,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// Ordering of the matfilt operations. This is necessary when using scene
+/// index plugins instead of a filter chain which is populated in the required
+/// order.
+enum MatfiltOrder
+{
+    Start = 100,
+    ConnectionResolve = 100, // vstruct
+    NodeTranslation = 110, // matx, preview surface
+    End = 200,
+};
+
 /// A function which manipulates a shading network for a given context.
 typedef void (*MatfiltFilterFnc)
     (const SdfPath & networkId,

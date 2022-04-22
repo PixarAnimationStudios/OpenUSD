@@ -68,7 +68,6 @@ HdSt_MaterialNetworkShader::HdSt_MaterialNetworkShader()
  , _computedTextureSourceHash(0)
  , _isValidComputedTextureSourceHash(false)
  , _materialTag()
- , _isSceneMaterial(true)
 {
 }
 
@@ -83,6 +82,9 @@ HdSt_MaterialNetworkShader::_SetSource(
         _isValidComputedHash = false;
     } else if (shaderStageKey == HdShaderTokens->geometryShader) {
         _geometrySource = source;
+        _isValidComputedHash = false;
+    } else if (shaderStageKey == HdShaderTokens->displacementShader) {
+        _displacementSource = source;
         _isValidComputedHash = false;
     }
 }
@@ -99,6 +101,8 @@ HdSt_MaterialNetworkShader::GetSource(TfToken const &shaderStageKey) const
         return _fragmentSource;
     } else if (shaderStageKey == HdShaderTokens->geometryShader) {
         return _geometrySource;
+    } else if (shaderStageKey == HdShaderTokens->displacementShader) {
+        return _displacementSource;
     }
 
     return std::string();
@@ -207,6 +211,8 @@ HdSt_MaterialNetworkShader::_ComputeHash() const
         ArchHash(_fragmentSource.c_str(), _fragmentSource.size()));
     boost::hash_combine(hash, 
         ArchHash(_geometrySource.c_str(), _geometrySource.size()));
+    boost::hash_combine(hash,
+        ArchHash(_displacementSource.c_str(), _displacementSource.size()));
 
     // Codegen is inspecting the shader bar spec to generate some
     // of the struct's, so we should probably use _paramSpec
@@ -247,6 +253,13 @@ void
 HdSt_MaterialNetworkShader::SetGeometrySource(const std::string &source)
 {
     _geometrySource = source;
+    _isValidComputedHash = false;
+}
+
+void
+HdSt_MaterialNetworkShader::SetDisplacementSource(const std::string &source)
+{
+    _displacementSource = source;
     _isValidComputedHash = false;
 }
 
@@ -441,12 +454,16 @@ _CollectPrimvarNames(const HdSt_MaterialParamVector &params)
 void
 HdSt_MaterialNetworkShader::AddResourcesFromTextures(ResourceContext &ctx) const
 {
+    const bool doublesSupported = ctx.GetResourceRegistry()->GetHgi()->
+        GetCapabilities()->IsSet(
+            HgiDeviceCapabilitiesBitsShaderDoublePrecision);
+
     // Add buffer sources for bindless texture handles (and
     // other texture metadata such as the sampling transform for
     // a field texture).
     HdBufferSourceSharedPtrVector result;
     HdSt_TextureBinder::ComputeBufferSources(
-        GetNamedTextureHandles(), &result);
+        GetNamedTextureHandles(), &result, doublesSupported);
 
     if (!result.empty()) {
         ctx.AddSources(GetShaderData(), std::move(result));
@@ -468,18 +485,6 @@ HdSt_MaterialNetworkShader::AddFallbackValueToSpecsAndSources(
             sourceName, param.fallbackValue);
     source->GetBufferSpecs(specs);
     sources->push_back(std::move(source));
-}
-
-bool
-HdSt_MaterialNetworkShader::IsSceneMaterial() const
-{
-    return _isSceneMaterial;
-}
-
-void
-HdSt_MaterialNetworkShader::SetIsSceneMaterial(bool isSceneMaterial)
-{
-    _isSceneMaterial = isSceneMaterial;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

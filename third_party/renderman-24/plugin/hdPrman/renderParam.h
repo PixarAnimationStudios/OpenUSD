@@ -204,17 +204,22 @@ public:
     void CreateRenderViewFromSpec(
         const VtDictionary &renderSpec);
 
-    // Starts riley and the thread if needed, and tells the thread render
+    // Starts the render thread (if needed), and tells the render thread to
+    // call into riley and start a render.
     void StartRender();
 
-    // Request Riley (and the HdRenderThread) to stop.
+    // Requests riley stop rendering; if blocking is true, waits until riley
+    // has exited and the render thread is idle before returning.  Note that
+    // after the render stops, the render thread will be running but idle;
+    // to stop the thread itself, call DeleteRenderThread. If the render thread
+    // is not running, this call does nothing.
     void StopRender(bool blocking = true);
 
-    // Query whether or not the HdRenderThread is running.
-    bool IsRenderStopped();
-
+    // Returns whether the render thread is active and rendering currently.
+    // Returns false if the render thread is active but idle (not in riley).
     bool IsRendering();
 
+    // Returns whether the user has requested pausing the render.
     bool IsPauseRequested();
 
     // Deletes the render thread if there is one.
@@ -387,6 +392,17 @@ HdPrman_RtMatrixToGfMatrix(const RtMatrix4x4 &m)
         m.m[2][0], m.m[2][1], m.m[2][2], m.m[2][3],
         m.m[3][0], m.m[3][1], m.m[3][2], m.m[3][3]);
 }
+
+// Convert Hydra points to Riley point primvar.
+void
+HdPrman_ConvertPointsPrimvar(HdSceneDelegate *sceneDelegate, SdfPath const &id,
+                             RtPrimVarList& primvars, size_t npoints);
+
+// Count hydra points to set element count on primvars and then
+// convert them to Riley point primvar.
+size_t
+HdPrman_ConvertPointsPrimvarForPoints(HdSceneDelegate *sceneDelegate, SdfPath const &id,
+                                      RtPrimVarList& primvars);
 
 // Convert any Hydra primvars that should be Riley primvars.
 void

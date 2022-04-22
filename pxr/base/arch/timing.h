@@ -51,13 +51,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Macro that defines the clocks per second
-///
-/// Unfortunately, Red Hat 7.1 does not define CLK_TCK correctly, so
-/// ARCH_CLK_TCK is the only guaranteed way to get the value of CLK_TCK. The
-/// value is currently the same on all of our platforms.
-#define ARCH_CLK_TCK 100
-
 /// Return the current time in system-dependent units.
 ///
 /// The current time is returned as a number of "ticks", where each tick

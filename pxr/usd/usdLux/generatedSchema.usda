@@ -167,7 +167,7 @@ class "VolumeLightAPI" (
     )
 }
 
-class "ListAPI" (
+class "LightListAPI" (
     doc = '''API schema to support discovery and publishing of lights in a scene.
 
     Discovering Lights via Traversal
@@ -191,12 +191,12 @@ class "ListAPI" (
     \\endcode
 
     This traversal -- suitably elaborated to handle certain details --
-    is the first and simplest thing UsdLuxListAPI provides.
-    UsdLuxListAPI::ComputeLightList() performs this traversal and returns
+    is the first and simplest thing UsdLuxLightListAPI provides.
+    UsdLuxLightListAPI::ComputeLightList() performs this traversal and returns
     all lights in the scene:
 
     \\code
-    01  UsdLuxListAPI listAPI(stage->GetPseudoRoot());
+    01  UsdLuxLightListAPI listAPI(stage->GetPseudoRoot());
     02  SdfPathVector lights = listAPI.ComputeLightList();
     \\endcode
 
@@ -207,7 +207,7 @@ class "ListAPI" (
     where possible, and is willing to do up-front computation and
     caching to achieve that.
 
-    UsdLuxListAPI provides a way to cache the computed light list,
+    UsdLuxLightListAPI provides a way to cache the computed light list,
     by publishing the list of lights onto prims in the model
     hierarchy.  Consider a big set that contains lights:
 
@@ -232,11 +232,11 @@ class "ListAPI" (
 
     The cache can be created by first invoking
     ComputeLightList(ComputeModeIgnoreCache) to pre-compute the list
-    and then storing the result with UsdLuxListAPI::StoreLightList().
+    and then storing the result with UsdLuxLightListAPI::StoreLightList().
 
     To enable efficient retrieval of the cache, it should be stored
     on a model hierarchy prim.  Furthermore, note that while you can
-    use a UsdLuxListAPI bound to the pseudo-root prim to query the
+    use a UsdLuxLightListAPI bound to the pseudo-root prim to query the
     lights (as in the example above) because it will perform a
     traversal over descendants, you cannot store the cache back to the
     pseduo-root prim.
@@ -246,9 +246,9 @@ class "ListAPI" (
 
     \\code
     01  // Find and load all lights, using lightList cache where available
-    02  UsdLuxListAPI list(stage->GetPseudoRoot());
+    02  UsdLuxLightListAPI list(stage->GetPseudoRoot());
     03  SdfPathSet lights = list.ComputeLightList(
-    04      UsdLuxListAPI::ComputeModeConsultModelHierarchyCache);
+    04      UsdLuxLightListAPI::ComputeModeConsultModelHierarchyCache);
     05  stage.LoadAndUnload(lights, SdfPathSet());
     \\endcode
 
@@ -281,12 +281,40 @@ class "ListAPI" (
 
     Instancing
 
-    Where instances are present, UsdLuxListAPI::ComputeLightList() will
+    Where instances are present, UsdLuxLightListAPI::ComputeLightList() will
     return the instance-unique paths to any lights discovered within
     those instances.  Lights within a UsdGeomPointInstancer will
     not be returned, however, since they cannot be referred to
     solely via paths.
 '''
+)
+{
+    rel lightList (
+        doc = "Relationship to lights in the scene."
+    )
+    token lightList:cacheBehavior (
+        allowedTokens = ["consumeAndHalt", "consumeAndContinue", "ignore"]
+        doc = """Controls how the lightList should be interpreted.
+        Valid values are:
+        - consumeAndHalt: The lightList should be consulted,
+          and if it exists, treated as a final authoritative statement
+          of any lights that exist at or below this prim, halting
+          recursive discovery of lights.
+        - consumeAndContinue: The lightList should be consulted,
+          but recursive traversal over nameChildren should continue
+          in case additional lights are added by descendants.
+        - ignore: The lightList should be entirely ignored.  This
+          provides a simple way to temporarily invalidate an existing
+          cache.  This is the fallback behavior.
+        """
+    )
+}
+
+class "ListAPI" (
+    doc = """
+    \\deprecated
+    Use LightListAPI instead
+"""
 )
 {
     rel lightList (
@@ -484,9 +512,14 @@ class "BoundableLightBase" (
         doc = """Extent is a three dimensional range measuring the geometric
         extent of the authored gprim in its own local space (i.e. its own
         transform not applied), without accounting for any shader-induced
-        displacement.  Whenever any geometry-affecting attribute is authored
-        for any gprim in a layer, extent must also be authored at the same
-        timesample; failure to do so will result in incorrect bounds-computation.
+        displacement. If __any__ extent value has been authored for a given 
+        Boundable, then it should be authored at every timeSample at which 
+        geometry-affecting properties are authored, to ensure correct 
+        evaluation via ComputeExtent(). If __no__ extent value has been 
+        authored, then ComputeExtent() will call the Boundable's registered 
+        ComputeExtentFunction(), which may be expensive, which is why we 
+        strongly encourage proper authoring of extent.
+        \\sa ComputeExtent()
         \\sa \\ref UsdGeom_Boundable_Extent.
         
         An authored extent on a prim which has children is expected to include
@@ -690,9 +723,14 @@ class DiskLight "DiskLight" (
         doc = """Extent is a three dimensional range measuring the geometric
         extent of the authored gprim in its own local space (i.e. its own
         transform not applied), without accounting for any shader-induced
-        displacement.  Whenever any geometry-affecting attribute is authored
-        for any gprim in a layer, extent must also be authored at the same
-        timesample; failure to do so will result in incorrect bounds-computation.
+        displacement. If __any__ extent value has been authored for a given 
+        Boundable, then it should be authored at every timeSample at which 
+        geometry-affecting properties are authored, to ensure correct 
+        evaluation via ComputeExtent(). If __no__ extent value has been 
+        authored, then ComputeExtent() will call the Boundable's registered 
+        ComputeExtentFunction(), which may be expensive, which is why we 
+        strongly encourage proper authoring of extent.
+        \\sa ComputeExtent()
         \\sa \\ref UsdGeom_Boundable_Extent.
         
         An authored extent on a prim which has children is expected to include
@@ -771,9 +809,14 @@ class RectLight "RectLight" (
         doc = """Extent is a three dimensional range measuring the geometric
         extent of the authored gprim in its own local space (i.e. its own
         transform not applied), without accounting for any shader-induced
-        displacement.  Whenever any geometry-affecting attribute is authored
-        for any gprim in a layer, extent must also be authored at the same
-        timesample; failure to do so will result in incorrect bounds-computation.
+        displacement. If __any__ extent value has been authored for a given 
+        Boundable, then it should be authored at every timeSample at which 
+        geometry-affecting properties are authored, to ensure correct 
+        evaluation via ComputeExtent(). If __no__ extent value has been 
+        authored, then ComputeExtent() will call the Boundable's registered 
+        ComputeExtentFunction(), which may be expensive, which is why we 
+        strongly encourage proper authoring of extent.
+        \\sa ComputeExtent()
         \\sa \\ref UsdGeom_Boundable_Extent.
         
         An authored extent on a prim which has children is expected to include
@@ -854,9 +897,14 @@ class SphereLight "SphereLight" (
         doc = """Extent is a three dimensional range measuring the geometric
         extent of the authored gprim in its own local space (i.e. its own
         transform not applied), without accounting for any shader-induced
-        displacement.  Whenever any geometry-affecting attribute is authored
-        for any gprim in a layer, extent must also be authored at the same
-        timesample; failure to do so will result in incorrect bounds-computation.
+        displacement. If __any__ extent value has been authored for a given 
+        Boundable, then it should be authored at every timeSample at which 
+        geometry-affecting properties are authored, to ensure correct 
+        evaluation via ComputeExtent(). If __no__ extent value has been 
+        authored, then ComputeExtent() will call the Boundable's registered 
+        ComputeExtentFunction(), which may be expensive, which is why we 
+        strongly encourage proper authoring of extent.
+        \\sa ComputeExtent()
         \\sa \\ref UsdGeom_Boundable_Extent.
         
         An authored extent on a prim which has children is expected to include
@@ -940,9 +988,14 @@ class CylinderLight "CylinderLight" (
         doc = """Extent is a three dimensional range measuring the geometric
         extent of the authored gprim in its own local space (i.e. its own
         transform not applied), without accounting for any shader-induced
-        displacement.  Whenever any geometry-affecting attribute is authored
-        for any gprim in a layer, extent must also be authored at the same
-        timesample; failure to do so will result in incorrect bounds-computation.
+        displacement. If __any__ extent value has been authored for a given 
+        Boundable, then it should be authored at every timeSample at which 
+        geometry-affecting properties are authored, to ensure correct 
+        evaluation via ComputeExtent(). If __no__ extent value has been 
+        authored, then ComputeExtent() will call the Boundable's registered 
+        ComputeExtentFunction(), which may be expensive, which is why we 
+        strongly encourage proper authoring of extent.
+        \\sa ComputeExtent()
         \\sa \\ref UsdGeom_Boundable_Extent.
         
         An authored extent on a prim which has children is expected to include

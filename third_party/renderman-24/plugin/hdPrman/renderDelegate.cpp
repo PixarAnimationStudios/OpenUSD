@@ -194,6 +194,11 @@ HdPrmanRenderDelegate::_Initialize()
         VtValue(TfGetenv("RILEY_VARIANT"))
     });
 
+    _settingDescriptors.push_back({
+        std::string("Disable motion blur"),
+        HdPrmanRenderSettingsTokens->disableMotionBlur,
+        VtValue(false)});
+
     _PopulateDefaultSettings(_settingDescriptors);
 
     _renderParam->Begin(this);
@@ -513,7 +518,7 @@ bool
 HdPrmanRenderDelegate::IsStopped() const
 {
     if (IsInteractive()) {
-        return _renderParam->IsRenderStopped();
+        return !_renderParam->IsRendering();
     }
     return true;
 }
@@ -523,7 +528,7 @@ HdPrmanRenderDelegate::Stop(bool blocking)
 {
     if (IsInteractive()) {
         _renderParam->StopRender(blocking);
-        return _renderParam->IsRenderStopped();
+        return !_renderParam->IsRendering();
     }
     return true;
 }

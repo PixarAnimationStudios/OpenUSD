@@ -104,6 +104,10 @@ GlfSimpleLightingContext::SetLights(GlfSimpleLightVector const & lights)
     _postSurfaceShaderStateValid = false;
 
     int numLights = GetNumLightsUsed();
+    if (_lights.size() > _maxLightsUsed) {
+        TF_WARN("Hydra supports up to %d lights, truncating the %lu found "
+                "lights to this max.", _maxLightsUsed, _lights.size());
+    }
 
     _useShadows = false;
     for (int i = 0;i < numLights; ++i) {

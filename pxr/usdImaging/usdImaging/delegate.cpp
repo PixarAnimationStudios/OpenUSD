@@ -119,6 +119,8 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _drawModeCache(GetTime())
     , _inheritedPrimvarCache()
     , _pointInstancerIndicesCache(GetTime())
+    , _nonlinearSampleCountCache(GetTime())
+    , _blurScaleCache(GetTime())
     , _displayRender(true)
     , _displayProxy(true)
     , _displayGuides(true)
@@ -578,6 +580,29 @@ namespace {
     };
 };
 
+namespace
+{
+
+class _NoticeBatchingContext
+{
+public:
+    _NoticeBatchingContext(HdRenderIndex *renderIndex)
+    : _renderIndex(renderIndex)
+    {
+        _renderIndex->SceneIndexEmulationNoticeBatchBegin();
+    }
+
+    ~_NoticeBatchingContext()
+    {
+        _renderIndex->SceneIndexEmulationNoticeBatchEnd();
+    }
+
+private:
+    HdRenderIndex * const _renderIndex;
+};
+
+} // namespace anonymous
+
 void
 UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
 {
@@ -604,6 +629,12 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
         .Msg("[Repopulate] Populating <%s> on stage %s\n",
              _rootPrimPath.GetString().c_str(),
              _stage->GetRootLayer()->GetDisplayName().c_str());
+
+    // Batch all population-driven scene index notices (PrimsAdded) until this
+    // goes out of scope so that downstream consumers which may want
+    // immediate information about prims need not be concerned with the order
+    // in which prims are populated.
+    _NoticeBatchingContext batchingContext(&GetRenderIndex());
 
     WorkDispatcher bindingDispatcher;
 
@@ -841,6 +872,8 @@ UsdImagingDelegate::SetTime(UsdTimeCode time)
     _xformCache.SetTime(_time);
     _visCache.SetTime(_time);
     _pointInstancerIndicesCache.SetTime(_time);
+    _nonlinearSampleCountCache.SetTime(_time);
+    _blurScaleCache.SetTime(_time);
 
     // No need to set time on the look binding cache here, since we know we're
     // only querying relationships.
@@ -975,6 +1008,8 @@ UsdImagingDelegate::ApplyPendingUpdates()
     _coordSysBindingCache.Clear();
     _inheritedPrimvarCache.Clear();
     _pointInstancerIndicesCache.Clear();
+    _nonlinearSampleCountCache.Clear();
+    _blurScaleCache.Clear();
 
     UsdImagingDelegate::_Worker worker(this);
     UsdImagingIndexProxy indexProxy(this, &worker);
@@ -1370,6 +1405,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
         // from plugins (such as the PointInstancer).
         if (attrName == UsdGeomTokens->visibility ||
             attrName == UsdGeomTokens->purpose ||
+            attrName == UsdGeomTokens->motionNonlinearSampleCount ||
             UsdGeomXformable::IsTransformationAffectedByAttrNamed(attrName)) {
             // Because these are inherited attributes, we must update all
             // children.
@@ -2254,6 +2290,23 @@ UsdImagingDelegate::GetScenePrimPath(SdfPath const& rprimId,
     return protoPath;
 }
 
+SdfPathVector
+UsdImagingDelegate::GetScenePrimPaths(SdfPath const& rprimId,
+                      std::vector<int> instanceIndices,
+                      std::vector<HdInstancerContext> *instancerContexts)
+{
+    SdfPath cachePath = ConvertIndexPathToCachePath(rprimId);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (!primInfo || !primInfo->adapter) {
+        TF_WARN("GetScenePrimPaths: Couldn't find rprim <%s>",
+                rprimId.GetText());
+        return SdfPathVector(instanceIndices.size(), cachePath);
+    }
+
+    return primInfo->adapter->GetScenePrimPaths(
+        cachePath, instanceIndices, instancerContexts);
+}
+
 bool
 UsdImagingDelegate::PopulateSelection(
               HdSelection::HighlightMode const& highlightMode,
@@ -2562,7 +2615,27 @@ UsdImagingDelegate::GetPrimvarDescriptors(SdfPath const& id,
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
 
     HdPrimvarDescriptorVector allPrimvars;
-    _primvarDescCache.FindPrimvars(cachePath, &allPrimvars);
+    if (!_primvarDescCache.FindPrimvars(cachePath, &allPrimvars)) {
+
+        // NOTE: One possible reason for not having an entry in the primvar
+        //       cache is if something downstream is querying for this during
+        //       the traditional "population" phase. In that case, allow it to
+        //       fill that cache by calling UpdateForTime early.
+        //
+        _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+        if (TF_VERIFY(primInfo)) {
+            primInfo->adapter->UpdateForTime(
+                primInfo->usdPrim, cachePath,
+                GetTime(),
+                HdChangeTracker::Clean
+                    // primvars + built-ins tracked as primvars
+                    | HdChangeTracker::DirtyPrimvar 
+                    | HdChangeTracker::DirtyPoints
+                    | HdChangeTracker::DirtyNormals
+                    | HdChangeTracker::DirtyWidths);
+            _primvarDescCache.FindPrimvars(cachePath, &allPrimvars);
+        }
+    }
 
     // Filter to only primvars of the right interpolation.
     // Note: it's valid to have no authored primvars (they could be computed)

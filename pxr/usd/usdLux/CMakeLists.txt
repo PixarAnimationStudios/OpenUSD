@@ -21,6 +21,7 @@ pxr_library(usdLux
         geometryLight
         lightAPI
         lightFilter
+        lightListAPI
         listAPI
         meshLightAPI
         nonboundableLightBase
@@ -54,6 +55,7 @@ pxr_library(usdLux
         wrapGeometryLight.cpp
         wrapLightAPI.cpp
         wrapLightFilter.cpp
+        wrapLightListAPI.cpp
         wrapListAPI.cpp
         wrapMeshLightAPI.cpp
         wrapNonboundableLightBase.cpp
@@ -82,7 +84,7 @@ pxr_library(usdLux
 pxr_test_scripts(
     testenv/testUsdLuxLight.py
     testenv/testUsdLuxLinkingAPI.py
-    testenv/testUsdLuxListAPI.py
+    testenv/testUsdLuxLightListAPI.py
 )
 
 pxr_register_test(testUsdLuxLight
@@ -103,13 +105,13 @@ pxr_register_test(testUsdLuxLinkingAPI
 )
 
 pxr_install_test_dir(
-    DEST testUsdLuxListAPI
-    SRC testenv/testUsdLuxListAPI
+    DEST testUsdLuxLightListAPI
+    SRC testenv/testUsdLuxLightListAPI
 )
 
-pxr_register_test(testUsdLuxListAPI
+pxr_register_test(testUsdLuxLightListAPI
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdLuxListAPI"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdLuxLightListAPI"
     EXPECTED_RETURN_CODE 0
 )
 

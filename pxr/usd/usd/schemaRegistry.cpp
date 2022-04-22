@@ -221,6 +221,13 @@ _IsConcreteSchemaKind(const UsdSchemaKind schemaKind)
     return schemaKind == UsdSchemaKind::ConcreteTyped;
 }
 
+static bool
+_IsAbstractSchemaKind(const UsdSchemaKind schemaKind)
+{
+    return (schemaKind == UsdSchemaKind::AbstractTyped) || 
+        (schemaKind == UsdSchemaKind::AbstractBase);
+}
+
 static bool 
 _IsAppliedAPISchemaKind(const UsdSchemaKind schemaKind)
 {
@@ -386,6 +393,20 @@ UsdSchemaRegistry::IsConcrete(const TfToken& primType)
 }
 
 /*static*/
+bool
+UsdSchemaRegistry::IsAbstract(const TfType& primType)
+{
+    return _IsAbstractSchemaKind(GetSchemaKind(primType));
+}
+
+/*static*/
+bool
+UsdSchemaRegistry::IsAbstract(const TfToken& primType)
+{
+    return _IsAbstractSchemaKind(GetSchemaKind(primType));
+}
+
+/*static*/
 bool 
 UsdSchemaRegistry::IsMultipleApplyAPISchema(const TfType& apiSchemaType)
 {
@@ -512,6 +533,7 @@ template <class T>
 static void
 _CopySpec(const T &srcSpec, const T &dstSpec)
 {
+    TRACE_FUNCTION();
     for (const TfToken& key : srcSpec->ListFields()) {
         if (!UsdSchemaRegistry::IsDisallowedField(key)) {
             dstSpec->SetInfo(key, srcSpec->GetInfo(key));
@@ -522,6 +544,7 @@ _CopySpec(const T &srcSpec, const T &dstSpec)
 static void
 _AddSchema(SdfLayerRefPtr const &source, SdfLayerRefPtr const &target)
 {
+    TRACE_FUNCTION();
     for (SdfPrimSpecHandle const &prim: source->GetRootPrims()) {
         if (!target->GetPrimAtPath(prim->GetPath())) {
 
@@ -724,6 +747,7 @@ public:
 
     void FindAndBuildAllSchemaDefinitions()
     {
+        TRACE_FUNCTION();
         // Find and load all the generated schema in plugin libraries.  We find 
         // these files adjacent to pluginfo files in libraries that provide 
         // subclasses of UsdSchemaBase.
@@ -804,6 +828,7 @@ void
 UsdSchemaRegistry::_SchemaDefInitHelper::
 _InitializePrimDefsAndSchematicsForPluginSchemas()
 {
+    TRACE_FUNCTION();
     // Get all types that derive from UsdSchemaBase by getting the type map 
     // cache.
     const _TypeMapCache &typeCache = _GetTypeMapCache();
@@ -1147,6 +1172,7 @@ void
 UsdSchemaRegistry::_SchemaDefInitHelper::
 _PopulateAppliedAPIPrimDefinitions()
 {
+    TRACE_FUNCTION();
     // All applied API schemas may contain other applied API schemas which may 
     // also include other API schemas. To populate their properties correctly,
     // we must do this in multiple passes.
@@ -1285,6 +1311,7 @@ void
 UsdSchemaRegistry::_SchemaDefInitHelper::
 _PopulateConcretePrimDefinitions()
 {
+    TRACE_FUNCTION();
     // Populate all concrete API schema definitions; it is expected that all 
     // API schemas, which these may depend on, have already been populated.
     for (auto &nameAndDefPtr : _registry->_concreteTypedPrimDefinitions) {

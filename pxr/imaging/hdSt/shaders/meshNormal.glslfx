@@ -47,6 +47,11 @@ vec3 GetNormal(vec3 Neye, int index)
     return normal;
 }
 
+vec3 GetNormal(vec3 Neye, int index, vec2 localST)
+{
+    return GetNormal(Neye, index);
+}
+
 --- --------------------------------------------------------------------------
 -- glsl MeshNormal.Scene.Patches
 
@@ -87,6 +92,11 @@ vec3 GetNormal(vec3 Neye, int index)
     return normal;
 }
 
+vec3 GetNormal(vec3 Neye, int index, vec2 localST)
+{
+    return GetNormal(Neye, index);
+}
+
 --- --------------------------------------------------------------------------
 -- glsl MeshNormal.Flat
 
@@ -116,7 +126,7 @@ vec3 GetNormal(vec3 Neye, int index, vec2 localST)
 --- --------------------------------------------------------------------------
 -- glsl MeshNormal.Fragment.ScreenSpace
 
-vec3 ComputeScreenSpaceNeye();
+FORWARD_DECL(vec3 ComputeScreenSpaceNeye());
 
 vec3 GetNormal(vec3 Neye, int index)
 {

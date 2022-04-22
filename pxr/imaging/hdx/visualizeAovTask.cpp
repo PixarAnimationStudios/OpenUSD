@@ -263,23 +263,17 @@ HdxVisualizeAovTask::_CreateBufferResources()
     }
 
     // A larger-than screen triangle made to fit the screen.
-    constexpr float vertDataGL[][6] =
+    constexpr float vertData[][6] =
             { { -1,  3, 0, 1,     0, 2 },
               { -1, -1, 0, 1,     0, 0 },
               {  3, -1, 0, 1,     2, 0 } };
 
-    constexpr float vertDataOther[][6] =
-            { { -1,  3, 0, 1,     0, -1 },
-              { -1, -1, 0, 1,     0,  1 },
-              {  3, -1, 0, 1,     2,  1 } };
-
     HgiBufferDesc vboDesc;
     vboDesc.debugName = "HdxVisualizeAovTask VertexBuffer";
     vboDesc.usage = HgiBufferUsageVertex;
-    vboDesc.initialData = _hgi->GetAPIName() != HgiTokens->OpenGL
-        ? vertDataOther : vertDataGL;
-    vboDesc.byteSize = sizeof(vertDataOther);
-    vboDesc.vertexStride = sizeof(vertDataOther[0]);
+    vboDesc.initialData = vertData;
+    vboDesc.byteSize = sizeof(vertData);
+    vboDesc.vertexStride = sizeof(vertData[0]);
     _vertexBuffer = _GetHgi()->CreateBuffer(vboDesc);
 
     static const int32_t indices[3] = {0,1,2};
@@ -371,7 +365,7 @@ HdxVisualizeAovTask::_CreatePipeline(HgiTextureDesc const& outputTextureDesc)
     // pixels that were set with a clearColor alpha of 0.0.
     desc.multiSampleState.alphaToCoverageEnable = false;
 
-    // Setup raserization state
+    // Setup rasterization state
     desc.rasterizationState.cullMode = HgiCullModeBack;
     desc.rasterizationState.polygonMode = HgiPolygonModeFill;
     desc.rasterizationState.winding = HgiWindingCounterClockwise;
@@ -474,14 +468,15 @@ HdxVisualizeAovTask::_UpdateMinMaxDepth(HgiTextureHandle const &inputAovTexture)
          return;
     }
 
-    std::vector<uint8_t> buffer;
-    HdStTextureUtils::HgiTextureReadback(_GetHgi(), inputAovTexture, &buffer);
+    size_t size = 0;
+    HdStTextureUtils::AlignedBuffer<uint8_t> buffer =
+        HdStTextureUtils::HgiTextureReadback(_GetHgi(), inputAovTexture, &size);
 
     {
         const HgiTextureDesc& textureDesc = inputAovTexture.Get()->GetDescriptor();
         const size_t width = textureDesc.dimensions[0];
         const size_t height = textureDesc.dimensions[1];
-        float *ptr = reinterpret_cast<float*>(&buffer[0]);
+        float const *ptr = reinterpret_cast<float const *>(buffer.get());
         float min = std::numeric_limits<float>::max();
         float max = std::numeric_limits<float>::min();
         for (size_t ii = 0; ii < width * height; ii++) {

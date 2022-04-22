@@ -32,6 +32,8 @@
 #include "pxr/imaging/hgi/handle.h"
 #include "pxr/imaging/hgi/types.h"
 
+#include "pxr/base/arch/align.h"
+
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -115,17 +117,65 @@ public:
         size_t layer,
         void * bufferStart);
 
-    // Read back the GPU contents of the HgiTexture to the CPU using the memory
-    // in the buffer vector.
-    // The vector is resized to accommodate the required memory.
-    // Returns true if the process was successful.
+    // Because the underlying graphics API may have alignment
+    // restrictions we use this wrapper class to manage the
+    // allocation of the returned buffer data, and expose a
+    // restricted subset of underlyling pointer's access methods.
+    template <typename T>
+    class AlignedBuffer
+    {
+    public:
+        AlignedBuffer()
+            : AlignedBuffer(nullptr)
+            { }
+
+        T *get() const {
+            return _alignedPtr.get();
+        }
+
+    private:
+        friend class HdStTextureUtils;
+
+        explicit AlignedBuffer(T * alignedPtr)
+            : _alignedPtr(alignedPtr, ArchAlignedFree)
+            { }
+
+        T *release() {
+            return _alignedPtr.release();
+        }
+
+        std::unique_ptr<T[], decltype(ArchAlignedFree)*> _alignedPtr;
+    };
+
+    /// Returns an unsigned byte buffer with data read back from \p texture.
     HDST_API
     static
-    bool
+    AlignedBuffer<uint8_t>
     HgiTextureReadback(Hgi * const hgi,
                        HgiTextureHandle const & texture,
-                       std::vector<uint8_t> * buffer);
+                       size_t * bufferSize);
+
+    /// Returns a buffer with data of type T read back from \p texture.
+    template <typename T>
+    static
+    AlignedBuffer<T>
+    HgiTextureReadback(Hgi * const hgi,
+                       HgiTextureHandle const & texture,
+                       size_t * bufferSize);
 };
+
+template <typename T>
+HdStTextureUtils::AlignedBuffer<T>
+HdStTextureUtils::HgiTextureReadback(Hgi * const hgi,
+                                     HgiTextureHandle const & texture,
+                                     size_t * bufferSize)
+{
+    HdStTextureUtils::AlignedBuffer<uint8_t> buffer =
+        HdStTextureUtils::HgiTextureReadback(hgi, texture, bufferSize);
+
+    T * typedData = reinterpret_cast<T *>(buffer.release());
+    return HdStTextureUtils::AlignedBuffer<T>(typedData);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

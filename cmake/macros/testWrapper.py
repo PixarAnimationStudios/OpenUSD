@@ -58,10 +58,28 @@ def _parseArgs():
             action='append',
             help=('Compare output file with a file in the baseline-dir of the '
                   'same name'))
+    parser.add_argument('--image-diff-compare', default=[], type=str,
+                        action='append',
+                        help=('Compare output image with an image in the baseline '
+                              'of the same name'))
+    parser.add_argument('--fail', type=str,
+                        help='The threshold for the acceptable difference of a pixel for failure')
+    parser.add_argument('--failpercent', type=str,
+                        help='The percentage of pixels that can be different before failure')
+    parser.add_argument('--hardfail', type=str,
+                        help='Triggers a failure if any pixels are above this threshold')
+    parser.add_argument('--warn', type=str,
+                        help='The threshold for the acceptable difference of a pixel for a warning')
+    parser.add_argument('--warnpercent', type=str,
+                        help='The percentage of pixels that can be different before a warning')
+    parser.add_argument('--hardwarn', type=str,
+                        help='Triggers a warning if any pixels are above this threshold')
+    parser.add_argument('--perceptual', action='store_true',
+                        help='Performs a test to see if two images are visually different')
     parser.add_argument('--files-exist', nargs='*',
             help=('Check that a set of files exist.'))
     parser.add_argument('--files-dont-exist', nargs='*',
-            help=('Check that a set of files exist.'))
+            help=('Check that a set of files do not exist.'))
     parser.add_argument('--clean-output-paths', nargs='*',
             help=('Path patterns to remove from the output files being diff\'d.'))
     parser.add_argument('--post-command', type=str,
@@ -166,6 +184,56 @@ def _diff(fileName, baselineDir, verbose):
 
     return True
 
+def _imageDiff(fileName, baseLineDir, verbose, env, warn=None, warnpercent=None,
+               hardwarn=None, fail=None, failpercent=None, hardfail=None,
+               perceptual=None):
+    import platform
+    if platform.system() == 'Windows':
+        imageDiff = 'idiff.exe'
+    else:
+        imageDiff = 'idiff'
+
+    cmdArgs = []
+    if warn is not None:
+        cmdArgs.extend(['-warn', warn])
+
+    if warnpercent is not None:
+        cmdArgs.extend(['-warnpercent', warnpercent])
+
+    if hardwarn is not None:
+        cmdArgs.extend(['-hardwarn', hardwarn])
+
+    if fail is not None:
+        cmdArgs.extend(['-fail', fail])
+
+    if failpercent is not None:
+        cmdArgs.extend(['-failpercent', failpercent])
+
+    if hardfail is not None:
+        cmdArgs.extend(['-hardfail', hardfail])
+
+    if perceptual:
+        cmdArgs.extend(['-p'])
+
+    for image in glob.glob(fileName):
+        cmd = [imageDiff]
+        cmd.extend(cmdArgs)
+        cmd.extend([_resolvePath(baseLineDir, image), image])
+
+        if verbose:
+            print("image diffing with {0}".format(cmd))
+
+        # This will print any diffs to stdout which is a nice side-effect
+        # 0: OK: the images match within the warning and error thresholds.
+        # 1: Warning: the errors differ a little, but within error thresholds.
+        # 2: Failure: the errors differ a lot, outside error thresholds.
+        # 3: The images were not the same size and could not be compared.
+        # 4: File error: could not find or open input files, etc.
+        if subprocess.call(cmd, shell=False, env=env) not in (0, 1):
+            return False
+
+    return True
+
 def _copyTree(src, dest):
     ''' Copies the contents of src into dest.'''
     if not os.path.exists(dest):
@@ -215,7 +283,7 @@ def _runCommand(raw_command, stdout_redir, stderr_redir, env,
                 "Error: return code {0} doesn't match "
                 "expected {1} (EXPECTED_RETURN_CODE).".format(retcode, 
                                                         expected_return_code))
-        sys.exit(1)       
+        sys.exit(1)
 
 if __name__ == '__main__':
     args = _parseArgs()
@@ -223,6 +291,11 @@ if __name__ == '__main__':
     if args.diff_compare and not args.baseline_dir:
         sys.stderr.write("Error: --baseline-dir must be specified with " 
                          "--diff-compare.")
+        sys.exit(1)
+
+    if args.image_diff_compare and not args.baseline_dir:
+        sys.stderr.write("Error: --baseline-dir must be specified with "
+                         "--image-diff-compare.")
         sys.exit(1)
 
     if args.clean_output_paths and not args.diff_compare:
@@ -311,6 +384,19 @@ if __name__ == '__main__':
             if not _diff(diff, args.baseline_dir, args.verbose):
                 sys.stderr.write('Error: diff for {0} failed '
                                  '(DIFF_COMPARE).'.format(diff))
+                sys.exit(1)
+
+    if args.image_diff_compare:
+        converted = vars(args)
+        params = {key: converted[key] for key in
+                  ('warn', 'warnpercent', 'hardwarn',
+                   'fail', 'failpercent', 'hardfail', 'perceptual')
+                  if key in converted}
+
+        for image in args.image_diff_compare:
+            if not _imageDiff(image, args.baseline_dir, args.verbose, env, **params):
+                sys.stderr.write('Error: image diff for {0} failed '
+                                 '(IMAGE_DIFF_COMPARE).\n'.format(image))
                 sys.exit(1)
 
     sys.exit(0)

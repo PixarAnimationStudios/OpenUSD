@@ -12,12 +12,29 @@ to compile and work with USD Core successfully.
 
   - Must specify the libraryName as layer metadata.
   - Schema typenames must be unique across all libraries.
-  - Attribute names and tokens must be camelCased valid C/python identifiers,
-    with the allowance that ':' signifies property namespacing.  See
-    \ref Usd_OM_UsdProperty and \ref Usd_NameSpacedPropertiesInCodeGen
-    for more information.
+  - Attribute names and tokens should be camelCased valid C/python identifiers,
+    with the allowance that ':' signifies property namespacing. However if 
+    useLiteralIdentifier metadata is provided in the schema.usda, then when 
+    creating public tokens for names, token-values, etc, code gen will try to 
+    use the tokens as-is substituting underscores where necessary to produce a 
+    valid identifier. Any invalid identifier will be updated using 
+    TfMakeValidIdentifier. Also note that as per established convention schema 
+    tokens, library tokens, relationship names and property namespace prefix 
+    tokens follow the use literal identifier pattern. See 
+    \ref Usd_OM_UsdProperty and \ref Usd_NameSpacedPropertiesInCodeGen for more 
+    information.
   - usd/schema.usda must exist in the LayerStack, not necessarily as a direct 
     subLayer. 
+  - If the names, default values and token values are not valid C/python
+    identifiers, then during schema gen we try to update these such that:
+      - If the first element of the token is a digit, an '_' is prefixed before
+      running it through TfMakeValidIdentifier.
+      - All invalid tokens are updated to replace any illegal element with an
+      '_'.
+      - Do note that since all special characters are replaced with an '_',
+      tokens like "foo#bar" and "foo$bar", will result in the same identifier
+      "foo_bar", hence violating the One-to-One mapping of token identifiers
+      mentioned in \ref Usd_NameSpacedPropertiesInCodeGen below.
 
 See pxr/usd/lib/usdGeom/schema.usda for an example.
 
@@ -431,7 +448,9 @@ usdGenSchema also supports the use of namespaced properties for code generation.
 For example, float  foo:bar will generate UsdMyClass::GetFooBarAttr() and 
 UsdTokens->fooBar (with a value of "foo:bar").  usdGenSchema will raise 
 exceptions to avoid naming collisions in the schema API and enforces a 
-One-to-One mapping of token identifiers to token values, as shown below.
+One-to-One mapping of token identifiers to token values, as shown below. Note
+that irrespective of useLiteralIdentifier value, property names with ':' are
+always camelCased for the defined convention.
 
 \code
 class MyClass "MyClass" {
@@ -505,6 +524,16 @@ Here's a short description of each datum in the global customData dictionary:
     also not generate any code. This is because we don't want to generate C++ 
     code for classes that would possibly inherit from another C++ class that 
     doesn't exist.
+
+  - \b useLiteralIdentifier - when set for a library all tokens (default values,
+ 	allowedTokens and property names) will try to use literal names as-is, instead
+ 	of camelCasing these, which is the default behavior. For invalid tokens
+ 	defined in schema.usda, usdGenSchema will use TfMakeValidIdentifier to make
+ 	valid tokens. Note that for property names containing ':', representing
+ 	namespace prefixes, usdGenSchema will continue to use camelCase as mentioned
+ 	in \ref Usd_NameSpacedPropertiesInCodeGen, example "namespacePrefix:attrName"
+ 	will be camelCased to "namespacePrefixAttrName" irrespective of
+ 	useLiteralIdentifier being set or not.
  
 \section Usd_PerClassProperties Customizing Per-Class Properties
 

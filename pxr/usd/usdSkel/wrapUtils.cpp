@@ -346,9 +346,10 @@ void wrapUsdSkelUtils()
         (arg("translations"), arg("rotations"), arg("scales")));
 
     def("NormalizeWeights",
-        static_cast<bool (*)(TfSpan<float>,int)>(
+        static_cast<bool (*)(TfSpan<float>,int,float)>(
             &UsdSkelNormalizeWeights),
-        (arg("weights"), arg("numInfluencesPerComponent")));
+        (arg("weights"), arg("numInfluencesPerComponent"),
+         arg("eps")=std::numeric_limits<float>::epsilon()));
 
     def("SortInfluences",
         static_cast<bool (*)(TfSpan<int>, TfSpan<float>,int)>(

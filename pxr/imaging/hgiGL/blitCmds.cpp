@@ -107,6 +107,12 @@ HgiGLBlitCmds::CopyBufferToTexture(HgiBufferToTextureOp const& copyOp)
 }
 
 void
+HgiGLBlitCmds::FillBuffer(HgiBufferHandle const& buffer, uint8_t value)
+{
+    _ops.push_back( HgiGLOps::FillBuffer(buffer, value) );
+}
+
+void
 HgiGLBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 {
     _ops.push_back( HgiGLOps::GenerateMipMaps(texture) );

@@ -2,6 +2,7 @@
 (
     endFrame = 2
     startFrame = 0
+    upAxis = "Z"
 )
 
 def Xform "Root"

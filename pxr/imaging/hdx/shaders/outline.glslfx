@@ -49,7 +49,7 @@
 void testTexel(int x, int y, REF(thread,float) dist2, REF(thread,vec4) color)
 {
     vec2 texCoords = uvOut + vec2(x, y) * texelSize;
-    vec4 c = HdGet_colorIn(texCoords);
+    vec4 c = HgiGet_colorIn(texCoords);
 
     if ( c.r > EPSILON || c.g > EPSILON || c.b > EPSILON) {
         float d = float(x * x + y * y );
@@ -121,7 +121,7 @@ void main()
     hd_FragColor = vec4(0, 0, 0, 1);
     // Check if the current texel is not black - meaning that we are inside an
     // area of colorId that has been highlighted.
-    vec4 color = HdGet_colorIn(uvOut);
+    vec4 color = HgiGet_colorIn(uvOut);
     bool isInside = color.r > EPSILON || color.g > EPSILON || color.b > EPSILON;
 
     if (enableOutline==0) { 

@@ -194,9 +194,12 @@ public:
     /// @{
 
     /// Constructor that takes a ConnectableAPI object.
-    /// Allow implicit (auto) conversion of UsdShadeShader to 
-    /// UsdShadeConnectableAPI, so that a shader can be passed into any function
-    /// that accepts a ConnectableAPI.
+    /// Allow implicit (auto) conversion of UsdShadeConnectableAPI to 
+    /// UsdShadeShader, so that a ConnectableAPI can be passed into any function
+    /// that accepts a Shader.
+    ///
+    /// \note that the conversion may produce an invalid Shader object, because
+    /// not all UsdShadeConnectableAPI%s are Shader%s
     USDSHADE_API
     UsdShadeShader(const UsdShadeConnectableAPI &connectable);
 

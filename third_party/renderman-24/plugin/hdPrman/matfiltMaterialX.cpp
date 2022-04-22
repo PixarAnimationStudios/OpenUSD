@@ -91,39 +91,44 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 
-// Use the given mxDocument to generate osl source code for the nodegraph output 
-// with the given hdOutputName
+// Use the given mxDocument to generate osl source code for the node from the 
+// nodeGraph with the given names.
 static std::string
 _GenMaterialXShaderCode(
     mx::DocumentPtr const &mxDoc,
     mx::FileSearchPath const &searchPath,
-    std::string const &hdOutputName,
-    std::string const &shaderName)
+    std::string const &shaderName,
+    std::string const &mxNodeName,
+    std::string const &mxNodeGraphName)
 {
     // Initialize the Context for shaderGen
     mx::GenContext mxContext = mx::OslShaderGenerator::create();
     mxContext.registerSourceCodeSearchPath(searchPath);
     mxContext.getOptions().fileTextureVerticalFlip = false;
 
-    // Find renderable elements in the Mtlx Document (NodeGraph outputs)
-    std::vector<mx::TypedElementPtr> renderableElements;
-    mx::findRenderableElements(mxDoc, renderableElements);
-
-    // Generate the OslShader for the matching hdOutput
-    for (auto& nodeGraphOutputElement : renderableElements) {
-        if (hdOutputName == nodeGraphOutputElement->getName()) {
-            TF_DEBUG(HDPRMAN_MATERIALS)
-                .Msg("Generate a MaterialX Osl shader for output '%s'\n", 
-                     hdOutputName.c_str());
-            mx::ShaderPtr mxShader = mx::createShader(shaderName, mxContext, 
-                                                      nodeGraphOutputElement);
-            if (mxShader) {
-                return mxShader->getSourceCode();
-            }
-            return mx::EMPTY_STRING;
-        }
+    // Get the Node from the Nodegraph/mxDoc 
+    mx::NodeGraphPtr mxNodeGraph = mxDoc->getNodeGraph(mxNodeGraphName);
+    if (!mxNodeGraph) {
+        TF_WARN("NodeGraph '%s' not found in the mxDoc.",
+                mxNodeGraphName.c_str());
+        return mx::EMPTY_STRING;
     }
-    TF_WARN("No matching output for '%s'\n", hdOutputName.c_str());
+    mx::NodePtr mxNode = mxNodeGraph->getNode(mxNodeName);
+    if (!mxNode) {
+        TF_WARN("Node '%s' not found in '%s' nodeGraph.",
+                mxNodeName.c_str(), mxNodeGraphName.c_str());
+        return mx::EMPTY_STRING;
+    }
+
+    // Generate the OslShader for the Node
+    TF_DEBUG(HDPRMAN_MATERIALS)
+        .Msg("Generate a MaterialX Osl shader for '%s' node.\n", 
+             mxNodeName.c_str());
+    mx::ShaderPtr mxShader = mx::createShader(shaderName, mxContext, mxNode);
+    if (mxShader) {
+        return mxShader->getSourceCode();
+    }
+    TF_WARN("Unable to create Shader for node '%s'.", mxNodeName.c_str());
     return mx::EMPTY_STRING;
 }
 
@@ -297,14 +302,14 @@ _UpdateNetwork(
 
     TfTokenVector terminalConnectionNames =
         netInterface->GetNodeInputConnectionNames(terminalNodeName);
-    
+
     for (TfToken const &cName : terminalConnectionNames) {
-        std::string const &mxNodeGraphOutput = cName.GetString();
         auto inputConnections =
             netInterface->GetNodeInputConnection(terminalNodeName, cName);
 
         for (auto const &currConnection : inputConnections) {
             TfToken const &upstreamNodeName = currConnection.upstreamNodeName;
+            TfToken const &outputName = currConnection.upstreamOutputName;
 
             if (!_HasNode(netInterface, upstreamNodeName)) {
                 TF_WARN("Unknown material node '%s'",
@@ -313,23 +318,25 @@ _UpdateNetwork(
             }
             bool newNode = visitedNodeNames.count(upstreamNodeName) == 0;
             if (!newNode) {
-                // Re-using a nodegraph output
-                // Get the sdrNode for this nodegraph output. 
+                // Re-using a node or node output, get the corresponding sdrNode
                 SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
                 SdrShaderNodeConstPtr sdrNode = 
                     sdrRegistry.GetShaderNodeByIdentifier(
                         netInterface->GetNodeType(upstreamNodeName));
 
                 // Update the connection into the terminal node so that the
-                // nodegraph output makes it into the closure
-                // Note: MaterialX nodes only have one output
+                // output makes it into the closure
                 TfToken const &inputName = cName;
-                TfToken outputName = sdrNode->GetOutputNames().at(0);
-                netInterface->SetNodeInputConnection(
-                    terminalNodeName,
-                    inputName,
-                    { {upstreamNodeName, outputName} });
-
+                if (sdrNode->GetOutput(outputName)) {
+                    netInterface->SetNodeInputConnection(
+                        terminalNodeName,
+                        inputName,
+                        { {upstreamNodeName, outputName} });
+                }
+                else {
+                    TF_WARN("Output '%s' not found on node '%s'.",
+                            outputName.GetText(), upstreamNodeName.GetText());
+                }
                 continue;
             }
             
@@ -339,12 +346,15 @@ _UpdateNetwork(
                                   &nodesToRemove, &visitedNodeNames);
             nodesToKeep.insert(upstreamNodeName);
 
-            // Generate the oslSource code for the output            
-            std::string fullOutputName = mxNodeGraphOutput + "_" +
-                                currConnection.upstreamOutputName.GetString();
-            std::string shaderName = mxNodeGraphOutput + "Shader";
-            std::string oslSource = _GenMaterialXShaderCode(mxDoc, 
-                                        searchPath, fullOutputName, shaderName);
+            // Generate the oslSource code for the connected upstream node
+            SdfPath const nodePath = SdfPath(upstreamNodeName);
+            std::string const &mxNodeName = nodePath.GetName();
+            std::string const &mxNodeGraphName =
+                nodePath.GetParentPath().GetName();
+            std::string shaderName = mxNodeName + "Shader";
+            std::string oslSource = _GenMaterialXShaderCode(
+                mxDoc, searchPath, shaderName, mxNodeName, mxNodeGraphName);
+            
             if (oslSource.empty()) {
                 continue;
             }
@@ -371,7 +381,6 @@ _UpdateNetwork(
 
             // Update the connection into the terminal node so that the 
             // nodegraph outputs make their way into the closure
-            TfToken outputName(fullOutputName);
             if (sdrNode->GetOutput(outputName)) {
                 TfToken inputName = cName;
                 TfToken updatedInputName = _GetUpdatedInputToken(inputName);

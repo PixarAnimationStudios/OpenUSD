@@ -66,6 +66,16 @@ MAT4  GetProjectionMatrix() {
     return MAT4(1);
 #endif
 }
+vec3 GetPositionInWorldSpace(vec3 windowRelativeCoord)
+{
+#if defined(HD_HAS_imageToWorldMatrix)
+    vec4 pImage = vec4(windowRelativeCoord, 1.0);
+    vec4 pWorld = vec4(HdGet_imageToWorldMatrix() * pImage);
+    return (pWorld / pWorld.w).xyz;
+#else
+    return windowRelativeCoord;
+#endif
+}
 float GetLightingBlendAmount() {
 #if defined(HD_HAS_lightingBlendAmount)
     return HdGet_lightingBlendAmount();
@@ -181,7 +191,7 @@ vec4 ApplySelectionColor(vec4 color)
 
 // Forward declare selection functionality.
 // XXX: Currently, the non-empty implementation of this is in hdx.
-vec4 ApplySelectionColor(vec4 color);
+FORWARD_DECL(vec4 ApplySelectionColor(vec4 color));
 
 // XXX: Make sure to update hdx/shaders/renderPass.glslfx when editing these
 // color override methods, since they're currently duplicated. This is because
@@ -198,7 +208,7 @@ vec4 ApplyColorOverrides(vec4 color)
 
 vec3 ApplyMaskColor(vec3 color, float weight, vec4 maskColor)
 {
-    float strength = maskColor.a * clamp(weight, 0, 1);
+    float strength = maskColor.a * clamp(weight, 0.0, 1.0);
     return mix(color, maskColor.rgb, strength);
 }
 
@@ -217,22 +227,40 @@ vec4 ApplyColorOverridesPostLighting(vec4 color)
     return color;
 }
 
+-- layout RenderPass.RenderColor
+
+[
+    ["out", "vec4", "colorOut"]
+]
+
 -- glsl RenderPass.RenderColor
 
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
 layout (location = 0) out vec4 colorOut;
+#endif
 
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     colorOut = color;
 }
 
+-- layout RenderPass.RenderId
+
+[
+    ["out", "vec4", "primIdOut"],
+    ["out", "vec4", "instanceIdOut"]
+]
+
 -- glsl RenderPass.RenderId
+
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
+layout (location = 0) out vec4 primIdOut;
+layout (location = 1) out vec4 instanceIdOut;
+#endif
 
 // XXX: This whole snippet is a little sketchy and should ideally be replaced
 // with AoVs.  We generate "primId" and "instanceId", and depending on how
 // the client called glDrawBuffers, they will get one or both.
-layout (location = 0) out vec4 primIdOut;
-layout (location = 1) out vec4 instanceIdOut;
 
 vec4 IntToVec4(int id)
 {

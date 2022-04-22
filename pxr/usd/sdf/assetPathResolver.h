@@ -114,6 +114,13 @@ std::string Sdf_GetAnonLayerDisplayName(
 std::string Sdf_GetAnonLayerIdentifierTemplate(
     const std::string& tag);
 
+/// If \p identifier contains file format arguments
+/// (e.g. foo.sdf:SDF_FORMAT_ARGS:a=b), strip them, assign the resulting string
+/// to *strippedIdentifier and return true.  Otherwise just return false.
+bool Sdf_StripIdentifierArgumentsIfPresent(
+    const std::string &identifier,
+    std::string *strippedIdentifier);
+
 /// Splits the given \p identifier into two portions: the layer path and the
 /// arguments. For example, given the identifier foo.sdf:SDF_FORMAT_ARGS:a=b,
 /// this function will set \p layerPath to "foo.sdf" and \p arguments to

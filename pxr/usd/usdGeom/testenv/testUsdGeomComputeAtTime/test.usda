@@ -127,12 +127,6 @@ def PointInstancer "OneInstanceUnalignedData" (
     }
 }
 
-def PointInstancer "OneInstanceVelocityScale" (
-    references = </OneInstance>
-) {
-    float motion:velocityScale = 2.0
-}
-
 def PointInstancer "MultiInstance" (
     references = </Base>
 ) {
@@ -645,12 +639,6 @@ def PointBased "OnePointPositionsAndVelocitiesOnly" (
         4: [ (2,8,0) ],
         6: [ (2,10,0) ]
     }
-}
-
-def PointBased "OnePointVelocityScale" (
-    references = </OnePoint>
-) {
-    float motion:velocityScale = 2.0
 }
 
 def PointBased "MultiPoints" (

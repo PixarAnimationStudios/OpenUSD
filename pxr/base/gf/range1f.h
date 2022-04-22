@@ -228,21 +228,21 @@ public:
     }
 
     /// unary sum.
-    GfRange1f operator +=(const GfRange1f &b) {
+    GfRange1f &operator +=(const GfRange1f &b) {
         _min += b._min;
         _max += b._max;
         return *this;
     }
 
     /// unary difference.
-    GfRange1f operator -=(const GfRange1f &b) {
+    GfRange1f &operator -=(const GfRange1f &b) {
         _min -= b._max;
         _max -= b._min;
         return *this;
     }
 
     /// unary multiply.
-    GfRange1f operator *=(double m) {
+    GfRange1f &operator *=(double m) {
         if (m > 0) {
             _min *= m;
             _max *= m;
@@ -255,7 +255,7 @@ public:
     }
 
     /// unary division.
-    GfRange1f operator /=(double m) {
+    GfRange1f &operator /=(double m) {
         return *this *= (1.0 / m);
     }
 

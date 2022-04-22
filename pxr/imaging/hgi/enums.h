@@ -57,19 +57,40 @@ using HgiBits = uint32_t;
 ///   The device can access GPU textures using bindless handles</li>
 /// <li>HgiDeviceCapabilitiesBitsShaderDoublePrecision:
 ///   The device supports double precision types in shaders</li>
+/// <li>HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne:
+///   The device's clip space depth ranges from [-1,1]</li>
+/// <li>HgiDeviceCapabilitiesBitsCppShaderPadding:
+///   Use CPP padding for shader language structures</li>
+/// <li>HgiDeviceCapabilitiesBitsConservativeRaster:
+///   The device supports conservative rasterization</li>
+/// <li>HgiDeviceCapabilitiesBitsStencilReadback:
+///   Supports reading back the stencil buffer from GPU to CPU.</li>
+/// <li>HgiDeviceCapabilitiesBitsCustomDepthRange:
+///   The device supports setting a custom depth range.</li>
+/// <li>HgiDeviceCapabilitiesBitsMetalTessellation:
+///   Supports Metal tessellation shaders</li>
+/// <li>HgiDeviceCapabilitiesBitsBasePrimitiveOffset:
+///   The device requires workaround for base primitive offset</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
 {
-    HgiDeviceCapabilitiesBitsPresentation          = 1 << 0,
-    HgiDeviceCapabilitiesBitsBindlessBuffers       = 1 << 1,
-    HgiDeviceCapabilitiesBitsConcurrentDispatch    = 1 << 2,
-    HgiDeviceCapabilitiesBitsUnifiedMemory         = 1 << 3,
-    HgiDeviceCapabilitiesBitsBuiltinBarycentrics   = 1 << 4,
-    HgiDeviceCapabilitiesBitsShaderDrawParameters  = 1 << 5,
-    HgiDeviceCapabilitiesBitsMultiDrawIndirect     = 1 << 6,
-    HgiDeviceCapabilitiesBitsBindlessTextures      = 1 << 7,
-    HgiDeviceCapabilitiesBitsShaderDoublePrecision = 1 << 8
+    HgiDeviceCapabilitiesBitsPresentation            = 1 << 0,
+    HgiDeviceCapabilitiesBitsBindlessBuffers         = 1 << 1,
+    HgiDeviceCapabilitiesBitsConcurrentDispatch      = 1 << 2,
+    HgiDeviceCapabilitiesBitsUnifiedMemory           = 1 << 3,
+    HgiDeviceCapabilitiesBitsBuiltinBarycentrics     = 1 << 4,
+    HgiDeviceCapabilitiesBitsShaderDrawParameters    = 1 << 5,
+    HgiDeviceCapabilitiesBitsMultiDrawIndirect       = 1 << 6,
+    HgiDeviceCapabilitiesBitsBindlessTextures        = 1 << 7,
+    HgiDeviceCapabilitiesBitsShaderDoublePrecision   = 1 << 8,
+    HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne = 1 << 9,
+    HgiDeviceCapabilitiesBitsCppShaderPadding        = 1 << 10,
+    HgiDeviceCapabilitiesBitsConservativeRaster      = 1 << 11,
+    HgiDeviceCapabilitiesBitsStencilReadback         = 1 << 12,
+    HgiDeviceCapabilitiesBitsCustomDepthRange        = 1 << 13,
+    HgiDeviceCapabilitiesBitsMetalTessellation       = 1 << 14,
+    HgiDeviceCapabilitiesBasePrimitiveOffset         = 1 << 15,
 };
 
 using HgiDeviceCapabilities = HgiBits;
@@ -320,6 +341,9 @@ using HgiBufferUsage = HgiBits;
 ///  stage.</li>
 /// <li>HgiShaderStageGeometry:
 ///   Governs the processing of Primitives.</li>
+/// <li>HgiShaderStagePostTessellationControl:
+///   Metal specific stage which computes tess factors
+///   and modifies user post tess vertex data.</li>
 /// <li>HgiShaderStagePostTessellationVertex:
 ///   Metal specific stage which performs tessellation and 
 ///   vertex processing.</li>
@@ -333,8 +357,9 @@ enum HgiShaderStageBits : HgiBits
     HgiShaderStageTessellationControl    = 1 << 3,
     HgiShaderStageTessellationEval       = 1 << 4,
     HgiShaderStageGeometry               = 1 << 5,
-    HgiShaderStagePostTessellationVertex = 1 << 6,
-    HgiShaderStageCustomBitsBegin        = 1 << 7,
+    HgiShaderStagePostTessellationControl = 1 << 6,
+    HgiShaderStagePostTessellationVertex = 1 << 7,
+    HgiShaderStageCustomBitsBegin        = 1 << 8,
 };
 using HgiShaderStage = HgiBits;
 
@@ -595,6 +620,10 @@ enum HgiPrimitiveType
 ///   New attribute data is fetched for each vertex.</li>
 /// <li>HgiVertexBufferStepFunctionPerInstance:
 ///   New attribute data is fetched for each instance.</li>
+/// <li>HgiVertexBufferStepFunctionPerPatch:
+///   New attribute data is fetched for each patch.</li>
+/// <li>HgiVertexBufferStepFunctionPerPatchControlPoint:
+///   New attribute data is fetched for each patch control point.</li>
 /// <li>HgiVertexBufferStepFunctionPerDrawCommand:
 ///   New attribute data is fetched for each draw in a multi-draw command.</li>
 /// </ul>
@@ -604,6 +633,8 @@ enum HgiVertexBufferStepFunction
     HgiVertexBufferStepFunctionConstant = 0,
     HgiVertexBufferStepFunctionPerVertex,
     HgiVertexBufferStepFunctionPerInstance,
+    HgiVertexBufferStepFunctionPerPatch,
+    HgiVertexBufferStepFunctionPerPatchControlPoint,
     HgiVertexBufferStepFunctionPerDrawCommand,
 
     HgiVertexBufferStepFunctionCount
@@ -651,11 +682,19 @@ using HgiMemoryBarrier = HgiBits;
 /// <ul>
 /// <li>HgiBindingTypeValue:
 ///   Shader declares binding as a value.
-///   Glsl example: uniform int parameter;
+///   Glsl example: buffer { int parameter; };
+///   Msl example: int parameter;</li>
+/// <li>HgiBindingTypeUniformValue:
+///   Shader declares binding as a uniform block value.
+///   Glsl example: uniform { int parameter; };
 ///   Msl example: int parameter;</li>
 /// <li>HgiBindingTypeArray:
 ///   Shader declares binding as array value.
-///   Glsl example: uniform int parameter[n];
+///   Glsl example: buffer { int parameter[n]; };
+///   Msl example: int parameter[n];</li>
+/// <li>HgiBindingTypeUniformArray:
+///   Shader declares binding as uniform block array value.
+///   Glsl example: uniform { int parameter[n]; };
 ///   Msl example: int parameter[n];</li>
 /// <li>HgiBindingTypePointer:
 ///   Shader declares binding as pointer value.
@@ -666,7 +705,9 @@ using HgiMemoryBarrier = HgiBits;
 enum HgiBindingType
 {
     HgiBindingTypeValue = 0,
+    HgiBindingTypeUniformValue,
     HgiBindingTypeArray,
+    HgiBindingTypeUniformArray,
     HgiBindingTypePointer,
 };
 
@@ -694,6 +735,26 @@ enum HgiInterpolationType
     HgiInterpolationDefault = 0,
     HgiInterpolationFlat,
     HgiInterpolationNoPerspective,
+};
+
+/// \enum HgiShaderTextureType
+///
+/// Describes the type of texture to be used in shader gen.
+///
+/// <ul>
+/// <li>HgiShaderTextureTypeTexture:
+///   Indicates a regular texture.</li>
+/// <li>HgiShaderTextureTypeShadowTexture:
+///   Indicates a shadow texture.</li>
+/// <li>HgiShaderTextureTypeArrayTexture:
+///   Indicates an array texture.</li>
+/// </ul>
+///
+enum HgiShaderTextureType
+{
+    HgiShaderTextureTypeTexture = 0,
+    HgiShaderTextureTypeShadowTexture,
+    HgiShaderTextureTypeArrayTexture
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

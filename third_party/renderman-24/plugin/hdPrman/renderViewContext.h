@@ -51,7 +51,7 @@ struct HdPrman_RenderViewDesc
         RtUString name;
         riley::RenderOutputType type;
         RtUString sourceName;
-        RtUString filterName;
+        RtUString rule;
         RtParamList params;
     };
 

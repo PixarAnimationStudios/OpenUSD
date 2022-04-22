@@ -31,6 +31,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class Hgi;
+
 using HgiVulkanShaderSectionUniquePtrVector =
     std::vector<std::unique_ptr<HgiVulkanShaderSection>>;
 
@@ -42,8 +44,9 @@ class HgiVulkanShaderGenerator final: public HgiShaderGenerator
 {
 public:
     HGIVULKAN_API
-    explicit HgiVulkanShaderGenerator(const HgiShaderFunctionDesc &descriptor,
-        const std::string &version);
+    explicit HgiVulkanShaderGenerator(
+        Hgi const *hgi,
+        const HgiShaderFunctionDesc &descriptor);
 
     //This is not commonly consumed by the end user, but is available.
     HGIVULKAN_API
@@ -51,14 +54,14 @@ public:
 
 protected:
     HGIVULKAN_API
-    void _Execute(
-        std::ostream &ss,
-        const std::string &originalShaderShader) override;
+    void _Execute(std::ostream &ss) override;
 
 private:
     HgiVulkanShaderGenerator() = delete;
     HgiVulkanShaderGenerator & operator=(const HgiVulkanShaderGenerator&) = delete;
     HgiVulkanShaderGenerator(const HgiVulkanShaderGenerator&) = delete;
+
+    void _WriteVersion(std::ostream &ss);
 
     void _WriteConstantParams(
         const HgiShaderFunctionParamDescVector &parameters);
@@ -73,6 +76,7 @@ private:
         const std::string &qualifier);
     
     HgiVulkanShaderSectionUniquePtrVector _shaderSections;
+    Hgi const *_hgi;
     uint32_t _bindIndex;
     std::vector<std::string> _shaderLayoutAttributes;
     std::string _version;

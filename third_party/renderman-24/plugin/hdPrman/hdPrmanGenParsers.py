@@ -85,7 +85,7 @@ def _compareFiles(installedFiles, generatedFiles, configuration):
     return diffs
 
 def _copyGeneratedFiles(installedFiles, generatedFiles, diffs):
-    baseNames = map(basename, installedFiles)
+    baseNames = [basename(installedFile) for installedFile in installedFiles]
     for baseName, generatedFile, installedFile in zip(baseNames, 
                                                       generatedFiles, 
                                                       installedFiles):
@@ -280,7 +280,7 @@ def _getConfiguration():
     if not arguments.bases:
         allFiles = listdir(arguments.srcDir)
         validExts = ['.yy', '.ll']
-        relevantFiles = filter(lambda f: splitext(f)[1] in validExts, allFiles)
+        relevantFiles = [f for f in allFiles if splitext(f)[1] in validExts]
         bases = list(set(map(lambda f: splitext(f)[0], relevantFiles)))
 
         if not bases:

@@ -141,6 +141,10 @@ _GetShaderType(HgiShaderStage stage)
             return "TESS_CONTROL_SHADER";
         case HgiShaderStageTessellationEval:
             return "TESS_EVALUATION_SHADER";
+        case HgiShaderStagePostTessellationControl:
+            return "POST_TESS_CONTROL_SHADER";
+        case HgiShaderStagePostTessellationVertex:
+            return "POST_TESS_VERTEX_SHADER";
         default:
             return nullptr;
     }
@@ -160,6 +164,7 @@ _DumpShaderSource(HgiShaderFunctionDesc const &desc)
 {
     const char *shaderType = _GetShaderType(desc.shaderStage);
     std::cout << "--------- " << shaderType << " ----------\n"
+              << desc.shaderCodeDeclarations
               << desc.shaderCode
               << "---------------------------\n"
               << std::flush;
@@ -289,9 +294,13 @@ HdStGLSLProgram::CompileShader(
     HgiShaderFunctionDesc shaderFnDesc;
     shaderFnDesc.shaderCode = shaderSource.c_str();
     shaderFnDesc.shaderStage = stage;
+
+    std::string generatedCode;
+    shaderFnDesc.generatedShaderCodeOut = &generatedCode;
+
     HgiShaderFunctionHandle shaderFn = hgi->CreateShaderFunction(shaderFnDesc);
 
-    if (!_ValidateCompilation(shaderFn, shaderType, shaderSource, _debugID)) {
+    if (!_ValidateCompilation(shaderFn, shaderType, generatedCode, _debugID)) {
         // shader is no longer needed.
         hgi->DestroyShaderFunction(&shaderFn);
 
@@ -315,7 +324,7 @@ HdStGLSLProgram::CompileShader(HgiShaderFunctionDesc const &desc)
     // this may not be an error, since glslfx gives empty string
     // for undefined shader stages (i.e. null geometry shader)
     if (!desc.shaderCode) return false;
-    
+
     const char *shaderType = _GetShaderType(desc.shaderStage);
     if (!shaderType) {
         TF_CODING_ERROR("Invalid shader type %d\n", desc.shaderStage);
@@ -323,21 +332,29 @@ HdStGLSLProgram::CompileShader(HgiShaderFunctionDesc const &desc)
     }
 
     if (TfDebug::IsEnabled(HDST_DUMP_SHADER_SOURCE)) {
-		_DumpShaderSource(desc);
+        _DumpShaderSource(desc);
     }
-    
+
     // Create a shader, compile it
     Hgi *const hgi = _registry->GetHgi();
+
+    // Optionally, capture generated shader code for diagnostic output.
+    std::string *generatedCode = desc.generatedShaderCodeOut;
+
     HgiShaderFunctionHandle shaderFn = hgi->CreateShaderFunction(desc);
-    
-    const bool success = shaderFn->IsValid();
-    if (success) {
-        // Store the shader function in the program descriptor
-        // so it can be used during Link time.
-        _programDesc.shaderFunctions.push_back(shaderFn);
+
+    if (!_ValidateCompilation(shaderFn, shaderType, *generatedCode, _debugID)) {
+        // shader is no longer needed.
+        hgi->DestroyShaderFunction(&shaderFn);
+
+        return false;
     }
-    
-    return success;
+
+    // Store the shader function in the program descriptor so it can be used
+    // during Link time.
+    _programDesc.shaderFunctions.push_back(shaderFn);
+
+    return true;
 }
 
 static std::string
@@ -506,12 +523,15 @@ HdStGLSLProgram::GetComputeProgram(
         const std::string sourceCode = defines + glslfx.GetSource(shaderToken);
         computeDesc.shaderCode = sourceCode.c_str();
 
+        std::string generatedCode;
+        computeDesc.generatedShaderCodeOut = &generatedCode;
+
         HgiShaderFunctionHandle computeFn =
             hgi->CreateShaderFunction(computeDesc);
 
         static const char *shaderType = "GL_COMPUTE_SHADER";
 
-        if (!_ValidateCompilation(computeFn, shaderType, sourceCode, 0)) {
+        if (!_ValidateCompilation(computeFn, shaderType, generatedCode, 0)) {
             // shader is no longer needed.
             hgi->DestroyShaderFunction(&computeFn);
             return nullptr;

@@ -1076,7 +1076,7 @@ YY_RULE_SETUP
     return TOK_EXPRESSION;
 }
 	YY_BREAK
-/* This should always match identifiers in the menva parser.  We
+/* This should always match identifiers in the sdf parser.  We
   * currently allow valid C/Python identifiers.
   */
 case 3:

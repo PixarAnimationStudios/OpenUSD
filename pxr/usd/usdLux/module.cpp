@@ -55,6 +55,7 @@ TF_WRAP_MODULE
         TF_WRAP(UsdLuxMeshLightAPI);
         TF_WRAP(UsdLuxVolumeLightAPI);
     }
+    TF_WRAP(UsdLuxLightListAPI);
     TF_WRAP(UsdLuxListAPI);
     TF_WRAP(UsdLuxShapingAPI);
     TF_WRAP(UsdLuxShadowAPI);

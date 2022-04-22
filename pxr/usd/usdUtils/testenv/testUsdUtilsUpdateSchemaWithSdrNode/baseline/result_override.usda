@@ -60,5 +60,6 @@ class "TestSchemaAPI" (
         displayGroup = "Internal"
     )
     color3f outputs:resultRGB
+    float propNS:testShaderPropWithNS = 0
 }
 

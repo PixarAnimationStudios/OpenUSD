@@ -360,10 +360,16 @@ public:
     /// \name Selection
     // ---------------------------------------------------------------------- //
 
+    /// \deprecated Call and implement GetScenePrimPaths instead.
     USDIMAGING_API
     virtual SdfPath GetScenePrimPath(SdfPath const& cachePath,
-                                     int instanceIndex,
-                                     HdInstancerContext *instancerCtx) const;
+        int instanceIndex,
+        HdInstancerContext *instancerCtx) const;
+
+    USDIMAGING_API
+    virtual SdfPathVector GetScenePrimPaths(SdfPath const& cachePath,
+        std::vector<int> const& instanceIndices,
+        std::vector<HdInstancerContext> *instancerCtxs) const;
 
     // Add the given usdPrim to the HdSelection object, to mark it for
     // selection highlighting. cachePath is the path of the object referencing
@@ -627,6 +633,12 @@ protected:
 
     USDIMAGING_API
     UsdImagingPrimvarDescCache* _GetPrimvarDescCache() const;
+
+    UsdImaging_NonlinearSampleCountCache*
+        _GetNonlinearSampleCountCache() const;
+
+    UsdImaging_BlurScaleCache*
+        _GetBlurScaleCache() const;
 
     USDIMAGING_API
     UsdPrim _GetPrim(SdfPath const& usdPath) const;

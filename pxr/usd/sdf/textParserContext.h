@@ -49,7 +49,7 @@ typedef void *yyscan_t;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// This class contains the global state while parsing a menva file.
+// This class contains the global state while parsing an sdf file.
 // It contains the data structures that we use to create the scene description
 // from the file.
 
@@ -156,7 +156,7 @@ public:
     // Stack of names of variants for the variant sets being built
     std::vector<std::vector<std::string> > currentVariantNames;
 
-    unsigned int menvaLineNo;
+    unsigned int sdfLineNo;
 
     // Used by flex for reentrant parsing
     yyscan_t scanner;

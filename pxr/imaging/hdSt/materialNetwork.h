@@ -71,6 +71,9 @@ public:
     std::string const& GetGeometryCode() const;
 
     HDST_API
+    std::string const& GetDisplacementCode() const;
+
+    HDST_API
     VtDictionary const& GetMetadata() const;
 
     HDST_API
@@ -110,6 +113,7 @@ private:
     std::string _fragmentSource;
     std::string _volumeSource;
     std::string _geometrySource;
+    std::string _displacementSource;
     VtDictionary _materialMetadata;
     HdSt_MaterialParamVector _materialParams;
     TextureDescriptorVector _textureDescriptors;
