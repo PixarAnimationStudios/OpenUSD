@@ -50,6 +50,9 @@ public:
         return TfCreateRefPtr(new UsdImagingStageSceneIndex());
     }
 
+    USDIMAGING_API
+    ~UsdImagingStageSceneIndex();
+
     // ------------------------------------------------------------------------
     // Scene index API
 
@@ -91,10 +94,12 @@ private:
     UsdImagingPrimAdapterSharedPtr _AdapterLookup(UsdPrim prim) const;
 
     TfTokenVector _GetImagingSubprims(
-            UsdPrim prim) const;
+            const UsdImagingPrimAdapterSharedPtr &adapter) const;
     TfToken _GetImagingSubprimType(
-            UsdPrim prim, TfToken const& subprim) const;
+            const UsdImagingPrimAdapterSharedPtr &adapter,
+            TfToken const& subprim) const;
     HdContainerDataSourceHandle _GetImagingSubprimData(
+            const UsdImagingPrimAdapterSharedPtr &adapter,
             UsdPrim prim, TfToken const& subprim) const;
 
     class _StageGlobals : public UsdImagingDataSourceStageGlobals
@@ -130,6 +135,9 @@ private:
 
     UsdStageRefPtr _stage;
     _StageGlobals _stageGlobals;
+
+    // Population
+    void _Populate(UsdPrim subtreeRoot);
 
     // Usd Prim Type to Adapter lookup table.
     using _AdapterMap = TfHashMap<TfToken, UsdImagingPrimAdapterSharedPtr, 

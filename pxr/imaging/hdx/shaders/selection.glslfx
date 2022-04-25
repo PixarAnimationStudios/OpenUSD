@@ -61,7 +61,8 @@ int GetNumSelectionHighlightModes()
 // ------  selection offset specifics -------
 // Note: This should match the selection offset encoding in
 // hdx/SelectionTracker.cpp
-void DecodeSelOffset(int selOffset, out bool isSelected, out int nextOffset)
+void DecodeSelOffset(int selOffset, REF(thread, bool) isSelected, 
+                     REF(thread, int) nextOffset)
 {
     isSelected = bool(selOffset & 0x1); // bit 0
     nextOffset = selOffset >> 1;        // bits 31:1
@@ -86,7 +87,7 @@ SubprimHeader DecodeSubprimHeader(int offset)
 }
 
 bool IsSubprimSelected(int id, int min, int max, int headerStart,
-                       out int nextSubprimOffset)
+                       REF(thread, int) nextSubprimOffset)
 {
     const int SUBPRIM_SELOFFSETS_HEADER_SIZE  = 3;
 
@@ -121,6 +122,23 @@ struct SubprimSelectionResult {
     bool pointSelected;
     int  pointColorId;
 };
+
+SubprimSelectionResult InitSubprimSelectionResult(
+    bool _elementSelected,
+    bool _edgeSelected,
+    bool _pointSelected,
+    int _pointColorId)
+{
+    SubprimSelectionResult res;
+
+    res.elementSelected = _elementSelected;
+    res.edgeSelected = _edgeSelected;
+    res.pointSelected = _pointSelected;
+    res.pointColorId = _pointColorId;
+
+    return res;
+}
+
 bool IsAnySubprimSelected(SubprimSelectionResult s)
 {
     return (s.elementSelected || s.edgeSelected || s.pointSelected);
@@ -141,7 +159,8 @@ bool HasCustomizedPointColor(SubprimSelectionResult s)
 SubprimSelectionResult GetSubprimSel(int offset,
                                      int elementId, int edgeId, int pointId)
 {
-    SubprimSelectionResult s = SubprimSelectionResult(false, false, false, 0);
+    SubprimSelectionResult s = InitSubprimSelectionResult(false, false, false, 0);
+
     int nextSubprimOffset = 0;
     SubprimHeader header = DecodeSubprimHeader(offset);
 
@@ -184,7 +203,7 @@ SubprimSelectionResult GetSubprimSel(int offset,
 }
 
 // --------- instance decoding ----------
-bool IsInstanceSelected(int offset, out int nextOffset)
+bool IsInstanceSelected(int offset, REF(thread, int) nextOffset)
 {
     // If we don't find an instance subprim block, pass the same offset to
     // GetSubprimSel.
@@ -209,13 +228,31 @@ struct SelectionResult {
     bool primOrInstanceSel;
     SubprimSelectionResult subprimSel;
 };
+
+SelectionResult InitSelectionResult(
+    bool _primOrInstanceSel,
+    bool _elementSelected,
+    bool _edgeSelected,
+    bool _pointSelected,
+    int _pointColorId)
+{
+    SelectionResult res;
+
+    res.primOrInstanceSel = _primOrInstanceSel;
+    res.subprimSel = InitSubprimSelectionResult(
+                        _elementSelected, _edgeSelected,
+                        _pointSelected, _pointColorId);
+
+    return res;
+}
+
+
 // Decodes the selection buffer encoding scheme for a given mode, and returns
 // the selection result.
 SelectionResult GetSelectionResult(int mode,
                                    int elementId, int edgeId, int pointId)
 {
-    SelectionResult res =
-        SelectionResult(false, SubprimSelectionResult(false, false, false, 0));
+    SelectionResult res = InitSelectionResult(false, false, false, false, 0);
 
 #if defined(HD_HAS_hdxSelectionBuffer)
     // The hdxSelectionBuffer layout is:
@@ -273,8 +310,7 @@ SelectionResult GetSelectionResult(int mode,
 SelectionResult
 _CombineWithOr(SelectionResult a, SelectionResult b)
 {
-    SelectionResult res =
-        SelectionResult(false, SubprimSelectionResult(false, false, false, 0));
+    SelectionResult res = InitSelectionResult(false, false, false, false, 0);
 
     res.primOrInstanceSel = a.primOrInstanceSel || b.primOrInstanceSel;
     res.subprimSel.elementSelected = a.subprimSel.elementSelected ||
@@ -291,8 +327,7 @@ _CombineWithOr(SelectionResult a, SelectionResult b)
 // mode.
 SelectionResult GetNetSelectionResult(int elementId, int edgeId, int pointId)
 {
-    SelectionResult netResult =
-        SelectionResult(false, SubprimSelectionResult(false, false, false, 0));
+    SelectionResult netResult = InitSelectionResult(false, false, false, false, 0);
 
 #if defined(HD_HAS_hdxSelectionBuffer)
     const int numSelectionModes = GetNumSelectionHighlightModes();
@@ -336,7 +371,7 @@ bool IsPointSelected(int pointId)
 // Helper functions to determine if the element (face) is selected for either
 // a given selection mode, or any of the modes.
 
-int GetElementID(); // code gen
+FORWARD_DECL(int GetElementID()); // code gen
 
 bool IsElementSelected(int mode)
 {
@@ -369,9 +404,9 @@ bool IsSelected()
 // Mixin for use in the geometry shader stage for wireframe rendering.
 // See comment below.
 
-int GetMaxNumSelectionHighlightModes();
-bool IsElementSelected(int mode);
-int GetElementID(); // code gen
+FORWARD_DECL(int GetMaxNumSelectionHighlightModes());
+FORWARD_DECL(bool IsElementSelected(int mode));
+FORWARD_DECL(int GetElementID()); // code gen
 
 vec4 ComputeSelectionOffset()
 {
@@ -423,9 +458,9 @@ vec4 ComputeSelectionOffset()
 // Mixin for use in the fragment shader stage to determine if the fragment is
 // selected.
 
-int GetElementID(); // generated via codeGen
-int GetPrimitiveEdgeId(); // defined in edgeId.glslfx, or generated via codeGen
-int GetPointId(); // defined in pointId.glslfx
+FORWARD_DECL(int GetElementID()); // generated via codeGen
+FORWARD_DECL(int GetPrimitiveEdgeId()); // defined in edgeId.glslfx, or generated via codeGen
+FORWARD_DECL(int GetPointId()); // defined in pointId.glslfx
 
 bool IsSelected()
 {
@@ -452,7 +487,7 @@ vec4 GetSelectionColor(int mode)
 }
 
 // fwd decl fn defined in edgeId.glslfx or generated via codeGen
-float GetSelectedEdgeOpacity();
+FORWARD_DECL(float GetSelectedEdgeOpacity());
 
 vec4 GetSubprimSelectionColor(int mode, SubprimSelectionResult res)
 {
@@ -471,9 +506,9 @@ vec4 GetSubprimSelectionColor(int mode, SubprimSelectionResult res)
 #endif
 
 // Fwd declare necessary methods to determine the subprim id of a fragment.
-int GetElementID(); // generated via codeGen
-int GetPrimitiveEdgeId(); // defined in edgeId.glslfx, or generated via codeGen
-int GetPointId(); // defined in pointId.glslfx
+FORWARD_DECL(int GetElementID()); // generated via codeGen
+FORWARD_DECL(int GetPrimitiveEdgeId()); // defined in edgeId.glslfx, or generated via codeGen
+FORWARD_DECL(int GetPointId()); // defined in pointId.glslfx
 
 // Decodes the selection buffer to find out if the current fragment is from
 // a prim/instance/subprim that is selected, applies selection highlighting to

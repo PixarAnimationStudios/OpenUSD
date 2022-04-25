@@ -61,7 +61,7 @@ vec3 FloatToSRGB(vec3 val)
 void main(void)
 {
     vec2 fragCoord = uvOut * screenSize;
-    vec4 inCol = HdTexelFetch_colorIn(ivec2(fragCoord));
+    vec4 inCol = HgiTexelFetch_colorIn(ivec2(fragCoord));
 
     #if defined(GLSLFX_USE_OCIO)
         inCol = OCIODisplay(inCol, Lut3DIn);

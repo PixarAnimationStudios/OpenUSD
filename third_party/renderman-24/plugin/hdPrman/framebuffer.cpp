@@ -461,6 +461,38 @@ HdPrmanFramebuffer::Register(RixContext* ctx)
     }
 }
 
+HdPrmanFramebuffer::HdPrmanAccumulationRule HdPrmanFramebuffer::ToAccumulationRule(RtUString name)
+{
+    if (name == RtUString("average"))
+    {
+        return k_accumulationRuleAverage;
+    }
+    else if (name == RtUString("min"))
+    {
+        return k_accumulationRuleMin;
+    }
+    else if (name == RtUString("max"))
+    {
+        return k_accumulationRuleMax;
+    }
+    else if (name == RtUString("zmin"))
+    {
+        return k_accumulationRuleZmin;
+    }
+    else if (name == RtUString("zmax"))
+    {
+        return k_accumulationRuleZmax;
+    }
+    else if (name == RtUString("sum"))
+    {
+        return k_accumulationRuleSum;
+    }
+    else
+    {
+        return k_accumulationRuleFilter;
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // XPU Display Driver API entrypoints
 ///////////////////////////////////////////////////////////////////////////////
@@ -554,6 +586,7 @@ public:
 
             const float* const srcWeights =
                 reinterpret_cast<const float*>(m_surface+m_weightsOffset);
+            const bool shouldNormalize = aovDesc.ShouldNormalizeBySampleCount();
 
             const int cc = HdGetComponentCount(aovDesc.format);
             const size_t srcOffset = m_offsets[offsetIdx];
@@ -697,7 +730,7 @@ public:
                 }
                 else if( cc == 4 ) {
                     WorkParallelForN(m_height,
-                                     [this, &aovBuffer, &srcWeights, &srcOffset]
+                                     [this, &aovBuffer, &srcWeights, &srcOffset, shouldNormalize]
                                      (size_t begin, size_t end) {
 
                         const float* weights =
@@ -724,7 +757,7 @@ public:
 
                             for (uint32_t x = 0; x < m_width; x++) {
                                 float isc = 1.f;
-                                if(*weights > 0.f)
+                                if(shouldNormalize && *weights > 0.f)
                                     isc = 1.f / *weights;
 
                                 const float* const srcColorG =
@@ -758,7 +791,7 @@ public:
                 }
                 else if (cc == 1) {
                     WorkParallelForN(m_height,
-                                     [this, &aovBuffer, &srcWeights, &srcOffset]
+                                     [this, &aovBuffer, &srcWeights, &srcOffset, shouldNormalize]
                                      (size_t begin, size_t end) {
 
 
@@ -779,7 +812,7 @@ public:
                             for (uint32_t x = 0; x < m_width; x++)
                             {
                                 float isc = 1.f;
-                                if(*weights > 0.f)
+                                if(shouldNormalize && *weights > 0.f)
                                     isc = 1.f / *weights;
 
                                 *aovData = *srcColorR * isc;
@@ -794,7 +827,7 @@ public:
                 else {
                     assert(cc == 3);
                     WorkParallelForN(m_height,
-                                     [this, &aovBuffer, &srcWeights, &srcOffset]
+                                     [this, &aovBuffer, &srcWeights, &srcOffset, shouldNormalize]
                                      (size_t begin, size_t end) {
 
                         const float* weights =
@@ -812,7 +845,7 @@ public:
 
                             for (uint32_t x = 0; x < m_width; x++) {
                                 float isc = 1.f;
-                                if(*weights > 0.f)
+                                if(shouldNormalize && *weights > 0.f)
                                     isc = 1.f / *weights;
 
                                 const float* const srcColorG =

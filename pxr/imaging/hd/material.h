@@ -193,9 +193,8 @@ struct HdMaterialNetwork2
 
 /// Converts a HdMaterialNetworkMap to a HdMaterialNetwork2
 HD_API
-void HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
+HdMaterialNetwork2 HdConvertToHdMaterialNetwork2(
     const HdMaterialNetworkMap & hdNetworkMap,
-    HdMaterialNetwork2 *result, 
     bool *isVolume = nullptr);
 
 

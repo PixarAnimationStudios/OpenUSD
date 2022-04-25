@@ -1303,28 +1303,28 @@ GfFrustum::IntersectsViewVolume(const GfBBox3d &bbox,
     points[7] = GfVec4d(localMax[0], localMax[1], localMax[2], 1);
 
     // Transform bbox local space points into clip space
-    for (int i = 0; i < 8; ++i) {
-        points[i] = points[i] * bbox.GetMatrix() * viewProjMat;
-    }
+    GfMatrix4d const bboxMatrix = bbox.GetMatrix() * viewProjMat;
 
     // clipFlags is a 6-bit field with one bit per +/- per x,y,z,
     // or one per frustum plane.  If the points overlap the
     // clip volume in any axis, then clipFlags will be 0x3f (0b111111).
     int clipFlags = 0;
     for (int i = 0; i < 8; ++i) {
-        GfVec4d clipPos = points[i];
+        GfVec4d const clipPos = points[i] * bboxMatrix;
 
         // flag is used as a 6-bit shift register, as we append
         // results of plane-side testing.  OR-ing all the flags
         // combines all the records of what plane-side the points
         // have been on.
         int flag = 0;
-        for (int j = 0; j < 3; ++j) {
-            // We use +/-clipPos[3] as the interval bound instead of 
-            // 1,-1 because these coordinates are not normalized.
-            flag = (flag << 1) | (clipPos[j] <  clipPos[3]);
-            flag = (flag << 1) | (clipPos[j] > -clipPos[3]);
-        }
+        // We use +/-clipPos[3] as the interval bound instead of
+        // 1,-1 because these coordinates are not normalized.
+        flag = (flag << 1) | (clipPos[0] <  clipPos[3]);
+        flag = (flag << 1) | (clipPos[0] > -clipPos[3]);
+        flag = (flag << 1) | (clipPos[1] <  clipPos[3]);
+        flag = (flag << 1) | (clipPos[1] > -clipPos[3]);
+        flag = (flag << 1) | (clipPos[2] <  clipPos[3]);
+        flag = (flag << 1) | (clipPos[2] > -clipPos[3]);
         clipFlags |= flag;
     }
 

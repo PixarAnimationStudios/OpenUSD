@@ -22,8 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/base/tf/diagnostic.h"
-
 #include "pxr/imaging/hgiMetal/hgi.h"
 #include "pxr/imaging/hgiMetal/conversions.h"
 #include "pxr/imaging/hgiMetal/diagnostic.h"
@@ -31,6 +29,10 @@
 #include "pxr/imaging/hgiMetal/resourceBindings.h"
 #include "pxr/imaging/hgiMetal/shaderProgram.h"
 #include "pxr/imaging/hgiMetal/shaderFunction.h"
+
+#include "pxr/base/gf/half.h"
+
+#include "pxr/base/tf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,6 +43,7 @@ HgiMetalGraphicsPipeline::HgiMetalGraphicsPipeline(
     , _vertexDescriptor(nil)
     , _depthStencilState(nil)
     , _renderPipelineState(nil)
+    , _constantTessFactors(nil)
 {
     _CreateVertexDescriptor();
     _CreateDepthStencilState(hgi->GetPrimaryDevice());
@@ -57,6 +60,9 @@ HgiMetalGraphicsPipeline::~HgiMetalGraphicsPipeline()
     }
     if (_vertexDescriptor) {
         [_vertexDescriptor release];
+    }
+    if (_constantTessFactors) {
+        [_constantTessFactors release];
     }
 }
 
@@ -84,7 +90,13 @@ HgiMetalGraphicsPipeline::_CreateVertexDescriptor()
             _vertexDescriptor.layouts[index].stepFunction =
                 MTLVertexStepFunctionConstant;
             _vertexDescriptor.layouts[index].stepRate = 0;
-        } else {
+        } else if (vbo.vertexStepFunction ==
+                HgiVertexBufferStepFunctionPerPatchControlPoint) {
+            _vertexDescriptor.layouts[index].stepFunction =
+                MTLVertexStepFunctionPerPatchControlPoint;
+            _vertexDescriptor.layouts[index].stepRate = 1;
+        }
+        else {
             _vertexDescriptor.layouts[index].stepFunction =
                 MTLVertexStepFunctionPerVertex;
             _vertexDescriptor.layouts[index].stepRate = 1;
@@ -113,7 +125,7 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
 
     // Create a new render pipeline state object
     HGIMETAL_DEBUG_LABEL(stateDesc, _descriptor.debugName.c_str());
-    stateDesc.rasterSampleCount = 1;
+    stateDesc.rasterSampleCount = _descriptor.multiSampleState.sampleCount;
 
     stateDesc.inputPrimitiveTopology =
         HgiMetalConversions::GetPrimitiveClass(_descriptor.primitiveType);
@@ -121,7 +133,22 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
     HgiMetalShaderProgram const *metalProgram =
         static_cast<HgiMetalShaderProgram*>(_descriptor.shaderProgram.Get());
 
-    stateDesc.vertexFunction = metalProgram->GetVertexFunction();
+    if (_descriptor.primitiveType == HgiPrimitiveTypePatchList) {
+        stateDesc.vertexFunction = metalProgram->GetPostTessVertexFunction();
+
+        MTLWinding winding = HgiMetalConversions::GetWinding(
+            _descriptor.rasterizationState.winding);
+        //flip the tess winding
+        winding = winding == MTLWindingClockwise ?
+            MTLWindingCounterClockwise : MTLWindingClockwise;
+        stateDesc.tessellationOutputWindingOrder = winding;
+
+        stateDesc.tessellationControlPointIndexType =
+            MTLTessellationControlPointIndexTypeUInt32;
+    } else {
+        stateDesc.vertexFunction = metalProgram->GetVertexFunction();
+    }
+    
     id<MTLFunction> fragFunction = metalProgram->GetFragmentFunction();
     if (fragFunction && _descriptor.rasterizationState.rasterizerEnabled) {
         stateDesc.fragmentFunction = fragFunction;
@@ -139,7 +166,10 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
             stateDesc.colorAttachments[i];
         
         metalColorAttachment.pixelFormat = HgiMetalConversions::GetPixelFormat(
-            hgiColorAttachment.format);
+            hgiColorAttachment.format, hgiColorAttachment.usage);
+
+        metalColorAttachment.writeMask = HgiMetalConversions::GetColorWriteMask(
+            hgiColorAttachment.colorMask);
 
         if (hgiColorAttachment.blendEnabled) {
             metalColorAttachment.blendingEnabled = YES;
@@ -173,8 +203,15 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
     HgiAttachmentDesc const &hgiDepthAttachment =
         _descriptor.depthAttachmentDesc;
 
-    stateDesc.depthAttachmentPixelFormat =
-        HgiMetalConversions::GetPixelFormat(hgiDepthAttachment.format);
+    MTLPixelFormat depthPixelFormat = HgiMetalConversions::GetPixelFormat(
+        hgiDepthAttachment.format, hgiDepthAttachment.usage);
+
+    stateDesc.depthAttachmentPixelFormat = depthPixelFormat;
+    
+    if (_descriptor.depthAttachmentDesc.usage & 
+        HgiTextureUsageBitsStencilTarget) {
+        stateDesc.stencilAttachmentPixelFormat = depthPixelFormat;
+    }
 
     stateDesc.sampleCount = _descriptor.multiSampleState.sampleCount;
     if (_descriptor.multiSampleState.alphaToCoverageEnable) {
@@ -270,6 +307,46 @@ void
 HgiMetalGraphicsPipeline::BindPipeline(id<MTLRenderCommandEncoder> renderEncoder)
 {
     [renderEncoder setRenderPipelineState:_renderPipelineState];
+    if (_descriptor.primitiveType == HgiPrimitiveTypePatchList) {
+        if (_constantTessFactors == nullptr) {
+
+            // tess factors are half floats encoded as uint16_t
+            uint16_t const factorZero =
+                    reinterpret_cast<uint16_t>(GfHalf(0.0f).bits());
+            uint16_t const factorOne =
+                    reinterpret_cast<uint16_t>(GfHalf(1.0f).bits());
+
+            if (_descriptor.tessellationState.patchType ==
+                        HgiTessellationState::PatchType::Triangle) {
+                MTLTriangleTessellationFactorsHalf triangleFactors;
+                triangleFactors.insideTessellationFactor = factorZero;
+                triangleFactors.edgeTessellationFactor[0] = factorOne;
+                triangleFactors.edgeTessellationFactor[1] = factorOne;
+                triangleFactors.edgeTessellationFactor[2] = factorOne;
+                _constantTessFactors =
+                    [renderEncoder.device
+                        newBufferWithBytes:&triangleFactors
+                                    length:sizeof(triangleFactors)
+                                    options:MTLResourceStorageModeShared];
+            } else { // is Quad tess factor
+                MTLQuadTessellationFactorsHalf quadFactors;
+                quadFactors.insideTessellationFactor[0] = factorZero;
+                quadFactors.insideTessellationFactor[1] = factorZero;
+                quadFactors.edgeTessellationFactor[0] = factorOne;
+                quadFactors.edgeTessellationFactor[1] = factorOne;
+                quadFactors.edgeTessellationFactor[2] = factorOne;
+                quadFactors.edgeTessellationFactor[3] = factorOne;
+                _constantTessFactors =
+                    [renderEncoder.device
+                        newBufferWithBytes:&quadFactors
+                                    length:sizeof(quadFactors)
+                                   options:MTLResourceStorageModeShared];
+            }
+        }
+        [renderEncoder setTessellationFactorBuffer:_constantTessFactors
+                                            offset: 0
+                                    instanceStride: 0];
+    }
 
     //
     // DepthStencil state
@@ -298,6 +375,11 @@ HgiMetalGraphicsPipeline::BindPipeline(id<MTLRenderCommandEncoder> renderEncoder
     [renderEncoder setFrontFacingWinding:HgiMetalConversions::GetWinding(
         _descriptor.rasterizationState.winding)];
     [renderEncoder setDepthStencilState:_depthStencilState];
+
+    if (_descriptor.rasterizationState.depthClampEnabled) {
+        [renderEncoder
+            setDepthClipMode: MTLDepthClipModeClamp];     
+    }
 
     TF_VERIFY(_descriptor.rasterizationState.lineWidth == 1.0f,
         "Missing implementation buffers");

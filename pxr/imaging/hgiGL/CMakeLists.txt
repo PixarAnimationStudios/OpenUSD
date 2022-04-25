@@ -28,8 +28,9 @@ pxr_library(hgiGL
         capabilities
         computeCmds
         computePipeline
+        contextArena
+        debugCodes
         device
-        framebufferCache
         garbageCollector
         graphicsCmds
         graphicsPipeline

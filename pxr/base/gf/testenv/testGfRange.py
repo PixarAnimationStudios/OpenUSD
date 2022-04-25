@@ -184,31 +184,41 @@ class TestGfRange(unittest.TestCase):
 
             
             r1 = Range(v1, v2)
+            r1_original = r1
             r2 = Range(v2, v3)
 
             r1 += r2
             self.assertEqual(r1, Range(makeValue(Value, [3, 5, 7, 9]),
                             makeValue(Value, [5, 7, 9, 11])))
+            self.assertTrue(r1 is r1_original)
             
             r1 = Range(v1, v2)
+            r1_original = r1
             r1 -= r2
             self.assertEqual(r1, Range(makeValue(Value, [-2, -2, -2, -2]),
                             makeValue(Value, [0, 0, 0, 0])))
-            
+            self.assertTrue(r1 is r1_original)
+
             r1 = Range(v1, v2)
+            r1_original = r1
             r1 *= 10
             self.assertEqual(r1, Range(makeValue(Value, [10, 20, 30, 40]),
                             makeValue(Value, [20, 30, 40, 50])))
+            self.assertTrue(r1 is r1_original)
             
             r1 = Range(v1, v2)
+            r1_original = r1
             r1 *= -10
             self.assertEqual(r1, Range(makeValue(Value, [-20, -30, -40, -50]),
                             makeValue(Value, [-10, -20, -30, -40])))
-            
+            self.assertTrue(r1 is r1_original)
+
             r1 = Range(v1, v2)
+            r1_original = r1
             r1 /= 10
             self.assertTrue(Gf.IsClose(r1.min, makeValue(Value, [0.1, 0.2, 0.3, 0.4]), 0.00001) and
                 Gf.IsClose(r1.max, makeValue(Value, [0.2, 0.3, 0.4, 0.5]), 0.00001))
+            self.assertTrue(r1 is r1_original)
 
             self.assertEqual(r1, eval(repr(r1)))
             

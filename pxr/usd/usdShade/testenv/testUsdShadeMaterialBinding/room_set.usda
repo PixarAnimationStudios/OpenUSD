@@ -1,4 +1,9 @@
 #usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
 
 def Xform "World" (
     prepend apiSchemas = ["CollectionAPI:furniture", "CollectionAPI:pensOrPencils", "CollectionAPI:emptyCollection"]
@@ -43,14 +48,14 @@ def Xform "World" (
             ]
 
             def "LampA" (
-                references = @./lamp.usda@</Lamp>
+                references = @./lamp.usda@
                 instanceable = true
             )
             {
             }
 
             def "LampB" (
-                references = @./lamp.usda@</Lamp>
+                references = @./lamp.usda@
                 instanceable = true
             )
             {

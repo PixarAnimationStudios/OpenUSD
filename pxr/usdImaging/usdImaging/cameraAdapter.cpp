@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdImaging/cameraAdapter.h"
+
+#include "pxr/usdImaging/usdImaging/dataSourceCamera.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -42,6 +44,36 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 UsdImagingCameraAdapter::~UsdImagingCameraAdapter() = default;
+
+TfTokenVector
+UsdImagingCameraAdapter::GetImagingSubprims()
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingCameraAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->camera;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingCameraAdapter::GetImagingSubprimData(
+        TfToken const& subprim,
+        UsdPrim const& prim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceCameraPrim::New(
+            prim.GetPath(),
+            prim,
+            stageGlobals);
+    }
+    return nullptr;
+}
 
 bool
 UsdImagingCameraAdapter::IsSupported(UsdImagingIndexProxy const* index) const

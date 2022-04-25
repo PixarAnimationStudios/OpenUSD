@@ -31,30 +31,59 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HgiShaderGenerator::HgiShaderGenerator(const HgiShaderFunctionDesc &descriptor)
-    : _originalShader(descriptor.shaderCode)
-    , _stage(descriptor.shaderStage)
+    : _descriptor(descriptor)
 {
 }
 
 HgiShaderGenerator::~HgiShaderGenerator() = default;
 
 void
-HgiShaderGenerator::Execute(std::ostream &ss)
+HgiShaderGenerator::Execute()
 {
-    //Use the protected version which can be overridden
-    _Execute(ss, _originalShader);
+    std::stringstream ss;
+
+    // Use the protected version which can be overridden
+    _Execute(ss);
+
+    // Capture the result as specified by the descriptor or locally.
+    if (_descriptor.generatedShaderCodeOut) {
+       *_descriptor.generatedShaderCodeOut = ss.str();
+    } else {
+       _localGeneratedShaderCode = ss.str();
+    }
 }
 
-const std::string&
-HgiShaderGenerator::_GetOriginalShader() const
+const char *
+HgiShaderGenerator::_GetShaderCodeDeclarations() const
 {
-    return _originalShader;
+    static const char *emptyString = "";
+    return _descriptor.shaderCodeDeclarations
+                ? _descriptor.shaderCodeDeclarations : emptyString;
+}
+
+const char *
+HgiShaderGenerator::_GetShaderCode() const
+{
+    static const char *emptyString = "";
+    return _descriptor.shaderCode
+                ? _descriptor.shaderCode : emptyString;
 }
 
 HgiShaderStage
 HgiShaderGenerator::_GetShaderStage() const
 {
-    return _stage;
+    return _descriptor.shaderStage;
+}
+
+const char *
+HgiShaderGenerator::GetGeneratedShaderCode() const
+{
+    // Return the result as specified by the descriptor or locally.
+    if (_descriptor.generatedShaderCodeOut) {
+       return _descriptor.generatedShaderCodeOut->c_str();
+    } else {
+       return _localGeneratedShaderCode.c_str();
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

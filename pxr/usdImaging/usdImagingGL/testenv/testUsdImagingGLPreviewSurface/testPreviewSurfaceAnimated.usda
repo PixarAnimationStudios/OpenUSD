@@ -3,6 +3,7 @@
     defaultPrim = "Scene"
     endTimeCode = 4
     startTimeCode = 1
+    upAxis = "Z"
 )
 
 def Xform "Scene" (

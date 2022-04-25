@@ -403,9 +403,10 @@ HdSt_TextureTestDriver::WriteToFile(HgiTextureHandle const &texture,
     storage.format = HioFormatFloat32Vec4;
     storage.flipped = true;
 
-    std::vector<uint8_t> buffer;
-    HdStTextureUtils::HgiTextureReadback(_hgi.get(), texture, &buffer);
-    storage.data = buffer.data();
+    size_t size = 0;
+    HdStTextureUtils::AlignedBuffer<uint8_t> buffer =
+        HdStTextureUtils::HgiTextureReadback(_hgi.get(), texture, &size);
+    storage.data = buffer.get();
 
     if (storage.format == HioFormatInvalid) {
         TF_CODING_ERROR("Hgi texture has format not corresponding to a"
@@ -468,7 +469,7 @@ static const std::string fragShaderStr =
 "void main(void)\n"
 "{\n"
 "    vec2 coord = (uvOut * screenSize) / 100.f;\n"
-"    vec4 color = vec4(HdGet_colorIn(coord).xyz, 1.0);\n"
+"    vec4 color = vec4(HgiGet_colorIn(coord).xyz, 1.0);\n"
 "    hd_FragColor = color;\n"
 "}\n";
 
@@ -549,23 +550,17 @@ HdSt_TextureTestDriver::_CreateBufferResources()
 
     constexpr size_t elementsPerVertex = 6;
     constexpr size_t vertDataCount = elementsPerVertex * 3;
-    constexpr float vertDataGL[vertDataCount] = 
+    constexpr float vertData[vertDataCount] =
             { -1,  1, 0, 1,     0, 1,
               -1, -1, 0, 1,     0, 0,
                1, -1, 0, 1,     1, 0};
 
-    constexpr float vertDataOther[vertDataCount] =
-            { -1,  1, 0, 1,     0, -1,
-              -1, -1, 0, 1,     0, 1,
-               1, -1, 0, 1,     1, 1};
-
     HgiBufferDesc vboDesc;
     vboDesc.debugName = "HdSt_TextureTestDriver VertexBuffer";
     vboDesc.usage = HgiBufferUsageVertex;
-    vboDesc.initialData = _hgi->GetAPIName() != HgiTokens->OpenGL 
-        ? vertDataOther : vertDataGL;
-    vboDesc.byteSize = sizeof(vertDataGL);
-    vboDesc.vertexStride = elementsPerVertex * sizeof(vertDataGL[0]);
+    vboDesc.initialData = vertData;
+    vboDesc.byteSize = sizeof(vertData);
+    vboDesc.vertexStride = elementsPerVertex * sizeof(vertData[0]);
     _vertexBuffer = _hgi->CreateBuffer(vboDesc);
 
     static const int32_t indices[3] = { 0, 1, 2 };

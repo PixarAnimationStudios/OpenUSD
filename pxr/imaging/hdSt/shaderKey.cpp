@@ -44,6 +44,8 @@ HdSt_ShaderKey::ComputeHash() const
     TfToken const *VS = GetVS();
     TfToken const *TCS = GetTCS();
     TfToken const *TES = GetTES();
+    TfToken const *PTCS = GetPTCS();
+    TfToken const *PTVS = GetPTVS();
     TfToken const *GS = GetGS();
     TfToken const *FS = GetFS();
 
@@ -58,6 +60,14 @@ HdSt_ShaderKey::ComputeHash() const
     while (TES && (!TES->IsEmpty())) {
         boost::hash_combine(hash, TES->Hash());
         ++TES;
+    }
+    while (PTCS && (!PTCS->IsEmpty())) {
+        boost::hash_combine(hash, PTCS->Hash());
+        ++PTCS;
+    }
+    while (PTVS && (!PTVS->IsEmpty())) {
+        boost::hash_combine(hash, PTVS->Hash());
+        ++PTVS;
     }
     while (GS && (!GS->IsEmpty())) {
         boost::hash_combine(hash, GS->Hash());
@@ -133,6 +143,8 @@ HdSt_ShaderKey::GetGlslfxString() const
     ss << _JoinTokens("vertexShader",      GetVS(),  &firstStage);
     ss << _JoinTokens("tessControlShader", GetTCS(), &firstStage);
     ss << _JoinTokens("tessEvalShader",    GetTES(), &firstStage);
+    ss << _JoinTokens("postTessControlShader",  GetPTCS(), &firstStage);
+    ss << _JoinTokens("postTessVertexShader",   GetPTVS(), &firstStage);
     ss << _JoinTokens("geometryShader",    GetGS(),  &firstStage);
     ss << _JoinTokens("fragmentShader",    GetFS(),  &firstStage);
     ss << "}}}\n";
@@ -157,6 +169,20 @@ HdSt_ShaderKey::GetTCS() const
 /*virtual*/
 TfToken const*
 HdSt_ShaderKey::GetTES() const
+{
+    return nullptr;
+}
+
+/*virtual*/
+TfToken const*
+HdSt_ShaderKey::GetPTCS() const
+{
+    return nullptr;
+}
+
+/*virtual*/
+TfToken const*
+HdSt_ShaderKey::GetPTVS() const
 {
     return nullptr;
 }
@@ -206,6 +232,13 @@ HdSt_ShaderKey::HasMirroredTransform() const
 /*virtual*/
 bool
 HdSt_ShaderKey::IsDoubleSided() const
+{
+    return false;
+}
+
+/*virtual*/
+bool
+HdSt_ShaderKey::UseMetalTessellation() const
 {
     return false;
 }

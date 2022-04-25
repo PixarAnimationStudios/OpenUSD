@@ -39,6 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (bbox)                                      \
     (bezier)                                    \
     (bSpline)                                   \
+    (blurScale)                                 \
     (camera)                                    \
     (catmullRom)                                \
     (collection)                                \
@@ -77,6 +78,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (lightLink)                                 \
     (lightFilterLink)                           \
     (materialParams)                            \
+    (nonlinearSampleCount)                      \
     (nonperiodic)                               \
     (normals)                                   \
     (params)                                    \
@@ -192,6 +194,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (displacementShader)                        \
     (fragmentShader)                            \
     (geometryShader)                            \
+    (imageToWorldMatrix)                        \
     (indicatorColor)                            \
     (lightingBlendAmount)                       \
     (overrideColor)                             \
@@ -210,7 +213,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (vertexShader)                              \
     (wireframeColor)                            \
     (worldToViewMatrix)                         \
-    (worldToViewInverseMatrix)
+    (worldToViewInverseMatrix)                  \
+    (stepSize)                                  \
+    (stepSizeLighting)
 
 // Deprecated. Use: HdStMaterialTagTokens
 #define HD_MATERIALTAG_TOKENS                   \

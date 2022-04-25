@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/imaging/hdx/oitVolumeRenderTask.h"
 #include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hdx/oitBufferAccessor.h"
@@ -41,13 +39,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (stepSize)
-    (stepSizeLighting)
-    (volumeRenderingConstants)
-);
-
 HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(
                 HdSceneDelegate* delegate, SdfPath const& id)
     : HdxRenderTask(delegate, id)
@@ -55,10 +46,6 @@ HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(
         std::make_shared<HdStRenderPassShader>(
             HdxPackageRenderPassOitVolumeShader()))
     , _isOitEnabled(HdxOitBufferAccessor::IsOitEnabled())
-    , _lastRenderSettingsVersion(0)
-    , _stepSize(HdStVolume::defaultStepSize)
-    , _stepSizeLighting(HdStVolume::defaultStepSizeLighting)
-    , _stepSizeBar(nullptr)
 {
 }
 
@@ -99,73 +86,6 @@ HdxOitVolumeRenderTask::Prepare(HdTaskContext* ctx,
             state->GetAovInputBindings(),
             renderIndex);
     }
-
-    HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
-        std::dynamic_pointer_cast<HdStResourceRegistry>(
-            renderIndex->GetResourceRegistry());
-
-    if (!hdStResourceRegistry) {
-        return;
-    }
-
-    // Allocate step size BAR
-    if (!_stepSizeBar) {
-        HdBufferSpecVector bufferSpecs;
-
-        bufferSpecs.emplace_back(
-            _tokens->stepSize,
-            HdTupleType{HdTypeFloat, 1});
-        bufferSpecs.emplace_back(
-            _tokens->stepSizeLighting,
-            HdTupleType{HdTypeFloat, 1});
-
-        _stepSizeBar = hdStResourceRegistry->AllocateUniformBufferArrayRange(
-            _tokens->stepSize, 
-            bufferSpecs, 
-            HdBufferArrayUsageHint());
-
-        _oitVolumeRenderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, 
-                             _tokens->volumeRenderingConstants,
-                             _stepSizeBar, /*interleaved=*/true));
-    }
-
-    // Add step size buffer sources
-    {
-        HdRenderDelegate *renderDelegate = renderIndex->GetRenderDelegate();
-
-        const int currentRenderSettingsVersion =
-            renderDelegate->GetRenderSettingsVersion();
-        
-        if (_lastRenderSettingsVersion != currentRenderSettingsVersion) {
-            float stepSize = renderDelegate->GetRenderSetting<float>(
-                HdStRenderSettingsTokens->volumeRaymarchingStepSize,
-                HdStVolume::defaultStepSize);
-            float stepSizeLighting = renderDelegate->GetRenderSetting<float>(
-                HdStRenderSettingsTokens->volumeRaymarchingStepSizeLighting,
-                HdStVolume::defaultStepSizeLighting);
-
-            if (_lastRenderSettingsVersion == 0 ||
-                _stepSize != stepSize || 
-                _stepSizeLighting != stepSizeLighting) {
-                _stepSize = stepSize;
-                _stepSizeLighting = stepSizeLighting;
-
-                HdBufferSourceSharedPtrVector sources = {
-                    std::make_shared<HdVtBufferSource>(
-                        _tokens->stepSize,
-                        VtValue(_stepSize)),
-                    std::make_shared<HdVtBufferSource>(
-                        _tokens->stepSizeLighting,
-                        VtValue(_stepSizeLighting))
-                };
- 
-                hdStResourceRegistry->AddSources(
-                    _stepSizeBar, std::move(sources));
-            }
-            _lastRenderSettingsVersion = currentRenderSettingsVersion;
-        }
-    }
 }
 
 void
@@ -187,7 +107,7 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
     HdxOitBufferAccessor oitBufferAccessor(ctx);
 
     oitBufferAccessor.RequestOitBuffers();
-    oitBufferAccessor.InitializeOitBuffersIfNecessary();
+    oitBufferAccessor.InitializeOitBuffersIfNecessary(_GetHgi());
 
     HdRenderPassStateSharedPtr renderPassState = _GetRenderPassState(ctx);
     if (!TF_VERIFY(renderPassState)) return;
@@ -209,18 +129,9 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
             "No OIT buffers allocated but needed by OIT volume render task");
         return;
     }
-    
-    // We render into a SSBO -- not MSSA compatible
-    bool oldMSAA = glIsEnabled(GL_MULTISAMPLE);
-    glDisable(GL_MULTISAMPLE);
-    // XXX When rendering HdStPoints we set GL_POINTS and assume that
-    //     GL_POINT_SMOOTH is enabled by default. This renders circles instead
-    //     of squares. However, when toggling MSAA off (above) we see GL_POINTS
-    //     start to render squares (driver bug?).
-    //     For now we always enable GL_POINT_SMOOTH. 
-    // XXX Switch points rendering to emit quad with FS that draws circle.
-    bool oldPointSmooth = glIsEnabled(GL_POINT_SMOOTH);
-    glEnable(GL_POINT_SMOOTH);
+
+    // We render into an SSBO -- not MSSA compatible
+    renderPassState->SetMultiSampleEnabled(false);
 
     // XXX
     //
@@ -234,18 +145,6 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
     renderPassState->SetEnableDepthMask(false);
     renderPassState->SetColorMasks({HdRenderPassState::ColorMaskNone});
     HdxRenderTask::Execute(ctx);
-
-    //
-    // Post Execute Restore
-    //
-
-    if (oldMSAA) {
-        glEnable(GL_MULTISAMPLE);
-    }
-
-    if (!oldPointSmooth) {
-        glDisable(GL_POINT_SMOOTH);
-    }
 }
 
 

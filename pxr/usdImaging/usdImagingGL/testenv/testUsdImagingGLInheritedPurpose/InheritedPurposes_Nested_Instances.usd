@@ -1,5 +1,7 @@
 #usda 1.0
-
+(
+    upAxis = "Z"
+)
 class "_Depth_2"
 {
     custom token purpose = "proxy"

@@ -679,8 +679,8 @@ public:
     template <typename T>
     static bool HasConnectableAPI()
     {
-        static_assert(std::is_base_of<UsdTyped, T>::value, 
-                "Provided type must derive UsdTyped.");
+        static_assert(std::is_base_of<UsdSchemaBase, T>::value, 
+                "Provided type must derive UsdSchemaBase.");
         return HasConnectableAPI(TfType::Find<T>());
     };
 

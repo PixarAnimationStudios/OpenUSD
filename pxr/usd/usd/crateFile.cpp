@@ -55,11 +55,15 @@
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/fastCompression.h"
 #include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
+#include "pxr/base/tf/pxrTslRobinMap/robin_set.h"
+#include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/safeOutputFile.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/tf/type.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
@@ -79,8 +83,6 @@
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/types.h"
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/type.h"
 
 #include <tbb/concurrent_queue.h>
 
@@ -295,6 +297,32 @@ template <class T>
 uint64_t GetPageNumber(T *addr) {
     return reinterpret_cast<uintptr_t>(addr) >> CRATE_PAGESHIFT;
 }
+
+// A helper struct for thread_local that uses nullptr initialization as a
+// sentinel to prevent guard variable use from being invoked after first
+// initialization.
+template <class T>
+struct _FastThreadLocalBase
+{
+    static T &Get() {
+        static thread_local T *theTPtr = nullptr;
+        if (ARCH_LIKELY(theTPtr)) {
+            return *theTPtr;
+        }
+        static thread_local T theT;
+        theTPtr = &theT;
+        return *theTPtr;
+    }
+};
+
+// This is a set that's used as a thread-local to guard against assets that
+// contain VtValues that recursively claim to contain themselves.  We insert
+// ValueReps as we unpack VtValues and if we ever encounter the same rep again,
+// we know we've hit a loop and we can error out instead of infinitely
+// recursing.
+using UnpackRecursionGuard = pxr_tsl::robin_set<ValueRep, TfHash>;
+struct _LocalUnpackRecursionGuard
+    : _FastThreadLocalBase<UnpackRecursionGuard> {};
 
 } // anon
 
@@ -1224,7 +1252,21 @@ public:
     VtValue Read(VtValue *) {
         _RecursiveReadAndPrefetch();
         auto rep = Read<ValueRep>();
-        return crate->UnpackValue(rep);
+        // Guard against recursion here -- a bad file can cause infinite
+        // recursion via VtValues that claim to contain themselves.
+        auto &recursionGuard = _LocalUnpackRecursionGuard::Get();
+        VtValue result;
+        if (!recursionGuard.insert(rep).second) {
+            TF_RUNTIME_ERROR("Corrupt asset <%s>: a VtValue claims to "
+                             "recursively contain itself -- returning "
+                             "an empty VtValue instead",
+                             crate->GetAssetPath().c_str());
+        }
+        else {
+            result = crate->UnpackValue(rep);
+        }
+        recursionGuard.erase(rep);
+        return result;
     }
 
     TimeSamples Read(TimeSamples *) {

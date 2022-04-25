@@ -741,6 +741,12 @@ pxr_register_test(testUsdAttributeInterpolationCpp
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdBugs
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdBugs"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdBug119633
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdBug119633"

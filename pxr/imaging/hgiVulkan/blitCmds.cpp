@@ -478,6 +478,12 @@ HgiVulkanBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 }
 
 void
+HgiVulkanBlitCmds::FillBuffer(HgiBufferHandle const& buffer, uint8_t value)
+{
+    TF_CODING_ERROR("Missing Implementation");
+}
+
+void
 HgiVulkanBlitCmds::MemoryBarrier(HgiMemoryBarrier barrier)
 {
     _CreateCommandBuffer();

@@ -578,7 +578,7 @@ void VtWrapComparisonFunctions()
 
 template <class Array>
 VtValue
-Vt_ConvertFromPySequence(TfPyObjWrapper const &obj)
+Vt_ConvertFromPySequenceOrIter(TfPyObjWrapper const &obj)
 {
     typedef typename Array::ElementType ElemType;
     TfPyLock lock;
@@ -597,6 +597,21 @@ Vt_ConvertFromPySequence(TfPyObjWrapper const &obj)
             if (!e.check())
                 return VtValue();
             *elem++ = e();
+        }
+        return VtValue(result);
+    } else if (PyIter_Check(obj.ptr())) {
+        Array result;
+        while (PyObject *item = PyIter_Next(obj.ptr())) {
+            boost::python::handle<> h(item);
+            if (!h) {
+                if (PyErr_Occurred())
+                    PyErr_Clear();
+                return VtValue();
+            }
+            boost::python::extract<ElemType> e(h.get());
+            if (!e.check())
+                return VtValue();
+            result.push_back(e());
         }
         return VtValue(result);
     }
@@ -625,7 +640,7 @@ Vt_CastToArray(VtValue const &v) {
     TfPyObjWrapper obj;
     // Attempt to convert from either python sequence or vector<VtValue>.
     if (v.IsHolding<TfPyObjWrapper>()) {
-        ret = Vt_ConvertFromPySequence<T>(v.UncheckedGet<TfPyObjWrapper>());
+        ret = Vt_ConvertFromPySequenceOrIter<T>(v.UncheckedGet<TfPyObjWrapper>());
     } else if (v.IsHolding<std::vector<VtValue> >()) {
         std::vector<VtValue> const &vec = v.UncheckedGet<std::vector<VtValue> >();
         ret = Vt_ConvertFromRange<T>(vec.begin(), vec.end());

@@ -1,4 +1,7 @@
 #usda 1.0
+(
+    upAxis = "Z"
+)
 
 # The PointInstancer schema requires 'prototypes', 'protoIndices' and 
 # 'positions' to be defined. If any of them are not defined, we should issue a 

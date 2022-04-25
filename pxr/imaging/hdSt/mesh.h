@@ -349,6 +349,7 @@ private:
                                    // the prim was created
     bool _displayOpacity : 1;
     bool _occludedSelectionShowsThrough : 1;
+    bool _pointsShadingEnabled : 1;
 
     std::unique_ptr<_FvarTopologyTracker> _fvarTopologyTracker;
 };

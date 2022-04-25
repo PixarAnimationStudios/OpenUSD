@@ -211,6 +211,10 @@ public:
         void AddComputation(HdBufferArrayRangeSharedPtr const &range,
                             HdComputationSharedPtr const &computation,
                             HdStComputeQueue const queue);
+        
+        HdStResourceRegistry * GetResourceRegistry() const {
+            return _registry;
+        }
 
     private:
         friend class HdStResourceRegistry;

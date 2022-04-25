@@ -168,6 +168,7 @@ class TestGfVec(unittest.TestCase):
 
     def OperatorsTest(self, Vec):
         v1 = Vec()
+        v1_original = v1
         v2 = Vec()
 
         # equality
@@ -187,6 +188,7 @@ class TestGfVec(unittest.TestCase):
         v1 += v2
         self.assertTrue(checkVec( v1, [8, 10, 6, 7] ))
         self.assertTrue(checkVec( v3, [8, 10, 6, 7] ))
+        self.assertTrue(v1 is v1_original)
 
         # component-wise subtraction
         SetVec( v1, [3, 1, 4, 1] )
@@ -195,6 +197,7 @@ class TestGfVec(unittest.TestCase):
         v1 -= v2
         self.assertTrue(checkVec( v1, [-2, -8, 2, -5] ))
         self.assertTrue(checkVec( v3, [-2, -8, 2, -5] ))
+        self.assertTrue(v1 is v1_original)
 
         # component-wise multiplication
         SetVec( v1, [3, 1, 4, 1] )
@@ -205,6 +208,7 @@ class TestGfVec(unittest.TestCase):
         self.assertTrue(checkVec( v1, [30, 10, 40, 10] ))
         self.assertTrue(checkVec( v4, [30, 10, 40, 10] ))
         self.assertTrue(checkVec( v5, [30, 10, 40, 10] ))
+        self.assertTrue(v1 is v1_original)
 
         # component-wise division
         SetVec( v1, [3, 6, 9, 12] )
@@ -212,6 +216,7 @@ class TestGfVec(unittest.TestCase):
         v1 /= 3
         self.assertTrue(checkVec( v1, [1, 2, 3, 4] ))
         self.assertTrue(checkVec( v3, [1, 2, 3, 4] ))
+        self.assertTrue(v1 is v1_original)
 
         # dot product
         SetVec( v1, [3, 1, 4, 1] )

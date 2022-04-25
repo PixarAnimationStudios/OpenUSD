@@ -28,7 +28,6 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/tokens.h"
-#include "pxr/imaging/hdSt/textureUtils.h"
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -218,9 +217,10 @@ HdStRenderBuffer::Map()
         return nullptr;
     }
 
-    HdStTextureUtils::HgiTextureReadback(hgi, texture, &_mappedBuffer);
+    size_t size = 0;
+    _mappedBuffer = HdStTextureUtils::HgiTextureReadback(hgi, texture, &size);
 
-    return _mappedBuffer.data();
+    return _mappedBuffer.get();
 }
 
 void
@@ -229,8 +229,8 @@ HdStRenderBuffer::Unmap()
     // XXX We could consider clearing _mappedBuffer here to free RAM.
     //     For now we assume that Map() will be called frequently so we prefer
     //     to avoid the cost of clearing the buffer over memory savings.
-    // _mappedBuffer.clear();
-    // _mappedBuffer.shrink_to_fit();
+    // _mappedBuffer.reset(nullptr);
+
     _mappers.fetch_sub(1);
 }
 

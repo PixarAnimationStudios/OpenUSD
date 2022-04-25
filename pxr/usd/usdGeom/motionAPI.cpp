@@ -109,6 +109,23 @@ UsdGeomMotionAPI::_GetTfType() const
 }
 
 UsdAttribute
+UsdGeomMotionAPI::GetMotionBlurScaleAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->motionBlurScale);
+}
+
+UsdAttribute
+UsdGeomMotionAPI::CreateMotionBlurScaleAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->motionBlurScale,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdGeomMotionAPI::GetVelocityScaleAttr() const
 {
     return GetPrim().GetAttribute(UsdGeomTokens->motionVelocityScale);
@@ -119,6 +136,23 @@ UsdGeomMotionAPI::CreateVelocityScaleAttr(VtValue const &defaultValue, bool writ
 {
     return UsdSchemaBase::_CreateAttr(UsdGeomTokens->motionVelocityScale,
                        SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomMotionAPI::GetNonlinearSampleCountAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->motionNonlinearSampleCount);
+}
+
+UsdAttribute
+UsdGeomMotionAPI::CreateNonlinearSampleCountAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->motionNonlinearSampleCount,
+                       SdfValueTypeNames->Int,
                        /* custom = */ false,
                        SdfVariabilityVarying,
                        defaultValue,
@@ -142,7 +176,9 @@ const TfTokenVector&
 UsdGeomMotionAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdGeomTokens->motionBlurScale,
         UsdGeomTokens->motionVelocityScale,
+        UsdGeomTokens->motionNonlinearSampleCount,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -168,23 +204,56 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-float UsdGeomMotionAPI::ComputeVelocityScale(UsdTimeCode time) const
+template <class T> 
+static T _ComputeInheritedMotionAttr(UsdPrim const &queriedPrim,
+                                     TfToken const &attrName,
+                                     T const &fallbackValue,
+                                     UsdTimeCode time)
 {
-    UsdPrim prim = GetPrim();
+    UsdPrim prim(queriedPrim);
     UsdPrim pseudoRoot = prim.GetStage()->GetPseudoRoot();
-    float  velocityScale = 1.0;
+    T val = fallbackValue;
 
     while (prim != pseudoRoot){
-        UsdAttribute vsAttr = 
-            prim.GetAttribute(UsdGeomTokens->motionVelocityScale);
-        if (vsAttr.HasAuthoredValue() && 
-            vsAttr.Get(&velocityScale, time)){
-            return velocityScale;
+        if (prim.HasAPI<UsdGeomMotionAPI>()){
+            UsdAttribute attr = 
+                prim.GetAttribute(attrName);
+            if (attr.HasAuthoredValue() && 
+                attr.Get(&val, time)){
+                return val;
+            }
         }
         prim = prim.GetParent();
     }
 
-    return velocityScale;
+    return val;
+}
+
+float UsdGeomMotionAPI::ComputeVelocityScale(UsdTimeCode time) const
+{
+    return _ComputeInheritedMotionAttr<float>(
+                  GetPrim(), 
+                  UsdGeomTokens->motionVelocityScale,
+                  1.0,
+                  time);
+}
+
+int UsdGeomMotionAPI::ComputeNonlinearSampleCount(UsdTimeCode time) const
+{
+    return _ComputeInheritedMotionAttr<int>(
+                  GetPrim(), 
+                  UsdGeomTokens->motionNonlinearSampleCount,
+                  3,
+                  time);
+}
+
+float UsdGeomMotionAPI::ComputeMotionBlurScale(UsdTimeCode time) const
+{
+    return _ComputeInheritedMotionAttr<float>(
+                  GetPrim(), 
+                  UsdGeomTokens->motionBlurScale,
+                  1.0,
+                  time);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

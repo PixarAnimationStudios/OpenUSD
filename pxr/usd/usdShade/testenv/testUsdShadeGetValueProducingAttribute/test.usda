@@ -1,4 +1,9 @@
 #usda 1.0
+(
+    upAxis = "Y"
+    metersPerUnit = 0.01
+    defaultPrim = "Material"
+)
 
 def Material "Material"
 {
@@ -58,7 +63,7 @@ def Material "Material"
         token outputs:nodeGraphOut5.connect = </Material/NodeGraph/NestedNodeGraph.outputs:out>
         token outputs:nodeGraphOutUnused
         token outputs:nodeGraphOut6
-        token outputs:nodeGraphOut6.connect = </Material/NodeGraph.outputs:nodeGraphInUnconnected>
+        token outputs:nodeGraphOut6.connect = </Material/NodeGraph.inputs:nodeGraphInUnconnected>
         token outputs:nodeGraphMultiOutput.connect = [
             </Material/NodeGraph/NestedNode1.outputs:nestedOut1>,
             </Material/NodeGraph/NestedNode2.outputs:nestedOut2>

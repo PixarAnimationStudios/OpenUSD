@@ -157,8 +157,17 @@ HdxSkydomeTask::Execute(HdTaskContext* ctx)
     _compositor->BindTextures( {_tokens->skydomeTexture}, {_skydomeTexture} );
 
     // Get the viewport size
-    GfVec2f size = renderPassState->GetFraming().dataWindow.GetSize();
-    const GfVec4i viewport(0, 0, size[0], size[1]);
+    GfVec4i viewport;
+    const CameraUtilFraming &framing = renderPassState->GetFraming();
+    
+    if (framing.IsValid()) {
+        GfVec2i size = framing.dataWindow.GetSize();
+        viewport = GfVec4i(0, 0, size[0], size[1]);
+    } else {
+        GfVec4f rect = renderPassState->GetViewport();
+        viewport =
+            GfVec4i(int(rect[0]), int(rect[1]), int(rect[2]), int(rect[3]));
+    }
 
     // Get the Color/Depth and Color/Depth Resolve Textures from the gfxCmdsDesc
     // so that the fullscreenShader can use them to create the appropriate
@@ -238,6 +247,8 @@ HdxSkydomeTask::_SetFragmentShader()
     HgiShaderFunctionAddStageInput(&fragDesc, "uvOut", "vec2");
     HgiShaderFunctionAddTexture(&fragDesc, "skydomeTexture");
     HgiShaderFunctionAddStageOutput(&fragDesc, "hd_FragColor", "vec4", "color");
+    HgiShaderFunctionAddStageOutput(
+        &fragDesc, "gl_FragDepth", "float", "depth(any)");
 
     // The order of the constant parameters has to match the order in the 
     // _ParameterBuffer struct

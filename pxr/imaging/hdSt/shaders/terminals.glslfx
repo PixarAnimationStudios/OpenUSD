@@ -30,7 +30,8 @@
 --- --------------------------------------------------------------------------
 -- glsl Geometry.CustomDisplacement
 
-vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord);
+FORWARD_DECL(
+    vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord));
 
 vec4 DisplacementTerminal(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
 {
@@ -64,10 +65,11 @@ struct ScalarOverride
     vec3 color;
 };
 
-ReprStyle GetReprStyle();
-ScalarOverride GetScalarOverride();
-vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
-vec4 postSurfaceShader(vec4 Peye, vec3 Neye, vec4 color);
+FORWARD_DECL(ReprStyle GetReprStyle());
+FORWARD_DECL(ScalarOverride GetScalarOverride());
+FORWARD_DECL(
+    vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord));
+FORWARD_DECL(vec4 postSurfaceShader(vec4 Peye, vec3 Neye, vec4 color));
 
 vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
@@ -395,6 +397,28 @@ ReprStyle GetReprStyle()
     reprStyle.applyColorOverride       = true;
     reprStyle.useSurfaceShaderColor    = false;
     reprStyle.useSurfaceShaderAlpha    = false;
+    
+    return reprStyle; 
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Fragment.PointShaded
+
+ReprStyle GetReprStyle()
+{
+    vec4 pointColor = vec4(vec3(0.18), 1.0);
+#if defined(HD_HAS_pointColor)
+    pointColor = HdGet_pointColor();
+#endif
+
+    ReprStyle reprStyle;
+    
+    reprStyle.color                    = pointColor;
+    reprStyle.usePrimvarColor          = false;
+    reprStyle.usePrimvarAlpha          = false;
+    reprStyle.applyColorOverride       = true;
+    reprStyle.useSurfaceShaderColor    = true;
+    reprStyle.useSurfaceShaderAlpha    = true;
     
     return reprStyle; 
 }

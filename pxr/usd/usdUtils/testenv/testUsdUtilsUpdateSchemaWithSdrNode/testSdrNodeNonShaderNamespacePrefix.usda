@@ -1,0 +1,23 @@
+#usda 1.0
+
+# Input USD file to test working of namespace prefix for non-shader nodes
+
+def Shader "TestNamespacePrefix" (
+    sdrMetadata = {
+        token schemaPropertyNSPrefixOverride = ""
+        token schemaName = "TestNSPrefix"
+        token tfTypeNameSuffix = "TestNS"
+    }
+)
+{
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @testDummy.glslfx@
+
+    float inputs:input1withNONSPrefix = 0.0
+    float inputs:input2withNONSPrefix = 0.0
+    float inputs:input2withPropNS = 0.0 (
+        sdrMetadata = {
+            token propertyNSPrefixOverride = "propNSPrefix"
+        }
+    )
+}

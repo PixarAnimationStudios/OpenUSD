@@ -37,18 +37,17 @@ class TfToken;
 
 bool HdPrmanLightFilterPopulateNodesFromLightParams(
     std::vector<riley::ShadingNode> *filterNodes,
-    SdfPath &filterPath,
+    const SdfPath &filterPath,
     HdSceneDelegate *sceneDelegate);
 
 void HdPrmanLightFilterGenerateCoordSysAndLinks(
     riley::ShadingNode *filter,
-    SdfPath &filterPath,
+    const SdfPath &filterPath,
     std::vector<riley::CoordinateSystemId> *coordsysIds,
     std::vector<TfToken> *filterLinks,
     HdSceneDelegate *sceneDelegate,
     HdPrman_RenderParam *renderParam,
-    riley::Riley *riley,
-    const riley::ShadingNode &lightNode);
+    riley::Riley *riley);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

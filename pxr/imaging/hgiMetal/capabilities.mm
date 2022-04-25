@@ -37,6 +37,8 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
 
     defaultStorageMode = MTLResourceStorageModeShared;
     bool unifiedMemory = false;
+    bool barycentrics = false;
+    bool hasAppleSilicon = false;
     if (@available(macOS 100.100, ios 12.0, *)) {
         unifiedMemory = true;
     } else if (@available(macOS 10.15, ios 13.0, *)) {
@@ -45,23 +47,68 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
 #else
         unifiedMemory = [device isLowPower];
 #endif
+        // On macOS 10.15 and 11.0 the AMD drivers reported the wrong value for
+        // supportsShaderBarycentricCoordinates so check both flags.
+        barycentrics = [device supportsShaderBarycentricCoordinates]
+                    || [device areBarycentricCoordsSupported];
+        
+        hasAppleSilicon = [device hasUnifiedMemory] && ![device isLowPower];
     }
 
     _SetFlag(HgiDeviceCapabilitiesBitsUnifiedMemory, unifiedMemory);
 
-    _SetFlag(HgiDeviceCapabilitiesBitsBuiltinBarycentrics, true);
+    _SetFlag(HgiDeviceCapabilitiesBitsBuiltinBarycentrics, barycentrics);
 
     _SetFlag(HgiDeviceCapabilitiesBitsShaderDoublePrecision, false);
+    
+    _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne, false);
 
-#if defined(ARCH_OS_MACOS)
+    _SetFlag(HgiDeviceCapabilitiesBitsCppShaderPadding, true);
+    
+    _SetFlag(HgiDeviceCapabilitiesBitsMetalTessellation, true);
+
+    _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect, true);
+
+    // This is done to decide whether to use a workaround for post tess
+    // patch primitive ID lookup. The bug causes the firstPatch offset
+    // to be included incorrectly in the primitive ID. Our workaround
+    // is to subtract it based on the base primitive offset
+    // Found in MacOS 13. If confirmed fixed for MacOS 14, add a check
+    // if we are on MacOS 14 or less
+    //bool isMacOs13OrLess = NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 13
+    //bool requireBasePrimitiveOffset = hasAppleSilicon && isMacOs13OrLess;
+    bool requiresBasePrimitiveOffset = hasAppleSilicon;
+    _SetFlag(HgiDeviceCapabilitiesBasePrimitiveOffset,
+             requiresBasePrimitiveOffset);
+
     if (!unifiedMemory) {
         defaultStorageMode = MTLResourceStorageModeManaged;
     }
-#endif
 
     _maxUniformBlockSize          = 64 * 1024;
     _maxShaderStorageBlockSize    = 1 * 1024 * 1024 * 1024;
     _uniformBufferOffsetAlignment = 16;
+    _maxClipDistances             = 8;
+    _pageSizeAlignment            = 4096;
+
+    // Apple Silicon only support memory barriers between vertex stages after
+    // macOS 12.3.
+    hasVertexMemoryBarrier = !hasAppleSilicon;
+    if (@available(macOS 12.3, *)) {
+        hasVertexMemoryBarrier = true;
+    }
+
+    // Vega GPUs require a fix to the indirect draw before macOS 12.2
+    requiresIndirectDrawFix = false;
+    if ([[device name] rangeOfString: @"Vega"].location != NSNotFound) {
+        if (@available(macOS 12.2, *)) {}
+        else
+        {
+            requiresIndirectDrawFix = true;
+        }
+    }
+
+    useParallelEncoder = true;
 }
 
 HgiMetalCapabilities::~HgiMetalCapabilities() = default;

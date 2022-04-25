@@ -25,34 +25,55 @@
 
 #include "pxr/imaging/hgiGL/shaderGenerator.h"
 #include "pxr/imaging/hgiGL/conversions.h"
+#include "pxr/imaging/hgi/capabilities.h"
+#include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
+
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static const std::string &
-_GetMacroBlob()
+static const char *
+_GetPackedTypeDefinitions()
 {
-    // Allows metal and GL to both handle out function params.
-    // On the metal side, the ref(space,type) parameter defines
-    // if items are in device or thread domain.
-    const static std::string header =
-        "#define REF(space,type) inout type\n"
-        "#define HD_NEEDS_FORWARD_DECL\n"
-        "#define HD_FWD_DECL(decl) decl\n"
-        ;
-    return header;
+    return
+        "\n"
+        "struct hgi_ivec3 { int    x, y, z; };\n"
+        "struct hgi_vec3  { float  x, y, z; };\n"
+        "struct hgi_dvec3 { double x, y, z; };\n"
+        "struct hgi_mat3  { float  m00, m01, m02,\n"
+        "                          m10, m11, m12,\n"
+        "                          m20, m21, m22; };\n"
+        "struct hgi_dmat3 { double m00, m01, m02,\n"
+        "                          m10, m11, m12,\n"
+        "                          m20, m21, m22; };\n";
+}
+
+template<typename SectionType, typename ...T>
+SectionType *
+HgiGLShaderGenerator::CreateShaderSection(T && ...t)
+{
+    std::unique_ptr<SectionType> p =
+        std::make_unique<SectionType>(std::forward<T>(t)...);
+    SectionType * const result = p.get();
+    GetShaderSections()->push_back(std::move(p));
+    return result;
 }
 
 HgiGLShaderGenerator::HgiGLShaderGenerator(
-    const HgiShaderFunctionDesc &descriptor,
-    const std::string &version)
+    Hgi const *hgi,
+    const HgiShaderFunctionDesc &descriptor)
   : HgiShaderGenerator(descriptor)
-  , _version(version)
+  , _hgi(hgi)
 {
     // Write out all GL shaders and add to shader sections
-    GetShaderSections()->push_back(
-        std::make_unique<HgiGLMacroShaderSection>(
-            _GetMacroBlob(), ""));
+
+    if (descriptor.shaderStage == HgiShaderStageFragment) {
+        if (descriptor.fragmentDescriptor.earlyFragmentTests) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (early_fragment_tests) in;\n");
+        }
+    }
 
     if (descriptor.shaderStage == HgiShaderStageCompute) {
 
@@ -99,8 +120,85 @@ HgiGLShaderGenerator::HgiGLShaderGenerator(
     _WriteTextures(descriptor.textures);
     _WriteBuffers(descriptor.buffers);
     _WriteInOuts(descriptor.stageInputs, "in");
+    _WriteInOutBlocks(descriptor.stageInputBlocks, "in");
     _WriteConstantParams(descriptor.constantParams);
     _WriteInOuts(descriptor.stageOutputs, "out");
+    _WriteInOutBlocks(descriptor.stageOutputBlocks, "out");
+}
+
+void
+HgiGLShaderGenerator::_WriteVersion(std::ostream &ss)
+{
+    const int glslVersion = _hgi->GetCapabilities()->GetShaderVersion();
+
+    ss << "#version " << std::to_string(glslVersion) << "\n";
+}
+
+void
+HgiGLShaderGenerator::_WriteExtensions(std::ostream &ss)
+{
+    const int glslVersion = _hgi->GetCapabilities()->GetShaderVersion();
+    const bool bindlessBufferEnabled = _hgi->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsBindlessBuffers);
+    const bool bindlessTextureEnabled = _hgi->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsBindlessTextures);
+    const bool shaderDrawParametersEnabled = _hgi->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsShaderDrawParameters);
+    const bool builtinBarycentricsEnabled = _hgi->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+
+    if (bindlessBufferEnabled) {
+        ss << "#extension GL_NV_shader_buffer_load : require\n"
+           << "#extension GL_NV_gpu_shader5 : require\n";
+    }
+    if (bindlessTextureEnabled) {
+        ss << "#extension GL_ARB_bindless_texture : require\n";
+    }
+
+    if (_GetShaderStage() & HgiShaderStageVertex) {
+        if (glslVersion < 460 && shaderDrawParametersEnabled) {
+            ss << "#extension GL_ARB_shader_draw_parameters : require\n";
+        }
+        if (shaderDrawParametersEnabled) {
+            ss << "int HgiGetBaseVertex() {\n";
+            if (glslVersion < 460) { // use ARB extension
+                ss << "  return gl_BaseVertexARB;\n";
+            } else {
+                ss << "  return gl_BaseVertex;\n";
+            }
+            ss << "}\n";
+        }
+    }
+
+    if (_GetShaderStage() & HgiShaderStageFragment) {
+        if (builtinBarycentricsEnabled) {
+            ss << "#extension GL_NV_fragment_shader_barycentric: require\n";
+        }
+    }
+}
+
+void
+HgiGLShaderGenerator::_WriteMacros(std::ostream &ss)
+{
+    // Allows Metal and GL to both handle out function params.
+    // On the Metal side, the ref(space,type) parameter defines
+    // if items are in device or thread domain.
+    ss << "#define REF(space,type) inout type\n"
+          "#define FORWARD_DECL(func_decl) func_decl;\n"
+          "#define ATOMIC_LOAD(a) (a)\n"
+          "#define ATOMIC_STORE(a, v) (a) = (v)\n"
+          "#define ATOMIC_ADD(a, v) atomicAdd(a, v)\n"
+          "#define ATOMIC_EXCHANGE(a, v) atomicExchange(a, v)\n"
+          "#define atomic_int int\n"
+          "#define atomic_uint uint\n";
+
+    // Advertise to shader code that we support double precision math
+    ss << "\n"
+        << "#define HGI_HAS_DOUBLE_TYPE 1\n"
+        << "\n";
+
+    // Define platform independent baseInstance as 0
+    ss << "#define gl_BaseInstance 0\n";
 }
 
 void
@@ -108,10 +206,11 @@ HgiGLShaderGenerator::_WriteTextures(
     const HgiShaderFunctionTextureDescVector &textures)
 {
     // Extract texture descriptors and add appropriate texture sections
+    size_t binding = 0;
     for (size_t i=0; i<textures.size(); i++) {
         const HgiShaderFunctionTextureDesc &textureDescription = textures[i];
         HgiShaderSectionAttributeVector attrs = {
-            HgiShaderSectionAttribute{"binding", std::to_string(i)}};
+            HgiShaderSectionAttribute{"binding", std::to_string(binding)}};
 
         if (textureDescription.writable) {
             attrs.insert(attrs.begin(), HgiShaderSectionAttribute{
@@ -126,8 +225,16 @@ HgiGLShaderGenerator::_WriteTextures(
                 i,
                 textureDescription.dimensions,
                 textureDescription.format,
+                textureDescription.textureType,
+                textureDescription.arraySize,
                 textureDescription.writable,
                 attrs));
+
+        if (textureDescription.arraySize > 0) {
+            binding += textureDescription.arraySize;
+        } else {
+            binding++;
+        }
     }
 }
 
@@ -138,16 +245,43 @@ HgiGLShaderGenerator::_WriteBuffers(
     //Extract buffer descriptors and add appropriate buffer sections
     for(size_t i=0; i<buffers.size(); i++) {
         const HgiShaderFunctionBufferDesc &bufferDescription = buffers[i];
-        const HgiShaderSectionAttributeVector attrs = {
-            HgiShaderSectionAttribute{"std430", ""},
-            HgiShaderSectionAttribute{"binding", std::to_string(i + 1)}};
 
-        GetShaderSections()->push_back(
-            std::make_unique<HgiGLBufferShaderSection>(
+        const bool isUniformBufferBinding =
+            (bufferDescription.binding == HgiBindingTypeUniformValue) ||
+            (bufferDescription.binding == HgiBindingTypeUniformArray);
+
+        const std::string arraySize =
+            (bufferDescription.arraySize > 0)
+                ? std::to_string(bufferDescription.arraySize)
+                : std::string();
+
+        if (isUniformBufferBinding) {
+            const HgiShaderSectionAttributeVector attrs = {
+                HgiShaderSectionAttribute{"std140", ""},
+                HgiShaderSectionAttribute{"binding",
+                    std::to_string(bufferDescription.bindIndex)}};
+
+            CreateShaderSection<HgiGLBufferShaderSection>(
                 bufferDescription.nameInShader,
-                i + 1,
+                bufferDescription.bindIndex,
                 bufferDescription.type,
-                attrs));
+                bufferDescription.binding,
+                arraySize,
+                attrs);
+        } else {
+            const HgiShaderSectionAttributeVector attrs = {
+                HgiShaderSectionAttribute{"std430", ""},
+                HgiShaderSectionAttribute{"binding",
+                    std::to_string(bufferDescription.bindIndex)}};
+
+            CreateShaderSection<HgiGLBufferShaderSection>(
+                bufferDescription.nameInShader,
+                bufferDescription.bindIndex,
+                bufferDescription.type,
+                bufferDescription.binding,
+                arraySize,
+                attrs);
+        }
     }
 }
 
@@ -158,31 +292,47 @@ HgiGLShaderGenerator::_WriteConstantParams(
     if (parameters.size() < 1) {
         return;
     }
-    GetShaderSections()->push_back(
-        std::make_unique<HgiGLBlockShaderSection>(
-            "ParamBuffer",
-            parameters,
-            0));
+    CreateShaderSection<HgiGLBlockShaderSection>(
+        "ParamBuffer",
+        parameters,
+        0);
 }
 
 void
 HgiGLShaderGenerator::_WriteInOuts(
     const HgiShaderFunctionParamDescVector &parameters,
-    const std::string &qualifier) 
+    const std::string &qualifier)
 {
-    uint32_t counter = 0;
-
     //To unify glslfx across different apis, other apis
     //may want these to be defined, but since they are
     //taken in opengl we ignore them
     const static std::set<std::string> takenOutParams {
         "gl_Position",
         "gl_FragColor",
-        "gl_FragDepth"
+        "gl_FragDepth",
+        "gl_PointSize",
+        "gl_ClipDistance",
+        "gl_CullDistance",
     };
-    const static std::map<std::string, std::string> takenInParams {
+
+    const static std::unordered_map<std::string, std::string> takenInParams {
         { HgiShaderKeywordTokens->hdPosition, "gl_Position"},
-        { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"}
+        { HgiShaderKeywordTokens->hdPointCoord, "gl_PointCoord"},
+        { HgiShaderKeywordTokens->hdClipDistance, "gl_ClipDistance"},
+        { HgiShaderKeywordTokens->hdCullDistance, "gl_CullDistance"},
+        { HgiShaderKeywordTokens->hdVertexID, "gl_VertexID"},
+        { HgiShaderKeywordTokens->hdInstanceID, "gl_InstanceID"},
+        { HgiShaderKeywordTokens->hdPrimitiveID, "gl_PrimitiveID"},
+        { HgiShaderKeywordTokens->hdSampleID, "gl_SampleID"},
+        { HgiShaderKeywordTokens->hdSamplePosition, "gl_SamplePosition"},
+        { HgiShaderKeywordTokens->hdFragCoord, "gl_FragCoord"},
+        { HgiShaderKeywordTokens->hdBaseVertex, "gl_BaseVertex"},
+        { HgiShaderKeywordTokens->hdBaseInstance, "gl_BaseInstance"},
+        { HgiShaderKeywordTokens->hdFrontFacing, "gl_FrontFacing"},
+        { HgiShaderKeywordTokens->hdLayer, "gl_Layer"},
+        { HgiShaderKeywordTokens->hdViewportIndex, "gl_ViewportIndex"},
+        { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"},
+        { HgiShaderKeywordTokens->hdBaryCoordNoPerspNV, "gl_BaryCoordNoPerspNV"},
     };
 
     const bool in_qualifier = qualifier == "in";
@@ -198,36 +348,86 @@ HgiGLShaderGenerator::_WriteInOuts(
             const std::string &role = param.role;
             auto const& keyword = takenInParams.find(role);
             if (keyword != takenInParams.end()) {
-                GetShaderSections()->push_back(
-                    std::make_unique<HgiGLKeywordShaderSection>(
+                if (role == HgiShaderKeywordTokens->hdGlobalInvocationID) {
+                    CreateShaderSection<HgiGLKeywordShaderSection>(
                         paramName,
                         param.type,
-                        keyword->second));
+                        keyword->second);
+                }
                 continue;
             }
         }
 
-        const HgiShaderSectionAttributeVector attrs {
-            HgiShaderSectionAttribute{"location", std::to_string(counter)}
-        };
+        HgiShaderSectionAttributeVector attrs;
 
-        GetShaderSections()->push_back(
-            std::make_unique<HgiGLMemberShaderSection>(
-                paramName,
-                param.type,
-                attrs,
-                qualifier));
-        counter++;
+        // Currently, all interstage variables and blocks are matched by name
+        const bool useInterstageSlot = false;
+
+        if (param.location != -1) {
+            // If a location has been specified then add it to the attributes.
+            attrs.push_back({"location", std::to_string(param.location)});
+        } else if (useInterstageSlot && (param.interstageSlot != -1)) {
+            // For interstage parameters use the interstageSlot for location.
+            attrs.push_back({"location", std::to_string(param.interstageSlot)});
+        }
+
+        CreateShaderSection<HgiGLMemberShaderSection>(
+            paramName,
+            param.type,
+            param.interpolation,
+            attrs,
+            qualifier,
+            std::string(),
+            param.arraySize);
     }
 }
 
 void
-HgiGLShaderGenerator::_Execute(
-    std::ostream &ss,
-    const std::string &originalShaderShader) 
+HgiGLShaderGenerator::_WriteInOutBlocks(
+    const HgiShaderFunctionParamBlockDescVector &parameterBlocks,
+    const std::string &qualifier)
+{
+    for(const HgiShaderFunctionParamBlockDesc &p : parameterBlocks) {
+
+        HgiGLShaderSectionPtrVector members;
+        for(const HgiShaderFunctionParamBlockDesc::Member &member : p.members) {
+
+            HgiGLMemberShaderSection *memberSection =
+                CreateShaderSection<HgiGLMemberShaderSection>(
+                    member.name,
+                    member.type,
+                    HgiInterpolationDefault,
+                    HgiShaderSectionAttributeVector(),
+                    qualifier,
+                    std::string(),
+                    std::string(),
+                    p.instanceName);
+            members.push_back(memberSection);
+        }
+
+        CreateShaderSection<HgiGLInterstageBlockShaderSection>(
+            p.blockName,
+            p.instanceName,
+            qualifier,
+            p.arraySize,
+            members);
+    }
+}
+
+void
+HgiGLShaderGenerator::_Execute(std::ostream &ss)
 {
     // Version number must be first line in glsl shader
-    ss << _version << "\n";
+    _WriteVersion(ss);
+
+    _WriteExtensions(ss);
+
+    // Write out all GL shaders and add to shader sections
+    _WriteMacros(ss);
+
+    ss << _GetPackedTypeDefinitions() << "\n";
+
+    ss << _GetShaderCodeDeclarations() << "\n";
 
     for (const std::string &attr : _shaderLayoutAttributes) {
         ss << attr;
@@ -239,40 +439,40 @@ HgiGLShaderGenerator::_Execute(
     //section, capabilities to define macros in global space,
     //and abilities to declare some members or functions there
     
+    ss << "\n// //////// Global Includes ////////\n";
     for (const std::unique_ptr<HgiGLShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalIncludes(ss);
-        ss << "\n";
     }
 
+    ss << "\n// //////// Global Macros ////////\n";
     for (const std::unique_ptr<HgiGLShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalMacros(ss);
-        ss << "\n";
     }
 
+    ss << "\n// //////// Global Structs ////////\n";
     for (const std::unique_ptr<HgiGLShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalStructs(ss);
-        ss << "\n";
     }
 
+    ss << "\n// //////// Global Member Declarations ////////\n";
     for (const std::unique_ptr<HgiGLShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalMemberDeclarations(ss);
-        ss << "\n";
     }
 
+    ss << "\n// //////// Global Function Definitions ////////\n";
     for (const std::unique_ptr<HgiGLShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalFunctionDefinitions(ss);
-        ss << "\n";
     }
 
     ss << "\n";
 
     // write all the original shader
-    ss << originalShaderShader;
+    ss << _GetShaderCode();
 }
 
 HgiGLShaderSectionUniquePtrVector*

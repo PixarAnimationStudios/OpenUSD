@@ -47,6 +47,26 @@ public:
     {}
     virtual ~UsdImagingVolumeAdapter();
 
+    // ---------------------------------------------------------------------- //
+    /// \name Scene Index Support
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    TfTokenVector GetImagingSubprims() override;
+
+    USDIMAGING_API
+    TfToken GetImagingSubprimType(TfToken const& subprim) override;
+
+    USDIMAGING_API
+    HdContainerDataSourceHandle GetImagingSubprimData(
+            TfToken const& subprim,
+            UsdPrim const& prim,
+            const UsdImagingDataSourceStageGlobals &stageGlobals) override;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Initialization
+    // ---------------------------------------------------------------------- //
+
     virtual SdfPath Populate(UsdPrim const& prim,
                      UsdImagingIndexProxy* index,
                      UsdImagingInstancerContext const*

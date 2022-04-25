@@ -131,7 +131,7 @@ what identifies the source of the Material's surface shading.
    pbrShader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(0.4)
    pbrShader.CreateInput("metallic", Sdf.ValueTypeNames.Float).Set(0.0)
    
-   material.CreateSurfaceOutput().ConnectToSource(pbrShader, "surface")
+   material.CreateSurfaceOutput().ConnectToSource(pbrShader.ConnectableAPI(), "surface")
 
 Add Texturing
 =============
@@ -152,9 +152,9 @@ how to map surface coordinates to texture coordinates.
    diffuseTextureSampler = UsdShade.Shader.Define(stage,'/TexModel/boardMat/diffuseTexture')
    diffuseTextureSampler.CreateIdAttr('UsdUVTexture')
    diffuseTextureSampler.CreateInput('file', Sdf.ValueTypeNames.Asset).Set("USDLogoLrg.png")
-   diffuseTextureSampler.CreateInput("st", Sdf.ValueTypeNames.Float2).ConnectToSource(stReader, 'result')
+   diffuseTextureSampler.CreateInput("st", Sdf.ValueTypeNames.Float2).ConnectToSource(stReader.ConnectableAPI(), 'result')
    diffuseTextureSampler.CreateOutput('rgb', Sdf.ValueTypeNames.Float3)
-   pbrShader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).ConnectToSource(diffuseTextureSampler, 'rgb')
+   pbrShader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).ConnectToSource(diffuseTextureSampler.ConnectableAPI(), 'rgb')
 
 Note that we have not yet specified what texture coordinate (primvar) the
 PrimvarReader should read. We could author the name of the primvar directly on

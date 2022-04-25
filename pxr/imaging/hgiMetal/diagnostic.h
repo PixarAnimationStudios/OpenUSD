@@ -44,6 +44,12 @@ bool HgiMetalDebugEnabled();
 #define HGIMETAL_DEBUG_LABEL(_obj, label) \
     if (HgiMetalDebugEnabled()) { [_obj setLabel:@(label)]; }
 
+#define HGIMETAL_DEBUG_PUSH_GROUP(_obj, label) \
+    if (HgiMetalDebugEnabled()) { [_obj pushDebugGroup:@(label)]; }
+
+#define HGIMETAL_DEBUG_POP_GROUP(_obj) \
+    if (HgiMetalDebugEnabled()) { [_obj popDebugGroup]; }
+
 /// Posts diagnostic errors for all Metal errors in the current context.
 HGIMETAL_API
 void HgiMetalPostPendingErrors(std::string const & where = std::string());

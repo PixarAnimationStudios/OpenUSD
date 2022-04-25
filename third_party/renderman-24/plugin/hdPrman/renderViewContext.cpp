@@ -30,7 +30,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdPrman_RenderViewDesc::RenderOutputDesc::RenderOutputDesc()
   : type(riley::RenderOutputType::k_Color)
-  , filterName(RixStr.k_filter)
+  , rule(RixStr.k_filter)
 { }
 
 HdPrman_RenderViewContext::HdPrman_RenderViewContext() = default;
@@ -53,7 +53,7 @@ HdPrman_RenderViewContext::CreateRenderView(
                 outputDesc.name,
                 outputDesc.type,
                 outputDesc.sourceName,
-                outputDesc.filterName,
+                outputDesc.rule,
                 RixStr.k_box,
                 filterWidth,
                 1.0f,

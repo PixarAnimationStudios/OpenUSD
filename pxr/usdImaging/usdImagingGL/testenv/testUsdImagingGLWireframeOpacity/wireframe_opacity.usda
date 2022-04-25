@@ -1,4 +1,7 @@
 #usda 1.0
+(
+    upAxis = "Z"
+)
 
 # Simple scene to test wireframe drawing of two meshes, one that's almost
 # transparent and another that's opaque. We want the wireframe to be opaque and

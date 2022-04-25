@@ -1,37 +1,37 @@
-#!/pxrpythonsubst                                                                   
-#                                                                                   
-# Copyright 2017 Pixar                                                              
-#                                                                                   
-# Licensed under the Apache License, Version 2.0 (the "Apache License")             
-# with the following modification; you may not use this file except in              
-# compliance with the Apache License and the following modification to it:          
-# Section 6. Trademarks. is deleted and replaced with:                              
-#                                                                                   
-# 6. Trademarks. This License does not grant permission to use the trade            
-#    names, trademarks, service marks, or product names of the Licensor             
-#    and its affiliates, except as required to comply with Section 4(c) of          
-#    the License and to reproduce the content of the NOTICE file.                   
-#                                                                                   
-# You may obtain a copy of the Apache License at                                    
-#                                                                                   
-#     http://www.apache.org/licenses/LICENSE-2.0                                    
-#                                                                                   
-# Unless required by applicable law or agreed to in writing, software               
-# distributed under the Apache License with the above modification is               
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY          
-# KIND, either express or implied. See the Apache License for the specific          
+#!/pxrpythonsubst
+#                                                                              
+# Copyright 2017 Pixar                                                         
+#                                                                              
+# Licensed under the Apache License, Version 2.0 (the "Apache License")        
+# with the following modification; you may not use this file except in         
+# compliance with the Apache License and the following modification to it:     
+# Section 6. Trademarks. is deleted and replaced with:                         
+#                                                                              
+# 6. Trademarks. This License does not grant permission to use the trade       
+#    names, trademarks, service marks, or product names of the Licensor        
+#    and its affiliates, except as required to comply with Section 4(c) of     
+#    the License and to reproduce the content of the NOTICE file.              
+#                                                                              
+# You may obtain a copy of the Apache License at                               
+#                                                                              
+#     http://www.apache.org/licenses/LICENSE-2.0                               
+#                                                                              
+# Unless required by applicable law or agreed to in writing, software          
+# distributed under the Apache License with the above modification is          
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY     
+# KIND, either express or implied. See the Apache License for the specific     
 # language governing permissions and limitations under the Apache License. 
 
 from __future__ import print_function
 
-from pxr import Sdf, Usd, UsdShade
+from pxr import Sdf, Usd, UsdShade, UsdGeom
 import os, unittest
 
 class TestUsdShadeMaterialBaseMaterial(unittest.TestCase):
-    def _SetupShading(self, stage):
+    def _SetupShading(self, stage, rootPrimPath):
         # Create this prim first, since it's the "entrypoint" to the layer, and
         # we want it to appear at the top
-        rootPrim = stage.DefinePrim("/ModelShading")
+        rootPrim = stage.DefinePrim(rootPrimPath)
 
         materialsPath = rootPrim.GetPath().AppendChild('Materials')
         return materialsPath
@@ -100,9 +100,14 @@ class TestUsdShadeMaterialBaseMaterial(unittest.TestCase):
     def test_Basic(self):
         fileName = "test_base_material_specializes.usda"
         stage = Usd.Stage.CreateNew(fileName)
-        materialsPath = self._SetupShading(stage)
+        rootPrimPath = Sdf.Path("/ModelShading")
+        UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.y)
+        UsdGeom.SetStageMetersPerUnit(stage, UsdGeom.LinearUnits.centimeters)
+        materialsPath = self._SetupShading(stage, rootPrimPath)
+        stage.SetDefaultPrim(stage.GetPrimAtPath(rootPrimPath))
+        
         self._TestShading(stage, materialsPath)
-        stage.GetRootLayer().Save()
+        stage.Save()
 
 if __name__ == "__main__":
     unittest.main()

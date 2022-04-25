@@ -28,6 +28,8 @@
 #include "pxr/usdImaging/usdImagingGL/legacyEngine.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
+#include "pxr/imaging/hd/flatteningSceneIndex.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/camera.h"
@@ -60,6 +62,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_DEBUG_SCENE_DELEGATE_ID, "/",
                       "Default usdImaging scene delegate id");
 
+TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX, false,
+                      "Use Scene Index API for imaging scene input");
+
 namespace {
 
 bool
@@ -79,6 +84,20 @@ _GetUsdImagingDelegateId()
         SdfPath(TfGetEnvSetting(USDIMAGINGGL_ENGINE_DEBUG_SCENE_DELEGATE_ID));
 
     return delegateId;
+}
+
+bool
+_GetUseSceneIndices()
+{
+    // Use UsdImagingStageSceneIndex for input if:
+    // - USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX is true (feature flag)
+    // - HdRenderIndex has scene index emulation enabled (otherwise,
+    //     AddInputScene won't work).
+    static bool useSceneIndices =
+        HdRenderIndex::IsSceneIndexEmulationEnabled() &&
+        (TfGetEnvSetting(USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX) == true);
+
+    return useSceneIndices;
 }
 
 void _InitGL()
@@ -119,6 +138,23 @@ _IsHydraEnabled()
         HdRendererPluginRegistry::GetInstance().GetDefaultPluginId();
 
     return !defaultPlugin.IsEmpty();
+}
+
+std::string
+_GetPlatformDependentRendererDisplayName(HfPluginDesc const &pluginDescriptor)
+{
+#if defined(__APPLE__)
+    // Rendering for Storm is delegated to Hgi. We override the
+    // display name for macOS since the Hgi implementation for
+    // macOS uses Metal instead of GL. Eventually, this should
+    // properly delegate to using Hgi to determine the display
+    // name for Storm.
+    static const TfToken _stormRendererPluginName("HdStormRendererPlugin");
+    if (pluginDescriptor.id == _stormRendererPluginName) {
+        return "Metal";
+    }
+#endif
+    return pluginDescriptor.displayName;
 }
 
 } // anonymous namespace
@@ -164,13 +200,15 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     , _excludedPrimPaths(excludedPaths)
     , _invisedPrimPaths(invisedPaths)
     , _isPopulated(false)
+    , _sceneIndex(nullptr)
+    , _sceneDelegate(nullptr)
 {
     _InitGL();
 
     if (IsHydraEnabled()) {
 
-        // _renderIndex, _taskController, and _sceneDelegate are initialized
-        // by the plugin system.
+        // _renderIndex, _taskController, and _sceneDelegate/_sceneIndex
+        // are initialized by the plugin system.
         if (!SetRendererPlugin(_GetDefaultRendererPluginId())) {
             TF_CODING_ERROR("No renderer plugins found! "
                             "Check before creation.");
@@ -193,7 +231,14 @@ UsdImagingGLEngine::_DestroyHydraObjects()
     // Destroy objects in opposite order of construction.
     _engine = nullptr;
     _taskController = nullptr;
-    _sceneDelegate = nullptr;
+    if (_GetUseSceneIndices()) {
+        if (_sceneIndex) {
+            _renderIndex->RemoveSceneIndex(_sceneIndex);
+            _sceneIndex = nullptr;
+        }
+    } else {
+        _sceneDelegate = nullptr;
+    }
     _renderIndex = nullptr;
     _renderDelegate = nullptr;
 }
@@ -220,21 +265,41 @@ UsdImagingGLEngine::PrepareBatch(
 
     HD_TRACE_FUNCTION();
 
-    TF_VERIFY(_sceneDelegate);
-
     if (_CanPrepare(root)) {
         if (!_isPopulated) {
-            _sceneDelegate->SetUsdDrawModesEnabled(params.enableUsdDrawModes);
-            _sceneDelegate->Populate(
-                root.GetStage()->GetPrimAtPath(_rootPath),
-                _excludedPrimPaths);
-            _sceneDelegate->SetInvisedPrimPaths(_invisedPrimPaths);
+            if (_GetUseSceneIndices()) {
+                TF_VERIFY(_sceneIndex);
+                _sceneIndex->SetStage(root.GetStage());
+                _sceneIndex->Populate();
+
+                // XXX(USD-7113): Add pruning based on _rootPath,
+                // _excludedPrimPaths
+
+                // XXX(USD-7114): Add draw mode support based on
+                // params.enableUsdDrawModes.
+
+                // XXX(USD-7115): Add invis overrides from _invisedPrimPaths.
+            } else {
+                TF_VERIFY(_sceneDelegate);
+                _sceneDelegate->SetUsdDrawModesEnabled(
+                        params.enableUsdDrawModes);
+                _sceneDelegate->Populate(
+                        root.GetStage()->GetPrimAtPath(_rootPath),
+                        _excludedPrimPaths);
+                _sceneDelegate->SetInvisedPrimPaths(_invisedPrimPaths);
+            }
             _isPopulated = true;
         }
 
         _PreSetTime(params);
+
         // SetTime will only react if time actually changes.
-        _sceneDelegate->SetTime(params.frame);
+        if (_GetUseSceneIndices()) {
+            _sceneIndex->SetTime(params.frame);
+        } else {
+            _sceneDelegate->SetTime(params.frame);
+        }
+
         _PostSetTime(params);
     }
 }
@@ -253,9 +318,13 @@ UsdImagingGLEngine::_PrepareRender(const UsdImagingGLRenderParams& params)
     _taskController->SetRenderParams(
         _MakeHydraUsdImagingGLRenderParams(params));
 
-    // Forward scene materials enable option to delegate
-    _sceneDelegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
-    _sceneDelegate->SetSceneLightsEnabled(params.enableSceneLights);
+    // Forward scene materials enable option.
+    if (_GetUseSceneIndices()) {
+        // XXX(USD-7116): params.enableSceneMaterials, params.enableSceneLights
+    } else {
+        _sceneDelegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
+        _sceneDelegate->SetSceneLightsEnabled(params.enableSceneLights);
+    }
 }
 
 void
@@ -307,11 +376,14 @@ UsdImagingGLEngine::Render(
 
     PrepareBatch(root, params);
 
-    // XXX(UsdImagingPaths): Is it correct to map USD root path directly
-    // to the cachePath here?
-    const SdfPath cachePath = root.GetPath();
+    // XXX(UsdImagingPaths): This bit is weird: we get the stage from "root",
+    // gate population by _rootPath (which may be different), and then pass
+    // root.GetPath() to hydra as the root to draw from. Note that this
+    // produces incorrect results in UsdImagingDelegate for native instancing.
     const SdfPathVector paths = {
-        _sceneDelegate->ConvertCachePathToIndexPath(cachePath) };
+        root.GetPath().ReplacePrefix(
+            SdfPath::AbsoluteRootPath(), _sceneDelegateId)
+    };
 
     RenderBatch(paths, params);
 }
@@ -338,8 +410,12 @@ UsdImagingGLEngine::SetRootTransform(GfMatrix4d const& xf)
         return;
     }
 
-    TF_VERIFY(_sceneDelegate);
-    _sceneDelegate->SetRootTransform(xf);
+    if (_GetUseSceneIndices()) {
+        // XXX(USD-7115): root transform
+    } else {
+        TF_VERIFY(_sceneDelegate);
+        _sceneDelegate->SetRootTransform(xf);
+    }
 }
 
 void
@@ -349,8 +425,12 @@ UsdImagingGLEngine::SetRootVisibility(bool isVisible)
         return;
     }
 
-    TF_VERIFY(_sceneDelegate);
-    _sceneDelegate->SetRootVisibility(isVisible);
+    if (_GetUseSceneIndices()) {
+        // XXX(USD-7115): root visibility
+    } else {
+        TF_VERIFY(_sceneDelegate);
+        _sceneDelegate->SetRootVisibility(isVisible);
+    }
 }
 
 //----------------------------------------------------------------------------
@@ -420,9 +500,13 @@ UsdImagingGLEngine::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
     TF_VERIFY(_taskController);
     // Note: Free cam uses SetCameraState, which expects the frustum to be
     // pre-adjusted for the viewport size.
-    
-    // The usdImagingDelegate manages the window policy for scene cameras.
-    _sceneDelegate->SetWindowPolicy(policy);
+
+    if (_GetUseSceneIndices()) {
+        // XXX(USD-7115): window policy
+    } else {
+        // The usdImagingDelegate manages the window policy for scene cameras.
+        _sceneDelegate->SetWindowPolicy(policy);
+    }
 }
 
 void
@@ -438,7 +522,10 @@ UsdImagingGLEngine::SetCameraPath(SdfPath const& id)
 
     // The camera that is set for viewing will also be used for
     // time sampling.
-    _sceneDelegate->SetCameraForSampling(id);
+    // XXX(HYD-2304): motion blur shutter window.
+    if (!_GetUseSceneIndices()) {
+        _sceneDelegate->SetCameraForSampling(id);
+    }
 }
 
 void 
@@ -532,6 +619,11 @@ UsdImagingGLEngine::SetSelected(SdfPathVector const& paths)
         return;
     }
 
+    if (_GetUseSceneIndices()) {
+        // XXX(HYD-2299): selection support
+        return;
+    }
+
     TF_VERIFY(_sceneDelegate);
 
     // populate new selection
@@ -577,6 +669,11 @@ void
 UsdImagingGLEngine::AddSelected(SdfPath const &path, int instanceIndex)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    if (_GetUseSceneIndices()) {
+        // XXX(HYD-2299): selection support
         return;
     }
 
@@ -636,6 +733,11 @@ UsdImagingGLEngine::TestIntersection(
             outHitInstanceIndex);
     }
 
+    if (_GetUseSceneIndices()) {
+        // XXX(HYD-2299): picking support
+        return false;
+    }
+
     TF_VERIFY(_sceneDelegate);
     TF_VERIFY(_taskController);
 
@@ -644,10 +746,11 @@ UsdImagingGLEngine::TestIntersection(
     // XXX(UsdImagingPaths): This is incorrect...  "Root" points to a USD
     // subtree, but the subtree in the hydra namespace might be very different
     // (e.g. for native instancing).  We need a translation step.
-    const SdfPath cachePath = root.GetPath();
-    const SdfPathVector roots = {
-        _sceneDelegate->ConvertCachePathToIndexPath(cachePath) };
-    _UpdateHydraCollection(&_intersectCollection, roots, params);
+    const SdfPathVector paths = {
+        root.GetPath().ReplacePrefix(
+            SdfPath::AbsoluteRootPath(), _sceneDelegateId)
+    };
+    _UpdateHydraCollection(&_intersectCollection, paths, params);
 
     _PrepareRender(params);
 
@@ -708,6 +811,11 @@ UsdImagingGLEngine::DecodeIntersection(
     HdInstancerContext *outInstancerContext)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
+        return false;
+    }
+
+    if (_GetUseSceneIndices()) {
+        // XXX(HYD-2299): picking
         return false;
     }
 
@@ -784,7 +892,7 @@ UsdImagingGLEngine::GetRendererDisplayName(TfToken const &id)
         return std::string();
     }
 
-    return pluginDescriptor.displayName;
+    return _GetPlatformDependentRendererDisplayName(pluginDescriptor);
 }
 
 TfToken
@@ -850,19 +958,33 @@ void
 UsdImagingGLEngine::_SetRenderDelegateAndRestoreState(
     HdPluginRenderDelegateUniqueHandle &&renderDelegate)
 {
-    // Pull old delegate/task controller state.
+    // Pull old scene/task controller state. Note that the scene index/delegate
+    // may not have been created, if this is the first time through this
+    // function, so we guard for null and use default values for xform/vis.
+    GfMatrix4d rootTransform = GfMatrix4d(1.0);
+    bool rootVisibility = true;
 
-    const GfMatrix4d rootTransform =
-        _sceneDelegate ? _sceneDelegate->GetRootTransform() : GfMatrix4d(1.0);
-    const bool isVisible =
-        _sceneDelegate ? _sceneDelegate->GetRootVisibility() : true;
+    if (_GetUseSceneIndices()) {
+        // XXX(USD-7115): root transform, visibility...
+    } else {
+        if (_sceneDelegate) {
+            rootTransform = _sceneDelegate->GetRootTransform();
+            rootVisibility = _sceneDelegate->GetRootVisibility();
+        }
+    }
+
     HdSelectionSharedPtr const selection = _GetSelection();
 
+    // Rebuild the imaging stack
     _SetRenderDelegate(std::move(renderDelegate));
 
-    // Rebuild state in the new delegate/task controller.
-    _sceneDelegate->SetRootVisibility(isVisible);
-    _sceneDelegate->SetRootTransform(rootTransform);
+    // Reload saved state.
+    if (_GetUseSceneIndices()) {
+        // XXX(USD-7115): root transform, visibility...
+    } else {
+        _sceneDelegate->SetRootVisibility(rootVisibility);
+        _sceneDelegate->SetRootTransform(rootTransform);
+    }
     _selTracker->SetSelection(selection);
     _taskController->SetSelectionColor(_selectionColor);
 }
@@ -900,9 +1022,16 @@ UsdImagingGLEngine::_SetRenderDelegate(
         HdRenderIndex::New(
             _renderDelegate.Get(), {&_hgiDriver}));
 
-    // Create the new delegate
-    _sceneDelegate = std::make_unique<UsdImagingDelegate>(
-        _renderIndex.get(), _sceneDelegateId);
+    // Create the new scene API
+    if (_GetUseSceneIndices()) {
+        _sceneIndex = UsdImagingStageSceneIndex::New();
+        _renderIndex->InsertSceneIndex(
+            HdFlatteningSceneIndex::New(_sceneIndex),
+            _sceneDelegateId);
+    } else {
+        _sceneDelegate = std::make_unique<UsdImagingDelegate>(
+                _renderIndex.get(), _sceneDelegateId);
+    }
 
     // Create the new task controller
     _taskController = std::make_unique<HdxTaskController>(
@@ -1260,8 +1389,6 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
         return;
     }
 
-    TF_VERIFY(_sceneDelegate);
-
     // User is responsible for initializing GL context
     const bool isCoreProfileContext = GlfContextCaps::GetInstance().coreProfile;
 
@@ -1395,13 +1522,19 @@ UsdImagingGLEngine::_PreSetTime(const UsdImagingGLRenderParams& params)
 {
     HD_TRACE_FUNCTION();
 
-    // Set the fallback refine level, if this changes from the existing value,
-    // all prim refine levels will be dirtied.
     const int refineLevel = _GetRefineLevel(params.complexity);
-    _sceneDelegate->SetRefineLevelFallback(refineLevel);
 
-    // Apply any queued up scene edits.
-    _sceneDelegate->ApplyPendingUpdates();
+    if (_GetUseSceneIndices()) {
+        // XXX(USD-7115): fallback refine level
+        // XXX(USD-7117): do we need to trigger deferred updates?
+    } else {
+        // Set the fallback refine level; if this changes from the
+        // existing value, all prim refine levels will be dirtied.
+        _sceneDelegate->SetRefineLevelFallback(refineLevel);
+
+        // Apply any queued up scene edits.
+        _sceneDelegate->ApplyPendingUpdates();
+    }
 }
 
 void
@@ -1595,7 +1728,14 @@ UsdImagingGLEngine::_GetDefaultRendererPluginId()
 UsdImagingDelegate *
 UsdImagingGLEngine::_GetSceneDelegate() const
 {
-    return _sceneDelegate.get();
+    if (_GetUseSceneIndices()) {
+        // XXX(USD-7118): this API needs to be removed for full
+        // scene index support.
+        TF_CODING_ERROR("_GetSceneDelegate API is unsupported");
+        return nullptr;
+    } else {
+        return _sceneDelegate.get();
+    }
 }
 
 HdEngine *

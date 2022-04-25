@@ -150,6 +150,10 @@ bool _ArePtrsEqual(PtrType const &self,
 template <typename PtrType>
 bool _ArePtrsNotEqual(PtrType const &self,
                       PtrType const &other) { return self != other; }
+template <typename PtrType>
+bool _ArePtrsLessThan(PtrType const &self,
+                      PtrType const &other) { return self < other; }
+
 
 // Default ownership policy does nothing.
 template <class PtrType>
@@ -377,7 +381,9 @@ struct WeakPtr : def_visitor<WeakPtr> {
         c.def("__eq__", _ArePtrsEqual<UnwrappedPtrType>,
               "Equality operator:  x == y");
         c.def("__ne__", _ArePtrsNotEqual<UnwrappedPtrType>,
-              "Non-equality  operator: x != y");
+              "Non-equality operator: x != y");
+        c.def("__lt__", _ArePtrsLessThan<UnwrappedPtrType>,
+              "Less than operator: x < y");
         c.def( TfTypePythonClass() );
     } 
 

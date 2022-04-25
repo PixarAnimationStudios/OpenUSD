@@ -32,6 +32,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USDGEOM_EXTENT, "Reports when Boundable "
+            "extents are computed dynamically because no cached authored "
+            "attribute is present in the scene.");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDGEOM_BBOX, "UsdGeom bounding box computation");
 }
 

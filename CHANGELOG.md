@@ -1,5 +1,346 @@
 # Change Log
 
+## [22.05] - 2022-04-22
+
+This release enables Storm for macOS using Metal. Refer to notes under Storm for
+details. Many thanks to our collaborators at Apple for all of their work to make
+this happen!
+
+### Build
+- Fixed compilation issue on GCC11.
+  (Issue: [#1721](https://github.com/PixarAnimationStudios/USD/pull/1721), 
+   PR: [#1776](https://github.com/PixarAnimationStudios/USD/pull/1776))
+
+- Deprecated support for Visual Studio 2015. Visual Studio 2017 will be the 
+  minimum supported version as of the next release.
+
+- Builds with Python enabled or disabled are now ABI-compatible.
+  (PR: [#1729](https://github.com/PixarAnimationStudios/USD/pull/1729))
+
+- Made 10.15.7 as the minimum macOS requirement (with compatible Xcode version 
+  being 12.4) we test against. Minimum CMake requirement for macOS has also been 
+  updated to 3.18.6.
+
+- On Apple Silicon systems, it is required to use an x86_64 architecture 
+  environment (e.g. "arch -x86_64 zsh") to build and execute binaries.
+
+- Updated build_usd.py to use OpenSubdiv 3.4.4.
+
+### USD
+- Added support for sdrUsdDefinitionType in UsdShadeShaderDef.
+
+- Removed SDR_DEFAULT_VALUE_AS_SDF_DEFAULT_VALUE environment variable,
+  SdrShaderProperty::GetDefaultValue and
+  SdrShaderProperty::GetDefaultValueAsSdfType will provide default values
+  appropriately.
+
+- Added disableMotionBlur in favor of deprecated instantaneousShutter in
+  UsdRender, to be more compliant of standard behavior of using only one sample
+  at the current frame when motion blur is disabled.
+
+- Deprecated motion:velocityScale in UsdGeomMotionAPI in favor of more general
+  motion:blurScale. Also deprecated usage of velocityScale in 
+  UsdGeomPointInstancer and UsdGeomPointBased. Refer to motion:blurScale 
+  documentation for more details.
+
+- Added GetMaterialPurposes() API to UsdShadeMaterialBindingAPI.
+
+- Improved performance and correctness of TfDictionaryLess.
+
+- Fixed performance regression due to thrashing of Sdf object identities.
+
+- Numerous performance improvements in UsdPrim's property names computation.
+
+- Changes for usdGenSchema:
+  - Disabled inheritance for multiple apply API schemas, now that
+    built-in API schemas are supported for multiple apply schemas.
+  - Fixed issue where schema tokens with invalid C++ identifiers would be 
+    generated. These tokens will now be converted into a valid identifier. 
+    Tokens beginning with a numeral are now prefixed with '_'.
+  - Added ability to generate C++ identifiers using property names and values 
+    exactly as authored in schema.usda instead of camel-casing them by 
+    specifying useLiteralIdentifier in the GLOBAL schema metadata. This is 
+    helpful in scenarios where schema.usda is generated using utilities like 
+    usdgenschemafromsdr instead of being hand authored.
+  - Fixed Python 3 compatibility by explicitly included the None
+    keyword in reserved list.
+
+- Added error handling for corrupt .usdc files where VtValues claimed to 
+  contain themselves.
+
+- Fixed inconsistent behavior of UsdShadeConnectableAPI::HasConnectableAPI 
+  between Python and C++.
+
+- Fixed UsdShadeConnectableAPIBehavior registry that caused it to miss builtin 
+  API schemas when querying for connectability. This caused incorrect result
+  when querying for HasConnectableAPI on just the prim types.
+
+- Numerous fixes and improvements for Python 3 compatibility.
+
+- Instance proxies can now be used to author opinions to non-local edit targets.
+
+- Added NdrFsHelperDiscoverFiles function to NdrDiscoveryPlugin which returns a
+  list of raw and resolved URIs to the files found by walking the directory.
+  This is similar to NdrFsHelperDiscoverNodes which returns a list of full
+  discovery results.
+
+- Updated UsdUtilsUpdateSchemaWithSdrNode to process nodes which do not exhibit
+  UsdShade connectability. This is used to incorporate rman concepts like
+  Options, etc, not connectable sdr nodes in the usdRiPxr schemas.
+
+- Updated NdrFsHelperDiscoverNodes API to include a parameter to optionally 
+  parse a shader identifier into its name, family and version.
+
+- Added an optional parameter to specify the tolerance for
+  UsdSkelNormalizeWeights.
+  (PR: [#1667](https://github.com/PixarAnimationStudios/USD/pull/1667))
+
+- Deprecated UsdLuxListAPI in favor of new UsdLuxLightListAPI.
+
+- Added plugin mechanism for registering variantSets for 
+  UsdUtilsGetRegisteredVariantSets.
+
+- Fixed a critical bug with UsdPhysics Mass computation.
+  (PR: [#1799](https://github.com/PixarAnimationStudios/USD/pull/1799))
+
+- Restored fix for symlink reading on Windows.
+  (PR: [#1804](https://github.com/PixarAnimationStudios/USD/pull/1804))
+
+- Added UsdGeomBoundable::ComputeExtent API to sit alongside
+  UsdGeomBoundable::ComputeExtentFromPlugins. This returns the extent on a
+  boundable if one is explicitly authored, else it computes using the registered
+  ComputeExtentFunction. Its recommended to use this API over extent getters,
+  which might incorrectly return schema fallback extent.
+
+- Added nonlinearSampleCount attribute to UsdGeomMotionAPI.
+
+### MaterialX Plugin
+- Make UsdMtlx plugin a library, moved to /usd/usdMtlx
+
+- Added support for multi-output MaterialX nodes.
+  (Issue: [#1581](https://github.com/PixarAnimationStudios/USD/issues/1581)
+
+- Added support for MaterialX namespaces declared in stdLibs
+  (PR: [#1631](https://github.com/PixarAnimationStudios/USD/pull/1631))
+
+- Fixed MaterialX boolean inputs.
+  (Issue: [#1784](https://github.com/PixarAnimationStudios/USD/pull/1784),
+   PR: [#1789](https://github.com/PixarAnimationStudios/USD/pull/1789))
+
+- Added support for using texcoord MaterialX node type for texture coordinates.
+  (Issue: [#1636](https://github.com/PixarAnimationStudios/USD/issues/1636)
+
+- Updated documentation to mention current known limitation of the MaterialX
+  plugin.
+  (Issue: [#1636](https://github.com/PixarAnimationStudios/USD/issues/1636)
+
+- Added a UsdBakeMaterialX script to bake MaterialX materials, via 
+  MaterialX::TextureBaker. Note this does not work on windows yet, and skips 
+  volume materials.
+
+- Improved discovery of MaterialX vector3 inputs
+  (PR: [#1790](https://github.com/PixarAnimationStudios/USD/pull/1790))
+
+### Alembic Plugin
+- Pruned redundant "vals" namespace from the primvars namespace when reading 
+  array primvars from alembic. 
+  (PR: [#1635](https://github.com/PixarAnimationStudios/USD/pull/1635))
+
+### Imaging
+- Added HdNoticeBatchingSceneIndex and methods to begin and end batching of 
+  notices for legacy scene delegates.
+
+- Adjusted HdRenderIndex::RemoveSprim() to not remove hierarchical descendents 
+  when scene index emulation is enabled.
+
+- Added HdSceneDelegate::GetScenePrimPaths(), a vectorized version of 
+  GetScenePrimPath(). Note that with this change, GetScenePrimPath() is 
+  deprecated; use GetScenePrimPaths() instead. 
+  (PR: [#1744](https://github.com/PixarAnimationStudios/USD/pull/1744))
+
+### UsdImaging
+- Added tests for usdImagingGL and testusdview. These are enabled on Linux but
+  are currently disabled on macOS and Windows, while we investigate these
+  further.
+  (PR: [#1743](https://github.com/PixarAnimationStudios/USD/pull/1743))
+
+- Support shapes with blendshapes but no skinning when using CPU computations
+  (PR: [#1757](https://github.com/PixarAnimationStudios/USD/pull/1757))
+
+- Fixed UDIM path resolving when no "1001" file exists
+  (PR: [#1787](https://github.com/PixarAnimationStudios/USD/pull/1787))
+
+- Made usdImaging stricter about only reading "model:drawMode" attributes from 
+  prims with UsdGeomModelAPI applied.
+
+- Added early support to UsdImagingEngine (and consequently usdview) for 
+  loading USD stages into hydra with scene indices instead of scene delegates. 
+  This is gated on an environment variable and is disabled by default.
+
+- Added USD scene index support for cameras and volumes.
+
+### Storm
+- Enabled Storm for macOS using Metal. This is the first release with this 
+  feature enabled and there are currently the following limitations:
+  - Disabled for macOS releases before 10.15 (Catalina) since Metal Shading 
+    Language 2.2 is required.
+  - Disabled for systems using integrated Intel GPUs which do not yet support 
+    fragment shader barycentric coordinates.
+  - Curves primitives are always drawn as linear segments and do not refine 
+    when complexity is changed.
+  - Mesh primitives do support subdivision refinement but do not support 
+    adaptive tessellation.
+  - Frustum culling is enabled but only executes on the CPU, GPU frustum 
+    culling is disabled.
+  - MaterialX materials are not yet supported.
+
+- Introduced several aspects to take advantage of full performance on Metal:
+  - Post Tessellation Vertex Shaders (PTVS) used when executing displacement 
+    shader terminals.
+  - Vertex buffer step function used to support plumbing of drawing coordinate 
+    attributes.
+  - Argument buffers used for buffer and texture binding.
+  - Support parallel encoding of render command buffers.
+
+- Significant additions to the Hgi API and to the HgiMetal and HgiGL 
+  implementations. The Hgi API is still under development, recent additions 
+  include:
+  - Extended shader parameter descriptor to include specification of 
+    interpolation qualifiers, arraySize, and binding location.
+  - Improved the distinction between UBO and SSBO bindings as needed for GL.
+  - Added support for GLSL style interstage interface blocks.
+  - Added a way to enable early_fragment_tests.
+  - Added support for conservative rasterization for HgiGL
+  - Added support for additional clipping distances.
+  - Added support for declaring and accessing arrays of textures (and texture 
+  arrays).
+  - Added support to distinguish between [0,1] and [-1,1] depth ranges.
+  - Added a BlitCmd to fill the contents of a GPU buffer.
+  - Additional enumeration of GPU capabilities.
+  - Improved consistency of naming for the input arguments to drawing commands.
+
+- Added support for building against OCIO v2.0 with backup compatibility for 
+  OCIO v1.x.
+
+- Fixed domeLight computations and skyDome viewport rendering for Metal 
+  including fixing the alpha value written by the skyDome
+  (Issue: [#1656](https://github.com/PixarAnimationStudios/USD/issues/1656))
+
+- Fixed management of framebuffer objects in HgiGL for applications with 
+  multiple GL contexts.
+
+- Added support for "widget" styled drawing in Storm.
+
+- Added a display style flag "materialIsFinal" to let geometry (such as 
+  widgets) opt out of material overrides.
+
+- Added ImageToWorldMatrix to renderPassState and GetPositionInWorldSpace() 
+  GLSL helper for fragment shaders.
+
+- Updated Storm runtime shader code generation significantly to support 
+  declaration of shader resources (textures, buffers, etc.) using Hgi.
+
+- Shader code generation continues to support native GLSL declaration of shader 
+  resources, the new method of using Hgi for this purpose is guarded by the 
+  env setting HDST_ENABLE_HGI_RESOURCE_GENERATION which is enabled by default 
+  only for Metal.
+
+- Enabled declaration of resources (textures, buffers, interstage interface 
+  blocks, etc.) as GLSLFX layouts for Storm's internal shader source files.
+
+- Use the appropriate GLSL (for OpenGL) or MSL (for Metal) shader mixins from 
+  OpenSubdiv.
+
+- Updated shader source files and generated shader code to use Hgi abstractions 
+  for accessing packed types, buffers, textures, atomic operators,
+
+- Updated previewSurface.glslfx and simpleLighting.glslfx to use newly added 
+  HdTextureLod_name() (consistent sampler access to specific mipmap levels) and 
+  HdGetScalar_name() (single component, scalar value access of a parameter 
+  without needing to guard against component swizzle of scalar data types) 
+  accessors where necessary for compatibility with GLSL and MSL. Also updated 
+  lighting shaders to use HdGet_name() for sampling shadow textures and arrays 
+  of shadow textures.
+
+- Shader programs compiled directly from Hgi (i.e. not going through Storm 
+  codegen) now access textures using HgiGet_name() accessors, HdGet_name() and 
+  similar accessors are provided by Storm codegen.
+
+- Generated shader source now has organizational comments to indicate which 
+  aspect of shader generation provided the following lines of shader source code.
+
+- Enabled HdSt_PipelineDrawBatch for Metal, and deleted HdSt_ImmediateDrawBatch. 
+  The existing env setting which enabled use of MDI drawing command buffers has 
+  been repurposed to just control whether the CPU or GPU iterates over the 
+  command buffer when executing drawing.
+
+- Fixed HdStTextureUtils::HgiTextureReadback() to support readback into aligned 
+  allocated buffers.
+
+- Added guards to allow volume primitive shaders to run when double precision 
+  values are not supported by the shader runtime.
+
+- Improved calculation of the size of OIT buffers in shaders for compatibility 
+  with Metal.
+
+- Added an error message when a scene is rendered with more than 16 lights. 
+  Changed the light selection to grab the first 16 lights, prioritizing dome 
+  and simple lights (which tend to be used as camera lights). Filtered out 
+  zero-intensity lights before light selection.
+
+### RenderMan Hydra Plugin
+- Removed use of __lightFilterParentShader as this is obsolete since R22, which 
+  was generating unknown or mismatched input parameter errors.
+
+- Changed light filter coordinate system name to be the full light filter path 
+  as opposed to the leaf name. Since light filters affecting a light are 
+  expressed via relationship, only the full path guarantees uniqueness.
+
+- Added support for light filter combineMode.
+
+- Updated the MaterialNetwork conversion function to return an 
+  HdMaterialNetwork2 for a given HdMaterialNetworkMap, instead of using an out 
+  param. Doing so avoids potential issues if the caller passes in an existing 
+  HdMaterialNetwork2, in which case we would get an inaccurate final material 
+  network.
+
+- Fixed a hang in StopRender() when blocking = true. Fixed 
+  HdPrmanRenderDelegate::IsStopped (and the Stop return value), which were 
+  previously erroneously always returning true for offline mode, and always 
+  returning false for interactive mode.
+
+- Disabled MaterialX scene index plugin when MaterialX support is not enabled.
+
+- Added scene index plugins for material filtering functionality.
+
+- Improved hdPrman's motion blur support by adding blur scale and velocity and 
+  acceleration motion blur implemented through a new scene index. 
+  The instantaneousShutter setting has been deprecated in favor of 
+  disableMotionBlur.
+
+- Fixed a bug where toggling visibility of individual instances would lead to a 
+  crash.
+
+- Fixed an issue that was not correctly updating riley visibility on changing 
+  rprim tags.
+
+- Updated hdPrman display driver to correctly normalize render outputs based on 
+  accumulation rule and type.
+
+- Updated usdRiPxr schemas to reflect updates to renderman args files.
+
+### usdview
+
+- Fixed crash bugs when running usdview on macOS systems where Storm is not 
+  enabled.
+  (Issue: [#1780](https://github.com/PixarAnimationStudios/USD/issues/1780))
+
+- Deprecated UsdImagingGLLegacyEngine, i.e. "HydraDisabled". This renderer 
+  doesn't support most USD features, and will be removed in the next release.
+
+- Deprecated UsdImagingGLEngine::_GetDelegate. This API will be removed in the 
+  next release.
+
 ## [22.03] - 2021-02-18
 
 ### Build
@@ -148,14 +489,14 @@
 - Improved HdMeshUtil Patch Param documentation.
   (Issue: [#1720](https://github.com/PixarAnimationStudios/USD/issues/1720))  
 
-- Cache “renderTag” attribute in Hydra instead of pulling it at every use.
+- Cache "renderTag" attribute in Hydra instead of pulling it at every use.
 
 ### UsdImaging
 - Fixed instancing-related edit processing bugs: when prims are added to or
   removed from USD prototype roots; or when invalidations propagate from
   non-instanced prims to instanced prims.
 
-- Fixed drawing of “unloaded-prim-as-bounds” when the unloaded prim is an
+- Fixed drawing of "unloaded-prim-as-bounds" when the unloaded prim is an
   instance.
 
 - Improved performance of UsdImagingDelegate::PopulateSelection.
@@ -190,9 +531,9 @@
     rather than GlfSimpleShadowArray.
   - Ported HdxSimpleLightTask to pass in lighting data through the HdSt buffer
     management system, instead of using out-of-band GL uniform blocks. Note that
-    as part of this change, there’s a new shader API for accessing lighting
+    as part of this change, there's a new shader API for accessing lighting
     data.
-  - Added the “triangulated quad” primitive type, which draws quad geometry as
+  - Added the "triangulated quad" primitive type, which draws quad geometry as
     triangles.  This is expected to deprecate the current quad rendering with
     adjacency lists, although the latter is supported in HgiGL at the moment.
   - Added support for built-in barycentric coordinates, based on
@@ -225,21 +566,21 @@
 
 - Added basis curve builtin primvars: screenSpaceWidths (boolean), for rendering
   UI elements, and minScreenSpaceWidth, for reducing aliasing of thin curves.
-  Note that these haven’t been formalized in USD.
+  Note that these haven't been formalized in USD.
 
 - Changed meshes with a present but invalid normals primvar to draw with
   shader-generated normals.
 
 - Added support for bool array primvar data.
 
-- Added support for widget rendering via the “widget” rendertag and
+- Added support for widget rendering via the "widget" rendertag and
   surfaceShader implementation, which uses a draw/blend-on-top configuration.
 
 - Sped up execution of empty render passes.
 
 - Fixed leakage of vertex attrib binding state in HdxPickTask.
 
-- Added shadow support for “distantLight” prim type.
+- Added shadow support for "distantLight" prim type.
 
 - Fixed evaluation of dome lights and dome light parameters.
 
@@ -269,9 +610,9 @@
 - Fixed cookie light filters in hdPrman to provide the appropriate coordinate
   system object.
 
-- Updated hdPrman’s fallback surface material to better match Storm, by
-  respecting the “displayColor”, “displayOpacity”, “displayRoughness”, and
-  “displayMetallic” primvars.
+- Updated hdPrman's fallback surface material to better match Storm, by
+  respecting the "displayColor", "displayOpacity", "displayRoughness", and
+  "displayMetallic" primvars.
 
 - Improved performance blitting Prman output when running interactively.
 
@@ -288,7 +629,7 @@
 
 - Fixed uninitialized values when picking from Python.
 
-- Fixed a bug with usdview’s composition view when examining prims with
+- Fixed a bug with usdview's composition view when examining prims with
   specializes arcs.
 
 - Added support to set the OCIO display, view, and colorspace.
@@ -955,9 +1296,9 @@ Support for RenderMan 23 was deprecated in 21.05 and has now been removed.
   ComputeFlattened().
 - Renamed render delegate API GetMaterialNetworkSelector() to 
   GetMaterialRenderContexts() to allow for multiple material render contexts.
-- Moved version tracking of batches from HdChangeTracker to Storm’s render 
+- Moved version tracking of batches from HdChangeTracker to Storm's render 
   delegate.
-- Moved garbage collection API to Storm’s render delegate.
+- Moved garbage collection API to Storm's render delegate.
 - Refactored the free camera code in HdxTaskController::_Delegate into its own 
   HdxFreeCameraSceneDelegate.
 - Removed obsolete HdTexture bprim.
@@ -1054,9 +1395,9 @@ Support for RenderMan 23 was deprecated in 21.05 and has now been removed.
 - MaterialX support in Storm:
    - Added basic support for textures.
    - Added basic support for direct lights.
-   - Added a Mtlx render context, which gets consumed by Storm’s render 
+   - Added a Mtlx render context, which gets consumed by Storm's render 
      delegate.
-   - Register MaterialX nodes as having "mtlx" source type and allow Storm’s 
+   - Register MaterialX nodes as having "mtlx" source type and allow Storm's 
      material network to accept both glslfx and mtlx sourcetypes.
    - Changed the MaterialX option from FIS to Specular Environment Prefilter.
    - Fixed u_envMatrix calculation to account for y-up/z-up/domelight 

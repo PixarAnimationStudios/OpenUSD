@@ -2,6 +2,7 @@
 (
     endTimeCode = 4
     startTimeCode = 0
+    upAxis = "Z"
 )
 
 def PointInstancer "Instancer" (

@@ -28,6 +28,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdStDrawItem::HdStDrawItem(HdRprimSharedData const *sharedData)
     : HdDrawItem(sharedData)
+    , _materialIsFinal(false)
+
 {
     HF_MALLOC_TAG_FUNCTION();
 }

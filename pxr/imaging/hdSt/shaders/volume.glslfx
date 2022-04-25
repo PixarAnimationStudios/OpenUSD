@@ -31,13 +31,25 @@
 #import $TOOLS/hdSt/shaders/pointId.glslfx
 
 --- --------------------------------------------------------------------------
+-- layout Volume.Vertex
+
+[
+    ["out block", "VertexData", "outData",
+        # Relying on perspectively correct interpolation.
+        ["vec3", "Peye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Volume.Vertex
 
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
 out VertexData
 {
     // Relying on perspectively correct interpolation.
     vec3 Peye;
 } outData;
+#endif
 
 void main(void)
 {
@@ -53,11 +65,27 @@ void main(void)
 
     gl_Position = vec4(GetProjectionMatrix() * pointEye);
 
-    ProcessPrimvars();
+    ProcessPrimvarsIn();
 }
 
 --- --------------------------------------------------------------------------
+-- layout Volume.Fragment
+
+[
+    ["in block", "VertexData", "inData",
+        ["vec3", "Peye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Volume.Fragment
+
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
+in VertexData
+{
+    vec3 Peye;
+} inData;
+#endif
 
 // Quality knobs, should eventually be configurable.
 //
@@ -72,11 +100,6 @@ const float minTransmittance = 0.002;
 
 // Minimal scattering amount to ray march to light
 const float minScattering = 0.002;
-
-in VertexData
-{
-    vec3 Peye;
-} inData;
 
 // Eye space to local space.
 // Used frequently per ray-marching step in both volumeIntegrator
@@ -258,7 +281,8 @@ accumulatedTransmittance(vec3 rayStartEye, vec3 rayDirectionEye)
     const float rayLength = timeRayExitsVolume(rayStartEye, rayDirectionEye);
     
     const int numSteps =
-        int(floor(min(maxNumSteps, rayLength / resolvedStepSizeEyeLighting)));
+        int(floor(min(float(maxNumSteps), 
+                      rayLength / resolvedStepSizeEyeLighting)));
 
     while(i < numSteps) {
         const vec3 rayPointEye = rayStartEye + i * rayStepEye;
@@ -344,7 +368,7 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayLength)
     const vec3 rayStepEye = resolvedStepSizeEye * rayDirectionEye;
 
     const int numSteps =
-        int(floor(min(maxNumSteps, rayLength / resolvedStepSizeEye)));
+        int(floor(min(float(maxNumSteps), rayLength / resolvedStepSizeEye)));
 
     // integrate transmittance and light along ray for bounding box
     while(i < numSteps) {
@@ -409,11 +433,14 @@ NDCtoEyeZ(float z)
 }
 
 // Compute the z-value of the near clipping plane in eye space.
-// Negative by OpenGL convention
 float
 computeNearZ()
 {
+#ifdef HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
     return NDCtoEyeZ(-1.0);
+#else
+    return NDCtoEyeZ(0.0);
+#endif
 }
 
 // Compute the near clipping distance. Always returns a positive value.
@@ -510,13 +537,18 @@ sampleZBuffer(vec2 fragcoord)
     // Sample the z-Buffer at the frag coordinate.
     const float bufferVal = texelFetch(HdGetSampler_depthReadback(),
                                        ivec2(fragcoord),
-                                       /* lod = */ 0).z;
+                                       /* lod = */ 0).x;
 #else
     // Assume far-plane if we cannot sample the z-Buffer.
     const float bufferVal = 1.0;
 #endif
 
+#ifdef HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+    // Convert from [0, 1] to [-1, 1] to if necessary
     return NDCtoEyeZ(2.0 * bufferVal - 1.0);
+#else
+    return NDCtoEyeZ(bufferVal);
+#endif
 }
 
 // Compute how much length we need to ray march.
@@ -555,12 +587,23 @@ scaleOfMatrix(MAT4 m)
     // A more general, coordinate independent implementation would take
     // the minimum singular value from the singular value decomposition.
     //
-    const mat3 affinePart = mat3(m);
+    const mat3 affinePart = mat3(m[0][0], m[0][1], m[0][2], 
+                                 m[1][0], m[1][1], m[1][2],
+                                 m[2][0], m[2][1], m[2][2]);
     return max3(length(affinePart[0]),
                 length(affinePart[1]),
                 length(affinePart[2]));
 }
 
+#ifdef HD_HAS_integrateLights
+#ifndef HD_HAS_definedIntegrateLights
+#define HD_HAS_definedIntegrateLights
+LightingContribution
+integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props) {
+    return integrateLightsDefault(Peye, Neye, props);
+}
+#endif
+#endif
 
 void main(void)
 {

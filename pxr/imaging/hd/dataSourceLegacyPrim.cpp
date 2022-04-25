@@ -1605,6 +1605,8 @@ public:
             name == HdLegacyDisplayStyleSchemaTokens->flatShadingEnabled ||
             name == HdLegacyDisplayStyleSchemaTokens->displacementEnabled ||
             name == HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough ||
+            name == HdLegacyDisplayStyleSchemaTokens->pointsShadingEnabled ||
+            name == HdLegacyDisplayStyleSchemaTokens->materialIsFinal ||
             name == HdLegacyDisplayStyleSchemaTokens->shadingStyle ||
             name == HdLegacyDisplayStyleSchemaTokens->reprSelector ||
             name == HdLegacyDisplayStyleSchemaTokens->cullStyle) {
@@ -1620,6 +1622,8 @@ public:
         results.push_back(HdLegacyDisplayStyleSchemaTokens->flatShadingEnabled);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->displacementEnabled);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough);
+        results.push_back(HdLegacyDisplayStyleSchemaTokens->pointsShadingEnabled);
+        results.push_back(HdLegacyDisplayStyleSchemaTokens->materialIsFinal);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->shadingStyle);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->reprSelector);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->cullStyle);
@@ -1658,6 +1662,20 @@ public:
             }
             return HdRetainedTypedSampledDataSource<bool>::New(
                     _displayStyle.occludedSelectionShowsThrough);
+        } else if (name == HdLegacyDisplayStyleSchemaTokens->pointsShadingEnabled) {
+            if (!_displayStyleRead) {
+                _displayStyle = _sceneDelegate->GetDisplayStyle(_id);
+                _displayStyleRead = true;
+            }
+            return HdRetainedTypedSampledDataSource<bool>::New(
+                    _displayStyle.pointsShadingEnabled);
+        } else if (name == HdLegacyDisplayStyleSchemaTokens->materialIsFinal) {
+            if (!_displayStyleRead) {
+                _displayStyle = _sceneDelegate->GetDisplayStyle(_id);
+                _displayStyleRead = true;
+            }
+            return HdRetainedTypedSampledDataSource<bool>::New(
+                    _displayStyle.materialIsFinal);
         } else if (name == HdLegacyDisplayStyleSchemaTokens->shadingStyle) {
             TfToken shadingStyle = _sceneDelegate->GetShadingStyle(_id)
                 .GetWithDefault<TfToken>();
@@ -2452,13 +2470,13 @@ _ConvertHdMaterialNetworkToHdDataSources(
 
     for (auto const &iter: hdNetworkMap.map) {
         const TfToken &terminalName = iter.first;
-        terminalsNames.push_back(terminalName);
-
         const HdMaterialNetwork &hdNetwork = iter.second;
 
         if (hdNetwork.nodes.empty()) {
             continue;
         }
+
+        terminalsNames.push_back(terminalName);
 
         // Transfer over individual nodes.
         // Note that the same nodes may be shared by multiple terminals.
@@ -2516,12 +2534,12 @@ _ConvertHdMaterialNetworkToHdDataSources(
                 HdMaterialNodeSchema::BuildRetained(
                     HdRetainedContainerDataSource::New(
                         paramsNames.size(), 
-                        &paramsNames.front(), 
-                        &paramsValues.front()), 
+                        paramsNames.data(),
+                        paramsValues.data()),
                     HdRetainedContainerDataSource::New(
                         cNames.size(), 
-                        &cNames.front(), 
-                        &cValues.front()), 
+                        cNames.data(),
+                        cValues.data()),
                     HdRetainedTypedSampledDataSource<TfToken>::New(
                         node.identifier)));
         }
@@ -2538,14 +2556,14 @@ _ConvertHdMaterialNetworkToHdDataSources(
     HdContainerDataSourceHandle nodesDefaultContext = 
         HdRetainedContainerDataSource::New(
             nodeNames.size(), 
-            &nodeNames.front(), 
-            &nodeValues.front());
+            nodeNames.data(),
+            nodeValues.data());
 
     HdContainerDataSourceHandle terminalsDefaultContext = 
         HdRetainedContainerDataSource::New(
             terminalsNames.size(), 
-            &terminalsNames.front(), 
-            &terminalsValues.front());
+            terminalsNames.data(),
+            terminalsValues.data());
 
     // Create the material network, potentially one per network selector
     HdDataSourceBaseHandle network = HdMaterialNetworkSchema::BuildRetained(

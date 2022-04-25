@@ -287,8 +287,8 @@ typedef std::map<std::string, std::string> SdfVariantSelectionMap;
 typedef std::map<std::string, std::vector<std::string> > SdfVariantsMap;
 
 /// A map of source SdfPaths to target SdfPaths for relocation.
-//  Note: This map needs to be lexicographically sorted for Csd composition
-//        implementation, so SdfPath::FastLessThan is explicitly omitted as
+//  Note: This map needs to be lexicographically sorted for some downstream
+//        clients, so SdfPath::FastLessThan is explicitly omitted as
 //        the Compare template parameter.
 typedef std::map<SdfPath, SdfPath> SdfRelocatesMap;
 

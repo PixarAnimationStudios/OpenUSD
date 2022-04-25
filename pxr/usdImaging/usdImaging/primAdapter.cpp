@@ -502,6 +502,17 @@ UsdImagingPrimAdapter::GetScenePrimPath(
 }
 
 /*virtual*/
+SdfPathVector
+UsdImagingPrimAdapter::GetScenePrimPaths(SdfPath const& cachePath,
+    std::vector<int> const& instanceIndices,
+    std::vector<HdInstancerContext> *instancerCtxs) const
+{
+    // Note: if we end up here, we're not instanced, since primInfo
+    // holds the instance adapter for instanced gprims.
+    return SdfPathVector(instanceIndices.size(), cachePath);
+}
+
+/*virtual*/
 bool
 UsdImagingPrimAdapter::PopulateSelection(
     HdSelection::HighlightMode const& mode,
@@ -574,6 +585,18 @@ UsdImagingPrimvarDescCache*
 UsdImagingPrimAdapter::_GetPrimvarDescCache() const
 {
     return &_delegate->_primvarDescCache; 
+}
+
+UsdImaging_NonlinearSampleCountCache* 
+UsdImagingPrimAdapter::_GetNonlinearSampleCountCache() const
+{
+    return &_delegate->_nonlinearSampleCountCache;
+}
+
+UsdImaging_BlurScaleCache* 
+UsdImagingPrimAdapter::_GetBlurScaleCache() const
+{
+    return &_delegate->_blurScaleCache;
 }
 
 GfMatrix4d 

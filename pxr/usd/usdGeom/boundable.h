@@ -155,9 +155,14 @@ public:
     /// Extent is a three dimensional range measuring the geometric
     /// extent of the authored gprim in its own local space (i.e. its own
     /// transform not applied), \em without accounting for any shader-induced
-    /// displacement.  Whenever any geometry-affecting attribute is authored
-    /// for any gprim in a layer, extent must also be authored at the same
-    /// timesample; failure to do so will result in incorrect bounds-computation.
+    /// displacement. If __any__ extent value has been authored for a given 
+    /// Boundable, then it should be authored at every timeSample at which 
+    /// geometry-affecting properties are authored, to ensure correct 
+    /// evaluation via ComputeExtent(). If __no__ extent value has been 
+    /// authored, then ComputeExtent() will call the Boundable's registered 
+    /// ComputeExtentFunction(), which may be expensive, which is why we 
+    /// strongly encourage proper authoring of extent.
+    /// \sa ComputeExtent()
     /// \sa \ref UsdGeom_Boundable_Extent.
     /// 
     /// An authored extent on a prim which has children is expected to include
@@ -191,6 +196,17 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+    
+    /// If an extent is authored on this boundable, it queries the \p extent 
+    /// from the extent attribute, otherwise if ComputeExtentFunction is 
+    /// registered for the boundable's type, it computes the \p extent at 
+    /// \p time. Returns true when extent is successfully populated, false 
+    /// otherwise.
+    ///
+    /// \sa ComputeExtentFromPlugins
+    /// \sa UsdGeomRegisterComputeExtentFunction
+    USDGEOM_API
+    bool ComputeExtent(const UsdTimeCode &time, VtVec3fArray *extent);
     
     /// Compute the extent for the Boundable prim \p boundable at time
     /// \p time.  If successful, populates \p extent with the result and

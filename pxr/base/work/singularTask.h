@@ -108,7 +108,7 @@ private:
                     // case we go again to ensure the task can do whatever it
                     // was awakened to do.  Once we successfully take the count
                     // to zero, we stop.
-                    size_t old = count;
+                    std::size_t old = count;
                     do { _fn(); } while (
                         !count.compare_exchange_strong(old, 0));
                 });

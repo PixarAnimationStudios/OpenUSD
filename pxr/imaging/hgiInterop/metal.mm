@@ -190,15 +190,6 @@ HgiInteropMetal::_CreateShaderContext(
     }
     
     Vertex v[12] = {
-        { {-1, -1}, {0, 0} },
-        { { 1, -1}, {1, 0} },
-        { {-1,  1}, {0, 1} },
-        
-        { {-1, 1}, {0, 1} },
-        { {1, -1}, {1, 0} },
-        { {1,  1}, {1, 1} },
-        
-        // Second set have flipped v coord
         { {-1, -1}, {0, 1} },
         { { 1, -1}, {1, 1} },
         { {-1,  1}, {0, 0} },
@@ -783,7 +774,7 @@ HgiInteropMetal::_RestoreOpenGlState()
 void
 HgiInteropMetal::_BlitToOpenGL(VtValue const &framebuffer,
                                GfVec4i const &compRegion,
-                               bool flipY, int shaderIndex)
+                               int shaderIndex)
 {
     // Clear GL error state
     _ProcessGLErrors(true);
@@ -856,12 +847,7 @@ HgiInteropMetal::_BlitToOpenGL(VtValue const &framebuffer,
     // Region of the framebuffer over which to composite.
     glViewport(compRegion[0], compRegion[1], compRegion[2], compRegion[3]);
 
-    if (flipY) {
-        glDrawArrays(GL_TRIANGLES, 6, 12);
-    }
-    else {
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-    }
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 
     _RestoreOpenGlState();
     glFlush();
@@ -880,11 +866,6 @@ HgiInteropMetal::CompositeToInterop(
     }
 
     _ValidateGLContext();
-
-    // XXX We need to flip all renderers (Embree, Prman, ...) for now as we
-    // assume they all output gl coords. That may not always be the case if
-    // Storm renders with Metal directly.
-    constexpr bool flipImage = true;
 
     const int width = 
         color ? color->GetDescriptor().dimensions[0] :
@@ -987,7 +968,7 @@ HgiInteropMetal::CompositeToInterop(
         HgiMetal::CommitCommandBuffer_WaitUntilScheduled);
 
     if (glShaderIndex != -1) {
-        _BlitToOpenGL(framebuffer, compRegion, flipImage, glShaderIndex);
+        _BlitToOpenGL(framebuffer, compRegion, glShaderIndex);
 
         _ProcessGLErrors();
     }

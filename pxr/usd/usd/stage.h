@@ -2205,6 +2205,7 @@ private:
 
     // The stage's EditTarget.
     UsdEditTarget _editTarget;
+    bool _editTargetIsLocalLayer;
 
     std::unique_ptr<PcpCache> _cache;
     std::unique_ptr<Usd_ClipCache> _clipCache;

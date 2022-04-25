@@ -270,7 +270,11 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
       shader storage blocks using the "std140" layout, except that the base
       alignment of arrays of scalars and vectors in rule (4) and of structures
       in rule (9) are not rounded up a multiple of the base alignment of a vec4.
+     
+      ***Unless we're using Metal, and then we use C++ alignment padding rules.
      */
+    const bool useCppShaderPadding = _resourceRegistry->GetHgi()->
+        GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsCppShaderPadding);
 
     TF_FOR_ALL(it, bufferSpecs) {
         // Figure out the alignment we need for this type of data
@@ -282,6 +286,10 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
         structAlignment = std::max(structAlignment, alignment);
 
         _stride += HdDataSizeOfTupleType(it->tupleType);
+        
+        if (useCppShaderPadding) {
+            _stride += _ComputePadding(alignment, _stride);
+        }
     }
 
     // Our struct stride needs to be aligned to the max alignment needed within
@@ -314,7 +322,11 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
                      "  %s : offset = %d, alignment = %d\n",
                      it->name.GetText(), offset, alignment);
 
-        offset += HdDataSizeOfTupleType(it->tupleType);
+        const int thisSize = HdDataSizeOfTupleType(it->tupleType);
+        offset += thisSize;
+        if (useCppShaderPadding) {
+            offset += _ComputePadding(alignment, thisSize);
+        }
     }
 
     _SetMaxNumRanges(_maxSize / _stride);

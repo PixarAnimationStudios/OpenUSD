@@ -58,7 +58,12 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     , _cullMode(GL_BACK)
     , _frontFace(GL_CCW)
     , _rasterizerDiscard(true)
+    , _restoreDepthClamp(false)
+    , _depthRange{0.f,1.f}
     , _restoreFramebufferSRGB(false)
+    , _restoreConservativeRaster(false)
+    , _restoreMultiSample(false)
+    , _restorePointSmooth(false)
 {
     TRACE_FUNCTION();
 
@@ -115,7 +120,26 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     glGetIntegerv(GL_CULL_FACE_MODE, &_cullMode);
     glGetIntegerv(GL_FRONT_FACE, &_frontFace);
     glGetBooleanv(GL_RASTERIZER_DISCARD, (GLboolean*)&_rasterizerDiscard);
+    glGetBooleanv(GL_DEPTH_CLAMP, (GLboolean*)&_restoreDepthClamp);
+    glGetFloatv(GL_DEPTH_RANGE, _depthRange);
     glGetBooleanv(GL_FRAMEBUFFER_SRGB, (GLboolean*)&_restoreFramebufferSRGB);
+
+    if (GARCH_GLAPI_HAS(NV_conservative_raster)) {
+        glGetBooleanv(GL_CONSERVATIVE_RASTERIZATION_NV,
+            (GLboolean*)&_restoreConservativeRaster);
+    }
+
+    GLint maxClipPlanes;
+    glGetIntegerv(GL_MAX_CLIP_PLANES, &maxClipPlanes);
+    _restoreClipDistances.resize(maxClipPlanes);
+    for (int i = 0; i < maxClipPlanes; i++) {
+        bool clipDistanceEnabled = false;
+        glGetBooleanv(GL_CLIP_DISTANCE0 + i, (GLboolean*)&clipDistanceEnabled);
+        _restoreClipDistances[i] = clipDistanceEnabled;
+    }
+
+    glGetBooleanv(GL_MULTISAMPLE, (GLboolean*)&_restoreMultiSample);
+    glGetBooleanv(GL_POINT_SMOOTH, (GLboolean*)&_restorePointSmooth);
 
     HGIGL_POST_PENDING_GL_ERRORS();
     #if defined(GL_KHR_debug)
@@ -226,10 +250,45 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
         glDisable(GL_RASTERIZER_DISCARD);
     }
 
+    if (_restoreDepthClamp) {
+        glEnable(GL_DEPTH_CLAMP);
+    } else {
+        glDisable(GL_DEPTH_CLAMP);
+    }
+    glDepthRangef(_depthRange[0], _depthRange[1]);
+
     if (_restoreFramebufferSRGB) {
        glEnable(GL_FRAMEBUFFER_SRGB);
     } else {
        glDisable(GL_FRAMEBUFFER_SRGB);
+    }
+
+    if (GARCH_GLAPI_HAS(NV_conservative_raster)) {
+        if (_restoreConservativeRaster) {
+            glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
+        } else {
+            glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+        }
+    }
+
+    for (size_t i = 0; i < _restoreClipDistances.size(); i++) {
+        if (_restoreClipDistances[i]) {
+            glEnable(GL_CLIP_DISTANCE0 + i);  
+        } else {
+            glDisable(GL_CLIP_DISTANCE0 + i);  
+        }
+    }
+
+    if (_restoreMultiSample) {
+        glEnable(GL_MULTISAMPLE);
+    } else {
+        glDisable(GL_MULTISAMPLE);
+    }
+
+    if (_restorePointSmooth) {
+        glEnable(GL_POINT_SMOOTH);
+    } else {
+        glDisable(GL_POINT_SMOOTH);
     }
 
     static const GLuint samplers[8] = {0};

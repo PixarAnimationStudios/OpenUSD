@@ -62,6 +62,11 @@ def Shader "TestSchemaAPI" (
                 """
         }
     )
+    float inputs:testShaderPropWithNS = 0.0 (
+        sdrMetadata = {
+            token propertyNSPrefixOverride = "propNS"
+        }
+    )
 
     color3f outputs:resultRGB
 }

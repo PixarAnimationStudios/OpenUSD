@@ -265,6 +265,9 @@ WRAP_CUSTOM {
              (arg("prim"), arg("bindingName"),
               arg("materialPurpose")=UsdShadeTokens->allPurpose))
 
+        .def("GetMaterialPurposes", &This::GetMaterialPurposes)
+             .staticmethod("GetMaterialPurposes")
+
         .def("ComputeBoundMaterial", &_WrapComputeBoundMaterial,
              arg("materialPurpose")=UsdShadeTokens->allPurpose)
 

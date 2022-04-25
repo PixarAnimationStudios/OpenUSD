@@ -99,6 +99,7 @@ pxr_library(hd
         meshTopology
         meshTopologySchema
         meshUtil
+        noticeBatchingSceneIndex
         overlayContainerDataSource
         perfLog
         pluginRenderDelegateUniqueHandle

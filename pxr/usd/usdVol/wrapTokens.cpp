@@ -91,7 +91,7 @@ void wrapUsdVolTokens()
     _AddToken(cls, "mask", UsdVolTokens->mask);
     _AddToken(cls, "matrix3d", UsdVolTokens->matrix3d);
     _AddToken(cls, "matrix4d", UsdVolTokens->matrix4d);
-    _AddToken(cls, "none", UsdVolTokens->none);
+    _AddToken(cls, "none_", UsdVolTokens->none_);
     _AddToken(cls, "normal", UsdVolTokens->normal);
     _AddToken(cls, "point", UsdVolTokens->point);
     _AddToken(cls, "quatd", UsdVolTokens->quatd);

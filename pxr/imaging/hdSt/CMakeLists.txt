@@ -132,7 +132,6 @@ pxr_library(hdSt
         extCompComputeShader
         fieldTextureCpuData
         imageShaderShaderKey
-        immediateDrawBatch
         indirectDrawBatch
         materialNetworkShader
         materialParam
@@ -142,6 +141,7 @@ pxr_library(hdSt
         pointsShaderKey
         quadrangulate
         resourceBinder
+        resourceLayout
         shaderKey
         subdivision
         triangulate

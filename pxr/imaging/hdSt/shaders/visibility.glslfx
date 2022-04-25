@@ -37,9 +37,10 @@ void DiscardBasedOnTopologicalVisibility()
 --- --------------------------------------------------------------------------
 -- glsl Visibility.Fragment.Topology
 
-int GetElementID(); // code gen
+FORWARD_DECL(int GetElementID()); // code gen
 
-void GetBitmaskBufferIndices(int id, out int arrayIndex, out int bitIndex)
+void GetBitmaskBufferIndices(
+    int id, REF(thread, int) arrayIndex, REF(thread, int) bitIndex)
 {
     arrayIndex = id / 32;
     bitIndex   = id % 32;
@@ -68,7 +69,7 @@ bool IsElementVisible()
     return true;
 }
 
-int GetPointId(); // pointId.glslfx
+FORWARD_DECL(int GetPointId()); // pointId.glslfx
 
 bool IsPointVisible()
 {

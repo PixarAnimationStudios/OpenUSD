@@ -180,7 +180,10 @@ Hio_StbImage::Hio_StbImage()
     : _width(0)
     , _height(0)
     , _gamma(0.0f)
+    , _outputType(HioTypeUnsignedByte)
     , _nchannels(0)
+    , _format(HioFormatInvalid)
+    , _sourceColorSpace(Auto)
 {
 }
 

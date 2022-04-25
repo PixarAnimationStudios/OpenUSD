@@ -214,6 +214,10 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         self.assertTrue(UsdShade.MaterialBindingAPI.Apply(belt).Bind(
             allPurposeMat, materialPurpose=UsdShade.Tokens.allPurpose))
 
+        self.assertEqual(UsdShade.MaterialBindingAPI.GetMaterialPurposes(),
+            [UsdShade.Tokens.allPurpose, UsdShade.Tokens.preview,
+             UsdShade.Tokens.full])
+
         # Compute all-purpose bindings.
         self.assertFalse(
             UsdShade.MaterialBindingAPI(bob).ComputeBoundMaterial()[0])

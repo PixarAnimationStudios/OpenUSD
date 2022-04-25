@@ -208,13 +208,13 @@ HdSceneIndexAdapterSceneDelegate::_PrimAdded(
             default:
                 break;
             };
+        }
 
-            if (it != _primCache.end()) {
-                _PrimCacheEntry & entry = (*it).second;
-                entry.primType = primType;
-            } else {
-                _primCache[indexPath].primType = primType;
-            }
+        if (it != _primCache.end()) {
+            _PrimCacheEntry & entry = (*it).second;
+            entry.primType = primType;
+        } else {
+            _primCache[indexPath].primType = primType;
         }
     }
 }
@@ -910,45 +910,52 @@ _Walk(
     HdContainerDataSourceHandle connsDS = nodeSchema.GetInputConnections();
     HdContainerDataSourceHandle paramsDS = nodeSchema.GetParameters();
 
-    const TfTokenVector connsNames = connsDS->GetNames();
-    for (const auto & connName : connsNames) {
-        HdDataSourceBaseHandle allConnDS = connsDS->Get(connName);
-
-        HdVectorDataSourceHandle connsDS = 
-            HdVectorDataSource::Cast(allConnDS);
-        
-        for (size_t i = 0 ; i < connsDS->GetNumElements() ; i++) {
-            HdDataSourceBaseHandle connDS = connsDS->GetElement(i);
+    if (connsDS) {
+        const TfTokenVector connsNames = connsDS->GetNames();
+        for (const auto & connName : connsNames) {
+            HdVectorDataSourceHandle allConnDS = 
+                HdVectorDataSource::Cast(connsDS->Get(connName));
             
-            HdMaterialConnectionSchema connSchema(
-                HdContainerDataSource::Cast(connDS));
-            if (!connSchema.IsDefined()) {
+            if (!allConnDS) {
                 continue;
             }
-        
-            TfToken p = connSchema.GetUpstreamNodePath()->GetTypedValue(0);
-            TfToken n = 
-                connSchema.GetUpstreamNodeOutputName()->GetTypedValue(0);
-            _Walk(SdfPath(p.GetString()), nodesDS, visitedSet, netHd);
+            
+            for (size_t i = 0 ; i < allConnDS->GetNumElements() ; i++) {
+                HdDataSourceBaseHandle connDS = allConnDS->GetElement(i);
+                
+                HdMaterialConnectionSchema connSchema(
+                    HdContainerDataSource::Cast(connDS));
+                if (!connSchema.IsDefined()) {
+                    continue;
+                }
+            
+                TfToken p = connSchema.GetUpstreamNodePath()->GetTypedValue(0);
+                TfToken n = 
+                    connSchema.GetUpstreamNodeOutputName()->GetTypedValue(0);
+                _Walk(SdfPath(p.GetString()), nodesDS, visitedSet, netHd);
 
-            HdMaterialRelationship r;
-            r.inputId = SdfPath(p.GetString()); 
-            r.inputName = n; 
-            r.outputId = nodePath; 
-            r.outputName=connName;
-            netHd->relationships.push_back(r);
+                HdMaterialRelationship r;
+                r.inputId = SdfPath(p.GetString()); 
+                r.inputName = n; 
+                r.outputId = nodePath; 
+                r.outputName=connName;
+                netHd->relationships.push_back(r);
+            }
         }
     }
 
-    const TfTokenVector pNames = paramsDS->GetNames();
     std::map<TfToken, VtValue> paramsHd;
-
-    for (const auto & pName : pNames) {
-        HdDataSourceBaseHandle paramDS = paramsDS->Get(pName);
-        HdSampledDataSourceHandle paramSDS = 
-            HdSampledDataSource::Cast(paramDS);
-        VtValue v = paramSDS->GetValue(0);
-        paramsHd[pName] = v;
+    if (paramsDS) {
+        const TfTokenVector pNames = paramsDS->GetNames();
+        for (const auto & pName : pNames) {
+            HdDataSourceBaseHandle paramDS = paramsDS->Get(pName);
+            HdSampledDataSourceHandle paramSDS = 
+                HdSampledDataSource::Cast(paramDS);
+            if (paramSDS) {
+                VtValue v = paramSDS->GetValue(0);
+                paramsHd[pName] = v;
+            }
+        }
     }
 
     HdMaterialNode n;
@@ -1005,10 +1012,9 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
         TfToken pathTk = connSchema.GetUpstreamNodePath()->GetTypedValue(0);
         SdfPath path(pathTk.GetString());
         matHd.terminals.push_back(path);
-        TfToken outN = connSchema.GetUpstreamNodeOutputName()->GetTypedValue(0); 
 
         // Continue walking the network
-        HdMaterialNetwork & netHd = matHd.map[outN];
+        HdMaterialNetwork & netHd = matHd.map[name];
         _Walk(path, nodesDS, &visitedNodes, &netHd);
     }
     return VtValue(matHd);
@@ -2089,6 +2095,16 @@ HdSceneIndexAdapterSceneDelegate::GetDisplayStyle(SdfPath const &id)
         if (HdBoolDataSourceHandle ds =
                 styleSchema.GetOccludedSelectionShowsThrough()) {
             result.occludedSelectionShowsThrough = ds->GetTypedValue(0.0f);
+        }
+
+        if (HdBoolDataSourceHandle ds =
+                styleSchema.GetPointsShadingEnabled()) {
+            result.pointsShadingEnabled = ds->GetTypedValue(0.0f);
+        }
+
+        if (HdBoolDataSourceHandle ds =
+                styleSchema.GetMaterialIsFinal()) {
+            result.materialIsFinal = ds->GetTypedValue(0.0f);
         }
     }
 

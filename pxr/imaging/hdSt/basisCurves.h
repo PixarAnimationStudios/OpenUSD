@@ -181,6 +181,7 @@ private:
     int _refineLevel;  // XXX: could be moved into HdBasisCurveTopology.
     bool _displayOpacity : 1;
     bool _occludedSelectionShowsThrough : 1;
+    bool _pointsShadingEnabled : 1;
 };
 
 

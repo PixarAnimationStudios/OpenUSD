@@ -413,18 +413,18 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
 void
 HdxTaskController::_CreateOitResolveTask()
 {
-    HdxRenderTaskParams renderParams;
+    HdxOitResolveTaskParams resolveParams;
     // OIT is using its own buffers which are only per pixel and not per
     // sample. Thus, we resolve the AOVs before starting to render any
     // OIT geometry and only use the resolved AOVs from then on.
-    renderParams.useAovMultiSample = false;
+    resolveParams.useAovMultiSample = false;
 
     _oitResolveTaskId = GetControllerId().AppendChild(_tokens->oitResolveTask);
 
     GetRenderIndex()->InsertTask<HdxOitResolveTask>(&_delegate,
         _oitResolveTaskId);
 
-    _delegate.SetParameter(_oitResolveTaskId, HdTokens->params, renderParams);
+    _delegate.SetParameter(_oitResolveTaskId, HdTokens->params, resolveParams);
 }
 
 void
@@ -501,7 +501,7 @@ HdxTaskController::_CreateSkydomeTask()
     SdfPath skydomeTaskId = GetControllerId().AppendChild(_tokens->skydomeTask);
     GetRenderIndex()->InsertTask<HdxSkydomeTask>(&_delegate, skydomeTaskId);
 
-    // This task wil be added to the _renderTaskIds so that the AOV's are 
+    // This task will be added to the _renderTaskIds so that the AOV's are
     // properly cleared. This means that we need to set the parameter and
     // collection values. (Following HdxTaskController::_CreateRenderTask())
     HdxRenderTaskParams renderParams;
@@ -1362,8 +1362,8 @@ HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
             _delegate.GetParameter<HdxRenderTaskParams>(
                 renderTaskId, HdTokens->params);
 
-        // We explicitly ignore input camera, viewport, and aovBindings because
-        // these are internally managed.
+        // We explicitly ignore input camera, viewport, aovBindings, and
+        // aov multisample settings because these are internally managed.
         HdxRenderTaskParams mergedParams = params;
         mergedParams.camera = oldParams.camera;
         mergedParams.viewport = oldParams.viewport;
@@ -1371,6 +1371,8 @@ HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
         mergedParams.overrideWindowPolicy = oldParams.overrideWindowPolicy;
         mergedParams.aovBindings = oldParams.aovBindings;
         mergedParams.aovInputBindings = oldParams.aovInputBindings;
+        mergedParams.useAovMultiSample = oldParams.useAovMultiSample;
+        mergedParams.resolveAovMultiSample = oldParams.resolveAovMultiSample;
 
         // We also explicitly manage blend params, based on the material tag.
         // XXX: Note: if params.enableIdRender is set, we want to use default

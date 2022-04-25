@@ -49,6 +49,9 @@ public:
     int GetShaderVersion() const override;
 
     MTLResourceOptions defaultStorageMode;
+    bool hasVertexMemoryBarrier;
+    bool useParallelEncoder;
+    bool requiresIndirectDrawFix;
 
 protected:
     friend class HgiMetal;

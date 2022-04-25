@@ -32,8 +32,6 @@
 #include "pxr/imaging/hgiMetal/shaderSection.h"
 #include "pxr/imaging/hgi/shaderGenerator.h"
 
-#include "pxr/base/gf/vec3i.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 //Shader program structure
@@ -77,22 +75,17 @@ public:
 
 protected:
     HGIMETAL_API
-    void _Execute(
-        std::ostream &ss, 
-        const std::string &originalShaderShader) override;
+    void _Execute(std::ostream &ss) override;
 
 private:
     HgiMetalShaderStageEntryPointUniquePtr
     _BuildShaderStageEntryPoints(
         const HgiShaderFunctionDesc &descriptor);
 
-    void _BuildTextureShaderSections(const HgiShaderFunctionDesc &descriptor);
-    void _BuildBufferShaderSections(const HgiShaderFunctionDesc &descriptor);
     void _BuildKeywordInputShaderSections(const HgiShaderFunctionDesc &descriptor);
 
     HgiMetalShaderSectionUniquePtrVector _shaderSections;
     HgiMetalShaderStageEntryPointUniquePtr _generatorShaderSections;
-    GfVec3i _computeThreadGroupSize;
 };
 
 

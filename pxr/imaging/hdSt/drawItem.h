@@ -64,6 +64,14 @@ public:
         _materialNetworkShader = shader;
     }
 
+    bool GetMaterialIsFinal() const {
+        return _materialIsFinal;
+    }
+
+    void SetMaterialIsFinal(bool isFinal) {
+        _materialIsFinal = isFinal;
+    }
+
 protected:
     size_t _GetBufferArraysHash() const override;
     size_t _GetElementOffsetsHash() const override;
@@ -71,6 +79,7 @@ protected:
 private:
     HdSt_GeometricShaderSharedPtr _geometricShader;
     HdSt_MaterialNetworkShaderSharedPtr _materialNetworkShader;
+    bool _materialIsFinal;
 };
 
 

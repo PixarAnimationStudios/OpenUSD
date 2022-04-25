@@ -40,13 +40,13 @@
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hdSt/textureUtils.h"
+#include "pxr/imaging/hdSt/tokens.h"
+#include "pxr/imaging/hdSt/volume.h"
 
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/tokens.h"
 #include "pxr/imaging/hgiGL/graphicsCmds.h"
 #include "pxr/imaging/glf/diagnostic.h"
-#include "pxr/imaging/glf/glContext.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -83,16 +83,6 @@ _IsStormRenderer(HdRenderDelegate *renderDelegate)
     return true;
 }
 
-// Generated renderbuffers
-static TfTokenVector _aovOutputs {
-    HdAovTokens->primId,
-    HdAovTokens->instanceId,
-    HdAovTokens->elementId,
-    HdAovTokens->edgeId,
-    HdAovTokens->pointId,
-    HdAovTokens->Neye,
-    HdAovTokens->depthStencil
-};
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
     (widgetDepthStencil)
 );
@@ -115,6 +105,7 @@ HdxPickTask::HdxPickTask(HdSceneDelegate* delegate, SdfPath const& id)
     , _index(nullptr)
     , _hgi(nullptr)
     , _pickableDepthIndex(0)
+    , _depthToken(HdAovTokens->depthStencil)
 {
 }
 
@@ -171,10 +162,27 @@ HdxPickTask::_CreateAovBindings()
         std::static_pointer_cast<HdStResourceRegistry>(
             _index->GetResourceRegistry());
 
-    HdRenderDelegate *renderDelegate = _index->GetRenderDelegate();
+    HdRenderDelegate const * renderDelegate = _index->GetRenderDelegate();
 
     GfVec3i dimensions(_contextParams.resolution[0],
                        _contextParams.resolution[1], 1);
+
+    bool const stencilReadback = _hgi->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsStencilReadback);
+
+    _depthToken = stencilReadback ? HdAovTokens->depthStencil
+                                  : HdAovTokens->depth;
+
+    // Generated renderbuffers
+    TfTokenVector const _aovOutputs {
+        HdAovTokens->primId,
+        HdAovTokens->instanceId,
+        HdAovTokens->elementId,
+        HdAovTokens->edgeId,
+        HdAovTokens->pointId,
+        HdAovTokens->Neye,
+        _depthToken
+    };
 
     // Add the new renderbuffers.
     for (size_t i = 0; i < _aovOutputs.size(); ++i) {
@@ -200,7 +208,8 @@ HdxPickTask::_CreateAovBindings()
 
         _pickableAovBindings.push_back(binding);
 
-        if (HdAovHasDepthStencilSemantic(aovOutput)) {
+        if (HdAovHasDepthSemantic(aovOutput) ||
+            HdAovHasDepthStencilSemantic(aovOutput)) {
             _pickableDepthIndex = i;
             _occluderAovBinding = binding;
         }
@@ -346,6 +355,7 @@ HdxPickTask::_ConditionStencilWithGLCallback(
             glDisable(GL_CULL_FACE);
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             glFrontFace(GL_CCW);
+            glDisable(GL_STENCIL_TEST);
         }
     };
 
@@ -369,9 +379,8 @@ HdxPickTask::_UseWidgetPass() const
 }
 
 template<typename T>
-T const *
-HdxPickTask::_ReadAovBuffer(TfToken const & aovName,
-                            std::vector<uint8_t> * buffer) const
+HdStTextureUtils::AlignedBuffer<T>
+HdxPickTask::_ReadAovBuffer(TfToken const & aovName) const
 {
     HdRenderBuffer const * renderBuffer = _FindAovBuffer(aovName);
 
@@ -380,11 +389,13 @@ HdxPickTask::_ReadAovBuffer(TfToken const & aovName,
         HgiTextureHandle texture = aov.Get<HgiTextureHandle>();
 
         if (texture) {
-            HdStTextureUtils::HgiTextureReadback(_hgi, texture, buffer);
+            size_t bufferSize = 0;
+            return HdStTextureUtils::HgiTextureReadback<T>(
+                                        _hgi, texture, &bufferSize);
         }
     }
 
-    return reinterpret_cast<T const *>(buffer->data());
+    return HdStTextureUtils::AlignedBuffer<T>();
 }
 
 HdRenderBuffer const *
@@ -442,13 +453,6 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
     // Store the render index so we can map ids to paths in Execute()...
     _index = &(delegate->GetRenderIndex());
 
-    // Make sure we're in a sane GL state before attempting anything.
-    GlfGLContextSharedPtr context = GlfGLContext::GetCurrentGLContext();
-    if (!TF_VERIFY(context)) {
-        TF_RUNTIME_ERROR("Invalid GL context");
-        return;
-    }
-
     _InitIfNeeded();
 
     if (!TF_VERIFY(_pickableRenderPass) || 
@@ -468,6 +472,15 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
     GfVec4i viewport(0, 0,
                      _contextParams.resolution[0],
                      _contextParams.resolution[1]);
+
+    const float stepSize = delegate->GetRenderIndex().GetRenderDelegate()->
+        GetRenderSetting<float>(
+        HdStRenderSettingsTokens->volumeRaymarchingStepSize,
+        HdStVolume::defaultStepSize);
+    const float stepSizeLighting = delegate->GetRenderIndex().
+        GetRenderDelegate()->GetRenderSetting<float>(
+        HdStRenderSettingsTokens->volumeRaymarchingStepSizeLighting,
+        HdStVolume::defaultStepSizeLighting);
 
     // Update the renderpass states.
     for (auto& state : states) {
@@ -493,6 +506,11 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
         state->SetBlendEnabled(false);
         state->SetCullStyle(_params.cullStyle);
         state->SetLightingEnabled(false);
+
+        state->SetVolumeRenderingConstants(stepSize, stepSizeLighting);
+        
+        // Enable conservative rasterization, if available.
+        state->SetConservativeRasterizationEnabled(true);
 
         // If scene materials are disabled in this environment then
         // let's setup the override shader
@@ -578,13 +596,6 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     GfVec2i dimensions = _contextParams.resolution;
     GfVec4i viewport(0, 0, dimensions[0], dimensions[1]);
 
-    GLuint restoreDrawFB = 0;
-    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, (GLint*)&restoreDrawFB);
-
-    GLuint vao = 0;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
     // Are we using stencil conditioning?
     bool needStencilConditioning =
         (_contextParams.depthMaskCallback != nullptr);
@@ -594,14 +605,6 @@ HdxPickTask::Execute(HdTaskContext* ctx)
             _pickableAovBindings[_pickableDepthIndex].renderBuffer);
         _ConditionStencilWithGLCallback(_contextParams.depthMaskCallback,
             _widgetDepthStencilBuffer.get());
-    }
-
-    //
-    // Enable conservative rasterization, if available.
-    //
-    bool convRstr = GARCH_GLAPI_HAS(NV_conservative_raster);
-    if (convRstr) {
-        glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
     }
 
     if (_UseOcclusionPass()) {
@@ -639,56 +642,35 @@ HdxPickTask::Execute(HdTaskContext* ctx)
             {HdxRenderTagTokens->widget});
     }
 
-    glDisable(GL_STENCIL_TEST);
+    // Capture the result buffers and cast to the appropriate types.
+    HdStTextureUtils::AlignedBuffer<int> primIds =
+        _ReadAovBuffer<int>(HdAovTokens->primId);
+    HdStTextureUtils::AlignedBuffer<int> instanceIds =
+        _ReadAovBuffer<int>(HdAovTokens->instanceId);
+    HdStTextureUtils::AlignedBuffer<int> elementIds =
+        _ReadAovBuffer<int>(HdAovTokens->elementId);
+    HdStTextureUtils::AlignedBuffer<int> edgeIds =
+        _ReadAovBuffer<int>(HdAovTokens->edgeId);
+    HdStTextureUtils::AlignedBuffer<int> pointIds =
+        _ReadAovBuffer<int>(HdAovTokens->pointId);
+    HdStTextureUtils::AlignedBuffer<int> neyes =
+        _ReadAovBuffer<int>(HdAovTokens->Neye);
+    HdStTextureUtils::AlignedBuffer<float> depths =
+        _ReadAovBuffer<float>(_depthToken);
 
-    if (convRstr) {
-        glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+    // For un-projection, get the depth range at time of drawing.
+    GfVec2f depthRange(0, 1);
+    if (_hgi->GetCapabilities()->IsSet(
+        HgiDeviceCapabilitiesBitsCustomDepthRange)) {
+        // Assume each of the render passes used the same depth range.
+        depthRange = _pickableRenderPassState->GetDepthRange();
     }
 
-    glBindVertexArray(0);
-    glDeleteVertexArrays(1, &vao);
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFB);
-
-    // Capture the result buffers and cast to the appropriate types.
-    std::vector<uint8_t> primIds;
-    int const * primIdPtr =
-        _ReadAovBuffer<int>(HdAovTokens->primId, &primIds);
-
-    std::vector<uint8_t> instanceIds;
-    int const * instanceIdPtr =
-        _ReadAovBuffer<int>(HdAovTokens->instanceId, &instanceIds);
-
-    std::vector<uint8_t> elementIds;
-    int const * elementIdPtr =
-        _ReadAovBuffer<int>(HdAovTokens->elementId, &elementIds);
-
-    std::vector<uint8_t> edgeIds;
-    int const * edgeIdPtr =
-        _ReadAovBuffer<int>(HdAovTokens->edgeId, &edgeIds);
-
-    std::vector<uint8_t> pointIds;
-    int const * pointIdPtr =
-        _ReadAovBuffer<int>(HdAovTokens->pointId, &pointIds);
-
-    std::vector<uint8_t> neyes;
-    int const * neyePtr =
-        _ReadAovBuffer<int>(HdAovTokens->Neye, &neyes);
-
-    std::vector<uint8_t> depths;
-    float const * depthPtr =
-        _ReadAovBuffer<float>(HdAovTokens->depthStencil, &depths);
-
-    // For un-projection, get the current depth range.
-    GLfloat p[2];
-    glGetFloatv(GL_DEPTH_RANGE, &p[0]);
-    GfVec2f depthRange(p[0], p[1]);
-
     HdxPickResult result(
-            primIdPtr, instanceIdPtr, elementIdPtr,
-            edgeIdPtr, pointIdPtr, neyePtr, depthPtr,
-            _index, _contextParams.pickTarget, _contextParams.viewMatrix,
-            _contextParams.projectionMatrix, depthRange, dimensions, viewport);
+        primIds.get(), instanceIds.get(), elementIds.get(),
+        edgeIds.get(), pointIds.get(), neyes.get(), depths.get(),
+        _index, _contextParams.pickTarget, _contextParams.viewMatrix,
+        _contextParams.projectionMatrix, depthRange, dimensions, viewport);
 
     // Resolve!
     if (_contextParams.resolveMode ==

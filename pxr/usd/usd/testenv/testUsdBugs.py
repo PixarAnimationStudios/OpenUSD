@@ -28,7 +28,7 @@ import unittest
 
 class TestUsdBugs(unittest.TestCase):
     def test_153956(self):
-        from pixar import Sdf
+        from pxr import Sdf
 
         # Create a crate-backed .usd file and populate it with an
         # attribute connection. These files do not store specs for
@@ -428,7 +428,7 @@ class TestUsdBugs(unittest.TestCase):
             layer.Save()
             del layer
             # Now truncate layer to corrupt it.
-            fobj = open(f.name, "rw+")
+            fobj = open(f.name, "r+")
             size = os.path.getsize(f.name)
             fobj.truncate(size / 2)
             fobj.close()

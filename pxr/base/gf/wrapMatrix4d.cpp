@@ -251,12 +251,10 @@ static bool __contains__vector( const GfMatrix4d &self, GfVec4d value ) {
     return false;
 }
 
-#if PY_MAJOR_VERSION == 2
 static GfMatrix4d __truediv__(const GfMatrix4d &self, GfMatrix4d value)
 {
     return self / value;
 }
-#endif
 
 static GfMatrix4d *__init__() {
     // Default constructor produces identity from python.
@@ -420,12 +418,6 @@ void wrapMatrix4d()
         .def( self * GfVec4f() )
         .def( GfVec4f() * self )
 
-#if PY_MAJOR_VERSION == 2
-        // Needed only to support "from __future__ import division" in
-        // python 2. In python 3 builds boost::python adds this for us.
-        .def("__truediv__", __truediv__ )
-#endif
-
         .def("SetTransform",
 	     (This & (This::*)( const GfRotation &,
 				const GfVec3d & ))&This::SetTransform,
@@ -513,4 +505,11 @@ void wrapMatrix4d()
     typeObj->tp_as_buffer = &bufferProcs;
     typeObj->tp_flags |= (TfPy_TPFLAGS_HAVE_NEWBUFFER |
                           TfPy_TPFLAGS_HAVE_GETCHARBUFFER);
+
+    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
+        // __truediv__ not added by .def( self / self ) above, which
+        // happens when building with python 2, but we need it to support
+        // "from __future__ import division"
+        cls.def("__truediv__", __truediv__ );
+    }
 }

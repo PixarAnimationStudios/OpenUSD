@@ -34,6 +34,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class Hgi;
+
 using HdBufferArrayRangeSharedPtr = 
     std::shared_ptr<class HdBufferArrayRange>;
 
@@ -54,7 +56,7 @@ public:
 
     /// Called during Excecute before writing to OIT buffers.
     HDX_API
-    void InitializeOitBuffersIfNecessary();
+    void InitializeOitBuffersIfNecessary(Hgi *hgi);
 
     /// Called during Execute to add necessary OIT buffer shader bindings.
     ///

@@ -143,11 +143,6 @@ class SdfAssetPath;
 /// ( 1.0 / UsdStage::GetTimeCodesPerSecond() ), because velocities are recorded
 /// in units/second, while we are interpolating in UsdTimeCode ordinates.
 /// 
-/// Additionally, if *motion:velocityScale* is authored or inherited (see
-/// UsdGeomMotionAPI::ComputeVelocityScale()), it is used to scale both the
-/// velocity and angular velocity by a constant value during computation. The
-/// *motion:velocityScale* attribute is encoded by UsdGeomMotionAPI.
-/// 
 /// We provide both high and low-level API's for dealing with the
 /// transformation as a matrix, both will compute the instance matrices using
 /// multiple threads; the low-level API allows the client to cache unvarying
@@ -939,9 +934,7 @@ public:
     ///               This vector must be either the same size as
     ///               \p protoIndices or empty. If it is empty, no mask is
     ///               applied.
-    /// \param velocityScale - factor used to artificially increase the effect
-    ///                        of velocity and angular velocity on positions and
-    ///                        orientations respectively.
+    /// \param velocityScale - \deprecated.
     USDGEOM_API
     static bool
     ComputeInstanceTransformsAtTime(
