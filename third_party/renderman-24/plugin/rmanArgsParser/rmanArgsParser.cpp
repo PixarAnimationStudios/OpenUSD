@@ -378,7 +378,15 @@ _GetDsoPathFromArgsPath(const std::string &argsPath)
 
     if (pathElts.size() < 3 || 
         !TfStringEndsWith(argsPath, argsExt) ||
-        pathElts[pathElts.size()-2] != "Args"){
+        pathElts[pathElts.size()-2] != "Args") {
+
+        if (pathElts[pathElts.size()-2] != "Args") {
+            TF_DEBUG(NDR_PARSING).Msg("Args file being parsed does not "
+                "live in \"Args\" named parent directory. No "
+                "implementation will be set for the sdr node.\n");
+            return std::string();
+        }
+
         TF_WARN("Unexpected path for RenderMan args file: %s - "
                 "expected a form like /path/to/plugins/Args/somePlugin.args",
                 argsPath.c_str());
