@@ -6,14 +6,39 @@
 
 ### USD
 - Removed support for Ar 1.0, which was deprecated in v21.11.
+- Improved memory allocation for value clips by using a shared pointer to the 
+  array of time mapping in Usd_Clips.
+  (Issue: [#1774](https://github.com/PixarAnimationStudios/USD/issues/1774), 
+   PR: [#1777](https://github.com/PixarAnimationStudios/USD/pull/1777))
+- Cleaned UsdShadeConnectableAPIBehavior code to not throw warnings when
+  querying for incompatible prim type, which has no plugin registered.
+- Miscellaneous small fixes.
+  (PR: [#1775](https://github.com/PixarAnimationStudios/USD/pull/1775))
+- Fixed a bug with the composition of reference/payload list ops across 
+  sublayers with different time codes per second or layer offsets.
+  (Issue: [#1778](https://github.com/PixarAnimationStudios/USD/issues/1778)) 
 
 ### Imaging
+- Fixed double-creation of Bprims when using scene index emulation.
+  (PR: [#1737](https://github.com/PixarAnimationStudios/USD/pull/1737))
+- Various fixes to primvar sampling in scene index emulation and the usdImaging
+  stage scene index.
+- Fixed inconsistencies for clipping planes to work with scene index emulation.
 
 ### UsdImaging
+- Introduced a new hdSi library which adds support for implicit shapes in 
+  UsdImagingStageSceneIndex.
+- Added basic support for SampleFilters in RenderSettings in UsdImaging scene 
+  delegate and HdPrman render delegate.
 
 ### Storm
 
 ### RenderMan Hydra Plugin
+- Added various implicit shapes support by using native Riley prims and the
+  implicit surface scene index.
+- Introduced basic sample filters support with Murk Sample Filter.
+- Updated HdPrman_RenderParam API to use new Riley API for setting XPU Devices
+  to use.
 
 ### usdview
 
