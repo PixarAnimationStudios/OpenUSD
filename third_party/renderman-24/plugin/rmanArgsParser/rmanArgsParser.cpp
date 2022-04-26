@@ -380,7 +380,7 @@ _GetDsoPathFromArgsPath(const std::string &argsPath)
         !TfStringEndsWith(argsPath, argsExt) ||
         pathElts[pathElts.size()-2] != "Args") {
 
-        if (pathElts[pathElts.size()-2] != "Args") {
+        if (pathElts.size() > 1 && pathElts[pathElts.size()-2] != "Args") {
             TF_DEBUG(NDR_PARSING).Msg("Args file being parsed does not "
                 "live in \"Args\" named parent directory. No "
                 "implementation will be set for the sdr node.\n");
