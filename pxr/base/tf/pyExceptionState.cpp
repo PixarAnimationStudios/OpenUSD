@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/pyErrorInternal.h"
+#include "pxr/base/tf/pyLock.h"
 
 #include <boost/python/object.hpp>
 #include <boost/python/extract.hpp>
@@ -33,6 +34,20 @@ using namespace boost::python;
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TfPyExceptionState::~TfPyExceptionState()
+{
+    Release();
+}
+    
+void
+TfPyExceptionState::Release()
+{
+    TfPyLock lock;
+    _type.release();
+    _value.release();
+    _trace.release();
+}
 
 string 
 TfPyExceptionState::GetExceptionString() const
