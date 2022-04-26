@@ -69,13 +69,11 @@ protected:
         const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;
 
 private:
-    HdContainerDataSourceHandle const _inputArgs;
-
-    TfToken _capsuleMode;
-    TfToken _coneMode;
-    TfToken _cubeMode;
-    TfToken _cylinderMode;
-    TfToken _sphereMode;
+    const TfToken _capsuleMode;
+    const TfToken _coneMode;
+    const TfToken _cubeMode;
+    const TfToken _cylinderMode;
+    const TfToken _sphereMode;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

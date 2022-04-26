@@ -1537,7 +1537,6 @@ HdsiImplicitSurfaceSceneIndex::HdsiImplicitSurfaceSceneIndex(
     const HdSceneIndexBaseRefPtr &inputSceneIndex,
     const HdContainerDataSourceHandle &inputArgs)
   : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
-  , _inputArgs(inputArgs)
   , _capsuleMode(_GetMode(inputArgs, HdPrimTypeTokens->capsule))
   , _coneMode(_GetMode(inputArgs, HdPrimTypeTokens->cone))
   , _cubeMode(_GetMode(inputArgs, HdPrimTypeTokens->cube))
