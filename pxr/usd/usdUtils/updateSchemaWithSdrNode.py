@@ -65,7 +65,7 @@ def _IsNSPrefixConnectableAPICompliant(nsPrefix):
             nsPrefix == UsdShade.Tokens.outputs[:1])
 
 def _CreateAttrSpecFromNodeAttribute(primSpec, prop, primDefForAttrPruning, 
-        schemaPropertyNSPrefixOverride, isInput=True):
+        schemaPropertyNSPrefixOverride, isSdrInput=True):
     propMetadata = prop.GetMetadata()
     # Early out if the property should be suppressed from being translated to
     # propertySpec
@@ -82,7 +82,7 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, primDefForAttrPruning,
 
     # Error out if trying to use an explicit propertyNSPrefixOverride on an
     # output attr
-    if (not isInput and propertyNSPrefixOverride is not None and \
+    if (not isSdrInput and propertyNSPrefixOverride is not None and \
             propertyNSPrefixOverride != UsdShade.Tokens.outputs[:-1]):
         Tf.RaiseRuntimeError("Presence of (%s) output parameter contradicts " \
             "the presence of propertyNSPrefixOverride (\"%s\"), as it is " \
@@ -101,8 +101,8 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, primDefForAttrPruning,
     # Note that UsdShade inputs and outputs tokens contain the ":" delimiter, so
     # we need to strip this to be used with JoinIdentifier
     if propertyNSPrefixOverride is None:
-        propertyNSPrefixOverride = UsdShade.Tokens.inputs[:-1] if isInput else \
-                UsdShade.Tokens.outputs[:-1]
+        propertyNSPrefixOverride = UsdShade.Tokens.inputs[:-1] if isSdrInput \
+                else UsdShade.Tokens.outputs[:-1]
 
     # Apply propertyNSPrefixOverride
     propName = Sdf.Path.JoinIdentifier([propertyNSPrefixOverride, propName])
@@ -176,9 +176,10 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, primDefForAttrPruning,
         attrSpec.default = defaultValue
 
 
-    # The core UsdLux inputs should remain connectable (interfaceOnly)
+    # The input property should remain connectable (interfaceOnly)
     # even if sdrProperty marks the input as not connectable
-    if isInput and not prop.IsConnectable():
+    if propertyNSPrefixOverride == UsdShade.Tokens.inputs[:-1] and \
+            not prop.IsConnectable():
         attrSpec.SetInfo(PropertyDefiningKeys.CONNECTABILITY, 
                 UsdShade.Tokens.interfaceOnly)
 
@@ -388,9 +389,17 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
     schemaBaseProvidesConnectability = UsdShade.ConnectableAPI. \
             HasConnectableAPI(usdSchemaReg.GetTypeFromName(schemaBase))
 
-    if (len(sdrNode.GetOutputNames()) > 0 and \
-            schemaPropertyNSPrefixOverride is not None and \
-            not _IsNSPrefixConnectableAPICompliant( \
+    emitSdrOutput = True
+    for outputName in sdrNode.GetOutputNames():
+        if PropertyDefiningKeys.USD_SUPPRESS_PROPERTY in \
+                sdrNode.GetOutput(outputName).GetMetadata():
+            emitSdrOutput = False
+            break;
+
+    if (emitSdrOutput and \
+        len(sdrNode.GetOutputNames()) > 0 and \
+        schemaPropertyNSPrefixOverride is not None and \
+        not _IsNSPrefixConnectableAPICompliant( \
                 schemaPropertyNSPrefixOverride)):
         Tf.RaiseRuntimeError("Presence of (%s) output parameters contradicts " \
             "the presence of schemaPropertyNSPrefixOverride (\"%s\"), as it " \
@@ -470,6 +479,9 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
     if apiSchemasForAttrPruning:
         primDefForAttrPruning = usdSchemaReg.BuildComposedPrimDefinition(
                 typedSchemaForAttrPruning, apiSchemasForAttrPruning)
+    else:
+        primDefForAttrPruning = \
+            usdSchemaReg.FindConcretePrimDefinition(typedSchemaForAttrPruning)
 
     # Create attrSpecs from input parameters
     for propName in sdrNode.GetInputNames():
