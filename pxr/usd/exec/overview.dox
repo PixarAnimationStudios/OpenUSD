@@ -1,0 +1,148 @@
+/*!
+\page exec_page_front Exec : Execution Definition Registry
+\if ( PIXAR_MFB_BUILD )
+\publicLib
+\mainpage Exec : Execution Definition Registry
+\endif
+
+Exec is a execution-specialized version of Ndr, and provides the following
+specialized classes:
+- `ExecRegistry`
+- `ExecNode`
+- `ExecProperty`
+
+For more details on the registry, nodes, or properties, see the base Ndr
+classes:
+- `NdrRegistry`
+- `NdrNode`
+- `NdrProperty`
+
+For a high-level view of the system and how all the parts work together, see
+the overview page for Ndr.
+
+\tableofcontents
+
+# Discussion of ExecPropertyTypes {#ExecPropertyTypes}
+
+Exec defines a limited set of types:
+- Bool
+- Int
+- String
+- Float
+- Color
+- Vector2
+- Vector3
+- Vector4
+- Quaternion
+- Rotation
+- Matrix3
+- Matrix4
+
+
+## Two notions of types (ExecPropertyType and SdfValueTypeName)
+
+The ExecPropertyType is not written out to a USD layer, but with the aid of other
+information and metadata gathered from a node's definition, the
+ExecPropertyType is mapped to an SdfValueTypeName that is written into USD
+layers.  The SdfValueTypeNames are a much richer and wider set of types, and it
+is this type that is looked at during opinion composition.
+
+For most of the basic ExecPropertyTypes, we have direct mappings to
+SdfValueTypeNames given the Exec type and if it is an array.  For some of the
+ExecPropertyTypes, we use metadata to aid the translation to a particular
+SdfValueTypeName (see below).
+
+Clients writing NdrParserPlugin sub-classes for Exec need only be concerned with
+a property's ExecPropertyType.  Exec will handle the details of assigning the
+correct SdfValueTypeName.
+
+
+## Discussion of the special Exec property types
+
+Some ExecPropertyTypes are a little special because there is no reasonable
+corresponding SdfValueTypeName, so we map them all to SdfValueTypeName->Token,
+which is typically reserved for an Unknown type.
+
+The special ExecPropertyTypes that map to 'Token' are:
+- Struct -  Struct types
+- Terminal - Certain properties represent 'terminal' ports (ie. surface,
+             displacement, volume, etc)
+
+As described, these special ExecPropertyTypes cannot be represented as a
+SdfValueTypeName, which is why we simply map them to 'Token'.  A user can
+find the original struct type or terminal type of one of these properties by
+examining the 'renderType' metadata on the property, since this original type
+information is not preserved in either the ExecPropertyType or SdfValueTypeName.
+
+
+## Exec metadata that is used to determine ExecPropertyType
+
+As mentioned previously, metadata can be used to drive the parsing of a
+ExecPropertyType.  This metadata does need to be authored by node writers.
+Some of these metadata tags are:
+- 'renderType' - The 'renderType' metadata should be specified for Struct,
+   Terminal and properties.
+   - On a Struct, the metadata would be 'renderType' = 'struct structName',
+     where structName is the actual struct's typename
+   - On a Terminal, the metadata would be 'renderType' = 'terminal terminalName'
+     where terminalName is the actual kind of terminal
+- 'role' - The 'role' metadata can be specified for any ExecPropertyType, and the
+   value of 'role' will determine if the property will be transformed to a
+   different ExecPropertyType.  This metadata is special in that parser plugin
+   writers do NOT need to handle any ExecPropertyType transformations.  Parser
+   writers simply need to parse the property as usual and allow
+   ExecProperty to apply any needed transformations to the ExecPropertyType.
+   The 'role' metadata can only have the following predefined values:
+   - 'none' - If 'role' is 'none', then the ExecPropertyType will be
+     transformed to be as generic as possible.  For example, if a property of
+     original ExecPropertyTypes->Color has 'role' specified as 'none', then the
+     property will actually become ExecPropertyTypes->Float.
+
+## Exec metadata that is used to determine SdfValueTypeName
+
+Some metadata is used to drive the conversion of an SdfValueTypeName.
+Metadata that is used for SdfValueTypeName conversion is authored either by 
+node writers (ExecUsdDefinitionName), or it should be injected into an 
+ExecProperty by a parser plugin writer (IsAssetIdentifier).
+This includes:
+- ExecPropertyMetadata->IsAssetIdentifier - This metadata tag is injected by a
+  parser if the parser determines that the property is an asset. The presence
+  of this metadata tag then guides the type mapping to choose
+  SdfValueTypeNames->Asset
+- ExecPropertyMetadata->ExecUsdDefinitionType - This metadata, explicitly 
+  authored in a node definition, specifies the SdfValueTypeName as string. 
+  Note that this metadata takes precendence in determining the SdfValueTypeName 
+  for the ExecProperty. Authors of node definition will have to provide 
+  explicit TfType value aliases (Refer SdfValueTypeName::GetAliasesAsTokens()) 
+  associated with the SdfValueTypeName, which generally match the type
+  declarations found in a usda file.
+  Example "bool" for SdfValueTypeNames->Bool, "bool[]" for
+  SdfValueTypeNames->BoolArray, etc. This is specifically important in
+  determining types which are represented as an "int" in the exec type system but
+  should be represented as SdfValueTypeNames->Bool in the equivalent Sdf/USD
+  representation. When execUsdDefinitionType is specified, Exec will do its best
+  to convert the default value provided in the node definition into the
+  requested SdfValueType.
+
+## Some examples illustrating the treatment of property types
+
+~~~~~~~~~~~~~{.usd}
+shader TestOSLShader
+(
+    color foo = color(1.0, 1.0 1.0),
+    token bar = "baz",
+    token surface = ""
+    [[
+        string renderType = "terminal surface"
+    ]]
+)
+~~~~~~~~~~~~~
+In the above example, the properties would be translated as follows:
+
+Property  |ExecPropertyType            |SdfValueTypeName
+:-------- |:------------------------- |:----------------
+foo       |ExecPropertyTypes->Color    |SdfValueTypeNames->Color
+bar       |ExecPropertyTypes->String   |SdfValueTypeNames->String
+surface   |ExecPropertyTypes->Terminal |SdfValueTypeNames->Token
+
+*/

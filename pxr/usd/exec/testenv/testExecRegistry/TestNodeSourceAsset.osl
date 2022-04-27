@@ -1,0 +1,15 @@
+//
+// TestNodeSourceAsset
+//
+// This file is not used directly in the test, but is compiled into the OSO.
+// To compile this node, go to this file's directory and run:
+// oslc -o TestNodeSourceAsset.oso TestNodeSourceAsset.osl
+//
+
+shader TestNodeSourceAsset
+(
+    float inputA = .0
+)
+{
+    // Nothing here!
+}
