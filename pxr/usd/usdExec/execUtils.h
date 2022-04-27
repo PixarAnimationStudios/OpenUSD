@@ -24,7 +24,7 @@ class UsdExecOutput;
 /// \class UsdExecUtils
 ///
 /// This class contains a set of utility functions used when authoring and 
-/// querying shading networks.
+/// querying exec networks.
 ///
 class UsdExecUtils {
 public:
@@ -68,21 +68,21 @@ public:
     /// returned, but only if it has an authored value. The input attribute
     /// itself carries the value for this input.
     /// - If the input is connected we follow the connection(s) until we reach
-    /// a valid output of a UsdExecShader node or if we reach a valid
+    /// a valid output of a UsdExecNode node or if we reach a valid
     /// UsdExecInput attribute of a UsdExecNodeGraph or UsdExecMaterial that
     /// has an authored value.
     ///
     /// An UsdExecOutput on a container can get its value from the same
-    /// type of sources as a UsdExecInput on either a UsdExecShader or
-    /// UsdExecNodeGraph. Outputs on non-containers (UsdExecShaders) cannot be
+    /// type of sources as a UsdExecInput on either a UsdExecNode or
+    /// UsdExecNodeGraph. Outputs on non-containers (UsdExecNodes) cannot be
     /// connected.
     ///
     /// This function returns a vector of UsdAttributes. The vector is empty if
     /// no valid attribute was found. The type of each attribute can be
     /// determined with the \p UsdExecUtils::GetType function.
     ///
-    /// If \p shaderOutputsOnly is true, it will only report attributes that are
-    /// outputs of non-containers (UsdExecShaders). This is a bit faster and
+    /// If \p outputsOnly is true, it will only report attributes that are
+    /// outputs of non-containers (UsdExecNodes). This is a bit faster and
     /// what is need when determining the connections for Material terminals.
     ///
     /// \note This will return the last attribute along the connection chain
@@ -97,12 +97,12 @@ public:
     USDEXEC_API
     static UsdExecAttributeVector GetValueProducingAttributes(
         UsdExecInput const &input,
-        bool shaderOutputsOnly = false);
+        bool outputsOnly = false);
     /// \overload
     USDEXEC_API
     static UsdExecAttributeVector GetValueProducingAttributes(
         UsdExecOutput const &output,
-        bool shaderOutputsOnly = false);
+        bool outputsOnly = false);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

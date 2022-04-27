@@ -67,7 +67,7 @@ class SdfAssetPath;
 /// from objects of any of the schema classes listed above.  If it seems
 /// onerous to need to construct a secondary schema object to interact with
 /// Inputs and Outputs, keep in mind that any function whose purpose is either
-/// to walk material/shader networks via their connections, or to create such
+/// to walk node networks via their connections, or to create such
 /// networks, can typically be written entirely in terms of 
 /// ExecConnectableAPI objects, without needing to care what the underlying
 /// prim type is.
@@ -668,7 +668,7 @@ public:
     USDEXEC_API
     UsdExecOutput GetOutput(const TfToken &name) const;
 
-    /// Returns all outputs on the connectable prim (i.e. shader or node-graph). 
+    /// Returns all outputs on the connectable prim (i.e. node or node-graph). 
     /// Outputs are represented by attributes in the "outputs:" namespace.
     /// If \p onlyAuthored is true (the default), then only return authored
     /// attributes; otherwise, this also returns un-authored builtins.
@@ -697,7 +697,7 @@ public:
     USDEXEC_API
     UsdExecInput GetInput(const TfToken &name) const;
 
-    /// Returns all inputs on the connectable prim (i.e. shader or node-graph). 
+    /// Returns all inputs on the connectable prim (i.e. node or node-graph). 
     /// Inputs are represented by attributes in the "inputs:" namespace.
     /// If \p onlyAuthored is true (the default), then only return authored
     /// attributes; otherwise, this also returns un-authored builtins.

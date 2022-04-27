@@ -64,7 +64,7 @@ struct UsdExecTokensType {
     USDEXEC_API UsdExecTokensType();
     /// \brief "execMetadata"
     /// 
-    /// Dictionary valued metadata key authored on ExecNode prims with implementationSource value of sourceAsset or  sourceCode to pass along metadata to the shader parser or  compiler. It is also used to author metadata on shader  properties in a UsdShade-based shader definition file. 
+    /// Dictionary valued metadata key authored on ExecNode prims with implementationSource value of sourceAsset or  sourceCode to pass along metadata to the node parser or  compiler. It is also used to author metadata on node  properties in a UsdExec-based node definition file. 
     const TfToken execMetadata;
     /// \brief "full"
     /// 

@@ -1,7 +1,7 @@
 //
 // unlicensed 2022 benmalartre
 //
-
+#include <iostream>
 #include "pxr/pxr.h"
 
 #include "pxr/usd/usdExec/execTypes.h"

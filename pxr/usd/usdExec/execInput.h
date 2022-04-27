@@ -124,10 +124,10 @@ public:
 
     /// \name API to author and query an Input's execMetadata
     /// 
-    /// This section provides API for authoring and querying shader registry
-    /// metadata on an Input. When the owning shader prim is providing a shader 
+    /// This section provides API for authoring and querying node registry
+    /// metadata on an Input. When the owning node prim is providing a node 
     /// definition, the authored "execMetadata" dictionary value provides 
-    /// metadata needed to populate the Input correctly in the shader registry. 
+    /// metadata needed to populate the Input correctly in the node registry. 
     /// 
     /// We expect the keys in execMetadata to correspond to the keys 
     /// in \ref ExecPropertyMetadata. However, this is not strictly enforced by
@@ -188,7 +188,7 @@ public:
     /// @{
 
     /// Speculative constructor that will produce a valid UsdExecInput when
-    /// \p attr already represents a shade Input, and produces an \em invalid 
+    /// \p attr already represents a node Input, and produces an \em invalid 
     /// UsdExecInput otherwise (i.e. the explicit bool conversion operator will 
     /// return false).
     USDEXEC_API
@@ -496,4 +496,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_USD_USD_SHADE_INPUT_H
+#endif // PXR_USD_USD_EXEC_INPUT_H
