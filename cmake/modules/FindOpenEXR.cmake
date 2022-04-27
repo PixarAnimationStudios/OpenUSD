@@ -68,7 +68,8 @@ foreach(OPENEXR_LIB
 
     # OpenEXR libraries may be suffixed with the version number, so we search
     # using both versioned and unversioned names.
-    find_library(OPENEXR_${OPENEXR_LIB}_LIBRARY
+
+    find_library(OPENEXR_${OPENEXR_LIB}_LIBRARY_RELEASE
         NAMES
             ${OPENEXR_LIB}-${OPENEXR_MAJOR_VERSION}_${OPENEXR_MINOR_VERSION}
             ${OPENEXR_LIB}
@@ -78,9 +79,58 @@ foreach(OPENEXR_LIB
         PATH_SUFFIXES
             lib/
         DOC
-            "OPENEXR's ${OPENEXR_LIB} library path"
+            "OPENEXR's ${OPENEXR_LIB} release library path"
     )
 
+    # On windows, by default debug libs get a _d suffix
+    find_library(OPENEXR_${OPENEXR_LIB}_LIBRARY_DEBUG
+        NAMES
+            ${OPENEXR_LIB}-${OPENEXR_MAJOR_VERSION}_${OPENEXR_MINOR_VERSION}_d
+            ${OPENEXR_LIB}_d
+        HINTS
+            "${OPENEXR_LOCATION}"
+            "$ENV{OPENEXR_LOCATION}"
+        PATH_SUFFIXES
+            lib/
+        DOC
+            "OPENEXR's ${OPENEXR_LIB} debug library path"
+    )
+
+    # # Figure out whether to use debug or release lib as "the" library
+
+    if(OPENEXR_${OPENEXR_LIB}_LIBRARY_RELEASE AND OPENEXR_${OPENEXR_LIB}_LIBRARY_DEBUG)
+        # both were found, decide which to use
+        string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
+        if(CMAKE_BUILD_TYPE_LOWER MATCHES "^(debug|relwithdebinfo)$")
+            set(OPENEXR_${OPENEXR_LIB}_LIBRARY_TYPE "DEBUG")
+        else()
+            set(OPENEXR_${OPENEXR_LIB}_LIBRARY_TYPE "RELEASE")
+        endif()
+    elseif(OPENEXR_${OPENEXR_LIB}_LIBRARY_RELEASE)
+        set(OPENEXR_${OPENEXR_LIB}_LIBRARY_TYPE "RELEASE")
+    elseif(OPENEXR_${OPENEXR_LIB}_LIBRARY_DEBUG)
+        set(OPENEXR_${OPENEXR_LIB}_LIBRARY_TYPE "DEBUG")
+    else()
+        set(OPENEXR_${OPENEXR_LIB}_LIBRARY_TYPE "NOTFOUND")
+    endif()
+
+    if(OPENEXR_${OPENEXR_LIB}_LIBRARY_TYPE)
+        set(OPENEXR_${OPENEXR_LIB}_LIBRARY
+            "${OPENEXR_${OPENEXR_LIB}_LIBRARY_${OPENEXR_${OPENEXR_LIB}_LIBRARY_TYPE}}"
+            CACHE
+            FILEPATH
+            "OPENEXR's ${OPENEXR_LIB} library path"
+        )
+    else()
+        set(OPENEXR_${OPENEXR_LIB}_LIBRARY OPENEXR_${OPENEXR_LIB}_LIBRARY-NOTFOUND)
+    endif()
+
+    if(OPENEXR_${OPENEXR_LIB}_LIBRARY_RELEASE)
+        list(APPEND OPENEXR_LIBRARIES_RELEASE ${OPENEXR_${OPENEXR_LIB}_LIBRARY_RELEASE})
+    endif()
+    if(OPENEXR_${OPENEXR_LIB}_LIBRARY_DEBUG)
+        list(APPEND OPENEXR_LIBRARIES_DEBUG ${OPENEXR_${OPENEXR_LIB}_LIBRARY_DEBUG})
+    endif()
     if(OPENEXR_${OPENEXR_LIB}_LIBRARY)
         list(APPEND OPENEXR_LIBRARIES ${OPENEXR_${OPENEXR_LIB}_LIBRARY})
     endif()
