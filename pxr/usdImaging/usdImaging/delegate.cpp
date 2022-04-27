@@ -1082,6 +1082,39 @@ UsdImagingDelegate::ApplyPendingUpdates()
     indexProxy._UniqueifyPathsToRepopulate();
     _Populate(&indexProxy);
     _ExecuteWorkForVariabilityUpdate(&worker);
+
+    // Mark all dirty collection prims
+    if (_collectionCache.AreAllPathsDirty())
+    {
+        TRACE_SCOPE("Mark all dirty collection members");
+        TF_FOR_ALL(it, _hdPrimInfoMap) {
+            UsdImagingPrimAdapterSharedPtr& adapter = it->second.adapter;
+            TF_DEBUG(USDIMAGING_CHANGES).Msg("[Update]: invalidate collection member prim (all paths dirty) %s\n", it->first.GetText());
+            adapter->MarkDirty(it->second.usdPrim, it->first,
+                HdChangeTracker::DirtyCategories, &indexProxy);
+        }
+        _collectionCache.ClearDirtyPaths();
+    }
+    else
+    {
+        const SdfPathSet& pathsDirtiedByCollections = _collectionCache.GetDirtyPaths();
+        if(!pathsDirtiedByCollections.empty())
+        {
+            TRACE_SCOPE("Mark dirty collection members");
+            for(const SdfPath& dirtyPath : pathsDirtiedByCollections)
+            {
+                TF_DEBUG(USDIMAGING_CHANGES).Msg("[Update]: invalidate collection member prim %s\n", dirtyPath.GetText());
+                _HdPrimInfo* primInfo = _GetHdPrimInfo(dirtyPath);
+                if (primInfo && primInfo->usdPrim.IsValid() &&
+                    TF_VERIFY(primInfo->adapter, "%s", dirtyPath.GetText())) {
+                    UsdImagingPrimAdapterSharedPtr& adapter = primInfo->adapter;
+                    adapter->MarkDirty(primInfo->usdPrim, dirtyPath,
+                        HdChangeTracker::DirtyCategories, &indexProxy);
+                }
+            }
+            _collectionCache.ClearDirtyPaths();
+        }
+    }
 }
 
 void 
@@ -1348,35 +1381,10 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
     // Otherwise, this is a totally new branch of the scene, so populate
     // from the resync target path. Note: we need to verify that usdPath exists,
     // since we can get resync notices for prims that were deleted.
-    UsdPrim usdPrim = _stage->GetPrimAtPath(usdPath);
-    if (usdPrim) {
+    if (_stage->GetPrimAtPath(usdPath)) {
         TF_DEBUG(USDIMAGING_CHANGES).Msg("  - affected new prim: <%s>\n",
             usdPath.GetText());
         proxy->Repopulate(usdPath);
-
-        if (usdPrim.HasAPI<UsdLuxLightAPI>()) {
-            // If a new light was added, ensure collections are dirtied
-            TRACE_SCOPE("Resync light/shadow link targets");
-            auto _MarkLinkPathsDirty = [&](const SdfPathSet& linkedPaths) {
-                for (SdfPath affectedCachePath : linkedPaths) {
-                    TF_DEBUG(USDIMAGING_CHANGES).Msg("[Refresh Object]: "
-                        "Light <%s> modified; invalidate linked prim %s\n", 
-                        usdPath.GetText(), affectedCachePath.GetText());
-                    _HdPrimInfo* primInfo = _GetHdPrimInfo(affectedCachePath);
-                    if (primInfo && primInfo->usdPrim.IsValid() &&
-                        TF_VERIFY(primInfo->adapter, "%s", affectedCachePath.GetText())) {
-                        UsdImagingPrimAdapterSharedPtr& adapter = primInfo->adapter;
-                        adapter->MarkDirty(primInfo->usdPrim, affectedCachePath,
-                            HdChangeTracker::DirtyCategories, proxy);
-                    }
-                }
-            };
-            UsdLuxLightAPI light(usdPrim);
-            UsdCollectionAPI lightLink{ light.GetLightLinkCollectionAPI() };
-            _MarkLinkPathsDirty(lightLink.ComputeIncludedPaths(lightLink.ComputeMembershipQuery(), _stage));
-            UsdCollectionAPI shadowLink{ light.GetShadowLinkCollectionAPI() };
-            _MarkLinkPathsDirty(shadowLink.ComputeIncludedPaths(shadowLink.ComputeMembershipQuery(), _stage));
-        }
     } else {
         TF_DEBUG(USDIMAGING_CHANGES).Msg("  - affected deleted prim: <%s>\n",
             usdPath.GetText());

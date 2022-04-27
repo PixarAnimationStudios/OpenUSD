@@ -68,7 +68,7 @@ public:
 
     /// Remove any cached entry for the given collection.
     /// Does nothing if no cache entry exists.
-    void RemoveCollection(UsdCollectionAPI const& collection);
+    void RemoveCollection(UsdStageWeakPtr const& stage, SdfPath const& path);
 
     /// Return the cached entry for the given collection.
     TfToken
@@ -78,6 +78,24 @@ public:
     // the given path.
     VtArray<TfToken>
     ComputeCollectionsContainingPath(SdfPath const& path) const;
+
+    /// Return the cached MembershipQuery for a given id
+    void
+    GetMembershipQuery(TfToken const& id, const Query** query) const;
+
+    /// Returns true if all paths should be considered dirty
+    /// This happens when a collection containing an exclusion is updated
+    bool
+    AreAllPathsDirty() const;
+
+    /// Returns a set of dirty paths
+    /// Should only be used if AreAllPathsDirty returned false
+    SdfPathSet const&
+    GetDirtyPaths() const;
+
+    /// Clears the internal dirty flags
+    void
+    ClearDirtyPaths();
 
 private:
     // The cache boils down to tracking the correspondence of
@@ -94,6 +112,12 @@ private:
     std::unordered_map<TfToken, Query, TfToken::HashFunctor> _queryForId;
     std::unordered_map<SdfPath, TfToken, SdfPath::Hash> _idForPath;
     std::unordered_map<Query, SdfPathSet, Query::Hash> _pathsForQuery;
+
+    void
+    _MarkCollectionContentDirty(UsdStageWeakPtr const& stage, UsdCollectionAPI::MembershipQuery const& query);
+
+    SdfPathSet _dirtyPaths;
+    bool _allPathsDirty = false;
 
     std::mutex _mutex;
 };

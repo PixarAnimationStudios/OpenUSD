@@ -64,6 +64,7 @@ void
 UsdImagingDiskLightAdapter::_RemovePrim(SdfPath const& cachePath,
                                          UsdImagingIndexProxy* index)
 {
+    UsdImagingLightAdapter::_RemovePrim(cachePath, index);
     index->RemoveSprim(HdPrimTypeTokens->diskLight, cachePath);
 }
 

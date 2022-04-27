@@ -64,6 +64,7 @@ void
 UsdImagingDistantLightAdapter::_RemovePrim(SdfPath const& cachePath,
                                          UsdImagingIndexProxy* index)
 {
+    UsdImagingLightAdapter::_RemovePrim(cachePath, index);
     index->RemoveSprim(HdPrimTypeTokens->distantLight, cachePath);
 }
 

@@ -128,6 +128,18 @@ protected:
     void _RemovePrim(SdfPath const& cachePath,
                      UsdImagingIndexProxy* index) override;
 
+private:
+    /// Updates the collection cache content
+    /// Checks for collection hash change and returns true if they are different
+    bool _UpdateCollectionsChanged(UsdPrim const& prim, SdfPath const& cachePath) const;
+
+    // Cache to detect collection changes
+    struct HashPair{
+        size_t lightCollectionHash = 0;
+        size_t shadowCollectionHash = 0;
+    };
+    mutable std::unordered_map<SdfPath, HashPair, SdfPath::Hash> _collectionHashes;
+
 };
 
 
