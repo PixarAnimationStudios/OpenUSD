@@ -155,7 +155,7 @@ void wrapUsdExecOutput()
 
         .def("GetValueProducingAttributes",
              &Output::GetValueProducingAttributes,
-             (arg("shaderOutputsOnly")=false))
+             (arg("outputsOnly")=false))
 
         .def("IsOutput", &Output::IsOutput)
         .staticmethod("IsOutput")

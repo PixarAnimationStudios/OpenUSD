@@ -43,9 +43,9 @@ over "GLOBAL" (
             dictionary execMetadata = {
                 string doc = """Dictionary valued metadata key authored on
                 ExecNode prims with implementationSource value of sourceAsset or 
-                sourceCode to pass along metadata to the shader parser or 
-                compiler. It is also used to author metadata on shader 
-                properties in a UsdShade-based shader definition file.
+                sourceCode to pass along metadata to the node parser or 
+                compiler. It is also used to author metadata on node 
+                properties in a UsdExec-based node definition file.
                 """
             }
         }
@@ -128,7 +128,7 @@ class "ExecConnectableAPI"
     from objects of any of the schema classes listed above.  If it seems
     onerous to need to construct a secondary schema object to interact with
     Inputs and Outputs, keep in mind that any function whose purpose is either
-    to walk material/shader networks via their connections, or to create such
+    to walk node networks via their connections, or to create such
     networks, can typically be written entirely in terms of 
     ExecConnectableAPI objects, without needing to care what the underlying
     prim type is.

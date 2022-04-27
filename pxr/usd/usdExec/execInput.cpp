@@ -372,10 +372,10 @@ UsdExecInput::ClearConnectability() const
 
 UsdExecAttributeVector
 UsdExecInput::GetValueProducingAttributes(
-    bool shaderOutputsOnly) const
+    bool outputsOnly) const
 {
     return UsdExecUtils::GetValueProducingAttributes(*this,
-                                                      shaderOutputsOnly);
+                                                      outputsOnly);
 }
 
 UsdAttribute

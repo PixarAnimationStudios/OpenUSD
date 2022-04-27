@@ -52,9 +52,9 @@ void wrapUsdExecUtils()
         .staticmethod("GetFullName")
 
         .def("GetValueProducingAttributes", GetValueProducingAttributes_Input,
-            (arg("input"), arg("shaderOutputsOnly")=false))
+            (arg("input"), arg("outputsOnly")=false))
         .def("GetValueProducingAttributes", GetValueProducingAttributes_Output,
-            (arg("output"), arg("shaderOutputsOnly")=false))
+            (arg("output"), arg("outputsOnly")=false))
         .staticmethod("GetValueProducingAttributes")
         ;
 

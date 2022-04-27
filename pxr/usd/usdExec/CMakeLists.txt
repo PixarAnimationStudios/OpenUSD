@@ -30,13 +30,13 @@ pxr_library(usdExec
     PYMODULE_CPPFILES
         module.cpp
         wrapTokens.cpp
-        wrapExecTypes.cpp
-        wrapExecUtils.cpp
+        wrapExecConnectableAPI.cpp
         wrapExecInput.cpp
+        wrapExecGraph.cpp
         wrapExecOutput.cpp
         wrapExecNode.cpp
-        wrapExecGraph.cpp
-        wrapExecConnectableAPI.cpp
+        wrapExecTypes.cpp
+        wrapExecUtils.cpp
 
     PYMODULE_FILES
         __init__.py

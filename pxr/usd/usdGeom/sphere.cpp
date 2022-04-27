@@ -181,7 +181,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdGeom/boundableComputeExtent.h"
 #include "pxr/base/tf/registryManager.h"
-
+#include <string>
+#include <iostream>
 PXR_NAMESPACE_OPEN_SCOPE
 
 bool
@@ -212,6 +213,8 @@ UsdGeomSphere::ComputeExtent(double radius, const GfMatrix4d& transform,
     return true;
 }
 
+
+
 static bool
 _ComputeExtentForSphere(
     const UsdGeomBoundable& boundable,
@@ -219,15 +222,18 @@ _ComputeExtentForSphere(
     const GfMatrix4d* transform,
     VtVec3fArray* extent)
 {
+    std::cout << "COMPUTE EXTEND FOR SPHERE..." << std::endl;
     const UsdGeomSphere sphereSchema(boundable);
     if (!TF_VERIFY(sphereSchema)) {
         return false;
     }
+    std::cout << "SPHERE VALID..." << std::endl;
 
     double radius;
     if (!sphereSchema.GetRadiusAttr().Get(&radius, time)) {
         return false;
     }
+    std::cout << "RADIUS VALID..." << std::endl;
 
     if (transform) {
         return UsdGeomSphere::ComputeExtent(radius, *transform, extent);

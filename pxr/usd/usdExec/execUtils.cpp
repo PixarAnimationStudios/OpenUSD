@@ -95,14 +95,14 @@ _GetValueProducingAttributesRecursive(
     UsdExecInOutput const & inoutput,
     _SmallSdfPathVector* foundAttributes,
     UsdExecAttributeVector & attrs,
-    bool shaderOutputsOnly);
+    bool outputsOnly);
 
 bool
 _FollowConnectionSourceRecursive(
     UsdExecConnectionSourceInfo const & sourceInfo,
     _SmallSdfPathVector* foundAttributes,
     UsdExecAttributeVector & attrs,
-    bool shaderOutputsOnly)
+    bool outputsOnly)
 {
     if (sourceInfo.sourceType == UsdExecAttributeType::Output) {
         UsdExecOutput connectedOutput =
@@ -114,7 +114,7 @@ _FollowConnectionSourceRecursive(
             return _GetValueProducingAttributesRecursive(connectedOutput,
                                                          foundAttributes,
                                                          attrs,
-                                                         shaderOutputsOnly);
+                                                         outputsOnly);
         }
     } else { // sourceType == UsdExecAttributeType::Input
         UsdExecInput connectedInput =
@@ -122,13 +122,13 @@ _FollowConnectionSourceRecursive(
         if (!sourceInfo.source.IsContainer()) {
             // Note, this is an invalid situation for a connected
             // chain. Since we started on an input to either a
-            // Shader or a container we cannot legally connect to an
+            // Node or a container we cannot legally connect to an
             // input on a non-container.
         } else {
             return _GetValueProducingAttributesRecursive(connectedInput,
                                                          foundAttributes,
                                                          attrs,
-                                                         shaderOutputsOnly);
+                                                         outputsOnly);
         }
     }
 
@@ -141,7 +141,7 @@ _GetValueProducingAttributesRecursive(
     UsdExecInOutput const & inoutput,
     _SmallSdfPathVector* foundAttributes,
     UsdExecAttributeVector & attrs,
-    bool shaderOutputsOnly)
+    bool outputsOnly)
 {
     if (!inoutput) {
         return false;
@@ -173,7 +173,7 @@ _GetValueProducingAttributesRecursive(
 
     if (sourceInfos.size() > 1) {
         // Follow each connection until we reach an output attribute on an
-        // actual shader node or an input attribute with a value
+        // actual node or an input attribute with a value
         for (const UsdExecConnectionSourceInfo& sourceInfo : sourceInfos) {
             // To handle cycle detection in the case of multiple connection we
             // have to copy the found attributes vector (multiple connections
@@ -186,22 +186,22 @@ _GetValueProducingAttributesRecursive(
                 _FollowConnectionSourceRecursive(sourceInfo,
                                                  &localFoundAttrs,
                                                  attrs,
-                                                 shaderOutputsOnly);
+                                                 outputsOnly);
         }
     } else if (!sourceInfos.empty()) {
         // Follow the one connection it until we reach an output attribute on an
-        // actual shader node or an input attribute with a value
+        // actual node or an input attribute with a value
         foundValidAttr =
                 _FollowConnectionSourceRecursive(sourceInfos[0],
                                                  foundAttributes,
                                                  attrs,
-                                                 shaderOutputsOnly);
+                                                 outputsOnly);
     }
 
     // If our trace should accept attributes with authored values, check if this
     // input or output doesn't have any valid attributes from connections, but
     // has an authored value. Return this attribute.
-    if (!shaderOutputsOnly && !foundValidAttr) {
+    if (!outputsOnly && !foundValidAttr) {
         // N.B. Checking whether an attribute has an authored value is a
         // non-trivial operation and should not be done unless required
         if (inoutput.GetAttr().HasAuthoredValue()) {
@@ -216,7 +216,7 @@ _GetValueProducingAttributesRecursive(
 /* static */
 UsdExecAttributeVector
 UsdExecUtils::GetValueProducingAttributes(UsdExecInput const &input,
-                                           bool shaderOutputsOnly)
+                                           bool outputsOnly)
 {
     TRACE_FUNCTION_SCOPE("INPUT");
 
@@ -228,7 +228,7 @@ UsdExecUtils::GetValueProducingAttributes(UsdExecInput const &input,
     _GetValueProducingAttributesRecursive(input,
                                           &foundAttributes,
                                           valueAttributes,
-                                          shaderOutputsOnly);
+                                          outputsOnly);
 
     return valueAttributes;
 }
@@ -236,7 +236,7 @@ UsdExecUtils::GetValueProducingAttributes(UsdExecInput const &input,
 /* static */
 UsdExecAttributeVector
 UsdExecUtils::GetValueProducingAttributes(UsdExecOutput const &output,
-                                           bool shaderOutputsOnly)
+                                           bool outputsOnly)
 {
     TRACE_FUNCTION_SCOPE("OUTPUT");
 
@@ -248,7 +248,7 @@ UsdExecUtils::GetValueProducingAttributes(UsdExecOutput const &output,
     _GetValueProducingAttributesRecursive(output,
                                           &foundAttributes,
                                           valueAttributes,
-                                          shaderOutputsOnly);
+                                          outputsOnly);
 
     return valueAttributes;
 }

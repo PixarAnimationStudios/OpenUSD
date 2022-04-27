@@ -15,7 +15,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \enum UsdExecAttributeType
 ///
-/// Specifies the type of a shading attribute.
+/// Specifies the type of a attribute.
 ///
 enum class UsdExecAttributeType {
     Invalid,
@@ -56,10 +56,10 @@ using UsdExecAttributeVector = TfSmallVector<UsdAttribute, 1>;
 /// for a single source, but that can "spill" to the heap in the case
 /// of a multi-connection.
 ///
-/// /sa UsdExecConnectionSourceInfo in connexionApi.h
+/// /sa UsdExecConnectionSourceInfo in connectableAPI.h
 struct UsdExecConnectionSourceInfo;
 using UsdExecSourceInfoVector = TfSmallVector<UsdExecConnectionSourceInfo, 1>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif
+#endif // PXR_USD_USD_EXEC_TYPES_H

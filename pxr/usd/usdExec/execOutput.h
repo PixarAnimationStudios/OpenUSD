@@ -22,7 +22,7 @@ class UsdExecInput;
 
 /// \class UsdExecOutput
 /// 
-/// This class encapsulates a shader or node-graph output, which is a 
+/// This class encapsulates a node or node-graph output, which is a 
 /// connectable attribute representing a typed, externally computed value.
 /// 
 class UsdExecOutput
@@ -113,10 +113,10 @@ public:
 
     /// \name API to author and query an Output's execMetadata
     /// 
-    /// This section provides API for authoring and querying shader registry
-    /// metadata on an Output. When the owning shader prim is providing a shader 
+    /// This section provides API for authoring and querying node registry
+    /// metadata on an Output. When the owning node prim is providing a node 
     /// definition, the authored "execMetadata" dictionary value provides 
-    /// metadata needed to populate the Output correctly in the shader registry. 
+    /// metadata needed to populate the Output correctly in the node registry. 
     /// 
     /// We expect the keys in execMetadata to correspond to the keys 
     /// in \ref SdrPropertyMetadata. However, this is not strictly enforced by
@@ -177,7 +177,7 @@ public:
     /// @{
 
     /// Speculative constructor that will produce a valid UsdExecOutput when
-    /// \p attr already represents a shade Output, and produces an \em invalid 
+    /// \p attr already represents a node Output, and produces an \em invalid 
     /// UsdExecOutput otherwise (i.e. the explicit bool conversion operator 
     /// will return false).
     USDEXEC_API
@@ -216,7 +216,7 @@ public:
     /// source attribute, which can be an input or an output.
     /// 
     /// An output is considered to be connectable only if it belongs to a 
-    /// node-graph. Shader outputs are not connectable.
+    /// node-graph. Node outputs are not connectable.
     /// 
     /// \sa UsdExecConnectableAPI::CanConnect
     USDEXEC_API
@@ -417,4 +417,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_USD_USD_SHADE_OUTPUT_H
+#endif // PXR_USD_USD_EXEC_OUTPUT_H
