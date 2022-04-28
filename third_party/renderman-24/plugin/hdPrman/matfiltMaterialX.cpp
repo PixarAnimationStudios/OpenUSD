@@ -74,6 +74,20 @@ TF_DEFINE_PRIVATE_TOKENS(
     // HdPrman Surface Terminal Node
     (PxrSurface)
 
+    // Texture Coordinate Tokens
+    (ND_geompropvalue_vector2)
+    (ND_remap_vector2)
+    (texcoord)
+    (geomprop)
+    (geompropvalue)
+    (in)
+    (inhigh)
+    (inlow)
+    (remap)
+    (vector2)
+    (float2)
+    ((string_type, "string"))
+
     // Hydra SourceTypes
     (OSL)       // Adapter Node
     (RmanCpp)   // PxrSurface Node
@@ -90,6 +104,47 @@ TF_DEFINE_PRIVATE_TOKENS(
     (vaddressmode)
 );
 
+static bool
+_FindGraphAndNodeByName(
+    mx::DocumentPtr const &mxDoc,
+    std::string const &mxNodeGraphName,
+    std::string const &mxNodeName,
+    mx::NodeGraphPtr * mxNodeGraph,
+    mx::NodePtr * mxNode)
+{
+    // Graph names are uniquified with mxDoc->createValidChildName in hdMtlx,
+    // so attempting to get the graph by the expected name may fail.
+    // Go to some extra effort to find the graph that contains the named node.
+
+    *mxNodeGraph = mxDoc->getNodeGraph(mxNodeGraphName);
+
+    if(*mxNodeGraph) {
+        *mxNode = (*mxNodeGraph)->getNode(mxNodeName);
+    }
+    if(!*mxNode) {
+        std::vector<mx::NodeGraphPtr> graphs = mxDoc->getNodeGraphs();
+        // first try last graph
+        if(graphs.size()) {
+            *mxNode =
+                (*(graphs.rbegin()))->getNode(mxNodeName);
+            if(*mxNode) {
+                *mxNodeGraph = *graphs.rbegin();
+            }
+        }
+        // Sometimes the above approach fails, so go looking
+        // through all the graph nodes for the texture
+        if(!*mxNode) {
+            for(auto graph : graphs) {
+                *mxNode = graph->getNode(mxNodeName);
+                if(*mxNode) {
+                    *mxNodeGraph = graph;
+                    break;
+                }
+            }
+        }
+    }
+    return (*mxNode != nullptr);
+}
 
 // Use the given mxDocument to generate osl source code for the node from the 
 // nodeGraph with the given names.
@@ -107,13 +162,21 @@ _GenMaterialXShaderCode(
     mxContext.getOptions().fileTextureVerticalFlip = false;
 
     // Get the Node from the Nodegraph/mxDoc 
-    mx::NodeGraphPtr mxNodeGraph = mxDoc->getNodeGraph(mxNodeGraphName);
-    if (!mxNodeGraph) {
+    mx::NodeGraphPtr mxNodeGraph;
+    mx::NodePtr mxNode;
+
+    _FindGraphAndNodeByName(mxDoc,
+                            mxNodeGraphName,
+                            mxNodeName,
+                            &mxNodeGraph,
+                            &mxNode);
+
+    if(!mxNodeGraph) {
         TF_WARN("NodeGraph '%s' not found in the mxDoc.",
                 mxNodeGraphName.c_str());
-        return mx::EMPTY_STRING;
-    }
-    mx::NodePtr mxNode = mxNodeGraph->getNode(mxNodeName);
+         return mx::EMPTY_STRING;
+   }
+
     if (!mxNode) {
         TF_WARN("Node '%s' not found in '%s' nodeGraph.",
                 mxNodeName.c_str(), mxNodeGraphName.c_str());
@@ -323,6 +386,10 @@ _UpdateNetwork(
                 SdrShaderNodeConstPtr sdrNode = 
                     sdrRegistry.GetShaderNodeByIdentifier(
                         netInterface->GetNodeType(upstreamNodeName));
+
+                if(!sdrNode) {
+                    continue;
+                }
 
                 // Update the connection into the terminal node so that the
                 // output makes it into the closure
@@ -560,8 +627,23 @@ _UpdateTextureNodes(
             std::string path = vFile.Get<SdfAssetPath>().GetResolvedPath();
             std::string ext = ArGetResolver().GetExtension(path);
 
+
+            mx::NodeGraphPtr mxNodeGraph;
+            mx::NodePtr mxTextureNode;
+
+            _FindGraphAndNodeByName(mxDoc,
+                                    texturePath.GetParentPath().GetName(),
+                                    texturePath.GetName(),
+                                    &mxNodeGraph,
+                                    &mxTextureNode);
+
+            if(!mxTextureNode) {
+                continue;
+            }
+
             // Update texture nodes that use non-native texture formats
             // to read them via a Renderman texture plugin.
+            bool needInvertT = false;
             if (!ext.empty() && ext != "tex") {
 
                 // Update the input value to use the Renderman texture plugin
@@ -578,20 +660,82 @@ _UpdateTextureNodes(
                 TF_DEBUG(HDPRMAN_IMAGE_ASSET_RESOLVE)
                     .Msg("Resolved MaterialX asset path: %s\n",
                          mxInputValue.c_str());
-                
+
                 // Update the MaterialX Texture Node with the new mxInputValue
-                const mx::NodeGraphPtr mxNodeGraph = 
-                    mxDoc->getNodeGraph(texturePath.GetParentPath().GetName());
-                const mx::NodePtr mxTextureNode = 
-                    mxNodeGraph->getNode(texturePath.GetName());
                 mxTextureNode->setInputValue(_tokens->file.GetText(), // name
                                              mxInputValue,            // value
                                              _tokens->filename.GetText());//type
             }
             else {
+                needInvertT = true;
+                // For tex files, update value with resolved path, because prman
+                // may not be able to find a usd relative path.
+                mxTextureNode->setInputValue(_tokens->file.GetText(), // name
+                                             path,                    // value
+                                             _tokens->filename.GetText());//type
                 TF_DEBUG(HDPRMAN_IMAGE_ASSET_RESOLVE)
                     .Msg("Resolved MaterialX asset path: %s\n",
                          path.c_str());
+            }
+
+            // If texcoord param isn't connected, make a default connection
+            // to a mtlx geompropvalue node.
+            mx::InputPtr texcoordInput =
+                mxTextureNode->getInput(_tokens->texcoord);
+            if(!texcoordInput) {
+                texcoordInput =
+                    mxTextureNode->addInput(_tokens->texcoord,
+                                            _tokens->vector2);
+                const std::string stNodeName =
+                    textureNodeName.GetString() + "__texcoord";
+
+                // Get the sdr node for the mxTexture node
+                SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
+                const SdrShaderNodeConstPtr sdrTextureNode =
+                    sdrRegistry.GetShaderNodeByIdentifierAndType(
+                        nodeType, _tokens->mtlx);
+                // Get the primvarname from the sdrTextureNode metadata
+                auto metadata = sdrTextureNode->GetMetadata();
+                auto primvarName = metadata[SdrNodeMetadata->Primvars];
+
+                mx::NodePtr geompropNode =
+                    mxNodeGraph->addNode(_tokens->geompropvalue,
+                                         stNodeName,
+                                         _tokens->vector2);
+                geompropNode->setInputValue(_tokens->geomprop,
+                                            primvarName, _tokens->string_type);
+                texcoordInput->setConnectedNode(geompropNode);
+                geompropNode->
+                    setNodeDefString(_tokens->ND_geompropvalue_vector2);
+            }
+            if(needInvertT) {
+                texcoordInput =
+                    mxTextureNode->getInput(_tokens->texcoord);
+                if(texcoordInput) {
+                    const std::string remapNodeName =
+                        textureNodeName.GetString() + "__remap";
+                    mx::NodePtr remapNode =
+                        mxNodeGraph->addNode(_tokens->remap,
+                                             remapNodeName,
+                                             _tokens->vector2);
+                    remapNode->
+                        setNodeDefString(_tokens->ND_remap_vector2);
+                    mx::InputPtr inInput =
+                        remapNode->addInput(_tokens->in,
+                                            _tokens->vector2);
+                    const mx::FloatVec inhigh = {1,0};
+                    const mx::FloatVec inlow = {0,1};
+                    remapNode->setInputValue(_tokens->inhigh,
+                                             inhigh,
+                                             _tokens->float2);
+                    remapNode->setInputValue(_tokens->inlow,
+                                             inlow,
+                                             _tokens->float2);
+                    mx::NodePtr primvarNode =
+                        texcoordInput->getConnectedNode();
+                    inInput->setConnectedNode(primvarNode);
+                    texcoordInput->setConnectedNode(remapNode);
+                }
             }
         }
     }
