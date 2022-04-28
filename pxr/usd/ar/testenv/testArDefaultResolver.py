@@ -58,30 +58,6 @@ class TestArDefaultResolver(unittest.TestCase):
         # Verify that the underlying resolver is an Ar.DefaultResolver.
         assert(isinstance(Ar.GetUnderlyingResolver(), Ar.DefaultResolver))
 
-    @unittest.skipIf(not hasattr(Ar.Resolver, "AnchorRelativePath"),
-                     "No AnchorRelativePath API")
-    def test_AnchorRelativePath(self):
-        r = Ar.GetResolver()
-
-        self.assertEqual('', r.AnchorRelativePath('', ''))
-        self.assertEqual('RelPath', r.AnchorRelativePath('', 'RelPath'))
-        self.assertEqual('', r.AnchorRelativePath('RelAnchor', ''))
-        self.assertEqual('RelPath',
-            r.AnchorRelativePath('RelAnchor', 'RelPath'))
-        self.assertEqual('/AbsolutePath',
-            r.AnchorRelativePath('/AbsoluteAnchor', '/AbsolutePath'))
-        self.assertEqual('/AbsolutePath/Subdir/FileRel.txt',
-            r.AnchorRelativePath('/AbsolutePath/ParentFile.txt', 
-                'Subdir/FileRel.txt'))
-        self.assertEqual('/AbsoluteAnchor/Subdir/FileRel.txt',
-            r.AnchorRelativePath('/AbsoluteAnchor/ParentFile.txt',
-                './Subdir/FileRel.txt'))
-        self.assertEqual('/AbsoluteAnchor/Subdir/FileRel.txt',
-            r.AnchorRelativePath('/AbsoluteAnchor/ParentDir/ParentFile.txt',
-                '../Subdir/FileRel.txt'))
-
-    @unittest.skipIf(not hasattr(Ar.Resolver, "CreateIdentifier"),
-                     "No CreateIdentifier API")
     def test_CreateIdentifier(self):
         r = Ar.GetResolver()
 
@@ -138,8 +114,6 @@ class TestArDefaultResolver(unittest.TestCase):
             'subdir/Bogus.txt',
             r.CreateIdentifier('subdir/Bogus.txt', _RP('dir/Anchor.txt')))
 
-    @unittest.skipIf(not hasattr(Ar.Resolver, "CreateIdentifierForNewAsset"),
-                     "No CreateIdentifierForNewAsset API")
     def test_CreateIdentifierForNewAsset(self):
         r = Ar.GetResolver()
 
@@ -346,8 +320,6 @@ class TestArDefaultResolver(unittest.TestCase):
 
         self.assertNotEqual(emptyContext, context)
 
-    @unittest.skipIf(not hasattr(Ar.Resolver, "ResolveForNewAsset"),
-                     "No ResolveForNewAsset API")
     def test_ResolveForNewAsset(self):
         resolver  = Ar.GetResolver()
 
@@ -384,8 +356,6 @@ class TestArDefaultResolver(unittest.TestCase):
                 'ResolveForNewAsset/test_ResolveForNewAsset.txt'),
             testFileAbsPath)
 
-    @unittest.skipIf(not hasattr(Ar.Resolver, "CreateContextFromString"),
-                     "No CreateContextFromString(s) API")
     def test_CreateContextFromString(self):
         resolver = Ar.GetResolver()
 

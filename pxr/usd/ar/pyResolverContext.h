@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -25,20 +25,35 @@
 #define PXR_USD_AR_PY_RESOLVER_CONTEXT_H
 
 /// \file ar/pyResolverContext.h
+/// Macros for creating Python bindings for objects used with 
+/// ArResolverContext.
+
+#include <boost/python/implicit.hpp>
 
 #include "pxr/pxr.h"
-#include "pxr/usd/ar/ar.h"
+#include "pxr/usd/ar/resolverContext.h"
 
-#define INCLUDE_AR_PY_RESOLVER_CONTEXT
+PXR_NAMESPACE_OPEN_SCOPE
 
-#if AR_VERSION == 1
-#include "pxr/usd/ar/pyResolverContext_v1.h"
-#elif AR_VERSION == 2
-#include "pxr/usd/ar/pyResolverContext_v2.h"
-#else
-#error Unhandled AR_VERSION
+/// Register the specified type as a context object that may be converted from
+/// Python into a ArResolverContext object in C++.  This typically would be
+/// called in the source file where the Python wrapping for the context object
+/// is defined.
+template <class Context>
+void 
+ArWrapResolverContextForPython();
+
+#ifndef doxygen
+
+template <class Context>
+void 
+ArWrapResolverContextForPython()
+{
+    boost::python::implicitly_convertible<Context, ArResolverContext>();
+};
+
+#endif //doxygen
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif
-
-#undef INCLUDE_AR_PY_RESOLVER_CONTEXT
-
-#endif // PXR_USD_AR_PY_RESOLVER_CONTEXT_H
