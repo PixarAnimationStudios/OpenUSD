@@ -273,6 +273,18 @@ struct Tf_Enum {
         Bet,
         Gimel
     };
+    enum class TestKeywords {
+        // Example keywords specific to Python 3
+        None,
+        False,
+        True,
+        // Example keywords specific to Python 2
+        print,
+        // Example keywords common to Python 2 and 3
+        import,
+        global,
+            
+    };
 };
 
 
@@ -308,6 +320,15 @@ TF_REGISTRY_FUNCTION(TfEnum) {
     TF_ADD_ENUM_NAME(Tf_TestScopedEnum::Boron, "B");
 }
 
+TF_REGISTRY_FUNCTION(TfEnum) {
+    TF_ADD_ENUM_NAME(Tf_Enum::TestKeywords::None);
+    TF_ADD_ENUM_NAME(Tf_Enum::TestKeywords::False, "False");
+    TF_ADD_ENUM_NAME(Tf_Enum::TestKeywords::True, "True");
+    TF_ADD_ENUM_NAME(Tf_Enum::TestKeywords::print, "print");
+    TF_ADD_ENUM_NAME(Tf_Enum::TestKeywords::import);
+    TF_ADD_ENUM_NAME(Tf_Enum::TestKeywords::global, "global");
+}
+    
 static void takesTfEnum(TfEnum const &e) {
     printf("got enum '%s' with value '%d'\n",
            TfEnum::GetName(e).c_str(), e.GetValueAsInt());
@@ -505,6 +526,7 @@ void wrapTf_TestTfPython()
         scope enumScope = class_<Tf_Enum>("_Enum", no_init);
         TfPyWrapEnum<Tf_Enum::TestEnum2>();
         TfPyWrapEnum<Tf_Enum::TestScopedEnum>();
+        TfPyWrapEnum<Tf_Enum::TestKeywords>();
     }
 
     TfPyWrapEnum<Tf_TestScopedEnum>();

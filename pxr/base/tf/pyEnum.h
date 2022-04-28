@@ -315,10 +315,15 @@ struct Tf_TypedPyEnumWrapper : Tf_PyEnumWrapper
     }
 };
 
-// Removes the MFB package prefix from name if it starts with it, and replaces
-// spaces with underscores.
+// Sanitizes the given \p name for use as a Python identifier. This includes
+// replacing spaces with '_' and appending '_' to names matching Python 
+// keywords.
+// 
+// If \p stripPackageName is true and \p name begins with the package name,
+// it will be stripped off.
 TF_API
-std::string Tf_PyCleanEnumName(std::string name);
+std::string Tf_PyCleanEnumName(std::string name,
+                               bool stripPackageName = false);
 
 // Adds attribute of given name with given value to given scope.
 // Issues a coding error if attribute by that name already existed.
@@ -406,12 +411,16 @@ public:
             enumName = TfStringGetSuffix(enumName);
 
         // If the name was not explicitly given, then clean it up by removing
-        // the mfb package name prefix if it exists.
+        // the package name prefix if it exists.
         if (!explicitName) {
-            if (!baseName.empty())
-                baseName = Tf_PyCleanEnumName(baseName);
-            else
-                enumName = Tf_PyCleanEnumName(enumName);
+            if (!baseName.empty()) {
+                baseName = Tf_PyCleanEnumName(
+                    baseName, /* stripPackageName = */ true);
+            }
+            else {
+                enumName = Tf_PyCleanEnumName(
+                    enumName, /* stripPackageName = */ true);
+            }
         }
         
         if (IsScopedEnum) {
@@ -432,9 +441,14 @@ public:
         // Register conversions for it.
         Tf_PyEnumRegistry::GetInstance().RegisterEnumConversions<T>();
 
-        // Export values.  Only clean names if basename is empty (i.e. the enum
-        // is top-level).
-        _ExportValues(baseName.empty(), enumClass);
+        // Export values.
+        //
+        // Only strip the package name from top-level enum values.
+        // For example, if an enum named "Foo" is declared at top-level
+        // scope in Tf with values "TfBar" and "TfBaz", we want to strip
+        // off Tf so that the values in Python will be Tf.Bar and Tf.Baz.
+        const bool stripPackageName = baseName.empty();
+        _ExportValues(stripPackageName, enumClass);
 
         // Register with Tf so that python clients of a TfType
         // that represents an enum are able to get to the equivalent 
@@ -449,19 +463,18 @@ public:
     /// Export all values in this enum to the enclosing scope.
     /// If no explicit names have been registered, this will export the TfEnum
     /// registered names and values (if any).
-    void _ExportValues(bool cleanNames, _EnumPyClassType &enumClass) {
+    void _ExportValues(bool stripPackageName, _EnumPyClassType &enumClass) {
         boost::python::list valueList;
 
-        std::vector<std::string> names = TfEnum::GetAllNames<T>();
-        TF_FOR_ALL(name, names) {
+        for (const std::string& name : TfEnum::GetAllNames<T>()) {
             bool success = false;
-            TfEnum enumValue = TfEnum::GetValueFromName<T>(*name, &success);
+            TfEnum enumValue = TfEnum::GetValueFromName<T>(name, &success);
             if (!success) {
                 continue;
             }
 
-            std::string cleanedName = cleanNames ?
-                Tf_PyCleanEnumName(*name) : *name;
+            const std::string cleanedName = 
+                Tf_PyCleanEnumName(name, stripPackageName);
 
             // convert value to python.
             Tf_TypedPyEnumWrapper<T> wrappedValue(cleanedName, enumValue);
