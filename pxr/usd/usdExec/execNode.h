@@ -176,6 +176,162 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+     // -------------------------------------------------------------------------
+    /// \name Conversion to and from UsdExecConnectableAPI
+    /// 
+    /// @{
+
+    /// Constructor that takes a ConnectableAPI object.
+    /// Allow implicit (auto) conversion of UsdExecNode to 
+    /// UsdExecConnectableAPI, so that a ExecNode can be passed into any function
+    /// that accepts a ConnectableAPI.
+    USDEXEC_API
+    UsdExecNode(const UsdExecConnectableAPI &connectable);
+
+    /// Contructs and returns a UsdExecConnectableAPI object with this shader.
+    ///
+    /// Note that most tasks can be accomplished without explicitly constructing 
+    /// a UsdExecConnectable API, since connection-related API such as
+    /// UsdExecConnectableAPI::ConnectToSource() are static methods, and 
+    /// UsdExecNode will auto-convert to a UsdExecConnectableAPI when 
+    /// passed to functions that want to act generically on a connectable
+    /// UsdExecConnectableAPI object.
+    USDEXEC_API
+    UsdExecConnectableAPI ConnectableAPI() const;
+
+    /// @}
+
+    // -------------------------------------------------------------------------
+    /// \name Outputs API
+    ///
+    /// Outputs represent a typed attribute on a shader or node-graph whose value 
+    /// is computed externally. 
+    /// 
+    /// When they exist on a node-graph, they are connectable and are typically 
+    /// connected to the output of a shader within the node-graph.
+    /// 
+    /// @{
+        
+    /// Create an output which can either have a value or can be connected.
+    /// The attribute representing the output is created in the "outputs:" 
+    /// namespace. Outputs on a shader cannot be connected, as their 
+    /// value is assumed to be computed externally.
+    /// 
+    USDEXEC_API
+    UsdExecOutput CreateOutput(const TfToken& name,
+                                const SdfValueTypeName& typeName);
+
+    /// Return the requested output if it exists.
+    /// 
+    USDEXEC_API
+    UsdExecOutput GetOutput(const TfToken &name) const;
+
+    /// Outputs are represented by attributes in the "outputs:" namespace.
+    /// If \p onlyAuthored is true (the default), then only return authored
+    /// attributes; otherwise, this also returns un-authored builtins.
+    /// 
+    USDEXEC_API
+    std::vector<UsdExecOutput> GetOutputs(bool onlyAuthored=true) const;
+
+    /// @}
+
+    // ------------------------------------------------------------------------- 
+
+    /// \name Inputs API
+    ///
+    /// Inputs are connectable attribute with a typed value. 
+    /// 
+    /// On Exec Node, the parameters are encoded as inputs. On Exec Graph,
+    /// interface attributes are represented as inputs.
+    /// 
+    /// @{
+        
+    /// Create an input which can either have a value or can be connected.
+    /// The attribute representing the input is created in the "inputs:" 
+    /// namespace. Inputs on both ExecNode and ExecGraph are connectable.
+    /// 
+    USDEXEC_API
+    UsdExecInput CreateInput(const TfToken& name,
+                              const SdfValueTypeName& typeName);
+
+    /// Return the requested input if it exists.
+    /// 
+    USDEXEC_API
+    UsdExecInput GetInput(const TfToken &name) const;
+
+    /// Inputs are represented by attributes in the "inputs:" namespace.
+    /// If \p onlyAuthored is true (the default), then only return authored
+    /// attributes; otherwise, this also returns un-authored builtins.
+    /// 
+    USDEXEC_API
+    std::vector<UsdExecInput> GetInputs(bool onlyAuthored=true) const;
+
+    /// @}
+
+    // -------------------------------------------------------------------------
+
+    /// \anchor UsdExecNode_ExecMetadata_API
+    /// \name Exec Node Metadata API
+    /// 
+    /// This section provides API for authoring and querying node registry
+    /// metadata. When the node's implementationSource is <b>sourceAsset</b> 
+    /// or <b>sourceCode</b>, the authored "execMetadata" dictionary value 
+    /// provides additional metadata needed to process the node source
+    /// correctly. It is used in combination with the sourceAsset or sourceCode
+    /// value to fetch the appropriate node from the node registry.
+    /// 
+    /// We expect the keys in execMetadata to correspond to the keys 
+    /// in \ref SdrNodeMetadata. However, this is not strictly enforced in the 
+    /// API. The only allowed value type in the "execMetadata" dictionary is a 
+    /// std::string since it needs to be converted into a NdrTokenMap, which Sdr
+    /// will parse using the utilities available in \ref ExecMetadataHelpers.
+    /// 
+    /// @{
+
+    /// Returns this node's composed "execMetadata" dictionary as a 
+    /// NdrTokenMap.
+    USDEXEC_API
+    NdrTokenMap GetExecMetadata() const;
+    
+    /// Returns the value corresponding to \p key in the composed 
+    /// <b>execMetadata</b> dictionary.
+    USDEXEC_API
+    std::string GetExecMetadataByKey(const TfToken &key) const;
+        
+    /// Authors the given \p execMetadata on this node at the current 
+    /// EditTarget.
+    USDEXEC_API
+    void SetExecMetadata(const NdrTokenMap &execMetadata) const;
+
+    /// Sets the value corresponding to \p key to the given string \p value, in 
+    /// the node's "execMetadata" dictionary at the current EditTarget.
+    USDEXEC_API
+    void SetExecMetadataByKey(
+        const TfToken &key, 
+        const std::string &value) const;
+
+    /// Returns true if the node has a non-empty composed "execMetadata" 
+    /// dictionary value.
+    USDEXEC_API
+    bool HasExecMetadata() const;
+
+    /// Returns true if there is a value corresponding to the given \p key in 
+    /// the composed "execMetadata" dictionary.
+    USDEXEC_API
+    bool HasExecMetadataByKey(const TfToken &key) const;
+
+    /// Clears any "execMetadata" value authored on the node in the current 
+    /// EditTarget.
+    USDEXEC_API
+    void ClearExecMetadata() const;
+
+    /// Clears the entry corresponding to the given \p key in the 
+    /// "execMetadata" dictionary authored in the current EditTarget.
+    USDEXEC_API
+    void ClearExecMetadataByKey(const TfToken &key) const;
+
+    /// @}
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

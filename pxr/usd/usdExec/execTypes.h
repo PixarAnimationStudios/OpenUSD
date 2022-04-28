@@ -45,7 +45,7 @@ enum class UsdExecConnectionModification {
 /// use a small vector that can be stack allocated that holds space for a single
 /// attributes, but that can "spill" to the heap in the case of multiple
 /// upstream attributes.
-using UsdExecAttributeVector = TfSmallVector<UsdAttribute, 1>;
+using UsdExecAttributeVector = TfSmallVector<UsdAttribute, 2>;
 
 /// \typedef UsdExecSourceInfoVector
 ///
@@ -58,7 +58,7 @@ using UsdExecAttributeVector = TfSmallVector<UsdAttribute, 1>;
 ///
 /// /sa UsdExecConnectionSourceInfo in connectableAPI.h
 struct UsdExecConnectionSourceInfo;
-using UsdExecSourceInfoVector = TfSmallVector<UsdExecConnectionSourceInfo, 1>;
+using UsdExecSourceInfoVector = TfSmallVector<UsdExecConnectionSourceInfo, 2>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

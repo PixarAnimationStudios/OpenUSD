@@ -350,7 +350,7 @@ public:
     bool SetConnectedSources(
         std::vector<UsdExecConnectionSourceInfo> const &sourceInfos) const;
 
-    using SourceInfoVector = TfSmallVector<UsdExecConnectionSourceInfo, 1>;
+    using SourceInfoVector = TfSmallVector<UsdExecConnectionSourceInfo, 2>;
 
     /// Finds the valid sources of connections for the Input.
     /// 

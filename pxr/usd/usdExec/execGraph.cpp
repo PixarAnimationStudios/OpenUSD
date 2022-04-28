@@ -127,3 +127,252 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usd/primRange.h"
+#include "pxr/usd/usdExec/execConnectableAPI.h"
+#include "pxr/usd/usdExec/execUtils.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+UsdExecGraph::UsdExecGraph(const UsdExecConnectableAPI &connectable)
+    : UsdExecGraph(connectable.GetPrim())
+{
+}
+
+UsdExecConnectableAPI 
+UsdExecGraph::ConnectableAPI() const
+{
+    return UsdExecConnectableAPI(GetPrim());
+}
+
+UsdExecOutput
+UsdExecGraph::CreateOutput(const TfToken& name,
+                             const SdfValueTypeName& typeName) const
+{
+    return UsdExecConnectableAPI(GetPrim()).CreateOutput(name, typeName);
+}
+
+UsdExecOutput
+UsdExecGraph::GetOutput(const TfToken &name) const
+{
+    return UsdExecConnectableAPI(GetPrim()).GetOutput(name);
+}
+
+std::vector<UsdExecOutput>
+UsdExecGraph::GetOutputs(bool onlyAuthored) const
+{
+    return UsdExecConnectableAPI(GetPrim()).GetOutputs(onlyAuthored);
+}
+
+UsdExecNode
+UsdExecGraph::ComputeOutputSource(
+    const TfToken &outputName,
+    TfToken *sourceName,
+    UsdExecAttributeType *sourceType) const
+{
+    // Check that we have a legit output
+    UsdExecOutput output = GetOutput(outputName);
+    if (!output) {
+        return UsdExecNode();
+    }
+
+    UsdExecAttributeVector valueAttrs =
+        UsdExecUtils::GetValueProducingAttributes(output);
+
+    if (valueAttrs.empty()) {
+        return UsdExecNode();
+    }
+
+    if (valueAttrs.size() > 1) {
+        TF_WARN("Found multiple upstream attributes for output %s on NodeGraph "
+                "%s. ComputeOutputSource will only report the first upsteam "
+                "UsdExecNode. Please use GetValueProducingAttributes to "
+                "retrieve all.", outputName.GetText(), GetPath().GetText());
+    }
+
+    UsdAttribute attr = valueAttrs[0];
+    std::tie(*sourceName, *sourceType) =
+        UsdExecUtils::GetBaseNameAndType(attr.GetName());
+
+    UsdExecNode node(attr.GetPrim());
+
+    if (*sourceType != UsdExecAttributeType::Output || !node) {
+        return UsdExecNode();
+    }
+
+    return node;
+}
+
+UsdExecInput
+UsdExecGraph::CreateInput(const TfToken& name,
+                              const SdfValueTypeName& typeName) const
+{
+    return UsdExecConnectableAPI(GetPrim()).CreateInput(name, typeName);
+}
+
+UsdExecInput
+UsdExecGraph::GetInput(const TfToken &name) const
+{
+    return UsdExecConnectableAPI(GetPrim()).GetInput(name);
+}
+
+std::vector<UsdExecInput>
+UsdExecGraph::GetInputs(bool onlyAuthored) const
+{
+    return UsdExecConnectableAPI(GetPrim()).GetInputs(onlyAuthored);
+}
+
+std::vector<UsdExecInput> 
+UsdExecGraph::GetInterfaceInputs() const
+{
+    return GetInputs();
+}
+
+static bool 
+_IsValidInput(UsdExecConnectableAPI const &source, 
+              UsdExecAttributeType const sourceType) 
+{
+    return (sourceType == UsdExecAttributeType::Input);
+}
+
+static
+UsdExecGraph::ExecInterfaceInputConsumersMap 
+_ComputeNonTransitiveInputConsumersMap(
+    const UsdExecGraph &nodeGraph)
+{
+    UsdExecGraph::ExecInterfaceInputConsumersMap result;
+
+    for (const auto& input : nodeGraph.GetInputs()) {
+        result[input] = {};
+    }
+
+    // XXX: This traversal isn't instancing aware. We must update this 
+    // once we have instancing aware USD objects. See http://bug/126053
+    for (UsdPrim prim: nodeGraph.GetPrim().GetDescendants()) {
+
+        UsdExecConnectableAPI connectable(prim);
+        if (!connectable)
+            continue;
+
+        std::vector<UsdExecInput> internalInputs = connectable.GetInputs();
+        for (const auto &internalInput: internalInputs) {
+            UsdExecConnectableAPI source;
+            TfToken sourceName;
+            UsdExecAttributeType sourceType;
+            if (UsdExecConnectableAPI::GetConnectedSource(internalInput,
+                    &source, &sourceName, &sourceType)) {
+                if (source.GetPrim() == nodeGraph.GetPrim() && 
+                    _IsValidInput(source, sourceType))
+                {
+                    result[nodeGraph.GetInput(sourceName)].push_back(
+                        internalInput);
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+static 
+void
+_RecursiveComputeNodeGraphInterfaceInputConsumers(
+    const UsdExecGraph::ExecInterfaceInputConsumersMap &inputConsumersMap,
+    UsdExecGraph::ExecGraphInputConsumersMap *nodeGraphInputConsumers)
+{
+    for (const auto &inputAndConsumers : inputConsumersMap) {
+        const std::vector<UsdExecInput> &consumers = inputAndConsumers.second;
+        for (const UsdExecInput &consumer: consumers) {
+            UsdExecConnectableAPI connectable(consumer.GetAttr().GetPrim());
+            if (connectable.GetPrim().IsA<UsdExecGraph>()) {
+                if (!nodeGraphInputConsumers->count(connectable)) {
+
+                    const auto &irMap = _ComputeNonTransitiveInputConsumersMap(
+                        UsdExecGraph(connectable));
+                    (*nodeGraphInputConsumers)[connectable] = irMap;
+                    
+                    _RecursiveComputeNodeGraphInterfaceInputConsumers(irMap, 
+                        nodeGraphInputConsumers);
+                }
+            }
+        }
+    }
+}
+
+static 
+void
+_ResolveConsumers(const UsdExecInput &consumer, 
+                   const UsdExecGraph::ExecGraphInputConsumersMap 
+                        &nodeGraphInputConsumers,
+                   std::vector<UsdExecInput> *resolvedConsumers) 
+{
+    UsdExecGraph consumerNodeGraph(consumer.GetAttr().GetPrim());
+    if (!consumerNodeGraph) {
+        resolvedConsumers->push_back(consumer);
+        return;
+    }
+
+    const auto &nodeGraphIt = nodeGraphInputConsumers.find(consumerNodeGraph);
+    if (nodeGraphIt != nodeGraphInputConsumers.end()) {
+        const UsdExecGraph::ExecInterfaceInputConsumersMap &inputConsumers = 
+            nodeGraphIt->second;
+
+        const auto &inputIt = inputConsumers.find(consumer);
+        if (inputIt != inputConsumers.end()) {
+            const auto &consumers = inputIt->second;
+            if (!consumers.empty()) {
+                for (const auto &nestedConsumer : consumers) {
+                    _ResolveConsumers(nestedConsumer, nodeGraphInputConsumers, 
+                                    resolvedConsumers);
+                }
+            } else {
+                // If the node-graph input has no consumers, then add it to 
+                // the list of resolved consumers.
+                resolvedConsumers->push_back(consumer);
+            }
+        }
+    } else {
+        resolvedConsumers->push_back(consumer);
+    }
+}
+
+UsdExecGraph::ExecInterfaceInputConsumersMap 
+UsdExecGraph::ComputeExecInterfaceInputConsumersMap(
+    bool computeTransitiveConsumers) const
+{
+    ExecInterfaceInputConsumersMap result = 
+        _ComputeNonTransitiveInputConsumersMap(*this);
+
+    if (!computeTransitiveConsumers)
+        return result;
+
+    // Collect all node-graphs for which we must compute the input-consumers map.
+    ExecGraphInputConsumersMap nodeGraphInputConsumers;
+    _RecursiveComputeNodeGraphInterfaceInputConsumers(result, 
+                                                      &nodeGraphInputConsumers);
+
+    // If the are no consumers belonging to node-graphs, we're done.
+    if (nodeGraphInputConsumers.empty())
+        return result;
+
+    ExecInterfaceInputConsumersMap resolved;
+    for (const auto &inputAndConsumers : result) {
+        const std::vector<UsdExecInput> &consumers = inputAndConsumers.second;
+
+        std::vector<UsdExecInput> resolvedConsumers;
+        for (const UsdExecInput &consumer: consumers) {
+            std::vector<UsdExecInput> nestedConsumers;
+            _ResolveConsumers(consumer, nodeGraphInputConsumers, 
+                              &nestedConsumers);
+
+            resolvedConsumers.insert(resolvedConsumers.end(), 
+                nestedConsumers.begin(), nestedConsumers.end());
+        }
+
+        resolved[inputAndConsumers.first] = resolvedConsumers;
+    }
+
+    return resolved;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
