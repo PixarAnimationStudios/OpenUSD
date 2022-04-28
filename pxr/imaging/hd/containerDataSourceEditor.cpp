@@ -24,7 +24,6 @@
 #include "pxr/imaging/hd/containerDataSourceEditor.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/base/tf/denseHashSet.h"
-#include "pxr/base/tf/iterator.h"
 
 #include <algorithm>
 
@@ -113,13 +112,9 @@ HdContainerDataSourceEditor::Finish()
     if (_initialContainer) {
 
         if (_directContainerSets.empty()) {
-            HdContainerDataSourceHandle containers[] = {
-                _NodeContainerDataSource::New(_root),
-                _initialContainer,
-            };
-
             return HdOverlayContainerDataSource::New(
-                TfArraySize(containers), containers);
+                _NodeContainerDataSource::New(_root),
+                _initialContainer);
         } else {
 
             static const HdBlockDataSourceHandle block =
@@ -140,14 +135,10 @@ HdContainerDataSourceEditor::Finish()
                 blocksEditor.Set(loc, block);
             }
 
-            HdContainerDataSourceHandle containers[] = {
+            return HdOverlayContainerDataSource::New(
                 _NodeContainerDataSource::New(_root),
                 blocksEditor._FinishWithNoInitialContainer(),
-                _initialContainer,
-            };
-
-            return HdOverlayContainerDataSource::New(TfArraySize(containers),
-                containers);
+                _initialContainer);
         }
 
     } else {
@@ -218,12 +209,9 @@ HdContainerDataSourceEditor::_NodeContainerDataSource::Get(const TfToken &name)
             if (!entry.childNode) {
                 return container;
             } else {
-                HdContainerDataSourceHandle containers[] = {
-                    _NodeContainerDataSource::New(entry.childNode),
-                    container,
-                };
                 return HdOverlayContainerDataSource::New(
-                    TfArraySize(containers), containers);
+                    _NodeContainerDataSource::New(entry.childNode),
+                    container);
             }
         } else if (entry.dataSource) {
             return entry.dataSource;
