@@ -299,7 +299,7 @@ public:
         std::vector<UsdExecConnectionSourceInfo> const &sourceInfos) const;
 
     // XXX move to new header
-    using SourceInfoVector = TfSmallVector<UsdExecConnectionSourceInfo, 1>;
+    using SourceInfoVector = TfSmallVector<UsdExecConnectionSourceInfo, 2>;
 
     /// Finds the valid sources of connections for the Output.
     /// 

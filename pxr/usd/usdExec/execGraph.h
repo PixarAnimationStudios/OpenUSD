@@ -66,7 +66,7 @@ class SdfAssetPath;
 /// 
 /// One of the most important functions of a exec-graph is to host the "interface"
 /// with which clients of already-built execution networks will interact.  Please
-/// see \ref ExecNodeGraph_Interfaces "Interface Inputs" for a detailed
+/// see \ref ExecGraph_Interfaces "Interface Inputs" for a detailed
 /// explanation of what the interface provides, and how to construct and
 /// use it, to effectively share/instance execution networks.
 /// 
@@ -181,6 +181,202 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Constructor that takes a ConnectableAPI object.
+    /// Allow implicit (auto) conversion of UsdExecGraph to 
+    /// UsdExecConnectableAPI, so that a NodeGraph can be passed into any 
+    /// function that accepts a ConnectableAPI.
+    USDEXEC_API
+    UsdExecGraph(const UsdExecConnectableAPI &connectable);
+
+    /// Contructs and returns a UsdExecConnectableAPI object with this 
+    /// node-graph.
+    /// 
+    /// Note that most tasks can be accomplished without explicitly constructing 
+    /// a UsdExecConnectable API, since connection-related API such as
+    /// UsdExecConnectableAPI::ConnectToSource() are static methods, and 
+    /// UsdExecGraph will auto-convert to a UsdExecConnectableAPI when 
+    /// passed to functions that want to act generically on a connectable
+    /// UsdExecConnectableAPI object.
+    USDEXEC_API
+    UsdExecConnectableAPI ConnectableAPI() const;
+
+    /// \anchor UsdExecGraph_Output
+    /// \name Outputs of a node-graph. These typically connect to outputs of 
+    /// shaders or nested node-graphs within the node-graph.
+    /// 
+    /// @{
+
+    /// Create an output which can either have a value or can be connected.
+    /// The attribute representing the output is created in the "outputs:" 
+    /// namespace.
+    /// 
+    USDEXEC_API
+    UsdExecOutput CreateOutput(const TfToken& name,
+                                const SdfValueTypeName& typeName) const;
+
+    /// Return the requested output if it exists.
+    /// 
+    USDEXEC_API
+    UsdExecOutput GetOutput(const TfToken &name) const;
+
+    /// Outputs are represented by attributes in the "outputs:" namespace.
+    /// If \p onlyAuthored is true (the default), then only return authored
+    /// attributes; otherwise, this also returns un-authored builtins.
+    ///
+    USDEXEC_API
+    std::vector<UsdExecOutput> GetOutputs(bool onlyAuthored=true) const;
+
+    /// \deprecated in favor of GetValueProducingAttributes on UsdExecOutput
+    /// Resolves the connection source of the requested output, identified by
+    /// \p outputName to a shader output.
+    /// 
+    /// \p sourceName is an output parameter that is set to the name of the 
+    /// resolved output, if the node-graph output is connected to a valid 
+    /// shader source.
+    ///
+    /// \p sourceType is an output parameter that is set to the type of the 
+    /// resolved output, if the node-graph output is connected to a valid 
+    /// shader source.
+    /// 
+    /// \return Returns a valid shader object if the specified output exists and 
+    /// is connected to one. Return an empty shader object otherwise.
+    /// The python version of this method returns a tuple containing three 
+    /// elements (the source shader, sourceName, sourceType).
+    USDEXEC_API
+    UsdExecNode ComputeOutputSource(
+        const TfToken &outputName, 
+        TfToken *sourceName, 
+        UsdExecAttributeType *sourceType) const;
+
+    /// @}
+
+    /// \anchor UsdExecGraph_Interfaces
+    /// \name Interface inputs of a node-graph. 
+    ///
+    /// In addition to serving as the "head" for all of the shading networks
+    /// that describe each render target's particular node-graph, the node-graph
+    /// prim provides a unified "interface" that allows node-graphs to share 
+    /// shading networks while retaining the ability for each to specify its own
+    /// set of unique values for the interface inputs that users may need to 
+    /// modify.
+    ///
+    /// A "Node-graph Interface" is a combination of:
+    /// \li a flat collection of attributes, of arbitrary names
+    /// \li for each such attribute, a list of UsdExecrInput targets
+    /// whose attributes on Shader prims should be driven by the interface
+    /// input.
+    ///
+    /// A single interface input can drive multiple shader inputs and be 
+    /// consumed by multiple render targets. The set of interface inputs itself 
+    /// is intentionally flat, to encourage sharing of the interface between 
+    /// render targets.  Clients are always free to create interface inputs with 
+    /// namespacing to segregate "private" attributes exclusive to the render 
+    /// target, but we hope this will be an exception.
+    ///
+    /// To facilitate connecting, qualifying, and interrogating interface
+    /// attributes, we use the attribute schema UsdExecInput, which also
+    /// serves as an abstraction for shader inputs.
+    ///
+    /// <b>Scoped Interfaces</b>
+    ///
+    /// \todo describe scoped interfaces and fix bug/108940 to account for them.
+    ///
+    /// @{
+
+    /// Create an Input which can either have a value or can be connected.
+    /// The attribute representing the input is created in the "inputs:" 
+    /// namespace.
+    /// 
+    /// \todo clarify error behavior if typeName does not match existing,
+    /// defined attribute - should match UsdPrim::CreateAttribute - bug/108970
+    ///
+    USDEXEC_API
+    UsdExecInput CreateInput(const TfToken& name,
+                              const SdfValueTypeName& typeName) const;
+
+    /// Return the requested input if it exists.
+    /// 
+    USDEXEC_API
+    UsdExecInput GetInput(const TfToken &name) const;
+
+    /// Returns all inputs present on the node-graph. These are represented by
+    /// attributes in the "inputs:" namespace.
+    /// If \p onlyAuthored is true (the default), then only return authored
+    /// attributes; otherwise, this also returns un-authored builtins.
+    ///
+    USDEXEC_API
+    std::vector<UsdExecInput> GetInputs(bool onlyAuthored=true) const;
+    
+    /// @}
+
+    // Provide custom hash and equality comparison function objects for 
+    // UsdExecGraph until bug 143077 is resolved.
+
+    /// Hash functor for UsdExecGraph objects.
+    struct ExecGraphHasher {
+        inline size_t operator()(const UsdExecGraph &nodeGraph) const {
+            return hash_value(nodeGraph.GetPrim());
+        }
+    };
+    /// Equality comparator for UsdExecGraph objects.
+    struct ExecGraphEqualFn
+    {
+        inline bool operator() (UsdExecGraph const& s1, 
+                                UsdExecGraph const& s2) const
+        {
+            return s1.GetPrim() == s2.GetPrim();
+        }
+    };
+
+    // ---------------------------------------------------------------------- //
+    /// \anchor UsdExecGraph_InterfaceInputs
+    /// \name Interface Inputs
+    /// 
+    /// API to query the inputs that form the interface of the node-graph and 
+    /// their connections.
+    /// 
+    /// @{
+        
+    /// Returns all the "Interface Inputs" of the node-graph. This is the same 
+    /// as GetInputs(), but is provided  as a convenience, to allow clients to
+    /// distinguish between inputs on shaders vs. interface-inputs on 
+    /// node-graphs.
+    USDEXEC_API
+    std::vector<UsdExecInput> GetInterfaceInputs() const;
+
+    /// Map of interface inputs to corresponding vectors of inputs that 
+    /// consume their values.
+    typedef std::unordered_map<UsdExecInput, std::vector<UsdExecInput>, 
+        UsdExecInput::Hash> ExecInterfaceInputConsumersMap;
+
+    /// Map of node-graphs to their associated input-consumers map.
+    typedef std::unordered_map<UsdExecGraph,
+                               ExecInterfaceInputConsumersMap, 
+                               ExecGraphHasher,
+                               ExecGraphEqualFn> 
+            ExecGraphInputConsumersMap;
+
+    /// Walks the namespace subtree below the node-graph and computes a map 
+    /// containing the list of all inputs on the node-graph and the associated 
+    /// vector of consumers of their values. The consumers can be inputs on 
+    /// shaders within the node-graph or on nested node-graphs).
+    /// 
+    /// If \p computeTransitiveConsumers is true, then value consumers
+    /// belonging to <b>node-graphs</b> are resolved transitively to compute the 
+    /// transitive mapping from inputs on the node-graph to inputs on shaders 
+    /// inside the material. Note that inputs on node-graphs that don't have 
+    /// value consumers will continue to be included in the result.
+    /// 
+    /// This API is provided for use by DCC's that want to present node-graph
+    /// interface / shader connections in the opposite direction than they are 
+    /// encoded in USD.
+    /// 
+    USDEXEC_API
+    ExecInterfaceInputConsumersMap ComputeExecInterfaceInputConsumersMap(
+        bool computeTransitiveConsumers=false) const;
+
+    /// @}
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
