@@ -41,23 +41,11 @@
 --- --------------------------------------------------------------------------
 -- glsl ViewFrustumCull.Counting
 
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-layout (std430, binding = drawIndirectResult_Binding) buffer ResultData {
-    int numVisibleInstances;
-};
-
-void
-FrustumCullCountVisibleInstances(int resultInstanceCount)
-{
-    ATOMIC_ADD(numVisibleInstances, resultInstanceCount);
-}
-#else
 void
 FrustumCullCountVisibleInstances(int resultInstanceCount)
 {
     ATOMIC_ADD(numVisibleInstances[0], resultInstanceCount);
 }
-#endif
 
 --- --------------------------------------------------------------------------
 -- glsl ViewFrustumCull.NoCounting
@@ -174,21 +162,6 @@ FrustumCullIsVisible(MAT4 toClip, vec4 localMin, vec4 localMax, vec2 drawRangeND
 --- --------------------------------------------------------------------------
 -- glsl ViewFrustumCull.Vertex
 
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-layout (location = instanceCountInput_Binding) in int instanceCountInput;
-layout (location = drawCommandIndex_Binding) in int drawCommandIndex;
-
-layout(std140, binding=ulocCullParams_Binding) uniform Uniforms {
-    mat4 cullMatrix;
-    vec2 drawRangeNDC;
-    uint drawCommandNumUints;
-};
-
-layout (std430, binding = dispatchBuffer_Binding) buffer DispatchBuffer {
-    uint drawCommands[];
-};
-#endif
-
 MAT4 GetCullMatrix()
 {
     return MAT4(cullMatrix);
@@ -283,21 +256,6 @@ void main()
    +-----------+---------------+-----------+
                             x:undefined value
 */
-
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-layout (location = drawCommandIndex_Binding) in int drawCommandIndex;
-
-layout(std140, binding=ulocCullParams_Binding) uniform Uniforms {
-    mat4 cullMatrix;
-    vec2 drawRangeNDC;
-    uint drawCommandNumUints;
-    int resetPass;
-};
-
-layout (std430, binding = dispatchBuffer_Binding) buffer DispatchBuffer {
-    uint drawCommands[];
-};
-#endif
 
 MAT4 GetCullMatrix()
 {
