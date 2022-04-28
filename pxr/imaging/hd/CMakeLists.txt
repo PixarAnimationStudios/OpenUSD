@@ -90,6 +90,7 @@ pxr_library(hd
         legacyPrimSceneIndex
         light
         lightSchema
+        mapContainerDataSource
         material
         materialBindingSchema
         materialConnectionSchema
