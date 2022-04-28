@@ -42,16 +42,9 @@ void
 UsdImaging_CollectionCache::_MarkCollectionContentDirty(UsdStageWeakPtr const& stage, 
     UsdCollectionAPI::MembershipQuery const& query)
 {
-    if(query.HasExcludes())
-    {
-        // If there are any exlusion we have to consider all previously excluded paths dirty
-        // As there is no API to query excluded paths we mark all prims in the Stage dirty
-        _allPathsDirty = true;
-    } else {
-        SdfPathSet linkedPaths = UsdComputeIncludedPathsFromCollection(query, stage);
-        std::merge(_dirtyPaths.begin(), _dirtyPaths.end(), linkedPaths.begin(), linkedPaths.end(),
-            std::inserter(_dirtyPaths, _dirtyPaths.begin()));
-    }
+    SdfPathSet linkedPaths = UsdComputeIncludedPathsFromCollection(query, stage);
+    std::merge(_dirtyPaths.begin(), _dirtyPaths.end(), linkedPaths.begin(), linkedPaths.end(),
+        std::inserter(_dirtyPaths, _dirtyPaths.begin()));
 }
 
 bool
@@ -97,16 +90,18 @@ UsdImaging_CollectionCache::UpdateCollection(UsdCollectionAPI const& c)
     _idForPath[path] = id;
 
     _MarkCollectionContentDirty(stage, query);
-    
+    // Also add the light in the dirty set for it to be marked as collection dirty
+    _dirtyPaths.insert(c.GetPrim().GetPath());
+
     return changed;
 }
 
 size_t
-UsdImaging_CollectionCache::RemoveCollection(UsdStageWeakPtr const& stage, SdfPath const& path)
+UsdImaging_CollectionCache::RemoveCollection(UsdStageWeakPtr const& stage, SdfPath const& collectionPath)
 {
     std::lock_guard<std::mutex> lock(_mutex);
 
-    auto const& pathEntry = _idForPath.find(path);
+    auto const& pathEntry = _idForPath.find(collectionPath);
     if (pathEntry == _idForPath.end()) {
         // No pathEntry -- bail.  This can happen if the collection was
         // trivial; see _IsQueryTrivial().
@@ -125,12 +120,13 @@ UsdImaging_CollectionCache::RemoveCollection(UsdStageWeakPtr const& stage, SdfPa
     _idForQuery.erase(queryRef);
 
     _MarkCollectionContentDirty(stage, queryRef);
+    _dirtyPaths.insert(collectionPath.GetPrimPath());
 
     auto const& pathsForQueryEntry = _pathsForQuery.find(queryRef);
-    pathsForQueryEntry->second.erase(path);
+    pathsForQueryEntry->second.erase(collectionPath);
     TF_DEBUG(USDIMAGING_COLLECTIONS)
         .Msg("UsdImaging_CollectionCache: Id '%s' disused <%s>\n",
-             id.GetText(), path.GetText());
+             id.GetText(), collectionPath.GetText());
 
     // Reap _pathsForQuery entries when the last path is removed.
     // This also reaps the associated identifier.
@@ -138,7 +134,7 @@ UsdImaging_CollectionCache::RemoveCollection(UsdStageWeakPtr const& stage, SdfPa
         _pathsForQuery.erase(pathsForQueryEntry);
         _queryForId.erase(queryEntry);
         TF_DEBUG(USDIMAGING_COLLECTIONS)
-            .Msg("UsdImaging_CollectionCache: Dropped id '%s'", id.GetText());
+            .Msg("UsdImaging_CollectionCache: Dropped id '%s'\n", id.GetText());
     }
     return hash;
 };
@@ -149,17 +145,10 @@ UsdImaging_CollectionCache::GetDirtyPaths() const
     return _dirtyPaths;
 }
 
-bool
-UsdImaging_CollectionCache::AreAllPathsDirty() const
-{
-    return _allPathsDirty;
-}
-
 void
 UsdImaging_CollectionCache::ClearDirtyPaths()
 {
     _dirtyPaths.clear();
-    _allPathsDirty = false;
 }
 
 TfToken

@@ -86,11 +86,6 @@ public:
     void
     GetMembershipQuery(TfToken const& id, const Query** query) const;
 
-    /// Returns true if all paths should be considered dirty
-    /// This happens when a collection containing an exclusion is updated
-    bool
-    AreAllPathsDirty() const;
-
     /// Returns a set of dirty paths
     /// Should only be used if AreAllPathsDirty returned false
     SdfPathSet const&
@@ -120,7 +115,6 @@ private:
     _MarkCollectionContentDirty(UsdStageWeakPtr const& stage, UsdCollectionAPI::MembershipQuery const& query);
 
     SdfPathSet _dirtyPaths;
-    bool _allPathsDirty = false;
 
     std::mutex _mutex;
 };

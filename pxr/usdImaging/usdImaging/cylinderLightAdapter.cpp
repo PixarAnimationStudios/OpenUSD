@@ -56,6 +56,7 @@ UsdImagingCylinderLightAdapter::Populate(UsdPrim const& prim,
 {
     index->InsertSprim(HdPrimTypeTokens->cylinderLight, prim.GetPath(), prim);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
+    _RegisterLightCollections(prim);
 
     return prim.GetPath();
 }
@@ -64,6 +65,7 @@ void
 UsdImagingCylinderLightAdapter::_RemovePrim(SdfPath const& cachePath,
                                          UsdImagingIndexProxy* index)
 {
+    _UnregisterLightCollections(cachePath);
     index->RemoveSprim(HdPrimTypeTokens->cylinderLight, cachePath);
 }
 

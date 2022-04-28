@@ -56,6 +56,7 @@ UsdImagingDistantLightAdapter::Populate(UsdPrim const& prim,
 {
     index->InsertSprim(HdPrimTypeTokens->distantLight, prim.GetPath(), prim);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
+    _RegisterLightCollections(prim);
 
     return prim.GetPath();
 }
@@ -64,7 +65,7 @@ void
 UsdImagingDistantLightAdapter::_RemovePrim(SdfPath const& cachePath,
                                          UsdImagingIndexProxy* index)
 {
-    UsdImagingLightAdapter::_RemovePrim(cachePath, index);
+    _UnregisterLightCollections(cachePath);
     index->RemoveSprim(HdPrimTypeTokens->distantLight, cachePath);
 }
 

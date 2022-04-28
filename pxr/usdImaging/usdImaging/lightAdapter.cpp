@@ -71,15 +71,30 @@ UsdImagingLightAdapter::Populate(UsdPrim const& prim,
 {
     index->InsertSprim(HdPrimTypeTokens->light, prim.GetPath(), prim);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
+    _RegisterLightCollections(prim);
 
     return prim.GetPath();
 }
 
 void
-UsdImagingLightAdapter::_RemovePrim(SdfPath const& cachePath,
-                                    UsdImagingIndexProxy* index)
+UsdImagingLightAdapter::MarkCollectionsDirty(UsdPrim const& prim,
+                                             SdfPath const& cachePath,
+                                             UsdImagingIndexProxy* index)
 {
-    index->RemoveSprim(HdPrimTypeTokens->light, cachePath);
+    index->MarkSprimDirty(cachePath, HdLight::DirtyCollection);
+}
+
+bool
+UsdImagingLightAdapter::_UpdateCollectionsChanged(UsdPrim const& prim) const {
+    UsdImaging_CollectionCache &collectionCache = _GetCollectionCache();
+    UsdLuxLight light(prim);
+    bool lightColChanged = collectionCache.UpdateCollection(light.GetLightLinkCollectionAPI());
+    bool shadowColChanged = collectionCache.UpdateCollection(light.GetShadowLinkCollectionAPI());
+    return lightColChanged || shadowColChanged;
+}
+
+void
+UsdImagingLightAdapter::_UnregisterLightCollections(SdfPath const& cachePath) {
     UsdImaging_CollectionCache &collectionCache = _GetCollectionCache();
     SdfPath lightLinkPath = cachePath.AppendProperty(UsdImagingTokens->collectionLightLink);
     collectionCache.RemoveCollection(_GetStage(), lightLinkPath);
@@ -87,8 +102,13 @@ UsdImagingLightAdapter::_RemovePrim(SdfPath const& cachePath,
     collectionCache.RemoveCollection(_GetStage(), shadowLinkPath);
 }
 
+void
+UsdImagingLightAdapter::_RegisterLightCollections(UsdPrim const& prim) {
+    _UpdateCollectionsChanged(prim);
+}
+
 bool
-UsdImagingLightAdapter::_UpdateCollectionsChanged(UsdPrim const& prim, SdfPath const& cachePath) const
+UsdImagingLightAdapter::_UpdateCollectionsChanged(UsdPrim const& prim) const {
 {
     UsdImaging_CollectionCache &collectionCache = _GetCollectionCache();
     UsdLuxLight light(prim);
@@ -185,9 +205,10 @@ UsdImagingLightAdapter::ProcessPropertyChange(UsdPrim const& prim,
     }
 
     if (TfStringStartsWith(propertyName.GetString(), UsdImagingTokens->collectionShadowLink.GetString()) || 
-        TfStringStartsWith(propertyName.GetString(), UsdImagingTokens->collectionLightLink.GetString()))
-    {
-        _UpdateCollectionsChanged(prim, cachePath);
+        TfStringStartsWith(propertyName.GetString(), UsdImagingTokens->collectionLightLink.GetString())) {
+        if (_UpdateCollectionsChanged(prim)) {
+            return HdLight::DirtyBits::DirtyCollection;
+        }
     }
 
     // "DirtyParam" is the catch-all bit for light params.

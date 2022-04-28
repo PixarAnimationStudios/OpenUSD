@@ -1084,34 +1084,19 @@ UsdImagingDelegate::ApplyPendingUpdates()
     _ExecuteWorkForVariabilityUpdate(&worker);
 
     // Mark all dirty collection prims
-    if (_collectionCache.AreAllPathsDirty())
-    {
-        TRACE_SCOPE("Mark all dirty collection members");
-        for(auto& it : _hdPrimInfoMap) {
-            UsdImagingPrimAdapterSharedPtr& adapter = it.second.adapter;
-            TF_DEBUG(USDIMAGING_CHANGES).Msg("[Update]: invalidate collection member prim (all paths dirty) %s\n", it.first.GetText());
-            adapter->MarkCollectionsDirty(it.second.usdPrim, it.first, &indexProxy);
+    const SdfPathSet& pathsDirtiedByCollections = _collectionCache.GetDirtyPaths();
+    if (!pathsDirtiedByCollections.empty()) {
+        TRACE_SCOPE("Mark dirty collection members");
+        for (const SdfPath& dirtyPath : pathsDirtiedByCollections) {
+            TF_DEBUG(USDIMAGING_CHANGES).Msg("[Update]: invalidate collection member prim %s\n", dirtyPath.GetText());
+            _HdPrimInfo* primInfo = _GetHdPrimInfo(dirtyPath);
+            if (primInfo && primInfo->usdPrim.IsValid() &&
+                TF_VERIFY(primInfo->adapter, "%s", dirtyPath.GetText())) {
+                UsdImagingPrimAdapterSharedPtr& adapter = primInfo->adapter;
+                adapter->MarkCollectionsDirty(primInfo->usdPrim, dirtyPath, &indexProxy);
+            }
         }
         _collectionCache.ClearDirtyPaths();
-    }
-    else
-    {
-        const SdfPathSet& pathsDirtiedByCollections = _collectionCache.GetDirtyPaths();
-        if(!pathsDirtiedByCollections.empty())
-        {
-            TRACE_SCOPE("Mark dirty collection members");
-            for(const SdfPath& dirtyPath : pathsDirtiedByCollections)
-            {
-                TF_DEBUG(USDIMAGING_CHANGES).Msg("[Update]: invalidate collection member prim %s\n", dirtyPath.GetText());
-                _HdPrimInfo* primInfo = _GetHdPrimInfo(dirtyPath);
-                if (primInfo && primInfo->usdPrim.IsValid() &&
-                    TF_VERIFY(primInfo->adapter, "%s", dirtyPath.GetText())) {
-                    UsdImagingPrimAdapterSharedPtr& adapter = primInfo->adapter;
-                    adapter->MarkCollectionsDirty(primInfo->usdPrim, dirtyPath, &indexProxy);
-                }
-            }
-            _collectionCache.ClearDirtyPaths();
-        }
     }
 }
 

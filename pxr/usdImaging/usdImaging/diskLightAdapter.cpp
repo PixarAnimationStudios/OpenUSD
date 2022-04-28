@@ -56,6 +56,7 @@ UsdImagingDiskLightAdapter::Populate(UsdPrim const& prim,
 {
     index->InsertSprim(HdPrimTypeTokens->diskLight, prim.GetPath(), prim);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
+    _RegisterLightCollections(prim);
 
     return prim.GetPath();
 }
@@ -64,7 +65,7 @@ void
 UsdImagingDiskLightAdapter::_RemovePrim(SdfPath const& cachePath,
                                          UsdImagingIndexProxy* index)
 {
-    UsdImagingLightAdapter::_RemovePrim(cachePath, index);
+    _UnregisterLightCollections(cachePath);
     index->RemoveSprim(HdPrimTypeTokens->diskLight, cachePath);
 }
 
