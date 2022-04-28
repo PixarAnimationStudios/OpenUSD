@@ -128,6 +128,11 @@ public:
                                    SdfPath const& cachePath,
                                    UsdImagingIndexProxy* index) override;
 
+    USDIMAGING_API
+    virtual void MarkCollectionsDirty(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingIndexProxy* index) override;
+
     // ---------------------------------------------------------------------- //
     /// \name Utility methods
     // ---------------------------------------------------------------------- //

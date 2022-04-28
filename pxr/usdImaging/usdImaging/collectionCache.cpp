@@ -47,31 +47,30 @@ UsdImaging_CollectionCache::_MarkCollectionContentDirty(UsdStageWeakPtr const& s
         // If there are any exlusion we have to consider all previously excluded paths dirty
         // As there is no API to query excluded paths we mark all prims in the Stage dirty
         _allPathsDirty = true;
-    }
-    else
-    {
+    } else {
         SdfPathSet linkedPaths = UsdComputeIncludedPathsFromCollection(query, stage);
         std::merge(_dirtyPaths.begin(), _dirtyPaths.end(), linkedPaths.begin(), linkedPaths.end(),
             std::inserter(_dirtyPaths, _dirtyPaths.begin()));
     }
 }
 
-TfToken
+bool
 UsdImaging_CollectionCache::UpdateCollection(UsdCollectionAPI const& c)
 {
     const UsdStageWeakPtr& stage = c.GetPrim().GetStage();
-    RemoveCollection(stage, c.GetCollectionPath());
+    const size_t removedHash = RemoveCollection(stage, c.GetCollectionPath());
 
     std::lock_guard<std::mutex> lock(_mutex);
 
     SdfPath path = c.GetCollectionPath();
     UsdCollectionAPI::MembershipQuery query = c.ComputeMembershipQuery();
+    bool changed = removedHash != query.GetHash();
 
     if (_IsQueryTrivial(query)) {
         TF_DEBUG(USDIMAGING_COLLECTIONS)
             .Msg("UsdImaging_CollectionCache: trivial for <%s>\n",
                  path.GetText());
-        return TfToken();
+        return changed;
     }
 
     // Establish Id <=> Query mapping.
@@ -99,10 +98,10 @@ UsdImaging_CollectionCache::UpdateCollection(UsdCollectionAPI const& c)
 
     _MarkCollectionContentDirty(stage, query);
     
-    return id;
+    return changed;
 }
 
-void
+size_t
 UsdImaging_CollectionCache::RemoveCollection(UsdStageWeakPtr const& stage, SdfPath const& path)
 {
     std::lock_guard<std::mutex> lock(_mutex);
@@ -111,7 +110,7 @@ UsdImaging_CollectionCache::RemoveCollection(UsdStageWeakPtr const& stage, SdfPa
     if (pathEntry == _idForPath.end()) {
         // No pathEntry -- bail.  This can happen if the collection was
         // trivial; see _IsQueryTrivial().
-        return;
+        return 0;
     }
     TfToken id = pathEntry->second;
     TF_VERIFY(!id.IsEmpty());
@@ -119,9 +118,10 @@ UsdImaging_CollectionCache::RemoveCollection(UsdStageWeakPtr const& stage, SdfPa
 
     auto const& queryEntry = _queryForId.find(id);
     if (!TF_VERIFY(queryEntry != _queryForId.end())) {
-        return;
+        return 0;
     }
     UsdCollectionAPI::MembershipQuery const& queryRef = queryEntry->second;
+    size_t hash = queryRef.GetHash();
     _idForQuery.erase(queryRef);
 
     _MarkCollectionContentDirty(stage, queryRef);
@@ -140,6 +140,7 @@ UsdImaging_CollectionCache::RemoveCollection(UsdStageWeakPtr const& stage, SdfPa
         TF_DEBUG(USDIMAGING_COLLECTIONS)
             .Msg("UsdImaging_CollectionCache: Dropped id '%s'", id.GetText());
     }
+    return hash;
 };
 
 SdfPathSet const&

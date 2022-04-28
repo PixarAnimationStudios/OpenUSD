@@ -64,11 +64,14 @@ public:
     /// given collection, and establishes a cache entry.  If a
     /// prior entry existed for the collection at this path,
     /// it is removed first.
-    TfToken UpdateCollection(UsdCollectionAPI const& collection);
-
-    /// Remove any cached entry for the given collection.
-    /// Does nothing if no cache entry exists.
-    void RemoveCollection(UsdStageWeakPtr const& stage, SdfPath const& path);
+    /// Returns true for newly created collection or
+    /// if the hash of the collection is different from the previous collection
+    bool
+    UpdateCollection(UsdCollectionAPI const& collection);
+ 
+    /// Returns the hash of the removed collection, or 0 if no collection existed
+    size_t
+    RemoveCollection(UsdStageWeakPtr const& stage, SdfPath const& path);
 
     /// Return the cached entry for the given collection.
     TfToken

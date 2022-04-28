@@ -1087,11 +1087,10 @@ UsdImagingDelegate::ApplyPendingUpdates()
     if (_collectionCache.AreAllPathsDirty())
     {
         TRACE_SCOPE("Mark all dirty collection members");
-        TF_FOR_ALL(it, _hdPrimInfoMap) {
-            UsdImagingPrimAdapterSharedPtr& adapter = it->second.adapter;
-            TF_DEBUG(USDIMAGING_CHANGES).Msg("[Update]: invalidate collection member prim (all paths dirty) %s\n", it->first.GetText());
-            adapter->MarkDirty(it->second.usdPrim, it->first,
-                HdChangeTracker::DirtyCategories, &indexProxy);
+        for(auto& it : _hdPrimInfoMap) {
+            UsdImagingPrimAdapterSharedPtr& adapter = it.second.adapter;
+            TF_DEBUG(USDIMAGING_CHANGES).Msg("[Update]: invalidate collection member prim (all paths dirty) %s\n", it.first.GetText());
+            adapter->MarkCollectionsDirty(it.second.usdPrim, it.first, &indexProxy);
         }
         _collectionCache.ClearDirtyPaths();
     }
@@ -1108,8 +1107,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
                 if (primInfo && primInfo->usdPrim.IsValid() &&
                     TF_VERIFY(primInfo->adapter, "%s", dirtyPath.GetText())) {
                     UsdImagingPrimAdapterSharedPtr& adapter = primInfo->adapter;
-                    adapter->MarkDirty(primInfo->usdPrim, dirtyPath,
-                        HdChangeTracker::DirtyCategories, &indexProxy);
+                    adapter->MarkCollectionsDirty(primInfo->usdPrim, dirtyPath, &indexProxy);
                 }
             }
             _collectionCache.ClearDirtyPaths();

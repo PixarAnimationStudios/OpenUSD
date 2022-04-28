@@ -520,12 +520,6 @@ public:
     USDIMAGING_API
     bool IsInInvisedPaths(const SdfPath &usdPath) const;
 
-    USDIMAGING_API
-    UsdStageRefPtr GetStage() const
-    {
-        return _stage;
-    }
-
 private:
     // Internal Get and SamplePrimvar
     VtValue _Get(SdfPath const& id, TfToken const& key, VtIntArray *outIndices);
