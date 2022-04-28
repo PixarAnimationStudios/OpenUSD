@@ -305,16 +305,6 @@ int ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
 			    int timeout, ArchCrashHandlerSystemCB callback, 
 			    void* userData);
 
-/// Crash, to test crash behavior.
-///
-/// This function causes the calling program to crash by doing bad malloc 
-/// and free things.  If \c spawnthread is true, it spawns a thread which 
-/// remains alive during the crash.  It aborts if it fails to crash.
-///
-/// \private
-ARCH_API
-void ArchTestCrash(bool spawnthread);
-
 #if defined(ARCH_OS_DARWIN)
 // macOS has no ETIME. ECANCELED seems to have about the closest meaning to
 // the actual error here. The operation is timing out, not being explicitly
