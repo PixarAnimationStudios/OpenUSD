@@ -152,7 +152,9 @@ if __name__ == '__main__':
     The script takes 3 arguments:
         - a json config, providing sdrNodes via sourceType, sdrNodeIdentifiers
           or explicit list of absolute asset file paths (sourceAssetNodes) and 
-          a list of sublayers.
+          a list of sublayers. The asset file paths might also contain
+          environment variables, so users must set these prior to running the
+          script.
         - a destination directory. Note that a schema.usda with appropriate 
           GLOBAL prim providing a libraryName in its customData, must be 
           present at this location. This is also the location where 
@@ -183,7 +185,9 @@ if __name__ == '__main__':
             or explicit list of absolute asset file paths (sourceAssetNodes).
             Note that for nodes specified under sourceAssetNodes we will use 
             the basename stripped of extension as the shaderId for nodes we 
-            create.
+            create. If node paths specified in sourceAssetNodes contain any
+            environment variables, user is required to set these prior to 
+            running the script.
             And also optionally providing a list of sublayers which the 
             schema.usda will sublayer. Code generation can also be optionally 
             enabled via the json config, note that code generation is disabled 
@@ -265,20 +269,18 @@ if __name__ == '__main__':
 
     sdrNodesDict = config.get(SchemaConfigConstants.SDR_NODES)
     if sdrNodesDict:
-        # Extract any renderContext from the config if specified.
-        if SchemaConfigConstants.RENDER_CONTEXT in sdrNodesDict.keys():
-            renderContext = \
-                    sdrNodesDict.get(SchemaConfigConstants.RENDER_CONTEXT)
-
         # Extract sdrNodes from the config
         sdrRegistry = Sdr.Registry()
         for sourceType in sdrNodesDict.keys():
             if sourceType == SchemaConfigConstants.RENDER_CONTEXT:
-                continue
-            if sourceType == SchemaConfigConstants.SOURCE_ASSET_NODES:
+                # Extract any renderContext from the config if specified.
+                renderContext = \
+                    sdrNodesDict.get(SchemaConfigConstants.RENDER_CONTEXT)
+            elif sourceType == SchemaConfigConstants.SOURCE_ASSET_NODES:
                 # process sdrNodes provided by explicit sourceAssetNodes
                 for assetPath in \
-                    sdrNodesDict.get(SchemaConfigConstants.SOURCE_ASSET_NODES):
+                sdrNodesDict.get(SchemaConfigConstants.SOURCE_ASSET_NODES):
+                    assetPath = os.path.expandvars(assetPath)
                     node = Sdr.Registry().GetShaderNodeFromAsset(assetPath)
                     nodeIdentifier = \
                         os.path.splitext(os.path.basename(assetPath))[0]
@@ -286,20 +288,21 @@ if __name__ == '__main__':
                         sdrNodesToParse.append((node, nodeIdentifier))
                     else:
                         Tf.Warn("Node not found at path: %s." %(assetPath))
-                continue
-            for nodeId in sdrNodesDict.get(sourceType):
-                node = sdrRegistry.GetShaderNodeByIdentifierAndType(nodeId,
-                        sourceType)
-                if node is not None:
-                    # This is a workaround to iterate through invalid sdrNodes 
-                    # (nodes not having any input or output properties). 
-                    # Currently these nodes return false when queried for 
-                    # IsValid().
-                    # Refer: pxr/usd/ndr/node.h#140-149
-                    sdrNodesToParse.append(node)
-                else:
-                    Tf.Warn("Invalid Node (%s:%s) provided." %(sourceType,
-                        nodeId))
+            else: 
+                # we have an actual sdr node source type
+                for nodeId in sdrNodesDict.get(sourceType):
+                    node = sdrRegistry.GetShaderNodeByIdentifierAndType(nodeId,
+                            sourceType)
+                    if node is not None:
+                        # This is a workaround to iterate through invalid 
+                        # sdrNodes (nodes not having any input or output 
+                        # properties). Currently these nodes return false when 
+                        # queried for IsValid().
+                        # Refer: pxr/usd/ndr/node.h#140-149
+                        sdrNodesToParse.append(node)
+                    else:
+                        Tf.Warn("Invalid Node (%s:%s) provided." %(sourceType,
+                            nodeId))
     else:
         Tf.Warn("No sdr nodes provided to generate a schema.usda")
         sys.exit(1)
@@ -349,6 +352,22 @@ if __name__ == '__main__':
     if writeReadme:
         readMeFile = os.path.join(schemaGenerationPath,
                 MiscConstants.README_FILE_NAME)
+
+        commonDescription = dedent("""
+            The json config can provide sdrNodes either using sourceType and
+            identifiers or using explicit paths via sourceAssetNodes. Note that, 
+            if explicit paths contain any environment variables, then user is
+            required to set these prior to running the script. Example:
+            "$RMANTREE/lib/defaults/PRManAttribute.args", will require setting
+            RMANTREE environment variable before running the script.
+
+            Note that since users of this script have less control on direct
+            authoring of schema.usda, "useLiteralIdentifier" is unconditionally
+            set to true in schema.usda, which means the default camelCase token 
+            names will be overriden and usdGenSchema will try keep the token 
+            names as-is unless these are invalid.
+            """)
+
         description = dedent("""
             The files ("schema.usda", "generatedSchema.usda" and
             "plugInfo.json") in this directory are auto generated using 
@@ -358,13 +377,9 @@ if __name__ == '__main__':
             json config. usdGenSchema is then run on this auto populated schema 
             (with skipCodeGeneration set to True) to output a 
             generatedSchema.usda and plugInfo.json.
-
-            Note that since users of this script have less control on direct
-            authoring of schema.usda, "useLiteralIdentifier" is unconditionally
-            set to true, which means the default camelCase token names will be
-            overriden and usdGenSchema will try keep the token names as-is
-            unless these are invalid.
-            """) if skipCodeGeneration else \
+            %s
+            """)%(commonDescription) \
+            if skipCodeGeneration else \
             dedent("""
             The files ("schema.usda", "generatedSchema.usda", "plugInfo.json",
             cpp source and header files) in this directory are auto generated
@@ -374,13 +389,9 @@ if __name__ == '__main__':
             json config. usdGenSchema is then run on this auto populated schema 
             to output a generatedSchema.usda and plugInfo.json and all the
             generated code.
+            %s
+            """)%(commonDescription)
 
-            Note that since users of this script have less control on direct
-            authoring of schema.usda, "useLiteralIdentifier" is unconditionally
-            set to true, which means the default camelCase token names will be
-            overriden and usdGenSchema will try keep the token names as-is
-            unless these are invalid.
-            """)
         with open(readMeFile, "w") as file:
             file.write(description)
     
