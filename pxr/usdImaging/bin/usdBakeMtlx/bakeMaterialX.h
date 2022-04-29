@@ -27,6 +27,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/usdImaging/bin/usdBakeMtlx/api.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/usd/usdShade/material.h"
 
@@ -44,6 +45,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(UsdStage);
 
 /// Read the MaterialX XML file at \p pathname convert and add to
 /// the given USD \p stage.
+USDBAKEMTLX_API
 UsdStageRefPtr UsdBakeMtlxReadDocToStage(std::string const &pathname,
                                          UsdStageRefPtr stage);
 
@@ -51,6 +53,7 @@ UsdStageRefPtr UsdBakeMtlxReadDocToStage(std::string const &pathname,
 /// MaterialX Document and Bake it using MaterialX::TextureBaker, storing
 /// the resulting mtlx Document at \p bakedMtlxFilename. Any resulting 
 /// textures from the baking process will live in the same directory. 
+USDBAKEMTLX_API
 std::string UsdBakeMtlxBakeMaterial(
     UsdShadeMaterial const& mtlxMaterial,
     std::string const& bakedMtlxDir,
