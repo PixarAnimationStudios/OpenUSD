@@ -62,6 +62,8 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     , _depthRange{0.f,1.f}
     , _restoreFramebufferSRGB(false)
     , _restoreConservativeRaster(false)
+    , _restoreMultiSample(false)
+    , _restorePointSmooth(false)
 {
     TRACE_FUNCTION();
 
@@ -135,6 +137,9 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
         glGetBooleanv(GL_CLIP_DISTANCE0 + i, (GLboolean*)&clipDistanceEnabled);
         _restoreClipDistances[i] = clipDistanceEnabled;
     }
+
+    glGetBooleanv(GL_MULTISAMPLE, (GLboolean*)&_restoreMultiSample);
+    glGetBooleanv(GL_POINT_SMOOTH, (GLboolean*)&_restorePointSmooth);
 
     HGIGL_POST_PENDING_GL_ERRORS();
     #if defined(GL_KHR_debug)
@@ -272,6 +277,18 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
         } else {
             glDisable(GL_CLIP_DISTANCE0 + i);  
         }
+    }
+
+    if (_restoreMultiSample) {
+        glEnable(GL_MULTISAMPLE);
+    } else {
+        glDisable(GL_MULTISAMPLE);
+    }
+
+    if (_restorePointSmooth) {
+        glEnable(GL_POINT_SMOOTH);
+    } else {
+        glDisable(GL_POINT_SMOOTH);
     }
 
     static const GLuint samplers[8] = {0};

@@ -38,6 +38,7 @@
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/mergingSceneIndex.h"
 #include "pxr/imaging/hd/legacyPrimSceneIndex.h"
+#include "pxr/imaging/hd/noticeBatchingSceneIndex.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -389,6 +390,28 @@ public:
     HD_API
     static bool IsSceneIndexEmulationEnabled();
 
+    /// An application or legacy scene delegate may prefer for the scene 
+    /// index observer notices generated from its prim insertions, removals, or
+    /// invalidations to be consolidated into vectorized batches. Calling this
+    /// will cause subsequent notices to be be queued.
+    /// 
+    /// NOTE: This does not currently track any nested state. Repeated calls
+    ///       prior to a corresponding SceneIndexEmulationNoticeBatchEnd will
+    ///       have no effect.
+    HD_API
+    void SceneIndexEmulationNoticeBatchBegin();
+
+    /// Flushes any queued scene index observer notices and disables further
+    /// queueing.
+    ///
+    /// NOTE: This does not currently track any nested state. Calling this
+    ///       will immediately flush and disable queueing regardless of the
+    ///       number of times SceneIndexEmulationNoticeBatchBegin is called
+    ///       prior.
+    HD_API
+    void SceneIndexEmulationNoticeBatchEnd();
+
+
 private:
     // The render index constructor is private so we can check
     // renderDelegate before construction: see HdRenderIndex::New(...).
@@ -474,6 +497,7 @@ private:
     };
 
     HdLegacyPrimSceneIndexRefPtr _emulationSceneIndex;
+    HdNoticeBatchingSceneIndexRefPtr _emulationNoticeBatchingSceneIndex;
     std::unique_ptr<class HdSceneIndexAdapterSceneDelegate> _siSd;
 
     HdMergingSceneIndexRefPtr _mergingSceneIndex;

@@ -284,10 +284,21 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
     if (!TF_VERIFY(_topology)) return;
 
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-
+    
+    HdStResourceRegistrySharedPtr resourceRegistry =
+        std::static_pointer_cast<HdStResourceRegistry>(
+            renderIndex.GetResourceRegistry());
+    
+    // For the time being, don't use complex curves on Metal. Support for this
+    // is planned for the future.
+    const bool hasMetalTessellation =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
+    
     TfToken curveType = _topology->GetCurveType();
     TfToken curveBasis = _topology->GetCurveBasis();
-    bool supportsRefinement = _SupportsRefinement(_refineLevel);
+    bool supportsRefinement = _SupportsRefinement(_refineLevel) &&
+        !hasMetalTessellation;
     if (!supportsRefinement) {
         // XXX: Rendering non-linear (i.e., cubic) curves as linear segments
         // when unrefined can be confusing. Should we continue to do this?
@@ -318,7 +329,8 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
     case HdBasisCurvesGeomStylePatch:
     {
         if (_SupportsRefinement(_refineLevel) &&
-            _SupportsUserWidths(drawItem)) {
+            _SupportsUserWidths(drawItem) &&
+            !hasMetalTessellation) {
             if (_SupportsUserNormals(drawItem)){
                 drawStyle = HdSt_BasisCurvesShaderKey::RIBBON;
                 normalStyle = HdSt_BasisCurvesShaderKey::ORIENTED;
@@ -382,10 +394,6 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
     TF_DEBUG(HD_RPRIM_UPDATED).
             Msg("HdStBasisCurves(%s) - Shader Key PrimType: %s\n ",
                 GetId().GetText(), HdSt_PrimTypeToString(shaderKey.primType));
-
-    HdStResourceRegistrySharedPtr resourceRegistry =
-        std::static_pointer_cast<HdStResourceRegistry>(
-            renderIndex.GetResourceRegistry());
 
     HdSt_GeometricShaderSharedPtr geomShader =
         HdSt_GeometricShader::Create(shaderKey, resourceRegistry);
@@ -538,6 +546,8 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                 HdStGetMaterialNetworkShader(this, sceneDelegate);
     }
 
+    const bool materialIsFinal = GetDisplayStyle(sceneDelegate).materialIsFinal;
+    bool materialIsFinalChanged = false;
     for (auto const& reprPair : _reprs) {
         const TfToken &reprToken = reprPair.first;
         _BasisCurvesReprConfig::DescArray const &descs =
@@ -548,8 +558,13 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
             if (descs[descIdx].geomStyle == HdBasisCurvesGeomStyleInvalid) {
                 continue;
             }
+
             HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
                 repr->GetDrawItem(drawItemIndex++));
+            if (materialIsFinal != drawItem->GetMaterialIsFinal()) {
+                materialIsFinalChanged = true;
+            }
+            drawItem->SetMaterialIsFinal(materialIsFinal);
 
             if (updateMaterialNetworkShader) {
                 drawItem->SetMaterialNetworkShader(materialNetworkShader);
@@ -559,6 +574,13 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                     sceneDelegate, renderParam, drawItem, descs[descIdx]);
             }
         }
+    }
+
+    if (materialIsFinalChanged) {
+        HdStMarkDrawBatchesDirty(renderParam);
+        TF_DEBUG(HD_RPRIM_UPDATED).Msg(
+            "%s: Marking all batches dirty to trigger deep validation because "
+            "the materialIsFinal was updated.\n", GetId().GetText());
     }
 }
 

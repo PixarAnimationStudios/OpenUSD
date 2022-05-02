@@ -39,6 +39,7 @@ pxr_library(hdSt
         garch
         glf
         hd
+        hdsi
         hgiGL
         hgiInterop
         sdr
@@ -58,6 +59,8 @@ pxr_library(hdSt
         commandBuffer
         copyComputation
         debugCodes
+        dependencyForwardingSceneIndexPlugin
+        dependencySceneIndexPlugin
         dispatchBuffer
         domeLightComputations
         drawItem
@@ -81,6 +84,7 @@ pxr_library(hdSt
         hgiConversions
         hioConversions
         imageShaderRenderPass
+        implicitSurfaceSceneIndexPlugin
         instancer
         interleavedMemoryManager
         light      
@@ -138,7 +142,6 @@ pxr_library(hdSt
         extCompComputeShader
         fieldTextureCpuData
         imageShaderShaderKey
-        immediateDrawBatch
         indirectDrawBatch
         materialNetworkShader
         materialParam
@@ -148,6 +151,7 @@ pxr_library(hdSt
         pointsShaderKey
         quadrangulate
         resourceBinder
+        resourceLayout
         shaderKey
         subdivision
         triangulate

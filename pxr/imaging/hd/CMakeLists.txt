@@ -35,20 +35,25 @@ pxr_library(hd
         bufferSpec
         camera
         cameraSchema
+        capsuleSchema
         categoriesSchema
         changeTracker
         command
         compExtCompInputSource
         computation
+        coneSchema
         containerDataSourceEditor
         coordSys
         coordSysBindingSchema
+        cubeSchema
+        cylinderSchema
         dataSource
         dataSourceLegacyPrim
         dataSourceLocator
         dataSourceMaterialNetworkInterface
         debugCodes
         dependenciesSchema
+        dependencyForwardingSceneIndex
         dependencySchema
         dirtyBitsTranslator
         dirtyList
@@ -99,6 +104,7 @@ pxr_library(hd
         meshTopology
         meshTopologySchema
         meshUtil
+        noticeBatchingSceneIndex
         overlayContainerDataSource
         perfLog
         pluginRenderDelegateUniqueHandle
@@ -139,6 +145,7 @@ pxr_library(hd
         selection
         smoothNormals
         sortedIds
+        sphereSchema
         sprim
         strategyBase
         subdivisionTagsSchema

@@ -4590,7 +4590,7 @@ case 2:
 YY_RULE_SETUP
 #line 73 "pxr/usd/sdf/textFileFormat.ll"
 {
-        if (yyextra->menvaLineNo == 1) {
+        if (yyextra->sdfLineNo == 1) {
             (*yylval_param) = std::string(yytext, yyleng);
             return TOK_MAGIC;
         }
@@ -4626,7 +4626,7 @@ case 7:
 YY_RULE_SETUP
 #line 88 "pxr/usd/sdf/textFileFormat.ll"
 {
-        yyextra->menvaLineNo++;
+        yyextra->sdfLineNo++;
         return TOK_NL;
     }
 	YY_BREAK
@@ -4951,7 +4951,7 @@ YY_RULE_SETUP
 
         unsigned int numlines = 0;
         (*yylval_param) = Sdf_EvalQuotedString(yytext, yyleng, 3, &numlines);
-        yyextra->menvaLineNo += numlines;
+        yyextra->sdfLineNo += numlines;
         return TOK_STRING;
     }
 	YY_BREAK
@@ -4976,7 +4976,7 @@ YY_RULE_SETUP
         if (outOfRange) {
            TF_WARN("Integer literal '%s' on line %d%s%s out of range, parsing "
                    "as double.  Consider exponential notation for large "
-                   "floating point values.", yytext, yyextra->menvaLineNo,
+                   "floating point values.", yytext, yyextra->sdfLineNo,
                    yyextra->fileContext.empty() ? "" : " in file ",
                    yyextra->fileContext.empty() ? "" :
                    yyextra->fileContext.c_str());
@@ -4995,7 +4995,7 @@ YY_RULE_SETUP
         if (outOfRange) {
            TF_WARN("Integer literal '%s' on line %d%s%s out of range, parsing "
                    "as double.  Consider exponential notation for large "
-                   "floating point values.", yytext, yyextra->menvaLineNo,
+                   "floating point values.", yytext, yyextra->sdfLineNo,
                    yyextra->fileContext.empty() ? "" : " in file ",
                    yyextra->fileContext.empty() ? "" :
                    yyextra->fileContext.c_str());

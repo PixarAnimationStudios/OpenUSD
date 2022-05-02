@@ -31,17 +31,15 @@
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
-#include <queue>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 // ---------------------------------------------------------------------------
 // Adapter delegation
 
 TfTokenVector
-UsdImagingStageSceneIndex::_GetImagingSubprims(UsdPrim prim) const
+UsdImagingStageSceneIndex::_GetImagingSubprims(
+        const UsdImagingPrimAdapterSharedPtr &adapter) const
 {
-    UsdImagingPrimAdapterSharedPtr adapter = _AdapterLookup(prim);
     if (adapter) {
         TfTokenVector subprims;
         subprims = adapter->GetImagingSubprims();
@@ -52,17 +50,20 @@ UsdImagingStageSceneIndex::_GetImagingSubprims(UsdPrim prim) const
                 == subprims.end()) {
             subprims.push_back(TfToken());
         }
+        return subprims;
     }
 
-    static TfTokenVector s_default = { TfToken() };
+    // Like above, if this prim isn't handled by any adapters, make sure we
+    // include the trivial subprim "".
+    static const TfTokenVector s_default = { TfToken() };
     return s_default;
 }
 
 TfToken
 UsdImagingStageSceneIndex::_GetImagingSubprimType(
-        UsdPrim prim, TfToken const& subprim) const
+        const UsdImagingPrimAdapterSharedPtr &adapter,
+        TfToken const& subprim) const
 {
-    UsdImagingPrimAdapterSharedPtr adapter = _AdapterLookup(prim);
     if (adapter) {
         return adapter->GetImagingSubprimType(subprim);
     }
@@ -71,9 +72,9 @@ UsdImagingStageSceneIndex::_GetImagingSubprimType(
 
 HdContainerDataSourceHandle
 UsdImagingStageSceneIndex::_GetImagingSubprimData(
+        const UsdImagingPrimAdapterSharedPtr &adapter,
         UsdPrim prim, TfToken const& subprim) const
 {
-    UsdImagingPrimAdapterSharedPtr adapter = _AdapterLookup(prim);
     if (adapter) {
         HdContainerDataSourceHandle ds =
             adapter->GetImagingSubprimData(subprim, prim, _stageGlobals);
@@ -82,9 +83,9 @@ UsdImagingStageSceneIndex::_GetImagingSubprimData(
         }
     }
 
-    // If there's no adapter/the adapter didn't handle the subprim, and the
-    // subprim is the trivial one "", create a dataSourcePrim to pick up
-    // inherited attributes.
+    // Note that if the subprim is "", and we either didn't find an adapter or
+    // the adapter didn't construct a datasource, we need to create a
+    // UsdImagingDataSourcePrim to pick up inherited attributes.
     if (subprim.IsEmpty()) {
         return UsdImagingDataSourcePrim::New(
                 prim.GetPath(), prim, _stageGlobals);
@@ -141,29 +142,40 @@ UsdImagingStageSceneIndex::UsdImagingStageSceneIndex()
 {
 }
 
+UsdImagingStageSceneIndex::~UsdImagingStageSceneIndex()
+{
+    SetStage(nullptr);
+}
+
 // ---------------------------------------------------------------------------
 
 HdSceneIndexPrim
 UsdImagingStageSceneIndex::GetPrim(const SdfPath &path) const
 {
+    TRACE_FUNCTION();
+
     static const HdSceneIndexPrim s_emptyPrim = {TfToken(), nullptr};
 
     if (!_stage) {
         return s_emptyPrim;
     }
 
-    SdfPath primPath = path.GetPrimPath();
+    const SdfPath primPath = path.GetPrimPath();
 
     UsdPrim prim = _stage->GetPrimAtPath(primPath);
     if (!prim) {
         return s_emptyPrim;
     }
 
-    TfToken subprim = path.IsPropertyPath() ? path.GetNameToken() : TfToken();
+    const TfToken subprim =
+        path.IsPropertyPath() ? path.GetNameToken() : TfToken();
 
-    TfToken imagingType = _GetImagingSubprimType(prim, subprim);
-    HdContainerDataSourceHandle dataSource =
-        _GetImagingSubprimData(prim, subprim);
+    UsdImagingPrimAdapterSharedPtr adapter =
+        _AdapterLookup(prim);
+
+    const TfToken imagingType = _GetImagingSubprimType(adapter, subprim);
+    const HdContainerDataSourceHandle dataSource =
+        _GetImagingSubprimData(adapter, prim, subprim);
 
     return {imagingType, dataSource};
 }
@@ -174,6 +186,8 @@ SdfPathVector
 UsdImagingStageSceneIndex::GetChildPrimPaths(
         const SdfPath &path) const
 {
+    TRACE_FUNCTION();
+
     if (!_stage) {
         return {};
     }
@@ -206,8 +220,11 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
         result.push_back(child.GetPath());
     }
 
-    SdfPath const& primPath = prim.GetPath();
-    TfTokenVector subprims = _GetImagingSubprims(prim);
+    UsdImagingPrimAdapterSharedPtr adapter =
+        _AdapterLookup(prim);
+
+    const SdfPath primPath = prim.GetPath();
+    const TfTokenVector subprims = _GetImagingSubprims(adapter);
     for (TfToken const& subprim : subprims) {
         if (!subprim.IsEmpty()) {
             result.push_back(primPath.AppendChild(subprim));
@@ -221,6 +238,8 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
 
 void UsdImagingStageSceneIndex::SetTime(UsdTimeCode time)
 {
+    TRACE_FUNCTION();
+
     if (_stageGlobals.GetTime() == time) {
         return;
     }
@@ -239,7 +258,10 @@ UsdTimeCode UsdImagingStageSceneIndex::GetTime() const
 
 void UsdImagingStageSceneIndex::SetStage(UsdStageRefPtr stage)
 {
+    TRACE_FUNCTION();
+
     if (_stage) {
+        TF_DEBUG(USDIMAGING_POPULATION).Msg("[Population] Removing </>\n");
         _SendPrimsRemoved({SdfPath::AbsoluteRootPath()});
         _stageGlobals.Clear();
         _adapterMap.clear();
@@ -254,34 +276,54 @@ void UsdImagingStageSceneIndex::Populate()
         return;
     }
 
+    _Populate(_stage->GetPseudoRoot());
+}
+
+void UsdImagingStageSceneIndex::_Populate(UsdPrim subtreeRoot)
+{
+    TRACE_FUNCTION();
+    if (!subtreeRoot) {
+        return;
+    }
+
     HdSceneIndexObserver::AddedPrimEntries addedPrims;
+    size_t lastEnd = 0;
 
-    std::queue<UsdPrim> roots;
-    roots.push(_stage->GetPseudoRoot());
-    while (!roots.empty()) {
-        UsdPrim root = roots.front();
-        roots.pop();
+    UsdPrimRange range(subtreeRoot, _GetTraversalPredicate());
+    for (UsdPrim prim : range) {
+        if (prim.IsPseudoRoot()) {
+            continue;
+        }
 
-        UsdPrimRange range(root, _GetTraversalPredicate());
-        for (UsdPrim prim : range) {
-            if (prim.IsPseudoRoot()) {
-                continue;
+        if (prim.IsInstance()) {
+            // XXX(USD-7119): Add native instancing support...
+            continue;
+        }
+
+        UsdImagingPrimAdapterSharedPtr adapter =
+            _AdapterLookup(prim);
+
+        // Enumerate the imaging sub-prims.
+        const SdfPath primPath = prim.GetPath();
+        const TfTokenVector subprims = _GetImagingSubprims(adapter);
+        for (TfToken const& subprim : subprims) {
+            const SdfPath subpath =
+                subprim.IsEmpty() ? primPath : primPath.AppendChild(subprim);
+            addedPrims.emplace_back(subpath,
+                    _GetImagingSubprimType(adapter, subprim));
+        }
+
+        if (TfDebug::IsEnabled(USDIMAGING_POPULATION)) {
+            TF_DEBUG(USDIMAGING_POPULATION).Msg(
+                "[Population] Populating <%s> (type = %s) ->\n",
+                primPath.GetText(),
+                prim.GetPrimTypeInfo().GetSchemaTypeName().GetText());
+            for (size_t i = lastEnd; i < addedPrims.size(); ++i) {
+                TF_DEBUG(USDIMAGING_POPULATION).Msg("\t<%s> (type = %s)\n",
+                    addedPrims[i].primPath.GetText(),
+                    addedPrims[i].primType.GetText());
             }
-
-            if (prim.IsInstance()) {
-                // XXX(USD-7119): Add native instancing support...
-                continue;
-            }
-
-            // Enumerate the imaging sub-prims.
-            SdfPath const& primPath = prim.GetPath();
-            const TfTokenVector subprims = _GetImagingSubprims(prim);
-            for (TfToken const& subprim : subprims) {
-                SdfPath const subpath = subprim.IsEmpty()
-                    ? primPath : primPath.AppendChild(subprim);
-                addedPrims.emplace_back(subpath,
-                        _GetImagingSubprimType(prim, subprim));
-            }
+            lastEnd = addedPrims.size();
         }
     }
 

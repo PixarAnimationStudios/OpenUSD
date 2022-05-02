@@ -165,6 +165,15 @@ HgiGLGraphicsPipeline::BindPipeline()
     //
     // Multi sample state
     //
+    if (_descriptor.multiSampleState.multiSampleEnable) {
+        glEnable(GL_MULTISAMPLE);
+    } else {
+        glDisable(GL_MULTISAMPLE);
+        // If not using GL_MULTISAMPLE, use GL_POINT_SMOOTH to render points as 
+        // circles instead of square.
+        // XXX Switch points rendering to emit quad with FS that draws circle.
+        glEnable(GL_POINT_SMOOTH);
+    }
     if (_descriptor.multiSampleState.alphaToCoverageEnable) {
         glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     } else {

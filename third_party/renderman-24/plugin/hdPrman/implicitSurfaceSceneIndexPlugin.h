@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Pixar
+// Copyright 2022 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -20,10 +20,32 @@
 // distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
-//
-#ifndef PXR_USD_AR_AR_H
-#define PXR_USD_AR_AR_H
 
-#define AR_VERSION @AR_VERSION@
+#ifndef PXR_IMAGING_HDPRMAN_IMPLICIT_SURFACE_SCENE_INDEX_PLUGIN_H
+#define PXR_IMAGING_HDPRMAN_IMPLICIT_SURFACE_SCENE_INDEX_PLUGIN_H
 
-#endif
+#include "pxr/pxr.h"
+#include "pxr/imaging/hd/sceneIndexPlugin.h"
+#include "hdPrman/api.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+/// \class HdPrman_ImplicitSurfaceSceneIndexPlugin
+///
+/// Plugin adds a scene index turning implicit surfaces into mesh's that
+/// Storm can consume. For now, only cube's are supported.
+///
+class HdPrman_ImplicitSurfaceSceneIndexPlugin : public HdSceneIndexPlugin
+{
+public:
+    HdPrman_ImplicitSurfaceSceneIndexPlugin();
+
+protected:
+    HdSceneIndexBaseRefPtr _AppendSceneIndex(
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const HdContainerDataSourceHandle &inputArgs) override;
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_IMAGING_HDPRMAN_IMPLICIT_SURFACE_SCENE_INDEX_PLUGIN_H

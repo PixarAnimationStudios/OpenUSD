@@ -40,7 +40,7 @@ HgiResourceBindings::GetDescriptor() const
 
 HgiBufferBindDesc::HgiBufferBindDesc()
     : bindingIndex(0)
-    , stageUsage(HgiShaderStageVertex)
+    , stageUsage(HgiShaderStageVertex | HgiShaderStagePostTessellationVertex)
 {
 }
 

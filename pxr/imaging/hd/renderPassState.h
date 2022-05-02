@@ -341,6 +341,10 @@ public:
     void SetColorMasks(std::vector<ColorMask> const& masks);
     std::vector<ColorMask> const& GetColorMasks() const { return _colorMasks; }
 
+    HD_API
+    void SetMultiSampleEnabled(bool enabled);
+    bool GetMultiSampleEnabled() const { return _multiSampleEnabled; }
+
 protected:
     // ---------------------------------------------------------------------- //
     // Camera and framing state 
@@ -419,6 +423,8 @@ protected:
 
     float _stepSize;
     float _stepSizeLighting;
+
+    bool _multiSampleEnabled;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

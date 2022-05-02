@@ -191,11 +191,18 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     std::vector<GfVec2i> shadowMapResolutions;
     shadowMapResolutions.reserve(_numLights);
 
-    TF_FOR_ALL (lightPerTypeIt, _lightIds) {
-        TF_FOR_ALL (lightPathIt, lightPerTypeIt->second) {
+    // Loop over the lightTypes vector so we always add the built-in light  
+    // types (dome and simple lights) first. This way if the scene has more  
+    // lights than is supported, the built-in lights should still be included.
+    for (TfToken const &lightType : lightTypes) {
+        const auto lightPathsIt = _lightIds.find(lightType);
+        if (lightPathsIt == _lightIds.end()) {
+            continue;
+        }
+        for (SdfPath const &lightPath : lightPathsIt->second) {
 
             HdStLight const *light = static_cast<const HdStLight *>(
-                    renderIndex.GetSprim(lightPerTypeIt->first, *lightPathIt));
+                    renderIndex.GetSprim(lightType, lightPath));
             if (!TF_VERIFY(light)) {
                 continue;
             }
@@ -674,7 +681,7 @@ HdxSimpleLightTask::Execute(HdTaskContext* ctx)
 
 size_t
 HdxSimpleLightTask::_AppendLightsOfType(HdRenderIndex &renderIndex,
-                   std::vector<TfToken> const &lightTypes,
+                   TfTokenVector const &lightTypes,
                    SdfPathVector const &lightIncludePaths,
                    SdfPathVector const &lightExcludePaths,
                    std::map<TfToken, SdfPathVector> *lights)
@@ -690,8 +697,11 @@ HdxSimpleLightTask::_AppendLightsOfType(HdRenderIndex &renderIndex,
             HdPrimGather gather;
             gather.Filter(sprimPaths, lightIncludePaths, lightExcludePaths,
                           &lightsLocal);
-            (*lights)[*it] = lightsLocal;
-            count += lightsLocal.size();
+            const size_t numLocalLights = lightsLocal.size();
+            if (numLocalLights > 0) {
+                (*lights)[*it] = lightsLocal;
+                count += numLocalLights;
+            }
         }
     }
     return count;

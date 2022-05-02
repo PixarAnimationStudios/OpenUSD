@@ -143,7 +143,7 @@ void
 _DiscoverNodes(
     NdrNodeDiscoveryResultVec* result,
     const mx::ConstDocumentPtr& doc,
-    const NdrNodeDiscoveryResult& fileResult,
+    const NdrDiscoveryUri& fileResult,
     const _NameMapping& nameMapping)
 {
     static const TfToken family = TfToken();
@@ -156,8 +156,8 @@ _DiscoverNodes(
             UsdMtlxGetVersion(nodeDef, &implicitDefault),
             _ChooseName(nodeDef->getName(), nameMapping),
             TfToken(nodeDef->getNodeString()),
-            fileResult.discoveryType,
-            fileResult.sourceType,
+            _tokens->discoveryType,
+            _tokens->discoveryType,
             fileResult.uri,
             fileResult.resolvedUri
         );
@@ -203,24 +203,14 @@ UsdMtlxDiscoveryPlugin::DiscoverNodes(const Context& context)
     // a document in memory and parse it but instead we choose to
     // read each document separately and merge them.
     if (auto document = UsdMtlxGetDocument("")) {
-        auto standardResult =
-            NdrNodeDiscoveryResult(
-                NdrIdentifier(),// identifier unused
-                NdrVersion(),   // version unused
-                "",             // name unused
-                TfToken(),      // family unused
-                _tokens->discoveryType,
-                _tokens->discoveryType,
-                "mtlx",
-                "mtlx"          // identify as the standard library
-            );
-        _DiscoverNodes(&result, document, standardResult,
+        // Identify as the standard library
+        _DiscoverNodes(&result, document, {"mtlx", "mtlx"},
                        _ComputeNameMapping(document));
     }
 
     // Find the mtlx files from other search paths.
     for (auto&& fileResult:
-            NdrFsHelpersDiscoverNodes(
+            NdrFsHelpersDiscoverFiles(
                 _customSearchPaths,
                 UsdMtlxStandardFileExtensions(),
                 TfGetenvBool("USDMTLX_PLUGIN_FOLLOW_SYMLINKS", false))) {

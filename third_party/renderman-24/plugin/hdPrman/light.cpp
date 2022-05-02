@@ -530,9 +530,8 @@ _PopulateNodesFromMaterialResource(HdSceneDelegate *sceneDelegate,
     }
 
     // Convert HdMaterial to HdMaterialNetwork2 form.
-    HdMaterialNetwork2 matNetwork2;
-    HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
-        hdMatVal.UncheckedGet<HdMaterialNetworkMap>(), &matNetwork2);
+    const HdMaterialNetwork2 matNetwork2 = HdConvertToHdMaterialNetwork2(
+            hdMatVal.UncheckedGet<HdMaterialNetworkMap>());
 
     SdfPath nodePath;
     for (auto const& terminal: matNetwork2.terminals) {
@@ -557,6 +556,115 @@ _PopulateNodesFromMaterialResource(HdSceneDelegate *sceneDelegate,
     }
 
     return true;
+}
+
+static void
+_AddLightFilterCombiner(std::vector<riley::ShadingNode>* lightFilterNodes)
+{
+    static RtUString combineMode("combineMode");
+    static RtUString mult("mult");
+    static RtUString max("max");
+    static RtUString min("min");
+    static RtUString screen("screen");
+
+    riley::ShadingNode combiner = riley::ShadingNode {
+        riley::ShadingNode::Type::k_LightFilter,
+        RtUString("PxrCombinerLightFilter"),
+        RtUString("terminal.Lightfilter"),
+        RtParamList()
+    };
+
+    // Build a map of light filter handles grouped by mode.
+    std::unordered_map<RtUString, std::vector<RtUString>> modeMap;
+
+    for (const auto& lightFilterNode : *lightFilterNodes) {       
+        RtUString mode;
+        lightFilterNode.params.GetString(combineMode, mode);
+        if (mode.Empty()) {
+            modeMap[mult].push_back(lightFilterNode.handle);
+        } 
+        else {
+            modeMap[mode].push_back(lightFilterNode.handle);
+        }
+    }
+
+    // Set the combiner light filter reference array for each mode.
+    for (const auto& entry : modeMap) {
+        combiner.params.SetLightFilterReferenceArray(
+            entry.first, &entry.second[0], entry.second.size());
+    }
+
+    lightFilterNodes->push_back(combiner);
+}
+
+static void
+_PopulateLightFilterNodes(
+        const SdfPath &lightId,
+        const SdfPathVector &lightFilterPaths,
+        HdSceneDelegate *sceneDelegate,
+        HdRenderParam *renderParam,
+        riley::Riley *riley,
+        std::vector<riley::ShadingNode> *lightFilterNodes,
+        std::vector<riley::CoordinateSystemId> *coordsysIds,
+        std::vector<TfToken> *lightFilterLinks)
+{
+    HdPrman_RenderParam * const param =
+        static_cast<HdPrman_RenderParam*>(renderParam);
+
+    if (lightFilterPaths.empty()) {
+        return;
+    }
+
+    int maxFilters = lightFilterPaths.size();
+    if (maxFilters > 1) {
+        maxFilters += 1;  // extra for the combiner filter
+    }
+    lightFilterNodes->reserve(maxFilters);
+    
+    for (const auto& filterPath : lightFilterPaths) {
+        TF_DEBUG(HDPRMAN_LIGHT_FILTER_LINKING)
+            .Msg("HdPrman: Light <%s> filter \"%s\" path \"%s\"\n",
+                lightId.GetText(), filterPath.GetName().c_str(),
+                filterPath.GetText());
+
+        if (!sceneDelegate->GetVisible(filterPath)) {
+            // XXX -- need to get a dependency analysis working here
+            // Invis of a filter works but does not cause the light
+            // to re-sync so one has to tweak the light to see the
+            // effect of the invised filter
+            TF_DEBUG(HDPRMAN_LIGHT_FILTER_LINKING)
+                .Msg("  filter invisible\n");
+            continue;
+        }
+
+        if (TfGetEnvSetting(HD_PRMAN_ENABLE_LIGHT_MATERIAL_NETWORKS)) {
+            if (!_PopulateNodesFromMaterialResource(
+                    sceneDelegate, filterPath,
+                    HdMaterialTerminalTokens->lightFilter, 
+                    lightFilterNodes)) {
+                continue;
+            }
+        } else {
+            if (!HdPrmanLightFilterPopulateNodesFromLightParams(
+                lightFilterNodes, filterPath, sceneDelegate)) {
+                continue;
+            }
+        }
+
+        HdPrmanLightFilterGenerateCoordSysAndLinks(
+            &lightFilterNodes->back(),
+            filterPath,
+            coordsysIds,
+            lightFilterLinks,
+            sceneDelegate,
+            param,
+            riley);
+    }
+
+    // Multiple filters requires a PxrCombinerLightFilter to combine results.
+    if (lightFilterNodes->size() > 1) {
+        _AddLightFilterCombiner(lightFilterNodes);
+    }
 }
 
 /* virtual */
@@ -685,69 +793,12 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
             }
         }
     }
-    
+
     std::vector<riley::ShadingNode> filterNodes;
     std::vector<riley::CoordinateSystemId> coordsysIds;
-    {
-        if (!_lightFilterPaths.empty()) {
-            int maxFilters = _lightFilterPaths.size();
-            std::vector<RtUString> sa;
-            if (maxFilters > 1)
-                sa.reserve(maxFilters);
-                maxFilters += 1;  // extra for the combiner filter
-            filterNodes.reserve(maxFilters);
-
-            for (SdfPath &filterPath: _lightFilterPaths) {
-                TF_DEBUG(HDPRMAN_LIGHT_FILTER_LINKING)
-                    .Msg("HdPrman: Light <%s> filter \"%s\" path \"%s\"\n",
-                        id.GetText(), filterPath.GetName().c_str(),
-                        filterPath.GetText());
-
-                if (!sceneDelegate->GetVisible(filterPath)) {
-                    // XXX -- need to get a dependency analysis working here
-                    // Invis of a filter works but does not cause the light
-                    // to re-sync so one has to tweak the light to see the
-                    // effect of the invised filter
-                    TF_DEBUG(HDPRMAN_LIGHT_FILTER_LINKING)
-                        .Msg("  filter invisible\n");
-                    continue;
-                }
-
-                if (TfGetEnvSetting(HD_PRMAN_ENABLE_LIGHT_MATERIAL_NETWORKS)) {
-                    if (!_PopulateNodesFromMaterialResource(
-                            sceneDelegate, filterPath,
-                            HdMaterialTerminalTokens->lightFilter, 
-                            &filterNodes)) {
-                        continue;
-                    }
-                } else {
-                    if (!HdPrmanLightFilterPopulateNodesFromLightParams(
-                        &filterNodes, filterPath, sceneDelegate)) {
-                        continue;
-                    }
-                }
-
-                HdPrmanLightFilterGenerateCoordSysAndLinks(
-                    &filterNodes.back(), filterPath, &coordsysIds,
-                    &_lightFilterLinks, sceneDelegate, param, riley, 
-                    lightNode);
-                sa.push_back(filterNodes.back().handle);
-            }
-            if (sa.size() > 1) {
-                // More than 1 light filter requires a combiner to blend
-                // their results
-                filterNodes.push_back({
-                    riley::ShadingNode::Type::k_LightFilter,
-                    RtUString("PxrCombinerLightFilter"),
-                    RtUString("terminal.Lightfilter"),
-                    RtParamList()});
-                // XXX -- assume mult for now
-                filterNodes.back().params.SetLightFilterReferenceArray(
-                    RtUString("mult"),
-                    (const RtUString* const&)&sa[0], sa.size());
-            }
-        }
-    }
+    _PopulateLightFilterNodes(
+        id, _lightFilterPaths, sceneDelegate, renderParam, riley,
+        &filterNodes, &coordsysIds, &_lightFilterLinks);
 
     // TODO: portals
 

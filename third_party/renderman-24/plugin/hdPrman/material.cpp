@@ -59,6 +59,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (omitFromRender)
     (material)
     (light)
+    (PrimvarPass)
 );
 
 TF_MAKE_STATIC_DATA(NdrTokenVec, _sourceTypes) {
@@ -227,6 +228,13 @@ _ConvertNodes(
             _ConvertNodes(network, e.upstreamNode, result, visitedNodes);
         }
     }
+
+    // Ignore nodes of id "PrimvarPass". This node is a workaround for 
+    // UsdPreviewSurface materials and is not a registered shader node.
+    if (node.nodeTypeId == _tokens->PrimvarPass) {
+        return false;
+    }
+
     // Find shader registry entry.
     SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrEntry =
@@ -517,6 +525,12 @@ _ConvertNodes(
                 TF_WARN("Unknown upstream node %s", e.upstreamNode.GetText());
                 continue;
             }
+            // Ignore nodes of id "PrimvarPass". This node is a workaround for 
+            // UsdPreviewSurface materials and is not a registered shader node.
+            if (upstreamNode->nodeTypeId == _tokens->PrimvarPass) {
+                continue;
+            }
+
             SdrShaderNodeConstPtr upstreamSdrEntry =
                 sdrRegistry.GetShaderNodeByIdentifier(
                       upstreamNode->nodeTypeId, *_sourceTypes);
@@ -715,9 +729,8 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
         VtValue hdMatVal = sceneDelegate->GetMaterialResource(id);
         if (hdMatVal.IsHolding<HdMaterialNetworkMap>()) {
             // Convert HdMaterial to HdMaterialNetwork2 form.
-            HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
-                hdMatVal.UncheckedGet<HdMaterialNetworkMap>(), 
-                &_materialNetwork);
+            _materialNetwork = HdConvertToHdMaterialNetwork2(
+                    hdMatVal.UncheckedGet<HdMaterialNetworkMap>());
             // Apply material filter chain to the network conditionally.
             // NOTE: When use scene index plugins for matfilt transformations,
             // the matfilt operations are triggered by the GetMaterialResource()

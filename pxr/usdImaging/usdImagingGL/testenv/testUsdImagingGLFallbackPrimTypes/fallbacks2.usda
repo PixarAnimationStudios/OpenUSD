@@ -8,4 +8,5 @@
         token[] Cube = ["Sphere"]
         token[] UnknownCylinder = ["Sphere"]
     }
+    upAxis = "Z"
 )

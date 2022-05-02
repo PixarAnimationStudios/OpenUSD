@@ -24,7 +24,6 @@
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
-#include "pxr/imaging/hdSt/immediateDrawBatch.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/pipelineDrawBatch.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -66,14 +65,12 @@ HdStCommandBuffer::~HdStCommandBuffer() = default;
 static
 HdSt_DrawBatchSharedPtr
 _NewDrawBatch(HdStDrawItemInstance * drawItemInstance, 
-              bool multiDrawIndirectEnabled)
+              HgiCapabilities const * hgiCapabilities)
 {
-    if (HdSt_PipelineDrawBatch::IsEnabled()) {
+    if (HdSt_PipelineDrawBatch::IsEnabled(hgiCapabilities)) {
         return std::make_shared<HdSt_PipelineDrawBatch>(drawItemInstance);
-    } else if (multiDrawIndirectEnabled) {
-        return std::make_shared<HdSt_IndirectDrawBatch>(drawItemInstance);
     } else {
-        return std::make_shared<HdSt_ImmediateDrawBatch>(drawItemInstance);
+        return std::make_shared<HdSt_IndirectDrawBatch>(drawItemInstance);
     }
 }
 
@@ -118,7 +115,7 @@ void
 HdStCommandBuffer::SetDrawItems(
     HdDrawItemConstPtrVectorSharedPtr const &drawItems,
     unsigned currentDrawBatchesVersion,
-    HgiCapabilities const &hgiCapabilities)
+    HgiCapabilities const *hgiCapabilities)
 {
     if (drawItems == _drawItems &&
         currentDrawBatchesVersion == _drawBatchesVersion) {
@@ -131,7 +128,7 @@ HdStCommandBuffer::SetDrawItems(
 
 void
 HdStCommandBuffer::RebuildDrawBatchesIfNeeded(unsigned currentBatchesVersion,
-    HgiCapabilities const &hgiCapabilities)
+    HgiCapabilities const *hgiCapabilities)
 {
     HD_TRACE_FUNCTION();
 
@@ -194,7 +191,7 @@ HdStCommandBuffer::RebuildDrawBatchesIfNeeded(unsigned currentBatchesVersion,
 }
 
 void
-HdStCommandBuffer::_RebuildDrawBatches(HgiCapabilities const &hgiCapabilities)
+HdStCommandBuffer::_RebuildDrawBatches(HgiCapabilities const *hgiCapabilities)
 {
     HD_TRACE_FUNCTION();
 
@@ -285,10 +282,8 @@ HdStCommandBuffer::_RebuildDrawBatches(HgiCapabilities const &hgiCapabilities)
         }
 
         if (!batched) {
-            const bool multiDrawIndirectEnabled = hgiCapabilities.IsSet(
-                HgiDeviceCapabilitiesBitsMultiDrawIndirect);
-            HdSt_DrawBatchSharedPtr batch = _NewDrawBatch(drawItemInstance, 
-                multiDrawIndirectEnabled);
+            HdSt_DrawBatchSharedPtr batch =
+                _NewDrawBatch(drawItemInstance, hgiCapabilities);
             _drawBatches.emplace_back(batch);
             prevBatch.Update(key, batch);
 

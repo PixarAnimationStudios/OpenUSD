@@ -149,12 +149,6 @@ public:
         HdBufferSpecVector * const specs,
         HdBufferSourceSharedPtrVector * const sources);
 
-    HDST_API
-    bool IsSceneMaterial() const;
-
-    HDST_API
-    void SetIsSceneMaterial(bool IsSceneMaterial);
-
 protected:
     HDST_API
     void _SetSource(TfToken const &shaderStageKey, std::string const &source);
@@ -186,8 +180,6 @@ private:
     NamedTextureHandleVector _namedTextureHandles;
 
     TfToken _materialTag;
-
-    bool _isSceneMaterial;
 
     // No copying
     HdSt_MaterialNetworkShader(const HdSt_MaterialNetworkShader &) = delete;

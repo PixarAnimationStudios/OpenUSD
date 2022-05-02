@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/imaging/hdx/oitVolumeRenderTask.h"
 #include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hdx/oitBufferAccessor.h"
@@ -131,18 +129,9 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
             "No OIT buffers allocated but needed by OIT volume render task");
         return;
     }
-    
-    // We render into a SSBO -- not MSSA compatible
-    bool oldMSAA = glIsEnabled(GL_MULTISAMPLE);
-    glDisable(GL_MULTISAMPLE);
-    // XXX When rendering HdStPoints we set GL_POINTS and assume that
-    //     GL_POINT_SMOOTH is enabled by default. This renders circles instead
-    //     of squares. However, when toggling MSAA off (above) we see GL_POINTS
-    //     start to render squares (driver bug?).
-    //     For now we always enable GL_POINT_SMOOTH. 
-    // XXX Switch points rendering to emit quad with FS that draws circle.
-    bool oldPointSmooth = glIsEnabled(GL_POINT_SMOOTH);
-    glEnable(GL_POINT_SMOOTH);
+
+    // We render into an SSBO -- not MSSA compatible
+    renderPassState->SetMultiSampleEnabled(false);
 
     // XXX
     //
@@ -156,18 +145,6 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
     renderPassState->SetEnableDepthMask(false);
     renderPassState->SetColorMasks({HdRenderPassState::ColorMaskNone});
     HdxRenderTask::Execute(ctx);
-
-    //
-    // Post Execute Restore
-    //
-
-    if (oldMSAA) {
-        glEnable(GL_MULTISAMPLE);
-    }
-
-    if (!oldPointSmooth) {
-        glDisable(GL_POINT_SMOOTH);
-    }
 }
 
 

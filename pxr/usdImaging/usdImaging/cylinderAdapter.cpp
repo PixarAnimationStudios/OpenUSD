@@ -23,11 +23,13 @@
 //
 #include "pxr/usdImaging/usdImaging/cylinderAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourceImplicits-Impl.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/implicitSurfaceMeshUtils.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
+#include "pxr/imaging/hd/cylinderSchema.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -50,6 +52,37 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdImagingCylinderAdapter::~UsdImagingCylinderAdapter() 
 {
+}
+
+TfTokenVector
+UsdImagingCylinderAdapter::GetImagingSubprims()
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingCylinderAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->cylinder;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingCylinderAdapter::GetImagingSubprimData(
+        TfToken const& subprim,
+        UsdPrim const& prim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceImplicitsPrim<UsdGeomCylinder>::New(
+            prim.GetPath(),
+            HdCylinderSchemaTokens->cylinder,
+            prim,
+            stageGlobals);
+    }
+    return nullptr;
 }
 
 bool

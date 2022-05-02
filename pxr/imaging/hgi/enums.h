@@ -65,6 +65,12 @@ using HgiBits = uint32_t;
 ///   The device supports conservative rasterization</li>
 /// <li>HgiDeviceCapabilitiesBitsStencilReadback:
 ///   Supports reading back the stencil buffer from GPU to CPU.</li>
+/// <li>HgiDeviceCapabilitiesBitsCustomDepthRange:
+///   The device supports setting a custom depth range.</li>
+/// <li>HgiDeviceCapabilitiesBitsMetalTessellation:
+///   Supports Metal tessellation shaders</li>
+/// <li>HgiDeviceCapabilitiesBitsBasePrimitiveOffset:
+///   The device requires workaround for base primitive offset</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
@@ -81,7 +87,10 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne = 1 << 9,
     HgiDeviceCapabilitiesBitsCppShaderPadding        = 1 << 10,
     HgiDeviceCapabilitiesBitsConservativeRaster      = 1 << 11,
-    HgiDeviceCapabilitiesBitsStencilReadback         = 1 << 12
+    HgiDeviceCapabilitiesBitsStencilReadback         = 1 << 12,
+    HgiDeviceCapabilitiesBitsCustomDepthRange        = 1 << 13,
+    HgiDeviceCapabilitiesBitsMetalTessellation       = 1 << 14,
+    HgiDeviceCapabilitiesBasePrimitiveOffset         = 1 << 15,
 };
 
 using HgiDeviceCapabilities = HgiBits;
@@ -611,6 +620,10 @@ enum HgiPrimitiveType
 ///   New attribute data is fetched for each vertex.</li>
 /// <li>HgiVertexBufferStepFunctionPerInstance:
 ///   New attribute data is fetched for each instance.</li>
+/// <li>HgiVertexBufferStepFunctionPerPatch:
+///   New attribute data is fetched for each patch.</li>
+/// <li>HgiVertexBufferStepFunctionPerPatchControlPoint:
+///   New attribute data is fetched for each patch control point.</li>
 /// <li>HgiVertexBufferStepFunctionPerDrawCommand:
 ///   New attribute data is fetched for each draw in a multi-draw command.</li>
 /// </ul>
@@ -620,6 +633,8 @@ enum HgiVertexBufferStepFunction
     HgiVertexBufferStepFunctionConstant = 0,
     HgiVertexBufferStepFunctionPerVertex,
     HgiVertexBufferStepFunctionPerInstance,
+    HgiVertexBufferStepFunctionPerPatch,
+    HgiVertexBufferStepFunctionPerPatchControlPoint,
     HgiVertexBufferStepFunctionPerDrawCommand,
 
     HgiVertexBufferStepFunctionCount
@@ -667,11 +682,19 @@ using HgiMemoryBarrier = HgiBits;
 /// <ul>
 /// <li>HgiBindingTypeValue:
 ///   Shader declares binding as a value.
-///   Glsl example: uniform int parameter;
+///   Glsl example: buffer { int parameter; };
+///   Msl example: int parameter;</li>
+/// <li>HgiBindingTypeUniformValue:
+///   Shader declares binding as a uniform block value.
+///   Glsl example: uniform { int parameter; };
 ///   Msl example: int parameter;</li>
 /// <li>HgiBindingTypeArray:
 ///   Shader declares binding as array value.
-///   Glsl example: uniform int parameter[n];
+///   Glsl example: buffer { int parameter[n]; };
+///   Msl example: int parameter[n];</li>
+/// <li>HgiBindingTypeUniformArray:
+///   Shader declares binding as uniform block array value.
+///   Glsl example: uniform { int parameter[n]; };
 ///   Msl example: int parameter[n];</li>
 /// <li>HgiBindingTypePointer:
 ///   Shader declares binding as pointer value.
@@ -682,7 +705,9 @@ using HgiMemoryBarrier = HgiBits;
 enum HgiBindingType
 {
     HgiBindingTypeValue = 0,
+    HgiBindingTypeUniformValue,
     HgiBindingTypeArray,
+    HgiBindingTypeUniformArray,
     HgiBindingTypePointer,
 };
 

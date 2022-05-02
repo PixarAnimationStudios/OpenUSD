@@ -43,6 +43,18 @@ using HdSt_ImageShaderRenderPassSharedPtr =
 using HdStRenderPassShaderSharedPtr =
     std::shared_ptr<class HdStRenderPassShader>;
 
+/// OIT resolve task params.
+struct HdxOitResolveTaskParams
+{
+    HdxOitResolveTaskParams()
+        : useAovMultiSample(true)
+        , resolveAovMultiSample(true)
+    {}
+
+    bool useAovMultiSample;
+    bool resolveAovMultiSample;
+};
+
 /// \class HdxOitResolveTask
 ///
 /// A task for resolving previous passes to pixels.
@@ -111,6 +123,15 @@ private:
     HdBufferArrayRangeSharedPtr _indexBar;
     HdBufferArrayRangeSharedPtr _uniformBar;
 };
+
+HDX_API
+bool operator==(const HdxOitResolveTaskParams& lhs,
+                const HdxOitResolveTaskParams& rhs);
+HDX_API
+bool operator!=(const HdxOitResolveTaskParams& lhs,
+                const HdxOitResolveTaskParams& rhs);
+HDX_API
+std::ostream& operator<<(std::ostream& out, const HdxOitResolveTaskParams& pv);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

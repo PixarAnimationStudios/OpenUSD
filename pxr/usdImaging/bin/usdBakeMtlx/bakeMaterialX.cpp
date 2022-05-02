@@ -179,11 +179,13 @@ UsdBakeMtlxBakeMaterial(
         {_tokens->mtlx}, &networkMap, UsdTimeCode());
 
     // Convert to HdMaterialNetwork2
-    HdMaterialNetwork2 network2;
     bool isVolume = false;
-    HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
-        networkMap, &network2, &isVolume);
-
+    const HdMaterialNetwork2 network2 =
+        HdConvertToHdMaterialNetwork2(networkMap, &isVolume);
+    if (isVolume) {
+        // Not supported
+        return std::string();
+    }
 
     // Load Standard Libraries/setup SearchPaths
     // XXX This does not follow the pattern used elsewhere because of how

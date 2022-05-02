@@ -143,16 +143,16 @@ public:
         HgiPrimitiveType primitiveType,
         uint32_t primitiveIndexSize,
         uint32_t vertexCount,
-        uint32_t firstVertex,
+        uint32_t baseVertex,
         uint32_t instanceCount,
-        uint32_t firstInstance);
+        uint32_t baseInstance);
 
     HGIGL_API
     static HgiGLOpsFn DrawIndirect(
         HgiPrimitiveType primitiveType,
         uint32_t primitiveIndexSize,
         HgiBufferHandle const& drawParameterBuffer,
-        uint32_t drawBufferOffset,
+        uint32_t drawBufferByteOffset,
         uint32_t drawCount,
         uint32_t stride);
 
@@ -163,9 +163,9 @@ public:
         HgiBufferHandle const& indexBuffer,
         uint32_t indexCount,
         uint32_t indexBufferByteOffset,
-        uint32_t vertexOffset,
+        uint32_t baseVertex,
         uint32_t instanceCount,
-        uint32_t firstInstance);
+        uint32_t baseInstance);
 
     HGIGL_API
     static HgiGLOpsFn DrawIndexedIndirect(
@@ -173,7 +173,7 @@ public:
         uint32_t primitiveIndexSize,
         HgiBufferHandle const& indexBuffer,
         HgiBufferHandle const& drawParameterBuffer,
-        uint32_t drawBufferOffset,
+        uint32_t drawBufferByteOffset,
         uint32_t drawCount,
         uint32_t stride);
 

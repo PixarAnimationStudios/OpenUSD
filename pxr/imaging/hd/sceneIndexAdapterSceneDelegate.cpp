@@ -44,8 +44,12 @@
 #include "pxr/imaging/hd/basisCurvesSchema.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
 #include "pxr/imaging/hd/cameraSchema.h"
+#include "pxr/imaging/hd/capsuleSchema.h"
 #include "pxr/imaging/hd/categoriesSchema.h"
+#include "pxr/imaging/hd/coneSchema.h"
 #include "pxr/imaging/hd/coordSysBindingSchema.h"
+#include "pxr/imaging/hd/cubeSchema.h"
+#include "pxr/imaging/hd/cylinderSchema.h"
 #include "pxr/imaging/hd/dependenciesSchema.h"
 #include "pxr/imaging/hd/dependencySchema.h"
 #include "pxr/imaging/hd/extComputationInputComputationSchema.h"
@@ -73,6 +77,7 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/renderBufferSchema.h"
+#include "pxr/imaging/hd/sphereSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
@@ -208,13 +213,13 @@ HdSceneIndexAdapterSceneDelegate::_PrimAdded(
             default:
                 break;
             };
+        }
 
-            if (it != _primCache.end()) {
-                _PrimCacheEntry & entry = (*it).second;
-                entry.primType = primType;
-            } else {
-                _primCache[indexPath].primType = primType;
-            }
+        if (it != _primCache.end()) {
+            _PrimCacheEntry & entry = (*it).second;
+            entry.primType = primType;
+        } else {
+            _primCache[indexPath].primType = primType;
         }
     }
 }
@@ -1039,9 +1044,14 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
         return VtValue();
     }
 
+    TfToken cameraSchemaToken = paramName;
+    if (paramName == HdCameraTokens->clipPlanes) {
+        cameraSchemaToken = HdCameraSchemaTokens->clippingPlanes;
+    }
+
     HdSampledDataSourceHandle valueDs =
         HdSampledDataSource::Cast(
-            camera->Get(paramName));
+            camera->Get(cameraSchemaToken));
     if (!valueDs) {
         return VtValue();
     }
@@ -1063,6 +1073,17 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
             range = value.UncheckedGet<GfVec2f>();
         }
         return VtValue(GfRange1f(range[0], range[1]));
+    } else if (paramName == HdCameraTokens->clipPlanes) {
+        std::vector<GfVec4d> vec;
+        if (value.IsHolding<VtArray<GfVec4d>>()) {
+            const VtArray<GfVec4d> array =
+                value.UncheckedGet<VtArray<GfVec4d>>();
+            vec.reserve(array.size());
+            for (const GfVec4d &p : array) {
+                vec.push_back(p);
+            }
+        }
+        return VtValue(vec);
     } else {
         return value;
     }
@@ -1390,6 +1411,71 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         return VtValue();
     }
 
+    if (prim.primType == HdPrimTypeTokens->cube) {
+        if (HdContainerDataSourceHandle cubeSrc =
+                HdContainerDataSource::Cast(
+                    prim.dataSource->Get(HdCubeSchemaTokens->cube))) {
+            if (cubeSrc->Has(key)) {
+                if (HdSampledDataSourceHandle valueSrc =
+                        HdSampledDataSource::Cast(cubeSrc->Get(key))) {
+                    return valueSrc->GetValue(0);
+                }
+            }
+        }
+    }
+
+    if (prim.primType == HdPrimTypeTokens->sphere) {
+        if (HdContainerDataSourceHandle sphereSrc =
+                HdContainerDataSource::Cast(
+                    prim.dataSource->Get(HdSphereSchemaTokens->sphere))) {
+            if (sphereSrc->Has(key)) {
+                if (HdSampledDataSourceHandle valueSrc =
+                        HdSampledDataSource::Cast(sphereSrc->Get(key))) {
+                    return valueSrc->GetValue(0);
+                }
+            }
+        }
+    }
+
+    if (prim.primType == HdPrimTypeTokens->cylinder) {
+        if (HdContainerDataSourceHandle cylinderSrc =
+                HdContainerDataSource::Cast(
+                    prim.dataSource->Get(HdCylinderSchemaTokens->cylinder))) {
+            if (cylinderSrc->Has(key)) {
+                if (HdSampledDataSourceHandle valueSrc =
+                        HdSampledDataSource::Cast(cylinderSrc->Get(key))) {
+                    return valueSrc->GetValue(0);
+                }
+            }
+        }
+    }
+
+    if (prim.primType == HdPrimTypeTokens->cone) {
+        if (HdContainerDataSourceHandle coneSrc =
+                HdContainerDataSource::Cast(
+                    prim.dataSource->Get(HdConeSchemaTokens->cone))) {
+            if (coneSrc->Has(key)) {
+                if (HdSampledDataSourceHandle valueSrc =
+                        HdSampledDataSource::Cast(coneSrc->Get(key))) {
+                    return valueSrc->GetValue(0);
+                }
+            }
+        }
+    }
+
+    if (prim.primType == HdPrimTypeTokens->capsule) {
+        if (HdContainerDataSourceHandle capsuleSrc =
+                HdContainerDataSource::Cast(
+                    prim.dataSource->Get(HdCapsuleSchemaTokens->capsule))) {
+            if (capsuleSrc->Has(key)) {
+                if (HdSampledDataSourceHandle valueSrc =
+                        HdSampledDataSource::Cast(capsuleSrc->Get(key))) {
+                    return valueSrc->GetValue(0);
+                }
+            }
+        }
+    }
+
     // "primvars" use of Get()
     if (HdContainerDataSource::Cast(prim.dataSource)->Has(
             HdPrimvarsSchemaTokens->primvars)) {
@@ -1541,19 +1627,32 @@ HdSceneIndexAdapterSceneDelegate::_SamplePrimvar(
         valueSource->GetContributingSampleTimesForInterval(
                 std::numeric_limits<float>::lowest(),
                 std::numeric_limits<float>::max(), &times);
+
+        // XXX fallback to include a single sample
+        if (times.empty()) {
+            times.push_back(0.0f);
+        }
     } else {
-        valueSource->GetContributingSampleTimesForInterval(
+        const bool isVarying =
+            valueSource->GetContributingSampleTimesForInterval(
                 0, 0, &times);
+        if (isVarying) {
+            if (times.empty()) {
+                TF_CODING_ERROR("No contributing sample times returned for "
+                                "%s %s even though "
+                                "GetContributingSampleTimesForInterval "
+                                "indicated otherwise.",
+                                id.GetText(), key.GetText());
+                times.push_back(0.0f);
+            }
+        } else {
+            times = { 0.0f };
+        }
     }
 
-    size_t authoredSamples = times.size();
+    const size_t authoredSamples = times.size();
     if (authoredSamples > maxSampleCount) {
         times.resize(maxSampleCount);
-    }
-
-    // XXX fallback to include a single sample
-    if (times.empty()) {
-        times.push_back(0.0f);
     }
 
     for (size_t i = 0; i < times.size(); ++i) {
@@ -2100,6 +2199,11 @@ HdSceneIndexAdapterSceneDelegate::GetDisplayStyle(SdfPath const &id)
         if (HdBoolDataSourceHandle ds =
                 styleSchema.GetPointsShadingEnabled()) {
             result.pointsShadingEnabled = ds->GetTypedValue(0.0f);
+        }
+
+        if (HdBoolDataSourceHandle ds =
+                styleSchema.GetMaterialIsFinal()) {
+            result.materialIsFinal = ds->GetTypedValue(0.0f);
         }
     }
 

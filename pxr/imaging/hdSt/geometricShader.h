@@ -60,12 +60,12 @@ class HioGlslfx;
 class HdSt_GeometricShader : public HdStShaderCode {
 public:
     /// Used in HdSt_CodeGen to generate the appropriate shader source 
-    enum class PrimitiveType { 
-        PRIM_POINTS, 
+    enum class PrimitiveType {
+        PRIM_POINTS,
         PRIM_BASIS_CURVES_LINES,     // when linear (or) non-refined cubic
         PRIM_BASIS_CURVES_LINEAR_PATCHES,  // refined linear curves
         PRIM_BASIS_CURVES_CUBIC_PATCHES,   // refined cubic curves
-        PRIM_MESH_COARSE_TRIANGLES,  
+        PRIM_MESH_COARSE_TRIANGLES,
         PRIM_MESH_REFINED_TRIANGLES, // e.g: loop subdiv
         PRIM_MESH_COARSE_QUADS,      // e.g: quadrangulation for ptex
         PRIM_MESH_REFINED_QUADS,     // e.g: catmark/bilinear subdiv
@@ -75,7 +75,7 @@ public:
         PRIM_MESH_BOXSPLINETRIANGLE, // e.g. loop limit surface patches
         PRIM_VOLUME                  // Simply draws triangles of bounding
                                      // box of a volume.
-    };                                         
+    };
 
     /// static query functions for PrimitiveType
     static inline bool IsPrimTypePoints (PrimitiveType primType) {
@@ -95,7 +95,7 @@ public:
                 primType == PrimitiveType::PRIM_MESH_REFINED_QUADS     ||
                 primType == PrimitiveType::PRIM_MESH_COARSE_TRIQUADS   ||
                 primType == PrimitiveType::PRIM_MESH_REFINED_TRIQUADS  ||
-                primType == PrimitiveType::PRIM_MESH_BSPLINE   ||
+                primType == PrimitiveType::PRIM_MESH_BSPLINE           ||
                 primType == PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE);
     }
 
@@ -117,9 +117,9 @@ public:
 
     static inline bool IsPrimTypeRefinedMesh(PrimitiveType primType) {
         return (primType == PrimitiveType::PRIM_MESH_REFINED_TRIANGLES ||
-                primType == PrimitiveType::PRIM_MESH_REFINED_QUADS ||
-                primType == PrimitiveType::PRIM_MESH_REFINED_TRIQUADS ||
-                primType == PrimitiveType::PRIM_MESH_BSPLINE ||
+                primType == PrimitiveType::PRIM_MESH_REFINED_QUADS     ||
+                primType == PrimitiveType::PRIM_MESH_REFINED_TRIQUADS  ||
+                primType == PrimitiveType::PRIM_MESH_BSPLINE           ||
                 primType == PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE);
     }
 
@@ -148,6 +148,7 @@ public:
                        bool useHardwareFaceCulling,
                        bool hasMirroredTransform,
                        bool doubleSided,
+                       bool useMetalTessellation,
                        HdPolygonMode polygonMode,
                        bool cullingPass,
                        FvarPatchType fvarPatchType,
@@ -197,6 +198,10 @@ public:
         return _doubleSided;
     }
 
+    bool GetUseMetalTessellation() const {
+        return _useMetalTessellation;
+    }
+
     float GetLineWidth() const {
         return _lineWidth;
     }
@@ -224,6 +229,10 @@ public:
 
     bool IsPrimTypeQuads() const {
         return IsPrimTypeQuads(_primType);
+    }
+
+    bool IsPrimTypeTriQuads() const {
+        return IsPrimTypeTriQuads(_primType);
     }
 
     bool IsPrimTypePatches() const {
@@ -264,6 +273,7 @@ private:
     bool _useHardwareFaceCulling;
     bool _hasMirroredTransform;
     bool _doubleSided;
+    bool _useMetalTessellation;
     HdPolygonMode _polygonMode;
     float _lineWidth;
 

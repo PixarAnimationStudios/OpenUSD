@@ -129,7 +129,6 @@ protected:
         HDST_API
         bool CompileShader(
                 HdStDrawItem const *drawItem,
-                bool indirect,
                 HdStResourceRegistrySharedPtr const &resourceRegistry);
 
         HdStGLSLProgramSharedPtr GetGLSLProgram() const {
@@ -214,7 +213,6 @@ protected:
     HDST_API
     _DrawingProgram & _GetDrawingProgram(
         HdStRenderPassStateSharedPtr const &state, 
-        bool indirect,
         HdStResourceRegistrySharedPtr const &resourceRegistry);
 
 protected:

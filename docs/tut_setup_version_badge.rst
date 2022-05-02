@@ -2,4 +2,4 @@
 
    :fa:`cogs` :ref:`Configure your Environment <tut_usd_tutorials:Environment Setup>`
 
-   :fa:`check` Tested with `USD 22.03 <https://github.com/PixarAnimationStudios/USD/tree/v22.03>`_
+   :fa:`check` Tested with `USD 22.05 <https://github.com/PixarAnimationStudios/USD/tree/v22.05>`_

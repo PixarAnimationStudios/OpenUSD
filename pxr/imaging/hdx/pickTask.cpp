@@ -40,7 +40,6 @@
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hdSt/textureUtils.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/volume.h"
 
@@ -356,6 +355,7 @@ HdxPickTask::_ConditionStencilWithGLCallback(
             glDisable(GL_CULL_FACE);
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             glFrontFace(GL_CCW);
+            glDisable(GL_STENCIL_TEST);
         }
     };
 
@@ -379,9 +379,8 @@ HdxPickTask::_UseWidgetPass() const
 }
 
 template<typename T>
-T const *
-HdxPickTask::_ReadAovBuffer(TfToken const & aovName,
-                            std::vector<uint8_t> * buffer) const
+HdStTextureUtils::AlignedBuffer<T>
+HdxPickTask::_ReadAovBuffer(TfToken const & aovName) const
 {
     HdRenderBuffer const * renderBuffer = _FindAovBuffer(aovName);
 
@@ -390,11 +389,13 @@ HdxPickTask::_ReadAovBuffer(TfToken const & aovName,
         HgiTextureHandle texture = aov.Get<HgiTextureHandle>();
 
         if (texture) {
-            HdStTextureUtils::HgiTextureReadback(_hgi, texture, buffer);
+            size_t bufferSize = 0;
+            return HdStTextureUtils::HgiTextureReadback<T>(
+                                        _hgi, texture, &bufferSize);
         }
     }
 
-    return reinterpret_cast<T const *>(buffer->data());
+    return HdStTextureUtils::AlignedBuffer<T>();
 }
 
 HdRenderBuffer const *
@@ -641,47 +642,35 @@ HdxPickTask::Execute(HdTaskContext* ctx)
             {HdxRenderTagTokens->widget});
     }
 
-    glDisable(GL_STENCIL_TEST);
-
     // Capture the result buffers and cast to the appropriate types.
-    std::vector<uint8_t> primIds;
-    int const * primIdPtr =
-        _ReadAovBuffer<int>(HdAovTokens->primId, &primIds);
+    HdStTextureUtils::AlignedBuffer<int> primIds =
+        _ReadAovBuffer<int>(HdAovTokens->primId);
+    HdStTextureUtils::AlignedBuffer<int> instanceIds =
+        _ReadAovBuffer<int>(HdAovTokens->instanceId);
+    HdStTextureUtils::AlignedBuffer<int> elementIds =
+        _ReadAovBuffer<int>(HdAovTokens->elementId);
+    HdStTextureUtils::AlignedBuffer<int> edgeIds =
+        _ReadAovBuffer<int>(HdAovTokens->edgeId);
+    HdStTextureUtils::AlignedBuffer<int> pointIds =
+        _ReadAovBuffer<int>(HdAovTokens->pointId);
+    HdStTextureUtils::AlignedBuffer<int> neyes =
+        _ReadAovBuffer<int>(HdAovTokens->Neye);
+    HdStTextureUtils::AlignedBuffer<float> depths =
+        _ReadAovBuffer<float>(_depthToken);
 
-    std::vector<uint8_t> instanceIds;
-    int const * instanceIdPtr =
-        _ReadAovBuffer<int>(HdAovTokens->instanceId, &instanceIds);
-
-    std::vector<uint8_t> elementIds;
-    int const * elementIdPtr =
-        _ReadAovBuffer<int>(HdAovTokens->elementId, &elementIds);
-
-    std::vector<uint8_t> edgeIds;
-    int const * edgeIdPtr =
-        _ReadAovBuffer<int>(HdAovTokens->edgeId, &edgeIds);
-
-    std::vector<uint8_t> pointIds;
-    int const * pointIdPtr =
-        _ReadAovBuffer<int>(HdAovTokens->pointId, &pointIds);
-
-    std::vector<uint8_t> neyes;
-    int const * neyePtr =
-        _ReadAovBuffer<int>(HdAovTokens->Neye, &neyes);
-
-    std::vector<uint8_t> depths;
-    float const * depthPtr =
-        _ReadAovBuffer<float>(_depthToken, &depths);
-
-    // For un-projection, get the current depth range.
-    GLfloat p[2];
-    glGetFloatv(GL_DEPTH_RANGE, &p[0]);
-    GfVec2f depthRange(p[0], p[1]);
+    // For un-projection, get the depth range at time of drawing.
+    GfVec2f depthRange(0, 1);
+    if (_hgi->GetCapabilities()->IsSet(
+        HgiDeviceCapabilitiesBitsCustomDepthRange)) {
+        // Assume each of the render passes used the same depth range.
+        depthRange = _pickableRenderPassState->GetDepthRange();
+    }
 
     HdxPickResult result(
-            primIdPtr, instanceIdPtr, elementIdPtr,
-            edgeIdPtr, pointIdPtr, neyePtr, depthPtr,
-            _index, _contextParams.pickTarget, _contextParams.viewMatrix,
-            _contextParams.projectionMatrix, depthRange, dimensions, viewport);
+        primIds.get(), instanceIds.get(), elementIds.get(),
+        edgeIds.get(), pointIds.get(), neyes.get(), depths.get(),
+        _index, _contextParams.pickTarget, _contextParams.viewMatrix,
+        _contextParams.projectionMatrix, depthRange, dimensions, viewport);
 
     // Resolve!
     if (_contextParams.resolveMode ==

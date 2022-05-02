@@ -273,6 +273,91 @@ UsdContrivedDerived::CreateJustDefaultAttr(VtValue const &defaultValue, bool wri
                        writeSparsely);
 }
 
+UsdAttribute
+UsdContrivedDerived::GetOverrideBaseTrueDerivedFalseAttr() const
+{
+    return GetPrim().GetAttribute(UsdContrivedTokens->overrideBaseTrueDerivedFalse);
+}
+
+UsdAttribute
+UsdContrivedDerived::CreateOverrideBaseTrueDerivedFalseAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->overrideBaseTrueDerivedFalse,
+                       SdfValueTypeNames->Int,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdContrivedDerived::GetOverrideBaseTrueDerivedNoneAttr() const
+{
+    return GetPrim().GetAttribute(UsdContrivedTokens->overrideBaseTrueDerivedNone);
+}
+
+UsdAttribute
+UsdContrivedDerived::CreateOverrideBaseTrueDerivedNoneAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->overrideBaseTrueDerivedNone,
+                       SdfValueTypeNames->Int,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdContrivedDerived::GetOverrideBaseFalseDerivedFalseAttr() const
+{
+    return GetPrim().GetAttribute(UsdContrivedTokens->overrideBaseFalseDerivedFalse);
+}
+
+UsdAttribute
+UsdContrivedDerived::CreateOverrideBaseFalseDerivedFalseAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->overrideBaseFalseDerivedFalse,
+                       SdfValueTypeNames->Int,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdContrivedDerived::GetOverrideBaseFalseDerivedNoneAttr() const
+{
+    return GetPrim().GetAttribute(UsdContrivedTokens->overrideBaseFalseDerivedNone);
+}
+
+UsdAttribute
+UsdContrivedDerived::CreateOverrideBaseFalseDerivedNoneAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->overrideBaseFalseDerivedNone,
+                       SdfValueTypeNames->Int,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdContrivedDerived::GetOverrideBaseNoneDerivedFalseAttr() const
+{
+    return GetPrim().GetAttribute(UsdContrivedTokens->overrideBaseNoneDerivedFalse);
+}
+
+UsdAttribute
+UsdContrivedDerived::CreateOverrideBaseNoneDerivedFalseAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->overrideBaseNoneDerivedFalse,
+                       SdfValueTypeNames->Int,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 UsdRelationship
 UsdContrivedDerived::GetBindingRel() const
 {
@@ -313,6 +398,11 @@ UsdContrivedDerived::GetSchemaAttributeNames(bool includeInherited)
         UsdContrivedTokens->testingAsset,
         UsdContrivedTokens->namespacedProperty,
         UsdContrivedTokens->justDefault,
+        UsdContrivedTokens->overrideBaseTrueDerivedFalse,
+        UsdContrivedTokens->overrideBaseTrueDerivedNone,
+        UsdContrivedTokens->overrideBaseFalseDerivedFalse,
+        UsdContrivedTokens->overrideBaseFalseDerivedNone,
+        UsdContrivedTokens->overrideBaseNoneDerivedFalse,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

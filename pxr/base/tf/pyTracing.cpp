@@ -26,6 +26,7 @@
 
 #include "pxr/base/tf/pyTracing.h"
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/staticData.h"
@@ -153,3 +154,4 @@ void Tf_PyTracingPythonInitialized()
 }
             
 PXR_NAMESPACE_CLOSE_SCOPE
+#endif // PXR_PYTHON_SUPPORT_ENABLED

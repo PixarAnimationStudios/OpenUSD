@@ -105,7 +105,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 bool HdPrmanLightFilterPopulateNodesFromLightParams(
     std::vector<riley::ShadingNode> *filterNodes,
-    SdfPath &filterPath,
+    const SdfPath &filterPath,
     HdSceneDelegate *sceneDelegate)
 {
     HD_TRACE_FUNCTION();
@@ -767,13 +767,12 @@ bool HdPrmanLightFilterPopulateNodesFromLightParams(
 
 void HdPrmanLightFilterGenerateCoordSysAndLinks(
     riley::ShadingNode *filter,
-    SdfPath &filterPath,
+    const SdfPath &filterPath,
     std::vector<riley::CoordinateSystemId> *coordsysIds,
     std::vector<TfToken> *filterLinks,
     HdSceneDelegate *sceneDelegate,
     HdPrman_RenderParam *renderParam,
-    riley::Riley *riley,
-    const riley::ShadingNode &lightNode)
+    riley::Riley *riley)
 {
     // Sample filter transform
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
@@ -786,28 +785,19 @@ void HdPrmanLightFilterGenerateCoordSysAndLinks(
     const riley::Transform xform = {
         unsigned(xf.count), xf_rt_values.data(), xf.times.data()};
 
-    // The coordSys name is the final component of the id,
-    // after stripping namespaces.
+    // To ensure the coordsys name is unique, use the full filter path.
+    RtUString coordsysName = RtUString(filterPath.GetText());
+
     RtParamList attrs;
-    const char *csName =
-                SdfPath::StripNamespace(filterPath.GetName()).c_str();
-    attrs.SetString(RixStr.k_name, RtUString(csName));
+    attrs.SetString(RixStr.k_name, coordsysName);
 
-    riley::CoordinateSystemId csId;
-    csId = riley->CreateCoordinateSystem(riley::UserId::DefaultId(),
-                                         xform, attrs);
-
+    riley::CoordinateSystemId csId = riley->CreateCoordinateSystem(
+        riley::UserId::DefaultId(), xform, attrs);
     (*coordsysIds).push_back(csId);
 
     // Only certain light filters require a coordsys, but we do not
     // know which, here, so we provide it in all cases.
-    filter->params.SetString(RtUString("coordsys"),
-                             RtUString(csName));
-
-    // Only certain light filters require a __lightFilterParentShader,
-    // but we do not know which, here, so we provide it in all cases.
-    filter->params.SetString(RtUString("__lightFilterParentShader"),
-                             lightNode.name);
+    filter->params.SetString(RtUString("coordsys"), coordsysName);
 
     // Light filter linking
     VtValue val = sceneDelegate->GetLightParamValue(filterPath,

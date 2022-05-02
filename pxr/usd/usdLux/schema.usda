@@ -83,12 +83,12 @@ class "LightAPI" (
 ) {
     uniform bool collection:lightLink:includeRoot = 1 (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
     )
     uniform bool collection:shadowLink:includeRoot = 1 (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
     )
     uniform token light:shaderId = "" (
@@ -236,13 +236,12 @@ class "MeshLightAPI" (
 ) {
     uniform token light:shaderId = "MeshLight" (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     uniform token light:materialSyncMode = "materialGlowTintsLight" (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
     )
 }
@@ -263,22 +262,21 @@ class "VolumeLightAPI" (
 ) {
     uniform token light:shaderId = "VolumeLight" (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     uniform token light:materialSyncMode = "materialGlowTintsLight" (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
     )
 }
 
-class "ListAPI" (
+class "LightListAPI" (
     inherits = </APISchemaBase>
     doc = """API schema to support discovery and publishing of lights in a scene.
 
-    \\section UsdLuxListAPI_Discovery Discovering Lights via Traversal
+    \\section UsdLuxLightListAPI_Discovery Discovering Lights via Traversal
     
     To motivate this API, consider what is required to discover all
     lights in a scene.  We must load all payloads and traverse all prims:
@@ -299,23 +297,23 @@ class "ListAPI" (
     \\endcode
 
     This traversal -- suitably elaborated to handle certain details --
-    is the first and simplest thing UsdLuxListAPI provides.
-    UsdLuxListAPI::ComputeLightList() performs this traversal and returns
+    is the first and simplest thing UsdLuxLightListAPI provides.
+    UsdLuxLightListAPI::ComputeLightList() performs this traversal and returns
     all lights in the scene:
 
     \\code
-    01  UsdLuxListAPI listAPI(stage->GetPseudoRoot());
+    01  UsdLuxLightListAPI listAPI(stage->GetPseudoRoot());
     02  SdfPathVector lights = listAPI.ComputeLightList();
     \\endcode
 
-    \\section UsdLuxListAPI_LightList Publishing a Cached Light List
+    \\section UsdLuxLightListAPI_LightList Publishing a Cached Light List
 
     Consider a USD client that needs to quickly discover lights but
     wants to defer loading payloads and traversing the entire scene
     where possible, and is willing to do up-front computation and
     caching to achieve that.
 
-    UsdLuxListAPI provides a way to cache the computed light list,
+    UsdLuxLightListAPI provides a way to cache the computed light list,
     by publishing the list of lights onto prims in the model
     hierarchy.  Consider a big set that contains lights:
 
@@ -340,11 +338,11 @@ class "ListAPI" (
 
     The cache can be created by first invoking
     ComputeLightList(ComputeModeIgnoreCache) to pre-compute the list
-    and then storing the result with UsdLuxListAPI::StoreLightList().
+    and then storing the result with UsdLuxLightListAPI::StoreLightList().
 
     To enable efficient retrieval of the cache, it should be stored
     on a model hierarchy prim.  Furthermore, note that while you can
-    use a UsdLuxListAPI bound to the pseudo-root prim to query the
+    use a UsdLuxLightListAPI bound to the pseudo-root prim to query the
     lights (as in the example above) because it will perform a
     traversal over descendants, you cannot store the cache back to the
     pseduo-root prim.
@@ -354,16 +352,16 @@ class "ListAPI" (
 
     \\code
     01  // Find and load all lights, using lightList cache where available
-    02  UsdLuxListAPI list(stage->GetPseudoRoot());
+    02  UsdLuxLightListAPI list(stage->GetPseudoRoot());
     03  SdfPathSet lights = list.ComputeLightList(
-    04      UsdLuxListAPI::ComputeModeConsultModelHierarchyCache);
+    04      UsdLuxLightListAPI::ComputeModeConsultModelHierarchyCache);
     05  stage.LoadAndUnload(lights, SdfPathSet());
     \\endcode
 
     In this mode, ComputeLightList() will traverse the model
     hierarchy, accumulating cached light lists.
 
-    \\section UsdLuxListAPI_CacheBehavior Controlling Cache Behavior
+    \\section UsdLuxLightListAPI_CacheBehavior Controlling Cache Behavior
 
     The lightList:cacheBehavior property gives additional fine-grained
     control over cache behavior:
@@ -387,13 +385,41 @@ class "ListAPI" (
     traversal of the scene for light discovery. The cache will be
     consulted but no descendant prims will be examined.
 
-    \\section UsdLuxListAPI_Instancing Instancing
+    \\section UsdLuxLightListAPI_Instancing Instancing
 
-    Where instances are present, UsdLuxListAPI::ComputeLightList() will
+    Where instances are present, UsdLuxLightListAPI::ComputeLightList() will
     return the instance-unique paths to any lights discovered within
     those instances.  Lights within a UsdGeomPointInstancer will
     not be returned, however, since they cannot be referred to
     solely via paths.
+"""
+) {
+    rel lightList (
+        doc = """Relationship to lights in the scene."""
+    )
+    token lightList:cacheBehavior (
+        doc = """Controls how the lightList should be interpreted.
+        Valid values are:
+        - consumeAndHalt: The lightList should be consulted,
+          and if it exists, treated as a final authoritative statement
+          of any lights that exist at or below this prim, halting
+          recursive discovery of lights.
+        - consumeAndContinue: The lightList should be consulted,
+          but recursive traversal over nameChildren should continue
+          in case additional lights are added by descendants.
+        - ignore: The lightList should be entirely ignored.  This
+          provides a simple way to temporarily invalidate an existing
+          cache.  This is the fallback behavior.
+        """
+        allowedTokens = ["consumeAndHalt", "consumeAndContinue", "ignore"]
+    )
+}
+
+class "ListAPI" (
+    inherits = </APISchemaBase>
+    doc = """
+    \\deprecated
+    Use LightListAPI instead
 """
 ) {
     rel lightList (
@@ -571,7 +597,7 @@ class LightFilter "LightFilter" (
 ) {
     uniform bool collection:filterLink:includeRoot = 1 (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
     )
     uniform token lightFilter:shaderId = "" (
@@ -627,9 +653,8 @@ class DistantLight "DistantLight" (
 ) {
     uniform token light:shaderId = "DistantLight" (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     float inputs:angle = 0.53 (
         doc = """Angular size of the light in degrees.
@@ -645,6 +670,7 @@ class DistantLight "DistantLight" (
         The DistantLight has a high default intensity to approximate the Sun."""
         customData = {
             token apiName = "intensity"
+            bool apiSchemaOverride = true
         }
     )
 }
@@ -661,9 +687,8 @@ class DiskLight "DiskLight" (
 ) {
     uniform token light:shaderId = "DiskLight"  (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     float inputs:radius = 0.5 (
         doc = "Radius of the disk."
@@ -688,9 +713,8 @@ class RectLight "RectLight" (
 ) {
     uniform token light:shaderId = "RectLight"  (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     float inputs:width = 1 (
         doc = "Width of the rectangle, in the local X axis."
@@ -724,9 +748,8 @@ class SphereLight "SphereLight" (
 ) {
     uniform token light:shaderId = "SphereLight"  (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     float inputs:radius = 0.5 (
         doc = "Radius of the sphere."
@@ -756,9 +779,8 @@ class CylinderLight "CylinderLight" (
 ) {
     uniform token light:shaderId = "CylinderLight"  (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     float inputs:length = 1 (
         doc = "Width of the rectangle, in the local X axis."
@@ -791,9 +813,8 @@ class GeometryLight "GeometryLight" (
     )
     uniform token light:shaderId = "GeometryLight"  (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
 }
 
@@ -826,9 +847,8 @@ class DomeLight "DomeLight" (
 ) {
     uniform token light:shaderId = "DomeLight"  (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     asset inputs:texture:file (
         doc = """A color texture to use on the dome, such as an HDR (high
@@ -873,9 +893,8 @@ class PortalLight "PortalLight" (
 ) {
     uniform token light:shaderId = "PortalLight"  (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     float3[] extent = [(-0.5, -0.5, 0.0), (0.5, 0.5, 0.0)] (
         doc = """Boundary extent of the unit rectangle in the XY plane that 

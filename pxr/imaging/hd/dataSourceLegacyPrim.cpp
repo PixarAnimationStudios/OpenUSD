@@ -1222,7 +1222,12 @@ public:
 
     bool Has(const TfToken &name) override
     {
-        VtValue v = _sceneDelegate->GetCameraParamValue(_id, name);
+        TfToken key = name;
+        if (name == HdCameraSchemaTokens->clippingPlanes) {
+            key = HdCameraTokens->clipPlanes;
+        }
+
+        VtValue v = _sceneDelegate->GetCameraParamValue(_id, key);
         return !v.IsEmpty();
     }
 
@@ -1242,6 +1247,7 @@ public:
         results.push_back(HdCameraSchemaTokens->verticalApertureOffset);
         results.push_back(HdCameraSchemaTokens->focalLength);
         results.push_back(HdCameraSchemaTokens->clippingRange);
+        results.push_back(HdCameraSchemaTokens->clippingPlanes);
 
         return results;
     }
@@ -1280,16 +1286,20 @@ public:
             }
             return HdRetainedTypedSampledDataSource<
                         CameraUtilConformWindowPolicy>::New(wp);
-        } else if (name == HdCameraTokens->clipPlanes) {
-            VtValue v = _sceneDelegate->GetCameraParamValue(_id, name);
-        
-            // XXX: this should probably be in the schema, and a vec4f array.
-            std::vector<GfVec4d> cp;
+        } else if (name == HdCameraSchemaTokens->clippingPlanes) {
+            const VtValue v = _sceneDelegate->GetCameraParamValue(
+                _id, HdCameraTokens->clipPlanes);
+            VtArray<GfVec4d> array;
             if (v.IsHolding<std::vector<GfVec4d>>()) {
-                cp = v.UncheckedGet<std::vector<GfVec4d>>();
+                const std::vector<GfVec4d> &vec =
+                    v.UncheckedGet<std::vector<GfVec4d>>();
+                array.resize(vec.size());
+                for (size_t i = 0; i < vec.size(); i++) {
+                    array[i] = vec[i];
+                }
             }
-            return HdRetainedTypedSampledDataSource<std::vector<GfVec4d>>::New(
-                        cp);
+            return HdRetainedTypedSampledDataSource<VtArray<GfVec4d>>::New(
+                array);
         } else if (std::find(HdCameraSchemaTokens->allTokens.begin(),
                 HdCameraSchemaTokens->allTokens.end(), name)
                     != HdCameraSchemaTokens->allTokens.end()) {
@@ -1606,6 +1616,7 @@ public:
             name == HdLegacyDisplayStyleSchemaTokens->displacementEnabled ||
             name == HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough ||
             name == HdLegacyDisplayStyleSchemaTokens->pointsShadingEnabled ||
+            name == HdLegacyDisplayStyleSchemaTokens->materialIsFinal ||
             name == HdLegacyDisplayStyleSchemaTokens->shadingStyle ||
             name == HdLegacyDisplayStyleSchemaTokens->reprSelector ||
             name == HdLegacyDisplayStyleSchemaTokens->cullStyle) {
@@ -1622,6 +1633,7 @@ public:
         results.push_back(HdLegacyDisplayStyleSchemaTokens->displacementEnabled);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->pointsShadingEnabled);
+        results.push_back(HdLegacyDisplayStyleSchemaTokens->materialIsFinal);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->shadingStyle);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->reprSelector);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->cullStyle);
@@ -1667,6 +1679,13 @@ public:
             }
             return HdRetainedTypedSampledDataSource<bool>::New(
                     _displayStyle.pointsShadingEnabled);
+        } else if (name == HdLegacyDisplayStyleSchemaTokens->materialIsFinal) {
+            if (!_displayStyleRead) {
+                _displayStyle = _sceneDelegate->GetDisplayStyle(_id);
+                _displayStyleRead = true;
+            }
+            return HdRetainedTypedSampledDataSource<bool>::New(
+                    _displayStyle.materialIsFinal);
         } else if (name == HdLegacyDisplayStyleSchemaTokens->shadingStyle) {
             TfToken shadingStyle = _sceneDelegate->GetShadingStyle(_id)
                 .GetWithDefault<TfToken>();
@@ -2461,13 +2480,13 @@ _ConvertHdMaterialNetworkToHdDataSources(
 
     for (auto const &iter: hdNetworkMap.map) {
         const TfToken &terminalName = iter.first;
-        terminalsNames.push_back(terminalName);
-
         const HdMaterialNetwork &hdNetwork = iter.second;
 
         if (hdNetwork.nodes.empty()) {
             continue;
         }
+
+        terminalsNames.push_back(terminalName);
 
         // Transfer over individual nodes.
         // Note that the same nodes may be shared by multiple terminals.
@@ -2525,12 +2544,12 @@ _ConvertHdMaterialNetworkToHdDataSources(
                 HdMaterialNodeSchema::BuildRetained(
                     HdRetainedContainerDataSource::New(
                         paramsNames.size(), 
-                        &paramsNames.front(), 
-                        &paramsValues.front()), 
+                        paramsNames.data(),
+                        paramsValues.data()),
                     HdRetainedContainerDataSource::New(
                         cNames.size(), 
-                        &cNames.front(), 
-                        &cValues.front()), 
+                        cNames.data(),
+                        cValues.data()),
                     HdRetainedTypedSampledDataSource<TfToken>::New(
                         node.identifier)));
         }
@@ -2547,14 +2566,14 @@ _ConvertHdMaterialNetworkToHdDataSources(
     HdContainerDataSourceHandle nodesDefaultContext = 
         HdRetainedContainerDataSource::New(
             nodeNames.size(), 
-            &nodeNames.front(), 
-            &nodeValues.front());
+            nodeNames.data(),
+            nodeValues.data());
 
     HdContainerDataSourceHandle terminalsDefaultContext = 
         HdRetainedContainerDataSource::New(
             terminalsNames.size(), 
-            &terminalsNames.front(), 
-            &terminalsValues.front());
+            terminalsNames.data(),
+            terminalsValues.data());
 
     // Create the material network, potentially one per network selector
     HdDataSourceBaseHandle network = HdMaterialNetworkSchema::BuildRetained(

@@ -63,6 +63,8 @@
 #include "RixShadingUtils.h"
 #include "RixPredefinedStrings.hpp"
 
+#include <thread>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -92,7 +94,8 @@ TF_MAKE_STATIC_DATA(std::vector<HdPrman_RenderParam::IntegratorCameraCallback>,
     _integratorCameraCallbacks->clear();
 }
 
-HdPrman_RenderParam::HdPrman_RenderParam(const std::string &rileyVariant) :
+HdPrman_RenderParam::HdPrman_RenderParam(const std::string &rileyVariant,
+        const std::string &xpuVariant) :
     resolution(0),
     _rix(nullptr),
     _ri(nullptr),
@@ -102,10 +105,12 @@ HdPrman_RenderParam::HdPrman_RenderParam(const std::string &rileyVariant) :
     _lastSettingsVersion(0)
 {
     TfRegistryManager::GetInstance().SubscribeTo<HdPrman_RenderParam>();
-    _CreateRiley(rileyVariant);
+    _CreateRiley(rileyVariant, xpuVariant);
     
     // Register RenderMan display driver
     HdPrmanFramebuffer::Register(_rix);
+    
+    _sampleFilterList = {0, nullptr};
 }
 
 HdPrman_RenderParam::~HdPrman_RenderParam()
@@ -295,7 +300,7 @@ _SetParamValue(RtUString const& name,
     } else if (val.IsHolding<VtArray<GfVec2f>>()) {
         const VtArray<GfVec2f>& v = val.UncheckedGet<VtArray<GfVec2f>>();
         params.SetFloatArray(name,
-            reinterpret_cast<const float*>(v.cdata()), 2);
+            reinterpret_cast<const float*>(v.cdata()), 2 * v.size());
     } else if (val.IsHolding<GfVec2d>()) {
         GfVec2d vd = val.UncheckedGet<GfVec2d>();
         float v[2] = {float(vd[0]), float(vd[1])};
@@ -309,7 +314,7 @@ _SetParamValue(RtUString const& name,
             v[i] = GfVec2f(vd[i]);
         }
         params.SetFloatArray(name,
-            reinterpret_cast<const float*>(v.cdata()), 2);
+            reinterpret_cast<const float*>(v.cdata()), 2 * v.size());
     } else if (val.IsHolding<GfVec3f>()) {
         GfVec3f v = val.UncheckedGet<GfVec3f>();
         if (role == HdPrimvarRoleTokens->color) {
@@ -327,21 +332,20 @@ _SetParamValue(RtUString const& name,
     } else if (val.IsHolding<VtArray<GfVec3f>>()) {
         const VtArray<GfVec3f>& v = val.UncheckedGet<VtArray<GfVec3f>>();
         if (role == HdPrimvarRoleTokens->color) {
-            params.SetColor(
-                name, *reinterpret_cast<const RtColorRGB*>(v.cdata()));
+            params.SetColorArray(
+                name, reinterpret_cast<const RtColorRGB*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->point) {
-            params.SetPoint(
-                name, *reinterpret_cast<const RtPoint3*>(v.cdata()));
+            params.SetPointArray(
+                name, reinterpret_cast<const RtPoint3*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->normal) {
-            params.SetNormal(
-                name, *reinterpret_cast<const RtNormal3*>(v.cdata()));
+            params.SetNormalArray(
+                name, reinterpret_cast<const RtNormal3*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->vector) {
-            params.SetVector(
-                name, *reinterpret_cast<const RtVector3*>(v.cdata()));
+            params.SetVectorArray(
+                name, reinterpret_cast<const RtVector3*>(v.cdata()), v.size());
         } else {
             params.SetFloatArray(
-                name, reinterpret_cast<const float*>(v.cdata()),
-                3);
+                name, reinterpret_cast<const float*>(v.cdata()), 3 * v.size());
         }
     } else if (val.IsHolding<GfVec3d>()) {
         // double->float
@@ -367,21 +371,20 @@ _SetParamValue(RtUString const& name,
             v[i] = GfVec3f(vd[i]);
         }
         if (role == HdPrimvarRoleTokens->color) {
-            params.SetColor(
-                name, *reinterpret_cast<const RtColorRGB*>(v.cdata()));
+            params.SetColorArray(
+                name, reinterpret_cast<const RtColorRGB*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->point) {
-            params.SetPoint(
-                name, *reinterpret_cast<const RtPoint3*>(v.cdata()));
+            params.SetPointArray(
+                name, reinterpret_cast<const RtPoint3*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->normal) {
-            params.SetNormal(
-                name, *reinterpret_cast<const RtNormal3*>(v.cdata()));
+            params.SetNormalArray(
+                name, reinterpret_cast<const RtNormal3*>(v.cdata()), v.size());
         } else if (role == HdPrimvarRoleTokens->vector) {
-            params.SetVector(
-                name, *reinterpret_cast<const RtVector3*>(v.cdata()));
+            params.SetVectorArray(
+                name, reinterpret_cast<const RtVector3*>(v.cdata()), v.size());
         } else {
             params.SetFloatArray(
-                name, reinterpret_cast<const float*>(v.cdata()),
-                3);
+                name, reinterpret_cast<const float*>(v.cdata()), 3 * v.size());
         }
     } else if (val.IsHolding<GfVec4f>()) {
         GfVec4f v = val.UncheckedGet<GfVec4f>();
@@ -390,7 +393,7 @@ _SetParamValue(RtUString const& name,
     } else if (val.IsHolding<VtArray<GfVec4f>>()) {
         const VtArray<GfVec4f>& v = val.UncheckedGet<VtArray<GfVec4f>>();
         params.SetFloatArray(
-            name, reinterpret_cast<const float*>(v.cdata()), 4);
+            name, reinterpret_cast<const float*>(v.cdata()), 4 * v.size());
     } else if (val.IsHolding<GfVec4d>()) {
         // double->float
         GfVec4f v(val.UncheckedGet<GfVec4d>());
@@ -405,7 +408,7 @@ _SetParamValue(RtUString const& name,
             v[i] = GfVec4f(vd[i]);
         }
         params.SetFloatArray(
-            name, reinterpret_cast<const float*>(v.cdata()), 4);
+            name, reinterpret_cast<const float*>(v.cdata()), 4 * v.size());
     } else if (val.IsHolding<GfMatrix4d>()) {
         GfMatrix4d v = val.UncheckedGet<GfMatrix4d>();
         params.SetMatrix(name, HdPrman_GfMatrixToRtMatrix(v));
@@ -415,7 +418,7 @@ _SetParamValue(RtUString const& name,
     } else if (val.IsHolding<VtArray<int>>()) {
         const VtArray<int>& v = val.UncheckedGet<VtArray<int>>();
         params.SetIntegerArray(
-            name, reinterpret_cast<const int*>(v.cdata()), 1);
+            name, reinterpret_cast<const int*>(v.cdata()), v.size());
     } else if (val.IsHolding<bool>()) {
         // bool->integer
         int v = val.UncheckedGet<bool>();
@@ -429,7 +432,7 @@ _SetParamValue(RtUString const& name,
             v[i] = int(vb[i]);
         }
         params.SetIntegerArray(
-            name, reinterpret_cast<const int*>(v.cdata()), 1);
+            name, reinterpret_cast<const int*>(v.cdata()), v.size());
     } else if (val.IsHolding<TfToken>()) {
         TfToken v = val.UncheckedGet<TfToken>();
         params.SetString(name, RtUString(v.GetText()));
@@ -1538,7 +1541,8 @@ HdPrman_RenderParam::SetParamFromVtValue(
 }
 
 void
-HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant)
+HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
+    const std::string &xpuDevices)
 {
     _rix = RixGetContext();
     if (!_rix) {
@@ -1578,14 +1582,34 @@ HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant)
 
     // Acquire Riley instance.
     _mgr = (RixRileyManager*)_rix->GetRixInterface(k_RixRileyManager);
-    _riley = _mgr->CreateRiley(RtUString(rileyVariant.c_str()), RtParamList());
+
+    _xpu = (!rileyVariant.empty() ||
+            (rileyVariant.find("xpu") != std::string::npos));
+
+    // Decide whether to use the CPU, GPU, or both
+    RtParamList paramList;
+    if (_xpu) {
+        static const RtUString cpuConfig("xpu:cpuconfig");
+        static const RtUString gpuConfig("xpu:gpuconfig");
+        static const int defaultGPUId = 0;
+
+        const bool useCpu = xpuDevices.find("cpu") != std::string::npos;
+        paramList.SetInteger(cpuConfig, useCpu ? 1 : 0);
+
+        const bool useGpu = xpuDevices.find("gpu") != std::string::npos;
+        if (useGpu) {
+            // Currently XPU only supports a single GPU
+            // Set the 0th GPU as being used
+            paramList.SetIntegerArray(gpuConfig, &defaultGPUId, 1);    
+        }
+    }
+
+    _riley = _mgr->CreateRiley(RtUString(rileyVariant.c_str()), paramList);
+
     if(!_riley) {
         TF_RUNTIME_ERROR("Could not initialize riley API.");
         return;
     }
-
-    _xpu = (!rileyVariant.empty() ||
-            (rileyVariant.find("xpu") != std::string::npos));
 }
 
 
@@ -1645,6 +1669,7 @@ _ComputeRenderViewDesc(
     const VtDictionary &renderSpec,
     const riley::CameraId cameraId,
     const riley::IntegratorId integratorId,
+    const riley::SampleFilterList &sampleFilterList,
     const GfVec2i &resolution)
 {
     HdPrman_RenderViewDesc renderViewDesc;
@@ -1652,6 +1677,7 @@ _ComputeRenderViewDesc(
     renderViewDesc.cameraId = cameraId;
     renderViewDesc.integratorId = integratorId;
     renderViewDesc.resolution = resolution;
+    renderViewDesc.sampleFilterList = sampleFilterList;
 
     const std::vector<VtValue> &renderVars =
         VtDictionaryGet<std::vector<VtValue>>(
@@ -1742,6 +1768,7 @@ HdPrman_RenderParam::CreateRenderViewFromSpec(
             renderSpec,
             GetCameraContext().GetCameraId(),
             GetActiveIntegratorId(),
+            GetSampleFilterList(),
             GfVec2i(512, 512));
 
     GetRenderViewContext().CreateRenderView(
@@ -2103,16 +2130,20 @@ HdPrman_RenderParam::StopRender(bool blocking)
         return;
     }
 
-    // It is necessary to call riley->Stop() until it succeeds
-    // because it's possible for it to be skipped if called too early,
-    // before the render has gotten underway.
-    // Also keep checking if render thread is still active,
-    // in case it has somehow managed to stop already.
-    while((_riley->Stop() == riley::StopResult::k_NotRendering) &&
-          _renderThread->IsRendering())
-    {
+    // Note: if we were rendering, when the flag goes low we'll be back in
+    // render thread idle until another StartRender comes in, so we don't need
+    // to manually call renderThread->StopRender. Theoretically
+    // riley->Stop() is blocking, but we need the loop here because:
+    // 1. It's possible that IsRendering() is true because we're in the preamble
+    //    of the render loop, before calling into riley. In that case, Stop()
+    //    is a no-op and we need to call it again after we call into Riley.
+    // 2. We've occassionally seen cases where Stop() returns successfully,
+    //    but the riley threadpools don't shut down right away.
+    while (_renderThread->IsRendering()) {
+        _riley->Stop();
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(100us);
     }
-    _renderThread->StopRender();
 }
 
 bool
@@ -2465,6 +2496,7 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
 
     renderViewDesc.cameraId = GetCameraContext().GetCameraId();
     renderViewDesc.integratorId = GetActiveIntegratorId();
+    renderViewDesc.sampleFilterList = GetSampleFilterList();
 
     GetRenderViewContext().CreateRenderView(
         renderViewDesc, riley);
@@ -2634,6 +2666,58 @@ HdPrman_RenderParam::UpdateRileyShutterInterval(
     
     riley::Riley * riley = AcquireRiley();
     riley->SetOptions(_GetDeprecatedOptionsPrunedList());
+}
+
+static
+void _MarkSampleFilterDirty(HdChangeTracker *tracker, SdfPath const &path)
+{
+    if (!path.IsEmpty()) {
+        tracker->MarkSprimDirty(path, HdChangeTracker::DirtyParams);
+    }
+}
+
+void
+HdPrman_RenderParam::SetConnectedSampleFilterPath(
+    HdSceneDelegate *sceneDelegate,
+    SdfPath const &connectedSampleFilterPath)
+{
+    if (_connectedSampleFilterPath != connectedSampleFilterPath) {
+        HdChangeTracker& tracker =
+            sceneDelegate->GetRenderIndex().GetChangeTracker();
+        _MarkSampleFilterDirty(&tracker, _connectedSampleFilterPath);
+        _MarkSampleFilterDirty(&tracker, connectedSampleFilterPath);
+        _connectedSampleFilterPath = connectedSampleFilterPath;
+    }
+}
+
+void
+HdPrman_RenderParam::AddSampleFilter(riley::SampleFilterId const& filterId)
+{
+    const auto filterIt = std::find(
+        _sampleFilterIds.begin(), _sampleFilterIds.end(), filterId);
+    if (filterIt == _sampleFilterIds.end()) {
+        _sampleFilterIds.push_back(filterId);
+        _sampleFilterList.count = _sampleFilterIds.size();
+        _sampleFilterList.ids = &_sampleFilterIds.front();
+    }
+}
+
+void
+HdPrman_RenderParam::RemoveSampleFilter(riley::SampleFilterId const& filterId)
+{
+    const auto filterIt = std::find(
+        _sampleFilterIds.begin(), _sampleFilterIds.end(), filterId);
+    if (filterIt != _sampleFilterIds.end()) {
+        _sampleFilterIds.erase(filterIt);
+        _sampleFilterList.count = _sampleFilterIds.size();
+        _sampleFilterList.ids = &_sampleFilterIds.front();
+    }
+}
+
+riley::SampleFilterList
+HdPrman_RenderParam::GetSampleFilterList()
+{
+    return _sampleFilterList;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

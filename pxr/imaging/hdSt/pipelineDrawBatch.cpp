@@ -24,6 +24,7 @@
 #include "pxr/imaging/hdSt/pipelineDrawBatch.h"
 
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
+#include "pxr/imaging/hdSt/codeGen.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/cullingShaderKey.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
@@ -77,11 +78,12 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 
-TF_DEFINE_ENV_SETTING(HDST_ENABLE_PIPELINE_DRAW_BATCHING, false,
-                      "Enable pipeline draw batching");
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_PIPELINE_DRAW_BATCH_GPU_FRUSTUM_CULLING,false,
+                      "Enable pipeline draw batching GPU frustum culling");
 
 HdSt_PipelineDrawBatch::HdSt_PipelineDrawBatch(
-    HdStDrawItemInstance * drawItemInstance)
+    HdStDrawItemInstance * drawItemInstance,
+    bool const allowGpuFrustumCulling)
     : HdSt_DrawBatch(drawItemInstance)
     , _drawCommandBufferDirty(false)
     , _bufferArraysHash(0)
@@ -98,10 +100,10 @@ HdSt_PipelineDrawBatch::HdSt_PipelineDrawBatch(
     , _useInstancing(false)
     , _useGpuCulling(false)
     , _useInstanceCulling(false)
-    , _allowGpuFrustumCulling(true)
-
+    , _allowGpuFrustumCulling(allowGpuFrustumCulling)
     , _instanceCountOffset(0)
     , _cullInstanceCountOffset(0)
+    , _patchBaseVertexByteOffset(0)
 {
     _Init(drawItemInstance);
 }
@@ -125,7 +127,7 @@ HdSt_PipelineDrawBatch::_Init(HdStDrawItemInstance * drawItemInstance)
     // determine drawing and culling config according to the first drawitem
     _useDrawIndexed = static_cast<bool>(drawItem->GetTopologyRange());
     _useInstancing  = static_cast<bool>(drawItem->GetInstanceIndexRange());
-    _useGpuCulling  = IsEnabledGPUFrustumCulling();
+    _useGpuCulling  = _allowGpuFrustumCulling && IsEnabledGPUFrustumCulling();
 
     // note: _useInstancing condition is not necessary. it can be removed
     //       if we decide always to use instance culling.
@@ -153,17 +155,22 @@ HdSt_PipelineDrawBatch::SetEnableTinyPrimCulling(bool tinyPrimCulling)
 
 /* static */
 bool
-HdSt_PipelineDrawBatch::IsEnabled()
+HdSt_PipelineDrawBatch::IsEnabled(HgiCapabilities const *hgiCapabilities)
 {
-    static bool isEnabled = TfGetEnvSetting(HDST_ENABLE_PIPELINE_DRAW_BATCHING);
-    return isEnabled;
+    // We require Hgi resource generation.
+    return HdSt_CodeGen::IsEnabledHgiResourceGeneration(hgiCapabilities);
 }
 
 /* static */
 bool
 HdSt_PipelineDrawBatch::IsEnabledGPUFrustumCulling()
 {
-    return HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling();
+    // Allow GPU frustum culling for PipelineDrawBatch to be disabled even
+    // when other GPU frustum culling is enabled. Both switches must be true
+    // for PipelineDrawBatch to use GPU frustum culling.
+    static bool isEnabled =
+        TfGetEnvSetting(HDST_ENABLE_PIPELINE_DRAW_BATCH_GPU_FRUSTUM_CULLING);
+    return isEnabled && HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling();
 }
 
 /* static */
@@ -178,12 +185,6 @@ bool
 HdSt_PipelineDrawBatch::IsEnabledGPUInstanceFrustumCulling()
 {
     return HdSt_IndirectDrawBatch::IsEnabledGPUInstanceFrustumCulling();
-}
-
-void
-HdSt_PipelineDrawBatch::SetAllowGpuFrustumCulling(bool allowGpuFrustumCulling)
-{
-    _allowGpuFrustumCulling = allowGpuFrustumCulling;
 }
 
 ////////////////////////////////////////////////////////////
@@ -203,7 +204,12 @@ namespace {
 // the drawing coord tuples.
 //
 // Note: _Draw*Command structs are layed out such that the first elements
-// match the layout of Vulkan and GL indirect draw buffers.
+// match the layout of Vulkan and GL and D3D indirect draw parameters.
+//
+// Note: Metal Patch drawing uses a different encoding than Vulkan and GL
+// and D3D. Also, there is no base vertex offset in the indexed draw encoding,
+// so we need to manually step vertex buffer binding offsets while encoding
+// draw commands.
 //
 // Note: GL specifies baseVertex as 'int' and other as 'uint', but
 // we never set negative baseVertex in our use cases.
@@ -211,7 +217,7 @@ namespace {
 // DrawingCoord 10 integers (+ numInstanceLevels)
 struct _DrawingCoord
 {
-    // drawingCoord0 (ivec4 for for drawing and culling)
+    // drawingCoord0 (ivec4 for drawing and culling)
     uint32_t modelDC;
     uint32_t constantDC;
     uint32_t elementDC;
@@ -234,10 +240,20 @@ struct _DrawingCoord
 // DrawNonIndexed + non-instance culling : 14 integers (+ numInstanceLevels)
 struct _DrawNonIndexedCommand
 {
-    uint32_t count;
-    uint32_t instanceCount;
-    uint32_t firstVertex;
-    uint32_t baseInstance;
+    union {
+        struct {
+            uint32_t count;
+            uint32_t instanceCount;
+            uint32_t baseVertex;
+            uint32_t baseInstance;
+        } common;
+        struct {
+            uint32_t patchCount;
+            uint32_t instanceCount;
+            uint32_t patchStart;
+            uint32_t baseInstance;
+        } metalPatch;
+    };
 
     _DrawingCoord drawingCoord;
 };
@@ -245,14 +261,24 @@ struct _DrawNonIndexedCommand
 // DrawNonIndexed + Instance culling : 18 integers (+ numInstanceLevels)
 struct _DrawNonIndexedInstanceCullCommand
 {
-    uint32_t count;
-    uint32_t instanceCount;
-    uint32_t firstVertex;
-    uint32_t baseInstance;
+    union {
+        struct {
+            uint32_t count;
+            uint32_t instanceCount;
+            uint32_t baseVertex;
+            uint32_t baseInstance;
+        } common;
+        struct {
+            uint32_t patchCount;
+            uint32_t instanceCount;
+            uint32_t patchStart;
+            uint32_t baseInstance;
+        } metalPatch;
+    };
 
     uint32_t cullCount;
     uint32_t cullInstanceCount;
-    uint32_t cullFirstVertex;
+    uint32_t cullBaseVertex;
     uint32_t cullBaseInstance;
 
     _DrawingCoord drawingCoord;
@@ -261,11 +287,22 @@ struct _DrawNonIndexedInstanceCullCommand
 // DrawIndexed + non-instance culling : 15 integers (+ numInstanceLevels)
 struct _DrawIndexedCommand
 {
-    uint32_t count;
-    uint32_t instanceCount;
-    uint32_t firstVertex;
-    uint32_t baseVertex;
-    uint32_t baseInstance;
+    union {
+        struct {
+            uint32_t count;
+            uint32_t instanceCount;
+            uint32_t baseIndex;
+            uint32_t baseVertex;
+            uint32_t baseInstance;
+        } common;
+        struct {
+            uint32_t patchCount;
+            uint32_t instanceCount;
+            uint32_t patchStart;
+            uint32_t baseInstance;
+            uint32_t baseVertex;
+        } metalPatch;
+    };
 
     _DrawingCoord drawingCoord;
 };
@@ -273,15 +310,26 @@ struct _DrawIndexedCommand
 // DrawIndexed + Instance culling : 19 integers (+ numInstanceLevels)
 struct _DrawIndexedInstanceCullCommand
 {
-    uint32_t count;
-    uint32_t instanceCount;
-    uint32_t firstVertex;
-    uint32_t baseVertex;
-    uint32_t baseInstance;
+    union {
+        struct {
+            uint32_t count;
+            uint32_t instanceCount;
+            uint32_t baseIndex;
+            uint32_t baseVertex;
+            uint32_t baseInstance;
+        } common;
+        struct {
+            uint32_t patchCount;
+            uint32_t instanceCount;
+            uint32_t patchStart;
+            uint32_t baseInstance;
+            uint32_t baseVertex;
+        } metalPatch;
+    };
 
     uint32_t cullCount;
     uint32_t cullInstanceCount;
-    uint32_t cullFirstVertex;
+    uint32_t cullBaseVertex;
     uint32_t cullBaseInstance;
 
     _DrawingCoord drawingCoord;
@@ -307,6 +355,8 @@ struct _DrawCommandTraits
     size_t drawingCoord1_offset;
     size_t drawingCoord2_offset;
     size_t drawingCoordI_offset;
+
+    size_t patchBaseVertex_offset;
 };
 
 template <typename CmdType>
@@ -320,9 +370,9 @@ void _SetDrawCommandTraits(_DrawCommandTraits * traits, int instancerNumLevels)
     traits->instancerNumLevels = instancerNumLevels;
     traits->instanceIndexWidth = instancerNumLevels + 1;
 
-    traits->count_offset = offsetof(CmdType, count);
-    traits->instanceCount_offset = offsetof(CmdType, instanceCount);
-    traits->baseInstance_offset = offsetof(CmdType, baseInstance);
+    traits->count_offset = offsetof(CmdType, common.count);
+    traits->instanceCount_offset = offsetof(CmdType, common.instanceCount);
+    traits->baseInstance_offset = offsetof(CmdType, common.baseInstance);
 
     // These are different only for instanced culling.
     traits->cullCount_offset = traits->count_offset;
@@ -349,6 +399,10 @@ void _SetDrawingCoordTraits(_DrawCommandTraits * traits)
 
     // drawingCoord instancer bindings follow the base drawing coord struct
     traits->drawingCoordI_offset = sizeof(CmdType);
+
+    // needed to step vertex buffer binding offsets for Metal tessellation
+    traits->patchBaseVertex_offset =
+        offsetof(CmdType, drawingCoord) + offsetof(_DrawingCoord, vertexDC);
 }
 
 _DrawCommandTraits
@@ -556,6 +610,10 @@ HdSt_PipelineDrawBatch::_CompileBatch(
     size_t const instancerNumLevels =
         _drawItemInstances[0]->GetDrawItem()->GetInstancePrimvarNumLevels();
 
+    bool const useMetalTessellation =
+        _drawItemInstances[0]->GetDrawItem()->
+                GetGeometricShader()->GetUseMetalTessellation();
+
     // Get the layout of the command buffer we are building.
     _DrawCommandTraits const traits =
         _GetDrawCommandTraits(instancerNumLevels,
@@ -604,7 +662,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
         uint32_t const numIndicesPerPrimitive =
             drawItem->GetGeometricShader()->GetPrimitiveIndexSize();
 
-        uint32_t const firstVertex = vertexDC;
+        uint32_t const baseVertex = vertexDC;
         uint32_t const vertexCount = _GetElementCount(dc.vertexBar);
 
         // if delegate fails to get vertex primvars, it could be empty.
@@ -612,13 +670,17 @@ HdSt_PipelineDrawBatch::_CompileBatch(
         uint32_t const numElements =
             vertexCount != 0 ? _GetElementCount(dc.indexBar) : 0;
 
-        uint32_t const firstIndex = primitiveDC * numIndicesPerPrimitive;
-        uint32_t const indicesCount = numElements * numIndicesPerPrimitive;
+        uint32_t const baseIndex = primitiveDC * numIndicesPerPrimitive;
+        uint32_t const indexCount = numElements * numIndicesPerPrimitive;
 
         uint32_t const instanceCount =
             _GetInstanceCount(drawItemInstance,
                               dc.instanceIndexBar,
                               traits.instanceIndexWidth);
+
+        // tessellated patches are encoded differently for Metal.
+        uint32_t const patchStart = primitiveDC;
+        uint32_t const patchCount = numElements;
 
         uint32_t const baseInstance = (uint32_t)item;
 
@@ -626,42 +688,82 @@ HdSt_PipelineDrawBatch::_CompileBatch(
         if (!_useDrawIndexed) {
             if (_useInstanceCulling) {
                 // _DrawNonIndexedInstanceCullCommand
-                *cmdIt++ = vertexCount;
-                *cmdIt++ = instanceCount;
-                *cmdIt++ = firstVertex;
-                *cmdIt++ = baseInstance;
+                if (useMetalTessellation) {
+                    *cmdIt++ = patchCount;
+                    *cmdIt++ = instanceCount;
+                    *cmdIt++ = patchStart;
+                    *cmdIt++ = baseInstance;
 
-                *cmdIt++ = 1;             /* cullCount (always 1) */
-                *cmdIt++ = instanceCount; /* cullInstanceCount */
-                *cmdIt++ = 0;             /* cullFirstVertex (not used)*/
-                *cmdIt++ = baseInstance;  /* cullBaseInstance */
+                    *cmdIt++ = 1;             /* cullCount (always 1) */
+                    *cmdIt++ = instanceCount; /* cullInstanceCount */
+                    *cmdIt++ = 0;             /* cullBaseVertex (not used)*/
+                    *cmdIt++ = baseInstance;  /* cullBaseInstance */
+                } else {
+                    *cmdIt++ = vertexCount;
+                    *cmdIt++ = instanceCount;
+                    *cmdIt++ = baseVertex;
+                    *cmdIt++ = baseInstance;
+
+                    *cmdIt++ = 1;             /* cullCount (always 1) */
+                    *cmdIt++ = instanceCount; /* cullInstanceCount */
+                    *cmdIt++ = 0;             /* cullBaseVertex (not used)*/
+                    *cmdIt++ = baseInstance;  /* cullBaseInstance */
+                }
             } else {
                 // _DrawNonIndexedCommand
-                *cmdIt++ = vertexCount;
-                *cmdIt++ = instanceCount;
-                *cmdIt++ = firstVertex;
-                *cmdIt++ = baseInstance;
+                if (useMetalTessellation) {
+                    *cmdIt++ = patchCount;
+                    *cmdIt++ = instanceCount;
+                    *cmdIt++ = patchStart;
+                    *cmdIt++ = baseInstance;
+                } else {
+                    *cmdIt++ = vertexCount;
+                    *cmdIt++ = instanceCount;
+                    *cmdIt++ = baseVertex;
+                    *cmdIt++ = baseInstance;
+                }
             }
         } else {
             if (_useInstanceCulling) {
                 // _DrawIndexedInstanceCullCommand
-                *cmdIt++ = indicesCount;
-                *cmdIt++ = instanceCount;
-                *cmdIt++ = firstIndex;
-                *cmdIt++ = firstVertex;
-                *cmdIt++ = baseInstance;
+                if (useMetalTessellation) {
+                    *cmdIt++ = patchCount;
+                    *cmdIt++ = instanceCount;
+                    *cmdIt++ = patchStart;
+                    *cmdIt++ = baseInstance;
+                    *cmdIt++ = baseVertex;
 
-                *cmdIt++ = 1;             /* cullCount (always 1) */
-                *cmdIt++ = instanceCount; /* cullInstanceCount */
-                *cmdIt++ = 0;             /* cullFirstVertex (not used)*/
-                *cmdIt++ = baseInstance;  /* cullBaseInstance */
+                    *cmdIt++ = 1;             /* cullCount (always 1) */
+                    *cmdIt++ = instanceCount; /* cullInstanceCount */
+                    *cmdIt++ = 0;             /* cullBaseVertex (not used)*/
+                    *cmdIt++ = baseInstance;  /* cullBaseInstance */
+                } else {
+                    *cmdIt++ = indexCount;
+                    *cmdIt++ = instanceCount;
+                    *cmdIt++ = baseIndex;
+                    *cmdIt++ = baseVertex;
+                    *cmdIt++ = baseInstance;
+
+                    *cmdIt++ = 1;             /* cullCount (always 1) */
+                    *cmdIt++ = instanceCount; /* cullInstanceCount */
+                    *cmdIt++ = 0;             /* cullBaseVertex (not used)*/
+                    *cmdIt++ = baseInstance;  /* cullBaseInstance */
+                }
             } else {
                 // _DrawIndexedCommand
-                *cmdIt++ = indicesCount;
-                *cmdIt++ = instanceCount;
-                *cmdIt++ = firstIndex;
-                *cmdIt++ = firstVertex;
-                *cmdIt++ = baseInstance;
+                if (useMetalTessellation) {
+                    *cmdIt++ = patchCount;
+                    *cmdIt++ = instanceCount;
+                    *cmdIt++ = patchStart;
+                    *cmdIt++ = baseInstance;
+                    *cmdIt++ = baseVertex;
+                } else {
+                    *cmdIt++ = indexCount;
+                    *cmdIt++ = instanceCount;
+                    *cmdIt++ = baseIndex;
+                    *cmdIt++ = baseVertex;
+                    *cmdIt++ = baseInstance;
+                }
             }
         }
 
@@ -713,6 +815,9 @@ HdSt_PipelineDrawBatch::_CompileBatch(
     // to be used during DrawItemInstanceChanged().
     _instanceCountOffset = traits.instanceCount_offset/sizeof(uint32_t);
     _cullInstanceCountOffset = traits.cullInstanceCount_offset/sizeof(uint32_t);
+
+    // cache the location of patchBaseVertex for tessellated patch drawing.
+    _patchBaseVertexByteOffset = traits.patchBaseVertex_offset;
 
     // allocate draw dispatch buffer
     _dispatchBuffer =
@@ -849,7 +954,7 @@ HdSt_PipelineDrawBatch::PrepareDraw(
         _drawCommandBufferDirty = false;
     }
 
-    if (_allowGpuFrustumCulling && _useGpuCulling) {
+    if (_useGpuCulling) {
         _ExecuteFrustumCull(updateBufferData,
                             renderPassState, resourceRegistry);
     }
@@ -1017,8 +1122,13 @@ _GetVertexBuffersForDrawing(_BindingState const & state)
             HgiVertexBufferDesc bufferDesc;
             bufferDesc.bindingIndex = vertexBufferDescVector.size();
             bufferDesc.vertexAttributes = {attrDesc};
-            bufferDesc.vertexStepFunction =
-                HgiVertexBufferStepFunctionPerVertex;
+            if (state.geometricShader->GetUseMetalTessellation()) {
+                bufferDesc.vertexStepFunction =
+                    HgiVertexBufferStepFunctionPerPatchControlPoint;
+            } else {
+                bufferDesc.vertexStepFunction =
+                    HgiVertexBufferStepFunctionPerVertex;
+            }
             bufferDesc.vertexStride = HdDataSizeOfTupleType(tupleType);
             vertexBufferDescVector.push_back(bufferDesc);
         }
@@ -1133,12 +1243,15 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
 
     if (_HasNothingToDraw()) return;
 
+    HgiCapabilities const *capabilities =
+        resourceRegistry->GetHgi()->GetCapabilities();
+
     // Drawing can be either direct or indirect. For either case,
     // the drawing batch and drawing program are prepared to resolve
     // drawing coordinate state indirectly, i.e. from buffer data.
-    bool const drawIndirect = true;
+    bool const drawIndirect =
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
     _DrawingProgram & program = _GetDrawingProgram(renderPassState,
-                                                   /*indirect=*/true,
                                                    resourceRegistry);
     if (!TF_VERIFY(program.IsValid())) return;
 
@@ -1157,6 +1270,7 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
             renderPassState,
             resourceRegistry,
             state);
+    
     HgiGraphicsPipelineHandle psoHandle = *pso.get();
     gfxCmds->BindPipeline(psoHandle);
 
@@ -1209,7 +1323,9 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
             paramBuffer->GetHandle(),
             paramBuffer->GetOffset(),
             dispatchBuffer->GetCount(),
-            paramBuffer->GetStride());
+            paramBuffer->GetStride(),
+            _drawCommandBuffer,
+            _patchBaseVertexByteOffset);
     }
 }
 
@@ -1221,38 +1337,59 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
 {
     TRACE_FUNCTION();
 
-    uint32_t const batchCount = dispatchBuffer->GetCount();
-    uint32_t const uintStride = dispatchBuffer->GetCommandNumUints();
+    uint32_t const drawCount = dispatchBuffer->GetCount();
+    uint32_t const strideUInt32 = dispatchBuffer->GetCommandNumUints();
 
     if (!_useDrawIndexed) {
-        for (uint32_t i = 0; i < batchCount; ++i) {
+        for (uint32_t i = 0; i < drawCount; ++i) {
             _DrawNonIndexedCommand const * cmd =
                 reinterpret_cast<_DrawNonIndexedCommand*>(
-                    &_drawCommandBuffer[i*uintStride]);
+                    &_drawCommandBuffer[i * strideUInt32]);
 
-            gfxCmds->Draw(
-                cmd->count,
-                cmd->firstVertex,
-                cmd->instanceCount,
-                cmd->baseInstance);
+            if (cmd->common.count && cmd->common.instanceCount) {
+                gfxCmds->Draw(
+                    cmd->common.count,
+                    cmd->common.baseVertex,
+                    cmd->common.instanceCount,
+                    cmd->common.baseInstance);
+            }
         }
     } else {
         HdStBufferResourceSharedPtr indexBuffer =
             indexBar->GetResource(HdTokens->indices);
         if (!TF_VERIFY(indexBuffer)) return;
 
-        for (uint32_t i = 0; i < batchCount; ++i) {
+        bool const useMetalTessellation =
+            _drawItemInstances[0]->GetDrawItem()->
+                    GetGeometricShader()->GetUseMetalTessellation();
+
+        for (uint32_t i = 0; i < drawCount; ++i) {
             _DrawIndexedCommand const * cmd =
                 reinterpret_cast<_DrawIndexedCommand*>(
-                    &_drawCommandBuffer[i*uintStride]);
+                    &_drawCommandBuffer[i * strideUInt32]);
 
-            gfxCmds->DrawIndexed(
-                indexBuffer->GetHandle(),
-                cmd->count,
-                static_cast<uint32_t>(cmd->firstVertex*sizeof(uint32_t)),
-                cmd->baseVertex,
-                cmd->instanceCount,
-                cmd->baseInstance);
+            uint32_t const indexBufferByteOffset =
+                static_cast<uint32_t>(cmd->common.baseIndex * sizeof(uint32_t));
+
+            if (cmd->common.count && cmd->common.instanceCount) {
+                if (useMetalTessellation) {
+                    gfxCmds->DrawIndexed(
+                        indexBuffer->GetHandle(),
+                        cmd->metalPatch.patchCount,
+                        indexBufferByteOffset,
+                        cmd->metalPatch.baseVertex,
+                        cmd->metalPatch.instanceCount,
+                        cmd->metalPatch.baseInstance);
+                } else {
+                    gfxCmds->DrawIndexed(
+                        indexBuffer->GetHandle(),
+                        cmd->common.count,
+                        indexBufferByteOffset,
+                        cmd->common.baseVertex,
+                        cmd->common.instanceCount,
+                        cmd->common.baseInstance);
+                }
+            }
         }
     }
 }
@@ -1593,7 +1730,6 @@ HdSt_PipelineDrawBatch::_GetCullingProgram(
         _cullingProgram.SetGeometricShader(cullShader);
 
         _cullingProgram.CompileShader(_drawItemInstances.front()->GetDrawItem(),
-                                      /*indirect=*/true,
                                        resourceRegistry);
 
         _dirtyCullingProgram = false;

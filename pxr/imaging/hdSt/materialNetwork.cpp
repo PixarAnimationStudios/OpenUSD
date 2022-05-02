@@ -1217,14 +1217,11 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
     _textureDescriptors.clear();
     _materialTag = HdStMaterialTagTokens->defaultMaterialTag;
 
-    HdMaterialNetwork2 surfaceNetwork;
-
     // The fragment source comes from the 'surface' network or the
     // 'volume' network.
     bool isVolume = false;
-    HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(hdNetworkMap,
-                                                      &surfaceNetwork,
-                                                      &isVolume);
+    HdMaterialNetwork2 surfaceNetwork =
+        HdConvertToHdMaterialNetwork2(hdNetworkMap, &isVolume);
     const TfToken &terminalName = (isVolume) ? HdMaterialTerminalTokens->volume 
                                             : HdMaterialTerminalTokens->surface;
 

@@ -15,6 +15,7 @@ pxr_library(usdImaging
         usd
         usdGeom
         usdLux
+        usdRender
         usdShade
         usdVol
         ar
@@ -28,6 +29,7 @@ pxr_library(usdImaging
         collectionCache
         dataSourceAttribute
         dataSourceBasisCurves
+        dataSourceCamera
         dataSourceGprim
         dataSourceMesh
         dataSourcePoints
@@ -35,6 +37,7 @@ pxr_library(usdImaging
         dataSourcePrimvars
         dataSourceRelationship
         dataSourceStageGlobals
+        dataSourceVolume
         debugCodes
         delegate
         indexProxy
@@ -74,6 +77,8 @@ pxr_library(usdImaging
         primAdapter
         primvarDescCache
         rectLightAdapter
+        renderSettingsAdapter
+        sampleFilterAdapter
         sphereAdapter
         sphereLightAdapter
         textureUtils
@@ -83,6 +88,9 @@ pxr_library(usdImaging
         api.h
         unitTestHelper.h
         version.h
+
+    PRIVATE_HEADERS
+        dataSourceImplicits-Impl.h
 
     RESOURCE_FILES
         plugInfo.json

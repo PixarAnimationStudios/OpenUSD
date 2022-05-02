@@ -77,9 +77,11 @@ _GetChainedStagingSize(HdBufferSourceSharedPtr const& src)
         HdBufferSourceSharedPtrVector chainedSrcs = src->GetChainedBuffers();
         // Traverse the tree in a depth-first fashion.
         for (auto& c : chainedSrcs) {
-            size_t chainedSize = c->GetNumElements()
-                * HdDataSizeOfTupleType(c->GetTupleType());
-            size += chainedSize + _GetChainedStagingSize(c);
+            const size_t numElements = c->GetNumElements();
+            if (numElements > 0) {
+                size += numElements * HdDataSizeOfTupleType(c->GetTupleType());
+            }
+            size += _GetChainedStagingSize(c);
         }
     }
 
@@ -797,12 +799,17 @@ HdStResourceRegistry::_Commit()
 
                                 // Calculate the size of the staging buffer.
                                 if (req.range && req.range->RequiresStaging()) {
-                                    size_t srcSize =
-                                        source->GetNumElements() *
-                                        HdDataSizeOfTupleType(
-                                            source->GetTupleType());
-                                    srcSize += _GetChainedStagingSize(source);
-                                    stagingBufferSize += srcSize;
+                                    const size_t numElements =
+                                        source->GetNumElements();
+                                    // Avoid calling functions on 
+                                    // HdNullBufferSources
+                                    if (numElements > 0) {
+                                        stagingBufferSize += numElements *
+                                            HdDataSizeOfTupleType(
+                                                source->GetTupleType());
+                                    }
+                                    stagingBufferSize += 
+                                        _GetChainedStagingSize(source);
                                 }
                             }
                         }
@@ -865,6 +872,13 @@ HdStResourceRegistry::_Commit()
             _uniformSsboAggregationStrategy.get());
         _singleBufferArrayRegistry.ReallocateAll(
             _singleAggregationStrategy.get());
+        
+        // APPLE METAL: The above creates a set of GPU to GPU copies. However
+        // the next phase may create some CPU to GPU copies to the same memory.
+        // Ideally we wouldn't have requested the GPU copy at all (as it's
+        // redundant) but we did, so we need to ensure these operations are
+        // completed before we issue the CPU to GPU updates.
+        SubmitBlitWork(HgiSubmitWaitTypeWaitUntilCompleted);
     }
 
     {

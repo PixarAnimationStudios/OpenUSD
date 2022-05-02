@@ -613,12 +613,12 @@ HgiGLOps::Draw(
     HgiPrimitiveType primitiveType,
     uint32_t primitiveIndexSize,
     uint32_t vertexCount,
-    uint32_t firstVertex,
+    uint32_t baseVertex,
     uint32_t instanceCount,
-    uint32_t firstInstance)
+    uint32_t baseInstance)
 {
     return [primitiveType, primitiveIndexSize,
-            vertexCount, firstVertex, instanceCount, firstInstance] {
+            vertexCount, baseVertex, instanceCount, baseInstance] {
         TRACE_SCOPE("HgiGLOps::Draw");
 
         if (primitiveType == HgiPrimitiveTypePatchList) {
@@ -627,10 +627,10 @@ HgiGLOps::Draw(
 
         glDrawArraysInstancedBaseInstance(
             HgiGLConversions::GetPrimitiveType(primitiveType),
-            firstVertex,
+            baseVertex,
             vertexCount,
             instanceCount,
-            firstInstance);
+            baseInstance);
 
         HGIGL_POST_PENDING_GL_ERRORS();
     };
@@ -641,12 +641,12 @@ HgiGLOps::DrawIndirect(
     HgiPrimitiveType primitiveType,
     uint32_t primitiveIndexSize,
     HgiBufferHandle const& drawParameterBuffer,
-    uint32_t drawBufferOffset,
+    uint32_t drawBufferByteOffset,
     uint32_t drawCount,
     uint32_t stride)
 {
     return [primitiveType, primitiveIndexSize,
-            drawParameterBuffer, drawBufferOffset, drawCount, stride] {
+            drawParameterBuffer, drawBufferByteOffset, drawCount, stride] {
         TRACE_SCOPE("HgiGLOps::DrawIndirect");
 
         HgiGLBuffer* drawBuf =
@@ -661,7 +661,7 @@ HgiGLOps::DrawIndirect(
         glMultiDrawArraysIndirect(
             HgiGLConversions::GetPrimitiveType(primitiveType),
             reinterpret_cast<const void*>(
-                static_cast<uintptr_t>(drawBufferOffset)),
+                static_cast<uintptr_t>(drawBufferByteOffset)),
             drawCount,
             stride);
 
@@ -676,13 +676,13 @@ HgiGLOps::DrawIndexed(
     HgiBufferHandle const& indexBuffer,
     uint32_t indexCount,
     uint32_t indexBufferByteOffset,
-    uint32_t vertexOffset,
+    uint32_t baseVertex,
     uint32_t instanceCount,
-    uint32_t firstInstance)
+    uint32_t baseInstance)
 {
     return [primitiveType, primitiveIndexSize,
             indexBuffer, indexCount, indexBufferByteOffset,
-            vertexOffset, instanceCount, firstInstance] {
+            baseVertex, instanceCount, baseInstance] {
         TRACE_SCOPE("HgiGLOps::DrawIndexed");
 
         HgiGLBuffer* indexBuf = static_cast<HgiGLBuffer*>(indexBuffer.Get());
@@ -700,8 +700,8 @@ HgiGLOps::DrawIndexed(
             reinterpret_cast<const void*>(
                 static_cast<uintptr_t>(indexBufferByteOffset)),
             instanceCount,
-            vertexOffset,
-            firstInstance);
+            baseVertex,
+            baseInstance);
 
         HGIGL_POST_PENDING_GL_ERRORS();
     };
@@ -713,12 +713,12 @@ HgiGLOps::DrawIndexedIndirect(
     uint32_t primitiveIndexSize,
     HgiBufferHandle const& indexBuffer,
     HgiBufferHandle const& drawParameterBuffer,
-    uint32_t drawBufferOffset,
+    uint32_t drawBufferByteOffset,
     uint32_t drawCount,
     uint32_t stride)
 {
     return [primitiveType, primitiveIndexSize,
-            indexBuffer, drawParameterBuffer, drawBufferOffset,
+            indexBuffer, drawParameterBuffer, drawBufferByteOffset,
             drawCount, stride] {
         TRACE_SCOPE("HgiGLOps::DrawIndexedIndirect");
 
@@ -739,7 +739,7 @@ HgiGLOps::DrawIndexedIndirect(
             HgiGLConversions::GetPrimitiveType(primitiveType),
             GL_UNSIGNED_INT,
             reinterpret_cast<const void*>(
-                static_cast<uintptr_t>(drawBufferOffset)),
+                static_cast<uintptr_t>(drawBufferByteOffset)),
             drawCount,
             stride);
 

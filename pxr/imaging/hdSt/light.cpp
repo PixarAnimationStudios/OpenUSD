@@ -141,6 +141,7 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
         l.SetAmbient(GfVec4f(0.0f));
         l.SetDiffuse(GfVec4f(0.0f));
         l.SetSpecular(GfVec4f(0.0f));
+        l.SetHasIntensity(false);
         return l;
     }
 

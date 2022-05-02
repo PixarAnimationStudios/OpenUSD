@@ -1155,7 +1155,7 @@ typedef struct _REPARSE_DATA_BUFFER {
 std::string ArchReadLink(const char* path)
 {
     HANDLE handle = ::CreateFileW(
-        ArchWindowsUtf8ToUtf16(path).c_str(), GENERIC_READ, 0,
+        ArchWindowsUtf8ToUtf16(path).c_str(), GENERIC_READ, FILE_SHARE_READ,
         NULL, OPEN_EXISTING,
         FILE_FLAG_OPEN_REPARSE_POINT |
         FILE_FLAG_BACKUP_SEMANTICS, NULL);

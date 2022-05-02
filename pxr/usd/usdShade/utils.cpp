@@ -53,6 +53,23 @@ UsdShadeUtils::GetPrefixForAttributeType(UsdShadeAttributeType sourceType)
 }
 
 /* static */
+SdfPath 
+UsdShadeUtils::GetConnectedSourcePath(
+    const UsdShadeConnectionSourceInfo &srcInfo
+    )
+{
+    SdfPath  src;
+
+    if (srcInfo){
+        string propName = GetPrefixForAttributeType(srcInfo.sourceType) +
+            srcInfo.sourceName.GetString();
+        src = srcInfo.source.GetPrim().GetPath()
+            .AppendProperty(TfToken(propName));
+    }
+    return src;
+}
+
+/* static */
 std::pair<TfToken, UsdShadeAttributeType> 
 UsdShadeUtils::GetBaseNameAndType(const TfToken &fullName)
 {

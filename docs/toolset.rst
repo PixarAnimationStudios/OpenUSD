@@ -9,10 +9,10 @@ usdedit
 *******
 
 :program:`usdedit` is a simple script that converts any single USD-readable
-file into its (temp) .usda ascii equivalent and brings the result up in your
-editor of choice, which is taken from the :envvar:`EDITOR` environment
-variable. Upon quitting the editor, any changes to the temp file will be
-converted back to the original file's format (assuming the
+file into its (temp) :filename:`.usda` text equivalent and brings the
+result up in your editor of choice, which is taken from the :envvar:`EDITOR`
+environment variable. Upon quitting the editor, any changes to the temp file
+will be converted back to the original file's format (assuming the
 :code:`FileFormatPlugin` for the format allows writing), and the original
 file's contents will be replaced with the edited contents.
 
@@ -22,12 +22,12 @@ file's contents will be replaced with the edited contents.
    
    usage: usdedit [-h] [-n] [-f] usdFileName
    
-   Convert a usd-readable file to the usd ascii format in a temporary location
-   and invoke an editor on it. After saving and quitting the editor, the edited
-   file will be converted back to the original format and OVERWRITE the original
-   file, unless you supply the "-n" (--noeffect) flag, in which case no changes
-   will be saved back to the original file. The editor to use will be queried
-   from the EDITOR environment variable.
+   Convert a usd-readable file to the .usda text format in a temporary
+   location and invoke an editor on it. After saving and quitting the editor,
+   the edited file will be converted back to the original format and
+   OVERWRITE the original file, unless you supply the "-n" (--noeffect) flag,
+   in which case no changes will be saved back to the original file. The
+   editor to use will be queried from the EDITOR environment variable.
    
    positional arguments:
      usdFileName           The usd file to edit.
@@ -46,7 +46,7 @@ file's contents will be replaced with the edited contents.
       being used as a source file, since the roundtripping is lossy!
 
     * Running :program:`usdedit` on a very large file with lots of dense,
-      numeric data may take a long time, create a really large ascii file in
+      numeric data may take a long time, create a really large text file in
       your temp area (wherever python's :python:`tempfile` package decides to
       put it), and may push the boundaries of your editor's scalability.
 

@@ -229,6 +229,16 @@ HD_DECLARE_DATASOURCE_HANDLES(HdBlockDataSource);
 
 // Utilities //////////////////////////////////////////////////////////////////
 
+/// Merges contributing sample times from several data sources.
+HD_API
+bool
+HdGetMergedContributingSampleTimesForInterval(
+    size_t count,
+    const HdSampledDataSourceHandle *inputDataSources,
+    HdSampledDataSource::Time startTime,
+    HdSampledDataSource::Time endTime,
+    std::vector<HdSampledDataSource::Time> * outSampleTimes);
+
 /// Print a datasource to a stream, for debugging/testing.
 void HdDebugPrintDataSource(
     std::ostream &,

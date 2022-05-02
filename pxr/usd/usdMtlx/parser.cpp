@@ -140,6 +140,12 @@ ShaderBuilder::AddProperty(
         // Not found.  If an Sdf type exists use that.
         if (converted.valueTypeName) {
             type = converted.valueTypeName.GetAsToken();
+            // Do not use GetAsToken for comparison as recommended in the API
+            if (converted.valueTypeName == SdfValueTypeNames->Bool) {
+                 defaultValue = UsdMtlxGetUsdValue(element, isOutput);
+                 metadata.emplace(SdrPropertyMetadata->SdrUsdDefinitionType,
+                           converted.valueTypeName.GetType().GetTypeName());
+            }
         }
         else {
             type = TfToken(mtlxType);
@@ -322,6 +328,12 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
     // node and we want to add $geomprop to the list of referenced primvars.
     if (TfStringStartsWith(nodeDef->getName(), "ND_geompropvalue")) {
         primvars.push_back("$geomprop");
+    }
+    // If the nodeDef name is ND_texcoord_vector2, it is using texture 
+    // coordinates and we want to add the default texturecoordinate name 
+    // to the list of referenced primvars.
+    if (nodeDef->getName() == "ND_texcoord_vector2") {
+        primvars.push_back(_GetPrimaryUvSetName());
     }
 
     // Also check internalgeomprops.

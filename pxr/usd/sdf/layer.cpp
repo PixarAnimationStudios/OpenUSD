@@ -255,7 +255,7 @@ SdfLayer::_WaitForInitializationAndCheckIfSuccessful()
     }
 
     // For various reasons, initialization may have failed.
-    // For example, the menva parser may have hit a syntax error,
+    // For example, the sdf text format parser may have hit a syntax error,
     // or transferring content from a source layer may have failed.
     // In this case _initializationWasSuccessful will be set to false.
     // The callers of this method are responsible for checking the result

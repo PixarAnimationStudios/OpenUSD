@@ -140,6 +140,23 @@ _IsHydraEnabled()
     return !defaultPlugin.IsEmpty();
 }
 
+std::string
+_GetPlatformDependentRendererDisplayName(HfPluginDesc const &pluginDescriptor)
+{
+#if defined(__APPLE__)
+    // Rendering for Storm is delegated to Hgi. We override the
+    // display name for macOS since the Hgi implementation for
+    // macOS uses Metal instead of GL. Eventually, this should
+    // properly delegate to using Hgi to determine the display
+    // name for Storm.
+    static const TfToken _stormRendererPluginName("HdStormRendererPlugin");
+    if (pluginDescriptor.id == _stormRendererPluginName) {
+        return "Metal";
+    }
+#endif
+    return pluginDescriptor.displayName;
+}
+
 } // anonymous namespace
 
 //----------------------------------------------------------------------------
@@ -875,7 +892,7 @@ UsdImagingGLEngine::GetRendererDisplayName(TfToken const &id)
         return std::string();
     }
 
-    return pluginDescriptor.displayName;
+    return _GetPlatformDependentRendererDisplayName(pluginDescriptor);
 }
 
 TfToken

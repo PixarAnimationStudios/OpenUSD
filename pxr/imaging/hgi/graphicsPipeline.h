@@ -119,6 +119,9 @@ inline bool operator!=(
 /// Properties to configure multi sampling.
 ///
 /// <ul>
+/// <li>multiSampleEnable:
+///   When enabled and sampleCount and attachments match and allow for it, use 
+///   multi-sampling.</li>
 /// <li>alphaToCoverageEnable:
 ///   Fragment's color.a determines coverage (screen door transparency).</li>
 /// <li>alphaToOneEnable:
@@ -134,6 +137,7 @@ struct HgiMultiSampleState
     HGI_API
     HgiMultiSampleState();
 
+    bool multiSampleEnable;
     bool alphaToCoverageEnable;
     bool alphaToOneEnable;
     HgiSampleCount sampleCount;
@@ -350,22 +354,27 @@ struct HgiTessellationLevel
 /// Properties to configure tessellation.
 ///
 /// <ul>
-/// <li>tessEnabled:
-///   When enabled, set up the pipeline for tessellation.
+/// <li>patchType:
+///   The type of tessellation patch.</li>
 /// <li>primitiveIndexSize:
-///   The number of control indices per patch.
+///   The number of control indices per patch.</li>
 /// <li>tessellationLevel:
-///   The fallback tessellation levels.
+///   The fallback tessellation levels.</li>
 /// </ul>
 ///
 struct HgiTessellationState
 {
+    enum PatchType {
+        Triangle,
+        Quad
+    };
+
     HGI_API
     HgiTessellationState();
 
-    HgiTessellationLevel tessellationLevel;
+    PatchType patchType;
     int primitiveIndexSize;
-    bool tessEnabled;
+    HgiTessellationLevel tessellationLevel;
 };
 
 /// \struct HgiGraphicsPipelineDesc

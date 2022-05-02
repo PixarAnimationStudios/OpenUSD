@@ -45,8 +45,8 @@ struct ShadowMatrix {
     float padding1;
 };
 
-MAT4 GetWorldToViewMatrix();
-MAT4 GetWorldToViewInverseMatrix();
+FORWARD_DECL(mat4 GetWorldToViewMatrix());
+FORWARD_DECL(mat4 GetWorldToViewInverseMatrix());
 
 ShadowMatrix GetShadow(int shadowIndex) {
     ShadowMatrix shadowMat;
@@ -168,8 +168,8 @@ bool GetUseColorMaterialDiffuse() {
     return HdGet_useColorMaterialDiffuse();
 }
 
-MAT4 GetWorldToViewMatrix();
-MAT4 GetWorldToViewInverseMatrix();
+FORWARD_DECL(mat4 GetWorldToViewMatrix());
+FORWARD_DECL(mat4 GetWorldToViewInverseMatrix());
 
 LightSource GetLightSource(int lightIndex) {
     LightSource light;
@@ -228,18 +228,6 @@ computeShadowFilterWidth(int index, vec4 Peye)
 #endif  // NUM_SHADOWS == 0
 
 // ---------------------------------------------------------------------------
-// textures
-// ---------------------------------------------------------------------------
-
-#if NUM_SHADOWS > 0
-
-sampler2DShadow GetShadowCompareTexture(int shadowIndex) {
-    return HdGetSampler_shadowCompareTextures(shadowIndex);
-}
-
-#endif // NUM_SHADOWS > 0
-
-// ---------------------------------------------------------------------------
 // lighting functions
 // ---------------------------------------------------------------------------
 
@@ -276,21 +264,21 @@ float
 shadowCompare(int shadowIndex, vec4 coord)
 {
     coord /= coord.w;
-    coord.z = min(1, coord.z + GetShadow(shadowIndex).bias);
+    coord.z = min(1.0, coord.z + GetShadow(shadowIndex).bias);
 
     // Cascade selection (in shadowing()) ensures Pshadow.xy is in [0,1],
     // but shadowFilter() can throw that off so we need to clamp.
     // XXX: sample the next cascade over?
     coord.xy = clamp(coord.xy, vec2(0), vec2(1));
 
-    return texture(GetShadowCompareTexture(shadowIndex), coord.xyz);
+    return HdGet_shadowCompareTextures(shadowIndex, coord.xyz).x;
 }
 
 #ifndef SHADOW_FILTER
 float
 shadowFilter(int shadowIndex, vec4 coord, vec4 Peye)
 {
-    return shadowCompare(index, coord);
+    return shadowCompare(shadowIndex, coord);
 }
 #endif // SHADOW_FILTER
 #endif // NUM_SHADOWS > 0
@@ -325,10 +313,15 @@ lightDistanceAttenuation(vec4 Peye, int index)
     float distAtten = 1.0;
     LightSource light = GetLightSource(index);
     if (light.position.w != 0.0) {
-        float d = distance(light.position, Peye);
-        distAtten = 1.0 / (light.attenuation[0] +
-                           light.attenuation[1] * d +
-                           light.attenuation[2] * d*d);
+        const float d = distance(light.position, Peye);
+        const float atten = light.attenuation[0] +
+                            light.attenuation[1] * d +
+                            light.attenuation[2] * d*d;
+        if (atten == 0) {
+            distAtten = 0.0;
+        } else {
+            distAtten = 1.0 / atten;
+        }
     }
     return distAtten;
 }
@@ -395,8 +388,7 @@ evaluateIndirectLight(vec3 Neye, vec3 Reye, float NdotE, float EdotH,
     const float lod = roughness * MAX_REFLECTION_LOD;
     vec3 Rdir = normalize((transformationMatrix * vec4(Reye,0.0)).xyz);
     vec2 Rcoord = projectSphericalToLatLong(Rdir);
-    vec3 prefilter = textureLod(HdGetSampler_domeLightPrefilter(),
-                                Rcoord, lod).rgb;
+    vec3 prefilter = HdTextureLod_domeLightPrefilter(Rcoord, lod).rgb;
     vec2 brdf = HdGet_domeLightBRDF(vec2(NdotE, roughness)).rg;
     vec3 specular = prefilter * (F * brdf.x + brdf.y);
 
@@ -409,7 +401,7 @@ evaluateIndirectLight(vec3 Neye, vec3 Reye, float NdotE, float EdotH,
     return result;
 }
 
-// for the comaptibility, turn on shadowing by default.
+// for the compatibility, turn on shadowing by default.
 #ifndef USE_SHADOWS
 #define USE_SHADOWS 1
 #endif
@@ -499,8 +491,8 @@ integrateLightsConstant(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 // lighting functions
 // ---------------------------------------------------------------------------
 
-LightingContribution
-integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props);
+FORWARD_DECL(LightingContribution integrateLights(vec4 Peye, vec3 Neye, 
+    LightingInterfaceProperties props));
 
 vec4
 simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint,

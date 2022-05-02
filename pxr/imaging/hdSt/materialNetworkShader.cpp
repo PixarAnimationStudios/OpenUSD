@@ -68,7 +68,6 @@ HdSt_MaterialNetworkShader::HdSt_MaterialNetworkShader()
  , _computedTextureSourceHash(0)
  , _isValidComputedTextureSourceHash(false)
  , _materialTag()
- , _isSceneMaterial(true)
 {
 }
 
@@ -432,9 +431,7 @@ _CollectPrimvarNames(const HdSt_MaterialParamVector &params)
     TfTokenVector primvarNames = _GetExtraIncludedShaderPrimvarNames();
 
     for (HdSt_MaterialParam const &param: params) {
-        if (param.IsFallback()) {
-            primvarNames.push_back(param.name);
-        } else if (param.IsPrimvarRedirect()) {
+        if (param.IsPrimvarRedirect()) {
             primvarNames.push_back(param.name);
             // primvar redirect connections are encoded as sampler coords
             primvarNames.insert(primvarNames.end(),
@@ -486,18 +483,6 @@ HdSt_MaterialNetworkShader::AddFallbackValueToSpecsAndSources(
             sourceName, param.fallbackValue);
     source->GetBufferSpecs(specs);
     sources->push_back(std::move(source));
-}
-
-bool
-HdSt_MaterialNetworkShader::IsSceneMaterial() const
-{
-    return _isSceneMaterial;
-}
-
-void
-HdSt_MaterialNetworkShader::SetIsSceneMaterial(bool isSceneMaterial)
-{
-    _isSceneMaterial = isSceneMaterial;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

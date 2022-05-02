@@ -128,25 +128,33 @@ class TestGfQuaternion(unittest.TestCase):
             self.assertEqual(q, quatType(1, vec3Type(2,3,4)))
 
             q = quatType(1, vec3Type(2,3,4))
+            q_original = q
             q *= quatType.GetIdentity()
             self.assertEqual(q, quatType(1, vec3Type(2,3,4)))
+            self.assertTrue(q is q_original)
 
             q *= 10
             self.assertEqual(q, quatType(10, vec3Type(20,30,40)))
+            self.assertTrue(q is q_original)
             q = q * 10
             self.assertEqual(q, quatType(100, vec3Type(200,300,400)))
             q = 10 * q
             self.assertEqual(q, quatType(1000, vec3Type(2000,3000,4000)))
+            q_original = q
             q /= 100
             self.assertEqual(q, quatType(10, vec3Type(20,30,40)))
+            self.assertTrue(q is q_original)
             q = q / 10
             self.assertEqual(q, quatType(1, vec3Type(2,3,4)))
 
+            q_original = q
             q += q
             self.assertEqual(q, quatType(2, vec3Type(4,6,8)))
+            self.assertTrue(q is q_original)
 
             q -= quatType(1, vec3Type(2,3,4))
             self.assertEqual(q, quatType(1, vec3Type(2,3,4)))
+            self.assertTrue(q is q_original)
 
             q = q + q
             self.assertEqual(q, quatType(2, vec3Type(4,6,8)))

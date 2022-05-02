@@ -351,14 +351,39 @@ Usd_ClipSet::Usd_ClipSet(
     }
 
     // Generate the clip time mapping that applies to all clips.
-    Usd_Clip::TimeMappings timeMapping;
+    std::shared_ptr<Usd_Clip::TimeMappings> times(new Usd_Clip::TimeMappings());
     if (clipDef.clipTimes) {
         for (const auto& clipTime : *clipDef.clipTimes) {
             const Usd_Clip::ExternalTime extTime = clipTime[0];
             const Usd_Clip::InternalTime intTime = clipTime[1];
-            timeMapping.push_back(Usd_Clip::TimeMapping(extTime, intTime));
+            times->push_back(Usd_Clip::TimeMapping(extTime, intTime));
         }
     }
+
+    if (!times->empty()) {
+        // Maintain the relative order of entries with the same stage time for
+        // jump discontinuities in case the authored times array was unsorted.
+        std::stable_sort(times->begin(), times->end(),
+                Usd_Clip::Usd_SortByExternalTime());
+
+        // Jump discontinuities are represented by consecutive entries in the
+        // times array with the same stage time, e.g. (10, 10), (10, 0).
+        // We represent this internally as (10 - SafeStep(), 10), (10, 0)
+        // because a lot of the desired behavior just falls out from this
+        // representation.
+        for (size_t i = 0; i < times->size() - 1; ++i) {
+            if ((*times)[i].externalTime == (*times)[i + 1].externalTime) {
+                (*times)[i].externalTime =
+                    (*times)[i].externalTime - UsdTimeCode::SafeStep();
+                (*times)[i].isJumpDiscontinuity = true;
+            }
+        }
+
+        // Add sentinel values to the beginning and end for convenience.
+        times->insert(times->begin(), times->front());
+        times->insert(times->end(), times->back());
+    }
+
 
     // Build up the final vector of clips.
     const _TimeToClipMap::const_iterator itBegin = startTimeToClip.begin();
@@ -384,7 +409,7 @@ Usd_ClipSet::Usd_ClipSet(
             /* clipAuthoredStartTime = */ clipEntry.startTime,
             /* clipStartTime = */ clipStartTime,
             /* clipEndTime = */ clipEndTime,
-            /* clipTimes = */ timeMapping));
+            /* clipTimes = */ times));
 
         valueClips.push_back(clip);
     }
@@ -416,7 +441,7 @@ Usd_ClipSet::Usd_ClipSet(
         /* clipAuthoredStartTime= */ Usd_ClipTimesEarliest,
         /* clipStartTime        = */ Usd_ClipTimesEarliest,
         /* clipEndTime          = */ Usd_ClipTimesLatest,
-        /* clipTimes            = */ Usd_Clip::TimeMappings()));
+        /* clipTimes            = */ std::make_shared<Usd_Clip::TimeMappings>()));
 
     if (generatedManifest) {
         // If we generated a manifest layer pull on the clip so that it takes

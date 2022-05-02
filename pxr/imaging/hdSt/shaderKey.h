@@ -101,6 +101,8 @@ struct HdSt_ShaderKey {
     HDST_API
     virtual bool IsDoubleSided() const;
     HDST_API
+    virtual bool UseMetalTessellation() const;
+    HDST_API
     virtual HdPolygonMode GetPolygonMode() const;
     HDST_API
     virtual float GetLineWidth() const;

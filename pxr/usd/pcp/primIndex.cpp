@@ -1793,7 +1793,6 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
         const RefOrPayloadType & refOrPayload = arcs[arcNum];
         const PcpSourceArcInfo& info = infoVec[arcNum];
         const SdfLayerHandle & srcLayer = info.layer;
-        const SdfLayerOffset & srcLayerOffset = info.layerOffset;
         SdfLayerOffset layerOffset = refOrPayload.GetLayerOffset();
 
         PCP_INDEXING_MSG(
@@ -1818,10 +1817,9 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
             fail = true;
         }
 
-        // Validate layer offset in original reference or payload (not the 
-        // composed layer offset stored in refOrPayload).
-        if (!srcLayerOffset.IsValid() ||
-            !srcLayerOffset.GetInverse().IsValid()) {
+        // Validate layer offset in original reference or payload.
+        if (!layerOffset.IsValid() ||
+            !layerOffset.GetInverse().IsValid()) {
             PcpErrorInvalidReferenceOffsetPtr err =
                 PcpErrorInvalidReferenceOffset::New();
             err->rootSite = PcpSite(node.GetRootNode().GetSite());
@@ -1829,11 +1827,15 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
             err->sourcePath = node.GetPath();
             err->assetPath  = info.authoredAssetPath;
             err->targetPath = refOrPayload.GetPrimPath();
-            err->offset     = srcLayerOffset;
+            err->offset     = layerOffset;
             indexer->RecordError(err);
 
             // Don't set fail, just reset the offset.
             layerOffset = SdfLayerOffset();
+        } else {
+            // Apply the layer stack offset for the introducing layer to the 
+            // reference or payload's layer offset.
+            layerOffset = info.layerStackOffset * layerOffset;
         }
 
         // Go no further if we've found any problems.

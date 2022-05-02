@@ -69,7 +69,6 @@ TF_MAKE_STATIC_DATA(
 {
     *_fallbackWidgetShader = std::make_shared<HdStGLSLFXShader>(
         std::make_shared<HioGlslfx>(HdStPackageWidgetShader()));
-    (*_fallbackWidgetShader)->SetIsSceneMaterial(false);
 }
 
 // -----------------------------------------------------------------------------

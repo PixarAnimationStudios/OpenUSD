@@ -636,10 +636,22 @@ function(pxr_register_test TEST_NAME)
         return()
     endif()
 
+    set(OPTIONS RUN_SERIAL PYTHON REQUIRES_SHARED_LIBS REQUIRES_PYTHON_MODULES PERCEPTUAL)
+    set(ONE_VALUE_ARGS
+            CUSTOM_PYTHON
+            COMMAND
+            STDOUT_REDIRECT STDERR_REDIRECT
+            POST_COMMAND POST_COMMAND_STDOUT_REDIRECT POST_COMMAND_STDERR_REDIRECT
+            PRE_COMMAND PRE_COMMAND_STDOUT_REDIRECT PRE_COMMAND_STDERR_REDIRECT
+            FILES_EXIST FILES_DONT_EXIST
+            CLEAN_OUTPUT
+            EXPECTED_RETURN_CODE
+            TESTENV
+            WARN WARN_PERCENT HARD_WARN FAIL FAIL_PERCENT HARD_FAIL)
+    set(MULTI_VALUE_ARGS DIFF_COMPARE IMAGE_DIFF_COMPARE ENV PRE_PATH POST_PATH)
+
     cmake_parse_arguments(bt
-        "RUN_SERIAL;PYTHON;REQUIRES_SHARED_LIBS;REQUIRES_PYTHON_MODULES" 
-        "CUSTOM_PYTHON;COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;POST_COMMAND;POST_COMMAND_STDOUT_REDIRECT;POST_COMMAND_STDERR_REDIRECT;PRE_COMMAND;PRE_COMMAND_STDOUT_REDIRECT;PRE_COMMAND_STDERR_REDIRECT;FILES_EXIST;FILES_DONT_EXIST;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
-        "DIFF_COMPARE;ENV;PRE_PATH;POST_PATH"
+        "${OPTIONS}" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}"
         ${ARGN}
     )
 
@@ -717,6 +729,53 @@ function(pxr_register_test TEST_NAME)
         # an argument though.
         set(baselineDir ${testenvDir}/baseline)
         set(testWrapperCmd ${testWrapperCmd} --baseline-dir=${baselineDir})
+    endif()
+
+    if (bt_IMAGE_DIFF_COMPARE)
+        if (IMAGE_DIFF_TOOL)
+            foreach (compareFile ${bt_IMAGE_DIFF_COMPARE})
+                set(testWrapperCmd ${testWrapperCmd} --image-diff-compare=${compareFile})
+            endforeach ()
+
+            # For now the baseline directory is assumed by convention from the test
+            # name. There may eventually be cases where we'd want to specify it by
+            # an argument though.
+            set(baselineDir ${testenvDir}/baseline)
+            set(testWrapperCmd ${testWrapperCmd} --baseline-dir=${baselineDir})
+
+            if (bt_WARN)
+                set(testWrapperCmd ${testWrapperCmd} --warn=${bt_WARN})
+            endif()
+
+            if (bt_WARN_PERCENT)
+                set(testWrapperCmd ${testWrapperCmd} --warnpercent=${bt_WARN_PERCENT})
+            endif()
+
+            if (bt_HARD_WARN)
+                set(testWrapperCmd ${testWrapperCmd} --hardwarn=${bt_HARD_WARN})
+            endif()
+
+            if (bt_FAIL)
+                set(testWrapperCmd ${testWrapperCmd} --fail=${bt_FAIL})
+            endif()
+
+            if (bt_FAIL_PERCENT)
+                set(testWrapperCmd ${testWrapperCmd} --failpercent=${bt_FAIL_PERCENT})
+            endif()
+
+            if (bt_HARD_FAIL)
+                set(testWrapperCmd ${testWrapperCmd} --hardfail=${bt_HARD_FAIL})
+            endif()
+
+            if(bt_PERCEPTUAL)
+                set(testWrapperCmd ${testWrapperCmd} --perceptual)
+            endif()
+
+            # Make sure to add the image diff tool to the PATH so
+            # it can be easily found within the testWrapper
+            get_filename_component(IMAGE_DIFF_TOOL_PATH ${IMAGE_DIFF_TOOL} DIRECTORY)
+            set(testWrapperCmd ${testWrapperCmd} --post-path=${IMAGE_DIFF_TOOL_PATH})
+        endif()
     endif()
 
     if (bt_CLEAN_OUTPUT)

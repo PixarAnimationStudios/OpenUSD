@@ -42,12 +42,23 @@
 }
 
 --- --------------------------------------------------------------------------
+-- layout ImageShader.Vertex
+
+[
+    ["out block", "VertexData", "outData",
+        ["vec2", "uv"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl ImageShader.Vertex
 
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
 out VertexData
 {
     vec2 uv;
 } outData;
+#endif
 
 void main(void)
 {
@@ -88,14 +99,36 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- layout ImageShader.Fragment
+
+[
+    ["in block", "VertexData", "inData",
+        ["vec2", "uv"]
+    ],
+    ["out", "vec4", "colorOut"]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl ImageShader.Fragment
 
+#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
 in VertexData
 {
     vec2 uv;
 } inData;
 
 layout (location = 0) out vec4 colorOut;
+#endif
+
+#ifdef HD_HAS_integrateLights
+#ifndef HD_HAS_definedIntegrateLights
+#define HD_HAS_definedIntegrateLights
+LightingContribution
+integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props) {
+    return integrateLightsDefault(Peye, Neye, props);
+}
+#endif
+#endif
 
 void main(void)
 {

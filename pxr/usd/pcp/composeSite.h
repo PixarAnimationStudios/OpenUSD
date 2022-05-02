@@ -72,12 +72,12 @@ class PcpLayerStackSite;
 /// \struct PcpSourceArcInfo
 ///
 /// Information about the source of the target of an arc.
-/// All arcs have a layer that the arc comes from. References and payloads
-/// have a resolved layer offset and authored asset path as well.
+/// All arcs have a layer that the arc comes from. References and payloads 
+/// supply an authored asset path as well.
 ///
 struct PcpSourceArcInfo {
     SdfLayerHandle layer;
-    SdfLayerOffset layerOffset;
+    SdfLayerOffset layerStackOffset;
     std::string authoredAssetPath;
 };
 

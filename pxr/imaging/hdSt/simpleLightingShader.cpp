@@ -551,7 +551,7 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdRenderIndex const &renderInde
                         resourceRegistry, aovId));
                     
                 HdAovDescriptor aovDesc = HdAovDescriptor(HdFormatFloat32, 
-                                                          /*multiSampled*/false, 
+                                                          /*multiSampled*/false,
                                                           VtValue(1.f));
 
                 HdRenderPassAovBinding &binding = _shadowAovBindings[i];

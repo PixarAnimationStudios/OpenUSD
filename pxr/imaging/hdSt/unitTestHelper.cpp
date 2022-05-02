@@ -403,9 +403,10 @@ HdSt_TextureTestDriver::WriteToFile(HgiTextureHandle const &texture,
     storage.format = HioFormatFloat32Vec4;
     storage.flipped = true;
 
-    std::vector<uint8_t> buffer;
-    HdStTextureUtils::HgiTextureReadback(_hgi.get(), texture, &buffer);
-    storage.data = buffer.data();
+    size_t size = 0;
+    HdStTextureUtils::AlignedBuffer<uint8_t> buffer =
+        HdStTextureUtils::HgiTextureReadback(_hgi.get(), texture, &size);
+    storage.data = buffer.get();
 
     if (storage.format == HioFormatInvalid) {
         TF_CODING_ERROR("Hgi texture has format not corresponding to a"
@@ -468,7 +469,7 @@ static const std::string fragShaderStr =
 "void main(void)\n"
 "{\n"
 "    vec2 coord = (uvOut * screenSize) / 100.f;\n"
-"    vec4 color = vec4(HdGet_colorIn(coord).xyz, 1.0);\n"
+"    vec4 color = vec4(HgiGet_colorIn(coord).xyz, 1.0);\n"
 "    hd_FragColor = color;\n"
 "}\n";
 

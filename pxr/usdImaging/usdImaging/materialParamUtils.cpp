@@ -121,7 +121,9 @@ _ResolvedPathForFirstTile(
         // naming pattern but the files that are linked do not. We'll
         // let whoever consumes the pattern determine if they want to
         // resolve symlinks themselves.
-        return resolver.Resolve(path);
+        path = resolver.Resolve(path);
+        if (!path.empty())
+            return path;
     }
     return std::string();
 }

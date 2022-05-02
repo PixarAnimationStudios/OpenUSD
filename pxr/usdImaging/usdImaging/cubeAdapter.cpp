@@ -23,11 +23,13 @@
 //
 #include "pxr/usdImaging/usdImaging/cubeAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourceImplicits-Impl.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/implicitSurfaceMeshUtils.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
+#include "pxr/imaging/hd/cubeSchema.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -50,6 +52,37 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdImagingCubeAdapter::~UsdImagingCubeAdapter() 
 {
+}
+
+TfTokenVector
+UsdImagingCubeAdapter::GetImagingSubprims()
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingCubeAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->cube;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingCubeAdapter::GetImagingSubprimData(
+        TfToken const& subprim,
+        UsdPrim const& prim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceImplicitsPrim<UsdGeomCube>::New(
+            prim.GetPath(),
+            HdCubeSchemaTokens->cube,
+            prim,
+            stageGlobals);
+    }
+    return nullptr;
 }
 
 bool

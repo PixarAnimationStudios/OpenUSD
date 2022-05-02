@@ -197,6 +197,8 @@ HgiGLCapabilities::_LoadCapabilities()
         conservativeRasterEnabled);
     _SetFlag(HgiDeviceCapabilitiesBitsStencilReadback,
         true);
+    _SetFlag(HgiDeviceCapabilitiesBitsCustomDepthRange,
+        true);
 
     if (TfDebug::IsEnabled(HGI_DEBUG_DEVICE_CAPABILITIES)) {
         std::cout

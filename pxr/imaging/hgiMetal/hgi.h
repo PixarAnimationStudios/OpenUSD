@@ -31,6 +31,7 @@
 #include "pxr/imaging/hgi/tokens.h"
 
 #import <Metal/Metal.h>
+#include <stack>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -188,6 +189,15 @@ public:
 
     HGIMETAL_API
     void ReleaseSecondaryCommandBuffer(id<MTLCommandBuffer> commandBuffer);
+    
+    HGIMETAL_API
+    id<MTLArgumentEncoder> GetBufferArgumentEncoder() const;
+    HGIMETAL_API
+    id<MTLArgumentEncoder> GetSamplerArgumentEncoder() const;
+    HGIMETAL_API
+    id<MTLArgumentEncoder> GetTextureArgumentEncoder() const;
+    HGIMETAL_API
+    id<MTLBuffer> GetArgBuffer();
 
 protected:
     HGIMETAL_API
@@ -209,12 +219,22 @@ private:
     id<MTLCommandQueue> _commandQueue;
     id<MTLCommandBuffer> _commandBuffer;
     id<MTLCaptureScope> _captureScopeFullFrame;
+    id<MTLArgumentEncoder> _argEncoderBuffer;
+    id<MTLArgumentEncoder> _argEncoderSampler;
+    id<MTLArgumentEncoder> _argEncoderTexture;
+    std::stack<id<MTLBuffer>> _freeArgBuffers;
+    std::mutex _freeArgMutex;
+
     HgiCmds* _currentCmds;
 
     std::unique_ptr<HgiMetalCapabilities> _capabilities;
 
     int _frameDepth;
     bool _workToFlush;
+
+#if !__has_feature(objc_arc)
+    NSAutoreleasePool *_pool;
+#endif
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

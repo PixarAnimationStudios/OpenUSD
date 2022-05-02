@@ -2785,7 +2785,7 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
         displayName = "Blur Far Value"
         doc = "blurFarVal: Blur multiplier where the blur interpolation ends."
     )
-    float inputs:ri:lightFilter:blurMidpoint = 0.5 (
+    float inputs:ri:lightFilter:blurMidpoint = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Blur"
         displayName = "Blur Midpoint"
@@ -3059,6 +3059,14 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
         displayGroup = "Multiplier"
         displayName = "Specular"
         doc = "specular: How much this light filter affects specular lighting."
+    )
+    bool inputs:ri:lightFilter:spherical = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Projection"
+        displayName = "Spherical"
+        doc = """spherical:  When this is on, the texture projects to a sphere
+            instead of to a plane.
+            """
     )
     float inputs:ri:lightFilter:tBlurMult = 1 (
         connectability = "interfaceOnly"
@@ -4936,6 +4944,14 @@ class PxrStylizedHatching "PxrStylizedHatching" (
           Replace tex1-tex8 with RED, ORANGE, YELLOW, GREEN, BLUE, INDIGO, VIOLET, TORQOISE for previewing blending
         """
     )
+    bool inputs:ri:blending_white = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Hatching"
+        displayName = "Blend White Lightest"
+        doc = """
+          After the lightest texture, tex1, add solid color white
+        """
+    )
     bool inputs:ri:camera_range_mask_switch = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Camera Range"
@@ -5248,7 +5264,7 @@ class PxrStylizedHatching "PxrStylizedHatching" (
         doc = "<help />"
     )
     token inputs:ri:whiteShader = "signalAovAverage" (
-        allowedTokens = ["signalAovAverage", "albedoAOV", "NPRalbedoAOV"]
+        allowedTokens = ["signalAovMono", "signalAovAverage", "albedoAOV", "NPRalbedoAOV"]
         connectability = "interfaceOnly"
         displayName = "Signal Energy From"
         doc = """ Under the hood a white shader approximation is created based off the Signal AOV to drive the Hatching. By default using average of RGB components of Signal AOV, but can also divide Signal AOV lighting results with a pure albedo from NPRalbedo AOV or albedo AOV. If NPRalbedo AOV chosen, must set Albedo Color in Stylized Controller Pattern node.
