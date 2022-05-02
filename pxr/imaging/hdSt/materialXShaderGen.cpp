@@ -600,6 +600,10 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
         emitLine("u_envRadiance = HdGetSampler_domeLightPrefilter()", mxStage);
     }
     emitLine("u_envRadianceMips = textureQueryLevels(u_envRadiance)", mxStage);
+#ifdef MATERIALX_MAJOR_VERSION
+    // Enable FIS lighting starting with MaterialX 1.38.3
+    emitLine("u_envRadianceSamples = 64", mxStage);
+#endif
     emitLine("#endif", mxStage, false);
     emitLineBreak(mxStage);
 
