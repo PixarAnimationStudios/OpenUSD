@@ -3081,8 +3081,10 @@ UsdStage::_DestroyDescendents(Usd_PrimDataPtr prim)
     prim->_firstChild = nullptr;
     while (childIt != childEnd) {
         if (_dispatcher) {
-            _dispatcher->Run([this, childIt]() { _DestroyPrim(*childIt); });
-            ++childIt;
+            // Make sure we advance to the next sibling before we destroy
+            // the current child so we don't read from a deleted prim.
+            Usd_PrimDataPtr child = *childIt++;
+            _dispatcher->Run([this, child]() { _DestroyPrim(child); });
         } else {
             _DestroyPrim(*childIt++);
         }
