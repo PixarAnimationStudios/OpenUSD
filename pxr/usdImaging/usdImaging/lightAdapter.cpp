@@ -87,7 +87,7 @@ UsdImagingLightAdapter::MarkCollectionsDirty(UsdPrim const& prim,
 bool
 UsdImagingLightAdapter::_UpdateCollectionsChanged(UsdPrim const& prim) const {
     UsdImaging_CollectionCache &collectionCache = _GetCollectionCache();
-    UsdLuxLight light(prim);
+    UsdLuxLightAPI light(prim);
     bool lightColChanged = collectionCache.UpdateCollection(light.GetLightLinkCollectionAPI());
     bool shadowColChanged = collectionCache.UpdateCollection(light.GetShadowLinkCollectionAPI());
     return lightColChanged || shadowColChanged;
@@ -111,7 +111,7 @@ bool
 UsdImagingLightAdapter::_UpdateCollectionsChanged(UsdPrim const& prim) const {
 {
     UsdImaging_CollectionCache &collectionCache = _GetCollectionCache();
-    UsdLuxLight light(prim);
+    UsdLuxLightAPI light(prim);
     bool lightColChanged = collectionCache.UpdateCollection(light.GetLightLinkCollectionAPI());
     bool shadowColChanged = collectionCache.UpdateCollection(light.GetShadowLinkCollectionAPI());
     return lightColChanged || shadowColChanged;
