@@ -104,6 +104,9 @@ HdPrman_RenderParam::HdPrman_RenderParam(const std::string &rileyVariant,
     _sceneLightCount(0),
     _lastSettingsVersion(0)
 {
+    // Setup to use the default GPU
+    _xpuGpuConfig.push_back(0);
+
     TfRegistryManager::GetInstance().SubscribeTo<HdPrman_RenderParam>();
     _CreateRiley(rileyVariant, xpuVariant);
     
@@ -1591,16 +1594,14 @@ HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
     if (_xpu) {
         static const RtUString cpuConfig("xpu:cpuconfig");
         static const RtUString gpuConfig("xpu:gpuconfig");
-        static const int defaultGPUId = 0;
 
         const bool useCpu = xpuDevices.find("cpu") != std::string::npos;
         paramList.SetInteger(cpuConfig, useCpu ? 1 : 0);
 
         const bool useGpu = xpuDevices.find("gpu") != std::string::npos;
         if (useGpu) {
-            // Currently XPU only supports a single GPU
-            // Set the 0th GPU as being used
-            paramList.SetIntegerArray(gpuConfig, &defaultGPUId, 1);    
+            paramList.SetIntegerArray(gpuConfig, 
+                                _xpuGpuConfig.data(), _xpuGpuConfig.size());
         }
     }
 

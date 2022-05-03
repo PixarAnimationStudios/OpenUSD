@@ -383,6 +383,7 @@ private:
 
     // RIX or XPU
     bool _xpu;
+    std::vector<int> _xpuGpuConfig;
 
     int _lastSettingsVersion;
 };
