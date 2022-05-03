@@ -77,6 +77,8 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/renderBufferSchema.h"
+#include "pxr/imaging/hd/renderSettingsSchema.h"
+#include "pxr/imaging/hd/sampleFilterSchema.h"
 #include "pxr/imaging/hd/sphereSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
@@ -96,6 +98,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (prmanParams)
     ((prmanParamsNames, ""))
+
+    ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
 );
 
 
@@ -1118,6 +1122,76 @@ HdSceneIndexAdapterSceneDelegate::GetLightParamValue(
 }
 
 
+static VtValue
+_GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
+{
+    HdContainerDataSourceHandle renderSettingsDs =
+            HdContainerDataSource::Cast(prim.dataSource->Get(
+                HdRenderSettingsSchemaTokens->renderSettings));
+    if (!renderSettingsDs) {
+        return VtValue();
+    }
+
+    if (key == _tokens->outputsRiSampleFilters) {
+        HdSampledDataSourceHandle valueDs =
+            HdSampledDataSource::Cast(renderSettingsDs->Get(
+                HdRenderSettingsSchemaTokens->sampleFilters));
+        if (!valueDs) {
+            return VtValue();
+        }
+
+        VtValue pathArrayValue = valueDs->GetValue(0);
+        if (pathArrayValue.IsHolding<VtArray<SdfPath>>()) {
+            VtArray<SdfPath> pathArray =
+                pathArrayValue.UncheckedGet<VtArray<SdfPath>>();
+            SdfPathVector pathVector(pathArray.cbegin(), pathArray.cend());
+            return VtValue(pathVector);
+        }
+    }
+    return VtValue();
+}
+
+static VtValue
+_GetSampleFilterResource(HdSceneIndexPrim prim)
+{
+    TRACE_FUNCTION();
+
+    HdSampleFilterSchema filterSchema =
+        HdSampleFilterSchema::GetFromParent(prim.dataSource);
+    if (!filterSchema.IsDefined()) {
+        return VtValue();
+    }
+    HdMaterialNodeSchema nodeSchema = filterSchema.GetSampleFilterResource();
+    if (!nodeSchema.IsDefined()) {
+        return VtValue();
+    }
+
+    // Convert HdDataSource with material node data to a HdMaterialNode2
+    HdMaterialNode2 hdNode2;
+    HdTokenDataSourceHandle nodeTypeDS = nodeSchema.GetNodeIdentifier();
+    if (nodeTypeDS) {
+        hdNode2.nodeTypeId = nodeTypeDS->GetTypedValue(0);
+    }
+
+    std::map<TfToken, VtValue> hdParams;
+    HdContainerDataSourceHandle paramsDS = nodeSchema.GetParameters();
+    if (paramsDS) {
+        const TfTokenVector pNames = paramsDS->GetNames();
+        for (const auto & pName : pNames) {
+            HdDataSourceBaseHandle paramDS = paramsDS->Get(pName);
+            HdSampledDataSourceHandle paramSDS =
+                HdSampledDataSource::Cast(paramDS);
+            if (paramSDS) {
+                VtValue v = paramSDS->GetValue(0);
+                hdParams[pName] = v;
+            }
+        }
+    }
+    hdNode2.parameters = hdParams;
+
+    return VtValue(hdNode2);
+}
+
 static
 HdInterpolation
 Hd_InterpolationAsEnum(const TfToken &interpolationToken)
@@ -1408,6 +1482,19 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
             }
         }
 
+        return VtValue();
+    }
+
+    // renderSettings usd of Get().
+    if (prim.primType == HdPrimTypeTokens->renderSettings) {
+        _GetRenderSettings(prim, key);
+    }
+
+    // sampleFilter usd of Get().
+    if (prim.primType == HdPrimTypeTokens->sampleFilter) {
+        if (key == HdSampleFilterSchemaTokens->sampleFilterResource) {
+            return _GetSampleFilterResource(prim);
+        }
         return VtValue();
     }
 

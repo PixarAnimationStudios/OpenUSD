@@ -126,6 +126,7 @@ pxr_library(hd
         renderIndex
         renderPass
         renderPassState
+        renderSettingsSchema
         renderThread
         repr
         resource
@@ -135,6 +136,7 @@ pxr_library(hd
         rprim
         rprimCollection
         rprimSharedData
+        sampleFilterSchema
         sceneDelegate
         sceneExtCompInputSource
         sceneIndex

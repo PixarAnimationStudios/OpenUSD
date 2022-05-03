@@ -61,6 +61,8 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/renderBufferSchema.h"
+#include "pxr/imaging/hd/renderSettingsSchema.h"
+#include "pxr/imaging/hd/sampleFilterSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
@@ -79,6 +81,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (prmanParams)
     ((prmanParamsNames, ""))
+
+    ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
 );
 
 // ----------------------------------------------------------------------------
@@ -2173,6 +2177,61 @@ private:
 
 // ----------------------------------------------------------------------------
 
+class Hd_DataSourceRenderSettings : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_DataSourceRenderSettings);
+
+    Hd_DataSourceRenderSettings(
+        HdSceneDelegate *sceneDelegate, const SdfPath &id)
+    : _sceneDelegate(sceneDelegate), _id(id)
+    {
+        TF_VERIFY(_sceneDelegate);
+    }
+
+    bool Has(const TfToken &name) override
+    {
+        TfToken key = name;
+        if (name == HdRenderSettingsSchemaTokens->sampleFilters) {
+            return true;
+        }
+
+        VtValue v = _sceneDelegate->Get(_id, name);
+        return !v.IsEmpty();
+    }
+
+    TfTokenVector GetNames() override
+    {
+        TfTokenVector v;
+        v.push_back(HdRenderSettingsSchemaTokens->sampleFilters);
+        return v;
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        if (name == HdRenderSettingsSchemaTokens->sampleFilters) {
+            const VtValue filterPathsValue =
+                _sceneDelegate->Get(_id, _tokens->outputsRiSampleFilters);
+            SdfPathVector filterPaths;
+            if (filterPathsValue.IsHolding<SdfPathVector>()) {
+                filterPaths = filterPathsValue.UncheckedGet<SdfPathVector>();
+            }
+            VtArray<SdfPath> pathsArray(filterPaths.begin(), filterPaths.end());
+            return HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
+                    pathsArray);
+        } else {
+            return HdSampledDataSourceHandle(
+                Hd_GenericGetSampledDataSource::New(_sceneDelegate, _id, name));
+        }
+    }
+
+private:
+    HdSceneDelegate *_sceneDelegate;
+    SdfPath _id;
+};
+
+// ----------------------------------------------------------------------------
+
 TfToken _InterpolationAsToken(HdInterpolation interpolation)
 {
     switch (interpolation) {
@@ -2335,6 +2394,18 @@ HdDataSourceLegacyPrim::Has(const TfToken &name)
         }
     }
 
+    if (_type == HdPrimTypeTokens->renderSettings) {
+        if (name == HdRenderSettingsSchemaTokens->renderSettings) {
+            return true;
+        }
+    }
+
+    if (_type == HdPrimTypeTokens->sampleFilter) {
+        if (name == HdSampleFilterSchemaTokens->sampleFilter) {
+            return true;
+        }
+    }
+
     if (HdLegacyPrimTypeIsVolumeField(_type)) {
         if (name == HdVolumeFieldSchemaTokens->volumeField) {
             return true;
@@ -2435,6 +2506,14 @@ HdDataSourceLegacyPrim::GetNames()
 
     if (_type == HdPrimTypeTokens->renderBuffer) {
         result.push_back(HdRenderBufferSchemaTokens->renderBuffer);
+    }
+
+    if (_type == HdPrimTypeTokens->renderSettings) {
+        result.push_back(HdRenderSettingsSchemaTokens->renderSettings);
+    }
+
+    if (_type == HdPrimTypeTokens->sampleFilter) {
+        result.push_back(HdSampleFilterSchemaTokens->sampleFilter);
     }
 
     if (HdLegacyPrimTypeIsVolumeField(_type)) {
@@ -2589,6 +2668,36 @@ _ConvertHdMaterialNetworkToHdDataSources(
     return true;
 }
 
+static bool
+_ConvertSampleFilterNodeToHdDataSources(
+    const HdMaterialNode2 &hdNode,
+    HdContainerDataSourceHandle *result)
+{
+    HD_TRACE_FUNCTION();
+
+    std::vector<TfToken> paramsNames;
+    std::vector<HdDataSourceBaseHandle> paramsValues;
+    for (const auto &p : hdNode.parameters) {
+        paramsNames.push_back(p.first);
+        paramsValues.push_back(
+            HdRetainedTypedSampledDataSource<VtValue>::New(p.second)
+        );
+    }
+
+    HdContainerDataSourceHandle nodeDS = HdMaterialNodeSchema::BuildRetained(
+        HdRetainedContainerDataSource::New(
+            paramsNames.size(), 
+            paramsNames.data(),
+            paramsValues.data()),
+        HdRetainedContainerDataSource::New(),// SampleFilter has no connections
+        HdRetainedTypedSampledDataSource<TfToken>::New(
+            hdNode.nodeTypeId));
+
+    *result = HdSampleFilterSchema::BuildRetained(nodeDS);
+
+    return true;
+}
+
 HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetPrimvarsDataSource()
 {
@@ -2712,6 +2821,26 @@ HdDataSourceLegacyPrim::_GetMaterialDataSource()
         return nullptr;
     }
     return materialDS;
+}
+
+HdDataSourceBaseHandle
+HdDataSourceLegacyPrim::_GetSampleFilterDataSource()
+{
+    VtValue sampleFilterValue = _sceneDelegate->Get(
+        _id, HdSampleFilterSchemaTokens->sampleFilterResource);
+
+    if (!sampleFilterValue.IsHolding<HdMaterialNode2>()) {
+        return nullptr;
+    }
+
+    HdMaterialNode2 sampleFilterNode =
+        sampleFilterValue.UncheckedGet<HdMaterialNode2>();
+    HdContainerDataSourceHandle sampleFilterDS = nullptr;    
+    if (!_ConvertSampleFilterNodeToHdDataSources(
+            sampleFilterNode, &sampleFilterDS)) {
+        return nullptr;
+    }
+    return sampleFilterDS;
 }
 
 HdDataSourceBaseHandle
@@ -2949,6 +3078,10 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
         return _GetInstanceCategoriesDataSource();
     } else if (name == HdRenderBufferSchemaTokens->renderBuffer) {
         return Hd_DataSourceRenderBuffer::New(_sceneDelegate, _id);
+    } else if (name == HdRenderSettingsSchemaTokens->renderSettings) {
+        return Hd_DataSourceRenderSettings::New(_sceneDelegate, _id);
+    } else if (name == HdSampleFilterSchemaTokens->sampleFilter) {
+        return _GetSampleFilterDataSource();
     } else if (name == HdVolumeFieldSchemaTokens->volumeField) {
         return Hd_DataSourceVolumeField::New(_id, _sceneDelegate);
     } else if (name == HdPrimTypeTokens->drawTarget) {

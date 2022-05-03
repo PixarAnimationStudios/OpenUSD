@@ -67,6 +67,8 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/renderBufferSchema.h"
+#include "pxr/imaging/hd/renderSettingsSchema.h"
+#include "pxr/imaging/hd/sampleFilterSchema.h"
 #include "pxr/imaging/hd/sphereSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
@@ -294,9 +296,7 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
         }
     } else if (primType == HdPrimTypeTokens->sampleFilter) {
         if (bits & HdChangeTracker::DirtyParams) {
-            const static HdDataSourceLocator locator(
-                HdPrimTypeTokens->sampleFilter);
-            set->append(locator);
+            set->append(HdSampleFilterSchema::GetDefaultLocator());
         }
     } else {
         // unknown prim type, use AllDirty for anything
@@ -359,9 +359,7 @@ HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(TfToken const& primType,
         }
     } else if (primType == HdPrimTypeTokens->renderSettings) {
         if (bits & HdChangeTracker::DirtyParams) {
-            const static HdDataSourceLocator locator(
-                HdPrimTypeTokens->renderSettings);
-            set->append(locator);
+            set->append(HdRenderSettingsSchema::GetDefaultLocator());
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (bits & HdField::DirtyParams) {
@@ -760,8 +758,7 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
             }
         }
     } else if (primType == HdPrimTypeTokens->sampleFilter) {
-        const static HdDataSourceLocator locator(HdPrimTypeTokens->sampleFilter);
-        if (_FindLocator(locator, end, &it)) {
+        if (_FindLocator(HdSampleFilterSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdChangeTracker::DirtyParams;
         }
     } else {
@@ -839,8 +836,7 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
             bits |= HdRenderBuffer::DirtyDescription;
         }
     } else if (primType == HdPrimTypeTokens->renderSettings) {
-        const static HdDataSourceLocator locator(HdPrimTypeTokens->renderSettings);
-        if (_FindLocator(locator, end, &it)) {
+        if (_FindLocator(HdRenderSettingsSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdChangeTracker::DirtyParams;
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
