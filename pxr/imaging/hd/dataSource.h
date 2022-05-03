@@ -48,7 +48,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     static Handle AtomicLoad(AtomicHandle &ptr) { \
         return std::atomic_load(&ptr); \
     } \
-    static void AtomicStore(AtomicHandle &ptr, Handle &v) { \
+    static void AtomicStore(AtomicHandle &ptr, const Handle &v) { \
         std::atomic_store(&ptr, v); \
     } \
     static Handle Cast(const HdDataSourceBase::Handle &v) { \
