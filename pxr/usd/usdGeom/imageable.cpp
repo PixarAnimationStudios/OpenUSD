@@ -431,27 +431,6 @@ UsdGeomImageable::MakeInvisible(const UsdTimeCode &time) const
     }
 }
 
-static
-TfToken
-_ComputePurpose(UsdPrim const &prim, UsdPrim *root=NULL)
-{
-    if (UsdPrim parent = prim.GetParent()){
-        TfToken myPurpose = _ComputePurpose(parent, root);
-        if (myPurpose != UsdGeomTokens->default_)
-            return myPurpose;
-        if (UsdGeomImageable ip = UsdGeomImageable(prim)){
-            ip.GetPurposeAttr().Get(&myPurpose);
-            if (root){
-                *root = prim;
-            }
-        }
-
-        return myPurpose;
-    }
-
-    return UsdGeomTokens->default_;
-}
-
 // Helper for computing only the authored purpose token from a valid imageable
 // prim. Returns an empty purpose token otherwise.
 static TfToken
@@ -487,12 +466,13 @@ _ComputeFallbackPurpose(const UsdGeomImageable &ip)
 // hierarchy and returns the first authored purpose opinion found on an 
 // imageable prim. Returns an empty token if there's purpose opinion to inherit
 // from.
-static
-TfToken _ComputeInheritableAncestorPurpose(const UsdPrim &prim)
+static TfToken
+_ComputeInheritableAncestorPurpose(const UsdPrim &prim)
 {
     UsdPrim parent = prim.GetParent();
     while (parent) {
-        const TfToken purpose = _ComputeAuthoredPurpose(UsdGeomImageable(parent));
+        const TfToken purpose =
+            _ComputeAuthoredPurpose(UsdGeomImageable(parent));
         if (!purpose.IsEmpty()) {
             return purpose;
         }
@@ -543,6 +523,20 @@ UsdGeomImageable::ComputePurposeInfo(const PurposeInfo &parentPurposeInfo) const
     return PurposeInfo (authoredPurpose, true);
 }
 
+// Helper to compute the purpose value for prim, which may or may not be
+// imageable.
+static
+TfToken
+_ComputePurpose(UsdPrim const &prim)
+{
+    UsdGeomImageable ip(prim);
+    if (ip) {
+        return ip.ComputePurpose();
+    }
+
+    return _ComputeInheritableAncestorPurpose(prim);
+}
+
 UsdPrim
 UsdGeomImageable::ComputeProxyPrim(UsdPrim *renderPrim) const
 {
@@ -568,11 +562,14 @@ UsdGeomImageable::ComputeProxyPrim(UsdPrim *renderPrim) const
         if (proxyPrimRel.GetForwardedTargets(&target)){
             if (target.size() == 1){
                 if (UsdPrim proxy = self.GetStage()->GetPrimAtPath(target[0])){
-                    if (_ComputePurpose(proxy) != UsdGeomTokens->proxy){
+                    const TfToken computedPurpose = _ComputePurpose(proxy);
+                    if (computedPurpose != UsdGeomTokens->proxy){
                         TF_WARN("Prim <%s>, targeted as proxyPrim of prim "
-                                "<%s> does not have purpose 'proxy'",
+                                "<%s> should have purpose 'proxy' but has "
+                                "'%s' instead.",
                                 proxy.GetPath().GetText(),
-                                renderRoot.GetPath().GetText());
+                                renderRoot.GetPath().GetText(),
+                                computedPurpose.GetText());
                         return UsdPrim();
                     }
                     if (renderPrim){

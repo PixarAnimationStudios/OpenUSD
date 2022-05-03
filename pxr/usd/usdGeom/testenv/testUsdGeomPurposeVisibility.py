@@ -547,7 +547,8 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         #     C   D
         #     |
         #     E
-        # Make A invisible and then make E visible. Test that D remains invisible.
+        # Make A invisible and then make E visible. Test that D remains
+        # invisible.
         print('Test preservation of visibility state.')
         a = UsdGeom.Scope.Define(stage, "/A")
         b = UsdGeom.Scope.Define(stage, "/A/B")
@@ -556,22 +557,32 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         e = UsdGeom.Scope.Define(stage, "/A/B/C/E")
         a.MakeInvisible()
         e.MakeVisible()
-        self.assertEqual(a.ComputeVisibility(), UsdGeom.Tokens.inherited, a.GetPath())
-        self.assertEqual(b.ComputeVisibility(), UsdGeom.Tokens.inherited, b.GetPath())
-        self.assertEqual(c.ComputeVisibility(), UsdGeom.Tokens.inherited, c.GetPath())
-        self.assertEqual(d.ComputeVisibility(), UsdGeom.Tokens.invisible, d.GetPath())
-        self.assertEqual(e.ComputeVisibility(), UsdGeom.Tokens.inherited, e.GetPath())
+        self.assertEqual(a.ComputeVisibility(), UsdGeom.Tokens.inherited,
+                         a.GetPath())
+        self.assertEqual(b.ComputeVisibility(), UsdGeom.Tokens.inherited,
+                         b.GetPath())
+        self.assertEqual(c.ComputeVisibility(), UsdGeom.Tokens.inherited,
+                         c.GetPath())
+        self.assertEqual(d.ComputeVisibility(), UsdGeom.Tokens.invisible,
+                         d.GetPath())
+        self.assertEqual(e.ComputeVisibility(), UsdGeom.Tokens.inherited,
+                         e.GetPath())
 
         print('Test non-default visibility authoring.')
         d.MakeVisible()
         a.MakeInvisible(1.0)
         e.MakeVisible(1.0)
         
-        self.assertEqual(a.ComputeVisibility(1.0), UsdGeom.Tokens.inherited, a.GetPath())
-        self.assertEqual(b.ComputeVisibility(1.0), UsdGeom.Tokens.inherited, b.GetPath())
-        self.assertEqual(c.ComputeVisibility(1.0), UsdGeom.Tokens.inherited, c.GetPath())
-        self.assertEqual(e.ComputeVisibility(1.0), UsdGeom.Tokens.inherited, e.GetPath())
-        self.assertEqual(d.ComputeVisibility(1.0), UsdGeom.Tokens.invisible, d.GetPath())
+        self.assertEqual(a.ComputeVisibility(1.0), UsdGeom.Tokens.inherited,
+                         a.GetPath())
+        self.assertEqual(b.ComputeVisibility(1.0), UsdGeom.Tokens.inherited,
+                         b.GetPath())
+        self.assertEqual(c.ComputeVisibility(1.0), UsdGeom.Tokens.inherited,
+                         c.GetPath())
+        self.assertEqual(e.ComputeVisibility(1.0), UsdGeom.Tokens.inherited,
+                         e.GetPath())
+        self.assertEqual(d.ComputeVisibility(1.0), UsdGeom.Tokens.invisible,
+                         d.GetPath())
 
     def test_ProxyPrim(self):
         stage = Usd.Stage.CreateInMemory()
@@ -587,7 +598,7 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         # with: C has purpose 'render' and proxyPrim targets D
         #       D has purpose proxy
         #       F has purpose render and proxyPrim targets B (which is default)
-        print('Test authoring and computing renderProxy.')
+        print('Test authoring and computing proxyPrim.')
         a = UsdGeom.Scope.Define(stage, "/A")
         b = UsdGeom.Scope.Define(stage, "/A/B")
         c = UsdGeom.Scope.Define(stage, "/A/B/C")
@@ -602,8 +613,21 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         f.SetProxyPrim(b)
         
         self.assertEqual(a.ComputeProxyPrim(), None, a.GetPath())
-        self.assertEqual(c.ComputeProxyPrim(), (d.GetPrim(), c.GetPrim()), c.GetPath())
-        self.assertEqual(e.ComputeProxyPrim(), (d.GetPrim(), c.GetPrim()), e.GetPath())
-        
+        self.assertEqual(c.ComputeProxyPrim(), (d.GetPrim(), c.GetPrim()),
+                         c.GetPath())
+        self.assertEqual(e.ComputeProxyPrim(), (d.GetPrim(), c.GetPrim()),
+                         e.GetPath())
+
+        # Compute the proxy prim in a case that is invalid because the targeted
+        # prim doesn't have 'proxy' purpose.
+        self.assertEqual(f.ComputeProxyPrim(), None, f.GetPath())
+
+        # Set purpose 'guide' on A, to make sure that D's purpose value isn't
+        # determined by an ancestor opinion (i.e., ensure the purpose value
+        # used here *doesn't* reflect pruning purpose semantics).
+        a.CreatePurposeAttr(UsdGeom.Tokens.guide)
+        self.assertEqual(e.ComputeProxyPrim(), (d.GetPrim(), c.GetPrim()),
+                         e.GetPath())
+
 if __name__ == "__main__":
     unittest.main()
