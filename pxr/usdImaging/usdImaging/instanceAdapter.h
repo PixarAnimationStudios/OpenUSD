@@ -625,8 +625,8 @@ private:
     // Map from instance cache path to their instancer path.
     // Note: this is for reducing proto prim lookup in _GetProtoPrim method.
     typedef std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>
-        _ProtoPrimCacheMap;
-    _ProtoPrimCacheMap _protoPrimCacheMap;
+        _ProtoPrimToInstancerMap;
+    _ProtoPrimToInstancerMap _protoPrimToInstancerMap;
 };
 
 

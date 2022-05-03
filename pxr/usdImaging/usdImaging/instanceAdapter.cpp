@@ -332,13 +332,13 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
 
             if (!isLeafInstancer) {
                 instancerData.childPointInstancers.insert(protoPath);
-            }
 
-            // Store cache path and instancer path mapping that
-            // helps to improve reversing lookup in `_GetProtoPrim()`
-            const auto& cacheIt = _protoPrimCacheMap.find(protoPath);
-            if (cacheIt == _protoPrimCacheMap.end()) {
-                _protoPrimCacheMap[protoPath] = instancerPath;
+                // Store cache path and instancer path mapping that
+                // helps to improve reversing lookup in `_GetProtoPrim()`
+                const auto& cacheIt = _protoPrimToInstancerMap.find(protoPath);
+                if (cacheIt == _protoPrimToInstancerMap.end()) {
+                    _protoPrimToInstancerMap[protoPath] = instancerPath;
+                }
             }
 
             TF_DEBUG(USDIMAGING_INSTANCER).Msg(
@@ -1362,11 +1362,6 @@ UsdImagingInstanceAdapter::_ResyncPath(SdfPath const& cachePath,
         }
     }
 
-    // Clear proto prim cache
-    if (!_protoPrimCacheMap.empty()) {
-        _protoPrimCacheMap.clear();
-    }
-
     // Actually resync everything.
     for (SdfPath const& instancer : instancersToUnload) {
         _ResyncInstancer(instancer, index, reload);
@@ -2092,6 +2087,12 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
         // Call ProcessRemoval here because we don't want them to reschedule for
         // resync, that will happen when the instancer is resync'd.
         pair.second.adapter->ProcessPrimRemoval(pair.first, index);
+
+        // Remove proto prim to instancer cache
+        auto protoIt = _protoPrimToInstancerMap.find(pair.first);
+        if (protoIt != _protoPrimToInstancerMap.end()) {
+            _protoPrimToInstancerMap.erase(protoIt);
+        }
     }
 
     // Remove this instancer's entry from the USD prototype -> instancer map.
@@ -2173,8 +2174,8 @@ UsdImagingInstanceAdapter::_GetProtoPrim(SdfPath const& instancerPath,
         // prim is not nested under the instancer, which causes the
         // instancerPath to be invalid in this context.
         //
-        const auto& cacheIt = _protoPrimCacheMap.find(cachePath);
-        if (cacheIt != _protoPrimCacheMap.end()) {
+        const auto& cacheIt = _protoPrimToInstancerMap.find(cachePath);
+        if (cacheIt != _protoPrimToInstancerMap.end()) {
             const auto& instancerIt = _instancerData.find(cacheIt->second);
             if (instancerIt != _instancerData.end()) {
                 const auto& protoIt = instancerIt->second.primMap.find(cachePath);
