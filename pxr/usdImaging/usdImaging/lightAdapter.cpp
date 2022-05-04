@@ -107,16 +107,6 @@ UsdImagingLightAdapter::_RegisterLightCollections(UsdPrim const& prim) {
     _UpdateCollectionsChanged(prim);
 }
 
-bool
-UsdImagingLightAdapter::_UpdateCollectionsChanged(UsdPrim const& prim) const {
-{
-    UsdImaging_CollectionCache &collectionCache = _GetCollectionCache();
-    UsdLuxLightAPI light(prim);
-    bool lightColChanged = collectionCache.UpdateCollection(light.GetLightLinkCollectionAPI());
-    bool shadowColChanged = collectionCache.UpdateCollection(light.GetShadowLinkCollectionAPI());
-    return lightColChanged || shadowColChanged;
-}
-
 void 
 UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
                                         SdfPath const& cachePath,
