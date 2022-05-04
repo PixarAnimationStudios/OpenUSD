@@ -3140,7 +3140,7 @@ pxr_register_test(testUsdImagingGLMaterialTag
     TESTENV testUsdImagingGLMaterialTag
 )
 
-if (MATERIALX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
+if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
     pxr_install_test_dir(
         SRC testenv/testUsdImagingGLMaterialX
         DEST testUsdImagingGLMaterialX
