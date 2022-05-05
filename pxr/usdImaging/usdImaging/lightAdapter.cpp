@@ -77,6 +77,14 @@ UsdImagingLightAdapter::Populate(UsdPrim const& prim,
 }
 
 void
+UsdImagingLightAdapter::_RemovePrim(SdfPath const& cachePath,
+                                         UsdImagingIndexProxy* index)
+{
+    _UnregisterLightCollections(cachePath);
+    index->RemoveSprim(HdPrimTypeTokens->domeLight, cachePath);
+}
+
+void
 UsdImagingLightAdapter::MarkCollectionsDirty(UsdPrim const& prim,
                                              SdfPath const& cachePath,
                                              UsdImagingIndexProxy* index)
