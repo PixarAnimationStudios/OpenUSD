@@ -99,7 +99,9 @@ def main():
     UsdAppUtils.complexityArgs.AddCmdlineArgs(parser)
     UsdAppUtils.colorArgs.AddCmdlineArgs(parser)
     UsdAppUtils.rendererArgs.AddCmdlineArgs(parser)
-
+    UsdAppUtils.aovArgs.AddCmdlineArgs(parser)
+    UsdAppUtils.shadingModeArgs.AddCmdlineArgs(parser)
+    
     parser.add_argument('--imageWidth', '-w', action='store', type=int,
         default=960,
         help=(
@@ -146,6 +148,8 @@ def main():
                 args.rendererPlugin))
     frameRecorder.SetImageWidth(args.imageWidth)
     frameRecorder.SetComplexity(args.complexity.value)
+    frameRecorder.SetAov(args.aov)
+    frameRecorder.SetShadingMode(args.shadingMode)
     frameRecorder.SetColorCorrectionMode(args.colorCorrectionMode)
     frameRecorder.SetIncludedPurposes(purposes)
 
