@@ -166,7 +166,13 @@ if __name__ == '__main__':
           explaination of the contents of the directory.
 
     This script will run usdGenSchema on the auto populated schema.usda.
-    
+
+    If regenerating schemas, it's recommended to set the
+    USD_DISABLE_AUTO_APPLY_API_SCHEMAS environment variable to true in 
+    order to prevent any previously generated auto-apply API schemas 
+    from being applied to the specified schema bases which can result 
+    in extra properties being pruned.
+
     The schema.usda populated specifications from the provided sdrNodes using
     UsdUtils.UpdateSchemaWithSdrNode and skipCodeGeneration metadata will be 
     set to true, unless explicitly marked False in the config for this 
@@ -355,11 +361,17 @@ if __name__ == '__main__':
 
         commonDescription = dedent("""
             The json config can provide sdrNodes either using sourceType and
-            identifiers or using explicit paths via sourceAssetNodes. Note that, 
-            if explicit paths contain any environment variables, then user is
-            required to set these prior to running the script. Example:
+            identifiers or using explicit paths via sourceAssetNodes. Note that
+            if explicit paths contain any environment variables, then the user 
+            is required to set these prior to running the script. Example:
             "$RMANTREE/lib/defaults/PRManAttribute.args", will require setting
-            RMANTREE environment variable before running the script.
+            the RMANTREE environment variable before running the script.
+
+            If regenerating schemas, it's recommended to set the
+            USD_DISABLE_AUTO_APPLY_API_SCHEMAS environment variable to true in 
+            order to prevent any previously generated auto-apply API schemas 
+            from being applied to the specified schema bases which can result 
+            in extra properties being pruned.
 
             Note that since users of this script have less control on direct
             authoring of schema.usda, "useLiteralIdentifier" is unconditionally
