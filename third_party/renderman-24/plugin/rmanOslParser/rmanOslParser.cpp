@@ -31,6 +31,7 @@
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/scoped.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/array.h"
@@ -61,6 +62,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     ((arraySize, "arraySize"))
+    ((pageStr, "page"))
+    ((oslPageDelimiter, "."))
     ((vstructMember, "vstructmember"))
     (sdrDefinitionName)
 
@@ -364,6 +367,12 @@ RmanOslParserPlugin::_getPropertyMetadata(const RixShaderParameter* param,
                     vstruct.c_str());
                 }
             }
+        } else if (entryName == _tokens->pageStr) {
+            // Replace OslPageDelimiter with SdrShaderProperty's Page Delimiter
+            metadata[entryName] = TfStringReplace(
+                    std::string(*metaParam->DefaultS()),
+                    _tokens->oslPageDelimiter, 
+                    SdrPropertyTokens->PageDelimiter.GetString());
         } else if (metaParam->Type() == RixShaderParameter::k_String) {
             metadata[entryName] = std::string(*metaParam->DefaultS());
         }

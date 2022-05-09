@@ -658,7 +658,9 @@ _Parse(
             if (parentPage.empty()) {
                 _Parse(shaderRep, childElement, pageName);
             } else {
-                _Parse(shaderRep, childElement, parentPage + "." + pageName);
+                _Parse(shaderRep, childElement, 
+                        parentPage + 
+                        SdrPropertyTokens->PageDelimiter.GetString() + pageName);
             }
         }
 

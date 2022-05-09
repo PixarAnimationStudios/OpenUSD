@@ -28,6 +28,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/array.h"
@@ -58,6 +59,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     ((arraySize, "arraySize"))
+    ((pageStr, "page"))
+    ((oslPageDelimiter, "."))
     ((vstructMember, "vstructmember"))
     (sdrDefinitionName)
 
@@ -320,6 +323,12 @@ SdrOslParserPlugin::_getPropertyMetadata(const OslParameter* param,
                     vstruct.c_str());
                 }
             }
+        } else if (entryName == _tokens->pageStr) {
+            // Replace OslPageDelimiter with SdrShaderProperty's Page Delimiter
+            metadata[entryName] = TfStringReplace(
+                    _getParamAsString(metaParam),
+                    _tokens->oslPageDelimiter, 
+                    SdrPropertyTokens->PageDelimiter.GetString());
         } else {
             metadata[entryName] = _getParamAsString(metaParam);
         }
