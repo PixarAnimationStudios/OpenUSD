@@ -144,24 +144,6 @@ public:
     /// layers.
     SDF_API bool ShouldSkipAnonymousReload() const;
 
-#if AR_VERSION == 1
-    /// Return true if layers produced by this file format are based
-    /// on physical files on disk. If so, this file format requires
-    /// layers to be serialized to and read from files on disk.
-    ///
-    /// For file formats where this function returns true, when
-    /// opening a layer Sdf will fetch layers to the filesystem 
-    /// via calls to ArResolver::FetchToLocalResolvedPath prior 
-    /// to calling ReadFromFile.
-    ///
-    /// This allows asset systems that do not store layers as individual
-    /// files to operate with file formats that require these files.
-    ///
-    /// \sa ArResolver::Resolve
-    /// \sa ArResolver::FetchToLocalResolvedPath
-    SDF_API bool LayersAreFileBased() const;
-#endif
-
     /// Returns true if anonymous layer identifiers should be passed to Read 
     /// when a layer is opened or reloaded.
     /// 
@@ -380,14 +362,6 @@ protected:
     // reloading anonymous layers.  Default implementation returns true.
     SDF_API
     virtual bool _ShouldSkipAnonymousReload() const;
-
-#if AR_VERSION == 1
-    /// File format subclasses may override this to specify whether
-    /// their layers are backed by physical files on disk.
-    /// Default implementation returns true.
-    SDF_API
-    virtual bool _LayersAreFileBased() const;
-#endif
 
     /// File format subclasses may override this to specify whether
     /// Read should be called when creating, opening, or reloading an anonymous

@@ -91,11 +91,7 @@ Sdf_CanCreateNewLayerWithIdentifier(
         return false;
     }
 
-#if AR_VERSION == 1
-    return ArGetResolver().CanCreateNewLayerWithIdentifier(identifier, whyNot);
-#else
     return true;
-#endif
 }
 
 ArResolvedPath
@@ -104,25 +100,15 @@ Sdf_ResolvePath(
     ArAssetInfo* assetInfo)
 {
     TRACE_FUNCTION();
-#if AR_VERSION == 1
-    return ArResolvedPath(
-        ArGetResolver().ResolveWithAssetInfo(layerPath, assetInfo));
-#else
     return ArGetResolver().Resolve(layerPath);
-#endif
 }
 
 bool
 Sdf_CanWriteLayerToPath(
     const ArResolvedPath& resolvedPath)
 {
-#if AR_VERSION == 1
-    return ArGetResolver().CanWriteLayerToPath(
-        resolvedPath, /* whyNot = */ nullptr);
-#else
     return ArGetResolver().CanWriteAssetToPath(
         resolvedPath, /* whyNot = */ nullptr);
-#endif
 }
 
 ArResolvedPath
@@ -134,29 +120,12 @@ Sdf_ComputeFilePath(
 
     ArResolvedPath resolvedPath = Sdf_ResolvePath(layerPath, assetInfo);  
     if (resolvedPath.empty()) {
-#if AR_VERSION == 1
-        // If we can't resolve layerPath, it means no layer currently
-        // exists at that location. Compute the local path to figure
-        // out where this layer would go if we were to create a new
-        // one. 
-        //
-        // However, we skip this for search paths since the real path
-        // is ambiguous if we can't resolve the search path above.
-        // This is important for layers with search path identifiers,
-        // because otherwise we may compute a confusing real path
-        // for these layers.
-        ArResolver& resolver = ArGetResolver();
-        if (!resolver.IsSearchPath(layerPath)) {
-            resolvedPath = ArResolvedPath(resolver.ComputeLocalPath(layerPath));
-        }
-#else
         // If we can't resolve layerPath, it means no layer currently
         // exists at that location. Use ResolveForNewAsset to figure
         // out where this layer would go if we were to create a new
         // one. 
         ArResolver& resolver = ArGetResolver();
         resolvedPath = resolver.ResolveForNewAsset(layerPath);
-#endif
     }
 
     return resolvedPath;
@@ -186,12 +155,7 @@ Sdf_ComputeAssetInfoFromIdentifier(
         // Anonymous layers do not have repository, overlay, or real paths.
         assetInfo->identifier = identifier;
     } else {
-#if AR_VERSION == 1
-        assetInfo->identifier = ArGetResolver()
-            .ComputeNormalizedPath(identifier);
-#else
         assetInfo->identifier = identifier;
-#endif
 
         string layerPath, arguments;
         Sdf_SplitIdentifier(assetInfo->identifier, &layerPath, &arguments);
@@ -202,17 +166,8 @@ Sdf_ComputeAssetInfoFromIdentifier(
             assetInfo->resolvedPath = ArResolvedPath(filePath);
         }
 
-#if AR_VERSION == 1
-        assetInfo->resolvedPath = ArResolvedPath(
-            Sdf_CanonicalizeRealPath(assetInfo->resolvedPath));
-
-        ArGetResolver().UpdateAssetInfo(
-            assetInfo->identifier, assetInfo->resolvedPath, fileVersion,
-            &resolveInfo);
-#else
         resolveInfo = ArGetResolver().GetAssetInfo(
             layerPath, assetInfo->resolvedPath);
-#endif
     }
 
     assetInfo->resolverContext = 
