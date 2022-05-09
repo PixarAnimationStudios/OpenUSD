@@ -938,7 +938,8 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
 
         // Constant Hydra primvars become either Riley primvars or attributes,
         // depending on prefix and the name.
-        // 1.) Constant primvars with the "ri:attributes:" prefix have that
+        // 1.) Constant primvars with the "ri:attributes:" or
+        //     "primvars:ri:attributes:" prefixes have that
         //     prefix stripped and become primvars for geometry prototype
         //     "attributes" or attributes for geometry instances.
         // 2.) Constant primvars with the "user:" prefix become attributes.
@@ -948,11 +949,23 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
         if (hdInterp == HdInterpolationConstant) {
             static const char *userAttrPrefix = "user:";
             static const char *riAttrPrefix = "ri:attributes:";
-
+            static const char *primvarsPrefix = "primvars:";
             bool hasUserPrefix =
                 TfStringStartsWith(primvar.name.GetString(), userAttrPrefix);
             bool hasRiAttributesPrefix =
                 TfStringStartsWith(primvar.name.GetString(), riAttrPrefix);
+            bool hasPrimvarRiAttributesPrefix =
+                    TfStringStartsWith(primvar.name.GetString(),primvarsPrefix);
+
+            // Strip "primvars:" from the name
+            TfToken primvarName = primvar.name;
+            if (hasPrimvarRiAttributesPrefix) {
+                const char *strippedName = primvar.name.GetText();
+                strippedName += strlen(primvarsPrefix);
+                primvarName = TfToken(strippedName);
+                hasRiAttributesPrefix =
+                      TfStringStartsWith(primvarName.GetString(), riAttrPrefix);
+            }
 
             bool skipPrimvar = false;
             if (paramType == _ParamTypeAttribute) {
@@ -965,7 +978,7 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                     // For 'ri:attributes' we check if the attribute is a
                     // prototype attribute and if so omit it, since it
                     // was included with the primvars.
-                    if (_IsPrototypeAttribute(primvar.name)) {
+                    if (_IsPrototypeAttribute(primvarName)) {
                         skipPrimvar = true;
                     }
                 }
@@ -979,7 +992,7 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                 } else if (hasRiAttributesPrefix) {
                     // If this ri attribute does not affect the prototype
                     // we skip
-                    if (!_IsPrototypeAttribute(primvar.name)) {
+                    if (!_IsPrototypeAttribute(primvarName)) {
                         skipPrimvar = true;
                     }
                 }
@@ -990,11 +1003,11 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
             }
 
             if (hasRiAttributesPrefix) {
-                const char *strippedName = primvar.name.GetText();
+                const char *strippedName = primvarName.GetText();
                 strippedName += strlen(riAttrPrefix);
                 name = _GetPrmanPrimvarName(TfToken(strippedName), detail);
             } else {
-                name = _GetPrmanPrimvarName(primvar.name, detail);
+                name = _GetPrmanPrimvarName(primvarName, detail);
             }
         } else {
             name = _GetPrmanPrimvarName(primvar.name, detail);
