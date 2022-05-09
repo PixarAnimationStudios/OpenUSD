@@ -3190,11 +3190,9 @@ UsdStage::Reload()
 
     ArResolverScopedCache resolverCache;
 
-#if AR_VERSION > 1
     // Refresh the resolver to pick up changes that might have
     // affected asset resolution.
     ArGetResolver().RefreshContext(GetPathResolverContext());
-#endif
 
     // Reload layers in a change block to batch together change notices.
     { 
@@ -4215,10 +4213,6 @@ void
 UsdStage::_HandleResolverDidChange(
     const ArNotice::ResolverChanged& n)
 {
-#if AR_VERSION == 1
-    return;
-#endif
-
     // A ResolverChanged notice that affects our resolver context means that
     // any asset paths that have been resolved on this stage may now resolve
     // to a different resolved path. This includes asset paths that were
