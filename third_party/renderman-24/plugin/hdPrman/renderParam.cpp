@@ -102,6 +102,7 @@ HdPrman_RenderParam::HdPrman_RenderParam(const std::string &rileyVariant,
     _mgr(nullptr),
     _riley(nullptr),
     _sceneLightCount(0),
+    _sampleFiltersId(riley::SampleFilterId::InvalidId()),
     _lastSettingsVersion(0)
 {
     // Setup to use the default GPU
@@ -112,8 +113,6 @@ HdPrman_RenderParam::HdPrman_RenderParam(const std::string &rileyVariant,
     
     // Register RenderMan display driver
     HdPrmanFramebuffer::Register(_rix);
-    
-    _sampleFilterList = {0, nullptr};
 }
 
 HdPrman_RenderParam::~HdPrman_RenderParam()
@@ -2682,56 +2681,101 @@ HdPrman_RenderParam::UpdateRileyShutterInterval(
     riley->SetOptions(_GetDeprecatedOptionsPrunedList());
 }
 
-static
-void _MarkSampleFilterDirty(HdChangeTracker *tracker, SdfPath const &path)
-{
-    if (!path.IsEmpty()) {
-        tracker->MarkSprimDirty(path, HdChangeTracker::DirtyParams);
-    }
-}
-
 void
-HdPrman_RenderParam::SetConnectedSampleFilterPath(
+HdPrman_RenderParam::SetConnectedSampleFilterPaths(
     HdSceneDelegate *sceneDelegate,
-    SdfPath const &connectedSampleFilterPath)
+    SdfPathVector const &connectedSampleFilterPaths)
 {
-    if (_connectedSampleFilterPath != connectedSampleFilterPath) {
-        HdChangeTracker& tracker =
-            sceneDelegate->GetRenderIndex().GetChangeTracker();
-        _MarkSampleFilterDirty(&tracker, _connectedSampleFilterPath);
-        _MarkSampleFilterDirty(&tracker, connectedSampleFilterPath);
-        _connectedSampleFilterPath = connectedSampleFilterPath;
+    if (_connectedSampleFilterPaths != connectedSampleFilterPaths) {
+        // Reset the Filter Paths/Shading Nodes
+        _addedFilterPaths.clear();
+        _sampleFilterShadingNodes.clear();
+
+        // Mark the SampleFilter Prims Dirty and update the Connected Paths
+        for (const SdfPath &path : connectedSampleFilterPaths) {
+            sceneDelegate->GetRenderIndex().GetChangeTracker()
+                .MarkSprimDirty(path, HdChangeTracker::DirtyParams);
+        }
+        _connectedSampleFilterPaths = connectedSampleFilterPaths;
+    }
+
+    // If there are no connected SampleFilters, delete the riley SampleFilter
+    if (_connectedSampleFilterPaths.size() == 0) {
+        if (_sampleFiltersId != riley::SampleFilterId::InvalidId()) {
+            AcquireRiley()->DeleteSampleFilter(_sampleFiltersId);
+            _sampleFiltersId = riley::SampleFilterId::InvalidId();
+        }
     }
 }
 
 void
-HdPrman_RenderParam::AddSampleFilter(riley::SampleFilterId const& filterId)
+HdPrman_RenderParam::_CreateSampleFilters()
 {
-    const auto filterIt = std::find(
-        _sampleFilterIds.begin(), _sampleFilterIds.end(), filterId);
-    if (filterIt == _sampleFilterIds.end()) {
-        _sampleFilterIds.push_back(filterId);
-        _sampleFilterList.count = _sampleFilterIds.size();
-        _sampleFilterList.ids = &_sampleFilterIds.front();
+    // If we have multiple SampleFilters, create a SampleFilter Combiner Node
+    if (_connectedSampleFilterPaths.size() > 1) {
+        static RtUString filterArrayName("filter");
+        static RtUString pxrSampleFilterCombiner("PxrSampleFilterCombiner");
+
+        // FilterRefs needs to match the order of SampleFilters specified in 
+        // the RenderSettings connection
+        std::vector<RtUString> filterRefs;
+        for (const SdfPath &path : _connectedSampleFilterPaths) {
+            filterRefs.push_back(RtUString(path.GetText()));
+        }
+
+        riley::ShadingNode combinerNode;
+        combinerNode.type = riley::ShadingNode::Type::k_SampleFilter;
+        combinerNode.handle = pxrSampleFilterCombiner;
+        combinerNode.name = pxrSampleFilterCombiner;
+        combinerNode.params.SetSampleFilterReferenceArray(
+            filterArrayName, filterRefs.data(), filterRefs.size());
+        _sampleFilterShadingNodes.push_back(combinerNode);
+    }
+    
+    // Create or update the Riley SampleFilters
+    riley::ShadingNetwork const sampleFilterNetwork = {
+        static_cast<uint32_t>(
+            _sampleFilterShadingNodes.size()), &_sampleFilterShadingNodes[0] };
+    
+    if (_sampleFiltersId == riley::SampleFilterId::InvalidId()) {
+        _sampleFiltersId = AcquireRiley()->CreateSampleFilter(
+            riley::UserId::DefaultId(),
+            sampleFilterNetwork, 
+            RtParamList());
+    }
+    else {
+        AcquireRiley()->ModifySampleFilter(
+            _sampleFiltersId, &sampleFilterNetwork, nullptr);
+    }
+
+    if (_sampleFiltersId == riley::SampleFilterId::InvalidId()) {
+        TF_WARN("Failed to create the Sample Filter(s)\n");
     }
 }
 
 void
-HdPrman_RenderParam::RemoveSampleFilter(riley::SampleFilterId const& filterId)
+HdPrman_RenderParam::AddSampleFilter(
+    SdfPath const& path,
+    riley::ShadingNode const& node)
 {
-    const auto filterIt = std::find(
-        _sampleFilterIds.begin(), _sampleFilterIds.end(), filterId);
-    if (filterIt != _sampleFilterIds.end()) {
-        _sampleFilterIds.erase(filterIt);
-        _sampleFilterList.count = _sampleFilterIds.size();
-        _sampleFilterList.ids = &_sampleFilterIds.front();
+    // Add the Shading Node to the vector if the filter is not yet added
+    const auto filterIt = _addedFilterPaths.insert(path);
+    if (filterIt.second) {
+        _sampleFilterShadingNodes.push_back(node);
+    }
+
+    // If we have all the Shading Nodes, create the SampleFilters in Riley
+    if (_sampleFilterShadingNodes.size() == _connectedSampleFilterPaths.size()){
+        _CreateSampleFilters();
     }
 }
 
 riley::SampleFilterList
 HdPrman_RenderParam::GetSampleFilterList()
 {
-    return _sampleFilterList;
+    return (_sampleFiltersId == riley::SampleFilterId::InvalidId()) 
+        ? riley::SampleFilterList({ 0, nullptr })
+        : riley::SampleFilterList({ 1, &_sampleFiltersId });
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

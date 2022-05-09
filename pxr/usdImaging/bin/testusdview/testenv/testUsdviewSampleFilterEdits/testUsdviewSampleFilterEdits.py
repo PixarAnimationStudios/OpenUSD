@@ -31,20 +31,29 @@ def _modifySettings(appController):
     appController._dataModel.viewSettings.autoComputeClippingPlanes = True
 
 # Update the connected Sample Filter.
-def _updateSampleFilterConnection(filterPath, appController):
+def _updateSampleFilterConnection(filterPaths, appController):
     stage = appController._dataModel.stage
     layer = stage.GetSessionLayer()
     stage.SetEditTarget(layer)
 
     renderSettings = stage.GetPrimAtPath('/Render/RenderSettings')
     sampleFilterAttr = renderSettings.GetAttribute('outputs:ri:sampleFilters')
-    sampleFilterAttr.SetConnections([filterPath])
+    sampleFilterAttr.SetConnections(filterPaths)
 
 # Test changing the connected SampleFilter.
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)
 
+    filter1 = '/Render/MurkFilter1.outputs:result'
+    filter2 = '/Render/MurkFilter2.outputs:result'
+
     appController._takeShot("firstFilter.png", waitForConvergence=True)
 
-    _updateSampleFilterConnection('/Render/MurkFilter2.outputs:result', appController)
+    _updateSampleFilterConnection([filter2], appController)
     appController._takeShot("secondFilter.png", waitForConvergence=True)
+
+    _updateSampleFilterConnection([filter1, filter2], appController)
+    appController._takeShot("multiFilters1.png", waitForConvergence=True)
+
+    _updateSampleFilterConnection([filter2, filter1], appController)
+    appController._takeShot("multiFilters2.png", waitForConvergence=True)
