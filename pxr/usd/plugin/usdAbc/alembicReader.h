@@ -31,7 +31,7 @@
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/token.h"
 #include <boost/noncopyable.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -159,7 +159,7 @@ public:
     ListTimeSamplesForPath(const SdfPath& path) const;
 
 private:
-    boost::scoped_ptr<class UsdAbc_AlembicDataReaderImpl> _impl;
+    std::unique_ptr<class UsdAbc_AlembicDataReaderImpl> _impl;
     std::string _errorLog;
 };
 
