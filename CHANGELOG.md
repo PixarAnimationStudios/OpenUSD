@@ -17,6 +17,9 @@
 - Fixed a bug with the composition of reference/payload list ops across 
   sublayers with different time codes per second or layer offsets.
   (Issue: [#1778](https://github.com/PixarAnimationStudios/USD/issues/1778)) 
+- Updated OSL and Args parsers to use Sdr's nested page delimiter of ":",
+  instead of ".". Updated documentation for the same in UsdShadeInput and
+  SdrShaderProperty.
 
 ### Imaging
 - Fixed double-creation of Bprims when using scene index emulation.
