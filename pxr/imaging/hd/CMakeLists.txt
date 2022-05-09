@@ -86,6 +86,7 @@ pxr_library(hd
         instanceRegistry
         instancerTopologySchema
         instanceSchema
+        lazyContainerDataSource
         legacyDisplayStyleSchema
         legacyPrimSceneIndex
         light

@@ -40,10 +40,14 @@ public:
         HdContainerDataSourceHandle initialContainer)
     : _initialContainer(initialContainer) {}
 
+    // Replaces data source at given locator and descending locations
+    // (if given a container data source) by given data source.
+    HD_API
     HdContainerDataSourceEditor &Set(
         const HdDataSourceLocator &locator,
         const HdDataSourceBaseHandle &dataSource);
 
+    HD_API
     HdContainerDataSourceHandle Finish();
 
 private:
