@@ -126,10 +126,7 @@ _ComputeVolumeFieldBindingDependencies(
                 HdContainerDataSource::Get(
                     primSource,
                     HdVolumeFieldBindingSchema::GetDefaultLocator()))),
-        _ComputeVolumeFieldBindingDependency(primPath),
-        HdContainerDataSource::Cast(
-            HdContainerDataSource::Get(
-                primSource, HdDependenciesSchema::GetDefaultLocator())));
+        _ComputeVolumeFieldBindingDependency(primPath));
 }
 
 TF_DECLARE_REF_PTRS(_SceneIndex);
@@ -158,10 +155,11 @@ public:
             return
                 { prim.primType,
                   HdContainerDataSourceEditor(prim.dataSource)
-                      .Set(HdDependenciesSchema::GetDefaultLocator(),
-                           HdLazyContainerDataSource::New(
-                               std::bind(_ComputeVolumeFieldBindingDependencies,
-                                         primPath, prim.dataSource)))
+                      .Overlay(
+                          HdDependenciesSchema::GetDefaultLocator(),
+                          HdLazyContainerDataSource::New(
+                              std::bind(_ComputeVolumeFieldBindingDependencies,
+                                        primPath, prim.dataSource)))
                       .Finish() };
         }
         return prim;

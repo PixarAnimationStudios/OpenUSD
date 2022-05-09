@@ -47,6 +47,14 @@ public:
         const HdDataSourceLocator &locator,
         const HdDataSourceBaseHandle &dataSource);
 
+    // Overlays data source at given location by given data source so that
+    // data sources in the initial container at descending locations can
+    // still come through.
+    HD_API
+    HdContainerDataSourceEditor &Overlay(
+        const HdDataSourceLocator &locator,
+        const HdContainerDataSourceHandle &containerDataSource);
+
     HD_API
     HdContainerDataSourceHandle Finish();
 
