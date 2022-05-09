@@ -252,7 +252,7 @@ public:
     /// attribute.
     ///
     /// Although 'normals' is not classified as a generic UsdGeomPrimvar (and
-    /// will not be included in the results of UsdGeomImageable::GetPrimvars() )
+    /// will not be included in the results of UsdGeomPrimvarsAPI::GetPrimvars() )
     /// it does require an interpolation specification.  The fallback
     /// interpolation, if left unspecified, is UsdGeomTokens->vertex , 
     /// which will generally produce smooth shading on a polygonal mesh.

@@ -196,6 +196,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usdGeom/primvarsAPI.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdGeomPrimvar
@@ -208,10 +210,11 @@ UsdGeomPrimvar
 UsdGeomGprim::CreateDisplayColorPrimvar(const TfToken& interpolation,
                                         int elementSize) const
 {
-    return CreatePrimvar(UsdGeomTokens->primvarsDisplayColor,
-                         SdfValueTypeNames->Color3fArray,
-                         interpolation,
-                         elementSize);
+    return UsdGeomPrimvarsAPI(GetPrim()).CreatePrimvar(
+        UsdGeomTokens->primvarsDisplayColor,
+        SdfValueTypeNames->Color3fArray,
+        interpolation,
+        elementSize);
 }
 
 UsdGeomPrimvar
@@ -224,10 +227,11 @@ UsdGeomPrimvar
 UsdGeomGprim::CreateDisplayOpacityPrimvar(const TfToken& interpolation,
                                           int elementSize) const
 {
-    return CreatePrimvar(UsdGeomTokens->primvarsDisplayOpacity,
-                         SdfValueTypeNames->FloatArray,
-                         interpolation,
-                         elementSize);
+    return UsdGeomPrimvarsAPI(GetPrim()).CreatePrimvar(
+        UsdGeomTokens->primvarsDisplayOpacity,
+        SdfValueTypeNames->FloatArray,
+        interpolation,
+        elementSize);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

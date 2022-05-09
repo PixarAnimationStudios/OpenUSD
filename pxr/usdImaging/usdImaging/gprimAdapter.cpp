@@ -787,7 +787,7 @@ UsdImagingGprimAdapter::Get(UsdPrim const& prim,
             constexpr float defaultValue = 1.0f;
             return VtValue(defaultValue);
         }
-    } else if (UsdGeomPrimvar pv = gprim.GetPrimvar(key)) {
+    } else if (UsdGeomPrimvar pv = UsdGeomPrimvarsAPI(gprim).GetPrimvar(key)) {
         if (outIndices) {
             if (pv && pv.Get(&value, time)) {
                 pv.GetIndices(outIndices, time);
