@@ -370,6 +370,10 @@ public:
     USDIMAGINGGL_API
     HgiTextureHandle GetAovTexture(TfToken const& name) const;
 
+    /// Returns the AOV render buffer for the given token.
+    USDIMAGINGGL_API
+    HdRenderBuffer* GetAovRenderBuffer(TfToken const& name) const;
+        
     /// Returns the list of renderer settings.
     USDIMAGINGGL_API
     UsdImagingGLRendererSettingsList GetRendererSettingsList() const;

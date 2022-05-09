@@ -1108,6 +1108,12 @@ UsdImagingGLEngine::GetAovTexture(
     return aovTexture;
 }
 
+HdRenderBuffer*
+UsdImagingGLEngine::GetAovRenderBuffer(TfToken const& name) const
+{
+    return _taskController->GetRenderOutput(name);
+}
+
 UsdImagingGLRendererSettingsList
 UsdImagingGLEngine::GetRendererSettingsList() const
 {
