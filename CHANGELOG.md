@@ -1,5 +1,10 @@
 # Change Log
 
+## [22.05a] - 2022-05-11
+
+### USD
+- Fixed a race condition that could lead to crashes during scene changes.
+
 ## [22.05] - 2022-04-22
 
 This release enables Storm for macOS using Metal. Refer to notes under Storm for
