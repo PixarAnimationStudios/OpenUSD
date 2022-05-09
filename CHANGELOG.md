@@ -6,6 +6,8 @@
 
 ### USD
 - Removed support for Ar 1.0, which was deprecated in v21.11.
+- Removed Primvar API on UsdGeomImageable which was deprecated in v19.03.
+  All remaining uses of this API have been updated to use UsdGeomPrimvarsAPI.
 - Improved memory allocation for value clips by using a shared pointer to the 
   array of time mapping in Usd_Clips.
   (Issue: [#1774](https://github.com/PixarAnimationStudios/USD/issues/1774), 
