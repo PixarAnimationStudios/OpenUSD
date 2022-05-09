@@ -88,6 +88,12 @@ extern TfEnvSetting<bool> HD_PRMAN_ENABLE_QUICKINTEGRATE;
 static bool _enableQuickIntegrate =
     TfGetEnvSetting(HD_PRMAN_ENABLE_QUICKINTEGRATE);
 
+TF_DEFINE_ENV_SETTING(HD_PRMAN_DISABLE_HIDER_JITTER, false,
+                      "Disable hider jitter");
+
+static bool _disableJitter =
+    TfGetEnvSetting(HD_PRMAN_DISABLE_HIDER_JITTER);
+
 TF_MAKE_STATIC_DATA(std::vector<HdPrman_RenderParam::IntegratorCameraCallback>,
                     _integratorCameraCallbacks)
 {
@@ -2052,7 +2058,7 @@ HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
 
         // Path tracer config.
         options.SetInteger(RixStr.k_hider_incremental, 1);
-        options.SetInteger(RixStr.k_hider_jitter, 1);
+        options.SetInteger(RixStr.k_hider_jitter, !_disableJitter);
         options.SetInteger(RixStr.k_trace_maxdepth, 10);
         options.SetFloat(RixStr.k_Ri_FormatPixelAspectRatio, 1.0f);
         options.SetString(RixStr.k_bucket_order, us_circle);
