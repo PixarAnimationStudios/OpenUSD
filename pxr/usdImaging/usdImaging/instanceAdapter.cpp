@@ -332,6 +332,13 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
 
             if (!isLeafInstancer) {
                 instancerData.childPointInstancers.insert(protoPath);
+
+                // Store cache path and instancer path mapping that
+                // helps to improve reversing lookup in `_GetProtoPrim()`
+                const auto& cacheIt = _protoPrimToInstancerMap.find(protoPath);
+                if (cacheIt == _protoPrimToInstancerMap.end()) {
+                    _protoPrimToInstancerMap[protoPath] = instancerPath;
+                }
             }
 
             TF_DEBUG(USDIMAGING_INSTANCER).Msg(
@@ -2080,6 +2087,12 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
         // Call ProcessRemoval here because we don't want them to reschedule for
         // resync, that will happen when the instancer is resync'd.
         pair.second.adapter->ProcessPrimRemoval(pair.first, index);
+
+        // Remove proto prim to instancer cache
+        auto protoIt = _protoPrimToInstancerMap.find(pair.first);
+        if (protoIt != _protoPrimToInstancerMap.end()) {
+            _protoPrimToInstancerMap.erase(protoIt);
+        }
     }
 
     // Remove this instancer's entry from the USD prototype -> instancer map.
@@ -2161,25 +2174,20 @@ UsdImagingInstanceAdapter::_GetProtoPrim(SdfPath const& instancerPath,
         // prim is not nested under the instancer, which causes the
         // instancerPath to be invalid in this context.
         //
-        // Tracking the non-child prims in a separate map would remove the need
-        // for this loop.
-        for (auto const& pathInstancerDataPair : _instancerData) {
-            _InstancerData const& instancer = pathInstancerDataPair.second;
-            _PrimMap::const_iterator protoIt =
-                                    instancer.primMap.find(cachePath);
-            if (protoIt != instancer.primMap.end()) {
-                // This is the correct instancer path for this prim.
-                instancerCachePath = pathInstancerDataPair.first;
-                materialUsdPath = 
-                    pathInstancerDataPair.second.materialUsdPath;
-                drawMode =
-                    pathInstancerDataPair.second.drawMode;
-                inheritablePurpose =
-                    pathInstancerDataPair.second.inheritablePurpose;
-                r = &protoIt->second;
-                break;
-            }
-        }
+        const auto& cacheIt = _protoPrimToInstancerMap.find(cachePath);
+        if (cacheIt != _protoPrimToInstancerMap.end()) {
+            const auto& instancerIt = _instancerData.find(cacheIt->second);
+            if (instancerIt != _instancerData.end()) {
+                const auto& protoIt = instancerIt->second.primMap.find(cachePath);
+                if (protoIt != instancerIt->second.primMap.end()) {
+                    instancerCachePath = cacheIt->second;
+                    materialUsdPath = instancerIt->second.materialUsdPath;
+                    drawMode = instancerIt->second.drawMode;
+                    inheritablePurpose = instancerIt->second.inheritablePurpose;
+                    r = &protoIt->second;
+                }
+             }
+         }
     }
 
     if (!r) {
