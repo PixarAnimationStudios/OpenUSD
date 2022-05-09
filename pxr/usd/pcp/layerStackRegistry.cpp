@@ -361,30 +361,6 @@ std::string
 _GetCanonicalLayerId(const SdfLayerHandle& anchorLayer, 
                      const std::string& layerId)
 {
-#if AR_VERSION == 1
-    const std::string computedLayerId = 
-        SdfComputeAssetPathRelativeToLayer(anchorLayer, layerId);
-    if (computedLayerId.empty()) {
-        return layerId;
-    }
-
-    if (SdfLayer::IsAnonymousLayerIdentifier(computedLayerId)) {
-        return computedLayerId;
-    }
-
-    ArResolver& resolver = ArGetResolver();
-
-    std::string canonicalPath = computedLayerId;
-    if (resolver.IsSearchPath(canonicalPath)) {
-        std::string resolvedSearchPath = resolver.Resolve(canonicalPath);
-        if (!resolvedSearchPath.empty()) {
-            canonicalPath.swap(resolvedSearchPath);
-        }
-    }
-
-    canonicalPath = resolver.ComputeRepositoryPath(canonicalPath);
-    return canonicalPath.empty() ? computedLayerId : canonicalPath;
-#else
     if (SdfLayer::IsAnonymousLayerIdentifier(layerId)) {
         return layerId;
     }
@@ -396,7 +372,6 @@ _GetCanonicalLayerId(const SdfLayerHandle& anchorLayer,
     // invalidate the resolved paths stored in the Pcp_MutedLayers object.
     return ArGetResolver().CreateIdentifier(
         layerId, anchorLayer->GetResolvedPath());
-#endif
 }
 }
 
