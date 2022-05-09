@@ -22,6 +22,13 @@
 - Updated OSL and Args parsers to use Sdr's nested page delimiter of ":",
   instead of ".". Updated documentation for the same in UsdShadeInput and
   SdrShaderProperty.
+- Updated usdRiPxr schemas to reflect updates to renderman args files and to
+  include other schema classes:
+  - Renderman Light APIs now can only apply to their respective UsdLux types.
+  - Added renderman default plugins schema classes and display drivers schema
+    classes.
+  - Updated previously generated schemas to usd ":" as the nested page delimiter
+    in display groups.
 
 ### Imaging
 - Fixed double-creation of Bprims when using scene index emulation.
