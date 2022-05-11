@@ -188,7 +188,6 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
 {
   GfMatrix4d viewMatrix = renderPassState->GetWorldToViewMatrix();
   GfMatrix4d projMatrix = renderPassState->GetProjectionMatrix();
-  GfMatrix4d cullMatrix = renderPassState->GetCullMatrix();
   GfVec4f viewport = renderPassState->GetViewport();
   HdRenderPass* renderPass = (HdRenderPass*)this;
   //auto drawItems = GetRenderIndex()->GetDrawItems(GetRprimCollection(), renderTags);
@@ -275,7 +274,7 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
           instanceBBox.Transform(GfMatrix4d(instanceXform));
 
           // cull 
-          if(GfFrustum::IntersectsViewVolume (instanceBBox, GfMatrix4d(cullMatrix)))
+          if(GfFrustum::IntersectsViewVolume (instanceBBox, GfMatrix4d(projMatrix)))
           {
             if(drawItem->HaveInstancesColors())
             {
@@ -325,7 +324,7 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
       else
       {
         // cull 
-        if(GfFrustum::IntersectsViewVolume(drawItem->GetBounds(), cullMatrix))
+        if(GfFrustum::IntersectsViewVolume(drawItem->GetBounds(), projMatrix))
         {
           // displayColor
             glUniform3fv(

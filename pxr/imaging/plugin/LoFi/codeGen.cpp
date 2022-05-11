@@ -119,7 +119,7 @@ LoFiCodeGen::LoFiCodeGen(LoFiProgramType type,
   , _shaderCode(shaderCode)
 {
   const GlfContextCaps& caps = GlfContextCaps::GetInstance();
-  _glslVersion = caps.glslVersion;
+  _glslVersion = caps.glVersion;
 }
 
 LoFiCodeGen::LoFiCodeGen(LoFiProgramType type, 
@@ -132,7 +132,7 @@ LoFiCodeGen::LoFiCodeGen(LoFiProgramType type,
   , _shaderCode(shaderCode)
 {
   const GlfContextCaps& caps = GlfContextCaps::GetInstance();
-  _glslVersion = caps.glslVersion;
+  _glslVersion = caps.glVersion;
 }
 
 void LoFiCodeGen::_EmitDeclaration(std::stringstream &ss,
