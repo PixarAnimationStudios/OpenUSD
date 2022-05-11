@@ -42,7 +42,7 @@ enum LoFiPrimvarInterpolation : short {
   LoFiInterpolationFaceVarying,
   LoFiInterpolationInstance,
 };
-
+/*
 static bool 
 LoFiGLCheckError(const char* message)
 {
@@ -96,7 +96,7 @@ LoFiGLFlushError()
   GLenum err;
   while((err = glGetError()) != GL_NO_ERROR){};
 }
-
+*/
 /// Triangulate a polygonal mesh
 /// Samples store a GfVec3i X per triangle vertex where
 ///  - X[0] Vertex index on original topology
