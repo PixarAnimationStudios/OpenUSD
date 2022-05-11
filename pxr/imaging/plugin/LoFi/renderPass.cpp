@@ -188,6 +188,7 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
 {
   GfMatrix4d viewMatrix = renderPassState->GetWorldToViewMatrix();
   GfMatrix4d projMatrix = renderPassState->GetProjectionMatrix();
+  //GfMatrix4d cullMatrix = renderPassState->GetCullMatrix();
   GfVec4f viewport = renderPassState->GetViewport();
   HdRenderPass* renderPass = (HdRenderPass*)this;
   //auto drawItems = GetRenderIndex()->GetDrawItems(GetRprimCollection(), renderTags);
@@ -274,8 +275,8 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
           instanceBBox.Transform(GfMatrix4d(instanceXform));
 
           // cull 
-          if(GfFrustum::IntersectsViewVolume (instanceBBox, GfMatrix4d(projMatrix)))
-          {
+          //if(GfFrustum::IntersectsViewVolume (instanceBBox, cullMatrix))
+          //{
             if(drawItem->HaveInstancesColors())
             {
               // displayColor
@@ -317,15 +318,15 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
             );
 
             vertexArray->Draw();
-          }
+          //}
           instanceIndex++;
         }
       }
       else
       {
         // cull 
-        if(GfFrustum::IntersectsViewVolume(drawItem->GetBounds(), projMatrix))
-        {
+        //if(GfFrustum::IntersectsViewVolume(drawItem->GetBounds(), cullMatrix))
+        //{
           // displayColor
             glUniform3fv(
               displayColorUniform,
@@ -352,7 +353,7 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
           );
 
           vertexArray->Draw();
-        }
+        //}
       }
       vertexArray->Unbind();
     }
