@@ -201,10 +201,9 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
             set->append(HdXformSchema::GetDefaultLocator());
         }
     } else if (primType == HdPrimTypeTokens->camera) {
-        if (bits & (HdCamera::DirtyProjMatrix |
-                    HdCamera::DirtyWindowPolicy |
+        if (bits & (HdCamera::DirtyParams |
                     HdCamera::DirtyClipPlanes |
-                    HdCamera::DirtyParams)) {
+                    HdCamera::DirtyWindowPolicy)) {
             set->append(HdCameraSchema::GetDefaultLocator());
         }
         if (bits & HdCamera::DirtyTransform) {
@@ -566,7 +565,7 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
         }
     } else if (primType == HdPrimTypeTokens->camera) {
         if (_FindLocator(HdCameraSchema::GetDefaultLocator(), end, &it)) {
-            bits |= HdCamera::DirtyProjMatrix |
+            bits |=
                 HdCamera::DirtyWindowPolicy |
                 HdCamera::DirtyClipPlanes |
                 HdCamera::DirtyParams;

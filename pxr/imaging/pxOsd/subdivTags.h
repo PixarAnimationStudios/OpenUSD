@@ -31,6 +31,8 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/tf/token.h"
 
+#include <iosfwd>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 

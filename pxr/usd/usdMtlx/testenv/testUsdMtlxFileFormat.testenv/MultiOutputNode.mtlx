@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+  <nodegraph name="test_ng">
+    <artistic_ior name="artistic_ior" type="multioutput">
+      <input name="reflectivity" type="color3" value="1,0,0" />
+      <input name="edge_color" type="color3" value="1,1,1" />
+    </artistic_ior>
+    <extract name="specular" type="float">
+      <input name="in" type="color3" nodename="artistic_ior" output="extinction" />
+    </extract>
+    <extract name="ior" type="float">
+      <input name="in" type="color3" nodename="artistic_ior" output="ior" />
+    </extract>
+    <output name="specular_output" type="float" nodename="specular" />
+    <output name="specular_ior_output" type="float" nodename="ior" />
+  </nodegraph>
+
+  <standard_surface name="test_sr" type="surfaceshader">
+    <input name="specular" type="float" output="specular_output" nodegraph="test_ng" />
+    <input name="specular_IOR" type="float" output="specular_ior_output" nodegraph="test_ng" />
+  </standard_surface>
+  <surfacematerial name="test_m" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="test_sr" />
+  </surfacematerial>
+</materialx>

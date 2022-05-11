@@ -107,6 +107,11 @@ endif()
 # Need half::_toFloat and half::_eLut.
 _add_define("OPENEXR_DLL")
 
+# Exclude headers from unnecessary Windows APIs to improve build
+# times and avoid annoying conflicts with macros defined in those
+# headers.
+_add_define("WIN32_LEAN_AND_MEAN")
+
 # These files require /bigobj compiler flag
 #   Vt/arrayPyBuffer.cpp
 #   Usd/crateFile.cpp

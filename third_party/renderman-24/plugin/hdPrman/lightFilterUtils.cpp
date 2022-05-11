@@ -24,11 +24,10 @@
 
 #include "hdPrman/lightFilterUtils.h"
 
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/light.h"
 #include "hdPrman/material.h"
-#include "hdPrman/renderParam.h"
 #include "hdPrman/rixStrings.h"
 
 #include "pxr/imaging/hd/material.h"
@@ -106,7 +105,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 bool HdPrmanLightFilterPopulateNodesFromLightParams(
     std::vector<riley::ShadingNode> *filterNodes,
-    SdfPath &filterPath,
+    const SdfPath &filterPath,
     HdSceneDelegate *sceneDelegate)
 {
     HD_TRACE_FUNCTION();
@@ -768,51 +767,37 @@ bool HdPrmanLightFilterPopulateNodesFromLightParams(
 
 void HdPrmanLightFilterGenerateCoordSysAndLinks(
     riley::ShadingNode *filter,
-    SdfPath &filterPath,
+    const SdfPath &filterPath,
     std::vector<riley::CoordinateSystemId> *coordsysIds,
     std::vector<TfToken> *filterLinks,
     HdSceneDelegate *sceneDelegate,
-    HdPrman_Context *context,
-    riley::Riley *riley,
-    const riley::ShadingNode &lightNode)
+    HdPrman_RenderParam *renderParam,
+    riley::Riley *riley)
 {
-    static const RtUString us_PxrRodLightFilter("PxrRodLightFilter");
-    static const RtUString us_PxrBarnLightFilter("PxrBarnLightFilter");
-
-    if (filter->name == us_PxrRodLightFilter ||
-        filter->name == us_PxrBarnLightFilter) {
-        // Sample filter transform
-        HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
-        sceneDelegate->SampleTransform(filterPath, &xf);
-        TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
-            xf_rt_values(xf.count);
-        for (size_t i=0; i < xf.count; ++i) {
-            xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(xf.values[i]);
-        }
-        const riley::Transform xform = {
-            unsigned(xf.count), xf_rt_values.data(), xf.times.data()};
-
-        // The coordSys name is the final component of the id,
-        // after stripping namespaces.
-        RtParamList attrs;
-        const char *csName =
-                    SdfPath::StripNamespace(filterPath.GetName()).c_str();
-        attrs.SetString(RixStr.k_name, RtUString(csName));
-
-        riley::CoordinateSystemId csId;
-        csId = riley->CreateCoordinateSystem(riley::UserId::DefaultId(),
-                                             xform, attrs);
-
-        (*coordsysIds).push_back(csId);
-
-        filter->params.SetString(RtUString("coordsys"),
-                                 RtUString(csName));
-
-        if (filter->name == us_PxrBarnLightFilter) {
-            filter->params.SetString(RtUString("__lightFilterParentShader"),
-                                     lightNode.name);
-        }
+    // Sample filter transform
+    HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
+    sceneDelegate->SampleTransform(filterPath, &xf);
+    TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
+        xf_rt_values(xf.count);
+    for (size_t i=0; i < xf.count; ++i) {
+        xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(xf.values[i]);
     }
+    const riley::Transform xform = {
+        unsigned(xf.count), xf_rt_values.data(), xf.times.data()};
+
+    // To ensure the coordsys name is unique, use the full filter path.
+    RtUString coordsysName = RtUString(filterPath.GetText());
+
+    RtParamList attrs;
+    attrs.SetString(RixStr.k_name, coordsysName);
+
+    riley::CoordinateSystemId csId = riley->CreateCoordinateSystem(
+        riley::UserId::DefaultId(), xform, attrs);
+    (*coordsysIds).push_back(csId);
+
+    // Only certain light filters require a coordsys, but we do not
+    // know which, here, so we provide it in all cases.
+    filter->params.SetString(RtUString("coordsys"), coordsysName);
 
     // Light filter linking
     VtValue val = sceneDelegate->GetLightParamValue(filterPath,
@@ -823,7 +808,7 @@ void HdPrmanLightFilterGenerateCoordSysAndLinks(
     }
     
     if (!lightFilterLink.IsEmpty()) {
-        context->IncrementLightFilterCount(lightFilterLink);
+        renderParam->IncrementLightFilterCount(lightFilterLink);
         (*filterLinks).push_back(lightFilterLink);
         // For light filters to link geometry, the light filters must
         // be assigned a grouping membership, and the

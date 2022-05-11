@@ -55,7 +55,11 @@
 // 40 -> 41: Renamed HdDelegate::GetMaterialNeworkselector() to 
 //           GetMaterialRenderContexts(). It now returns a TfTokenVector.
 // 41 -> 42: Removed GetMaterialTag() from HdRenderIndex.
-#define HD_API_VERSION 42
+// 42 -> 43: Removed HdCamera pulling on view and projection matrix.
+// 43 -> 44: Replaced HdCamera::GetProjectionMatrix with
+//           HdComputeProjectionMatrix.
+// 44 -> 45: Added HdSceneDelegate::GetScenePrimPaths.
+#define HD_API_VERSION 45
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

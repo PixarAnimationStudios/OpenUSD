@@ -1,0 +1,48 @@
+#usda 1.0
+
+def Xform "Group"
+{
+    def Xform "Geom"
+    {
+        def Mesh "cube"
+        {
+            float3[] extent = [(-2, -1, -1), (2, 1, 1)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 2, 3, 4, 5, 6, 7, 0, 6, 5, 1, 4, 7, 3, 2, 0, 3, 7, 6, 4, 2, 1, 5]
+            token interpolateBoundary = "edgeAndCorner"
+            rel material:binding = </Group/Materials/Red>
+            uniform token orientation = "rightHanded"
+            float3[] points = [(1, 1, 1), (-1, 1, 1), (-1, -1, 1), (1, -1, 1), (-1, -1, -1), (-1, 1, -1), (1, 1, -1), (1, -1, -1)]
+            float3[] primvars:displayColor = [(0.5, 0.5, 0.5)]
+            token subdivisionScheme = "none"
+        }
+    }
+
+    def Xform "Materials"
+    {
+        def Material "Red"
+        {
+            token outputs:surface.connect = </Group/Materials/Red/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                float inputs:clearcoat = 0
+                float inputs:clearcoatRoughness = 1
+                color3f inputs:diffuseColor = (1, 0, 0)
+                float inputs:displacement = 0
+                color3f inputs:emissiveColor = (0, 0, 0)
+                float inputs:ior = 1.5
+                float inputs:metallic = 0.1
+                float3 inputs:normal = (0, 0, 1)
+                float inputs:occlusion = 1
+                float inputs:opacity = 1
+                float inputs:roughness = 0.25
+                color3f inputs:specularColor = (1, 1, 1)
+                int inputs:useSpecularWorkflow = 0
+                token outputs:surface
+            }
+        }
+    }
+}
+

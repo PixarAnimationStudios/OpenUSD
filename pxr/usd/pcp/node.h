@@ -444,6 +444,22 @@ template <>
 struct Tf_ShouldIterateOverCopy<PcpNodeRef::child_const_range> :
     boost::true_type {};
 
+/// Support for range-based for loops for PcpNodeRef children ranges.
+inline
+PcpNodeRef_ChildrenIterator
+begin(const PcpNodeRef::child_const_range& r)
+{
+    return r.first;
+}
+
+/// Support for range-based for loops for PcpNodeRef children ranges.
+inline
+PcpNodeRef_ChildrenIterator
+end(const PcpNodeRef::child_const_range& r)
+{
+    return r.second;
+}
+
 // Helper to count the non-variant path components of a path; equivalent
 // to path.StripAllVariantSelections().GetPathElementCount() except
 // this method avoids constructing a new SdfPath value.

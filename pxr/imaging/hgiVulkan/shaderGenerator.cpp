@@ -23,6 +23,8 @@
 //
 
 #include "pxr/imaging/hgiVulkan/shaderGenerator.h"
+#include "pxr/imaging/hgiVulkan/conversions.h"
+#include "pxr/imaging/hgiVulkan/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -34,18 +36,42 @@ _GetMacroBlob()
     // On the metal side, the ref(space,type) parameter defines
     // if items are in device or thread domain.
     const static std::string header =
-        "#define REF(space,type) inout type\n";
+        "#define REF(space,type) inout type\n"
+        "#define HD_NEEDS_FORWARD_DECL\n"
+        "#define HD_FWD_DECL(decl) decl\n"
+        ;
     return header;
 }
 
 HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
+    Hgi const *hgi,
     const HgiShaderFunctionDesc &descriptor)
   : HgiShaderGenerator(descriptor)
+  , _hgi(hgi)
   , _bindIndex(0)
 {
-    //Write out all GL shaders and add to shader sections
+    // Write out all GL shaders and add to shader sections
     GetShaderSections()->push_back(
         std::make_unique<HgiVulkanMacroShaderSection>(_GetMacroBlob(), ""));
+
+    if (descriptor.shaderStage == HgiShaderStageCompute) {
+        int workSizeX = descriptor.computeDescriptor.localSize[0];
+        int workSizeY = descriptor.computeDescriptor.localSize[1];
+        int workSizeZ = descriptor.computeDescriptor.localSize[2];
+
+        if (workSizeX == 0 || workSizeY == 0 || workSizeZ == 0) {
+            workSizeX = 1;
+            workSizeY = 1;
+            workSizeZ = 1;
+        }
+      
+        _shaderLayoutAttributes.push_back(
+            std::string("layout(") +
+            "local_size_x = " + std::to_string(workSizeX) + ", "
+            "local_size_y = " + std::to_string(workSizeY) + ", "
+            "local_size_z = " + std::to_string(workSizeZ) + ") in;\n"
+        );
+    }
 
     // The ordering here is important (buffers before textures), because we
     // need to increment the bind location for resources in the same order
@@ -56,6 +82,14 @@ HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
     _WriteBuffers(descriptor.buffers);
     _WriteInOuts(descriptor.stageInputs, "in");
     _WriteInOuts(descriptor.stageOutputs, "out");
+}
+
+void
+HgiVulkanShaderGenerator::_WriteVersion(std::ostream &ss)
+{
+    const int glslVersion = _hgi->GetCapabilities()->GetShaderVersion();
+
+    ss << "#version " << std::to_string(glslVersion) << "\n";
 }
 
 void
@@ -75,17 +109,28 @@ void
 HgiVulkanShaderGenerator::_WriteTextures(
     const HgiShaderFunctionTextureDescVector& textures)
 {
-    for(const HgiShaderFunctionTextureDesc& desc : textures) {
-        const HgiShaderSectionAttributeVector attrs = {
+    for (const HgiShaderFunctionTextureDesc& desc : textures) {
+        HgiShaderSectionAttributeVector attrs = {
             HgiShaderSectionAttribute{
                 "binding",
                 std::to_string(_bindIndex)}};
+
+        if (desc.writable) {
+            attrs.insert(attrs.begin(), HgiShaderSectionAttribute{
+                HgiVulkanConversions::GetImageLayoutFormatQualifier(
+                    desc.format), 
+                ""});
+        }
 
         GetShaderSections()->push_back(
             std::make_unique<HgiVulkanTextureShaderSection>(
                 desc.nameInShader,
                 _bindIndex,
                 desc.dimensions,
+                desc.format,
+                desc.textureType,
+                desc.arraySize,
+                desc.writable,
                 attrs));
 
         // In Vulkan buffers and textures cannot have the same binding index.
@@ -131,7 +176,7 @@ HgiVulkanShaderGenerator::_WriteInOuts(
         "gl_FragDepth"
     };
     const static std::map<std::string, std::string> takenInParams {
-        { HgiShaderKeywordTokens->hdPosition, "gl_Postiion"},
+        { HgiShaderKeywordTokens->hdPosition, "gl_Position"},
         { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"}
     };
 
@@ -173,11 +218,16 @@ HgiVulkanShaderGenerator::_WriteInOuts(
 }
 
 void
-HgiVulkanShaderGenerator::_Execute(
-    std::ostream &ss,
-    const std::string &originalShaderShader) 
+HgiVulkanShaderGenerator::_Execute(std::ostream &ss)
 {
-    ss << _GetVersion() << " \n";
+    // Version number must be first line in glsl shader
+    _WriteVersion(ss);
+
+    ss << _GetShaderCodeDeclarations();
+    
+    for (const std::string &attr : _shaderLayoutAttributes) {
+        ss << attr;
+    }
 
     HgiVulkanShaderSectionUniquePtrVector* shaderSections = GetShaderSections();
     //For all shader sections, visit the areas defined for all
@@ -185,43 +235,40 @@ HgiVulkanShaderGenerator::_Execute(
     //section, capabilities to define macros in global space,
     //and abilities to declare some members or functions there
     
+    ss << "\n// //////// Global Includes ////////\n";
     for (const std::unique_ptr<HgiVulkanShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalIncludes(ss);
-        ss << "\n";
     }
 
+    ss << "\n// //////// Global Macros ////////\n";
     for (const std::unique_ptr<HgiVulkanShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalMacros(ss);
-        ss << "\n";
     }
 
+    ss << "\n// //////// Global Structs ////////\n";
     for (const std::unique_ptr<HgiVulkanShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalStructs(ss);
-        ss << "\n";
     }
 
+    ss << "\n// //////// Global Member Declarations ////////\n";
     for (const std::unique_ptr<HgiVulkanShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalMemberDeclarations(ss);
-        ss << "\n";
     }
 
+    ss << "\n// //////// Global Function Definitions ////////\n";
     for (const std::unique_ptr<HgiVulkanShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalFunctionDefinitions(ss);
-        ss << "\n";
     }
 
     ss << "\n";
-    const char* cstr = originalShaderShader.c_str();
 
-    //write all the original shader except the version string
-    ss.write(
-        cstr + _GetVersion().length(),
-        originalShaderShader.length() - _GetVersion().length());
+    // write all the original shader
+    ss << _GetShaderCode();
 }
 
 HgiVulkanShaderSectionUniquePtrVector*

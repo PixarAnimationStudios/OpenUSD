@@ -23,11 +23,9 @@
 //
 #include "hdPrman/points.h"
 
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
-#include "hdPrman/renderParam.h"
-#include "hdPrman/renderPass.h"
 #include "hdPrman/rixStrings.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -65,29 +63,21 @@ HdPrman_Points::GetInitialDirtyBitsMask() const
 }
 
 RtPrimVarList
-HdPrman_Points::_ConvertGeometry(HdPrman_Context *context,
+HdPrman_Points::_ConvertGeometry(HdPrman_RenderParam *renderParam,
                                   HdSceneDelegate *sceneDelegate,
                                   const SdfPath &id,
                                   RtUString *primType,
                                   std::vector<HdGeomSubset> *geomSubsets)
 {
-    VtValue pointsVal = sceneDelegate->Get(id, HdTokens->points);
-    VtVec3fArray points = pointsVal.Get<VtVec3fArray>();
+    RtPrimVarList primvars;
 
-    RtPrimVarList primvars(
-         1, /* uniform */
-         points.size(), /* vertex */
-         points.size(), /* varying */
-         points.size()  /* facevarying */);
-
-    RtPoint3 const *pointsData = (RtPoint3 const*)(&points[0]);
-    primvars.SetPointDetail(RixStr.k_P, pointsData,
-                            RtDetailType::k_vertex);
+    const size_t npoints =
+        HdPrman_ConvertPointsPrimvarForPoints(sceneDelegate, id, primvars);
 
     *primType = RixStr.k_Ri_Points;
 
     HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, 1,
-                            points.size(), points.size(), points.size());
+                            npoints, npoints, npoints);
     return primvars;
 }
 

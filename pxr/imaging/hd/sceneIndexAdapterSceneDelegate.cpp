@@ -109,7 +109,6 @@ HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(
     // disabling flattening as it's not yet needed for pure emulation
     //result = HdFlatteningSceneIndex::New(result);
 
-
     return result;
 }
 
@@ -118,8 +117,7 @@ HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(
 HdSceneIndexAdapterSceneDelegate::HdSceneIndexAdapterSceneDelegate(
     HdSceneIndexBaseRefPtr inputSceneIndex,
     HdRenderIndex *parentIndex,
-    SdfPath const &delegateID,
-    SdfPath ownerPath)
+    SdfPath const &delegateID)
 : HdSceneDelegate(parentIndex, delegateID)
 , _inputSceneIndex(inputSceneIndex)
 , _sceneDelegatesBuilt(false)
@@ -210,13 +208,13 @@ HdSceneIndexAdapterSceneDelegate::_PrimAdded(
             default:
                 break;
             };
+        }
 
-            if (it != _primCache.end()) {
-                _PrimCacheEntry & entry = (*it).second;
-                entry.primType = primType;
-            } else {
-                _primCache[indexPath].primType = primType;
-            }
+        if (it != _primCache.end()) {
+            _PrimCacheEntry & entry = (*it).second;
+            entry.primType = primType;
+        } else {
+            _primCache[indexPath].primType = primType;
         }
     }
 }
@@ -912,45 +910,52 @@ _Walk(
     HdContainerDataSourceHandle connsDS = nodeSchema.GetInputConnections();
     HdContainerDataSourceHandle paramsDS = nodeSchema.GetParameters();
 
-    const TfTokenVector connsNames = connsDS->GetNames();
-    for (const auto & connName : connsNames) {
-        HdDataSourceBaseHandle allConnDS = connsDS->Get(connName);
-
-        HdVectorDataSourceHandle connsDS = 
-            HdVectorDataSource::Cast(allConnDS);
-        
-        for (size_t i = 0 ; i < connsDS->GetNumElements() ; i++) {
-            HdDataSourceBaseHandle connDS = connsDS->GetElement(i);
+    if (connsDS) {
+        const TfTokenVector connsNames = connsDS->GetNames();
+        for (const auto & connName : connsNames) {
+            HdVectorDataSourceHandle allConnDS = 
+                HdVectorDataSource::Cast(connsDS->Get(connName));
             
-            HdMaterialConnectionSchema connSchema(
-                HdContainerDataSource::Cast(connDS));
-            if (!connSchema.IsDefined()) {
+            if (!allConnDS) {
                 continue;
             }
-        
-            TfToken p = connSchema.GetUpstreamNodePath()->GetTypedValue(0);
-            TfToken n = 
-                connSchema.GetUpstreamNodeOutputName()->GetTypedValue(0);
-            _Walk(SdfPath(p.GetString()), nodesDS, visitedSet, netHd);
+            
+            for (size_t i = 0 ; i < allConnDS->GetNumElements() ; i++) {
+                HdDataSourceBaseHandle connDS = allConnDS->GetElement(i);
+                
+                HdMaterialConnectionSchema connSchema(
+                    HdContainerDataSource::Cast(connDS));
+                if (!connSchema.IsDefined()) {
+                    continue;
+                }
+            
+                TfToken p = connSchema.GetUpstreamNodePath()->GetTypedValue(0);
+                TfToken n = 
+                    connSchema.GetUpstreamNodeOutputName()->GetTypedValue(0);
+                _Walk(SdfPath(p.GetString()), nodesDS, visitedSet, netHd);
 
-            HdMaterialRelationship r;
-            r.inputId = SdfPath(p.GetString()); 
-            r.inputName = n; 
-            r.outputId = nodePath; 
-            r.outputName=connName;
-            netHd->relationships.push_back(r);
+                HdMaterialRelationship r;
+                r.inputId = SdfPath(p.GetString()); 
+                r.inputName = n; 
+                r.outputId = nodePath; 
+                r.outputName=connName;
+                netHd->relationships.push_back(r);
+            }
         }
     }
 
-    const TfTokenVector pNames = paramsDS->GetNames();
     std::map<TfToken, VtValue> paramsHd;
-
-    for (const auto & pName : pNames) {
-        HdDataSourceBaseHandle paramDS = paramsDS->Get(pName);
-        HdSampledDataSourceHandle paramSDS = 
-            HdSampledDataSource::Cast(paramDS);
-        VtValue v = paramSDS->GetValue(0);
-        paramsHd[pName] = v;
+    if (paramsDS) {
+        const TfTokenVector pNames = paramsDS->GetNames();
+        for (const auto & pName : pNames) {
+            HdDataSourceBaseHandle paramDS = paramsDS->Get(pName);
+            HdSampledDataSourceHandle paramSDS = 
+                HdSampledDataSource::Cast(paramDS);
+            if (paramSDS) {
+                VtValue v = paramSDS->GetValue(0);
+                paramsHd[pName] = v;
+            }
+        }
     }
 
     HdMaterialNode n;
@@ -1007,10 +1012,9 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
         TfToken pathTk = connSchema.GetUpstreamNodePath()->GetTypedValue(0);
         SdfPath path(pathTk.GetString());
         matHd.terminals.push_back(path);
-        TfToken outN = connSchema.GetUpstreamNodeOutputName()->GetTypedValue(0); 
 
         // Continue walking the network
-        HdMaterialNetwork & netHd = matHd.map[outN];
+        HdMaterialNetwork & netHd = matHd.map[name];
         _Walk(path, nodesDS, &visitedNodes, &netHd);
     }
     return VtValue(matHd);
@@ -1174,20 +1178,17 @@ HdSceneIndexAdapterSceneDelegate::GetPrimvarDescriptors(
         }
     }
 
-    if (it->second.primvarDescriptorsState.load() ==
-            _PrimCacheEntry::ReadStateUnread) {
-        it->second.primvarDescriptorsState.store(
-            _PrimCacheEntry::ReadStateReading);
+    _PrimCacheEntry::ReadState current = _PrimCacheEntry::ReadStateUnread;
+    if (it->second.primvarDescriptorsState.compare_exchange_strong(
+            current, _PrimCacheEntry::ReadStateReading)) {
         it->second.primvarDescriptors = std::move(descriptors);
         it->second.primvarDescriptorsState.store(
             _PrimCacheEntry::ReadStateRead);
-    } else {
-        // if someone is in the process of filling the entry, just
-        // return our value instead of trying to assign
-        return descriptors[interpolation];
+
+        return it->second.primvarDescriptors[interpolation];
     }
-    
-    return it->second.primvarDescriptors[interpolation];
+
+    return descriptors[interpolation];
 }
 
 HdExtComputationPrimvarDescriptorVector
@@ -1486,24 +1487,44 @@ HdSceneIndexAdapterSceneDelegate::_SamplePrimvar(
 
     HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
 
-    HdPrimvarsSchema primvars =
-        HdPrimvarsSchema::GetFromParent(prim.dataSource);
-    if (!primvars) {
-        return 0;
-    }
-    HdPrimvarSchema primvar = primvars.GetPrimvar(key);
-    if (!primvar) {
-        return 0;
-    }
-
     HdSampledDataSourceHandle valueSource = nullptr;
     HdIntArrayDataSourceHandle indicesSource = nullptr;
-    if (sampleIndices) {
-        valueSource = primvar.GetIndexedPrimvarValue();
-        indicesSource = primvar.GetIndices();
-    } else {
-        valueSource = primvar.GetPrimvarValue();
+    
+    HdPrimvarsSchema primvars =
+        HdPrimvarsSchema::GetFromParent(prim.dataSource);
+    if (primvars) {
+        HdPrimvarSchema primvar = primvars.GetPrimvar(key);
+        if (primvar) {
+            if (sampleIndices) {
+                valueSource = primvar.GetIndexedPrimvarValue();
+                indicesSource = primvar.GetIndices();
+            } else {
+                valueSource = primvar.GetPrimvarValue();
+            }
+        }
     }
+
+    // NOTE: SamplePrimvar is used by some render delegates to get multiple
+    //       samples from camera parameters. While this works from UsdImaging,
+    //       it's not due to intentional scene delegate specification but
+    //       by UsdImaging fallback behavior which goes directly to USD attrs
+    //       in absence of a matching primvar.
+    //       In order to support legacy uses of this, we will also check
+    //       camera parameter datasources
+    if (!valueSource && prim.primType == HdPrimTypeTokens->camera) {
+        if (HdCameraSchema cameraSchema =
+                HdCameraSchema::GetFromParent(prim.dataSource)) {
+            // Ask for the key directly from the schema's container data source
+            // as immediate child data source names match the legacy camera
+            // parameter names (e.g. focalLength)
+            // For a native data source, this will naturally have time samples.
+            // For a emulated data source, we are accounting for the possibly
+            // that it needs to call SamplePrimvar
+            valueSource = HdSampledDataSource::Cast(
+                cameraSchema.GetContainer()->Get(key));
+        }
+    }
+
     if (!valueSource) {
         return 0;
     }
@@ -2074,6 +2095,16 @@ HdSceneIndexAdapterSceneDelegate::GetDisplayStyle(SdfPath const &id)
         if (HdBoolDataSourceHandle ds =
                 styleSchema.GetOccludedSelectionShowsThrough()) {
             result.occludedSelectionShowsThrough = ds->GetTypedValue(0.0f);
+        }
+
+        if (HdBoolDataSourceHandle ds =
+                styleSchema.GetPointsShadingEnabled()) {
+            result.pointsShadingEnabled = ds->GetTypedValue(0.0f);
+        }
+
+        if (HdBoolDataSourceHandle ds =
+                styleSchema.GetMaterialIsFinal()) {
+            result.materialIsFinal = ds->GetTypedValue(0.0f);
         }
     }
 

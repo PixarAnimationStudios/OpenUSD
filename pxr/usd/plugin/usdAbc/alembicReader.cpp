@@ -302,6 +302,9 @@ _CleanName(
         name = attempt;
     }
 
+    if (name == "vals")
+        return "";
+
     return name;
 }
 

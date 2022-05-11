@@ -159,9 +159,10 @@ def _processEvents(self, iterations=10, waitForConvergence=False):
 AppController._processEvents = _processEvents
 
 # Take a shot of the viewport and save it to a file.
-def _takeShot(self, fileName, iterations=10, waitForConvergence=False):
+def _takeShot(self, fileName, iterations=10, waitForConvergence=False,
+              cropToAspectRatio=False):
     self._processEvents(iterations, waitForConvergence)
-    viewportShot = self.GrabViewportShot()
+    viewportShot = self.GrabViewportShot(cropToAspectRatio=cropToAspectRatio)
     viewportShot.save(fileName, "PNG")
 
 AppController._takeShot = _takeShot

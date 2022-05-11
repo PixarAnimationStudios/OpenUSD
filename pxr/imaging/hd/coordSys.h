@@ -29,15 +29,7 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/sprim.h"
 
-#include "pxr/base/vt/dictionary.h"
-#include "pxr/base/vt/value.h"
-
-#include <memory>
-#include <vector>
-
 PXR_NAMESPACE_OPEN_SCOPE
-
-class HdSceneDelegate;
 
 /// \class HdCoordSys
 ///
@@ -61,12 +53,13 @@ class HdSceneDelegate;
 /// of the transform from its local space to world space.  In other
 /// words, it has the same interpretation as the transform for rprims.
 ///
-class HdCoordSys : public HdSprim {
+class HdCoordSys : public HdSprim
+{
 public:
     HD_API
     HdCoordSys(SdfPath const & id);
     HD_API
-    virtual ~HdCoordSys();
+    ~HdCoordSys() override;
 
     // Change tracking for HdCoordSys
     enum DirtyBits : HdDirtyBits {

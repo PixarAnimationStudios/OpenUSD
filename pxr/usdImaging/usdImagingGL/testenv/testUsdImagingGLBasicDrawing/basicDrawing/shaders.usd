@@ -1,0 +1,431 @@
+#usda 1.0
+(
+    endFrame = 10
+    startFrame = 1
+    upAxis = "Z"
+)
+
+def Scope "Materials"
+{
+    def Material "UvMat"
+    {
+        token outputs:surface.connect = </Materials/UvMat/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform asset info:glslfx:sourceAsset = @basicDrawing/shaders-surface.glslfx@
+            uniform token info:implementationSource = "sourceAsset"
+            uniform float3 inputs:diffuseColor = (1, 0, 1)
+            add uniform float3 inputs:diffuseColor.connect = </Materials/UvMat/Tex.outputs:color>
+            token outputs:surface
+        }
+
+        def Shader "Tex"
+        {
+            uniform token info:id = "HwUvTexture_1"
+            uniform asset inputs:file = @basicDrawing/tiledGradient.png@
+            add uniform float2 inputs:uv.connect = </Materials/UvMat/Primvar.outputs:result>
+            float3 outputs:color
+        }
+
+        def Shader "Primvar"
+        {
+            uniform token info:id = "HwPrimvar_1"
+            uniform token inputs:varname = "map1_uv"
+            float2 outputs:result
+        }
+    }
+
+    def Material "PrimvarMat"
+    {
+        token outputs:surface.connect = </Materials/PrimvarMat/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform asset info:glslfx:sourceAsset = @basicDrawing/shaders-surface.glslfx@
+            uniform token info:implementationSource = "sourceAsset"
+            uniform float3 inputs:diffuseColor = (0.07, 0.521, 0.8)
+            add uniform float3 inputs:diffuseColor.connect = </Materials/PrimvarMat/Primvar.outputs:result>
+            token outputs:surface
+        }
+
+        def Shader "Primvar"
+        {
+            uniform token info:id = "HwPrimvar_1"
+            uniform token inputs:varname = "displayColor2"
+            float3 outputs:result
+        }
+    }
+
+    def Material "FallbackMat"
+    {
+        token outputs:surface.connect = </Materials/FallbackMat/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform asset info:glslfx:sourceAsset = @basicDrawing/shaders-surface.glslfx@
+            uniform token info:implementationSource = "sourceAsset"
+            uniform float3 inputs:diffuseColor = (1, 0, 1)
+            token outputs:surface
+        }
+    }
+
+    def Material "PtexMat"
+    {
+        token outputs:surface.connect = </Materials/PtexMat/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform asset info:glslfx:sourceAsset = @basicDrawing/shaders-surface.glslfx@
+            uniform token info:implementationSource = "sourceAsset"
+            uniform float3 inputs:diffuseColor = (1, 0, 1)
+            add uniform float3 inputs:diffuseColor.connect = </Materials/PtexMat/Tex.outputs:color>
+            token outputs:surface
+        }
+
+        def Shader "Tex"
+        {
+            uniform token info:id = "HwPtexTexture_1" (
+                faceIndexPrimvar = "myPtexFaceIndex"
+            )
+            uniform asset inputs:file = @basicDrawing/test.ptx@
+            float3 outputs:color
+        }
+    }
+}
+
+def Xform "Parent"
+{
+    def Xform "Meshes"
+    {
+        def Scope "Primvars"
+        {
+            def Mesh "MeshTest_primvar1"
+            {
+                float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+                token faceVaryingInterpolateBoundary = "alwaysSharp"
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                token interpolateBoundary = "edgeAndCorner"
+                rel material:binding = </Materials/PrimvarMat>
+                point3f[] points = [(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
+                color3f[] primvars:displayColor2 = [(0, 0.1, 0.9), (0.9, 0.1, 0), (0.1, 0.9, 0), (0, 0.9, 0.9)] (
+                    interpolation = "vertex"
+                )
+                uniform token subdivisionScheme = "catmullClark"
+            }
+
+            def Mesh "MeshTest_primvar2"
+            {
+                float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+                token faceVaryingInterpolateBoundary = "alwaysSharp"
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                token interpolateBoundary = "edgeAndCorner"
+                rel material:binding = </Materials/PrimvarMat>
+                point3f[] points = [(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
+                color3f[] primvars:displayColor2 = [(0.1, 0.1, 0), (0, 1, 0), (1, 0, 0), (0.9, 0, 0)] (
+                    interpolation = "vertex"
+                )
+                custom float2[] primvars:map1_uv = [(0, 1), (1, 1), (0, 0), (1, 0)] (
+                    interpolation = "vertex"
+                )
+                uniform token subdivisionScheme = "catmullClark"
+                custom double3 xformOp:translate = (0, 0, -4.25)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Scope "UV"
+        {
+            def Mesh "MeshTest_Uv1"
+            {
+                float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+                token faceVaryingInterpolateBoundary = "alwaysSharp"
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                token interpolateBoundary = "edgeAndCorner"
+                rel material:binding = </Materials/UvMat>
+                point3f[] points = [(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
+                color3f[] primvars:displayColor = [(0.5, 0.5, 0.9)] (
+                    interpolation = "uniform"
+                )
+                color3f[] primvars:displayColor2 = [(0, 0.1, 0.9), (0.9, 0.1, 0), (0.1, 0.9, 0), (0, 0.9, 0.9)] (
+                    interpolation = "vertex"
+                )
+                custom float2[] primvars:map1_uv = [(0, 1), (1, 1), (0, 0), (1, 0)] (
+                    interpolation = "vertex"
+                )
+                uniform token subdivisionScheme = "catmullClark"
+                custom double3 xformOp:translate = (-4.25, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Mesh "MeshTest_Uv2"
+            {
+                float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+                token faceVaryingInterpolateBoundary = "alwaysSharp"
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                token interpolateBoundary = "edgeAndCorner"
+                rel material:binding = </Materials/UvMat>
+                point3f[] points = [(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
+                custom float2[] primvars:map1_uv = [(0, 1), (0.4, 1), (0, 0), (0.4, 0)] (
+                    interpolation = "vertex"
+                )
+                uniform token subdivisionScheme = "catmullClark"
+                custom double3 xformOp:translate = (-4.25, 0, -4.25)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Scope "Fallback"
+        {
+            def Mesh "MeshTest_Fallback"
+            {
+                float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+                token faceVaryingInterpolateBoundary = "alwaysSharp"
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                token interpolateBoundary = "edgeAndCorner"
+                rel material:binding = </Materials/FallbackMat>
+                point3f[] points = [(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
+                uniform token subdivisionScheme = "catmullClark"
+                custom double3 xformOp:translate = (4.25, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Scope "PTex"
+        {
+            def Mesh "MeshTest_Ptex1"
+            {
+                float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+                token faceVaryingInterpolateBoundary = "alwaysSharp"
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                token interpolateBoundary = "edgeAndCorner"
+                rel material:binding = </Materials/PtexMat>
+                point3f[] points = [(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
+                custom float[] primvars:myPtexFaceIndex = [0] (
+                    interpolation = "uniform"
+                )
+                custom int primvars:ptexFaceOffset = 67 (
+                    interpolation = "constant"
+                )
+                uniform token subdivisionScheme = "catmullClark"
+                custom double3 xformOp:translate = (4.25, 0, -4.25)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Mesh "MeshTest_Ptex2"
+            {
+                float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+                token faceVaryingInterpolateBoundary = "alwaysSharp"
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                token interpolateBoundary = "edgeAndCorner"
+                rel material:binding = </Materials/PtexMat>
+                point3f[] points = [(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
+                custom float[] primvars:myPtexFaceIndex = [0] (
+                    interpolation = "uniform"
+                )
+                custom int primvars:ptexFaceOffset = 66 (
+                    interpolation = "constant"
+                )
+                uniform token subdivisionScheme = "catmullClark"
+                custom double3 xformOp:translate = (4.25, 0, 4.25)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+    }
+
+    def Scope "Curves"
+    {
+        def BasisCurves "Loop"
+        {
+            uniform token basis = "bspline"
+            int[] curveVertexCounts = [10]
+            float3[] extent = [(-3.77021, -1.95556, -1), (2.79944, 9.61911, 1)]
+            rel material:binding = </Materials/PrimvarMat>
+            uniform token orientation = "rightHanded"
+            point3f[] points = [(-2.77021, 5.61911, 0), (-2.64559, 1.85052, 0), (-2.52098, -1.91808, 0), (2.3203, -1.95556, 0), (2.59944, 0.794341, 0), (2.0742, 2.59551, 0), (-0.058857, 2.60262, 0), (-1.44907, 0.768724, 0), (-1.55156, 2.82384, 0), (-1.65406, 4.87896, 0)]
+            color3f[] primvars:displayColor = [(0, 0.5, 1), (0.5, 0, 1), (0.5, 0.5, 0), (0.5, 0, 1), (0, 0.5, 1), (0.5, 0, 1), (0.5, 0.5, 0), (0.5, 0, 1), (0, 0.5, 1), (0.5, 0, 1)] (
+                interpolation = "vertex"
+            )
+            color3f[] primvars:displayColor2 = [(0.1, 0.1, 0), (0, 1, 0), (1, 0, 0), (0.9, 0, 0), (0.9, 0, 0), (0.9, 0, 0), (0.9, 0, 0), (0.9, 0, 0), (0.9, 0, 0), (0.9, 0, 0)] (
+                interpolation = "vertex"
+            )
+            uniform token type = "cubic"
+            float[] widths = [0.22] (
+                interpolation = "constant"
+            )
+            uniform token wrap = "nonperiodic"
+            custom double xformOp:rotateX = 90
+            custom double3 xformOp:scale = (0.5, 0.5, 0.5)
+            custom double3 xformOp:translate = (-8, 7, 3.9)
+            uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:rotateX", "xformOp:translate"]
+        }
+    }
+
+    def Scope "Points"
+    {
+        def Points "Points_Primvar" (
+            customData = {
+                bool zUp = 1
+            }
+        )
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (0.52, 0.52, 0.52)]
+            rel material:binding = </Materials/PrimvarMat>
+            point3f[] points = [(-0.5, -0.5, -0.5), (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (0.5, -0.5, -0.5), (-0.5, 0.5, 0.5)]
+            custom int primvars:detail_idx = 1 (
+                elementSize = 1
+                interpolation = "constant"
+            )
+            color3f[] primvars:displayColor2 = [(1, 0, 0), (1, 1, 0), (1, 0, 1), (0, 1, 0), (0, 0, 1)] (
+                interpolation = "vertex"
+            )
+            custom int[] primvars:id = [0, 1, 2, 3, 4] (
+                elementSize = 1
+                interpolation = "varying"
+            )
+            custom int primvars:prim_idx = 0 (
+                elementSize = 1
+                interpolation = "constant"
+            )
+            float[] widths = [0.56292385, 0.25219387, 0.86007416, 0.4467854, 0.25168622]
+            custom double3 xformOp:scale = (2, 2, 2)
+            custom double3 xformOp:translate = (0, -1, 2)
+            uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+        }
+
+        def Points "Points_Uv" (
+            customData = {
+                bool zUp = 1
+            }
+        )
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (0.52, 0.52, 0.52)]
+            rel material:binding = </Materials/UvMat>
+            point3f[] points = [(-0.5, -0.5, -0.5), (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (0.5, -0.5, -0.5), (-0.5, 0.5, 0.5)]
+            custom int primvars:detail_idx = 1 (
+                elementSize = 1
+                interpolation = "constant"
+            )
+            color3f[] primvars:displayColor2 = [(1, 0, 0), (1, 1, 0), (1, 0, 1), (0, 1, 0), (0, 0, 1)] (
+                interpolation = "vertex"
+            )
+            custom int[] primvars:id = [0, 1, 2, 3, 4] (
+                elementSize = 1
+                interpolation = "varying"
+            )
+            custom float2[] primvars:map1_uv = [(0.1, 1), (1, 1), (0.1, 0.1), (1, 0.1), (0.5, 0.5)] (
+                interpolation = "vertex"
+            )
+            custom int primvars:prim_idx = 0 (
+                elementSize = 1
+                interpolation = "constant"
+            )
+            float[] widths = [0.56292385, 0.25219387, 0.86007416, 0.4467854, 0.25168622]
+            custom double3 xformOp:scale = (2, 2, 2)
+            custom double3 xformOp:translate = (0, -1, 4)
+            uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+        }
+    }
+
+    def Scope "Intrinsics"
+    {
+        def Scope "Cube"
+        {
+            def Cube "Cube_Fallback"
+            {
+                rel material:binding = </Materials/FallbackMat>
+                color3f[] primvars:displayColor2 = [(1, 0, 0), (1, 1, 0), (1, 0, 1), (0, 1, 0), (0, 0, 1)] (
+                    interpolation = "vertex"
+                )
+                custom double3 xformOp:scale = (2, 2, 2)
+                custom double3 xformOp:translate = (2.125, 0, 4.25)
+                uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+            }
+
+            def Cube "Cube_PrimvarVertex"
+            {
+                rel material:binding = </Materials/PrimvarMat>
+                color3f[] primvars:displayColor2 = [(1, 0, 0), (1, 1, 0), (1, 0, 1), (0, 1, 0), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+                    interpolation = "vertex"
+                )
+                custom double3 xformOp:scale = (2, 2, 2)
+                custom double3 xformOp:translate = (-2.125, 0, 4.25)
+                uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+            }
+        }
+
+        def Scope "Cone"
+        {
+            def Cone "Cone_Fallback"
+            {
+                rel material:binding = </Materials/FallbackMat>
+                custom double3 xformOp:scale = (2, 2, 2)
+                custom double3 xformOp:translate = (-4.25, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+            }
+
+            def Cone "Cone_PrimvarUniform"
+            {
+                rel material:binding = </Materials/PrimvarMat>
+                color3f[] primvars:displayColor2 = [(1, 0, 0)] (
+                    interpolation = "constant"
+                )
+                custom double3 xformOp:scale = (2, 2, 2)
+                custom double3 xformOp:translate = (-4.25, 0, 4.25)
+                uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+            }
+        }
+
+        def Scope "Sphere"
+        {
+            def Sphere "Sphere_Fallback"
+            {
+                rel material:binding = </Materials/FallbackMat>
+                custom double3 xformOp:scale = (2, 2, 2)
+                custom double3 xformOp:translate = (-6.5, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+            }
+
+            def Sphere "Sphere_PrimvarUniform"
+            {
+                rel material:binding = </Materials/PrimvarMat>
+                color3f[] primvars:displayColor2 = [(1, 0, 0)] (
+                    interpolation = "constant"
+                )
+                custom double3 xformOp:scale = (2, 2, 2)
+                custom double3 xformOp:translate = (-6.5, 0, 4.25)
+                uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+            }
+        }
+
+        def Scope "Capsule"
+        {
+            def Capsule "Capsule_Fallback"
+            {
+                rel material:binding = </Materials/FallbackMat>
+                custom double3 xformOp:scale = (2, 2, 2)
+                custom double3 xformOp:translate = (-4.25, 0, -2.25)
+                uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+            }
+
+            def Capsule "Capsule_PrimvarUniform"
+            {
+                rel material:binding = </Materials/PrimvarMat>
+                color3f[] primvars:displayColor2 = [(1, 0, 0)] (
+                    interpolation = "constant"
+                )
+                custom double3 xformOp:scale = (2, 2, 2)
+                custom double3 xformOp:translate = (-6.5, 0, -2.25)
+                uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+            }
+        }
+    }
+}
+

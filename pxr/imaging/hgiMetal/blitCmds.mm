@@ -60,7 +60,7 @@ void
 HgiMetalBlitCmds::_CreateEncoder()
 {
     if (!_blitEncoder) {
-        _commandBuffer = _hgi->GetPrimaryCommandBuffer();
+        _commandBuffer = _hgi->GetPrimaryCommandBuffer(this);
         if (_commandBuffer == nil) {
             _commandBuffer = _hgi->GetSecondaryCommandBuffer();
             _secondaryCommandBuffer = true;
@@ -68,9 +68,9 @@ HgiMetalBlitCmds::_CreateEncoder()
         _blitEncoder = [_commandBuffer blitCommandEncoder];
 
         if (_label) {
-            if (HgiMetalDebugEnabled()) {
-                _blitEncoder.label = _label;
-            }
+            [_blitEncoder pushDebugGroup:_label];
+            [_label release];
+            _label = nil;
         }
     }
 }
@@ -78,10 +78,14 @@ HgiMetalBlitCmds::_CreateEncoder()
 void
 HgiMetalBlitCmds::PushDebugGroup(const char* label)
 {
-    if (_blitEncoder) {
-        HGIMETAL_DEBUG_LABEL(_blitEncoder, label)
+    if (!HgiMetalDebugEnabled()) {
+        return;
     }
-    else if (HgiMetalDebugEnabled()) {
+
+    if (_blitEncoder) {
+        HGIMETAL_DEBUG_PUSH_GROUP(_blitEncoder, label)
+    }
+    else  {
         _label = [@(label) copy];
     }
 }
@@ -89,6 +93,9 @@ HgiMetalBlitCmds::PushDebugGroup(const char* label)
 void
 HgiMetalBlitCmds::PopDebugGroup()
 {
+    if (_blitEncoder) {
+        HGIMETAL_DEBUG_POP_GROUP(_blitEncoder)
+    }
 }
 
 void 
@@ -110,15 +117,12 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
 
     HgiTextureDesc const& texDesc = srcTexture->GetDescriptor();
 
-    MTLPixelFormat metalFormat = MTLPixelFormatInvalid;
-
-    if (texDesc.usage & HgiTextureUsageBitsColorTarget) {
-        metalFormat = HgiMetalConversions::GetPixelFormat(texDesc.format);
-    } else if (texDesc.usage & HgiTextureUsageBitsDepthTarget) {
-        TF_VERIFY(texDesc.format == HgiFormatFloat32);
-        metalFormat = MTLPixelFormatDepth32Float;
-    } else {
-        TF_CODING_ERROR("Unknown HgTextureUsage bit");
+    MTLPixelFormat metalFormat = HgiMetalConversions::GetPixelFormat(
+        texDesc.format, texDesc.usage);
+    
+    if (metalFormat == MTLPixelFormatDepth32Float_Stencil8) {
+        TF_WARN("Cannot read back depth stencil on Metal.");
+        return;
     }
 
     id<MTLDevice> device = _hgi->GetPrimaryDevice();
@@ -160,28 +164,26 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
                                    texDesc.dimensions[1])
                           options:blitOptions];
 
-    if (@available(macOS 10.11, ios 100.100, *)) {
-        if ([cpuBuffer storageMode] == MTLStorageModeManaged) {
-            [_blitEncoder performSelector:@selector(synchronizeResource:)
-                               withObject:cpuBuffer];
-        }
+#if defined(ARCH_OS_OSX)
+    if ([cpuBuffer storageMode] == MTLStorageModeManaged) {
+        [_blitEncoder performSelector:@selector(synchronizeResource:)
+                           withObject:cpuBuffer];
     }
+#endif
     
     // Offset into the dst buffer
     char* dst = ((char*) copyOp.cpuDestinationBuffer) +
         copyOp.destinationByteOffset;
     
-    // Offset into the src buffer
-    const char* src = (const char*) [cpuBuffer contents];
-
     // bytes to copy
     size_t byteSize = copyOp.destinationBufferByteSize;
 
     [_commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer)
         {
+            const char* src = (const char*) [cpuBuffer contents];
             memcpy(dst, src, byteSize);
+            [cpuBuffer release];
         }];
-    [cpuBuffer release];
 }
 
 void
@@ -257,6 +259,22 @@ HgiMetalBlitCmds::CopyBufferGpuToGpu(
                         toBuffer:dstBuffer->GetBufferId()
                destinationOffset:copyOp.destinationByteOffset
                             size:copyOp.byteSize];
+
+#if defined(ARCH_OS_OSX)
+    // APPLE METAL: We need to do this copy host side, otherwise later
+    // cpu copies into OTHER parts of this destination buffer see some of
+    // our GPU copied range trampled by alignment of the blit. The Metal
+    // spec says bytes outside of the range may be copied when calling
+    // didModifyRange
+
+    // We still need this for the staging buffer on AMD GPUs, so I'd like
+    // to investigate further.
+    if ([srcBuffer->GetBufferId() storageMode] == MTLStorageModeManaged) {
+        memcpy((char*)dstBuffer->GetCPUStagingAddress() + copyOp.destinationByteOffset,
+               (char*)srcBuffer->GetCPUStagingAddress() + copyOp.sourceByteOffset,
+               copyOp.byteSize);
+    }
+#endif
 }
 
 void HgiMetalBlitCmds::CopyBufferCpuToGpu(
@@ -317,11 +335,13 @@ HgiMetalBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
     HgiMetalBuffer* metalBuffer = static_cast<HgiMetalBuffer*>(
         copyOp.gpuSourceBuffer.Get());
 
-    if (@available(macOS 10.11, ios 100.100, *)) {
+    _CreateEncoder();
+
+    if ([metalBuffer->GetBufferId() storageMode] == MTLStorageModeManaged) {
         [_blitEncoder performSelector:@selector(synchronizeResource:)
                            withObject:metalBuffer->GetBufferId()];
     }
-    
+
     // Offset into the dst buffer
     char* dst = ((char*) copyOp.cpuDestinationBuffer) +
         copyOp.destinationByteOffset;
@@ -349,6 +369,20 @@ void
 HgiMetalBlitCmds::CopyBufferToTexture(HgiBufferToTextureOp const& copyOp)
 {
     TF_CODING_ERROR("Missing Implementation");
+}
+
+void
+HgiMetalBlitCmds::FillBuffer(HgiBufferHandle const& buffer, uint8_t value)
+{
+    HgiMetalBuffer* metalBuf = static_cast<HgiMetalBuffer*>(buffer.Get());
+    if (metalBuf) {
+        _CreateEncoder();
+        
+        size_t length = metalBuf->GetDescriptor().byteSize;
+        [_blitEncoder fillBuffer:metalBuf->GetBufferId()
+                           range:NSMakeRange(0, length)
+                           value:value];
+    }
 }
 
 void
@@ -392,6 +426,13 @@ HgiMetalBlitCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
             _hgi->CommitSecondaryCommandBuffer(_commandBuffer, waitType);
         }
         else {
+            if (waitType != HgiMetal::CommitCommandBuffer_WaitUntilCompleted) {
+                // Ordering problems between CPU updates and GPU updates to a buffer
+                // result in incorrect buffer contents. This is avoided by waiting
+                // until work is scheduled, before future calls to didModifyRange
+                // are made
+                waitType = HgiMetal::CommitCommandBuffer_WaitUntilScheduled;
+            }
             _hgi->CommitPrimaryCommandBuffer(waitType);
         }
     }

@@ -1,0 +1,47 @@
+#usda 1.0
+(
+    endFrame = 10
+    startFrame = 1
+    upAxis = "Z"
+)
+
+def Xform "Root"
+{
+    def PointInstancer "depth1"
+    {
+        float3[] extent = [(-5, -5, -5), (5, 5, 5)]
+        point3f[] positions = [(-1, 0, 0), (0, 4, 1), (4, 0, 0), (4, 4, 0)]
+        int[] protoIndices = [0, 1, 0, 1]
+        rel prototypes = [
+            </Root/prototypes/proto1>,
+            </Root/prototypes/proto2>,
+        ]
+    }
+
+    def "prototypes"
+    {
+        def Xform "proto1"
+        {
+            def Cube "cubeA"
+            {
+                float3[] primvars:displayColor = [(1, 1, 1)]
+            }
+
+            def Cube "cubeB"
+            {
+                float3[] primvars:displayColor = [(1, 0, 0)]
+                float3 xformOp:translate = (0, 0, -3)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Xform "proto2"
+        {
+            def Sphere "sphere"
+            {
+                float3[] primvars:displayColor = [(0, 1, 0)]
+            }
+        }
+    }
+}
+

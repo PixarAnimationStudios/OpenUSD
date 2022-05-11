@@ -21,16 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/contextCaps.h"
-
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
-#include "pxr/imaging/hdSt/immediateDrawBatch.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
+#include "pxr/imaging/hdSt/pipelineDrawBatch.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/materialParam.h"
+
+#include "pxr/imaging/hgi/capabilities.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -60,20 +60,17 @@ HdStCommandBuffer::HdStCommandBuffer()
     /*NOTHING*/
 }
 
-HdStCommandBuffer::~HdStCommandBuffer()
-{
-}
+HdStCommandBuffer::~HdStCommandBuffer() = default;
 
 static
 HdSt_DrawBatchSharedPtr
-_NewDrawBatch(HdStDrawItemInstance * drawItemInstance)
+_NewDrawBatch(HdStDrawItemInstance * drawItemInstance, 
+              HgiCapabilities const * hgiCapabilities)
 {
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-
-    if (caps.multiDrawIndirectEnabled) {
-        return std::make_shared<HdSt_IndirectDrawBatch>(drawItemInstance);
+    if (HdSt_PipelineDrawBatch::IsEnabled(hgiCapabilities)) {
+        return std::make_shared<HdSt_PipelineDrawBatch>(drawItemInstance);
     } else {
-        return std::make_shared<HdSt_ImmediateDrawBatch>(drawItemInstance);
+        return std::make_shared<HdSt_IndirectDrawBatch>(drawItemInstance);
     }
 }
 
@@ -91,6 +88,7 @@ HdStCommandBuffer::PrepareDraw(
 
 void
 HdStCommandBuffer::ExecuteDraw(
+    HgiGraphicsCmds *gfxCmds,
     HdStRenderPassStateSharedPtr const &renderPassState,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
@@ -108,7 +106,7 @@ HdStCommandBuffer::ExecuteDraw(
     // draw batches
     //
     for (auto const& batch : _drawBatches) {
-        batch->ExecuteDraw(renderPassState, resourceRegistry);
+        batch->ExecuteDraw(gfxCmds, renderPassState, resourceRegistry);
     }
     HD_PERF_COUNTER_SET(HdPerfTokens->drawBatches, _drawBatches.size());
 }
@@ -116,19 +114,21 @@ HdStCommandBuffer::ExecuteDraw(
 void
 HdStCommandBuffer::SetDrawItems(
     HdDrawItemConstPtrVectorSharedPtr const &drawItems,
-    unsigned currentDrawBatchesVersion)
+    unsigned currentDrawBatchesVersion,
+    HgiCapabilities const *hgiCapabilities)
 {
     if (drawItems == _drawItems &&
         currentDrawBatchesVersion == _drawBatchesVersion) {
         return;
     }
     _drawItems = drawItems;
-    _RebuildDrawBatches();
+    _RebuildDrawBatches(hgiCapabilities);
     _drawBatchesVersion = currentDrawBatchesVersion;
 }
 
 void
-HdStCommandBuffer::RebuildDrawBatchesIfNeeded(unsigned currentBatchesVersion)
+HdStCommandBuffer::RebuildDrawBatchesIfNeeded(unsigned currentBatchesVersion,
+    HgiCapabilities const *hgiCapabilities)
 {
     HD_TRACE_FUNCTION();
 
@@ -186,12 +186,12 @@ HdStCommandBuffer::RebuildDrawBatchesIfNeeded(unsigned currentBatchesVersion)
     }
 
     if (rebuildAllDrawBatches) {
-        _RebuildDrawBatches();
+        _RebuildDrawBatches(hgiCapabilities);
     }   
 }
 
 void
-HdStCommandBuffer::_RebuildDrawBatches()
+HdStCommandBuffer::_RebuildDrawBatches(HgiCapabilities const *hgiCapabilities)
 {
     HD_TRACE_FUNCTION();
 
@@ -205,9 +205,6 @@ HdStCommandBuffer::_RebuildDrawBatches()
     _drawItemInstances.reserve(_drawItems->size());
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->rebuildBatches);
-
-    const bool bindlessTexture = GlfContextCaps::GetInstance()
-                                               .bindlessTextureEnabled;
 
     // Use a cheap bucketing strategy to reduce to number of comparison tests
     // required to figure out if a draw item can be batched.
@@ -251,19 +248,16 @@ HdStCommandBuffer::_RebuildDrawBatches()
 
         size_t key = drawItem->GetGeometricShader()->ComputeHash();
         boost::hash_combine(key, drawItem->GetBufferArraysHash());
-        if (!bindlessTexture) {
-            // Geometric, RenderPass and Lighting shaders should never break
-            // batches, however materials can. We consider the textures
-            // used by the material to be part of the batch key for that
-            // reason.
-            // Since textures can be animated and thus materials can be batched
-            // at some times but not other times, we use the texture prim path
-            // for the hash which does not vary over time.
-            // 
-            boost::hash_combine(
-                key, drawItem->GetMaterialNetworkShader()->
-                                        ComputeTextureSourceHash());
-        }
+        // Geometric, RenderPass and Lighting shaders should never break
+        // batches, however materials can. We consider the textures
+        // used by the material to be part of the batch key for that
+        // reason.
+        // Since textures can be animated and thus materials can be batched
+        // at some times but not other times, we use the texture prim path
+        // for the hash which does not vary over time.
+        // 
+        boost::hash_combine(key,
+            drawItem->GetMaterialNetworkShader()->ComputeTextureSourceHash());
 
         // Do a quick check to see if the draw item can be batched with the
         // previous draw item, before checking the batchMap.
@@ -288,7 +282,8 @@ HdStCommandBuffer::_RebuildDrawBatches()
         }
 
         if (!batched) {
-            HdSt_DrawBatchSharedPtr batch = _NewDrawBatch(drawItemInstance);
+            HdSt_DrawBatchSharedPtr batch =
+                _NewDrawBatch(drawItemInstance, hgiCapabilities);
             _drawBatches.emplace_back(batch);
             prevBatch.Update(key, batch);
 

@@ -41,16 +41,32 @@ class HgiGLDevice;
 
 using HgiGLOpsFn = std::function<void(void)>;
 using HgiGLOpsVector = std::vector<HgiGLOpsFn>;
-
+using HgiGLContextArenaHandle = HgiHandle<class HgiGLContextArena>;
 
 /// \class HgiGL
 ///
 /// OpenGL implementation of the Hydra Graphics Interface.
 ///
-/// HgiGL expects the GL context to be externally managed.
+/// \section GL Context Management
+/// HgiGL expects any GL context(s) to be externally managed.
 /// When HgiGL is constructed and during any of its resource create / destroy
-/// calls and during command recording operations it expects that the OpenGL
+/// calls and during command recording operations, it expects that an OpenGL
 /// context is valid and current.
+///
+/// When an application uses the same HgiGL instance from multiple GL contexts,
+/// the expectations are that:
+/// 1. The application has set up sharing amongst the various GL contexts. This
+///    ensures that any non-container resources created may be shared amongst
+///    the contexts. These shared resources may be safely deleted from
+///    any context in the share group.
+///
+/// 2. A context arena (see relevant API below) is used per GL context to
+///    manage container resources that can't be shared amongst GL contexts.
+///    Currently, HgiGL's support is limited to framebuffer objects.
+///
+/// In the absence of an application provided context arena, the default arena
+/// is used with the implied expectation that the same GL context is valid
+/// and current for the lifetime of the HgiGL instance.
 ///
 class HgiGL final : public Hgi
 {
@@ -60,6 +76,13 @@ public:
 
     HGIGL_API
     ~HgiGL() override;
+
+    /// ------------------------------------------------------------------------
+    /// Virtual API
+    /// ------------------------------------------------------------------------
+
+    HGIGL_API
+    bool IsBackendSupported() const override;
 
     HGIGL_API
     HgiGraphicsCmdsUniquePtr CreateGraphicsCmds(
@@ -146,13 +169,33 @@ public:
     HGIGL_API
     void EndFrame() override;
 
-    //
-    // HgiGL specific
-    //
+    /// ------------------------------------------------------------------------
+    // HgiGL specific API
+    /// ------------------------------------------------------------------------
 
-    /// Returns the opengl device.
+    // Returns the opengl device.
     HGIGL_API
     HgiGLDevice* GetPrimaryDevice() const;
+
+    /// ------------------------------------------------------------------------
+    /// Context arena API
+    /// Please refer to \ref "GL Context Management" for usage expectations.
+    ///
+    /// Creates and return a context arena object handle.
+    HGIGL_API
+    HgiGLContextArenaHandle CreateContextArena();
+
+    /// Destroy a context arena.
+    /// Note: The context arena must be unset (by calling SetContextArena with
+    ///       an empty handle) prior to destruction.
+    HGIGL_API
+    void DestroyContextArena(HgiGLContextArenaHandle* arenaHandle);
+    
+    /// Set the context arena to manage container resources (currently limited to
+    /// framebuffer objects) for graphics commands submitted subsequently.
+    HGIGL_API
+    void SetContextArena(HgiGLContextArenaHandle const& arenaHandle);
+    // -------------------------------------------------------------------------
 
 protected:
     HGIGL_API
@@ -162,9 +205,9 @@ private:
     HgiGL & operator=(const HgiGL&) = delete;
     HgiGL(const HgiGL&) = delete;
 
-    // Invalidates the resource handle and places the object in the garbage
-    // collector vector for future destruction.
-    // This is helpful to avoid destroying GPU resources still in-flight.
+    /// Invalidates the resource handle and places the object in the garbage
+    /// collector vector for future destruction.
+    /// This is helpful to avoid destroying GPU resources still in-flight.
     template<class T>
     void _TrashObject(
         HgiHandle<T>* handle, std::vector<HgiHandle<T>>* collector) {
@@ -177,6 +220,13 @@ private:
     HgiGLGarbageCollector _garbageCollector;
     int _frameDepth;
 };
+
+/// ----------------------------------------------------------------------------
+/// API Version & History 
+/// ----------------------------------------------------------------------------
+/// 1 -> 2: Added Context Arena API
+///
+#define HGIGL_API_VERSION 2
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

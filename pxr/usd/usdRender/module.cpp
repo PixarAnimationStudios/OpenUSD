@@ -28,7 +28,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(UsdRenderSettingsAPI);
     TF_WRAP(UsdRenderSettingsBase);
     TF_WRAP(UsdRenderSettings);
     TF_WRAP(UsdRenderProduct);

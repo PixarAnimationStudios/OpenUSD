@@ -27,6 +27,7 @@
 #include "pxr/usd/pcp/diagnostic.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/node_Iterator.h"
+#include "pxr/usd/pcp/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -84,6 +85,24 @@ _OriginsAreNestedArcs(const PcpNodeRef& a, const PcpNodeRef& b)
     return false;
 }
 
+// Returns the namespace depth of the node that inherits or specializes
+// the class hierarchy that n is a member of.
+static int
+_GetNamespaceDepthForClassHierarchy(const PcpNodeRef& n)
+{
+    PcpNodeRef instanceNode, classNode;
+    std::tie(instanceNode, classNode) = Pcp_FindStartingNodeOfClassHierarchy(n);
+
+    // For specializes strength ordering, a relocates node isn't really the 
+    // "instance" of the class hierarchy, it's just a placeholder indicating
+    // a change in namespace. Skip past these nodes.
+    while (instanceNode.GetArcType() == PcpArcTypeRelocate) {
+        instanceNode = instanceNode.GetParentNode();
+    }
+
+    return instanceNode.GetNamespaceDepth();
+}
+
 int 
 PcpCompareSiblingNodeStrength(
     const PcpNodeRef& a, const PcpNodeRef& b)
@@ -107,38 +126,6 @@ PcpCompareSiblingNodeStrength(
     // Specializes arcs need special handling because of how specializes
     // nodes throughout the graph are copied to the root.
     if (PcpIsSpecializeArc(a.GetArcType())) {
-        const PcpNodeRef aOrigin = a.GetOriginNode();
-        const PcpNodeRef bOrigin = b.GetOriginNode();
-
-        // Special case: We should only have two specializes nodes
-        // with the same origin and that are siblings when one has been 
-        // implied across a composition arc to the root node and the other 
-        // has been copied to the root node for strength ordering. In this
-        // case, the implied arc expresses the opinions local to the root layer
-        // stack, and is meant to be stronger than the copied specialize. The 
-        // implied node will be the one whose site is *not* the same as its 
-        // origin; the copied node is the one whose site is the same as its 
-        // origin.
-        if (aOrigin == bOrigin &&
-            aOrigin != a.GetParentNode() &&
-            bOrigin != b.GetParentNode()) {
-
-            TF_VERIFY(a.GetParentNode() == a.GetRootNode() &&
-                      b.GetParentNode() == b.GetRootNode());
-
-            if (a.GetSite() == aOrigin.GetSite()) {
-                // a was copied from its origin, so it's weaker than b.
-                return 1;
-            }
-            else if (b.GetSite() == bOrigin.GetSite()) {
-                // b was copied from its origin, so it's weaker than a.
-                return -1;
-            }
-            
-            TF_VERIFY(false, "Did not find copied specialize node.");
-            return 0;
-        }
-
         const std::pair<PcpNodeRef, size_t> aOriginRoot = _GetOriginRootNode(a);
         const std::pair<PcpNodeRef, size_t> bOriginRoot = _GetOriginRootNode(b);
 
@@ -156,41 +143,147 @@ PcpCompareSiblingNodeStrength(
         }
         
         // Origin strength.
-        // Since specializes arcs are the weakest of all arc types, 
-        // using 'strongest origin wins' would cause opinions that are 
-        // more remote (e.g., across references) to be stronger than 
-        // opinions that are more local. 
-        //
-        // To avoid this, we use the origin root node -- the node for the
-        // actual authored opinion -- to determine strength.
-        if (aOrigin != bOrigin) {
-            if (aOriginRoot.first == bOriginRoot.first) {
-                // If both sibling nodes have the same origin root, the
-                // node with the longest chain of origins represents the
-                // most local opinion, which should be strongest.
-                if (aOriginRoot.second > bOriginRoot.second) {
-                    return -1;
-                }
-                else if (bOriginRoot.second > aOriginRoot.second) {
-                    return 1;
-                }
+        const PcpNodeRef aOrigin = a.GetOriginNode();
+        const PcpNodeRef bOrigin = b.GetOriginNode();
 
-                TF_VERIFY(
-                    aOriginRoot.second != bOriginRoot.second,
-                    "Should not have sibling specializes nodes with same "
-                    "origin root and distance to origin root.");
-            }
-            else {
-                // Otherwise, stronger origin root is stronger.
-                int result = _OriginIsStronger(
-                    a.GetRootNode(), aOriginRoot.first, bOriginRoot.first);
-                if (result < 0) {
+        const bool aIsAuthoredArc = (aOrigin == a.GetParentNode());
+        const bool bIsAuthoredArc = (bOrigin == b.GetParentNode());
+
+        if (aOrigin == bOrigin) {
+            // If a and b have the same origin node, either both are authored
+            // arcs or both are implied/propagated from other nodes.
+            //
+            // - In the first case, we want to fall through to comparing the
+            //   sibling arc numbers below.
+            // 
+            // - The second case should only happen when one node has been
+            //   implied across a composition arc to the root node and the other
+            //   has been propagated to the root node for strength ordering.
+            //   The implied node expresses the opinions local to the root
+            //   layer stack, and is stronger than the propagated node. The
+            //   implied node will be the one whose site is *not* the same as
+            //   its origin; the propagated node is the one whose site is the
+            //   same as its origin. For more info on the propagation process,
+            //   see documentation on _EvalImpliedSpecializes.
+            if (!aIsAuthoredArc && !bIsAuthoredArc) {
+                TF_VERIFY(a.GetParentNode() == a.GetRootNode() &&
+                          b.GetParentNode() == b.GetRootNode());
+
+                const bool aIsImplied = (a.GetSite() != aOrigin.GetSite());
+                const bool bIsImplied = (b.GetSite() != bOrigin.GetSite());
+                if (aIsImplied && !bIsImplied) {
                     return -1;
-                } else if (result > 0) {
+                }
+                else if (!aIsImplied && bIsImplied) {
                     return 1;
                 }
-                TF_VERIFY(false, "Did not find either origin");
+            
+                TF_VERIFY(false, "Did not find copied specialize node.");
+                return 0;
             }
+
+            TF_VERIFY(aIsAuthoredArc && bIsAuthoredArc);
+        }
+        else {
+            // If a and b originate from different authored specialize
+            // arcs, use the strength ordering of the corresponding origin
+            // root nodes to determine whether a or b is stronger.
+            if (aOriginRoot.first != bOriginRoot.first) {
+                const int result = _OriginIsStronger(
+                    a.GetRootNode(), aOriginRoot.first, bOriginRoot.first);
+                TF_VERIFY(result != 0, "Did not find either origin root");
+                return result;
+            }
+
+            // Otherwise, a and b are sibling nodes that originate from the same
+            // authored specialize arc. This can only happen if these nodes are
+            // children of the root node. a and b may have been propagated or
+            // implied from elsewhere in the composition graph or they may be
+            // specialize arcs authored directly on the prim.
+            TF_VERIFY(a.GetParentNode() == a.GetRootNode() &&
+                      b.GetParentNode() == b.GetRootNode());
+
+            // First, look at the namespace depth of the 'instance' node that
+            // inherits or specializes the class hierarchy that a and b's origin
+            // is a member of. This accounts for specializes arcs that have
+            // been implied to to ancestral hierarchies. This shows up in
+            // the museum test case SpecializesAndAncestralArcs2.
+            const int aDepth = aIsAuthoredArc ? 
+                0 : _GetNamespaceDepthForClassHierarchy(aOrigin);
+            const int bDepth = bIsAuthoredArc ?
+                0 : _GetNamespaceDepthForClassHierarchy(bOrigin);
+
+            if (aDepth < bDepth) {
+                return -1;
+            }
+            else if (bDepth < aDepth) {
+                return 1;
+            }
+
+            // Next, check which node has the longest chain of origins
+            // to the origin root. A node with a longer chain of origins
+            // has been implied up the composition graph further away
+            // from the origin root and closer to the root of the graph.
+            // Conceptually, this means that a node with a longer chain
+            // of origins represents an implied opinion that is "more
+            // local" and thus stronger than a node with a shorter
+            // chain of origins.
+            //
+            // For example, consider a simple chain of references with
+            // a specializes arc at the end:
+            //
+            // @root.sdf@</A> -ref-> @ref.sdf@</Ref_1> 
+            //                -ref-> @ref2.sdf@</Ref_2>
+            //                -ref-> @ref3.sdf@</Ref_3> -spec-> @ref3.sdf@</S>
+            //
+            // The implied opinions due to @ref3.sdf@</S> are:
+            //
+            // @ref2.usda@</S> (origin = @ref3.usda@</S>, 
+            //                  distance from origin root = 1)
+            // @ref.usda@</S>, (origin = @ref2.usda@</S>, 
+            //                  distance from origin root = 2)
+            // @root.usda@</S>, (origin = @ref.usda@</S>,
+            //                   distance from origin root = 3)
+            //
+            // Note that the longer the origin root distance, the
+            // closer to the root and more local the opinion is.
+            if (aOriginRoot.second > bOriginRoot.second) {
+                return -1;
+            }
+            else if (bOriginRoot.second > aOriginRoot.second) {
+                return 1;
+            }
+
+            // In cases where an inherited prim specializes another prim,
+            // a and b may be two nodes where one has been implied
+            // from the origin root up to the root node, and the other
+            // has been propagated from under the inherited hierarchy
+            // that was implied to the root node. In this case, the
+            // implied node is the more local opinion. Without this
+            // special handling, the traversal in the next block of
+            // code would identify the propagated node as stronger.
+            // This is similar to the special case above. See 
+            // the TrickySpecializesAndInherits3 test case for an example.
+            if (a.GetLayerStack() == a.GetRootNode().GetLayerStack() &&
+                b.GetLayerStack() == b.GetRootNode().GetLayerStack() &&
+                !aIsAuthoredArc && !bIsAuthoredArc) {
+                
+                const bool aIsImplied = (a.GetSite() != aOrigin.GetSite());
+                const bool bIsImplied = (b.GetSite() != bOrigin.GetSite());
+                if (aIsImplied && !bIsImplied) {
+                    return -1;
+                }
+                else if (!aIsImplied && bIsImplied) {
+                    return 1;
+                }
+            }
+
+            // Lastly, traverse the graph to determine whether a or b's
+            // origin is stronger.
+            const int result = _OriginIsStronger(
+                a.GetRootNode(), aOrigin, bOrigin);
+            TF_VERIFY(result != 0, "Did not find either origin");
+            return result;
         }
     }
     else {

@@ -30,49 +30,60 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static std::string
-_ExtractVersionString(const std::string &originalShader)
-{
-    if (TfStringStartsWith(originalShader, "#version")) {
-        return originalShader.substr(0, originalShader.find('\n'));
-    }
-    return std::string();
-}
-
 HgiShaderGenerator::HgiShaderGenerator(const HgiShaderFunctionDesc &descriptor)
-    // As we append to the top of complete GLSLFX files, the version
-    // string has to be hoisted for OpenGL and removed for Metal
-    : _version(_ExtractVersionString(descriptor.shaderCode))
-    , _originalShader(descriptor.shaderCode)
-    , _stage(descriptor.shaderStage)
+    : _descriptor(descriptor)
 {
 }
 
 HgiShaderGenerator::~HgiShaderGenerator() = default;
 
 void
-HgiShaderGenerator::Execute(std::ostream &ss)
+HgiShaderGenerator::Execute()
 {
-    //Use the protected version which can be overridden
-    _Execute(ss, _originalShader);
+    std::stringstream ss;
+
+    // Use the protected version which can be overridden
+    _Execute(ss);
+
+    // Capture the result as specified by the descriptor or locally.
+    if (_descriptor.generatedShaderCodeOut) {
+       *_descriptor.generatedShaderCodeOut = ss.str();
+    } else {
+       _localGeneratedShaderCode = ss.str();
+    }
 }
 
-const std::string&
-HgiShaderGenerator::_GetOriginalShader() const
+const char *
+HgiShaderGenerator::_GetShaderCodeDeclarations() const
 {
-    return _originalShader;
+    static const char *emptyString = "";
+    return _descriptor.shaderCodeDeclarations
+                ? _descriptor.shaderCodeDeclarations : emptyString;
+}
+
+const char *
+HgiShaderGenerator::_GetShaderCode() const
+{
+    static const char *emptyString = "";
+    return _descriptor.shaderCode
+                ? _descriptor.shaderCode : emptyString;
 }
 
 HgiShaderStage
 HgiShaderGenerator::_GetShaderStage() const
 {
-    return _stage;
+    return _descriptor.shaderStage;
 }
 
-const std::string&
-HgiShaderGenerator::_GetVersion() const
+const char *
+HgiShaderGenerator::GetGeneratedShaderCode() const
 {
-    return _version;
+    // Return the result as specified by the descriptor or locally.
+    if (_descriptor.generatedShaderCodeOut) {
+       return _descriptor.generatedShaderCodeOut->c_str();
+    } else {
+       return _localGeneratedShaderCode.c_str();
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

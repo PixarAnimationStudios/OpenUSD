@@ -1,0 +1,51 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Z"
+)
+
+def Xform "Scene" (
+kind = "component"
+)
+{
+    def Scope "Looks"
+    {
+        def Material "Material"
+        {
+            string inputs:colorPrimvarName = "mydisplayColor"
+            float inputs:roughness = 0.3
+            token outputs:surface.connect = </Scene/Looks/Material/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                
+                float inputs:roughness.connect = </Scene/Looks/Material.inputs:roughness>
+
+                color3f inputs:diffuseColor = (1.0, 0.0, 0.0)
+                color3f inputs:diffuseColor.connect  = </Scene/Looks/Material/Primvar.outputs:result>
+            
+                token outputs:surface
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float3"
+                string inputs:varname.connect = </Scene/Looks/Material.inputs:colorPrimvarName>
+                float3 outputs:result
+            }
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def Sphere "Sphere"
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            color3f[] primvars:mydisplayColor = [(0.0, 1.0, 0.0)]
+            rel material:binding = </Scene/Looks/Material>
+        }
+    }
+}

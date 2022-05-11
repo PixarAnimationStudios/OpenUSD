@@ -237,6 +237,28 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // GUIDERADIUS 
+    // --------------------------------------------------------------------- //
+    /// The radius of guide geometry to use to visualize the dome light.  The default is 1 km for scenes whose metersPerUnit is the USD default of 0.01 (i.e., 1 world unit is 1 cm).
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float guideRadius = 100000` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
+    USDLUX_API
+    UsdAttribute GetGuideRadiusAttr() const;
+
+    /// See GetGuideRadiusAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDLUX_API
+    UsdAttribute CreateGuideRadiusAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // PORTALS 
     // --------------------------------------------------------------------- //
     /// Optional portals to guide light sampling.

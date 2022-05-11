@@ -120,6 +120,7 @@ void wrapMapFunction()
              return_value_policy<TfPyMapToDictionary>())
         .staticmethod("IdentityPathMap")
         .add_property("isIdentity", &This::IsIdentity)
+        .add_property("isIdentityPathMapping", &This::IsIdentityPathMapping)
         .add_property("isNull", &This::IsNull)
 
         .def("MapSourceToTarget", &This::MapSourceToTarget,

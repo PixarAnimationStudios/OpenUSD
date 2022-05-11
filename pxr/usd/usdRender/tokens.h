@@ -98,6 +98,10 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderSettingsBase
     const TfToken dataWindowNDC;
+    /// \brief "disableMotionBlur"
+    /// 
+    /// UsdRenderSettingsBase
+    const TfToken disableMotionBlur;
     /// \brief "expandAperture"
     /// 
     /// Possible value for UsdRenderSettingsBase::GetAspectRatioConformPolicyAttr(), Default value for UsdRenderSettingsBase::GetAspectRatioConformPolicyAttr()

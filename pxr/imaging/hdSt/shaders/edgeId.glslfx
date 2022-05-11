@@ -28,20 +28,6 @@
 --- #import $TOOLS/hdSt/shaders/edgeId.glslfx
 
 --- --------------------------------------------------------------------------
--- glsl EdgeId.Fragment.Fallback
-// Mixin version to use when mesh edge selection and highlighting is inactive.
-// Note: When rendering a mesh as points, this mixin isn't used. We handle it
-// in code gen.
-
-int GetPrimitiveEdgeId() {
-    return -1;
-}
-
-float GetSelectedEdgeOpacity() {
-    return 0.0;
-}
-
---- --------------------------------------------------------------------------
 -- glsl EdgeId.Fragment.Common
 
 // Determines whether a fragment is on or close to an unhidden triangle edge.
@@ -57,6 +43,8 @@ float SelectedEdgeFalloff(float d) {
 
 --- --------------------------------------------------------------------------
 -- glsl EdgeId.Fragment.TriangleSurface
+
+FORWARD_DECL(vec3 GetEdgeDistanceTriangle());
 
 vec3 ComputeBaseFaceEdgeDistanceTriangle()
 {
@@ -120,7 +108,7 @@ int GetPrimitiveEdgeId()
     }
 
     const int edgeFlag = GetEdgeFlag();
-    const int meshEdgeIndex = HdGet_edgeIndices().x;
+    const int meshEdgeIndex = HdGetScalar_edgeIndices();
 
     // Translate face-edge to authored mesh-edge
     if (edgeFlag == 0) {

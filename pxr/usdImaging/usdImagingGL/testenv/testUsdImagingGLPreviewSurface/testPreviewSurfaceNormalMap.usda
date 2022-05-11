@@ -1,0 +1,138 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Y"
+)
+
+def Xform "Scene" (
+kind = "component"
+)
+{
+    def Scope "Looks"
+    {
+        def Material "Material"
+        {
+            token inputs:textureCoords = "st"
+            float inputs:roughness = 0.9
+            token outputs:surface.connect = </Scene/Looks/Material/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview" 
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                int inputs:useSpecularWorkflow = 0
+                float inputs:roughness.connect = </Scene/Looks/Material.inputs:roughness>
+                normal3f inputs:normal.connect  = </Scene/Looks/Material/NormalTexture.outputs:rgb>
+                token outputs:surface
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Scene/Looks/Material.inputs:textureCoords>
+                float2 outputs:result
+            }
+
+            def Shader "NormalTexture"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @normalMap.png@
+                float2 inputs:st.connect = </Scene/Looks/Material/Primvar.outputs:result>
+
+                token inputs:sourceColorSpace = "raw"
+
+                float4 inputs:scale = (2, 2, 2, 1)
+                float4 inputs:bias = (-1, -1, -1, 0)
+
+                float3 outputs:rgb
+            }
+        }
+    }
+
+    def Xform "Lights" 
+    {
+        # Set the purpose for lights to "render" so that they're not included
+        # in the test's frameAll calculation.
+        uniform token purpose = "render"
+        
+        def SphereLight "LeftRed" (
+            active=true
+        )
+        {
+            color3f inputs:color = (1, 0, 0)
+            float inputs:intensity = 40
+            double3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.5, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def SphereLight "RightBlue" (
+            active=true
+        )
+        {
+            color3f inputs:color = (0, 0, 1)
+            float inputs:intensity = 40
+            double3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (9, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def "Plane1" (
+            references = </Prototypes/Plane>
+        )
+        {
+            rel material:binding = </Scene/Looks/Material>
+            Vec3f xformOp:translate = (0, 0, 0)
+            float xformOp:rotateY = 0
+        }
+
+        def "Plane2" (
+            references = </Prototypes/Plane>
+        )
+        {
+            rel material:binding = </Scene/Looks/Material>
+            Vec3f xformOp:translate = (2.5, 0, 0)
+            float xformOp:rotateY = 180
+        }
+
+        def "Plane3" (
+            references = </Prototypes/Plane>
+        )
+        {
+            rel material:binding = </Scene/Looks/Material>
+            Vec3f xformOp:translate = (0, -2.5, 0)
+            float xformOp:rotateY = 45
+        }
+
+        def "Plane4" (
+            references = </Prototypes/Plane>
+        )
+        {
+            rel material:binding = </Scene/Looks/Material>
+            Vec3f xformOp:translate = (2.5, -2.5, 0)
+            float xformOp:rotateY = 135
+        }
+    }
+}
+
+def Scope "Prototypes"(
+    active=false
+)
+{
+    def Mesh "Plane" {
+        uniform bool doubleSided = 1
+
+        float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+        point3f[] points = [(-1,-1,0), (1, -1,0), (1, 1, 0), (-1, 1, 0)]
+
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY", "xformOp:rotateX"]
+    }
+}

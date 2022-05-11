@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 from pxr import Gf, Sdf, Sdr, Tf, Usd, UsdGeom, UsdLux, UsdShade, Plug
 import unittest, math
 
@@ -41,6 +43,12 @@ class TestUsdLuxLight(unittest.TestCase):
         assert cool_color[2] > cool_color[1]
 
     def test_BasicConnectableLights(self):
+        # Try checking connectableAPI on core lux types first before going
+        # through the prim.
+        self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
+            UsdLux.RectLight))
+        self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
+            UsdLux.PluginLightFilter))
         stage = Usd.Stage.CreateInMemory()
         rectLight = UsdLux.RectLight.Define(stage, '/RectLight')
         self.assertTrue(rectLight)
@@ -386,17 +394,13 @@ class TestUsdLuxLight(unittest.TestCase):
         _VerifyExtentAndBBox(sphereLight, [(-3.0, -3.0, -3.0), (3.0, 3.0, 3.0)])
 
         # Special case for portal light. Portal lights don't have any attributes
-        # that affect their extent, but they do have a constant extent defined
-        # for a unit rectangle in the XY plane.
+        # that affect their extent. Extent values are used only when
+        # explicitly authored but portal lights' do register a
+        # ComputeExtentFuction, which sets the extent as default from the
+        # schema.
         portalLight = UsdLux.PortalLight.Define(stage, "/PortalLight")
         self.assertTrue(portalLight)
-        self.assertIsNone(
-            UsdGeom.Boundable.ComputeExtentFromPlugins(portalLight, time))
-        self.assertEqual(
-            portalLight.ComputeLocalBound(time, "default"),
-            Gf.BBox3d(
-                Gf.Range3d(Gf.Vec3d(-0.5, -0.5, 0.0), Gf.Vec3d(0.5, 0.5, 0.0)), 
-                Gf.Matrix4d(1.0)))
+        _VerifyExtentAndBBox(portalLight, [(-0.5, -0.5, 0.0), (0.5, 0.5, 0.0)])
 
         # For completeness verify that distant and dome lights are not 
         # boundable.
@@ -503,7 +507,7 @@ class TestUsdLuxLight(unittest.TestCase):
             # shaderId as sdr Identifier) in usdLux domain will have an 
             # SdrShaderNode with source type 'USD' registered for it under its 
             # USD schema type name. 
-            node = Sdr.Registry().GetNodeByName(sdrIdentifier, ['USD'])
+            node = Sdr.Registry().GetNodeByIdentifier(sdrIdentifier, ['USD'])
             self.assertTrue(node is not None)
             self.assertIn(sdrIdentifier, expectedLightNodes)
 
@@ -552,7 +556,7 @@ class TestUsdLuxLight(unittest.TestCase):
 
                 # Some USD property types don't match exactly one to one and are
                 # converted to different types. In particular relevance to 
-                # lights, Bool becomes Int and Token becomes String.
+                # lights and Token becomes String.
                 expectedTypeName = primInput.GetTypeName()
                 # Array valued attributes have their array size determined from
                 # the default value and will be converted to scalar in the 
@@ -560,10 +564,13 @@ class TestUsdLuxLight(unittest.TestCase):
                 if expectedTypeName.isArray:
                     if not primDefaultValue or len(primDefaultValue) == 0:
                         expectedTypeName = expectedTypeName.scalarType
-                if expectedTypeName == Sdf.ValueTypeNames.Bool:
-                    expectedTypeName = Sdf.ValueTypeNames.Int 
                 elif expectedTypeName == Sdf.ValueTypeNames.Token:
                     expectedTypeName = Sdf.ValueTypeNames.String 
+                # Bool SdfTypes should Have Int SdrTypes, but still return as
+                # Bool when queried for GetTypeAsSdfType
+                if expectedTypeName == Sdf.ValueTypeNames.Bool:
+                    self.assertEqual(nodeInput.GetType(),
+                            Sdf.ValueTypeNames.Int)
                 # Verify the node's input type maps back to USD property's type
                 # (with the noted above exceptions).
                 self.assertEqual(

@@ -53,42 +53,57 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory<HgiFactory<HgiMetal>>();
 }
 
-static int _GetAPIVersion()
-{
-    if (@available(macOS 10.15, ios 13.0, *)) {
-        return APIVersion_Metal3_0;
-    }
-    if (@available(macOS 10.13, ios 11.0, *)) {
-        return APIVersion_Metal2_0;
-    }
-    
-    return APIVersion_Metal1_0;
-}
-
 HgiMetal::HgiMetal(id<MTLDevice> device)
 : _device(device)
 , _currentCmds(nullptr)
 , _frameDepth(0)
-, _apiVersion(_GetAPIVersion())
 , _workToFlush(false)
 {
     if (!_device) {
         if( TfGetenvBool("HGIMETAL_USE_INTEGRATED_GPU", false)) {
-            _device = MTLCopyAllDevices()[1];
+            auto devices = MTLCopyAllDevices();
+            for (id<MTLDevice> d in devices) {
+                if ([d isLowPower]) {
+                    _device = d;
+                    break;
+                }
+            }
         }
 
         if (!_device) {
             _device = MTLCreateSystemDefaultDevice();
         }
     }
-    
+
     static int const commandBufferPoolSize = 256;
+
     _commandQueue = [_device newCommandQueueWithMaxCommandBufferCount:
                      commandBufferPoolSize];
     _commandBuffer = [_commandQueue commandBuffer];
     [_commandBuffer retain];
 
     _capabilities.reset(new HgiMetalCapabilities(_device));
+
+    MTLArgumentDescriptor *argumentDescBuffer =
+        [[MTLArgumentDescriptor alloc] init];
+    argumentDescBuffer.dataType = MTLDataTypePointer;
+    _argEncoderBuffer = [_device newArgumentEncoderWithArguments:
+                        @[argumentDescBuffer]];
+    [argumentDescBuffer release];
+
+    MTLArgumentDescriptor *argumentDescSampler =
+        [[MTLArgumentDescriptor alloc] init];
+    argumentDescSampler.dataType = MTLDataTypeSampler;
+    _argEncoderSampler = [_device newArgumentEncoderWithArguments:
+                         @[argumentDescSampler]];
+    [argumentDescSampler release];
+
+    MTLArgumentDescriptor *argumentDescTexture =
+        [[MTLArgumentDescriptor alloc] init];
+    argumentDescTexture.dataType = MTLDataTypeTexture;
+    _argEncoderTexture = [_device newArgumentEncoderWithArguments:
+                         @[argumentDescTexture]];
+    [argumentDescTexture release];
 
     HgiMetalSetupMetalDebug();
     
@@ -100,14 +115,39 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
     
     [[MTLCaptureManager sharedCaptureManager]
         setDefaultCaptureScope:_captureScopeFullFrame];
+
+#if !__has_feature(objc_arc)
+    _pool = nil;
+#endif
 }
 
 HgiMetal::~HgiMetal()
 {
     [_commandBuffer commit];
+    [_commandBuffer waitUntilCompleted];
     [_commandBuffer release];
     [_captureScopeFullFrame release];
     [_commandQueue release];
+    [_argEncoderBuffer release];
+    [_argEncoderTexture release];
+    
+    while(_freeArgBuffers.size()) {
+        [_freeArgBuffers.top() release];
+        _freeArgBuffers.pop();
+    }
+}
+
+bool
+HgiMetal::IsBackendSupported() const
+{
+    // Want Metal 2.0 and Metal Shading Language 2.2 or higher.
+    if (@available(macOS 10.15, ios 13.0, *)) {
+        // Only support devices with barycentrics.
+        return 
+            _capabilities->IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+    }
+
+    return false;
 }
 
 id<MTLDevice>
@@ -120,17 +160,8 @@ HgiGraphicsCmdsUniquePtr
 HgiMetal::CreateGraphicsCmds(
     HgiGraphicsCmdsDesc const& desc)
 {
-    // XXX We should TF_CODING_ERROR here when there are no attachments, but
-    // during the Hgi transition we allow it to render to global gl framebuffer.
-    if (!desc.HasAttachments()) {
-        // TF_CODING_ERROR("Graphics encoder desc has no attachments");
-        return nullptr;
-    }
-
-    HgiMetalGraphicsCmds* encoder(
-        new HgiMetalGraphicsCmds(this, desc));
-
-    return HgiGraphicsCmdsUniquePtr(encoder);
+    HgiMetalGraphicsCmds* gfxCmds(new HgiMetalGraphicsCmds(this, desc));
+    return HgiGraphicsCmdsUniquePtr(gfxCmds);
 }
 
 HgiComputeCmdsUniquePtr
@@ -184,7 +215,16 @@ HgiMetal::DestroyTextureView(HgiTextureViewHandle* viewHandle)
 {
     // Trash the texture inside the view and invalidate the view handle.
     HgiTextureHandle texHandle = (*viewHandle)->GetViewTexture();
-    _TrashObject(&texHandle);
+
+    if (_workToFlush) {
+        [_commandBuffer
+         addCompletedHandler:[texHandle](id<MTLCommandBuffer> cmdBuffer)
+         {
+            delete texHandle.Get();
+        }];
+    } else {
+        _TrashObject(&texHandle);
+    }
     (*viewHandle)->SetViewTexture(HgiTextureHandle());
     delete viewHandle->Get();
     *viewHandle = HgiTextureViewHandle();
@@ -294,6 +334,10 @@ HgiMetal::GetCapabilities() const
 void
 HgiMetal::StartFrame()
 {
+#if !__has_feature(objc_arc)
+    _pool = [[NSAutoreleasePool alloc] init];
+#endif
+
     if (_frameDepth++ == 0) {
         [_captureScopeFullFrame beginScope];
 
@@ -312,6 +356,13 @@ HgiMetal::EndFrame()
     if (--_frameDepth == 0) {
         [_captureScopeFullFrame endScope];
     }
+
+#if !__has_feature(objc_arc)
+    if (_pool) {
+        [_pool drain];
+        _pool = nil;
+    }
+#endif
 }
 
 id<MTLCommandQueue>
@@ -321,10 +372,10 @@ HgiMetal::GetQueue() const
 }
 
 id<MTLCommandBuffer>
-HgiMetal::GetPrimaryCommandBuffer(bool flush)
+HgiMetal::GetPrimaryCommandBuffer(HgiCmds *requester, bool flush)
 {
     if (_workToFlush) {
-        if (_currentCmds) {
+        if (_currentCmds && requester != _currentCmds) {
             return nil;
         }
     }
@@ -345,7 +396,7 @@ HgiMetal::GetSecondaryCommandBuffer()
 int
 HgiMetal::GetAPIVersion() const
 {
-    return _apiVersion;
+    return GetCapabilities()->GetAPIVersion();
 }
 
 void
@@ -382,6 +433,56 @@ void
 HgiMetal::ReleaseSecondaryCommandBuffer(id<MTLCommandBuffer> commandBuffer)
 {
     [commandBuffer release];
+}
+
+id<MTLArgumentEncoder>
+HgiMetal::GetBufferArgumentEncoder() const
+{
+    return _argEncoderBuffer;
+}
+
+id<MTLArgumentEncoder>
+HgiMetal::GetSamplerArgumentEncoder() const
+{
+    return _argEncoderSampler;
+}
+
+id<MTLArgumentEncoder>
+HgiMetal::GetTextureArgumentEncoder() const
+{
+    return _argEncoderTexture;
+}
+
+id<MTLBuffer>
+HgiMetal::GetArgBuffer()
+{
+    MTLResourceOptions options = _capabilities->defaultStorageMode;
+    id<MTLBuffer> buffer;
+
+    {
+        std::lock_guard<std::mutex> lock(_freeArgMutex);
+        if (_freeArgBuffers.empty()) {
+            buffer = [_device newBufferWithLength:4096 options:options];
+        }
+        else {
+            buffer = _freeArgBuffers.top();
+            _freeArgBuffers.pop();
+            memset(buffer.contents, 0x00, buffer.length);
+        }
+    }
+
+    if (!_commandBuffer) {
+        TF_CODING_ERROR("_commandBuffer is null");
+    }
+
+    [_commandBuffer
+     addCompletedHandler:^(id<MTLCommandBuffer> cmdBuffer)
+     {
+        std::lock_guard<std::mutex> lock(_freeArgMutex);
+        _freeArgBuffers.push(buffer);
+     }];
+
+    return buffer;
 }
 
 bool

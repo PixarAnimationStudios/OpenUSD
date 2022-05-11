@@ -1,0 +1,14 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def BasisCurves "curve" 
+{
+    token type = "linear"
+    float3[] extent = [(-1,-1,-1),(1,1,1)]
+    int[] curveVertexCounts = [4]
+    point3f[] points = [(-1,-1,-1), (-1,1,1), (1,-1,1), (1,1,-1)]
+    color3f[] primvars:displayColor = [(0,0,1),(0,1,0),(1,0,0),(1,1,1)] (interpolation = "vertex")
+    float[] widths = [.1,.2,.3,.01] (interpolation = "vertex")
+}

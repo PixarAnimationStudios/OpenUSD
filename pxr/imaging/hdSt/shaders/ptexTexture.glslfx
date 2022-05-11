@@ -67,15 +67,17 @@ int computeMipmapOffsetV(int h, int level)
     return (m & x) + (level&~1);
 }
 
-void evalQuadraticBSpline(float u, out float B[3], out float BU[3])
+void evalQuadraticBSpline(float u,
+    REF(thread,float) B0,  REF(thread,float) B1,  REF(thread,float) B2,
+    REF(thread,float) BU0, REF(thread,float) BU1, REF(thread,float) BU2)
 {
-    B[0] = 0.5 * (u*u - 2.0*u + 1);
-    B[1] = 0.5 + u - u*u;
-    B[2] = 0.5 * u*u;
+    B0 = 0.5 * (u*u - 2.0*u + 1);
+    B1 = 0.5 + u - u*u;
+    B2 = 0.5 * u*u;
 
-    BU[0] = u - 1.0;
-    BU[1] = 1 - 2 * u;
-    BU[2] = u;
+    BU0 = u - 1.0;
+    BU1 = 1 - 2 * u;
+    BU2 = u;
 }
 
 PtexPacking getPtexPacking(usampler1DArray packings, int faceID, int level)
@@ -211,8 +213,8 @@ vec4 PtexLookup(vec4 patchCoord,
     return result;
 }
 
-vec4 PtexLookupQuadratic(out vec4 du,
-                         out vec4 dv,
+vec4 PtexLookupQuadratic(REF(thread, vec4) du,
+                         REF(thread, vec4) dv,
                          vec4 patchCoord,
                          int level,
                          sampler2DArray data,
@@ -245,9 +247,11 @@ vec4 PtexLookupQuadratic(out vec4 du,
     d[8] = texelFetch(data, ivec3(cX+1, cY+1, ppack.page), 0);
 
     float B[3], D[3];
-    vec4 BUCP[3] = vec4[3](vec4(0,0,0,0), vec4(0,0,0,0), vec4(0,0,0,0)),
-         DUCP[3] = vec4[3](vec4(0,0,0,0), vec4(0,0,0,0), vec4(0,0,0,0));
-    evalQuadraticBSpline(y, B, D);
+    vec4 BUCP[3], DUCP[3];
+    BUCP[0] = vec4(0); BUCP[1] = vec4(0); BUCP[2] = vec4(0);
+    DUCP[0] = vec4(0); DUCP[1] = vec4(0); DUCP[2] = vec4(0);
+
+    evalQuadraticBSpline(y, B[0], B[1], B[2], D[0], D[1], D[2]);
 
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; j++) {
@@ -257,7 +261,7 @@ vec4 PtexLookupQuadratic(out vec4 du,
         }
     }
 
-    evalQuadraticBSpline(x, B, D);
+    evalQuadraticBSpline(x, B[0], B[1], B[2], D[0], D[1], D[2]);
 
     vec4 result = vec4(0);
     du = vec4(0);
@@ -326,8 +330,8 @@ vec4 PtexMipmapLookup(vec4 patchCoord,
     return result;
 }
 
-vec4 PtexMipmapLookupQuadratic(out vec4 du,
-                               out vec4 dv,
+vec4 PtexMipmapLookupQuadratic(REF(thread, vec4) du,
+                               REF(thread, vec4) dv,
                                vec4 patchCoord,
                                float level,
                                sampler2DArray data,
@@ -371,21 +375,14 @@ vec4 PtexMipmapLookupQuadratic(vec4 patchCoord,
 
 // ----------------------------------------------------------------------------
 
-#ifndef HD_PTEX_TEXTURE_FACEOFFSET
-#define HD_PTEX_TEXTURE_FACEOFFSET
-uniform int ptexFaceOffset;
-#endif
-
 vec4
 PtexTextureLookup(sampler2DArray data,
                   usampler1DArray packings,
                   vec4 patchCoord)
 {
-    patchCoord.w += ptexFaceOffset;
     return PtexLookup(patchCoord,
                       /*level = */0,
                       data,
                       packings);
 }
-
 

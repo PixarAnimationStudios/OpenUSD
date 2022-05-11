@@ -504,8 +504,13 @@ HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
                             HdTupleType {HdTypeInt32Vec2, 1});
     } else {
         // quads (catmark, bilinear)
-        specs->emplace_back(HdTokens->indices,
-                            HdTupleType {HdTypeInt32Vec4, 1});
+        if (_topology->TriangulateQuads()) {
+            specs->emplace_back(HdTokens->indices,
+                                HdTupleType {HdTypeInt32, 6});
+        } else {
+            specs->emplace_back(HdTokens->indices,
+                                HdTupleType {HdTypeInt32, 4});
+        }
         specs->emplace_back(HdTokens->primitiveParam,
                             HdTupleType {HdTypeInt32Vec3, 1});
         specs->emplace_back(HdTokens->edgeIndices,
@@ -1224,13 +1229,28 @@ HdSt_OsdIndexComputation::Resolve()
         _PopulateUniformPrimitiveBuffer(patchTable);
     } else {
         // populate refined quad indices.
-        VtArray<GfVec4i> indices(ptableSize/4);
-        memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
+        size_t const numQuads = ptableSize / 4;
+
+        int const numIndicesPerQuad =
+            _topology->TriangulateQuads()
+                ? HdMeshTriQuadBuilder::NumIndicesPerTriQuad
+                : HdMeshTriQuadBuilder::NumIndicesPerQuad;
+        VtIntArray indices(numQuads * numIndicesPerQuad);
+
+        if (numIndicesPerQuad == 4) {
+            memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
+        } else {
+            HdMeshTriQuadBuilder outputIndices(indices.data(), true);
+            for (size_t i=0; i<numQuads; ++i) {
+                GfVec4i quadIndices(&firstIndex[i*4]);
+                outputIndices.EmitQuadFace(quadIndices);
+            }
+        }
 
         // refined quads index buffer
         HdBufferSourceSharedPtr quadIndices =
             std::make_shared<HdVtBufferSource>(
-                HdTokens->indices, VtValue(indices));
+                HdTokens->indices, VtValue(indices), numIndicesPerQuad);
         _SetResult(quadIndices);
 
         _PopulateUniformPrimitiveBuffer(patchTable);
@@ -1820,17 +1840,23 @@ _EvalStencilsGPU(
           [&](HgiShaderFunctionDesc &computeDesc) {
             computeDesc.debugName = shaderToken.GetString();
             computeDesc.shaderStage = HgiShaderStageCompute;
+            computeDesc.computeDescriptor.localSize = GfVec3i(64, 1, 1);
 
             HgiShaderFunctionAddBuffer(&computeDesc,
-                                       "sizes", HdStTokens->_int);
+                "sizes", HdStTokens->_int,
+                BufferBinding_Sizes, HgiBindingTypePointer);
             HgiShaderFunctionAddBuffer(&computeDesc,
-                                       "offsets", HdStTokens->_int);
+                "offsets", HdStTokens->_int,
+                BufferBinding_Offsets, HgiBindingTypePointer);
             HgiShaderFunctionAddBuffer(&computeDesc,
-                                       "indices", HdStTokens->_int);
+                "indices", HdStTokens->_int,
+                BufferBinding_Indices, HgiBindingTypePointer);
             HgiShaderFunctionAddBuffer(&computeDesc,
-                                       "weights", HdStTokens->_float);
-            HgiShaderFunctionAddBuffer(&computeDesc,
-                                       "primvar", HdStTokens->_float);
+                "weights", HdStTokens->_float,
+                BufferBinding_Weights, HgiBindingTypePointer);
+            HgiShaderFunctionAddWritableBuffer(&computeDesc,
+                "primvar", HdStTokens->_float,
+                BufferBinding_Primvar);
 
             static const std::string params[] = {
                 "pointIndexStart",

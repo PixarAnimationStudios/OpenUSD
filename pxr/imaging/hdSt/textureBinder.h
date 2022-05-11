@@ -31,6 +31,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HdBufferSpecVector = std::vector<struct HdBufferSpec>;
+struct HgiResourceBindingsDesc;
 
 /// \class HdSt_TextureBinder
 ///
@@ -54,7 +55,8 @@ public:
     static void
     GetBufferSpecs(
         const NamedTextureHandleVector &textures,
-        HdBufferSpecVector * specs);
+        HdBufferSpecVector * specs,
+        bool doublesSupported);
 
     /// Compute buffer sources for shader bar.
     ///
@@ -67,7 +69,8 @@ public:
     static void
     ComputeBufferSources(
         const NamedTextureHandleVector &textures,
-        HdBufferSourceSharedPtrVector * sources);
+        HdBufferSourceSharedPtrVector * sources,
+        bool doublesSupported);
 
     /// Bind textures.
     ///
@@ -82,6 +85,15 @@ public:
     UnbindResources(
         HdSt_ResourceBinder const &binder,
         const NamedTextureHandleVector &textures);
+
+    /// Get Bindings Descs
+    ///
+    static void
+    GetBindingDescs(
+        HdSt_ResourceBinder const &binder,
+        HgiResourceBindingsDesc * bindingsDesc,
+        const NamedTextureHandleVector &textures);
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

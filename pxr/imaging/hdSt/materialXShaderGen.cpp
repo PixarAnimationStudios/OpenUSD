@@ -26,6 +26,7 @@
 #include "pxr/base/tf/stringUtils.h"
 
 #include <MaterialXCore/Value.h>
+#include <MaterialXGenGlsl/Nodes/SurfaceNodeGlsl.h>
 #include <MaterialXGenShader/Shader.h>
 #include <MaterialXGenShader/ShaderGenerator.h>
 #include <MaterialXGenShader/Syntax.h>
@@ -34,6 +35,31 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+    // Create a customized version of the class mx::SurfaceNodeGlsl
+    // to be able to notify the shader generator when we start/end
+    // emitting the code for the SurfaceNode
+    class HdStMaterialXSurfaceNodeGen : public mx::SurfaceNodeGlsl
+    {
+    public:
+        static mx::ShaderNodeImplPtr create() {
+            return std::make_shared<HdStMaterialXSurfaceNodeGen>();
+        }
+
+        void emitFunctionCall(
+            const mx::ShaderNode& node, 
+            mx::GenContext& context,
+            mx::ShaderStage& stage) const override
+        {
+            HdStMaterialXShaderGen& shadergen = 
+                static_cast<HdStMaterialXShaderGen&>(context.getShaderGenerator());
+            
+            shadergen.SetEmittingSurfaceNode(true);
+            mx::SurfaceNodeGlsl::emitFunctionCall(node, context, stage);
+            shadergen.SetEmittingSurfaceNode(false);
+        }
+    };
+}
 
 static const std::string MxHdTangentString = 
 R"(
@@ -48,10 +74,11 @@ R"(
 static const std::string MxHdLightString = 
 R"(#if NUM_LIGHTS > 0
     for (int i = 0; i < NUM_LIGHTS; ++i) {
+        LightSource light = GetLightSource(i);
 
         // Save the indirect light transformation
-        if (lightSource[i].isIndirectLight) {
-            hdTransformationMatrix = lightSource[i].worldToLightTransform;
+        if (light.isIndirectLight) {
+            hdTransformationMatrix = light.worldToLightTransform;
         }
         // Save the direct light data
         else {
@@ -60,28 +87,35 @@ R"(#if NUM_LIGHTS > 0
 
             // Position (Hydra position in ViewSpace)
             $lightData[u_numActiveLightSources].position = 
-                (HdGet_worldToViewInverseMatrix() * lightSource[i].position).xyz;
+                (HdGet_worldToViewInverseMatrix() * light.position).xyz;
 
             // Color and Intensity 
-            // Note: Storm supports Simple, Sphere and Rect Direct Lights where
-            // diffuse = lightColor * intensity;
-            // specular = vec3(1) * intensity;
-            float intensity = lightSource[i].specular.r;
-            $lightData[u_numActiveLightSources].color = lightSource[i].diffuse.rgb/intensity;
+            // Note: in Storm, diffuse = lightColor * intensity;
+            float intensity = max( max(light.diffuse.r, light.diffuse.g), 
+                                   light.diffuse.b);
+            $lightData[u_numActiveLightSources].color = light.diffuse.rgb/intensity;
             $lightData[u_numActiveLightSources].intensity = intensity;
             
             // Attenuation 
             // Hydra: vec3(const, linear, quadratic)
             // MaterialX: const = 0.0, linear = 1.0, quadratic = 2.0
-            if (lightSource[i].attenuation.z > 0) {
+            if (light.attenuation.z > 0) {
                 $lightData[u_numActiveLightSources].decay_rate = 2.0;
             }
-            else if (lightSource[i].attenuation.y > 0) {
+            else if (light.attenuation.y > 0) {
                 $lightData[u_numActiveLightSources].decay_rate = 1.0;
             }
             else {
                 $lightData[u_numActiveLightSources].decay_rate = 0.0;
             }
+
+            // ShadowOcclusion value
+            #if USE_SHADOWS
+                u_lightData[u_numActiveLightSources].shadowOcclusion = 
+                    light.hasShadow ? shadowing(i, Peye) : 1.0;
+            #else 
+                u_lightData[u_numActiveLightSources].shadowOcclusion = 1.0;
+            #endif
 
             u_numActiveLightSources++;
         }
@@ -94,10 +128,16 @@ HdStMaterialXShaderGen::HdStMaterialXShaderGen(
     : GlslShaderGenerator(), 
       _mxHdTextureMap(mxHdInfo.textureMap),
       _mxHdPrimvarMap(mxHdInfo.primvarMap),
-      _materialTag(mxHdInfo.materialTag)
+      _materialTag(mxHdInfo.materialTag),
+      _bindlessTexturesEnabled(mxHdInfo.bindlessTexturesEnabled),
+      _emittingSurfaceNode(false)
 {
     _defaultTexcoordName = (mxHdInfo.defaultTexcoordName == mx::EMPTY_STRING) ?
                             "st" : mxHdInfo.defaultTexcoordName;
+
+    // Register the customized version of the Surface node generator
+    registerImplementation("IM_surface_" + GlslShaderGenerator::TARGET, 
+        HdStMaterialXSurfaceNodeGen::create);
 }
 
 // Based on GlslShaderGenerator::generate()
@@ -129,6 +169,10 @@ HdStMaterialXShaderGen::_EmitGlslfxShader(
     mx::GenContext& mxContext,
     mx::ShaderStage& mxStage) const
 {
+    // Add a per-light shadowOcclusion value to the lightData uniform block
+    addStageUniform(mx::HW::LIGHT_DATA, mx::Type::FLOAT, 
+        "shadowOcclusion", mxStage);
+
     _EmitGlslfxHeader(mxStage);
     _EmitMxFunctions(mxGraph, mxContext, mxStage);
     _EmitMxSurfaceShader(mxGraph, mxContext, mxStage);
@@ -202,6 +246,24 @@ HdStMaterialXShaderGen::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
     emitLineBreak(mxStage);
 }
 
+static bool 
+_IsHardcodedPublicUniform(const mx::TypeDesc& varType)
+{
+    // Most major types of public uniforms are set through 
+    // HdSt_MaterialParamVector in HdStMaterialXFilter's
+    // _AddMaterialXParams function, the rest are hardcoded 
+    // in the shader
+    if (varType.getBaseType() != mx::TypeDesc::BASETYPE_FLOAT &&
+        varType.getBaseType() != mx::TypeDesc::BASETYPE_INTEGER) {
+        return true;
+    }
+    if (varType.getSize() < 1 || varType.getSize() > 4) {
+        return true;
+    }
+
+    return false;
+}
+
 // Similar to GlslShaderGenerator::emitPixelStage() with alterations and 
 // additions to match Pxr's codeGen
 void
@@ -242,6 +304,34 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
             emitComment("Uniform block: " + uniforms.getName(), mxStage);
             emitVariableDeclarations(uniforms, mx::EMPTY_STRING, 
                                      mx::Syntax::SEMICOLON, mxContext, mxStage);
+            emitLineBreak(mxStage);
+        }
+    }
+
+    // If bindlessTextures are not enabled, the above for loop skips 
+    // initializing textures. Initialize them here by defining mappings 
+    // to the appropriate HdGetSampler function. 
+    if (!_bindlessTexturesEnabled) {
+
+        // Define mappings for the DomeLight Textures
+        emitLine("#ifdef HD_HAS_domeLightIrradiance", mxStage, false);
+        emitLine("#define u_envRadiance HdGetSampler_domeLightPrefilter() ", mxStage, false);
+        emitLine("#define u_envIrradiance HdGetSampler_domeLightIrradiance() ", mxStage, false);
+        emitLine("#else", mxStage, false);
+        emitLine("uniform sampler2D u_envRadiance;", mxStage, false);
+        emitLine("uniform sampler2D u_envIrradiance;", mxStage, false);
+        emitLine("#endif", mxStage, false);
+        emitLineBreak(mxStage);
+
+        // Define mappings for the MaterialX Textures
+        if (!_mxHdTextureMap.empty()) {
+            emitComment("Define MaterialX to Hydra Sampler mappings", mxStage);
+            for (auto texturePair : _mxHdTextureMap) {
+                emitLine(TfStringPrintf("#define %s_file HdGetSampler_%s()",
+                                        texturePair.first.c_str(),
+                                        texturePair.second.c_str()),
+                        mxStage, false);
+            }
             emitLineBreak(mxStage);
         }
     }
@@ -427,6 +517,9 @@ HdStMaterialXShaderGen::_EmitMxSurfaceShader(
                 emitLine(finalOutputReturn + outputValue, mxStage);
             }
         }
+
+        // Emit color overrides (mainly for selection highlighting)
+        emitLine("mxOut = ApplyColorOverrides(mxOut)", mxStage);
     }
     emitLine("return mxOut", mxStage);
 
@@ -461,16 +554,35 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
                                   mx::Syntax::COMMA, mxStage);
     emitLineBreak(mxStage);
 
+    // Initialize MaterialX parameters with HdGet_ equivalents
+    emitComment("Initialize Material Parameters", mxStage);
+    const mx::VariableBlock& paramsBlock =
+        mxStage.getUniformBlock(mx::HW::PUBLIC_UNIFORMS);
+    for (size_t i = 0; i < paramsBlock.size(); ++i) {
+        const auto variable = paramsBlock[i];
+        const auto variableType = variable->getType();
+        if (!_IsHardcodedPublicUniform(*variableType)) {
+            emitLine(variable->getVariable() + " = HdGet_" +
+                variable->getVariable() + "()", mxStage);
+        }
+    }
+    emitLineBreak(mxStage);
+
     // Initialize the Indirect Light Textures
+    // Note: only need to initialize textures when bindlessTextures are enabled,
+    // when bindlessTextures are not enabled, mappings are defined in 
+    // HdStMaterialXShaderGen::_EmitMxFunctions
     emitLine("#ifdef HD_HAS_domeLightIrradiance", mxStage, false);
-    emitLine("u_envIrradiance = HdGetSampler_domeLightIrradiance()", mxStage);
-    emitLine("u_envRadiance = HdGetSampler_domeLightPrefilter()", mxStage);
+    if (_bindlessTexturesEnabled) {
+        emitLine("u_envIrradiance = HdGetSampler_domeLightIrradiance()", mxStage);
+        emitLine("u_envRadiance = HdGetSampler_domeLightPrefilter()", mxStage);
+    }
     emitLine("u_envRadianceMips = textureQueryLevels(u_envRadiance)", mxStage);
     emitLine("#endif", mxStage, false);
     emitLineBreak(mxStage);
 
     // Initialize MaterialX Texture samplers with HdGetSampler equivalents
-    if (!_mxHdTextureMap.empty()) {
+    if (_bindlessTexturesEnabled && !_mxHdTextureMap.empty()) {
         emitComment("Initialize Material Textures", mxStage);
         for (auto texturePair : _mxHdTextureMap) {
             emitLine(texturePair.first + "_file = "
@@ -606,18 +718,30 @@ HdStMaterialXShaderGen::emitVariableDeclarations(
         mx::HW::T_ALBEDO_TABLE      // BRDF texture
     };
 
+    // Most public uniforms are set from outside the shader
+    const bool isPublicUniform = block.getName() == mx::HW::PUBLIC_UNIFORMS;
+
     for (size_t i = 0; i < block.size(); ++i)
     {
         emitLineBegin(stage);
+        const auto variable = block[i];
+        const auto varType = variable->getType();
+
+        // If bindlessTextures are not enabled the Mx Smpler names are mapped 
+        // to the Hydra equivalents in HdStMaterialXShaderGen::_EmitMxFunctions
+        if (!_bindlessTexturesEnabled && varType == mx::Type::FILENAME) {
+            continue;
+        }
 
         // Only declare the variables that we need to initialize with Hd Data
-        if (MxHdVariables.count(block[i]->getName())) {
-            emitVariableDeclaration(block[i], mx::EMPTY_STRING,
+        if ( (isPublicUniform && !_IsHardcodedPublicUniform(*varType))
+            || MxHdVariables.count(variable->getName()) ) {
+            emitVariableDeclaration(variable, mx::EMPTY_STRING,
                                     context, stage, false);
         }
         // Otherwise assign the value from MaterialX
         else {
-            emitVariableDeclaration(block[i], qualifier, 
+            emitVariableDeclaration(variable, qualifier,
                                     context, stage, assignValue);
         }
         emitString(separator, stage);
@@ -625,5 +749,22 @@ HdStMaterialXShaderGen::emitVariableDeclarations(
     }
 }
 
+void 
+HdStMaterialXShaderGen::emitLine(
+    const std::string& str, 
+    MaterialX::ShaderStage& stage, 
+    bool semicolon) const
+{
+    mx::GlslShaderGenerator::emitLine(str, stage, semicolon);
+
+    // When emitting the Light loop code for the Surface node, the variable
+    // 'occlusion' represents shadow occlusion. We don't use MaterialX's
+    // shadow implementation (hwShadowMap is false). Instead, use our own 
+    // per-light occlusion value calculated in mxInit() and stored in lightData
+    if (_emittingSurfaceNode && str == "vec3 L = lightShader.direction") {
+        emitLine(
+            "occlusion = u_lightData[activeLightIndex].shadowOcclusion", stage);
+    }
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

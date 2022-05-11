@@ -130,7 +130,7 @@ public:
     // Create a string from a value
     static std::string StringFromVtValue(const VtValue &value);
 
-    // Convert enums to a strings for use in menva syntax.
+    // Convert enums to strings for use in sdf text format syntax.
     // Note that in some cases we use empty strings to represent the
     // default values of these enums.
     static const char* Stringify( SdfPermission val );
@@ -963,7 +963,7 @@ Sdf_WriteRelationship(
     // Sdf_GetGenericRelationshipMetadataFields().
     //
     // These special cases below were all kept to prevent reordering in existing
-    // menva files, which would create noise in file diffs.
+    // Pixar files, which would create noise in file diffs.
     bool hasComment           = !rel.GetComment().empty();
     bool hasTargets           = rel.HasField(SdfFieldKeys->TargetPaths);
     bool hasDefaultValue      = rel.HasField(SdfFieldKeys->Default);

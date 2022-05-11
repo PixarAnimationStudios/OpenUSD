@@ -44,7 +44,6 @@
 #include "pxr/imaging/hdx/oitBufferAccessor.h"
 
 #include "pxr/imaging/glf/diagnostic.h"
-#include "pxr/imaging/glf/contextCaps.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -93,48 +92,18 @@ _GetScreenSize()
         return GfVec2i(viewport[2], viewport[3]);
     }
     
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
+    if (attachType == GL_TEXTURE) {
+        GLint w, h;
+        glGetTextureLevelParameteriv(attachId, 0, GL_TEXTURE_WIDTH, &w);
+        glGetTextureLevelParameteriv(attachId, 0, GL_TEXTURE_HEIGHT, &h);
+        return GfVec2i(w,h);
+    }
 
-    if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-        if (attachType == GL_TEXTURE) {
-            GLint w, h;
-            glGetTextureLevelParameteriv(attachId, 0, GL_TEXTURE_WIDTH, &w);
-            glGetTextureLevelParameteriv(attachId, 0, GL_TEXTURE_HEIGHT, &h);
-            return GfVec2i(w,h);
-        }
-
-        if (attachType == GL_RENDERBUFFER) {
-            GLint w, h;
-            glGetNamedRenderbufferParameteriv(
-                attachId, GL_RENDERBUFFER_WIDTH, &w);
-            glGetNamedRenderbufferParameteriv(
-                attachId, GL_RENDERBUFFER_HEIGHT, &h);
-            return GfVec2i(w,h);
-        }
-    } else {
-        if (attachType == GL_TEXTURE) {
-            GLint w, h;
-            GLint oldBinding;
-            glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldBinding);
-            glBindTexture(GL_TEXTURE_2D, attachId);
-            glGetTexLevelParameteriv(GL_TEXTURE_2D,0, GL_TEXTURE_WIDTH, &w);
-            glGetTexLevelParameteriv(GL_TEXTURE_2D,0, GL_TEXTURE_HEIGHT, &h);
-            glBindTexture(GL_TEXTURE_2D, oldBinding);
-            return GfVec2i(w,h);
-        }
-        
-        if (attachType == GL_RENDERBUFFER) {
-            GLint w, h;
-            GLint oldBinding;
-            glGetIntegerv(GL_RENDERBUFFER_BINDING, &oldBinding);
-            glBindRenderbuffer(GL_RENDERBUFFER, attachId);
-            glGetRenderbufferParameteriv(
-                GL_RENDERBUFFER,GL_RENDERBUFFER_WIDTH,&w);
-            glGetRenderbufferParameteriv(
-                GL_RENDERBUFFER,GL_RENDERBUFFER_HEIGHT,&h);
-            glBindRenderbuffer(GL_RENDERBUFFER, oldBinding);
-            return GfVec2i(w,h);
-        }
+    if (attachType == GL_RENDERBUFFER) {
+        GLint w, h;
+        glGetNamedRenderbufferParameteriv(attachId, GL_RENDERBUFFER_WIDTH, &w);
+        glGetNamedRenderbufferParameteriv(attachId, GL_RENDERBUFFER_HEIGHT, &h);
+        return GfVec2i(w,h);
     }
 
     constexpr int oitScreenSizeFallback = 2048;
@@ -159,6 +128,53 @@ HdxOitResolveTask::Sync(
     HdDirtyBits*     dirtyBits)
 {
     HD_TRACE_FUNCTION();
+
+    if (!_renderPassState) {
+        // We do not use renderDelegate->CreateRenderPassState because
+        // ImageShaders always use HdSt
+        _renderPassState = std::make_shared<HdStRenderPassState>();
+        _renderPassState->SetEnableDepthTest(false);
+        _renderPassState->SetEnableDepthMask(false);
+        _renderPassState->SetAlphaThreshold(0.0f);
+        _renderPassState->SetAlphaToCoverageEnabled(false);
+        _renderPassState->SetColorMasks({HdRenderPassState::ColorMaskRGBA});
+        _renderPassState->SetBlendEnabled(true);
+        
+        // We expect pre-multiplied color as input into the OIT resolve shader
+        // e.g. vec4(rgb * a, a). Hence the src factor for rgb is "One" since 
+        // src alpha is already accounted for. 
+        // Alpha's are blended with the same blending equation as the rgb's.
+        // Thinking about it conceptually, if you're looking through two glass 
+        // windows both occluding 50% of light, some light would still be 
+        // passing through. 50% of light passes through the first window, then 
+        // 50% of the remaining light through the second window. Hence the 
+        // equation: 0.5 + 0.5 * (1 - 0.5) = 0.75, as 75% of light is occluded.
+        _renderPassState->SetBlend(
+            HdBlendOp::HdBlendOpAdd,
+            HdBlendFactor::HdBlendFactorOne,
+            HdBlendFactor::HdBlendFactorOneMinusSrcAlpha,
+            HdBlendOp::HdBlendOpAdd,
+            HdBlendFactor::HdBlendFactorOne,
+            HdBlendFactor::HdBlendFactorOneMinusSrcAlpha);
+
+        _renderPassShader = std::make_shared<HdStRenderPassShader>(
+            HdxPackageOitResolveImageShader());
+        _renderPassState->SetRenderPassShader(_renderPassShader);
+    }
+
+    if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
+        HdxOitResolveTaskParams params;
+
+        if (!_GetTaskParams(delegate, &params)) {
+            return;
+        }
+
+        _renderPassState->SetUseAovMultiSample(
+            params.useAovMultiSample);
+        _renderPassState->SetResolveAovMultiSample(
+            params.resolveAovMultiSample);
+    }
+
     *dirtyBits = HdChangeTracker::Clean;
 
     // Note: We defer creation of the render pass to the Prepare phase since
@@ -230,10 +246,9 @@ HdxOitResolveTask::_PrepareOitBuffers(
         //
         // Counter Buffer
         //
-        HdBufferSpecVector counterSpecs;
-        counterSpecs.push_back(HdBufferSpec(
-            HdxTokens->hdxOitCounterBuffer, 
-            HdTupleType {HdTypeInt32, 1}));
+        HdBufferSpecVector counterSpecs{
+            { HdxTokens->hdxOitCounterBuffer, HdTupleType{HdTypeInt32, 1} }
+        };
         _counterBar = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                                             /*role*/HdxTokens->oitCounter,
                                             counterSpecs,
@@ -241,10 +256,9 @@ HdxOitResolveTask::_PrepareOitBuffers(
         //
         // Index Buffer
         //
-        HdBufferSpecVector indexSpecs;
-        indexSpecs.push_back(HdBufferSpec(
-            HdxTokens->hdxOitIndexBuffer,
-            HdTupleType {HdTypeInt32, 1}));
+        HdBufferSpecVector indexSpecs{
+            { HdxTokens->hdxOitIndexBuffer, HdTupleType{HdTypeInt32, 1} }
+        };
         _indexBar = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                                             /*role*/HdxTokens->oitIndices,
                                             indexSpecs,
@@ -253,10 +267,9 @@ HdxOitResolveTask::_PrepareOitBuffers(
         //
         // Data Buffer
         //        
-        HdBufferSpecVector dataSpecs;
-        dataSpecs.push_back(HdBufferSpec(
-            HdxTokens->hdxOitDataBuffer, 
-            HdTupleType {HdTypeFloatVec4, 1}));
+        HdBufferSpecVector dataSpecs{
+            { HdxTokens->hdxOitDataBuffer, HdTupleType{HdTypeFloatVec4, 1} }
+        };
         _dataBar = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                                             /*role*/HdxTokens->oitData,
                                             dataSpecs,
@@ -265,10 +278,9 @@ HdxOitResolveTask::_PrepareOitBuffers(
         //
         // Depth Buffer
         //
-        HdBufferSpecVector depthSpecs;
-        depthSpecs.push_back(HdBufferSpec(
-            HdxTokens->hdxOitDepthBuffer, 
-            HdTupleType {HdTypeFloat, 1}));
+        HdBufferSpecVector depthSpecs{
+            { HdxTokens->hdxOitDepthBuffer, HdTupleType{HdTypeFloat, 1} }
+        };
         _depthBar = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                                             /*role*/HdxTokens->oitDepth,
                                             depthSpecs,
@@ -277,10 +289,9 @@ HdxOitResolveTask::_PrepareOitBuffers(
         //
         // Uniforms
         //
-        HdBufferSpecVector uniformSpecs;
-        uniformSpecs.push_back( HdBufferSpec(
-            HdxTokens->oitScreenSize,HdTupleType{HdTypeInt32Vec2, 1}));
-
+        HdBufferSpecVector uniformSpecs{
+            { HdxTokens->oitScreenSize, HdTupleType{HdTypeInt32Vec2, 1} }
+        };
         _uniformBar = hdStResourceRegistry->AllocateUniformBufferArrayRange(
                                             /*role*/HdxTokens->oitUniforms,
                                             uniformSpecs,
@@ -335,7 +346,7 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
     // execute of the first oit render task will clear the buffer in this
     // iteration.
     ctx->erase(HdxTokens->oitClearedFlag);
-    
+
     if (!_renderPass) {
         HdRprimCollection collection;
         HdRenderDelegate* renderDelegate = renderIndex->GetRenderDelegate();
@@ -348,36 +359,6 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
         _renderPass = std::make_shared<HdSt_ImageShaderRenderPass>(
             renderIndex, collection);
         _renderPass->SetupFullscreenTriangleDrawItem();
-
-        // We do not use renderDelegate->CreateRenderPassState because
-        // ImageShaders always use HdSt
-        _renderPassState = std::make_shared<HdStRenderPassState>();
-        _renderPassState->SetEnableDepthTest(false);
-        _renderPassState->SetEnableDepthMask(false);
-        _renderPassState->SetAlphaThreshold(0.0f);
-        _renderPassState->SetAlphaToCoverageEnabled(false);
-        _renderPassState->SetColorMasks({HdRenderPassState::ColorMaskRGBA});
-        _renderPassState->SetBlendEnabled(true);
-        // We expect pre-multiplied color as input into the OIT resolve shader
-        // e.g. vec4(rgb * a, a). Hence the src factor for rgb is "One" since 
-        // src alpha is already accounted for. 
-        // Alpha's are blended with the same blending equation as the rgb's.
-        // Thinking about it conceptually, if you're looking through two glass 
-        // windows both occluding 50% of light, some light would still be 
-        // passing through. 50% of light passes through the first window, then 
-        // 50% of the remaining light through the second window. Hence the 
-        // equation: 0.5 + 0.5 * (1 - 0.5) = 0.75, as 75% of light is occluded.
-        _renderPassState->SetBlend(
-            HdBlendOp::HdBlendOpAdd,
-            HdBlendFactor::HdBlendFactorOne,
-            HdBlendFactor::HdBlendFactorOneMinusSrcAlpha,
-            HdBlendOp::HdBlendOpAdd,
-            HdBlendFactor::HdBlendFactorOne,
-            HdBlendFactor::HdBlendFactorOneMinusSrcAlpha);
-
-        _renderPassShader = std::make_shared<HdStRenderPassShader>(
-            HdxPackageOitResolveImageShader());
-        _renderPassState->SetRenderPassShader(_renderPassShader);
     }
 
     _PrepareOitBuffers(
@@ -416,6 +397,30 @@ HdxOitResolveTask::Execute(HdTaskContext* ctx)
     }
 
     _renderPass->Execute(_renderPassState, GetRenderTags());
+}
+
+bool
+operator==(HdxOitResolveTaskParams const& lhs, 
+           HdxOitResolveTaskParams const& rhs)
+{
+    return lhs.useAovMultiSample == rhs.useAovMultiSample
+        && lhs.resolveAovMultiSample == rhs.resolveAovMultiSample;
+}
+
+bool
+operator!=(HdxOitResolveTaskParams const& lhs, 
+           HdxOitResolveTaskParams const& rhs)
+{
+    return !(lhs==rhs);
+}
+
+std::ostream&
+operator<<(std::ostream& out, HdxOitResolveTaskParams const& p)
+{
+    out << "OitResolveTask Params: (...) "
+        << p.useAovMultiSample << " "
+        << p.resolveAovMultiSample;
+    return out;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -78,7 +78,6 @@ public:
                 // Test specifying an invalid encoding
                 {{TfToken("sdrUsdEncodingVersion"), std::string("foobar")}}
             ),
-            // Provide an alias for this node's identifier.
             NdrNodeDiscoveryResult(
                 TfToken("TestNodeSameName"),
                 NdrVersion().GetAsDefault(),
@@ -87,12 +86,7 @@ public:
                 TfToken("args"),
                 TfToken("RmanCpp"),
                 "TestNodeSameName.args",
-                "TestNodeSameName.args",
-                std::string(),
-                NdrTokenMap(),
-                std::string(),
-                TfToken(),
-                NdrTokenVec({TfToken("Alias_TestNodeSameName")})
+                "TestNodeSameName.args"
             ),
             NdrNodeDiscoveryResult(
                 TfToken("TestNodeSameName"),

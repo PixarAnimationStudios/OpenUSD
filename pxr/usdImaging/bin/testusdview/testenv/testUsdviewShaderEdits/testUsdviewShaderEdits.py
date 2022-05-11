@@ -77,8 +77,7 @@ def testUsdviewInputFunction(appController):
     l = s.GetSessionLayer()
     s.SetEditTarget(l)
 
-    # Turn off the built-in camera light so Prman's default white dome light
-    # turns on 
+    # Turn off the built-in camera light
     appController._ambientOnlyClicked(False)
 
     _bugStep1(s)

@@ -46,7 +46,8 @@ public:
         const std::string &identifier,
         const HgiShaderSectionAttributeVector &attributes = {},
         const std::string &storageQualifier = std::string(),
-        const std::string &defaultValue = std::string());
+        const std::string &defaultValue = std::string(),
+        const std::string &arraySize = std::string());
 
     HGIVULKAN_API
     ~HgiVulkanShaderSection() override;
@@ -69,6 +70,7 @@ public:
 
 protected:
     const std::string _storageQualifier;
+    const std::string _arraySize;
 
 private:
     HgiVulkanShaderSection() = delete;
@@ -172,6 +174,10 @@ public:
         const std::string &identifier,
         const uint32_t layoutIndex,
         const uint32_t dimensions,
+        const HgiFormat format,
+        const HgiShaderTextureType textureType,
+        const uint32_t arraySize,
+        const bool writable,
         const HgiShaderSectionAttributeVector &attributes,
         const std::string &defaultValue = std::string());
 
@@ -192,7 +198,15 @@ private:
         const HgiVulkanTextureShaderSection&) = delete;
     HgiVulkanTextureShaderSection(const HgiVulkanTextureShaderSection&) = delete;
 
+    void _WriteSamplerType(std::ostream &ss) const;
+    void _WriteSampledDataType(std::ostream &ss) const;
+
     const uint32_t _dimensions;
+    const HgiFormat _format;
+    const HgiShaderTextureType _textureType;
+    const uint32_t _arraySize;
+    const bool _writable;
+    static const std::string _storageQualifier;
 };
 
 /// \class HgiVulkanBufferShaderSection

@@ -64,4 +64,30 @@ def Shader "TestShaderPropertiesNodeUSD" (
         }
     )
 
+    int inputs:testAllowedTokens (
+        allowedTokens = ["token1", "token2"]
+    )
+    
+    int inputs:testMetadataOptions (
+        sdrMetadata = {
+            token options = "token1|token2"
+        }
+    )
+
+    int inputs:testAllowedTokenAndMetdataOptions (
+        allowedTokens = ["token1", "token2"]
+        sdrMetadata = {
+            token options = "token3|token4"
+        }
+    )
+
+    int inputs:intButBool (
+        sdrMetadata = {
+            string sdrUsdDefinitionType = "bool"
+        }
+    )
+
+    bool inputs:actualBool (
+    )
+
 }

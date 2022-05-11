@@ -9,6 +9,7 @@ pxr_library(hdMtlx
         sdr
         tf
         trace
+        usdMtlx
         vt
         ${MATERIALX_LIBRARIES}
 

@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/pointsAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourcePoints.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -47,6 +48,36 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdImagingPointsAdapter::~UsdImagingPointsAdapter() 
 {
+}
+
+TfTokenVector
+UsdImagingPointsAdapter::GetImagingSubprims()
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingPointsAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->points;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingPointsAdapter::GetImagingSubprimData(
+        TfToken const& subprim,
+        UsdPrim const& prim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourcePointsPrim::New(
+            prim.GetPath(),
+            prim,
+            stageGlobals);
+    }
+    return nullptr;
 }
 
 bool

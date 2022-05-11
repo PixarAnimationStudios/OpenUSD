@@ -1,0 +1,39 @@
+#usda 1.0
+(
+    upAxis = "Y"
+    endTimeCode = 7
+    startTimeCode = 1
+)
+
+# An empty mesh that becomes a full cube.
+# Note that for time samples 1-4, the attributes below aren't authored and
+# default to an empty array.
+# This morphing topology revealed a bug in Storm when switching between
+# empty and non-empty time samples wherein the non-empty topology persisted,
+#
+def Mesh "MorphingCube" {
+    float3[] extent = [(-1,-1,-1), (1,1,1)]
+
+    int[] faceVertexCounts.timeSamples = {
+        5 : [4, 4, 4, 4],
+        7 : [4, 4, 4, 4, 4, 4],
+    }
+    int[] faceVertexIndices.timeSamples = {
+        5: [0, 1, 2, 3, 4, 5, 6, 7, 0, 6, 5, 1, 4, 7, 3, 2],
+        7: [0, 1, 2, 3, 4, 5, 6, 7, 0, 6, 5, 1, 4, 7, 3, 2, 0, 3, 7, 6, 4, 2, 1, 5]
+    }
+    token visibility.timeSamples = {
+        1: "invisible",
+        3: "invisible",
+        5: "inherited",
+        7: "inherited"
+    }
+
+    point3f[] points.timeSamples = {
+        5: [(1, 1, 1), (-1, 1, 1), (-1, -1, 1), (1, -1, 1), (-1, -1, -1), (-1, 1, -1), (1, 1, -1), (1, -1, -1)]
+    }
+
+    float3[] primvars:displayColor = [(1,0,0)]
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (0,0,0)
+ }

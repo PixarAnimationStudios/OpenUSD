@@ -31,7 +31,6 @@
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 
-#include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/range1f.h"
@@ -66,12 +65,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (exposure)                                      \
                                                     \
     /* how to match window with different aspect */ \
-    (windowPolicy)                                  \
-                                                    \
-    /* OpenGL-style matrices, deprecated */         \
-    (worldToViewMatrix)                             \
-    (projectionMatrix)
-
+    (windowPolicy)
 
 TF_DECLARE_PUBLIC_TOKENS(HdCameraTokens, HD_API, HD_CAMERA_TOKENS);
 
@@ -97,16 +91,13 @@ public:
     {
         Clean                 = 0,
         DirtyTransform        = 1 << 0,
-        DirtyViewMatrix       = DirtyTransform, // deprecated
-        DirtyProjMatrix       = 1 << 1,         // deprecated
-        DirtyWindowPolicy     = 1 << 2,
-        DirtyClipPlanes       = 1 << 3,
-        DirtyParams           = 1 << 4,
+        DirtyParams           = 1 << 1,
+        DirtyClipPlanes       = 1 << 2,
+        DirtyWindowPolicy     = 1 << 3,
         AllDirty              = (DirtyTransform
-                                |DirtyProjMatrix
-                                |DirtyWindowPolicy
+                                |DirtyParams
                                 |DirtyClipPlanes
-                                |DirtyParams)
+                                |DirtyWindowPolicy)
     };
 
     enum Projection {
@@ -209,23 +200,13 @@ public:
     }
 
     // ---------------------------------------------------------------------- //
-    /// Legacy camera parameters accessor API
+    /// Convenience API for rasterizers
     // ---------------------------------------------------------------------- //
 
-    /// Returns the matrix transformation from world to camera space.
-    /// \deprecated Use GetTransform instead
+    /// Computes the projection matrix for a camera from its physical
+    /// properties.
     HD_API
-    GfMatrix4d GetViewMatrix() const;
-
-    /// Returns the matrix transformation from camera to world space.
-    /// \deprecated Use GetTransform and invert instead
-    HD_API
-    GfMatrix4d GetViewInverseMatrix() const;
-
-    /// Returns the projection matrix for the camera.
-    /// \deprecated Compute from above physically based attributes
-    HD_API
-    GfMatrix4d GetProjectionMatrix() const;
+    GfMatrix4d ComputeProjectionMatrix() const;
 
 protected:
     // frustum
@@ -251,11 +232,6 @@ protected:
     // Camera's opinion how it display in a window with
     // a different aspect ratio
     CameraUtilConformWindowPolicy _windowPolicy;
-
-    // OpenGL-style matrices
-    GfMatrix4d _worldToViewMatrix;
-    GfMatrix4d _worldToViewInverseMatrix;
-    GfMatrix4d _projectionMatrix;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

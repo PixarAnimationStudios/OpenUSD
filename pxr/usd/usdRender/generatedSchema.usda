@@ -72,11 +72,17 @@ class "RenderSettingsBase" (
         aspectRatioConformPolicy.
         """
     )
+    uniform bool disableMotionBlur = 0 (
+        doc = """Disable all motion blur by setting the shutter interval
+        of the targeted camera to [0,0] - that is, take only one sample,
+        namely at the current time code."""
+    )
     uniform bool instantaneousShutter = 0 (
-        doc = """Override the targeted _camera_'s _shutterClose_ to be
-        equal to the value of its _shutterOpen_, to produce a zero-width
-        shutter interval.  This gives us a convenient way to disable
-        motion blur."""
+        doc = """Deprecated - use disableMotionBlur instead. Override
+        the targeted _camera_'s _shutterClose_ to be equal to the
+        value of its _shutterOpen_, to produce a zero-width shutter
+        interval.  This gives us a convenient way to disable motion
+        blur."""
     )
     uniform float pixelAspectRatio = 1 (
         doc = """The aspect ratio (width/height) of image pixels..
@@ -158,6 +164,11 @@ class RenderSettings "RenderSettings" (
         aspectRatioConformPolicy.
         """
     )
+    uniform bool disableMotionBlur = 0 (
+        doc = """Disable all motion blur by setting the shutter interval
+        of the targeted camera to [0,0] - that is, take only one sample,
+        namely at the current time code."""
+    )
     uniform token[] includedPurposes = ["default", "render"] (
         doc = """The list of UsdGeomImageable _purpose_ values that
         should be included in the render.  Note this cannot be
@@ -165,10 +176,11 @@ class RenderSettings "RenderSettings" (
         which geometry is present."""
     )
     uniform bool instantaneousShutter = 0 (
-        doc = """Override the targeted _camera_'s _shutterClose_ to be
-        equal to the value of its _shutterOpen_, to produce a zero-width
-        shutter interval.  This gives us a convenient way to disable
-        motion blur."""
+        doc = """Deprecated - use disableMotionBlur instead. Override
+        the targeted _camera_'s _shutterClose_ to be equal to the
+        value of its _shutterOpen_, to produce a zero-width shutter
+        interval.  This gives us a convenient way to disable motion
+        blur."""
     )
     uniform token[] materialBindingPurposes = ["full", ""] (
         allowedTokens = ["full", "preview", ""]
@@ -191,13 +203,6 @@ class RenderSettings "RenderSettings" (
         doc = """The image pixel resolution, corresponding to the
         camera's screen window."""
     )
-}
-
-class "RenderSettingsAPI" (
-    doc = """UsdRenderSettingsAPI is a base class for API schemas
-    to encode renderer-specific settings."""
-)
-{
 }
 
 class RenderVar "RenderVar" (
@@ -322,11 +327,17 @@ class RenderProduct "RenderProduct" (
         aspectRatioConformPolicy.
         """
     )
+    uniform bool disableMotionBlur = 0 (
+        doc = """Disable all motion blur by setting the shutter interval
+        of the targeted camera to [0,0] - that is, take only one sample,
+        namely at the current time code."""
+    )
     uniform bool instantaneousShutter = 0 (
-        doc = """Override the targeted _camera_'s _shutterClose_ to be
-        equal to the value of its _shutterOpen_, to produce a zero-width
-        shutter interval.  This gives us a convenient way to disable
-        motion blur."""
+        doc = """Deprecated - use disableMotionBlur instead. Override
+        the targeted _camera_'s _shutterClose_ to be equal to the
+        value of its _shutterOpen_, to produce a zero-width shutter
+        interval.  This gives us a convenient way to disable motion
+        blur."""
     )
     rel orderedVars (
         doc = """Specifies the RenderVars that should be consumed and

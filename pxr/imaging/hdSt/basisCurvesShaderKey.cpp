@@ -113,6 +113,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((commonFS,                        "Fragment.CommonTerminals"))
     ((hullColorFS,                     "Fragment.HullColor"))
     ((pointColorFS,                    "Fragment.PointColor"))
+    ((pointShadedFS,                    "Fragment.PointShaded"))
     ((surfaceFS,                       "Fragment.Surface"))
     ((surfaceUnlitFS,                  "Fragment.SurfaceUnlit"))
     ((scalarOverrideFS,                "Fragment.ScalarOverride"))
@@ -135,7 +136,8 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     bool basisWidthInterpolation,
     bool basisNormalInterpolation,
     TfToken shadingTerminal,
-    bool hasAuthoredTopologicalVisibility)
+    bool hasAuthoredTopologicalVisibility,
+    bool pointsShadingEnabled)
     : glslfx(_tokens->baseGLSLFX)
 {
     bool drawThick = (drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE) || 
@@ -306,7 +308,14 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     if (shadingTerminal == HdBasisCurvesReprDescTokens->hullColor) {
         FS[fsIndex++] = _tokens->hullColorFS;
     } else if (shadingTerminal == HdBasisCurvesReprDescTokens->pointColor) {
-        FS[fsIndex++] = _tokens->pointColorFS;
+        if (pointsShadingEnabled) {
+            // Let points for these curves be affected by the associated
+            // material so as to appear coherent with the other shaded surfaces
+            // that may be part of this rprim.
+            FS[fsIndex++] = _tokens->pointShadedFS;
+        } else {
+            FS[fsIndex++] = _tokens->pointColorFS;
+        }
     } else if (shadingTerminal ==
                HdBasisCurvesReprDescTokens->surfaceShaderUnlit) {
         FS[fsIndex++] = _tokens->surfaceUnlitFS;

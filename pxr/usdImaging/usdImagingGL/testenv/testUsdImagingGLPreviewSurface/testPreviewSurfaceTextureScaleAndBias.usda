@@ -1,0 +1,204 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Z"
+)
+
+class Mesh "Plane" {
+    float3[] extent = [(-2, 0, -2), (2, 0, 2)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 2, 3]
+    rel material:binding = </Scene/Looks/Material>
+    point3f[] points = [(-2, 0, -2), (2, 0, -2), (2, 0, 2), (-2, 0, 2)]
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+    float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+        interpolation = "vertex"
+    )
+}
+
+def Xform "Scene" (
+    kind = "component"
+)
+{
+    def Scope "Looks"
+    {
+        def Material "Material1"
+        {
+            string inputs:textureCoords = "st"
+            token outputs:surface.connect = </Scene/Looks/Material1/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </Scene/Looks/Material1/Texture.outputs:rgb>
+                token outputs:surface
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                string inputs:varname.connect = </Scene/Looks/Material1.inputs:textureCoords>
+                float2 outputs:result
+            }
+
+            def Shader "Texture"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @WoodPlanks.jpg@
+                float2 inputs:st.connect = </Scene/Looks/Material1/Primvar.outputs:result>
+                float3 outputs:rgb
+            }
+        }
+
+        def Material "Material2"
+        {
+            string inputs:textureCoords = "st"
+            token outputs:surface.connect = </Scene/Looks/Material2/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </Scene/Looks/Material2/Texture.outputs:rgb>
+                token outputs:surface
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                string inputs:varname.connect = </Scene/Looks/Material2.inputs:textureCoords>
+                float2 outputs:result
+            }
+
+            def Shader "Texture"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @WoodPlanks.jpg@
+                float4 inputs:bias = (0, 0, 0, 0)
+                float4 inputs:scale = (1, 0.2, 1, 1)
+                float2 inputs:st.connect = </Scene/Looks/Material2/Primvar.outputs:result>
+                float3 outputs:rgb
+            }
+        }
+
+        def Material "Material3"
+        {
+            string inputs:textureCoords = "st"
+            token outputs:surface.connect = </Scene/Looks/Material3/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </Scene/Looks/Material3/Texture.outputs:rgb>
+                token outputs:surface
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                string inputs:varname.connect = </Scene/Looks/Material3.inputs:textureCoords>
+                float2 outputs:result
+            }
+
+            def Shader "Texture"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @WoodPlanks.jpg@
+                float4 inputs:bias = (0.2, 0, 0.2, 0)
+                float4 inputs:scale = (1, 1, 1, 1)
+                float2 inputs:st.connect = </Scene/Looks/Material3/Primvar.outputs:result>
+                float3 outputs:rgb
+                float outputs:a
+                float outputs:b
+                float outputs:g
+                float outputs:r
+            }
+        }
+
+        def Material "Material4"
+        {
+            string inputs:textureCoords = "st"
+            token outputs:surface.connect = </Scene/Looks/Material4/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </Scene/Looks/Material4/Texture.outputs:rgb>
+                token outputs:surface
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                string inputs:varname.connect = </Scene/Looks/Material4.inputs:textureCoords>
+                float2 outputs:result
+            }
+
+            def Shader "Texture"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @WoodPlanks.jpg@
+                float4 inputs:bias = (0.2, 0, 0.2, 0)
+                float4 inputs:scale = (1, 0.2, 1, 1)
+                float2 inputs:st.connect = </Scene/Looks/Material4/Primvar.outputs:result>
+                float3 outputs:rgb
+            }
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def "Plane1" (
+            references = </Plane>
+        )
+        {
+            double3 xformOp:translate = ( -2.25, 0, 2.25)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material1>
+        }
+
+        def "Plane2" (
+            references = </Plane>
+        )
+        {
+            double3 xformOp:translate = ( 2.25, 0, 2.25)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material2>
+        }
+
+        def "Plane3" (
+            references = </Plane>
+        )
+        {
+            double3 xformOp:translate = ( -2.25, 0,-2.25)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material3>
+        }
+
+        def "Plane4" (
+            references = </Plane>
+        )
+        {
+            double3 xformOp:translate = ( 2.25, 0, -2.25)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material4>
+        }
+    }
+
+    def Xform "Lights"
+    {
+        # Set the purpose for lights to "render" so that they're not included
+        # in the test's frameAll calculation.
+        uniform token purpose = "render"
+
+        def DomeLight "Light"
+        {
+        }
+    }
+}
+

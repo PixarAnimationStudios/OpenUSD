@@ -179,7 +179,7 @@ HdxPackageDefaultDomeLightTexture()
 
     static TfToken domeLightTexture = (useTex)
         ? _GetTexturePath("StinsonBeach.tex")
-        : _GetTexturePath("StinsonBeach.exr");
+        : _GetTexturePath("StinsonBeach.hdr");
     return domeLightTexture;
 }
 

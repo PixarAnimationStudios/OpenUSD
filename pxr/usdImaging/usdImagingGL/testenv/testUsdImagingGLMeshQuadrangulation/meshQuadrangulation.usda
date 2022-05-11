@@ -1,0 +1,116 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+class "TestMesh"
+{
+#                 0--------4---18--7---24----9
+#                /|        |        \  25   /
+#               / |        |         17   23
+#              /  |        |          \  /
+#             10  12 hole 14   19      6.
+#            / 13 |        |          /  \
+#           /     |        |        16 22 21
+#          /      |        |        /      \
+#         1---11--2--------3---15--5---20---8
+    int[] faceVertexCounts = [3, 4, 5, 3, 3]
+    int[] faceVertexIndices = [0, 1, 2,
+                               0, 2, 3, 4,
+                               4, 3, 5, 6 ,7,
+                               6, 5, 8,
+                               7, 6, 9]
+    int[] holeIndices = []
+    point3f[] points = [ ( 1.0, 0.0, 1.0),#0
+                         ( 0.0, 0.0, 0.0),
+                         ( 1.0, 0.0, 0.0),#2
+                         ( 2.0, 0.0, 0.0),
+                         ( 2.0, 0.0, 1.0),
+                         ( 3.0, 0.0, 0.0),#5
+                         ( 3.5, 0.0, 0.5),
+                         ( 3.0, 0.0, 1.0),#7
+                         ( 4.0, 0.0, 0.0),
+                         ( 4.0, 0.0, 1.0)]
+}
+
+class "TestMeshUniformColor" (
+    inherits = </TestMesh>
+)
+{
+    color3f[] primvars:displayColor = [ (1.0, 0.0, 0.0), #face0
+                                        (0.0, 1.0, 0.0), #face1
+                                        (0.0, 0.0, 1.0), #face2
+                                        (0.0, 1.0, 1.0), #face3
+                                        (1.0, 1.0, 0.0)  #face4
+                                      ] (
+        interpolation = "uniform"
+    )
+}
+
+class "TestMeshFacevaryingColor" (
+    inherits = </TestMesh>
+)
+{
+    # faceVarying implies that we need to supply a value for each vertex of a
+    # face.
+    color3f[] primvars:displayColor = [ (1.0, 0.0, 0.0), #face0
+                                        (0.0, 1.0, 0.0),
+                                        (0.0, 0.0, 1.0),
+
+                                        (0.0, 1.0, 0.0), #face1
+                                        (0.0, 1.0, 0.0),
+                                        (0.0, 1.0, 0.0),
+                                        (0.0, 1.0, 0.0),
+
+                                        (1.0, 0.0, 0.0), #face2
+                                        (0.0, 1.0, 0.0),
+                                        (0.0, 0.0, 1.0),
+                                        (0.0, 1.0, 1.0),
+                                        (1.0, 1.0, 1.0),
+
+                                        (1.0, 0.0, 0.0), #face3
+                                        (0.0, 1.0, 0.0),
+                                        (0.0, 0.0, 1.0),
+
+                                        (1.0, 0.0, 0.0), #face4
+                                        (0.0, 1.0, 0.0),
+                                        (0.0, 0.0, 1.0) ] (
+        interpolation = "faceVarying"
+    )
+}
+
+def Xform "Geom" (
+    kind = "component"
+)
+{
+    def Mesh "NoHoleUniformColor" (
+        inherits = </TestMeshUniformColor>
+    )
+    {
+    }
+
+    def Mesh "HoleUniformColor" (
+        inherits = </TestMeshUniformColor>
+    )
+    {
+        int[] holeIndices = [1]
+        custom double3 xformOp:translate = (0, 0, -2)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Mesh "NoHoleFacevaryingColor" (
+        inherits = </TestMeshFacevaryingColor>
+    )
+    {
+        custom double3 xformOp:translate = (0, 0, -4)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # A Hydra bug in refining facevarying primvars for topologies with hole(s)
+    # makes this case non-deterministic, and the test noisy.
+    # Once it is addressed, we can uncomment it.
+    #def Mesh "HoleFacevaryingColor" (inherits=</TestMeshFacevaryingColor>) {
+    #    int[] holeIndices = [1]
+    #    custom double3 xformOp:translate = (0, 0, -6)
+    #    uniform token[] xformOpOrder = ["xformOp:translate"]
+    #}
+}

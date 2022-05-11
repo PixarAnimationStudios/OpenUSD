@@ -142,6 +142,7 @@ public:
     };
     // Returns true if it contains data sources for an indexed primvar value
     // and for indices.
+    HD_API
     bool IsIndexed();
 
 

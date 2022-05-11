@@ -42,6 +42,7 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
         TfToken("trace"),
         TfToken("usd"),
         TfToken("usdGeom"),
+        TfToken("usdShade"),
         TfToken("vt"),
         TfToken("work")
     };

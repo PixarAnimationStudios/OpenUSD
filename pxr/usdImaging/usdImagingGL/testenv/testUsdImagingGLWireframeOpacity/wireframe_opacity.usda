@@ -1,0 +1,37 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+# Simple scene to test wireframe drawing of two meshes, one that's almost
+# transparent and another that's opaque. We want the wireframe to be opaque and
+# ignore primvar displayOpacity so it's clearly visible when rendered as
+# a wireframe alone (i.e., not wireframe on surface)
+
+# Expected output is the same wireframe color for both cubes when drawn as
+# wireframes
+
+def Cube "NotFullyOpaque"
+{
+    color3f[] primvars:displayColor = [(1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 0, 1), (0, 0, 1), (0, 1, 1), (0, 1, 1)] (
+        interpolation = "vertex"
+    )
+    float[] primvars:displayOpacity = [0.3] (
+        interpolation = "constant"
+    )
+    custom double3 xformOp:translate = (-5, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Cube "FullyOpaque"
+{
+    color3f[] primvars:displayColor = [(1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 0, 1), (0, 0, 1), (0, 1, 1), (0, 1, 1)] (
+        interpolation = "vertex"
+    )
+    float[] primvars:displayOpacity = [1] (
+        interpolation = "constant"
+    )
+    custom double3 xformOp:translate = (0, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+

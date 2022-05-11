@@ -238,6 +238,9 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
     // Record the drawmode for use in UpdateForTime().
     _drawModeMap.insert(std::make_pair(cachePath, drawMode));
 
+    // Record the material for use in remove/resync.
+    _materialMap.insert(std::make_pair(cachePath, materialPath));
+
     return cachePath;
 }
 
@@ -248,15 +251,52 @@ UsdImagingGLDrawModeAdapter::_IsMaterialPath(SdfPath const& path) const
 }
 
 void
+UsdImagingGLDrawModeAdapter::ProcessPrimResync(SdfPath const& cachePath,
+        UsdImagingIndexProxy* index)
+
+{
+    if (cachePath.GetNameToken() == _tokens->material) {
+        // Ignore a resync of the material on the theory that the rprim resync
+        // will take care of it.
+        return;
+    }
+
+    ProcessPrimRemoval(cachePath, index);
+
+    // XXX(UsdImagingPaths): We use the cachePath directly here,
+    // same as PrimAdapter::ProcessPrimResync.  Its use is questionable.
+    // Instanced cards prims should be removed, never resynced, since they are
+    // repopulated by instancer population loops, so this is probably ok?
+    index->Repopulate(cachePath);
+}
+
+void
+UsdImagingGLDrawModeAdapter::ProcessPrimRemoval(SdfPath const& cachePath,
+        UsdImagingIndexProxy* index)
+{
+    if (cachePath.GetNameToken() == _tokens->material) {
+        // Ignore a removal of the material on the theory that the rprim removal
+        // will take care of it.
+        return;
+    }
+
+    // Remove the material
+    _MaterialMap::const_iterator it = _materialMap.find(cachePath);
+    if (it != _materialMap.end()) {
+        index->RemoveSprim(HdPrimTypeTokens->material, it->second);
+        _materialMap.erase(it);
+    }
+
+    // Remove the rprim
+    _drawModeMap.erase(cachePath);
+    index->RemoveRprim(cachePath);
+}
+
+void
 UsdImagingGLDrawModeAdapter::_RemovePrim(SdfPath const& cachePath,
                                        UsdImagingIndexProxy* index)
 {
-    if (_IsMaterialPath(cachePath)) {
-        index->RemoveSprim(HdPrimTypeTokens->material, cachePath);
-    } else {
-        _drawModeMap.erase(cachePath);
-        index->RemoveRprim(cachePath);
-    }
+    TF_CODING_ERROR("_RemovePrim called on draw mode adapter!");
 }
 
 void
@@ -577,7 +617,11 @@ UsdImagingGLDrawModeAdapter::GetMaterialId(UsdPrim const& prim,
                                            SdfPath const& cachePath, 
                                            UsdTimeCode time) const
 {
-    return _GetMaterialPath(prim);
+    _MaterialMap::const_iterator it = _materialMap.find(cachePath);
+    if (it != _materialMap.end()) {
+        return it->second;
+    }
+    return SdfPath();
 }
 
 /*virtual*/
@@ -1487,8 +1531,13 @@ UsdImagingGLDrawModeAdapter::GetTransform(UsdPrim const& prim,
 {
     // If the draw mode is instantiated on an instance, prim will be
     // the instance prim, but we want to ignore transforms on that
-    // prim since the instance adapter will handle them.
-    if (prim.IsInstance()) {
+    // prim since the instance adapter will incorporate it into the per-instance
+    // transform and we don't want to double-transform the prim.
+    //
+    // Note: if the prim is unloaded (because unloaded prims are drawing as
+    // bounds), we skip the normal instancing machinery and need to handle
+    // the transform ourselves.
+    if (prim.IsInstance() && prim.IsLoaded()) {
         return GfMatrix4d(1.0);
     } else {
         return BaseAdapter::GetTransform(

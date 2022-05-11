@@ -283,7 +283,7 @@ class CrateFile
 {
 public:
     struct Version;
-
+    
 private:
     // A move-only helper struct to represent a range of data in a FILE*, with
     // optional "ownership" of that FILE* (i.e. responsibility to fclose upon
@@ -475,6 +475,63 @@ public:
     friend struct ValueRep;
     friend struct TimeSamples;
 
+    struct Version {
+        // Not named 'major' since that's a macro name conflict on POSIXes.
+        uint8_t majver, minver, patchver;
+        
+        constexpr Version() : Version(0,0,0) {}
+        constexpr Version(uint8_t majver, uint8_t minver, uint8_t patchver)
+            : majver(majver), minver(minver), patchver(patchver) {}
+        
+        explicit Version(CrateFile::_BootStrap const &boot)
+            : Version(boot.version[0], boot.version[1], boot.version[2]) {}
+
+        /// Read a version from a dotted decimal integer string, e.g. "1.2.3".
+        static Version FromString(char const *str);
+
+        /// Return a version number as a single 32-bit integer.  From most to
+        /// least significant, the returned integer's bytes are 0,
+        /// major-version, minor-version, patch-version.
+        constexpr uint32_t AsInt() const {
+            return static_cast<uint32_t>(majver) << 16 |
+                static_cast<uint32_t>(minver) << 8 |
+                static_cast<uint32_t>(patchver);
+        }
+
+        /// Return a dotted decimal integer string for this version,
+        /// e.g. "1.2.3".
+        std::string AsString() const;
+
+        /// Return true if this version is not zero in all components.
+        bool IsValid() const { return AsInt() != 0; }
+
+        // Return true if fileVer has the same major version as this, and has a
+        // lesser or same minor version.  Patch version irrelevant, since the
+        // versioning scheme specifies that patch level changes are
+        // forward-compatible.
+        bool CanRead(Version const &fileVer) const {
+            return fileVer.majver == majver && fileVer.minver <= minver;
+        }
+
+        // Return true if fileVer has the same major version as this, and has a
+        // lesser minor version, or has the same minor version and a lesser or
+        // equal patch version.
+        bool CanWrite(Version const &fileVer) const {
+            return fileVer.majver == majver &&
+                (fileVer.minver < minver ||
+                 (fileVer.minver == minver && fileVer.patchver <= patchver));
+        }
+    
+#define LOGIC_OP(op)                                                    \
+        constexpr bool operator op(Version const &other) const {        \
+            return AsInt() op other.AsInt();                            \
+        }
+        LOGIC_OP(==); LOGIC_OP(!=);
+        LOGIC_OP(<);  LOGIC_OP(>);
+        LOGIC_OP(<=); LOGIC_OP(>=);
+#undef LOGIC_OP
+    };
+
     typedef std::pair<TfToken, VtValue> FieldValuePair;
 
     struct Field {
@@ -576,7 +633,10 @@ public:
     static bool CanRead(string const &assetPath);
     static bool CanRead(string const &assetPath, ArAssetSharedPtr const &asset);
 
+    static Version GetSoftwareVersion();
     static TfToken const &GetSoftwareVersionToken();
+
+    Version GetFileVersion() const;
     TfToken GetFileVersionToken() const;
 
     static std::unique_ptr<CrateFile> CreateNew();

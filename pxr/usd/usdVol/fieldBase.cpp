@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdVolFieldBase,
-        TfType::Bases< UsdGeomBoundable > >();
+        TfType::Bases< UsdGeomXformable > >();
     
 }
 
@@ -90,7 +90,7 @@ UsdVolFieldBase::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames;
     static TfTokenVector allNames =
-        UsdGeomBoundable::GetSchemaAttributeNames(true);
+        UsdGeomXformable::GetSchemaAttributeNames(true);
 
     if (includeInherited)
         return allNames;

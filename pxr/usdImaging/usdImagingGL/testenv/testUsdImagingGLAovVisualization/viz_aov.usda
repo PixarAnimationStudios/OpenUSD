@@ -1,0 +1,129 @@
+#usda 1.0
+(
+    doc = "Rows of shapes"
+    upAxis = "Y"
+)
+
+def Xform "Scene"
+{
+    def Xform "Row1"
+    {
+        def Xform "Sphere"
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-4, 0, -2.5, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Sphere "Sphere"
+            {
+                color3f[] primvars:displayColor = [(0.8, 0.8, 0.1)]
+            }
+        }
+
+        def Xform "Capsule"
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1.5, 0, -2.5, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Capsule "XAxis"
+            {
+                uniform token axis = "X"
+                float3[] extent = [(-1, -0.5, -0.5), (1, 0.5, 0.5)]
+                color3f[] primvars:displayColor = [(0.8, 0.1, 0.1)]
+            }
+
+            def Capsule "YAxis"
+            {
+                uniform token axis = "Y"
+                float3[] extent = [(-0.5, -1, -0.5), (0.5, 1, 0.5)]
+                color3f[] primvars:displayColor = [(0.1, 0.8, 0.1)]
+            }
+
+            def Capsule "ZAxis"
+            {
+                uniform token axis = "Z"
+                color3f[] primvars:displayColor = [(0.1, 0.1, 0.8)]
+            }
+        }
+
+        def Xform "Cylinder"
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1.5, 0, -2.5, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Cylinder "XAxis"
+            {
+                uniform token axis = "X"
+                float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+                color3f[] primvars:displayColor = [(0.8, 0.1, 0.1)]
+            }
+
+            def Cylinder "YAxis"
+            {
+                uniform token axis = "Y"
+                float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+                color3f[] primvars:displayColor = [(0.1, 0.8, 0.1)]
+            }
+
+            def Cylinder "ZAxis"
+            {
+                uniform token axis = "Z"
+                color3f[] primvars:displayColor = [(0.1, 0.1, 0.8)]
+            }
+        }
+
+        def Xform "Cones"
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (4, 0, -2.5, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Cone "XAxis"
+            {
+                uniform token axis = "X"
+                float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+                color3f[] primvars:displayColor = [(0.8, 0.1, 0.1)]
+            }
+
+            def Cone "YAxis"
+            {
+                uniform token axis = "Y"
+                float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+                color3f[] primvars:displayColor = [(0.1, 0.8, 0.1)]
+            }
+
+            def Cone "ZAxis"
+            {
+                uniform token axis = "Z"
+                color3f[] primvars:displayColor = [(0.1, 0.1, 0.8)]
+            }
+        }
+    }
+
+    def Xform "Row2" (
+        references = </Scene/Row1>
+    )
+    {
+        float3 xformOp:rotateXYZ = (0, 45, 0)
+        double3 xformOp:translate = (0, -5, -15)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def Xform "ScaledRow3" (
+        references = </Scene/Row1>
+    )
+    {
+        float3 xformOp:rotateXYZ = (0, -45, 0)
+        double3 xformOp:translate = (0, -10, -30)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+}
+
+
+def Camera "main_cam"
+{
+    float focalLength = 50
+    float fStop = 2
+    token projection = "perspective"
+
+    double3 xformOp:translate = (0, -5, 50)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}

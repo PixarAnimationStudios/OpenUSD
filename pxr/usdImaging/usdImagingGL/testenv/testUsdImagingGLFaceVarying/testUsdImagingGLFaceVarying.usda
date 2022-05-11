@@ -1,0 +1,269 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+class Mesh "QuadMeshProto"
+{
+    point3f[] points = [
+        (-1, 0, -1),
+        (-0.33333, 0, -1),
+        (0.33333, 0, -1),
+        (1, 0, -1),
+        (-1, 0, -0.33333),
+        (-0.33333, 0, -0.33333),
+        (0.3333, 0, -0.33333),
+        (1, 0, -0.33333),
+        (-1, 0, 0.33333),
+        (-0.33333, 0, 0.33333),
+        (0.33333, 0, 0.33333),
+        (1, 0, 0.33333),
+        (-1, 0, 1),
+        (-0.33333, 0, 1),
+        (0.33333, 0, 1),
+        (1, 0, 1)]
+
+    texCoord2f[] primvars:st_vertex = [
+        (0, 1),
+        (0.33333, 1),
+        (0.66667, 1),
+        (1, 1),
+        (0, 0.66667),
+        (0.33333, 0.66667),
+        (0.66667, 0.66667),
+        (1, 0.66667),
+        (0, 0.33333),
+        (0.33333, 0.33333),
+        (0.66667, 0.33333),
+        (1, 0.33333),
+        (0, 0),
+        (0.33333, 0),
+        (0.66667, 0),
+        (1, 0)] ( interpolation = "vertex" )
+
+    texCoord2f[] primvars:st_faceVarying = [
+        (0, 1),
+        (0.33333, 1),
+        (0.66667, 1),
+        (1, 1),
+        (0, 0.66667),
+        (0.33333, 0.66667),
+        (0.66667, 0.66667),
+        (1, 0.66667),
+        (0, 0.33333),
+        (0.33333, 0.33333),
+        (0.66667, 0.33333),
+        (1, 0.33333),
+        (0, 0),
+        (0.33333, 0),
+        (0.66667, 0),
+        (1, 0)] ( interpolation = "faceVarying" )
+    int[] primvars:st_faceVarying:indices = [
+        0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6,
+        4, 5, 9, 8, 5, 6, 10, 9, 6, 7, 11, 10,
+        8, 9, 13, 12, 9, 10, 14, 13, 10, 11, 15, 14]
+
+    float[] primvars:scalarField = [
+        -1, -0.696732, -0.696732, -1,
+        -0.696732, 0.499991, 0.499991, -0.696732,
+        -0.696732, 0.499991, 0.499991, -0.696732,
+        -1, -0.696732, -0.696732, -1] ( interpolation = "vertex" )
+
+    color3f[] primvars:faceColor = [
+        (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1),
+        (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0),
+        (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1),
+        (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0),
+        (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1),
+        (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0),
+        (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1),
+        (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0),
+        (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
+            interpolation = "faceVarying" )
+
+    int[] holeIndices = [4]
+
+    int[] faceVertexCounts = [
+        4, 4, 4, 4, 4, 4, 4, 4, 4]
+    int[] faceVertexIndices = [
+        0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6,
+        4, 5, 9, 8, 5, 6, 10, 9, 6, 7, 11, 10,
+        8, 9, 13, 12, 9, 10, 14, 13, 10, 11, 15, 14]
+
+    uniform token subdivisionScheme = "catmullClark"
+    uniform token boundaryInterpolation = "edgeOnly"
+}
+
+class Mesh "TriangleMeshProto"
+{
+    point3f[] points = [
+        (-1, 0, -1),
+        (-0.33333, 0, -1),
+        (0.33333, 0, -1),
+        (1, 0, -1),
+        (-1, 0, -0.33333),
+        (-0.33333, 0, -0.33333),
+        (0.3333, 0, -0.33333),
+        (1, 0, -0.33333),
+        (-1, 0, 0.33333),
+        (-0.33333, 0, 0.33333),
+        (0.33333, 0, 0.33333),
+        (1, 0, 0.33333),
+        (-1, 0, 1),
+        (-0.33333, 0, 1),
+        (0.33333, 0, 1),
+        (1, 0, 1)]
+
+    texCoord2f[] primvars:st_vertex = [
+        (0, 1),
+        (0.33333, 1),
+        (0.66667, 1),
+        (1, 1),
+        (0, 0.66667),
+        (0.33333, 0.66667),
+        (0.66667, 0.66667),
+        (1, 0.66667),
+        (0, 0.33333),
+        (0.33333, 0.33333),
+        (0.66667, 0.33333),
+        (1, 0.33333),
+        (0, 0),
+        (0.33333, 0),
+        (0.66667, 0),
+        (1, 0)] ( interpolation = "vertex" )
+
+    texCoord2f[] primvars:st_faceVarying = [
+        (0, 1),
+        (0.33333, 1),
+        (0.66667, 1),
+        (1, 1),
+        (0, 0.66667),
+        (0.33333, 0.66667),
+        (0.66667, 0.66667),
+        (1, 0.66667),
+        (0, 0.33333),
+        (0.33333, 0.33333),
+        (0.66667, 0.33333),
+        (1, 0.33333),
+        (0, 0),
+        (0.33333, 0),
+        (0.66667, 0),
+        (1, 0)] ( interpolation = "faceVarying" )
+    int[] primvars:st_faceVarying:indices = [
+        0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6,
+        4, 5, 9, 4, 9, 8, 5, 6, 10, 5, 10, 9, 6, 7, 11, 6, 11, 10,
+        8, 9, 13, 8, 13, 12, 9, 10, 14, 9, 14, 13, 10, 11, 15, 10, 15, 14]
+
+    float[] primvars:scalarField = [
+        -1, -0.696732, -0.696732, -1,
+        -0.696732, 0.499991, 0.499991, -0.696732,
+        -0.696732, 0.499991, 0.499991, -0.696732,
+        -1, -0.696732, -0.696732, -1] ( interplation = "vertex" )
+
+    color3f[] primvars:faceColor = [
+        (1, 1, 1), (1, 1, 1), (1, 1, 1), (0, 0, 0), (0, 0, 0), (0, 0, 0),
+        (1, 1, 1), (1, 1, 1), (1, 1, 1), (0, 0, 0), (0, 0, 0), (0, 0, 0),
+        (1, 1, 1), (1, 1, 1), (1, 1, 1), (0, 0, 0), (0, 0, 0), (0, 0, 0),
+        (1, 1, 1), (1, 1, 1), (1, 1, 1), (0, 0, 0), (0, 0, 0), (0, 0, 0),
+        (1, 1, 1), (1, 1, 1), (1, 1, 1), (0, 0, 0), (0, 0, 0), (0, 0, 0),
+        (1, 1, 1), (1, 1, 1), (1, 1, 1), (0, 0, 0), (0, 0, 0), (0, 0, 0),
+        (1, 1, 1), (1, 1, 1), (1, 1, 1), (0, 0, 0), (0, 0, 0), (0, 0, 0),
+        (1, 1, 1), (1, 1, 1), (1, 1, 1), (0, 0, 0), (0, 0, 0), (0, 0, 0),
+        (1, 1, 1), (1, 1, 1), (1, 1, 1), (0, 0, 0), (0, 0, 0), (0, 0, 0)] (
+            interpolation = "faceVarying" )
+
+    int[] holeIndices = [8,9]
+
+    int[] faceVertexCounts = [
+        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+    int[] faceVertexIndices = [
+        0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6,
+        4, 5, 9, 4, 9, 8, 5, 6, 10, 5, 10, 9, 6, 7, 11, 6, 11, 10,
+        8, 9, 13, 8, 13, 12, 9, 10, 14, 9, 14, 13, 10, 11, 15, 10, 15, 14]
+
+    uniform token subdivisionScheme = "loop"
+    uniform token boundaryInterpolation = "edgeOnly"
+}
+
+over "Collections" (
+    prepend apiSchemas = ["CollectionAPI:material:Material"]
+)
+{
+    uniform token collection:material:Material:expansionRule = "expandPrims"
+    rel collection:material:Material:includes = [
+        </Scene/Geom/QuadMesh>,
+        </Scene/Geom/TriangleMesh>
+    ]
+}
+
+def Scope "Scene" (
+    kind = "component"
+)
+{
+    rel material:binding:collection:preview:Material = [
+        </Collections.collection:material:Material>,
+        </Scene/Looks/Material>
+    ]
+
+    def Scope "Looks"
+    {
+        def Material "Material"
+        {
+            string inputs:coords = "st_faceVarying"
+            token outputs:surface.connect = </Scene/Looks/Material/PbrPreview.outputs:surface>
+            token outputs:displacement.connect = </Scene/Looks/Material/PbrPreview.outputs:displacement>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.18, 0.18, 0.18)
+                float  inputs:opacity = 1.0
+                int    inputs:useSpecularWorkflow = 0
+                color3f inputs:specularColor = (1, 1, 1)
+                float  inputs:metallic = 0.0
+                float  inputs:roughness = 1.0
+                float  inputs:clearcoat = 0.0
+                float  inputs:clearcoatRoughness = 0.01
+                color3f inputs:emissiveColor = (0, 0, 0)
+                float  inputs:displacement = 0
+                float  inputs:occlusion = 1
+                float3 inputs:normal = (0, 1, 0)
+                float  inputs:ior = 1.5
+
+                color3f inputs:diffuseColor.connect = </Scene/Looks/Material/Diffuse.outputs:rgb>
+
+                token outputs:surface
+                token outputs:displacement
+            }
+
+            def Shader "Diffuse"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @texture.png@
+                float2 inputs:st.connect = </Scene/Looks/Material/Coords.outputs:result>
+                float3 outputs:rgb
+            }
+
+            def Shader "Coords"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                string inputs:varname.connect = </Scene/Looks/Material.inputs:coords>
+                float2 outputs:result
+            }
+        }
+    }
+
+    def Scope "Geom"
+    {
+        def Mesh "QuadMesh" ( references = </QuadMeshProto> )
+        {
+            double3 xformOp:translate = (-1.25, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Mesh "TriangleMesh" ( references = </TriangleMeshProto> )
+        {
+            double3 xformOp:translate = (1.25, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+}

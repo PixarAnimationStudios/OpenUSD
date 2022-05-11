@@ -121,7 +121,9 @@ _ResolvedPathForFirstTile(
         // naming pattern but the files that are linked do not. We'll
         // let whoever consumes the pattern determine if they want to
         // resolve symlinks themselves.
-        return resolver.Resolve(path);
+        path = resolver.Resolve(path);
+        if (!path.empty())
+            return path;
     }
     return std::string();
 }
@@ -214,8 +216,17 @@ _ResolveAssetAttribute(
             ArJoinPackageRelativePath(firstTilePackage, firstTilePath));
 }
 
-VtValue
-UsdImaging_ResolveMaterialParamValue(
+// Get the value from the usd attribute at given time. If it is an
+// SdfAssetPath containing a UDIM pattern, e.g., //SHOW/myImage.<UDIM>.exr,
+// the resolved path of the SdfAssetPath will be updated to a file path
+// with a UDIM pattern, e.g., /filePath/myImage.<UDIM>.exr.
+// There might be support for different patterns, e.g., myImage._MAPID_.exr,
+// but this function always normalizes it to myImage.<UDIM>.exr.
+//
+// The function assumes that the correct ArResolverContext is bound.
+//
+static VtValue
+_ResolveMaterialParamValue(
     const UsdAttribute& attr,
     const UsdTimeCode& time)
 {
@@ -411,8 +422,7 @@ void _WalkGraph(
             // we resolve the asset path with the udim pattern to a file
             // path with a udim pattern, e.g.,
             // /someDir/myImage.<UDIM>.exr to /filePath/myImage.<UDIM>.exr.
-            const VtValue value =
-                UsdImaging_ResolveMaterialParamValue(attr, time);
+            const VtValue value = _ResolveMaterialParamValue(attr, time);
             if (!value.IsEmpty()) {
                 node.parameters[inputName] = value;
             }
@@ -438,7 +448,7 @@ void _WalkGraph(
 }
 
 void
-UsdImaging_BuildHdMaterialNetworkFromTerminal(
+UsdImagingBuildHdMaterialNetworkFromTerminal(
     UsdPrim const& usdTerminal,
     TfToken const& terminalIdentifier,
     TfTokenVector const& shaderSourceTypes,
@@ -520,7 +530,7 @@ bool _IsGraphTimeVarying(UsdShadeConnectableAPI const & shadeNode,
 }
 
 bool
-UsdImaging_IsHdMaterialNetworkTimeVarying(
+UsdImagingIsHdMaterialNetworkTimeVarying(
     UsdPrim const& usdTerminal)
 {
     _PathSet visitedNodes;

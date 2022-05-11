@@ -259,5 +259,53 @@ class TestUsdEditTarget(unittest.TestCase):
             attrName = 'ReferencedModelSessionSublayerStringAttr'
             _CreateAndTestPrimAttribute(stage, primPath, attrName)
 
+    def test_StageEditTargetInstancing2(self):
+        rootLayer = Sdf.Layer.CreateAnonymous(".usda")
+        rootLayer.ImportFromString('''\
+        #usda 1.0
+
+        def "Class"
+        {
+        }
+
+        def "A" (
+            inherits = </Class>
+            instanceable = True
+        )
+        {
+        }
+        ''')
+
+        stage = Usd.Stage.Open(rootLayer)
+
+        # Set up an edit target that points across the inherit arc
+        # between /A and /Class. We expect that any edits
+        # to /Model or descendants will be mapped to /Class.
+        instance = stage.GetPrimAtPath('/A')
+        n = instance.GetPrimIndex().rootNode.children[0]
+        self.assertEqual(n.arcType, Pcp.ArcTypeInherit)
+        stage.SetEditTarget(Usd.EditTarget(stage.GetRootLayer(), n))
+
+        # These editing operations would fail if they were authoring
+        # local opinions because local overrides on descendants of
+        # instances are ignored. However, because the stage's edit
+        # target remaps these edits to the inherited class, these
+        # operations succeed.
+        instanceChild = stage.DefinePrim('/A/Child')
+        self.assertTrue(instanceChild.IsInstanceProxy())
+        self.assertEqual(instanceChild.GetPath(), '/A/Child')
+        self.assertTrue(stage.GetRootLayer().GetPrimAtPath(
+            '/Class/Child'))
+
+        instanceChildAttr = instanceChild.CreateAttribute(
+            'testAttr', Sdf.ValueTypeNames.String)
+        self.assertEqual(instanceChildAttr.GetPath(), '/A/Child.testAttr')
+        self.assertTrue(stage.GetRootLayer().GetAttributeAtPath(
+            '/Class/Child.testAttr'))
+
+        self.assertTrue(instanceChildAttr.Set("foo"))
+        self.assertEqual(stage.GetRootLayer().GetAttributeAtPath(
+            '/Class/Child.testAttr').default, "foo")
+
 if __name__ == "__main__":
     unittest.main()

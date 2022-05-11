@@ -351,11 +351,15 @@ class HdRetainedSmallVectorDataSource : public HdVectorDataSource
 public:
     HD_DECLARE_DATASOURCE(HdRetainedSmallVectorDataSource);
 
+    HD_API
     HdRetainedSmallVectorDataSource(
         size_t count, 
         HdDataSourceBaseHandle *values);
 
+    HD_API
     size_t GetNumElements() override;
+
+    HD_API
     HdDataSourceBaseHandle GetElement(size_t element) override;
 
 private:
@@ -368,6 +372,7 @@ HD_DECLARE_DATASOURCE_HANDLES(HdRetainedSmallVectorDataSource);
 
 /// Given a VtValue, attempt to create a RetainedTypedSampledDataSource of
 /// the appropriate type via type dispatch.
+HD_API
 HdSampledDataSourceHandle
 HdCreateTypedRetainedDataSource(VtValue const &v);
 

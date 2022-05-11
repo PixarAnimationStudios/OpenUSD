@@ -198,7 +198,7 @@ HdxRenderTask::_HasDrawItems() const
 {
     if (HdSt_RenderPass* hdStRenderPass =
             dynamic_cast<HdSt_RenderPass*>(_pass.get())) {
-        return hdStRenderPass->HasDrawItems();
+        return hdStRenderPass->HasDrawItems(GetRenderTags());
     } else {
         // Non-Storm backends don't typically use the draw item subsystem.
         // Return true to signify that there is rendering work to do.

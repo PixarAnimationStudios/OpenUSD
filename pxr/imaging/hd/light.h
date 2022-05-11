@@ -30,8 +30,6 @@
 #include "pxr/imaging/hd/sprim.h"
 
 #include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/vt/dictionary.h"
-#include "pxr/base/vt/value.h"
 
 #include <vector>
 
@@ -50,9 +48,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((textureFile, "texture:file"))                         \
     ((textureFormat, "texture:format"))                     \
     (width)                                                 \
+    (ambient)                                               \
     (diffuse)                                               \
     (specular)                                              \
     (normalize)                                             \
+    (hasShadow)                                             \
     ((shapingFocus, "shaping:focus"))                       \
     ((shapingFocusTint, "shaping:focusTint"))               \
     ((shapingConeAngle, "shaping:cone:angle"))              \
@@ -73,18 +73,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_PUBLIC_TOKENS(HdLightTokens, HD_API, HD_LIGHT_TOKENS);
 
 class HdSceneDelegate;
-typedef std::vector<class HdLight const *> HdLightPtrConstVector;
+using HdLightPtrConstVector = std::vector<class HdLight const *>;
 
 /// \class HdLight
 ///
 /// A light model, used in conjunction with HdRenderPass.
 ///
-class HdLight : public HdSprim {
+class HdLight : public HdSprim
+{
 public:
     HD_API
     HdLight(SdfPath const & id);
     HD_API
-    virtual ~HdLight();
+    ~HdLight() override;
 
     // Change tracking for HdLight
     enum DirtyBits : HdDirtyBits {

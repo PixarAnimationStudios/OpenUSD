@@ -9,21 +9,11 @@ if (NOT ${PXR_BUILD_GPU_SUPPORT} OR NOT ${PXR_ENABLE_GL_SUPPORT})
     return()
 endif()
 
-if (OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK)
-    add_definitions(-DOPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK)
-endif()
-if (OPENSUBDIV_HAS_GLSL_COMPUTE)
-    add_definitions(-DOPENSUBDIV_HAS_GLSL_COMPUTE)
-endif()
-
 set(optionalLibs "")
 set(optionalIncludeDirs "")
 set(optionalPublicClasses "")
 set(optionalPrivateClasses "")
 if (${PXR_ENABLE_MATERIALX_SUPPORT})
-    add_definitions(-DPXR_MATERIALX_STDLIB_DIR="${MATERIALX_STDLIB_DIR}")
-    add_definitions(-DPXR_MATERIALX_BASE_DIR="${MATERIALX_BASE_DIR}")
-
     list(APPEND optionalLibs ${MATERIALX_LIBRARIES} hdMtlx)
     list(APPEND optionalIncludeDirs ${MATERIALX_INCLUDE_DIRS})
     list(APPEND optionalPrivateClasses
@@ -44,6 +34,7 @@ pxr_library(hdSt
         glf
         hd
         hgiGL
+        hgiInterop
         sdr
         tf
         trace
@@ -80,7 +71,7 @@ pxr_library(hdSt
         glConversions
         glslfxShader
         glslProgram
-        glUtils
+        bufferUtils
         hgiConversions
         hioConversions
         imageShaderRenderPass
@@ -141,15 +132,16 @@ pxr_library(hdSt
         extCompComputeShader
         fieldTextureCpuData
         imageShaderShaderKey
-        immediateDrawBatch
         indirectDrawBatch
         materialNetworkShader
         materialParam
         meshShaderKey
         meshTopology 
+        pipelineDrawBatch
         pointsShaderKey
         quadrangulate
         resourceBinder
+        resourceLayout
         shaderKey
         subdivision
         triangulate

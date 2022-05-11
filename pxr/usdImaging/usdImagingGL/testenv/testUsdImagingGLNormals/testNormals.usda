@@ -1,0 +1,133 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Xform "R"
+{
+    custom float xformOp:rotateX = 45
+    uniform token[] xformOpOrder = ["xformOp:rotateX"]
+
+    def Xform "Cube_SmoothNormals" (
+        kind = "component"
+    )
+    {
+        custom double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Mesh "M"
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+            point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+            uniform token subdivisionScheme = "none"
+        }
+    }
+
+    def Xform "Cube_ConstantNormals" (
+        kind = "component"
+    )
+    {
+        custom double3 xformOp:translate = (2, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Mesh "M"
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+            point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+            normal3f[] primvars:normals = [(1, 0, 0)] (
+                interpolation = "constant"
+            )
+            uniform token subdivisionScheme = "none"
+        }
+    }
+
+    def Xform "Cube_UniformNormals" (
+        kind = "component"
+    )
+    {
+        custom double3 xformOp:translate = (4, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Mesh "M"
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+            normal3f[] normals = [(0, 0, 1), (0, 1, 0), (0, 0, -1), (0, -1, 0), (1, 0, 0), (-1, 0, 0)] (
+                interpolation = "uniform"
+            )
+            point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+            uniform token subdivisionScheme = "none"
+        }
+    }
+
+    def Xform "Cube_VertexNormals" (
+        kind = "component"
+    )
+    {
+        custom double3 xformOp:translate = (6, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Mesh "M"
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+            normal3f[] normals = [(-0.577, -0.577, 0.577), (0.577, -0.577, 0.577), (-0.577, 0.577, 0.577), (0.577, 0.577, 0.577), (-0.577, 0.577, -0.577), (0.577, 0.577, -0.577), (-0.577, -0.577, -0.577), (0.577, -0.577, -0.577)] (
+                interpolation = "vertex"
+            )
+            point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+            uniform token subdivisionScheme = "none"
+        }
+    }
+
+    def Xform "Cube_FvarNormals" (
+        kind = "component"
+    )
+    {
+        custom double3 xformOp:translate = (8, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Mesh "M"
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+            normal3f[] normals = [(1, 0, 0)] (
+                interpolation = "constant"
+            )
+            point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+            # Faces: +Z, +Y, -Z, -Y, +X, -X
+            # Positive faces: smooth shaded
+            # Negative faces: flat shaded
+            normal3f[] primvars:normals = [(-0.577, -0.577, 0.577), (0.577, -0.577, 0.577), (0.577, 0.577, 0.577), (-0.577, 0.577, 0.577), (-0.577, 0.577, 0.577), (0.577, 0.577, 0.577), (0.577, 0.577, -0.577), (-0.577, 0.577, -0.577), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0.577, -0.577, 0.577), (0.577, -0.577, -0.577), (0.577, 0.577, -0.577), (0.577, 0.577, 0.577), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)] (
+                interpolation = "faceVarying"
+            )
+            uniform token subdivisionScheme = "none"
+        }
+    }
+
+    def Xform "Cube_CatmullConstantNormals" (
+        kind = "component"
+    )
+    {
+        custom double3 xformOp:translate = (10, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Mesh "M"
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+            normal3f[] normals = [(1, 0, 0)] (
+                interpolation = "constant"
+            )
+            point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+        }
+    }
+}
+

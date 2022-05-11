@@ -63,7 +63,7 @@ public:
     /// current time, but does not change the accumulated time of the \c
     /// TfStopwatch.
     inline void Start() {
-        _startTick = ArchGetTickTime();
+        _startTick = ArchGetStartTickTime();
     }
 
     /// Increases the accumulated time stored in the \c TfStopwatch.
@@ -77,7 +77,7 @@ public:
     /// "sample count" is simply the number of times that \c Stop() has been
     /// called.
     inline void Stop() {
-        _nTicks += ArchGetTickTime() - _startTick;
+        _nTicks += ArchGetStopTickTime() - _startTick;
         _sampleCount++;
     }
 

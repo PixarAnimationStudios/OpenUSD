@@ -22,11 +22,25 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import UsdUtils, Sdf, Usd, Sdr, UsdShade, Tf
-import os
+from pxr import UsdUtils, Sdf, Usd, Sdr, UsdShade, Tf, Plug
+import os, sys
 import unittest
 
 class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
+    ErrorHandlingTest = False
+
+    @classmethod
+    def setUpClass(cls):
+        # Register applied schemas 
+        pr = Plug.Registry()
+        testPlugins = pr.RegisterPlugins(os.path.abspath("resources"))
+        assert len(testPlugins) == 1, \
+                "Failed to load expected test plugin"
+        assert testPlugins[0].name == \
+            "TestUsdUtilsUpdateSchemaWithSdrAttrPruning", \
+                "Failed to load expected test plugin"
+        return True
+
     def _GetSdrNode(self, assetFile, shaderDefPrimPath):
         stage = Usd.Stage.Open(assetFile)
         self.assertTrue(stage)
@@ -39,6 +53,9 @@ class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
         return node
     
     def test_APISchemaGen(self):
+        if self.ErrorHandlingTest:
+            self.skipTest("Running Error Handling Test, skipping.");
+            return
         sdrNode = self._GetSdrNode("testSdrNodeAPISchema.usda", 
                 "/TestSchemaAPI")
         self.assertTrue(sdrNode)
@@ -46,6 +63,9 @@ class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
         UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
     def test_APIIdentifierMissing(self):
+        if self.ErrorHandlingTest:
+            self.skipTest("Running Error Handling Test, skipping.")
+            return
         sdrNode = self._GetSdrNode("testAPIIdentifierMissing.usda", 
                 "/APIIdentifierMissing")
         self.assertTrue(sdrNode)
@@ -53,6 +73,9 @@ class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
         UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
     def test_OverrideAPISchemaGen(self):
+        if self.ErrorHandlingTest:
+            self.skipTest("Running Error Handling Test, skipping.");
+            return
         sdrNode = self._GetSdrNode("testSdrNodeAPISchema.usda", 
                 "/TestSchemaAPI")
         self.assertTrue(sdrNode)
@@ -60,6 +83,9 @@ class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
         UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
     def test_OmitDuplicateProperties(self):
+        if self.ErrorHandlingTest:
+            self.skipTest("Running Error Handling Test, skipping.");
+            return
         sdrNode = self._GetSdrNode("testDuplicateProps.usda",
                 "/TestDuplicatePropsAPI")
         self.assertTrue(sdrNode)
@@ -67,6 +93,9 @@ class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
         UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
     def test_OmitDuplicatePropertiesTypeMismatch(self):
+        if self.ErrorHandlingTest:
+            self.skipTest("Running Error Handling Test, skipping.");
+            return
         sdrNode = self._GetSdrNode("testDuplicatePropsTypeMismatch.usda",
                 "/TestDuplicatePropsAPI")
         self.assertTrue(sdrNode)
@@ -74,6 +103,9 @@ class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
         UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
     def test_rmanConcreteSchema(self):
+        if self.ErrorHandlingTest:
+            self.skipTest("Running Error Handling Test, skipping.");
+            return
         sdrNode = self._GetSdrNode("testSdrNodeConcreteSchema.usda",
                 "/TestSchemaConcrete")
         self.assertTrue(sdrNode)
@@ -81,6 +113,9 @@ class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
         UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
     def test_UsdShadeConnectableAPIMetadata(self):
+        if self.ErrorHandlingTest:
+            self.skipTest("Running Error Handling Test, skipping.");
+            return
         sdrNode = self._GetSdrNode("testUsdShadeConnectableAPI.usda", 
                 "/TestUsdShadeConnectableAPIMetadataAPI")
         self.assertTrue(sdrNode)
@@ -89,6 +124,9 @@ class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
         UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
     def test_UsdShadeConnectableAPIMetadata2(self):
+        if self.ErrorHandlingTest:
+            self.skipTest("Running Error Handling Test, skipping.");
+            return
         sdrNode = self._GetSdrNode("testUsdShadeConnectableAPI2.usda", 
                 "/TestUsdShadeConnectableAPIMetadataAPI")
         self.assertTrue(sdrNode)
@@ -96,5 +134,49 @@ class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
             Sdf.Layer.CreateNew("./resultUsdShadeConnectableAPIMetadata2.usda")
         UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
+    def test_NamespacePrefixNonShaderNode(self):
+        if self.ErrorHandlingTest:
+            self.skipTest("Running Error Handling Test, skipping.");
+            return
+        sdrNode = self._GetSdrNode("testSdrNodeNonShaderNamespacePrefix.usda", 
+                "/TestNamespacePrefix")
+        self.assertTrue(sdrNode)
+        resultLayer = \
+            Sdf.Layer.CreateNew(
+                "./testSdrNodeNonShaderNamespacePrefixResult.usda")
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, 
+                "myRenderContext")
+
+    def test_NamespacePrefixShaderNode(self):
+        if self.ErrorHandlingTest:
+            self.skipTest("Running Error Handling Test, skipping.");
+            return
+        sdrNode = self._GetSdrNode("testSdrNodeShaderNamespacePrefix.usda", 
+                "/TestNamespacePrefix")
+        self.assertTrue(sdrNode)
+        resultLayer = \
+            Sdf.Layer.CreateNew(
+                "./testSdrNodeShaderNamespacePrefixResult.usda")
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
+
+    def test_NamespacePrefixOutputTerminal(self):
+        if not self.ErrorHandlingTest:
+            self.skipTest("Running normal tests, skipping error handling test");
+            return
+        sdrNode = self._GetSdrNode("testSdrNodeWithOutputAndNSPrefix.usda", 
+                "/TestNamespacePrefix")
+        self.assertTrue(sdrNode)
+        resultLayer = Sdf.Layer.CreateNew(
+                "./testSdrNodeShaderNamespaceOutputTerminal.usda")
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, 
+                "myRenderContext")
+
 if __name__ == "__main__":
-    unittest.main()
+    # Since py2 currently does not support -k option for test matching, we need
+    # to use argument to check if the ErrorHandling tests need to be run or not
+    # Eg: 
+    # testUsdUtilsUpdateSchemaWithSdrNode TestUsdUpdateSchemaWithSdrNode True
+    # will set self.ErrorHandlingTest and skip normal schema gen tests.
+    if len(sys.argv) > 2:
+        TestUsdUpdateSchemaWithSdrNode.ErrorHandlingTest = sys.argv.pop()
+    unittest.main(verbosity=2)

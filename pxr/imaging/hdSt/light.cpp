@@ -141,6 +141,7 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
         l.SetAmbient(GfVec4f(0.0f));
         l.SetDiffuse(GfVec4f(0.0f));
         l.SetSpecular(GfVec4f(0.0f));
+        l.SetHasIntensity(false);
         return l;
     }
 
@@ -149,12 +150,10 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
             .Get<GfVec3f>();
 
     // Color temperature
-    VtValue enableColorTemperatureVal = 
-        sceneDelegate->GetLightParamValue(id,
+    VtValue enableColorTemperatureVal = sceneDelegate->GetLightParamValue(id,
             HdLightTokens->enableColorTemperature);
     if (enableColorTemperatureVal.GetWithDefault<bool>(false)) {
-        VtValue colorTemperatureVal = 
-            sceneDelegate->GetLightParamValue(id,
+        VtValue colorTemperatureVal = sceneDelegate->GetLightParamValue(id,
                 HdLightTokens->colorTemperature);
         if (colorTemperatureVal.IsHolding<float>()) {
             float colorTemperature = colorTemperatureVal.Get<float>();
@@ -229,7 +228,10 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
     // Calculate the final color of the light
     GfVec4f c(hdc[0]*intensity, hdc[1]*intensity, hdc[2]*intensity, 1.0f); 
 
-    // Diffuse & Specular multiplier
+    // Ambient, Diffuse & Specular multipliers
+    float ambientMultiplier = 
+        sceneDelegate->GetLightParamValue(id, HdLightTokens->ambient)
+            .GetWithDefault<float>(0.0f);
     float diffuseMultiplier = 
         sceneDelegate->GetLightParamValue(id, HdLightTokens->diffuse)
             .GetWithDefault<float>(1.0f);
@@ -246,13 +248,16 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
             .GetWithDefault<float>(0.0f);
 
     // Create the Glf Simple Light object that will be used by the rest
-    // of the pipeline. No support for shadows for this translated light.
+    // of the pipeline.
     GlfSimpleLight l;
     l.SetHasIntensity(intensity != 0.0f);
-    l.SetAmbient(GfVec4f(0.0f));
+    l.SetAmbient(ambientMultiplier * c);
     l.SetDiffuse(diffuseMultiplier * c);
-    l.SetSpecular(GfVec4f(specularMultiplier * intensity));
-    l.SetHasShadow(false);
+    l.SetSpecular(specularMultiplier * c);
+    l.SetHasShadow(
+        sceneDelegate->GetLightParamValue(id, HdLightTokens->hasShadow)
+            .GetWithDefault<bool>(false));
+
     if (_lightType == HdPrimTypeTokens->rectLight ||
         _lightType == HdPrimTypeTokens->diskLight) {
         l.SetSpotCutoff(shapingConeAngle);
@@ -280,6 +285,7 @@ HdStLight::_PrepareDomeLight(
     GlfSimpleLight l;
     l.SetHasShadow(false);
     l.SetIsDomeLight(true);
+    l.SetAttenuation(GfVec3f(0.0f, 0.0f, 0.0f));
 
     // The intensity value is set to 0 if light is not visible
     if (!sceneDelegate->GetVisible(id) ||
@@ -288,7 +294,53 @@ HdStLight::_PrepareDomeLight(
         l.SetHasIntensity(false);
         return l;
     }
+    
+    // Get the color of the light
+    GfVec3f hdc = sceneDelegate->GetLightParamValue(id, HdLightTokens->color)
+        .Get<GfVec3f>();
 
+    // Color temperature
+    VtValue enableColorTemperatureVal = 
+        sceneDelegate->GetLightParamValue(id,
+            HdLightTokens->enableColorTemperature);
+    if (enableColorTemperatureVal.GetWithDefault<bool>(false)) {
+        VtValue colorTemperatureVal = 
+            sceneDelegate->GetLightParamValue(id,
+                HdLightTokens->colorTemperature);
+        if (colorTemperatureVal.IsHolding<float>()) {
+            float colorTemperature = colorTemperatureVal.Get<float>();
+            hdc = GfCompMult(hdc,
+                _BlackbodyTemperatureAsRgb(colorTemperature));
+        }
+    }
+
+    // Intensity
+    float intensity = 
+        sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity)
+            .Get<float>();
+
+    // Exposure
+    float exposure = 
+        sceneDelegate->GetLightParamValue(id, HdLightTokens->exposure)
+            .Get<float>();
+    intensity *= powf(2.0f, GfClamp(exposure, -50.0f, 50.0f));
+
+    // Calculate the final color of the light
+    GfVec4f c(hdc[0]*intensity, hdc[1]*intensity, hdc[2]*intensity, 1.0f); 
+
+    // Diffuse & Specular multiplier
+    float diffuseMultiplier = 
+        sceneDelegate->GetLightParamValue(id, HdLightTokens->diffuse)
+            .GetWithDefault<float>(1.0f);
+    float specularMultiplier = 
+        sceneDelegate->GetLightParamValue(id, HdLightTokens->specular)
+            .GetWithDefault<float>(1.0f);
+
+    l.SetHasIntensity(intensity != 0.0f);
+    l.SetDiffuse(diffuseMultiplier * c);
+    l.SetSpecular(specularMultiplier * c);
+
+    // Dome light texture
     {
         const VtValue v = sceneDelegate->GetLightParamValue(
                 id, HdLightTokens->textureFile);
@@ -407,13 +459,13 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
     // Shadow Params
     if (bits & DirtyShadowParams) {
         _params[HdLightTokens->shadowParams] =
-                sceneDelegate->Get(id, HdLightTokens->shadowParams);
+            sceneDelegate->GetLightParamValue(id, HdLightTokens->shadowParams);
     }
 
     // Shadow Collection
     if (bits & DirtyCollection) {
         VtValue vtShadowCollection =
-                sceneDelegate->Get(id, HdLightTokens->shadowCollection);
+            sceneDelegate->GetLightParamValue(id, HdLightTokens->shadowCollection);
 
         // Optional
         if (vtShadowCollection.IsHolding<HdRprimCollection>()) {
@@ -457,10 +509,11 @@ HdStLight::Get(TfToken const &token) const
 HdDirtyBits
 HdStLight::GetInitialDirtyBitsMask() const
 {
-    // In the case of regular lights we want to sync all dirty bits, but
-    // for area lights coming from the scenegraph we just want to extract
+    // In the case of simple and distant lights we want to sync all dirty bits,
+    // but for area lights coming from the scenegraph we just want to extract
     // the Transform and Params for now.
-    if (_lightType == HdPrimTypeTokens->simpleLight) {
+    if (_lightType == HdPrimTypeTokens->simpleLight || 
+        _lightType == HdPrimTypeTokens->distantLight) {
         return AllDirty;
     } else {
         return (DirtyParams | DirtyTransform);

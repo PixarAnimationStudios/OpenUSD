@@ -266,6 +266,10 @@ static void DoUnitTest()
     });
     TF_AXIOM(table.find(SdfPath("/a2/a2/a2/a2"))->second == "found");
     TF_AXIOM(table.find(SdfPath("/a3/a3/a3/a3"))->second == "a");
+
+    // Test iterator.HasChild()
+    TF_AXIOM(table.find(SdfPath("/a2/a2/a2")).HasChild() == true);
+    TF_AXIOM(table.find(SdfPath("/a2/a2/a2/a2")).HasChild() == false);
 }
 
 

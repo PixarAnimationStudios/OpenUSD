@@ -49,6 +49,8 @@
 
 #include "pxr/imaging/pxOsd/tokens.h"
 
+#include "pxr/base/gf/camera.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -118,8 +120,9 @@ private:
 }
 
 // ------------------------------------------------------------------------
-Hdx_UnitTestDelegate::Hdx_UnitTestDelegate(HdRenderIndex *index)
-    : HdSceneDelegate(index, SdfPath::AbsoluteRootPath())
+Hdx_UnitTestDelegate::Hdx_UnitTestDelegate(HdRenderIndex *index, 
+                                           SdfPath const& delegateId)
+    : HdSceneDelegate(index, delegateId)
     , _refineLevel(0)
 {
     // add camera
@@ -154,15 +157,48 @@ Hdx_UnitTestDelegate::SetCamera(GfMatrix4d const &viewMatrix,
     SetCamera(_cameraId, viewMatrix, projMatrix);
 }
 
+static
+HdCamera::Projection
+_ToHd(const GfCamera::Projection projection)
+{
+    switch(projection) {
+    case GfCamera::Perspective:
+        return HdCamera::Perspective;
+    case GfCamera::Orthographic:
+        return HdCamera::Orthographic;
+    }
+    TF_CODING_ERROR("Bad GfCamera::Projection value");
+    return HdCamera::Perspective;
+}
+
 void
 Hdx_UnitTestDelegate::SetCamera(SdfPath const &cameraId,
                                 GfMatrix4d const &viewMatrix,
                                 GfMatrix4d const &projMatrix)
 {
+    GfCamera cam;
+    cam.SetFromViewAndProjectionMatrix(viewMatrix,
+                                       projMatrix);
+
+    _cameraTransforms[cameraId] = cam.GetTransform();
+
     _ValueCache &cache = _valueCacheMap[cameraId];
-    cache[HdCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
-    cache[HdCameraTokens->worldToViewMatrix] = VtValue(viewMatrix);
-    cache[HdCameraTokens->projectionMatrix] = VtValue(projMatrix);
+    cache[HdCameraTokens->projection] = VtValue(_ToHd(cam.GetProjection()));
+    cache[HdCameraTokens->focalLength] = VtValue(
+        cam.GetFocalLength() * float(GfCamera::FOCAL_LENGTH_UNIT));
+    cache[HdCameraTokens->horizontalAperture] = VtValue(
+        cam.GetHorizontalAperture() * float(GfCamera::APERTURE_UNIT));
+    cache[HdCameraTokens->verticalAperture] = VtValue(
+        cam.GetVerticalAperture() * float(GfCamera::APERTURE_UNIT));
+    cache[HdCameraTokens->horizontalApertureOffset] = VtValue(
+        cam.GetHorizontalApertureOffset() * float(GfCamera::APERTURE_UNIT));
+    cache[HdCameraTokens->verticalApertureOffset] = VtValue(
+        cam.GetVerticalApertureOffset() * float(GfCamera::APERTURE_UNIT));
+    cache[HdCameraTokens->clippingRange] = VtValue(
+        cam.GetClippingRange());
+
+    cache[HdCameraTokens->windowPolicy] = VtValue(
+        CameraUtilFit);
 
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(cameraId,
                                                        HdCamera::AllDirty);
@@ -175,8 +211,17 @@ Hdx_UnitTestDelegate::AddCamera(SdfPath const &id)
     GetRenderIndex().InsertSprim(HdPrimTypeTokens->camera, this, id);
     _ValueCache &cache = _valueCacheMap[id];
     cache[HdCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
-    cache[HdCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1.0));
-    cache[HdCameraTokens->projectionMatrix] = VtValue(GfMatrix4d(1.0));
+}
+
+void
+Hdx_UnitTestDelegate::UpdateCamera(SdfPath const &id,
+                                   TfToken const &key,
+                                   VtValue value)
+{
+    _ValueCache &cache = _valueCacheMap[id];
+    cache[key] = value;
+    HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+    tracker.MarkSprimDirty(id, HdCamera::AllDirty);
 }
 
 void
@@ -228,13 +273,46 @@ Hdx_UnitTestDelegate::SetLight(SdfPath const &id, TfToken const &key,
 }
 
 void
+Hdx_UnitTestDelegate::RemoveLight(SdfPath const &id)
+{
+    // remove light
+    GetRenderIndex().RemoveSprim(HdPrimTypeTokens->simpleLight, id);
+    _valueCacheMap.erase(id);
+}
+
+void
+Hdx_UnitTestDelegate::UpdateTransform(SdfPath const& id,
+                                      GfMatrix4f const& mat)
+{
+    if(_meshes.find(id) != _meshes.end()) {
+        _meshes[id].transform = GfMatrix4d(mat);
+        HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+        tracker.MarkRprimDirty(id, HdChangeTracker::DirtyTransform);
+    }
+    if (_cameraTransforms.find(id) != _cameraTransforms.end()) {
+        _cameraTransforms[id] = GfMatrix4d(mat);
+        HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+        tracker.MarkSprimDirty(id, HdChangeTracker::DirtyTransform);
+    }        
+}
+
+void
 Hdx_UnitTestDelegate::AddRenderBuffer(SdfPath const &id,
-                                      const HdRenderBufferDescriptor &desc)
+                                      HdRenderBufferDescriptor const &desc)
 {
     GetRenderIndex().InsertBprim(HdPrimTypeTokens->renderBuffer, this, id);
 
     _ValueCache &cache = _valueCacheMap[id];
     cache[_tokens->renderBufferDescriptor] = desc;
+}
+
+void
+Hdx_UnitTestDelegate::UpdateRenderBuffer(SdfPath const &id,
+                                         HdRenderBufferDescriptor const &desc)
+{
+    _ValueCache &cache = _valueCacheMap[id];
+    cache[_tokens->renderBufferDescriptor] = desc;
+    GetRenderIndex().GetChangeTracker().MarkBprimDirty(id, HdRenderBuffer::DirtyDescription);
 }
 
 void
@@ -724,6 +802,9 @@ Hdx_UnitTestDelegate::GetTransform(SdfPath const & id)
 {
     if(_meshes.find(id) != _meshes.end()) {
         return _meshes[id].transform;
+    }
+    if (_cameraTransforms.find(id) != _cameraTransforms.end()) {
+        return _cameraTransforms[id];
     }
     return GfMatrix4d(1);
 }

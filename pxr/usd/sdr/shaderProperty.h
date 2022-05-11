@@ -236,8 +236,10 @@ public:
     const NdrSdfTypeIndicator GetTypeAsSdfType() const override;
 
     /// Accessor for default value corresponding to the SdfValueTypeName
-    /// returned by GetTypeAsSdfType. Note that this could be different than
-    /// value returned by GetDefaultValue.
+    /// returned by GetTypeAsSdfType. Note that this is different than 
+    /// GetDefaultValue which returns the default value associated with the 
+    /// SdrPropertyType and may differ from the SdfValueTypeName, example when
+    /// sdrUsdDefinitionType metadata is specified for a sdr property.
     ///
     /// \sa GetTypeAsSdfType
     SDR_API

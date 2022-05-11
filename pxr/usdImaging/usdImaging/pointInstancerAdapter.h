@@ -260,6 +260,11 @@ public:
         int instanceIndex,
         HdInstancerContext *instancerContext) const override;
 
+    virtual SdfPathVector GetScenePrimPaths(
+        SdfPath const& cachePath,
+        std::vector<int> const& instanceIndices,
+        std::vector<HdInstancerContext> *instancerCtxs) const override;
+
     virtual bool PopulateSelection(
         HdSelection::HighlightMode const& highlightMode,
         SdfPath const &cachePath,

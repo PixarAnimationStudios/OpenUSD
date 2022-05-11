@@ -96,6 +96,24 @@ class TestTfType(unittest.TestCase):
             self.assertNotEqual(hash(t), hash(Tf.Type.GetRoot()))
             self.assertTrue(t)
 
+    def test_BytesOrUnicodeArgs(self):
+        expectedType = Tf.Type.FindByName('int')
+        self.assertTrue(expectedType)
+
+        # test bytes arg
+        typeNameBytes = b'int'
+        t = Tf.Type.FindByName(typeNameBytes)
+        self.assertEqual(expectedType, t)
+        t = Tf.Type(typeNameBytes)
+        self.assertEqual(expectedType, t)
+
+        #test unicode arg
+        typeNameUnicode = u'int'
+        t = Tf.Type.FindByName(typeNameUnicode)
+        self.assertEqual(expectedType, t)
+        t = Tf.Type(typeNameUnicode)
+        self.assertEqual(expectedType, t)
+
     def test_PurePythonHierarchy(self):
         self.assertFalse(self.tBase.isUnknown)
         self.assertIn(Base.__name__, self.tBase.typeName)

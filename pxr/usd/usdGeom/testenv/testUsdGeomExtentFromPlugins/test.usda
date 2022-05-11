@@ -95,3 +95,9 @@ def Capsule "capsule"
     }
 }
 
+def Sphere "AuthoredExtentSphere"
+{
+    float3[] extent = [(-10.0, -10.0, -10.0), (10.0, 10.0, 10.0)]
+    double radius = 2
+}
+

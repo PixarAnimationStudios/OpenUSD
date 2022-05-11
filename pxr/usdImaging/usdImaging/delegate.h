@@ -411,6 +411,12 @@ public:
                      int instanceIndex,
                      HdInstancerContext *instancerContext = nullptr) override;
 
+    USDIMAGING_API
+    virtual SdfPathVector
+    GetScenePrimPaths(SdfPath const& rprimId,
+                      std::vector<int> instanceIndices,
+                      std::vector<HdInstancerContext> *instancerContexts = nullptr) override;
+
     // ExtComputation support
     USDIMAGING_API
     TfTokenVector
@@ -749,6 +755,8 @@ private:
     UsdImaging_CollectionCache _collectionCache;
     UsdImaging_InheritedPrimvarCache _inheritedPrimvarCache;
     UsdImaging_PointInstancerIndicesCache _pointInstancerIndicesCache;
+    UsdImaging_NonlinearSampleCountCache _nonlinearSampleCountCache;
+    UsdImaging_BlurScaleCache _blurScaleCache;
 
     // Pickability
     PickabilityMap _pickablesMap;

@@ -342,10 +342,17 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                     TfType::GetCanonicalTypeName(typeid(*primAdapter)).c_str() :
                     "none");
         }
+
+        UsdPrim instancerPrim = _GetPrim(instancerPath);
+
         // Add this instancer into the render index
         index->InsertInstancer(instancerPath,
-                               _GetPrim(instancerPath),
+                               instancerPrim,
                                ctx.instancerAdapter);
+
+        // Add a dependency to the instance's proto root (to pick up scene
+        // edits to the proto root).
+        index->AddDependency(instancerPath, instancerPrim.GetPrototype());
 
         // Mark this instancer as having a TrackVariability queued, since
         // we automatically queue it in InsertInstancer.
@@ -1357,13 +1364,21 @@ UsdImagingInstanceAdapter::_ResyncPath(SdfPath const& cachePath,
 void UsdImagingInstanceAdapter::ProcessPrimResync(SdfPath const& cachePath,
                                                   UsdImagingIndexProxy* index)
 {
-    _ResyncPath(cachePath, index, /*reload=*/true);
+    if (cachePath.IsPropertyPath()) {
+        _ResyncPath(cachePath.GetParentPath(), index, /*reload=*/true);
+    } else {
+        _ResyncPath(cachePath, index, /*reload=*/true);
+    }
 }
 
 void UsdImagingInstanceAdapter::ProcessPrimRemoval(SdfPath const& cachePath,
                                                    UsdImagingIndexProxy* index)
 {
-    _ResyncPath(cachePath, index, /*reload=*/false);
+    if (cachePath.IsPropertyPath()) {
+        _ResyncPath(cachePath.GetParentPath(), index, /*reload=*/false);
+    } else {
+        _ResyncPath(cachePath, index, /*reload=*/false);
+    }
 }
 
 void
@@ -2384,16 +2399,34 @@ UsdImagingInstanceAdapter::_ComputeInstanceMap(
     return indices;
 }
 
-struct UsdImagingInstanceAdapter::_GetScenePrimPathFn
+/* virtual */
+SdfPath
+UsdImagingInstanceAdapter::GetScenePrimPath(
+    SdfPath const& cachePath,
+    int instanceIndex,
+    HdInstancerContext *instancerContext) const
 {
-    _GetScenePrimPathFn(
+    HD_TRACE_FUNCTION();
+
+    // Pass nullptr to instancerCtxs because this value is never used by
+    // our implementation of this method.
+    SdfPathVector paths = GetScenePrimPaths(
+        cachePath, { instanceIndex }, nullptr);
+    return paths.size() > 0 ? paths[0] : SdfPath();
+}
+
+struct UsdImagingInstanceAdapter::_GetScenePrimPathsFn
+{
+    _GetScenePrimPathsFn(
         const UsdImagingInstanceAdapter* adapter_,
-        int instanceIndex_,
+        const std::vector<int> &instanceIndices_,
         const SdfPath &protoPath_)
         : adapter(adapter_)
-        , instanceIndex(instanceIndex_)
         , protoPath(protoPath_)
-    { }
+    {
+        instanceIndices.insert(
+            instanceIndices_.begin(), instanceIndices_.end());
+    }
 
     void Initialize(size_t numInstances)
     {
@@ -2405,7 +2438,7 @@ struct UsdImagingInstanceAdapter::_GetScenePrimPathFn
         // If this iteration is the right instance index, compose all the USD
         // prototype paths together to get the instance proxy path.  Include the
         // proto path (of the child prim), if one was provided.
-        if (instanceIdx == instanceIndex) {
+        if (instanceIndices.find(instanceIdx) != instanceIndices.end()) {
             SdfPathVector instanceChain;
             // To get the correct prim-in-prototype, we need to add the
             // prototype path to the instance chain.  However, there's a case in
@@ -2421,24 +2454,27 @@ struct UsdImagingInstanceAdapter::_GetScenePrimPathFn
             for (UsdPrim const& prim : instanceContext) {
                 instanceChain.push_back(prim.GetPath());
             }
-            primPath = adapter->_GetPrimPathFromInstancerChain(instanceChain);
-            return false;
+            primPaths.emplace(instanceIdx,
+                adapter->_GetPrimPathFromInstancerChain(instanceChain));
+            // We can stop iterating when we've found a prim path for each
+            // instance index.
+            return primPaths.size() != instanceIndices.size();
         }
         return true;
     }
 
     const UsdImagingInstanceAdapter* adapter;
-    const size_t instanceIndex;
     const SdfPath& protoPath;
-    SdfPath primPath;
+    std::set<int> instanceIndices;
+    std::map<int, SdfPath> primPaths;
 };
 
 /* virtual */
-SdfPath
-UsdImagingInstanceAdapter::GetScenePrimPath(
+SdfPathVector
+UsdImagingInstanceAdapter::GetScenePrimPaths(
     SdfPath const& cachePath,
-    int instanceIndex,
-    HdInstancerContext *instancerContext) const
+    std::vector<int> const& instanceIndices,
+    std::vector<HdInstancerContext> *instancerCtxs) const
 {
     HD_TRACE_FUNCTION();
 
@@ -2451,7 +2487,7 @@ UsdImagingInstanceAdapter::GetScenePrimPath(
     if (_IsChildPrim(usdPrim, cachePath)) {
 
         TF_DEBUG(USDIMAGING_SELECTION).Msg(
-            "GetScenePrimPath: instance proto = %s\n", cachePath.GetText());
+            "GetScenePrimPaths: instance proto = %s\n", cachePath.GetText());
 
         UsdImagingInstancerContext instancerContext;
         _ProtoPrim const& proto = _GetProtoPrim(
@@ -2459,13 +2495,13 @@ UsdImagingInstanceAdapter::GetScenePrimPath(
             cachePath, &instancerContext);
 
         if (!proto.adapter) {
-            return SdfPath();
+            return SdfPathVector(instanceIndices.size());
         }
 
         _InstancerData const* instrData =
             TfMapLookupPtr(_instancerData, instancerContext.instancerCachePath);
         if (!instrData) {
-            return SdfPath();
+            return SdfPathVector(instanceIndices.size());
         }
 
         UsdPrim instancerPrim = _GetPrim(instancerContext.instancerCachePath);
@@ -2474,34 +2510,46 @@ UsdImagingInstanceAdapter::GetScenePrimPath(
         // invisible instances).
         VtIntArray indices = _ComputeInstanceMap(instancerPrim, *instrData, 
             _GetTimeWithOffset(0.0));
+        std::vector<int> remappedIndices;
 
-        instanceIndex = indices[instanceIndex];
+        remappedIndices.reserve(instanceIndices.size());
+        for (size_t i = 0; i < instanceIndices.size(); i++)
+            remappedIndices.push_back(indices[instanceIndices[i]]);
 
-        _GetScenePrimPathFn primPathFn(this, instanceIndex, proto.path);
-        _RunForAllInstancesToDraw(instancerPrim, &primPathFn);
-        return primPathFn.primPath;
+        SdfPathVector result;
+        result.reserve(instanceIndices.size());
+        _GetScenePrimPathsFn primPathsFn(this, remappedIndices, proto.path);
+        _RunForAllInstancesToDraw(instancerPrim, &primPathsFn);
+        for (size_t i = 0; i < remappedIndices.size(); i++)
+            result.push_back(primPathsFn.primPaths[remappedIndices[i]]);
+        return result;
     } else {
 
         TF_DEBUG(USDIMAGING_SELECTION).Msg(
-            "GetScenePrimPath: instance = %s\n", cachePath.GetText());
+            "GetScenePrimPaths: instance = %s\n", cachePath.GetText());
 
         SdfPath const* instancerPath =
             TfMapLookupPtr(_instanceToInstancerMap, cachePath);
         if (instancerPath == nullptr) {
-            return SdfPath();
+            return SdfPathVector(instanceIndices.size());
         }
         _InstancerData const* instrData =
             TfMapLookupPtr(_instancerData, *instancerPath);
         if (instrData == nullptr) {
-            return SdfPath();
+            return SdfPathVector(instanceIndices.size());
         }
-        _GetScenePrimPathFn primPathFn(this, instanceIndex,
+
+        SdfPathVector result;
+        result.reserve(instanceIndices.size());
+        _GetScenePrimPathsFn primPathsFn(this, instanceIndices,
             SdfPath::EmptyPath());
-        _RunForAllInstancesToDraw(_GetPrim(*instancerPath), &primPathFn);
-        return primPathFn.primPath;
+        _RunForAllInstancesToDraw(_GetPrim(*instancerPath), &primPathsFn);
+        for (size_t i = 0; i < instanceIndices.size(); i++)
+            result.push_back(primPathsFn.primPaths[instanceIndices[i]]);
+        return result;
     }
 
-    return SdfPath();
+    return SdfPathVector(instanceIndices.size());
 }
 
 struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn

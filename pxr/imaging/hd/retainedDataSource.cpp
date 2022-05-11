@@ -469,6 +469,7 @@ HdCreateTypedRetainedDataSource(VtValue const &v)
 // HdRetainedTypedSampledDataSource<>::New specializations
 
 template <>
+HD_API
 HdRetainedTypedSampledDataSource<bool>::Handle
 HdRetainedTypedSampledDataSource<bool>::New(const bool &value)
 {

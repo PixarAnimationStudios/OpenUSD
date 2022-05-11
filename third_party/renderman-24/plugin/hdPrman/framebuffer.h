@@ -45,15 +45,39 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdPrmanFramebuffer 
 {
 public:
-    struct HdPrmanAov 
+    enum HdPrmanAccumulationRule {
+        k_accumulationRuleFilter,
+        k_accumulationRuleAverage,
+        k_accumulationRuleMin,
+        k_accumulationRuleMax,
+        k_accumulationRuleZmin,
+        k_accumulationRuleZmax,
+        k_accumulationRuleSum
+    };
+
+    struct AovDesc
     {
         TfToken name;
         HdFormat format;
         VtValue clearValue;
+        HdPrmanAccumulationRule rule;
+
+        bool ShouldNormalizeBySampleCount() const
+        {
+            return format != HdFormatInt32 && rule != k_accumulationRuleMin &&
+                   rule != k_accumulationRuleMax && rule != k_accumulationRuleZmin &&
+                   rule != k_accumulationRuleZmax;
+        }
+    };
+
+    struct AovBuffer
+    {
+        AovDesc desc;
         std::vector<uint32_t> pixels;
     };
-    typedef std::vector<HdPrmanAov> HdPrmanAovList ;
-    typedef std::vector<HdPrmanAov>::iterator HdPrmanAovIt ;
+
+    using AovDescVector = std::vector<AovDesc>;
+    using AovBufferVector = std::vector<AovBuffer>;
 
     HdPrmanFramebuffer();
     ~HdPrmanFramebuffer();
@@ -64,21 +88,26 @@ public:
     static HdPrmanFramebuffer* GetByID(int32_t id);
     static void Register(RixContext*);
 
+    /// Convert the accumulation rule string to the HdPrmanAccumulationRule enum
+    static HdPrmanAccumulationRule ToAccumulationRule(RtUString name);
+
+    /// (Re-)Creates Aov buffers without allocating pixel storage
+    /// (allocated through Resize).
+    void CreateAovBuffers(const AovDescVector &aovDescs);
+
     /// Resize the buffer.
-     void Resize(int width, int height,
+    void Resize(int width, int height,
                 int cropXMin=0, int cropYMin=0,
                 int cropWidth=0, int cropHeight=0);
 
     void Clear();
 
-    void AddAov(TfToken aovName, HdFormat dataType, VtValue clearValue);
-
     std::mutex mutex;
-    HdPrmanAovList aovs;
+    AovBufferVector aovBuffers;
 
     int w, h;
-    int cropOrigin[2] = {0,0};
-    int cropRes[2] = {0,0};
+    int cropOrigin[2];
+    int cropRes[2];
     int32_t id;
 
     // Projection matrix (for the depth output).
@@ -87,8 +116,7 @@ public:
     // Clear functionality.
     bool pendingClear;
 
-    riley::DisplayId dspyId;
-    riley::RenderTargetId rtId;
+    std::atomic<bool> newData;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

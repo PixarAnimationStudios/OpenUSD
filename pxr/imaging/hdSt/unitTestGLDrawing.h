@@ -75,8 +75,9 @@ public:
     virtual void Idle();
 
     HDST_API
-    bool WriteToFile(std::string const & attachment,
-                     std::string const & filename) const;
+    virtual void Present(uint32_t framebuffer) {
+        // do nothing
+    }
 
 protected:
     HDST_API

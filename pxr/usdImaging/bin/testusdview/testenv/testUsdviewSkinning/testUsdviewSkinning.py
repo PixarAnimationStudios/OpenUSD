@@ -23,6 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from __future__ import print_function
 from pxr.UsdAppUtils.complexityArgs import RefinementComplexities
 from pxr.Usdviewq.common import RenderModes, Usd, UsdGeom
 from pxr import Vt, Gf

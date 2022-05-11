@@ -41,8 +41,17 @@ class HgiMetalCapabilities final : public HgiCapabilities
 public:
     HGIMETAL_API
     ~HgiMetalCapabilities() override;
+    
+    HGIMETAL_API
+    int GetAPIVersion() const override;
+    
+    HGIMETAL_API
+    int GetShaderVersion() const override;
 
     MTLResourceOptions defaultStorageMode;
+    bool hasVertexMemoryBarrier;
+    bool useParallelEncoder;
+    bool requiresIndirectDrawFix;
 
 protected:
     friend class HgiMetal;

@@ -45,8 +45,7 @@ struct NdrNodeDiscoveryResult {
         const std::string &sourceCode=std::string(),
         const NdrTokenMap &metadata=NdrTokenMap(),
         const std::string& blindData=std::string(),
-        const TfToken& subIdentifier=TfToken(),
-        const NdrTokenVec& aliases=NdrTokenVec()
+        const TfToken& subIdentifier=TfToken()
     ) : identifier(identifier),
         version(version),
         name(name),
@@ -58,8 +57,7 @@ struct NdrNodeDiscoveryResult {
         sourceCode(sourceCode),
         metadata(metadata),
         blindData(blindData),
-        subIdentifier(subIdentifier),
-        aliases(aliases)
+        subIdentifier(subIdentifier)
     { }
 
     /// The node's identifier.
@@ -146,13 +144,6 @@ struct NdrNodeDiscoveryResult {
     /// subIdentifier is only needed if the asset specifies multiple definitions
     /// rather than a single definition.
     TfToken subIdentifier;
-
-    /// A list of aliases that can be used when looking up the node by 
-    /// identifier in the NdrRegistry.
-    /// 
-    /// See NdrRegistry::GetNodesByIdentifier, NdrRegistry::GetNodeByIdentifier,
-    /// and NdrRegistry::GetNodeByIdentifierAndType.
-    NdrTokenVec aliases;
 };
 
 typedef std::vector<NdrNodeDiscoveryResult> NdrNodeDiscoveryResultVec;

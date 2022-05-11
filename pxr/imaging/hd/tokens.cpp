@@ -75,6 +75,7 @@ bool HdPrimTypeIsLight(TfToken const& primType)
             primType == HdPrimTypeTokens->diskLight ||
             primType == HdPrimTypeTokens->distantLight ||
             primType == HdPrimTypeTokens->domeLight ||
+            primType == HdPrimTypeTokens->light ||
             primType == HdPrimTypeTokens->pluginLight ||
             primType == HdPrimTypeTokens->rectLight ||
             primType == HdPrimTypeTokens->sphereLight);

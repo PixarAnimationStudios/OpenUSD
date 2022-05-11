@@ -64,6 +64,10 @@ public:
     ~HdStMesh() override;
 
     HDST_API
+    void UpdateRenderTag(HdSceneDelegate *delegate,
+                         HdRenderParam *renderParam) override;
+
+    HDST_API
     void Sync(HdSceneDelegate *delegate,
               HdRenderParam   *renderParam,
               HdDirtyBits     *dirtyBits,
@@ -345,6 +349,7 @@ private:
                                    // the prim was created
     bool _displayOpacity : 1;
     bool _occludedSelectionShowsThrough : 1;
+    bool _pointsShadingEnabled : 1;
 
     std::unique_ptr<_FvarTopologyTracker> _fvarTopologyTracker;
 };

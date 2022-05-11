@@ -1,0 +1,28 @@
+#usda 1.0
+(
+    doc = "Test Subdiv Tags"
+    endFrame = 1
+    startFrame = 1
+    upAxis = "Z"
+)
+
+def Mesh "pPlane1" (
+    kind = "model"
+)
+{
+    int[] cornerIndices = [5]
+    float[] cornerSharpnesses = [5]
+    int[] creaseIndices = [2, 3]
+    int[] creaseLengths = [2]
+    float[] creaseSharpnesses = [5]
+    Vec3f[] extent = [(-1, 0, -1), (1, 0, 1)]
+    int[] faceVertexCounts = [4, 4, 4, 4, 4]
+    PointIndex[] faceVertexIndices = [0, 1, 2, 3, 3, 2, 5, 4, 4, 5, 6, 7, 2, 8, 9, 5, 5, 9, 10, 6]
+    int[] holeIndices = [1]
+    token interpolateBoundary = "edgeOnly"
+    PointFloat[] points = [(-1, 0, 1), (-1, 0, 0), (-0.5, 0, 0), (-0.5, 0, 1), (0, 0, 1), (0.5, 0, 0), (1, 0, 0), (1, 0, 1), (-0.5, 0, -1), (0, 0, -1), (1, 0, -1)]
+    ColorFloat[] primvars:displayColor = [(1, 1, 1)]
+    custom Matrix4d xformOp:transform = ( (400, 0, 0, 0), (0, 400, 0, 0), (0, 0, 400, 0), (0, -600, 600, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+

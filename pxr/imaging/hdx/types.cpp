@@ -109,6 +109,8 @@ const HioFormat FORMAT_DESC[] =
 
     HioFormatFloat32, // HdFormatFloat32UInt8
 
+    HioFormatInt32,   // PackedInt1010102
+
 };
 
 // A few random format validations to make sure out Hio table stays aligned

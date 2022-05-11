@@ -655,7 +655,7 @@ public:
             ++dataIndex;
         }
 
-        bindingData->Swap(contextData);
+        bindingData->UncheckedSwap(contextData);
 
         _ContextStack& contextStack = _threadContextStack.local();
         if (contextStack.empty()) {

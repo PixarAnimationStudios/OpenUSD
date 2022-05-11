@@ -1,0 +1,126 @@
+#usda 1.0
+(
+    defaultPrim = "Volume"
+    endFrame = 250
+    startFrame = 1
+    upAxis = "Y"
+)
+
+def Material "TwoFieldMaterial" (
+    doc = "A material reading density from a field and albedo from a constant primvar"
+)
+{
+    token outputs:volume.connect = </TwoFieldMaterial/Volume.outputs:volume>
+
+    def Shader "Volume"
+    {
+        uniform asset info:glslfx:sourceAsset = @volumeShaderTwoFields.glslfx@
+        uniform token info:implementationSource = "sourceAsset"
+        float inputs:albedo.connect = </TwoFieldMaterial/AlbedoReader.outputs:result>
+        float inputs:density.connect = </TwoFieldMaterial/DensityReader.outputs:result>
+        float inputs:densityScale.connect = </TwoFieldMaterial/DensityScaleReader.outputs:result>
+        float inputs:heat.connect = </TwoFieldMaterial/HeatReader.outputs:result>
+        float inputs:heatScale.connect = </TwoFieldMaterial/HeatScaleReader.outputs:result>
+        token outputs:volume
+    }
+
+    def Shader "DensityReader"
+    {
+        uniform token info:id = "HwFieldReader_float"
+        token inputs:fieldname = "density"
+        float outputs:result
+    }
+
+    def Shader "HeatReader"
+    {
+        uniform token info:id = "HwFieldReader_float"
+        token inputs:fieldname = "heat"
+        float outputs:result
+    }
+
+    def Shader "AlbedoReader"
+    {
+        uniform token info:id = "UsdPrimvarReader_float"
+        string inputs:varname = "albedo"
+        float outputs:result
+    }
+
+    def Shader "DensityScaleReader"
+    {
+        uniform token info:id = "UsdPrimvarReader_float"
+        string inputs:varname = "densityScale"
+        float outputs:result
+    }
+
+    def Shader "HeatScaleReader"
+    {
+        uniform token info:id = "UsdPrimvarReader_float"
+        string inputs:varname = "heatScale"
+        float outputs:result
+    }
+}
+
+def Volume "Volume"
+{
+    float3[] extent = [(-40, -30, -30), (30, 30, 100)]
+    rel field:density = </Volume/Density>
+    rel field:heat = </Volume/Heat>
+    rel material:binding:preview = </TwoFieldMaterial>
+    float primvars:albedo = 0.8 (
+        interpolation = "constant"
+    )
+    float primvars:densityScale = 3 (
+        interpolation = "constant"
+    )
+    float primvars:heatScale = 10 (
+        interpolation = "constant"
+    )
+    float xformOp:rotateX = -90
+    double3 xformOp:scale = (1, 1, 1)
+    double3 xformOp:translate = (0, -3, 0)
+    token[] xformOpOrder = ["xformOp:translate", "xformOp:scale", "xformOp:rotateX"]
+
+    def OpenVDBAsset "Density"
+    {
+        token fieldName = "density"
+        asset filePath = @densityAndHeat.vdb@
+    }
+
+    def OpenVDBAsset "Heat"
+    {
+        token fieldName = "heat"
+        asset filePath = @densityAndHeat.vdb@
+    }
+}
+
+def Camera "main_cam"
+{
+    float focalLength = 35
+    float focusDistance = 100
+    float fStop = 160
+    double xformOp:rotateX = -30
+    double xformOp:rotateY = 30
+    double3 xformOp:translate = (0, 30, 60)
+    token[] xformOpOrder = ["xformOp:rotateY", "xformOp:translate", "xformOp:rotateX"]
+}
+
+def Xform "Lights"
+{
+    double3 xformOp:translate = (0, 3, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def DistantLight "Left"
+    {
+        color3f inputs:color = (0.8, 0.2, 0.2)
+        float inputs:exposure = 3
+        float xformOp:rotateY = -90
+        uniform token[] xformOpOrder = ["xformOp:rotateY"]
+    }
+    def DistantLight "Right"
+    {
+        color3f inputs:color = (0.2, 0.2, 0.8)
+        float inputs:exposure = 3
+        float xformOp:rotateY = 90
+        uniform token[] xformOpOrder = ["xformOp:rotateY"]
+    }
+}

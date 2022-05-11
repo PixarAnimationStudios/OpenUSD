@@ -259,7 +259,7 @@ WRAP_CUSTOM {
             class_<UsdGeomImageable::PurposeInfo>("PurposeInfo")
                 .def(init<>())
                 .def(init<const TfToken &, bool>())
-                .def("__nonzero__", &_Nonzero)
+                .def(TfPyBoolBuiltinFuncName, &_Nonzero)
                 .def(self == self)
                 .def(self != self)
                 .add_property("purpose", &_GetPurpose, &_SetPurpose)

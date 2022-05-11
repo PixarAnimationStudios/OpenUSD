@@ -234,6 +234,12 @@ public:
             return result;
         }
 
+        /// Returns true if incrementing this iterator would move to a child
+        /// entry, false otherwise.
+        bool HasChild() const {
+            return bool(_entry->firstChild);
+        }
+
     protected:
         friend class boost::iterator_core_access;
         friend class SdfPathTable;

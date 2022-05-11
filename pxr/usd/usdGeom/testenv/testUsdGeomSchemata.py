@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+# pylint: disable=map-builtin-not-iterating
+
 import sys, unittest
 from pxr import Sdf, Usd, UsdGeom, Vt, Gf, Tf
 

@@ -52,7 +52,7 @@ public:
     /// This information is useful to prevent unnecessary resource allocation
     /// and pipeline state changes.
     HDST_API
-    bool HasDrawItems() const;
+    bool HasDrawItems(TfTokenVector const &renderTags) const;
 
 protected:
     virtual void _Execute(HdRenderPassStateSharedPtr const &renderPassState,
@@ -87,8 +87,8 @@ private:
     // The version number of the render tags opinion of tasks.
     int _taskRenderTagsVersion;
     
-    // Cache the render tags parameter passed to _Execute().
-    TfTokenVector _renderTags;
+    // The renderTags passed to _Execute(), for comparison next _Execute().
+    TfTokenVector _prevRenderTags;
 
     // The version number of the material tags (of the rprims).
     unsigned int _materialTagsVersion;

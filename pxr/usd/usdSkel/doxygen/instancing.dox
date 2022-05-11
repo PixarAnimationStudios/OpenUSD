@@ -31,6 +31,7 @@ We will begin with the complete example, before breaking it into parts:
 \code
 def Xform "Model" (
     instanceable = true
+    prepend apiSchemas = ["SkelBindingAPI"]
 )
 {
     rel skel:skeleton = <Skel>
@@ -67,6 +68,7 @@ contains a Skeleton:
 \code
 def Xform "Model" (
     instanceable = true
+    prepend apiSchemas = ["SkelBindingAPI"]
 )
 {
     rel skel:skeleton = <Skel>

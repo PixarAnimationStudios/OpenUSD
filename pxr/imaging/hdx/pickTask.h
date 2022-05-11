@@ -27,12 +27,14 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 
+#include "pxr/imaging/hdSt/textureUtils.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
 
+#include "pxr/base/arch/align.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2i.h"
@@ -64,10 +66,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_PUBLIC_TOKENS(HdxPickTokens, HDX_API, HDX_PICK_TOKENS);
 
-TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
-
+class HdStRenderBuffer;
 class HdStRenderPassState;
 using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
+
+class Hgi;
 
 /// Pick task params. This contains render-style state (for example), but is
 /// augmented by HdxPickTaskContextParams, which is passed in on the task
@@ -95,7 +98,8 @@ struct HdxPickHit {
     int pointIndex;
     GfVec3f worldSpaceHitPoint;
     GfVec3f worldSpaceHitNormal;
-    // normalizedDepth is in the range [0,1].
+    // normalizedDepth is in the range [0,1].  Nb: the pick depth buffer won't
+    // contain items drawn with renderTag "widget" for simplicity.
     float normalizedDepth;
 
     inline bool IsValid() const {
@@ -214,30 +218,53 @@ public:
 private:
     HdxPickTaskParams _params;
     HdxPickTaskContextParams _contextParams;
-    TfTokenVector _renderTags;
+    TfTokenVector _allRenderTags;
+    TfTokenVector _nonWidgetRenderTags;
 
     // We need to cache a pointer to the render index so Execute() can
     // map prim ID to paths.
     HdRenderIndex *_index;
 
-    void _InitIfNeeded(GfVec2i const& widthHeight);
+    void _InitIfNeeded();
+    void _CreateAovBindings();
+    void _CleanupAovBindings();
+    void _ResizeOrCreateBufferForAOV(
+        const HdRenderPassAovBinding& aovBinding);
+
     void _ConditionStencilWithGLCallback(
-            HdxPickTaskContextParams::DepthMaskCallback maskCallback);
+            HdxPickTaskContextParams::DepthMaskCallback maskCallback,
+            HdRenderBuffer const * depthStencilBuffer);
 
     bool _UseOcclusionPass() const;
+    bool _UseWidgetPass() const;
 
-    // Create a shared render pass each for pickables and unpickables
+    template<typename T>
+    HdStTextureUtils::AlignedBuffer<T>
+    _ReadAovBuffer(TfToken const & aovName) const;
+
+    HdRenderBuffer const * _FindAovBuffer(TfToken const & aovName) const;
+
+    // Create a shared render pass each for pickables, unpickables, and 
+    // widgets (which may draw on top even when occluded).
     HdRenderPassSharedPtr _pickableRenderPass;
     HdRenderPassSharedPtr _occluderRenderPass;
+    HdRenderPassSharedPtr _widgetRenderPass;
 
     // Having separate render pass states allows us to use different
     // shader mixins if we choose to (we don't currently).
     HdRenderPassStateSharedPtr _pickableRenderPassState;
     HdRenderPassStateSharedPtr _occluderRenderPassState;
+    HdRenderPassStateSharedPtr _widgetRenderPassState;
 
-    // A single draw target is shared for all contexts.  Since the FBO cannot
-    // be shared, we clone the attachments on each request.
-    GlfDrawTargetRefPtr _drawTarget;
+    Hgi* _hgi;
+
+    std::vector<std::unique_ptr<HdStRenderBuffer>> _pickableAovBuffers;
+    HdRenderPassAovBindingVector _pickableAovBindings;
+    HdRenderPassAovBinding _occluderAovBinding;
+    size_t _pickableDepthIndex;
+    TfToken _depthToken;
+    std::unique_ptr<HdStRenderBuffer> _widgetDepthStencilBuffer;
+    HdRenderPassAovBindingVector _widgetAovBindings;
 
     HdxPickTask() = delete;
     HdxPickTask(const HdxPickTask &) = delete;

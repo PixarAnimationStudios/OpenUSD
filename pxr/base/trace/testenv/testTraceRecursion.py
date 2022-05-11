@@ -50,6 +50,7 @@ def WriteReport(reporter, collector, filename):
 
 gc = Trace.Collector()
 gr = Trace.Reporter.globalReporter
+gr.shouldAdjustForOverheadAndNoise = False
 
 gc.enabled = True
 gr.foldRecursiveCalls = True

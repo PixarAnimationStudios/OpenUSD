@@ -173,7 +173,9 @@ class TestSdfPath(unittest.TestCase):
         # Test repr w/ quotes
         pathWithQuotes = Sdf.Path("b'\"")
         self.assertEqual( eval(repr(pathWithQuotes)), pathWithQuotes )
-        
+
+        self.assertEqual(Sdf._PathGetDebuggerPathText(Sdf.Path()), '')
+
         # ========================================================================
         # Test SdfPath -> bool conversion
         # ========================================================================

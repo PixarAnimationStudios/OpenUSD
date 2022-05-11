@@ -109,6 +109,10 @@ public:
     HDST_API
     void ReallocateSamplerIfNecessary();
 
+    /// Get whether bindless texture handles are enabled.
+    ///
+    bool UseBindlessHandles() const;
+
 private:
     HdStTextureObjectSharedPtr _textureObject;
     HdStSamplerObjectSharedPtr _samplerObject;

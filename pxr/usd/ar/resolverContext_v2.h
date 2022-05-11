@@ -41,8 +41,9 @@
 // incompatible macro definitions in pyport.h on macOS.
 #include <locale>
 #include "pxr/base/tf/pyLock.h"
-#include "pxr/base/tf/pyObjWrapper.h"
 #endif
+
+#include "pxr/base/tf/pyObjWrapper.h"
 
 #include <algorithm>
 #include <memory>
@@ -263,10 +264,7 @@ private:
         virtual bool Equals(const _Untyped& rhs) const = 0;
         virtual size_t Hash() const = 0;
         virtual std::string GetDebugString() const = 0;
-
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
         virtual TfPyObjWrapper GetPythonObj() const = 0;
-#endif
     };
 
     template <class Context>
@@ -308,13 +306,15 @@ private:
             return ArGetDebugString(_context);            
         }
 
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
         virtual TfPyObjWrapper GetPythonObj() const
         {
+ #ifdef PXR_PYTHON_SUPPORT_ENABLED
             TfPyLock lock;
             return boost::python::object(_context);
-        }
+#else
+            return {};
 #endif
+        }
 
         Context _context;
     };

@@ -55,6 +55,8 @@ pxr_library(tf
         patternMatcher
         pointerAndBits
         pyLock
+        pyObjWrapper
+        pyTracing
         refBase
         refCount
         refPtr
@@ -103,14 +105,12 @@ pxr_library(tf
         pyModuleNotice
         pyNoticeWrapper
         pyObjectFinder
-        pyObjWrapper
         pyOptional
         pyOverride
         pyPolymorphic
         pyPtrHelpers
         pyResultConversions
         pySingleton
-        pyTracing
         pyUtils
         pyWrapContext
         scriptModuleLoader
@@ -128,6 +128,10 @@ pxr_library(tf
         instantiateSingleton.h
         instantiateStacked.h
         instantiateType.h
+        pxrTslRobinMap/robin_growth_policy.h
+        pxrTslRobinMap/robin_hash.h
+        pxrTslRobinMap/robin_map.h
+        pxrTslRobinMap/robin_set.h
         preprocessorUtils.h
         preprocessorUtilsLite.h
         safeTypeCompare.h

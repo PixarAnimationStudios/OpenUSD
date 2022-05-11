@@ -111,9 +111,14 @@ void wrapUsdContrivedEmptyMultipleApplyAPI()
         .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",
-             &This::GetSchemaAttributeNames,
+             (const TfTokenVector &(*)(bool))&This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
-             arg("instanceName")=TfToken(),
+             return_value_policy<TfPySequenceToList>())
+        .def("GetSchemaAttributeNames",
+             (TfTokenVector(*)(bool, const TfToken &))
+                &This::GetSchemaAttributeNames,
+             arg("includeInherited"),
+             arg("instanceName"),
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 

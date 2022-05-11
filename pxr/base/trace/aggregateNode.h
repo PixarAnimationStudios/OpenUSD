@@ -167,6 +167,18 @@ public:
         return _expanded;
     }
 
+    /// Subtract \p scopeOverhead cost times the number of descendant nodes from
+    /// the inclusive time of each node.  If \p numDescendantNodes is not null,
+    /// add the number of nodes descendant to this node (not including this
+    /// node) to *numDescendantNodes.  Also for any nodes with descendants that
+    /// are "noisy" wrt \p timerQuantum, do not subtract their times from the
+    /// parent's exclusive time, but instead set their times to zero.  This way
+    /// we retain the sample count, but do not pollute the parent node's
+    /// exclusive time with noise.
+    TRACE_API void AdjustForOverheadAndNoise(
+        TimeStamp scopeOverhead, TimeStamp timerQuantum,
+        uint64_t *numDescendantNodes = nullptr);
+
     /// \name Recursion
     /// @{
 

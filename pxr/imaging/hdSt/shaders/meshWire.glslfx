@@ -32,21 +32,8 @@
 
 vec3 GetPrimitiveEdgeMask()
 {
-    // see hd/meshUtil.cpp
-    //
-    //          0__                0  0   0__
-    //        _/|\ \_            _/.  ..   . \_
-    //      _/  | \  \_   ->   _/  .  . .   .  \_
-    //     /  A |C \ B \_     /  A .  .C .   . B \_
-    //    1-----2---3----4   1-----2  1---2   1----2
-    //
-    //  Type   EdgeFlag    Draw
-    //    -       0        show all edges
-    //    A       1        hide [2-0]
-    //    B       2        hide [0-1]
-    //    C       3        hide [0-1] and [2-0]
-
     // A value of one in this mask hides the corresponding edge.
+    // (See hd/meshUtil.cpp)
     return vec3(0, GetEdgeFlag() & 1, GetEdgeFlag() & 2);
 }
 
@@ -55,24 +42,42 @@ vec3 GetPrimitiveEdgeMask()
 
 vec3 GetPrimitiveEdgeMask()
 {
-    // see hd/meshUtil.cpp
-    //  Case                   EdgeFlag    Draw
-    //  Quad/Refined face         0        hide common edge for the tri-pair
-    //  Non-Quad face             1/2/3    hide common edge for the tri-pair &
-    //                                     hide interior quadrangulated edges
-    //
-    //  The first quad of a non-quad face is marked 1; the last as 2; and
-    //  intermediate quads as 3.
-    //
-    //  3...2
-    //  |  ..
-    //  | . .
-    //  |.  .
-    //  0---1
-    //
-
     // A value of one in this mask hides the corresponding edge.
+    // (See hd/meshUtil.cpp)
     return vec3(1, 0, GetEdgeFlag() != 0);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeMaskPTVSTriQuad
+
+vec4 GetFlaggedPrimitiveEdgeDistance(vec4 edgeDistance)
+{
+    if (GetEdgeFlag() != 0) {
+        edgeDistance.yz += vec2(2.0);
+    } 
+    return edgeDistance;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeMaskTriQuad
+
+vec3 GetPrimitiveEdgeMask()
+{
+    // A value of one in this mask hides the corresponding edge.
+    // (See hd/meshUtil.cpp)
+    if (GetTriQuadID() == 0) {
+        return vec3(GetEdgeFlag() != 0, 1, 0);
+    } else {
+        return vec3(0, 1, GetEdgeFlag() != 0);
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeMaskMetalRefinedTriQuad
+
+vec3 GetPrimitiveEdgeMask()
+{
+    return vec3(0, 1, 0);
 }
 
 --- --------------------------------------------------------------------------
@@ -82,6 +87,14 @@ vec3 GetPrimitiveEdgeMask()
 {
     // Hide the common edge between the pair of rasterized triangles.
     return vec3(1,0,0);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeMaskPTVSRefinedTriQuad
+
+vec4 GetFlaggedPrimitiveEdgeDistance(vec4 edgeDistance)
+{
+    return edgeDistance;
 }
 
 --- --------------------------------------------------------------------------
@@ -95,14 +108,12 @@ vec3 GetPrimitiveEdgeMask()
 --- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.EdgeCommon
 
-vec3 GetBarycentricCoord(); // codeGen
-
 // Returns the distance of the current fragment (in viewport pixel units) from
 // the nearest edge.
 float GetMinEdgeDistance()
 {
     // Hide triangle edges by adding edge mask.
-    vec3 param = GetBarycentricCoord() + GetPrimitiveEdgeMask();
+    vec3 param = GetEdgeCoord() + GetPrimitiveEdgeMask();
     vec3 edgeDistance = max(vec3(0.0), param / fwidth(param));
     return min(edgeDistance.x,
                min(edgeDistance.y,
@@ -119,9 +130,34 @@ float GetEdgeOpacity() {
 }
 
 --- --------------------------------------------------------------------------
--- glsl MeshWire.Fragment.EdgeParam
+-- glsl MeshWire.Fragment.EdgeRefinedTriquad
 
-vec4 GetPatchCoord(int localIndex); // codeGen
+// Returns the distance of the current fragment (in viewport pixel units) from
+// the nearest edge.
+float GetMinEdgeDistance()
+{
+    vec2 leftBottom = GetEdgeCoord();
+    vec2 rightTop = vec2(1.0) - leftBottom;
+    vec4 param = vec4(leftBottom.y, rightTop.x, rightTop.y, leftBottom.x);
+    vec4 edgeDistance = max(vec4(0.0), param / fwidth(param));
+    edgeDistance = GetFlaggedPrimitiveEdgeDistance(edgeDistance);
+    return min(
+        min(edgeDistance.x, edgeDistance.y),
+        min(edgeDistance.z, edgeDistance.w)
+    );
+}
+
+// Use edge distance to compute a smooth opacity falloff for good looking edges.
+float GetEdgeFalloff(float d) {
+    return exp2(-4 * d * d);
+}
+
+float GetEdgeOpacity() {
+    return GetEdgeFalloff(GetMinEdgeDistance());
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeParam
 
 vec3 GetEdgeParamTriangle()
 {
@@ -225,7 +261,7 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     vec4 wireColor = GetWireframeColor();
     
     // If wireColor is unset (zero), the fill color is just dimmed a bit.
-    if (wireColor == vec4(0)) wireColor.a = 0.5;
+    if (all(equal(wireColor, vec4(0)))) wireColor.a = 0.5;
 
     vec4 Cedge = vec4(mix(Cfill.rgb, wireColor.rgb, wireColor.a), 1);
     Cfill.rgb = mix(Cfill.rgb, Cedge.rgb, p);
@@ -264,6 +300,30 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 }
 
 --- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeCoord.Barycentric
+
+vec3 GetEdgeCoord()
+{
+    return GetBarycentricCoord();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeCoord.PostTessPositionInPatch.Triangle
+
+vec3 GetEdgeCoord()
+{
+    return ptvsBarycentricCoord;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeCoord.PostTessPositionInPatch.Quad
+
+vec2 GetEdgeCoord()
+{
+    return ptvsBarycentricCoord;
+}
+
+--- --------------------------------------------------------------------------
 -- glsl MeshPatchWire.Fragment.EdgeOnSurface
 
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
@@ -273,7 +333,7 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     vec4 wireColor = GetWireframeColor();
 
     // If wireColor is unset (zero), the fill color is just dimmed a bit.
-    if (wireColor == vec4(0)) wireColor.a = 0.5;
+    if (all(equal(wireColor, vec4(0)))) wireColor.a = 0.5;
 
     vec4 Cedge = vec4(mix(Cfill.rgb, wireColor.rgb, wireColor.a), 1);
     Cfill.rgb = mix(Cfill.rgb, Cedge.rgb, p);

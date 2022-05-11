@@ -388,9 +388,12 @@ UsdSkelMakeTransforms(const GfVec3f* translations,
 
 /// Helper method to normalize weight values across each consecutive run of
 /// \p numInfluencesPerComponent elements.
+/// If the total weight for a run of elements is smaller than \p eps, the
+/// elements' weights are set to zero.
 USDSKEL_API
 bool
-UsdSkelNormalizeWeights(TfSpan<float> weights, int numInfluencesPerComponent);
+UsdSkelNormalizeWeights(TfSpan<float> weights, int numInfluencesPerComponent,
+                        float eps = std::numeric_limits<float>::epsilon());
 
 
 /// \overload
@@ -542,9 +545,10 @@ UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
                      bool inSerial=false);
 
 
-/// Skin normals using linear blend skinning (LBS).
-/// Currently, this is restricted to skinning of normals stored using
-/// _vertex_ primvar interpolation.
+/// Skin normals using linear blend skinning (LBS), for normals with _vertex_
+/// or _varying_ interpolation.
+/// Use UsdSkelSkinFaceVaryingNormalsLBS() for normals with _faceVarying__
+/// interpolation.
 /// The \p jointXforms are the *inverse transposes* of the 3x3 component
 /// of the \ref UsdSkel_Term_SkinningTransforms" "skinning transforms",
 /// given in _skeleton space_. The \p geomBindTransform is the
@@ -594,6 +598,30 @@ UsdSkelSkinNormalsLBS(const GfMatrix3f& geomBindTransform,
                      int numInfluencesPerPoint,
                      TfSpan<GfVec3f> normals,
                      bool inSerial=false);
+
+/// Skin normals with _faceVarying_ interpolation using linear blend skinning.
+USDSKEL_API
+bool
+UsdSkelSkinFaceVaryingNormalsLBS(const GfMatrix3d& geomBindTransform,
+                                 TfSpan<const GfMatrix3d> jointXforms,
+                                 TfSpan<const int> jointIndices,
+                                 TfSpan<const float> jointWeights,
+                                 int numInfluencesPerPoint,
+                                 TfSpan<const int> faceVertexIndices,
+                                 TfSpan<GfVec3f> normals,
+                                 bool inSerial=false);
+
+/// \overload
+USDSKEL_API
+bool
+UsdSkelSkinFaceVaryingNormalsLBS(const GfMatrix3f& geomBindTransform,
+                                 TfSpan<const GfMatrix3f> jointXforms,
+                                 TfSpan<const int> jointIndices,
+                                 TfSpan<const float> jointWeights,
+                                 int numInfluencesPerPoint,
+                                 TfSpan<const int> faceVertexIndices,
+                                 TfSpan<GfVec3f> normals,
+                                 bool inSerial=false);
 
 
 /// Skin a transform using linear blend skinning (LBS).

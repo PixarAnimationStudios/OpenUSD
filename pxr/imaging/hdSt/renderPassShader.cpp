@@ -23,11 +23,9 @@
 //
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/renderBuffer.h"
@@ -37,8 +35,6 @@
 #include "pxr/imaging/hdSt/textureHandle.h"
 #include "pxr/imaging/hdSt/textureObject.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
-
-#include "pxr/imaging/hf/perfLog.h"
 
 #include "pxr/imaging/hio/glslfx.h"
 
@@ -134,12 +130,18 @@ HdStRenderPassShader::HdStRenderPassShader(TfToken const &glslfxFile)
     , _glslfx(std::make_unique<HioGlslfx>(glslfxFile))
     , _hash(0)
     , _hashValid(false)
-    , _cullStyle(HdCullStyleNothing)
 {
 }
 
 /*virtual*/
 HdStRenderPassShader::~HdStRenderPassShader() = default;
+
+/* virtual */
+HioGlslfx const *
+HdStRenderPassShader::_GetGlslfx() const
+{
+    return _glslfx.get();
+}
 
 /*virtual*/
 HdStRenderPassShader::ID
@@ -185,16 +187,11 @@ HdStRenderPassShader::GetSource(TfToken const &shaderStageKey) const
 /*virtual*/
 void
 HdStRenderPassShader::BindResources(const int program,
-                                    HdSt_ResourceBinder const &binder,
-                                    HdRenderPassState const &state)
+                                    HdSt_ResourceBinder const &binder)
 {
     TF_FOR_ALL(it, _customBuffers) {
         binder.Bind(it->second);
     }
-
-    // set fallback states (should be moved to HdRenderPassState::Bind)
-    unsigned int cullStyle = _cullStyle;
-    binder.BindUniformui(HdShaderTokens->cullStyle, 1, &cullStyle);
 
     HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
 }
@@ -202,8 +199,7 @@ HdStRenderPassShader::BindResources(const int program,
 /*virtual*/
 void
 HdStRenderPassShader::UnbindResources(const int program,
-                                      HdSt_ResourceBinder const &binder,
-                                      HdRenderPassState const &state)
+                                      HdSt_ResourceBinder const &binder)
 {
     TF_FOR_ALL(it, _customBuffers) {
         binder.Unbind(it->second);
@@ -270,12 +266,6 @@ HdStRenderPassShader::AddBindings(HdBindingRequestVector *customBindings)
     TF_FOR_ALL(it, _customBuffers) {
         customBindings->push_back(it->second);
     }
-
-    // typed binding to emit declaration and accessor.
-    customBindings->push_back(
-        HdBindingRequest(HdBinding::UNIFORM,
-                         HdShaderTokens->cullStyle,
-                         HdTypeUInt32));
 }
 
 HdSt_MaterialParamVector const &
@@ -321,9 +311,9 @@ HdStRenderPassShader::UpdateAovInputTextures(
     }
 
     for (const auto &namedTextureIdentifier : namedTextureIdentifiers) {
-        static const HdSamplerParameters samplerParameters{
+        static const HdSamplerParameters samplerParameters(
             HdWrapClamp, HdWrapClamp, HdWrapClamp,
-            HdMinFilterNearest, HdMagFilterNearest};
+            HdMinFilterNearest, HdMagFilterNearest);
 
         // Allocate texture handle for given identifier.
         HdStTextureHandleSharedPtr textureHandle =

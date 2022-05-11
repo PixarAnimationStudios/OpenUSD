@@ -31,8 +31,6 @@ HdCoordSys::HdCoordSys(SdfPath const &id)
 {
 }
 
-HdCoordSys::~HdCoordSys()
-{
-}
+HdCoordSys::~HdCoordSys() = default;
 
 PXR_NAMESPACE_CLOSE_SCOPE

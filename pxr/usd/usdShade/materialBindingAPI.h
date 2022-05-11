@@ -703,6 +703,10 @@ public:
     using BindingsCache = tbb::concurrent_unordered_map<SdfPath,
             std::unique_ptr<BindingsAtPrim>, SdfPath::Hash>;
 
+    /// Returns a vector of the possible values for the 'material purpose'.
+    USDSHADE_API
+    static TfTokenVector GetMaterialPurposes();
+
     /// \overload
     /// Computes the resolved bound material for this prim, for the given 
     /// material purpose. 

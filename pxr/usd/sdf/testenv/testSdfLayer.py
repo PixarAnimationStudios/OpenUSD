@@ -789,5 +789,38 @@ def "Root"
         self.assertFalse(layer.Reload())
         self.assertTrue(prim)
 
+    def test_VariantInertness(self):
+        layer = Sdf.Layer.CreateAnonymous()
+        layer.ImportFromString(
+'''#sdf 1.4.32
+over "test"
+{
+    variantSet "vars" = {
+        "off" {
+        }
+        "render" (
+            payload = @foobar@
+        ) {
+        }
+    }
+
+    variantSet "empty" = {
+        "nothing" {
+        }
+    }
+}
+''')
+        self.assertTrue(layer.GetPrimAtPath('/test{vars=off}').isInert)
+        self.assertFalse(layer.GetPrimAtPath('/test{vars=render}').isInert)
+        self.assertFalse(layer.GetObjectAtPath('/test{empty=}').isInert)
+        self.assertFalse(layer.GetObjectAtPath('/test{vars=}').isInert)
+
+        # XXX this will have to be fixed up when bug PRES-82547 is fixed.
+        # Possibly by deleting this case, if we decide that empty variant set
+        # specs are not allowed.
+        emptySet = layer.GetObjectAtPath('/test{empty=}')
+        emptySet.RemoveVariant(layer.GetObjectAtPath('/test{empty=nothing}'))
+        self.assertTrue(emptySet.isInert)
+
 if __name__ == "__main__":
     unittest.main()

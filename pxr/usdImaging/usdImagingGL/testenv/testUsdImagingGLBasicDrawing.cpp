@@ -98,9 +98,10 @@ My_TestGLDrawing::InitTest()
     TRACE_FUNCTION();
     
     std::cout << "My_TestGLDrawing::InitTest()\n";
-    _stage = UsdStage::Open(GetStageFilePath());
-    SdfPathVector excludedPaths;
+    _stage = UsdStage::Open(GetStageFilePath(),
+        IsEnabledUnloadedAsBounds() ? UsdStage::LoadNone : UsdStage::LoadAll);
 
+    SdfPathVector excludedPaths;
     if (UsdImagingGLEngine::IsHydraEnabled()) {
         std::cout << "Using HD Renderer.\n";
         _engine.reset(new UsdImagingGLEngine(
@@ -134,7 +135,15 @@ My_TestGLDrawing::InitTest()
     if (_ShouldFrameAll()) {
         TfTokenVector purposes;
         purposes.push_back(UsdGeomTokens->default_);
-        purposes.push_back(UsdGeomTokens->proxy);
+        if (IsShowGuides()) {
+            purposes.push_back(UsdGeomTokens->guide);
+        }
+        if (IsShowProxy()) {
+            purposes.push_back(UsdGeomTokens->proxy);
+        }
+        if (IsShowRender()) {
+            purposes.push_back(UsdGeomTokens->render);
+        }
 
         // Extent hints are sometimes authored as an optimization to avoid
         // computing bounds, they are particularly useful for some tests where
@@ -285,6 +294,10 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     params.showRender = IsShowRender();
     params.showProxy = IsShowProxy();
     params.clearColor = GetClearColor();
+
+    if (IsEnabledUnloadedAsBounds()) {
+        _SetDisplayUnloadedPrimsWithBounds(_engine.get(), true);
+    }
 
     glViewport(0, 0, width, height);
 

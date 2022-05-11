@@ -28,6 +28,12 @@
 #include "pxr/base/gf/math.h"
 #include "pxr/base/trace/trace.h"
 
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/blitCmds.h"
+#include "pxr/imaging/hgi/blitCmdsOps.h"
+#include "pxr/imaging/hgi/capabilities.h"
+#include "pxr/imaging/hgi/texture.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -533,6 +539,55 @@ HdStTextureUtils::ReadAndConvertImage(
     }
 
     return true;
+}
+
+HdStTextureUtils::AlignedBuffer<uint8_t>
+HdStTextureUtils::HgiTextureReadback(
+    Hgi * const hgi,
+    HgiTextureHandle const & texture,
+    size_t * bufferSize)
+{
+    if (!bufferSize) {
+        return AlignedBuffer<uint8_t>();
+    }
+
+    *bufferSize = 0;
+
+    if (!texture) {
+        return AlignedBuffer<uint8_t>();
+    }
+
+    const HgiTextureDesc& textureDesc = texture.Get()->GetDescriptor();
+    const size_t formatByteSize = HgiGetDataSizeOfFormat(textureDesc.format);
+    const size_t width = textureDesc.dimensions[0];
+    const size_t height = textureDesc.dimensions[1];
+    const size_t dataByteSize = width * height * formatByteSize;
+
+    if (dataByteSize == 0) {
+        return AlignedBuffer<uint8_t>();
+    }
+
+    // For Metal the CPU buffer has to be rounded up to a multiple of the page
+    // size.
+    const size_t alignment = hgi->GetCapabilities()->GetPageSizeAlignment();
+    const size_t bitMask = alignment - 1;
+    *bufferSize = (dataByteSize + bitMask) & (~bitMask);
+
+    uint8_t* rawBuffer = (uint8_t*)ArchAlignedAlloc(alignment, *bufferSize);
+    AlignedBuffer<uint8_t> buffer(rawBuffer);
+
+    HgiBlitCmdsUniquePtr const blitCmds = hgi->CreateBlitCmds();
+    HgiTextureGpuToCpuOp copyOp;
+    copyOp.gpuSourceTexture = texture;
+    copyOp.sourceTexelOffset = GfVec3i(0);
+    copyOp.mipLevel = 0;
+    copyOp.cpuDestinationBuffer = rawBuffer;
+    copyOp.destinationByteOffset = 0;
+    copyOp.destinationBufferByteSize = *bufferSize;
+    blitCmds->CopyTextureGpuToCpu(copyOp);
+    hgi->SubmitCmds(blitCmds.get(), HgiSubmitWaitTypeWaitUntilCompleted);
+
+    return buffer;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

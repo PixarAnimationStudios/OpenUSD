@@ -268,17 +268,40 @@ class TestUsdSchemaRegistry(unittest.TestCase):
 
         # Prim def has built in property names.
         self.assertEqual(primDef.GetPropertyNames(), 
-            ['expansionRule', 'includeRoot', 'excludes', 'includes'])
+            ['collection:__INSTANCE_NAME__:expansionRule', 
+             'collection:__INSTANCE_NAME__:includeRoot', 
+             'collection:__INSTANCE_NAME__:excludes', 
+             'collection:__INSTANCE_NAME__:includes'])
 
         # Prim def has relationship/property spec for 'excludes'
-        self.assertTrue(primDef.GetSchemaPropertySpec('excludes'))
-        self.assertFalse(primDef.GetSchemaAttributeSpec('excludes'))
-        self.assertTrue(primDef.GetSchemaRelationshipSpec('excludes'))
+        self.assertTrue(primDef.GetSchemaPropertySpec(
+            'collection:__INSTANCE_NAME__:excludes'))
+        self.assertFalse(primDef.GetSchemaAttributeSpec(
+            'collection:__INSTANCE_NAME__:excludes'))
+        self.assertTrue(primDef.GetSchemaRelationshipSpec(
+            'collection:__INSTANCE_NAME__:excludes'))
 
         # Prim def has attribute/property spec for 'expansionRule'.
-        self.assertTrue(primDef.GetSchemaPropertySpec('expansionRule'))
-        self.assertTrue(primDef.GetSchemaAttributeSpec('expansionRule'))
-        self.assertFalse(primDef.GetSchemaRelationshipSpec('expansionRule'))
+        self.assertTrue(primDef.GetSchemaPropertySpec(
+            'collection:__INSTANCE_NAME__:expansionRule'))
+        self.assertTrue(primDef.GetSchemaAttributeSpec(
+            'collection:__INSTANCE_NAME__:expansionRule'))
+        self.assertFalse(primDef.GetSchemaRelationshipSpec(
+            'collection:__INSTANCE_NAME__:expansionRule'))
+
+        # We can also get the CollectionAPI prim definition using its template
+        # name instead.
+        templatePrimDef = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
+            'CollectionAPI:__INSTANCE_NAME__')
+        # Note that we can't test for equality of the prim defs directly, even
+        # though they're the same, since the python objects are different. So we
+        # verify that the main aspects of the definitions are same instead.
+        self.assertEqual(templatePrimDef.GetPropertyNames(),
+                         primDef.GetPropertyNames())
+        self.assertEqual(templatePrimDef.ListMetadataFields(),
+                         primDef.ListMetadataFields())
+        self.assertEqual(templatePrimDef.GetAppliedAPISchemas(),
+                         primDef.GetAppliedAPISchemas())
 
         # API schema but not an applied schema. No prim definition
         self.assertFalse(Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
@@ -351,19 +374,6 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                 "SingleApplyAPI")
         self.assertEqual(typeNameAndInstance[0], "SingleApplyAPI")
         self.assertEqual(typeNameAndInstance[1], "")
-
-    def test_GetPropertyNamespacePrefix(self):
-        # CollectionAPI is a multiple apply API so it must have a property
-        # namespace prefix.
-        self.assertEqual(
-            Usd.SchemaRegistry().GetPropertyNamespacePrefix("CollectionAPI"),
-            "collection")
-        # Other schema types that are not multiple apply API will not have a 
-        # property namespace prefix.
-        self.assertEqual(
-            Usd.SchemaRegistry().GetPropertyNamespacePrefix("MetadataTest"), "")
-        self.assertEqual(
-            Usd.SchemaRegistry().GetPropertyNamespacePrefix("ClipsAPI"), "")
 
     def test_FlattenPrimDefinition(self):
         # Verifies that the given spec has exactly the field values enumerated
@@ -458,34 +468,40 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         # for the CollectionAPI itself, not an applied instance of the API 
         # schema.
         apiPrimDefPrimFields = {
-            "apiSchemas" : Sdf.TokenListOp.CreateExplicit([]),
+            "apiSchemas" : Sdf.TokenListOp.CreateExplicit(
+                ["CollectionAPI:__INSTANCE_NAME__"]),
             "documentation" : apiPrimDef.GetDocumentation(),
             "specifier" : Sdf.SpecifierOver
         }
         apiPrimDefProperties = {
-            "expansionRule" : {
+            "collection:__INSTANCE_NAME__:expansionRule" : {
                 "custom" : False,
                 "default" : "expandPrims",
                 "typeName" : Sdf.ValueTypeNames.Token,
-                "allowedTokens" : ["explicitOnly", "expandPrims", "expandPrimsAndProperties"],
-                "documentation" : apiPrimDef.GetPropertyDocumentation("expansionRule"),
+                "allowedTokens" : ["explicitOnly", "expandPrims", 
+                                   "expandPrimsAndProperties"],
+                "documentation" : apiPrimDef.GetPropertyDocumentation(
+                    "collection:__INSTANCE_NAME__:expansionRule"),
                 "variability" : Sdf.VariabilityUniform
             },
-            "includeRoot" : {
+            "collection:__INSTANCE_NAME__:includeRoot" : {
                 "custom" : False,
                 "default" : None,
                 "typeName" : Sdf.ValueTypeNames.Bool,
-                "documentation" : apiPrimDef.GetPropertyDocumentation("includeRoot"),
+                "documentation" : apiPrimDef.GetPropertyDocumentation(
+                    "collection:__INSTANCE_NAME__:includeRoot"),
                 "variability" : Sdf.VariabilityUniform
             },
-            "includes" : {
+            "collection:__INSTANCE_NAME__:includes" : {
                 "custom" : False,
-                "documentation" : apiPrimDef.GetPropertyDocumentation("includes"),
+                "documentation" : apiPrimDef.GetPropertyDocumentation(
+                    "collection:__INSTANCE_NAME__:includes"),
                 "variability" : Sdf.VariabilityUniform
             },
-            "excludes" : {
+            "collection:__INSTANCE_NAME__:excludes" : {
                 "custom" : False,
-                "documentation" : apiPrimDef.GetPropertyDocumentation("excludes"),
+                "documentation" : apiPrimDef.GetPropertyDocumentation(
+                    "collection:__INSTANCE_NAME__:excludes"),
                 "variability" : Sdf.VariabilityUniform
             }
         }
@@ -575,7 +591,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         # will have the "collection:foo:" prefix as the schema is applied in
         # this prim definition.
         for (propName, fieldValues) in apiPrimDefProperties.items():
-            newPrimDefProperties["collection:foo:" + propName] = fieldValues
+            fooPropName = Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+                propName, "foo")
+            newPrimDefProperties[fooPropName] = fieldValues
 
         # Verify the prim spec matches the prim definition.
         _VerifyExpectedPrimData(layer, "/PrimDefs",
@@ -587,6 +605,103 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertTrue(layer.GetPrimAtPath("/PrimDefs/ConcreteSchema"))
         self.assertTrue(layer.GetPrimAtPath("/PrimDefs/APISchema"))
         self.assertTrue(layer.GetPrimAtPath("/PrimDefs/FlattenToNewPrim"))
+
+    def test_MultipleApplyNameTemplates(self):
+        # Test making template names with any combination of prefix and base 
+        # name.
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
+            "foo", "bar"), "foo:__INSTANCE_NAME__:bar")
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
+            "foo", ""), "foo:__INSTANCE_NAME__")
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
+            "", "bar"), "__INSTANCE_NAME__:bar")
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
+            "", ""), "__INSTANCE_NAME__")
+
+        # Test making instance versions of the template names.
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+            "foo:__INSTANCE_NAME__:bar", "inst1"), "foo:inst1:bar")
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+            "foo:__INSTANCE_NAME__:bar", "inst2"), "foo:inst2:bar")
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+            "foo:__INSTANCE_NAME__", "inst1"), "foo:inst1")
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+            "foo:__INSTANCE_NAME__", "inst2"), "foo:inst2")
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+            "__INSTANCE_NAME__:bar", "inst1"), "inst1:bar")
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+            "__INSTANCE_NAME__:bar", "inst2"), "inst2:bar")
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+            "__INSTANCE_NAME__", "inst1"), "inst1")
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+            "__INSTANCE_NAME__", "inst2"), "inst2")
+
+        # Test getting the base name from a name template.
+        self.assertEqual(Usd.SchemaRegistry.GetMultipleApplyNameTemplateBaseName(
+            "foo:__INSTANCE_NAME__:bar"), "bar")
+        self.assertEqual(Usd.SchemaRegistry.GetMultipleApplyNameTemplateBaseName(
+            "foo:__INSTANCE_NAME__:bar:baz"), "bar:baz")
+        self.assertEqual(Usd.SchemaRegistry.GetMultipleApplyNameTemplateBaseName(
+            "foo:__INSTANCE_NAME__"), "")
+        self.assertEqual(Usd.SchemaRegistry.GetMultipleApplyNameTemplateBaseName(
+            "__INSTANCE_NAME__:bar"), "bar")
+        self.assertEqual(Usd.SchemaRegistry.GetMultipleApplyNameTemplateBaseName(
+            "__INSTANCE_NAME__"), "")
+
+        # Test IsMultipleApplyNameTemplate
+        # These are all name template names.
+        self.assertTrue(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            "foo:__INSTANCE_NAME__:bar"))
+        self.assertTrue(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            "foo:__INSTANCE_NAME__:bar:baz"))
+        self.assertTrue(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            "foo:__INSTANCE_NAME__"))
+        self.assertTrue(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            "__INSTANCE_NAME__:bar"))
+        self.assertTrue(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            "__INSTANCE_NAME__"))
+        # The following are not template names
+        self.assertFalse(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            "foo"))
+        self.assertFalse(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            "foo:__INSTANCE_NAME__bar"))
+        self.assertFalse(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            "foo:__INSTANCE_NAME__bar:baz"))
+        self.assertFalse(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            ""))
+
+        # Test edge cases for making instanced property names and getting the 
+        # property base name. We don't check validity of instanceable names or 
+        # instance names.
+
+        # Not an instanceable property name, returns the property name as is.
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+            "foo", "inst1"), "foo")
+        self.assertEqual(Usd.SchemaRegistry.GetMultipleApplyNameTemplateBaseName(
+            "foo"), "foo")
+        # The instance placeholder must be found as an exact full word match to 
+        # be an instanceable property
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+            "foo:__INSTANCE_NAME___:bar", "inst1"), "foo:__INSTANCE_NAME___:bar")
+        self.assertEqual(Usd.SchemaRegistry.GetMultipleApplyNameTemplateBaseName(
+            "foo:__INSTANCE_NAME___:bar"), "foo:__INSTANCE_NAME___:bar")
+        # If the instance name placeholder is found twice, only the first 
+        # occurrence is replaced with the instance name.
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+            "foo:__INSTANCE_NAME__:__INSTANCE_NAME__", "inst1"), 
+            "foo:inst1:__INSTANCE_NAME__")
+        self.assertEqual(Usd.SchemaRegistry.GetMultipleApplyNameTemplateBaseName(
+            "foo:__INSTANCE_NAME__:__INSTANCE_NAME__"), "__INSTANCE_NAME__")
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+            "foo:__INSTANCE_NAME__:__INSTANCE_NAME__:bar", "inst1"), 
+            "foo:inst1:__INSTANCE_NAME__:bar")
+        self.assertEqual(Usd.SchemaRegistry.GetMultipleApplyNameTemplateBaseName(
+            "foo:__INSTANCE_NAME__:__INSTANCE_NAME__:bar"), 
+            "__INSTANCE_NAME__:bar")
+        # If the instance name is empty with still replace the instance name
+        # placeholder with the empty string.
+        self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+            "foo:__INSTANCE_NAME__:bar", ""), "foo::bar")
 
 if __name__ == "__main__":
     unittest.main()

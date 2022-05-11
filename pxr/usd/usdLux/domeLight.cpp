@@ -137,6 +137,23 @@ UsdLuxDomeLight::CreateTextureFormatAttr(VtValue const &defaultValue, bool write
                        writeSparsely);
 }
 
+UsdAttribute
+UsdLuxDomeLight::GetGuideRadiusAttr() const
+{
+    return GetPrim().GetAttribute(UsdLuxTokens->guideRadius);
+}
+
+UsdAttribute
+UsdLuxDomeLight::CreateGuideRadiusAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->guideRadius,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 UsdRelationship
 UsdLuxDomeLight::GetPortalsRel() const
 {
@@ -170,6 +187,7 @@ UsdLuxDomeLight::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->lightShaderId,
         UsdLuxTokens->inputsTextureFile,
         UsdLuxTokens->inputsTextureFormat,
+        UsdLuxTokens->guideRadius,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

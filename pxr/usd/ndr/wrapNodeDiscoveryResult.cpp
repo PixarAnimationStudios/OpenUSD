@@ -61,7 +61,6 @@ _Repr(const NdrNodeDiscoveryResult& x)
     if (!x.metadata.empty()) { ADD_KW_ARG(args, metadata); };
     if (!x.blindData.empty()) { ADD_KW_ARG(args, blindData); };
     if (!x.subIdentifier.IsEmpty()) { ADD_KW_ARG(args, subIdentifier); };
-    if (!x.aliases.empty()) { ADD_KW_ARG(args, aliases); };
 
     #undef ADD_KW_ARG
 
@@ -162,7 +161,7 @@ void wrapNodeDiscoveryResult()
     class_<This>("NodeDiscoveryResult", no_init)
         .def(init<NdrIdentifier, NdrVersion, std::string, TfToken, TfToken, 
                   TfToken, std::string, std::string, std::string,
-                  NdrTokenMap, std::string, TfToken, NdrTokenVec>(
+                  NdrTokenMap, std::string, TfToken>(
                   (arg("identifier"),
                    arg("version"),
                    arg("name"),
@@ -174,8 +173,7 @@ void wrapNodeDiscoveryResult()
                    arg("sourceCode")=std::string(), 
                    arg("metadata")=NdrTokenMap(),
                    arg("blindData")=std::string(),
-                   arg("subIdentifier")=TfToken(),
-                   arg("aliases")=NdrTokenVec())))
+                   arg("subIdentifier")=TfToken())))
         .add_property("identifier", make_getter(&This::identifier,
                           return_value_policy<return_by_value>()))
         .add_property("version", &This::version)
@@ -194,8 +192,6 @@ void wrapNodeDiscoveryResult()
         .add_property("blindData", &This::blindData)
         .add_property("subIdentifier", make_getter(&This::subIdentifier, 
                           return_value_policy<return_by_value>()))
-        .add_property("aliases", make_getter(&This::aliases,  
-                          return_value_policy<TfPySequenceToList>()))
         .def("__repr__", _Repr)
         ;
 

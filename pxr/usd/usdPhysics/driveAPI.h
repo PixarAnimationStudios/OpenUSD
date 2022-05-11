@@ -103,14 +103,20 @@ public:
     virtual ~UsdPhysicsDriveAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
+    /// class and all its ancestor classes.  Does not include attributes that
+    /// may be authored by custom/extended methods of the schemas involved.
+    USDPHYSICS_API
+    static const TfTokenVector &
+    GetSchemaAttributeNames(bool includeInherited=true);
+
+    /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes for a given instance name.  Does not
     /// include attributes that may be authored by custom/extended methods of
     /// the schemas involved. The names returned will have the proper namespace
     /// prefix.
     USDPHYSICS_API
-    static const TfTokenVector &
-    GetSchemaAttributeNames(
-        bool includeInherited=true, const TfToken instanceName=TfToken());
+    static TfTokenVector
+    GetSchemaAttributeNames(bool includeInherited, const TfToken &instanceName);
 
     /// Returns the name of this multiple-apply schema instance
     TfToken GetName() const {

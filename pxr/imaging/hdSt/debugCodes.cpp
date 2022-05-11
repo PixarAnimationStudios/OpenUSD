@@ -31,6 +31,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
+     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DRAW,
+        "Reports diagnostics for drawing");
      TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DRAW_BATCH,
         "Reports diagnostics for draw batches");
      TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_FORCE_DRAW_BATCH_REBUILD,

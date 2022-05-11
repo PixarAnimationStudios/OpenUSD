@@ -27,14 +27,12 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/usd/sdf/types.h"
-#include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
 
-#include "hdPrman/context.h"
+#include "hdPrman/gprimbase.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
-#include "hdPrman/renderParam.h"
-#include "hdPrman/renderPass.h"
 #include "hdPrman/rixStrings.h"
 
 #include "Riley.h"
@@ -46,27 +44,28 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// A mix-in template that adds shared gprim behavior to support
 /// various HdRprim types.
 template <typename BASE>
-class HdPrman_Gprim : public BASE {
+class HdPrman_Gprim : public BASE, public HdPrman_GprimBase
+{
 public:
-    typedef BASE BaseType;
+    using BaseType = BASE;
 
     HdPrman_Gprim(SdfPath const& id)
         : BaseType(id)
     {
     }
 
-    virtual ~HdPrman_Gprim() = default;
+    ~HdPrman_Gprim() override = default;
 
     void
     Finalize(HdRenderParam *renderParam) override
     {
-        HdPrman_Context *context =
-            static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
+        HdPrman_RenderParam *param =
+            static_cast<HdPrman_RenderParam*>(renderParam);
 
-        riley::Riley *riley = context->riley;
+        riley::Riley *riley = param->AcquireRiley();
 
         // Release retained conversions of coordSys bindings.
-        context->ReleaseCoordSysBindings(BASE::GetId());
+        param->ReleaseCoordSysBindings(BASE::GetId());
 
         // Delete instances before deleting the prototypes they use.
         for (const auto &id: _instanceIds) {
@@ -115,14 +114,14 @@ protected:
     // Provide a fallback material.  Default grabs _fallbackMaterial
     // from the context.
     virtual riley::MaterialId
-    _GetFallbackMaterial(HdPrman_Context *context)
+    _GetFallbackMaterial(HdPrman_RenderParam *renderParam)
     {
-        return context->fallbackMaterial;
+        return renderParam->GetFallbackMaterialId();
     }
 
     // Populate primType and primvars.
     virtual RtPrimVarList
-    _ConvertGeometry(HdPrman_Context *context,
+    _ConvertGeometry(HdPrman_RenderParam *renderParam,
                       HdSceneDelegate *sceneDelegate,
                       const SdfPath &id,
                       RtUString *primType,
@@ -132,9 +131,6 @@ protected:
     HdPrman_Gprim(const HdPrman_Gprim&)             = delete;
     HdPrman_Gprim &operator =(const HdPrman_Gprim&) = delete;
 
-protected:
-    std::vector<riley::GeometryPrototypeId> _prototypeIds;
-    std::vector<riley::GeometryInstanceId> _instanceIds;
 };
 
 template <typename BASE>
@@ -148,8 +144,11 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
     TF_UNUSED(reprToken);
 
-    HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
+    HdPrman_RenderParam *param =
+        static_cast<HdPrman_RenderParam*>(renderParam);
+
+    // Riley API.
+    riley::Riley *riley = param->AcquireRiley();
 
     // Update instance bindings.
     BASE::_UpdateInstancer(sceneDelegate, dirtyBits);
@@ -168,8 +167,10 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
     sceneDelegate->SampleTransform(id, &xf);
 
-    // Riley API.
-    riley::Riley *riley = context->riley;
+    // Update visibility so thet rprim->IsVisible() will work in render pass
+    if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {
+        BASE::_UpdateVisibility(sceneDelegate, dirtyBits);
+    }
 
     // Resolve material binding.  Default to fallbackGprimMaterial.
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
@@ -180,17 +181,17 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
         BASE::SetMaterialId(sceneDelegate->GetMaterialId(id));
 #endif
     }
-    riley::MaterialId materialId = _GetFallbackMaterial(context);
+    riley::MaterialId materialId = _GetFallbackMaterial(param);
     riley::DisplacementId dispId = riley::DisplacementId::InvalidId();
     const SdfPath & hdMaterialId = BASE::GetMaterialId();
     HdPrman_ResolveMaterial(sceneDelegate, hdMaterialId, &materialId, &dispId);
 
     // Convert (and cache) coordinate systems.
     riley::CoordinateSystemList coordSysList = {0, nullptr};
-    if (HdPrman_Context::RileyCoordSysIdVecRefPtr convertedCoordSys =
-        context->ConvertAndRetainCoordSysBindings(sceneDelegate, id)) {
+    if (HdPrman_RenderParam::RileyCoordSysIdVecRefPtr convertedCoordSys =
+        param->ConvertAndRetainCoordSysBindings(sceneDelegate, id)) {
         coordSysList.count = convertedCoordSys->size();
-        coordSysList.ids = &(*convertedCoordSys)[0];
+        coordSysList.ids = convertedCoordSys->data();
     }
 
     // Hydra dirty bits corresponding to PRMan prototype primvars
@@ -208,7 +209,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     {
         RtUString primType;
         HdGeomSubsets geomSubsets;
-        RtPrimVarList primvars = _ConvertGeometry(context, sceneDelegate, id,
+        RtPrimVarList primvars = _ConvertGeometry(param, sceneDelegate, id,
                          &primType, &geomSubsets);
 
         // Transfer material opinions of primvars.
@@ -255,8 +256,8 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                 std::vector<int32_t> int32Indices(subset.indices.begin(),
                                                   subset.indices.end());
                 primvars.SetIntegerArray(RixStr.k_shade_faceset,
-                                          &int32Indices[0],
-                                          int32Indices.size());
+                                         int32Indices.data(),
+                                         int32Indices.size());
                 // Look up material override for the subset (if any)
                 riley::MaterialId subsetMaterialId = materialId;
                 riley::DisplacementId subsetDispId = dispId;
@@ -283,7 +284,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     // Create or modify Riley geometry instances.
     //
     // Resolve attributes.
-    RtParamList attrs = context->ConvertAttributes(sceneDelegate, id);
+    RtParamList attrs = param->ConvertAttributes(sceneDelegate, id);
     if (!isHdInstance) {
         // Simple case: Singleton instance.
         // Convert transform.
@@ -372,6 +373,9 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                     riley::GeometryPrototypeId::InvalidId(),
                     oldInstanceId);
             }
+            // Clear before resize, because above we just deleted
+            // all the instances, so require re-creating them in riley.
+            _instanceIds.clear();
             _instanceIds.resize(newCount,
                                 riley::GeometryInstanceId::InvalidId());
         }
@@ -399,7 +403,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
 
             // Convert categories.
             if (instanceIndex < instanceCategories.size()) {
-                context->ConvertCategoriesToAttributes(
+                param->ConvertCategoriesToAttributes(
                     id, instanceCategories[instanceIndex], instanceAttrs);
             }
 

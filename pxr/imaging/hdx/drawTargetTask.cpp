@@ -24,6 +24,7 @@
 #include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
+#include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdx/drawTargetTask.h"
 #include "pxr/imaging/hdx/tokens.h"
@@ -338,12 +339,12 @@ HdxDrawTargetTask::_ComputeCameraInfo(
         GfVec3d(1.0, -1.0, 1.0));
 
     const GfMatrix4d projectionMatrix =
-        CameraUtilConformedWindow(camera->GetProjectionMatrix(), 
+        CameraUtilConformedWindow(camera->ComputeProjectionMatrix(), 
                                   camera->GetWindowPolicy(),
                                   aspect)
         * yflip;
     
-    return { camera->GetViewMatrix(),
+    return { camera->GetTransform().GetInverse(),
              projectionMatrix,
              viewport,
              camera->GetClipPlanes() };
@@ -469,11 +470,24 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
 
     ///----------------------
 
-    // lighting context
+    // lighting context and lighting shader
     GlfSimpleLightingContextRefPtr srcLightingContext;
     _GetTaskContextData(ctx, HdxTokens->lightingContext, &srcLightingContext);
 
+    HdStSimpleLightingShaderSharedPtr srcSimpleLightingShader;
+    VtValue lightingShader = (*ctx)[HdxTokens->lightingShader];
+    if (lightingShader.IsHolding<HdStLightingShaderSharedPtr>()) {
+        if (HdStSimpleLightingShaderSharedPtr simpleLightingShader =
+            std::dynamic_pointer_cast<HdStSimpleLightingShader>(
+                lightingShader.UncheckedGet<HdStLightingShaderSharedPtr>())) {
+            srcSimpleLightingShader = simpleLightingShader;
+        }
+    }
+
     for (_RenderPassInfo &renderPassInfo : _renderPassesInfo) {
+        if (srcSimpleLightingShader) {
+            renderPassInfo.simpleLightingShader = srcSimpleLightingShader;
+        }
 
         const _CameraInfo cameraInfo = _ComputeCameraInfo(
             renderIndex,
@@ -509,6 +523,7 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+    GLF_GROUP_FUNCTION();
 
     // Apply polygon offset to whole pass.
     // XXX TODO: Move to an appropriate home

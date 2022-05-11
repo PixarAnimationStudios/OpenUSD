@@ -359,6 +359,19 @@ Sdf_CreateIdentifier(
     return layerPath + Sdf_EncodeArguments(arguments);
 }
 
+bool Sdf_StripIdentifierArgumentsIfPresent(
+    const std::string &identifier,
+    std::string *strippedIdentifier)
+{
+    size_t argPos = identifier.find(_Tokens->ArgsDelimiter.GetString());
+    if (argPos == string::npos) {
+        return false;
+    }
+    
+    *strippedIdentifier = string(identifier, 0, argPos);
+    return true;
+}
+
 bool
 Sdf_SplitIdentifier(
     const string& identifier,
@@ -435,9 +448,11 @@ Sdf_GetExtension(
 {
     // Split the identifier to get the layer asset path without
     // any file format arguments.
-    string assetPath;
-    std::string dummyArgs;
-    Sdf_SplitIdentifier(identifier, &assetPath, &dummyArgs);
+    string strippedPath;
+    const string &assetPath =
+        Sdf_StripIdentifierArgumentsIfPresent(identifier, &strippedPath)
+        ? strippedPath
+        : identifier;
 
     if (Sdf_IsAnonLayerIdentifier(assetPath)) {
         // Strip off the "anon:0x...:" portion of the anonymous layer
@@ -445,7 +460,7 @@ Sdf_GetExtension(
         // allows clients to create anonymous layers using tags that
         // match their asset path scheme and retrieve the extension
         // via ArResolver.
-        assetPath = Sdf_GetAnonLayerDisplayName(assetPath);
+        return Sdf_GetExtension(Sdf_GetAnonLayerDisplayName(assetPath));
     }
 
     // XXX: If the asset path is a dot file (e.g. ".sdf"), we append
@@ -453,7 +468,7 @@ Sdf_GetExtension(
     // interpreted as a directory name. This is legacy behavior that
     // should be fixed.
     if (!assetPath.empty() && assetPath[0] == '.') {
-        assetPath = "temp_file_name" + assetPath;
+        return Sdf_GetExtension("temp_file_name" + assetPath);
     }
 
     return ArGetResolver().GetExtension(assetPath);

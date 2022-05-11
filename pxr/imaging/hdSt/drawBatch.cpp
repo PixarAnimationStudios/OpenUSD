@@ -31,7 +31,6 @@
 #include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/package.h"
-#include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
@@ -134,6 +133,11 @@ HdSt_DrawBatch::_IsAggregated(HdStDrawItem const *drawItem0,
         return false;
     }
 
+    if (drawItem0->GetMaterialIsFinal() != 
+        drawItem1->GetMaterialIsFinal()) {
+        return false;
+    }
+
     if (drawItem0->GetGeometricShader() == drawItem1->GetGeometricShader()
         && drawItem0->GetInstancePrimvarNumLevels() ==
             drawItem1->GetInstancePrimvarNumLevels()
@@ -224,7 +228,6 @@ _GetFallbackMaterialNetworkShader()
 
 HdSt_DrawBatch::_DrawingProgram &
 HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
-                                 bool indirect,
                                  HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
@@ -238,10 +241,13 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
     boost::hash_combine(shaderHash,
                         firstDrawItem->GetGeometricShader()->ComputeHash());
 
-    HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader  =
-        state->GetUseSceneMaterials()
-            ? firstDrawItem->GetMaterialNetworkShader()
-            : _GetFallbackMaterialNetworkShader();
+    HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader =
+        firstDrawItem->GetMaterialNetworkShader();
+    
+    if (!state->GetUseSceneMaterials() &&
+        !firstDrawItem->GetMaterialIsFinal() ) {
+        materialNetworkShader = _GetFallbackMaterialNetworkShader();
+    }
 
     size_t materialNetworkShaderHash =
         materialNetworkShader ? materialNetworkShader->ComputeHash() : 0;
@@ -265,7 +271,7 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
 
         // Try to compile the shader and if it fails to compile we go back
         // to use the specified fallback material network shader.
-        if (!_program.CompileShader(firstDrawItem, indirect, resourceRegistry)){
+        if (!_program.CompileShader(firstDrawItem, resourceRegistry)){
 
             // While the code should gracefully handle shader compilation
             // failures, it is also undesirable for shaders to silently fail.
@@ -286,7 +292,6 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
                 _GetFallbackMaterialNetworkShader());
 
             bool res = _program.CompileShader(firstDrawItem, 
-                                              indirect, 
                                               resourceRegistry);
             // We expect the fallback shader to always compile.
             TF_VERIFY(res, "Failed to compile with fallback material network");
@@ -299,9 +304,14 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
 }
 
 bool
+HdSt_DrawBatch::_DrawingProgram::IsValid() const
+{
+    return _glslProgram && _glslProgram->Validate();
+}
+
+bool
 HdSt_DrawBatch::_DrawingProgram::CompileShader(
         HdStDrawItem const *drawItem,
-        bool indirect,
         HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
@@ -331,9 +341,10 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
     _resourceBinder.ResolveBindings(drawItem,
                                     shaders,
                                     codeGen.GetMetaData(),
-                                    indirect,
                                     instanceDraw,
-                                    customBindings);
+                                    customBindings,
+                                    resourceRegistry->GetHgi()->
+                                        GetCapabilities());
 
     HdStGLSLProgram::ID hash = codeGen.ComputeHash();
 
@@ -353,9 +364,7 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
 
         _glslProgram = programInstance.GetValue();
 
-        if (_glslProgram) {
-            _resourceBinder.IntrospectBindings(_glslProgram->GetProgram());
-        } else {
+        if (!_glslProgram) {
             // Failed to compile and link a valid glsl program.
             return false;
         }

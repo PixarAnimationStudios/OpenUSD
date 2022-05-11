@@ -147,6 +147,16 @@ public:
     USD_API
     static bool IsConcrete(const TfToken& primType);
 
+    /// Returns true if the prim type \p primType is an abstract schema type 
+    /// and, unlike a concrete type, is not instantiable in scene description.
+    USD_API
+    static bool IsAbstract(const TfType& primType);
+
+    /// Returns true if the prim type \p primType is an abstract schema type 
+    /// and, unlike a concrete type, is not instantiable in scene description.
+    USD_API
+    static bool IsAbstract(const TfToken& primType);
+
     /// Returns true if \p apiSchemaType is an applied API schema type.
     USD_API
     static bool IsAppliedAPISchema(const TfType& apiSchemaType);
@@ -269,11 +279,71 @@ public:
     static void CollectAddtionalAutoApplyAPISchemasFromPlugins(
         std::map<TfToken, TfTokenVector> *autoApplyAPISchemas);
 
-    /// Returns the namespace prefix that is prepended to all properties of
-    /// the given \p multiApplyAPISchemaName.
+    /// Creates a name template that can represent a property or API schema that
+    /// belongs to a multiple apply schema and will therefore have multiple 
+    /// instances with different names.
+    ///
+    /// The name template is created by joining the \p namespacePrefix, 
+    /// the instance name placeholder "__INSTANCE_NAME__", and the 
+    /// \p baseName using the namespace delimiter. Therefore the 
+    /// returned name template will be of one of the following forms depending 
+    /// on whether either of the inputs is empty:
+    /// 1. namespacePrefix:__INSTANCE_NAME__:baseName
+    /// 2. namespacePrefix:__INSTANCE_NAME__
+    /// 3. __INSTANCE_NAME__:baseName
+    /// 4. __INSTANCE_NAME__
+    /// 
+    /// Name templates can be passed to MakeMultipleApplyNameInstance along with
+    /// an instance name to create the name for a particular instance.
+    /// 
     USD_API
-    TfToken GetPropertyNamespacePrefix(
-        const TfToken &multiApplyAPISchemaName) const;
+    static TfToken MakeMultipleApplyNameTemplate(
+        const std::string &namespacePrefix, 
+        const std::string &baseName);
+
+    /// Returns an instance of a multiple apply schema name from the given 
+    /// \p nameTemplate for the given \p instanceName.
+    ///
+    /// The returned name is created by replacing the instance name placeholder 
+    /// "__INSTANCE_NAME__" in the name template with the given instance name.
+    /// If the instance name placeholder is not found in \p nameTemplate, then 
+    /// the name template is not multiple apply name template and is returned as
+    /// is.
+    /// 
+    /// Note that the instance name placeholder must be found as an exact full
+    /// word match with one of the tokenized components of the name template, 
+    /// when tokenized by the namespace delimiter, in order for it to be treated
+    /// as a placeholder and substituted with the instance name.
+    ///
+    USD_API
+    static TfToken MakeMultipleApplyNameInstance(
+        const std::string &nameTemplate,
+        const std::string &instanceName);
+
+    /// Returns the base name for the multiple apply schema name template 
+    /// \p nameTemplate.
+    ///
+    /// The base name is the substring of the given name template that comes
+    /// after the instance name placeholder and the subsequent namespace 
+    /// delimiter. If the given property name does not contain the instance name
+    /// placeholder, it is not a name template and the name template is returned
+    /// as is.
+    ///
+    USD_API
+    static TfToken GetMultipleApplyNameTemplateBaseName(
+        const std::string &nameTemplate);
+
+    /// Returns true if \p nameTemplate is a multiple apply schema name 
+    /// template.
+    ///
+    /// The given \p nameTemplate is a name template if and only if it 
+    /// contains the instance name place holder "__INSTANCE_NAME__" as an exact
+    /// match as one of the tokenized components of the name tokenized by
+    /// the namespace delimiter.
+    ///
+    USD_API
+    static bool IsMultipleApplyNameTemplate(
+        const std::string &nameTemplate);
 
     /// Finds the prim definition for the given \p typeName token if 
     /// \p typeName is a registered concrete typed schema type. Returns null if
@@ -281,7 +351,7 @@ public:
     const UsdPrimDefinition* FindConcretePrimDefinition(
         const TfToken &typeName) const {
         const auto it = _concreteTypedPrimDefinitions.find(typeName);
-        return it != _concreteTypedPrimDefinitions.end() ? it->second : nullptr;
+        return it != _concreteTypedPrimDefinitions.end() ? it->second.get() : nullptr;
     }
 
     /// Finds the prim definition for the given \p typeName token if 
@@ -293,13 +363,13 @@ public:
         // apply schemas. This function will most often be used to find a 
         // single apply schema's prim definition as the prim definitions for
         // multiple apply schemas aren't generally useful.
-        const auto it = _singleApplyAPIPrimDefinitions.find(typeName);
-        if (it != _singleApplyAPIPrimDefinitions.end()) {
-            return it->second;
+        const auto it = _appliedAPIPrimDefinitions.find(typeName);
+        if (it != _appliedAPIPrimDefinitions.end()) {
+            return it->second.get();
         }
         const auto multiIt = _multiApplyAPIPrimDefinitions.find(typeName);
         return multiIt != _multiApplyAPIPrimDefinitions.end() ? 
-            multiIt->second.primDef : nullptr;
+            multiIt->second : nullptr;
     }
 
     /// Returns the empty prim definition.
@@ -339,10 +409,10 @@ private:
     // For the given full API schema name (which may be "type:instance" for 
     // multiple apply API schemas), finds and returns the prim definition for 
     // the API schema type. If the API schema is an instance of a multiple 
-    // apply API, the full prefix that will be prepended to all properties 
-    // when the schema is applied will be set in propertyPrefix.
+    // apply API, the instance name will be set in instanceName.
     const UsdPrimDefinition *_FindAPIPrimDefinitionByFullName(
-        const TfToken &apiSchemaName, std::string *propertyPrefix) const;
+        const TfToken &apiSchemaName, 
+        TfToken *instanceName) const;
 
     void _ComposeAPISchemasIntoPrimDefinition(
         UsdPrimDefinition *primDef, 
@@ -353,24 +423,21 @@ private:
     // registry.
     class _SchemaDefInitHelper;
 
-    // Multiple apply API schema definitions want to be stored along with the
-    // their schema's property namespace prefix which is required to correctly
-    // apply them.
-    struct _MultipleApplyAPIDefinition {
-        UsdPrimDefinition *primDef = nullptr;
-        TfToken propertyNamespace;
-    };
-    using _TypeNameToMultipleApplyAPIDefinitionMap = std::unordered_map<
-        TfToken, _MultipleApplyAPIDefinition, TfToken::HashFunctor>;
-
     using _TypeNameToPrimDefinitionMap = std::unordered_map<
-        TfToken, UsdPrimDefinition *, TfToken::HashFunctor>;
+        TfToken, const std::unique_ptr<UsdPrimDefinition>, TfToken::HashFunctor>;
 
     SdfLayerRefPtr _schematics;
 
     _TypeNameToPrimDefinitionMap _concreteTypedPrimDefinitions;
-    _TypeNameToPrimDefinitionMap _singleApplyAPIPrimDefinitions;
-    _TypeNameToMultipleApplyAPIDefinitionMap _multiApplyAPIPrimDefinitions;
+    _TypeNameToPrimDefinitionMap _appliedAPIPrimDefinitions;
+
+    // This is a mapping from multiple apply API schema name (e.g. 
+    // "CollectionAPI") to the template prim definition stored for it in
+    // _appliedAPIPrimDefinitions as the template prim definition is actually 
+    // mapped to its template name (e.g. "CollectionAPI:__INSTANCE_NAME__") in
+    // that map.
+    std::unordered_map<TfToken, const UsdPrimDefinition *, TfToken::HashFunctor> 
+        _multiApplyAPIPrimDefinitions;
     UsdPrimDefinition *_emptyPrimDefinition;
 
     VtDictionary _fallbackPrimTypes;

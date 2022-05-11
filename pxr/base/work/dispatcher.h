@@ -63,10 +63,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// dispatcher.Wait();
 /// \endcode
 ///
-/// Calls to Run() and Cancel() may be made concurrently.  However, once Wait()
-/// is called, calls to Run() and Cancel() must only be made by tasks already
-/// added by Run().  Additionally, Wait() must never be called by a task added by
-/// Run(), since that task could never complete.
+/// Calls to Run() and Cancel() may be made concurrently.  Calls to Wait() may
+/// also be made concurrently.  However, once any calls to Wait() are in-flight,
+/// calls to Run() and Cancel() must only be made by tasks already added by
+/// Run().  This means that users of this class are responsible to synchronize
+/// concurrent calls to Wait() to ensure this requirement is met.
+///
+/// Additionally, Wait() must never be called by a task added by Run(), since
+/// that task could never complete.
 ///
 class WorkDispatcher
 {
@@ -174,6 +178,9 @@ private:
     // The error transports we use to transmit errors in other threads back to
     // this thread.
     _ErrorTransports _errors;
+
+    // Concurrent calls to Wait() have to serialize certain cleanup operations.
+    std::atomic_flag _waitCleanupFlag;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

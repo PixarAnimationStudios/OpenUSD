@@ -307,7 +307,7 @@ SdfGetNameForUnit( const TfEnum &unit )
 
     // get indices
     std::pair<uint32_t, uint32_t> indices = Sdf_GetUnitIndices(unit);
-    // look up menva name in our table
+    // look up sdf name in our table
     return info._UnitNameTable[indices.first][indices.second];
 }
 

@@ -42,26 +42,29 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
         NormalSourceSmooth,
         NormalSourceLimit,
         NormalSourceFlat,
-        NormalSourceGeometryShader,
-        NormalSourceScreenSpace
+        NormalSourceFlatGeometric,
+        NormalSourceFlatScreenSpace,
     };
 
     HdSt_MeshShaderKey(HdSt_GeometricShader::PrimitiveType primType,
                        TfToken shadingTerminal,
-                       bool useCustomDisplacement,
                        NormalSource normalsSource,
                        HdInterpolation normalsInterpolation,
-                       bool doubleSided,
-                       bool forceGeometryShader,
-                       bool hasTopologicalVisibility,
-                       bool blendWireframeColor,
                        HdCullStyle cullStyle,
                        HdMeshGeomStyle geomStyle,
+                       HdSt_GeometricShader::FvarPatchType fvarPatchType,
                        float lineWidth,
+                       bool doubleSided,
+                       bool hasBuiltinBarycentrics,
+                       bool hasMetalTessellation,
+                       bool hasCustomDisplacement,
+                       bool hasPerFaceInterpolation,
+                       bool hasTopologicalVisibility,
+                       bool blendWireframeColor,
                        bool hasMirroredTransform,
                        bool hasInstancer,
-                       bool enableScalarOverride, 
-                       HdSt_GeometricShader::FvarPatchType fvarPatchType);
+                       bool enableScalarOverride,
+                       bool pointsShadingEnabled);
 
     // Note: it looks like gcc 4.8 has a problem issuing
     // a wrong warning as "array subscript is above array bounds"
@@ -80,6 +83,9 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     bool IsDoubleSided() const override {
         return doubleSided;
     }
+    bool UseMetalTessellation() const override {
+        return useMetalTessellation;
+    }
 
     HdPolygonMode GetPolygonMode() const override { return polygonMode; }
     float GetLineWidth() const override { return lineWidth; }
@@ -95,6 +101,7 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     bool useHardwareFaceCulling;
     bool hasMirroredTransform;
     bool doubleSided;
+    bool useMetalTessellation;
     HdPolygonMode polygonMode;
     float lineWidth;
     HdSt_GeometricShader::FvarPatchType fvarPatchType;
@@ -103,6 +110,8 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     TfToken const *GetVS()  const override { return VS; }
     TfToken const *GetTCS() const override { return TCS; }
     TfToken const *GetTES() const override { return TES; }
+    TfToken const *GetPTCS()  const override { return PTCS; }
+    TfToken const *GetPTVS()  const override { return PTVS; }
     TfToken const *GetGS()  const override { return GS; }
     TfToken const *GetFS()  const override { return FS; }
 
@@ -110,8 +119,10 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     TfToken VS[7];
     TfToken TCS[3];
     TfToken TES[4];
+    TfToken PTCS[3];
+    TfToken PTVS[11];
     TfToken GS[10];
-    TfToken FS[19];
+    TfToken FS[22];
 };
 
 

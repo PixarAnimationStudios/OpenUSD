@@ -31,7 +31,6 @@
 
 #include "pxr/usd/sdf/path.h"
 
-#include "pxr/base/vt/value.h"
 #include "pxr/base/tf/token.h"
 
 #include <memory>
@@ -87,12 +86,10 @@ public:
     NamedTextureHandleVector const & GetNamedTextureHandles() const override;
     HDST_API
     void BindResources(int program,
-                       HdSt_ResourceBinder const &binder,
-                       HdRenderPassState const &state) override;
+                       HdSt_ResourceBinder const &binder) override;
     HDST_API
     void UnbindResources(int program,
-                         HdSt_ResourceBinder const &binder,
-                         HdRenderPassState const &state) override;
+                         HdSt_ResourceBinder const &binder) override;
     HDST_API
     void AddBindings(HdBindingRequestVector *customBindings) override;
     HDST_API
@@ -109,6 +106,8 @@ public:
     void SetFragmentSource(const std::string &source);
     HDST_API
     void SetGeometrySource(const std::string &source);
+    HDST_API
+    void SetDisplacementSource(const std::string &source);
     HDST_API
     void SetParams(const HdSt_MaterialParamVector &params);
     HDST_API
@@ -163,6 +162,7 @@ protected:
 private:
     std::string _fragmentSource;
     std::string _geometrySource;
+    std::string _displacementSource;
 
     // Shader Parameters
     HdSt_MaterialParamVector       _params;

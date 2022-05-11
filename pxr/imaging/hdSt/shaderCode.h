@@ -61,7 +61,7 @@ using HdStTextureHandleSharedPtr =
 using HdComputationSharedPtr =
     std::shared_ptr<class HdComputation>;
 
-class HdRenderPassState;
+class HioGlslfx;
 class HdSt_ResourceBinder;
 class HdStResourceRegistry;
 
@@ -110,6 +110,12 @@ public:
     /// Returns the shader source provided by this shader
     /// for \a shaderStageKey
     virtual std::string GetSource(TfToken const &shaderStageKey) const = 0;
+
+    /// Returns the resource layout for the shader stages specified by
+    /// \a shaderStageKeys. This is initialized using the shader's
+    /// HioGlslfx configuration.
+    HDST_API
+    VtDictionary GetLayout(TfTokenVector const &shaderStageKeys) const;
 
     // XXX: Should be pure-virtual
     /// Returns the shader parameters for this shader.
@@ -170,13 +176,11 @@ public:
     /// XXX: this interface is meant to be used for bridging
     /// the GlfSimpleLightingContext mechanism, and not for generic use-cases.
     virtual void BindResources(int program,
-                               HdSt_ResourceBinder const &binder,
-                               HdRenderPassState const &state) = 0;
+                               HdSt_ResourceBinder const &binder) = 0;
 
     /// Unbinds shader-specific resources.
     virtual void UnbindResources(int program,
-                                 HdSt_ResourceBinder const &binder,
-                                 HdRenderPassState const &state) = 0;
+                                 HdSt_ResourceBinder const &binder) = 0;
 
     /// Add custom bindings (used by codegen)
     virtual void AddBindings(HdBindingRequestVector* customBindings) = 0;
@@ -207,6 +211,10 @@ public:
         void AddComputation(HdBufferArrayRangeSharedPtr const &range,
                             HdComputationSharedPtr const &computation,
                             HdStComputeQueue const queue);
+        
+        HdStResourceRegistry * GetResourceRegistry() const {
+            return _registry;
+        }
 
     private:
         friend class HdStResourceRegistry;
@@ -229,6 +237,10 @@ private:
     // No copying
     HdStShaderCode(const HdStShaderCode &)                      = delete;
     HdStShaderCode &operator =(const HdStShaderCode &)          = delete;
+
+    // Returns the HioGlslfx instance used to configure this shader.
+    // This can return nullptr for shaders without a GLSLFX instance.
+    virtual HioGlslfx const * _GetGlslfx() const;
 };
 
 

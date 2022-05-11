@@ -90,6 +90,26 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// * <typeTag> *!*
 ///   * <tag>
 ///     * _value_
+/// * <usdSchemaDef>
+///   * <metadataKey> (this specified a metadata key with an appropriate
+///                    value, example "schemaName", schemaKind", etc. Refer
+///                    UsdUtilsUpdateSchemaFromSdr for all valid metadata keys 
+///                    for usdSchemaDef)
+///     * _value_
+///   * <apiSchemaAutoApplyTo>
+///     * <autoApplyTo>
+///       * _value_
+///   * <apiSchemaCanOnlyApplyTo>
+///     * <autoApplyTo>
+///       * _value_
+///   * <apiSchemasForAttrPruning>
+///     * <apiSchema>
+///       * _value_
+/// * <sdrGlobalConfig>
+///   * <sdrDefinitionNameFallbackPrefix> (Used as a prefix for parameters that
+///                                        do not have an explicit
+///                                        _sdrDefinitionName_ provided.)
+///     * _value_
 ///
 /// For more information on the specifics of what any of these elements or
 /// attributes mean, see the Renderman documentation on the Args format. Items
@@ -111,20 +131,6 @@ public:
 
     RMAN_ARGS_PARSER_API
     const TfToken& GetSourceType() const override;
-
-    /// Parses mappings shader indentifiers to aliases for that shader an Args
-    /// file indicated by the discovery result. This used by the 
-    /// RmanDiscoveryPlugin to gather aliases for shaders from a special alias
-    /// Args file.
-    /// 
-    /// The alias Args file is expected to contain one or more elements of the
-    /// form
-    /// * <shaderAlias name="_ShaderName_" alias="_ShaderAlias_" />
-    /// 
-    RMAN_ARGS_PARSER_API
-    static void ParseShaderAliases(
-        const NdrNodeDiscoveryResult& aliasesDiscoveryRes,
-        std::map<NdrIdentifier, NdrTokenVec> *aliasMap);
 };
 
 

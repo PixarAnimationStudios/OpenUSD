@@ -145,9 +145,6 @@ HdxFullscreenShader::SetProgram(
     std::string vsCode;
     //pass this guy in as a reference -->
     
-    if(_hgi->GetAPIName() == HgiTokens->OpenGL) {
-        vsCode = "#version 450 \n";
-    }
     vsCode +=vsGlslfx.GetSource(_tokens->fullscreenVertex);
     TF_VERIFY(!vsCode.empty());
 
@@ -157,9 +154,6 @@ HdxFullscreenShader::SetProgram(
     // Setup the fragment shader
     std::string fsCode;
     
-    if(_hgi->GetAPIName() == HgiTokens->OpenGL) {
-        fsCode = "#version 450 \n";
-    }
     fsCode += fsGlslfx.GetSource(_shaderName);
     TF_VERIFY(!fsCode.empty());
     fragDesc.shaderCode = fsCode.c_str();
@@ -304,23 +298,17 @@ HdxFullscreenShader::_CreateBufferResources()
      */
     constexpr size_t elementsPerVertex = 6;
     constexpr size_t vertDataCount = elementsPerVertex * 3;
-    constexpr float vertDataGL[vertDataCount] = 
+    constexpr float vertData[vertDataCount] =
             { -1,  3, 0, 1,     0, 2,
               -1, -1, 0, 1,     0, 0,
                3, -1, 0, 1,     2, 0};
 
-    constexpr float vertDataOther[vertDataCount] =
-            { -1,  3, 0, 1,     0, -1,
-              -1, -1, 0, 1,     0, 1,
-               3, -1, 0, 1,     2, 1};
-
     HgiBufferDesc vboDesc;
     vboDesc.debugName = "HdxFullscreenShader VertexBuffer";
     vboDesc.usage = HgiBufferUsageVertex;
-    vboDesc.initialData = _hgi->GetAPIName() != HgiTokens->OpenGL 
-        ? vertDataOther : vertDataGL;
-    vboDesc.byteSize = sizeof(vertDataGL);
-    vboDesc.vertexStride = elementsPerVertex * sizeof(vertDataGL[0]);
+    vboDesc.initialData = vertData;
+    vboDesc.byteSize = sizeof(vertData);
+    vboDesc.vertexStride = elementsPerVertex * sizeof(vertData[0]);
     _vertexBuffer = _hgi->CreateBuffer(vboDesc);
 
     static const int32_t indices[3] = {0,1,2};
@@ -506,7 +494,16 @@ HdxFullscreenShader::_CreatePipeline(
     // pixels that were set with a clearColor alpha of 0.0.
     desc.multiSampleState.alphaToCoverageEnable = false;
 
-    // Setup raserization state
+    // The MSAA on renderPipelineState has to match the render target.
+    if (colorDst) {
+        desc.multiSampleState.sampleCount = 
+            colorDst->GetDescriptor().sampleCount;
+    } else if (depthDst) {
+        desc.multiSampleState.sampleCount = 
+            depthDst->GetDescriptor().sampleCount;
+    }
+
+    // Setup rasterization state
     desc.rasterizationState.cullMode = HgiCullModeBack;
     desc.rasterizationState.polygonMode = HgiPolygonModeFill;
     desc.rasterizationState.winding = HgiWindingCounterClockwise;
@@ -700,7 +697,7 @@ HdxFullscreenShader::_Draw(
             _constantsData.size(), _constantsData.data());
     }
 
-    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1);
+    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1, 0);
     gfxCmds->PopDebugGroup();
 
     // Done recording commands, submit work.

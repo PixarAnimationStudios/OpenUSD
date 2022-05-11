@@ -1,0 +1,48 @@
+#usda 1.0
+(
+    endTimeCode = 4
+    startTimeCode = 0
+    upAxis = "Z"
+)
+
+def PointInstancer "Instancer" (
+    inactiveIds = [3]
+)
+{
+    float3[] extent = [(-7, -1, -1), (7, 1, 1)]
+
+    #           0 1 2 3 4
+    #  Frame 0: * * * - * (3 = inactive)
+    #  Frame 1: - * * - * (0 = invisible, 3 = inactive)
+    #  Frame 2: * - * * - (4 = invisible, 1 = inactive / ids remapping)
+    #  Frame 3: * - * * * (inactive / ids remapping)
+    #  Frame 4: * * * - * (3 = inactive)
+
+    int64[] ids.timeSamples = {
+        0: [0, 1, 2, 3, 4],
+        1: [0, 1, 2, 3, 4],
+        2: [4, 3, 2, 1, 0],
+        3: [4, 3, 2, 1, 0],
+        4: [0, 1, 2, 3, 4],
+    }
+    int64[] invisibleIds.timeSamples = {
+        0: [],
+        1: [0],
+        2: [0],
+        3: [],
+    }
+    point3f[] positions = [(-6, 0, 0), (-3, 0, 0), (0, 0, 0), (3, 0, 0), (6, 0, 0)]
+    int[] protoIndices = [0, 0, 0, 0, 0]
+    rel prototypes = </Instancer/Protos/Proto1>
+
+    def "Protos"
+    {
+        def "Proto1"
+        {
+            def Cube "Cube"
+            {
+            }
+        }
+    }
+}
+

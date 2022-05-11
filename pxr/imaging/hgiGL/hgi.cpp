@@ -29,6 +29,7 @@
 #include "pxr/imaging/hgiGL/buffer.h"
 #include "pxr/imaging/hgiGL/computeCmds.h"
 #include "pxr/imaging/hgiGL/computePipeline.h"
+#include "pxr/imaging/hgiGL/contextArena.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/device.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
@@ -85,6 +86,13 @@ HgiGL::~HgiGL()
 {
     _garbageCollector.PerformGarbageCollection();
     delete _device;
+}
+
+bool
+HgiGL::IsBackendSupported() const
+{
+    // Want OpenGL 4.5 or higher.
+    return GetCapabilities()->GetAPIVersion() >= 450;
 }
 
 HgiGLDevice*
@@ -178,7 +186,8 @@ HgiGL::DestroyBuffer(HgiBufferHandle* bufHandle)
 HgiShaderFunctionHandle
 HgiGL::CreateShaderFunction(HgiShaderFunctionDesc const& desc)
 {
-    return HgiShaderFunctionHandle(new HgiGLShaderFunction(desc),GetUniqueId());
+    return HgiShaderFunctionHandle(
+        new HgiGLShaderFunction(this, desc), GetUniqueId());
 }
 
 void
@@ -218,7 +227,7 @@ HgiGraphicsPipelineHandle
 HgiGL::CreateGraphicsPipeline(HgiGraphicsPipelineDesc const& desc)
 {
     return HgiGraphicsPipelineHandle(
-        new HgiGLGraphicsPipeline(desc), GetUniqueId());
+        new HgiGLGraphicsPipeline(this, desc), GetUniqueId());
 }
 
 void
@@ -271,6 +280,7 @@ HgiGL::EndFrame()
 {
     if (--_frameDepth == 0) {
         _garbageCollector.PerformGarbageCollection();
+        _device->GarbageCollect();
 
         // End Full Frame debug label
         #if defined(GL_KHR_debug)
@@ -279,6 +289,28 @@ HgiGL::EndFrame()
         }
         #endif
     }
+}
+
+HgiGLContextArenaHandle
+HgiGL::CreateContextArena()
+{
+    return HgiGLContextArenaHandle(
+                new HgiGLContextArena(), GetUniqueId());
+}
+
+void
+HgiGL::DestroyContextArena(HgiGLContextArenaHandle* arenaHandle)
+{
+    if (arenaHandle) {
+        delete arenaHandle->Get();
+        *arenaHandle = HgiGLContextArenaHandle();
+    }
+}
+
+void
+HgiGL::SetContextArena(HgiGLContextArenaHandle const& arenaHandle)
+{
+    _device->SetCurrentArena(arenaHandle);
 }
 
 bool
@@ -305,6 +337,7 @@ HgiGL::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
     // If the Hgi client does not call Hgi::EndFrame we garbage collect here.
     if (_frameDepth == 0) {
         _garbageCollector.PerformGarbageCollection();
+        _device->GarbageCollect();
     }
 
     return result;

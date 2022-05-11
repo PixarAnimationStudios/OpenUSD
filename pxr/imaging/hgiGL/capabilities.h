@@ -45,6 +45,21 @@ public:
 
     HGIGL_API
     HgiGLCapabilities();
+
+    HGIGL_API
+    int GetAPIVersion() const override;
+
+    HGIGL_API
+    int GetShaderVersion() const override;
+
+private:
+    void _LoadCapabilities();
+
+    // GL version
+    int _glVersion;   // 400 (4.0), 410 (4.1), ...
+    
+    // GLSL version 
+    int _glslVersion; // 400, 410, ...
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -210,6 +210,12 @@ HdRenderDelegate::IsPauseSupported() const
 }
 
 bool
+HdRenderDelegate::IsPaused() const
+{
+    return false;
+}
+
+bool
 HdRenderDelegate::Pause()
 {
     return false;
@@ -228,9 +234,15 @@ HdRenderDelegate::IsStopSupported() const
 }
 
 bool
-HdRenderDelegate::Stop()
+HdRenderDelegate::IsStopped() const
 {
-    return false;
+    return true;
+}
+
+bool
+HdRenderDelegate::Stop(bool blocking)
+{
+    return true;
 }
 
 bool

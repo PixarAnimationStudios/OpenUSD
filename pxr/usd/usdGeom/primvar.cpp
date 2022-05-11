@@ -43,8 +43,24 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 UsdGeomPrimvar::UsdGeomPrimvar(const UsdAttribute &attr)
     : _attr(attr)
+    , _idTargetStatus(IdTargetUninitialized)
 {
-    _SetIdTargetRelName();
+}
+
+UsdGeomPrimvar::UsdGeomPrimvar(const UsdGeomPrimvar &other)
+    : _attr(other._attr)
+    , _idTargetStatus(IdTargetUninitialized)
+{
+}
+
+UsdGeomPrimvar &
+UsdGeomPrimvar::operator=(const UsdGeomPrimvar &other)
+{
+    if (this != &other) {
+        _idTargetStatus = IdTargetUninitialized;
+        _attr = other._attr;
+    }
+    return *this;
 }
 
 /* static */
@@ -402,6 +418,7 @@ UsdGeomPrimvar::ComputeFlattened(
 UsdGeomPrimvar::UsdGeomPrimvar(const UsdPrim& prim, 
                                const TfToken& primvarName,
                                const SdfValueTypeName &typeName)
+    : _idTargetStatus(IdTargetUninitialized)
 {
     TF_VERIFY(prim);
 
@@ -412,25 +429,10 @@ UsdGeomPrimvar::UsdGeomPrimvar(const UsdPrim& prim,
     }
     // If a problem occurred, an error should already have been issued,
     // and _attr will be invalid, which is what we want
-
-    _SetIdTargetRelName();
 }
 
-void
-UsdGeomPrimvar::_SetIdTargetRelName()
-{
-    if (!_attr) {
-        return;
-    }
-
-    const SdfValueTypeName& typeName = _attr.GetTypeName();
-    if (typeName == SdfValueTypeNames->String ||
-            typeName == SdfValueTypeNames->StringArray) {
-        std::string name(_attr.GetName().GetString());
-        _idTargetRelName = TfToken(name.append(_tokens->idFrom.GetText()));
-    }
-}
-
+// Note! caller must ensure that _idTargetStatus == IdTargetPossible before
+// calling.
 UsdRelationship
 UsdGeomPrimvar::_GetIdTargetRel(bool create) const
 {
@@ -445,14 +447,16 @@ UsdGeomPrimvar::_GetIdTargetRel(bool create) const
 bool
 UsdGeomPrimvar::IsIdTarget() const
 {
-    return !_idTargetRelName.IsEmpty() && _GetIdTargetRel(false);
+    return _ComputeIdTargetPossibility() &&
+        !_idTargetRelName.IsEmpty() &&
+        _GetIdTargetRel(false);
 }
 
 bool
 UsdGeomPrimvar::SetIdTarget(
         const SdfPath& path) const
 {
-    if (_idTargetRelName.IsEmpty()) {
+    if (!_ComputeIdTargetPossibility()) {
         TF_CODING_ERROR("Can only set ID Target for string or string[] typed"
                         " primvars (primvar type is '%s')",
                         _attr.GetTypeName().GetAsToken().GetText());
@@ -461,8 +465,7 @@ UsdGeomPrimvar::SetIdTarget(
 
     if (UsdRelationship rel = _GetIdTargetRel(true)) {
         SdfPathVector targets;
-        targets.push_back(path.IsEmpty() ? _attr.GetPrimPath() : 
-                path);
+        targets.push_back(path.IsEmpty() ? _attr.GetPrimPath() : path);
         return rel.SetTargets(targets);
     }
     return false;
@@ -476,7 +479,7 @@ UsdGeomPrimvar::Get(
 {
     // check if there is a relationship and if so use the target path string to
     // get the string value.
-    if (!_idTargetRelName.IsEmpty()) {
+    if (_ComputeIdTargetPossibility()) {
         if (UsdRelationship rel = _GetIdTargetRel(false)) {
             SdfPathVector targets;
             if (rel.GetForwardedTargets(&targets) && 
@@ -504,7 +507,7 @@ UsdGeomPrimvar::Get(
 {
     // check if there is a relationship and if so use the target path string to
     // get the string value... Just take the first target, for now.
-    if (!_idTargetRelName.IsEmpty()) {
+    if (_ComputeIdTargetPossibility()) {
         if (UsdRelationship rel = _GetIdTargetRel(false)) {
             value->clear();
             SdfPathVector targets;
@@ -526,7 +529,7 @@ UsdGeomPrimvar::Get(
         VtValue* value,
         UsdTimeCode time) const
 {
-    if (!_idTargetRelName.IsEmpty()) {
+    if (_ComputeIdTargetPossibility()) {
         const SdfValueTypeName& typeName = _attr.GetTypeName();
         if (typeName == SdfValueTypeNames->String) {
             std::string s;
@@ -603,6 +606,42 @@ UsdGeomPrimvar::NameContainsNamespaces() const
             != std::string::npos);
 }
 
+bool
+UsdGeomPrimvar::_ComputeIdTargetPossibility() const
+{
+    // Read the current value.
+    _IdTargetStatus status = _idTargetStatus.load();
+
+    if (status == IdTargetUninitialized) {
+        // Attempt to take it to Initializing.
+        if (_idTargetStatus.compare_exchange_strong(
+                status, IdTargetInitializing)) {
+            // We get to do the initialization.
+            if (!_attr) {
+                _idTargetStatus = IdTargetImpossible;
+            }
+            else {
+                // Set the rel target name.
+                const SdfValueTypeName& typeName = _attr.GetTypeName();
+                if (typeName == SdfValueTypeNames->String ||
+                    typeName == SdfValueTypeNames->StringArray) {
+                    std::string name(_attr.GetName().GetString());
+                    _idTargetRelName = TfToken(
+                        name.append(_tokens->idFrom.GetText()));
+                    _idTargetStatus = status = IdTargetPossible;
+                }
+                else {
+                    _idTargetStatus = status = IdTargetImpossible;
+                }
+            }
+        }
+    }
+    while (status == IdTargetInitializing) {
+        std::this_thread::yield();
+        status = _idTargetStatus.load();
+    }
+    return status == IdTargetPossible;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

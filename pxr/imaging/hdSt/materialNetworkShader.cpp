@@ -35,9 +35,10 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/imaging/hgi/capabilities.h"
+
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -82,6 +83,9 @@ HdSt_MaterialNetworkShader::_SetSource(
     } else if (shaderStageKey == HdShaderTokens->geometryShader) {
         _geometrySource = source;
         _isValidComputedHash = false;
+    } else if (shaderStageKey == HdShaderTokens->displacementShader) {
+        _displacementSource = source;
+        _isValidComputedHash = false;
     }
 }
 
@@ -97,6 +101,8 @@ HdSt_MaterialNetworkShader::GetSource(TfToken const &shaderStageKey) const
         return _fragmentSource;
     } else if (shaderStageKey == HdShaderTokens->geometryShader) {
         return _geometrySource;
+    } else if (shaderStageKey == HdShaderTokens->displacementShader) {
+        return _displacementSource;
     }
 
     return std::string();
@@ -141,8 +147,7 @@ HdSt_MaterialNetworkShader::GetNamedTextureHandles() const
 /*virtual*/
 void
 HdSt_MaterialNetworkShader::BindResources(const int program,
-                                 HdSt_ResourceBinder const &binder,
-                                 HdRenderPassState const &state)
+                                 HdSt_ResourceBinder const &binder)
 {
     HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
 
@@ -151,8 +156,7 @@ HdSt_MaterialNetworkShader::BindResources(const int program,
 /*virtual*/
 void
 HdSt_MaterialNetworkShader::UnbindResources(const int program,
-                                   HdSt_ResourceBinder const &binder,
-                                   HdRenderPassState const &state)
+                                   HdSt_ResourceBinder const &binder)
 {
     binder.UnbindShaderResources(this);
 
@@ -180,6 +184,17 @@ HdSt_MaterialNetworkShader::ComputeHash() const
 HdStShaderCode::ID
 HdSt_MaterialNetworkShader::ComputeTextureSourceHash() const
 {
+    // To avoid excessive plumbing and checking of HgiCapabilities in order to 
+    // determine if bindless textures are enabled, we make things a little 
+    // easier for ourselves by having this function check and return 0 if 
+    // using bindless textures.
+    const bool useBindlessHandles = _namedTextureHandles.empty() ? false :
+        _namedTextureHandles[0].handle->UseBindlessHandles();
+    
+    if (useBindlessHandles) { 
+        return 0;
+    }
+
     if (!_isValidComputedTextureSourceHash) {
         _computedTextureSourceHash = _ComputeTextureSourceHash();
         _isValidComputedTextureSourceHash = true;
@@ -196,6 +211,8 @@ HdSt_MaterialNetworkShader::_ComputeHash() const
         ArchHash(_fragmentSource.c_str(), _fragmentSource.size()));
     boost::hash_combine(hash, 
         ArchHash(_geometrySource.c_str(), _geometrySource.size()));
+    boost::hash_combine(hash,
+        ArchHash(_displacementSource.c_str(), _displacementSource.size()));
 
     // Codegen is inspecting the shader bar spec to generate some
     // of the struct's, so we should probably use _paramSpec
@@ -236,6 +253,13 @@ void
 HdSt_MaterialNetworkShader::SetGeometrySource(const std::string &source)
 {
     _geometrySource = source;
+    _isValidComputedHash = false;
+}
+
+void
+HdSt_MaterialNetworkShader::SetDisplacementSource(const std::string &source)
+{
+    _displacementSource = source;
     _isValidComputedHash = false;
 }
 
@@ -319,7 +343,7 @@ HdSt_MaterialNetworkShader::Reload()
 /*static*/
 bool
 HdSt_MaterialNetworkShader::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
-                                HdStShaderCodeSharedPtr const &shaderB)
+                                         HdStShaderCodeSharedPtr const &shaderB)
 {
     // Can aggregate if the shaders are identical.
     if (shaderA == shaderB) {
@@ -338,11 +362,9 @@ HdSt_MaterialNetworkShader::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
         return false;
     }
 
-    if (!HdSt_ResourceBinder::UseBindlessHandles()) {
-        if (shaderA->ComputeTextureSourceHash() !=
-                shaderB->ComputeTextureSourceHash()) {
-            return false;
-        }
+    if (shaderA->ComputeTextureSourceHash() !=
+        shaderB->ComputeTextureSourceHash()) {
+        return false;
     }
 
     return true;
@@ -432,12 +454,16 @@ _CollectPrimvarNames(const HdSt_MaterialParamVector &params)
 void
 HdSt_MaterialNetworkShader::AddResourcesFromTextures(ResourceContext &ctx) const
 {
+    const bool doublesSupported = ctx.GetResourceRegistry()->GetHgi()->
+        GetCapabilities()->IsSet(
+            HgiDeviceCapabilitiesBitsShaderDoublePrecision);
+
     // Add buffer sources for bindless texture handles (and
     // other texture metadata such as the sampling transform for
     // a field texture).
     HdBufferSourceSharedPtrVector result;
     HdSt_TextureBinder::ComputeBufferSources(
-        GetNamedTextureHandles(), &result);
+        GetNamedTextureHandles(), &result, doublesSupported);
 
     if (!result.empty()) {
         ctx.AddSources(GetShaderData(), std::move(result));

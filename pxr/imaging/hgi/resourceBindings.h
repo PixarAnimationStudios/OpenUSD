@@ -55,7 +55,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   limits to max buffers in an array.</li>
 /// <li>offsets:
 ///    Offset (in bytes) where data begins from the start of the buffer.
-///    This if an offset for each buffer in 'buffers'.</li>
+///    There is an offset corresponding to each buffer in 'buffers'.</li>
+/// <li>sizes:
+///    Size (in bytes) of the range of data in the buffer to bind.
+///    There is a size corresponding to each buffer in 'buffers'.
+///    If sizes is empty or the size for a buffer is specified as zero,
+///    then the entire buffer is bound.
+///    If the offset for a buffer is non-zero, then a non-zero size must
+///    also be specified.</li>
 /// <li>resourceType:
 ///    The type of buffer(s) that is to be bound.
 ///    All buffers in the array must have the same type.
@@ -74,6 +81,7 @@ struct HgiBufferBindDesc
 
     HgiBufferHandleVector buffers;
     std::vector<uint32_t> offsets;
+    std::vector<uint32_t> sizes;
     HgiBindResourceType resourceType;
     uint32_t bindingIndex;
     HgiShaderStage stageUsage;

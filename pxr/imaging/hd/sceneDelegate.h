@@ -90,16 +90,28 @@ struct HdDisplayStyle {
     /// Does the prim act "transparent" to allow occluded selection to show
     /// through?
     bool occludedSelectionShowsThrough;
+
+    /// Should the prim's points get shaded like surfaces, as opposed to 
+    /// constant shaded?
+    bool pointsShadingEnabled;
+
+    /// Is this prim exempt from having its material disabled or overridden,
+    /// for example, when a renderer chooses to ignore all scene materials?
+    bool materialIsFinal;
     
     /// Creates a default DisplayStyle.
     /// - refineLevel is 0.
     /// - flatShading is disabled.
     /// - displacement is enabled.
+    /// - occludedSelectionShowsThrough is disabled.
+    /// - pointsShading is disabled.
     HdDisplayStyle()
         : refineLevel(0)
         , flatShadingEnabled(false)
         , displacementEnabled(true)
         , occludedSelectionShowsThrough(false)
+        , pointsShadingEnabled(false)
+        , materialIsFinal(false)
     { }
     
     /// Creates a DisplayStyle.
@@ -109,14 +121,23 @@ struct HdDisplayStyle {
     /// \param displacement enables displacement shading, defaults to false.
     /// \param occludedSelectionShowsThrough controls whether the prim lets
     ///        occluded selection show through it, defaults to false.
+    /// \param pointsShadingEnabled controls whether the prim's points 
+    ///        are shaded as surfaces or constant-shaded, defaults to false.
+    /// \param materialisFinal controls whether the prim's material should be 
+    ///        exempt from override or disabling, such as when a renderer 
+    ///        wants to ignore all scene materials.
     HdDisplayStyle(int refineLevel_,
                    bool flatShading = false,
                    bool displacement = true,
-                   bool occludedSelectionShowsThrough_ = false)
+                   bool occludedSelectionShowsThrough_ = false,
+                   bool pointsShadingEnabled_ = false,
+                   bool materialIsFinal_ = false)
         : refineLevel(std::max(0, refineLevel_))
         , flatShadingEnabled(flatShading)
         , displacementEnabled(displacement)
         , occludedSelectionShowsThrough(occludedSelectionShowsThrough_)
+        , pointsShadingEnabled(pointsShadingEnabled_)
+        , materialIsFinal(materialIsFinal_)
     {
         if (refineLevel_ < 0) {
             TF_CODING_ERROR("negative refine level is not supported");
@@ -133,7 +154,9 @@ struct HdDisplayStyle {
             && flatShadingEnabled == rhs.flatShadingEnabled
             && displacementEnabled == rhs.displacementEnabled
             && occludedSelectionShowsThrough ==
-                rhs.occludedSelectionShowsThrough;
+                rhs.occludedSelectionShowsThrough
+            && pointsShadingEnabled == rhs.pointsShadingEnabled
+            && materialIsFinal == rhs.materialIsFinal;
     }
     bool operator!=(HdDisplayStyle const& rhs) const {
         return !(*this == rhs);
@@ -618,10 +641,21 @@ public:
     /// Returns the scene address of the prim corresponding to the given
     /// rprim/instance index. This is designed to give paths in scene namespace,
     /// rather than hydra namespace, so it always strips the delegate ID.
+    /// \deprecated use GetScenePrimPaths
     HD_API
     virtual SdfPath GetScenePrimPath(SdfPath const& rprimId,
                                      int instanceIndex,
                                      HdInstancerContext *instancerContext = nullptr);
+
+    /// A vectorized version of GetScenePrimPath that allows the prim adapter
+    /// to amortize expensive calculations across a number of path evaluations
+    /// in a single call. Note that only a single rprimId is supported. This
+    /// allows this call to be forwarded directly to a single prim adapter
+    /// rather than requiring a lot of data shuffling.
+    HD_API
+    virtual SdfPathVector GetScenePrimPaths(SdfPath const& rprimId,
+                                     std::vector<int> instanceIndices,
+                                     std::vector<HdInstancerContext> *instancerContexts = nullptr);
 
     // -----------------------------------------------------------------------//
     /// \name Material Aspects

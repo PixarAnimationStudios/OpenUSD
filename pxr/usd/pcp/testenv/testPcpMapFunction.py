@@ -39,6 +39,7 @@ null = Pcp.MapFunction()
 testMapFuncs.append(null)
 assert null.isNull
 assert not null.isIdentity
+assert not null.isIdentityPathMapping
 assert null.timeOffset == Sdf.LayerOffset()
 for path in testPaths:
     assert null.MapSourceToTarget( path ).isEmpty
@@ -48,15 +49,28 @@ identity = Pcp.MapFunction.Identity()
 testMapFuncs.append(identity)
 assert not identity.isNull
 assert identity.isIdentity
+assert identity.isIdentityPathMapping
 assert identity.timeOffset == Sdf.LayerOffset()
 for path in testPaths:
     assert identity.MapSourceToTarget( path ) == path
+
+# Test identity path mapping with non-identity offset
+identityPathMapping = Pcp.MapFunction(Pcp.MapFunction.IdentityPathMap(),
+                                      Sdf.LayerOffset(scale=10.0))
+testMapFuncs.append(identityPathMapping)
+assert not identityPathMapping.isNull
+assert not identityPathMapping.isIdentity
+assert identityPathMapping.isIdentityPathMapping
+assert identityPathMapping.timeOffset == Sdf.LayerOffset(scale=10.0)
+for path in testPaths:
+    assert identityPathMapping.MapSourceToTarget( path ) == path
 
 # Test a simple mapping, simulating a referenced model instance.
 m = Pcp.MapFunction({'/Model': '/Model_1'})
 testMapFuncs.append(m)
 assert not m.isNull
 assert not m.isIdentity
+assert not m.isIdentityPathMapping
 assert m.MapSourceToTarget('/').isEmpty
 assert m.MapSourceToTarget('/Model') == Sdf.Path('/Model_1')
 assert m.MapSourceToTarget('/Model/anim') == Sdf.Path('/Model_1/anim')
@@ -79,6 +93,7 @@ m2 = Pcp.MapFunction({'/CharRig': '/Model/Rig'})
 testMapFuncs.append(m2)
 assert not m2.isNull
 assert not m2.isIdentity
+assert not m2.isIdentityPathMapping
 assert m2.MapSourceToTarget('/').isEmpty
 assert m2.MapSourceToTarget('/CharRig') == Sdf.Path('/Model/Rig')
 assert m2.MapSourceToTarget('/CharRig/rig') == Sdf.Path('/Model/Rig/rig')
@@ -97,6 +112,7 @@ m3 = m.Compose(m2)
 testMapFuncs.append(m3)
 assert not m3.isNull
 assert not m3.isIdentity
+assert not m3.isIdentityPathMapping
 assert m3.MapSourceToTarget('/').isEmpty
 assert m3.MapSourceToTarget('/CharRig') == Sdf.Path('/Model_1/Rig')
 assert m3.MapSourceToTarget('/CharRig/rig') == Sdf.Path('/Model_1/Rig/rig')
@@ -227,7 +243,3 @@ def TestBug112645():
                 '/GuitarRigX/Anim/Strings/String1'})
 
 TestBug112645()
-
-# TODO:
-# test constructing invalid map functions
-# test application to anim splines, including animated constraints

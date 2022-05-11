@@ -26,8 +26,6 @@
 #include "pxr/usd/usdRender/product.h"
 #include "pxr/usd/usdRender/var.h"
 #include "pxr/usd/usdGeom/camera.h"
-#include "pxr/base/gf/camera.h"
-#include "pxr/base/gf/frustum.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -94,8 +92,20 @@ _ReadSettingsBase(UsdRenderSettingsBase const& base,
                 GfVec2f(dataWindowNDCVec[2], dataWindowNDCVec[3]));
         }
     }
-    _Get( base.GetInstantaneousShutterAttr(),
-          &pd->instantaneousShutter, sparse );
+
+    _Get( base.GetDisableMotionBlurAttr(),
+          &pd->disableMotionBlur, sparse );
+
+    {
+        // For backwards-compatibility:
+        // instantaneousShutter disables motion blur
+        bool instantaneousShutter = false;
+        _Get( base.GetDisableMotionBlurAttr(),
+              &instantaneousShutter, sparse);
+        if (instantaneousShutter) {
+            pd->disableMotionBlur = true;
+        }
+    }
 }
 
 // TODO: Consolidate with CameraUtilConformedWindow().  Resolve policy

@@ -41,6 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
+class SdfChangeBlock;
 class SdfSpec;
 
 /// \class Sdf_ChangeManager
@@ -81,33 +82,37 @@ public:
                        bool inert);
     void RemoveSpecIfInert(const SdfSpec&);
 
-    // Open/close change blocks. SdfChangeBlock provides stack-based management
-    // of change blocks and should be preferred over this API.
-    SDF_API
-    void OpenChangeBlock();
-    SDF_API
-    void CloseChangeBlock();
-
 private:
+    friend class SdfChangeBlock;
+    
+    struct _Data {
+        _Data();
+        SdfLayerChangeListVec changes;
+        SdfChangeBlock const *outermostBlock;
+        std::vector<SdfSpec> removeIfInert;
+    };
+
     Sdf_ChangeManager();
     ~Sdf_ChangeManager();
 
+    // Open a change block, and return a non-null pointer if this was the
+    // outermost change block.  The caller must only call _CloseChangeBlock if
+    // _OpenChangeBlock returned a non-null pointer, and pass it back.
+    SDF_API
+    void const *_OpenChangeBlock(SdfChangeBlock const *block);
+    SDF_API
+    void _CloseChangeBlock(SdfChangeBlock const *block, void const *openKey);
+
     void _SendNoticesForChangeList( const SdfLayerHandle & layer,
                                     const SdfChangeList & changeList );
-    void _SendNotices();
+    void _SendNotices(_Data *data);
 
-    void _ProcessRemoveIfInert();
+    void _ProcessRemoveIfInert(_Data *data);
 
     SdfChangeList &_GetListFor(SdfLayerChangeListVec &changeList,
                                SdfLayerHandle const &layer);
 
 private:
-    struct _Data {
-        _Data();
-        SdfLayerChangeListVec changes;
-        int changeBlockDepth;
-        std::vector<SdfSpec> removeIfInert;
-    };
 
     tbb::enumerable_thread_specific<_Data> _data;
 

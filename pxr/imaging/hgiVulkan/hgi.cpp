@@ -74,6 +74,17 @@ HgiVulkan::~HgiVulkan()
     delete _instance;
 }
 
+bool
+HgiVulkan::IsBackendSupported() const
+{
+    // Want Vulkan 1.2 or higher.
+    const uint32_t apiVersion = GetCapabilities()->GetAPIVersion();
+    const uint32_t majorVersion = VK_VERSION_MAJOR(apiVersion);
+    const uint32_t minorVersion = VK_VERSION_MINOR(apiVersion);
+
+    return (majorVersion >= 1) && (minorVersion >= 2);
+}
+
 /* Multi threaded */
 HgiGraphicsCmdsUniquePtr
 HgiVulkan::CreateGraphicsCmds(
@@ -176,8 +187,8 @@ HgiShaderFunctionHandle
 HgiVulkan::CreateShaderFunction(HgiShaderFunctionDesc const& desc)
 {
     return HgiShaderFunctionHandle(
-        new HgiVulkanShaderFunction(GetPrimaryDevice(), desc),
-        GetUniqueId());
+        new HgiVulkanShaderFunction(GetPrimaryDevice(), this, desc,
+        GetCapabilities()->GetShaderVersion()), GetUniqueId());
 }
 
 /* Multi threaded */

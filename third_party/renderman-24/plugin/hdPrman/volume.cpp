@@ -23,17 +23,20 @@
 //
 #include "hdPrman/volume.h"
 
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
-#include "hdPrman/renderParam.h"
-#include "hdPrman/renderPass.h"
 #include "hdPrman/rixStrings.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/usdVol/tokens.h"
 #include "pxr/usdImaging/usdVolImaging/tokens.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/tf/fileUtils.h"
+
+#ifdef PXR_OPENVDB_SUPPORT_ENABLED
+#include "pxr/imaging/hioOpenVDB/utils.h"
+#endif
 
 #include "Riley.h"
 #include "RiTypesHelper.h"
@@ -165,7 +168,7 @@ _DetermineOpenVDBFieldType(HdSceneDelegate *sceneDelegate,
             return HdPrman_Volume::FieldType::NormalType;
         } else if (vectorDataRoleHint == UsdVolTokens->vector) {
             return HdPrman_Volume::FieldType::VectorType;
-        } else if (vectorDataRoleHint == UsdVolTokens->none) {
+        } else if (vectorDataRoleHint == UsdVolTokens->none_) {
             // Fall through
         } else if (!vectorDataRoleHint.IsEmpty()) {
             TF_WARN("Unknown vectorDataRoleHint value '%s' on volume field prim"
@@ -236,6 +239,68 @@ _EmitOpenVDBVolume(HdSceneDelegate *sceneDelegate,
         volumeAssetPath = fileAssetPath.GetAssetPath();
     }
 
+    // This will be the first of the string args supplied to the blobbydso. 
+    std::string vdbSource;
+
+#ifndef PXR_OPENVDB_SUPPORT_ENABLED
+    vdbSource = volumeAssetPath;
+#else
+    // If volumeAssetPath is an actual file path, copy it into the vdbSource
+    // string, prepended with a "file:" tag.
+    if (TfIsFile(volumeAssetPath)) {
+        vdbSource = "file:" + volumeAssetPath;
+
+    } else {
+        // volumeAssetPath is not a file path. Attempt to resolve
+        // it as an ArAsset and retrieve vdb grids from that asset.
+        openvdb::GridPtrVecPtr gridVecPtr =
+            HioOpenVDBGridsFromAsset(volumeAssetPath);
+
+        if (!gridVecPtr) {
+            TF_WARN("Failed to retrieve VDB grids from %s.",
+                    volumeAssetPath.c_str());
+            return;
+        }
+
+        // Allocate a new vector of vdb grid pointers on the heap. The contents
+        // are copied from gridVecPtr. (This copy should be fairly cheap since
+        // the elements are just shared pointers).
+        openvdb::GridPtrVec* grids = new openvdb::GridPtrVec(*gridVecPtr);
+
+        // Ownership of this new vector is given to RixStorage, which
+        // will take care of clean-up when rendering is complete.
+        RixContext* context = RixGetContext();
+        RixStorage* storage =
+            static_cast<RixStorage*>(context->GetRixInterface(k_RixGlobalData));
+        if (!storage) {
+            TF_WARN("Failed to access RixStorage interface.");
+            return;
+        }
+
+        // Create a unique RixStorage key by combining the id
+        // and the raw pointer address of the grids vector.
+        std::stringstream stream;
+        stream << id << "@" << static_cast<void*>(grids);
+        const std::string key(stream.str());
+
+        // Store the grids vector in RixStorage.
+        // This will allow the impl_openvdb blobbydso to retrieve it.
+        storage->Lock();
+        storage->Set(RtUString(key.c_str()), grids,
+            [](RixContext* context, void* data) // clean-up function
+            {
+                if (auto grids = static_cast<openvdb::GridPtrVec*>(data)) {
+                    grids->clear();
+                    delete grids;
+                }
+            });
+        storage->Unlock();
+
+        // Copy key into the vdbSource string, prepended with a "key:" tag.
+        vdbSource = "key:" + key;
+    }
+#endif
+
     const VtValue fieldNameVal = sceneDelegate->Get(firstfield.fieldId,
                                                     HdFieldTokens->fieldName);
     const TfToken &fieldName = fieldNameVal.Get<TfToken>();
@@ -243,7 +308,7 @@ _EmitOpenVDBVolume(HdSceneDelegate *sceneDelegate,
     primvars->SetString(RixStr.k_Ri_type, blobbydsoImplOpenVDB);
 
     RtUString sa[2] = {
-        RtUString(volumeAssetPath.c_str()),
+        RtUString(vdbSource.c_str()),
         RtUString(fieldName.GetText())
     };
     primvars->SetStringArray(RixStr.k_blobbydso_stringargs, sa, 2);
@@ -369,7 +434,7 @@ HdPrman_Volume::DeclareFieldPrimvar(RtPrimVarList* primvars,
 }
 
 RtPrimVarList
-HdPrman_Volume::_ConvertGeometry(HdPrman_Context *context,
+HdPrman_Volume::_ConvertGeometry(HdPrman_RenderParam *renderParam,
                                  HdSceneDelegate *sceneDelegate,
                                  const SdfPath &id,
                                  RtUString *primType,

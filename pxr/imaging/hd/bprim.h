@@ -53,7 +53,8 @@ class HdRenderParam;
 /// Dependent on the state of any other prim.
 ///
 /// The most typical use of a Bprim would be a Texture.
-class HdBprim {
+class HdBprim
+{
 public:
     HD_API
     HdBprim(SdfPath const & id);

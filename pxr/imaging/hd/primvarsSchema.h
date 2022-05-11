@@ -54,9 +54,11 @@ public:
     HdPrimvarsSchema(HdContainerDataSourceHandle container)
     : HdSchema(container) {}
 
+    HD_API
     TfTokenVector GetPrimvarNames();
-    HdPrimvarSchema GetPrimvar(TfToken name);
 
+    HD_API
+    HdPrimvarSchema GetPrimvar(TfToken name);
 
     /// Retrieves a container data source with the schema's default name token
     /// "primvars" from the parent container and constructs a

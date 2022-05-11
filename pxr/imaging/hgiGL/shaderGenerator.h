@@ -29,7 +29,11 @@
 #include "pxr/imaging/hgiGL/shaderSection.h"
 #include "pxr/imaging/hgiGL/api.h"
 
+#include <map>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+class Hgi;
 
 using HgiGLShaderSectionUniquePtrVector =
     std::vector<std::unique_ptr<HgiGLShaderSection>>;
@@ -42,22 +46,29 @@ class HgiGLShaderGenerator final: public HgiShaderGenerator
 {
 public:
     HGIGL_API
-    explicit HgiGLShaderGenerator(const HgiShaderFunctionDesc &descriptor);
+    explicit HgiGLShaderGenerator(
+        Hgi const *hgi,
+        const HgiShaderFunctionDesc &descriptor);
 
     //This is not commonly consumed by the end user, but is available.
     HGIGL_API
     HgiGLShaderSectionUniquePtrVector* GetShaderSections();
 
+    template<typename SectionType, typename ...T>
+    SectionType *CreateShaderSection(T && ...t);
+
 protected:
     HGIGL_API
-    void _Execute(
-        std::ostream &ss,
-        const std::string &originalShaderShader) override;
+    void _Execute(std::ostream &ss) override;
 
 private:
     HgiGLShaderGenerator() = delete;
     HgiGLShaderGenerator & operator=(const HgiGLShaderGenerator&) = delete;
     HgiGLShaderGenerator(const HgiGLShaderGenerator&) = delete;
+
+    void _WriteVersion(std::ostream &ss);
+    void _WriteExtensions(std::ostream &ss);
+    void _WriteMacros(std::ostream &ss);
 
     void _WriteTextures(const HgiShaderFunctionTextureDescVector &textures);
 
@@ -70,8 +81,13 @@ private:
     void _WriteInOuts(
         const HgiShaderFunctionParamDescVector &parameters,
         const std::string &qualifier);
+    void _WriteInOutBlocks(
+        const HgiShaderFunctionParamBlockDescVector &parameterBlocks,
+        const std::string &qualifier);
     
+    Hgi const *_hgi;
     HgiGLShaderSectionUniquePtrVector _shaderSections;
+    std::vector<std::string> _shaderLayoutAttributes;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

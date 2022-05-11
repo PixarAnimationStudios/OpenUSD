@@ -57,6 +57,9 @@ public:
     ~HgiVulkan() override;
 
     HGIVULKAN_API
+    bool IsBackendSupported() const override;
+
+    HGIVULKAN_API
     HgiGraphicsCmdsUniquePtr CreateGraphicsCmds(
         HgiGraphicsCmdsDesc const& desc) override;
 

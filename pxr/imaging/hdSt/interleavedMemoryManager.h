@@ -64,7 +64,8 @@ protected:
         : HdStBufferArrayRange(resourceRegistry)
         , _stripedBuffer(nullptr)
         , _index(NOT_ALLOCATED)
-        , _numElements(1) {}
+        , _numElements(1)
+        , _capacity(0) {}
 
         /// Destructor.
         HDST_API
@@ -124,6 +125,10 @@ protected:
             return _stripedBuffer->GetVersion();
         }
 
+        int GetElementStride() const override {
+            return _stripedBuffer->GetElementStride();
+        }
+
         /// Increment the version of the buffer array.
         void IncrementVersion() override {
             _stripedBuffer->IncrementVersion();
@@ -168,6 +173,16 @@ protected:
             _stripedBuffer = nullptr;
         }
 
+         /// Returns the capacity of allocated area
+        int GetCapacity() const {
+            return _capacity;
+        }
+
+        /// Set the capacity of allocated area for this range.
+        void SetCapacity(int capacity) {
+            _capacity = capacity;
+        }
+
     protected:
         /// Returns the aggregation container
         HDST_API
@@ -178,6 +193,7 @@ protected:
         _StripedInterleavedBuffer *_stripedBuffer;
         int _index;
         size_t _numElements;
+        int _capacity;
     };
 
     using _StripedInterleavedBufferSharedPtr =
@@ -235,6 +251,10 @@ protected:
         int GetStride() const {
             return _stride;
         }
+        
+        int GetElementStride() const {
+            return _elementStride;
+        }
 
         /// TODO: We need to distinguish between the primvar types here, we should
         /// tag each HdBufferSource and HdBufferResource with Constant, Uniform,
@@ -283,6 +303,18 @@ protected:
         int _stride;
         int _bufferOffsetAlignment;  // ranged binding offset alignment
         size_t _maxSize;             // maximum size of single buffer
+
+        // _elementStride is similar to _stride but does account for any buffer
+        // offset alignment. If there are multiple elements in a buffer, this 
+        // will be the actual byte distance between the two values. 
+        // For example, imagine there are three buffers (A, B, C) in a buffer 
+        // array, and each buffer has two elements. 
+        // +------------------------------------------------------------+
+        // | a1 | b1 | c1 | a2 | b2 | c2 | padding for offset alignment |
+        // +------------------------------------------------------------+
+        // The _stride will be the size of a1 + b1 + c1 + padding, while the
+        // _elementStride will be the size of a1 + b1 + c1.
+        size_t _elementStride; 
 
         HdStBufferResourceNamedList _resourceList;
 

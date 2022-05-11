@@ -30,9 +30,7 @@ HdVolume::HdVolume(SdfPath const& id)
 {
 }
 
-HdVolume::~HdVolume()
-{
-}
+HdVolume::~HdVolume() = default;
 
 /* virtual */
 TfTokenVector const &

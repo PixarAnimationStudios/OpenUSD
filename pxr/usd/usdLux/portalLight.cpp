@@ -144,3 +144,27 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdGeom/boundableComputeExtent.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+static bool
+_ComputeExtent(
+    const UsdGeomBoundable &boundable,
+    const UsdTimeCode &time,
+    const GfMatrix4d *transform,
+    VtVec3fArray *extent)
+{
+    // Schema defined constant Boundary extent of the unit rectangle in the XY 
+    // plane that defines the portal.
+    return boundable.GetPrim().GetPrimDefinition().GetAttributeFallbackValue(
+            UsdLuxTokens->extent, extent);
+}
+
+TF_REGISTRY_FUNCTION(UsdGeomBoundable)
+{
+    UsdGeomRegisterComputeExtentFunction<UsdLuxPortalLight>(_ComputeExtent);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

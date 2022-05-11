@@ -107,6 +107,14 @@ void wrapUsdSchemaRegistry()
              (arg("primType")))
         .staticmethod("IsConcrete")
 
+        .def("IsAbstract",
+             (bool (*)(const TfType &)) &This::IsAbstract,
+             (arg("primType")))
+        .def("IsAbstract",
+             (bool (*)(const TfToken&)) &This::IsAbstract,
+             (arg("primType")))
+        .staticmethod("IsAbstract")
+
         .def("IsAppliedAPISchema", 
              (bool (*)(const TfType &)) &This::IsAppliedAPISchema,
              (arg("apiSchemaType")))
@@ -146,8 +154,27 @@ void wrapUsdSchemaRegistry()
              return_value_policy<TfPyMapToDictionary>())
         .staticmethod("GetAutoApplyAPISchemas")
 
-        .def("GetPropertyNamespacePrefix", &This::GetPropertyNamespacePrefix, 
-            (arg("multiApplyAPISchemaName")))
+        .def("MakeMultipleApplyNameTemplate", 
+             &This::MakeMultipleApplyNameTemplate,
+             arg("namespacePrefix"),
+             arg("baseName"))
+        .staticmethod("MakeMultipleApplyNameTemplate")
+
+        .def("MakeMultipleApplyNameInstance", 
+             &This::MakeMultipleApplyNameInstance,
+             arg("nameTemplate"),
+             arg("instanceName"))
+        .staticmethod("MakeMultipleApplyNameInstance")
+
+        .def("GetMultipleApplyNameTemplateBaseName", 
+             &This::GetMultipleApplyNameTemplateBaseName,
+             arg("nameTemplate"))
+        .staticmethod("GetMultipleApplyNameTemplateBaseName")
+
+        .def("IsMultipleApplyNameTemplate", 
+             &This::IsMultipleApplyNameTemplate,
+             arg("nameTemplate"))
+        .staticmethod("IsMultipleApplyNameTemplate")
 
         .def("FindConcretePrimDefinition", 
              &This::FindConcretePrimDefinition,

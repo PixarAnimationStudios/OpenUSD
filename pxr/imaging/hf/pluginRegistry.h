@@ -28,7 +28,9 @@
 #include "pxr/imaging/hf/api.h"
 #include "pxr/imaging/hf/perfLog.h"
 #include "pxr/imaging/hf/pluginDesc.h"
+#include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/type.h"
+
 #include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -139,6 +141,12 @@ protected:
     template<typename T, typename PluginBaseType, typename... Bases>
     static void Define();
 
+    /// Gives subclasses an opportunity to inspect plugInfo-based metadata
+    /// at the time of discovery.
+    HF_API
+    virtual void _CollectAdditionalMetadata(
+        const PlugRegistry &plugRegistry, const TfType &pluginType);
+
 private:
     typedef std::vector<Hf_PluginEntry> _PluginEntryVector;
     typedef std::map<TfToken, size_t> _TokenMap;
@@ -152,6 +160,7 @@ private:
 
     template<typename T>
     static HfPluginBase *_CreatePlugin();
+
     HF_API
     static void _SetFactory(TfType &type, _FactoryFn &func);
 

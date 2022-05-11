@@ -69,7 +69,7 @@ float normalizeDepth(float depth)
 void main(void)
 {
     vec2 fragCoord = uvOut * screenSize;
-    float depth = HdTexelFetch_depthIn(ivec2(fragCoord)).x;
+    float depth = HgiTexelFetch_depthIn(ivec2(fragCoord)).x;
      hd_FragColor = vec4( vec3(normalizeDepth(depth)), 1.0 );
 }
 
@@ -94,7 +94,7 @@ vec3 IntToVec3(int id)
 void main(void)
 {
     vec2 fragCoord = uvOut * screenSize;
-    int id = HdTexelFetch_idIn(ivec2(fragCoord)).x;
+    int id = int(HgiTexelFetch_idIn(ivec2(fragCoord)).x);
     int vizId = id * 11629091; // prime number near ln(2) * 2^24
     hd_FragColor = vec4(IntToVec3(vizId), 1.0);
 }
@@ -110,7 +110,7 @@ vec3 renormalize(vec3 normal)
 void main(void)
 {
     vec2 fragCoord = uvOut * screenSize;
-    vec3 normal = HdTexelFetch_normalIn(ivec2(fragCoord)).xyz;
+    vec3 normal = HgiTexelFetch_normalIn(ivec2(fragCoord)).xyz;
     hd_FragColor = vec4(renormalize(normal), 1.0);
 }
 
@@ -120,5 +120,5 @@ void main(void)
 {
     vec2 fragCoord = uvOut * screenSize;
     // Force conversion to a vector of floats.
-    hd_FragColor = vec4(HdTexelFetch_aovIn(ivec2(fragCoord)));
+    hd_FragColor = vec4(HgiTexelFetch_aovIn(ivec2(fragCoord)));
 }

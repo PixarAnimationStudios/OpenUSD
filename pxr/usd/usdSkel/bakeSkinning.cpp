@@ -879,6 +879,7 @@ private:
 
     bool _ComputeRestPoints(const UsdTimeCode time);
     bool _ComputeRestNormals(const UsdTimeCode time);
+    bool _ComputeFaceVertexIndices(const UsdTimeCode time);
     bool _ComputeGeomBindXform(const UsdTimeCode time);
     bool _ComputeJointInfluences(const UsdTimeCode time);
 
@@ -916,6 +917,11 @@ private:
     _Task _restNormalsTask;
     VtVec3fArray _restNormals;
     UsdAttributeQuery _restNormalsQuery;
+
+    // Topology for face-varying normals.
+    _Task _faceVertexIndicesTask;
+    VtIntArray _faceVertexIndices;
+    UsdAttributeQuery _faceVertexIndicesQuery;
 
     // Geom bind transform.
     _Task _geomBindXformTask;
@@ -1003,10 +1009,26 @@ _SkinningAdapter::_SkinningAdapter(
             UsdSkelBakeSkinningParms::ModifiesNormals) {
             _restNormalsQuery = UsdAttributeQuery(pointBased.GetNormalsAttr());
             const TfToken& normalsInterp = pointBased.GetNormalsInterpolation();
-            // Can only process vertex/varying normals.
-            if (!_restNormalsQuery.HasAuthoredValue() ||
-                (normalsInterp != UsdGeomTokens->vertex &&
-                 normalsInterp != UsdGeomTokens->varying)) {
+
+            // Face-varying normals are supported for mesh prims and require
+            // the faceVertexIndices attribute.
+            // Otherwise, can only process vertex/varying normals.
+            if (normalsInterp == UsdGeomTokens->faceVarying &&
+                skinningQuery.GetPrim().IsA<UsdGeomMesh>()) {
+
+                const UsdGeomMesh mesh(skinningQuery.GetPrim());
+                _faceVertexIndicesQuery =
+                    UsdAttributeQuery(mesh.GetFaceVertexIndicesAttr());
+
+                if (!_restNormalsQuery.HasAuthoredValue() ||
+                    !_faceVertexIndicesQuery.HasAuthoredValue()) {
+                    _faceVertexIndicesQuery = UsdAttributeQuery();
+                    _restNormalsQuery = UsdAttributeQuery();
+                }
+
+            } else if (!_restNormalsQuery.HasAuthoredValue() ||
+                       (normalsInterp != UsdGeomTokens->vertex &&
+                        normalsInterp != UsdGeomTokens->varying)) {
                 _restNormalsQuery = UsdAttributeQuery();
             }
         }
@@ -1066,9 +1088,12 @@ _SkinningAdapter::_SkinningAdapter(
                         UsdSkelBakeSkinningParms::DeformPointsWithBlendShapes;
                 }
             }
+            // Only vertex/varying normals are supported for blendshapes.
+            // Supporting faceVarying normals would require extending the
+            // schema.
             if ((parms.deformationFlags &
                  UsdSkelBakeSkinningParms::DeformNormalsWithBlendShapes) &&
-                _restNormalsQuery) {
+                _restNormalsQuery && !_faceVertexIndicesQuery) {
 
                 _subShapeNormalOffsets =
                     _blendShapeQuery->ComputeSubShapeNormalOffsets();
@@ -1165,6 +1190,12 @@ _SkinningAdapter::_SkinningAdapter(
         _restNormalsTask.SetActive(true);
         _restNormalsTask.SetMightBeTimeVarying(
             _restNormalsQuery.ValueMightBeTimeVarying());
+
+        if (_faceVertexIndicesQuery.IsValid()) {
+            _faceVertexIndicesTask.SetActive(true);
+            _faceVertexIndicesTask.SetMightBeTimeVarying(
+                _faceVertexIndicesQuery.ValueMightBeTimeVarying());
+        }
     }
 
     if (_flags & RequiresGeomBindXform) {
@@ -1228,6 +1259,7 @@ _SkinningAdapter::_SkinningAdapter(
         "[UsdSkelBakeSkinning]\n  Computation state for skinnable prim <%s>:\n"
         "    _restPointsTask: %s\n"
         "    _restNormalsTask: %s\n"
+        "    _faceVertexIndicesTask: %s\n"
         "    _geomBindXformTask: %s\n"
         "    _geomBindInvTransposeXformTask: %s\n"
         "    _jointInfluencesTask: %s\n"
@@ -1237,6 +1269,7 @@ _SkinningAdapter::_SkinningAdapter(
         _skinningQuery.GetPrim().GetPath().GetText(),
         _restPointsTask.GetDescription().c_str(),
         _restNormalsTask.GetDescription().c_str(),
+        _faceVertexIndicesTask.GetDescription().c_str(),
         _geomBindXformTask.GetDescription().c_str(),
         _geomBindInvTransposeXformTask.GetDescription().c_str(),
         _jointInfluencesTask.GetDescription().c_str(),
@@ -1259,6 +1292,12 @@ _SkinningAdapter::ExtendTimeSamples(const GfInterval& interval,
     }
     if (_restNormalsTask) {
         if (_restNormalsQuery.GetTimeSamplesInInterval(
+                interval, &tmpTimes)) {
+            times->insert(times->end(), tmpTimes.begin(), tmpTimes.end());
+        }
+    }
+    if (_faceVertexIndicesTask) {
+        if (_faceVertexIndicesQuery.GetTimeSamplesInInterval(
                 interval, &tmpTimes)) {
             times->insert(times->end(), tmpTimes.begin(), tmpTimes.end());
         }
@@ -1372,6 +1411,17 @@ _SkinningAdapter::_ComputeRestNormals(const UsdTimeCode time)
         time, GetPrim(), "compute rest normals",
         [&](UsdTimeCode time) {
             return _restNormalsQuery.Get(&_restNormals, time);
+        });
+}
+
+
+bool
+_SkinningAdapter::_ComputeFaceVertexIndices(const UsdTimeCode time)
+{
+    return _faceVertexIndicesTask.Run(
+        time, GetPrim(), "compute face vertex indices",
+        [&](UsdTimeCode time) {
+            return _faceVertexIndicesQuery.Get(&_faceVertexIndices, time);
         });
 }
 
@@ -1598,11 +1648,20 @@ _SkinningAdapter::_DeformNormalsWithLBS(const GfMatrix4d& skelToGprimXf)
         _normals.value = _restNormals;
     }
 
-    _normals.hasSampleAtCurrentTime =
-        UsdSkelSkinNormalsLBS(_geomBindInvTransposeXform, xformsForPrim,
-                              _jointIndices, _jointWeights,
-                              _skinningQuery.GetNumInfluencesPerComponent(),
-                              _normals.value);
+    if (_faceVertexIndicesTask) {
+        _normals.hasSampleAtCurrentTime =
+            UsdSkelSkinFaceVaryingNormalsLBS(_geomBindInvTransposeXform,
+                    xformsForPrim, _jointIndices, _jointWeights,
+                    _skinningQuery.GetNumInfluencesPerComponent(),
+                    _faceVertexIndices, _normals.value);
+    } else {
+        _normals.hasSampleAtCurrentTime =
+            UsdSkelSkinNormalsLBS(_geomBindInvTransposeXform, xformsForPrim,
+                                  _jointIndices, _jointWeights,
+                                  _skinningQuery.GetNumInfluencesPerComponent(),
+                                  _normals.value);
+    }
+
     if (!_normals.hasSampleAtCurrentTime) {
         return;
     }
@@ -1700,6 +1759,7 @@ _SkinningAdapter::Update(const UsdTimeCode time, const size_t timeIndex)
     // Compute inputs.
     _ComputeRestPoints(time);
     _ComputeRestNormals(time);
+    _ComputeFaceVertexIndices(time);
 
     // Blend shapes precede LBS skinning.
     if (_flags & UsdSkelBakeSkinningParms::DeformWithBlendShapes) {

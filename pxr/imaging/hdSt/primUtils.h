@@ -96,6 +96,15 @@ HdStGetInstancerPrimvarDescriptors(
     HdSceneDelegate * delegate);
 
 // -----------------------------------------------------------------------------
+// Tracking render tag changes
+// -----------------------------------------------------------------------------
+
+HDST_API
+void HdStUpdateRenderTag(HdSceneDelegate *delegate,
+                         HdRenderParam *renderParam,
+                         HdRprim *rprim);
+
+// -----------------------------------------------------------------------------
 // Material processing utilities
 // -----------------------------------------------------------------------------
 HDST_API

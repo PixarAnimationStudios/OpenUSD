@@ -36,7 +36,9 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/mergingSceneIndex.h"
 #include "pxr/imaging/hd/legacyPrimSceneIndex.h"
+#include "pxr/imaging/hd/noticeBatchingSceneIndex.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -232,6 +234,10 @@ public:
     HD_API
     TfToken GetRenderTag(SdfPath const& id) const;
 
+    /// Like GetRenderTag, but updates the render tag if dirty.
+    TfToken UpdateRenderTag(SdfPath const& id,
+                            HdDirtyBits bits);
+
     /// Returns a sorted list of all Rprims in the render index.
     /// The list is sorted by std::less<SdfPath>
     HD_API
@@ -348,6 +354,18 @@ public:
     HdBprim *GetFallbackBprim(TfToken const& typeId) const;
 
     // ---------------------------------------------------------------------- //
+    /// \name Scene indices
+    // ---------------------------------------------------------------------- //
+    HD_API
+    void InsertSceneIndex(
+            HdSceneIndexBaseRefPtr inputSceneIndex,
+            SdfPath const& scenePathPrefix);
+
+    HD_API
+    void RemoveSceneIndex(
+            HdSceneIndexBaseRefPtr inputSceneIndex);
+
+    // ---------------------------------------------------------------------- //
     /// \name Render Delegate
     // ---------------------------------------------------------------------- //
     /// Currently, a render index only supports connection to one type of
@@ -365,6 +383,34 @@ public:
     /// delegate.
     HD_API
     HdResourceRegistrySharedPtr GetResourceRegistry() const;
+
+    /// Returns true if scene index features are available
+    /// This is true by default but can be controlled via an
+    /// HD_ENABLE_SCENE_INDEX_EMULATION environment variable.
+    HD_API
+    static bool IsSceneIndexEmulationEnabled();
+
+    /// An application or legacy scene delegate may prefer for the scene 
+    /// index observer notices generated from its prim insertions, removals, or
+    /// invalidations to be consolidated into vectorized batches. Calling this
+    /// will cause subsequent notices to be be queued.
+    /// 
+    /// NOTE: This does not currently track any nested state. Repeated calls
+    ///       prior to a corresponding SceneIndexEmulationNoticeBatchEnd will
+    ///       have no effect.
+    HD_API
+    void SceneIndexEmulationNoticeBatchBegin();
+
+    /// Flushes any queued scene index observer notices and disables further
+    /// queueing.
+    ///
+    /// NOTE: This does not currently track any nested state. Calling this
+    ///       will immediately flush and disable queueing regardless of the
+    ///       number of times SceneIndexEmulationNoticeBatchBegin is called
+    ///       prior.
+    HD_API
+    void SceneIndexEmulationNoticeBatchEnd();
+
 
 private:
     // The render index constructor is private so we can check
@@ -451,7 +497,10 @@ private:
     };
 
     HdLegacyPrimSceneIndexRefPtr _emulationSceneIndex;
+    HdNoticeBatchingSceneIndexRefPtr _emulationNoticeBatchingSceneIndex;
     std::unique_ptr<class HdSceneIndexAdapterSceneDelegate> _siSd;
+
+    HdMergingSceneIndexRefPtr _mergingSceneIndex;
 
     struct _TaskInfo {
         HdSceneDelegate *sceneDelegate;

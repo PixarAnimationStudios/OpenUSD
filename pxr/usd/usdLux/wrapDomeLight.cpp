@@ -62,6 +62,13 @@ _CreateTextureFormatAttr(UsdLuxDomeLight &self,
     return self.CreateTextureFormatAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateGuideRadiusAttr(UsdLuxDomeLight &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateGuideRadiusAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
 
 static std::string
 _Repr(const UsdLuxDomeLight &self)
@@ -116,6 +123,13 @@ void wrapUsdLuxDomeLight()
              &This::GetTextureFormatAttr)
         .def("CreateTextureFormatAttr",
              &_CreateTextureFormatAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetGuideRadiusAttr",
+             &This::GetGuideRadiusAttr)
+        .def("CreateGuideRadiusAttr",
+             &_CreateGuideRadiusAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

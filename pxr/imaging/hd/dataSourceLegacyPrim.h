@@ -109,6 +109,7 @@ private:
     HdDataSourceBaseHandle _GetExtentDataSource();
     HdDataSourceBaseHandle _GetCategoriesDataSource();
     HdDataSourceBaseHandle _GetInstanceCategoriesDataSource();
+    HdDataSourceBaseHandle _GetPrmanParamsDataSource();
 
 private:
     SdfPath _id;

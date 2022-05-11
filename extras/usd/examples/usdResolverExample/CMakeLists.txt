@@ -23,7 +23,7 @@ pxr_plugin(${PXR_PACKAGE}
         api.h
 
     PYTHON_CPPFILES
-        moduleDeps
+        moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp

@@ -77,7 +77,7 @@ private:
     HdRprimSharedData _sharedData;
     HdStDrawItem _drawItem;
     HdStDrawItemInstance _drawItemInstance;
-    HdSt_DrawBatchSharedPtr _immediateBatch;
+    HdSt_DrawBatchSharedPtr _drawBatch;
     Hgi* _hgi;
 };
 
