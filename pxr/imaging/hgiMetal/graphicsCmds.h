@@ -143,6 +143,7 @@ private:
     
     void _CreateArgumentBuffer();
     void _SyncArgumentBuffer();
+    void _VegaIndirectFix();
 
     // We implement multi-draw indirect commands on Metal by encoding
     // separate draw commands for each draw.

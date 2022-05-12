@@ -46,8 +46,8 @@ HgiMetalGraphicsPipeline::HgiMetalGraphicsPipeline(
     , _constantTessFactors(nil)
 {
     _CreateVertexDescriptor();
-    _CreateDepthStencilState(hgi->GetPrimaryDevice());
-    _CreateRenderPipelineState(hgi->GetPrimaryDevice());
+    _CreateDepthStencilState(hgi);
+    _CreateRenderPipelineState(hgi);
 }
 
 HgiMetalGraphicsPipeline::~HgiMetalGraphicsPipeline()
@@ -103,9 +103,7 @@ HgiMetalGraphicsPipeline::_CreateVertexDescriptor()
         }
 
         // Describe each vertex attribute in the vertex buffer
-        for (size_t loc = 0; loc<vas.size(); loc++) {
-            HgiVertexAttributeDesc const& va = vas[loc];
-
+        for (HgiVertexAttributeDesc const& va : vas) {
             uint32_t idx = va.shaderBindLocation;
             _vertexDescriptor.attributes[idx].format =
                 HgiMetalConversions::GetVertexFormat(va.format);
@@ -118,7 +116,7 @@ HgiMetalGraphicsPipeline::_CreateVertexDescriptor()
 }
 
 void
-HgiMetalGraphicsPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
+HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
 {
     MTLRenderPipelineDescriptor *stateDesc =
         [[MTLRenderPipelineDescriptor alloc] init];
@@ -228,6 +226,7 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
     stateDesc.vertexDescriptor = _vertexDescriptor;
 
     NSError *error = NULL;
+    id<MTLDevice> device = hgi->GetPrimaryDevice();
     _renderPipelineState = [device
         newRenderPipelineStateWithDescriptor:stateDesc
         error:&error];
@@ -261,7 +260,7 @@ _CreateStencilDescriptor(HgiStencilState const & stencilState)
 }
 
 void
-HgiMetalGraphicsPipeline::_CreateDepthStencilState(id<MTLDevice> device)
+HgiMetalGraphicsPipeline::_CreateDepthStencilState(HgiMetal *hgi)
 {
     MTLDepthStencilDescriptor *depthStencilStateDescriptor =
         [[MTLDepthStencilDescriptor alloc] init];
@@ -295,6 +294,7 @@ HgiMetalGraphicsPipeline::_CreateDepthStencilState(id<MTLDevice> device)
             _CreateStencilDescriptor(_descriptor.depthState.stencilBack);
     }
     
+    id<MTLDevice> device = hgi->GetPrimaryDevice();
     _depthStencilState = [device
         newDepthStencilStateWithDescriptor:depthStencilStateDescriptor];
     [depthStencilStateDescriptor release];
