@@ -815,6 +815,10 @@ protected:
     _GetInheritedPrimvars(UsdPrim const& prim) const;
 
     USDIMAGING_API
+    UsdGeomPrimvar _GetInheritedPrimvar(UsdPrim const& prim,
+                                        TfToken const& primvarName) const;
+
+    USDIMAGING_API
     GfInterval _GetCurrentTimeSamplingInterval();
 
     USDIMAGING_API

@@ -1037,22 +1037,6 @@ UsdImagingGprimAdapter::GetOpacity(UsdPrim const& prim,
     return true;
 }
 
-UsdGeomPrimvar
-UsdImagingGprimAdapter::_GetInheritedPrimvar(UsdPrim const& prim,
-                                             TfToken const& primvarName) const
-{
-    UsdImaging_InheritedPrimvarStrategy::value_type inheritedPrimvarRecord =
-        _GetInheritedPrimvars(prim.GetParent());
-    if (inheritedPrimvarRecord) {
-        for (UsdGeomPrimvar const& pv : inheritedPrimvarRecord->primvars) {
-            if (pv.GetPrimvarName() == primvarName) {
-                return pv;
-            }
-        }
-    }
-    return UsdGeomPrimvar();
-}
-
 TfTokenVector
 UsdImagingGprimAdapter::_CollectMaterialPrimvars(
     SdfPathVector const& materialUsdPaths, 
