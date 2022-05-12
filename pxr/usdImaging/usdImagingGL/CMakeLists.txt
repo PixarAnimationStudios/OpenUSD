@@ -1100,8 +1100,8 @@ pxr_register_test(testUsdImagingGLComplexityOsd3
         testUsdImagingGLComplexity_1.png
         testUsdImagingGLComplexity_1.1.png
         testUsdImagingGLComplexity_1.2.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLComplexityOsd3
@@ -1114,7 +1114,8 @@ pxr_register_test(testUsdImagingGLBasisCurvesWithColor
         testUsdImagingGLBasisCurvesWithColor_1.1.png
         testUsdImagingGLBasisCurvesWithColor_1.2.png
         testUsdImagingGLBasisCurvesWithColor_1.3.png
-    FAIL_PERCENT 30
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLBasisCurvesWithColor
@@ -1170,8 +1171,8 @@ pxr_register_test(testUsdImagingGLVaryingTopology
         testUsdImagingGLVaryingTopology_001.png
         testUsdImagingGLVaryingTopology_002.png
         testUsdImagingGLVaryingTopology_003.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLVaryingTopology
@@ -1292,8 +1293,8 @@ pxr_register_test(testUsdImagingGLNurbsCurves
         testUsdImagingGLNurbsCurves_000.png
         testUsdImagingGLNurbsCurves_050.png
         testUsdImagingGLNurbsCurves_150.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLNurbsCurves
@@ -1305,8 +1306,8 @@ pxr_register_test(testUsdImagingGLNurbsCurves_refined
         testUsdImagingGLNurbsCurves_refined_000.png
         testUsdImagingGLNurbsCurves_refined_050.png
         testUsdImagingGLNurbsCurves_refined_150.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLNurbsCurves
@@ -1513,8 +1514,8 @@ pxr_register_test(testUsdImagingGLHighlight_pi_ni
         testUsdImagingGLHighlight_pi_ni_017.png
         testUsdImagingGLHighlight_pi_ni_018.png
         testUsdImagingGLHighlight_pi_ni_019.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLHighlight
@@ -1554,8 +1555,8 @@ pxr_register_test(testUsdImagingGLShadeBadTexture
         out3.png
         out4.png
         out5.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLShadeBadTexture
@@ -1581,8 +1582,8 @@ pxr_register_test(testUsdImagingGLPointInstancer_pi_basic
     IMAGE_DIFF_COMPARE
         pi_basic_001.png
         pi_basic_002.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPointInstancer
@@ -1728,8 +1729,8 @@ pxr_register_test(testUsdImagingGLPointInstancer_pi_varying
         pi_varying_026.png
         pi_varying_027.png
         pi_varying_028.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPointInstancer
@@ -1756,8 +1757,8 @@ pxr_register_test(testUsdImagingGLPointInstancer_pi_pi_varying
         pi_pi_varying_015.png
         pi_pi_varying_016.png
         pi_pi_varying_017.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPointInstancer
@@ -1769,8 +1770,8 @@ pxr_register_test(testUsdImagingGLPointInstancer_pi_pi_time
         pi_pi_time_000.png
         pi_pi_time_001.png
         pi_pi_time_002.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPointInstancer
@@ -1830,8 +1831,8 @@ pxr_register_test(testUsdImagingGLResync
         world_0.png
         world_1.png
         world_2.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLResync
@@ -1843,8 +1844,8 @@ pxr_register_test(testUsdImagingGLResync_instancer
         instancer_0.png
         instancer_1.png
         instancer_2.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLResync
@@ -1870,8 +1871,8 @@ pxr_register_test(testUsdImagingGLPrimvarSharing
         default_000.png
         default_001.png
         default_002.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPrimvarSharing
@@ -1900,8 +1901,8 @@ pxr_register_test(testUsdImagingGLPrimvarSharing_colors
         default_colors_000.png
         default_colors_001.png
         default_colors_002.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPrimvarSharing
@@ -1929,8 +1930,8 @@ pxr_register_test(testUsdImagingGLColorOpacityPrimvar
     IMAGE_DIFF_COMPARE
         color_opacity_primvar_000.png
         color_opacity_primvar_001.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLColorOpacityPrimvar
@@ -2265,8 +2266,8 @@ pxr_register_test(testUsdImagingGLPreviewSurface_Animated
         testPreviewSurfaceAnimated_002.png
         testPreviewSurfaceAnimated_003.png
         testPreviewSurfaceAnimated_004.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPreviewSurface
@@ -2546,8 +2547,8 @@ pxr_register_test(testUsdImagingGLPreviewSurfaceNonBindless_Animated
         testPreviewSurfaceAnimated_002.png
         testPreviewSurfaceAnimated_003.png
         testPreviewSurfaceAnimated_004.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPreviewSurface
@@ -3136,8 +3137,8 @@ pxr_register_test(testUsdImagingGLPopOut
         test_6.png
         test_7.png
         test_8.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPopOut
@@ -3155,8 +3156,8 @@ pxr_register_test(testUsdImagingGLPopOut_instance
         test_instance_6.png
         test_instance_7.png
         test_instance_8.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPopOut
@@ -3440,8 +3441,8 @@ pxr_register_test(testUsdImagingGLBasisCurvesVaryingTopology
         testUsdImagingGLBasisCurvesVaryingTopology_003.png
         testUsdImagingGLBasisCurvesVaryingTopology_004.png
         testUsdImagingGLBasisCurvesVaryingTopology_005.png
-    FAIL 1
-    FAIL_PERCENT 1
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLBasisCurvesVaryingTopology
