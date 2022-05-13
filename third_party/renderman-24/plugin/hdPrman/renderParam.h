@@ -380,8 +380,7 @@ private:
 
     // SampleFilter
     SdfPathVector _connectedSampleFilterPaths;
-    std::set<SdfPath> _addedFilterPaths;
-    std::vector<riley::ShadingNode> _sampleFilterShadingNodes;
+    std::map<SdfPath, riley::ShadingNode> _sampleFilterNodes;
     riley::SampleFilterId _sampleFiltersId;
 
     // RIX or XPU

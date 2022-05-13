@@ -2694,10 +2694,10 @@ HdPrman_RenderParam::SetConnectedSampleFilterPaths(
 {
     if (_connectedSampleFilterPaths != connectedSampleFilterPaths) {
         // Reset the Filter Paths/Shading Nodes
-        _addedFilterPaths.clear();
-        _sampleFilterShadingNodes.clear();
+        _sampleFilterNodes.clear();
 
         // Mark the SampleFilter Prims Dirty and update the Connected Paths
+        riley::ShadingNode shadingNode;
         for (const SdfPath &path : connectedSampleFilterPaths) {
             sceneDelegate->GetRenderIndex().GetChangeTracker()
                 .MarkSprimDirty(path, HdChangeTracker::DirtyParams);
@@ -2717,6 +2717,12 @@ HdPrman_RenderParam::SetConnectedSampleFilterPaths(
 void
 HdPrman_RenderParam::_CreateSampleFilters()
 {
+    std::vector<riley::ShadingNode> shadingNodes;
+    for (const auto pair : _sampleFilterNodes) {
+        if (pair.second.name) {
+            shadingNodes.push_back(pair.second);
+        }
+    }
     // If we have multiple SampleFilters, create a SampleFilter Combiner Node
     if (_connectedSampleFilterPaths.size() > 1) {
         static RtUString filterArrayName("filter");
@@ -2735,13 +2741,12 @@ HdPrman_RenderParam::_CreateSampleFilters()
         combinerNode.name = pxrSampleFilterCombiner;
         combinerNode.params.SetSampleFilterReferenceArray(
             filterArrayName, filterRefs.data(), filterRefs.size());
-        _sampleFilterShadingNodes.push_back(combinerNode);
+        shadingNodes.push_back(combinerNode);
     }
     
     // Create or update the Riley SampleFilters
     riley::ShadingNetwork const sampleFilterNetwork = {
-        static_cast<uint32_t>(
-            _sampleFilterShadingNodes.size()), &_sampleFilterShadingNodes[0] };
+        static_cast<uint32_t>(shadingNodes.size()), &shadingNodes[0] };
     
     if (_sampleFiltersId == riley::SampleFilterId::InvalidId()) {
         _sampleFiltersId = AcquireRiley()->CreateSampleFilter(
@@ -2764,14 +2769,14 @@ HdPrman_RenderParam::AddSampleFilter(
     SdfPath const& path,
     riley::ShadingNode const& node)
 {
-    // Add the Shading Node to the vector if the filter is not yet added
-    const auto filterIt = _addedFilterPaths.insert(path);
-    if (filterIt.second) {
-        _sampleFilterShadingNodes.push_back(node);
+    // Update or Add the SampleFilter Shading node
+    const auto filterIt = _sampleFilterNodes.insert( {path, node} );
+    if (!filterIt.second) {
+        filterIt.first->second = node;
     }
 
     // If we have all the Shading Nodes, create the SampleFilters in Riley
-    if (_sampleFilterShadingNodes.size() == _connectedSampleFilterPaths.size()){
+    if (_sampleFilterNodes.size() == _connectedSampleFilterPaths.size()) {
         _CreateSampleFilters();
     }
 }
