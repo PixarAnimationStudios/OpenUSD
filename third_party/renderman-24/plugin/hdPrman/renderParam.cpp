@@ -1609,7 +1609,7 @@ HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
 
     // Decide whether to use the CPU, GPU, or both
     RtParamList paramList;
-    if (_xpu) {
+    if (_xpu && !xpuDevices.empty()) {
         static const RtUString cpuConfig("xpu:cpuconfig");
         static const RtUString gpuConfig("xpu:gpuconfig");
 
