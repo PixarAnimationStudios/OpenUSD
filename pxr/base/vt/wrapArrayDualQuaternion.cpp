@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2021 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,35 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#define ADDITION_OPERATOR
+#define SUBTRACTION_OPERATOR
+#define MULTIPLICATION_OPERATOR
+#define DOUBLE_MULT_OPERATOR
+#define DOUBLE_DIV_OPERATOR
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-// Defined in arrayPyBuffer.cpp
-void Vt_AddBufferProtocolSupportToVtArrays();
-
-PXR_NAMESPACE_CLOSE_SCOPE
+#include "pxr/base/vt/typeHeaders.h"
+#include "pxr/base/vt/wrapArray.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
-{
-    TF_WRAP(Array);
-    TF_WRAP(ArrayDualQuaternion);
-    TF_WRAP(ArrayFloat);
-    TF_WRAP(ArrayIntegral);
-    TF_WRAP(ArrayMatrix);
-    TF_WRAP(ArrayQuaternion);
-    TF_WRAP(ArrayRange);
-    TF_WRAP(ArrayString);
-    TF_WRAP(ArrayToken);
-    TF_WRAP(ArrayVec);
-
-    // Add python buffer protocol support to VtArray.
-    Vt_AddBufferProtocolSupportToVtArrays();
-
-    TF_WRAP(Dictionary);
-    TF_WRAP(Value);
+void wrapArrayDualQuaternion() {
+    BOOST_PP_SEQ_FOR_EACH(VT_WRAP_ARRAY, ~, VT_DUALQUATERNION_VALUE_TYPES);
 }
