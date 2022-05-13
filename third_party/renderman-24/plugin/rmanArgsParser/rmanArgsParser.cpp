@@ -220,22 +220,6 @@ _LoadXmlDoc(const NdrNodeDiscoveryResult& discoveryResult,
             xml_document *doc)
 {
     if (!discoveryResult.resolvedUri.empty()) {
-#if AR_VERSION == 1
-        // Get the resolved URI to a location that it can be read by the Args
-        // parser
-        bool localFetchSuccessful = ArGetResolver().FetchToLocalResolvedPath(
-            discoveryResult.uri,
-            discoveryResult.resolvedUri
-        );
-
-        if (!localFetchSuccessful) {
-            TF_WARN("Could not localize the args file at URI [%s] into a local "
-                    "path. An invalid Sdr node definition will be created.",
-                    discoveryResult.uri.c_str());
-
-            return false;
-        }
-#endif
         std::shared_ptr<const char> buffer;
         std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
             ArResolvedPath(discoveryResult.resolvedUri));
