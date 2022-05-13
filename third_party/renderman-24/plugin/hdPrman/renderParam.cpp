@@ -2697,7 +2697,6 @@ HdPrman_RenderParam::SetConnectedSampleFilterPaths(
         _sampleFilterNodes.clear();
 
         // Mark the SampleFilter Prims Dirty and update the Connected Paths
-        riley::ShadingNode shadingNode;
         for (const SdfPath &path : connectedSampleFilterPaths) {
             sceneDelegate->GetRenderIndex().GetChangeTracker()
                 .MarkSprimDirty(path, HdChangeTracker::DirtyParams);
