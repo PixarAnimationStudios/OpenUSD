@@ -650,6 +650,9 @@ public:
         if (name == HdMeshSchemaTokens->subdivisionTags) {
             return true;
         }
+        if (name == HdMeshSchemaTokens->subdivisionScheme) {
+            return true;
+        }
         if (name == HdMeshSchemaTokens->doubleSided) {
             return true;
         }
@@ -664,6 +667,7 @@ public:
         return {
             HdMeshSchemaTokens->topology,
             HdMeshSchemaTokens->subdivisionTags,
+            HdMeshSchemaTokens->subdivisionScheme,
             HdMeshSchemaTokens->doubleSided,
             HdMeshSchemaTokens->geomSubsets,
         };
