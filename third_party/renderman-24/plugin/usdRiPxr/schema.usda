@@ -1,8 +1,8 @@
 #usda 1.0
 (
     subLayers = [
-        @usdLux/schema.usda@,
         @usdGeom/schema.usda@,
+        @usdLux/schema.usda@,
         @usd/schema.usda@
     ]
 )
@@ -675,6 +675,21 @@ class "PxrOptionsAPI" (
         doc = """
                 Specifies whether the renderer should bake Pattern results or Integrator results
                 or both.
+            """
+    )
+    int ri:hider:bakeudimoffset = 0 (
+        displayGroup = "Baking"
+        displayName = "Baking udim offset"
+        doc = """
+                Offset when baking for a subset of udims.  Used together with bakeudimstride.
+                Default 0 means bake all udims when bakeudimstride is 1.
+            """
+    )
+    int ri:hider:bakeudimstride = 1 (
+        displayGroup = "Baking"
+        displayName = "Baking udim stride"
+        doc = """
+                Stride when baking for a subset of udims.  Default 1 means bake all udims.
             """
     )
     bool ri:hider:bluenoise = 1 (
@@ -2313,7 +2328,6 @@ class PxrAovLight "PxrAovLight" (
 class "PxrCylinderLightAPI" (
     customData = {
         token[] apiSchemaAutoApplyTo = ["CylinderLight"]
-        token[] apiSchemaCanOnlyApplyTo = ["CylinderLight"]
         string apiSchemaType = "singleApply"
         string className = "CylinderLightAPI"
     }
@@ -2459,7 +2473,6 @@ class "PxrCylinderLightAPI" (
 class "PxrDiskLightAPI" (
     customData = {
         token[] apiSchemaAutoApplyTo = ["DiskLight"]
-        token[] apiSchemaCanOnlyApplyTo = ["DiskLight"]
         string apiSchemaType = "singleApply"
         string className = "DiskLightAPI"
     }
@@ -2605,7 +2618,6 @@ class "PxrDiskLightAPI" (
 class "PxrDistantLightAPI" (
     customData = {
         token[] apiSchemaAutoApplyTo = ["DistantLight"]
-        token[] apiSchemaCanOnlyApplyTo = ["DistantLight"]
         string apiSchemaType = "singleApply"
         string className = "DistantLightAPI"
     }
@@ -2742,7 +2754,6 @@ class "PxrDistantLightAPI" (
 class "PxrDomeLightAPI" (
     customData = {
         token[] apiSchemaAutoApplyTo = ["DomeLight"]
-        token[] apiSchemaCanOnlyApplyTo = ["DomeLight"]
         string apiSchemaType = "singleApply"
         string className = "DomeLightAPI"
     }
@@ -3147,7 +3158,6 @@ class PxrEnvDayLight "PxrEnvDayLight" (
 class "PxrMeshLightAPI" (
     customData = {
         token[] apiSchemaAutoApplyTo = ["MeshLightAPI", "VolumeLightAPI"]
-        token[] apiSchemaCanOnlyApplyTo = ["MeshLightAPI", "VolumeLightAPI"]
         string apiSchemaType = "singleApply"
         string className = "MeshLightAPI"
     }
@@ -3271,7 +3281,6 @@ class "PxrMeshLightAPI" (
 class "PxrPortalLightAPI" (
     customData = {
         token[] apiSchemaAutoApplyTo = ["PortalLight"]
-        token[] apiSchemaCanOnlyApplyTo = ["PortalLight"]
         string apiSchemaType = "singleApply"
         string className = "PortalLightAPI"
     }
@@ -3443,7 +3452,6 @@ class "PxrPortalLightAPI" (
 class "PxrRectLightAPI" (
     customData = {
         token[] apiSchemaAutoApplyTo = ["RectLight"]
-        token[] apiSchemaCanOnlyApplyTo = ["RectLight"]
         string apiSchemaType = "singleApply"
         string className = "RectLightAPI"
     }
@@ -3606,7 +3614,6 @@ class "PxrRectLightAPI" (
 class "PxrSphereLightAPI" (
     customData = {
         token[] apiSchemaAutoApplyTo = ["SphereLight"]
-        token[] apiSchemaCanOnlyApplyTo = ["SphereLight"]
         string apiSchemaType = "singleApply"
         string className = "SphereLightAPI"
     }

@@ -556,6 +556,21 @@ class "PxrOptionsAPI"
                 or both.
             """
     )
+    int ri:hider:bakeudimoffset = 0 (
+        displayGroup = "Baking"
+        displayName = "Baking udim offset"
+        doc = """
+                Offset when baking for a subset of udims.  Used together with bakeudimstride.
+                Default 0 means bake all udims when bakeudimstride is 1.
+            """
+    )
+    int ri:hider:bakeudimstride = 1 (
+        displayGroup = "Baking"
+        displayName = "Baking udim stride"
+        doc = """
+                Stride when baking for a subset of udims.  Default 1 means bake all udims.
+            """
+    )
     bool ri:hider:bluenoise = 1 (
         displayGroup = "Common"
         displayName = "Blue Noise Samples"
@@ -1533,6 +1548,9 @@ class "PxrPrimvarsAPI"
 
 class PxrBlockerLightFilter "PxrBlockerLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
@@ -1738,6 +1756,9 @@ class PxrBlockerLightFilter "PxrBlockerLightFilter" (
 
 class PxrGoboLightFilter "PxrGoboLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
@@ -3777,6 +3798,9 @@ class "PxrSphereLightAPI"
 
 class PxrBarnLightFilter "PxrBarnLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
@@ -4115,6 +4139,9 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
 
 class PxrCombinerLightFilter "PxrCombinerLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
@@ -4221,6 +4248,9 @@ class PxrCombinerLightFilter "PxrCombinerLightFilter" (
 
 class PxrCookieLightFilter "PxrCookieLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
@@ -4666,6 +4696,9 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
 
 class PxrIntMultLightFilter "PxrIntMultLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
@@ -4809,6 +4842,9 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
 
 class PxrRampLightFilter "PxrRampLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
@@ -5002,6 +5038,9 @@ class PxrRampLightFilter "PxrRampLightFilter" (
 
 class PxrRodLightFilter "PxrRodLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
