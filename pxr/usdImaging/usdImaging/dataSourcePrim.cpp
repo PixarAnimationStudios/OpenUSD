@@ -511,4 +511,32 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
     return nullptr;
 }
 
+/*static*/ HdDataSourceLocatorSet
+UsdImagingDataSourcePrim::Invalidate(
+        const TfToken &subprim, const TfTokenVector &properties)
+{
+    HdDataSourceLocatorSet locators;
+
+    for (const TfToken &propertyName : properties) {
+        if (propertyName == UsdGeomTokens->visibility) {
+            locators.insert(HdVisibilitySchema::GetDefaultLocator());
+        }
+
+        if (propertyName == UsdGeomTokens->purpose) {
+            locators.insert(HdPurposeSchema::GetDefaultLocator());
+        }
+
+        if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(
+                    propertyName)) {
+            locators.insert(HdXformSchema::GetDefaultLocator());
+        }
+
+        if (propertyName == UsdGeomTokens->extent) {
+            locators.insert(HdExtentSchema::GetDefaultLocator());
+        }
+    }
+
+    return locators;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

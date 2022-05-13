@@ -417,6 +417,12 @@ public:
     USDIMAGING_API
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
+    /// Returns the hydra attribute set we should invalidate if the value of
+    /// the USD properties in \p properties change.
+    USDIMAGING_API
+    static HdDataSourceLocatorSet Invalidate(
+            const TfToken &subprim, const TfTokenVector &properties);
+
 protected:
     /// Use to construct a new UsdImagingDataSourcePrim.
     ///

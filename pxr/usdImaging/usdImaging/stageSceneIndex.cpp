@@ -94,6 +94,22 @@ UsdImagingStageSceneIndex::_GetImagingSubprimData(
     return nullptr;
 }
 
+HdDataSourceLocatorSet
+UsdImagingStageSceneIndex::_InvalidateImagingSubprim(
+        const UsdImagingPrimAdapterSharedPtr &adapter,
+        TfToken const& subprim, TfTokenVector const& properties) const
+{
+    if (adapter) {
+        return adapter->InvalidateImagingSubprim(subprim, properties);
+    }
+
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourcePrim::Invalidate(subprim, properties);
+    }
+
+    return HdDataSourceLocatorSet();
+}
+
 void
 UsdImagingStageSceneIndex::_PopulateAdapterMap()
 {
@@ -264,10 +280,14 @@ void UsdImagingStageSceneIndex::SetStage(UsdStageRefPtr stage)
         TF_DEBUG(USDIMAGING_POPULATION).Msg("[Population] Removing </>\n");
         _SendPrimsRemoved({SdfPath::AbsoluteRootPath()});
         _stageGlobals.Clear();
+        TfNotice::Revoke(_objectsChangedNoticeKey);
         _adapterMap.clear();
     }
     _stage = stage;
     _PopulateAdapterMap();
+    _objectsChangedNoticeKey =
+        TfNotice::Register(TfCreateWeakPtr(this),
+            &UsdImagingStageSceneIndex::_OnUsdObjectsChanged, _stage);
 }
 
 void UsdImagingStageSceneIndex::Populate()
@@ -343,6 +363,153 @@ UsdImagingStageSceneIndex::_GetTraversalPredicate() const
     // UsdPrimRange traversal isn't impossible to follow.  For now we'll go
     // with the default predicate, and resolve special cases as they come up.
     return UsdPrimDefaultPredicate;
+}
+
+// ---------------------------------------------------------------------------
+
+void
+UsdImagingStageSceneIndex::_OnUsdObjectsChanged(
+    UsdNotice::ObjectsChanged const& notice,
+    UsdStageWeakPtr const& sender)
+{
+    if (!sender || !TF_VERIFY(sender == _stage)) {
+        return;
+    }
+
+    TRACE_FUNCTION();
+
+    TF_DEBUG(USDIMAGING_CHANGES).Msg("[Objects Changed] Notice received "
+            "from stage with root layer @%s@\n",
+            sender->GetRootLayer()->GetIdentifier().c_str());
+
+    // These paths represent objects which have been modified in a structural
+    // way, for example changing type or composition topology. These paths may
+    // be paths to prims or properties. Prim resyncs trigger a repopulation of
+    // the subtree rooted at the prim path. Property resyncs are promoted to
+    // hydra property invalidations.
+    const UsdNotice::ObjectsChanged::PathRange pathsToResync =
+        notice.GetResyncedPaths();
+    for (auto it = pathsToResync.begin(); it != pathsToResync.end(); ++it) {
+        if (it->IsPrimPath()) {
+            _usdPrimsToResync.push_back(*it);
+            TF_DEBUG(USDIMAGING_CHANGES).Msg(" - Resync queued: %s\n",
+                    it->GetText());
+        } else if (it->IsPropertyPath()) {
+            _usdPropertiesToUpdate[it->GetPrimPath()]
+                .push_back(it->GetNameToken());
+            TF_DEBUG(USDIMAGING_CHANGES).Msg(
+                    " - Property update due to property resync queued: %s\n",
+                    it->GetText());
+        }
+    }
+
+    // These paths represent objects which have been modified in a 
+    // non-structural way, for example setting a value. These paths may be paths
+    // to prims or properties. Property invalidations flow into hydra as dirty
+    // locators. Prim invalidations are promoted to resyncs or ignored.
+    const UsdNotice::ObjectsChanged::PathRange pathsToUpdate =
+        notice.GetChangedInfoOnlyPaths();
+    const SdfSchema& schema = SdfSchema::GetInstance();
+
+    for (auto it = pathsToUpdate.begin(); it != pathsToUpdate.end(); ++it) {
+        if (it->IsPrimPath()) {
+            // By default, resync the prim if there are any changes to plugin
+            // fields and ignore changes to built-in fields. Schemas typically
+            // register their own plugin metadata fields instead of relying on
+            // built-in fields.
+            const TfTokenVector changedFields = it.GetChangedFields();
+            for (const TfToken &field : changedFields) {
+                const SdfSchema::FieldDefinition *fieldDef =
+                    schema.GetFieldDefinition(field);
+                if (fieldDef && fieldDef->IsPlugin()) {
+                    _usdPrimsToResync.push_back(*it);
+                    TF_DEBUG(USDIMAGING_CHANGES).Msg(
+                            " - Resync due to prim update queued: %s\n",
+                            it->GetText());
+                    break;
+                }
+            }
+        } else if (it->IsPropertyPath()) {
+            _usdPropertiesToUpdate[it->GetPrimPath()]
+                .push_back(it->GetNameToken());
+            TF_DEBUG(USDIMAGING_CHANGES).Msg(" - Property update queued: %s\n",
+                    it->GetText());
+        }
+    }
+}
+
+void
+UsdImagingStageSceneIndex::ApplyPendingUpdates()
+{
+    if (!_stage ||
+        (_usdPrimsToResync.empty() && _usdPropertiesToUpdate.empty())) {
+        return;
+    }
+
+    TRACE_FUNCTION();
+
+    // Resync first...
+    std::sort(_usdPrimsToResync.begin(), _usdPrimsToResync.end());
+    size_t lastResynced = 0;
+    for (size_t i = 0; i < _usdPrimsToResync.size(); ++i) {
+        // Coalesce paths with a common prefix, so as not to resync /A and /A/B,
+        // since due to their hierarchical nature the latter is redundant.
+        // Thanks to the sort, all suffixes of path[i] are in a contiguous block
+        // to the right of i.  We skip all resync paths until we find one that's
+        // not a suffix of path[i], which marks the start of a new (possibly
+        // 1-element) contiguous block of suffixes of some path.
+        if (i > 0 && _usdPrimsToResync[i].HasPrefix(
+                _usdPrimsToResync[lastResynced])) {
+            continue;
+        }
+        lastResynced = i;
+
+        TF_DEBUG(USDIMAGING_POPULATION).Msg("[Population] Removing <%s>\n",
+                _usdPrimsToResync[i].GetText());
+        _SendPrimsRemoved({_usdPrimsToResync[i]});
+        _Populate(_stage->GetPrimAtPath(_usdPrimsToResync[i]));
+
+        // Prune property updates of resynced prims, which are redundant.
+        auto start = _usdPropertiesToUpdate.lower_bound(_usdPrimsToResync[i]);
+        auto end = start;
+        while (end != _usdPropertiesToUpdate.end() &&
+               end->first.HasPrefix(_usdPrimsToResync[i])) {
+            ++end;
+        }
+        if (start != end) {
+            _usdPropertiesToUpdate.erase(start, end);
+        }
+    }
+
+    // Changed properties...
+    HdSceneIndexObserver::DirtiedPrimEntries dirtiedPrims;
+    for (auto const& pair : _usdPropertiesToUpdate) {
+        const SdfPath &primPath = pair.first;
+        const TfTokenVector &properties = pair.second;
+        // XXX: We could sort/unique the properties here...
+        
+        const UsdPrim prim = _stage->GetPrimAtPath(primPath);
+        UsdImagingPrimAdapterSharedPtr adapter =
+            _AdapterLookup(prim);
+
+        const TfTokenVector subprims = _GetImagingSubprims(adapter);
+        for (TfToken const& subprim : subprims) {
+            HdDataSourceLocatorSet dirtyLocators =
+                _InvalidateImagingSubprim(adapter, subprim, properties);
+            if (!dirtyLocators.IsEmpty()) {
+                SdfPath const subpath = subprim.IsEmpty()
+                    ? primPath : primPath.AppendChild(subprim);
+                dirtiedPrims.emplace_back(subpath, dirtyLocators);
+            }
+        }
+    }
+
+    _usdPrimsToResync.clear();
+    _usdPropertiesToUpdate.clear();
+
+    if (dirtiedPrims.size() > 0) {
+        _SendPrimsDirtied(dirtiedPrims);
+    }
 }
 
 // ---------------------------------------------------------------------------

@@ -91,6 +91,11 @@ public:
             UsdPrim const& prim,
             const UsdImagingDataSourceStageGlobals &stageGlobals);
 
+    USDIMAGING_API
+    virtual HdDataSourceLocatorSet InvalidateImagingSubprim(
+            TfToken const& subprim,
+            TfTokenVector const& properties);
+
     // ---------------------------------------------------------------------- //
     /// \name Initialization
     // ---------------------------------------------------------------------- //

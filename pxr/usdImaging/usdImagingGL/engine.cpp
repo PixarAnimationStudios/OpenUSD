@@ -1532,7 +1532,7 @@ UsdImagingGLEngine::_PreSetTime(const UsdImagingGLRenderParams& params)
 
     if (_GetUseSceneIndices()) {
         // XXX(USD-7115): fallback refine level
-        // XXX(USD-7117): do we need to trigger deferred updates?
+        _sceneIndex->ApplyPendingUpdates();
     } else {
         // Set the fallback refine level; if this changes from the
         // existing value, all prim refine levels will be dirtied.

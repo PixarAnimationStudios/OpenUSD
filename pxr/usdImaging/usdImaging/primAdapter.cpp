@@ -112,6 +112,14 @@ UsdImagingPrimAdapter::GetImagingSubprimData(
     return nullptr;
 }
 
+HdDataSourceLocatorSet
+UsdImagingPrimAdapter::InvalidateImagingSubprim(
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    return HdDataSourceLocatorSet();
+}
+
 /*static*/
 bool
 UsdImagingPrimAdapter::ShouldCullSubtree(UsdPrim const& prim)
