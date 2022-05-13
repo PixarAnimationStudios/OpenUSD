@@ -147,22 +147,6 @@ RmanOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
     bool hasErrors = false;
 
     if (!discoveryResult.uri.empty()) {
-#if AR_VERSION == 1
-        // Get the resolved URI to a location that it can be read by the OSL
-        // parser    
-        bool localFetchSuccessful = ArGetResolver().FetchToLocalResolvedPath(
-            discoveryResult.uri,
-            discoveryResult.resolvedUri
-        );
-
-        if (!localFetchSuccessful) {
-            TF_WARN("Could not localize the OSL at URI [%s] into a local path. "
-                    "An invalid Sdr node definition will be created.", 
-                    discoveryResult.uri.c_str());
-
-            return NdrParserPlugin::GetInvalidNode(discoveryResult);
-        }
-#endif
         if (TfIsFile(discoveryResult.resolvedUri.c_str())) {
             // Attempt to parse the node
             hasErrors = sq->Open(discoveryResult.resolvedUri.c_str(), ""); 
