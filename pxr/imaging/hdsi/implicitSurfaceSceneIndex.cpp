@@ -246,7 +246,7 @@ _ComputePointsPrimvarDataSource(
 {
     static HdTokenDataSourceHandle const roleDataSource =
         HdPrimvarSchema::BuildRoleDataSource(
-            HdPrimvarSchemaTokens->Point);
+            HdPrimvarSchemaTokens->point);
     static HdTokenDataSourceHandle const interpolationDataSource =
         HdPrimvarSchema::BuildInterpolationDataSource(
             HdPrimvarSchemaTokens->vertex);
@@ -464,7 +464,7 @@ _ComputePointsPrimvarDataSource(
 {
     static HdTokenDataSourceHandle const roleDataSource =
         HdPrimvarSchema::BuildRoleDataSource(
-            HdPrimvarSchemaTokens->Point);
+            HdPrimvarSchemaTokens->point);
     static HdTokenDataSourceHandle const interpolationDataSource =
         HdPrimvarSchema::BuildInterpolationDataSource(
             HdPrimvarSchemaTokens->vertex);
@@ -697,7 +697,7 @@ _ComputePointsPrimvarDataSource(
 {
     static HdTokenDataSourceHandle const roleDataSource =
         HdPrimvarSchema::BuildRoleDataSource(
-            HdPrimvarSchemaTokens->Point);
+            HdPrimvarSchemaTokens->point);
     static HdTokenDataSourceHandle const interpolationDataSource =
         HdPrimvarSchema::BuildInterpolationDataSource(
             HdPrimvarSchemaTokens->vertex);
@@ -923,7 +923,7 @@ _ComputePointsPrimvarDataSource(
 {
     static HdTokenDataSourceHandle const roleDataSource =
         HdPrimvarSchema::BuildRoleDataSource(
-            HdPrimvarSchemaTokens->Point);
+            HdPrimvarSchemaTokens->point);
     static HdTokenDataSourceHandle const interpolationDataSource =
         HdPrimvarSchema::BuildInterpolationDataSource(
             HdPrimvarSchemaTokens->vertex);
@@ -1217,7 +1217,7 @@ _ComputePointsPrimvarDataSource(
 {
     static HdTokenDataSourceHandle const roleDataSource =
         HdPrimvarSchema::BuildRoleDataSource(
-            HdPrimvarSchemaTokens->Point);
+            HdPrimvarSchemaTokens->point);
     static HdTokenDataSourceHandle const interpolationDataSource =
         HdPrimvarSchema::BuildInterpolationDataSource(
             HdPrimvarSchemaTokens->vertex);
