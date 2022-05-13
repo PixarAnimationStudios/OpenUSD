@@ -311,7 +311,7 @@ _ReadFromAsset(mx::DocumentPtr doc, const ArResolvedPath& resolvedPath,
                            newReadOptions);
         };
 
-    mx::readFromXmlString(doc, s, &readOptions);
+    mx::readFromXmlString(doc, s, searchPath, &readOptions);
 }
 #endif
 

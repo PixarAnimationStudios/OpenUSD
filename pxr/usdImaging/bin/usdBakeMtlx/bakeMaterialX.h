@@ -30,13 +30,15 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/usd/usdShade/material.h"
 
+#include <MaterialXCore/Library.h>
+
 #include "pxr/base/tf/declarePtrs.h"
 #include <string>
 
-namespace MaterialX {
+MATERIALX_NAMESPACE_BEGIN
     using FilePathVec = std::vector<class FilePath>;
     class FileSearchPath;
-}
+MATERIALX_NAMESPACE_END
 
 PXR_NAMESPACE_OPEN_SCOPE
 

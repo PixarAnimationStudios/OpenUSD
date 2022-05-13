@@ -288,6 +288,7 @@ _FindMatchingNodeDef(
     const mx::ConstDocumentPtr& mtlxDocument,
     const mx::ConstInterfaceElementPtr& mtlxInterface,
     const std::string& family,
+    const std::string& type,
     const NdrVersion& version,
     const std::string& target)
 {
@@ -300,7 +301,11 @@ _FindMatchingNodeDef(
         }
 
         // Filter by types.
-        if (mtlxInterface && !mtlxInterface->isTypeCompatible(mtlxNodeDef)) {
+        if (mtlxInterface && !mtlxInterface->hasExactInputMatch(mtlxNodeDef)) {
+            continue;
+        }
+
+        if (mtlxNodeDef->getType() != type) {
             continue;
         }
 
@@ -347,6 +352,7 @@ _FindMatchingNodeDef(
     auto nodeDef = _FindMatchingNodeDef(mtlxShaderNode->getDocument(),
                                         mtlxInterface,
                                         mtlxShaderNode->getCategory(),
+                                        mtlxShaderNode->getType(),
                                         UsdMtlxGetVersion(mtlxShaderNode),
                                         mtlxShaderNode->getTarget());
     if (nodeDef) {
@@ -355,9 +361,18 @@ _FindMatchingNodeDef(
 
     // Get the standard library document and check that.
     static auto standardLibraryDocument = UsdMtlxGetDocument("");
+
+    if (mtlxShaderNode->hasNodeDefString()) {
+        nodeDef = standardLibraryDocument->getNodeDef(mtlxShaderNode->getNodeDefString());
+        if (nodeDef) {
+            return nodeDef;
+        }
+    }
+
     return _FindMatchingNodeDef(standardLibraryDocument,
                                 mtlxInterface,
                                 mtlxShaderNode->getCategory(),
+                                mtlxShaderNode->getType(),
                                 UsdMtlxGetVersion(mtlxShaderNode),
                                 mtlxShaderNode->getTarget());
 }
@@ -1316,7 +1331,7 @@ _Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
 
     // Get the nodeDef for this shaderNode.
     mx::ConstNodeDefPtr mtlxNodeDef = mtlxShaderNode->getNodeDef();
-    if (mtlxShaderNode->getNodeDefString().empty()) {
+    if (!mtlxNodeDef) {
         // The shaderNode specified a node instead of a nodeDef. Find
         // the best matching nodedef since the MaterialX API doesn't.
         mtlxNodeDef =

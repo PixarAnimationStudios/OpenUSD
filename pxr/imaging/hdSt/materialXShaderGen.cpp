@@ -272,9 +272,15 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     mx::GenContext& mxContext,
     mx::ShaderStage& mxStage) const
 {
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && MATERIALX_BUILD_VERSION == 3
+    std::string libPath;
+#else
+    // Starting from MaterialX 1.38.4 at PR 877, we must add the "libraries" part:
+    std::string libPath = "libraries/";
+#endif
     // Add global constants and type definitions
-    emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
-                + "/lib/mx_defines.glsl", mxContext, mxStage);
+    emitInclude(libPath + "stdlib/" + mx::GlslShaderGenerator::TARGET
+                + "/lib/mx_math.glsl", mxContext, mxStage);
     emitLine("#if NUM_LIGHTS > 0", mxStage, false);
     emitLine("#define MAX_LIGHT_SOURCES NUM_LIGHTS", mxStage, false);
     emitLine("#else", mxStage, false);
@@ -386,17 +392,12 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
         _EmitMxInitFunction(vertexData, mxStage);
     }
 
-    // Emit common math functions
-    emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
-                + "/lib/mx_math.glsl", mxContext, mxStage);
-    emitLineBreak(mxStage);
-
     // Emit lighting and shadowing code
     if (lighting) {
         emitSpecularEnvironment(mxContext, mxStage);
     }
     if (shadowing) {
-        emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
+        emitInclude(libPath + "pbrlib/" + mx::GlslShaderGenerator::TARGET
                     + "/lib/mx_shadow.glsl", mxContext, mxStage);
     }
 
@@ -404,7 +405,7 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     if (mxContext.getOptions().hwDirectionalAlbedoMethod == 
             mx::HwDirectionalAlbedoMethod::DIRECTIONAL_ALBEDO_TABLE ||
         mxContext.getOptions().hwWriteAlbedoTable) {
-        emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
+        emitInclude(libPath + "pbrlib/" + mx::GlslShaderGenerator::TARGET
                     + "/lib/mx_table.glsl", mxContext, mxStage);
         emitLineBreak(mxStage);
     }
@@ -413,12 +414,12 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     // depending on the vertical flip flag.
     if (mxContext.getOptions().fileTextureVerticalFlip) {
         _tokenSubstitutions[mx::ShaderGenerator::T_FILE_TRANSFORM_UV] = 
-            "stdlib/" + mx::GlslShaderGenerator::TARGET +
+            libPath + "stdlib/" + mx::GlslShaderGenerator::TARGET +
             "/lib/mx_transform_uv_vflip.glsl";
     }
     else {
         _tokenSubstitutions[mx::ShaderGenerator::T_FILE_TRANSFORM_UV] = 
-            "stdlib/" + mx::GlslShaderGenerator::TARGET + 
+            libPath + "stdlib/" + mx::GlslShaderGenerator::TARGET + 
             "/lib/mx_transform_uv.glsl";
     }
 
@@ -426,6 +427,9 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     if (mxContext.getOptions().hwAmbientOcclusion) {
         emitInclude(ShaderGenerator::T_FILE_TRANSFORM_UV, mxContext, mxStage);
     }
+
+    // Add light sampling functions
+    emitLightFunctionDefinitions(mxGraph, mxContext, mxStage);
 
     // Add all functions for node implementations
     emitFunctionDefinitions(mxGraph, mxContext, mxStage);
@@ -448,7 +452,8 @@ HdStMaterialXShaderGen::_EmitMxSurfaceShader(
     emitLine("mxInit(Peye, Neye)", mxStage);
 
     const mx::ShaderGraphOutputSocket* outputSocket = mxGraph.getOutputSocket();
-    if (mxGraph.hasClassification(mx::ShaderNode::Classification::CLOSURE)) {
+    if (mxGraph.hasClassification(mx::ShaderNode::Classification::CLOSURE) &&
+        !mxGraph.hasClassification(mx::ShaderNode::Classification::SHADER)) {
         // Handle the case where the mxGraph is a direct closure.
         // We don't support rendering closures without attaching 
         // to a surface shader, so just output black.
@@ -465,8 +470,25 @@ HdStMaterialXShaderGen::_EmitMxSurfaceShader(
                 mxStage);
     }
     else {
-        // Add all function calls
-        emitFunctionCalls(mxGraph, mxContext, mxStage);
+        // Surface shaders need special handling.
+        if (mxGraph.hasClassification(mx::ShaderNode::Classification::SHADER | 
+                                      mx::ShaderNode::Classification::SURFACE))
+        {
+            // Emit all texturing nodes. These are inputs to any
+            // closure/shader nodes and need to be emitted first.
+            emitFunctionCalls(mxGraph, mxContext, mxStage, mx::ShaderNode::Classification::TEXTURE);
+
+            // Emit function calls for all surface shader nodes.
+            // These will internally emit their closure function calls.
+            emitFunctionCalls(mxGraph, mxContext, mxStage, mx::ShaderNode::Classification::SHADER | 
+                                                           mx::ShaderNode::Classification::SURFACE);
+        }
+        else
+        {
+            // No surface shader graph so just generate all
+            // function calls in order.
+            emitFunctionCalls(mxGraph, mxContext, mxStage);
+        }
 
         // Emit final output
         std::string finalOutputReturn = "vec4 mxOut = " ;
