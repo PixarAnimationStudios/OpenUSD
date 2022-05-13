@@ -35,8 +35,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    HdSceneIndexPluginRegistry::Define<
-        HdGpSceneIndexPlugin, HdSceneIndexPlugin>();
+    HdSceneIndexPluginRegistry::Define<HdGpSceneIndexPlugin>();
 }
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
