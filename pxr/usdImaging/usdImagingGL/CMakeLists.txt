@@ -3423,18 +3423,18 @@ pxr_register_test(testUsdImagingGLBasisCurvesVaryingTopology
 )
 
 # Disable this test temporarily due to issue where test runs forever
-# pxr_register_test(testUsdImagingGLClippingPlanes
-#     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -frameAll -camera /World/main_cam -times 1 2 -stage clippingPlanes.usda -write testUsdImagingGLClippingPlanes.png"
-#     IMAGE_DIFF_COMPARE
-#         testUsdImagingGLClippingPlanes_001.png
-#         testUsdImagingGLClippingPlanes_002.png
-#     FAIL 0.01
-#     FAIL_PERCENT 0.02
-#     WARN 0.02
-#     WARN_PERCENT 0.01
-#     EXPECTED_RETURN_CODE 0
-#     TESTENV testUsdImagingGLClippingPlanes
-# )
+pxr_register_test(testUsdImagingGLClippingPlanes
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -frameAll -camera /World/main_cam -times 1 2 -stage clippingPlanes.usda -write testUsdImagingGLClippingPlanes.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLClippingPlanes_001.png
+        testUsdImagingGLClippingPlanes_002.png
+    FAIL 0.01
+    FAIL_PERCENT 0.02
+    WARN 0.02
+    WARN_PERCENT 0.01
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLClippingPlanes
+)
 
 pxr_register_test(testUsdImagingGLAnimatedCamera
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -frameAll -camera /World/main_cam -times 1 2 3 -stage cameraMoving.usda -write testUsdImagingGLAnimatedCamera.png"
