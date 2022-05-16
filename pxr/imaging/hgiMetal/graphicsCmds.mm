@@ -111,11 +111,13 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
     // The GPU culling pass is only a vertex shader, so it doesn't have any
     // render targets bound to it.  To prevent an API validation error, set
     // some default values for the target.
+#if (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15)
     if (!desc.HasAttachments()) {
         _renderPassDescriptor.renderTargetWidth = 256;
         _renderPassDescriptor.renderTargetHeight = 256;
         _renderPassDescriptor.defaultRasterSampleCount = 1;
     }
+#endif
 
     // Color attachments
     bool resolvingColor = !desc.colorResolveTextures.empty();

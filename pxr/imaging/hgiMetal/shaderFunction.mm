@@ -51,7 +51,11 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
         options.fastMathEnabled = YES;
 
         if (@available(macOS 10.15, ios 13.0, *)) {
+#if (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15)
             options.languageVersion = MTLLanguageVersion2_2;
+#else
+            options.languageVersion = MTLLanguageVersion2_1;
+#endif
         } else {
             options.languageVersion = MTLLanguageVersion2_1;
         }
