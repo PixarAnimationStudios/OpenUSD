@@ -26,6 +26,7 @@
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "pxr/usdImaging/usdImagingGL/legacyEngine.h"
+#include "pxr/usdImaging/usdImagingGL/drawModeSceneIndex.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
@@ -1026,7 +1027,9 @@ UsdImagingGLEngine::_SetRenderDelegate(
     if (_GetUseSceneIndices()) {
         _sceneIndex = UsdImagingStageSceneIndex::New();
         _renderIndex->InsertSceneIndex(
-            HdFlatteningSceneIndex::New(_sceneIndex),
+            UsdImagingGLDrawModeSceneIndex::New(
+                HdFlatteningSceneIndex::New(_sceneIndex),
+                /* inputArgs = */ nullptr),
             _sceneDelegateId);
     } else {
         _sceneDelegate = std::make_unique<UsdImagingDelegate>(

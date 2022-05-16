@@ -23,12 +23,16 @@
 //
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/dataSourceAttribute.h"
+#include "pxr/usdImaging/usdImaging/modelSchema.h"
 
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/extentSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
+
+#include "pxr/usd/usd/modelAPI.h"
+#include "pxr/usd/kind/registry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -388,6 +392,187 @@ UsdImagingDataSourceXform::Get(const TfToken &name)
     return nullptr;
 }
 
+
+// ----------------------------------------------------------------------------
+
+UsdImagingDataSourceModel::UsdImagingDataSourceModel(
+        const UsdGeomModelAPI &model,
+        const SdfPath &sceneIndexPath,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+  : _model(model)
+  , _sceneIndexPath(sceneIndexPath)
+  , _stageGlobals(stageGlobals)
+{
+}
+
+bool
+UsdImagingDataSourceModel::Has(const TfToken &name)
+{
+    if (name == UsdImagingModelSchemaTokens->drawMode) {
+        return true;
+    }
+    if (name == UsdImagingModelSchemaTokens->applyDrawMode) {
+        return true;
+    }
+    if (name == UsdImagingModelSchemaTokens->drawModeColor) {
+        return true;
+    }
+    if (name == UsdImagingModelSchemaTokens->cardGeometry) {
+        return true;
+    }
+    if (name == UsdImagingModelSchemaTokens->cardTextureXPos) {
+        return true;
+    }
+    if (name == UsdImagingModelSchemaTokens->cardTextureYPos) {
+        return true;
+    }
+    if (name == UsdImagingModelSchemaTokens->cardTextureZPos) {
+        return true;
+    }
+    if (name == UsdImagingModelSchemaTokens->cardTextureXNeg) {
+        return true;
+    }
+    if (name == UsdImagingModelSchemaTokens->cardTextureYNeg) {
+        return true;
+    }
+    if (name == UsdImagingModelSchemaTokens->cardTextureZNeg) {
+        return true;
+    }
+
+    return false;
+}
+
+TfTokenVector
+UsdImagingDataSourceModel::GetNames()
+{
+    return {
+        UsdImagingModelSchemaTokens->drawMode,
+        UsdImagingModelSchemaTokens->applyDrawMode,
+        UsdImagingModelSchemaTokens->drawModeColor,
+        UsdImagingModelSchemaTokens->cardGeometry,
+        UsdImagingModelSchemaTokens->cardTextureXPos,
+        UsdImagingModelSchemaTokens->cardTextureYPos,
+        UsdImagingModelSchemaTokens->cardTextureZPos,
+        UsdImagingModelSchemaTokens->cardTextureXNeg,
+        UsdImagingModelSchemaTokens->cardTextureYNeg,
+        UsdImagingModelSchemaTokens->cardTextureZNeg
+    };
+}
+
+HdDataSourceBaseHandle
+UsdImagingDataSourceModel::Get(const TfToken &name)
+{
+    if (name == UsdImagingModelSchemaTokens->drawMode) {
+        static const HdDataSourceLocator locator =
+            UsdImagingModelSchema::GetDefaultLocator().Append(
+                UsdImagingModelSchemaTokens->drawMode);
+        return UsdImagingDataSourceAttribute<TfToken>::New(
+            _model.GetModelDrawModeAttr(),
+            _stageGlobals,
+            _sceneIndexPath,
+            locator);
+    }
+    if (name == UsdImagingModelSchemaTokens->applyDrawMode) {
+        UsdPrim prim = _model.GetPrim();
+        if (prim.IsModel()) {
+            if (UsdModelAPI(prim).IsKind(KindTokens->component)) {
+                return HdRetainedTypedSampledDataSource<bool>::New(true);
+            }
+        }
+
+        static const HdDataSourceLocator locator =
+            UsdImagingModelSchema::GetDefaultLocator().Append(
+                UsdImagingModelSchemaTokens->applyDrawMode);
+        return UsdImagingDataSourceAttribute<bool>::New(
+            _model.GetModelApplyDrawModeAttr(),
+            _stageGlobals,
+            _sceneIndexPath,
+            locator);
+    }
+    if (name == UsdImagingModelSchemaTokens->drawModeColor) {
+        static const HdDataSourceLocator locator =
+            UsdImagingModelSchema::GetDefaultLocator().Append(
+                UsdImagingModelSchemaTokens->drawModeColor);
+        return UsdImagingDataSourceAttribute<GfVec3f>::New(
+            _model.GetModelDrawModeColorAttr(),
+            _stageGlobals,
+            _sceneIndexPath,
+            locator);
+    }
+    if (name == UsdImagingModelSchemaTokens->cardGeometry) {
+        static const HdDataSourceLocator locator =
+            UsdImagingModelSchema::GetDefaultLocator().Append(
+                UsdImagingModelSchemaTokens->cardGeometry);
+        return UsdImagingDataSourceAttribute<TfToken>::New(
+            _model.GetModelCardGeometryAttr(),
+            _stageGlobals,
+            _sceneIndexPath,
+            locator);
+    }
+    if (name == UsdImagingModelSchemaTokens->cardTextureXPos) {
+        static const HdDataSourceLocator locator =
+            UsdImagingModelSchema::GetDefaultLocator().Append(
+                UsdImagingModelSchemaTokens->cardTextureXPos);
+        return UsdImagingDataSourceAttribute<SdfAssetPath>::New(
+            _model.GetModelCardTextureXPosAttr(),
+            _stageGlobals,
+            _sceneIndexPath,
+            locator);
+    }
+    if (name == UsdImagingModelSchemaTokens->cardTextureYPos) {
+        static const HdDataSourceLocator locator =
+            UsdImagingModelSchema::GetDefaultLocator().Append(
+                UsdImagingModelSchemaTokens->cardTextureYPos);
+        return UsdImagingDataSourceAttribute<SdfAssetPath>::New(
+            _model.GetModelCardTextureYPosAttr(),
+            _stageGlobals,
+            _sceneIndexPath,
+            locator);
+    }
+    if (name == UsdImagingModelSchemaTokens->cardTextureZPos) {
+        static const HdDataSourceLocator locator =
+            UsdImagingModelSchema::GetDefaultLocator().Append(
+                UsdImagingModelSchemaTokens->cardTextureZPos);
+        return UsdImagingDataSourceAttribute<SdfAssetPath>::New(
+            _model.GetModelCardTextureZPosAttr(),
+            _stageGlobals,
+            _sceneIndexPath,
+            locator);
+    }
+    if (name == UsdImagingModelSchemaTokens->cardTextureXNeg) {
+        static const HdDataSourceLocator locator =
+            UsdImagingModelSchema::GetDefaultLocator().Append(
+                UsdImagingModelSchemaTokens->cardTextureXNeg);
+        return UsdImagingDataSourceAttribute<SdfAssetPath>::New(
+            _model.GetModelCardTextureXNegAttr(),
+            _stageGlobals,
+            _sceneIndexPath,
+            locator);
+    }
+    if (name == UsdImagingModelSchemaTokens->cardTextureYNeg) {
+        static const HdDataSourceLocator locator =
+            UsdImagingModelSchema::GetDefaultLocator().Append(
+                UsdImagingModelSchemaTokens->cardTextureYNeg);
+        return UsdImagingDataSourceAttribute<SdfAssetPath>::New(
+            _model.GetModelCardTextureYNegAttr(),
+            _stageGlobals,
+            _sceneIndexPath,
+            locator);
+    }
+    if (name == UsdImagingModelSchemaTokens->cardTextureZNeg) {
+        static const HdDataSourceLocator locator =
+            UsdImagingModelSchema::GetDefaultLocator().Append(
+                UsdImagingModelSchemaTokens->cardTextureZNeg);
+        return UsdImagingDataSourceAttribute<SdfAssetPath>::New(
+            _model.GetModelCardTextureZNegAttr(),
+            _stageGlobals,
+            _sceneIndexPath,
+            locator);
+    }
+
+    return nullptr;
+}
+
 // ----------------------------------------------------------------------------
 
 UsdImagingDataSourcePrim::UsdImagingDataSourcePrim(
@@ -415,6 +600,8 @@ UsdImagingDataSourcePrim::Has(
         return _GetUsdPrim().IsA<UsdGeomXformable>();
     } else if (name == HdExtentSchemaTokens->extent) {
         return _GetUsdPrim().IsA<UsdGeomBoundable>();
+    } else if (name == TfToken("model")) {
+        return _GetUsdPrim().IsA<UsdGeomModelAPI>();
     }
 
     return false;
@@ -440,6 +627,10 @@ UsdImagingDataSourcePrim::GetNames()
 
     if (_GetUsdPrim().IsA<UsdGeomBoundable>()) {
         vec.push_back(HdExtentSchemaTokens->extent);
+    }
+
+    if (_GetUsdPrim().HasAPI<UsdGeomModelAPI>()) {
+        vec.push_back(TfToken("model"));
     }
 
     return vec;
@@ -506,6 +697,13 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         } else {
             return nullptr;
         }
+    } else if (name == UsdImagingModelSchemaTokens->model) {
+        UsdGeomModelAPI model(_GetUsdPrim());
+        if (!model) {
+            return nullptr;
+        }
+        return UsdImagingDataSourceModel::New(
+            model, _sceneIndexPath, _GetStageGlobals());
     }
 
     return nullptr;

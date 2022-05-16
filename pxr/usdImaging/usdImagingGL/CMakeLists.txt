@@ -41,6 +41,7 @@ pxr_library(usdImagingGL
 
     PUBLIC_CLASSES
         drawModeAdapter
+        drawModeSceneIndex
         engine
         package
         renderParams
@@ -51,6 +52,7 @@ pxr_library(usdImagingGL
         version.h
 
     PRIVATE_CLASSES
+        drawModeStandin
         legacyEngine
 
     PRIVATE_HEADERS

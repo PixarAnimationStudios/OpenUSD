@@ -31,6 +31,7 @@
 
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/boundable.h"
+#include "pxr/usd/usdGeom/modelAPI.h"
 
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
@@ -375,6 +376,53 @@ private:
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceXform);
+
+// ----------------------------------------------------------------------------
+
+///
+/// \class UsdImagingDataSourceModel
+///
+/// Data source representing model API for a USD prim.
+///
+class UsdImagingDataSourceModel : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(UsdImagingDataSourceModel);
+
+    /// Returns true if name matches an attribute in UsdImagingModelSchema.
+    ///
+    bool Has(const TfToken &name) override;
+
+    /// Return attribute names of UsdImagingModelSchema.
+    ///
+    TfTokenVector GetNames() override;
+
+    /// Returns data authored on USD prim (without resolving inherited) for
+    /// attribute names of UsdImagingModelSchema.
+    ///
+    HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+private:
+    /// C'tor.
+    ///
+    /// \p model is API schema from which this class can extract values from.
+    /// \p sceneIndexPath is the path of this object in the scene index.
+    /// \p stageGlobals represents the context object for the UsdStage with
+    /// which to evaluate this attribute data source.
+    ///
+    /// Note: client code calls this via static New().
+    UsdImagingDataSourceModel(
+            const UsdGeomModelAPI &model,
+            const SdfPath &sceneIndexPath,
+            const UsdImagingDataSourceStageGlobals &stageGlobals);
+
+private:
+    UsdGeomModelAPI _model;
+    const SdfPath _sceneIndexPath;
+    const UsdImagingDataSourceStageGlobals &_stageGlobals;
+};
+
+HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceModel);
 
 // ----------------------------------------------------------------------------
 
