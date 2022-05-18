@@ -26,6 +26,8 @@
 #include "pxr/imaging/hdGp/generativeProceduralPluginRegistry.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 
+#include "pxr/base/tf/envSetting.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -38,17 +40,22 @@ TF_REGISTRY_FUNCTION(TfType)
     HdSceneIndexPluginRegistry::Define<HdGpSceneIndexPlugin>();
 }
 
+TF_DEFINE_ENV_SETTING(HDGP_INCLUDE_DEFAULT_RESOLVER, false,
+    "Register a default hydra generative procedural resolver to the scene index"
+    " chain.");
+
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    // For now, do not add the procedural resolving scene index automatically
-    // That becomes a pipeline decision until standard workflows emerge.
-
-    // HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-    //    TfToken(), // empty token means all renderers
-    //    TfToken("HdGpSceneIndexPlugin"),
-    //    nullptr,   // no argument data necessary
-    //    0,         // insertion phase
-    //    HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    // For now, do not add the procedural resolving scene index by default but
+    // allow activation of a default configured instance via envvar.
+    if (TfGetEnvSetting(HDGP_INCLUDE_DEFAULT_RESOLVER) == true) {
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            TfToken(), // empty token means all renderers
+            TfToken("HdGpSceneIndexPlugin"),
+            nullptr,   // no argument data necessary
+            0,         // insertion phase
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    }
 }
 
 HdGpSceneIndexPlugin::HdGpSceneIndexPlugin() = default;
