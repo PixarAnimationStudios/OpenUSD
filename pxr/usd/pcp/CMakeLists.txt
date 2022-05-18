@@ -491,6 +491,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_SubrootReferenceAndRelocates.testenv
+    DEST testPcpMuseum_SubrootReferenceAndRelocates
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_SubrootReferenceAndVariants.testenv
     DEST testPcpMuseum_SubrootReferenceAndVariants
 )
@@ -1149,6 +1154,13 @@ pxr_register_test(testPcpMuseum_SubrootReferenceAndClasses
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SubrootReferenceAndClasses/root.sdf" 
     STDOUT_REDIRECT compositionResults_SubrootReferenceAndClasses.txt
     DIFF_COMPARE compositionResults_SubrootReferenceAndClasses.txt 
+)
+
+pxr_register_test(testPcpMuseum_SubrootReferenceAndRelocates
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SubrootReferenceAndRelocates/root.sdf" 
+    STDOUT_REDIRECT compositionResults_SubrootReferenceAndRelocates.txt
+    DIFF_COMPARE compositionResults_SubrootReferenceAndRelocates.txt 
 )
 
 pxr_register_test(testPcpMuseum_SubrootReferenceAndVariants
