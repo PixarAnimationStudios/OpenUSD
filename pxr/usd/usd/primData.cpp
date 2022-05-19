@@ -239,7 +239,7 @@ Usd_DescribePrimData(const Usd_PrimData *p, SdfPath const &proxyPrimPath)
         isInstanceProxy ? proxyPrimPath.GetText() : p->_path.GetText(),
         (isInstanceProxy || isInstance) ? TfStringPrintf(
             "with prototype <%s> ", isInstance ?
-            prototypeForInstance->GetPath().GetText() :
+            (prototypeForInstance ? prototypeForInstance->GetPath().GetText() : "unknown prototype") :
             p->_path.GetText()).c_str() : "",
         (isInstanceProxy || isPrototype || isInPrototype) ? TfStringPrintf(
             "using prim index <%s> ",
