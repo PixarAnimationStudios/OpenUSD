@@ -348,11 +348,11 @@ class AppController(QtCore.QObject):
         smallFontSizeStr = "%spt" % str(smallSize)
 
         # Apply the style sheet to it
-        sheet = open(os.path.join(resourceDir, 'usdviewstyle.qss'), 'r')
-        sheetString = sheet.read() % {
-            'RESOURCE_DIR'  : resourceDir,
-            'BASE_FONT_SZ'  : baseFontSizeStr,
-            'SMALL_FONT_SZ' : smallFontSizeStr}
+        with open(os.path.join(resourceDir, 'usdviewstyle.qss'), 'r') as sheet:
+            sheetString = sheet.read() % {
+                'RESOURCE_DIR'  : resourceDir,
+                'BASE_FONT_SZ'  : baseFontSizeStr,
+                'SMALL_FONT_SZ' : smallFontSizeStr}
 
         app = QtWidgets.QApplication.instance()
         app.setStyleSheet(sheetString)
