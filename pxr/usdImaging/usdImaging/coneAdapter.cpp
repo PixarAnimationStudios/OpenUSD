@@ -42,6 +42,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+using _PrimSource = UsdImagingDataSourceImplicitsPrim<UsdGeomCone, HdConeSchema>;
+}
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -76,13 +79,24 @@ UsdImagingConeAdapter::GetImagingSubprimData(
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
-        return UsdImagingDataSourceImplicitsPrim<UsdGeomCone>::New(
+        return _PrimSource::New(
             prim.GetPath(),
-            HdConeSchemaTokens->cone,
             prim,
             stageGlobals);
     }
     return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingConeAdapter::InvalidateImagingSubprim(
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return _PrimSource::Invalidate(subprim, properties);
+    }
+    
+    return HdDataSourceLocatorSet();
 }
 
 bool
