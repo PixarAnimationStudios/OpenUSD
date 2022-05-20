@@ -457,6 +457,28 @@ _SetParamValue(RtUString const& name,
             us.push_back(RtUString(s.c_str()));
         }
         params.SetStringArray(name, us.data(), us.size());
+    } else if (val.IsHolding<SdfAssetPath>()) {
+        SdfAssetPath asset = val.UncheckedGet<SdfAssetPath>();
+        // Since we can't know how the texture will be consumed,
+        // go with the default of flipping textures
+        const bool flipTexture = true;
+        RtUString v = HdPrman_ResolveAssetToRtUString(asset, flipTexture,
+                                                   _tokens->primvar.GetText());
+        params.SetString(name, v);
+    } else if (val.IsHolding<VtArray<SdfAssetPath>>()) {
+        // Convert to RtUString.
+        const VtArray<SdfAssetPath>& v =
+            val.UncheckedGet<VtArray<SdfAssetPath>>();
+        // Since we can't know how the texture will be consumed,
+        // go with the default of flipping textures
+        const bool flipTexture = true;
+        std::vector<RtUString> us;
+        us.reserve(v.size());
+        for (SdfAssetPath const& asset: v) {
+            us.push_back(HdPrman_ResolveAssetToRtUString(asset, flipTexture,
+                                                   _tokens->primvar.GetText()));
+        }
+        params.SetStringArray(name, us.data(), us.size());
     } else if (val.IsHolding<VtArray<TfToken>>()) {
         // Convert to RtUString.
         const VtArray<TfToken>& v =
@@ -1245,6 +1267,13 @@ HdPrman_ResolveMaterial(HdSceneDelegate *sceneDelegate,
     return false;
 }
 
+inline static bool
+HdPrman_IsNativeRenderManFormat(std::string const &path)
+{
+    std::string ext = ArGetResolver().GetExtension(path);
+    return (ext == "tex") || (ext == "bkm") || (ext == "ptc") || (ext == "ies");
+}
+
 RtUString
 HdPrman_ResolveAssetToRtUString(SdfAssetPath const &asset,
                                 bool flipTexture,
@@ -1259,25 +1288,18 @@ HdPrman_ResolveAssetToRtUString(SdfAssetPath const &asset,
         v = asset.GetAssetPath();
     }
 
-    // Use the RtxHioImage plugin for resolved paths that appear
-    // to be non-tex image files as only RenderMan itself can read
-    // tex files.  Note, we cannot read tex files from USDZ until
-    // RenderMan can read tex from an ArAsset.
+    // Use the RtxHioImage plugin for resolved paths that are not
+    // native RenderMan formats, but which Hio can read.
+    // Note: we cannot read tex files from USDZ until we add support
+    // to RtxHioImage (or another Rtx plugin) for this.
     // FUTURE NOTE: When we want to support primvar substitutions with
     // the use of non-tex textures, the following clause can no longer
     // be an "else if" (because such paths won't ArResolve), and we may 
     // not be able to even do an extension check...
-    else if (ArGetResolver().GetExtension(v) != "tex") {
-        if (!flipTexture) {
-            v = "rtxplugin:RtxHioImage" ARCH_LIBRARY_SUFFIX
-                "?filename=" + v + "&flipped=false";
-        }
-
-        // Check for images.
-        else if (!v.empty() && imageRegistry.IsSupportedImageFile(v)) {
-            v = "rtxplugin:RtxHioImage" ARCH_LIBRARY_SUFFIX
-                "?filename=" + v;
-        }
+    else if (!HdPrman_IsNativeRenderManFormat(v) &&
+             imageRegistry.IsSupportedImageFile(v)) {
+        v = "rtxplugin:RtxHioImage" ARCH_LIBRARY_SUFFIX
+            "?filename=" + v + (flipTexture ? "" : "&flipped=false");
     }
 
     TF_DEBUG(HDPRMAN_IMAGE_ASSET_RESOLVE)
