@@ -734,7 +734,16 @@ function(_pxr_target_link_libraries NAME)
         set(finalIncs "")
         set(finalSystemIncs "")
         _pxr_transitive_internal_libraries("${internal}" internal)
-        foreach(lib ${internal})
+
+        set(all_libraries "")
+        list(APPEND all_libraries ${internal})
+        list(APPEND all_libraries ${external})
+
+        foreach(lib ${all_libraries})
+            if (NOT TARGET ${lib})
+                continue()
+            endif()
+
             get_property(defs TARGET ${lib} PROPERTY INTERFACE_COMPILE_DEFINITIONS)
             foreach(def ${defs})
                 if(NOT ";${finalDefs};" MATCHES ";${def};")
