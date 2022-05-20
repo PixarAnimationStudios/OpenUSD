@@ -20,6 +20,16 @@
     <input name="note" type="string" value="" uniform="true" />
     <output name="out" type="vector3" />
   </nodedef>
+  <nodedef name="nd_color3" node="UsdMtlxTestNode">
+    <input name="in" type="color3" />
+    <input name="note" type="string" value="" uniform="true" />
+    <output name="out" type="color3" />
+  </nodedef>
+  <nodedef name="nd_color4" node="UsdMtlxTestNode">
+    <input name="in" type="color4" />
+    <input name="note" type="string" value="" uniform="true" />
+    <output name="out" type="color4" />
+  </nodedef>
   <nodedef name="nd_boolean" node="UsdMtlxTestNode">
     <input name="in" type="boolean" />
     <input name="note" type="string" value="" uniform="true" />
@@ -44,6 +54,8 @@
   <implementation name="im_float" nodedef="nd_float" file="mx_constant_float.osl" function="mx_constant_float" />
   <implementation name="im_string" nodedef="nd_string" file="mx_constant_string.osl" function="mx_constant_string" />
   <implementation name="im_vector" nodedef="nd_vector" file="mx_constant_vector.osl" function="mx_constant_vector" />
+  <implementation name="im_color3" nodedef="nd_color3" file="mx_constant_color3.osl" function="mx_constant_color3" />
+  <implementation name="im_color4" nodedef="nd_color4" file="mx_constant_color4.osl" function="mx_constant_color4" />
   <implementation name="im_boolean" nodedef="nd_boolean" file="mx_constant_bool.osl" function="mx_constant_bool" />
   <implementation name="im_surface" nodedef="nd_surface" file="mx_add_surfaceshader.osl" function="mx_add_surfaceshader" />
   <implementation name="im_customtype" nodedef="nd_customtype" file="mx_constant_filename.osl" function="FUNC" />
