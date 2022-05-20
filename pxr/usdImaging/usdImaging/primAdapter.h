@@ -827,6 +827,11 @@ protected:
     UsdImaging_InheritedPrimvarStrategy::value_type
     _GetInheritedPrimvars(UsdPrim const& prim) const;
 
+    // Utility for derived classes to try to find an inherited primvar.
+    USDIMAGING_API
+    UsdGeomPrimvar _GetInheritedPrimvar(UsdPrim const& prim,
+                                        TfToken const& primvarName) const;
+
     USDIMAGING_API
     GfInterval _GetCurrentTimeSamplingInterval();
 
