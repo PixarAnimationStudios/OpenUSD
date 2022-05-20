@@ -110,18 +110,7 @@ UsdImagingStageSceneIndex::_InvalidateImagingSubprim(
     return HdDataSourceLocatorSet();
 }
 
-void
-UsdImagingStageSceneIndex::_PopulateAdapterMap()
-{
-    TRACE_FUNCTION();
 
-    UsdImagingAdapterRegistry& reg = UsdImagingAdapterRegistry::GetInstance();
-    const TfTokenVector& adapterKeys = reg.GetAdapterKeys();
-
-    for (TfToken const& adapterKey : adapterKeys) {
-        _adapterMap.insert({adapterKey, reg.ConstructAdapter(adapterKey)});
-    }
-}
 
 UsdImagingPrimAdapterSharedPtr
 UsdImagingStageSceneIndex::_AdapterLookup(UsdPrim prim) const
@@ -132,24 +121,42 @@ UsdImagingStageSceneIndex::_AdapterLookup(UsdPrim prim) const
     // or something, instead of hardcoding the LightAPI reference...
 
     const UsdPrimTypeInfo &typeInfo = prim.GetPrimTypeInfo();
+    const TfToken adapterKey = typeInfo.GetSchemaTypeName();
 
-    _AdapterMap::const_iterator it =
-        _adapterMap.find(typeInfo.GetSchemaTypeName());
-    if(it != _adapterMap.end() && TF_VERIFY(it->second)) {
+    _AdapterMap::const_iterator it = _adapterMap.find(adapterKey);
+    bool adapterKeyFound = it != _adapterMap.end();
+    if (adapterKeyFound && it->second) {
         return it->second;
+    }
+
+    UsdImagingAdapterRegistry &reg = UsdImagingAdapterRegistry::GetInstance();
+    UsdImagingPrimAdapterSharedPtr adapter;
+
+    // If we haven't cached a nullptr previously, attempt to construct an
+    // adapter with the given key.
+    if (!adapterKeyFound) {
+        adapter = reg.ConstructAdapter(adapterKey);
+        _adapterMap[adapterKey] = adapter;
     }
 
     // XXX: Note that we're hardcoding handling for LightAPI here to match
     // UsdImagingDelegate, but the hope is to more generally support imaging
     // behaviors for API classes in the future.
-    if (prim.HasAPI<UsdLuxLightAPI>()) {
-        it = _adapterMap.find(TfToken("LightAPI"));
-        if (it != _adapterMap.end() && TF_VERIFY(it->second)) {
-            return it->second;
+    
+    // If we are still null (cached or otherwise), check for a LightAPI on this
+    // instance of the prim.
+    if (!adapter && prim.HasAPI<UsdLuxLightAPI>()) {
+        static const TfToken lightApiKey("LightAPI");
+        it = _adapterMap.find(lightApiKey);
+        if (it != _adapterMap.end()) {
+            adapter = it->second;
+        } else {
+            adapter = reg.ConstructAdapter(lightApiKey);
+            _adapterMap[lightApiKey] = adapter;
         }
     }
 
-    return nullptr;
+    return adapter;
 }
 
 // ---------------------------------------------------------------------------
@@ -283,11 +290,14 @@ void UsdImagingStageSceneIndex::SetStage(UsdStageRefPtr stage)
         TfNotice::Revoke(_objectsChangedNoticeKey);
         _adapterMap.clear();
     }
+
     _stage = stage;
-    _PopulateAdapterMap();
-    _objectsChangedNoticeKey =
-        TfNotice::Register(TfCreateWeakPtr(this),
-            &UsdImagingStageSceneIndex::_OnUsdObjectsChanged, _stage);
+
+    if (_stage) {
+        _objectsChangedNoticeKey =
+            TfNotice::Register(TfCreateWeakPtr(this),
+                &UsdImagingStageSceneIndex::_OnUsdObjectsChanged, _stage);
+    }
 }
 
 void UsdImagingStageSceneIndex::Populate()

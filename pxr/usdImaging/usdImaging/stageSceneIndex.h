@@ -35,6 +35,8 @@
 #include "pxr/usd/usd/stage.h"
 
 #include <tbb/concurrent_hash_map.h>
+#include <tbb/concurrent_unordered_map.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -98,8 +100,6 @@ private:
 
     Usd_PrimFlagsConjunction _GetTraversalPredicate() const;
 
-    void _PopulateAdapterMap();
-
     // Adapter delegation.
     UsdImagingPrimAdapterSharedPtr _AdapterLookup(UsdPrim prim) const;
 
@@ -162,10 +162,13 @@ private:
     // Property changes get converted into PrimsDirtied messages.
     std::map<SdfPath, TfTokenVector> _usdPropertiesToUpdate;
 
-    // Usd Prim Type to Adapter lookup table.
-    using _AdapterMap = TfHashMap<TfToken, UsdImagingPrimAdapterSharedPtr, 
-                TfToken::HashFunctor>;
-    _AdapterMap _adapterMap;
+    // Usd Prim Type to Adapter lookup table, concurrent because it could
+    // be potentially filled during concurrent GetPrim calls rather than
+    // just during single-threaded population.
+    using _AdapterMap = tbb::concurrent_unordered_map<
+        TfToken, UsdImagingPrimAdapterSharedPtr, TfHash>;
+
+    mutable _AdapterMap _adapterMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
