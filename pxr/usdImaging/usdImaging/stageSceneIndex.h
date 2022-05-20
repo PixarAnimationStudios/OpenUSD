@@ -101,7 +101,10 @@ private:
     Usd_PrimFlagsConjunction _GetTraversalPredicate() const;
 
     // Adapter delegation.
-    UsdImagingPrimAdapterSharedPtr _AdapterLookup(UsdPrim prim) const;
+    UsdImagingPrimAdapterSharedPtr _AdapterLookup(
+            UsdPrim prim) const;
+    UsdImagingPrimAdapterSharedPtr _AdapterLookup(
+            const TfToken &adapterKey) const;
 
     TfTokenVector _GetImagingSubprims(
             const UsdImagingPrimAdapterSharedPtr &adapter) const;

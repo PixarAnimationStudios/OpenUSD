@@ -123,39 +123,37 @@ UsdImagingStageSceneIndex::_AdapterLookup(UsdPrim prim) const
     const UsdPrimTypeInfo &typeInfo = prim.GetPrimTypeInfo();
     const TfToken adapterKey = typeInfo.GetSchemaTypeName();
 
-    _AdapterMap::const_iterator it = _adapterMap.find(adapterKey);
-    bool adapterKeyFound = it != _adapterMap.end();
-    if (adapterKeyFound && it->second) {
-        return it->second;
-    }
-
-    UsdImagingAdapterRegistry &reg = UsdImagingAdapterRegistry::GetInstance();
-    UsdImagingPrimAdapterSharedPtr adapter;
-
-    // If we haven't cached a nullptr previously, attempt to construct an
-    // adapter with the given key.
-    if (!adapterKeyFound) {
-        adapter = reg.ConstructAdapter(adapterKey);
-        _adapterMap[adapterKey] = adapter;
+    // If there is an adapter for the type name, return it.
+    if (UsdImagingPrimAdapterSharedPtr adapter = _AdapterLookup(adapterKey)) {
+        return adapter;
     }
 
     // XXX: Note that we're hardcoding handling for LightAPI here to match
     // UsdImagingDelegate, but the hope is to more generally support imaging
     // behaviors for API classes in the future.
-    
-    // If we are still null (cached or otherwise), check for a LightAPI on this
-    // instance of the prim.
-    if (!adapter && prim.HasAPI<UsdLuxLightAPI>()) {
+
+    // Otherwise, check for the LightAPI.
+    if (prim.HasAPI<UsdLuxLightAPI>()) {
         static const TfToken lightApiKey("LightAPI");
-        it = _adapterMap.find(lightApiKey);
-        if (it != _adapterMap.end()) {
-            adapter = it->second;
-        } else {
-            adapter = reg.ConstructAdapter(lightApiKey);
-            _adapterMap[lightApiKey] = adapter;
-        }
+        return _AdapterLookup(lightApiKey);
     }
 
+    return nullptr;
+}
+
+UsdImagingPrimAdapterSharedPtr
+UsdImagingStageSceneIndex::_AdapterLookup(const TfToken &adapterKey) const
+{
+    // Look-up adapter in cache.
+    _AdapterMap::const_iterator const it = _adapterMap.find(adapterKey);
+    if (it != _adapterMap.end()) {
+        return it->second;
+    }
+
+    // Construct and store in cache if not in cache yet.
+    UsdImagingAdapterRegistry &reg = UsdImagingAdapterRegistry::GetInstance();
+    UsdImagingPrimAdapterSharedPtr adapter = reg.ConstructAdapter(adapterKey);
+    _adapterMap[adapterKey] = adapter;
     return adapter;
 }
 
