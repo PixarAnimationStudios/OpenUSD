@@ -34,7 +34,7 @@ from math import tan, floor, ceil, radians as rad, isinf
 import os, sys
 from time import time
 
-from .qt import QtCore, QtGui, QtWidgets, QtOpenGL, PySideModule, QGLWidget, QGLFormat
+from .qt import QtCore, QtGui, QtWidgets, QtOpenGL, QGLWidget, QGLFormat
 
 from pxr import Tf
 from pxr import Gf
@@ -836,16 +836,11 @@ class StageView(QGLWidget):
         # default backbuffer uses GL_RGB.
         glFormat = QGLFormat()
         msaa = os.getenv("USDVIEW_ENABLE_MSAA", "1")
-        if PySideModule == 'PySide6':
-            if msaa == "1":
-                glFormat.setSamples(4)
-            super(StageView, self).__init__()
-            self.setFormat(glFormat)
-        else:
-            if msaa == "1":
-                glFormat.setSampleBuffers(True)
-                glFormat.setSamples(4)
-            super(StageView, self).__init__(glFormat, parent)
+        if msaa == "1":
+            glFormat.setSampleBuffers(True)
+            glFormat.setSamples(4)
+
+        super(StageView, self).InitQGLWidget(glFormat, parent)
 
         self._dataModel = dataModel or StageView.DefaultDataModel()
         self._printTiming = printTiming
@@ -953,9 +948,9 @@ class StageView(QGLWidget):
         # create the renderer lazily, when we try to do real work with it.
         if not self._renderer:
             if self.context().isValid():
-                if PySideModule == 'PySide6' or self.context().initialized():
-                    self._renderer = UsdImagingGL.Engine()
-                    self._handleRendererChanged(self.GetCurrentRendererId())
+                if self.isContextInitialised():
+                  self._renderer = UsdImagingGL.Engine()
+                  self._handleRendererChanged(self.GetCurrentRendererId())
             elif not self._reportedContextError:
                 self._reportedContextError = True
                 raise RuntimeError("StageView could not initialize renderer without a valid GL context")
