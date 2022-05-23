@@ -73,11 +73,50 @@ if PySideModule == 'PySide':
 
 elif PySideModule == 'PySide2':
     from PySide2 import QtCore, QtGui, QtWidgets, QtOpenGL
+    from PySide2.QtOpenGL import QGLWidget as QGLWidget
+    from PySide2.QtOpenGL import QGLFormat as QGLFormat
+    from PySide2 import QtWidgets as QtActionWidgets
     
     # Older versions still have QtGui.QStringListModel - this
     # is apparently a bug:
     #    https://bugreports.qt.io/browse/PYSIDE-614
     if not hasattr(QtCore, 'QStringListModel'):
         QtCore.QStringListModel = QtGui.QStringListModel
+    
+    def bindTexture(self, qimage):
+        from OpenGL import GL
+        tex = self.bindTexture(qimage, GL.GL_TEXTURE_2D, GL.GL_RGBA,
+                               QtOpenGL.QGLContext.NoBindOption)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, tex)
+
+        return tex
+
+    def releaseTexture(self, tex):
+        from OpenGL import GL
+        GL.glDeleteTextures(tex)
+
+    QGLWidget.BindTexture = bindTexture
+    QGLWidget.ReleaseTexture = releaseTexture
+
+elif PySideModule == 'PySide6':
+    from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGL
+    from PySide6.QtOpenGLWidgets import QOpenGLWidget as QGLWidget
+    from PySide6.QtGui import QSurfaceFormat as QGLFormat
+    from PySide6 import QtGui as QtActionWidgets
+
+    QGLWidget.updateGL = QGLWidget.update
+
+    def bindTexture(self, qimage):
+        tex = QtOpenGL.QOpenGLTexture(qimage)
+        tex.bind()
+        return tex
+
+    def releaseTexture(self, tex):
+        tex.release()
+        tex.destroy()
+
+    QGLWidget.BindTexture = bindTexture
+    QGLWidget.ReleaseTexture = releaseTexture
+
 else:
     raise ImportError('Unrecognized PySide module "{}"'.format(PySideModule))

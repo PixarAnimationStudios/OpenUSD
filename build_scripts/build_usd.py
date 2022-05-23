@@ -26,6 +26,7 @@ from __future__ import print_function
 import argparse
 import codecs
 import contextlib
+import copy
 import ctypes
 import datetime
 import distutils
@@ -106,6 +107,17 @@ def GetCommandOutput(command):
     except subprocess.CalledProcessError:
         pass
     return None
+
+def GetMacArmArch():
+    return os.environ.get('MACOS_ARM_ARCHITECTURE') or "arm64"
+
+def GetMacArch():
+    macArch = GetCommandOutput('arch').strip()
+    if macArch == "i386" or macArch == "x86_64":
+        macArch = "x86_64"
+    else:
+        macArch = GetMacArmArch()
+    return macArch
 
 def GetXcodeDeveloperDirectory():
     """Returns the active developer directory as reported by 'xcode-select -p'.
@@ -891,20 +903,51 @@ def InstallTBB_Windows(context, force, buildArgs):
 
 def InstallTBB_LinuxOrMacOS(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force)):
-        # Note: TBB installation fails on OSX when cuda is installed, a 
-        # suggested fix:
-        # https://github.com/spack/spack/issues/6000#issuecomment-358817701
-        if MacOS():
-            PatchFile("build/macos.inc", 
-                    [("shell clang -v ", "shell clang --version ")])
-
         # Append extra argument controlling libstdc++ ABI if specified.
         AppendCXX11ABIArg("CXXFLAGS", context, buildArgs)
 
-        # TBB does not support out-of-source builds in a custom location.
-        Run('make -j{procs} {buildArgs}'
-            .format(procs=context.numJobs, 
-                    buildArgs=" ".join(buildArgs)))
+        if MacOS():
+            # Note: TBB installation fails on OSX when cuda is installed, a 
+            # suggested fix:
+            # https://github.com/spack/spack/issues/6000#issuecomment-358817701
+            PatchFile("build/macos.inc", 
+                    [("shell clang -v ", "shell clang --version ")])
+
+            PatchFile("include/tbb/machine/macos_common.h", 
+                [("#define __TBB_Yield()  sched_yield()",
+                  "#if defined(__aarch64__)\n"
+                  "#define __TBB_Yield()  sched_yield()\n"
+                  "#else\n"
+                  "#define __TBB_Yield()  __TBB_Pause(1)\n"
+                  "#endif\n")])
+
+            PatchFile("src/tbb/custom_scheduler.h", 
+                [("const int yield_threshold = 100;",
+                  "const int yield_threshold = 10;")])
+
+            PatchFile("build/macos.clang.inc", 
+                [("LIBDL = -ldl",
+                    "LIBDL = -ldl\n"
+                    "export SDKROOT:=$(shell xcodebuild -sdk -version | grep -o -E '/.*SDKs/MacOSX.*' 2>/dev/null | head -1)"),
+                    ("-m64",
+                    "-m64 -arch x86_64"),
+                    ("ifeq ($(arch),$(filter $(arch),armv7 armv7s arm64))",
+                    "ifeq ($(arch),$(filter $(arch),armv7 armv7s arm64 arm64e))")],
+                True)
+        
+            archPrimary = GetMacArch()
+            if (archPrimary == "x86_64"):
+                archPrimary = "intel64"
+
+            Run('make -j{procs} arch={arch} {buildArgs}'.
+                format(arch=archPrimary,
+                       procs=context.numJobs, 
+                       buildArgs=" ".join(buildArgs)))
+        else:
+            # TBB does not support out-of-source builds in a custom location.
+            Run('make -j{procs} {buildArgs}'
+                .format(procs=context.numJobs, 
+                        buildArgs=" ".join(buildArgs)))
 
         # Install both release and debug builds. USD requires the debug
         # libraries when building in debug mode, and installing both
@@ -987,7 +1030,16 @@ PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.29.tar.gz"
 
 def InstallPNG(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(PNG_URL, context, force)):
-        RunCMake(context, force, buildArgs)
+        extraArgs = copy.deepcopy(buildArgs)
+        if MacOS():
+            extraArgs.append("-DCMAKE_C_FLAGS=\"-DPNG_ARM_NEON_OPT=0\"")
+            PatchFile("CMakeLists.txt",
+                [('add_custom_target(gensym DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/libpng.sym")',
+                  'add_custom_target(gensym DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/libpng.sym" genvers)'),
+                 ("add_custom_target(genfiles DEPENDS",
+                  "add_custom_target(genfiles DEPENDS gensym symbol-check")])
+
+        RunCMake(context, force, extraArgs)
 
 PNG = Dependency("PNG", InstallPNG, "include/png.h")
 
@@ -997,7 +1049,18 @@ PNG = Dependency("PNG", InstallPNG, "include/png.h")
 OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/v2.3.0.zip"
 
 def InstallOpenEXR(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(OPENEXR_URL, context, force)):
+    srcDir = DownloadURL(OPENEXR_URL, context, force)
+    with CurrentWorkingDirectory(srcDir):
+        if MacOS():
+            PatchFile(srcDir + "/OpenEXR/CMakeLists.txt",
+                [("SET (OPENEXR_LIBSUFFIX \"\")",
+                  "SET (OPENEXR_LIBSUFFIX \"\")\n"
+                  "FILE ( APPEND ${CMAKE_CURRENT_BINARY_DIR}/config/OpenEXRConfig.h \"\n"
+                  "#undef OPENEXR_IMF_HAVE_GCC_INLINE_ASM_AVX\n"
+                  "#ifndef __aarch64__\n"
+                  "#define OPENEXR_IMF_HAVE_GCC_INLINE_ASM_AVX 1\n"
+                  "#endif\n\")\n")])
+
         RunCMake(context, force, 
                  ['-DOPENEXR_BUILD_PYTHON_LIBS=OFF',
                   '-DOPENEXR_PACKAGE_PREFIX="{}"'.format(context.instDir),
@@ -1172,6 +1235,21 @@ def InstallOpenColorIO(context, force, buildArgs):
                       [("IMPORTED_LOCATION_RELEASE", 
                         "IMPORTED_LOCATION_RELWITHDEBINFO")])
 
+        if MacOS():
+            arch = GetMacArch()
+
+            PatchFile("CMakeLists.txt",
+                    [('CMAKE_ARGS      ${TINYXML_CMAKE_ARGS}',
+                    'CMAKE_ARGS      ${TINYXML_CMAKE_ARGS}\n' +
+                    '            CMAKE_CACHE_ARGS -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH:BOOL=TRUE'
+                    ' -DCMAKE_OSX_ARCHITECTURES:STRING="{arch}"'.format(arch=arch)),
+                    ('CMAKE_ARGS      ${YAML_CPP_CMAKE_ARGS}',
+                    'CMAKE_ARGS      ${YAML_CPP_CMAKE_ARGS}\n' +
+                    '            CMAKE_CACHE_ARGS -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH:BOOL=TRUE'
+                    ' -DCMAKE_OSX_ARCHITECTURES:STRING="{arch}"'.format(arch=arch)),
+                    ('set(CMAKE_OSX_ARCHITECTURES x86_64 CACHE STRING',
+                     'set(CMAKE_OSX_ARCHITECTURES "{arch}" CACHE STRING'.format(arch=arch))])
+            
         # The OCIO build treats all warnings as errors but several come up
         # on various platforms, including:
         # - On gcc6, v1.1.0 emits many -Wdeprecated-declaration warnings for
@@ -1189,6 +1267,15 @@ def InstallOpenColorIO(context, force, buildArgs):
             pass
         else:
             extraArgs.append('-DCMAKE_CXX_FLAGS=-w')
+		
+        if MacOS():
+            #if using version 2 of OCIO we patch a different config path as it resides elsewere
+            PatchFile("src/core/Config.cpp",
+                       [("cacheidnocontext_ = cacheidnocontext_;", 
+                         "cacheidnocontext_ = rhs.cacheidnocontext_;")])
+
+            extraArgs.append('-DCMAKE_CXX_FLAGS="-Wno-unused-function -Wno-unused-const-variable -Wno-unused-private-field"')
+            extraArgs.append('-DOCIO_USE_SSE=OFF')
 
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
@@ -1290,7 +1377,7 @@ def GetPySideInstructions():
                 'update your PYTHONPATH to indicate where it is '
                 'located.')
     else:                       
-        return ('PySide2 is not installed. If you have pip '
+        return ('PySide2 or PySide6 are not installed. If you have pip '
                 'installed, run "pip install PySide2" '
                 'to install it, then re-run this script.\n'
                 'If PySide2 is already installed, you may need to '
@@ -1298,7 +1385,7 @@ def GetPySideInstructions():
                 'located.')
 
 PYSIDE = PythonDependency("PySide", GetPySideInstructions,
-                          moduleNames=["PySide", "PySide2"])
+                          moduleNames=["PySide", "PySide2", "PySide6"])
 
 ############################################################
 # HDF5
@@ -1321,6 +1408,10 @@ ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.7.10.zip"
 
 def InstallAlembic(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ALEMBIC_URL, context, force)):
+        if MacOS():
+            PatchFile("CMakeLists.txt", 
+                      [("ADD_DEFINITIONS(-Wall -Werror -Wextra -Wno-unused-parameter)",
+                        "ADD_DEFINITIONS(-Wall -Wextra -Wno-unused-parameter)")])
         cmakeOptions = ['-DUSE_BINARIES=OFF', '-DUSE_TESTS=OFF']
         if context.enableHDF5:
             # HDF5 requires the H5_BUILT_AS_DYNAMIC_LIB macro be defined if
@@ -1368,10 +1459,10 @@ MATERIALX = Dependency("MaterialX", InstallMaterialX, "include/MaterialXCore/Lib
 
 ############################################################
 # Embree
-# For MacOS we use version 3.7.0 to include a fix from Intel
-# to build on Catalina.
+# For MacOS we use version 3.13.2 to include a fix from Intel
+# to build on Apple Silicon.
 if MacOS():
-    EMBREE_URL = "https://github.com/embree/embree/archive/v3.7.0.tar.gz"
+    EMBREE_URL = "https://github.com/embree/embree/archive/v3.13.2.tar.gz"
 else:
     EMBREE_URL = "https://github.com/embree/embree/archive/v3.2.2.tar.gz"
 
@@ -2145,11 +2236,13 @@ if PYSIDE in requiredDependencies:
     # The USD build will skip building usdview if pyside2-uic or pyside-uic is
     # not found, so check for it here to avoid confusing users. This list of 
     # PySide executable names comes from cmake/modules/FindPySide.cmake
+    pyside6Uic = ["pyside6-uic", "uic"]
+    found_pyside6Uic = any([which(p) for p in pyside6Uic])
     pyside2Uic = ["pyside2-uic", "python2-pyside2-uic", "pyside2-uic-2.7", "uic"]
     found_pyside2Uic = any([which(p) for p in pyside2Uic])
     pysideUic = ["pyside-uic", "python2-pyside-uic", "pyside-uic-2.7"]
     found_pysideUic = any([which(p) for p in pysideUic])
-    if not given_pysideUic and not found_pyside2Uic and not found_pysideUic:
+    if not given_pysideUic and not found_pyside2Uic and not found_pysideUic and not found_pyside6Uic:
         if Windows():
             # Windows does not support PySide2 with Python2.7
             PrintError("pyside-uic not found -- please install PySide and"
@@ -2157,10 +2250,10 @@ if PYSIDE in requiredDependencies:
                        " {0} depending on your platform)"
                    .format(" or ".join(pysideUic)))
         else:
-            PrintError("pyside2-uic not found -- please install PySide2 and"
+            PrintError("uic not found-- please install PySide2 or PySide6 and"
                        " adjust your PATH. (Note that this program may be"
                        " named {0} depending on your platform)"
-                       .format(" or ".join(pyside2Uic)))
+                       .format(" or ".join(set(pyside2Uic+pyside6Uic))))
         sys.exit(1)
 
 if JPEG in requiredDependencies:
@@ -2329,6 +2422,10 @@ if Windows():
         os.path.join(context.instDir, "bin"),
         os.path.join(context.instDir, "lib")
     ])
+
+if MacOS():
+    from _macOS_codesign import MacOSCodesign
+    MacOSCodesign(context.usdInstDir, verbosity > 1)
 
 Print("""
 Success! To use USD, please ensure that you have:""")
