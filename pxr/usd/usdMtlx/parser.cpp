@@ -48,6 +48,14 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((discoveryType, "mtlx"))
     ((sourceType, ""))
+
+    (uimin)
+    (uimax)
+    (uisoftmin)
+    (uisoftmax)
+    (uistep)
+    (unit)
+    (unittype)
 );
 
 // This environment variable lets users override the name of the primary
@@ -123,6 +131,73 @@ public:
 private:
     std::map<std::string, std::string> _propertyNameRemapping;
 };
+
+static
+void
+ParseMetadata(
+    NdrTokenMap& metadata,
+    const TfToken& key,
+    const mx::ConstElementPtr& element,
+    const std::string& attribute)
+{
+    const auto& value = element->getAttribute(attribute);
+    if (!value.empty()) {
+        metadata.emplace(key, value);
+    }
+}
+
+static
+void
+ParseOptions(
+    NdrOptionVec& options,
+    const mx::ConstElementPtr& element
+)
+{
+    const auto& enumLabels = element->getAttribute("enum");
+    if (enumLabels.empty()) {
+        return;
+    }
+
+    const auto& enumValues = element->getAttribute("enumvalues");
+    std::vector<std::string> allLabels = UsdMtlxSplitStringArray(enumLabels);
+    std::vector<std::string> allValues = UsdMtlxSplitStringArray(enumValues);
+
+    if (allValues.size() && allValues.size() != allLabels.size()) {
+        // An array of vector2 values will produce twice the expected number of
+        // elements. We can fix that by regrouping them.
+        if (allValues.size() > allLabels.size() &&
+            allValues.size() % allLabels.size() == 0) {
+
+            size_t stride = allValues.size() / allLabels.size();
+            std::vector<std::string> rebuiltValues;
+            std::string currentValue;
+            for (size_t i = 0; i < allValues.size(); ++i) {
+                if (i % stride != 0) {
+                    currentValue += mx::ARRAY_PREFERRED_SEPARATOR;
+                }
+                currentValue += allValues[i];
+                if ((i+1) % stride == 0) {
+                    rebuiltValues.push_back(currentValue);
+                    currentValue = "";
+                }
+            }
+            allValues.swap(rebuiltValues);
+        } else {
+            // Can not reconcile the size difference:
+            allValues.clear();
+        }
+    }
+
+    auto itLabels = allLabels.cbegin();
+    auto itValues = allValues.cbegin();
+    while (itLabels != allLabels.cend()) {
+        TfToken value;
+        if (itValues != allValues.cend()) {
+            value = TfToken(*itValues++);
+        }
+        options.emplace_back(TfToken(*itLabels++), value);
+    }
+}
 
 void
 ShaderBuilder::AddProperty(
@@ -240,6 +315,36 @@ ShaderBuilder::AddProperty(
     auto j = _propertyNameRemapping.find(name);
     if (j != _propertyNameRemapping.end()) {
         metadata[SdrPropertyMetadata->ImplementationName] = j->second;
+    }
+
+    if (!isOutput) {
+        ParseMetadata(metadata, SdrPropertyMetadata->Label, element, "uiname");
+        ParseMetadata(metadata, SdrPropertyMetadata->Help, element, "doc");
+        ParseMetadata(metadata, SdrPropertyMetadata->Page, element, "uifolder");
+
+        ParseMetadata(metadata, _tokens->uimin, element, "uimin");
+        ParseMetadata(metadata, _tokens->uimax, element, "uimax");
+        ParseMetadata(metadata, _tokens->uisoftmin, element, "uisoftmin");
+        ParseMetadata(metadata, _tokens->uisoftmax, element, "uisoftmax");
+        ParseMetadata(metadata, _tokens->uistep, element, "uistep");
+        ParseMetadata(metadata, _tokens->unit, element, "unit");
+        ParseMetadata(metadata, _tokens->unittype, element, "unittype");
+
+        for (const auto& pair : metadata) {
+            const TfToken attrName = pair.first;
+            const std::string attrValue = pair.second;
+
+            if (std::find(SdrPropertyMetadata->allTokens.begin(),
+                        SdrPropertyMetadata->allTokens.end(),
+                        attrName) != SdrPropertyMetadata->allTokens.end()){
+                continue;
+            }
+
+            // Attribute hasn't been handled yet, so put it into the hints dict
+            hints.insert({attrName, attrValue});
+        }
+
+        ParseOptions(options, element);
     }
 
     // Add the property.

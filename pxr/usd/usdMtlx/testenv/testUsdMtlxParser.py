@@ -57,6 +57,40 @@ class TestParser(unittest.TestCase):
             self.assertEqual(sorted(node.GetInputNames()), ["in", "note"])
             self.assertEqual(node.GetOutputNames(), ['out'])
 
+        # Verify some metadata:
+        node = Sdr.Registry().GetShaderNodeByIdentifier(
+            'UsdMtlxTestNamespace:nd_vector')
+        self.assertEqual(node.GetHelp(), "Vector help")
+        # Properties without a Page metadata end up in an unnamed page. This
+        # means that all MaterialX outputs will be assigned to the unnamed page
+        # when the metadata is used.
+        self.assertEqual(node.GetPages(), ["UI Page", ""])
+        self.assertEqual(node.GetPropertyNamesForPage("UI Page"), ["in",])
+        self.assertEqual(node.GetPropertyNamesForPage(""), ["note", "out"])
+        input = node.GetInput("in")
+        self.assertEqual(input.GetHelp(), "Property help")
+        self.assertEqual(input.GetLabel(), "UI Vector")
+        self.assertEqual(input.GetPage(), "UI Page")
+        self.assertEqual(input.GetOptions(),
+            [("X", "1, 0, 0"), ("Y", "0, 1, 0"), ("Z", "0, 0, 1")])
+
+        node = Sdr.Registry().GetShaderNodeByIdentifier(
+            'UsdMtlxTestNamespace:nd_float')
+        expected = {
+            "uimin": "-360.0",
+            "uimax": "360.0",
+            "uisoftmin": "0.0",
+            "uisoftmax": "180.0",
+            "uistep": "1.0",
+            "unittype": "angle",
+            "unit": "degree"
+        }
+        hints = node.GetInput("in").GetHints()
+        metadata = node.GetInput("in").GetMetadata()
+        for key in expected.keys():
+            self.assertEqual(hints[key], expected[key])
+            self.assertEqual(metadata[key], expected[key])
+
         # Verify converted types.
         typeNameMap = {
             'boolean': 'bool',
