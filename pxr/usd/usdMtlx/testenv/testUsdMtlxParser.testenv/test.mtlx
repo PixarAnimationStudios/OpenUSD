@@ -6,7 +6,7 @@
     <output name="out" type="integer" />
   </nodedef>
   <nodedef name="nd_float" node="UsdMtlxTestNode">
-    <input name="in" type="float" />
+    <input name="in" type="float" uimin="-360.0" uimax="360.0" uisoftmin="0.0" uisoftmax="180.0" uistep="1.0" unittype="angle" unit="degree" />
     <input name="note" type="string" value="" uniform="true" />
     <output name="out" type="float" />
   </nodedef>
@@ -15,8 +15,8 @@
     <input name="note" type="string" value="" uniform="true" />
     <output name="out" type="string" />
   </nodedef>
-  <nodedef name="nd_vector" node="UsdMtlxTestNode">
-    <input name="in" type="vector3" />
+  <nodedef name="nd_vector" node="UsdMtlxTestNode" doc="Vector help">
+    <input name="in" type="vector3" enum="X,Y,Z" enumvalues="1,0,0, 0,1,0, 0,0,1" doc="Property help" uiname="UI Vector" uifolder="UI Page" />
     <input name="note" type="string" value="" uniform="true" />
     <output name="out" type="vector3" />
   </nodedef>
