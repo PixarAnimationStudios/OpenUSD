@@ -162,7 +162,7 @@ ParseOptions(
     std::vector<std::string> allLabels = UsdMtlxSplitStringArray(enumLabels);
     std::vector<std::string> allValues = UsdMtlxSplitStringArray(enumValues);
 
-    if (allValues.size() && allValues.size() != allLabels.size()) {
+    if (!allValues.empty() && allValues.size() != allLabels.size()) {
         // An array of vector2 values will produce twice the expected number of
         // elements. We can fix that by regrouping them.
         if (allValues.size() > allLabels.size() &&
@@ -334,13 +334,13 @@ ShaderBuilder::AddProperty(
             const TfToken attrName = pair.first;
             const std::string attrValue = pair.second;
 
-            if (std::find(SdrPropertyMetadata->allTokens.begin(),
-                        SdrPropertyMetadata->allTokens.end(),
-                        attrName) != SdrPropertyMetadata->allTokens.end()){
+            const auto& allTokens = SdrPropertyMetadata->allTokens;
+            if (std::find(allTokens.begin(), allTokens.end(), attrName) !=
+                allTokens.end()) {
                 continue;
             }
 
-            // Attribute hasn't been handled yet, so put it into the hints dict
+            // Attribute hasn't been handled yet, so put it into the hints dict.
             hints.insert({attrName, attrValue});
         }
 
