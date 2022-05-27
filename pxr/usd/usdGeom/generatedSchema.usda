@@ -1371,11 +1371,11 @@ class Plane "Plane" (
 
         \\sa UsdGeomGprim::GetDoubleSidedAttr()"""
     )
-    float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)] (
+    float3[] extent = [(-1, -1, 0), (1, 1, 0)] (
         doc = """Extent is re-defined on Plane only to provide a fallback
         value. \\sa UsdGeomGprim::GetExtentAttr()."""
     )
-    double length = 1 (
+    double length = 2 (
         doc = """The length of the plane, which aligns to the y-axis when axis is
         'Z' or 'X', or to the z-axis when axis is 'Y'.  If you author length 
         you must also author extent.
@@ -1443,7 +1443,7 @@ class Plane "Plane" (
         deactivating geometry prims, invisible geometry is still 
         available for inspection, for positioning, for defining volumes, etc.'''
     )
-    double width = 1 (
+    double width = 2 (
         doc = """The width of the plane, which aligns to the x-axis when axis is
         'Z' or 'Y', or to the z-axis when axis is 'X'.  If you author width 
         you must also author extent.

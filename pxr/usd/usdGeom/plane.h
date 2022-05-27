@@ -168,7 +168,7 @@ public:
     // --------------------------------------------------------------------- //
     // DOUBLESIDED 
     // --------------------------------------------------------------------- //
-    /// Planes are double-sided by default. Clients may also supported
+    /// Planes are double-sided by default. Clients may also support
     /// single-sided planes.
     /// 
     /// \sa UsdGeomGprim::GetDoubleSidedAttr()
@@ -202,7 +202,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `double width = 1` |
+    /// | Declaration | `double width = 2` |
     /// | C++ Type | double |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
     USDGEOM_API
@@ -228,7 +228,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `double length = 1` |
+    /// | Declaration | `double length = 2` |
     /// | C++ Type | double |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
     USDGEOM_API
@@ -279,7 +279,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]` |
+    /// | Declaration | `float3[] extent = [(-1, -1, 0), (1, 1, 0)]` |
     /// | C++ Type | VtArray<GfVec3f> |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3Array |
     USDGEOM_API

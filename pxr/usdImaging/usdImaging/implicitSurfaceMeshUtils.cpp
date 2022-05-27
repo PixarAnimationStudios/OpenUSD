@@ -461,20 +461,20 @@ UsdImagingGeneratePlaneMeshPoints(
     std::vector<GfVec3f> points(numPoints);
 
     if (axis == UsdGeomTokens->x) {
-        points = { GfVec3f( 0.0f,  0.5f * length, 0.5f * width ),
-                   GfVec3f( 0.0f, -0.5f * length, 0.5f * width ),
-                   GfVec3f( 0.0f, -0.5f * length,-0.5f * width ),
-                   GfVec3f( 0.0f,  0.5f * length,-0.5f * width ) };
+        points = { GfVec3f( 0.0f,  1.0f * length, 1.0f * width ),
+                   GfVec3f( 0.0f, -1.0f * length, 1.0f * width ),
+                   GfVec3f( 0.0f, -1.0f * length,-1.0f * width ),
+                   GfVec3f( 0.0f,  1.0f * length,-1.0f * width ) };
     } else if (axis == UsdGeomTokens->y) {
-        points = { GfVec3f(-0.5f * width, 0.0f, 0.5f * length ),
-                   GfVec3f( 0.5f * width, 0.0f, 0.5f * length ),
-                   GfVec3f( 0.5f * width, 0.0f,-0.5f * length ),
-                   GfVec3f(-0.5f * width, 0.0f,-0.5f * length ) };
+        points = { GfVec3f(-1.0f * width, 0.0f, 1.0f * length ),
+                   GfVec3f( 1.0f * width, 0.0f, 1.0f * length ),
+                   GfVec3f( 1.0f * width, 0.0f,-1.0f * length ),
+                   GfVec3f(-1.0f * width, 0.0f,-1.0f * length ) };
     } else {
-        points = { GfVec3f( 0.5f * width, 0.5f * length, 0.0f ),
-                   GfVec3f(-0.5f * width, 0.5f * length, 0.0f ),
-                   GfVec3f(-0.5f * width,-0.5f * length, 0.0f ),
-                   GfVec3f( 0.5f * width,-0.5f * length, 0.0f ) };
+        points = { GfVec3f( 1.0f * width, 1.0f * length, 0.0f ),
+                   GfVec3f(-1.0f * width, 1.0f * length, 0.0f ),
+                   GfVec3f(-1.0f * width,-1.0f * length, 0.0f ),
+                   GfVec3f( 1.0f * width,-1.0f * length, 0.0f ) };
     }
 
     VtVec3fArray pointsArray(numPoints);
