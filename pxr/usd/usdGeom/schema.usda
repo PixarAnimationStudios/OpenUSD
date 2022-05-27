@@ -824,19 +824,19 @@ class Plane "Plane" (
     }
 ) {
     uniform bool doubleSided = true (
-        doc = """Planes are double-sided by default, clients may also supported
+        doc = """Planes are double-sided by default. Clients may also support
         single-sided planes.
 
         \\sa UsdGeomGprim::GetDoubleSidedAttr()"""
         )
-    double width = 2.0 (
+    double width = 1.0 (
         doc = """The width of the plane, which aligns to the x-axis when \\em axis is
         'Z' or 'Y', or to the z-axis when \\em axis is 'X'.  If you author \\em width 
         you must also author \\em extent.
 
         \\sa UsdGeomGprim::GetExtentAttr()"""
     )
-    double length = 2.0 (
+    double length = 1.0 (
         doc = """The length of the plane, which aligns to the y-axis when \\em axis is
         'Z' or 'X', or to the z-axis when \\em axis is 'Y'.  If you author \\em length 
         you must also author \\em extent.
@@ -851,15 +851,9 @@ class Plane "Plane" (
 
         \\sa UsdGeomGprim::GetAxisAttr()."""
     )
-    float3[] extent = [(-1.0, -1.0, 0.0), (1.0, 1.0, 0.0)] (
+    float3[] extent = [(-0.5, -0.5, 0.0), (0.5, 0.5, 0.0)] (
         doc = """Extent is re-defined on Plane only to provide a fallback
         value. \\sa UsdGeomGprim::GetExtentAttr()."""
-    )
-    texCoord2d[] primvars:st = [(1.0,1.0),(0.0,1.0),(0.0,0.0),(1.0,0.0)] (
-        doc = """The default st coordinates for texture maps.
-
-        \\sa UsdGeomGprim::GetPrimvarsStAttr()"""
-        interpolation = "varying"
     )
 }
 

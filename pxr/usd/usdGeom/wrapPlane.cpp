@@ -83,13 +83,6 @@ _CreateExtentAttr(UsdGeomPlane &self,
     return self.CreateExtentAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
 }
-        
-static UsdAttribute
-_CreatePrimvarsStAttr(UsdGeomPlane &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreatePrimvarsStAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TexCoord2dArray), writeSparsely);
-}
 
 static std::string
 _Repr(const UsdGeomPlane &self)
@@ -165,13 +158,6 @@ void wrapUsdGeomPlane()
              &This::GetExtentAttr)
         .def("CreateExtentAttr",
              &_CreateExtentAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetPrimvarsStAttr",
-             &This::GetPrimvarsStAttr)
-        .def("CreatePrimvarsStAttr",
-             &_CreatePrimvarsStAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

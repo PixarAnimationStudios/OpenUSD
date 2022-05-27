@@ -452,36 +452,36 @@ UsdImagingGetPlaneTopology()
 }
 
 VtVec3fArray
-UsdImagingGeneratePlaneMeshPoints(double width,
-                        double length,
-                        TfToken const & axis)
+UsdImagingGeneratePlaneMeshPoints(
+    const double width,
+    const double length,
+    const TfToken& axis)
 {
     int numPoints = 4;
-    std::vector<GfVec3f> _points(numPoints);
+    std::vector<GfVec3f> points(numPoints);
 
     if (axis == UsdGeomTokens->x) {
-        _points = { GfVec3f( 0.0f,  0.5f * length,-0.5f * width ),
-                    GfVec3f( 0.0f,  0.5f * length, 0.5f * width ),
-                    GfVec3f( 0.0f, -0.5f * length, 0.5f * width ),
-                    GfVec3f( 0.0f, -0.5f * length,-0.5f * width ) };
+        points = { GfVec3f( 0.0f,  0.5f * length, 0.5f * width ),
+                   GfVec3f( 0.0f, -0.5f * length, 0.5f * width ),
+                   GfVec3f( 0.0f, -0.5f * length,-0.5f * width ),
+                   GfVec3f( 0.0f,  0.5f * length,-0.5f * width ) };
     } else if (axis == UsdGeomTokens->y) {
-        _points = { 
-                    GfVec3f( 0.5f * width, 0.0f,-0.5f * length ),
-                    GfVec3f(-0.5f * width, 0.0f,-0.5f * length ),
-                    GfVec3f(-0.5f * width, 0.0f, 0.5f * length ),
-                    GfVec3f( 0.5f * width, 0.0f, 0.5f * length ) };
+        points = { GfVec3f(-0.5f * width, 0.0f, 0.5f * length ),
+                   GfVec3f( 0.5f * width, 0.0f, 0.5f * length ),
+                   GfVec3f( 0.5f * width, 0.0f,-0.5f * length ),
+                   GfVec3f(-0.5f * width, 0.0f,-0.5f * length ) };
     } else {
-        _points = { GfVec3f( 0.5f * width, 0.5f * length, 0.0f ),
-                    GfVec3f(-0.5f * width, 0.5f * length, 0.0f ),
-                    GfVec3f(-0.5f * width,-0.5f * length, 0.0f ),
-                    GfVec3f( 0.5f * width,-0.5f * length, 0.0f ) };
+        points = { GfVec3f( 0.5f * width, 0.5f * length, 0.0f ),
+                   GfVec3f(-0.5f * width, 0.5f * length, 0.0f ),
+                   GfVec3f(-0.5f * width,-0.5f * length, 0.0f ),
+                   GfVec3f( 0.5f * width,-0.5f * length, 0.0f ) };
     }
 
     VtVec3fArray pointsArray(numPoints);
     GfVec3f * p = pointsArray.data();
 
     for (int i=0; i<numPoints; ++i) {
-        *p++ = _points[i];
+        *p++ = points[i];
     }
 
     TF_VERIFY(p - pointsArray.data() == numPoints);

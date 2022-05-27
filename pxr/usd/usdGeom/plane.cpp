@@ -188,23 +188,6 @@ UsdGeomPlane::CreateExtentAttr(VtValue const &defaultValue, bool writeSparsely) 
                        writeSparsely);
 }
 
-UsdAttribute
-UsdGeomPlane::GetPrimvarsStAttr() const
-{
-    return GetPrim().GetAttribute(UsdGeomTokens->primvarsSt);
-}
-
-UsdAttribute
-UsdGeomPlane::CreatePrimvarsStAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->primvarsSt,
-                       SdfValueTypeNames->TexCoord2dArray,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
-}
-
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -227,7 +210,6 @@ UsdGeomPlane::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->length,
         UsdGeomTokens->axis,
         UsdGeomTokens->extent,
-        UsdGeomTokens->primvarsSt,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -259,14 +241,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 static bool
 _ComputeExtentMax(double width, double length, const TfToken& axis, GfVec3f* max)
 {
+    float halfWidth = width * 0.5;
+    float halfLength = length * 0.5;
+
     if (axis == UsdGeomTokens->x) {
-        *max = GfVec3f(0, length, width);
+        *max = GfVec3f(0, halfLength, halfWidth);
     } else if (axis == UsdGeomTokens->y) {
-        *max = GfVec3f(width, 0, length);
+        *max = GfVec3f(halfWidth, 0, halfLength);
     } else if (axis == UsdGeomTokens->z) {
-        *max = GfVec3f(width, length, 0);
+        *max = GfVec3f(halfWidth, halfLength, 0);
     } else {
-      return false; // invalid axis
+        return false; // invalid axis
     }
 
     return true;

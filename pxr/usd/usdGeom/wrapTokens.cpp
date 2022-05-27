@@ -169,7 +169,6 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "power", UsdGeomTokens->power);
     _AddToken(cls, "primvarsDisplayColor", UsdGeomTokens->primvarsDisplayColor);
     _AddToken(cls, "primvarsDisplayOpacity", UsdGeomTokens->primvarsDisplayOpacity);
-    _AddToken(cls, "primvarsSt", UsdGeomTokens->primvarsSt);
     _AddToken(cls, "projection", UsdGeomTokens->projection);
     _AddToken(cls, "protoIndices", UsdGeomTokens->protoIndices);
     _AddToken(cls, "prototypes", UsdGeomTokens->prototypes);

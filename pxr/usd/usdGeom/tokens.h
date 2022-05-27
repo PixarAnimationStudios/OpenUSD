@@ -482,10 +482,6 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomGprim
     const TfToken primvarsDisplayOpacity;
-    /// \brief "primvars:st"
-    /// 
-    /// UsdGeomPlane
-    const TfToken primvarsSt;
     /// \brief "projection"
     /// 
     /// UsdGeomCamera

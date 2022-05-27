@@ -1366,16 +1366,16 @@ class Plane "Plane" (
         \\sa UsdGeomGprim::GetAxisAttr()."""
     )
     uniform bool doubleSided = 1 (
-        doc = """Planes are double-sided by default, clients may also supported
+        doc = """Planes are double-sided by default. Clients may also support
         single-sided planes.
 
         \\sa UsdGeomGprim::GetDoubleSidedAttr()"""
     )
-    float3[] extent = [(-1, -1, 0), (1, 1, 0)] (
+    float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)] (
         doc = """Extent is re-defined on Plane only to provide a fallback
         value. \\sa UsdGeomGprim::GetExtentAttr()."""
     )
-    double length = 2 (
+    double length = 1 (
         doc = """The length of the plane, which aligns to the y-axis when axis is
         'Z' or 'X', or to the z-axis when axis is 'Y'.  If you author length 
         you must also author extent.
@@ -1402,12 +1402,6 @@ class Plane "Plane" (
         out as an independent attribute rather than an rgba color, both so that
         each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
-    )
-    texCoord2d[] primvars:st = [(1, 1), (0, 1), (0, 0), (1, 0)] (
-        doc = """The default st coordinates for texture maps.
-
-        \\sa UsdGeomGprim::GetPrimvarsStAttr()"""
-        interpolation = "varying"
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -1449,7 +1443,7 @@ class Plane "Plane" (
         deactivating geometry prims, invisible geometry is still 
         available for inspection, for positioning, for defining volumes, etc.'''
     )
-    double width = 2 (
+    double width = 1 (
         doc = """The width of the plane, which aligns to the x-axis when axis is
         'Z' or 'Y', or to the z-axis when axis is 'X'.  If you author width 
         you must also author extent.

@@ -168,7 +168,7 @@ public:
     // --------------------------------------------------------------------- //
     // DOUBLESIDED 
     // --------------------------------------------------------------------- //
-    /// Planes are double-sided by default, clients may also supported
+    /// Planes are double-sided by default. Clients may also supported
     /// single-sided planes.
     /// 
     /// \sa UsdGeomGprim::GetDoubleSidedAttr()
@@ -202,7 +202,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `double width = 2` |
+    /// | Declaration | `double width = 1` |
     /// | C++ Type | double |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
     USDGEOM_API
@@ -228,7 +228,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `double length = 2` |
+    /// | Declaration | `double length = 1` |
     /// | C++ Type | double |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
     USDGEOM_API
@@ -279,7 +279,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float3[] extent = [(-1, -1, 0), (1, 1, 0)]` |
+    /// | Declaration | `float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)]` |
     /// | C++ Type | VtArray<GfVec3f> |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3Array |
     USDGEOM_API
@@ -292,30 +292,6 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
     UsdAttribute CreateExtentAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // PRIMVARSST 
-    // --------------------------------------------------------------------- //
-    /// The default st coordinates for texture maps.
-    /// 
-    /// \sa UsdGeomGprim::GetPrimvarsStAttr()
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `texCoord2d[] primvars:st = [(1, 1), (0, 1), (0, 0), (1, 0)]` |
-    /// | C++ Type | VtArray<GfVec2d> |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TexCoord2dArray |
-    USDGEOM_API
-    UsdAttribute GetPrimvarsStAttr() const;
-
-    /// See GetPrimvarsStAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDGEOM_API
-    UsdAttribute CreatePrimvarsStAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //
