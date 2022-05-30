@@ -85,8 +85,10 @@ class TestParser(unittest.TestCase):
             "unittype": "angle",
             "unit": "degree"
         }
-        hints = node.GetInput("in").GetHints()
-        metadata = node.GetInput("in").GetMetadata()
+        input = node.GetInput("in")
+        self.assertEqual(input.GetHelp(), "Unit is degree.")
+        hints = input.GetHints()
+        metadata = input.GetMetadata()
         for key in expected.keys():
             self.assertEqual(hints[key], expected[key])
             self.assertEqual(metadata[key], expected[key])

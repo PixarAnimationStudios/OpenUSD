@@ -330,6 +330,14 @@ ShaderBuilder::AddProperty(
         ParseMetadata(metadata, _tokens->unit, element, "unit");
         ParseMetadata(metadata, _tokens->unittype, element, "unittype");
 
+        if (!metadata.count(SdrPropertyMetadata->Help) &&
+             metadata.count(_tokens->unit)) {
+            // The unit can be helpful if there is no documentation.
+            metadata.emplace(SdrPropertyMetadata->Help,
+                             TfStringPrintf("Unit is %s.",
+                                            metadata[_tokens->unit].c_str()));
+        }
+
         for (const auto& pair : metadata) {
             const TfToken attrName = pair.first;
             const std::string attrValue = pair.second;
