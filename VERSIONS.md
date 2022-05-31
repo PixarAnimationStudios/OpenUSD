@@ -21,23 +21,23 @@ Our test machines have the following software versions installed
 | Boost         | 1.66.0, 1.70.0       | 1.70.0                       | 1.70.0                         |
 | Intel TBB     | 2018 Update 6        | 2018 Update 1                | 2018 Update 6                  |
 | OpenSubdiv    | 3.4.4                | 3.4.4                        | 3.4.4                          |
-| OpenImageIO   | 2.1.16.0             | 2.1.16.0                     | 2.1.16.0                       |
+| OpenImageIO   | 2.1.16.0             | 2.3.15.0                     | 2.1.16.0                       |
 | OpenColorIO   | 1.1.0                | 1.1.0                        | 1.1.0                          |
 | OSL           | 1.8.12               |                              |                                |
 | Ptex          | 2.1.33               | 2.1.33                       | 2.1.33                         |
 | PySide2       | 2.0.0~alpha0, 5.14.1 | 5.14.1                       | 5.14.1                         |
 | PyOpenGL      | 3.1.5                | 3.1.5                        | 3.1.5                          |
-| Embree        | 3.2.2                | 3.2.2                        | 3.2.2                          |
+| Embree        | 3.2.2                | 3.13.2                       | 3.2.2                          |
 | RenderMan     | 23.5                 | 23.5                         | 23.5                           |
 | Alembic       | 1.7.10               | 1.7.10                       | 1.7.10                         |
-| OpenEXR       | 2.3.0                | 2.3.0                        | 2.3.0                          |
+| OpenEXR       | 2.3.0                | 2.5.5                        | 2.3.0                          |
 | MaterialX     | 1.38.0               | 1.38.0                       | 1.38.0                         |
 | Jinja2        | 2.0                  |                              |                                |
 | Flex          | 2.5.39               |                              |                                |
 | Bison         | 2.4.1                |                              |                                |
 | Doxygen       | 1.8.14               |                              |                                |
 | GraphViz      | 2.40.1               |                              |                                |
-| OpenVDB       | 6.1.0                | 6.1.0                        | 6.1.0                          |
+| OpenVDB       | 6.1.0                | 6.2.1                        | 6.1.0                          |
 | Vulkan SDK    | 1.2.135.0            | 1.2.135.0                    | 1.2.135.0                      |
 
 ## Other Known Versions

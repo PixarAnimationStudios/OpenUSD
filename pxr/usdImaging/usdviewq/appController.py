@@ -28,7 +28,7 @@ from __future__ import division
 from __future__ import print_function
 
 # Qt Components
-from .qt import QtCore, QtGui, QtWidgets
+from .qt import QtCore, QtGui, QtWidgets, QtActionWidgets
 
 # Stdlib components
 import re, sys, os, cProfile, pstats, traceback
@@ -617,7 +617,7 @@ class AppController(QtCore.QObject):
             self._ui.frameSlider.setTracking(
                     self._dataModel.viewSettings.redrawOnScrub)
 
-            self._ui.colorGroup = QtWidgets.QActionGroup(self)
+            self._ui.colorGroup = QtActionWidgets.QActionGroup(self)
             self._ui.colorGroup.setExclusive(True)
             self._clearColorActions = (
                 self._ui.actionBlack,
@@ -627,7 +627,7 @@ class AppController(QtCore.QObject):
             for action in self._clearColorActions:
                 self._ui.colorGroup.addAction(action)
 
-            self._ui.renderModeActionGroup = QtWidgets.QActionGroup(self)
+            self._ui.renderModeActionGroup = QtActionWidgets.QActionGroup(self)
             self._ui.renderModeActionGroup.setExclusive(True)
             self._renderModeActions = (
                 self._ui.actionWireframe,
@@ -642,7 +642,7 @@ class AppController(QtCore.QObject):
             for action in self._renderModeActions:
                 self._ui.renderModeActionGroup.addAction(action)
 
-            self._ui.colorCorrectionActionGroup = QtWidgets.QActionGroup(self)
+            self._ui.colorCorrectionActionGroup = QtActionWidgets.QActionGroup(self)
             self._ui.colorCorrectionActionGroup.setExclusive(True)
             self._colorCorrectionActions = (
                 self._ui.actionNoColorCorrection,
@@ -663,7 +663,7 @@ class AppController(QtCore.QObject):
                             self._dataModel.viewSettings.renderMode, fallback))
                 self._dataModel.viewSettings.renderMode = fallback
 
-            self._ui.pickModeActionGroup = QtWidgets.QActionGroup(self)
+            self._ui.pickModeActionGroup = QtActionWidgets.QActionGroup(self)
             self._ui.pickModeActionGroup.setExclusive(True)
             self._pickModeActions = (
                 self._ui.actionPick_Prims,
@@ -680,7 +680,7 @@ class AppController(QtCore.QObject):
                             self._dataModel.viewSettings.pickMode, fallback))
                 self._dataModel.viewSettings.pickMode = fallback
 
-            self._ui.selHighlightModeActionGroup = QtWidgets.QActionGroup(self)
+            self._ui.selHighlightModeActionGroup = QtActionWidgets.QActionGroup(self)
             self._ui.selHighlightModeActionGroup.setExclusive(True)
             self._selHighlightActions = (
                 self._ui.actionNever,
@@ -689,7 +689,7 @@ class AppController(QtCore.QObject):
             for action in self._selHighlightActions:
                 self._ui.selHighlightModeActionGroup.addAction(action)
 
-            self._ui.highlightColorActionGroup = QtWidgets.QActionGroup(self)
+            self._ui.highlightColorActionGroup = QtActionWidgets.QActionGroup(self)
             self._ui.highlightColorActionGroup.setExclusive(True)
             self._selHighlightColorActions = (
                 self._ui.actionSelYellow,
@@ -698,7 +698,7 @@ class AppController(QtCore.QObject):
             for action in self._selHighlightColorActions:
                 self._ui.highlightColorActionGroup.addAction(action)
 
-            self._ui.interpolationActionGroup = QtWidgets.QActionGroup(self)
+            self._ui.interpolationActionGroup = QtActionWidgets.QActionGroup(self)
             self._ui.interpolationActionGroup.setExclusive(True)
             for interpolationType in Usd.InterpolationType.allValues:
                 action = self._ui.menuInterpolation.addAction(interpolationType.displayName)
@@ -707,7 +707,7 @@ class AppController(QtCore.QObject):
                     self._dataModel.stage.GetInterpolationType() == interpolationType)
                 self._ui.interpolationActionGroup.addAction(action)
 
-            self._ui.primViewDepthGroup = QtWidgets.QActionGroup(self)
+            self._ui.primViewDepthGroup = QtActionWidgets.QActionGroup(self)
             for i in range(1, 9):
                 action = getattr(self._ui, "actionLevel_" + str(i))
                 self._ui.primViewDepthGroup.addAction(action)
@@ -881,7 +881,7 @@ class AppController(QtCore.QObject):
 
             self._ui.actionToggle_Framed_View.triggered.connect(self._toggleFramedView)
 
-            self._ui.complexityGroup = QtWidgets.QActionGroup(self._mainWindow)
+            self._ui.complexityGroup = QtActionWidgets.QActionGroup(self._mainWindow)
             self._ui.complexityGroup.setExclusive(True)
             self._complexityActions = (
                 self._ui.actionLow,
@@ -1396,7 +1396,7 @@ class AppController(QtCore.QObject):
 
     def _configureRendererPlugins(self):
         if self._stageView:
-            self._ui.rendererPluginActionGroup = QtWidgets.QActionGroup(self)
+            self._ui.rendererPluginActionGroup = QtActionWidgets.QActionGroup(self)
             self._ui.rendererPluginActionGroup.setExclusive(True)
 
             pluginTypes = self._stageView.GetRendererPlugins()
@@ -1440,7 +1440,7 @@ class AppController(QtCore.QObject):
 
     def _configureRendererAovs(self):
         if self._stageView:
-            self._ui.rendererAovActionGroup = QtWidgets.QActionGroup(self)
+            self._ui.rendererAovActionGroup = QtActionWidgets.QActionGroup(self)
             self._ui.rendererAovActionGroup.setExclusive(True)
             self._ui.menuRendererAovs.clear()
 
@@ -1731,7 +1731,7 @@ class AppController(QtCore.QObject):
             addLabelSeparator("<i> Displays </i>", ocioMenu)
             for d in displays:
                 displayMenu = QtWidgets.QMenu(d)
-                group = QtWidgets.QActionGroup(displayMenu)
+                group = QtActionWidgets.QActionGroup(displayMenu)
                 group.setExclusive(True)
 
                 for v in config.getViews(d):
@@ -1746,7 +1746,7 @@ class AppController(QtCore.QObject):
         if colorSpaces:
             ocioMenu.addSeparator()
             addLabelSeparator("<i> Colorspaces </i>", ocioMenu)
-            group = QtWidgets.QActionGroup(ocioMenu)
+            group = QtActionWidgets.QActionGroup(ocioMenu)
             group.setExclusive(True)
             for cs in colorSpaces:
                 colorSpace = cs.getName()
