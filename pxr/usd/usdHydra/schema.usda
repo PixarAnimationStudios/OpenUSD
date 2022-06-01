@@ -34,14 +34,14 @@ over "GLOBAL" (
             }
 
             dictionary infoFilename = {
-                string value = "info:filename"
+                string value = "inputs:file"
                 string doc = """ The special "info:filename" property of a hydra
                 Texture shader, which points to a resolvable texture asset."""
             }
 
 
             dictionary infoVarname = {
-                string value = "info:varname"
+                string value = "inputs:varname"
                 string doc = """
                 """
             }

@@ -102,11 +102,11 @@ struct UsdHydraTokensType {
     /// 
     /// Default value for UsdHydraGenerativeProceduralAPI::GetProceduralSystemAttr()
     const TfToken hydraGenerativeProcedural;
-    /// \brief "info:filename"
+    /// \brief "inputs:file"
     /// 
     /// The special "info:filename" property of a hydra Texture shader, which points to a resolvable texture asset.
     const TfToken infoFilename;
-    /// \brief "info:varname"
+    /// \brief "inputs:varname"
     /// 
     ///  
     const TfToken infoVarname;
