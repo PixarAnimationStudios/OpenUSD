@@ -34,13 +34,9 @@ def Scope "World"
     }
 
     def GenerativeProcedural "myGenerativeProc" (
-#       TODO: use API schema for defining proceduralSystem when available
-#        prepend apiSchemas = ["HydraGenerativeProceduralAPI"]
+        prepend apiSchemas = ["HydraGenerativeProceduralAPI"]
     )
     {
-        # TODO: use API schema for defining proceduralSystem when available
-        token proceduralSystem = "hydraGenerativeProcedural"
-
         token primvars:hdGp:proceduralType = "MakeSomeStuff"
         int primvars:myCount = 3
         int primvars:myDepth = 1
@@ -48,13 +44,9 @@ def Scope "World"
     }
 
     def GenerativeProcedural "cubePerMeshProc" (
-#       TODO: use API schema for defining proceduralSystem when available
-#        prepend apiSchemas = ["HydraGenerativeProceduralAPI"]
+        prepend apiSchemas = ["HydraGenerativeProceduralAPI"]
     )
     {
-        # TODO: use API schema for defining proceduralSystem when available
-        token proceduralSystem = "hydraGenerativeProcedural"
-        
         token primvars:hdGp:proceduralType = "CubePerMeshPoint"
         rel primvars:sourceMeshPath = </World/myMesh2>
         float primvars:scale = 2
