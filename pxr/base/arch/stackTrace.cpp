@@ -58,6 +58,7 @@
 #endif
 #include <algorithm>
 #include <atomic>
+#include <csignal>
 #include <fstream>
 #include <ostream>
 #include <iterator>
@@ -140,6 +141,10 @@ static const char* const* _sessionCrashLogArgv = nullptr;
 // displaying error information.  Initialized in
 // Arch_InitConfig() to ArchGetExecutablePath()
 static char * _progNameForErrors = NULL;
+
+// Flag indicating whether the crash signal handler has been invoked.
+// Use a type that's safe in the presence of asynchronous signals.
+static volatile std::sig_atomic_t _isCrashing = 0;
 
 namespace {
 // Key-value map for program info. Stores additional
@@ -997,6 +1002,18 @@ ArchSetLogSession(
     _sessionCrashLogArgv = crashArgv;
 }
 
+bool
+ArchIsAppCrashing()
+{
+    return _isCrashing;
+}
+
+static void
+_SetAppIsCrashing(bool crashing)
+{
+    _isCrashing = crashing;
+}
+
 /*
  * Run an external program to make a report and tell the user where the report
  * file is.
@@ -1015,6 +1032,10 @@ _ArchLogProcessStateHelper(bool isFatal,
     while (busy.test_and_set(std::memory_order_acquire)) {
         // Spin!
         std::this_thread::yield();
+    }
+
+    if (isFatal) {
+        _SetAppIsCrashing(true);
     }
 
     const char* progname = ArchGetProgramNameForErrors();

@@ -116,6 +116,11 @@ void ArchSetProcessStateLogCommand(const char* command,
                                    const char *const argv[],
                                    const char* const fatalArgv[]);
 
+/// Returns true if the fatal signal handler ArchLogFatalProcessState
+/// has been invoked.
+ARCH_API
+bool ArchIsAppCrashing();
+
 /// Log session info.
 ///
 /// Optionally indicate that this is due to a crash by providing
