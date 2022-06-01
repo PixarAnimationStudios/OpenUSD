@@ -33,6 +33,9 @@
     classes.
   - Updated previously generated schemas to usd ":" as the nested page delimiter
     in display groups.
+- Added the ability to specify properties as API schema overrides for schema
+  generation.
+  See: https://graphics.pixar.com/usd/release/api/_usd__page__generating_schemas.html#Usd_APISchemaPropertyOverride
 
 ### Imaging
 - Fixed double-creation of Bprims when using scene index emulation.
