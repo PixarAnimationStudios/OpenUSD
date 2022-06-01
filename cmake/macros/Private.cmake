@@ -337,6 +337,16 @@ function(_classes LIBRARY_NAME)
     set(${LIBRARY_NAME}_CPPFILES ${${LIBRARY_NAME}_CPPFILES} PARENT_SCOPE)
 endfunction() # _classes
 
+function(_get_library_prefix output)
+    if (PXR_LIB_PREFIX)
+      set(${output} ${PXR_LIB_PREFIX} PARENT_SCOPE)
+    elseif (PXR_BUILD_MONOLITHIC)
+      set(${output} ${CMAKE_SHARED_LIBRARY_PREFIX} PARENT_SCOPE)
+    else()
+      set(${output} ${CMAKE_SHARED_LIBRARY_PREFIX}usd_ PARENT_SCOPE)
+    endif()
+endfunction() # _get_library_prefix
+
 function(_get_install_dir path out)
     if (PXR_INSTALL_SUBDIR)
         set(${out} ${PXR_INSTALL_SUBDIR}/${path} PARENT_SCOPE)
