@@ -51,7 +51,8 @@ int main(int argc, char** argv)
     ArchLogStackTrace("Crashing", true, log.c_str());
     ArchUnlinkFile(log.c_str());
 
-    ArchLogPostMortem("Test Crashing");
+    ArchLogFatalProcessState("Test Fatal");
+    ArchLogCurrentProcessState("Test Non-Fatal");
 
     // test crashing with and without spawning
     ArchTestCrash(ArchTestCrashMode::ReadInvalidAddresses);

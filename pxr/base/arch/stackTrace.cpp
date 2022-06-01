@@ -311,8 +311,10 @@ ArchEnableSessionLogging()
 }
 
 static const char* const stackTracePrefix = "st";
-static const char* stackTraceCmd = nullptr;
-static const char* const* stackTraceArgv = nullptr;
+
+static const char* _processStateCmd = nullptr;
+static const char* const* _nonFatalArgv = nullptr;
+static const char* const* _fatalArgv = nullptr;
 
 static long _GetAppElapsedTime();
 
@@ -704,14 +706,18 @@ getBase(const char* path)
  */
 
 static
-int _LogStackTraceForPid(const char *logfile)
+int _LogStackTraceForPid(bool isFatal,
+                         const char *logfile, 
+                         const char *reason)
 {
     // Get the command to run.
     const char* cmd = asgetenv("ARCH_POSTMORTEM");
+    const char* const* cmdArgv =
+        isFatal ? _fatalArgv : _nonFatalArgv;
     if (!cmd) {
-        cmd = stackTraceCmd;
+        cmd = _processStateCmd;
     }
-    if (!cmd || !stackTraceArgv) {
+    if (!cmd || !cmdArgv) {
         // Silently do nothing.
         return 0;
     }
@@ -720,14 +726,17 @@ int _LogStackTraceForPid(const char *logfile)
     char pidBuffer[numericBufferSize], timeBuffer[numericBufferSize];
     asitoa(pidBuffer, getpid());
     asitoa(timeBuffer, _GetAppElapsedTime());
-    const char* const substitutions[3][2] = {
-        { "$pid", pidBuffer }, { "$log", logfile }, { "$time", timeBuffer }
+    const char* const substitutions[4][2] = {
+        { "$pid", pidBuffer }, 
+        { "$log", logfile }, 
+        { "$time", timeBuffer }, 
+        { "$reason", reason }
     };
 
     // Build the argument list.
     static constexpr size_t maxArgs = 32;
     const char* argv[maxArgs];
-    if (!_MakeArgv(argv, maxArgs, cmd, stackTraceArgv, substitutions, 2)) {
+    if (!_MakeArgv(argv, maxArgs, cmd, cmdArgv, substitutions, 4)) {
         static const char msg[] = "Too many arguments to postmortem command\n";
         aswrite(2, msg);
         return 0;
@@ -740,10 +749,13 @@ int _LogStackTraceForPid(const char *logfile)
 }
 
 void
-ArchSetPostMortem(const char* command, const char *const argv[] )
+ArchSetProcessStateLogCommand(const char* command, 
+                              const char *const argv[], 
+                              const char *const fatalArgv[])
 {
-    stackTraceCmd  = command;
-    stackTraceArgv = argv;
+    _processStateCmd  = command;
+    _nonFatalArgv = argv;
+    _fatalArgv = fatalArgv;
 }
 
 /*
@@ -991,10 +1003,11 @@ ArchSetLogSession(
  *
  * Use of char*'s is deliberate: only async-safe calls allowed past this point!
  */
-void
-ArchLogPostMortem(const char* reason,
-                  const char* message /* = nullptr */,
-                  const char* extraLogMsg /* = nullptr */)
+static void
+_ArchLogProcessStateHelper(bool isFatal,
+                           const char* reason,
+                           const char* message = nullptr,
+                           const char* extraLogMsg = nullptr)
 {
     static std::atomic_flag busy = ATOMIC_FLAG_INIT;
 
@@ -1096,7 +1109,9 @@ ArchLogPostMortem(const char* reason,
     fputs(" ] ...", stderr);
     fflush(stderr);
 
-    int loggedStack = _LogStackTraceForPid(logfile);
+    int loggedStack = reason ?
+         _LogStackTraceForPid(isFatal, logfile, reason) :
+         _LogStackTraceForPid(isFatal, logfile, message);
     fputs(" done.\n", stderr);
     // Additionally, print the first few lines of extra log information since
     // developers don't always think to look for it in the stack trace file.
@@ -1110,6 +1125,24 @@ ArchLogPostMortem(const char* reason,
     }
 
     busy.clear(std::memory_order_release);
+}
+
+void
+ArchLogFatalProcessState(const char* reason,
+                         const char* message /* = nullptr */,
+                         const char* extraLogMsg /* = nullptr */)
+{
+    _ArchLogProcessStateHelper(true /* isFatal */, 
+        reason, message, extraLogMsg);
+}
+
+void
+ArchLogCurrentProcessState(const char* reason,
+                           const char* message /* = nullptr */,
+                           const char* extraLogMsg /* = nullptr */)
+{
+    _ArchLogProcessStateHelper(false /* isFatal */,
+        reason, message, extraLogMsg);
 }
 
 /*
@@ -1199,7 +1232,7 @@ _LogStackTraceToOutputIterator(OutputIterator oi, size_t maxDepth, bool addEndl)
     char logfile[1024];
     _GetStackTraceName(logfile, sizeof(logfile));
 
-    _LogStackTraceForPid(logfile);
+    _LogStackTraceForPid(false, logfile, "Log Stack Trace");
 
     ifstream inFile(logfile);
     string line;
