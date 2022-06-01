@@ -775,7 +775,7 @@ Arch_SetAppLaunchTime()
  * ArchGetAppLaunchTime()
  * -------------------------------
  * Returns the application's launch time, or NULL if a timestamp hasn't
- * been created with AchSetAppLaunchTime().  
+ * been created with ArchSetAppLaunchTime().  
  */
 time_t
 ArchGetAppLaunchTime()
