@@ -28,12 +28,14 @@
 
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/simpleLightingShader.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -173,6 +175,15 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
                         _lightExcludePaths,
                         &_lightIds);
 
+    const size_t maxLights = size_t(
+        renderIndex.GetRenderDelegate()->GetRenderSetting<int>(
+            HdStRenderSettingsTokens->maxLights, 16));
+
+    if (_numLights > (size_t)maxLights) {
+        TF_WARN("Hydra supports up to %zu lights, truncating the %zu found "
+                "lights to this max.", maxLights, _numLights);
+    }
+
     // We rebuild the lights array every time, but avoid reallocating
     // the array every frame as this was showing up as a significant portion
     // of the time in this function.
@@ -200,6 +211,11 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
             continue;
         }
         for (SdfPath const &lightPath : lightPathsIt->second) {
+
+            // Stop adding lights if we're at the light limit.
+            if (_glfSimpleLights.size() >= maxLights) {
+                break;
+            }
 
             HdStLight const *light = static_cast<const HdStLight *>(
                     renderIndex.GetSprim(lightType, lightPath));
@@ -278,10 +294,16 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
             }
             _glfSimpleLights.push_back(std::move(glfl));
         }
+        // Stop adding lights if we're at the light limit.
+        if (_glfSimpleLights.size() >= maxLights) {
+            break;
+        }
     }
 
     // In case there is a mismatch, conform _numLights to this array size.
     _numLights = _glfSimpleLights.size();
+
+    TF_VERIFY(_numLights <= maxLights);
 
     lightingContext->SetUseLighting(_numLights > 0);
     lightingContext->SetLights(_glfSimpleLights);
