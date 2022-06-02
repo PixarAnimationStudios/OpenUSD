@@ -34,6 +34,15 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     if (@available(macOS 10.14.5, ios 12.0, *)) {
         _SetFlag(HgiDeviceCapabilitiesBitsConcurrentDispatch, true);
     }
+    bool hasIntel = [[device name] rangeOfString: @"Intel"].location != NSNotFound;
+    bool vertexOffsettingFixes = false;
+    if (@available(macOS 13.0, *)) {
+        vertexOffsettingFixes = true;
+    }
+    _SetFlag(HgiDeviceCapabilitiesBitsTessellationBarycentric,
+                  hasIntel);
+    _SetFlag(HgiDeviceCapabilitiesBitsPatchVertexOffsetting,
+                  hasIntel && !vertexOffsettingFixes);
 
     defaultStorageMode = MTLResourceStorageModeShared;
     bool unifiedMemory = false;
@@ -49,8 +58,9 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
 #endif
         // On macOS 10.15 and 11.0 the AMD drivers reported the wrong value for
         // supportsShaderBarycentricCoordinates so check both flags.
-        barycentrics = [device supportsShaderBarycentricCoordinates]
-                    || [device areBarycentricCoordsSupported];
+        barycentrics = ([device supportsShaderBarycentricCoordinates]
+                    || [device areBarycentricCoordsSupported])
+                    && !hasIntel;
         
         hasAppleSilicon = [device hasUnifiedMemory] && ![device isLowPower];
     }

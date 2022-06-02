@@ -71,26 +71,32 @@ using HgiBits = uint32_t;
 ///   Supports Metal tessellation shaders</li>
 /// <li>HgiDeviceCapabilitiesBitsBasePrimitiveOffset:
 ///   The device requires workaround for base primitive offset</li>
+/// <li>HgiDeviceCapabilitiesPatchVertexOffsetting:
+///   Set if requires ability to migitate patch vertes offset bug on Intel</li>
+/// <li>HgiDeviceCapabilitiesBitsTessellationBarycentric:
+///   Use the tesscoord/position_in_patch as barycentric</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
 {
-    HgiDeviceCapabilitiesBitsPresentation            = 1 << 0,
-    HgiDeviceCapabilitiesBitsBindlessBuffers         = 1 << 1,
-    HgiDeviceCapabilitiesBitsConcurrentDispatch      = 1 << 2,
-    HgiDeviceCapabilitiesBitsUnifiedMemory           = 1 << 3,
-    HgiDeviceCapabilitiesBitsBuiltinBarycentrics     = 1 << 4,
-    HgiDeviceCapabilitiesBitsShaderDrawParameters    = 1 << 5,
-    HgiDeviceCapabilitiesBitsMultiDrawIndirect       = 1 << 6,
-    HgiDeviceCapabilitiesBitsBindlessTextures        = 1 << 7,
-    HgiDeviceCapabilitiesBitsShaderDoublePrecision   = 1 << 8,
-    HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne = 1 << 9,
-    HgiDeviceCapabilitiesBitsCppShaderPadding        = 1 << 10,
-    HgiDeviceCapabilitiesBitsConservativeRaster      = 1 << 11,
-    HgiDeviceCapabilitiesBitsStencilReadback         = 1 << 12,
-    HgiDeviceCapabilitiesBitsCustomDepthRange        = 1 << 13,
-    HgiDeviceCapabilitiesBitsMetalTessellation       = 1 << 14,
-    HgiDeviceCapabilitiesBasePrimitiveOffset         = 1 << 15,
+    HgiDeviceCapabilitiesBitsPresentation              = 1 << 0,
+    HgiDeviceCapabilitiesBitsBindlessBuffers           = 1 << 1,
+    HgiDeviceCapabilitiesBitsConcurrentDispatch        = 1 << 2,
+    HgiDeviceCapabilitiesBitsUnifiedMemory             = 1 << 3,
+    HgiDeviceCapabilitiesBitsBuiltinBarycentrics       = 1 << 4,
+    HgiDeviceCapabilitiesBitsShaderDrawParameters      = 1 << 5,
+    HgiDeviceCapabilitiesBitsMultiDrawIndirect         = 1 << 6,
+    HgiDeviceCapabilitiesBitsBindlessTextures          = 1 << 7,
+    HgiDeviceCapabilitiesBitsShaderDoublePrecision     = 1 << 8,
+    HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne   = 1 << 9,
+    HgiDeviceCapabilitiesBitsCppShaderPadding          = 1 << 10,
+    HgiDeviceCapabilitiesBitsConservativeRaster        = 1 << 11,
+    HgiDeviceCapabilitiesBitsStencilReadback           = 1 << 12,
+    HgiDeviceCapabilitiesBitsCustomDepthRange          = 1 << 13,
+    HgiDeviceCapabilitiesBitsMetalTessellation         = 1 << 14,
+    HgiDeviceCapabilitiesBasePrimitiveOffset           = 1 << 15,
+    HgiDeviceCapabilitiesBitsPatchVertexOffsetting     = 1 << 16,
+    HgiDeviceCapabilitiesBitsTessellationBarycentric   = 1 << 17
 };
 
 using HgiDeviceCapabilities = HgiBits;

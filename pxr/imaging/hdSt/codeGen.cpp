@@ -1392,7 +1392,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         capabilities->IsSet(HgiDeviceCapabilitiesBitsShaderDoublePrecision);
     const bool minusOneToOneDepth =
         capabilities->IsSet(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne);
-
+    const bool useTessellationBarycentric =
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsTessellationBarycentric);
     bool const useHgiResourceGeneration =
         IsEnabledHgiResourceGeneration(capabilities);
 
@@ -1662,6 +1663,16 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         _genFS << "vec3 GetBarycentricCoord() {\n"
                   "  return gl_BaryCoordNoPerspNV;\n"
                   "}\n";
+    } else if (useTessellationBarycentric && _hasPTVS) {
+        if (_geometricShader->IsPrimTypeQuads() || _geometricShader->IsPrimTypeTriQuads()) {
+            _genFS << "vec3 GetBarycentricCoord() {\n"
+                      "  return vec3(0.0, ptvsBarycentricCoord.y, ptvsBarycentricCoord.x);"
+                      "}\n";
+        } else { 
+            _genFS << "vec3 GetBarycentricCoord() {\n"
+                      "  return ptvsBarycentricCoord;\n"
+                      "}\n";
+        }
     } else {
         if (_hasGS) {
             _genGS << "noperspective out vec3 hd_barycentricCoord;\n";
@@ -1738,7 +1749,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             // do nothing. no additional code needs to be generated.
             ;
     }
-    if (!builtinBarycentricsEnabled) {
+    if (!(builtinBarycentricsEnabled || useTessellationBarycentric)) {
         switch(_geometricShader->GetPrimitiveType())
         {
             case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
@@ -2299,6 +2310,23 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionAddStageInput(
             &fsDesc, "gl_FragCoord", "vec4",
             HgiShaderKeywordTokens->hdPosition);
+        
+        if (_hasPTVS) {
+            std::string vecSize = std::string();
+            if (_geometricShader->IsPrimTypeQuads() || _geometricShader->IsPrimTypeTriQuads()) {
+                vecSize = "vec2";
+            } else {
+                vecSize = "vec3";
+            }
+            HgiShaderFunctionAddStageInput(
+                &fsDesc, "ptvsBarycentricCoord", vecSize,
+                "");
+            
+            HgiShaderFunctionAddStageInput(
+                &fsDesc, "patch_idOut", "uint",
+                "");
+        }
+        
 
         if (!glslProgram->CompileShader(fsDesc)) {
             return nullptr;
@@ -2403,9 +2431,9 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
 
         //Set the patchtype to later decide tessfactor types
         ptvsDesc.tessellationDescriptor.patchType =
-            _geometricShader->IsPrimTypeTriangles() ?
+            (_geometricShader->IsPrimTypeTriangles() ?
             HgiShaderFunctionTessellationDesc::PatchType::Triangle :
-            HgiShaderFunctionTessellationDesc::PatchType::Quad;
+            HgiShaderFunctionTessellationDesc::PatchType::Quad);
 
         resourceGen._GenerateHgiResources(&ptvsDesc,
             HdShaderTokens->postTessVertexShader, _resAttrib, _metaData);
@@ -2438,8 +2466,8 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             HgiShaderKeywordTokens->hdPatchID);
         
         std::string tessCoordType =
-            _geometricShader->IsPrimTypeTriangles() ?
-            "vec3" : "vec2";
+        (_geometricShader->IsPrimTypeQuads() || _geometricShader->IsPrimTypeTriQuads()) ?
+            "vec2" : "vec3";
         
         HgiShaderFunctionAddStageInput(
             &ptvsDesc, "gl_TessCoord", tessCoordType,
@@ -2452,6 +2480,10 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionAddStageOutput(
                 &ptvsDesc, "gl_Position", "vec4",
                 "position");
+        
+        HgiShaderFunctionAddStageOutput(
+                &ptvsDesc, "ptvsBarycentricCoord", tessCoordType,
+                "");
 
         char const* pointRole =
             (_geometricShader->GetPrimitiveType() ==
@@ -2461,6 +2493,9 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionAddStageOutput(
             &ptvsDesc, "gl_PointSize", "float",
                 pointRole);
+        HgiShaderFunctionAddStageOutput(
+            &ptvsDesc, "patch_idOut", "uint",
+                "");
 
         if (!glslProgram->CompileShader(ptvsDesc)) {
             return nullptr;
@@ -3720,10 +3755,9 @@ HdSt_CodeGen::_GenerateDrawingCoord(
             primitiveID << "int GetBasePrimitiveOffset() { return 0; }\n";
             _genPTVS    << "int GetBasePrimitiveOffset() { return 0; }\n";
         }
-        if (_geometricShader->GetPrimitiveType() ==
-               HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIQUADS) {
+        if (HdSt_GeometricShader::IsPrimTypeTriQuads(_geometricShader->GetPrimitiveType())) {
             primitiveID << "int GetPrimitiveID() {\n"
-                        << "  return (gl_PrimitiveID - GetBasePrimitiveOffset()) / 2;\n"
+                        << "  return (gl_PrimitiveID - GetBasePrimitiveOffset());\n"
                         << "}\n"
                         << "int GetTriQuadID() {\n"
                         << "  return (gl_PrimitiveID - GetBasePrimitiveOffset()) & 1;\n"

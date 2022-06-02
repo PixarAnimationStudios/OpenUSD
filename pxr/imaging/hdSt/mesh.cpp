@@ -622,10 +622,14 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         bool const hasBuiltinBarycentrics =
             resourceRegistry->GetHgi()->GetCapabilities()->
                 IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+        
+        bool const hasTessellationBarycentrics =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+            IsSet(HgiDeviceCapabilitiesBitsTessellationBarycentric);
 
         HdSt_MeshTopologySharedPtr topology =
             HdSt_MeshTopology::New(meshTopology, refineLevel, refineMode,
-                hasBuiltinBarycentrics
+                (hasBuiltinBarycentrics || hasTessellationBarycentrics)
                     ? HdSt_MeshTopology::QuadsTriangulated
                     : HdSt_MeshTopology::QuadsUntriangulated);
         
@@ -2576,6 +2580,10 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     bool const hasMetalTessellation =
         resourceRegistry->GetHgi()->GetCapabilities()->
             IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
+    
+    bool const hasTessellationBarycentrics =
+         resourceRegistry->GetHgi()->GetCapabilities()->
+             IsSet(HgiDeviceCapabilitiesBitsTessellationBarycentric);
 
     // create a shaderKey and set to the geometric shader.
     HdSt_MeshShaderKey shaderKey(primType,
@@ -2588,6 +2596,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  desc.lineWidth,
                                  _doubleSided || desc.doubleSided,
                                  hasBuiltinBarycentrics,
+                                 hasTessellationBarycentrics,
                                  hasMetalTessellation,
                                  hasCustomDisplacement,
                                  hasPerFaceInterpolation,

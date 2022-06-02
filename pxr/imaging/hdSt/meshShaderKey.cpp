@@ -177,6 +177,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     float lineWidth,
     bool doubleSided,
     bool hasBuiltinBarycentrics,
+    bool hasTessellationBarycentrics,
     bool hasMetalTessellation,
     bool hasCustomDisplacement,
     bool hasPerFaceInterpolation,
@@ -281,10 +282,14 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     }
     VS[vsIndex++] = _tokens->mainVS;
     VS[vsIndex] = TfToken();
-
+    
+    bool hasHardwareBarycentrics = hasBuiltinBarycentrics || hasTessellationBarycentrics;
+    
+    bool usePTVSTechniques = hasCustomDisplacement || ptvsSceneNormals || ptvsGeometricNormals
+        || hasHardwareBarycentrics;
+    
     useMetalTessellation =
-        hasMetalTessellation && !isPrimTypePoints &&
-        (hasCustomDisplacement || ptvsSceneNormals || ptvsGeometricNormals);
+        hasMetalTessellation && !isPrimTypePoints && usePTVSTechniques;
 
     // post tess vertex shader vertex steps
     uint8_t ptvsIndex = 0;
@@ -422,11 +427,9 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             && (isPrimTypeTris ||
                 isPrimTypeTriQuads)
             // whether we can skip generating coords for edges
-            && ((!renderWireframe && !renderEdges) ||
-                hasBuiltinBarycentrics)
+            && ((!renderWireframe && !renderEdges) || hasHardwareBarycentrics)
             // whether we can skip generating coords for per-face interpolation
-            && (!hasPerFaceInterpolation ||
-                hasBuiltinBarycentrics))
+            && (!hasPerFaceInterpolation || hasHardwareBarycentrics))
             ;
             
     if (canSkipGS) {
