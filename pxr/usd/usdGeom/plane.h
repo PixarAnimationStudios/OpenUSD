@@ -53,7 +53,7 @@ class SdfAssetPath;
 /// \class UsdGeomPlane
 ///
 /// Defines a primitive plane, centered at the origin, and is defined by
-/// a cardinal axis, width, and length. It is also double-sided.
+/// a cardinal axis, width, and length. The plane is double-sided by default.
 /// 
 /// The axis of width and length are perpendicular to the plane's \em axis:
 /// 
