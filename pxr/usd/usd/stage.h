@@ -54,6 +54,7 @@
 
 #include <tbb/concurrent_vector.h>
 #include <tbb/concurrent_unordered_set.h>
+#include <tbb/concurrent_hash_map.h>
 #include <tbb/spin_rw_mutex.h>
 
 #include <functional>
@@ -2206,11 +2207,18 @@ private:
 
     size_t _usedLayersRevision;
 
-    // A map from Path to Prim, for fast random access.
-    typedef TfHashMap<
-        SdfPath, Usd_PrimDataIPtr, SdfPath::Hash> PathToNodeMap;
+    // A concurrent map from Path to Prim, for fast random access.
+    struct _TbbHashEq {
+        inline bool equal(SdfPath const &l, SdfPath const &r) const {
+            return l == r;
+        }
+        inline size_t hash(SdfPath const &path) const {
+            return path.GetHash();
+        }
+    };
+    using PathToNodeMap = tbb::concurrent_hash_map<
+        SdfPath, Usd_PrimDataIPtr, _TbbHashEq>;
     PathToNodeMap _primMap;
-    mutable boost::optional<tbb::spin_rw_mutex> _primMapMutex;
 
     // The interpolation type used for all attributes on the stage.
     UsdInterpolationType _interpolationType;
