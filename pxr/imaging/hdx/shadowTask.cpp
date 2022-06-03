@@ -109,171 +109,174 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
     // Thus we must make a distinction between the number of render passes and 
     // the number of shadow maps indicated by the shadow array.
     size_t numShadowMaps = shadows->GetNumShadowMapPasses();
-    static const TfToken shadowMaterialTags[2] = 
-        { HdStMaterialTagTokens->defaultMaterialTag, 
-          HdStMaterialTagTokens->masked };
-    _passes.resize( TfArraySize(shadowMaterialTags) * numShadowMaps);
 
-    // Mostly we can populate the renderpasses from shadow info, but the lights
-    // contain the shadow collection; so we need to loop through the lights
-    // assigning collections to their shadows.
-    for (size_t lightId = 0; lightId < glfLights.size(); ++lightId) {
+    if (numShadowMaps > 0) {
+        static const TfToken shadowMaterialTags[2] = 
+            { HdStMaterialTagTokens->defaultMaterialTag, 
+            HdStMaterialTagTokens->masked };
+        _passes.resize( TfArraySize(shadowMaterialTags) * numShadowMaps);
 
-        if (!glfLights[lightId].HasShadow()) {
-            continue;
-        }
+        // Mostly we can populate the renderpasses from shadow info, but the lights
+        // contain the shadow collection; so we need to loop through the lights
+        // assigning collections to their shadows.
+        for (size_t lightId = 0; lightId < glfLights.size(); ++lightId) {
 
-        // Shadows are supported on for SimpleLights and DistantLights
-        HdStLight* light = static_cast<HdStLight*>(renderIndex.GetSprim(
-                HdPrimTypeTokens->simpleLight, glfLights[lightId].GetID()));
-        if (!light) {
-            light = static_cast<HdStLight*>(renderIndex.GetSprim(
-                HdPrimTypeTokens->distantLight, glfLights[lightId].GetID()));
-        }
-
-        TF_VERIFY(light);
-
-        // Extract the collection from the HD light
-        VtValue vtShadowCollection =
-            light->Get(HdLightTokens->shadowCollection);
-        const HdRprimCollection &col =
-            vtShadowCollection.IsHolding<HdRprimCollection>()
-                ? vtShadowCollection.Get<HdRprimCollection>()
-                : HdRprimCollection();
-
-        // Only want opaque or masked prims to appear in shadow pass, so make
-        // two copies of the shadow collection with appropriate material tags
-        HdRprimCollection newColDefault = col;
-        newColDefault.SetMaterialTag(shadowMaterialTags[0]);
-        HdRprimCollection newColMasked = col;
-        newColMasked.SetMaterialTag(shadowMaterialTags[1]);
-
-        int shadowStart = glfLights[lightId].GetShadowIndexStart();
-        int shadowEnd = glfLights[lightId].GetShadowIndexEnd();
-
-        // Note here that we may want to sort the passes by collection
-        // to invalidate fewer passes if the collections match already.
-        // SetRprimCollection checks for identity changes on the collection
-        // and no-ops in that case.
-        for (int shadowId = shadowStart; shadowId <= shadowEnd; ++shadowId) {
-            // Remember, we have two render passes (one for each collection)
-            // per shadow map. First the "defaultMaterialTag" passes.
-            if (_passes[shadowId]) {
-                _passes[shadowId]->SetRprimCollection(newColDefault);
-            } else {
-                _passes[shadowId] = std::make_shared<HdSt_RenderPass>
-                    (&renderIndex, newColDefault);
+            if (!glfLights[lightId].HasShadow()) {
+                continue;
             }
 
-            // Then the "masked" materialTag passes
-            if (_passes[shadowId + numShadowMaps]) {
-                _passes[shadowId + numShadowMaps]->SetRprimCollection(
-                    newColMasked);
-            } else {
-                _passes[shadowId + numShadowMaps] = 
-                    std::make_shared<HdSt_RenderPass>
-                    (&renderIndex, newColMasked);
+            // Shadows are supported on for SimpleLights and DistantLights
+            HdStLight* light = static_cast<HdStLight*>(renderIndex.GetSprim(
+                    HdPrimTypeTokens->simpleLight, glfLights[lightId].GetID()));
+            if (!light) {
+                light = static_cast<HdStLight*>(renderIndex.GetSprim(
+                    HdPrimTypeTokens->distantLight, glfLights[lightId].GetID()));
+            }
+
+            TF_VERIFY(light);
+
+            // Extract the collection from the HD light
+            VtValue vtShadowCollection =
+                light->Get(HdLightTokens->shadowCollection);
+            const HdRprimCollection &col =
+                vtShadowCollection.IsHolding<HdRprimCollection>()
+                    ? vtShadowCollection.Get<HdRprimCollection>()
+                    : HdRprimCollection();
+
+            // Only want opaque or masked prims to appear in shadow pass, so make
+            // two copies of the shadow collection with appropriate material tags
+            HdRprimCollection newColDefault = col;
+            newColDefault.SetMaterialTag(shadowMaterialTags[0]);
+            HdRprimCollection newColMasked = col;
+            newColMasked.SetMaterialTag(shadowMaterialTags[1]);
+
+            int shadowStart = glfLights[lightId].GetShadowIndexStart();
+            int shadowEnd = glfLights[lightId].GetShadowIndexEnd();
+
+            // Note here that we may want to sort the passes by collection
+            // to invalidate fewer passes if the collections match already.
+            // SetRprimCollection checks for identity changes on the collection
+            // and no-ops in that case.
+            for (int shadowId = shadowStart; shadowId <= shadowEnd; ++shadowId) {
+                // Remember, we have two render passes (one for each collection)
+                // per shadow map. First the "defaultMaterialTag" passes.
+                if (_passes[shadowId]) {
+                    _passes[shadowId]->SetRprimCollection(newColDefault);
+                } else {
+                    _passes[shadowId] = std::make_shared<HdSt_RenderPass>
+                        (&renderIndex, newColDefault);
+                }
+
+                // Then the "masked" materialTag passes
+                if (_passes[shadowId + numShadowMaps]) {
+                    _passes[shadowId + numShadowMaps]->SetRprimCollection(
+                        newColMasked);
+                } else {
+                    _passes[shadowId + numShadowMaps] = 
+                        std::make_shared<HdSt_RenderPass>
+                        (&renderIndex, newColMasked);
+                }
             }
         }
-    }
 
-    // Shrink down to fit to conserve resources
-    if (_renderPassStates.size() > _passes.size()) {
-        _renderPassStates.resize(_passes.size());
-    } 
-    
-    // Ensure all passes have the right params set.
-    if (dirtyParams) {
-        TF_FOR_ALL(it, _renderPassStates) {
-            _UpdateDirtyParams(*it, _params);
-        }
-    }
-    
-    // Add new states if the number of passes has grown
-    if (_renderPassStates.size() < _passes.size()) {
-        for (size_t passId = _renderPassStates.size();
-             passId < _passes.size(); passId++) {
-            HdStRenderPassShaderSharedPtr renderPassShadowShader = 
-                std::make_shared<HdStRenderPassShader>(
-                    HdxPackageRenderPassShadowShader());
-            HdStRenderPassStateSharedPtr renderPassState =
-                std::make_shared<HdStRenderPassState>(
-                    renderPassShadowShader);
-
-            renderPassState->SetDepthFunc(_params.depthFunc);
-            renderPassState->SetDepthBiasUseDefault(!_params.depthBiasEnable);
-            renderPassState->SetDepthBiasEnabled(_params.depthBiasEnable);
-            renderPassState->SetDepthBias(_params.depthBiasConstantFactor,
-                                          _params.depthBiasSlopeFactor);
-            renderPassState->SetEnableDepthClamp(true);
-            renderPassState->SetDepthRange(GfVec2f(0, 0.99999));
-
-            // This state is invariant of parameter changes so set it
-            // once.
-            renderPassState->SetLightingEnabled(false);
-            // XXX : This can be removed when Hydra has support for 
-            //       transparent objects.
-            //       We use an epsilon offset from 1.0 to allow for 
-            //       calculation during primvar interpolation which
-            //       doesn't fully saturate back to 1.0.
-            const float TRANSPARENT_ALPHA_THRESHOLD = (1.0f - 1e-6f);
-            renderPassState->SetAlphaThreshold(TRANSPARENT_ALPHA_THRESHOLD);
-            // A new state is treated as dirty and needs the params set.
-            _UpdateDirtyParams(renderPassState, _params);
-
-            _renderPassStates.push_back(std::move(renderPassState));
-        }
-    }
-
-    // Get AOV bindings created by simple lighting shader.
-    HdRenderPassAovBindingVector shadowAovBindings;
-    VtValue lightingShader = (*ctx)[HdxTokens->lightingShader];
-    if (lightingShader.IsHolding<HdStLightingShaderSharedPtr>()) {
-        if (HdStSimpleLightingShaderSharedPtr simpleLightingShader =
-            std::dynamic_pointer_cast<HdStSimpleLightingShader>(
-                lightingShader.UncheckedGet<HdStLightingShaderSharedPtr>())) {
-            shadowAovBindings = simpleLightingShader->GetShadowAovBindings();
-        }
-    }
-
-    for (size_t passId = 0; passId < _passes.size(); passId++) {
-
-        // Make sure each pass got created. Light shadow indices are supposed
-        // to be compact (see simpleLightTask.cpp).
-        if (!TF_VERIFY(_passes[passId])) {
-            continue;
-        }
-
-        // Because we create two render passes for each shadow map, we must 
-        // convert the index
-        size_t shadowMapId = passId % numShadowMaps;
-
-        GfVec2i shadowMapRes = shadows->GetShadowMapSize(shadowMapId);
-
-        // Set camera framing based on the shadow map's, which is computed in
-        // HdxSimpleLightTask.
-        _renderPassStates[passId]->SetCameraFramingState( 
-            shadows->GetViewMatrix(shadowMapId), 
-            shadows->GetProjectionMatrix(shadowMapId),
-            GfVec4d(0,0,shadowMapRes[0], shadowMapRes[1]),
-            HdRenderPassState::ClipPlanesVector());
+        // Shrink down to fit to conserve resources
+        if (_renderPassStates.size() > _passes.size()) {
+            _renderPassStates.resize(_passes.size());
+        } 
         
-        // Set AOV bindings.
-        if (shadowMapId < shadowAovBindings.size()) {
-            if (passId == shadowMapId) {
-                _renderPassStates[passId]->SetAovBindings(
-                    { shadowAovBindings[shadowMapId] });
-            } else {
-                // Don't want "masked" render passes to clear.
-                HdRenderPassAovBinding aovBindingCopy = 
-                    shadowAovBindings[shadowMapId];
-                aovBindingCopy.clearValue = VtValue();
-                _renderPassStates[passId]->SetAovBindings(
-                    { aovBindingCopy });
+        // Ensure all passes have the right params set.
+        if (dirtyParams) {
+            TF_FOR_ALL(it, _renderPassStates) {
+                _UpdateDirtyParams(*it, _params);
+            }
+        }
+        
+        // Add new states if the number of passes has grown
+        if (_renderPassStates.size() < _passes.size()) {
+            for (size_t passId = _renderPassStates.size();
+                passId < _passes.size(); passId++) {
+                HdStRenderPassShaderSharedPtr renderPassShadowShader = 
+                    std::make_shared<HdStRenderPassShader>(
+                        HdxPackageRenderPassShadowShader());
+                HdStRenderPassStateSharedPtr renderPassState =
+                    std::make_shared<HdStRenderPassState>(
+                        renderPassShadowShader);
+
+                renderPassState->SetDepthFunc(_params.depthFunc);
+                renderPassState->SetDepthBiasUseDefault(!_params.depthBiasEnable);
+                renderPassState->SetDepthBiasEnabled(_params.depthBiasEnable);
+                renderPassState->SetDepthBias(_params.depthBiasConstantFactor,
+                                            _params.depthBiasSlopeFactor);
+                renderPassState->SetEnableDepthClamp(true);
+                renderPassState->SetDepthRange(GfVec2f(0, 0.99999));
+
+                // This state is invariant of parameter changes so set it
+                // once.
+                renderPassState->SetLightingEnabled(false);
+                // XXX : This can be removed when Hydra has support for 
+                //       transparent objects.
+                //       We use an epsilon offset from 1.0 to allow for 
+                //       calculation during primvar interpolation which
+                //       doesn't fully saturate back to 1.0.
+                const float TRANSPARENT_ALPHA_THRESHOLD = (1.0f - 1e-6f);
+                renderPassState->SetAlphaThreshold(TRANSPARENT_ALPHA_THRESHOLD);
+                // A new state is treated as dirty and needs the params set.
+                _UpdateDirtyParams(renderPassState, _params);
+
+                _renderPassStates.push_back(std::move(renderPassState));
             }
         }
 
-        _passes[passId]->Sync();
+        // Get AOV bindings created by simple lighting shader.
+        HdRenderPassAovBindingVector shadowAovBindings;
+        VtValue lightingShader = (*ctx)[HdxTokens->lightingShader];
+        if (lightingShader.IsHolding<HdStLightingShaderSharedPtr>()) {
+            if (HdStSimpleLightingShaderSharedPtr simpleLightingShader =
+                std::dynamic_pointer_cast<HdStSimpleLightingShader>(
+                    lightingShader.UncheckedGet<HdStLightingShaderSharedPtr>())) {
+                shadowAovBindings = simpleLightingShader->GetShadowAovBindings();
+            }
+        }
+
+        for (size_t passId = 0; passId < _passes.size(); passId++) {
+
+            // Make sure each pass got created. Light shadow indices are supposed
+            // to be compact (see simpleLightTask.cpp).
+            if (!TF_VERIFY(_passes[passId])) {
+                continue;
+            }
+
+            // Because we create two render passes for each shadow map, we must 
+            // convert the index
+            size_t shadowMapId = passId % numShadowMaps;
+
+            GfVec2i shadowMapRes = shadows->GetShadowMapSize(shadowMapId);
+
+            // Set camera framing based on the shadow map's, which is computed in
+            // HdxSimpleLightTask.
+            _renderPassStates[passId]->SetCameraFramingState( 
+                shadows->GetViewMatrix(shadowMapId), 
+                shadows->GetProjectionMatrix(shadowMapId),
+                GfVec4d(0,0,shadowMapRes[0], shadowMapRes[1]),
+                HdRenderPassState::ClipPlanesVector());
+            
+            // Set AOV bindings.
+            if (shadowMapId < shadowAovBindings.size()) {
+                if (passId == shadowMapId) {
+                    _renderPassStates[passId]->SetAovBindings(
+                        { shadowAovBindings[shadowMapId] });
+                } else {
+                    // Don't want "masked" render passes to clear.
+                    HdRenderPassAovBinding aovBindingCopy = 
+                        shadowAovBindings[shadowMapId];
+                    aovBindingCopy.clearValue = VtValue();
+                    _renderPassStates[passId]->SetAovBindings(
+                        { aovBindingCopy });
+                }
+            }
+
+            _passes[passId]->Sync();
+        }
     }
 
     *dirtyBits = HdChangeTracker::Clean;
