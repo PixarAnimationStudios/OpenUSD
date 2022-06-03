@@ -86,9 +86,6 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
         return;
     }
 
-    GlfSimpleLightVector const glfLights = lightingContext->GetLights();
-    GlfSimpleShadowArrayRefPtr const shadows = lightingContext->GetShadows();
-
     // Extract the new shadow task params from scene delegate
     const bool dirtyParams = (*dirtyBits) & HdChangeTracker::DirtyParams;
     if (dirtyParams) {
@@ -102,23 +99,26 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
         _renderTags = _GetTaskRenderTags(delegate);
     }
 
-    // Make sure we have the right number of shadow render passes.
-    // Because we would like to render only prims with the "defaultMaterialTag"
-    // or "masked" material tag, we need to make two collections and thus two
-    // render passes for what would be the same shadow map pass.  
-    // Thus we must make a distinction between the number of render passes and 
-    // the number of shadow maps indicated by the shadow array.
-    size_t numShadowMaps = shadows->GetNumShadowMapPasses();
+    GlfSimpleLightVector const glfLights = lightingContext->GetLights();
+    GlfSimpleShadowArrayRefPtr const shadows = lightingContext->GetShadows();
+    const size_t numShadowMaps = shadows->GetNumShadowMapPasses();
 
     if (numShadowMaps > 0) {
+        // Make sure we have the right number of shadow render passes.
+        // Because we would like to render only prims with the 
+        // "defaultMaterialTag" or "masked" material tag, we need to make two 
+        // collections and thus two render passes for what would be the same 
+        // shadow map pass. Thus we must make a distinction between the number 
+        // of render passes and the number of shadow maps indicated by the 
+        // shadow array.
         static const TfToken shadowMaterialTags[2] = 
             { HdStMaterialTagTokens->defaultMaterialTag, 
-            HdStMaterialTagTokens->masked };
+              HdStMaterialTagTokens->masked };
         _passes.resize( TfArraySize(shadowMaterialTags) * numShadowMaps);
 
-        // Mostly we can populate the renderpasses from shadow info, but the lights
-        // contain the shadow collection; so we need to loop through the lights
-        // assigning collections to their shadows.
+        // Mostly we can populate the renderpasses from shadow info, but the 
+        // lights contain the shadow collection; so we need to loop through the 
+        // lights assigning collections to their shadows.
         for (size_t lightId = 0; lightId < glfLights.size(); ++lightId) {
 
             if (!glfLights[lightId].HasShadow()) {
@@ -143,8 +143,9 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
                     ? vtShadowCollection.Get<HdRprimCollection>()
                     : HdRprimCollection();
 
-            // Only want opaque or masked prims to appear in shadow pass, so make
-            // two copies of the shadow collection with appropriate material tags
+            // Only want opaque or masked prims to appear in shadow pass, so 
+            // make two copies of the shadow collection with appropriate 
+            // material tags
             HdRprimCollection newColDefault = col;
             newColDefault.SetMaterialTag(shadowMaterialTags[0]);
             HdRprimCollection newColMasked = col;
@@ -157,7 +158,7 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
             // to invalidate fewer passes if the collections match already.
             // SetRprimCollection checks for identity changes on the collection
             // and no-ops in that case.
-            for (int shadowId = shadowStart; shadowId <= shadowEnd; ++shadowId) {
+            for (int shadowId = shadowStart; shadowId <= shadowEnd; ++shadowId){
                 // Remember, we have two render passes (one for each collection)
                 // per shadow map. First the "defaultMaterialTag" passes.
                 if (_passes[shadowId]) {
@@ -190,7 +191,7 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
                 _UpdateDirtyParams(*it, _params);
             }
         }
-        
+
         // Add new states if the number of passes has grown
         if (_renderPassStates.size() < _passes.size()) {
             for (size_t passId = _renderPassStates.size();
@@ -203,10 +204,11 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
                         renderPassShadowShader);
 
                 renderPassState->SetDepthFunc(_params.depthFunc);
-                renderPassState->SetDepthBiasUseDefault(!_params.depthBiasEnable);
+                renderPassState->SetDepthBiasUseDefault(
+                    !_params.depthBiasEnable);
                 renderPassState->SetDepthBiasEnabled(_params.depthBiasEnable);
                 renderPassState->SetDepthBias(_params.depthBiasConstantFactor,
-                                            _params.depthBiasSlopeFactor);
+                                              _params.depthBiasSlopeFactor);
                 renderPassState->SetEnableDepthClamp(true);
                 renderPassState->SetDepthRange(GfVec2f(0, 0.99999));
 
@@ -234,14 +236,14 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
             if (HdStSimpleLightingShaderSharedPtr simpleLightingShader =
                 std::dynamic_pointer_cast<HdStSimpleLightingShader>(
                     lightingShader.UncheckedGet<HdStLightingShaderSharedPtr>())) {
-                shadowAovBindings = simpleLightingShader->GetShadowAovBindings();
+                shadowAovBindings =
+                    simpleLightingShader->GetShadowAovBindings();
             }
         }
 
         for (size_t passId = 0; passId < _passes.size(); passId++) {
-
-            // Make sure each pass got created. Light shadow indices are supposed
-            // to be compact (see simpleLightTask.cpp).
+            // Make sure each pass got created. Light shadow indices are 
+            // supposed to be compact (see simpleLightTask.cpp).
             if (!TF_VERIFY(_passes[passId])) {
                 continue;
             }
@@ -252,8 +254,8 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
 
             GfVec2i shadowMapRes = shadows->GetShadowMapSize(shadowMapId);
 
-            // Set camera framing based on the shadow map's, which is computed in
-            // HdxSimpleLightTask.
+            // Set camera framing based on the shadow map's, which is computed 
+            // in HdxSimpleLightTask.
             _renderPassStates[passId]->SetCameraFramingState( 
                 shadows->GetViewMatrix(shadowMapId), 
                 shadows->GetProjectionMatrix(shadowMapId),

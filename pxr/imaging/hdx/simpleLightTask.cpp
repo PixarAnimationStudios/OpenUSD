@@ -332,11 +332,11 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
                     continue;
                 }
                 // Complete the shadow setup for this light
-                int shadowStart = 
+                const int shadowStart = 
                     _glfSimpleLights[lightId].GetShadowIndexStart();
-                int shadowEnd = 
+                const int shadowEnd = 
                     _glfSimpleLights[lightId].GetShadowIndexEnd();
-                std::vector<GfMatrix4d> shadowMatrices =
+                const std::vector<GfMatrix4d> shadowMatrices =
                     _glfSimpleLights[lightId].GetShadowMatrices();
 
                 for (int shadowId = shadowStart; shadowId <= shadowEnd; 
