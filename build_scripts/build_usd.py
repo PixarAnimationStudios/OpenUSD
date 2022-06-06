@@ -1109,7 +1109,18 @@ else:
     OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/v2.3.0.zip"
 
 def InstallOpenEXR(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(OPENEXR_URL, context, force)):
+    srcDir = DownloadURL(OPENEXR_URL, context, force)
+    with CurrentWorkingDirectory(srcDir):
+        if MacOS():
+            PatchFile(srcDir + "/OpenEXR/CMakeLists.txt",
+                [("SET (OPENEXR_LIBSUFFIX \"\")",
+                  "SET (OPENEXR_LIBSUFFIX \"\")\n"
+                  "FILE ( APPEND ${CMAKE_CURRENT_BINARY_DIR}/config/OpenEXRConfig.h \"\n"
+                  "#undef OPENEXR_IMF_HAVE_GCC_INLINE_ASM_AVX\n"
+                  "#ifndef __aarch64__\n"
+                  "#define OPENEXR_IMF_HAVE_GCC_INLINE_ASM_AVX 1\n"
+                  "#endif\n\")\n")])
+
         RunCMake(context, force, 
                  ['-DOPENEXR_BUILD_PYTHON_LIBS=OFF',
                   '-DOPENEXR_PACKAGE_PREFIX="{}"'.format(context.instDir),
@@ -1304,12 +1315,12 @@ def InstallOpenColorIO(context, force, buildArgs):
                       'CMAKE_ARGS      ${TINYXML_CMAKE_ARGS}\n' +
                       '            CMAKE_CACHE_ARGS -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH:BOOL=TRUE'
                       ' -DCMAKE_OSX_ARCHITECTURES:STRING="{arch}"'.format(arch=arch)),
-                    ('CMAKE_ARGS      ${YAML_CPP_CMAKE_ARGS}',
-                     'CMAKE_ARGS      ${YAML_CPP_CMAKE_ARGS}\n' +
-                     '            CMAKE_CACHE_ARGS -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH:BOOL=TRUE'
-                     ' -DCMAKE_OSX_ARCHITECTURES:STRING="{arch}"'.format(arch=arch)),
-                    ('set(CMAKE_OSX_ARCHITECTURES x86_64 CACHE STRING',
-                     'set(CMAKE_OSX_ARCHITECTURES "{arch}" CACHE STRING'.format(arch=arch))])
+                     ('CMAKE_ARGS      ${YAML_CPP_CMAKE_ARGS}',
+                      'CMAKE_ARGS      ${YAML_CPP_CMAKE_ARGS}\n' +
+                      '            CMAKE_CACHE_ARGS -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH:BOOL=TRUE'
+                      ' -DCMAKE_OSX_ARCHITECTURES:STRING="{arch}"'.format(arch=arch)),
+                     ('set(CMAKE_OSX_ARCHITECTURES x86_64 CACHE STRING',
+                      'set(CMAKE_OSX_ARCHITECTURES "{arch}" CACHE STRING'.format(arch=arch))])
             
         # The OCIO build treats all warnings as errors but several come up
         # on various platforms, including:
@@ -1505,6 +1516,10 @@ else:
 
 def InstallAlembic(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ALEMBIC_URL, context, force)):
+        if MacOS():
+            PatchFile("CMakeLists.txt", 
+                      [("ADD_DEFINITIONS(-Wall -Werror -Wextra -Wno-unused-parameter)",
+                        "ADD_DEFINITIONS(-Wall -Wextra -Wno-unused-parameter)")])
         cmakeOptions = ['-DUSE_BINARIES=OFF', '-DUSE_TESTS=OFF']
         if context.enableHDF5:
             # HDF5 requires the H5_BUILT_AS_DYNAMIC_LIB macro be defined if
