@@ -127,6 +127,8 @@ def GetMacTargetArch():
             macTargets = "x86_64"
         if context.targetARM64:
             macTargets = GetMacArmArch()
+        if context.targetUniversal:
+            macTargets = "x86_64;" + GetMacArmArch()
 
     return macTargets
 
@@ -329,6 +331,30 @@ def CurrentWorkingDirectory(dir):
     try: yield
     finally: os.chdir(curdir)
 
+def CreateUniversalBinaries(context, libNames, x86Dir, armDir):
+    lipoCommands = []
+    xcodeRoot = subprocess.check_output(["xcode-select", "--print-path"]).decode('utf-8').strip()
+    lipoBinary = "{XCODE_ROOT}/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo".format(XCODE_ROOT=xcodeRoot)
+    for libName in libNames:
+        outputName = os.path.join(context.instDir, "lib", libName)
+        if not os.path.islink("{x86Dir}/{libName}".format(x86Dir=x86Dir, libName=libName)):
+            if os.path.exists(outputName):
+                os.remove(outputName)
+            lipoCmd = "{lipo} -create {x86Dir}/{libName} {armDir}/{libName} -output {outputName}".format(
+                lipo=lipoBinary, x86Dir=x86Dir, armDir=armDir, libName=libName, outputName=outputName)
+            lipoCommands.append(lipoCmd)
+            Run(lipoCmd)
+    for libName in libNames:
+        if os.path.islink("{x86Dir}/{libName}".format(x86Dir=x86Dir, libName=libName)):
+            outputName = os.path.join(context.instDir, "lib", libName)
+            if os.path.exists(outputName):
+                os.unlink(outputName)
+            targetName = os.readlink("{x86Dir}/{libName}".format(x86Dir=x86Dir, libName=libName))
+            targetName = os.path.basename(targetName)
+            os.symlink("{instDir}/lib/{libName}".format(instDir=context.instDir, libName=targetName),
+                outputName)
+    return lipoCommands
+
 def CopyFiles(context, src, dest):
     """Copy files like shutil.copy, but src may be a glob pattern."""
     filesToCopy = glob.glob(src)
@@ -393,7 +419,7 @@ def FormatMultiProcs(numJobs, generator):
 
     return "{tag}{procs}".format(tag=tag, procs=numJobs)
 
-def RunCMake(context, force, extraArgs = None, envOverride = None, macOSTarget = None):
+def RunCMake(context, force, extraArgs = None, envOverride = None):
     """Invoke CMake to configure, build, and install a library whose 
     source code is located in the current working directory."""
     # Create a directory for out-of-source builds in the build directory
@@ -438,14 +464,12 @@ def RunCMake(context, force, extraArgs = None, envOverride = None, macOSTarget =
 
         # For macOS cross compilation, set the Xcode architecture flags.
         # If a target has been passed in then use it instead.
-        if not macOSTarget:
-            macOSTarget = GetMacTargetArch()
-        if context.targetNative or macOSTarget == GetMacArch():
+        if context.targetNative or GetMacTargetArch() == GetMacArch():
             extraArgs.append('-DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=YES')
         else:
             extraArgs.append('-DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO')
 
-        extraArgs.append('-DCMAKE_OSX_ARCHITECTURES={0}'.format(macOSTarget))
+        extraArgs.append('-DCMAKE_OSX_ARCHITECTURES={0}'.format(GetMacTargetArch()))
 
     # We use -DCMAKE_BUILD_TYPE for single-configuration generators 
     # (Ninja, make), and --config for multi-configuration generators 
@@ -781,6 +805,9 @@ def InstallBoost_Helper(context, force, buildArgs):
             elif context.targetARM64:
                 macOSArchitecture = "architecture=arm"
                 macOSArch = "-arch arm64"
+            elif context.targetUniversal:
+                macOSArchitecture = "architecture=combined"
+                macOSArch="-arch arm64 -arch x86_64"
 
             if macOSArch:
                 bootstrapCmd += " cxxflags=\"{0}\" cflags=\"{0}\" linkflags=\"{0}\"".format(macOSArch)
@@ -944,8 +971,10 @@ else:
 def InstallTBB(context, force, buildArgs):
     if Windows():
         InstallTBB_Windows(context, force, buildArgs)
-    elif Linux() or MacOS():
-        InstallTBB_LinuxOrMacOS(context, force, buildArgs)
+    elif MacOS():
+        InstallTBB_MacOS(context, force, buildArgs)
+    else:
+        InstallTBB_Linux(context, force, buildArgs)
 
 def InstallTBB_Windows(context, force, buildArgs):
     TBB_ROOT_DIR_NAME = "tbb2018_20180822oss"
@@ -963,40 +992,105 @@ def InstallTBB_Windows(context, force, buildArgs):
         CopyDirectory(context, "include\\serial", "include\\serial")
         CopyDirectory(context, "include\\tbb", "include\\tbb")
 
-def InstallTBB_LinuxOrMacOS(context, force, buildArgs):
+def InstallTBB_MacOS(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force)):
         # Append extra argument controlling libstdc++ ABI if specified.
         AppendCXX11ABIArg("CXXFLAGS", context, buildArgs)
 
-        if MacOS():
-            # Note: TBB installation fails on OSX when cuda is installed, a 
-            # suggested fix:
-            # https://github.com/spack/spack/issues/6000#issuecomment-358817701
-            PatchFile("build/macos.inc", 
-                    [("shell clang -v ", "shell clang --version ")])
+        # Note: TBB installation fails on OSX when cuda is installed, a 
+        # suggested fix:
+        # https://github.com/spack/spack/issues/6000#issuecomment-358817701
+        PatchFile("build/macos.inc", 
+                [("shell clang -v ", "shell clang --version ")])
 
-            PatchFile("build/macos.clang.inc", 
-                    [("-m64",
-                      "-m64 -arch x86_64"),
-                     ("ifeq ($(arch),$(filter $(arch),armv7 armv7s arm64))",
-                      "ifeq ($(arch),$(filter $(arch),armv7 armv7s arm64 arm64e))")],
-                    True)
-    
-            targetArch = GetMacTargetArch()
+        PatchFile("build/macos.clang.inc", 
+                [("-m64",
+                    "-m64 -arch x86_64"),
+                    ("ifeq ($(arch),$(filter $(arch),armv7 armv7s arm64))",
+                    "ifeq ($(arch),$(filter $(arch),armv7 armv7s arm64 arm64e))")],
+                True)
 
-            if (targetArch == "x86_64"):
-                targetArch = "intel64"
+        secondaryArch = ""
 
-            Run('make -j{procs} arch={arch} {buildArgs}'.format(
-                arch=targetArch,
-                procs=context.numJobs,
-                buildArgs=" ".join(buildArgs)))
-
+        if context.targetNative:
+            primaryArch = GetMacArch()
         else:
-            # TBB does not support out-of-source builds in a custom location.
-            Run('make -j{procs} {buildArgs}'
-                .format(procs=context.numJobs, 
-                        buildArgs=" ".join(buildArgs)))
+            if context.targetX86:
+                primaryArch = "x86_64"
+            if context.targetARM64:
+                primaryArch = GetMacArmArch()
+            if context.targetUniversal:
+                primaryArch = GetMacArch()
+                if (primaryArch == "x86_64"):
+                    secondaryArch = GetMacArmArch()
+                else:
+                    secondaryArch = "intel64"
+
+        if (primaryArch == "x86_64"):
+            primaryArch = "intel64"
+
+        makeTBBCmdPrimary = 'make -j{procs} arch={arch} {buildArgs}'.format(
+            arch=primaryArch,
+            procs=context.numJobs,
+            buildArgs=" ".join(buildArgs))
+
+        Run(makeTBBCmdPrimary)
+
+        makeTBBCmdSecondary = ""
+        if secondaryArch:
+            makeTBBCmdSecondary = 'make -j{procs} arch={arch} {buildArgs}'.format(
+                arch=secondaryArch,
+                procs=context.numJobs,
+                buildArgs=" ".join(buildArgs))
+            Run(makeTBBCmdSecondary)               
+
+        # Install both release and debug builds. USD requires the debug
+        # libraries when building in debug mode, and installing both
+        # makes it easier for users to install dependencies in some
+        # location that can be shared by both release and debug USD
+        # builds. Plus, the TBB build system builds both versions anyway.
+        if context.targetUniversal:
+            x86Files = glob.glob(os.getcwd() + "/build/*intel64*_release/libtbb*.*")
+            armFiles = glob.glob(os.getcwd() + "/build/*arm64*_release/libtbb*.*")
+            libNames = [os.path.basename(x) for x in x86Files]
+            x86Dir = os.path.dirname(x86Files[0])
+            armDir = os.path.dirname(armFiles[0])
+
+            lipoCommandsRelease = CreateUniversalBinaries(context, libNames, x86Dir, armDir)
+
+            x86Files = glob.glob(os.getcwd() + "/build/*intel64*_debug/libtbb*.*")
+            armFiles = glob.glob(os.getcwd() + "/build/*arm64*_debug/libtbb*.*")
+            libNames = [os.path.basename(x) for x in x86Files]
+            x86Dir = os.path.dirname(x86Files[0])
+            armDir = os.path.dirname(armFiles[0])
+
+            lipoCommandsDebug = CreateUniversalBinaries(context, libNames, x86Dir, armDir)
+        else:
+            CopyFiles(context, "build/*_release/libtbb*.*", "lib")
+            CopyFiles(context, "build/*_debug/libtbb*.*", "lib")
+
+        # Output paths that are of interest
+        with open(os.path.join(context.usdInstDir, 'tbbBuild.txt'), 'wt') as file:
+            file.write('ARCHIVE:' + TBB_URL.split("/")[-1] + '\n')
+            file.write('BUILDFOLDER:' + os.path.split(os.getcwd())[1] + '\n')
+            file.write('MAKEPRIMARY:' + makeTBBCmdPrimary + '\n')
+
+            if context.targetUniversal:
+                file.write('MAKESECONDARY:' + makeTBBCmdSecondary + '\n')
+                file.write('LIPO_RELEASE:' + ','.join(lipoCommandsRelease) + '\n')
+                file.write('LIPO_DEBUG:' + ','.join(lipoCommandsDebug) + '\n')
+
+        CopyDirectory(context, "include/serial", "include/serial")
+        CopyDirectory(context, "include/tbb", "include/tbb")
+
+def InstallTBB_Linux(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force)):
+        # Append extra argument controlling libstdc++ ABI if specified.
+        AppendCXX11ABIArg("CXXFLAGS", context, buildArgs)
+
+        Run('make -j{procs} arch={arch} {buildArgs}'.format(
+            procs=context.numJobs,
+            buildArgs=" ".join(buildArgs)))
 
         # Install both release and debug builds. USD requires the debug
         # libraries when building in debug mode, and installing both
@@ -1095,6 +1189,11 @@ def InstallPNG(context, force, buildArgs):
                   'add_custom_target(gensym DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/libpng.sym" genvers)'),
                  ("add_custom_target(genfiles DEPENDS",
                   "add_custom_target(genfiles DEPENDS gensym symbol-check")])
+
+            if context.targetUniversal:
+                PatchFile("scripts/genout.cmake.in",
+                [("CMAKE_OSX_ARCHITECTURES",
+                  "CMAKE_OSX_INTERNAL_ARCHITECTURES")])
 
         RunCMake(context, force, extraArgs)
 
@@ -1413,9 +1512,7 @@ def InstallOpenSubdiv(context, force, buildArgs):
         if MacOS():
             context.numJobs = 1
 
-            macOSTarget = GetMacTargetArch()
-
-            if macOSTarget != GetMacArch():
+            if GetMacTargetArch() != GetMacArch():
                 # For macOS cross-compilation it is necessary to build stringify
                 # on the host architecture.  This is then passed into the second
                 # phase of building OSD with the STRINGIFY_LOCATION parameter.
@@ -1426,9 +1523,10 @@ def InstallOpenSubdiv(context, force, buildArgs):
 
                 stringifyContext = copy.copy(context)
                 stringifyContext.instDir = os.path.join(context.instDir, "stringify")
+                stringifyContext.targetArch = GetMacArch()
 
                 with CurrentWorkingDirectory(stringifyDir):
-                    RunCMake(stringifyContext, force, extraArgs, macOSTarget = GetMacArch())
+                    RunCMake(stringifyContext, force, extraArgs)
 
                 buildStringifyDir = os.path.join(stringifyContext.buildDir, os.path.split(srcOSDDir)[1] + "_stringify")
 
@@ -1567,10 +1665,10 @@ MATERIALX = Dependency("MaterialX", InstallMaterialX, "include/MaterialXCore/Lib
 
 ############################################################
 # Embree
-# For MacOS we use version 3.13.2 to include a fix from Intel
+# For MacOS we use version 3.13.3 to include a fix from Intel
 # to build on Apple Silicon.
 if MacOS():
-    EMBREE_URL = "https://github.com/embree/embree/archive/v3.13.2.tar.gz"
+    EMBREE_URL = "https://github.com/embree/embree/archive/v3.13.3.tar.gz"
 else:
     EMBREE_URL = "https://github.com/embree/embree/archive/v3.2.2.tar.gz"
 
@@ -1591,7 +1689,23 @@ def InstallEmbree(context, force, buildArgs):
 
         extraArgs += buildArgs
 
-        RunCMake(context, force, extraArgs)
+        if MacOS() and context.targetUniversal:
+            primaryArch = GetMacArch()
+            secondaryArch = ""
+            if (primaryArch == "x86_64"):
+                secondaryArch = GetMacArmArch()
+            else:
+                secondaryArch = "x86_64"
+            
+            primaryContext = copy.copy(context)
+            primaryContext.targetArch = primaryArch
+            RunCMake(context, force, extraArgs, None)
+
+            secondaryContext = copy.copy(context)
+            primaryContext.targetArch = secondaryArch
+            RunCMake(secondaryContext, force, extraArgs, None)
+        else:
+            RunCMake(context, force, extraArgs)
 
 EMBREE = Dependency("Embree", InstallEmbree, "include/embree3/rtcore.h")                  
 
@@ -1872,8 +1986,9 @@ group.add_argument("--build-variant", default=BUILD_RELEASE,
 TARGET_NATIVE = "native"
 TARGET_X86 = "x86_64"
 TARGET_ARM64 = "arm64"
+TARGET_UNIVERSAL = "universal"
 group.add_argument("--build-target", default=TARGET_NATIVE,
-                   choices=[TARGET_NATIVE, TARGET_X86, TARGET_ARM64],
+                   choices=[TARGET_NATIVE, TARGET_X86, TARGET_ARM64, TARGET_UNIVERSAL],
                    help=("Build target for macOS cross compilation. "
                          "(default: {})".format(TARGET_NATIVE)))
 
@@ -2145,6 +2260,10 @@ class InstallContext:
         self.targetNative = (args.build_target == TARGET_NATIVE)
         self.targetX86 = (args.build_target == TARGET_X86)
         self.targetARM64 = (args.build_target == TARGET_ARM64)
+        if SupportsMacOSUniversalBinaries():
+            self.targetUniversal = (args.build_target == TARGET_UNIVERSAL)
+        else:
+            raise ValueError("Universal binaries only supported in macOS 11.0 and later.")
         self.useCXX11ABI = \
             (args.use_cxx11_abi if hasattr(args, "use_cxx11_abi") else None)
         self.safetyFirst = args.safety_first
@@ -2466,6 +2585,7 @@ summaryMsg = summaryMsg.format(
     buildTarget=("Native" if context.targetNative
                   else "x86_64" if context.targetX86
                   else "ARM64" if context.targetARM64
+                  else "Universal" if context.targetUniversal
                   else ""),
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
