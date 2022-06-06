@@ -3,6 +3,10 @@
 ## [22.08] - TBD
 
 ### Build
+- On Apple Silicon systems, usdview requires the use an x86_64 architecture 
+  environment (e.g. "arch -x86_64 zsh") to build and execute binaries.
+
+- Updated build_usd.py to use, on Apple Silicon: tbb 2020-U2, and boost 1.76
 
 ### USD
 - Removed support for Ar 1.0, which was deprecated in v21.11.
@@ -29,6 +33,9 @@
     classes.
   - Updated previously generated schemas to usd ":" as the nested page delimiter
     in display groups.
+- Added the ability to specify properties as API schema overrides for schema
+  generation.
+  See: https://graphics.pixar.com/usd/release/api/_usd__page__generating_schemas.html#Usd_APISchemaPropertyOverride
 
 ### Imaging
 - Fixed double-creation of Bprims when using scene index emulation.
@@ -84,7 +91,7 @@ this happen!
   being 12.4) we test against. Minimum CMake requirement for macOS has also been 
   updated to 3.18.6.
 
-- On Apple Silicon systems, it is required to use an x86_64 architecture 
+- On Apple Silicon systems, it is required to use an x86_64 architecture
   environment (e.g. "arch -x86_64 zsh") to build and execute binaries.
 
 - Updated build_usd.py to use OpenSubdiv 3.4.4.
