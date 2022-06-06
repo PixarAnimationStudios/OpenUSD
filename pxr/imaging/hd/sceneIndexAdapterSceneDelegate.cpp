@@ -996,6 +996,25 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
         return VtValue();
     }
 
+
+    // Some legacy render delegates may require all shading nodes
+    // to be included regardless of whether they are reachable via
+    // a terminal. While 100% accuracy in emulation would require that
+    // behavior to be enabled by default, it is generally not desireable
+    // as it leads to a lot of unnecessary data duplication across 
+    // terminals.
+    // 
+    // A renderer which wants this behavior can configure its networks
+    // with an "includeDisconnectedNodes" data source.
+    bool includeDisconnectedNodes = false;
+    if (matDS) {
+        static const TfToken key("includeDisconnectedNodes");
+        if (HdBoolDataSourceHandle ds = HdBoolDataSource::Cast(
+                matDS->Get(key))) {
+            includeDisconnectedNodes = ds->GetTypedValue(0.0f);
+        }
+    }
+
     // Convert HdDataSource with material data to HdMaterialNetworkMap
     HdMaterialNetworkMap matHd;
 
@@ -1025,6 +1044,14 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
         // Continue walking the network
         HdMaterialNetwork & netHd = matHd.map[name];
         _Walk(path, nodesDS, &visitedNodes, &netHd);
+
+        // see "includeDisconnectedNodes" above
+        if (includeDisconnectedNodes && nodesDS) {
+            for (const TfToken &nodeName : nodesDS->GetNames()) {
+                _Walk(SdfPath(nodeName.GetString()),
+                    nodesDS, &visitedNodes, &netHd);
+            }
+        }
     }
     return VtValue(matHd);
 }

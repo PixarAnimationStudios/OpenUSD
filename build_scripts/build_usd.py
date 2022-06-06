@@ -91,6 +91,8 @@ def Linux():
     return platform.system() == "Linux"
 def MacOS():
     return platform.system() == "Darwin"
+def Arm():
+    return platform.processor() == "arm"
 
 def Python3():
     return sys.version_info.major == 3
@@ -224,19 +226,23 @@ def GetPythonInfo(context):
     # the platforms:
     pythonExecPath = sys.executable
     pythonVersion = sysconfig.get_config_var("py_version_short")  # "2.7"
-    pythonVersionNoDot = sysconfig.get_config_var("py_version_nodot") # "27"
 
     # Lib path is unfortunately special for each platform and there is no
     # config_var for it. But we can deduce it for each platform, and this
     # logic works for any Python version.
     def _GetPythonLibraryFilename(context):
         if Windows():
-            suffix = '_d' if context.buildDebug and context.debugPython else ''
-            return "python" + pythonVersionNoDot + suffix + ".lib"
+            return "python{version}{suffix}.lib".format(
+                version=sysconfig.get_config_var("py_version_nodot"),
+                suffix=('_d' if context.buildDebug and context.debugPython
+                        else ''))
         elif Linux():
             return sysconfig.get_config_var("LDLIBRARY")
         elif MacOS():
-            return "libpython" + pythonVersion + ".dylib"
+            return "libpython{version}.dylib".format(
+                version=(sysconfig.get_config_var('LDVERSION') or
+                         sysconfig.get_config_var('VERSION') or
+                         pythonVersion))
         else:
             raise RuntimeError("Platform not supported")
 
@@ -258,20 +264,38 @@ def GetPythonInfo(context):
         pythonLibPath = os.path.join(pythonBaseDir, "lib",
                                      _GetPythonLibraryFilename(context))
     else:
-        pythonIncludeDir = sysconfig.get_config_var("INCLUDEPY")
-        if Windows():
+        pythonIncludeDir = sysconfig.get_path("include")
+        if not pythonIncludeDir or not os.path.isdir(pythonIncludeDir):
+            # as a backup, and for legacy reasons - not preferred because
+            # it may be baked at build time
+            pythonIncludeDir = sysconfig.get_config_var("INCLUDEPY")
+
+        # if in a venv, installed_base will be the "original" python,
+        # which is where the libs are ("base" will be the venv dir)
+        pythonBaseDir = sysconfig.get_config_var("installed_base")
+        if not pythonBaseDir or not os.path.isdir(pythonBaseDir):
+            # for python-2.7
             pythonBaseDir = sysconfig.get_config_var("base")
+
+        if Windows():
             pythonLibPath = os.path.join(pythonBaseDir, "libs",
                                          _GetPythonLibraryFilename(context))
         elif Linux():
-            pythonLibDir = sysconfig.get_config_var("LIBDIR")
             pythonMultiarchSubdir = sysconfig.get_config_var("multiarchsubdir")
-            if pythonMultiarchSubdir:
-                pythonLibDir = pythonLibDir + pythonMultiarchSubdir
-            pythonLibPath = os.path.join(pythonLibDir,
-                                         _GetPythonLibraryFilename(context))
+            # Try multiple ways to get the python lib dir
+            for pythonLibDir in (sysconfig.get_config_var("LIBDIR"),
+                                 os.path.join(pythonBaseDir, "lib")):
+                if pythonMultiarchSubdir:
+                    pythonLibPath = \
+                        os.path.join(pythonLibDir + pythonMultiarchSubdir,
+                                     _GetPythonLibraryFilename(context))
+                    if os.path.isfile(pythonLibPath):
+                        break
+                pythonLibPath = os.path.join(pythonLibDir,
+                                             _GetPythonLibraryFilename(context))
+                if os.path.isfile(pythonLibPath):
+                    break
         elif MacOS():
-            pythonBaseDir = sysconfig.get_config_var("base")
             pythonLibPath = os.path.join(pythonBaseDir, "lib",
                                          _GetPythonLibraryFilename(context))
         else:
@@ -730,7 +754,9 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 # boost
 
 if MacOS():
-    BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
+    # This version of boost resolves Python3 compatibilty issues on Big Sur and Monterey and is
+    # compatible with Python 2.7 through Python 3.10
+    BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif Linux():
     if Python3():
@@ -934,10 +960,9 @@ BOOST = Dependency("boost", InstallBoost, BOOST_VERSION_FILE)
 if Windows():
     TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/2018_U6/tbb2018_20180822oss_win.zip"
 elif MacOS():
-    # On MacOS we experience various crashes in tests during teardown
-    # starting with 2018 Update 2. Until we figure that out, we use
-    # 2018 Update 1 on this platform.
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/2018_U1.tar.gz"
+    # This version of TBB has no test teardown crashes and fixes compatibility
+    # issues with M1, Big Sur, and Monterey
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/2020_U2.tar.gz"
 else:
     TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/2018_U6.tar.gz"
 
@@ -969,17 +994,9 @@ def InstallTBB_LinuxOrMacOS(context, force, buildArgs):
         AppendCXX11ABIArg("CXXFLAGS", context, buildArgs)
 
         if MacOS():
-            # Note: TBB installation fails on OSX when cuda is installed, a 
-            # suggested fix:
-            # https://github.com/spack/spack/issues/6000#issuecomment-358817701
-            PatchFile("build/macos.inc", 
-                    [("shell clang -v ", "shell clang --version ")])
-
             PatchFile("build/macos.clang.inc", 
                     [("-m64",
-                      "-m64 -arch x86_64"),
-                     ("ifeq ($(arch),$(filter $(arch),armv7 armv7s arm64))",
-                      "ifeq ($(arch),$(filter $(arch),armv7 armv7s arm64 arm64e))")],
+                      "-m64 -arch x86_64")],
                     True)
     
             targetArch = GetMacTargetArch()
@@ -1004,7 +1021,15 @@ def InstallTBB_LinuxOrMacOS(context, force, buildArgs):
         # location that can be shared by both release and debug USD
         # builds. Plus, the TBB build system builds both versions anyway.
         CopyFiles(context, "build/*_release/libtbb*.*", "lib")
-        CopyFiles(context, "build/*_debug/libtbb*.*", "lib")
+        
+        # Some platform/configuration combinations, such as mac/arm64
+        # cannot currently be built as debug. The try allows the build to
+        # proceed even when the debug build was not produced.
+        try:
+            CopyFiles(context, "build/*_debug/libtbb*.*", "lib")
+        except:
+            PrintWarning("TBB debug libraries are not available on this platform.")
+
         CopyDirectory(context, "include/serial", "include/serial")
         CopyDirectory(context, "include/tbb", "include/tbb")
 
@@ -1086,17 +1111,14 @@ TIFF = Dependency("TIFF", InstallTIFF, "include/tiff.h")
 PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.29.tar.gz"
 
 def InstallPNG(context, force, buildArgs):
+    macArgs = []
+    if MacOS() and Arm():
+        # ensure libpng's build doesn't erroneously activate inappropriate
+        # Neon extensions
+        macArgs = ["-DPNG_HARDWARE_OPTIMIZATIONS=OFF", 
+                   "-DPNG_ARM_NEON=off"] # case is significant
     with CurrentWorkingDirectory(DownloadURL(PNG_URL, context, force)):
-        extraArgs = copy.deepcopy(buildArgs)
-        if MacOS():
-            extraArgs.append("-DCMAKE_C_FLAGS=\"-DPNG_ARM_NEON_OPT=0\"")
-            PatchFile("CMakeLists.txt",
-                [('add_custom_target(gensym DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/libpng.sym")',
-                  'add_custom_target(gensym DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/libpng.sym" genvers)'),
-                 ("add_custom_target(genfiles DEPENDS",
-                  "add_custom_target(genfiles DEPENDS gensym symbol-check")])
-
-        RunCMake(context, force, extraArgs)
+        RunCMake(context, force, buildArgs + macArgs)
 
 PNG = Dependency("PNG", InstallPNG, "include/png.h")
 
