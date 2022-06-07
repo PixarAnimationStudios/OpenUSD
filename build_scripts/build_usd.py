@@ -157,18 +157,6 @@ def IsVisualStudio2015OrGreater():
     VISUAL_STUDIO_2015_VERSION = (14, 0)
     return IsVisualStudioVersionOrGreater(VISUAL_STUDIO_2015_VERSION)
 
-def IsMayaPython():
-    """Determine whether we're running in Maya's version of Python. When 
-    building against Maya's Python, there are some additional restrictions
-    on what we're able to build."""
-    try:
-        import maya
-        return True
-    except:
-        pass
-
-    return False
-
 def GetPythonInfo(context):
     """Returns a tuple containing the path to the Python executable, shared
     library, and include directory corresponding to the version of Python
@@ -214,60 +202,42 @@ def GetPythonInfo(context):
         else:
             raise RuntimeError("Platform not supported")
 
-    # XXX: Handle the case where this script is being called using Maya's
-    # Python since the sysconfig variables are set up differently in Maya.
-    # Ideally we would not have any special Maya knowledge in here at all.
-    if IsMayaPython():
+    pythonIncludeDir = sysconfig.get_path("include")
+    if not pythonIncludeDir or not os.path.isdir(pythonIncludeDir):
+        # as a backup, and for legacy reasons - not preferred because
+        # it may be baked at build time
+        pythonIncludeDir = sysconfig.get_config_var("INCLUDEPY")
+
+    # if in a venv, installed_base will be the "original" python,
+    # which is where the libs are ("base" will be the venv dir)
+    pythonBaseDir = sysconfig.get_config_var("installed_base")
+    if not pythonBaseDir or not os.path.isdir(pythonBaseDir):
+        # for python-2.7
         pythonBaseDir = sysconfig.get_config_var("base")
 
-        # On Windows, the "base" path points to a "Python\" subdirectory
-        # that contains the DLLs for site-package modules but not the
-        # directories for the headers and .lib file we need -- those 
-        # are one level up.
-        if Windows():
-            pythonBaseDir = os.path.dirname(pythonBaseDir)
-        
-        pythonIncludeDir = os.path.join(pythonBaseDir, "include",
-                                        "python" + pythonVersion)
+    if Windows():
+        pythonLibPath = os.path.join(pythonBaseDir, "libs",
+                                     _GetPythonLibraryFilename(context))
+    elif Linux():
+        pythonMultiarchSubdir = sysconfig.get_config_var("multiarchsubdir")
+        # Try multiple ways to get the python lib dir
+        for pythonLibDir in (sysconfig.get_config_var("LIBDIR"),
+                             os.path.join(pythonBaseDir, "lib")):
+            if pythonMultiarchSubdir:
+                pythonLibPath = \
+                    os.path.join(pythonLibDir + pythonMultiarchSubdir,
+                                 _GetPythonLibraryFilename(context))
+                if os.path.isfile(pythonLibPath):
+                    break
+            pythonLibPath = os.path.join(pythonLibDir,
+                                         _GetPythonLibraryFilename(context))
+            if os.path.isfile(pythonLibPath):
+                break
+    elif MacOS():
         pythonLibPath = os.path.join(pythonBaseDir, "lib",
                                      _GetPythonLibraryFilename(context))
     else:
-        pythonIncludeDir = sysconfig.get_path("include")
-        if not pythonIncludeDir or not os.path.isdir(pythonIncludeDir):
-            # as a backup, and for legacy reasons - not preferred because
-            # it may be baked at build time
-            pythonIncludeDir = sysconfig.get_config_var("INCLUDEPY")
-
-        # if in a venv, installed_base will be the "original" python,
-        # which is where the libs are ("base" will be the venv dir)
-        pythonBaseDir = sysconfig.get_config_var("installed_base")
-        if not pythonBaseDir or not os.path.isdir(pythonBaseDir):
-            # for python-2.7
-            pythonBaseDir = sysconfig.get_config_var("base")
-
-        if Windows():
-            pythonLibPath = os.path.join(pythonBaseDir, "libs",
-                                         _GetPythonLibraryFilename(context))
-        elif Linux():
-            pythonMultiarchSubdir = sysconfig.get_config_var("multiarchsubdir")
-            # Try multiple ways to get the python lib dir
-            for pythonLibDir in (sysconfig.get_config_var("LIBDIR"),
-                                 os.path.join(pythonBaseDir, "lib")):
-                if pythonMultiarchSubdir:
-                    pythonLibPath = \
-                        os.path.join(pythonLibDir + pythonMultiarchSubdir,
-                                     _GetPythonLibraryFilename(context))
-                    if os.path.isfile(pythonLibPath):
-                        break
-                pythonLibPath = os.path.join(pythonLibDir,
-                                             _GetPythonLibraryFilename(context))
-                if os.path.isfile(pythonLibPath):
-                    break
-        elif MacOS():
-            pythonLibPath = os.path.join(pythonBaseDir, "lib",
-                                         _GetPythonLibraryFilename(context))
-        else:
-            raise RuntimeError("Platform not supported")
+        raise RuntimeError("Platform not supported")
 
     return (pythonExecPath, pythonLibPath, pythonIncludeDir, pythonVersion)
 
@@ -1640,24 +1610,18 @@ specified library and do not conflict with other options, otherwise build
 errors may occur.
 
 - Python Versions and DCC Plugins:
-Some DCCs (most notably, Maya) may ship with and run using their own version of
-Python. In that case, it is important that USD and the plugins for that DCC are
-built using the DCC's version of Python and not the system version. This can be
-done by running %(prog)s using the DCC's version of Python.
+Some DCCs may ship with and run using their own version of Python. In that case,
+it is important that USD and the plugins for that DCC are built using the DCC's
+version of Python and not the system version. This can be done by running
+%(prog)s using the DCC's version of Python.
 
-The flag --build-python-info allows calling the %(prog)s with any python (such as
-system python) but pass in the python that you want USD to use to build the python
-bindings with. This flag takes 4 arguments: python executable, python include directory
-python library and python version.
+If %(prog)s does not automatically detect the necessary information, the flag
+--build-python-info can be used to explicitly pass in the Python that you want
+USD to use to build the Python bindings with. This flag takes 4 arguments: 
+Python executable, Python include directory Python library and Python version.
 
-For example, to build USD on macOS for use in Maya 2019, run:
-
-/Applications/Autodesk/maya2019/Maya.app/Contents/bin/mayapy %(prog)s --no-usdview ...
-
-Note that this is primarily an issue on macOS, where a DCC's version of Python
-is likely to conflict with the version provided by the system. On other
-platforms, %(prog)s *should* be run using the system Python and *should not*
-be run using the DCC's Python.
+Note that this is primarily an issue on MacOS, where a DCC's version of Python
+is likely to conflict with the version provided by the system.
 
 - C++11 ABI Compatibility:
 On Linux, the --use-cxx11-abi parameter can be used to specify whether to use
