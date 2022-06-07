@@ -51,7 +51,11 @@ static void Run()
     _Map _map;
 
     // Make sure size expectations are ok.
-    TF_AXIOM(sizeof(_Map) == 4 * sizeof(void *));
+    // Due to boost::compressed_pair, because both HashFn and EqualKey are
+    // 0-size, should only hold a vector + pointer
+    // (Note that on windows, debug mode will change sizeof vector)
+    TF_AXIOM(sizeof(_Map) == sizeof(std::vector<_Map::value_type>)
+                             + sizeof(void *));
 
     // Insert a bunch of numbers in order.
     printf("inserting numbers to 10000\n");
@@ -243,7 +247,10 @@ static void Run()
     _Map2 _map2(TfHash(), TestTf_DenseHashMapModuloEqual(2));
 
     // Make sure size expectations are ok.
-    TF_AXIOM(sizeof(_Map2) > 4 * sizeof(void *));
+    TF_AXIOM(sizeof(TestTf_DenseHashMapModuloEqual) > 0);
+    TF_AXIOM(sizeof(_Map2) == sizeof(std::vector<_Map2::value_type>)
+                              + sizeof(void *)
+                              + sizeof(TestTf_DenseHashMapModuloEqual));
 
     // Insert a bunch of numbers in order.
     printf("inserting numbers to 10000\n");

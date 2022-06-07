@@ -3,9 +3,15 @@
 ## [22.08] - TBD
 
 ### Build
+- On Apple Silicon systems, usdview requires the use an x86_64 architecture 
+  environment (e.g. "arch -x86_64 zsh") to build and execute binaries.
+
+- Updated build_usd.py to use, on Apple Silicon: tbb 2020-U2, and boost 1.76
 
 ### USD
 - Removed support for Ar 1.0, which was deprecated in v21.11.
+- Removed Primvar API on UsdGeomImageable which was deprecated in v19.03.
+  All remaining uses of this API have been updated to use UsdGeomPrimvarsAPI.
 - Improved memory allocation for value clips by using a shared pointer to the 
   array of time mapping in Usd_Clips.
   (Issue: [#1774](https://github.com/PixarAnimationStudios/USD/issues/1774), 
@@ -17,6 +23,19 @@
 - Fixed a bug with the composition of reference/payload list ops across 
   sublayers with different time codes per second or layer offsets.
   (Issue: [#1778](https://github.com/PixarAnimationStudios/USD/issues/1778)) 
+- Updated OSL and Args parsers to use Sdr's nested page delimiter of ":",
+  instead of ".". Updated documentation for the same in UsdShadeInput and
+  SdrShaderProperty.
+- Updated usdRiPxr schemas to reflect updates to renderman args files and to
+  include other schema classes:
+  - Renderman Light APIs now can only apply to their respective UsdLux types.
+  - Added renderman default plugins schema classes and display drivers schema
+    classes.
+  - Updated previously generated schemas to usd ":" as the nested page delimiter
+    in display groups.
+- Added the ability to specify properties as API schema overrides for schema
+  generation.
+  See: https://graphics.pixar.com/usd/release/api/_usd__page__generating_schemas.html#Usd_APISchemaPropertyOverride
 
 ### Imaging
 - Fixed double-creation of Bprims when using scene index emulation.
@@ -46,6 +65,11 @@
 
 ### MaterialX Plugin
 
+## [22.05a] - 2022-05-11
+
+### USD
+- Fixed a race condition that could lead to crashes during scene changes.
+
 ## [22.05] - 2022-04-22
 
 This release enables Storm for macOS using Metal. Refer to notes under Storm for
@@ -67,7 +91,7 @@ this happen!
   being 12.4) we test against. Minimum CMake requirement for macOS has also been 
   updated to 3.18.6.
 
-- On Apple Silicon systems, it is required to use an x86_64 architecture 
+- On Apple Silicon systems, it is required to use an x86_64 architecture
   environment (e.g. "arch -x86_64 zsh") to build and execute binaries.
 
 - Updated build_usd.py to use OpenSubdiv 3.4.4.

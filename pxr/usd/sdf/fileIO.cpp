@@ -41,11 +41,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#if AR_VERSION != 1
-
 Sdf_StreamWritableAsset::~Sdf_StreamWritableAsset() = default;
-
-#endif
 
 bool
 Sdf_WriteToStream(const SdfSpec &baseSpec, std::ostream& o, size_t indent)

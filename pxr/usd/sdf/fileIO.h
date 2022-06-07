@@ -28,10 +28,6 @@
 
 #include "pxr/usd/ar/ar.h"
 
-#if AR_VERSION == 1
-#include <ostream>
-#include <sstream>
-#else
 #include "pxr/usd/ar/writableAsset.h"
 #include "pxr/base/tf/diagnosticLite.h"
 
@@ -40,47 +36,10 @@
 #include <memory>
 #include <ostream>
 #include <sstream>
-#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfSpec;
-
-#if AR_VERSION == 1
-
-// Helper class for writing out strings for the text file format.
-class Sdf_TextOutput
-{
-public:
-    explicit Sdf_TextOutput(std::ostream& out) : _out(out) { }
-
-    Sdf_TextOutput(const Sdf_TextOutput&) = delete;
-    const Sdf_TextOutput& operator=(const Sdf_TextOutput&) = delete;
-
-    bool Close()
-    {
-        return true;
-    }
-
-    // Write given \p str to output.
-    bool Write(const std::string& str)
-    {
-        _out << str;
-        return true;
-    }
-
-    // Write NUL-terminated character string \p str to output.
-    bool Write(const char* str)
-    {
-        _out << str;
-        return true;
-    }
-
-private:
-    std::ostream& _out;
-};
-
-#else
 
 // ArWritableAsset implementation that writes to a std::ostream.
 class Sdf_StreamWritableAsset
@@ -216,8 +175,6 @@ private:
     std::unique_ptr<char[]> _buffer;
     size_t _bufferPos;
 };
-
-#endif
 
 // Helper class for writing out strings for the text file format
 // into a single string. 

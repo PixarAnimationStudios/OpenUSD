@@ -11,6 +11,7 @@ pxr_library(usdHydra
     PUBLIC_CLASSES
         tokens
         discoveryPlugin
+        generativeProceduralAPI
 
     PUBLIC_HEADERS
         api.h
@@ -21,12 +22,15 @@ pxr_library(usdHydra
     PYMODULE_CPPFILES
         module.cpp
         wrapTokens.cpp
+        wrapGenerativeProceduralAPI.cpp
 
     PYMODULE_FILES
         __init__.py
 
     RESOURCE_FILES
         plugInfo.json
+        generatedSchema.usda
+        schema.usda:usdHydra/schema.usda
         shaders/shaderDefs.usda
         shaders/empty.glslfx
 

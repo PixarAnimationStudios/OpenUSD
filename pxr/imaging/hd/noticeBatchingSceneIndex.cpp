@@ -23,6 +23,8 @@
 //
 #include "pxr/imaging/hd/noticeBatchingSceneIndex.h"
 
+#include "pxr/base/trace/trace.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdNoticeBatchingSceneIndex::_BatchEntry::~_BatchEntry() = default;
@@ -53,6 +55,8 @@ HdNoticeBatchingSceneIndex::_PrimsAdded(
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
     if (_batchingEnabled) {
+        TRACE_FUNCTION();
+
         if (!_batches.empty()) {
             if (_PrimsAddedBatchEntry *batchEntry =
                     dynamic_cast<_PrimsAddedBatchEntry*>(
@@ -78,6 +82,8 @@ HdNoticeBatchingSceneIndex::_PrimsRemoved(
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
     if (_batchingEnabled) {
+        TRACE_FUNCTION();
+
         if (!_batches.empty()) {
             if (_PrimsRemovedBatchEntry *batchEntry =
                     dynamic_cast<_PrimsRemovedBatchEntry*>(
@@ -105,6 +111,8 @@ HdNoticeBatchingSceneIndex::_PrimsDirtied(
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
     if (_batchingEnabled) {
+        TRACE_FUNCTION();
+
         if (!_batches.empty()) {
             if (_PrimsDirtiedBatchEntry *batchEntry =
                     dynamic_cast<_PrimsDirtiedBatchEntry*>(

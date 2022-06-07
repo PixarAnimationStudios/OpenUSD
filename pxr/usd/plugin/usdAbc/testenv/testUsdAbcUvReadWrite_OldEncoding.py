@@ -57,20 +57,27 @@ class TestUsdAbcUvWrite(unittest.TestCase):
             self.assertTrue(rplaneUv)
             self.assertTrue(rplaneStUv)
 
-            self.assertEqual(planeSt.GetPrimvar('st').GetTypeName(), 'float2[]') 
-            self.assertEqual(rplaneSt.GetPrimvar('uv').GetTypeName(), 'float2[]')
-            self.assertEqual(planeSt.GetPrimvar('st').Get(), rplaneSt.GetPrimvar('uv').Get(0))
-            self.assertEqual(planeSt.GetPrimvar('st').GetIndices(), rplaneSt.GetPrimvar('uv').GetIndices(0))
+            planeSt_pvAPI = UsdGeom.PrimvarsAPI(planeSt)
+            planeUv_pvAPI = UsdGeom.PrimvarsAPI(planeUv)
+            planeStUv_pvAPI = UsdGeom.PrimvarsAPI(planeStUv)
+            rplaneSt_pvAPI = UsdGeom.PrimvarsAPI(rplaneSt)
+            rplaneUv_pvAPI = UsdGeom.PrimvarsAPI(rplaneUv)
+            rplaneStUv_pvAPI = UsdGeom.PrimvarsAPI(rplaneStUv)
 
-            self.assertEqual(planeUv.GetPrimvar('uv').GetTypeName(), 'float2[]') 
-            self.assertEqual(rplaneUv.GetPrimvar('uv').GetTypeName(), 'float2[]')
-            self.assertEqual(planeUv.GetPrimvar('uv').Get(), rplaneUv.GetPrimvar('uv').Get(0))
-            self.assertEqual(planeUv.GetPrimvar('uv').GetIndices(), rplaneUv.GetPrimvar('uv').GetIndices(0))
+            self.assertEqual(planeSt_pvAPI.GetPrimvar('st').GetTypeName(), 'float2[]') 
+            self.assertEqual(rplaneSt_pvAPI.GetPrimvar('uv').GetTypeName(), 'float2[]')
+            self.assertEqual(planeSt_pvAPI.GetPrimvar('st').Get(), rplaneSt_pvAPI.GetPrimvar('uv').Get(0))
+            self.assertEqual(planeSt_pvAPI.GetPrimvar('st').GetIndices(), rplaneSt_pvAPI.GetPrimvar('uv').GetIndices(0))
 
-            self.assertEqual(planeStUv.GetPrimvar('st').GetTypeName(), 'float2[]') 
-            self.assertEqual(rplaneStUv.GetPrimvar('uv').GetTypeName(), 'float2[]')
-            self.assertEqual(planeStUv.GetPrimvar('st').Get(), rplaneStUv.GetPrimvar('uv').Get(0))
-            self.assertEqual(planeStUv.GetPrimvar('st').GetIndices(), rplaneStUv.GetPrimvar('uv').GetIndices(0))
+            self.assertEqual(planeUv_pvAPI.GetPrimvar('uv').GetTypeName(), 'float2[]') 
+            self.assertEqual(rplaneUv_pvAPI.GetPrimvar('uv').GetTypeName(), 'float2[]')
+            self.assertEqual(planeUv_pvAPI.GetPrimvar('uv').Get(), rplaneUv_pvAPI.GetPrimvar('uv').Get(0))
+            self.assertEqual(planeUv_pvAPI.GetPrimvar('uv').GetIndices(), rplaneUv_pvAPI.GetPrimvar('uv').GetIndices(0))
+
+            self.assertEqual(planeStUv_pvAPI.GetPrimvar('st').GetTypeName(), 'float2[]') 
+            self.assertEqual(rplaneStUv_pvAPI.GetPrimvar('uv').GetTypeName(), 'float2[]')
+            self.assertEqual(planeStUv_pvAPI.GetPrimvar('st').Get(), rplaneStUv_pvAPI.GetPrimvar('uv').Get(0))
+            self.assertEqual(planeStUv_pvAPI.GetPrimvar('st').GetIndices(), rplaneStUv_pvAPI.GetPrimvar('uv').GetIndices(0))
 
             del stage
             del roundStage

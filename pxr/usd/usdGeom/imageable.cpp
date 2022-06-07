@@ -180,62 +180,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(
-    USD_GEOM_IMAGEABLE_DEPRECATE_PRIMVARS_API, false,
-    "Whether UsdGeomImageable's primvars API should issue deprecation warnings");
-
-inline static void
-_IssueAPIWarningIfDeprecationFlagEnabled()
-{
-    if (TfGetEnvSetting(USD_GEOM_IMAGEABLE_DEPRECATE_PRIMVARS_API)) {
-        TF_WARN("API deprecation warning: UsdGeomImageable's primvars API "
-                "will be removed in the future.  Use UsdGeomPrimvarsAPI "
-                "instead.");
-    }
-}
-
-UsdGeomPrimvar 
-UsdGeomImageable::CreatePrimvar(const TfToken& attrName,
-                                const SdfValueTypeName &typeName,
-                                const TfToken& interpolation,
-                                int elementSize) const
-{
-    _IssueAPIWarningIfDeprecationFlagEnabled();
-    return UsdGeomPrimvarsAPI(GetPrim())
-        .CreatePrimvar(attrName, typeName, interpolation,
-                       elementSize);
-}
-
-
-UsdGeomPrimvar
-UsdGeomImageable::GetPrimvar(const TfToken &name) const
-{
-    _IssueAPIWarningIfDeprecationFlagEnabled();
-    return UsdGeomPrimvarsAPI(GetPrim()).GetPrimvar(name);
-}
-
-std::vector<UsdGeomPrimvar>
-UsdGeomImageable::GetPrimvars() const
-{
-    _IssueAPIWarningIfDeprecationFlagEnabled();
-    return UsdGeomPrimvarsAPI(GetPrim()).GetPrimvars();
-}
-
-std::vector<UsdGeomPrimvar>
-UsdGeomImageable::GetAuthoredPrimvars() const
-{
-    _IssueAPIWarningIfDeprecationFlagEnabled();
-    return UsdGeomPrimvarsAPI(GetPrim()).GetAuthoredPrimvars();
-}
-
-bool
-UsdGeomImageable::HasPrimvar(const TfToken &name) const
-{
-    _IssueAPIWarningIfDeprecationFlagEnabled();
-    return UsdGeomPrimvarsAPI(GetPrim()).HasPrimvar(name);
-}
-
-
 /* static */
 const TfTokenVector &
 UsdGeomImageable::GetOrderedPurposeTokens()

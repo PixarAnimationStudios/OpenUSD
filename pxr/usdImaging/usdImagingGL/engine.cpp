@@ -26,6 +26,7 @@
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "pxr/usdImaging/usdImagingGL/legacyEngine.h"
+#include "pxr/usdImaging/usdImagingGL/drawModeSceneIndex.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
@@ -1026,7 +1027,9 @@ UsdImagingGLEngine::_SetRenderDelegate(
     if (_GetUseSceneIndices()) {
         _sceneIndex = UsdImagingStageSceneIndex::New();
         _renderIndex->InsertSceneIndex(
-            HdFlatteningSceneIndex::New(_sceneIndex),
+            UsdImagingGLDrawModeSceneIndex::New(
+                HdFlatteningSceneIndex::New(_sceneIndex),
+                /* inputArgs = */ nullptr),
             _sceneDelegateId);
     } else {
         _sceneDelegate = std::make_unique<UsdImagingDelegate>(
@@ -1106,6 +1109,12 @@ UsdImagingGLEngine::GetAovTexture(
     }
 
     return aovTexture;
+}
+
+HdRenderBuffer*
+UsdImagingGLEngine::GetAovRenderBuffer(TfToken const& name) const
+{
+    return _taskController->GetRenderOutput(name);
 }
 
 UsdImagingGLRendererSettingsList
@@ -1526,7 +1535,7 @@ UsdImagingGLEngine::_PreSetTime(const UsdImagingGLRenderParams& params)
 
     if (_GetUseSceneIndices()) {
         // XXX(USD-7115): fallback refine level
-        // XXX(USD-7117): do we need to trigger deferred updates?
+        _sceneIndex->ApplyPendingUpdates();
     } else {
         // Set the fallback refine level; if this changes from the
         // existing value, all prim refine levels will be dirtied.

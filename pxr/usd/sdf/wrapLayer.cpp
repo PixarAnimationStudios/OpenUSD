@@ -653,12 +653,7 @@ void wrapLayer()
 
         .def("GetDisplayName", &This::GetDisplayName)
 
-#if AR_VERSION == 1
-        .def("UpdateAssetInfo", &This::UpdateAssetInfo,
-             ( arg("fileVersion") = std::string() ))
-#else
         .def("UpdateAssetInfo", &This::UpdateAssetInfo)
-#endif
 
         .def("ComputeAbsolutePath", &This::ComputeAbsolutePath)
 

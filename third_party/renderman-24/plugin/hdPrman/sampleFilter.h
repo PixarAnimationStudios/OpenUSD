@@ -48,13 +48,10 @@ public:
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 private:
-    riley::SampleFilterId _filterId;
-
     void _CreateRmanSampleFilter(HdPrman_RenderParam *renderParam,
                                  SdfPath const& filterPrimPath,
                                  HdMaterialNode2 const& sampleFilterNode);
 
-    void _RemoveSampleFilter(HdPrman_RenderParam *renderParam);
 };
 
 

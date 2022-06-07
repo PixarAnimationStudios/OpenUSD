@@ -586,6 +586,14 @@ UsdImagingGprimAdapter::MarkMaterialDirty(UsdPrim const& prim,
     index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyMaterialId);
 }
 
+void
+UsdImagingGprimAdapter::MarkCollectionsDirty(UsdPrim const& prim,
+                                             SdfPath const& cachePath,
+                                             UsdImagingIndexProxy* index)
+{
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyCategories);
+}
+
 /*virtual*/
 VtValue
 UsdImagingGprimAdapter::GetPoints(UsdPrim const& prim,
@@ -787,7 +795,7 @@ UsdImagingGprimAdapter::Get(UsdPrim const& prim,
             constexpr float defaultValue = 1.0f;
             return VtValue(defaultValue);
         }
-    } else if (UsdGeomPrimvar pv = gprim.GetPrimvar(key)) {
+    } else if (UsdGeomPrimvar pv = UsdGeomPrimvarsAPI(gprim).GetPrimvar(key)) {
         if (outIndices) {
             if (pv && pv.Get(&value, time)) {
                 pv.GetIndices(outIndices, time);
@@ -1035,22 +1043,6 @@ UsdImagingGprimAdapter::GetOpacity(UsdPrim const& prim,
         *opacity = VtValue(result);
     }
     return true;
-}
-
-UsdGeomPrimvar
-UsdImagingGprimAdapter::_GetInheritedPrimvar(UsdPrim const& prim,
-                                             TfToken const& primvarName) const
-{
-    UsdImaging_InheritedPrimvarStrategy::value_type inheritedPrimvarRecord =
-        _GetInheritedPrimvars(prim.GetParent());
-    if (inheritedPrimvarRecord) {
-        for (UsdGeomPrimvar const& pv : inheritedPrimvarRecord->primvars) {
-            if (pv.GetPrimvarName() == primvarName) {
-                return pv;
-            }
-        }
-    }
-    return UsdGeomPrimvar();
 }
 
 TfTokenVector

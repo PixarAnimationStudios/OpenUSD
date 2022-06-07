@@ -58,15 +58,12 @@ void HdPrman_RenderSettings::Sync(
             sceneDelegate->Get(GetId(), _tokens->outputsRiSampleFilters);
 
         if (filterPathValue.IsHolding<SdfPathVector>()) {
-            const SdfPathVector filterPathVector =
+            const SdfPathVector filterPaths =
                 filterPathValue.UncheckedGet<SdfPathVector>();
-            const SdfPath connectedFilter = filterPathVector.empty() 
-                ? SdfPath()
-                : filterPathVector.at(0).GetPrimPath();
-            param->SetConnectedSampleFilterPath(sceneDelegate, connectedFilter);
+            param->SetConnectedSampleFilterPaths(sceneDelegate, filterPaths);
         }
         if (filterPathValue.IsEmpty()) {
-            param->SetConnectedSampleFilterPath(sceneDelegate, SdfPath());
+            param->SetConnectedSampleFilterPaths(sceneDelegate, SdfPathVector());
         }
     }
 

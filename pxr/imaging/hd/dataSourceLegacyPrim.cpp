@@ -650,6 +650,9 @@ public:
         if (name == HdMeshSchemaTokens->subdivisionTags) {
             return true;
         }
+        if (name == HdMeshSchemaTokens->subdivisionScheme) {
+            return true;
+        }
         if (name == HdMeshSchemaTokens->doubleSided) {
             return true;
         }
@@ -664,6 +667,7 @@ public:
         return {
             HdMeshSchemaTokens->topology,
             HdMeshSchemaTokens->subdivisionTags,
+            HdMeshSchemaTokens->subdivisionScheme,
             HdMeshSchemaTokens->doubleSided,
             HdMeshSchemaTokens->geomSubsets,
         };
@@ -2462,8 +2466,14 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdBasisCurvesSchemaTokens->basisCurves);
     }
 
+    // Allow all legacy prims to provide primvars as that's the only interface
+    // for advertising what names/values are there.
+    // Abstract prims which may need to be expressed via legacy scene delegate
+    // APIs can make use of it without this code needing to be aware of any
+    // custom types.
+    result.push_back(HdPrimvarsSchemaTokens->primvars);
+
     if (HdPrimTypeIsGprim(_type)) {
-        result.push_back(HdPrimvarsSchemaTokens->primvars);
         result.push_back(HdExtComputationPrimvarsSchemaTokens->extComputationPrimvars);
         result.push_back(HdMaterialBindingSchemaTokens->materialBinding);
         result.push_back(HdLegacyDisplayStyleSchemaTokens->displayStyle); 
@@ -2475,11 +2485,10 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdXformSchemaTokens->xform);
         result.push_back(HdExtentSchemaTokens->extent);
     }
-    
+
     if (HdPrimTypeIsLight(_type)) {
         result.push_back(HdMaterialSchemaTokens->material);
         result.push_back(HdXformSchemaTokens->xform);
-        result.push_back(HdPrimvarsSchemaTokens->primvars);
     }
 
     if (_IsTypeLightLike(_type)) {
@@ -2495,7 +2504,6 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdXformSchemaTokens->xform);
         result.push_back(HdInstancedBySchemaTokens->instancedBy);
         result.push_back(HdInstancerTopologySchemaTokens->instancerTopology);
-        result.push_back(HdPrimvarsSchemaTokens->primvars);
         result.push_back(HdInstanceCategoriesSchemaTokens->instanceCategories);
     }
 

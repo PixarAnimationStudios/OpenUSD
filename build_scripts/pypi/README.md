@@ -9,10 +9,20 @@ any of the files here and committing to dev or release.
 ## Generating New Packages
 
 To start a new package build, first update any parameters that need to be
-updated.  This may include things like the version number or supported python
-versions in setup.py. At a minimum you should increase the version number for
-each build, so that pip can manage installs and upgrades as expected (see
-[PEP440](https://www.python.org/dev/peps/pep-0440)).
+updated. This may include things like the supported python versions in
+setup.py.
+
+The package's version number is derived from the USD version specified in
+cmake/defaults/Version.cmake. It's important that this version number is
+incremented for each published package, so that pip can manage installs and
+upgrades as expected (see [PEP440](https://www.python.org/dev/peps/pep-0440)).
+
+Version numbers cannot be reused. If a patch is needed for a major release,
+a post-release tag (see [post-releases in PEP440](https://peps.python.org/pep-0440/#post-releases)
+must be added to the version number to distinguish the patch release from
+the major release. For example, a patch release to 22.05 might be called
+22.05.post1. The tag can be specified by manually running the Azure pipeline
+and specifying the post-release tag as a parameter in the UI.
 
 Other parameters in setup.py are 
 [documented here](https://packaging.python.org/guides/distributing-packages-using-setuptools).

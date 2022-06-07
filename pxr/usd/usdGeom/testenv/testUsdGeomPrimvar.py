@@ -482,7 +482,8 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         
         gprim = UsdGeom.Mesh.Define(stage, '/myMesh')
         
-        primvar = gprim.CreatePrimvar('myStringArray', Sdf.ValueTypeNames.StringArray)
+        primvar = UsdGeom.PrimvarsAPI(gprim).CreatePrimvar(
+            'myStringArray', Sdf.ValueTypeNames.StringArray)
         primvar.SetInterpolation(UsdGeom.Tokens.constant)
         
         value = ['one', 'two', 'three']

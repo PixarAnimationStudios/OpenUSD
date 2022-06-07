@@ -14,8 +14,14 @@ set(optionalIncludeDirs "")
 set(optionalPublicClasses "")
 set(optionalPrivateClasses "")
 if (${PXR_ENABLE_MATERIALX_SUPPORT})
-    list(APPEND optionalLibs ${MATERIALX_LIBRARIES} hdMtlx)
-    list(APPEND optionalIncludeDirs ${MATERIALX_INCLUDE_DIRS})
+    list(APPEND optionalLibs
+        MaterialXGenShader
+        MaterialXRender
+        MaterialXCore
+        MaterialXFormat
+        MaterialXGenGlsl
+        hdMtlx
+    )
     list(APPEND optionalPrivateClasses
          materialXFilter
          materialXShaderGen

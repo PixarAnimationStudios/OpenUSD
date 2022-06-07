@@ -84,11 +84,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define SDR_PROPERTY_ROLE_TOKENS \
     ((None, "none"))
 
+#define SDR_PROPERTY_TOKENS \
+    ((PageDelimiter, ":"))
+
 TF_DECLARE_PUBLIC_TOKENS(SdrPropertyTypes, SDR_API, SDR_PROPERTY_TYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(SdrPropertyMetadata, SDR_API, 
                          SDR_PROPERTY_METADATA_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(SdrPropertyRole, SDR_API,
                          SDR_PROPERTY_ROLE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(SdrPropertyTokens, SDR_API, SDR_PROPERTY_TOKENS);
 
 /// \class SdrShaderProperty
 ///
@@ -127,7 +131,9 @@ public:
     SDR_API
     std::string GetHelp() const;
 
-    /// The page (group), eg "Advanced", this property appears on, if any.
+    /// The page (group), eg "Advanced", this property appears on, if any. Note
+    /// that the page for a shader property can be nested, delimited by ":", 
+    /// representing the hierarchy of sub-pages a property is defined in.
     SDR_API
     const TfToken& GetPage() const { return _page; }
 

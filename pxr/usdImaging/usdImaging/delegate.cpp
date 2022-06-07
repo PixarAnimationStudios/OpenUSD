@@ -1082,6 +1082,22 @@ UsdImagingDelegate::ApplyPendingUpdates()
     indexProxy._UniqueifyPathsToRepopulate();
     _Populate(&indexProxy);
     _ExecuteWorkForVariabilityUpdate(&worker);
+
+    // Mark all dirty collection prims
+    const SdfPathSet& pathsDirtiedByCollections = _collectionCache.GetDirtyPaths();
+    if (!pathsDirtiedByCollections.empty()) {
+        TRACE_SCOPE("Mark dirty collection members");
+        for (const SdfPath& dirtyPath : pathsDirtiedByCollections) {
+            TF_DEBUG(USDIMAGING_CHANGES).Msg("[Update]: invalidate collection member prim %s\n", dirtyPath.GetText());
+            _HdPrimInfo* primInfo = _GetHdPrimInfo(dirtyPath);
+            if (primInfo && primInfo->usdPrim.IsValid() &&
+                TF_VERIFY(primInfo->adapter, "%s", dirtyPath.GetText())) {
+                UsdImagingPrimAdapterSharedPtr& adapter = primInfo->adapter;
+                adapter->MarkCollectionsDirty(primInfo->usdPrim, dirtyPath, &indexProxy);
+            }
+        }
+        _collectionCache.ClearDirtyPaths();
+    }
 }
 
 void 

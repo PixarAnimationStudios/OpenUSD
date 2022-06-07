@@ -1,20 +1,23 @@
 /*!
-\page usdHydra_page_front UsdHydra : USD Hydra Shading Schemas
+\page usdHydra_page_front UsdHydra : USD Hydra Schemas
 \if ( PIXAR_MFB_BUILD )
-\mainpage UsdHydra : USD Hydra Shading Schemas
+\mainpage UsdHydra : USD Hydra Schemas
 \publicLib
 \endif
 
 \section usdHydra_overview Overview
 
-\note This library is now deprecated and will be deleted soon.
+UsdHydra provides the UsdHydraGenerativeProceduralAPI schema for extending the
+definition of UsdProcGenerativeProcedural prims to provide scene description
+of HdGpGenerativeProcedural plug-ins.
+
+\note The tokens described below are now deprecated and will be deleted soon.
 
 UsdHydra used to provide schemas and behaviors for creating and connecting 
 shading networks based on UsdShade.
 
-The schemas in this library have been deleted. Currently, it provides only the 
-list of tokens used in the schemas, to assist in the gradual transition to the 
-new-style of hydra shaders authored using the shader registry.
-
+The shading-related schemas in this library have been deleted. From these it
+provides only the list of tokens used in the schemas, to assist in the gradual
+transition to the new-style of hydra shaders authored using the shader registry.
 
 */

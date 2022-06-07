@@ -31,11 +31,13 @@
 #include <set>
 #include <unordered_map>
 
-namespace MaterialX {
+#include <MaterialXCore/Library.h>
+
+MATERIALX_NAMESPACE_BEGIN
     class FileSearchPath;
     using DocumentPtr = std::shared_ptr<class Document>;
     using StringMap = std::unordered_map<std::string, std::string>;
-}
+MATERIALX_NAMESPACE_END
 
 PXR_NAMESPACE_OPEN_SCOPE
 

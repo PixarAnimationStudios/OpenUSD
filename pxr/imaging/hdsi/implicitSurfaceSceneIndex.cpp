@@ -42,6 +42,7 @@
 #include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/base/tf/iterator.h"
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -246,7 +247,7 @@ _ComputePointsPrimvarDataSource(
 {
     static HdTokenDataSourceHandle const roleDataSource =
         HdPrimvarSchema::BuildRoleDataSource(
-            HdPrimvarSchemaTokens->Point);
+            HdPrimvarSchemaTokens->point);
     static HdTokenDataSourceHandle const interpolationDataSource =
         HdPrimvarSchema::BuildInterpolationDataSource(
             HdPrimvarSchemaTokens->vertex);
@@ -464,7 +465,7 @@ _ComputePointsPrimvarDataSource(
 {
     static HdTokenDataSourceHandle const roleDataSource =
         HdPrimvarSchema::BuildRoleDataSource(
-            HdPrimvarSchemaTokens->Point);
+            HdPrimvarSchemaTokens->point);
     static HdTokenDataSourceHandle const interpolationDataSource =
         HdPrimvarSchema::BuildInterpolationDataSource(
             HdPrimvarSchemaTokens->vertex);
@@ -697,7 +698,7 @@ _ComputePointsPrimvarDataSource(
 {
     static HdTokenDataSourceHandle const roleDataSource =
         HdPrimvarSchema::BuildRoleDataSource(
-            HdPrimvarSchemaTokens->Point);
+            HdPrimvarSchemaTokens->point);
     static HdTokenDataSourceHandle const interpolationDataSource =
         HdPrimvarSchema::BuildInterpolationDataSource(
             HdPrimvarSchemaTokens->vertex);
@@ -923,7 +924,7 @@ _ComputePointsPrimvarDataSource(
 {
     static HdTokenDataSourceHandle const roleDataSource =
         HdPrimvarSchema::BuildRoleDataSource(
-            HdPrimvarSchemaTokens->Point);
+            HdPrimvarSchemaTokens->point);
     static HdTokenDataSourceHandle const interpolationDataSource =
         HdPrimvarSchema::BuildInterpolationDataSource(
             HdPrimvarSchemaTokens->vertex);
@@ -1217,7 +1218,7 @@ _ComputePointsPrimvarDataSource(
 {
     static HdTokenDataSourceHandle const roleDataSource =
         HdPrimvarSchema::BuildRoleDataSource(
-            HdPrimvarSchemaTokens->Point);
+            HdPrimvarSchemaTokens->point);
     static HdTokenDataSourceHandle const interpolationDataSource =
         HdPrimvarSchema::BuildInterpolationDataSource(
             HdPrimvarSchemaTokens->vertex);
@@ -1549,6 +1550,8 @@ HdsiImplicitSurfaceSceneIndex::HdsiImplicitSurfaceSceneIndex(
 HdSceneIndexPrim
 HdsiImplicitSurfaceSceneIndex::GetPrim(const SdfPath &primPath) const
 {
+    TRACE_FUNCTION();
+
     const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
     if (prim.primType == HdPrimTypeTokens->cube) {
         if (_cubeMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) {
@@ -1622,6 +1625,8 @@ HdsiImplicitSurfaceSceneIndex::_PrimsAdded(
         return;
     }
     
+    TRACE_FUNCTION();
+
     std::vector<size_t> indices;
     for (size_t i = 0; i < entries.size(); i++) {
         if ((entries[i].primType == HdPrimTypeTokens->cube &&

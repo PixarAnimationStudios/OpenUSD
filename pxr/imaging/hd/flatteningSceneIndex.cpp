@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/xformSchema.h"
@@ -31,6 +32,20 @@
 #include "pxr/base/work/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (model)
+    (drawMode)
+    (inherited)
+);
+
+static
+const HdDataSourceLocator &_GetDrawModeLocator()
+{
+    static const HdDataSourceLocator l(_tokens->model, _tokens->drawMode);
+    return l;
+}
 
 HdFlatteningSceneIndex::HdFlatteningSceneIndex(
         const HdSceneIndexBaseRefPtr &inputScene)
@@ -52,6 +67,9 @@ HdFlatteningSceneIndex::HdFlatteningSceneIndex(
             HdRetainedTypedSampledDataSource<TfToken>::New(
                 HdRenderTagTokens->geometry))
         .Build())
+
+    , _identityDrawMode(
+        HdRetainedTypedSampledDataSource<TfToken>::New(TfToken()))
 {
 }
 
@@ -125,6 +143,7 @@ HdFlatteningSceneIndex::_PrimsAdded(
                 HdXformSchema::GetDefaultLocator(),
                 HdVisibilitySchema::GetDefaultLocator(),
                 HdPurposeSchema::GetDefaultLocator(),
+                HdDataSourceLocator(_tokens->model)
             };
 
             _DirtyHierarchy(entry.primPath, locators, &dirtyEntries);
@@ -185,6 +204,11 @@ HdFlatteningSceneIndex::_PrimsDirtied(
         if (entry.dirtyLocators.Intersects(
                     HdPurposeSchema::GetDefaultLocator())) {
             locators.insert(HdPurposeSchema::GetDefaultLocator());
+        }
+        static const HdDataSourceLocator modelLocator(_tokens->model);
+        if (entry.dirtyLocators.Intersects(
+                    modelLocator)) {
+            locators.insert(modelLocator);
         }
 
         if (!locators.IsEmpty()) {
@@ -263,25 +287,34 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::PrimDirtied(
         const HdDataSourceLocatorSet &set)
 {
     bool anyDirtied = false;
-    HdContainerDataSourceHandle null(nullptr);
+    static const HdContainerDataSourceHandle containerNull(nullptr);
+    static const HdTokenDataSourceHandle tokenNull(nullptr);
 
     if (set.Intersects(HdXformSchema::GetDefaultLocator())) {
         if (HdContainerDataSource::AtomicLoad(_computedXformDataSource)) {
             anyDirtied = true;
         }
-        HdContainerDataSource::AtomicStore(_computedXformDataSource, null);
+        HdContainerDataSource::AtomicStore(
+            _computedXformDataSource, containerNull);
     }
     if (set.Intersects(HdVisibilitySchema::GetDefaultLocator())) {
         if (HdContainerDataSource::AtomicLoad(_computedVisDataSource)) {
             anyDirtied = true;
         }
-        HdContainerDataSource::AtomicStore(_computedVisDataSource, null);
+        HdContainerDataSource::AtomicStore(
+            _computedVisDataSource, containerNull);
     }
     if (set.Intersects(HdPurposeSchema::GetDefaultLocator())) {
         if (HdContainerDataSource::AtomicLoad(_computedPurposeDataSource)) {
             anyDirtied = true;
         }
-        HdContainerDataSource::AtomicStore(_computedPurposeDataSource, null);
+        HdContainerDataSource::AtomicStore(
+            _computedPurposeDataSource, containerNull);
+    }
+    if (set.Intersects(_GetDrawModeLocator())) {
+        anyDirtied = true;
+        HdTokenDataSource::AtomicStore(
+            _computedDrawModeDataSource, tokenNull);
     }
 
     return anyDirtied;
@@ -298,6 +331,9 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::Has(
         return true;
     }
     if (name == HdPurposeSchemaTokens->purpose) {
+        return true;
+    }
+    if (name == _tokens->model) {
         return true;
     }
 
@@ -319,6 +355,7 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::GetNames()
         bool hasXform = false;
         bool hasVis = false;
         bool hasPurpose = false;
+        bool hasModel = false;
         for (const TfToken &name : result) {
             if (name == HdXformSchemaTokens->xform) {
                 hasXform = true;
@@ -329,7 +366,10 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::GetNames()
             if (name == HdPurposeSchemaTokens->purpose) {
                 hasPurpose = true;
             }
-            if (hasXform && hasVis && hasPurpose) {
+            if (name == _tokens->model) {
+                hasModel = true;
+            }
+            if (hasXform && hasVis && hasPurpose && hasModel) {
                 break;
             }
         }
@@ -343,10 +383,14 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::GetNames()
         if (!hasPurpose) {
             result.push_back(HdPurposeSchemaTokens->purpose);
         }
+        if (!hasModel) {
+            result.push_back(_tokens->model);
+        }
     } else {
         result.push_back(HdXformSchemaTokens->xform);
         result.push_back(HdVisibilitySchemaTokens->visibility);
         result.push_back(HdPurposeSchemaTokens->purpose);
+        result.push_back(_tokens->model);
     }
 
     return result;
@@ -362,6 +406,8 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::Get(
         return _GetVis();
     } else if (name == HdPurposeSchemaTokens->purpose) {
         return _GetPurpose();
+    } else if (name == _tokens->model) {
+        return _GetModel();
     } else if (_inputDataSource) {
         return _inputDataSource->Get(name);
     } else {
@@ -530,6 +576,76 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetXform()
             _computedXformDataSource, computedXformDataSource);
 
     return computedXformDataSource;
+}
+
+HdDataSourceBaseHandle
+HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetModel()
+{
+    HdContainerDataSourceHandle const modelContainer =
+        _inputDataSource
+            ? HdContainerDataSource::Cast(_inputDataSource->Get(_tokens->model))
+            : nullptr;
+    HdContainerDataSourceHandle const overrideContainer =
+        HdRetainedContainerDataSource::New(
+            _tokens->drawMode, _GetDrawMode(modelContainer));
+    if (!modelContainer) {
+        return overrideContainer;
+    }
+    return HdOverlayContainerDataSource::New(overrideContainer, modelContainer);
+}
+
+HdDataSourceBaseHandle
+HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetDrawMode(
+    const HdContainerDataSourceHandle &modelContainer)
+{
+    HdTokenDataSource::AtomicHandle computedDrawModeDataSource =
+        HdTokenDataSource::AtomicLoad(_computedDrawModeDataSource);
+
+    if (computedDrawModeDataSource) {
+        return computedDrawModeDataSource;
+    }
+
+    computedDrawModeDataSource = _GetDrawModeUncached(modelContainer);
+
+    HdTokenDataSource::AtomicStore(
+        _computedDrawModeDataSource, computedDrawModeDataSource);
+
+    return computedDrawModeDataSource;
+}
+
+HdTokenDataSourceHandle
+HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetDrawModeUncached(
+    const HdContainerDataSourceHandle &modelContainer)
+{
+    if (modelContainer) {
+        if (const HdTokenDataSourceHandle src =
+                HdTokenDataSource::Cast(
+                    modelContainer->Get(_tokens->drawMode))) {
+            const TfToken drawMode = src->GetTypedValue(0.0f);
+            if (!drawMode.IsEmpty() && drawMode != _tokens->inherited) {
+                return src;
+            }
+        }
+    }
+
+    if (_primPath.GetPathElementCount() == 0) {
+        return _sceneIndex._identityDrawMode;
+    }
+
+    const SdfPath parentPath = _primPath.GetParentPath();
+    const auto it = _sceneIndex._prims.find(parentPath);
+    if (it == _sceneIndex._prims.end()) {
+        return _sceneIndex._identityDrawMode;
+    }
+
+    if (const HdTokenDataSourceHandle src =
+            HdTokenDataSource::Cast(
+                HdContainerDataSource::Get(
+                    it->second.prim.dataSource, _GetDrawModeLocator()))) {
+        return src;
+    }
+
+    return _sceneIndex._identityDrawMode;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
