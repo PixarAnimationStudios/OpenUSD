@@ -44,6 +44,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+using _PrimSource = UsdImagingDataSourceImplicitsPrim<UsdGeomCapsule, HdCapsuleSchema>;
+}
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -78,13 +81,24 @@ UsdImagingCapsuleAdapter::GetImagingSubprimData(
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
-        return UsdImagingDataSourceImplicitsPrim<UsdGeomCapsule>::New(
+        return _PrimSource::New(
             prim.GetPath(),
-            HdCapsuleSchemaTokens->capsule,
             prim,
             stageGlobals);
     }
     return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingCapsuleAdapter::InvalidateImagingSubprim(
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return _PrimSource::Invalidate(subprim, properties);
+    }
+    
+    return HdDataSourceLocatorSet();
 }
 
 bool

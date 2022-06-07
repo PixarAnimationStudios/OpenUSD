@@ -30,9 +30,13 @@
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
 
 #include "pxr/imaging/hd/sceneIndex.h"
+
+#include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/stage.h"
 
 #include <tbb/concurrent_hash_map.h>
+#include <tbb/concurrent_unordered_map.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -82,16 +86,25 @@ public:
     USDIMAGING_API
     UsdTimeCode GetTime() const;
 
+    // Apply queued stage edits to imaging scene.
+    // If the USD stage is edited while the scene index is pulling from it,
+    // those edits get queued and deferred.  Calling ApplyPendingUpdates will
+    // turn resync requests into PrimsAdded/PrimsRemoved, and property changes
+    // into PrimsDirtied.
+    USDIMAGING_API
+    void ApplyPendingUpdates();
+
 private:
     USDIMAGING_API
     UsdImagingStageSceneIndex();
 
     Usd_PrimFlagsConjunction _GetTraversalPredicate() const;
 
-    void _PopulateAdapterMap();
-
     // Adapter delegation.
-    UsdImagingPrimAdapterSharedPtr _AdapterLookup(UsdPrim prim) const;
+    UsdImagingPrimAdapterSharedPtr _AdapterLookup(
+            UsdPrim prim) const;
+    UsdImagingPrimAdapterSharedPtr _AdapterLookup(
+            const TfToken &adapterKey) const;
 
     TfTokenVector _GetImagingSubprims(
             const UsdImagingPrimAdapterSharedPtr &adapter) const;
@@ -101,6 +114,9 @@ private:
     HdContainerDataSourceHandle _GetImagingSubprimData(
             const UsdImagingPrimAdapterSharedPtr &adapter,
             UsdPrim prim, TfToken const& subprim) const;
+    HdDataSourceLocatorSet _InvalidateImagingSubprim(
+            const UsdImagingPrimAdapterSharedPtr &adapter,
+            TfToken const& subprim, TfTokenVector const& properties) const;
 
     class _StageGlobals : public UsdImagingDataSourceStageGlobals
     {
@@ -139,10 +155,23 @@ private:
     // Population
     void _Populate(UsdPrim subtreeRoot);
 
-    // Usd Prim Type to Adapter lookup table.
-    using _AdapterMap = TfHashMap<TfToken, UsdImagingPrimAdapterSharedPtr, 
-                TfToken::HashFunctor>;
-    _AdapterMap _adapterMap;
+    // Edit processing
+    void _OnUsdObjectsChanged(UsdNotice::ObjectsChanged const& notice,
+                              UsdStageWeakPtr const& sender);
+    TfNotice::Key _objectsChangedNoticeKey;
+
+    // Note: resync paths mean we remove the whole subtree and repopulate.
+    SdfPathVector _usdPrimsToResync;
+    // Property changes get converted into PrimsDirtied messages.
+    std::map<SdfPath, TfTokenVector> _usdPropertiesToUpdate;
+
+    // Usd Prim Type to Adapter lookup table, concurrent because it could
+    // be potentially filled during concurrent GetPrim calls rather than
+    // just during single-threaded population.
+    using _AdapterMap = tbb::concurrent_unordered_map<
+        TfToken, UsdImagingPrimAdapterSharedPtr, TfHash>;
+
+    mutable _AdapterMap _adapterMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

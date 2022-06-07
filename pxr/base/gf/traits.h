@@ -47,6 +47,11 @@ template <class T>
 struct GfIsGfQuat { static const bool value = false; };
 
 /// A metafunction with a static const bool member 'value' that is true for
+/// GfDualQuat types and false for all other types.
+template <class T>
+struct GfIsGfDualQuat { static const bool value = false; };
+
+/// A metafunction with a static const bool member 'value' that is true for
 /// GfRange types and false for all other types.
 template <class T>
 struct GfIsGfRange { static const bool value = false; };

@@ -282,19 +282,6 @@ _GetExternalAssetModificationTimes(const SdfLayer& layer)
     return result;
 }
 
-#if AR_VERSION == 1
-static bool
-_ModificationTimesEqual(const VtValue& t1, const VtValue& t2)
-{
-    return t1 == t2;
-}
-
-static bool
-_ModificationTimesEqual(const VtDictionary& t1, const VtDictionary& t2)
-{
-    return t1 == t2;
-}
-#else
 static bool
 _ModificationTimesEqual(const VtValue& v1, const VtValue& v2)
 {
@@ -324,7 +311,6 @@ _ModificationTimesEqual(const VtDictionary& t1, const VtDictionary& t2)
     
     return true;
 }
-#endif
 
 SdfLayerRefPtr
 SdfLayer::CreateAnonymous(
@@ -447,17 +433,6 @@ SdfLayer::_CreateNew(
     ArResolver& resolver = ArGetResolver();
 
     ArAssetInfo assetInfo;
-
-#if AR_VERSION == 1
-    // When creating a new layer, assume that relative identifiers are
-    // relative to the current working directory.
-    const bool isRelativePath = resolver.IsRelativePath(identifier);
-    const string absIdentifier = 
-        isRelativePath ? TfAbsPath(identifier) : identifier;
-
-    // Direct newly created layers to a local path.
-    const string localPath = resolver.ComputeLocalPath(absIdentifier);
-#else
     string absIdentifier, localPath;
     {
         TfErrorMark m;
@@ -475,7 +450,6 @@ SdfLayer::_CreateNew(
             m.Clear();
         }
     }
-#endif
 
     if (localPath.empty()) {
         TF_CODING_ERROR(
@@ -574,15 +548,8 @@ SdfLayer::New(
 
     tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
 
-#if AR_VERSION == 1
-    // When creating a new layer, assume that relative identifiers are
-    // relative to the current working directory.
-    const string absIdentifier = ArGetResolver().IsRelativePath(identifier) ?
-        TfAbsPath(identifier) : identifier;
-#else
     const string absIdentifier = 
         ArGetResolver().CreateIdentifierForNewAsset(identifier);
-#endif
 
     SdfLayerRefPtr layer = _CreateNewWithFormat(
         fileFormat, absIdentifier, std::string(), ArAssetInfo(), args);
@@ -717,12 +684,9 @@ SdfLayer::_ComputeInfoToFindOrOpenLayer(
     }
 
     const bool isAnonymous = IsAnonymousLayerIdentifier(layerPath);
-
-#if AR_VERSION > 1
     if (!isAnonymous) {
         layerPath = ArGetResolver().CreateIdentifier(layerPath);
     }
-#endif
 
     // If we're trying to open an anonymous layer, do not try to compute the
     // real path for it.
@@ -1036,14 +1000,6 @@ SdfLayer::_Reload(bool force)
 
         VtValue timestamp(ArGetResolver().GetModificationTimestamp(
             layerPath, resolvedPath));
-#if AR_VERSION == 1
-        if (timestamp.IsEmpty()) {
-            TF_CODING_ERROR(
-                "Unable to get modification time for '%s (%s)'",
-                GetIdentifier().c_str(), resolvedPath.GetPathString().c_str());
-            return _ReloadFailed;
-        }
-#endif
 
         // Ask the current external asset dependency state.
         VtDictionary externalAssetTimestamps = 
@@ -1137,22 +1093,6 @@ SdfLayer::_Read(
         TfStringify(metadataOnly).c_str());
 
     SdfFileFormatConstPtr format = GetFileFormat();
-#if AR_VERSION == 1
-    if (format->LayersAreFileBased()) {
-        if (!ArGetResolver().FetchToLocalResolvedPath(
-                identifier, resolvedPath)) {
-            TF_DEBUG(SDF_LAYER).Msg(
-                "SdfLayer::_Read - unable to fetch '%s' to "
-                "local path '%s'\n",
-                identifier.c_str(), resolvedPath.c_str());
-            return false;
-        }
-
-        TF_DEBUG(SDF_LAYER).Msg(
-            "SdfLayer::_Read - fetched '%s' to local path '%s'\n",
-            identifier.c_str(), resolvedPath.c_str());
-    }
-#endif
     return format->Read(this, resolvedPath, metadataOnly);
 }
 
@@ -2503,19 +2443,12 @@ SdfLayer::SetIdentifier(const string &identifier)
         return;
     }
 
-#if AR_VERSION == 1
-    // When changing a layer's identifier, assume that relative identifiers are
-    // relative to the current working directory.
-    const string absIdentifier = ArGetResolver().IsRelativePath(identifier) ?
-        TfAbsPath(identifier) : identifier;
-#else
     // Create an identifier for the layer based on the desired identifier
     // that was passed in. Since this may identifier may point to an asset
     // that doesn't exist yet, use CreateIdentifierForNewAsset.
     newLayerPath = ArGetResolver().CreateIdentifierForNewAsset(newLayerPath);
     const string absIdentifier = 
         Sdf_CreateIdentifier(newLayerPath, newArguments);
-#endif
     const ArResolvedPath oldResolvedPath = GetResolvedPath();
 
     // Hold open a change block to defer identifier-did-change
@@ -2559,52 +2492,13 @@ SdfLayer::SetIdentifier(const string &identifier)
     // new location yet.
     const ArResolvedPath newResolvedPath = GetResolvedPath();
     if (oldResolvedPath != newResolvedPath) {
-#if AR_VERSION == 1
-        _assetModificationTime = ArGetResolver().GetModificationTimestamp(
-            GetIdentifier(), newResolvedPath);
-#else
         const ArTimestamp timestamp = ArGetResolver().GetModificationTimestamp(
             newLayerPath, newResolvedPath);
         _assetModificationTime =
             (timestamp.IsValid() || Sdf_ResolvePath(newLayerPath)) ?
             VtValue(timestamp) : VtValue();
-#endif
     }
 }
-
-#if AR_VERSION == 1
-
-void
-SdfLayer::UpdateAssetInfo(const string &fileVersion)
-{
-    TRACE_FUNCTION();
-    TF_DEBUG(SDF_LAYER).Msg(
-        "SdfLayer::UpdateAssetInfo('%s')\n",
-        fileVersion.c_str());
-
-    // Hold open a change block to defer identifier-did-change
-    // notification until the mutex is unlocked.
-    SdfChangeBlock block;
-    {
-        // If the layer has a resolve info with a non-empty asset name, this
-        // means that the layer identifier is a search-path to a layer within
-        // an asset, which last resolved to a pinnable location. Bind the
-        // original context found in the resolve info within this block so the
-        // layer's search path identifier can be properly re-resolved within
-        // _InitializeFromIdentifier.
-        std::unique_ptr<ArResolverContextBinder> binder;
-        if (!GetAssetName().empty()) {
-            binder.reset(new ArResolverContextBinder(
-                    _assetInfo->resolverContext));
-        }    
-
-        tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
-        _InitializeFromIdentifier(GetIdentifier(),
-            /* realPath */ std::string(), fileVersion);
-    }
-}
-
-#else
 
 void
 SdfLayer::UpdateAssetInfo()
@@ -2632,8 +2526,6 @@ SdfLayer::UpdateAssetInfo()
         _InitializeFromIdentifier(GetIdentifier());
     }
 }
-
-#endif // AR_VERSION
 
 string
 SdfLayer::GetDisplayName() const
@@ -2727,16 +2619,8 @@ SdfLayer::ComputeAbsolutePath(const string& assetPath) const
         return assetPath;
     }
 
-#if AR_VERSION == 1
-    // Make it relative to the repository path, if available, so that path
-    // resolution will work for references.
-    const string relativeToPath = GetRepositoryPath().empty() ?
-        GetRealPath() : GetRepositoryPath();
-    return ArGetResolver().AnchorRelativePath(relativeToPath, assetPath);
-#else
     return SdfComputeAssetPathRelativeToLayer(
         SdfCreateNonConstHandle(this), assetPath);
-#endif
 }
 
 string
@@ -3331,16 +3215,6 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
         // Grab modification timestamp.
         VtValue timestamp(ArGetResolver().GetModificationTimestamp(
             info.layerPath, ArResolvedPath(readFilePath)));
-#if AR_VERSION == 1
-        if (timestamp.IsEmpty()) {
-            TF_CODING_ERROR(
-                "Unable to get modification timestamp for '%s (%s)'",
-                info.identifier.c_str(), readFilePath.c_str());
-            layer->_FinishInitialization(/* success = */ false);
-            return TfNullPtr;
-        }
-#endif
-        
         layer->_assetModificationTime.Swap(timestamp);
     }
 
@@ -4715,15 +4589,6 @@ SdfLayer::_WriteToFile(const string & newFileName,
         return false;
     }
 
-#if AR_VERSION == 1
-    if (!ArGetResolver().CreatePathForLayer(newFileName)) {
-        TF_RUNTIME_ERROR(
-            "Cannot create path to write '%s'",
-            newFileName.c_str());
-        return false;
-    }
-#endif
-
     // If the output file format has a different schema, then transfer content
     // to an in-memory layer first just to validate schema compatibility.
     const bool differentSchema = &fileFormat->GetSchema() != &GetSchema();
@@ -4811,14 +4676,6 @@ SdfLayer::_Save(bool force) const
     // Record modification timestamp.
     VtValue timestamp(ArGetResolver().GetModificationTimestamp(
         GetIdentifier(), path));
-#if AR_VERSION == 1
-    if (timestamp.IsEmpty()) {
-        TF_CODING_ERROR(
-            "Unable to get modification timestamp for '%s (%s)'",
-            GetIdentifier().c_str(), path.GetPathString().c_str());
-        return false;
-    }
-#endif
     _assetModificationTime.Swap(timestamp);
 
     SdfNotice::LayerDidSaveLayerToFile().Send(_self);

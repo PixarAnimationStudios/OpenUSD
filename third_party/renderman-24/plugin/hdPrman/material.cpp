@@ -727,7 +727,13 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
     if ((*dirtyBits & HdMaterial::DirtyResource) ||
         (*dirtyBits & HdMaterial::DirtyParams)) {
         VtValue hdMatVal = sceneDelegate->GetMaterialResource(id);
-        if (hdMatVal.IsHolding<HdMaterialNetworkMap>()) {
+
+        if (hdMatVal.IsEmpty()) {
+            if (TfDebug::IsEnabled(HDPRMAN_MATERIALS)) {
+                printf("no material network found for %s:\n", id.GetText());
+            }
+            _ResetMaterial(param);
+        } else if (hdMatVal.IsHolding<HdMaterialNetworkMap>()) {
             // Convert HdMaterial to HdMaterialNetwork2 form.
             _materialNetwork = HdConvertToHdMaterialNetwork2(
                     hdMatVal.UncheckedGet<HdMaterialNetworkMap>());
@@ -751,10 +757,9 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
             _ConvertHdMaterialNetwork2ToRman(param, id, _materialNetwork,
                                              &_materialId, &_displacementId);
         } else {
-            TF_WARN("HdPrmanMaterial: Expected material resource "
-                    "for <%s> to contain HdMaterialNodes, but "
-                    "found %s instead.",
-                    id.GetText(), hdMatVal.GetTypeName().c_str());
+            TF_CODING_ERROR("HdPrmanMaterial: Expected material resource "
+                "for <%s> to contain HdMaterialNodes, but found %s instead.",
+                id.GetText(), hdMatVal.GetTypeName().c_str());
             _ResetMaterial(param);
         }
     }

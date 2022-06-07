@@ -42,6 +42,7 @@ pxr_library(usdImaging
         delegate
         indexProxy
         materialParamUtils
+        modelSchema
         resolvedAttributeCache
         instancerContext
         stageSceneIndex

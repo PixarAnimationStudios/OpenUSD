@@ -140,7 +140,7 @@ private:
 /// Return false otherwise.
 ///
 /// This function may modify which children are copied by filling in
-/// \p srcChildren and \p dstChildren will the children to copy and their
+/// \p srcChildren and \p dstChildren with the children to copy and their
 /// destination. Both of these values must be set, and must contain the same
 /// number of children.
 /// 

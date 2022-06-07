@@ -44,25 +44,13 @@ TF_MAKE_STATIC_DATA(NdrTokenVec, _sourceTypes) {
 
 HdPrman_SampleFilter::HdPrman_SampleFilter(
     SdfPath const& id)
-    : HdSprim(id),
-      _filterId(riley::SampleFilterId::InvalidId())
+    : HdSprim(id)
 {
 }
 
-void HdPrman_SampleFilter::Finalize(HdRenderParam *renderParam)
+void
+HdPrman_SampleFilter::Finalize(HdRenderParam *renderParam)
 {
-    HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(renderParam);
-    _RemoveSampleFilter(param);
-}
-
-void HdPrman_SampleFilter::_RemoveSampleFilter(HdPrman_RenderParam *param)
-{
-    if (_filterId != riley::SampleFilterId::InvalidId()) {
-        riley::Riley *riley = param->AcquireRiley();
-        param->RemoveSampleFilter(_filterId);
-        riley->DeleteSampleFilter(_filterId);
-        _filterId = riley::SampleFilterId::InvalidId();
-    }
 }
 
 void 
@@ -71,14 +59,10 @@ HdPrman_SampleFilter::_CreateRmanSampleFilter(
     SdfPath const& filterPrimPath,
     HdMaterialNode2 const& sampleFilterNode)
 {
-    // Create Riley Shading Network for the Sample Filter 
-    riley::Riley *riley = renderParam->AcquireRiley();
-    std::vector<riley::ShadingNode> nodes;
-
     // Create Sample Filter Riley Node
-    riley::ShadingNode sn;
-    sn.type = riley::ShadingNode::Type::k_SampleFilter;
-    sn.handle = RtUString(filterPrimPath.GetText());
+    riley::ShadingNode rileyNode;
+    rileyNode.type = riley::ShadingNode::Type::k_SampleFilter;
+    rileyNode.handle = RtUString(filterPrimPath.GetText());
 
     // Get the Sample Filter ShaderPath from the ShaderRegister
     SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
@@ -95,7 +79,7 @@ HdPrman_SampleFilter::_CreateRmanSampleFilter(
                 sdrEntry->GetName().c_str());
         return;
     }
-    sn.name = RtUString(shaderPath.c_str());
+    rileyNode.name = RtUString(shaderPath.c_str());
 
     // Initialize the Sample Filter parameters 
     for (const auto &param : sampleFilterNode.parameters) {
@@ -110,35 +94,14 @@ HdPrman_SampleFilter::_CreateRmanSampleFilter(
         }
         renderParam->SetParamFromVtValue(
             RtUString(prop->GetImplementationName().c_str()),
-            param.second, prop->GetType(), sn.params);
+            param.second, prop->GetType(), rileyNode.params);
     }
-    nodes.push_back(sn);
-
-    // Create or update the Riley SampleFilter
-    if (_filterId == riley::SampleFilterId::InvalidId()) {
-        _filterId = riley->CreateSampleFilter(
-            riley::UserId::DefaultId(),
-            {static_cast<uint32_t>(nodes.size()), &nodes[0]},
-            RtParamList());
-    }
-    else {
-        riley::ShadingNetwork const sampleFilterNetwork = {
-            static_cast<uint32_t>(nodes.size()), &nodes[0]};
-        riley->ModifySampleFilter(_filterId, &sampleFilterNetwork, nullptr);
-    }
-
-    if (_filterId == riley::SampleFilterId::InvalidId()) {
-        TF_WARN("Failed to create Sample SampleFilter %s\n",
-                filterPrimPath.GetText());
-    }
-    else {
-        renderParam->AddSampleFilter(_filterId);
-    }
+    renderParam->AddSampleFilter(filterPrimPath, rileyNode);
     return;
 }
 
-
-void HdPrman_SampleFilter::Sync(
+void
+HdPrman_SampleFilter::Sync(
     HdSceneDelegate *sceneDelegate,
     HdRenderParam *renderParam,
     HdDirtyBits *dirtyBits)
@@ -149,7 +112,9 @@ void HdPrman_SampleFilter::Sync(
     if (*dirtyBits & HdChangeTracker::DirtyParams) {
 
         // Only Create the SampleFilter if connected to the RenderSettings
-        if (id == param->GetConnectedSampleFilterPath()) {
+        SdfPathVector connectedFilters = param->GetConnectedSampleFilterPaths();
+        if (std::find(connectedFilters.begin(), connectedFilters.end(), id)
+            != connectedFilters.end()) {
             const VtValue sampleFilterResourceValue =
                 sceneDelegate->Get(id, _tokens->sampleFilterResource);
 
@@ -158,9 +123,6 @@ void HdPrman_SampleFilter::Sync(
                     sampleFilterResourceValue.UncheckedGet<HdMaterialNode2>();
                 _CreateRmanSampleFilter(param, id, sampleFilterNode);
             }
-        }
-        else {
-            _RemoveSampleFilter(param);
         }
     }
 

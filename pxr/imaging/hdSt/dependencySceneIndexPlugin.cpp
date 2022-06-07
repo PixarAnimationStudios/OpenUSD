@@ -23,9 +23,11 @@
 
 #include "pxr/imaging/hdSt/dependencySceneIndexPlugin.h"
 
+#include "pxr/imaging/hd/containerDataSourceEditor.h"
 #include "pxr/imaging/hd/dependenciesSchema.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hd/mapContainerDataSource.h"
+#include "pxr/imaging/hd/lazyContainerDataSource.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
@@ -112,80 +114,20 @@ _ComputeVolumeFieldBindingDependency(const SdfPath &primPath)
             builder.Build());
 }
 
-/// Data source adding __dependencies given the data source of a
-/// volume.
-class _VolumePrimDataSource : public HdContainerDataSource
+HdContainerDataSourceHandle
+_ComputeVolumeFieldBindingDependencies(
+    const SdfPath &primPath,
+    const HdContainerDataSourceHandle &primSource)
 {
-public:
-    HD_DECLARE_DATASOURCE(_VolumePrimDataSource);
-
-    _VolumePrimDataSource(
-        const SdfPath &primPath,
-        const HdContainerDataSourceHandle &primSource)
-      : _primPath(primPath)
-      , _primSource(primSource)
-    {
-    }
-
-    bool Has(const TfToken &name) override
-    {
-        if (!_primSource) {
-            return false;
-        }
-
-        if (name == HdDependenciesSchemaTokens->__dependencies) {
-            return true;
-        }
-
-        return _primSource->Has(name);
-    }
-
-    TfTokenVector GetNames() override
-    {
-        TfTokenVector result;
-
-        if (!_primSource) {
-            return result;
-        }
-
-        result = _primSource->GetNames();
-        result.push_back(HdDependenciesSchemaTokens->__dependencies);
-
-        return result;
-    }
-
-    HdDataSourceBaseHandle Get(const TfToken &name) override
-    {
-        if (!_primSource) {
-            return nullptr;
-        }
-
-        HdDataSourceBaseHandle src = _primSource->Get(name);
-
-        if (name == HdDependenciesSchemaTokens->__dependencies) {
-            HdContainerDataSourceHandle sources[] = {
-                HdMapContainerDataSource::New(
-                    _ComputeVolumeFieldDependency,
-                    HdContainerDataSource::Cast(
-                        HdContainerDataSource::Get(
-                            _primSource,
-                            HdVolumeFieldBindingSchema::GetDefaultLocator()))),
-                _ComputeVolumeFieldBindingDependency(_primPath),
-                HdContainerDataSource::Cast(src) };
-
-            return HdOverlayContainerDataSource::New(
-                TfArraySize(sources),
-                sources);
-        }
-        return std::move(src);
-    }
-
-private:
-    SdfPath _primPath;
-    HdContainerDataSourceHandle _primSource;
-};
-
-HD_DECLARE_DATASOURCE_HANDLES(_VolumePrimDataSource);
+    return HdOverlayContainerDataSource::New(
+        HdMapContainerDataSource::New(
+            _ComputeVolumeFieldDependency,
+            HdContainerDataSource::Cast(
+                HdContainerDataSource::Get(
+                    primSource,
+                    HdVolumeFieldBindingSchema::GetDefaultLocator()))),
+        _ComputeVolumeFieldBindingDependency(primPath));
+}
 
 TF_DECLARE_REF_PTRS(_SceneIndex);
 
@@ -212,7 +154,13 @@ public:
         if (prim.primType == HdPrimTypeTokens->volume) {
             return
                 { prim.primType,
-                  _VolumePrimDataSource::New(primPath, prim.dataSource) };
+                  HdContainerDataSourceEditor(prim.dataSource)
+                      .Overlay(
+                          HdDependenciesSchema::GetDefaultLocator(),
+                          HdLazyContainerDataSource::New(
+                              std::bind(_ComputeVolumeFieldBindingDependencies,
+                                        primPath, prim.dataSource)))
+                      .Finish() };
         }
         return prim;
     }

@@ -65,6 +65,7 @@ void
 UsdImagingPluginLightAdapter::_RemovePrim(SdfPath const& cachePath,
                                          UsdImagingIndexProxy* index)
 {
+    _UnregisterLightCollections(cachePath);
     index->RemoveSprim(HdPrimTypeTokens->pluginLight, cachePath);
 }
 

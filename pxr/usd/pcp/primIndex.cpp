@@ -2385,11 +2385,21 @@ _EvalImpliedRelocations(
         "Evaluating relocations implied by %s", 
         Pcp_FormatSite(node.GetSite()).c_str());
 
-    if (PcpNodeRef parent = node.GetParentNode()) {
-        if (PcpNodeRef gp = parent.GetParentNode()) {
-            SdfPath gpRelocSource =
+    if (const PcpNodeRef parent = node.GetParentNode()) {
+        if (const PcpNodeRef gp = parent.GetParentNode()) {
+
+            // Determine the path of the relocation source prim in the parent's
+            // layer stack. Note that this mapping may fail in some cases. For
+            // example, if prim /A/B was relocated to /A/C, and then in another
+            // layer stack prim /D sub-root referenced /A/C, there would be no
+            // corresponding prim for the source /A/B in that layer stack.
+            // See SubrootReferenceAndRelocates for a concrete example.
+            const SdfPath gpRelocSource =
                 parent.GetMapToParent().MapSourceToTarget(node.GetPath());
-            if (!TF_VERIFY(!gpRelocSource.IsEmpty())) {
+            if (gpRelocSource.IsEmpty()) {
+                PCP_INDEXING_PHASE(
+                    indexer, node,
+                    "No implied site for relocation source -- skipping");
                 return;
             }
 

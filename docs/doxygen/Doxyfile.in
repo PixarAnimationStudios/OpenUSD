@@ -1984,7 +1984,8 @@ PREDEFINED             = doxygen \
                          "TF_DEFINE_STACKED(name, x, y)=class name"     \
                          "PXR_NAMESPACE_OPEN_SCOPE" \
                          "PXR_NAMESPACE_CLOSE_SCOPE" \
-                         "PXR_NS"
+                         "PXR_NS" \
+                         "PXR_PYTHON_SUPPORT_ENABLED"
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The

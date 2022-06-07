@@ -44,7 +44,8 @@ def _setRenderMode(appController, renderMode):
     appController._stageView.updateView()
 
 def _CreatePrimvar(prim, primvarName, primvarType, interpToken, value):
-    pv = prim.CreatePrimvar(primvarName, primvarType, interpToken)
+    pv = UsdGeom.PrimvarsAPI(prim).CreatePrimvar(
+        primvarName, primvarType, interpToken)
     if not pv:
         print("Failed to create primvar", str(primvarName))
         return

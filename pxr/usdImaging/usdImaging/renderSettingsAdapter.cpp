@@ -151,15 +151,21 @@ UsdImagingRenderSettingsAdapter::Get(
     if (prim.HasAttribute(key)) {
         UsdAttribute const &attr = prim.GetAttribute(key);
 
-        // Only return authored attribute values or connections
+        // Only return authored attribute values and UsdShadeConnectableAPI
+        // connections
         VtValue value;
         if (attr.HasAuthoredValue() && attr.Get(&value, time)) {
             return value;
         }
-        if (attr.HasAuthoredConnections()) {
-            SdfPathVector connections;
-            attr.GetConnections(&connections);
-            return VtValue(connections);
+        if (UsdShadeOutput::IsOutput(attr)) {
+            UsdShadeAttributeVector targets =
+                UsdShadeUtils::GetValueProducingAttributes(
+                    UsdShadeOutput(attr));
+            SdfPathVector outputs;
+            for (auto const& output : targets) {
+                outputs.push_back(output.GetPrimPath());
+            }
+            return VtValue(outputs);
         }
         return value;
     }

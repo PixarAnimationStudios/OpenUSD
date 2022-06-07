@@ -38,15 +38,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// A container data source representing info for, e.g., cube data source
 /// locator for a cube. Instantiate using, e.g., UsdGeomCube.
 ///
-template<typename U>
+template<typename U, typename V>
 class UsdImagingDataSourceImplicits : public HdContainerDataSource
 {
 public:
-    HD_DECLARE_DATASOURCE(UsdImagingDataSourceImplicits<U>);
+    using This = UsdImagingDataSourceImplicits<U, V>;
+
+    HD_DECLARE_DATASOURCE(This);
 
     bool Has(const TfToken &name) override {
-        static const TfTokenVector usdNames = _GetSchemaAttributeNames();
-        for (const TfToken &usdName : usdNames) {
+        for (const TfToken &usdName : _GetSchemaAttributeNames()) {
             if (name == usdName) {
                 return true;
             }
@@ -54,8 +55,7 @@ public:
         return false;
     }
     TfTokenVector GetNames() override {
-        static const TfTokenVector usdNames = _GetSchemaAttributeNames();
-        return usdNames;
+        return _GetSchemaAttributeNames();
     }
     HdDataSourceBaseHandle Get(const TfToken &name) override {
         if (UsdAttribute attr = _usdGeomSchema.GetPrim().GetAttribute(name)) {
@@ -64,29 +64,50 @@ public:
                     attr,
                     _stageGlobals,
                     _sceneIndexPath,
-                    HdDataSourceLocator(_locatorToken, name));
+                    _GetLocatorForProperty(name));
         } else {
             return nullptr;
         }
+    }
+
+    static
+    HdDataSourceLocatorSet
+    Invalidate(const TfToken &subprim, const TfTokenVector &properties) {
+        HdDataSourceLocatorSet locators;
+
+        for (const TfToken &propertyName : properties) {
+            for (const TfToken &usdName : _GetSchemaAttributeNames()) {
+                if (propertyName == usdName) {
+                    locators.insert(_GetLocatorForProperty(propertyName));
+                }
+            }
+        }
+
+        return locators;
     }
 
 private:
     // Private constructor, use static New() instead.
     UsdImagingDataSourceImplicits(
             const SdfPath &sceneIndexPath,
-            const TfToken &locatorToken,
             U usdGeomSchema,
             const UsdImagingDataSourceStageGlobals &stageGlobals)
       : _sceneIndexPath(sceneIndexPath)
-      , _locatorToken(locatorToken)
       , _usdGeomSchema(usdGeomSchema)
       , _stageGlobals(stageGlobals)
     {
     }
 
-    TfTokenVector
-    static _GetSchemaAttributeNames()
+    static
+    HdDataSourceLocator
+    _GetLocatorForProperty(const TfToken &name)
     {
+        return V::GetDefaultLocator().Append(name);
+    }
+
+    static
+    TfTokenVector
+    _GetSchemaAttributeNamesUncached() {
         TfTokenVector result =
             U::GetSchemaAttributeNames(/* includeInherited = */ false);
         result.erase(
@@ -95,9 +116,15 @@ private:
         return result;
     }
 
+    static
+    const TfTokenVector &
+    _GetSchemaAttributeNames() {
+        static const TfTokenVector result = _GetSchemaAttributeNamesUncached();
+        return result;
+    }
+
 private:
     const SdfPath _sceneIndexPath;
-    const TfToken _locatorToken;
     U _usdGeomSchema;
     const UsdImagingDataSourceStageGlobals & _stageGlobals;
 };
@@ -106,14 +133,16 @@ private:
 ///
 /// A prim data source for a cube, ...
 ///
-template<typename U>
+template<typename U, typename V>
 class UsdImagingDataSourceImplicitsPrim : public UsdImagingDataSourceGprim
 {
 public:
-    HD_DECLARE_DATASOURCE(UsdImagingDataSourceImplicitsPrim<U>);
+    using This = UsdImagingDataSourceImplicitsPrim<U, V>;
+
+    HD_DECLARE_DATASOURCE(This);
 
     bool Has(const TfToken &name) override {
-        if (name == _locatorToken) {
+        if (name == _GetLocatorToken()) {
             return true;
         }
         
@@ -121,15 +150,14 @@ public:
     }
     TfTokenVector GetNames() override {
         TfTokenVector result = UsdImagingDataSourceGprim::GetNames();
-        result.push_back(_locatorToken);
+        result.push_back(_GetLocatorToken());
         return result;
 
     }
     HdDataSourceBaseHandle Get(const TfToken &name) override {
-        if (name == _locatorToken) {
-            return UsdImagingDataSourceImplicits<U>::New(
+        if (name == _GetLocatorToken()) {
+            return UsdImagingDataSourceImplicits<U, V>::New(
                 _GetSceneIndexPath(),
-                _locatorToken,
                 U(_GetUsdPrim()),
                 _GetStageGlobals());
         }
@@ -137,20 +165,45 @@ public:
         return UsdImagingDataSourceGprim::Get(name);
     }
 
+    static
+    HdDataSourceLocatorSet
+    Invalidate(const TfToken &subprim, const TfTokenVector &properties) {
+        HdDataSourceLocatorSet locators =
+            UsdImagingDataSourceImplicits<U,V>::Invalidate(
+                subprim, properties);
+
+        locators.insert(
+            UsdImagingDataSourceGprim::Invalidate(subprim, properties));
+
+        return locators;
+    }
+
 private:
     // Private constructor, use static New() instead.
     UsdImagingDataSourceImplicitsPrim(
         const SdfPath &sceneIndexPath,
-        const TfToken &locatorToken,
         UsdPrim usdPrim,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
       : UsdImagingDataSourceGprim(sceneIndexPath, usdPrim, stageGlobals)
-      , _locatorToken(locatorToken)
     {
     }
 
-private:
-    const TfToken _locatorToken;
+    static 
+    TfToken
+    _GetLocatorTokenUncached() {
+        if (V::GetDefaultLocator().GetElementCount() != 1) {
+            TF_CODING_ERROR("Expected data source locator with one element.");
+            return TfToken();
+        }
+        return V::GetDefaultLocator().GetFirstElement();
+    }
+
+    static
+    const TfToken &
+    _GetLocatorToken() {
+        static const TfToken result = _GetLocatorTokenUncached();
+        return result;
+    }
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

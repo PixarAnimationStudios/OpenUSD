@@ -67,6 +67,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_TINY_PRIM_CULLING, false,
                       "Enable tiny prim culling");
 
+TF_DEFINE_ENV_SETTING(HDST_MAX_LIGHTS, 16,
+                      "Maximum number of lights to render with");
+
 const TfTokenVector HdStRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
     HdPrimTypeTokens->mesh,
@@ -197,7 +200,11 @@ HdStRenderDelegate::HdStRenderDelegate(HdRenderSettingsMap const& settingsMap)
             "Maximum memory for a volume field texture in Mb "
             "(unless overridden by field prim)",
             HdStRenderSettingsTokens->volumeMaxTextureMemoryPerField,
-            VtValue(HdStVolume::defaultMaxTextureMemoryPerField) }
+            VtValue(HdStVolume::defaultMaxTextureMemoryPerField) },
+        HdRenderSettingDescriptor{
+            "Maximum number of lights",
+            HdStRenderSettingsTokens->maxLights,
+            VtValue(int(TfGetEnvSetting(HDST_MAX_LIGHTS))) },
     };
 
     _PopulateDefaultSettings(_settingDescriptors);

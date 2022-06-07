@@ -614,14 +614,6 @@ public:
             return;
         }
 
-#if AR_VERSION == 1
-        // ... and can be localized to a physical location on disk.
-        if (!ArGetResolver().FetchToLocalResolvedPath(assetPath.GetAssetPath(),
-                    rootFilePath)) {
-            return;
-        }
-#endif
-
         // Record all dependencies in layerDependenciesMap so we can recurse
         // on them.
         const auto processPathFunc =
@@ -712,18 +704,6 @@ public:
                     _unresolvedAssetPaths.push_back(refAssetPath);
                     continue;
                 } 
-
-#if AR_VERSION == 1
-                // Ensure that the resolved path can be fetched to a physical 
-                // location on disk.
-                if (!ArGetResolver().FetchToLocalResolvedPath(refAssetPath, 
-                        resolvedRefFilePath)) {
-                    TF_WARN("Failed to fetch-to-local resolved path for asset "
-                        "@%s@ : '%s'. Skipping dependency.", 
-                        refAssetPath.c_str(), resolvedRefFilePath.c_str());
-                    continue;
-                }
-#endif
 
                 // Check if this dependency must skipped.
                 if (std::find(dependenciesToSkip.begin(), 
@@ -871,11 +851,6 @@ _AssetLocalizer::_RemapAssetPath(const std::string &refPath,
 {
     auto &resolver = ArGetResolver();
 
-#if AR_VERSION == 1
-    const bool isContextDependentPath = resolver.IsSearchPath(refPath);
-    const bool isRelativePath = 
-        !isContextDependentPath && resolver.IsRelativePath(refPath);
-#else
     const bool isContextDependentPath =
         resolver.IsContextDependentPath(refPath);
 
@@ -887,7 +862,6 @@ _AssetLocalizer::_RemapAssetPath(const std::string &refPath,
         !isContextDependentPath &&
         (resolver.CreateIdentifier(refPath, layer->GetResolvedPath()) !=
          resolver.CreateIdentifier(refPath));
-#endif
 
     // Return relative paths unmodified.
     if (isRelativePathOut) {
@@ -907,13 +881,7 @@ _AssetLocalizer::_RemapAssetPath(const std::string &refPath,
                 SdfComputeAssetPathRelativeToLayer(layer, refPath);
         const std::string refFilePath = resolver.Resolve(refAssetPath);
 
-        bool resolveOk = !refFilePath.empty();
-#if AR_VERSION == 1
-        // Ensure that the resolved path can be fetched to a physical 
-        // location on disk.
-        resolveOk = resolveOk &&
-            resolver.FetchToLocalResolvedPath(refAssetPath, refFilePath);
-#endif
+        const bool resolveOk = !refFilePath.empty();
 
         if (resolveOk) {
             result = refFilePath;
@@ -924,19 +892,11 @@ _AssetLocalizer::_RemapAssetPath(const std::string &refPath,
     }
 
     // Normalize paths compared below to account for path format differences.
-#if AR_VERSION == 1
-    const std::string layerPath = 
-        resolver.ComputeNormalizedPath(layer->GetRealPath());
-    result = resolver.ComputeNormalizedPath(result);
-    rootFilePath = resolver.ComputeNormalizedPath(rootFilePath);
-    origRootFilePath = resolver.ComputeNormalizedPath(origRootFilePath);
-#else
     const std::string layerPath = 
         TfNormPath(layer->GetRealPath());
     result = TfNormPath(result);
     rootFilePath = TfNormPath(rootFilePath);
     origRootFilePath = TfNormPath(origRootFilePath);
-#endif
 
     bool resultPointsToRoot = ((result == rootFilePath) || 
                                (result == origRootFilePath));

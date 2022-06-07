@@ -59,7 +59,7 @@ HdContainerDataSourceEditor::_GetNode(const HdDataSourceLocator &locator)
 }
 
 HdContainerDataSourceEditor &
-HdContainerDataSourceEditor:: Set(
+HdContainerDataSourceEditor::Set(
     const HdDataSourceLocator &locator,
     const HdDataSourceBaseHandle &dataSource)
 {
@@ -90,6 +90,29 @@ HdContainerDataSourceEditor:: Set(
     // setting something directly clears previous children
 
     entry.childNode = nullptr;
+
+    return (*this);
+}
+
+HdContainerDataSourceEditor &
+HdContainerDataSourceEditor::Overlay(
+    const HdDataSourceLocator &locator,
+    const HdContainerDataSourceHandle &dataSource)
+{
+    if (locator.IsEmpty()) {
+        // exception? 
+        return (*this);
+    }
+
+    if (!dataSource) {
+        return (*this);
+    }        
+
+    _NodeSharedPtr parentNode = _GetNode(locator.RemoveLastElement());
+
+    _Entry &entry = parentNode->entries[locator.GetLastElement()];
+
+    entry.dataSource = dataSource;
 
     return (*this);
 }

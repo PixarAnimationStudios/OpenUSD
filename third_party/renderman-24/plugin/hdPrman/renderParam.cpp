@@ -88,6 +88,12 @@ extern TfEnvSetting<bool> HD_PRMAN_ENABLE_QUICKINTEGRATE;
 static bool _enableQuickIntegrate =
     TfGetEnvSetting(HD_PRMAN_ENABLE_QUICKINTEGRATE);
 
+TF_DEFINE_ENV_SETTING(HD_PRMAN_DISABLE_HIDER_JITTER, false,
+                      "Disable hider jitter");
+
+static bool _disableJitter =
+    TfGetEnvSetting(HD_PRMAN_DISABLE_HIDER_JITTER);
+
 TF_MAKE_STATIC_DATA(std::vector<HdPrman_RenderParam::IntegratorCameraCallback>,
                     _integratorCameraCallbacks)
 {
@@ -102,6 +108,7 @@ HdPrman_RenderParam::HdPrman_RenderParam(const std::string &rileyVariant,
     _mgr(nullptr),
     _riley(nullptr),
     _sceneLightCount(0),
+    _sampleFiltersId(riley::SampleFilterId::InvalidId()),
     _lastSettingsVersion(0)
 {
     // Setup to use the default GPU
@@ -112,8 +119,6 @@ HdPrman_RenderParam::HdPrman_RenderParam(const std::string &rileyVariant,
     
     // Register RenderMan display driver
     HdPrmanFramebuffer::Register(_rix);
-    
-    _sampleFilterList = {0, nullptr};
 }
 
 HdPrman_RenderParam::~HdPrman_RenderParam()
@@ -450,6 +455,28 @@ _SetParamValue(RtUString const& name,
         us.reserve(v.size());
         for (std::string const& s: v) {
             us.push_back(RtUString(s.c_str()));
+        }
+        params.SetStringArray(name, us.data(), us.size());
+    } else if (val.IsHolding<SdfAssetPath>()) {
+        SdfAssetPath asset = val.UncheckedGet<SdfAssetPath>();
+        // Since we can't know how the texture will be consumed,
+        // go with the default of flipping textures
+        const bool flipTexture = true;
+        RtUString v = HdPrman_ResolveAssetToRtUString(asset, flipTexture,
+                                                   _tokens->primvar.GetText());
+        params.SetString(name, v);
+    } else if (val.IsHolding<VtArray<SdfAssetPath>>()) {
+        // Convert to RtUString.
+        const VtArray<SdfAssetPath>& v =
+            val.UncheckedGet<VtArray<SdfAssetPath>>();
+        // Since we can't know how the texture will be consumed,
+        // go with the default of flipping textures
+        const bool flipTexture = true;
+        std::vector<RtUString> us;
+        us.reserve(v.size());
+        for (SdfAssetPath const& asset: v) {
+            us.push_back(HdPrman_ResolveAssetToRtUString(asset, flipTexture,
+                                                   _tokens->primvar.GetText()));
         }
         params.SetStringArray(name, us.data(), us.size());
     } else if (val.IsHolding<VtArray<TfToken>>()) {
@@ -938,7 +965,8 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
 
         // Constant Hydra primvars become either Riley primvars or attributes,
         // depending on prefix and the name.
-        // 1.) Constant primvars with the "ri:attributes:" prefix have that
+        // 1.) Constant primvars with the "ri:attributes:" or
+        //     "primvars:ri:attributes:" prefixes have that
         //     prefix stripped and become primvars for geometry prototype
         //     "attributes" or attributes for geometry instances.
         // 2.) Constant primvars with the "user:" prefix become attributes.
@@ -948,11 +976,23 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
         if (hdInterp == HdInterpolationConstant) {
             static const char *userAttrPrefix = "user:";
             static const char *riAttrPrefix = "ri:attributes:";
-
+            static const char *primvarsPrefix = "primvars:";
             bool hasUserPrefix =
                 TfStringStartsWith(primvar.name.GetString(), userAttrPrefix);
             bool hasRiAttributesPrefix =
                 TfStringStartsWith(primvar.name.GetString(), riAttrPrefix);
+            bool hasPrimvarRiAttributesPrefix =
+                    TfStringStartsWith(primvar.name.GetString(),primvarsPrefix);
+
+            // Strip "primvars:" from the name
+            TfToken primvarName = primvar.name;
+            if (hasPrimvarRiAttributesPrefix) {
+                const char *strippedName = primvar.name.GetText();
+                strippedName += strlen(primvarsPrefix);
+                primvarName = TfToken(strippedName);
+                hasRiAttributesPrefix =
+                      TfStringStartsWith(primvarName.GetString(), riAttrPrefix);
+            }
 
             bool skipPrimvar = false;
             if (paramType == _ParamTypeAttribute) {
@@ -965,7 +1005,7 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                     // For 'ri:attributes' we check if the attribute is a
                     // prototype attribute and if so omit it, since it
                     // was included with the primvars.
-                    if (_IsPrototypeAttribute(primvar.name)) {
+                    if (_IsPrototypeAttribute(primvarName)) {
                         skipPrimvar = true;
                     }
                 }
@@ -979,7 +1019,7 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                 } else if (hasRiAttributesPrefix) {
                     // If this ri attribute does not affect the prototype
                     // we skip
-                    if (!_IsPrototypeAttribute(primvar.name)) {
+                    if (!_IsPrototypeAttribute(primvarName)) {
                         skipPrimvar = true;
                     }
                 }
@@ -990,11 +1030,11 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
             }
 
             if (hasRiAttributesPrefix) {
-                const char *strippedName = primvar.name.GetText();
+                const char *strippedName = primvarName.GetText();
                 strippedName += strlen(riAttrPrefix);
                 name = _GetPrmanPrimvarName(TfToken(strippedName), detail);
             } else {
-                name = _GetPrmanPrimvarName(primvar.name, detail);
+                name = _GetPrmanPrimvarName(primvarName, detail);
             }
         } else {
             name = _GetPrmanPrimvarName(primvar.name, detail);
@@ -1227,6 +1267,13 @@ HdPrman_ResolveMaterial(HdSceneDelegate *sceneDelegate,
     return false;
 }
 
+inline static bool
+HdPrman_IsNativeRenderManFormat(std::string const &path)
+{
+    std::string ext = ArGetResolver().GetExtension(path);
+    return (ext == "tex") || (ext == "bkm") || (ext == "ptc") || (ext == "ies");
+}
+
 RtUString
 HdPrman_ResolveAssetToRtUString(SdfAssetPath const &asset,
                                 bool flipTexture,
@@ -1241,25 +1288,18 @@ HdPrman_ResolveAssetToRtUString(SdfAssetPath const &asset,
         v = asset.GetAssetPath();
     }
 
-    // Use the RtxHioImage plugin for resolved paths that appear
-    // to be non-tex image files as only RenderMan itself can read
-    // tex files.  Note, we cannot read tex files from USDZ until
-    // RenderMan can read tex from an ArAsset.
+    // Use the RtxHioImage plugin for resolved paths that are not
+    // native RenderMan formats, but which Hio can read.
+    // Note: we cannot read tex files from USDZ until we add support
+    // to RtxHioImage (or another Rtx plugin) for this.
     // FUTURE NOTE: When we want to support primvar substitutions with
     // the use of non-tex textures, the following clause can no longer
     // be an "else if" (because such paths won't ArResolve), and we may 
     // not be able to even do an extension check...
-    else if (ArGetResolver().GetExtension(v) != "tex") {
-        if (!flipTexture) {
-            v = "rtxplugin:RtxHioImage" ARCH_LIBRARY_SUFFIX
-                "?filename=" + v + "&flipped=false";
-        }
-
-        // Check for images.
-        else if (!v.empty() && imageRegistry.IsSupportedImageFile(v)) {
-            v = "rtxplugin:RtxHioImage" ARCH_LIBRARY_SUFFIX
-                "?filename=" + v;
-        }
+    else if (!HdPrman_IsNativeRenderManFormat(v) &&
+             imageRegistry.IsSupportedImageFile(v)) {
+        v = "rtxplugin:RtxHioImage" ARCH_LIBRARY_SUFFIX
+            "?filename=" + v + (flipTexture ? "" : "&flipped=false");
     }
 
     TF_DEBUG(HDPRMAN_IMAGE_ASSET_RESOLVE)
@@ -1591,7 +1631,7 @@ HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
 
     // Decide whether to use the CPU, GPU, or both
     RtParamList paramList;
-    if (_xpu) {
+    if (_xpu && !xpuDevices.empty()) {
         static const RtUString cpuConfig("xpu:cpuconfig");
         static const RtUString gpuConfig("xpu:gpuconfig");
 
@@ -2040,7 +2080,7 @@ HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
 
         // Path tracer config.
         options.SetInteger(RixStr.k_hider_incremental, 1);
-        options.SetInteger(RixStr.k_hider_jitter, 1);
+        options.SetInteger(RixStr.k_hider_jitter, !_disableJitter);
         options.SetInteger(RixStr.k_trace_maxdepth, 10);
         options.SetFloat(RixStr.k_Ri_FormatPixelAspectRatio, 1.0f);
         options.SetString(RixStr.k_bucket_order, us_circle);
@@ -2669,56 +2709,105 @@ HdPrman_RenderParam::UpdateRileyShutterInterval(
     riley->SetOptions(_GetDeprecatedOptionsPrunedList());
 }
 
-static
-void _MarkSampleFilterDirty(HdChangeTracker *tracker, SdfPath const &path)
-{
-    if (!path.IsEmpty()) {
-        tracker->MarkSprimDirty(path, HdChangeTracker::DirtyParams);
-    }
-}
-
 void
-HdPrman_RenderParam::SetConnectedSampleFilterPath(
+HdPrman_RenderParam::SetConnectedSampleFilterPaths(
     HdSceneDelegate *sceneDelegate,
-    SdfPath const &connectedSampleFilterPath)
+    SdfPathVector const &connectedSampleFilterPaths)
 {
-    if (_connectedSampleFilterPath != connectedSampleFilterPath) {
-        HdChangeTracker& tracker =
-            sceneDelegate->GetRenderIndex().GetChangeTracker();
-        _MarkSampleFilterDirty(&tracker, _connectedSampleFilterPath);
-        _MarkSampleFilterDirty(&tracker, connectedSampleFilterPath);
-        _connectedSampleFilterPath = connectedSampleFilterPath;
+    if (_connectedSampleFilterPaths != connectedSampleFilterPaths) {
+        // Reset the Filter Paths/Shading Nodes
+        _sampleFilterNodes.clear();
+
+        // Mark the SampleFilter Prims Dirty and update the Connected Paths
+        for (const SdfPath &path : connectedSampleFilterPaths) {
+            sceneDelegate->GetRenderIndex().GetChangeTracker()
+                .MarkSprimDirty(path, HdChangeTracker::DirtyParams);
+        }
+        _connectedSampleFilterPaths = connectedSampleFilterPaths;
+    }
+
+    // If there are no connected SampleFilters, delete the riley SampleFilter
+    if (_connectedSampleFilterPaths.size() == 0) {
+        if (_sampleFiltersId != riley::SampleFilterId::InvalidId()) {
+            AcquireRiley()->DeleteSampleFilter(_sampleFiltersId);
+            _sampleFiltersId = riley::SampleFilterId::InvalidId();
+        }
     }
 }
 
 void
-HdPrman_RenderParam::AddSampleFilter(riley::SampleFilterId const& filterId)
+HdPrman_RenderParam::_CreateSampleFilters()
 {
-    const auto filterIt = std::find(
-        _sampleFilterIds.begin(), _sampleFilterIds.end(), filterId);
-    if (filterIt == _sampleFilterIds.end()) {
-        _sampleFilterIds.push_back(filterId);
-        _sampleFilterList.count = _sampleFilterIds.size();
-        _sampleFilterList.ids = &_sampleFilterIds.front();
+    std::vector<riley::ShadingNode> shadingNodes;
+    for (const auto pair : _sampleFilterNodes) {
+        if (pair.second.name) {
+            shadingNodes.push_back(pair.second);
+        }
+    }
+    // If we have multiple SampleFilters, create a SampleFilter Combiner Node
+    if (_connectedSampleFilterPaths.size() > 1) {
+        static RtUString filterArrayName("filter");
+        static RtUString pxrSampleFilterCombiner("PxrSampleFilterCombiner");
+
+        // FilterRefs needs to match the order of SampleFilters specified in 
+        // the RenderSettings connection
+        std::vector<RtUString> filterRefs;
+        for (const SdfPath &path : _connectedSampleFilterPaths) {
+            filterRefs.push_back(RtUString(path.GetText()));
+        }
+
+        riley::ShadingNode combinerNode;
+        combinerNode.type = riley::ShadingNode::Type::k_SampleFilter;
+        combinerNode.handle = pxrSampleFilterCombiner;
+        combinerNode.name = pxrSampleFilterCombiner;
+        combinerNode.params.SetSampleFilterReferenceArray(
+            filterArrayName, filterRefs.data(), filterRefs.size());
+        shadingNodes.push_back(combinerNode);
+    }
+    
+    // Create or update the Riley SampleFilters
+    riley::ShadingNetwork const sampleFilterNetwork = {
+        static_cast<uint32_t>(shadingNodes.size()), &shadingNodes[0] };
+    
+    if (_sampleFiltersId == riley::SampleFilterId::InvalidId()) {
+        _sampleFiltersId = AcquireRiley()->CreateSampleFilter(
+            riley::UserId::DefaultId(),
+            sampleFilterNetwork, 
+            RtParamList());
+    }
+    else {
+        AcquireRiley()->ModifySampleFilter(
+            _sampleFiltersId, &sampleFilterNetwork, nullptr);
+    }
+
+    if (_sampleFiltersId == riley::SampleFilterId::InvalidId()) {
+        TF_WARN("Failed to create the Sample Filter(s)\n");
     }
 }
 
 void
-HdPrman_RenderParam::RemoveSampleFilter(riley::SampleFilterId const& filterId)
+HdPrman_RenderParam::AddSampleFilter(
+    SdfPath const& path,
+    riley::ShadingNode const& node)
 {
-    const auto filterIt = std::find(
-        _sampleFilterIds.begin(), _sampleFilterIds.end(), filterId);
-    if (filterIt != _sampleFilterIds.end()) {
-        _sampleFilterIds.erase(filterIt);
-        _sampleFilterList.count = _sampleFilterIds.size();
-        _sampleFilterList.ids = &_sampleFilterIds.front();
+    // Update or Add the SampleFilter Shading node
+    const auto filterIt = _sampleFilterNodes.insert( {path, node} );
+    if (!filterIt.second) {
+        filterIt.first->second = node;
+    }
+
+    // If we have all the Shading Nodes, create the SampleFilters in Riley
+    if (_sampleFilterNodes.size() == _connectedSampleFilterPaths.size()) {
+        _CreateSampleFilters();
     }
 }
 
 riley::SampleFilterList
 HdPrman_RenderParam::GetSampleFilterList()
 {
-    return _sampleFilterList;
+    return (_sampleFiltersId == riley::SampleFilterId::InvalidId()) 
+        ? riley::SampleFilterList({ 0, nullptr })
+        : riley::SampleFilterList({ 1, &_sampleFiltersId });
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

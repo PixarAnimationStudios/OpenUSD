@@ -1,0 +1,29 @@
+{
+    "Plugins": [
+        {
+            "LibraryPath": "@TEST_PLUG_INFO_LIBRARY_PATH@", 
+            "Name": "TestUsdImagingGLHdGpProcedurals", 
+            "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@", 
+            "Root": "@PLUG_INFO_ROOT@", 
+            "Type": "library",
+            "Info": {
+                "Types": {
+                    "CubePerMeshPointProceduralPlugin": {
+                        "bases": [
+                            "HdGpGenerativeProceduralPlugin"
+                        ], 
+                        "displayName": "CubePerMeshPoint",
+                        "priority" : 0
+                    },
+                    "MakeSomeStuffGenerativeProceduralPlugin": {
+                        "bases": [
+                            "HdGpGenerativeProceduralPlugin"
+                        ], 
+                        "displayName": "MakeSomeStuff",
+                        "priority" : 0
+                    }
+                }
+            }
+        }
+    ]
+}

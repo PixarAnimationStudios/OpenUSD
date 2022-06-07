@@ -251,7 +251,11 @@ public:
 
     /// Set the displayGroup metadata for this Input,  i.e. hinting for the
     /// location and nesting of the attribute.
+    ///
+    /// Note for an input representing a nested SdrShaderProperty, its expected
+    /// to have the scope delimited by a ":".
     /// \sa UsdProperty::SetDisplayGroup(), UsdProperty::SetNestedDisplayGroup()
+    /// \sa SdrShaderProperty::GetPage()
     USDSHADE_API
     bool SetDisplayGroup(const std::string& displayGroup) const;
 

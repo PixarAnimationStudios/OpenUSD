@@ -234,7 +234,6 @@ UsdMtlxStandardFileExtensions()
     return extensions;
 }
 
-#if AR_VERSION > 1
 static void
 _ReadFromAsset(mx::DocumentPtr doc, const ArResolvedPath& resolvedPath,
                const mx::FileSearchPath& searchPath = mx::FileSearchPath(),
@@ -311,9 +310,8 @@ _ReadFromAsset(mx::DocumentPtr doc, const ArResolvedPath& resolvedPath,
                            newReadOptions);
         };
 
-    mx::readFromXmlString(doc, s, &readOptions);
+    mx::readFromXmlString(doc, s, searchPath, &readOptions);
 }
-#endif
 
 mx::DocumentPtr
 UsdMtlxReadDocument(const std::string& resolvedPath)
@@ -321,10 +319,6 @@ UsdMtlxReadDocument(const std::string& resolvedPath)
     try {
         mx::DocumentPtr doc = mx::createDocument();
 
-#if AR_VERSION == 1
-        mx::readFromXmlFile(doc, resolvedPath);
-        return doc;
-#else
         // If resolvedPath points to a file on disk read from it directly
         // otherwise use the more general ArAsset API to read it from
         // whatever backing store it points to.
@@ -339,7 +333,6 @@ UsdMtlxReadDocument(const std::string& resolvedPath)
                 return doc;
             }
         }
-#endif
     }
     catch (mx::ExceptionFoundCycle& x) {
         TF_RUNTIME_ERROR("MaterialX cycle found reading '%s': %s", 

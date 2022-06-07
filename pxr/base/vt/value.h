@@ -1467,7 +1467,8 @@ BOOST_PP_SEQ_FOR_EACH(_VT_DECLARE_ZERO_VALUE_FACTORY,
                       unused,
                       VT_VEC_VALUE_TYPES
                       VT_MATRIX_VALUE_TYPES
-                      VT_QUATERNION_VALUE_TYPES)
+                      VT_QUATERNION_VALUE_TYPES
+                      VT_DUALQUATERNION_VALUE_TYPES)
 
 #undef _VT_DECLARE_ZERO_VALUE_FACTORY
 

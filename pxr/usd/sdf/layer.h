@@ -487,13 +487,8 @@ public:
     /// layer identifier, which updates asset information such as the layer's
     /// resolved path and other asset info. This may be used to update the
     /// layer after external changes to the underlying asset system.
-#if AR_VERSION == 1
-    SDF_API
-    void UpdateAssetInfo(const std::string& fileVersion = std::string());
-#else
     SDF_API
     void UpdateAssetInfo();
-#endif
 
     /// Returns the layer's display name.
     ///

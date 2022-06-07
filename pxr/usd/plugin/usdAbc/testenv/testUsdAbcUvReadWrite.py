@@ -56,20 +56,27 @@ class TestUsdAbcUvWrite(unittest.TestCase):
             self.assertTrue(rplaneUv)
             self.assertTrue(rplaneStUv)
 
-            self.assertEqual(planeSt.GetPrimvar('st').GetTypeName(), 'texCoord2f[]')
-            self.assertEqual(rplaneSt.GetPrimvar('st').GetTypeName(), 'texCoord2f[]')
-            self.assertEqual(planeSt.GetPrimvar('st').Get(), rplaneSt.GetPrimvar('st').Get(0))
-            self.assertEqual(planeSt.GetPrimvar('st').GetIndices(), rplaneSt.GetPrimvar('st').GetIndices(0))
+            planeSt_pvAPI = UsdGeom.PrimvarsAPI(planeSt)
+            planeUv_pvAPI = UsdGeom.PrimvarsAPI(planeUv)
+            planeStUv_pvAPI = UsdGeom.PrimvarsAPI(planeStUv)
+            rplaneSt_pvAPI = UsdGeom.PrimvarsAPI(rplaneSt)
+            rplaneUv_pvAPI = UsdGeom.PrimvarsAPI(rplaneUv)
+            rplaneStUv_pvAPI = UsdGeom.PrimvarsAPI(rplaneStUv)
 
-            self.assertEqual(planeUv.GetPrimvar('uv').GetTypeName(), 'texCoord2f[]')
-            self.assertEqual(rplaneUv.GetPrimvar('st').GetTypeName(), 'texCoord2f[]')
-            self.assertEqual(planeUv.GetPrimvar('uv').Get(), rplaneUv.GetPrimvar('st').Get(0))
-            self.assertEqual(planeUv.GetPrimvar('uv').GetIndices(), rplaneUv.GetPrimvar('st').GetIndices(0))
+            self.assertEqual(planeSt_pvAPI.GetPrimvar('st').GetTypeName(), 'texCoord2f[]')
+            self.assertEqual(rplaneSt_pvAPI.GetPrimvar('st').GetTypeName(), 'texCoord2f[]')
+            self.assertEqual(planeSt_pvAPI.GetPrimvar('st').Get(), rplaneSt_pvAPI.GetPrimvar('st').Get(0))
+            self.assertEqual(planeSt_pvAPI.GetPrimvar('st').GetIndices(), rplaneSt_pvAPI.GetPrimvar('st').GetIndices(0))
 
-            self.assertEqual(planeStUv.GetPrimvar('st').GetTypeName(), 'texCoord2f[]')
-            self.assertEqual(rplaneStUv.GetPrimvar('st').GetTypeName(), 'texCoord2f[]')
-            self.assertEqual(planeStUv.GetPrimvar('st').Get(), rplaneStUv.GetPrimvar('st').Get(0))
-            self.assertEqual(planeStUv.GetPrimvar('st').GetIndices(), rplaneStUv.GetPrimvar('st').GetIndices(0))
+            self.assertEqual(planeUv_pvAPI.GetPrimvar('uv').GetTypeName(), 'texCoord2f[]')
+            self.assertEqual(rplaneUv_pvAPI.GetPrimvar('st').GetTypeName(), 'texCoord2f[]')
+            self.assertEqual(planeUv_pvAPI.GetPrimvar('uv').Get(), rplaneUv_pvAPI.GetPrimvar('st').Get(0))
+            self.assertEqual(planeUv_pvAPI.GetPrimvar('uv').GetIndices(), rplaneUv_pvAPI.GetPrimvar('st').GetIndices(0))
+
+            self.assertEqual(planeStUv_pvAPI.GetPrimvar('st').GetTypeName(), 'texCoord2f[]')
+            self.assertEqual(rplaneStUv_pvAPI.GetPrimvar('st').GetTypeName(), 'texCoord2f[]')
+            self.assertEqual(planeStUv_pvAPI.GetPrimvar('st').Get(), rplaneStUv_pvAPI.GetPrimvar('st').Get(0))
+            self.assertEqual(planeStUv_pvAPI.GetPrimvar('st').GetIndices(), rplaneStUv_pvAPI.GetPrimvar('st').GetIndices(0))
 
             del stage
             del roundStage

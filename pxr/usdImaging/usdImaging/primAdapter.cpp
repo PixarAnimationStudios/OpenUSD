@@ -112,6 +112,14 @@ UsdImagingPrimAdapter::GetImagingSubprimData(
     return nullptr;
 }
 
+HdDataSourceLocatorSet
+UsdImagingPrimAdapter::InvalidateImagingSubprim(
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    return HdDataSourceLocatorSet();
+}
+
 /*static*/
 bool
 UsdImagingPrimAdapter::ShouldCullSubtree(UsdPrim const& prim)
@@ -244,6 +252,14 @@ void
 UsdImagingPrimAdapter::MarkReprDirty(UsdPrim const& prim,
                                      SdfPath const& cachePath,
                                      UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkCollectionsDirty(UsdPrim const& prim,
+                                            SdfPath const& cachePath,
+                                            UsdImagingIndexProxy* index)
 {
 }
 
@@ -1022,6 +1038,12 @@ UsdImagingPrimAdapter::_GetCollectionCache() const
     return _delegate->_collectionCache;
 }
 
+UsdStageRefPtr
+UsdImagingPrimAdapter::_GetStage() const
+{
+    return _delegate->_stage;
+}
+
 UsdImaging_CoordSysBindingStrategy::value_type
 UsdImagingPrimAdapter::_GetCoordSysBindings(UsdPrim const& prim) const
 {
@@ -1032,6 +1054,22 @@ UsdImaging_InheritedPrimvarStrategy::value_type
 UsdImagingPrimAdapter::_GetInheritedPrimvars(UsdPrim const& prim) const
 {
     return _delegate->_inheritedPrimvarCache.GetValue(prim);
+}
+
+UsdGeomPrimvar
+UsdImagingPrimAdapter::_GetInheritedPrimvar(UsdPrim const& prim,
+                                             TfToken const& primvarName) const
+{
+    UsdImaging_InheritedPrimvarStrategy::value_type inheritedPrimvarRecord =
+        _GetInheritedPrimvars(prim.GetParent());
+    if (inheritedPrimvarRecord) {
+        for (UsdGeomPrimvar const& pv : inheritedPrimvarRecord->primvars) {
+            if (pv.GetPrimvarName() == primvarName) {
+                return pv;
+            }
+        }
+    }
+    return UsdGeomPrimvar();
 }
 
 bool

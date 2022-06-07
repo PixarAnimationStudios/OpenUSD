@@ -272,13 +272,14 @@ public:
     void UpdateRileyShutterInterval(const HdRenderIndex * renderIndex);
 
     // Path to the connected Sample Filter from the Render Settings Prim
-    void SetConnectedSampleFilterPath(HdSceneDelegate *sceneDelegate,
-        SdfPath const& connectedSampleFilterPath);
-    SdfPath GetConnectedSampleFilterPath() {return _connectedSampleFilterPath;}
+    void SetConnectedSampleFilterPaths(HdSceneDelegate *sceneDelegate,
+        SdfPathVector const& connectedSampleFilterPaths);
+    SdfPathVector GetConnectedSampleFilterPaths() {
+        return _connectedSampleFilterPaths;
+    }
 
     // Riley Data from the Sample Filter Prim
-    void AddSampleFilter(riley::SampleFilterId const& filterId);
-    void RemoveSampleFilter(riley::SampleFilterId const& filterId);
+    void AddSampleFilter(SdfPath const& path, riley::ShadingNode const& node);
     riley::SampleFilterList GetSampleFilterList();
 
 private:
@@ -287,6 +288,7 @@ private:
     void _CreateFallbackMaterials();
     void _CreateFallbackLight();
     void _CreateIntegrator(HdRenderDelegate * renderDelegate);
+    void _CreateSampleFilters();
 
     void _DestroyRiley();
 
@@ -377,9 +379,9 @@ private:
     HdPrman_RenderViewContext _renderViewContext;
 
     // SampleFilter
-    SdfPath _connectedSampleFilterPath;
-    riley::SampleFilterList _sampleFilterList;
-    std::vector<riley::SampleFilterId> _sampleFilterIds;
+    SdfPathVector _connectedSampleFilterPaths;
+    std::map<SdfPath, riley::ShadingNode> _sampleFilterNodes;
+    riley::SampleFilterId _sampleFiltersId;
 
     // RIX or XPU
     bool _xpu;
