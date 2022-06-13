@@ -177,6 +177,7 @@ diagnostic and debugging facilities, and an interactive python interpreter.
           [--numThreads NUMTHREADS] [--ff FIRSTFRAME] [--lf LASTFRAME]
           [--cf CURRENTFRAME] [--complexity {low,medium,high,veryhigh}]
           [--quitAfterStartup] [--sessionLayer SESSIONLAYER]
+          [--mute MUTELAYERSRE]
           usdFile
    
    View a usd file
@@ -232,7 +233,12 @@ diagnostic and debugging facilities, and an interactive python interpreter.
                            anonymous to persistent, be aware that layers saved
                            from Export Overrides will include the opinions in the
                            persistent session layer.
-
+     --mute MUTELAYERSRE   Layer identifiers searched against this regular
+                           expression will be muted on the stage prior to, and
+                           after loading. Multiple expressions can be supplied
+                           using the | regex separator operator. Alternatively
+                           the argument may be used multiple times.
+     
 **Further Notes on Command Line Options**
 
     * :option:`--renderer` : Can be used to select any of the render

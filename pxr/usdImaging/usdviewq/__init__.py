@@ -237,6 +237,15 @@ class Launcher(object):
                             "will include the opinions in the persistent "
                             "session layer.")
 
+        parser.add_argument('--mute', default=None, type=str,
+                            dest='muteLayersRe', action='append', nargs=1,
+                            help="Layer identifiers searched against this "
+                                 "regular expression will be muted on the "
+                                 "stage prior to, and after loading. Multiple "
+                                 "expressions can be supplied using the | "
+                                 "regex separator operator. Alternatively the "
+                                 "argument may be used multiple times.")
+
     def ParseOptions(self, parser):
         '''
         runs the parser on the arguments

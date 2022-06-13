@@ -445,11 +445,10 @@ class AppController(QtCore.QObject):
             self._usdviewApi = UsdviewApi(self)
             if not self._noPlugins:
                 self._configurePlugins()
-
             # read the stage here
             stage = self._openStage(
                 self._parserData.usdFile, self._parserData.sessionLayer,
-                self._parserData.populationMask)
+                self._parserData.populationMask, self._parserData.muteLayersRe)
             if not stage:
                 sys.exit(0)
 
@@ -1171,7 +1170,43 @@ class AppController(QtCore.QObject):
         if self._printTiming:
             t.PrintTime("'%s'" % msg)
 
-    def _openStage(self, usdFilePath, sessionFilePath, populationMaskPaths):
+    def _applyStageOpenLayerMutes(self, stage, muteLayersRe):
+        # note this function should only be called once, during _openStage().
+        if not muteLayersRe:
+            return
+        
+        def _MuteMatchingLayers():
+            layersToMute = []
+            for layer in stage.GetUsedLayers():
+                if matcher.search(layer.identifier):
+                    print('(usdview) Muting layer {}'.format(layer.identifier))
+                    layersToMute.append(layer.identifier)
+            if layersToMute:
+                stage.MuteAndUnmuteLayers(layersToMute, [])
+
+        try:
+            pattern = '|'.join(x[0] for x in muteLayersRe)
+            # fix up bad input on the users behalf since any leading, trailing
+            # or duplicate | operators result in a match for every layer and
+            # thus break the stage.
+            pattern =  re.sub('^\||(?<=\|)\|+|\|$', '', pattern)
+            if not pattern:
+                return
+            matcher = re.compile(pattern)
+        except:
+            PrintWarning('Ignoring invalid mute layers regular '
+                         'expression(s):', muteLayersRe)
+            return
+        
+        _MuteMatchingLayers()
+        if not self._unloaded:
+            stage.Load()
+            # second pass in order to mute additional 
+            # layers populated after loading
+            _MuteMatchingLayers()
+            
+    def _openStage(self, usdFilePath, sessionFilePath,
+                   populationMaskPaths, muteLayersRe):
 
         def _GetFormattedError(reasons=None):
             err = ("Error: Unable to open stage '{0}'\n".format(usdFilePath))
@@ -1187,7 +1222,8 @@ class AppController(QtCore.QObject):
             Tf.MallocTag.Initialize()
 
         with Timer() as t:
-            loadSet = Usd.Stage.LoadNone if self._unloaded else Usd.Stage.LoadAll
+            loadSet = Usd.Stage.LoadNone if (self._unloaded or muteLayersRe) \
+                                         else Usd.Stage.LoadAll
             popMask = (None if populationMaskPaths is None else
                        Usd.StagePopulationMask())
 
@@ -1225,6 +1261,8 @@ class AppController(QtCore.QObject):
                                        sessionLayer,
                                        self._resolverContextFn(usdFilePath), 
                                        loadSet)
+
+            self._applyStageOpenLayerMutes(stage, muteLayersRe)
 
         if not stage:
             sys.stderr.write(_GetFormattedError())
@@ -2792,7 +2830,7 @@ class AppController(QtCore.QObject):
             self._closeStage()
             stage = self._openStage(
                 self._parserData.usdFile, self._parserData.sessionLayer,
-                self._parserData.populationMask)
+                self._parserData.populationMask, self._parserData.muteLayersRe)
             # We need this for layers which were cached in memory but changed on
             # disk. The additional Reload call should be cheap when nothing
             # actually changed.
@@ -4218,30 +4256,36 @@ class AppController(QtCore.QObject):
 
         path = obj.GetPath()
 
+        mutedLayerColor = QtGui.QColor(151, 151, 151)
+                
         # The pseudoroot is different enough from prims and properties that
         # it makes more sense to process it separately
         if path == Sdf.Path.absoluteRootPath:
-            layers = GetRootLayerStackInfo(
-                self._dataModel.stage.GetRootLayer())
+            layers = GetRootLayerStackInfo(self._dataModel.stage)
             tableWidget.setColumnCount(2)
             tableWidget.horizontalHeaderItem(1).setText('Layer Offset')
 
             tableWidget.setRowCount(len(layers))
 
             for i, layer in enumerate(layers):
-                layerItem = QtWidgets.QTableWidgetItem(layer.GetHierarchicalDisplayString())
-                layerItem.layerPath = layer.layer.realPath
-                layerItem.identifier = layer.layer.identifier
+                layerItem = QtWidgets.QTableWidgetItem(
+                              layer.GetHierarchicalDisplayString())
+                layerItem.stage = self._dataModel.stage
+                layerItem.layerPath = layer.GetRealPath()
+                layerItem.identifier = layer.GetIdentifier()
                 toolTip = "<b>identifier:</b> @%s@ <br> <b>resolved path:</b> %s" % \
-                    (layer.layer.identifier, layerItem.layerPath)
+                           (layerItem.identifier, layerItem.layerPath)
                 toolTip = self._limitToolTipSize(toolTip)
                 layerItem.setToolTip(toolTip)
+                if layer.IsMuted():
+                    layerItem.setForeground(QtGui.QBrush(mutedLayerColor))
                 tableWidget.setItem(i, 0, layerItem)
 
                 offsetItem = QtWidgets.QTableWidgetItem(layer.GetOffsetString())
-                offsetItem.layerPath = layer.layer.realPath
-                offsetItem.identifier = layer.layer.identifier
-                toolTip = self._limitToolTipSize(str(layer.offset))
+                offsetItem.stage = layerItem.stage
+                offsetItem.layerPath = layerItem.layerPath
+                offsetItem.identifier = layerItem.identifier
+                toolTip = self._limitToolTipSize(str(layer.GetOffset))
                 offsetItem.setToolTip(toolTip)
                 tableWidget.setItem(i, 1, offsetItem)
 
@@ -4259,9 +4303,10 @@ class AppController(QtCore.QObject):
                 prop = obj.GetPrim().GetProperty(path.name)
                 specs = prop.GetPropertyStack(self._dataModel.currentFrame)
                 c3 = "Value" if (len(specs) == 0 or
-                                 isinstance(specs[0], Sdf.AttributeSpec)) else "Target Paths"
+                               isinstance(specs[0], Sdf.AttributeSpec)) \
+                                 else "Target Paths"
                 tableWidget.setHorizontalHeaderItem(2,
-                                                    QtWidgets.QTableWidgetItem(c3))
+                                                 QtWidgets.QTableWidgetItem(c3))
             else:
                 specs = obj.GetPrim().GetPrimStack()
                 tableWidget.setHorizontalHeaderItem(2,
@@ -4303,9 +4348,12 @@ class AppController(QtCore.QObject):
                 # Add the data the context menu needs
                 for j in range(3):
                     item = tableWidget.item(i, j)
+                    item.stage = self._dataModel.stage
                     item.layerPath = spec.layer.realPath
                     item.path = spec.path.pathString
                     item.identifier = spec.layer.identifier
+                    if self._dataModel.stage.IsLayerMuted(item.identifier):
+                        item.setForeground(QtGui.QBrush(mutedLayerColor))
 
     def _isHUDVisible(self):
         """Checks if the upper HUD is visible by looking at the global HUD

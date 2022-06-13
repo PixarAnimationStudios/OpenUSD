@@ -61,6 +61,11 @@
 
 ### usdview
 
+- Added --mute commandline option for muting layers prior to initial stage load.
+- Improved muted layer support in the Layer Stack tab (previously muted layers 
+  were not listed) and added context menu support to interactively mute/unmute
+  layers from the ui.
+
 ### Alembic Plugin
 
 ### MaterialX Plugin
