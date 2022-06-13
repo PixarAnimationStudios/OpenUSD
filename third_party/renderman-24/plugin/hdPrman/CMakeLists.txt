@@ -88,6 +88,7 @@ pxr_plugin(${PXR_PACKAGE}
         renderSettings
         rixStrings
         sampleFilter
+        sampleFilterInvalidatingSceneIndexPlugin
         sphere
         volume
         xcpt

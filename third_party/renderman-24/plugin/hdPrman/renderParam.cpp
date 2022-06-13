@@ -2822,15 +2822,17 @@ HdPrman_RenderParam::SetConnectedSampleFilterPaths(
     SdfPathVector const &connectedSampleFilterPaths)
 {
     if (_connectedSampleFilterPaths != connectedSampleFilterPaths) {
-        // Reset the Filter Paths/Shading Nodes
+        // Reset the Filter Shading Nodes and update the Connected Paths
         _sampleFilterNodes.clear();
-
-        // Mark the SampleFilter Prims Dirty and update the Connected Paths
-        for (const SdfPath &path : connectedSampleFilterPaths) {
-            sceneDelegate->GetRenderIndex().GetChangeTracker()
-                .MarkSprimDirty(path, HdChangeTracker::DirtyParams);
-        }
         _connectedSampleFilterPaths = connectedSampleFilterPaths;
+
+        if (! HdRenderIndex::IsSceneIndexEmulationEnabled()) {
+            // Mark the SampleFilter Prims Dirty
+            for (const SdfPath &path : connectedSampleFilterPaths) {
+                sceneDelegate->GetRenderIndex().GetChangeTracker()
+                    .MarkSprimDirty(path, HdChangeTracker::DirtyParams);
+            }
+        }
     }
 
     // If there are no connected SampleFilters, delete the riley SampleFilter

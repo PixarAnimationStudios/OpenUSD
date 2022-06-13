@@ -38,6 +38,12 @@
                         "loadWithRenderer": "Prman",
                         "priority": 0,
                         "displayName": "Prman Dependency Forwarding Scene Index"
+                    },
+                    "HdPrman_SampleFilterInvalidatingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman Sample Filter Invalidating Scene Index"
                     }
                 }
             },
