@@ -609,7 +609,8 @@ class HdSt_TextureTestDriver
 {
 public:
     HdSt_TextureTestDriver();
-    
+    ~HdSt_TextureTestDriver();
+
     void Draw(HgiTextureHandle const &colorDst, 
               HgiTextureHandle const &inputTexture,
               HgiSamplerHandle const &inputSampler);

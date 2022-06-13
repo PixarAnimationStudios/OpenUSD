@@ -351,6 +351,25 @@ HdSt_TextureTestDriver::HdSt_TextureTestDriver() :
     _CreateVertexBufferDescriptor();
 }
 
+HdSt_TextureTestDriver::~HdSt_TextureTestDriver()
+{
+    if (_vertexBuffer) {
+        _hgi->DestroyBuffer(&_vertexBuffer);
+    }
+    if (_indexBuffer) {
+        _hgi->DestroyBuffer(&_indexBuffer);
+    }
+    if (_shaderProgram) {
+        _DestroyShaderProgram();
+    }
+    if (_resourceBindings) {
+        _hgi->DestroyResourceBindings(&_resourceBindings);
+    }
+    if (_pipeline) {
+        _hgi->DestroyGraphicsPipeline(&_pipeline);
+    }
+}
+
 void
 HdSt_TextureTestDriver::Draw(HgiTextureHandle const &colorDst, 
                              HgiTextureHandle const &inputTexture,
