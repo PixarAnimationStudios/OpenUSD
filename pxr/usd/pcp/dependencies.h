@@ -249,54 +249,24 @@ private:
     ConcurrentPopulationContext *_concurrentPopulationContext;
 };
 
-template <typename FN>
-static void
-Pcp_ForEachDependentNode( const SdfPath &sitePath,
-                          const SdfLayerHandle &layer,
-                          const SdfPath &depIndexPath,
-                          const PcpCache &cache,
-                          const FN &fn )
+static inline bool
+Pcp_NodeUsesLayerOrLayerStack( const PcpNodeRef& node,
+                               const SdfLayerHandle& layer )
 {
-    PcpNodeRef nodeUsingSite;
-
-    // Walk up as needed to find a containing prim index.
-    SdfPath indexPath;
-    const PcpPrimIndex *primIndex = nullptr;
-    for (indexPath = depIndexPath.GetAbsoluteRootOrPrimPath();
-         indexPath != SdfPath();
-         indexPath = indexPath.GetParentPath())
-    {
-        primIndex = cache.FindPrimIndex(indexPath);
-        if (primIndex) {
-            break;
-        }
-    }
-    if (primIndex) {
-        // Find which node corresponds to (layer, oldPath).
-        for (const PcpNodeRef &node: primIndex->GetNodeRange()) {
-            if (PcpNodeIntroducesDependency(node) && 
-                node.GetLayerStack()->HasLayer(layer) &&
-                sitePath.HasPrefix(node.GetPath()))
-            {
-                nodeUsingSite = node;
-                fn(depIndexPath, nodeUsingSite);
-            }
-        }
-    }
-
-    TF_VERIFY(
-            nodeUsingSite, 
-            "Unable to find node that introduced dependency on site "
-            "<%s>@%s@ for prim <%s>", 
-            sitePath.GetText(),
-            layer->GetIdentifier().c_str(),
-            depIndexPath.GetText());
+    return node.GetLayerStack()->HasLayer(layer);
 }
 
-template <typename FN>
+static inline bool
+Pcp_NodeUsesLayerOrLayerStack( const PcpNodeRef& node,
+                               const PcpLayerStackRefPtr& layerStack )
+{
+    return node.GetLayerStack() == layerStack;
+}
+
+template <class FN, class LayerOrLayerStack>
 static void
 Pcp_ForEachDependentNode( const SdfPath &sitePath,
-                          const PcpLayerStackPtr &layerStack,
+                          const LayerOrLayerStack &layerOrLayerStack,
                           const SdfPath &depIndexPath,
                           const PcpCache &cache,
                           const FN &fn )
@@ -316,10 +286,10 @@ Pcp_ForEachDependentNode( const SdfPath &sitePath,
         }
     }
     if (primIndex) {
-        // Find which node corresponds to (layerStack, oldPath).
+        // Find which node corresponds to (layerOrLayerStack, oldPath).
         for (const PcpNodeRef &node: primIndex->GetNodeRange()) {
-            if (PcpNodeIntroducesDependency(node) &&
-                node.GetLayerStack() == layerStack &&
+            if (PcpNodeIntroducesDependency(node) && 
+                Pcp_NodeUsesLayerOrLayerStack(node, layerOrLayerStack) &&
                 sitePath.HasPrefix(node.GetPath()))
             {
                 nodeUsingSite = node;
@@ -331,9 +301,9 @@ Pcp_ForEachDependentNode( const SdfPath &sitePath,
     TF_VERIFY(
             nodeUsingSite, 
             "Unable to find node that introduced dependency on site "
-            "<%s>%s for prim <%s> in %s", 
+            "<%s>@%s@ for prim <%s> in %s", 
             sitePath.GetText(),
-            TfStringify(layerStack->GetIdentifier()).c_str(),
+            TfStringify(layerOrLayerStack->GetIdentifier()).c_str(),
             depIndexPath.GetText(),
             TfStringify(cache.GetLayerStack()->GetIdentifier()).c_str()
             );
