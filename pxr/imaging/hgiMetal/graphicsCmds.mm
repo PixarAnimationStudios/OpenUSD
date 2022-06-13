@@ -39,21 +39,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static void
-_VegaIndirectFix(HgiMetal* hgi,
-                 id<MTLRenderCommandEncoder> encoder,
-                 MTLPrimitiveType primType)
-{
-    if (hgi->GetCapabilities()->requiresIndirectDrawFix) {
-        // Fix for Vega in macOS before 12.0.  There is state leakage between
-        // indirect draw of different prim types which results in a GPU crash.
-        // Flush with a null draw through the direct path.
-        [encoder drawPrimitives:primType
-                vertexStart:0
-                vertexCount:0];
-    }
-}
-
 HgiMetalGraphicsCmds::CachedEncoderState::CachedEncoderState()
 {
     numVertexBufferBindings = MAX_METAL_VERTEX_BUFFER_BINDINGS;
@@ -288,6 +273,27 @@ HgiMetalGraphicsCmds::EnableParallelEncoder(bool enable)
     _enableParallelEncoder = enable;
 }
 
+void
+HgiMetalGraphicsCmds::_VegaIndirectFix()
+{
+    if (!_primitiveTypeChanged) {
+        return;
+    }
+    
+    if (!_hgi->GetCapabilities()->requiresIndirectDrawFix) {
+        return;
+    }
+    // Fix for Vega in macOS before 12.0.  There is state leakage between
+    // indirect draw of different prim types which results in a GPU crash.
+    // Flush with a null draw through the direct path.
+    id<MTLRenderCommandEncoder> encoder = _GetEncoder();
+    MTLPrimitiveType mtlType =
+        HgiMetalConversions::GetPrimitiveType(_primitiveType);
+    [encoder drawPrimitives:mtlType
+            vertexStart:0
+            vertexCount:0];
+}
+
 uint32_t
 HgiMetalGraphicsCmds::_GetNumEncoders()
 {
@@ -416,11 +422,10 @@ HgiMetalGraphicsCmds::_SyncArgumentBuffer()
     if (_argumentBuffer) {
         if (_argumentBuffer.storageMode != MTLStorageModeShared &&
             [_argumentBuffer respondsToSelector:@selector(didModifyRange:)]) {
-            NSRange range = NSMakeRange(0, _argumentBuffer.length);
 
             ARCH_PRAGMA_PUSH
             ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND
-            [_argumentBuffer didModifyRange:range];
+            [_argumentBuffer didModifyRange:{0, _argumentBuffer.length}];
             ARCH_PRAGMA_POP
         }
         _argumentBuffer = nil;
@@ -434,7 +439,7 @@ HgiMetalGraphicsCmds::SetViewport(GfVec4i const& vp)
     double y = vp[1];
     double w = vp[2];
     double h = vp[3];
-    
+
     // Viewport is inverted in the y. Along with the front face winding order
     // being inverted.
     // This combination allows us to emulate the OpenGL coordinate space on
@@ -628,7 +633,7 @@ HgiMetalGraphicsCmds::Draw(
 
     MTLPrimitiveType type=HgiMetalConversions::GetPrimitiveType(_primitiveType);
     id<MTLRenderCommandEncoder> encoder = _GetEncoder();
-    
+
     _SetVertexBufferStepFunctionOffsets(encoder, baseInstance);
 
     if (_primitiveType == HgiPrimitiveTypePatchList) {
@@ -664,13 +669,13 @@ HgiMetalGraphicsCmds::DrawIndirect(
     uint32_t drawCount,
     uint32_t stride)
 {
+    MTLPrimitiveType mtlType =
+        HgiMetalConversions::GetPrimitiveType(_primitiveType);
+    id<MTLBuffer> drawBufferId =
+        static_cast<HgiMetalBuffer*>(drawParameterBuffer.Get())->GetBufferId();
+    const HgiCapabilities *capabilities = _hgi->GetCapabilities();
+
     _SyncArgumentBuffer();
-
-    HgiMetalBuffer* drawBuf =
-        static_cast<HgiMetalBuffer*>(drawParameterBuffer.Get());
-
-    MTLPrimitiveType type=HgiMetalConversions::GetPrimitiveType(_primitiveType);
-    
     static const uint32_t _drawCallsPerThread = 256;
     const uint32_t numEncoders = std::min(
                                  std::max(drawCount / _drawCallsPerThread, 1U),
@@ -703,14 +708,13 @@ HgiMetalGraphicsCmds::DrawIndirect(
                         [encoder drawPatches:controlPointCount
                             patchIndexBuffer:NULL
                       patchIndexBufferOffset:0
-                              indirectBuffer:drawBuf->GetBufferId()
+                              indirectBuffer:drawBufferId
                         indirectBufferOffset:bufferOffset];
                     }
                 }
                 else {
-                    if (_primitiveTypeChanged) {
-                        _VegaIndirectFix(_hgi, encoder, type);
-                    }
+                    _VegaIndirectFix();
+
                     for (uint32_t offset = encoderOffset;
                          offset < encoderOffset + encoderCount;
                          ++offset) {
@@ -718,8 +722,8 @@ HgiMetalGraphicsCmds::DrawIndirect(
                         const uint32_t bufferOffset = drawBufferByteOffset
                                                     + (offset * stride);
                         
-                        [encoder drawPrimitives:type
-                                 indirectBuffer:drawBuf->GetBufferId()
+                        [encoder drawPrimitives:mtlType
+                                 indirectBuffer:drawBufferId
                            indirectBufferOffset:bufferOffset];
                     }
                 }
@@ -741,7 +745,8 @@ HgiMetalGraphicsCmds::DrawIndexed(
 
     HgiMetalBuffer* indexBuf = static_cast<HgiMetalBuffer*>(indexBuffer.Get());
 
-    MTLPrimitiveType type=HgiMetalConversions::GetPrimitiveType(_primitiveType);
+    MTLPrimitiveType mtlType =
+        HgiMetalConversions::GetPrimitiveType(_primitiveType);
 
     id<MTLRenderCommandEncoder> encoder = _GetEncoder();
         
@@ -762,7 +767,9 @@ HgiMetalGraphicsCmds::DrawIndexed(
                       instanceCount:instanceCount
                        baseInstance:baseInstance];
     } else {
-        [encoder drawIndexedPrimitives:type
+        _VegaIndirectFix();
+
+        [encoder drawIndexedPrimitives:mtlType
                             indexCount:indexCount
                              indexType:MTLIndexTypeUInt32
                            indexBuffer:indexBuf->GetBufferId()
@@ -785,16 +792,14 @@ HgiMetalGraphicsCmds::DrawIndexedIndirect(
     std::vector<uint32_t> const& drawParameterBufferUInt32,
     uint32_t patchBaseVertexByteOffset)
 {
-    _SyncArgumentBuffer();
-    
-    id<MTLBuffer> indexBufferId =
-        static_cast<HgiMetalBuffer*>(indexBuffer.Get())->GetBufferId();
+    MTLPrimitiveType mtlType =
+        HgiMetalConversions::GetPrimitiveType(_primitiveType);
     id<MTLBuffer> drawBufferId =
         static_cast<HgiMetalBuffer*>(drawParameterBuffer.Get())->GetBufferId();
+    id<MTLBuffer> indexBufferId =
+        static_cast<HgiMetalBuffer*>(indexBuffer.Get())->GetBufferId();
 
-    MTLPrimitiveType type =
-        HgiMetalConversions::GetPrimitiveType(_primitiveType);
-    
+    _SyncArgumentBuffer();
     static const uint32_t _drawCallsPerThread = 256;
     const uint32_t numEncoders = std::min(
                                  std::max(drawCount / _drawCallsPerThread, 1U),
@@ -846,9 +851,8 @@ HgiMetalGraphicsCmds::DrawIndexedIndirect(
                     }
                 }
                 else {
-                    if (_primitiveTypeChanged) {
-                        _VegaIndirectFix(_hgi, encoder, type);
-                    }
+                    _VegaIndirectFix();
+                    
                     for (uint32_t offset = encoderOffset;
                          offset < encoderOffset + encoderCount;
                          ++offset) {
@@ -857,7 +861,7 @@ HgiMetalGraphicsCmds::DrawIndexedIndirect(
                         const uint32_t bufferOffset = drawBufferByteOffset
                                                     + (offset * stride);
                         
-                        [encoder drawIndexedPrimitives:type
+                        [encoder drawIndexedPrimitives:mtlType
                                              indexType:MTLIndexTypeUInt32
                                            indexBuffer:indexBufferId
                                      indexBufferOffset:0

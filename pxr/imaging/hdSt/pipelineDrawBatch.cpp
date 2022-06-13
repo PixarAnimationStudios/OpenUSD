@@ -47,7 +47,6 @@
 
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
-#include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsPipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
 
@@ -1284,9 +1283,9 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
     _BindVertexBuffersForDrawing(gfxCmds, state);
 
     if (drawIndirect) {
-        _ExecuteDrawIndirect(gfxCmds, _dispatchBuffer, state.indexBar);
+        _ExecuteDrawIndirect(gfxCmds, state.indexBar);
     } else {
-        _ExecuteDrawImmediate(gfxCmds, _dispatchBuffer, state.indexBar);
+        _ExecuteDrawImmediate(gfxCmds, state.indexBar);
     }
 
     hgi->DestroyResourceBindings(&resourceBindings);
@@ -1298,12 +1297,11 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
 void
 HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
     HgiGraphicsCmds * gfxCmds,
-    HdStDispatchBufferSharedPtr const & dispatchBuffer,
     HdStBufferArrayRangeSharedPtr const & indexBar)
 {
     TRACE_FUNCTION();
 
-    HdStBufferResourceSharedPtr paramBuffer = dispatchBuffer->
+    HdStBufferResourceSharedPtr paramBuffer = _dispatchBuffer->
         GetBufferArrayRange()->GetResource(HdTokens->drawDispatch);
     if (!TF_VERIFY(paramBuffer)) return;
 
@@ -1311,7 +1309,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
         gfxCmds->DrawIndirect(
             paramBuffer->GetHandle(),
             paramBuffer->GetOffset(),
-            dispatchBuffer->GetCount(),
+            _dispatchBuffer->GetCount(),
             paramBuffer->GetStride());
     } else {
         HdStBufferResourceSharedPtr indexBuffer =
@@ -1322,7 +1320,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
             indexBuffer->GetHandle(),
             paramBuffer->GetHandle(),
             paramBuffer->GetOffset(),
-            dispatchBuffer->GetCount(),
+            _dispatchBuffer->GetCount(),
             paramBuffer->GetStride(),
             _drawCommandBuffer,
             _patchBaseVertexByteOffset);
@@ -1332,13 +1330,12 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
 void
 HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
     HgiGraphicsCmds * gfxCmds,
-    HdStDispatchBufferSharedPtr const & dispatchBuffer,
     HdStBufferArrayRangeSharedPtr const & indexBar)
 {
     TRACE_FUNCTION();
 
-    uint32_t const drawCount = dispatchBuffer->GetCount();
-    uint32_t const strideUInt32 = dispatchBuffer->GetCommandNumUints();
+    uint32_t const drawCount = _dispatchBuffer->GetCount();
+    uint32_t const strideUInt32 = _dispatchBuffer->GetCommandNumUints();
 
     if (!_useDrawIndexed) {
         for (uint32_t i = 0; i < drawCount; ++i) {
