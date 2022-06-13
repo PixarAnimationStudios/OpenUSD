@@ -94,12 +94,14 @@ public:
     /// This method will not immediately spawn a parse call which will be
     /// deferred until a GetNode*() method is called.
     NDR_API
-    void AppendDiscoveryResult(NdrNodeDiscoveryResult&& discoveryResult);
+    void AddDiscoveryResult(NdrNodeDiscoveryResult&& discoveryResult);
 
     /// Copy version of the method above.
-    /// For performance reasons, one should prefer to use the move version.
+    /// For performance reasons, one should prefer to use the rvalue reference
+    /// form.
+    /// \overload
     NDR_API
-    void AppendDiscoveryResult(const NdrNodeDiscoveryResult& discoveryResult);
+    void AddDiscoveryResult(const NdrNodeDiscoveryResult& discoveryResult);
 
     /// Allows the client to set any additional parser plugins that would
     /// otherwise NOT be found through the plugin system.

@@ -353,18 +353,18 @@ NdrRegistry::SetExtraDiscoveryPlugins(const std::vector<TfType>& pluginTypes)
     SetExtraDiscoveryPlugins(std::move(discoveryPlugins));
 }
 
-void NdrRegistry::AppendDiscoveryResult(NdrNodeDiscoveryResult&& discoveryResult)
+void NdrRegistry::AddDiscoveryResult(NdrNodeDiscoveryResult&& discoveryResult)
 {
     std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
     _AddDiscoveryResultNoLock(std::move(discoveryResult));
 }
 
-void NdrRegistry::AppendDiscoveryResult(const NdrNodeDiscoveryResult& discoveryResult)
+void NdrRegistry::AddDiscoveryResult(const NdrNodeDiscoveryResult& discoveryResult)
 {
     // Explicitly create a copy, otherwise this method will recurse
     // into itself.
     NdrNodeDiscoveryResult result = discoveryResult;
-    AppendDiscoveryResult(std::move(result));
+    AddDiscoveryResult(std::move(result));
 }
 
 void
