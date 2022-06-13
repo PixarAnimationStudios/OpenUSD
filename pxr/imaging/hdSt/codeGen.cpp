@@ -1387,7 +1387,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     const bool metalTessellationEnabled =
         capabilities->IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
     const bool requiresBasePrimitiveOffset =
-        capabilities->IsSet(HgiDeviceCapabilitiesBasePrimitiveOffset);
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsBasePrimitiveOffset);
     const bool doublePrecisionEnabled =
         capabilities->IsSet(HgiDeviceCapabilitiesBitsShaderDoublePrecision);
     const bool minusOneToOneDepth =
@@ -3131,7 +3131,7 @@ static void _EmitTextureAccessors(
                 << _GetPackedTypeAccessor(dataType, false)
                 << "(HgiGet_" << name;
             if (isArray) {
-                accessors << "(index, sampleCoord)\n";
+                accessors << "(index, sampleCoord)";
             } else {
                 accessors << "(sampleCoord)";
             }
