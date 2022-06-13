@@ -1074,7 +1074,12 @@ public:
     /// is of type \a T.  Invokes undefined behavior otherwise.  This is the
     /// fastest \a Get() method to use after a successful \a IsHolding() check.
     template <class T>
-    T const &UncheckedGet() const { return _Get<T>(); }
+    T const &UncheckedGet() const & { return _Get<T>(); }
+
+    /// \overload In case *this is an rvalue, move the held value out and return
+    /// by value.
+    template <class T>
+    T UncheckedGet() && { return UncheckedRemove<T>(); }
 
     /// Returns a const reference to the held object if the held object
     /// is of type \a T.  Issues an error and returns a const reference to a
@@ -1085,7 +1090,7 @@ public:
     /// The default implementation of the default value factory produces a
     /// value-initialized T.
     template <class T>
-    T const &Get() const {
+    T const &Get() const & {
         typedef Vt_DefaultValueFactory<T> Factory;
 
         // In the unlikely case that the types don't match, we obtain a default
@@ -1097,6 +1102,22 @@ public:
 
         return _Get<T>();
     }
+
+    /// \overload In case *this is an rvalue, move the held value out and return
+    /// by value.
+    template <class T>
+    T Get() && {
+        typedef Vt_DefaultValueFactory<T> Factory;
+
+        // In the unlikely case that the types don't match, we obtain a default
+        // value to return and issue an error via _FailGet.
+        if (ARCH_UNLIKELY(!IsHolding<T>())) {
+            return *(static_cast<T const *>(
+                         _FailGet(Factory::Invoke, typeid(T))));
+        }
+
+        return UncheckedRemove<T>();
+    }    
 
     /// Return a copy of the held object if the held object is of type T.
     /// Return a copy of the default value \a def otherwise.  Note that this
@@ -1480,14 +1501,26 @@ BOOST_PP_SEQ_FOR_EACH(_VT_DECLARE_ZERO_VALUE_FACTORY,
 
 template <>
 inline const VtValue&
-VtValue::Get<VtValue>() const {
+VtValue::Get<VtValue>() const & {
     return *this;
 }
 
 template <>
+inline VtValue
+VtValue::Get<VtValue>() && {
+    return std::move(*this);
+}
+
+template <>
 inline const VtValue&
-VtValue::UncheckedGet<VtValue>() const {
+VtValue::UncheckedGet<VtValue>() const & {
     return *this;
+}
+
+template <>
+inline VtValue
+VtValue::UncheckedGet<VtValue>() && {
+    return std::move(*this);
 }
 
 template <>
