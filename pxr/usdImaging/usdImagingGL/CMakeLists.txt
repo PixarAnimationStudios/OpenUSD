@@ -2078,6 +2078,20 @@ pxr_register_test(testUsdImagingGLPreviewSurface_Primvars
 )
 
 
+pxr_register_test(testUsdImagingGLPreviewSurface_PrimvarReaderOpacity
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage testPreviewSurfacePrimvarReaderOpacity.usda -write testPreviewSurfacePrimvarReaderOpacity.png"
+    IMAGE_DIFF_COMPARE
+        testPreviewSurfacePrimvarReaderOpacity.png
+    FAIL 0.05
+    FAIL_PERCENT 0.001
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPreviewSurface
+    ENV
+        HGIGL_ENABLE_BINDLESS_TEXTURE=1
+)
+
+
 pxr_register_test(testUsdImagingGLPreviewSurface_Specular
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage testPreviewSurfaceSpecular.usda -write testPreviewSurfaceSpecular.png"
     IMAGE_DIFF_COMPARE

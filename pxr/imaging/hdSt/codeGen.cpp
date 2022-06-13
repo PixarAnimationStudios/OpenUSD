@@ -5579,6 +5579,17 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                 << "\n}\n"
                 << "#define HD_HAS_" << it->second.name << " 1\n";
             
+            // Emit scalar accessors to support shading languages like MSL which
+            // do not support swizzle operators on scalar values.
+            if (_GetNumComponents(it->second.dataType) <= 4) {
+                accessors
+                    << _GetFlatType(it->second.dataType) << " HdGetScalar_"
+                    << it->second.name << "()"
+                    << " { return HdGet_" << it->second.name << "()"
+                    << _GetFlatTypeSwizzleString(it->second.dataType)
+                    << "; }\n";
+            }
+
             if (it->second.name == it->second.inPrimvars[0]) {
                 accessors
                     << "#endif\n";
