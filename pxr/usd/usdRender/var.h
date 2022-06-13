@@ -58,8 +58,7 @@ class SdfAssetPath;
 /// allows encoding of (generally renderer-specific) parameters that
 /// configure the renderer for computing the variable.
 /// 
-/// 
-/// ote In the future, UsdRender may standardize RenderVar representation
+/// \note In the future, UsdRender may standardize RenderVar representation
 /// for well-known variables under the sourceType `intrinsic`,
 /// such as _r_, _g_, _b_, _a_, _z_, or _id_.
 /// 

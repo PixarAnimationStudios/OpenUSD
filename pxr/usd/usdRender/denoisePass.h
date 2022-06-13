@@ -21,17 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDRENDER_GENERATED_PRODUCT_H
-#define USDRENDER_GENERATED_PRODUCT_H
+#ifndef USDRENDER_GENERATED_DENOISEPASS_H
+#define USDRENDER_GENERATED_DENOISEPASS_H
 
-/// \file usdRender/product.h
+/// \file usdRender/denoisePass.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdRender/api.h"
-#include "pxr/usd/usdRender/settingsBase.h"
+#include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usdRender/tokens.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -47,30 +46,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// RENDERPRODUCT                                                              //
+// DENOISEPASS                                                                //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdRenderProduct
+/// \class UsdRenderDenoisePass
 ///
-/// A UsdRenderProduct describes an image or other
-/// file-like artifact produced by a render. A RenderProduct
-/// combines one or more RenderVars into a file or interactive
-/// buffer.  It also provides all the controls established in
-/// UsdRenderSettingsBase as optional overrides to whatever the
-/// owning UsdRenderSettings prim dictates.
+/// A DenoisePass generates renders via a denoising process.  This may
+/// be the same renderer that a pipeline uses for UsdRender, or may be a separate
+/// one.  Notably, a DenoisePass requires another Pass to be present for it to
+/// operate.  The denoising process itself is not generative, and requires
+/// images inputs to operate.
 /// 
-/// Specific renderers may support additional settings, such
-/// as a way to configure compression settings, filetype metadata,
-/// and so forth.  Such settings can be encoded using
-/// renderer-specific API schemas applied to the product prim.
+/// As denoising integration varies so widely across pipelines, all
+/// implementation details are left to pipeline-specific prims
+/// that inherit from DenoisePass.
 /// 
 ///
-/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
-/// that are text/tokens, the actual token is published and defined in \ref UsdRenderTokens.
-/// So to set an attribute to the value "rightHanded", use UsdRenderTokens->rightHanded
-/// as the value.
-///
-class UsdRenderProduct : public UsdRenderSettingsBase
+class UsdRenderDenoisePass : public UsdTyped
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -78,26 +70,26 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
 
-    /// Construct a UsdRenderProduct on UsdPrim \p prim .
-    /// Equivalent to UsdRenderProduct::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdRenderDenoisePass on UsdPrim \p prim .
+    /// Equivalent to UsdRenderDenoisePass::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdRenderProduct(const UsdPrim& prim=UsdPrim())
-        : UsdRenderSettingsBase(prim)
+    explicit UsdRenderDenoisePass(const UsdPrim& prim=UsdPrim())
+        : UsdTyped(prim)
     {
     }
 
-    /// Construct a UsdRenderProduct on the prim held by \p schemaObj .
-    /// Should be preferred over UsdRenderProduct(schemaObj.GetPrim()),
+    /// Construct a UsdRenderDenoisePass on the prim held by \p schemaObj .
+    /// Should be preferred over UsdRenderDenoisePass(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdRenderProduct(const UsdSchemaBase& schemaObj)
-        : UsdRenderSettingsBase(schemaObj)
+    explicit UsdRenderDenoisePass(const UsdSchemaBase& schemaObj)
+        : UsdTyped(schemaObj)
     {
     }
 
     /// Destructor.
     USDRENDER_API
-    virtual ~UsdRenderProduct();
+    virtual ~UsdRenderDenoisePass();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -106,17 +98,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdRenderProduct holding the prim adhering to this
+    /// Return a UsdRenderDenoisePass holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdRenderProduct(stage->GetPrimAtPath(path));
+    /// UsdRenderDenoisePass(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDRENDER_API
-    static UsdRenderProduct
+    static UsdRenderDenoisePass
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
@@ -142,7 +134,7 @@ public:
     /// the opinion at the current EditTarget.
     ///
     USDRENDER_API
-    static UsdRenderProduct
+    static UsdRenderDenoisePass
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 protected:
@@ -163,75 +155,6 @@ private:
     // override SchemaBase virtuals.
     USDRENDER_API
     const TfType &_GetTfType() const override;
-
-public:
-    // --------------------------------------------------------------------- //
-    // PRODUCTTYPE 
-    // --------------------------------------------------------------------- //
-    /// The type of output to produce.
-    /// The default, "raster", indicates a 2D image.
-    /// 
-    /// \note In the future, UsdRender may define additional product
-    /// types.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `uniform token productType = "raster"` |
-    /// | C++ Type | TfToken |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
-    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    USDRENDER_API
-    UsdAttribute GetProductTypeAttr() const;
-
-    /// See GetProductTypeAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDRENDER_API
-    UsdAttribute CreateProductTypeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // PRODUCTNAME 
-    // --------------------------------------------------------------------- //
-    /// Specifies the name that the output/display driver
-    /// should give the product.  This is provided as-authored to the
-    /// driver, whose responsibility it is to situate the product on a
-    /// filesystem or other storage, in the desired location.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `token productName = ""` |
-    /// | C++ Type | TfToken |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
-    USDRENDER_API
-    UsdAttribute GetProductNameAttr() const;
-
-    /// See GetProductNameAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDRENDER_API
-    UsdAttribute CreateProductNameAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // ORDEREDVARS 
-    // --------------------------------------------------------------------- //
-    /// Specifies the RenderVars that should be consumed and
-    /// combined into the final product.  If ordering is relevant to the
-    /// output driver, then the ordering of targets in this relationship
-    /// provides the order to use.
-    ///
-    USDRENDER_API
-    UsdRelationship GetOrderedVarsRel() const;
-
-    /// See GetOrderedVarsRel(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
-    USDRENDER_API
-    UsdRelationship CreateOrderedVarsRel() const;
 
 public:
     // ===================================================================== //

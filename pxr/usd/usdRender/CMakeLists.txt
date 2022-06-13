@@ -9,7 +9,9 @@ pxr_library(usdRender
         usdGeom
 
     PUBLIC_CLASSES
+        denoisePass
         product
+        renderPass
         settings
         settingsBase
         spec
@@ -24,7 +26,9 @@ pxr_library(usdRender
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapDenoisePass.cpp
         wrapProduct.cpp
+        wrapRenderPass.cpp
         wrapSettingsBase.cpp
         wrapSettings.cpp
         wrapTokens.cpp
