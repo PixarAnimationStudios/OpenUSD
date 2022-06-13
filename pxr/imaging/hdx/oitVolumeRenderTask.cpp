@@ -39,13 +39,31 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static Hgi* TryGetHgi(HdSceneDelegate* delegate) {
+    if (delegate == nullptr) {
+        return nullptr;
+    }
+    HdResourceRegistrySharedPtr resourceRegistry =
+        delegate->GetRenderIndex().GetResourceRegistry();
+    if (resourceRegistry == nullptr) {
+        return nullptr;
+    }
+    std::shared_ptr<HdStResourceRegistry> hdStResourceRegistry =
+        std::static_pointer_cast<HdStResourceRegistry>(
+        resourceRegistry);
+    if (hdStResourceRegistry == nullptr) {
+        return nullptr;
+    }
+    return hdStResourceRegistry->GetHgi();
+}
+
 HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(
                 HdSceneDelegate* delegate, SdfPath const& id)
     : HdxRenderTask(delegate, id)
     , _oitVolumeRenderPassShader(
         std::make_shared<HdStRenderPassShader>(
             HdxPackageRenderPassOitVolumeShader()))
-    , _isOitEnabled(HdxOitBufferAccessor::IsOitEnabled())
+    , _isOitEnabled(TryGetHgi(delegate))
 {
 }
 

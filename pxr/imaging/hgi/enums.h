@@ -75,6 +75,8 @@ using HgiBits = uint32_t;
 ///   Set if requires ability to migitate patch vertes offset bug on Intel</li>
 /// <li>HgiDeviceCapabilitiesBitsTessellationBarycentric:
 ///   Use the tesscoord/position_in_patch as barycentric</li>
+/// <li>HgiDeviceCapabilitiesBitsOIT:
+///   Is able to perform OIT</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
@@ -96,7 +98,8 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsMetalTessellation         = 1 << 14,
     HgiDeviceCapabilitiesBasePrimitiveOffset           = 1 << 15,
     HgiDeviceCapabilitiesBitsPatchVertexOffsetting     = 1 << 16,
-    HgiDeviceCapabilitiesBitsTessellationBarycentric   = 1 << 17
+    HgiDeviceCapabilitiesBitsTessellationBarycentric   = 1 << 17,
+    HgiDeviceCapabilitiesBitsOIT                       = 1 << 18
 };
 
 using HgiDeviceCapabilities = HgiBits;

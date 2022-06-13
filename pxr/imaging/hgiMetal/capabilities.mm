@@ -43,6 +43,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
                   hasIntel);
     _SetFlag(HgiDeviceCapabilitiesBitsPatchVertexOffsetting,
                   hasIntel && !vertexOffsettingFixes);
+    _SetFlag(HgiDeviceCapabilitiesBitsOIT, !hasIntel);
 
     defaultStorageMode = MTLResourceStorageModeShared;
     bool unifiedMemory = false;
