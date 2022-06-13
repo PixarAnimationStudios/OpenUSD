@@ -317,32 +317,39 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     // the shadow array needed in the lighting context in 
     // order to receive shadows
     // This will re-allocate internal buffers if they change.
-    shadows->SetShadowMapResolutions(shadowMapResolutions);
+    if (lightingContext->GetUseShadows()) {
+        shadows->SetShadowMapResolutions(shadowMapResolutions);
 
-    if (shadowIndex > -1) {
-        for (size_t lightId = 0; lightId < _numLights; ++lightId) {
-            if (lightId >= _glfSimpleLights.size()) {
-                TF_CODING_ERROR(
-                    "lightId %zu >= _glfSimpleLights.size() %zu", 
-                    lightId, _glfSimpleLights.size());
-                continue;
-            }
-            if (!_glfSimpleLights[lightId].HasShadow()) {
-                continue;
-            }
-            // Complete the shadow setup for this light
-            int shadowStart = _glfSimpleLights[lightId].GetShadowIndexStart();
-            int shadowEnd = _glfSimpleLights[lightId].GetShadowIndexEnd();
-            std::vector<GfMatrix4d> shadowMatrices =
-                _glfSimpleLights[lightId].GetShadowMatrices();
+        if (shadowIndex > -1) {
+            for (size_t lightId = 0; lightId < _numLights; ++lightId) {
+                if (lightId >= _glfSimpleLights.size()) {
+                    TF_CODING_ERROR(
+                        "lightId %zu >= _glfSimpleLights.size() %zu", 
+                        lightId, _glfSimpleLights.size());
+                    continue;
+                }
+                if (!_glfSimpleLights[lightId].HasShadow()) {
+                    continue;
+                }
+                // Complete the shadow setup for this light
+                const int shadowStart = 
+                    _glfSimpleLights[lightId].GetShadowIndexStart();
+                const int shadowEnd = 
+                    _glfSimpleLights[lightId].GetShadowIndexEnd();
+                const std::vector<GfMatrix4d> shadowMatrices =
+                    _glfSimpleLights[lightId].GetShadowMatrices();
 
-            for (int shadowId = shadowStart; shadowId <= shadowEnd; ++shadowId) {
-                shadows->SetViewMatrix(shadowId,
-                    _glfSimpleLights[lightId].GetTransform());
-                shadows->SetProjectionMatrix(shadowId,
-                    shadowMatrices[shadowId - shadowStart]);
+                for (int shadowId = shadowStart; shadowId <= shadowEnd; 
+                     ++shadowId) {
+                    shadows->SetViewMatrix(shadowId,
+                        _glfSimpleLights[lightId].GetTransform());
+                    shadows->SetProjectionMatrix(shadowId,
+                        shadowMatrices[shadowId - shadowStart]);
+                }
             }
         }
+    } else {
+        shadows->SetShadowMapResolutions( std::vector<GfVec2i>() );
     }
 
     _lightingShader->AllocateTextureHandles(renderIndex);

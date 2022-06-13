@@ -137,7 +137,8 @@ public:
     bool IsValid() const { return _layer; }
 
     /// Return the layer this EditTarget contains.
-    const SdfLayerHandle &GetLayer() const { return _layer; }
+    const SdfLayerHandle &GetLayer() const & { return _layer; }
+    SdfLayerHandle GetLayer() && { return std::move(_layer); }
 
     /// Map the provided \a scenePath into a SdfSpec path for the
     /// EditTarget's layer, according to the EditTarget's mapping.  Null edit

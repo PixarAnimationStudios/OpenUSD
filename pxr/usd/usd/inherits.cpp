@@ -81,11 +81,40 @@ UsdInherits::GetAllDirectInherits() const
     }
 
     std::unordered_set<SdfPath, SdfPath::Hash> seen;
-    for (auto const &node:
-             _prim.GetPrimIndex().GetNodeRange(PcpRangeTypeInherit)) {
-        if (!node.IsDueToAncestor() && seen.insert(node.GetPath()).second) {
+
+    auto addIfDirectInheritFn = [&](const PcpNodeRef &node) {
+        if (node.GetArcType() == PcpArcTypeInherit &&
+                !node.GetOriginRootNode().IsDueToAncestor() && 
+                seen.insert(node.GetPath()).second) {
             ret.push_back(node.GetPath());
         }
+    };
+
+    // All class based arcs (inherits and specializes) get propagated up the 
+    // prim index graph to the root node regardless of the where they're 
+    // introduced. So we just have to look for the direct inherit nodes in the
+    // subtrees started by inherit and specialize arcs under the root node.
+    // Looking at only the propagated inherits has the advantage that these 
+    // inherits are guaranteed to be correctly mapped across any references that
+    // introduce them (which is important for local inherits)
+    // 
+    // When a specialized class inherits other classes (or vice versa),
+    // those classes form a hierarchy and are propagated together. This means
+    // that any inherit arcs introduced under a specializes arc will not break
+    // the encapsulation of the class hierarchy and will not be found under the 
+    // root's inherits arcs when the class hierarchy is introduces by a 
+    // specializes. Thus, we have to search under both the root's inherits 
+    // and its specializes to find all propagated inherit arcs.
+    //
+    // Note that this relies on the fact that propagated direct class base arcs
+    // are not culled from the prim index even if they do not produce specs.
+    for (const PcpNodeRef &node: 
+            _prim.GetPrimIndex().GetNodeRange(PcpRangeTypeInherit)) {
+        addIfDirectInheritFn(node);
+    }
+    for (const PcpNodeRef &node:
+             _prim.GetPrimIndex().GetNodeRange(PcpRangeTypeSpecialize)) {
+        addIfDirectInheritFn(node);
     }
     return ret;
 }

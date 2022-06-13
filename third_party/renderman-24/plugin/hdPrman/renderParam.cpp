@@ -57,6 +57,15 @@
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderThread.h"
 
+// XXX: Statistics depend on a header that is only included in v24.4+
+#if (_PRMANAPI_VERSION_MAJOR_ > 24 || (_PRMANAPI_VERSION_MAJOR_ == 24 && _PRMANAPI_VERSION_MINOR_ >= 4))
+#define _ENABLE_STATS
+#endif
+
+#ifdef _ENABLE_STATS
+#include "stats/Session.h"
+#endif
+
 #include "Riley.h"
 #include "RiTypesHelper.h"
 #include "RixRiCtl.h"
@@ -106,11 +115,15 @@ HdPrman_RenderParam::HdPrman_RenderParam(const std::string &rileyVariant,
     _rix(nullptr),
     _ri(nullptr),
     _mgr(nullptr),
+    _statsSession(nullptr),
     _riley(nullptr),
     _sceneLightCount(0),
     _sampleFiltersId(riley::SampleFilterId::InvalidId()),
     _lastSettingsVersion(0)
 {
+    // Create the stats session
+    _CreateStatsSession();
+
     // Setup to use the default GPU
     _xpuGpuConfig.push_back(0);
 
@@ -126,6 +139,8 @@ HdPrman_RenderParam::~HdPrman_RenderParam()
     DeleteRenderThread();
 
     _DestroyRiley();
+
+    _DestroyStatsSession();
 }
 
 void
@@ -1584,6 +1599,57 @@ HdPrman_RenderParam::SetParamFromVtValue(
 }
 
 void
+HdPrman_RenderParam::_CreateStatsSession(void)
+{
+#ifdef _ENABLE_STATS
+    // Set log level for diagnostics relating to initialization. If we succeed in loading a
+    // config file then the log level specified in the config file will take precedence.
+    stats::Logger::LogLevel statsDebugLevel = stats::GlobalLogger()->DefaultLogLevel();
+    stats::SetGlobalLogLevel(statsDebugLevel);
+    stats::SetGlobalLogLevel(stats::Logger::k_debug);
+
+    // Build default listener plugin search path
+    std::string listenerPath(".");
+    char* rmanTreePath = getenv("RMANTREE");
+    if (rmanTreePath)
+    {
+        listenerPath += ":";
+        listenerPath += rmanTreePath;
+        listenerPath += "/lib/plugins/listeners";
+    }
+
+    stats::SetListenerPluginSearchPath(listenerPath);
+
+    // Create our stats Session config.
+    std::string configFilename("stats.ini");
+    std::string configSearchPathStr;
+    char* configSearchPathOverride = getenv("RMAN_STATS_CONFIG_PATH");
+    if (configSearchPathOverride)
+    {
+        configSearchPathStr = std::string(configSearchPathOverride);
+    }
+
+    // This could eventually come from a GUI so we go through
+    // the motion of checking to see if we have a filename.
+    stats::SessionConfig sessionConfig("HDPRman Stats Session");
+    if (!configFilename.empty() && !configSearchPathStr.empty())
+    {
+        // Try to resolve the file in the given path and load the
+        // configuration data. If it fails to find the config
+        // file we'll just fall back onto the defaults.
+        sessionConfig.LoadConfigFile(configSearchPathStr, configFilename);
+    }
+
+    // Instantiate a stats Session from config object.
+    _statsSession = &stats::AddSession(sessionConfig);
+
+    // Validate and inform
+    _statsSession->LogInfo("HDPRMan", "Created Roz stats session '" +
+                                      _statsSession->GetName() + "'.");
+#endif
+}
+
+void
 HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
     const std::string &xpuDevices)
 {
@@ -1605,8 +1671,17 @@ HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
     // interactive contexts as described in PRMAN-2353
     char arg1[] = "-woff";
     char woffs[] = "R56008,R56009";
+
+#ifdef _ENABLE_STATS
+    std::string statsSession("-statssession");
+    std::string statsSessionName(_statsSession->GetName());
+
+    char* argv[] = { arg0, arg1, woffs, &statsSession[0], &statsSessionName[0]};
+    _ri->PRManBegin(5, argv);
+#else
     char* argv[] = { arg0, arg1, woffs};
     _ri->PRManBegin(3, argv);
+#endif
 
     // Register an Xcpt handler
     RixXcpt* rix_xcpt = (RixXcpt*)_rix->GetRixInterface(k_RixXcpt);
@@ -1839,6 +1914,18 @@ HdPrman_RenderParam::_DestroyRiley()
     }
 }
 
+void
+HdPrman_RenderParam::_DestroyStatsSession(void)
+{
+#ifdef _ENABLE_STATS
+    if (_statsSession)
+    {
+        stats::RemoveSession(*_statsSession);
+        _statsSession = nullptr;
+    }
+#endif
+}
+
 static
 RtParamList
 _ComputeVolumeNodeParams()
@@ -1868,7 +1955,7 @@ HdPrman_RenderParam::_CreateFallbackMaterials()
             &materialNodes
         );
         _fallbackMaterialId = _riley->CreateMaterial(
-            riley::UserId::DefaultId(),
+            riley::UserId(stats::AddDataLocation(materialNodes[0].name.CStr()).GetValue()),
             {static_cast<uint32_t>(materialNodes.size()), materialNodes.data()},
             RtParamList());
     }
@@ -1883,9 +1970,9 @@ HdPrman_RenderParam::_CreateFallbackMaterials()
                 riley::ShadingNode::Type::k_Bxdf,
                 us_PxrVolume,
                 us_simpleVolume,
-                _ComputeVolumeNodeParams()}};    
+                _ComputeVolumeNodeParams()}};
         _fallbackVolumeMaterialId = _riley->CreateMaterial(
-            riley::UserId::DefaultId(),
+            riley::UserId(stats::AddDataLocation(materialNodes[0].name.CStr()).GetValue()),
             {static_cast<uint32_t>(materialNodes.size()), materialNodes.data()},
             RtParamList());
     }
@@ -1945,9 +2032,10 @@ HdPrman_RenderParam::_CreateIntegrator(HdRenderDelegate * const renderDelegate)
     // consumed in UpdateIntegrator.
     static const HdPrmanCamera * const camera = nullptr;
 
+    riley::ShadingNode integratorNode(_ComputeIntegratorNode(renderDelegate, camera));
     _integratorId = _riley->CreateIntegrator(
-        riley::UserId::DefaultId(),
-        _ComputeIntegratorNode(renderDelegate, camera));
+        riley::UserId(stats::AddDataLocation(integratorNode.name.CStr()).GetValue()),
+        integratorNode);
 }
 
 void
@@ -2155,7 +2243,15 @@ HdPrman_RenderParam::StartRender()
                 &HdPrman_RenderParam::_RenderThreadCallback, this));
         _renderThread->StartThread();
     }
-    
+
+#ifdef _ENABLE_STATS
+    // Clear out old stats values
+    if (_statsSession)
+    {
+        _statsSession->RemoveOldMetricData();
+    }
+#endif
+
     _renderThread->StartRender();
 }
 
@@ -2185,6 +2281,14 @@ HdPrman_RenderParam::StopRender(bool blocking)
         using namespace std::chrono_literals;
         std::this_thread::sleep_for(100us);
     }
+
+#ifdef _ENABLE_STATS
+    // Clear out old stats values. TODO: should we be calling this here? 
+    if (_statsSession)
+    {
+        _statsSession->RemoveOldMetricData();
+    }
+#endif
 }
 
 bool
@@ -2635,9 +2739,12 @@ HdPrman_RenderParam::_CreateQuickIntegrator(
     static const HdPrmanCamera * const camera = nullptr;
 
     if (_enableQuickIntegrate) {
-        _quickIntegratorId = _riley->CreateIntegrator(
-            riley::UserId::DefaultId(),
-            _ComputeQuickIntegratorNode(renderDelegate, camera));
+      riley::ShadingNode integratorNode(
+          _ComputeQuickIntegratorNode(renderDelegate, camera));
+      _quickIntegratorId = _riley->CreateIntegrator(
+          riley::UserId(
+              stats::AddDataLocation(integratorNode.name.CStr()).GetValue()),
+          integratorNode);
     }
 }
 
@@ -2771,7 +2878,8 @@ HdPrman_RenderParam::_CreateSampleFilters()
     
     if (_sampleFiltersId == riley::SampleFilterId::InvalidId()) {
         _sampleFiltersId = AcquireRiley()->CreateSampleFilter(
-            riley::UserId::DefaultId(),
+            riley::UserId(stats::AddDataLocation("/sampleFilters").
+                              GetValue()),
             sampleFilterNetwork, 
             RtParamList());
     }

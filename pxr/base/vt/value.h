@@ -1428,17 +1428,6 @@ private:
 
 #ifndef doxygen
 
-/// Make a default value.  VtValue uses this to create values to be returned
-/// from failed calls to \a Get.  Clients may specialize this for their own
-/// types.
-template <class T>
-struct Vt_DefaultValueFactory {
-    /// This function *must* return an object of type \a T.
-    static Vt_DefaultValueHolder Invoke() {
-        return Vt_DefaultValueHolder::Create<T>();
-    }
-};
-
 struct Vt_ValueShapeDataAccess {
     static const Vt_ShapeData* _GetShapeData(const VtValue& value) {
         return value._GetShapeData();
@@ -1449,15 +1438,27 @@ struct Vt_ValueShapeDataAccess {
     }
 };
 
+/// Make a default value.  VtValue uses this to create values to be returned
+/// from failed calls to \a Get.  Clients may specialize this for their own
+/// types.
+template <class T>
+struct Vt_DefaultValueFactory {
+    static Vt_DefaultValueHolder Invoke();
+};
+
+template <class T>
+inline Vt_DefaultValueHolder
+Vt_DefaultValueFactory<T>::Invoke() {
+    return Vt_DefaultValueHolder::Create<T>();
+}
+
 // For performance reasons, the default constructors for vectors,
 // matrices, and quaternions do *not* initialize the data of the
 // object.  This greatly improves the performance of creating large
-// arrays of objects.  However, boost::value_initialized<T>() no
-// longer fills the memory of the object with 0 bytes before invoking
-// the constructor so we started getting errors complaining about
-// uninitialized values.  So, we now use VtZero to construct zeroed
-// out vectors, matrices, and quaternions by explicitly instantiating
-// the factory for these types. 
+// arrays of objects.  However, for consistency and to avoid
+// errors complaining about uninitialized values, we use VtZero
+// to construct zeroed out vectors, matrices, and quaternions by
+// explicitly instantiating the factory for these types. 
 //
 #define _VT_DECLARE_ZERO_VALUE_FACTORY(r, unused, elem)                 \
 template <>                                                             \

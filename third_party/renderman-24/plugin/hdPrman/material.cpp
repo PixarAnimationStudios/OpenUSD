@@ -664,7 +664,7 @@ _ConvertHdMaterialNetwork2ToRman(
                 materialFound = true;
                 if (*materialId == riley::MaterialId::InvalidId()) {
                     *materialId = riley->CreateMaterial(
-                        riley::UserId::DefaultId(),
+                        riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
                         {static_cast<uint32_t>(nodes.size()), &nodes[0]},
                         RtParamList());
                 } else {
@@ -682,7 +682,7 @@ _ConvertHdMaterialNetwork2ToRman(
                 displacementFound = true;
                 if (*displacementId == riley::DisplacementId::InvalidId()) {
                     *displacementId = riley->CreateDisplacement(
-                        riley::UserId::DefaultId(),
+                        riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
                         {static_cast<uint32_t>(nodes.size()), &nodes[0]},
                         RtParamList());
                 } else {

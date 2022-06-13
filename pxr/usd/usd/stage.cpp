@@ -1933,21 +1933,21 @@ UsdStage::GetRelationshipAtPath(const SdfPath &path) const
 Usd_PrimDataConstPtr
 UsdStage::_GetPrimDataAtPath(const SdfPath &path) const
 {
-    tbb::spin_rw_mutex::scoped_lock lock;
-    if (_primMapMutex)
-        lock.acquire(*_primMapMutex, /*write=*/false);
-    PathToNodeMap::const_iterator entry = _primMap.find(path);
-    return entry != _primMap.end() ? entry->second.get() : nullptr;
+    PathToNodeMap::const_accessor acc;
+    if (_primMap.find(acc, path)) {
+        return acc->second.get();
+    }
+    return nullptr;
 }
 
 Usd_PrimDataPtr
 UsdStage::_GetPrimDataAtPath(const SdfPath &path)
 {
-    tbb::spin_rw_mutex::scoped_lock lock;
-    if (_primMapMutex)
-        lock.acquire(*_primMapMutex, /*write=*/false);
-    PathToNodeMap::const_iterator entry = _primMap.find(path);
-    return entry != _primMap.end() ? entry->second.get() : nullptr;
+    PathToNodeMap::const_accessor acc;
+    if (_primMap.find(acc, path)) {
+        return acc->second.get();
+    }
+    return nullptr;
 }
 
 Usd_PrimDataConstPtr 
@@ -2488,18 +2488,11 @@ UsdStage::_InstantiatePrim(const SdfPath &primPath)
 
     // Instantiate new prim data instance.
     Usd_PrimDataPtr p = new Usd_PrimData(this, primPath);
-    pair<PathToNodeMap::iterator, bool> result;
-    std::pair<SdfPath, Usd_PrimDataPtr> payload(primPath, p);
-    {
-        tbb::spin_rw_mutex::scoped_lock lock;
-        if (_primMapMutex)
-            lock.acquire(*_primMapMutex);
-        result = _primMap.insert(payload);
-    }
 
     // Insert entry into the map -- should always succeed.
-    TF_VERIFY(result.second, "Newly instantiated prim <%s> already present in "
-              "_primMap", primPath.GetText());
+    TF_VERIFY(_primMap.emplace(primPath, p),
+              "Newly instantiated prim <%s> already present in _primMap",
+              primPath.GetText());
     return p;
 }
 
@@ -2946,7 +2939,6 @@ UsdStage::_ComposeSubtreesInParallel(
 
     // Begin a subtree composition in parallel.
     WorkWithScopedParallelism([this, &prims, &primIndexPaths]() {
-            _primMapMutex = boost::in_place();
             _dispatcher = boost::in_place();
             // We populate the clip cache concurrently during composition, so we
             // need to enable concurrent population here.
@@ -2965,12 +2957,10 @@ UsdStage::_ComposeSubtreesInParallel(
             }
             catch (...) {
                 _dispatcher = boost::none;
-                _primMapMutex = boost::none;
                 throw;
             }
             
             _dispatcher = boost::none;
-            _primMapMutex = boost::none;
         });
 }
 
@@ -3098,26 +3088,24 @@ UsdStage::_DestroyPrimsInParallel(const vector<SdfPath>& paths)
 
     TRACE_FUNCTION();
 
-    TF_AXIOM(!_dispatcher && !_primMapMutex);
+    TF_AXIOM(!_dispatcher);
 
     WorkWithScopedParallelism([&]() {
-            _primMapMutex = boost::in_place();
-            _dispatcher = boost::in_place();
-            for (const auto& path : paths) {
-                Usd_PrimDataPtr prim = _GetPrimDataAtPath(path);
-                // We *expect* every prim in paths to be valid as we iterate,
-                // but at one time had issues with deactivated prototype prims,
-                // so we preserve a guard for resiliency.  See
-                // testUsdBug141491.py
-                if (TF_VERIFY(prim)) {
-                    _dispatcher->Run([this, prim]() {
-                            _DestroyPrim(prim);
-                        });
-                }
+        _dispatcher = boost::in_place();
+        for (const auto& path : paths) {
+            Usd_PrimDataPtr prim = _GetPrimDataAtPath(path);
+            // We *expect* every prim in paths to be valid as we iterate,
+            // but at one time had issues with deactivated prototype prims,
+            // so we preserve a guard for resiliency.  See
+            // testUsdBug141491.py
+            if (TF_VERIFY(prim)) {
+                _dispatcher->Run([this, prim]() {
+                    _DestroyPrim(prim);
+                });
             }
-            _dispatcher = boost::none;
-            _primMapMutex = boost::none;
-        });
+        }
+        _dispatcher = boost::none;
+    });
 }
 
 void
@@ -3153,17 +3141,10 @@ UsdStage::_DestroyPrim(Usd_PrimDataPtr prim)
     // NOTE: The above was true in gcc 4.4 but not in gcc 4.8, nor is it
     //       true in boost::unordered_map or std::unordered_map.
     if (!_isClosingStage) {
-        SdfPath primPath = prim->GetPath(); 
-        tbb::spin_rw_mutex::scoped_lock lock;
-        const bool hasMutex = static_cast<bool>(_primMapMutex);
-        if (hasMutex)
-            lock.acquire(*_primMapMutex);
-        bool erased = _primMap.erase(primPath);
-        if (hasMutex)
-            lock.release();
-        TF_VERIFY(erased, 
+        SdfPath primPath = prim->GetPath();
+        TF_VERIFY(_primMap.erase(primPath),
                   "Destroyed prim <%s> not present in stage's data structures",
-                  prim->GetPath().GetString().c_str());
+                  primPath.GetString().c_str());
     }
 }
 
@@ -4512,12 +4493,13 @@ UsdStage::_ComputeSubtreesToRecompose(
 
         // Add prototypes to list of subtrees to recompose and instantiate any 
         // new prototype not present in the primMap from before
+        PathToNodeMap::const_accessor acc;
         if (_instanceCache->IsPrototypePath(*i)) {
-            PathToNodeMap::const_iterator itr = _primMap.find(*i);
             Usd_PrimDataPtr prototypePrim;
-            if (itr != _primMap.end()) {
+            if (_primMap.find(acc, *i)) {
                 // should be a changed prototype if already in the primMap
-                prototypePrim = itr->second.get();
+                prototypePrim = acc->second.get();
+                acc.release();
             } else {
                 // newPrototype should be absent from the primMap, instantiate
                 // these now to be added to subtreesToRecompose
@@ -4531,8 +4513,7 @@ UsdStage::_ComputeSubtreesToRecompose(
         // Collect all non-prototype prims (including descendants of prototypes)
         // to be added to subtreesToRecompute
         SdfPath const &parentPath = i->GetParentPath();
-        PathToNodeMap::const_iterator parentIt = _primMap.find(parentPath);
-        if (parentIt != _primMap.end()) {
+        if (_primMap.find(acc, parentPath)) {
 
             // Since our input range contains no descendant paths, siblings
             // must appear consecutively.  We want to process all siblings that
@@ -4541,16 +4522,17 @@ UsdStage::_ComputeSubtreesToRecompose(
             // parent to find the range of siblings.
 
             // Recompose parent's list of children.
-            auto parent = parentIt->second.get();
+            auto parent = acc->second.get();
+            acc.release();
             _ComposeChildren(
                 parent, parent->IsInPrototype() ? nullptr : &_populationMask,
                 /*recurse=*/false);
 
             // Recompose the subtree for each affected sibling.
             do {
-                PathToNodeMap::const_iterator primIt = _primMap.find(*i);
-                if (primIt != _primMap.end()) {
-                    subtreesToRecompose->push_back(primIt->second.get());
+                if (_primMap.find(acc, *i)) {
+                    subtreesToRecompose->push_back(acc->second.get());
+                    acc.release();
                 } else if (_instanceCache->IsPrototypePath(*i)) {
                     // If this path is a prototype path and is not present in
                     // the primMap, then this must be a new prototype added

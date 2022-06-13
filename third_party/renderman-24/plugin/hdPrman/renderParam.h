@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
+#include "hdPrman/prmanArchDefs.h"
 #include "hdPrman/xcpt.h"
 #include "hdPrman/cameraContext.h"
 #include "hdPrman/renderViewContext.h"
@@ -38,6 +39,10 @@
 #include <mutex>
 
 class RixRiCtl;
+
+namespace stats {
+class Session;
+};
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -283,6 +288,7 @@ public:
     riley::SampleFilterList GetSampleFilterList();
 
 private:
+    void _CreateStatsSession();
     void _CreateRiley(const std::string &rileyVariant, 
         const std::string &xpuVariant);
     void _CreateFallbackMaterials();
@@ -291,6 +297,7 @@ private:
     void _CreateSampleFilters();
 
     void _DestroyRiley();
+    void _DestroyStatsSession();
 
     // Updates clear colors of AOV descriptors of framebuffer.
     // If this is not possible because the set of AOVs changed,
@@ -310,6 +317,9 @@ private:
 
     // Xcpt Handler
     HdPrman_Xcpt _xcpt;
+
+    // Roz stats session
+    stats::Session *_statsSession;
 
     // Riley instance.
     riley::Riley *_riley;

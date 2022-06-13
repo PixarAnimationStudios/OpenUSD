@@ -301,10 +301,15 @@ _CompileOslSource(
         .Msg("--------- MaterialX Generated Shader '%s' ----------\n%s"
              "---------------------------\n\n", name.c_str(), oslSource.c_str());
 
-    // Include the filepath to the MaterialX OSL directory (stdlib/osl)
+    // Include the filepath to the MaterialX OSL directory containing mx_funcs.h
     std::vector<std::string> oslArgs;
     oslArgs.reserve(searchPaths.size());
-    const mx::FilePath stdlibOslPath = "stdlib/osl";
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && MATERIALX_BUILD_VERSION == 3
+    static const mx::FilePath stdlibOslPath = "stdlib/osl";
+#else 
+    // MaterialX v1.38.4 restructured the OSL files and moved mx_funcs.h
+    static const mx::FilePath stdlibOslPath = "stdlib/genosl/include"; 
+#endif
     for (mx::FilePath const &path : searchPaths) {
         const mx::FilePath fullPath = path/stdlibOslPath;
         oslArgs.push_back(fullPath.exists() ? "-I" + fullPath.asString()
@@ -315,6 +320,11 @@ _CompileOslSource(
     std::string oslCompiledSource;
     OSL::OSLCompiler oslCompiler;
     oslCompiler.compile_buffer(oslSource, oslCompiledSource, oslArgs);
+    if (oslCompiledSource.empty()) {
+        TF_WARN("Unable to compile MaterialX Osl shader for the '%s' "
+                "MaterialX node\n", name.substr(0, name.size()-6).c_str());
+        return mx::EMPTY_STRING;
+    }
 
     // Save compiled shader
     std::string compiledFilePath = ArchMakeTmpFileName("MX." + name, ".oso");
@@ -330,7 +340,7 @@ _CompileOslSource(
         fclose(compiledShader);
         return compiledFilePath;
     }
-#else        
+#else
     TF_WARN("Unable to compile MaterialX generated Osl shader, enable OSL "
             "support for full MaterialX support in HdPrman.\n");
     return mx::EMPTY_STRING;

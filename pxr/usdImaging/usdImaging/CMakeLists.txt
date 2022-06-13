@@ -31,6 +31,7 @@ pxr_library(usdImaging
         dataSourceBasisCurves
         dataSourceCamera
         dataSourceGprim
+        dataSourceMaterial
         dataSourceMesh
         dataSourcePoints
         dataSourcePrim
@@ -70,6 +71,7 @@ pxr_library(usdImaging
         meshAdapter
         nurbsCurvesAdapter
         nurbsPatchAdapter
+        planeAdapter
         pluginLightAdapter
         pluginLightFilterAdapter
         pointsAdapter
