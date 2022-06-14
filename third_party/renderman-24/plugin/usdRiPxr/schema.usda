@@ -46,7 +46,7 @@ class "PxrSampleFilterPluginBase" (
     doc = """Base Schema class which other PxrSampleFilter plugins will inherit. 
     It also provides UsdShade connectability for all classes that derive from
     it."""
-    inherits = </Typed>
+    inherits = </Imageable>
 )
 {
     token outputs:result (
@@ -65,7 +65,7 @@ class "PxrDisplayFilterPluginBase" (
     doc = """Base Schema class which other PxrDisplayFilter plugins will inherit.
     It also provides UsdShade connectability for all classes that derive from
     it."""
-    inherits = </Typed>
+    inherits = </Imageable>
 )
 {
     token outputs:result (
