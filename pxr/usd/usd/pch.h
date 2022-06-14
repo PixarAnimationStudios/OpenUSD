@@ -228,7 +228,6 @@
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/utility/in_place_factory.hpp>
-#include <tbb/atomic.h>
 #include <tbb/blocked_range.h>
 #include <tbb/cache_aligned_allocator.h>
 #include <tbb/concurrent_hash_map.h>

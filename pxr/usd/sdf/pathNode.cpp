@@ -62,7 +62,7 @@ static_assert(sizeof(Sdf_PrimPropertyPathNode) == 3 * sizeof(void *), "");
 struct Sdf_PathNodePrivateAccess
 {
     template <class Handle>
-    static inline tbb::atomic<unsigned int> &
+    static inline std::atomic<unsigned int> &
     GetRefCount(Handle h) {
         Sdf_PathNode const *p =
             reinterpret_cast<Sdf_PathNode const *>(h.GetPtr());
@@ -265,7 +265,7 @@ _FindOrCreate(Table &table,
     if (iresult.second ||
         (Table::NodeHandle::IsCounted &&
          Access::GetRefCount(
-             iresult.first->second).fetch_and_increment() == 0)) {
+             iresult.first->second).fetch_add(1) == 0)) {
         // There was either no entry, or there was one but it had begun dying
         // (another client dropped its refcount to 0).  We have to create a new
         // entry in the table.  When the client that is deleting the other node
