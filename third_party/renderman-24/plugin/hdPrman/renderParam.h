@@ -284,7 +284,11 @@ public:
     }
 
     // Riley Data from the Sample Filter Prim
-    void AddSampleFilter(SdfPath const& path, riley::ShadingNode const& node);
+    void AddSampleFilter(
+        HdSceneDelegate *sceneDelegate, 
+        SdfPath const& path, 
+        riley::ShadingNode const& node);
+    void CreateSampleFilterNetwork(HdSceneDelegate *sceneDelegate);
     riley::SampleFilterList GetSampleFilterList();
 
 private:
@@ -294,8 +298,7 @@ private:
     void _CreateFallbackMaterials();
     void _CreateFallbackLight();
     void _CreateIntegrator(HdRenderDelegate * renderDelegate);
-    void _CreateSampleFilters();
-
+    
     void _DestroyRiley();
     void _DestroyStatsSession();
 

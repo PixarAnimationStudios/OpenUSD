@@ -298,6 +298,9 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdChangeTracker::DirtyParams) {
             set->append(HdSampleFilterSchema::GetDefaultLocator());
         }
+        if (bits & HdChangeTracker::DirtyVisibility) {
+            set->append(HdVisibilitySchema::GetDefaultLocator());
+        }
     } else {
         // unknown prim type, use AllDirty for anything
         if (bits) {
@@ -760,6 +763,9 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
     } else if (primType == HdPrimTypeTokens->sampleFilter) {
         if (_FindLocator(HdSampleFilterSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdChangeTracker::DirtyParams;
+        }
+        if (_FindLocator(HdVisibilitySchema::GetDefaultLocator(), end, &it)) {
+            bits |= HdChangeTracker::DirtyVisibility;
         }
     } else {
         // unknown prim type, use AllDirty for anything

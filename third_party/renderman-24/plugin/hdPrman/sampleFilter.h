@@ -48,7 +48,8 @@ public:
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 private:
-    void _CreateRmanSampleFilter(HdPrman_RenderParam *renderParam,
+    void _CreateRmanSampleFilter(HdSceneDelegate *sceneDelegate,
+                                 HdPrman_RenderParam *renderParam,
                                  SdfPath const& filterPrimPath,
                                  HdMaterialNode2 const& sampleFilterNode);
 

@@ -2845,25 +2845,31 @@ HdPrman_RenderParam::SetConnectedSampleFilterPaths(
 }
 
 void
-HdPrman_RenderParam::_CreateSampleFilters()
+HdPrman_RenderParam::CreateSampleFilterNetwork(HdSceneDelegate *sceneDelegate)
 {
     std::vector<riley::ShadingNode> shadingNodes;
-    for (const auto pair : _sampleFilterNodes) {
-        if (pair.second.name) {
-            shadingNodes.push_back(pair.second);
+    std::vector<RtUString> filterRefs;
+
+    // Gather shading nodes and reference paths (for combiner) for all connected
+    // and visible SampleFilters. The filterRefs order needs to match the order
+    // of SampleFilters specified in the RenderSettings connection.
+    for (const auto& path : _connectedSampleFilterPaths) {
+        if (sceneDelegate->GetVisible(path)) {
+            const auto it = _sampleFilterNodes.find(path);
+            if (!TF_VERIFY(it != _sampleFilterNodes.end())) {
+                continue;
+            }
+            if (it->second.name) {
+                shadingNodes.push_back(it->second);
+                filterRefs.push_back(RtUString(path.GetText()));
+            }
         }
     }
+
     // If we have multiple SampleFilters, create a SampleFilter Combiner Node
-    if (_connectedSampleFilterPaths.size() > 1) {
+    if (shadingNodes.size() > 1) {
         static RtUString filterArrayName("filter");
         static RtUString pxrSampleFilterCombiner("PxrSampleFilterCombiner");
-
-        // FilterRefs needs to match the order of SampleFilters specified in 
-        // the RenderSettings connection
-        std::vector<RtUString> filterRefs;
-        for (const SdfPath &path : _connectedSampleFilterPaths) {
-            filterRefs.push_back(RtUString(path.GetText()));
-        }
 
         riley::ShadingNode combinerNode;
         combinerNode.type = riley::ShadingNode::Type::k_SampleFilter;
@@ -2897,6 +2903,7 @@ HdPrman_RenderParam::_CreateSampleFilters()
 
 void
 HdPrman_RenderParam::AddSampleFilter(
+    HdSceneDelegate *sceneDelegate,
     SdfPath const& path,
     riley::ShadingNode const& node)
 {
@@ -2908,7 +2915,7 @@ HdPrman_RenderParam::AddSampleFilter(
 
     // If we have all the Shading Nodes, create the SampleFilters in Riley
     if (_sampleFilterNodes.size() == _connectedSampleFilterPaths.size()) {
-        _CreateSampleFilters();
+        CreateSampleFilterNetwork(sceneDelegate);
     }
 }
 

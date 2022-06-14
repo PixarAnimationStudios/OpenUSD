@@ -55,6 +55,7 @@ HdPrman_SampleFilter::Finalize(HdRenderParam *renderParam)
 
 void 
 HdPrman_SampleFilter::_CreateRmanSampleFilter(
+    HdSceneDelegate *sceneDelegate,
     HdPrman_RenderParam *renderParam,
     SdfPath const& filterPrimPath,
     HdMaterialNode2 const& sampleFilterNode)
@@ -96,7 +97,7 @@ HdPrman_SampleFilter::_CreateRmanSampleFilter(
             RtUString(prop->GetImplementationName().c_str()),
             param.second, prop->GetType(), rileyNode.params);
     }
-    renderParam->AddSampleFilter(filterPrimPath, rileyNode);
+    renderParam->AddSampleFilter(sceneDelegate, filterPrimPath, rileyNode);
     return;
 }
 
@@ -110,7 +111,6 @@ HdPrman_SampleFilter::Sync(
     HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(renderParam);
 
     if (*dirtyBits & HdChangeTracker::DirtyParams) {
-
         // Only Create the SampleFilter if connected to the RenderSettings
         SdfPathVector connectedFilters = param->GetConnectedSampleFilterPaths();
         if (std::find(connectedFilters.begin(), connectedFilters.end(), id)
@@ -121,9 +121,13 @@ HdPrman_SampleFilter::Sync(
             if (sampleFilterResourceValue.IsHolding<HdMaterialNode2>()) {
                 HdMaterialNode2 sampleFilterNode =
                     sampleFilterResourceValue.UncheckedGet<HdMaterialNode2>();
-                _CreateRmanSampleFilter(param, id, sampleFilterNode);
+                _CreateRmanSampleFilter(
+                    sceneDelegate, param, id, sampleFilterNode);
             }
         }
+    } 
+    else if (*dirtyBits & HdChangeTracker::DirtyVisibility) {
+        param->CreateSampleFilterNetwork(sceneDelegate);
     }
 
     *dirtyBits = HdChangeTracker::Clean;
@@ -132,7 +136,10 @@ HdPrman_SampleFilter::Sync(
 
 HdDirtyBits HdPrman_SampleFilter::GetInitialDirtyBitsMask() const
 {
-    int mask = HdChangeTracker::Clean | HdChangeTracker::DirtyParams;
+    int mask = 
+        HdChangeTracker::Clean | 
+        HdChangeTracker::DirtyParams | 
+        HdChangeTracker::DirtyVisibility;
     return (HdDirtyBits)mask;
 }
 
