@@ -70,6 +70,12 @@
 
 ### MaterialX Plugin
 
+## [22.05b] - 2022-06-14
+
+### Build
+- Fixed broken URL in build_usd.py for downloading libtiff.
+  (Issue: [#1901](https://github.com/PixarAnimationStudios/USD/issues/1901))
+
 ## [22.05a] - 2022-05-11
 
 ### USD
