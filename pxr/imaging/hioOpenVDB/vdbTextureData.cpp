@@ -22,6 +22,12 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include "pxr/base/arch/defines.h"
+#ifdef ARCH_OS_WINDOWS
+    // Otherwise M_PI_2 is undefined from openvdb's Mat.h
+    #define _USE_MATH_DEFINES
+#endif
+
 #include "pxr/imaging/hioOpenVDB/vdbTextureData.h"
 #include "pxr/imaging/hioOpenVDB/debugCodes.h"
 #include "pxr/imaging/hioOpenVDB/utils.h"
