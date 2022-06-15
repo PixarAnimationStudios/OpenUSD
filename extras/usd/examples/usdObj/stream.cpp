@@ -186,7 +186,7 @@ UsdObjStream::AddFace(Face const &face)
 {
     // If there aren't any groups, add one first.
     if (_groups.empty()) {
-        AddGroup(string());
+        AddGroup(string("default"));
     }
     _groups.back().faces.push_back(face);
 }

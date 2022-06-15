@@ -133,7 +133,7 @@ UsdObjReadDataFromStream(std::istream &input,
             // Create new group.
             string groupName;
             lineStream >> groupName;
-            stream->AddGroup(groupName);
+            stream->AddGroup(groupName.size() ? groupName : "default");
         } else {
             // Add arbitrary text (or comment).
             stream->AppendArbitraryText(line);
