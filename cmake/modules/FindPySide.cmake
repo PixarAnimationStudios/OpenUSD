@@ -26,15 +26,27 @@ if (NOT PYTHON_EXECUTABLE)
     return()
 endif()
 
-# Prefer PySide2 over PySide
+# Prefer PySide6 over PySide2 and PySide
 # Note: Windows does not support PySide2 with Python2.7
 execute_process(
-    COMMAND "${PYTHON_EXECUTABLE}" "-c" "import PySide2"
+    COMMAND "${PYTHON_EXECUTABLE}" "-c" "import PySide6"
     RESULT_VARIABLE pySideImportResult 
 )
 if (pySideImportResult EQUAL 0)
-    set(pySideImportResult "PySide2")
-    set(pySideUIC pyside2-uic python2-pyside2-uic pyside2-uic-2.7 uic)
+    set(pySideImportResult "PySide6")
+    set(pySideUIC pyside6-uic python3-pyside6-uic uic)
+endif()
+
+# PySide6 not found
+if (pySideImportResult EQUAL 1)
+    execute_process(
+        COMMAND "${PYTHON_EXECUTABLE}" "-c" "import PySide2"
+        RESULT_VARIABLE pySideImportResult 
+    )
+    if (pySideImportResult EQUAL 0)
+        set(pySideImportResult "PySide2")
+        set(pySideUIC pyside2-uic python2-pyside2-uic pyside2-uic-2.7 uic)
+    endif()
 endif()
 
 # PySide2 not found OR PYSIDE explicitly requested
@@ -66,6 +78,8 @@ if (pySideImportResult)
 else()
     if (PYSIDE_USE_PYSIDE)
         message(STATUS "Did not find PySide with ${PYTHON_EXECUTABLE}")
+    elseif (PYSIDE_USE_PYSIDE6)
+        message(STATUS "Did not find PySide6 with ${PYTHON_EXECUTABLE}")
     else()
         message(STATUS "Did not find PySide2 with ${PYTHON_EXECUTABLE}")
     endif()
