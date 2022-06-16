@@ -149,7 +149,21 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
         GetRenderIndex()->GetResourceRegistry());
     TF_VERIFY(resourceRegistry);
 
-    _cmdBuffer.PrepareDraw(stRenderPassState, resourceRegistry);
+    // Create a graphics command to handle the culling and other prepare steps.
+    // This does not have any AOVs since it only writes intermediate buffers.
+    HgiGraphicsCmdsDesc gfxDesc;
+    HgiGraphicsCmdsUniquePtr prepareGfxCmds = _hgi->CreateGraphicsCmds(gfxDesc);
+    if (!TF_VERIFY(prepareGfxCmds)) {
+        return;
+    }
+    HdRprimCollection const &collection = GetRprimCollection();
+    std::string prepareName = "HdSt_RenderPass: Prepare " +
+        collection.GetMaterialTag().GetString();
+    prepareGfxCmds->PushDebugGroup(prepareName.c_str());
+    _cmdBuffer.PrepareDraw(prepareGfxCmds.get(), stRenderPassState, resourceRegistry);
+
+    prepareGfxCmds->PopDebugGroup();
+    _hgi->SubmitCmds(prepareGfxCmds.get());
 
     // Create graphics work to render into aovs.
     const HgiGraphicsCmdsDesc desc =
@@ -159,7 +173,6 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
         return;
     }
 
-    HdRprimCollection const &collection = GetRprimCollection();
     std::string passName = "HdSt_RenderPass: " +
         collection.GetMaterialTag().GetString();
 

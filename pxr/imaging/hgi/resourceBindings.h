@@ -206,6 +206,25 @@ private:
 using HgiResourceBindingsHandle = HgiHandle<HgiResourceBindings>;
 using HgiResourceBindingsHandleVector = std::vector<HgiResourceBindingsHandle>;
 
+struct HgiVertexBufferBinding
+{
+    HGI_API
+    HgiVertexBufferBinding(HgiBufferHandle const &buffer,
+                           uint32_t byteOffset,
+                           uint32_t index)
+        : buffer(buffer)
+        , byteOffset(byteOffset)
+        , index(index)
+    {
+    }
+
+    HgiBufferHandle buffer;
+    uint32_t byteOffset;
+    uint32_t index;
+};
+
+using HgiVertexBufferBindingVector = std::vector<HgiVertexBufferBinding>;
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

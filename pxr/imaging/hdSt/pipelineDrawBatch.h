@@ -62,6 +62,7 @@ public:
     /// Prepare draw commands and apply view frustum culling for this batch.
     HDST_API
     void PrepareDraw(
+        HgiGraphicsCmds *gfxCmds,
         HdStRenderPassStateSharedPtr const & renderPassState,
         HdStResourceRegistrySharedPtr const & resourceRegistry) override;
 
@@ -139,6 +140,7 @@ private:
                 HdStBufferArrayRangeSharedPtr const & indexBar);
 
     void _ExecuteFrustumCull(
+                HgiGraphicsCmds * cullGfxCmds,
                 bool updateDispatchBuffer,
                 HdStRenderPassStateSharedPtr const & renderPassState,
                 HdStResourceRegistrySharedPtr const & resourceRegistry);

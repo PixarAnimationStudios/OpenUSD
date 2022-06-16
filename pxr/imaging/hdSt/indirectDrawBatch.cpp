@@ -893,6 +893,7 @@ HdSt_IndirectDrawBatch::_HasNothingToDraw() const
 
 void
 HdSt_IndirectDrawBatch::PrepareDraw(
+    HgiGraphicsCmds *gfxCmds,
     HdStRenderPassStateSharedPtr const & renderPassState,
     HdStResourceRegistrySharedPtr const & resourceRegistry)
 {
@@ -916,7 +917,7 @@ HdSt_IndirectDrawBatch::PrepareDraw(
     }
 
     if (_useGpuCulling) {
-        _ExecuteFrustumCull(updateBufferData,
+        _ExecuteFrustumCull(gfxCmds, updateBufferData,
                             renderPassState, resourceRegistry);
     }
 }
@@ -1308,6 +1309,7 @@ _GetCullPipeline(
 
 void
 HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
+    HgiGraphicsCmds * cullGfxCmds,
     bool const updateBufferData,
     HdStRenderPassStateSharedPtr const & renderPassState,
     HdStResourceRegistrySharedPtr const & resourceRegistry)
@@ -1369,9 +1371,6 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
                              : sizeof(Uniforms));
     HgiGraphicsPipelineHandle psoHandle = *pso.get();
 
-    // GfxCmds has no attachment since it is a vertex only shader.
-    HgiGraphicsCmdsDesc gfxDesc;
-    HgiGraphicsCmdsUniquePtr cullGfxCmds = hgi->CreateGraphicsCmds(gfxDesc);
     if (_useInstanceCulling) {
         cullGfxCmds->PushDebugGroup("GPU frustum culling (instanced)");
     } else {
@@ -1456,7 +1455,7 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
     }
 
     cullGfxCmds->PopDebugGroup();
-    hgi->SubmitCmds(cullGfxCmds.get());
+    hgi->SubmitCmds(cullGfxCmds);
 
     state.UnbindResourcesForViewTransformation();
 
