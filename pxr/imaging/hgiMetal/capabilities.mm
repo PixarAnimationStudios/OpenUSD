@@ -35,6 +35,25 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
         _SetFlag(HgiDeviceCapabilitiesBitsConcurrentDispatch, true);
     }
 
+    bool hasIntel = false;
+    //Gate intel on Mac by macOS 13.0
+    if (@available(macOS 13.0, *)) {
+        hasIntel = [device isLowPower];
+    }
+
+    _SetFlag(HgiDeviceCapabilitiesBitsOIT, !hasIntel);
+
+    if (hasIntel) {
+        bool vertexOffsettingFixes = true;
+        // Once IG driver issue is fixed, change to false.
+        if (@available(macOS 13.0, *)) {
+            vertexOffsettingFixes = false;
+        }
+        _SetFlag(HgiDeviceCapabilitiesBitsTessellationBarycentric, true);
+        _SetFlag(HgiDeviceCapabilitiesBitsPrimitiveIdEmulation, true);
+        _SetFlag(HgiDeviceCapabilitiesBitsPatchVertexOffsetting, vertexOffsettingFixes);
+    }
+
     defaultStorageMode = MTLResourceStorageModeShared;
     bool unifiedMemory = false;
     bool barycentrics = false;
@@ -49,8 +68,9 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
 #endif
         // On macOS 10.15 and 11.0 the AMD drivers reported the wrong value for
         // supportsShaderBarycentricCoordinates so check both flags.
-        barycentrics = [device supportsShaderBarycentricCoordinates]
-                    || [device areBarycentricCoordsSupported];
+        barycentrics = ([device supportsShaderBarycentricCoordinates]
+                    || [device areBarycentricCoordsSupported])
+                    && !hasIntel;
         
         hasAppleSilicon = [device hasUnifiedMemory] && ![device isLowPower];
     }

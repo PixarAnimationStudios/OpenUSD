@@ -91,6 +91,10 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsCustomDepthRange        = 1 << 13,
     HgiDeviceCapabilitiesBitsMetalTessellation       = 1 << 14,
     HgiDeviceCapabilitiesBitsBasePrimitiveOffset     = 1 << 15,
+    HgiDeviceCapabilitiesBitsPatchVertexOffsetting   = 1 << 16,
+    HgiDeviceCapabilitiesBitsTessellationBarycentric = 1 << 17,
+    HgiDeviceCapabilitiesBitsOIT                     = 1 << 18,
+    HgiDeviceCapabilitiesBitsPrimitiveIdEmulation    = 1 << 19
 };
 
 using HgiDeviceCapabilities = HgiBits;
