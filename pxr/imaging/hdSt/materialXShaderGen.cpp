@@ -324,8 +324,8 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
         emitLine("#define u_envRadiance HdGetSampler_domeLightPrefilter() ", mxStage, false);
         emitLine("#define u_envIrradiance HdGetSampler_domeLightIrradiance() ", mxStage, false);
         emitLine("#else", mxStage, false);
-        emitLine("uniform sampler2D u_envRadiance;", mxStage, false);
-        emitLine("uniform sampler2D u_envIrradiance;", mxStage, false);
+        emitLine("#define u_envRadiance HdGetSampler_domeLightFallback()", mxStage, false);
+        emitLine("#define u_envIrradiance HdGetSampler_domeLightFallback()", mxStage, false);
         emitLine("#endif", mxStage, false);
         emitLineBreak(mxStage);
 
@@ -333,6 +333,9 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
         if (!_mxHdTextureMap.empty()) {
             emitComment("Define MaterialX to Hydra Sampler mappings", mxStage);
             for (auto texturePair : _mxHdTextureMap) {
+                if (texturePair.first == "domeLightFallback") {
+                    continue;
+                }
                 emitLine(TfStringPrintf("#define %s_file HdGetSampler_%s()",
                                         texturePair.first.c_str(),
                                         texturePair.second.c_str()),
@@ -594,19 +597,26 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
     // Note: only need to initialize textures when bindlessTextures are enabled,
     // when bindlessTextures are not enabled, mappings are defined in 
     // HdStMaterialXShaderGen::_EmitMxFunctions
-    emitLine("#ifdef HD_HAS_domeLightIrradiance", mxStage, false);
+    emitComment("Initialize Indirect Light Textures and values", mxStage);
     if (_bindlessTexturesEnabled) {
+        emitLine("#ifdef HD_HAS_domeLightIrradiance", mxStage, false);
         emitLine("u_envIrradiance = HdGetSampler_domeLightIrradiance()", mxStage);
         emitLine("u_envRadiance = HdGetSampler_domeLightPrefilter()", mxStage);
+        emitLine("#else", mxStage, false);
+        emitLine("u_envIrradiance = HdGetSampler_domeLightFallback()", mxStage);
+        emitLine("u_envRadiance = HdGetSampler_domeLightFallback()", mxStage);
+        emitLine("#endif", mxStage, false);
     }
     emitLine("u_envRadianceMips = textureQueryLevels(u_envRadiance)", mxStage);
-    emitLine("#endif", mxStage, false);
     emitLineBreak(mxStage);
 
     // Initialize MaterialX Texture samplers with HdGetSampler equivalents
     if (_bindlessTexturesEnabled && !_mxHdTextureMap.empty()) {
         emitComment("Initialize Material Textures", mxStage);
         for (auto texturePair : _mxHdTextureMap) {
+            if (texturePair.first == "domeLightFallback") {
+                continue;
+            }
             emitLine(texturePair.first + "_file = "
                     "HdGetSampler_" + texturePair.second + "()", mxStage);
         }
