@@ -56,6 +56,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (uistep)
     (unit)
     (unittype)
+    (defaultgeomprop)
 );
 
 // This environment variable lets users override the name of the primary
@@ -141,6 +142,19 @@ ParseMetadata(
     const std::string& attribute)
 {
     const auto& value = element->getAttribute(attribute);
+    if (!value.empty()) {
+        metadata.emplace(key, value);
+    }
+}
+
+static
+void
+ParseMetadata(
+    NdrTokenMap& metadata,
+    const TfToken& key,
+    const mx::ConstElementPtr& element)
+{
+    const auto& value = element->getAttribute(key.GetString());
     if (!value.empty()) {
         metadata.emplace(key, value);
     }
@@ -283,14 +297,13 @@ ShaderBuilder::AddProperty(
     auto name = element->getName();
 
     // Record builtin primvar references for this node's inputs.
-    static const std::string defaultgeompropName("defaultgeomprop");
     if (!isOutput && primvars != nullptr) {
 
         // If an input has "defaultgeomprop", that means it reads from the
         // primvar specified unless connected. We mark these in Sdr as
         // always-required primvars; note that this means we might overestimate
         // which primvars are referenced in a material.
-        const auto& defaultgeomprop = element->getAttribute(defaultgeompropName);
+        const auto& defaultgeomprop = element->getAttribute(_tokens->defaultgeomprop.GetString());
         if (!defaultgeomprop.empty()) {
             // Note: MaterialX uses a default texcoord of "UV0", which we
             // inline replace with the configured default.
@@ -322,13 +335,14 @@ ShaderBuilder::AddProperty(
         ParseMetadata(metadata, SdrPropertyMetadata->Help, element, "doc");
         ParseMetadata(metadata, SdrPropertyMetadata->Page, element, "uifolder");
 
-        ParseMetadata(metadata, _tokens->uimin, element, "uimin");
-        ParseMetadata(metadata, _tokens->uimax, element, "uimax");
-        ParseMetadata(metadata, _tokens->uisoftmin, element, "uisoftmin");
-        ParseMetadata(metadata, _tokens->uisoftmax, element, "uisoftmax");
-        ParseMetadata(metadata, _tokens->uistep, element, "uistep");
-        ParseMetadata(metadata, _tokens->unit, element, "unit");
-        ParseMetadata(metadata, _tokens->unittype, element, "unittype");
+        ParseMetadata(metadata, _tokens->uimin, element);
+        ParseMetadata(metadata, _tokens->uimax, element);
+        ParseMetadata(metadata, _tokens->uisoftmin, element);
+        ParseMetadata(metadata, _tokens->uisoftmax, element);
+        ParseMetadata(metadata, _tokens->uistep, element);
+        ParseMetadata(metadata, _tokens->unit, element);
+        ParseMetadata(metadata, _tokens->unittype, element);
+        ParseMetadata(metadata, _tokens->defaultgeomprop, element);
 
         if (!metadata.count(SdrPropertyMetadata->Help) &&
              metadata.count(_tokens->unit)) {
