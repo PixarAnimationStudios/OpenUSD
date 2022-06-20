@@ -84,6 +84,7 @@ _ShouldStoreDependency(PcpDependencyFlags depFlags)
 void
 Pcp_Dependencies::Add(
     const PcpPrimIndex &primIndex,
+    PcpCulledDependencyVector &&culledDependencies,
     PcpDynamicFileFormatDependencyData &&fileFormatDependencyData)
 {
     TfAutoMallocTag2 tag("Pcp", "Pcp_Dependencies::Add");
@@ -94,6 +95,20 @@ Pcp_Dependencies::Add(
     TF_DEBUG(PCP_DEPENDENCIES)
         .Msg("Pcp_Dependencies: Adding deps for index <%s>:\n",
              primIndexPath.GetText());
+
+    auto addDependency = [this, &primIndexPath](
+        const PcpLayerStackRefPtr& layerStack,
+        const SdfPath& path)
+    {
+        auto iresult = _deps.emplace(layerStack, _SiteDepMap());
+        _SiteDepMap &siteDepMap = iresult.first->second;
+        if (iresult.second) {
+            // If we inserted a new entry, bump the revision count.
+            ++_layerStacksRevision;
+        }
+        std::vector<SdfPath> &deps = siteDepMap[path];
+        deps.push_back(primIndexPath);
+    };
 
     int nodeIndex=0, count=0;
     for (const PcpNodeRef &n: primIndex.GetNodeRange()) {
@@ -106,14 +121,7 @@ Pcp_Dependencies::Add(
                 if (_concurrentPopulationContext) {
                     lock.acquire(_concurrentPopulationContext->_mutex);
                 }
-                auto iresult = _deps.emplace(n.GetLayerStack(), _SiteDepMap());
-                _SiteDepMap &siteDepMap = iresult.first->second;
-                if (iresult.second) {
-                    // If we inserted a new entry, bump the revision count.
-                    ++_layerStacksRevision;
-                }
-                std::vector<SdfPath> &deps = siteDepMap[n.GetPath()];
-                deps.push_back(primIndexPath);
+                addDependency(n.GetLayerStack(), n.GetPath());
             }
 
             TF_DEBUG(PCP_DEPENDENCIES)
@@ -123,6 +131,45 @@ Pcp_Dependencies::Add(
                      TfEnum::GetDisplayName(n.GetArcType()).c_str(),
                      n.GetPath().GetText(),
                      TfStringify(n.GetLayerStack()->GetIdentifier()).c_str());
+        }
+    }
+
+    if (!culledDependencies.empty()) {
+        const PcpCulledDependencyVector* insertedDeps = nullptr;
+        {
+            tbb::spin_mutex::scoped_lock lock;
+            if (_concurrentPopulationContext) {
+                lock.acquire(_concurrentPopulationContext->_mutex);
+            }
+
+            for (const PcpCulledDependency& dep : culledDependencies) {
+                addDependency(dep.layerStack, dep.sitePath);
+            }
+
+            count += culledDependencies.size();
+
+            PcpCulledDependencyVector& deps =
+                _culledDependenciesMap[primIndexPath];
+            if (deps.empty()) {
+                deps = std::move(culledDependencies);
+            }
+            else {
+                deps.insert(deps.begin(),
+                    std::make_move_iterator(culledDependencies.begin()),
+                    std::make_move_iterator(culledDependencies.end()));
+            }
+
+            insertedDeps = &deps;
+        }
+
+        if (TfDebug::IsEnabled(PCP_DEPENDENCIES)) {
+            for (const PcpCulledDependency& dep : *insertedDeps) {
+                TF_DEBUG(PCP_DEPENDENCIES)
+                    .Msg(" - Node (culled) (%s): <%s> %s\n",
+                        PcpDependencyFlagsToString(dep.flags).c_str(),
+                        dep.sitePath.GetText(),
+                        TfStringify(dep.layerStack->GetIdentifier()).c_str());
+            }
         }
     }
 
@@ -162,31 +209,19 @@ Pcp_Dependencies::Remove(const PcpPrimIndex &primIndex, PcpLifeboat *lifeboat)
         .Msg("Pcp_Dependencies: Removing deps for index <%s>\n",
              primIndexPath.GetText());
 
-    int nodeIndex=0;
-    for (const PcpNodeRef &n: primIndex.GetNodeRange()) {
-        const int curNodeIndex = nodeIndex++;
-        const PcpDependencyFlags depFlags = PcpClassifyNodeDependency(n);
-        if (!_ShouldStoreDependency(depFlags)) {
-            continue;
-        }
-
-        _SiteDepMap &siteDepMap = _deps[n.GetLayerStack()];
-        std::vector<SdfPath> &deps = siteDepMap[n.GetPath()];
-
-        TF_DEBUG(PCP_DEPENDENCIES)
-            .Msg(" - Node %i (%s %s): <%s> %s\n",
-                 curNodeIndex,
-                 PcpDependencyFlagsToString(depFlags).c_str(),
-                 TfEnum::GetDisplayName(n.GetArcType()).c_str(),
-                 n.GetPath().GetText(),
-                 TfStringify(n.GetLayerStack()->GetIdentifier()).c_str());
+    auto removeDependency = [this, &primIndexPath, &lifeboat](
+        const PcpLayerStackRefPtr& layerStack,
+        const SdfPath& path)
+    {
+        _SiteDepMap &siteDepMap = _deps[layerStack];
+        std::vector<SdfPath> &deps = siteDepMap[path];
 
         // Swap with last element, then remove that.
         // We are using the vector as an unordered set.
         std::vector<SdfPath>::iterator i =
             std::find(deps.begin(), deps.end(), primIndexPath);
         if (!TF_VERIFY(i != deps.end())) {
-            continue;
+            return;
         }
         std::vector<SdfPath>::iterator last = --deps.end();
         std::swap(*i, *last);
@@ -200,7 +235,7 @@ Pcp_Dependencies::Remove(const PcpPrimIndex &primIndex, PcpLifeboat *lifeboat)
 
             // Scan children to see if we can remove this subtree.
             _SiteDepMap::iterator i, iBegin, iEnd;
-            std::tie(iBegin, iEnd) = siteDepMap.FindSubtreeRange(n.GetPath());
+            std::tie(iBegin, iEnd) = siteDepMap.FindSubtreeRange(path);
             for (i = iBegin; i != iEnd && i->second.empty(); ++i) {}
             bool subtreeIsEmpty = i == iEnd;
             if (subtreeIsEmpty) {
@@ -208,7 +243,7 @@ Pcp_Dependencies::Remove(const PcpPrimIndex &primIndex, PcpLifeboat *lifeboat)
                 TF_DEBUG(PCP_DEPENDENCIES).Msg("      No subtree deps\n");
 
                 // Now scan upwards to reap parent entries.
-                for (SdfPath p = n.GetPath().GetParentPath();
+                for (SdfPath p = path.GetParentPath();
                      !p.IsEmpty(); p = p.GetParentPath()) {
                     std::tie(iBegin, iEnd) = siteDepMap.FindSubtreeRange(p);
                     if (iBegin != iEnd
@@ -226,18 +261,53 @@ Pcp_Dependencies::Remove(const PcpPrimIndex &primIndex, PcpLifeboat *lifeboat)
                 // Check if the entire table is empty.
                 if (siteDepMap.empty()) {
                     if (lifeboat) {
-                        lifeboat->Retain(n.GetLayerStack());
+                        lifeboat->Retain(layerStack);
                     }
-                    _deps.erase(n.GetLayerStack());
+                    _deps.erase(layerStack);
                     ++_layerStacksRevision;
 
                     TF_DEBUG(PCP_DEPENDENCIES)
                         .Msg("    Removed last dep on %s\n",
-                             TfStringify(n.GetLayerStack()
+                             TfStringify(layerStack
                                          ->GetIdentifier()).c_str());
                 }
             }
         }
+
+    };
+
+    int nodeIndex=0;
+    for (const PcpNodeRef &n: primIndex.GetNodeRange()) {
+        const int curNodeIndex = nodeIndex++;
+        const PcpDependencyFlags depFlags = PcpClassifyNodeDependency(n);
+        if (!_ShouldStoreDependency(depFlags)) {
+            continue;
+        }
+
+        TF_DEBUG(PCP_DEPENDENCIES)
+            .Msg(" - Node %i (%s %s): <%s> %s\n",
+                 curNodeIndex,
+                 PcpDependencyFlagsToString(depFlags).c_str(),
+                 TfEnum::GetDisplayName(n.GetArcType()).c_str(),
+                 n.GetPath().GetText(),
+                 TfStringify(n.GetLayerStack()->GetIdentifier()).c_str());
+
+        removeDependency(n.GetLayerStack(), n.GetPath());
+    }
+
+    auto culledDepIt = _culledDependenciesMap.find(primIndexPath);
+    if (culledDepIt != _culledDependenciesMap.end()) {
+        for (const PcpCulledDependency& dep : culledDepIt->second) {
+            TF_DEBUG(PCP_DEPENDENCIES)
+                .Msg(" - Node (culled) (%s): <%s> %s\n",
+                    PcpDependencyFlagsToString(dep.flags).c_str(),
+                    dep.sitePath.GetText(),
+                    TfStringify(dep.layerStack->GetIdentifier()).c_str());
+
+            removeDependency(dep.layerStack, dep.sitePath);
+        }
+
+        _culledDependenciesMap.erase(culledDepIt);
     }
 
     // We need to remove prim index's dynamic format dependency object
@@ -285,6 +355,7 @@ Pcp_Dependencies::RemoveAll(PcpLifeboat* lifeboat)
     _deps.clear();
     ++_layerStacksRevision;
     _possibleDynamicFileFormatArgumentFields.clear();
+    _culledDependenciesMap.clear();
     _fileFormatArgumentDependencyMap.clear();
 }
 
@@ -320,6 +391,21 @@ Pcp_Dependencies::UsesLayerStack(const PcpLayerStackPtr& layerStack) const
     return _deps.find(layerStack) != _deps.end();
 }
 
+const PcpCulledDependencyVector&
+Pcp_Dependencies::GetCulledDependencies(const SdfPath &primIndexPath) const
+{
+    static const PcpCulledDependencyVector empty;
+    auto it = _culledDependenciesMap.find(primIndexPath);
+    return it == _culledDependenciesMap.end() ? empty : it->second;
+}
+
+const PcpCulledDependencyVector&
+Pcp_Dependencies::GetCulledDependencies(
+    const PcpCache& cache, const SdfPath &primIndexPath)
+{
+    return cache._primDependencies->GetCulledDependencies(primIndexPath);
+}
+
 bool 
 Pcp_Dependencies::HasAnyDynamicFileFormatArgumentDependencies() const
 {
@@ -345,6 +431,28 @@ Pcp_Dependencies::GetDynamicFileFormatArgumentDependencyData(
         return empty;
     }
     return it->second;
+}
+
+void
+Pcp_AddCulledDependency(
+    const PcpNodeRef& node,
+    PcpCulledDependencyVector* culledDeps)
+{
+    const PcpDependencyFlags depFlags = PcpClassifyNodeDependency(node);
+    if (!_ShouldStoreDependency(depFlags)) {
+        return;
+    }
+
+    PcpCulledDependency dep;
+    dep.flags = depFlags;
+    dep.layerStack = node.GetLayerStack();
+    dep.sitePath = node.GetPath();
+    dep.unrelocatedSitePath = 
+        node.GetArcType() == PcpArcTypeRelocate ? 
+        node.GetParentNode().GetPath() : SdfPath();
+    dep.mapToRoot = node.GetMapToRoot().Evaluate();
+
+    culledDeps->push_back(std::move(dep));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

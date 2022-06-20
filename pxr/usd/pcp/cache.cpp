@@ -532,6 +532,78 @@ PcpCache::FindSiteDependencies(
     return result;
 }
 
+namespace
+{
+
+template <class CacheFilterFn>
+static void
+_ProcessDependentNode(
+    const PcpNodeRef& node, const SdfPath& localSitePath, 
+    const CacheFilterFn& cacheFilterFn,
+    PcpDependencyVector* deps)
+{
+    // Now that we have found a dependency on depPrimSitePath,
+    // use path translation to get the corresponding depIndexPath.
+    SdfPath depIndexPath;
+    bool valid = false;
+    if (node.GetArcType() == PcpArcTypeRelocate) {
+        // Relocates require special handling.  Because
+        // a relocate node's map function is always
+        // identity, we must do our own prefix replacement
+        // to step out of the relocate, then continue
+        // with regular path translation.
+        const PcpNodeRef parent = node.GetParentNode(); 
+        depIndexPath = PcpTranslatePathFromNodeToRoot(
+            parent,
+            localSitePath.ReplacePrefix( node.GetPath(),
+                                         parent.GetPath() ),
+            &valid );
+    } else {
+        depIndexPath = PcpTranslatePathFromNodeToRoot(
+            node, localSitePath, &valid);
+    }
+
+    if (valid && TF_VERIFY(!depIndexPath.IsEmpty()) &&
+        cacheFilterFn(depIndexPath)) {
+        deps->push_back(PcpDependency{
+            depIndexPath, localSitePath,
+            node.GetMapToRoot().Evaluate() });
+    }
+}
+
+template <class CacheFilterFn>
+static void
+_ProcessCulledDependency(
+    const PcpCulledDependency& dep, const SdfPath& localSitePath,
+    const CacheFilterFn& cacheFilterFn,
+    PcpDependencyVector* deps)
+{
+    // This function mirrors _ProcessDependentNode above, see comments
+    // in that function for more details.
+    SdfPath depIndexPath;
+    bool valid = false;
+    if (!dep.unrelocatedSitePath.IsEmpty()) {
+        depIndexPath = PcpTranslatePathFromNodeToRootUsingFunction(
+            dep.mapToRoot, 
+            localSitePath.ReplacePrefix(dep.sitePath,
+                                        dep.unrelocatedSitePath),
+            &valid);
+    }
+    else {
+        depIndexPath = PcpTranslatePathFromNodeToRootUsingFunction(
+            dep.mapToRoot, localSitePath, &valid);
+    }
+
+    if (valid && TF_VERIFY(!depIndexPath.IsEmpty()) &&
+        cacheFilterFn(depIndexPath)) {
+        deps->push_back(PcpDependency{
+            depIndexPath, localSitePath,
+            dep.mapToRoot });
+    }
+}
+
+} // end anonymous namespace
+
 PcpDependencyVector
 PcpCache::FindSiteDependencies(
     const PcpLayerStackPtr& siteLayerStack,
@@ -654,35 +726,24 @@ PcpCache::FindSiteDependencies(
                 }
             }
 
-            // Now that we have found a dependency on depPrimSitePath,
-            // use path translation to get the corresponding depIndexPath.
-            SdfPath depIndexPath;
-            bool valid = false;
-            if (node.GetArcType() == PcpArcTypeRelocate) {
-                // Relocates require special handling.  Because
-                // a relocate node's map function is always
-                // identity, we must do our own prefix replacement
-                // to step out of the relocate, then continue
-                // with regular path translation.
-                const PcpNodeRef parent = node.GetParentNode(); 
-                depIndexPath = PcpTranslatePathFromNodeToRoot(
-                    parent,
-                    localSitePath.ReplacePrefix( node.GetPath(),
-                                                 parent.GetPath() ),
-                    &valid );
-            } else {
-                depIndexPath = PcpTranslatePathFromNodeToRoot(
-                    node, localSitePath, &valid);
-            }
-            if (valid && TF_VERIFY(!depIndexPath.IsEmpty()) &&
-                cacheFilterFn(depIndexPath)) {
-                deps.push_back(PcpDependency{
-                    depIndexPath, localSitePath,
-                    node.GetMapToRoot().Evaluate() });
-            }
+            _ProcessDependentNode(node, localSitePath, cacheFilterFn, &deps);
         };
+
+        auto visitCulledDepFn = [&](const SdfPath &depPrimIndexPath,
+                                    const PcpCulledDependency &dep)
+        {
+            if (localMask != PcpDependencyTypeAnyIncludingVirtual) {
+                PcpDependencyFlags flags = dep.flags;
+                if ((flags & localMask) != flags) { 
+                    return;
+                }
+            }
+
+            _ProcessCulledDependency(dep, localSitePath, cacheFilterFn, &deps);
+        };
+
         Pcp_ForEachDependentNode(depPrimSitePath, siteLayerStack,
-                                 depPrimIndexPath, *this, visitNodeFn);
+            depPrimIndexPath, *this, visitNodeFn, visitCulledDepFn);
     };
     _primDependencies->ForEachDependencyOnSite(
         siteLayerStack, *sitePrimPath,
@@ -1385,7 +1446,9 @@ struct PcpCache::_ParallelIndexer
                 mutableIndex->Swap(outputs.primIndex);
                 lock.release();
                 _cache->_primDependencies->Add(
-                    *index, std::move(outputs.dynamicFileFormatDependency));
+                    *index, 
+                    std::move(outputs.culledDependencies),
+                    std::move(outputs.dynamicFileFormatDependency));
             }
         }
 
@@ -1526,8 +1589,10 @@ PcpCache::_ComputePrimIndexWithCompatibleInputs(
         outputs.allErrors.end());
 
     // Add dependencies.
-    _primDependencies->Add(outputs.primIndex, 
-                           std::move(outputs.dynamicFileFormatDependency));
+    _primDependencies->Add(
+        outputs.primIndex, 
+        std::move(outputs.culledDependencies),
+        std::move(outputs.dynamicFileFormatDependency));
 
     // Update _includedPayloads if we included a discovered payload.
     if (outputs.payloadState == PcpPrimIndexOutputs::IncludedByPredicate) {

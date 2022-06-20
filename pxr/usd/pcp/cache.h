@@ -616,6 +616,7 @@ public:
 
 private:
     friend class PcpChanges;
+    friend class Pcp_Dependencies;
     friend class Pcp_Statistics;
 
     struct _ParallelIndexer;
