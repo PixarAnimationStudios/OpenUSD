@@ -53,7 +53,7 @@ Hd_VertexAdjacency::BuildAdjacencyTable(HdMeshTopology const *topology)
 
     int const * numVertsPtr = topology->GetFaceVertexCounts().cdata();
     int const * vertsPtr = topology->GetFaceVertexIndices().cdata();
-    int numFaces = topology->GetFaceVertexCounts().size();
+    const int numFaces = topology->GetFaceVertexCounts().size();
     bool flip = (topology->GetOrientation() != HdTokens->rightHanded);
 
     // compute numPoints from topology indices
@@ -72,6 +72,11 @@ Hd_VertexAdjacency::BuildAdjacencyTable(HdMeshTopology const *topology)
     for (int i=0; i<numFaces; ++i) {
         int nv = numVertsPtr[i];
         for (int j=0; j<nv; ++j) {
+            if (!vertsPtr) {
+                TF_WARN("Topology's face vertex counts are inconsistent with "
+                        "face vertex indices.\n");
+                return false;
+            }
             int index = vertsPtr[vertIndex++];
             if (index < 0 || index >= _numPoints) {
                 TF_CODING_ERROR("vertex index out of range "
