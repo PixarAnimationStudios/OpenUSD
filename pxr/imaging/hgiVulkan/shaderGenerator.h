@@ -66,6 +66,10 @@ private:
 
     void _WriteVersion(std::ostream &ss);
 
+    void _WriteExtensions(std::ostream &ss);
+    
+    void _WriteMacros(std::ostream &ss);
+
     void _WriteConstantParams(
         const HgiShaderFunctionParamDescVector &parameters);
 
