@@ -2873,6 +2873,10 @@ UsdStage::_ReportErrors(const PcpErrorVector &errors,
 static Usd_PrimTypeInfoCache &
 _GetPrimTypeInfoCache()
 {
+    // As noted in prim.h, our current guarantee of the lifetime of the objects
+    // referenced by the return value of UsdPrim::GetPrimTypeInfo is (at least)
+    // as long as the owning stage is open. This is currently true as we never
+    // clear either this cache or its contents.
     static Usd_PrimTypeInfoCache cache;
     return cache;
 }
