@@ -15,6 +15,14 @@ if (${PXR_HEADLESS_TEST_MODE})
     return()
 endif()
 
+# testusdview imaging tests require python and plugin mechanism which we do not
+# support for static build configurations due to potential conflict in client
+# applications linking against static build USD
+if (NOT BUILD_SHARED_LIBS)
+    message(STATUS "Skipping ${PXR_PACKAGE} tests on static build configuration")
+    return()
+endif()
+
 pxr_install_test_dir(
     SRC testenv/testUsdviewAlive
     DEST testUsdviewAlive

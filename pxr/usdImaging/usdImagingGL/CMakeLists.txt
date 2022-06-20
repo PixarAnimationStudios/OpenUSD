@@ -170,6 +170,14 @@ if (WIN32)
     return()
 endif()
 
+# usdImagingGL tests require plugin mechanism to find different renderer
+# plugins, which we do not support for static build configurations due to 
+# potential conflict in client applocitions linking against static build USD
+if (NOT BUILD_SHARED_LIBS)
+    message(STATUS "Skipping ${PXR_PACKAGE} tests on static build configuration")
+    return()
+endif()
+
 #
 # Install all the test data
 #
