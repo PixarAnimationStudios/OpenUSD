@@ -41,7 +41,6 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
         TfToken("gf"),
         TfToken("hf"),
         TfToken("hio"),
-        TfToken("js"),
         TfToken("plug"),
         TfToken("sdf"),
         TfToken("tf"),
