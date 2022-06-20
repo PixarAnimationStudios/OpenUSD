@@ -52,6 +52,9 @@ public:
     HGIVULKAN_API
     HgiVulkanShaderSectionUniquePtrVector* GetShaderSections();
 
+    template<typename SectionType, typename ...T>
+    SectionType *CreateShaderSection(T && ...t);
+
 protected:
     HGIVULKAN_API
     void _Execute(std::ostream &ss) override;
