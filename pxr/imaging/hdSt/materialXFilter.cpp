@@ -179,9 +179,10 @@ HdSt_GenMaterialXShader(
 static VtValue
 _GetHdFilterValue(std::string const& mxInputValue)
 {
-    if(mxInputValue == "closest") {
+    if (mxInputValue == "closest") {
         return VtValue(HdStTextureTokens->nearestMipmapNearest);
     }
+    // linear/cubic
     return VtValue(HdStTextureTokens->linearMipmapLinear);
 }
 
@@ -198,6 +199,7 @@ _GetHdSamplerValue(std::string const& mxInputValue)
     if (mxInputValue == "mirror") {
         return VtValue(HdStTextureTokens->mirror);
     }
+    // periodic
     return VtValue(HdStTextureTokens->repeat);
 }
 
@@ -227,16 +229,19 @@ _GetHdTextureParameters(
         (*hdTextureParams)[HdStTextureTokens->wrapT] = 
             _GetHdSamplerValue(mxInputValue);
     }
+}
 
-    // Properties specific to <tiledimage> nodes:
-    else if (mxInputName == "uvtiling" || mxInputName == "uvoffset" ||
-        mxInputName == "realworldimagesize" || 
-        mxInputName == "realworldtilesize") {
-        (*hdTextureParams)[HdStTextureTokens->wrapS] = 
-            VtValue(HdStTextureTokens->repeat);
-        (*hdTextureParams)[HdStTextureTokens->wrapT] = 
-            VtValue(HdStTextureTokens->repeat);
-    }
+static void
+_AddDefaultMtlxTextureValues(
+    std::map<TfToken, VtValue>* hdTextureParams)
+{
+    // MaterialX uses repeat/periodic for the default wrap values, without
+    // this the texture will use the Hydra default useMetadata. 
+    // Note that these will get overwritten by any authored values
+    (*hdTextureParams)[HdStTextureTokens->wrapS] = 
+        VtValue(HdStTextureTokens->repeat);
+    (*hdTextureParams)[HdStTextureTokens->wrapT] = 
+        VtValue(HdStTextureTokens->repeat);
 }
 
 // Find the HdNode and its corresponding NodePath in the given HdNetwork 
@@ -394,6 +399,7 @@ _UpdateTextureNodes(
 
         // Gather the Hydra Texture Parameters
         std::map<TfToken, VtValue> hdParameters;
+        _AddDefaultMtlxTextureValues(&hdParameters);
         for (auto const& currParam : hdTextureNode.parameters) {
 
             // Get the MaterialX Input Value string
