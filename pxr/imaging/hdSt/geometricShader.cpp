@@ -51,9 +51,11 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
                                        bool cullingPass,
                                        FvarPatchType fvarPatchType,
                                        SdfPath const &debugId,
-                                       float lineWidth)
+                                       float lineWidth,
+                                       HgiTessellationSpacing spacing)
     : HdStShaderCode()
     , _primType(primType)
+    , _tessellationSpacing(spacing)
     , _cullStyle(cullStyle)
     , _useHardwareFaceCulling(useHardwareFaceCulling)
     , _hasMirroredTransform(hasMirroredTransform)
@@ -156,6 +158,7 @@ HdSt_GeometricShader::GetPrimitiveIndexSize() const
             primIndexSize = 3;
             break;
         case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
+        case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_WIRE_PATCHES:
         case PrimitiveType::PRIM_MESH_COARSE_QUADS:
         case PrimitiveType::PRIM_MESH_REFINED_QUADS:
             primIndexSize = 4;
@@ -221,6 +224,7 @@ HdSt_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
         case PrimitiveType::PRIM_MESH_REFINED_TRIQUADS:
         case PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES:
         case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
+        case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_WIRE_PATCHES:
         case PrimitiveType::PRIM_MESH_BSPLINE:
         case PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
         // for patches with tesselation, input to GS is still a series of tris
@@ -305,7 +309,8 @@ HdSt_GeometricShader::GetHgiPrimitiveType() const
                 shaderKey.IsFrustumCullingPass(),
                 shaderKey.GetFvarPatchType(),
                 /*debugId=*/SdfPath(),
-                shaderKey.GetLineWidth()));
+                shaderKey.GetLineWidth(),
+                shaderKey.GetTessellationSpacing()));
     }
     return geometricShaderInstance.GetValue();
 }

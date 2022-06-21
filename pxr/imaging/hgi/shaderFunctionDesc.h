@@ -288,7 +288,7 @@ bool operator!=(
 ///
 struct HgiShaderFunctionTessellationDesc
 {
-    enum class PatchType { Quad, Triangle };
+    enum class PatchType { Quad, Triangle, Isoline };
     HGI_API
     HgiShaderFunctionTessellationDesc();
 

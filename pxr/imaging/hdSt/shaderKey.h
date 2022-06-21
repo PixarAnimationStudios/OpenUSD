@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdSt/geometricShader.h" // XXX: for PrimitiveType
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hgi/enums.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -106,6 +107,8 @@ struct HdSt_ShaderKey {
     virtual HdPolygonMode GetPolygonMode() const;
     HDST_API
     virtual float GetLineWidth() const;
+    HDST_API
+    virtual HgiTessellationSpacing GetTessellationSpacing() const;
 
     // Returns the face-varying patch type used in code gen during creation
     // of the face-varying primvar accessors. Only relevant for mesh prims with 

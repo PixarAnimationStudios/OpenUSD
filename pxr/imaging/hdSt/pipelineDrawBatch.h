@@ -145,6 +145,12 @@ private:
                 HdStRenderPassStateSharedPtr const & renderPassState,
                 HdStResourceRegistrySharedPtr const & resourceRegistry);
 
+    void _ExecutePostTesselation(
+            HgiGraphicsCmds *ptcsGfxCmds,
+            bool const updateBufferData,
+            HdStRenderPassStateSharedPtr const & renderPassState,
+            HdStResourceRegistrySharedPtr const & resourceRegistry);
+
     void _BeginGPUCountVisibleInstances(
         HdStResourceRegistrySharedPtr const & resourceRegistry);
 

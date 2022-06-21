@@ -1078,6 +1078,16 @@ HdStRenderPassState::_InitPrimitiveState(
                 geometricShader->IsPrimTypeTriangles()
                     ? HgiTessellationState::PatchType::Triangle
                     : HgiTessellationState::PatchType::Quad;
+            if (geometricShader->GetHgiPrimitiveType() ==
+                HgiPrimitiveTypePointList) {
+                pipeDesc->tessellationState.patchType = HgiTessellationState::Isoline;
+            }
+        }
+    }
+    if (geometricShader->GetUseMetalTessellation()) {
+        if (geometricShader->GetHgiPrimitiveType() ==
+            HgiPrimitiveTypePointList) {
+            pipeDesc->tessellationState.patchType = HgiTessellationState::Isoline;
         }
     }
 }

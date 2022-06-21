@@ -120,6 +120,18 @@ public:
     HGIGL_API
     void MemoryBarrier(HgiMemoryBarrier barrier) override;
 
+    HGIGL_API
+    bool BindTessControlPipeline(HgiGraphicsPipelineHandle pipeline) override
+    {
+        return false;
+    }
+
+    HGIGL_API
+    void SetTessFactorBuffer(HgiGraphicsPipelineHandle pipeline,
+         HgiBufferHandle buffer, uint32_t offset, uint32_t stride) override
+    {
+    }
+
 protected:
     friend class HgiGL;
 

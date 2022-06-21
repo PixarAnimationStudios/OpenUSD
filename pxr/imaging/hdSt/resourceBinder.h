@@ -309,6 +309,7 @@ public:
         BindingDeclaration culledInstanceIndexArrayBinding;
         BindingDeclaration instanceIndexBaseBinding;
         BindingDeclaration primitiveParamBinding;
+        BindingDeclaration tessFactorsBinding;
         BindingDeclaration edgeIndexBinding;
         BindingDeclaration coarseFaceIndexBinding;
         std::vector<BindingDeclaration> fvarPatchParamBindings;

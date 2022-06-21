@@ -80,12 +80,15 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
             case HgiShaderStagePostTessellationVertex:
                 entryPoint = @"vertexEntryPoint";
                 break;
-            case HgiShaderStageTessellationControl:
+            case HgiShaderStagePostTessellationControl:
+                entryPoint = @"vertexEntryPoint";
+                break;
             case HgiShaderStageTessellationEval:
             case HgiShaderStageGeometry:
                 TF_CODING_ERROR("Todo: Unsupported shader stage");
                 break;
         }
+
 
         // Load the function into the library
         _shaderId = [library newFunctionWithName:entryPoint];

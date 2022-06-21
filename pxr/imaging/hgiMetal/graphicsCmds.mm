@@ -88,6 +88,7 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
     , _scissorRectSet(false)
     , _enableParallelEncoder(false)
     , _primitiveTypeChanged(false)
+    , _bindPTCS(false)
     , _maxNumEncoders(1)
 {
     TF_VERIFY(desc.colorTextures.size() == desc.colorAttachmentDescs.size());
@@ -304,7 +305,20 @@ HgiMetalGraphicsCmds::_SetCachedEncoderState(id<MTLRenderCommandEncoder> encoder
         [encoder setScissorRect:_CachedEncState.scissorRect];
     }
     if (_CachedEncState.graphicsPipeline) {
-        _CachedEncState.graphicsPipeline->BindPipeline(encoder);
+        if (_CachedEncState.bindPTCS) {
+            _CachedEncState.graphicsPipeline->BindTessControlPipeline(encoder);
+            _CachedEncState.bindPTCS = false;
+        } else {
+            _CachedEncState.graphicsPipeline->BindPipeline(encoder);
+            if (_CachedEncState.tessFactorBuffer.Get() != nullptr) {
+                _CachedEncState.graphicsPipeline->SetTessFactorBuffer(
+                      encoder,
+                      _CachedEncState.tessFactorBuffer,
+                      _CachedEncState.tessFactorOffset,
+                      _CachedEncState.tessFactorStride);
+            }
+        }
+
     }
     if (_CachedEncState.resourceBindings) {
         _CachedEncState.resourceBindings->BindResources(_hgi,
@@ -479,6 +493,44 @@ HgiMetalGraphicsCmds::BindPipeline(HgiGraphicsPipelineHandle pipeline)
     }
 }
 
+bool
+HgiMetalGraphicsCmds::BindTessControlPipeline(HgiGraphicsPipelineHandle pipeline)
+{
+    _primitiveType = pipeline->GetDescriptor().primitiveType;
+    _primitiveIndexSize =
+        pipeline->GetDescriptor().tessellationState.primitiveIndexSize;
+
+    _CachedEncState.graphicsPipeline =
+        static_cast<HgiMetalGraphicsPipeline*>(pipeline.Get());
+    if (_CachedEncState.graphicsPipeline) {
+        if (!_CachedEncState.graphicsPipeline->
+            HasPostTessControlPipeLineState()) {
+            return false;
+        }
+        for (auto& encoder : _encoders) {
+            _CachedEncState.graphicsPipeline->BindTessControlPipeline(encoder);
+        }
+        _CachedEncState.bindPTCS = true;
+    }
+    return true;
+}
+
+void
+HgiMetalGraphicsCmds::SetTessFactorBuffer(HgiGraphicsPipelineHandle pipeline,
+     HgiBufferHandle buffer, uint32_t offset, uint32_t stride)
+{
+    if (HgiMetalGraphicsPipeline* p =
+        static_cast<HgiMetalGraphicsPipeline*>(pipeline.Get())) {
+            _CachedEncState.tessFactorBuffer = buffer;
+            _CachedEncState.tessFactorOffset = offset;
+            _CachedEncState.tessFactorStride = stride;
+            for (auto& encoder : _encoders) {
+                _CachedEncState.graphicsPipeline->SetTessFactorBuffer(encoder, buffer, offset, stride);
+            }
+    }
+}
+
+
 void
 HgiMetalGraphicsCmds::BindResources(HgiResourceBindingsHandle r)
 {
@@ -539,8 +591,7 @@ HgiMetalGraphicsCmds::Draw(
     id<MTLRenderCommandEncoder> encoder = _GetEncoder();
 
     _stepFunctions.SetVertexBufferOffsets(encoder, baseInstance);
-
-    if (_primitiveType == HgiPrimitiveTypePatchList) {
+        if (_primitiveType == HgiPrimitiveTypePatchList) {
         const NSUInteger controlPointCount = _primitiveIndexSize;
         [encoder drawPatches:controlPointCount
                   patchStart:0
@@ -723,10 +774,10 @@ HgiMetalGraphicsCmds::DrawIndexedIndirect(
                                         ? finalCount : normalCount;
             wd.Run([&, i, encoderOffset, encoderCount]() {
                 id<MTLRenderCommandEncoder> encoder = _GetEncoder(i);
-                
+
                 if (_primitiveType == HgiPrimitiveTypePatchList) {
                     const NSUInteger controlPointCount = _primitiveIndexSize;
-                    
+
                     for (uint32_t offset = encoderOffset;
                          offset < encoderOffset + encoderCount;
                          ++offset) {

@@ -71,6 +71,13 @@ public:
         const void* data) override;
 
     HGIMETAL_API
+    bool BindTessControlPipeline(HgiGraphicsPipelineHandle pipeline) override;
+
+    HGIMETAL_API
+    void SetTessFactorBuffer(HgiGraphicsPipelineHandle pipeline,
+         HgiBufferHandle buffer, uint32_t offset, uint32_t stride) override;
+
+    HGIMETAL_API
     void BindVertexBuffers(
         HgiVertexBufferBindingVector const &bindings) override;
 
@@ -157,6 +164,10 @@ private:
         HgiMetalGraphicsPipeline* graphicsPipeline;
         id<MTLBuffer> argumentBuffer;
         HgiVertexBufferBindingVector vertexBindings;
+        bool bindPTCS = false;
+        HgiBufferHandle tessFactorBuffer;
+        uint32_t tessFactorOffset = 0;
+        uint32_t tessFactorStride = 0;
     } _CachedEncState;
     
     HgiMetal* _hgi;
@@ -173,6 +184,7 @@ private:
     bool _scissorRectSet;
     bool _enableParallelEncoder;
     bool _primitiveTypeChanged;
+    bool _bindPTCS;
     uint32 _maxNumEncoders;
     HgiMetalStepFunctions _stepFunctions;
 };

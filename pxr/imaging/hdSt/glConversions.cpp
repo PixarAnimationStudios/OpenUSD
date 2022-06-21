@@ -198,6 +198,7 @@ HdStGLConversions::GetPrimitiveMode(
             primMode = GL_POINTS;
             break;
         case PrimitiveType::PRIM_BASIS_CURVES_LINES:
+        case PrimitiveType::PRIM_BASIS_CURVES_TESS_LINES:
             primMode = GL_LINES;
             break;
         case PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
@@ -212,6 +213,7 @@ HdStGLConversions::GetPrimitiveMode(
             primMode = GL_LINES_ADJACENCY;
             break;
         case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
+        case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_WIRE_PATCHES:
         case PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES:
         case PrimitiveType::PRIM_MESH_BSPLINE:
         case PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:

@@ -757,6 +757,29 @@ enum HgiShaderTextureType
     HgiShaderTextureTypeArrayTexture
 };
 
+/// \enum HgiTessellationSpacing
+ ///
+ /// Describes the type of shader tessellation spacing to use
+ ///
+ /// <ul>
+ /// <li>None:
+ ///   No tessellation spacing
+ /// <li>Even:
+ ///   Even spacing. Only whole integers are considered for spacing
+ /// <li>FractionalOdd:
+ ///   Fractional odd tessellation spacing
+ /// <li>FractionalEven:
+ ///   Fractional even tessellation spacing
+ /// </ul>
+ ///
+ enum HgiTessellationSpacing
+ {
+     HgiTessellationSpacingNone = 0,
+     HgiTessellationSpacingEven,
+     HgiTessellationSpacingFractionalOdd,
+     HgiTessellationSpacingFractionalEven
+ };
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

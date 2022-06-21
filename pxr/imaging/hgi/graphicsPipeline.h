@@ -366,14 +366,17 @@ struct HgiTessellationState
 {
     enum PatchType {
         Triangle,
-        Quad
+        Quad,
+        Isoline
     };
 
     HGI_API
     HgiTessellationState();
 
+    HgiTessellationSpacing spacing;
     PatchType patchType;
     int primitiveIndexSize;
+    bool useConstantTessFactors;
     HgiTessellationLevel tessellationLevel;
 };
 

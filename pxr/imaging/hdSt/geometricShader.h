@@ -64,7 +64,9 @@ public:
         PRIM_POINTS,
         PRIM_BASIS_CURVES_LINES,     // when linear (or) non-refined cubic
         PRIM_BASIS_CURVES_LINEAR_PATCHES,  // refined linear curves
+        PRIM_BASIS_CURVES_TESS_LINES,
         PRIM_BASIS_CURVES_CUBIC_PATCHES,   // refined cubic curves
+        PRIM_BASIS_CURVES_CUBIC_WIRE_PATCHES,
         PRIM_MESH_COARSE_TRIANGLES,
         PRIM_MESH_REFINED_TRIANGLES, // e.g: loop subdiv
         PRIM_MESH_COARSE_QUADS,      // e.g: quadrangulation for ptex
@@ -85,6 +87,7 @@ public:
     static inline bool IsPrimTypeBasisCurves(PrimitiveType primType) {
         return (primType == PrimitiveType::PRIM_BASIS_CURVES_LINES ||
                 primType == PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES ||
+                primType == PrimitiveType::PRIM_BASIS_CURVES_CUBIC_WIRE_PATCHES ||
                 primType == PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES);
     }
 
@@ -127,7 +130,9 @@ public:
         return primType == PrimitiveType::PRIM_MESH_BSPLINE ||
                primType == PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE ||
                primType == PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES ||
-               primType == PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES;
+               primType == PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES ||
+               primType == PrimitiveType::PRIM_BASIS_CURVES_CUBIC_WIRE_PATCHES ||
+            primType == PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES;
     }
 
     // Face-varying patch type
@@ -153,7 +158,9 @@ public:
                        bool cullingPass,
                        FvarPatchType fvarPatchType,
                        SdfPath const &debugId = SdfPath(),
-                       float lineWidth = 0);
+                       float lineWidth = 0,
+                       HgiTessellationSpacing spacing =
+                             HgiTessellationSpacingNone);
 
     HDST_API
     ~HdSt_GeometricShader() override;
@@ -180,6 +187,10 @@ public:
 
     PrimitiveType GetPrimitiveType() const {
         return _primType;
+    }
+
+    HgiTessellationSpacing GetTessellationSpacing() const {
+             return _tessellationSpacing;
     }
 
     HdCullStyle GetCullStyle() const {
@@ -269,6 +280,7 @@ public:
 
 private:
     PrimitiveType _primType;
+    HgiTessellationSpacing _tessellationSpacing;
     HdCullStyle _cullStyle;
     bool _useHardwareFaceCulling;
     bool _hasMirroredTransform;
