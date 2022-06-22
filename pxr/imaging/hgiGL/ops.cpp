@@ -580,27 +580,22 @@ HgiGLOps::SetConstantValues(
 
 HgiGLOpsFn
 HgiGLOps::BindVertexBuffers(
-    uint32_t firstBinding,
-    HgiBufferHandleVector const& vertexBuffers,
-    std::vector<uint32_t> const& byteOffsets)
+    HgiVertexBufferBindingVector const &bindings)
 {
-    return [firstBinding, vertexBuffers, byteOffsets] {
+    return [bindings] {
         TRACE_SCOPE("HgiGLOps::BindVertexBuffers");
-        TF_VERIFY(byteOffsets.size() == vertexBuffers.size());
-        TF_VERIFY(byteOffsets.size() == vertexBuffers.size());
 
         // XXX use glBindVertexBuffers to bind all VBs in one go.
-        for (size_t i=0; i<vertexBuffers.size(); i++) {
-            HgiBufferHandle bufHandle = vertexBuffers[i];
-            HgiGLBuffer* buf = static_cast<HgiGLBuffer*>(bufHandle.Get());
+        for (HgiVertexBufferBinding const &binding : bindings) {
+            HgiGLBuffer* buf = static_cast<HgiGLBuffer*>(binding.buffer.Get());
             HgiBufferDesc const& desc = buf->GetDescriptor();
 
             TF_VERIFY(desc.usage & HgiBufferUsageVertex);
 
             glBindVertexBuffer(
-                firstBinding + i,
+                binding.index,
                 buf->GetBufferId(),
-                byteOffsets[i],
+                binding.byteOffset,
                 desc.vertexStride);
         }
 

@@ -26,8 +26,8 @@
 #include "pxr/imaging/hgiMetal/conversions.h"
 #include "pxr/imaging/hgiMetal/diagnostic.h"
 #include "pxr/imaging/hgiMetal/graphicsCmds.h"
-#include "pxr/imaging/hgiMetal/hgi.h"
 #include "pxr/imaging/hgiMetal/graphicsPipeline.h"
+#include "pxr/imaging/hgiMetal/hgi.h"
 #include "pxr/imaging/hgiMetal/resourceBindings.h"
 #include "pxr/imaging/hgiMetal/texture.h"
 
@@ -41,36 +41,34 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiMetalGraphicsCmds::CachedEncoderState::CachedEncoderState()
 {
-    numVertexBufferBindings = MAX_METAL_VERTEX_BUFFER_BINDINGS;
     ResetCachedEncoderState();
 }
 
 void
 HgiMetalGraphicsCmds::CachedEncoderState::ResetCachedEncoderState()
 {
-    for (uint32_t i = 0; i < numVertexBufferBindings; i++) {
-        VertexBufferBindingDesc[i].vertexBuffer = nil;
-        VertexBufferBindingDesc[i].byteOffset = 0;
-        
-    }
+    vertexBindings.clear();
 
     resourceBindings = nil;
     graphicsPipeline = nil;
     argumentBuffer = nil;
-    numVertexBufferBindings = 0;
 }
 
-void
-HgiMetalGraphicsCmds::CachedEncoderState::AddVertexBinding(
-    uint32_t bindingIndex, id<MTLBuffer> buffer, uint32_t byteOffset)
+static void
+_SetVertexBindings(id<MTLRenderCommandEncoder> encoder,
+                   HgiVertexBufferBindingVector const &bindings)
 {
-    if (bindingIndex >= MAX_METAL_VERTEX_BUFFER_BINDINGS) {
-        TF_CODING_ERROR("Binding index exceeds space for cached state");
-        return;
+    for (HgiVertexBufferBinding const binding : bindings)
+    {
+        if (binding.buffer) {
+            HgiMetalBuffer* mtlBuffer =
+                static_cast<HgiMetalBuffer*>(binding.buffer.Get());
+
+            [encoder setVertexBuffer:mtlBuffer->GetBufferId()
+                              offset:binding.byteOffset
+                             atIndex:binding.index];
+        }
     }
-    VertexBufferBindingDesc[bindingIndex].vertexBuffer = buffer;
-    VertexBufferBindingDesc[bindingIndex].byteOffset = byteOffset;
-    numVertexBufferBindings = std::max(numVertexBufferBindings, bindingIndex+1);
 }
 
 HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
@@ -106,10 +104,6 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
         return;
     }
     
-    static const size_t _maxStepFunctionDescs = 4;
-    _vertexBufferStepFunctionDescs.reserve(_maxStepFunctionDescs);
-    _patchBaseVertexBufferStepFunctionDescs.reserve(_maxStepFunctionDescs);
-
     _renderPassDescriptor = [[MTLRenderPassDescriptor alloc] init];
 
     // The GPU culling pass is only a vertex shader, so it doesn't have any
@@ -317,15 +311,8 @@ HgiMetalGraphicsCmds::_SetCachedEncoderState(id<MTLRenderCommandEncoder> encoder
                                                         encoder,
                                                         _CachedEncState.argumentBuffer);
     }
-    
-    for (uint32_t j = 0; j < _CachedEncState.numVertexBufferBindings; j++)
-    {
-        if (_CachedEncState.VertexBufferBindingDesc[j].vertexBuffer != nil) {
-            [encoder setVertexBuffer:_CachedEncState.VertexBufferBindingDesc[j].vertexBuffer
-                              offset:_CachedEncState.VertexBufferBindingDesc[j].byteOffset
-                             atIndex:j];
-        }
-    }
+
+    _SetVertexBindings(encoder, _CachedEncState.vertexBindings);
 }
 
 void
@@ -479,7 +466,8 @@ HgiMetalGraphicsCmds::BindPipeline(HgiGraphicsPipelineHandle pipeline)
 
     _primitiveIndexSize =
         pipeline->GetDescriptor().tessellationState.primitiveIndexSize;
-    _InitVertexBufferStepFunction(pipeline.Get());
+    
+    _stepFunctions.Init(pipeline->GetDescriptor());
 
     _CachedEncState.graphicsPipeline =
         static_cast<HgiMetalGraphicsPipeline*>(pipeline.Get());
@@ -525,100 +513,16 @@ HgiMetalGraphicsCmds::SetConstantValues(
 
 void
 HgiMetalGraphicsCmds::BindVertexBuffers(
-    uint32_t firstBinding,
-    HgiBufferHandleVector const& vertexBuffers,
-    std::vector<uint32_t> const& byteOffsets)
+    HgiVertexBufferBindingVector const &bindings)
 {
-    TF_VERIFY(byteOffsets.size() == vertexBuffers.size());
+    _stepFunctions.Bind(bindings);
 
-    for (size_t i = 0; i < vertexBuffers.size(); i++) {
-        HgiBufferHandle bufHandle = vertexBuffers[i];
-        HgiMetalBuffer* buf = static_cast<HgiMetalBuffer*>(bufHandle.Get());
-        HgiBufferDesc const& desc = buf->GetDescriptor();
+    _CachedEncState.vertexBindings.insert(
+        _CachedEncState.vertexBindings.end(),
+        bindings.begin(), bindings.end());
 
-        uint32_t const byteOffset = byteOffsets[i];
-        uint32_t const bindingIndex = firstBinding + i;
-
-        TF_VERIFY(desc.usage & HgiBufferUsageVertex);
-        
-        for (auto& encoder : _encoders) {
-            [encoder setVertexBuffer:buf->GetBufferId()
-                              offset:byteOffset
-                             atIndex:bindingIndex];
-        }
-        _BindVertexBufferStepFunction(byteOffset, bindingIndex);
-        
-        _CachedEncState.AddVertexBinding(bindingIndex,
-                                         buf->GetBufferId(),
-                                         byteOffset);
-    }
-}
-
-void
-HgiMetalGraphicsCmds::_InitVertexBufferStepFunction(
-    HgiGraphicsPipeline const * pipeline)
-{
-    HgiGraphicsPipelineDesc const & descriptor = pipeline->GetDescriptor();
-
-    _vertexBufferStepFunctionDescs.clear();
-    _patchBaseVertexBufferStepFunctionDescs.clear();
-
-    for (size_t index = 0; index < descriptor.vertexBuffers.size(); index++) {
-        auto const & vbo = descriptor.vertexBuffers[index];
-        if (vbo.vertexStepFunction ==
-                    HgiVertexBufferStepFunctionPerDrawCommand) {
-            _vertexBufferStepFunctionDescs.emplace_back(
-                        index, 0, vbo.vertexStride);
-        } else if (vbo.vertexStepFunction ==
-                    HgiVertexBufferStepFunctionPerPatchControlPoint) {
-            _patchBaseVertexBufferStepFunctionDescs.emplace_back(
-                index, 0, vbo.vertexStride);
-        }
-    }
-}
-
-void
-HgiMetalGraphicsCmds::_BindVertexBufferStepFunction(
-    uint32_t byteOffset,
-    uint32_t bindingIndex)
-{
-    for (auto & stepFunction : _vertexBufferStepFunctionDescs) {
-        if (stepFunction.bindingIndex == bindingIndex) {
-            stepFunction.byteOffset = byteOffset;
-        }
-    }
-    for (auto & stepFunction : _patchBaseVertexBufferStepFunctionDescs) {
-        if (stepFunction.bindingIndex == bindingIndex) {
-            stepFunction.byteOffset = byteOffset;
-        }
-    }
-}
-
-void
-HgiMetalGraphicsCmds::_SetVertexBufferStepFunctionOffsets(
-    id<MTLRenderCommandEncoder> encoder,
-    uint32_t baseInstance)
-{
-    for (auto const & stepFunction : _vertexBufferStepFunctionDescs) {
-        uint32_t const offset = stepFunction.vertexStride * baseInstance +
-                                stepFunction.byteOffset;
-
-        [encoder setVertexBufferOffset:offset
-                               atIndex:stepFunction.bindingIndex];
-     }
-}
-
-void
-HgiMetalGraphicsCmds::_SetPatchBaseVertexBufferStepFunctionOffsets(
-    id<MTLRenderCommandEncoder> encoder,
-    uint32_t baseVertex)
-{
-    for (auto const & stepFunction : _patchBaseVertexBufferStepFunctionDescs) {
-        uint32_t const offset = stepFunction.vertexStride * baseVertex +
-                                stepFunction.byteOffset;
-
-        [encoder setVertexBufferOffset:offset
-                               atIndex:stepFunction.bindingIndex];
+    for (auto& encoder : _encoders) {
+        _SetVertexBindings(encoder, bindings);
     }
 }
 
@@ -634,7 +538,7 @@ HgiMetalGraphicsCmds::Draw(
     MTLPrimitiveType type=HgiMetalConversions::GetPrimitiveType(_primitiveType);
     id<MTLRenderCommandEncoder> encoder = _GetEncoder();
 
-    _SetVertexBufferStepFunctionOffsets(encoder, baseInstance);
+    _stepFunctions.SetVertexBufferOffsets(encoder, baseInstance);
 
     if (_primitiveType == HgiPrimitiveTypePatchList) {
         const NSUInteger controlPointCount = _primitiveIndexSize;
@@ -673,7 +577,6 @@ HgiMetalGraphicsCmds::DrawIndirect(
         HgiMetalConversions::GetPrimitiveType(_primitiveType);
     id<MTLBuffer> drawBufferId =
         static_cast<HgiMetalBuffer*>(drawParameterBuffer.Get())->GetBufferId();
-    const HgiCapabilities *capabilities = _hgi->GetCapabilities();
 
     _SyncArgumentBuffer();
     static const uint32_t _drawCallsPerThread = 256;
@@ -702,7 +605,7 @@ HgiMetalGraphicsCmds::DrawIndirect(
                     for (uint32_t offset = encoderOffset;
                          offset < encoderOffset + encoderCount;
                          ++offset) {
-                        _SetVertexBufferStepFunctionOffsets(encoder, offset);
+                        _stepFunctions.SetVertexBufferOffsets(encoder, offset);
                         const uint32_t bufferOffset = drawBufferByteOffset
                                                     + (offset * stride);
                         [encoder drawPatches:controlPointCount
@@ -718,7 +621,7 @@ HgiMetalGraphicsCmds::DrawIndirect(
                     for (uint32_t offset = encoderOffset;
                          offset < encoderOffset + encoderCount;
                          ++offset) {
-                        _SetVertexBufferStepFunctionOffsets(encoder, offset);
+                        _stepFunctions.SetVertexBufferOffsets(encoder, offset);
                         const uint32_t bufferOffset = drawBufferByteOffset
                                                     + (offset * stride);
                         
@@ -750,12 +653,12 @@ HgiMetalGraphicsCmds::DrawIndexed(
 
     id<MTLRenderCommandEncoder> encoder = _GetEncoder();
         
-    _SetVertexBufferStepFunctionOffsets(encoder, baseInstance);
+    _stepFunctions.SetVertexBufferOffsets(encoder, baseInstance);
 
     if (_primitiveType == HgiPrimitiveTypePatchList) {
         const NSUInteger controlPointCount = _primitiveIndexSize;
 
-        _SetPatchBaseVertexBufferStepFunctionOffsets(encoder, baseVertex);
+        _stepFunctions.SetPatchBaseOffsets(encoder, baseVertex);
 
         [encoder drawIndexedPatches:controlPointCount
                          patchStart:indexBufferByteOffset / sizeof(uint32_t)
@@ -827,7 +730,7 @@ HgiMetalGraphicsCmds::DrawIndexedIndirect(
                     for (uint32_t offset = encoderOffset;
                          offset < encoderOffset + encoderCount;
                          ++offset) {
-                            _SetVertexBufferStepFunctionOffsets(
+                            _stepFunctions.SetVertexBufferOffsets(
                                 encoder, offset);
 
                             const uint32_t baseVertexIndex =
@@ -836,7 +739,7 @@ HgiMetalGraphicsCmds::DrawIndexedIndirect(
                             const uint32_t baseVertex =
                                 drawParameterBufferUInt32[baseVertexIndex];
 
-                            _SetPatchBaseVertexBufferStepFunctionOffsets(
+                            _stepFunctions.SetPatchBaseOffsets(
                                 encoder, baseVertex);
 
                             const uint32_t bufferOffset = drawBufferByteOffset
@@ -856,7 +759,7 @@ HgiMetalGraphicsCmds::DrawIndexedIndirect(
                     for (uint32_t offset = encoderOffset;
                          offset < encoderOffset + encoderCount;
                          ++offset) {
-                        _SetVertexBufferStepFunctionOffsets(encoder, offset);
+                        _stepFunctions.SetVertexBufferOffsets(encoder, offset);
 
                         const uint32_t bufferOffset = drawBufferByteOffset
                                                     + (offset * stride);
