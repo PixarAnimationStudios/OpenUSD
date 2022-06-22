@@ -121,12 +121,22 @@ class TestUsdValueClips(unittest.TestCase):
             startClip = min(allTimeSamples) 
             endClip = startClip
 
+            self.assertEqual(
+                attr.GetTimeSamplesInInterval(
+                    Gf.Interval(startClip - 1, endClip, True, False)),
+                [])
+
             while endClip < max(allTimeSamples):
                 self.assertEqual(
                     attr.GetTimeSamplesInInterval(
                         Gf.Interval(startClip, endClip)), 
                     [t for t in allTimeSamples if t <= endClip])
                 endClip += 1
+
+            self.assertEqual(
+                attr.GetTimeSamplesInInterval(
+                    Gf.Interval(endClip, endClip + 1, False, True)),
+                [])
 
     def CheckValue(self, attr, expected, time=None, query=True):
         if time is not None:
@@ -1096,6 +1106,7 @@ class TestUsdValueClips(unittest.TestCase):
 
             self.assertEqual(attrNotInFirstClip.GetTimeSamples(),
                              [2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
+                
             self.CheckTimeSamples(attrNotInFirstClip)
 
             # The middle clips that are active in the range [2, 6) have no
@@ -1300,6 +1311,150 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(attrNotInAnyClip.GetTimeSamples(), 
                          [0.0, 2.0, 4.0, 6.0, 7.0])
         self.CheckTimeSamples(attrNotInAnyClip)
+
+    def test_GetTimeSamplesInIntervalWithoutInterpolation(self):
+        """Tests behavior of GetTimeSamplesInInterval with clip sets
+        that are missing time samples with interpolation between
+        missing clip values turned off."""
+        def _OpenTestStage():
+            # Use the test case from missingValueInterpolation but turn off
+            # the interpolation behavior for this test case.
+            stage = Usd.Stage.Open('missingValueInterpolation/root.usda')
+            Sdf.CreatePrimInLayer(stage.GetSessionLayer(), '/Model').SetInfo(
+                'clips', {'default': {'interpolateMissingClipValues' : False}})
+
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))
+
+            return stage
+
+        # When interpolation is turned off, querying time samples in an
+        # interval should only need to open the clips that are active
+        # during that interval. In this case, only clip 1 is active in
+        # the time interval [0, 1] with time samples at 0.0 and 1.0.
+        stage = _OpenTestStage()
+        attrNotInFirstClip = stage.GetAttributeAtPath(
+            '/Model.attrNotInLastClip')
+        self.assertEqual(
+            attrNotInFirstClip.GetTimeSamplesInInterval(
+                Gf.Interval(0.0, 1.0)),
+            [0.0, 1.0])
+
+        self.assertTrue(
+            Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))        
+
+        # If there are no values in any clips, we should still only need
+        # to open the clip that is active during that interval, which is
+        # clip 1. This is because each clip introduces a time sample at
+        # its start time when interpolation is turned off, even if it
+        # has no authored samples.
+        del stage
+        stage = _OpenTestStage()
+        attrNotInAnyClip = stage.GetAttributeAtPath('/Model.attrNotInAnyClip')
+        self.assertEqual(
+            attrNotInAnyClip.GetTimeSamplesInInterval(
+                Gf.Interval(0.0, 1.0)),
+            [0.0])
+
+        self.assertTrue(
+            Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))        
+
+    def test_GetTimeSamplesInIntervalWithInterpolation(self):
+        """Tests behavior of GetTimeSamplesInInterval with clip sets
+        that are missing time samples with interpolation between
+        missing clip values turned on."""
+        def _OpenTestStage():
+            stage = Usd.Stage.Open('missingValueInterpolation/root.usda')
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))
+            return stage
+
+        # When interpolation is turned on, querying time samples in an
+        # interval should only need to open the clips that are active
+        # during that interval if any of them contain time samples. In
+        # this case, only clip 1 is active in the time interval [0, 1]
+        # with time samples at 0.0 and 1.0.
+        stage = _OpenTestStage()
+        attrNotInFirstClip = stage.GetAttributeAtPath(
+            '/Model.attrNotInLastClip')
+        self.assertEqual(
+            attrNotInFirstClip.GetTimeSamplesInInterval(
+                Gf.Interval(0.0, 1.0)),
+            [0.0, 1.0])
+
+        self.assertTrue(
+            Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))        
+
+        # However, if the active clip does not contain time samples,
+        # we currently need to scan to see if any other clips provide
+        # time samples. In the worst case, when no clips provide samples,
+        # this will cause all clips to be opened.
+        del stage
+        stage = _OpenTestStage()
+        attrNotInAnyClip = stage.GetAttributeAtPath('/Model.attrNotInAnyClip')
+        self.assertEqual(
+            attrNotInAnyClip.GetTimeSamplesInInterval(
+                Gf.Interval(0.0, 1.0)),
+            [0.0])
+
+        self.assertTrue(
+            Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+        self.assertTrue(
+            Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+        self.assertTrue(
+            Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+        self.assertTrue(
+            Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))        
+
+        # This can be mitigated by authoring value blocks in the manifest to
+        # indicate that certain clips do not provide samples. In this case,
+        # we've authored blocks for all clips so none of them should be opened.
+        del stage
+        stage = _OpenTestStage()
+        attrNotInAnyClip = stage.GetAttributeAtPath(
+            '/ModelWithManifestBlocks.attrNotInAnyClip')
+        self.assertEqual(
+            attrNotInAnyClip.GetTimeSamplesInInterval(
+                Gf.Interval(0.0, 1.0)),
+            [0.0])
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))
 
     def test_AncestralClips(self):
         """Tests that clips specified on a descendant model will override
