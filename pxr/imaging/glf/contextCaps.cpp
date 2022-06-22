@@ -76,7 +76,8 @@ GlfContextCaps::GetInstance()
 {
     GlfContextCaps& caps = TfSingleton<GlfContextCaps>::GetInstance();
 
-    if (caps.glVersion == 0) {
+    if (GlfGLContext::GetCurrentGLContext()->IsValid() &&
+        caps.glVersion == 0) {
         TF_CODING_ERROR("GlfContextCaps has not been initialized");
         // Return the default set
     }
