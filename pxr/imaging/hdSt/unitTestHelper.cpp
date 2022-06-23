@@ -400,7 +400,7 @@ HdSt_TextureTestDriver::Draw(HgiTextureHandle const &colorDst,
     gfxCmds->PushDebugGroup("Debug HdSt_TextureTestDriver");
     gfxCmds->BindResources(_resourceBindings);
     gfxCmds->BindPipeline(_pipeline);
-    gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
+    gfxCmds->BindVertexBuffers({{_vertexBuffer, 0, 0}});
     gfxCmds->SetViewport(viewport);
     gfxCmds->SetConstantValues(_pipeline, HgiShaderStageFragment, 0, 
         _constantsData.size(), _constantsData.data());
