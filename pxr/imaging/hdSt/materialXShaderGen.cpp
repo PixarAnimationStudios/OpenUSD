@@ -272,15 +272,9 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     mx::GenContext& mxContext,
     mx::ShaderStage& mxStage) const
 {
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && MATERIALX_BUILD_VERSION == 3
-    std::string libPath;
-#else
-    // Starting from MaterialX 1.38.4 at PR 877, we must add the "libraries" part:
-    std::string libPath = "libraries/";
-#endif
     // Add global constants and type definitions
-    emitInclude(libPath + "stdlib/" + mx::GlslShaderGenerator::TARGET
-                + "/lib/mx_math.glsl", mxContext, mxStage);
+    emitLibraryInclude("stdlib/" + mx::GlslShaderGenerator::TARGET
+                       + "/lib/mx_math.glsl", mxContext, mxStage);
     emitLine("#if NUM_LIGHTS > 0", mxStage, false);
     emitLine("#define MAX_LIGHT_SOURCES NUM_LIGHTS", mxStage, false);
     emitLine("#else", mxStage, false);
@@ -400,16 +394,16 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
         emitSpecularEnvironment(mxContext, mxStage);
     }
     if (shadowing) {
-        emitInclude(libPath + "pbrlib/" + mx::GlslShaderGenerator::TARGET
-                    + "/lib/mx_shadow.glsl", mxContext, mxStage);
+        emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
+                           + "/lib/mx_shadow.glsl", mxContext, mxStage);
     }
 
     // Emit directional albedo table code.
     if (mxContext.getOptions().hwDirectionalAlbedoMethod == 
             mx::HwDirectionalAlbedoMethod::DIRECTIONAL_ALBEDO_TABLE ||
         mxContext.getOptions().hwWriteAlbedoTable) {
-        emitInclude(libPath + "pbrlib/" + mx::GlslShaderGenerator::TARGET
-                    + "/lib/mx_table.glsl", mxContext, mxStage);
+        emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
+                           + "/lib/mx_table.glsl", mxContext, mxStage);
         emitLineBreak(mxStage);
     }
 
@@ -417,19 +411,34 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     // depending on the vertical flip flag.
     if (mxContext.getOptions().fileTextureVerticalFlip) {
         _tokenSubstitutions[mx::ShaderGenerator::T_FILE_TRANSFORM_UV] = 
-            libPath + "stdlib/" + mx::GlslShaderGenerator::TARGET +
-            "/lib/mx_transform_uv_vflip.glsl";
+            "mx_transform_uv_vflip.glsl";
     }
     else {
         _tokenSubstitutions[mx::ShaderGenerator::T_FILE_TRANSFORM_UV] = 
-            libPath + "stdlib/" + mx::GlslShaderGenerator::TARGET + 
-            "/lib/mx_transform_uv.glsl";
+            "mx_transform_uv.glsl";
     }
 
     // Emit uv transform code globally if needed.
     if (mxContext.getOptions().hwAmbientOcclusion) {
-        emitInclude(ShaderGenerator::T_FILE_TRANSFORM_UV, mxContext, mxStage);
+        emitLibraryInclude(
+            "stdlib/" + mx::GlslShaderGenerator::TARGET + "/lib/" +
+            _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV],
+            mxContext, mxStage);
     }
+
+    // Prior to MaterialX 1.38.5 the token substitutions need to
+    // include the full path to the .glsl files, so we prepend that
+    // here.
+#if MATERIALX_MAJOR_VERSION == 1 &&  \
+    MATERIALX_MINOR_VERSION == 38
+    #if MATERIALX_BUILD_VERSION < 4
+        _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV].insert(
+            0, "stdlib/" + mx::GlslShaderGenerator::TARGET + "/lib/");
+    #elif MATERIALX_BUILD_VERSION == 4
+        _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV].insert(
+            0, "libraries/stdlib/" + mx::GlslShaderGenerator::TARGET + "/lib/");
+    #endif
+#endif
 
     // Add light sampling functions
     emitLightFunctionDefinitions(mxGraph, mxContext, mxStage);
@@ -730,6 +739,25 @@ HdStMaterialXShaderGen::_EmitMxVertexDataLine(
     return hdVariableDef.empty() ? mx::EMPTY_STRING : hdVariableDef;
 }
 
+#if MATERIALX_MAJOR_VERSION <= 1 &&  \
+    MATERIALX_MINOR_VERSION <= 38 && \
+    MATERIALX_BUILD_VERSION <= 4
+void
+HdStMaterialXShaderGen::emitLibraryInclude(
+    const mx::FilePath& filename,
+    mx::GenContext& context,
+    mx::ShaderStage& stage) const
+{
+#if MATERIALX_MAJOR_VERSION == 1 && \
+    MATERIALX_MINOR_VERSION == 38 && \
+    MATERIALX_BUILD_VERSION == 3
+    emitInclude(filename, context, stage);
+#else
+    // Starting from MaterialX 1.38.4 at PR 877, we must add the "libraries" part:
+    emitInclude(mx::FilePath("libraries") / filename, context, stage);
+#endif
+}
+#endif
 
 void
 HdStMaterialXShaderGen::emitVariableDeclarations(

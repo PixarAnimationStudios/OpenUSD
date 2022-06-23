@@ -34,6 +34,12 @@ if (${PXR_ENABLE_MATERIALX_SUPPORT})
     list(APPEND optionalPublicClasses matfiltMaterialX)
 
     if (${PXR_ENABLE_OSL_SUPPORT})
+        if (DEFINED OSL_SHADER_INSTALL_DIR)
+            add_compile_definitions(
+              OSL_SHADER_INSTALL_DIR=\"${OSL_SHADER_INSTALL_DIR}\"
+            )
+        endif()
+
         list(APPEND optionalLibs ${OSL_COMP_LIBRARY})
         list(APPEND optionalIncludeDirs ${OSL_INCLUDE_DIR})
     endif()
