@@ -49,6 +49,7 @@
   UsdImagingStageSceneIndex.
 - Added basic support for SampleFilters in RenderSettings in UsdImaging scene 
   delegate and HdPrman render delegate.
+- Removed most of the remaining direct use of OpenGL from UsdImagingGLEngine.
 
 ### Storm
 

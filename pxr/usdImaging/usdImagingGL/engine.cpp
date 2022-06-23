@@ -35,11 +35,6 @@
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/camera.h"
 
-#include "pxr/imaging/glf/diagnostic.h"
-#include "pxr/imaging/glf/contextCaps.h"
-#include "pxr/imaging/glf/glContext.h"
-#include "pxr/imaging/glf/info.h"
-
 #include "pxr/imaging/hd/rendererPlugin.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
 #include "pxr/imaging/hdx/pickTask.h"
@@ -101,35 +96,10 @@ _GetUseSceneIndices()
     return useSceneIndices;
 }
 
-void _InitGL()
-{
-    static std::once_flag initFlag;
-
-    std::call_once(initFlag, []{
-
-        // Initialize GL library for GL Extensions if needed
-        GarchGLApiLoad();
-
-        // Initialize if needed and switch to shared GL context.
-        GlfSharedGLContextScopeHolder sharedContext;
-
-        // Initialize GL context caps based on shared context
-        GlfContextCaps::InitInstance();
-
-    });
-}
 
 bool
 _IsHydraEnabled()
 {
-    // Make sure there is an OpenGL context when 
-    // trying to initialize Hydra/Reference
-    GlfGLContextSharedPtr context = GlfGLContext::GetCurrentGLContext();
-    if (!context || !context->IsValid()) {
-        TF_CODING_ERROR("OpenGL context required, using reference renderer");
-        return false;
-    }
-
     if (!_GetHydraEnabledEnvVar()) {
         return false;
     }
@@ -204,7 +174,6 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     , _sceneIndex(nullptr)
     , _sceneDelegate(nullptr)
 {
-    _InitGL();
 
     if (IsHydraEnabled()) {
 
@@ -545,6 +514,8 @@ UsdImagingGLEngine::SetCameraState(const GfMatrix4d& viewMatrix,
 void
 UsdImagingGLEngine::SetCameraStateFromOpenGL()
 {
+    GarchGLApiLoad();
+
     GfMatrix4d viewMatrix, projectionMatrix;
     GfVec4d viewport;
     glGetDoublev(GL_MODELVIEW_MATRIX, viewMatrix.GetArray());
@@ -1398,77 +1369,12 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
         return;
     }
 
-    // User is responsible for initializing GL context
-    const bool isCoreProfileContext = GlfContextCaps::GetInstance().coreProfile;
-
-    GLF_GROUP_FUNCTION();
-
-    GLint restoreReadFbo = 0;
-    GLint restoreDrawFbo = 0;
-    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &restoreReadFbo);
-    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &restoreDrawFbo);
-    if (_userFramebuffer.IsEmpty()) {
-        // If user supplied no framebuffer, use the currently bound
-        // framebuffer.
-        _taskController->SetPresentationOutput(
-            HgiTokens->OpenGL,
-            VtValue(static_cast<uint32_t>(restoreDrawFbo)));
-    }
-
-    GLuint vao;
-    if (isCoreProfileContext) {
-        // We must bind a VAO (Vertex Array Object) because core profile 
-        // contexts do not have a default vertex array object. VAO objects are 
-        // container objects which are not shared between contexts, so we create
-        // and bind a VAO here so that core rendering code does not have to 
-        // explicitly manage per-GL context state.
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
-    } else {
-        glPushAttrib(GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT);
-    }
-
-    // hydra orients all geometry during topological processing so that
-    // front faces have ccw winding.
-    if (params.flipFrontFacing) {
-        glFrontFace(GL_CW); // < State is pushed via GL_POLYGON_BIT
-    } else {
-        glFrontFace(GL_CCW); // < State is pushed via GL_POLYGON_BIT
-    }
-
-    if (params.applyRenderState) {
-        glDisable(GL_BLEND);
-    }
-
-    // for points width
-    glEnable(GL_PROGRAM_POINT_SIZE);
-
-    // TODO:
-    //  * forceRefresh
-    //  * showGuides, showRender, showProxy
-    //  * gammaCorrectColors
-
     {
         // Release the GIL before calling into hydra, in case any hydra plugins
         // call into python.
         TF_PY_ALLOW_THREADS_IN_SCOPE();
         _engine->Execute(_renderIndex.get(), &tasks);
     }
-
-    if (isCoreProfileContext) {
-
-        glBindVertexArray(0);
-        // XXX: We should not delete the VAO on every draw call, but we 
-        // currently must because it is GL Context state and we do not control 
-        // the context.
-        glDeleteVertexArrays(1, &vao);
-
-    } else {
-        glPopAttrib(); // GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT
-    }
-
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, restoreReadFbo);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFbo);
 }
 
 bool 
