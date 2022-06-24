@@ -684,10 +684,7 @@ if MacOS():
     BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif Linux():
-    if Python3():
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
-    else:
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.66.0/source/boost_1_66_0.tar.gz"
+    BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif Windows():
     # The default installation of boost on Windows puts headers in a versioned 
@@ -854,13 +851,14 @@ BOOST = Dependency("boost", InstallBoost, BOOST_VERSION_FILE)
 # Intel TBB
 
 if Windows():
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/2018_U6/tbb2018_20180822oss_win.zip"
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/2019_U6/tbb2019_20190410oss_win.zip"
+    TBB_ROOT_DIR_NAME = "tbb2019_20190410oss"
 elif MacOS():
     # This version of TBB has no test teardown crashes and fixes compatibility
     # issues with M1, Big Sur, and Monterey
     TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/2020_U2.tar.gz"
 else:
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/2018_U6.tar.gz"
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2019_U6.tar.gz"
 
 def InstallTBB(context, force, buildArgs):
     if Windows():
@@ -869,7 +867,6 @@ def InstallTBB(context, force, buildArgs):
         InstallTBB_LinuxOrMacOS(context, force, buildArgs)
 
 def InstallTBB_Windows(context, force, buildArgs):
-    TBB_ROOT_DIR_NAME = "tbb2018_20180822oss"
     with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force, 
         TBB_ROOT_DIR_NAME)):
         # On Windows, we simply copy headers and pre-built DLLs to
@@ -1000,21 +997,30 @@ PNG = Dependency("PNG", InstallPNG, "include/png.h")
 ############################################################
 # IlmBase/OpenEXR
 
-OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/v2.3.0.zip"
+OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v2.4.3.zip"
 
 def InstallOpenEXR(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OPENEXR_URL, context, force)):
         RunCMake(context, force, 
-                 ['-DOPENEXR_BUILD_PYTHON_LIBS=OFF',
-                  '-DOPENEXR_PACKAGE_PREFIX="{}"'.format(context.instDir),
-                  '-DOPENEXR_ENABLE_TESTS=OFF'] + buildArgs)
+                 ['-DPYILMBASE_ENABLE=OFF',
+                  '-DOPENEXR_VIEWERS_ENABLE=OFF',
+                  '-DBUILD_TESTING=OFF'] + buildArgs)
 
 OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
 
 ############################################################
 # Ptex
 
-PTEX_URL = "https://github.com/wdas/ptex/archive/v2.1.33.zip"
+# We continue to use v2.1.33 from the VFX2019 platform on Windows
+# instead of v2.3.2 from VFX2020 because v2.3.2 requires PkgConfig,
+# which does not exist on Windows. This requirement appears to
+# be lifted by commit c797af4 which landed after v2.4.1.
+if Windows():
+    PTEX_URL = "https://github.com/wdas/ptex/archive/v2.1.33.zip"
+    PTEX_VERSION = "v2.1.33"
+else:
+    PTEX_URL = "https://github.com/wdas/ptex/archive/refs/tags/v2.3.2.zip"
+    PTEX_VERSION = "v2.3.2"
 
 def InstallPtex(context, force, buildArgs):
     if Windows():
@@ -1052,7 +1058,15 @@ def InstallPtex_Windows(context, force, buildArgs):
 
 def InstallPtex_LinuxOrMacOS(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(PTEX_URL, context, force)):
-        RunCMake(context, force, buildArgs)
+        cmakeOptions = [
+            '-DPTEX_BUILD_STATIC_LIBS=OFF',
+            # We must tell the Ptex build system what version we're building
+            # otherwise we get errors when running CMake.
+            '-DPTEX_VER={v}'.format(v=PTEX_VERSION)
+        ]
+        cmakeOptions += buildArgs
+
+        RunCMake(context, force, cmakeOptions)
 
 PTEX = Dependency("Ptex", InstallPtex, "include/PtexVersion.h")
 
@@ -1073,12 +1087,7 @@ BLOSC = Dependency("Blosc", InstallBLOSC, "include/blosc.h")
 ############################################################
 # OpenVDB
 
-# Using version 6.1.0 since it has reworked its CMake files so that
-# there are better options to not compile the OpenVDB binaries and to
-# not require additional dependencies such as GLFW. Note that version
-# 6.1.0 does require CMake 3.3 though.
-
-OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/v6.1.0.zip"
+OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v7.1.0.zip"
 
 def InstallOpenVDB(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OPENVDB_URL, context, force)):
@@ -1347,11 +1356,17 @@ ALEMBIC = Dependency("Alembic", InstallAlembic, "include/Alembic/Abc/Base.h")
 ############################################################
 # Draco
 
-DRACO_URL = "https://github.com/google/draco/archive/master.zip"
+DRACO_URL = "https://github.com/google/draco/archive/refs/tags/1.3.5.zip"
 
 def InstallDraco(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(DRACO_URL, context, force)):
-        cmakeOptions = ['-DBUILD_USD_PLUGIN=ON']
+        cmakeOptions = [
+            '-DBUILD_USD_PLUGIN=ON',
+            # Must explicitly specify building shared libs to ensure symbols are
+            # exported on Windows. See Draco's CMakeLists.txt where 
+            # CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS is set.
+            '-DBUILD_SHARED_LIBS=ON'
+        ]
         cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
 
