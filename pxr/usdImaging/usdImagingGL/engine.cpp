@@ -512,38 +512,6 @@ UsdImagingGLEngine::SetCameraState(const GfMatrix4d& viewMatrix,
 }
 
 void
-UsdImagingGLEngine::SetCameraStateFromOpenGL()
-{
-    GarchGLApiLoad();
-
-    GfMatrix4d viewMatrix, projectionMatrix;
-    GfVec4d viewport;
-    glGetDoublev(GL_MODELVIEW_MATRIX, viewMatrix.GetArray());
-    glGetDoublev(GL_PROJECTION_MATRIX, projectionMatrix.GetArray());
-    glGetDoublev(GL_VIEWPORT, &viewport[0]);
-
-    SetCameraState(viewMatrix, projectionMatrix);
-    SetRenderViewport(viewport);
-}
-
-void
-UsdImagingGLEngine::SetLightingStateFromOpenGL()
-{
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        return;
-    }
-
-    TF_VERIFY(_taskController);
-
-    if (!_lightingContextForOpenGLState) {
-        _lightingContextForOpenGLState = GlfSimpleLightingContext::New();
-    }
-    _lightingContextForOpenGLState->SetStateFromOpenGL();
-
-    _taskController->SetLightingState(_lightingContextForOpenGLState);
-}
-
-void
 UsdImagingGLEngine::SetLightingState(GlfSimpleLightingContextPtr const &src)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {

@@ -115,11 +115,7 @@ void wrapEngine()
             .def("SetRenderViewport", &UsdImagingGLEngine::SetRenderViewport)
             .def("SetCameraPath", &UsdImagingGLEngine::SetCameraPath)
             .def("SetCameraState", &UsdImagingGLEngine::SetCameraState)
-            .def("SetLightingStateFromOpenGL",
-                    &UsdImagingGLEngine::SetLightingStateFromOpenGL)
             .def("SetLightingState", &_SetLightingState)
-            .def("SetCameraStateFromOpenGL", 
-                    &UsdImagingGLEngine::SetCameraStateFromOpenGL)
             .def("SetSelected", &UsdImagingGLEngine::SetSelected)
             .def("ClearSelected", &UsdImagingGLEngine::ClearSelected)
             .def("AddSelected", &UsdImagingGLEngine::AddSelected)
