@@ -50,6 +50,16 @@
 - Added basic support for SampleFilters in RenderSettings in UsdImaging scene 
   delegate and HdPrman render delegate.
 - Removed most of the remaining direct use of OpenGL from UsdImagingGLEngine.
+- Updated UsdImagingCameraAdapter::TrackVariability to consider all attributes
+  on the camera prim.
+  (PR: [#1797](https://github.com/PixarAnimationStudios/USD/pull/1797))
+- Implemented reverse lookup table in instanceAdapter to improve performance.
+  (PR: [#1740](https://github.com/PixarAnimationStudios/USD/pull/1740))
+- Fixed light collection change-tracking.
+  (PR: [#1653](https://github.com/PixarAnimationStudios/USD/pull/1653))
+- Updated UsdImagingPointInstancerAdapter to register velocity and
+  acceleration primvars.
+  (PR: [#1849](https://github.com/PixarAnimationStudios/USD/pull/1849))
 
 ### Storm
 
@@ -59,6 +69,9 @@
 - Introduced basic sample filters support with Murk Sample Filter.
 - Updated HdPrman_RenderParam API to use new Riley API for setting XPU Devices
   to use.
+- Fixed support for sharpness per crease edge with subdivs.
+- Fixed "depth" AOV to return [0,1] instead of [-1,1], for consistency with
+  Storm and the expectations of Hdx compositing code.
 
 ### usdview
 
