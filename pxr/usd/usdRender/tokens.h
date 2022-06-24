@@ -88,7 +88,7 @@ struct UsdRenderTokensType {
     const TfToken color3f;
     /// \brief "command"
     /// 
-    /// UsdRenderRenderPass
+    /// UsdRenderPass
     const TfToken command;
     /// \brief "cropAperture"
     /// 
@@ -104,11 +104,11 @@ struct UsdRenderTokensType {
     const TfToken dataWindowNDC;
     /// \brief "denoise:enable"
     /// 
-    /// UsdRenderRenderPass
+    /// UsdRenderPass
     const TfToken denoiseEnable;
     /// \brief "denoise:pass"
     /// 
-    /// UsdRenderRenderPass
+    /// UsdRenderPass
     const TfToken denoisePass;
     /// \brief "disableMotionBlur"
     /// 
@@ -120,7 +120,7 @@ struct UsdRenderTokensType {
     const TfToken expandAperture;
     /// \brief "fileName"
     /// 
-    /// UsdRenderRenderPass
+    /// UsdRenderPass
     const TfToken fileName;
     /// \brief "full"
     /// 
@@ -132,7 +132,7 @@ struct UsdRenderTokensType {
     const TfToken includedPurposes;
     /// \brief "inputPasses"
     /// 
-    /// UsdRenderRenderPass
+    /// UsdRenderPass
     const TfToken inputPasses;
     /// \brief "instantaneousShutter"
     /// 
@@ -156,7 +156,7 @@ struct UsdRenderTokensType {
     const TfToken orderedVars;
     /// \brief "passType"
     /// 
-    /// UsdRenderRenderPass
+    /// UsdRenderPass
     const TfToken passType;
     /// \brief "pixelAspectRatio"
     /// 
@@ -196,7 +196,7 @@ struct UsdRenderTokensType {
     const TfToken renderSettingsPrimPath;
     /// \brief "renderSource"
     /// 
-    /// UsdRenderRenderPass
+    /// UsdRenderPass
     const TfToken renderSource;
     /// \brief "resolution"
     /// 

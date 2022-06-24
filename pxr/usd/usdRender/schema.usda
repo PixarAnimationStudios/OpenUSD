@@ -260,8 +260,10 @@ class RenderPass "RenderPass" (
 
     The name of the prim is used as the pass's name.
     """
+    customData = {
+         string className = "Pass"
+    }
 ) {
-
     uniform token passType (
         doc = """A string used to categorize differently structured 
         or executed types of passes within a customized pipeline.
@@ -347,17 +349,20 @@ class RenderPass "RenderPass" (
 }
  
  
-class DenoisePass "DenoisePass" (
+class RenderDenoisePass "RenderDenoisePass" (
     inherits = </Typed>
-    doc = """A DenoisePass generates renders via a denoising process.  This may
-    be the same renderer that a pipeline uses for UsdRender, or may be a separate
-    one.  Notably, a DenoisePass requires another Pass to be present for it to
-    operate.  The denoising process itself is not generative, and requires
-    images inputs to operate.
+    doc = """A RenderDenoisePass generates renders via a denoising process.
+    This may be the same renderer that a pipeline uses for UsdRender, 
+    or may be a separate one.  Notably, a RenderDenoisePass requires
+    another Pass to be present for it to operate.  The denoising process 
+    itself is not generative, and requires images inputs to operate.
  
     As denoising integration varies so widely across pipelines, all
     implementation details are left to pipeline-specific prims
-    that inherit from DenoisePass.
+    that inherit from RenderDenoisePass.
     """
+    customData = {
+         string className = "DenoisePass"
+    }
 ) {
 }
