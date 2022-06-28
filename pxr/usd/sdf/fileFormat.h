@@ -383,6 +383,7 @@ private:
 // Base file format factory.
 class Sdf_FileFormatFactoryBase : public TfType::FactoryBase {
 public:
+    SDF_API virtual ~Sdf_FileFormatFactoryBase();
     virtual SdfFileFormatRefPtr New() const = 0;
 };
 

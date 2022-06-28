@@ -394,4 +394,8 @@ SdfFileFormat::_InstantiateNewLayer(
     return new SdfLayer(fileFormat, identifier, realPath, assetInfo, args);
 }
 
+// ------------------------------------------------------------
+
+Sdf_FileFormatFactoryBase::~Sdf_FileFormatFactoryBase() = default;
+
 PXR_NAMESPACE_CLOSE_SCOPE
