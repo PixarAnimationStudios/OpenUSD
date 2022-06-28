@@ -8,6 +8,15 @@
 
 - Updated build_usd.py to use, on Apple Silicon: tbb 2020-U2, and boost 1.76
 
+- Support for PySide6 has been added to usdview. By default, the build will
+  search first for PySide6 then PySide2 then PySide.  Users may specify the
+  following CMake variables to influence this search behavior:
+    PYSIDE_USE_PYSIDE2=TRUE  to force the use of PySide2 or
+    PYSIDE_USE_PYSIDE=TRUE   to force the use of PySide
+  (PR: [#1898](https://github.com/PixarAnimationStudios/USD/pull/1898)
+- PySide6 and Python 3 are required for Apple Silicon.
+- Support for PySide is deprecated and will be removed subsequently.
+
 ### USD
 - Removed support for Ar 1.0, which was deprecated in v21.11.
 - Removed Primvar API on UsdGeomImageable which was deprecated in v19.03.
@@ -62,6 +71,8 @@
   (PR: [#1849](https://github.com/PixarAnimationStudios/USD/pull/1849))
 
 ### Storm
+- Improved HgiGraphicsCmds interface for binding vertex buffers.
+  (PR: [#1876](https://github.com/PixarAnimationStudios/USD/pull/1876))
 
 ### RenderMan Hydra Plugin
 - Added various implicit shapes support by using native Riley prims and the
