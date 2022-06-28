@@ -18,6 +18,8 @@ pxr_library(ar
         assetInfo
         defaultResolver
         defaultResolverContext
+        definePackageResolver
+        defineResolver
         filesystemAsset
         filesystemWritableAsset
         notice
@@ -34,8 +36,6 @@ pxr_library(ar
     PUBLIC_HEADERS
         api.h
         ar.h
-        definePackageResolver.h
-        defineResolver.h
         defineResolverContext.h
         threadLocalScopedCache.h
 
