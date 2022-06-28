@@ -72,7 +72,8 @@ public:
 
     /// Prepare the command buffer for draw
     HDST_API
-    void PrepareDraw(HdStRenderPassStateSharedPtr const &renderPassState,
+    void PrepareDraw(HgiGraphicsCmds *gfxCmds,
+                     HdStRenderPassStateSharedPtr const &renderPassState,
                      HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     /// Execute the command buffer
