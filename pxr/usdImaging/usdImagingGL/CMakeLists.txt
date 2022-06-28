@@ -1961,11 +1961,11 @@ pxr_register_test(testUsdImagingGLWireframeOpacity
 pxr_register_test(testUsdImagingGLCards
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage testCards.usda -write testCards.png"
     IMAGE_DIFF_COMPARE
-        testUsdImagingGLWireframeOpacity.png
+        testCards.png
     FAIL 0.01
-    FAIL_PERCENT 0.01
+    FAIL_PERCENT 0.1
     WARN 0.02
-    WARN_PERCENT 0.005
+    WARN_PERCENT 0.05
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLCards
 )
@@ -1976,9 +1976,9 @@ pxr_register_test(testUsdImagingGLCards_anim
         testAnim_001.png
         testAnim_002.png
     FAIL 0.01
-    FAIL_PERCENT 0.01
+    FAIL_PERCENT 0.1
     WARN 0.02
-    WARN_PERCENT 0.005
+    WARN_PERCENT 0.05
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLCards
 )
@@ -1988,9 +1988,9 @@ pxr_register_test(testUsdImagingGLCards_bounds
     IMAGE_DIFF_COMPARE
         testUnloadedAsBounds.png
     FAIL 0.01
-    FAIL_PERCENT 0.01
+    FAIL_PERCENT 0.1
     WARN 0.02
-    WARN_PERCENT 0.005
+    WARN_PERCENT 0.05
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLCards
 )

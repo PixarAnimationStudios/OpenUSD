@@ -59,6 +59,8 @@
 - Added basic support for SampleFilters in RenderSettings in UsdImaging scene 
   delegate and HdPrman render delegate.
 - Removed most of the remaining direct use of OpenGL from UsdImagingGLEngine.
+- Fixed "model:drawMode" evaluation to apply to components without
+  "GeomModelAPI" applied.
 - Updated UsdImagingCameraAdapter::TrackVariability to consider all attributes
   on the camera prim.
   (PR: [#1797](https://github.com/PixarAnimationStudios/USD/pull/1797))

@@ -175,9 +175,8 @@ UsdImagingDelegate::_IsDrawModeApplied(UsdPrim const& prim)
         return true;
     }
 
-    // Otherwise, only models with the GeomModel API schema applied can draw as
-    // cards...
-    if (!prim.IsModel() || !prim.HasAPI<UsdGeomModelAPI>()) {
+    // Early out if the prim isn't part of the model hierarchy.
+    if (!prim.IsModel()) {
         return false;
     }
 
@@ -188,14 +187,22 @@ UsdImagingDelegate::_IsDrawModeApplied(UsdPrim const& prim)
         return false;
     }
 
-    // Draw mode is only applied on models that are components, or which have
-    // applyDrawMode = true.
-    if (UsdModelAPI(prim).IsKind(KindTokens->component))
+    // Check if model:applyDrawMode is explicitly set.
+    UsdGeomModelAPI geomModelAPI(prim);
+    if (geomModelAPI) {
+        UsdAttribute applyAttr = geomModelAPI.GetModelApplyDrawModeAttr();
+        if (applyAttr.HasAuthoredValue()) {
+            bool applyDrawMode = false;
+            applyAttr.Get(&applyDrawMode);
+            return applyDrawMode;
+        }
+    }
+
+    // If a prim is kind = "component", it gets an implicit fallback of
+    // "model:applyDrawMode = 1", even if the API is not applied.
+    // Otherwise, the fallback is "0", as defined in the schema.
+    if (UsdModelAPI(prim).IsKind(KindTokens->component)) {
         return true;
-    else {
-        bool applyDrawMode = false;
-        UsdGeomModelAPI(prim).GetModelApplyDrawModeAttr().Get(&applyDrawMode);
-        return applyDrawMode;
     }
 
     return false;
