@@ -997,7 +997,15 @@ PNG = Dependency("PNG", InstallPNG, "include/png.h")
 ############################################################
 # IlmBase/OpenEXR
 
-OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v2.4.3.zip"
+# On Windows we use v2.5.2 as it contains a fix that removes symlink creation
+# on that platform, which is not typically allowed unless the user turns on
+# "Developer Mode". 
+#
+# See https://github.com/AcademySoftwareFoundation/openexr/pull/742.
+if Windows():
+    OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v2.5.2.zip"
+else:
+    OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v2.4.3.zip"
 
 def InstallOpenEXR(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OPENEXR_URL, context, force)):
@@ -1011,11 +1019,13 @@ OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
 ############################################################
 # Ptex
 
-# We continue to use v2.1.33 from the VFX2019 platform on Windows
-# instead of v2.3.2 from VFX2020 because v2.3.2 requires PkgConfig,
-# which does not exist on Windows. This requirement appears to
-# be lifted by commit c797af4 which landed after v2.4.1.
-if Windows():
+# v2.3.2 requires PkgConfig, which does not typically exist on Windows and
+# MacOS. This requirement is removed by commit c797af4 which landed after
+# v2.4.1. However, since this fix is not in a versioned release we do not
+# want to use it in our build, and the changes in the fix are just enough
+# to be uncomfortable to patch ourselves. So on those platforms, we use
+# v2.1.33 from the CY2019 VFX Reference Platform.
+if Windows() or MacOS():
     PTEX_URL = "https://github.com/wdas/ptex/archive/v2.1.33.zip"
     PTEX_VERSION = "v2.1.33"
 else:

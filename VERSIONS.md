@@ -23,13 +23,13 @@ Our test machines have the following software versions installed
 | OpenImageIO   | 2.1.16.0             | 2.1.16.0                     | 2.1.16.0                       |
 | OpenColorIO   | 1.1.0                | 1.1.0                        | 1.1.0                          |
 | OSL           | 1.10.9               |                              |                                |
-| Ptex          | 2.3.2                | 2.3.2                        | 2.1.33                         |
+| Ptex          | 2.3.2                | 2.1.33                       | 2.1.33                         |
 | Qt for Python | PySide2 5.14.1       | PySide6 6.3.1                | PySide2 5.14.1                 |
 | PyOpenGL      | 3.1.5                | 3.1.5                        | 3.1.5                          |
 | Embree        | 3.2.2                | 3.2.2                        | 3.2.2                          |
 | RenderMan     | 24.0                 | 24.0                         | 24.0                           |
 | Alembic       | 1.7.10               | 1.7.10                       | 1.7.10                         |
-| OpenEXR       | 2.4.4                | 2.4.4                        | 2.4.4                          |
+| OpenEXR       | 2.4.4                | 2.4.4                        | 2.5.2                          |
 | MaterialX     | 1.38.4               | 1.38.4                       | 1.38.4                         |
 | Jinja2        | 2.0                  |                              |                                |
 | Flex          | 2.5.39               |                              |                                |
