@@ -668,7 +668,6 @@ class View(QtWidgets.QTextEdit):
         self.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
         self.tripleClickTimer = QtCore.QBasicTimer()
         self.tripleClickPoint = QtCore.QPoint()
-        self._ignoreKeyPresses = True
         self.ResetCharFormat()
 
     def SetStartOfInput(self, position):
@@ -764,20 +763,6 @@ class View(QtWidgets.QTextEdit):
         else:
             super(View, self).timerEvent(e)
 
-    def enterEvent(self, e):
-        self._ignoreKeyPresses = False
-
-    def leaveEvent(self, e):
-        self._ignoreKeyPresses = True
-
-    def dragEnterEvent(self, e):
-        self._ignoreKeyPresses = False
-        super(View, self).dragEnterEvent(e)
-
-    def dragLeaveEvent(self, e):
-        self._ignoreKeyPresses = True
-        super(View, self).dragLeaveEvent(e)
-
     def insertFromMimeData(self, source):
         if not self._CursorIsInInputArea():
             self._MoveCursorToEndOfInput()
@@ -801,10 +786,6 @@ class View(QtWidgets.QTextEdit):
         """
         Handle user input a key at a time.
         """
-
-        if (self._ignoreKeyPresses):
-            e.ignore()
-            return
 
         key = e.key()
 
