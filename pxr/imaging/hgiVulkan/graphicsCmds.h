@@ -81,9 +81,7 @@ public:
 
     HGIVULKAN_API
     void BindVertexBuffers(
-        uint32_t firstBinding,
-        HgiBufferHandleVector const& buffers,
-        std::vector<uint32_t> const& byteOffsets) override;
+        HgiVertexBufferBindingVector const &bindings) override;
 
     HGIVULKAN_API
     void Draw(

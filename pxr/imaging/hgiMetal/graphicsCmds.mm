@@ -577,6 +577,7 @@ HgiMetalGraphicsCmds::DrawIndirect(
         HgiMetalConversions::GetPrimitiveType(_primitiveType);
     id<MTLBuffer> drawBufferId =
         static_cast<HgiMetalBuffer*>(drawParameterBuffer.Get())->GetBufferId();
+    const HgiCapabilities *capabilities = _hgi->GetCapabilities();
 
     _SyncArgumentBuffer();
     static const uint32_t _drawCallsPerThread = 256;

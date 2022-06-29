@@ -206,6 +206,19 @@ private:
 using HgiResourceBindingsHandle = HgiHandle<HgiResourceBindings>;
 using HgiResourceBindingsHandleVector = std::vector<HgiResourceBindingsHandle>;
 
+/// \struct HgiVertexBufferBinding
+///
+/// Describes a buffer to be bound during encoding.
+///
+/// <ul>
+/// <li>buffer:
+///   The buffer to be bound (e.g. uniform, storage, vertex).</li>
+/// <li>byteOffset:
+///   The byte offset into the buffer from where the data will be bound.</li>
+/// <li>index:
+///   The binding index to which the buffer will be bound.</li>
+/// </ul>
+///
 struct HgiVertexBufferBinding
 {
     HGI_API
