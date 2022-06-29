@@ -292,6 +292,13 @@ when invoking cmake. This plugin is compatible with Draco 1.3.4. The additional 
 Disable unit testing and prevent tests from being built by specifying the cmake flag ```PXR_BUILD_TESTS=FALSE```
 when invoking cmake.
 
+In order to aid with diagnosing of failing tests, test generated files for failing test are explicitly put in the following directories, where
+<ctest_run_timestamp> (formatted as "%Y-%m-%dT%H.%M.%S") represents the timestamp when ctest was run for the failing test.
+```
+${CMAKE_BINARY_DIR}/Testing/Failed-Diffs/<ctest_run_timestamp>/${TEST_NAME}/${filename}.result.${ext}
+${CMAKE_BINARY_DIR}/Testing/Failed-Diffs/<ctest_run_timestamp>/${TEST_NAME}/${filename}.baseline.${ext}
+```
+
 ## Other Build Options
 
 ##### Plugin Metadata Location
