@@ -3,10 +3,13 @@
 ## [22.08] - TBD
 
 ### Build
-- On Apple Silicon systems, usdview requires the use an x86_64 architecture 
-  environment (e.g. "arch -x86_64 zsh") to build and execute binaries.
+- Native builds on macOS are supported for both Apple Silicon and Intel systems.
+  It is possible to cross compile for Intel systems by building within an
+  x86_64 architecture environment, for example, by creating an x86_64 shell
+  via "arch -x86_64 zsh" and then running the build within that shell.
+  (PR: [#1875](https://github.com/PixarAnimationStudios/USD/pull/1875)
 
-- Updated build_usd.py to use, on Apple Silicon: tbb 2020-U2, and boost 1.76
+- Updated build_usd.py to use, on Apple Silicon: boost 1.76, and Embree 3.13.3
 
 - Support for PySide6 has been added to usdview. By default, the build will
   search first for PySide6 then PySide2 then PySide.  Users may specify the
