@@ -2538,31 +2538,46 @@ UsdImagingInstanceAdapter::GetScenePrimPaths(
         if (!instanceIndices.empty()) {
             int minIdx = std::numeric_limits<int>::max();
             int maxIdx = 0;
+            int validIndices = 0;
 
             // determine the min/max index to determine how many bits have to be
             // allocated in the requestIndicesMap.
             for (size_t i = 0; i < instanceIndices.size(); i++) {
-                int remappedIndex = indices[instanceIndices[i]];
-                minIdx = std::min(minIdx, remappedIndex);
-                maxIdx = std::max(maxIdx, remappedIndex);
+                int instanceIndex = instanceIndices[i];
+
+                // skip invalid indices
+                if (instanceIndex < indices.size()) {
+                    int remappedIndex = indices[instanceIndex];
+                    minIdx = std::min(minIdx, remappedIndex);
+                    maxIdx = std::max(maxIdx, remappedIndex);
+                    ++validIndices;
+                }
             }
 
-            // For each requested index provide a mapping into the result vector
-            // Indices in the map set to std::numeric_limits<int>::max()
-            // are not being requested.
-            std::vector<int> requestedIndicesMap(
-                maxIdx - minIdx + 1, std::numeric_limits<int>::max());
+            // at least one index was valid, get the prim paths
+            if (validIndices > 0) {
+                // For each valid requested index provide a mapping into the result vector
+                // Indices in the map set to std::numeric_limits<int>::max()
+                // are not being requested.
+                std::vector<int> requestedIndicesMap(
+                    maxIdx - minIdx + 1, std::numeric_limits<int>::max());
 
-            // set bits for all requested indices to true
-            for (size_t i = 0; i < instanceIndices.size(); i++) {
-                int remappedIndex = indices[instanceIndices[i]];
-                requestedIndicesMap[remappedIndex - minIdx] = i;
+                // set bits for all valid requested indices to true
+                for (size_t i = 0; i < instanceIndices.size(); i++) {
+                    int instanceIndex = instanceIndices[i];
+
+                    // skip invalid indices
+                    if (instanceIndex < indices.size()) {
+                        int remappedIndex = indices[instanceIndex];
+                        requestedIndicesMap[remappedIndex - minIdx] = i;
+                    }
+                }
+
+                result.resize(validIndices);
+                _GetScenePrimPathsFn primPathsFn(
+                    this, requestedIndicesMap, minIdx, result, proto.path);
+                _RunForAllInstancesToDraw(instancerPrim, &primPathsFn);
             }
-
-            result.resize(instanceIndices.size());
-            _GetScenePrimPathsFn primPathsFn(
-                this, requestedIndicesMap, minIdx, result, proto.path);
-            _RunForAllInstancesToDraw(instancerPrim, &primPathsFn);
         }
         return result;
     } else {
