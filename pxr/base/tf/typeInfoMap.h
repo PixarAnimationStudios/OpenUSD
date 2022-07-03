@@ -183,7 +183,7 @@ public:
     }
 
     /// Remove this key (and any aliases associated with it).
-     void Remove(const std::string& key) {
+    void Remove(const std::string& key) {
         typename _StringCache::iterator i = _stringCache.find(key);
         if (i == _stringCache.end())
             return;
@@ -198,7 +198,13 @@ public:
             _stringCache.erase(*j);
         }
 
-        _nameMap.erase(e->primaryKey);
+        // `e` points into the node owned by _nameMap.  Passing
+        // e->primaryKey to erase() would cause the node to be
+        // deleted.  However, the implementation of erase may access
+        // the key again after the node has been deleted (at least,
+        // when TfHashMap is __gnu_cxx::hash_map.)
+        const std::string primaryKey = std::move(e->primaryKey);
+        _nameMap.erase(primaryKey);
     }
 
 private:

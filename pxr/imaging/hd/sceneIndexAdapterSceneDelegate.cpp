@@ -44,8 +44,12 @@
 #include "pxr/imaging/hd/basisCurvesSchema.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
 #include "pxr/imaging/hd/cameraSchema.h"
+#include "pxr/imaging/hd/capsuleSchema.h"
 #include "pxr/imaging/hd/categoriesSchema.h"
+#include "pxr/imaging/hd/coneSchema.h"
 #include "pxr/imaging/hd/coordSysBindingSchema.h"
+#include "pxr/imaging/hd/cubeSchema.h"
+#include "pxr/imaging/hd/cylinderSchema.h"
 #include "pxr/imaging/hd/dependenciesSchema.h"
 #include "pxr/imaging/hd/dependencySchema.h"
 #include "pxr/imaging/hd/extComputationInputComputationSchema.h"
@@ -73,6 +77,9 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/renderBufferSchema.h"
+#include "pxr/imaging/hd/renderSettingsSchema.h"
+#include "pxr/imaging/hd/sampleFilterSchema.h"
+#include "pxr/imaging/hd/sphereSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
@@ -91,6 +98,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (prmanParams)
     ((prmanParamsNames, ""))
+
+    ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
 );
 
 
@@ -987,6 +996,25 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
         return VtValue();
     }
 
+
+    // Some legacy render delegates may require all shading nodes
+    // to be included regardless of whether they are reachable via
+    // a terminal. While 100% accuracy in emulation would require that
+    // behavior to be enabled by default, it is generally not desireable
+    // as it leads to a lot of unnecessary data duplication across 
+    // terminals.
+    // 
+    // A renderer which wants this behavior can configure its networks
+    // with an "includeDisconnectedNodes" data source.
+    bool includeDisconnectedNodes = false;
+    if (matDS) {
+        static const TfToken key("includeDisconnectedNodes");
+        if (HdBoolDataSourceHandle ds = HdBoolDataSource::Cast(
+                matDS->Get(key))) {
+            includeDisconnectedNodes = ds->GetTypedValue(0.0f);
+        }
+    }
+
     // Convert HdDataSource with material data to HdMaterialNetworkMap
     HdMaterialNetworkMap matHd;
 
@@ -1016,6 +1044,14 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
         // Continue walking the network
         HdMaterialNetwork & netHd = matHd.map[name];
         _Walk(path, nodesDS, &visitedNodes, &netHd);
+
+        // see "includeDisconnectedNodes" above
+        if (includeDisconnectedNodes && nodesDS) {
+            for (const TfToken &nodeName : nodesDS->GetNames()) {
+                _Walk(SdfPath(nodeName.GetString()),
+                    nodesDS, &visitedNodes, &netHd);
+            }
+        }
     }
     return VtValue(matHd);
 }
@@ -1039,9 +1075,14 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
         return VtValue();
     }
 
+    TfToken cameraSchemaToken = paramName;
+    if (paramName == HdCameraTokens->clipPlanes) {
+        cameraSchemaToken = HdCameraSchemaTokens->clippingPlanes;
+    }
+
     HdSampledDataSourceHandle valueDs =
         HdSampledDataSource::Cast(
-            camera->Get(paramName));
+            camera->Get(cameraSchemaToken));
     if (!valueDs) {
         return VtValue();
     }
@@ -1063,6 +1104,17 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
             range = value.UncheckedGet<GfVec2f>();
         }
         return VtValue(GfRange1f(range[0], range[1]));
+    } else if (paramName == HdCameraTokens->clipPlanes) {
+        std::vector<GfVec4d> vec;
+        if (value.IsHolding<VtArray<GfVec4d>>()) {
+            const VtArray<GfVec4d> array =
+                value.UncheckedGet<VtArray<GfVec4d>>();
+            vec.reserve(array.size());
+            for (const GfVec4d &p : array) {
+                vec.push_back(p);
+            }
+        }
+        return VtValue(vec);
     } else {
         return value;
     }
@@ -1096,6 +1148,76 @@ HdSceneIndexAdapterSceneDelegate::GetLightParamValue(
     return valueDs->GetValue(0);
 }
 
+
+static VtValue
+_GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
+{
+    HdContainerDataSourceHandle renderSettingsDs =
+            HdContainerDataSource::Cast(prim.dataSource->Get(
+                HdRenderSettingsSchemaTokens->renderSettings));
+    if (!renderSettingsDs) {
+        return VtValue();
+    }
+
+    if (key == _tokens->outputsRiSampleFilters) {
+        HdSampledDataSourceHandle valueDs =
+            HdSampledDataSource::Cast(renderSettingsDs->Get(
+                HdRenderSettingsSchemaTokens->sampleFilters));
+        if (!valueDs) {
+            return VtValue();
+        }
+
+        VtValue pathArrayValue = valueDs->GetValue(0);
+        if (pathArrayValue.IsHolding<VtArray<SdfPath>>()) {
+            VtArray<SdfPath> pathArray =
+                pathArrayValue.UncheckedGet<VtArray<SdfPath>>();
+            SdfPathVector pathVector(pathArray.cbegin(), pathArray.cend());
+            return VtValue(pathVector);
+        }
+    }
+    return VtValue();
+}
+
+static VtValue
+_GetSampleFilterResource(HdSceneIndexPrim prim)
+{
+    TRACE_FUNCTION();
+
+    HdSampleFilterSchema filterSchema =
+        HdSampleFilterSchema::GetFromParent(prim.dataSource);
+    if (!filterSchema.IsDefined()) {
+        return VtValue();
+    }
+    HdMaterialNodeSchema nodeSchema = filterSchema.GetSampleFilterResource();
+    if (!nodeSchema.IsDefined()) {
+        return VtValue();
+    }
+
+    // Convert HdDataSource with material node data to a HdMaterialNode2
+    HdMaterialNode2 hdNode2;
+    HdTokenDataSourceHandle nodeTypeDS = nodeSchema.GetNodeIdentifier();
+    if (nodeTypeDS) {
+        hdNode2.nodeTypeId = nodeTypeDS->GetTypedValue(0);
+    }
+
+    std::map<TfToken, VtValue> hdParams;
+    HdContainerDataSourceHandle paramsDS = nodeSchema.GetParameters();
+    if (paramsDS) {
+        const TfTokenVector pNames = paramsDS->GetNames();
+        for (const auto & pName : pNames) {
+            HdDataSourceBaseHandle paramDS = paramsDS->Get(pName);
+            HdSampledDataSourceHandle paramSDS =
+                HdSampledDataSource::Cast(paramDS);
+            if (paramSDS) {
+                VtValue v = paramSDS->GetValue(0);
+                hdParams[pName] = v;
+            }
+        }
+    }
+    hdNode2.parameters = hdParams;
+
+    return VtValue(hdNode2);
+}
 
 static
 HdInterpolation
@@ -1390,6 +1512,84 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         return VtValue();
     }
 
+    // renderSettings usd of Get().
+    if (prim.primType == HdPrimTypeTokens->renderSettings) {
+        _GetRenderSettings(prim, key);
+    }
+
+    // sampleFilter usd of Get().
+    if (prim.primType == HdPrimTypeTokens->sampleFilter) {
+        if (key == HdSampleFilterSchemaTokens->sampleFilterResource) {
+            return _GetSampleFilterResource(prim);
+        }
+        return VtValue();
+    }
+
+    if (prim.primType == HdPrimTypeTokens->cube) {
+        if (HdContainerDataSourceHandle cubeSrc =
+                HdContainerDataSource::Cast(
+                    prim.dataSource->Get(HdCubeSchemaTokens->cube))) {
+            if (cubeSrc->Has(key)) {
+                if (HdSampledDataSourceHandle valueSrc =
+                        HdSampledDataSource::Cast(cubeSrc->Get(key))) {
+                    return valueSrc->GetValue(0);
+                }
+            }
+        }
+    }
+
+    if (prim.primType == HdPrimTypeTokens->sphere) {
+        if (HdContainerDataSourceHandle sphereSrc =
+                HdContainerDataSource::Cast(
+                    prim.dataSource->Get(HdSphereSchemaTokens->sphere))) {
+            if (sphereSrc->Has(key)) {
+                if (HdSampledDataSourceHandle valueSrc =
+                        HdSampledDataSource::Cast(sphereSrc->Get(key))) {
+                    return valueSrc->GetValue(0);
+                }
+            }
+        }
+    }
+
+    if (prim.primType == HdPrimTypeTokens->cylinder) {
+        if (HdContainerDataSourceHandle cylinderSrc =
+                HdContainerDataSource::Cast(
+                    prim.dataSource->Get(HdCylinderSchemaTokens->cylinder))) {
+            if (cylinderSrc->Has(key)) {
+                if (HdSampledDataSourceHandle valueSrc =
+                        HdSampledDataSource::Cast(cylinderSrc->Get(key))) {
+                    return valueSrc->GetValue(0);
+                }
+            }
+        }
+    }
+
+    if (prim.primType == HdPrimTypeTokens->cone) {
+        if (HdContainerDataSourceHandle coneSrc =
+                HdContainerDataSource::Cast(
+                    prim.dataSource->Get(HdConeSchemaTokens->cone))) {
+            if (coneSrc->Has(key)) {
+                if (HdSampledDataSourceHandle valueSrc =
+                        HdSampledDataSource::Cast(coneSrc->Get(key))) {
+                    return valueSrc->GetValue(0);
+                }
+            }
+        }
+    }
+
+    if (prim.primType == HdPrimTypeTokens->capsule) {
+        if (HdContainerDataSourceHandle capsuleSrc =
+                HdContainerDataSource::Cast(
+                    prim.dataSource->Get(HdCapsuleSchemaTokens->capsule))) {
+            if (capsuleSrc->Has(key)) {
+                if (HdSampledDataSourceHandle valueSrc =
+                        HdSampledDataSource::Cast(capsuleSrc->Get(key))) {
+                    return valueSrc->GetValue(0);
+                }
+            }
+        }
+    }
+
     // "primvars" use of Get()
     if (HdContainerDataSource::Cast(prim.dataSource)->Has(
             HdPrimvarsSchemaTokens->primvars)) {
@@ -1541,19 +1741,32 @@ HdSceneIndexAdapterSceneDelegate::_SamplePrimvar(
         valueSource->GetContributingSampleTimesForInterval(
                 std::numeric_limits<float>::lowest(),
                 std::numeric_limits<float>::max(), &times);
+
+        // XXX fallback to include a single sample
+        if (times.empty()) {
+            times.push_back(0.0f);
+        }
     } else {
-        valueSource->GetContributingSampleTimesForInterval(
+        const bool isVarying =
+            valueSource->GetContributingSampleTimesForInterval(
                 0, 0, &times);
+        if (isVarying) {
+            if (times.empty()) {
+                TF_CODING_ERROR("No contributing sample times returned for "
+                                "%s %s even though "
+                                "GetContributingSampleTimesForInterval "
+                                "indicated otherwise.",
+                                id.GetText(), key.GetText());
+                times.push_back(0.0f);
+            }
+        } else {
+            times = { 0.0f };
+        }
     }
 
-    size_t authoredSamples = times.size();
+    const size_t authoredSamples = times.size();
     if (authoredSamples > maxSampleCount) {
         times.resize(maxSampleCount);
-    }
-
-    // XXX fallback to include a single sample
-    if (times.empty()) {
-        times.push_back(0.0f);
     }
 
     for (size_t i = 0; i < times.size(); ++i) {

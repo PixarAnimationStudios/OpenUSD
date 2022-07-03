@@ -53,13 +53,6 @@
 --- --------------------------------------------------------------------------
 -- glsl ImageShader.Vertex
 
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-out VertexData
-{
-    vec2 uv;
-} outData;
-#endif
-
 void main(void)
 {
     // Position the vertices to create a large-than-screen triangle.
@@ -110,15 +103,6 @@ void main(void)
 
 --- --------------------------------------------------------------------------
 -- glsl ImageShader.Fragment
-
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-in VertexData
-{
-    vec2 uv;
-} inData;
-
-layout (location = 0) out vec4 colorOut;
-#endif
 
 #ifdef HD_HAS_integrateLights
 #ifndef HD_HAS_definedIntegrateLights

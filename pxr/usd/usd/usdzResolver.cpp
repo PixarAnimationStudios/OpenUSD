@@ -143,12 +143,6 @@ Usd_UsdzResolver::Resolve(
 namespace
 {
 
-#if AR_VERSION == 1
-#define _CONST
-#else
-#define _CONST const
-#endif
-
 class _Asset
     : public ArAsset
 {
@@ -173,12 +167,12 @@ public:
     {
     }
 
-    size_t GetSize() _CONST override
+    size_t GetSize() const override
     {
         return _sizeInZipFile;
     }
 
-    std::shared_ptr<const char> GetBuffer() _CONST override
+    std::shared_ptr<const char> GetBuffer() const override
     {
         struct _Deleter
         {
@@ -195,7 +189,7 @@ public:
         return std::shared_ptr<const char>(_dataInZipFile, d);
     }
 
-    size_t Read(void* buffer, size_t count, size_t offset) _CONST override
+    size_t Read(void* buffer, size_t count, size_t offset) const override
     {
         if (ARCH_UNLIKELY(offset + count > _sizeInZipFile)) {
             return 0;
@@ -204,7 +198,7 @@ public:
         return count;
     }
     
-    std::pair<FILE*, size_t> GetFileUnsafe() _CONST override
+    std::pair<FILE*, size_t> GetFileUnsafe() const override
     {
         std::pair<FILE*, size_t> result = _sourceAsset->GetFileUnsafe();
         if (result.first) {

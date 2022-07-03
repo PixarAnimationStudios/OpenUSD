@@ -150,6 +150,33 @@ UsdImagingGenerateCapsuleMeshPoints(
     const double radius,
     const TfToken& axis);
 
+// Plane
+
+/// Return a topology object for use with all generated "Plane" meshes.  This
+/// is constructed once and is identical for all planes.  The indices refer to
+/// the points array returned by UsdImagingGeneratePlaneMeshPoints().
+USDIMAGING_API
+const PxOsdMeshTopology&
+UsdImagingGetPlaneTopology();
+
+/// Generate an array of points describing a "plane". This is a mesh describing
+/// a double-sided plane aligned to an axis, with a width and length along the
+/// other cardinal axes.
+///
+/// Unlike most other primitives in this library, it's not possible to use a
+/// constant set of points and effect width and length adjustments by varying
+/// the transform matrix.  This function will generate the points with the
+/// requested parameters, and no additional transform is required.  The returned
+/// points are for use with the topology provided by
+/// UsdImagingGetPlaneTopology().
+USDIMAGING_API
+VtVec3fArray
+UsdImagingGeneratePlaneMeshPoints(
+    const double width,
+    const double length,
+    const TfToken& axis);
+
+
 // Transforms
 
 /// Generate a transform to inflate the "unit sphere" or "unit cube" mesh to the

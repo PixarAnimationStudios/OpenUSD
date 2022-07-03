@@ -62,13 +62,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((shadowCompareTextures, "shadowCompareTextures"))
 );
 
-// XXX:
-// currently max number of lights are limited to 16 by
-// GL_MAX_VARYING_VECTORS for having the varying attribute
-//    out vec2 FshadowFilterWidth[NUM_LIGHTS];
-// which is defined in simpleLighting.glslfx.
-static const int _maxLightsUsed = 16;
-
 /* static */
 GlfSimpleLightingContextRefPtr
 GlfSimpleLightingContext::New()
@@ -104,10 +97,6 @@ GlfSimpleLightingContext::SetLights(GlfSimpleLightVector const & lights)
     _postSurfaceShaderStateValid = false;
 
     int numLights = GetNumLightsUsed();
-    if (_lights.size() > _maxLightsUsed) {
-        TF_WARN("Hydra supports up to %d lights, truncating the %lu found "
-                "lights to this max.", _maxLightsUsed, _lights.size());
-    }
 
     _useShadows = false;
     for (int i = 0;i < numLights; ++i) {
@@ -127,7 +116,7 @@ GlfSimpleLightingContext::GetLights() const
 int
 GlfSimpleLightingContext::GetNumLightsUsed() const
 {
-    return std::min((int)_lights.size(), _maxLightsUsed);
+    return (int)_lights.size();
 }
 
 int

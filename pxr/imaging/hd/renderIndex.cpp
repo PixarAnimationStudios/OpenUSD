@@ -654,6 +654,7 @@ HdRenderIndex::InsertBprim(TfToken const& typeId,
     // the prim information
     if (_IsEnabledSceneIndexEmulation()) {
         _emulationSceneIndex->AddLegacyPrim(bprimId, typeId, sceneDelegate);
+        return;
     }
 
     _InsertBprim(typeId, sceneDelegate, bprimId);

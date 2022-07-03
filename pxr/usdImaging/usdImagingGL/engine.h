@@ -221,22 +221,12 @@ public:
     void SetCameraState(const GfMatrix4d& viewMatrix,
                         const GfMatrix4d& projectionMatrix);
 
-    /// Helper function to extract camera and viewport state from opengl and
-    /// then call SetCameraState and SetRenderViewport
-    USDIMAGINGGL_API
-    void SetCameraStateFromOpenGL();
-
     /// @}
 
     // ---------------------------------------------------------------------
     /// \name Light State
     /// @{
     // ---------------------------------------------------------------------
-    
-    /// Helper function to extract lighting state from opengl and then
-    /// call SetLights.
-    USDIMAGINGGL_API
-    void SetLightingStateFromOpenGL();
 
     /// Copy lighting state from another lighting context.
     USDIMAGINGGL_API
@@ -370,6 +360,10 @@ public:
     USDIMAGINGGL_API
     HgiTextureHandle GetAovTexture(TfToken const& name) const;
 
+    /// Returns the AOV render buffer for the given token.
+    USDIMAGINGGL_API
+    HdRenderBuffer* GetAovRenderBuffer(TfToken const& name) const;
+        
     /// Returns the list of renderer settings.
     USDIMAGINGGL_API
     UsdImagingGLRendererSettingsList GetRendererSettingsList() const;

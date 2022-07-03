@@ -1,5 +1,100 @@
 # Change Log
 
+## [22.08] - TBD
+
+### Build
+- On Apple Silicon systems, usdview requires the use an x86_64 architecture 
+  environment (e.g. "arch -x86_64 zsh") to build and execute binaries.
+
+- Updated build_usd.py to use, on Apple Silicon: tbb 2020-U2, and boost 1.76
+
+### USD
+- Removed support for Ar 1.0, which was deprecated in v21.11.
+- Removed Primvar API on UsdGeomImageable which was deprecated in v19.03.
+  All remaining uses of this API have been updated to use UsdGeomPrimvarsAPI.
+- Improved memory allocation for value clips by using a shared pointer to the 
+  array of time mapping in Usd_Clips.
+  (Issue: [#1774](https://github.com/PixarAnimationStudios/USD/issues/1774), 
+   PR: [#1777](https://github.com/PixarAnimationStudios/USD/pull/1777))
+- Cleaned UsdShadeConnectableAPIBehavior code to not throw warnings when
+  querying for incompatible prim type, which has no plugin registered.
+- Miscellaneous small fixes.
+  (PR: [#1775](https://github.com/PixarAnimationStudios/USD/pull/1775))
+- Fixed a bug with the composition of reference/payload list ops across 
+  sublayers with different time codes per second or layer offsets.
+  (Issue: [#1778](https://github.com/PixarAnimationStudios/USD/issues/1778)) 
+- Updated OSL and Args parsers to use Sdr's nested page delimiter of ":",
+  instead of ".". Updated documentation for the same in UsdShadeInput and
+  SdrShaderProperty.
+- Updated usdRiPxr schemas to reflect updates to renderman args files and to
+  include other schema classes:
+  - Renderman Light APIs now can only apply to their respective UsdLux types.
+  - Added renderman default plugins schema classes and display drivers schema
+    classes.
+  - Updated previously generated schemas to usd ":" as the nested page delimiter
+    in display groups.
+- Added the ability to specify properties as API schema overrides for schema
+  generation.
+  See: https://graphics.pixar.com/usd/release/api/_usd__page__generating_schemas.html#Usd_APISchemaPropertyOverride
+
+### Imaging
+- Fixed double-creation of Bprims when using scene index emulation.
+  (PR: [#1737](https://github.com/PixarAnimationStudios/USD/pull/1737))
+- Various fixes to primvar sampling in scene index emulation and the usdImaging
+  stage scene index.
+- Fixed inconsistencies for clipping planes to work with scene index emulation.
+
+### UsdImaging
+- Introduced a new hdSi library which adds support for implicit shapes in 
+  UsdImagingStageSceneIndex.
+- Added basic support for SampleFilters in RenderSettings in UsdImaging scene 
+  delegate and HdPrman render delegate.
+- Removed most of the remaining direct use of OpenGL from UsdImagingGLEngine.
+- Updated UsdImagingCameraAdapter::TrackVariability to consider all attributes
+  on the camera prim.
+  (PR: [#1797](https://github.com/PixarAnimationStudios/USD/pull/1797))
+- Implemented reverse lookup table in instanceAdapter to improve performance.
+  (PR: [#1740](https://github.com/PixarAnimationStudios/USD/pull/1740))
+- Fixed light collection change-tracking.
+  (PR: [#1653](https://github.com/PixarAnimationStudios/USD/pull/1653))
+- Updated UsdImagingPointInstancerAdapter to register velocity and
+  acceleration primvars.
+  (PR: [#1849](https://github.com/PixarAnimationStudios/USD/pull/1849))
+
+### Storm
+
+### RenderMan Hydra Plugin
+- Added various implicit shapes support by using native Riley prims and the
+  implicit surface scene index.
+- Introduced basic sample filters support with Murk Sample Filter.
+- Updated HdPrman_RenderParam API to use new Riley API for setting XPU Devices
+  to use.
+- Fixed support for sharpness per crease edge with subdivs.
+- Fixed "depth" AOV to return [0,1] instead of [-1,1], for consistency with
+  Storm and the expectations of Hdx compositing code.
+
+### usdview
+
+- Added --mute commandline option for muting layers prior to initial stage load.
+- Improved muted layer support in the Layer Stack tab (previously muted layers 
+  were not listed) and added context menu support to interactively mute/unmute
+  layers from the ui.
+
+### Alembic Plugin
+
+### MaterialX Plugin
+
+## [22.05b] - 2022-06-14
+
+### Build
+- Fixed broken URL in build_usd.py for downloading libtiff.
+  (Issue: [#1901](https://github.com/PixarAnimationStudios/USD/issues/1901))
+
+## [22.05a] - 2022-05-11
+
+### USD
+- Fixed a race condition that could lead to crashes during scene changes.
+
 ## [22.05] - 2022-04-22
 
 This release enables Storm for macOS using Metal. Refer to notes under Storm for
@@ -21,7 +116,7 @@ this happen!
   being 12.4) we test against. Minimum CMake requirement for macOS has also been 
   updated to 3.18.6.
 
-- On Apple Silicon systems, it is required to use an x86_64 architecture 
+- On Apple Silicon systems, it is required to use an x86_64 architecture
   environment (e.g. "arch -x86_64 zsh") to build and execute binaries.
 
 - Updated build_usd.py to use OpenSubdiv 3.4.4.

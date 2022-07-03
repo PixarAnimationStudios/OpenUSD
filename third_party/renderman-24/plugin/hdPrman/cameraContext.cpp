@@ -740,7 +740,8 @@ HdPrman_CameraContext::Begin(riley::Riley * const riley)
     const riley::Transform transform = { 1, matrix, zerotime };
         
     _cameraId = riley->CreateCamera(
-        riley::UserId::DefaultId(),
+        riley::UserId(
+            stats::AddDataLocation(name.CStr()).GetValue()),
         name,
         node,
         transform,

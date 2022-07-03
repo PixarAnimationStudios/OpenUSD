@@ -49,14 +49,6 @@
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Vertex
 
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-out VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} outData;
-#endif
-
 // Fwd declare methods defined in pointId.glslfx, that are used below.
 FORWARD_DECL(int GetPointId());
 FORWARD_DECL(float GetPointRasterSize(int));
@@ -1105,14 +1097,6 @@ vec4 GetInterpolatedPatchCoord()
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Fragment
-
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-in VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} inData;
-#endif
 
 #ifndef HD_HAS_ptexFaceOffset
 #define HD_HAS_ptexFaceOffset

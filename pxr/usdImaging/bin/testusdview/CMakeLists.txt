@@ -15,6 +15,14 @@ if (${PXR_HEADLESS_TEST_MODE})
     return()
 endif()
 
+# testusdview imaging tests require python and plugin mechanism which we do not
+# support for static build configurations due to potential conflict in client
+# applications linking against static build USD
+if (NOT BUILD_SHARED_LIBS)
+    message(STATUS "Skipping ${PXR_PACKAGE} tests on static build configuration")
+    return()
+endif()
+
 pxr_install_test_dir(
     SRC testenv/testUsdviewAlive
     DEST testUsdviewAlive
@@ -206,6 +214,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdviewSampleFilterEdits
+    DEST testUsdviewSampleFilterEdits
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdviewAnimatedBounds
     DEST testUsdviewAnimatedBounds
 )
@@ -318,6 +331,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdviewVariantSelection
     DEST testUsdviewVariantSelection
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdviewPointWidths
+    DEST testUsdviewPointWidths
 )
 
 
@@ -952,6 +970,21 @@ pxr_register_test(testUsdviewVariantSelection
         cylinder2.png
     FAIL 1
     FAIL_PERCENT 0.0002
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewPointWidths
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPointWidths.py points.usda"
+    IMAGE_DIFF_COMPARE
+        start.png
+        set_point_widths_025.png
+        set_point_widths_050.png
+        set_point_widths_primvar_075.png
+        end.png
+    FAIL 1
+    FAIL_PERCENT 0.002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
 )

@@ -168,6 +168,14 @@ HdSt_TestDriverBase<SceneDelegate>::HdSt_TestDriverBase()
 template<typename SceneDelegate>
 HdSt_TestDriverBase<SceneDelegate>::~HdSt_TestDriverBase()
 {
+    for (size_t i = 0; i < _renderPassStates.size(); i++) {
+        _renderPassStates[i].reset();
+    }
+
+    for (size_t i = 0; i < _renderPasses.size(); i++) {
+        _renderPasses[i].reset();
+    }
+
     delete _sceneDelegate;
     delete _renderIndex;
 }
@@ -187,12 +195,7 @@ template<typename SceneDelegate>
 void
 HdSt_TestDriverBase<SceneDelegate>::_Init()
 {
-    if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
-        TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "GPU") {
-        _Init(HdReprSelector(HdReprTokens->smoothHull));
-    } else {
-        _Init(HdReprSelector(HdReprTokens->hull));
-    }
+    _Init(HdReprSelector(HdReprTokens->smoothHull));
 }
 
 template<typename SceneDelegate>
@@ -614,7 +617,8 @@ class HdSt_TextureTestDriver
 {
 public:
     HdSt_TextureTestDriver();
-    
+    ~HdSt_TextureTestDriver();
+
     void Draw(HgiTextureHandle const &colorDst, 
               HgiTextureHandle const &inputTexture,
               HgiSamplerHandle const &inputSampler);

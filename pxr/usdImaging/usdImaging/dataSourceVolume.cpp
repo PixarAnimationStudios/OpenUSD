@@ -26,6 +26,8 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
 
+#include "pxr/usd/usdVol/tokens.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdImagingDataSourceVolumeFieldBindings
@@ -102,7 +104,7 @@ UsdImagingDataSourceVolumePrim::GetNames()
     return result;
 }
 
-HdDataSourceBaseHandle 
+HdDataSourceBaseHandle
 UsdImagingDataSourceVolumePrim::Get(const TfToken &name)
 {
     if (name == HdVolumeFieldBindingSchemaTokens->volumeFieldBinding) {
@@ -111,6 +113,29 @@ UsdImagingDataSourceVolumePrim::Get(const TfToken &name)
     } else {
         return UsdImagingDataSourceGprim::Get(name);
     }
+}
+
+HdDataSourceLocatorSet
+UsdImagingDataSourceVolumePrim::Invalidate(
+    const TfToken &subprim, const TfTokenVector &properties)
+{
+    HdDataSourceLocatorSet locators =
+        UsdImagingDataSourceGprim::Invalidate(subprim, properties);
+
+    static const std::string fieldPrefix =
+        UsdVolTokens->field.GetString() + ":";
+
+    for (const TfToken &propertyName : properties) {
+        if (TfStringStartsWith(propertyName.GetString(), fieldPrefix)) {
+            // There doesn't seem to be any client that can make use of
+            // fine-grained invalidation where we sent the sub data source
+            // locator of the volume field binding corresponding to this field.
+            locators.insert(HdVolumeFieldBindingSchema::GetDefaultLocator());
+            break;
+        }
+    }
+
+    return locators;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

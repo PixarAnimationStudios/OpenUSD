@@ -26,6 +26,7 @@
 
 #include "pxr/imaging/hd/api.h"
 
+#include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
 #include "pxr/usd/sdf/pathTable.h"
@@ -97,6 +98,7 @@ private:
     HdContainerDataSourceHandle _identityXform;
     HdContainerDataSourceHandle _identityVis;
     HdContainerDataSourceHandle _identityPurpose;
+    HdTokenDataSourceHandle _identityDrawMode;
 
     // methods
     void _DirtyHierarchy(
@@ -132,6 +134,11 @@ private:
         HdDataSourceBaseHandle _GetXform();
         HdDataSourceBaseHandle _GetVis();
         HdDataSourceBaseHandle _GetPurpose();
+        HdDataSourceBaseHandle _GetModel();
+        HdDataSourceBaseHandle _GetDrawMode(
+            const HdContainerDataSourceHandle &model);
+        HdTokenDataSourceHandle _GetDrawModeUncached(
+            const HdContainerDataSourceHandle &model);
 
         const HdFlatteningSceneIndex &_sceneIndex;
         SdfPath _primPath;
@@ -139,6 +146,7 @@ private:
         HdContainerDataSourceAtomicHandle _computedXformDataSource;
         HdContainerDataSourceAtomicHandle _computedVisDataSource;
         HdContainerDataSourceAtomicHandle _computedPurposeDataSource;
+        HdTokenDataSource::AtomicHandle _computedDrawModeDataSource;
     };
 
     HD_DECLARE_DATASOURCE_HANDLES(_PrimLevelWrappingDataSource);

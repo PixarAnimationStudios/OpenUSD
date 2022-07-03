@@ -166,6 +166,8 @@ HgiInteropOpenGL::CompositeToInterop(
     }
 #endif
     
+    // When no destination framebuffer is specified, composite into
+    // the currently bound framebuffer.
     if (!framebuffer.IsEmpty()) {
         if (framebuffer.IsHolding<uint32_t>()) {
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER,

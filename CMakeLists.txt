@@ -56,6 +56,10 @@ if (PXR_BUILD_PRMAN_PLUGIN)
     endif()
 endif()
 
+if (PXR_BUILD_TESTS)
+    pxr_tests_prologue()
+endif()
+
 if (PXR_BUILD_DOCUMENTATION)
     pxr_build_documentation()
 endif()   

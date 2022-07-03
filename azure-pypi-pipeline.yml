@@ -17,6 +17,21 @@ trigger:
         exclude:
         - /
 
+# Azure does not support an empty string as a default argument, so we use a
+# special 'none' string for post_release_tag.
+parameters:
+- name: post_release_tag
+  displayName: Post Release Version Tag
+  type: string
+  default: 'none'
+
+variables:
+- name: post_release_tag_arg
+  ${{ if eq(parameters.post_release_tag, 'none') }}:
+    value: ''
+  ${{ else }}:
+    value: ${{ format('--post-release-tag {0}', parameters.post_release_tag) }}
+
 stages:
 - stage: Build_and_Package
   jobs:
@@ -54,7 +69,7 @@ stages:
         docker exec usdmanylinux sh -c 'cp LICENSE.txt ./packaging'
       displayName: "Creating packaging directory"
     - bash: |
-        docker exec -w /opt/USD/packaging usdmanylinux $(PYTHON_INTERPRETER) setup.py bdist_wheel --python-tag ${PYTHON_TAG}
+        docker exec -w /opt/USD/packaging usdmanylinux $(PYTHON_INTERPRETER) setup.py $(post_release_tag_arg) bdist_wheel --python-tag ${PYTHON_TAG}
       displayName: 'Running setup.py'
     - bash: |
         docker exec usdmanylinux /bin/bash -c 'PYTHONPATH=/opt/USD/packaging/pypi/lib/python LD_LIBRARY_PATH=/opt/USD/packaging/pypi/lib:$LD_LIBRARY_PATH auditwheel repair packaging/dist/*.whl'
@@ -115,7 +130,7 @@ stages:
     - script: |
         cd D:\packaging
         dir
-        python setup.py bdist_wheel --python-tag $(PYTHON_TAG) --plat-name win_amd64
+        python setup.py $(post_release_tag_arg) bdist_wheel --python-tag $(PYTHON_TAG) --plat-name win_amd64
       displayName: 'Running setup.py'
     - task: PublishPipelineArtifact@0
       inputs:
@@ -167,7 +182,7 @@ stages:
       displayName: "Creating packaging directory"
     - bash: |
         cd ./packaging
-        $(PYTHON_INTERPRETER) setup.py bdist_wheel --python-tag ${PYTHON_TAG} --plat-name macosx_10_9_x86_64
+        $(PYTHON_INTERPRETER) setup.py $(post_release_tag_arg) bdist_wheel --python-tag ${PYTHON_TAG} --plat-name macosx_10_9_x86_64
       displayName: 'Running setup.py'
     - bash: |
         delocate-wheel -v -w dist-delocated packaging/dist/*

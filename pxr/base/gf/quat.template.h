@@ -96,6 +96,10 @@ class {{ QUAT }}
     {{ '' if ALLOW_IMPLICIT_CONVERSION(S, SCL) else 'explicit ' }}{{ QUAT }}(class {{ QUATNAME(S) }} const &other);
 {% endfor %}
 
+    /// Return the zero quaternion, with real coefficient 0 and an
+    /// imaginary coefficients all zero.
+    static {{ QUAT }} GetZero() { return {{ QUAT }}(0.0); }
+
     /// Return the identity quaternion, with real coefficient 1 and an
     /// imaginary coefficients all zero.
     static {{ QUAT }} GetIdentity() { return {{ QUAT }}(1.0); }

@@ -38,21 +38,32 @@ _IsQueryTrivial(UsdCollectionAPI::MembershipQuery const& query)
         ruleMap.begin()->second == UsdTokens->expandPrims;
 }
 
-TfToken
+void
+UsdImaging_CollectionCache::_MarkCollectionContentDirty(UsdStageWeakPtr const& stage, 
+    UsdCollectionAPI::MembershipQuery const& query)
+{
+    SdfPathSet linkedPaths = UsdComputeIncludedPathsFromCollection(query, stage);
+    std::merge(_dirtyPaths.begin(), _dirtyPaths.end(), linkedPaths.begin(), linkedPaths.end(),
+        std::inserter(_dirtyPaths, _dirtyPaths.begin()));
+}
+
+bool
 UsdImaging_CollectionCache::UpdateCollection(UsdCollectionAPI const& c)
 {
-    RemoveCollection(c);
+    const UsdStageWeakPtr& stage = c.GetPrim().GetStage();
+    const size_t removedHash = RemoveCollection(stage, c.GetCollectionPath());
 
     std::lock_guard<std::mutex> lock(_mutex);
 
     SdfPath path = c.GetCollectionPath();
     UsdCollectionAPI::MembershipQuery query = c.ComputeMembershipQuery();
+    bool changed = removedHash != query.GetHash();
 
     if (_IsQueryTrivial(query)) {
         TF_DEBUG(USDIMAGING_COLLECTIONS)
             .Msg("UsdImaging_CollectionCache: trivial for <%s>\n",
                  path.GetText());
-        return TfToken();
+        return changed;
     }
 
     // Establish Id <=> Query mapping.
@@ -78,20 +89,23 @@ UsdImaging_CollectionCache::UpdateCollection(UsdCollectionAPI const& c)
     _pathsForQuery[query].insert(path);
     _idForPath[path] = id;
 
-    return id;
+    _MarkCollectionContentDirty(stage, query);
+    // Also add the light in the dirty set for it to be marked as collection dirty
+    _dirtyPaths.insert(c.GetPrim().GetPath());
+
+    return changed;
 }
 
-void
-UsdImaging_CollectionCache::RemoveCollection(UsdCollectionAPI const& c)
+size_t
+UsdImaging_CollectionCache::RemoveCollection(UsdStageWeakPtr const& stage, SdfPath const& collectionPath)
 {
     std::lock_guard<std::mutex> lock(_mutex);
 
-    SdfPath path = c.GetCollectionPath();
-    auto const& pathEntry = _idForPath.find(path);
+    auto const& pathEntry = _idForPath.find(collectionPath);
     if (pathEntry == _idForPath.end()) {
         // No pathEntry -- bail.  This can happen if the collection was
         // trivial; see _IsQueryTrivial().
-        return;
+        return 0;
     }
     TfToken id = pathEntry->second;
     TF_VERIFY(!id.IsEmpty());
@@ -99,26 +113,43 @@ UsdImaging_CollectionCache::RemoveCollection(UsdCollectionAPI const& c)
 
     auto const& queryEntry = _queryForId.find(id);
     if (!TF_VERIFY(queryEntry != _queryForId.end())) {
-        return;
+        return 0;
     }
     UsdCollectionAPI::MembershipQuery const& queryRef = queryEntry->second;
+    size_t hash = queryRef.GetHash();
+    _idForQuery.erase(queryRef);
+
+    _MarkCollectionContentDirty(stage, queryRef);
+    _dirtyPaths.insert(collectionPath.GetPrimPath());
 
     auto const& pathsForQueryEntry = _pathsForQuery.find(queryRef);
-    pathsForQueryEntry->second.erase(path);
+    pathsForQueryEntry->second.erase(collectionPath);
     TF_DEBUG(USDIMAGING_COLLECTIONS)
         .Msg("UsdImaging_CollectionCache: Id '%s' disused <%s>\n",
-             id.GetText(), path.GetText());
+             id.GetText(), collectionPath.GetText());
 
     // Reap _pathsForQuery entries when the last path is removed.
     // This also reaps the associated identifier.
     if (pathsForQueryEntry->second.empty()) {
         _pathsForQuery.erase(pathsForQueryEntry);
-        _idForQuery.erase(queryRef);
         _queryForId.erase(queryEntry);
         TF_DEBUG(USDIMAGING_COLLECTIONS)
-            .Msg("UsdImaging_CollectionCache: Dropped id '%s'", id.GetText());
+            .Msg("UsdImaging_CollectionCache: Dropped id '%s'\n", id.GetText());
     }
+    return hash;
 };
+
+SdfPathSet const&
+UsdImaging_CollectionCache::GetDirtyPaths() const
+{
+    return _dirtyPaths;
+}
+
+void
+UsdImaging_CollectionCache::ClearDirtyPaths()
+{
+    _dirtyPaths.clear();
+}
 
 TfToken
 UsdImaging_CollectionCache::GetIdForCollection(UsdCollectionAPI const& c)

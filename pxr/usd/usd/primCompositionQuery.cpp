@@ -207,7 +207,6 @@ UsdPrimCompositionQueryArc::GetIntroducingListEditor(
     // We want the reference we return to be the authored value in the list op
     // itself which we can get back from the source arc info.
     ref->SetAssetPath(info.authoredAssetPath);
-    ref->SetLayerOffset(info.layerOffset);
     return true;    
 }
 
@@ -233,7 +232,6 @@ UsdPrimCompositionQueryArc::GetIntroducingListEditor(
     // We want the payload we return to be the authored value in the list op
     // itself which we can get back from the source arc info.
     payload->SetAssetPath(info.authoredAssetPath);
-    payload->SetLayerOffset(info.layerOffset);
     return true;
 }
 

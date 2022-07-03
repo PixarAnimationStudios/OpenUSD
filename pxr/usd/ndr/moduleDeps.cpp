@@ -36,11 +36,12 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
     // List of direct dependencies for this library.
     const std::vector<TfToken> reqs = {
         TfToken("ar"),
+        TfToken("arch"),
         TfToken("plug"),
         TfToken("sdf"),
         TfToken("tf"),
-        TfToken("vt"),
-        TfToken("work")
+        TfToken("trace"),
+        TfToken("vt")
     };
     TfScriptModuleLoader::GetInstance().
         RegisterLibrary(TfToken("ndr"), TfToken("pxr.Ndr"), reqs);

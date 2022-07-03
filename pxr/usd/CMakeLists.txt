@@ -12,6 +12,7 @@ set(DIRS
     usdMedia
     usdShade
     usdLux
+    usdProc
     usdRender
     usdHydra
     usdRi

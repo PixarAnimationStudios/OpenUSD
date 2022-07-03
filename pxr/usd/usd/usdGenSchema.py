@@ -287,6 +287,33 @@ def _CamelCase(aString):
     
 Token = namedtuple('Token', ['id', 'value', 'desc'])
 
+def _GetNameAndRawNameForPropInfo(sdfProp, classInfo):
+    if classInfo.propertyNamespacePrefix:
+        # A property namespace prefix will only exist for multiple apply API
+        # schemas and is used to create the instanceable namespace prefix 
+        # prepended to all its properties. We prepend this instanceable 
+        # prefix to the raw name here.
+        rawName = Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
+            classInfo.propertyNamespacePrefix, sdfProp.name)
+        # Since the property info's name is used to create the identifier 
+        # used for tokens and such, we make it from the instanced property 
+        # name with the instance name placeholder replaced with 
+        # "_MultipleApplyTemplate_". This is so we don't end up with an
+        # the implementation detail of "__INSTANCE_NAME__" in the identifier
+        # itself.
+        name = _CamelCase(
+            Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+                rawName, "_MultipleApplyTemplate_"))
+    else:
+        rawName = sdfProp.name
+        # For property names, camelCase all tokens irrespective of
+        # useLiteralIdentifier, so that we are consistent in our attribute
+        # naming when namespace prefix are provided and respect our coding
+        # convention. (Example: namespacePrefix:attrName ->
+        # namespacePrefixAttrName)
+        name = _MakeValidToken(rawName, False)
+    return (name, rawName)
+
 class PropInfo(object):
     class CodeGen:
         """Specifies how code gen constructs get methods for a property
@@ -302,37 +329,26 @@ class PropInfo(object):
     def __init__(self, sdfProp, classInfo):
         # Allow user to specify custom naming through customData metadata.
         self.customData = dict(sdfProp.customData)
+        self.name, self.rawName = _GetNameAndRawNameForPropInfo(
+            sdfProp, classInfo)
 
-        if classInfo.propertyNamespacePrefix:
-            # A property namespace prefix will only exist for multiple apply API
-            # schemas and is used to create the instanceable namespace prefix 
-            # prepended to all its properties. We prepend this instanceable 
-            # prefix to the raw name here.
-            self.rawName = Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
-                classInfo.propertyNamespacePrefix, sdfProp.name)
-            # Since the property info's name is used to create the identifier 
-            # used for tokens and such, we make it from the instanced property 
-            # name with the instance name placeholder replaced with 
-            # "_MultipleApplyTemplate_". This is so we don't end up with an
-            # the implementation detail of "__INSTANCE_NAME__" in the identifier
-            # itself.
-            self.name = _CamelCase(
-                Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
-                    self.rawName, "_MultipleApplyTemplate_"))
+        # Determine if this property will be an API schema override in the 
+        # flattened stage.
+        self.isAPISchemaOverride = self.customData.get(
+            'apiSchemaOverride', False)
+
+        # If the property is an API schema override, force the apiName to
+        # empty so it isn't added to any of the C++ API
+        if self.isAPISchemaOverride:
+            self.apiName = ''
         else:
-            self.rawName = sdfProp.name
-            # For property names, camelCase all tokens irrespective of
-            # useLiteralIdentifier, so that we are consistent in our attribute
-            # naming when namespace prefix are provided and respect our coding
-            # convention. (Example: namespacePrefix:attrName ->
-            # namespacePrefixAttrName)
-            self.name = _MakeValidToken(self.rawName, False)
-
-        self.apiName    = self.customData.get('apiName', _CamelCase(sdfProp.name))
-        self.apiGet     = self.customData.get('apiGetImplementation', self.CodeGen.Generated)
+            self.apiName = self.customData.get(
+                'apiName', _CamelCase(sdfProp.name))
+        self.apiGet = self.customData.get(
+            'apiGetImplementation', self.CodeGen.Generated)
         if self.apiGet not in [self.CodeGen.Generated, self.CodeGen.Custom]:
             Print.Err("Token '%s' is not valid." % self.apiGet)
-        self.doc        = _SanitizeDoc(sdfProp.documentation, '\n    /// ')
+        self.doc = _SanitizeDoc(sdfProp.documentation, '\n    /// ')
         # Keep around the property spec so that we can pull any other data we
         # may need from it.
         self._sdfPropSpec = sdfProp
@@ -473,6 +489,7 @@ class ClassInfo(object):
         self.rels = {}
         self.attrOrder = []
         self.relOrder = []
+        self.apiSchemaOverridePropertyNames = []
         self.tokens = set()
 
         # Important names
@@ -724,6 +741,69 @@ def _MakeMultipleApplySchemaNameTemplate(apiSchemaName):
     return Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
         typeName, instanceName) 
 
+# Gets the full list of API schema property overrides for the schema prim. We
+# use the USD prim because we need to know all override properties for the 
+# flattened schema class, so this will include any overrides provided purely 
+# through inheritance.
+def _GetAPISchemaOverridePropertyNames(usdPrim, propertyNamespacePrefix):
+    apiSchemaOverridePropertyNames = []
+
+    for usdProp in usdPrim.GetProperties():
+        # We grab the property stack which gives us the property spec for every
+        # inherited schema class that defines this property.
+        propStack = usdProp.GetPropertyStack(Usd.TimeCode.Default())
+        
+        # Skip if the first and strongest property spec does not define the 
+        # property as an API schema override.
+        if not propStack[0].customData.get('apiSchemaOverride', False):
+            continue
+
+        # If a property is set as an API schema override, we need to verify that
+        # in every base class that also defines the property, the property is 
+        # also set to be an API schema override.
+        #
+        # We do this because we need to ensure that if a base class defines a 
+        # property as not being an API schema override property (it is a 
+        # concrete property of the class) that no class that derives from it
+        # is allowed to change that property into being an API schema override.
+        # This is important since API schema overrides will only be added to a
+        # schema's prim definition if an included API schema actually defines
+        # the property. Changing a property from a base class into an API schema
+        # override may have the effect of deleting that base class property from
+        # the derived class if that property isn't defined in one of its
+        # built-in API schemas. We don't want a to introduce a backdoor way of
+        # deleting properties in derived classes.
+        # 
+        # Note that we do allow derived classes to convert an API schema 
+        # override into a concrete defined property.
+        for prop in propStack[1:]:
+            # Check that each property spec for this property has 
+            # 'apiSchemaOverride = true' in its customData
+            if not prop.customData.get('apiSchemaOverride', False):
+                raise _GetSchemaDefException(
+                    "Invalid schema property definition encountered while "
+                    "processing property %s.\n"
+                    "Property declarations in schema classes cannot set "
+                    "'apiSchemaOverride=true' on properties which exist in their "
+                    "inherited classes but are not already defined as API schemas "
+                    "overrides." 
+                    % usdProp.GetPath(), 
+                     prop.path)
+
+        propName = usdProp.GetName()
+        # A property namespace prefix will be provides for multiple apply API 
+        # schemas. If so, the property names need to be converted into their
+        # template names to match the properties that will be in the 
+        # generatedSchema.
+        if propertyNamespacePrefix:
+            propName = Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
+                propertyNamespacePrefix, propName)
+
+        # Add the property name to the list.
+        apiSchemaOverridePropertyNames.append(propName)
+           
+    return apiSchemaOverridePropertyNames          
+
 def ParseUsd(usdFilePath):
     sdfLayer = Sdf.Layer.FindOrOpen(usdFilePath)
     stage = Usd.Stage.Open(sdfLayer)
@@ -830,6 +910,14 @@ def ParseUsd(usdFilePath):
                 classInfo.rels[relInfo.name] = relInfo
                 classInfo.relOrder.append(relInfo.name)
 
+        # Get all the API schema override properties declared for this class as
+        # they need to appear in the generatedSchema. This includes any 
+        # inherited override properties base class schemas. The properties are
+        # also properly prefixed with the namespace template for multiple apply
+        # schemas.
+        classInfo.apiSchemaOverridePropertyNames = \
+            _GetAPISchemaOverridePropertyNames(
+                usdPrim, classInfo.propertyNamespacePrefix)
     
     for classInfo in classes:
         # If this is an applied API schema that does not inherit from 
@@ -1165,8 +1253,11 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
 
             
     for cls in classes:
+        # Get whether there are any token valued attributes that will
+        # be exposed in the C++ API.
         hasTokenAttrs = any(
-            [cls.attrs[attr].typeName == Sdf.ValueTypeNames.Token
+            [(cls.attrs[attr].typeName == Sdf.ValueTypeNames.Token and
+              cls.attrs[attr].apiName)
              for attr in cls.attrs])
 
         # header file
@@ -1403,7 +1494,7 @@ def _RenamePropertiesWithInstanceablePrefix(usdPrim):
     if not namespacePrefix:
         raise _GetSchemaDefException("propertyNamespacePrefix "
             "must exist as a metadata field on multiple-apply "
-            "API schemas with properties", p.GetPath())
+            "API schemas with properties", usdPrim.GetPath())
 
     # For each property create a copy with the prefixed instanceable property
     # name.
@@ -1485,8 +1576,21 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
                           Sdf.TokenListOp.CreateExplicit(appliedAPISchemas))
 
         p.ClearCustomData()
+
+        # Properties may have customData indicating that they are an 
+        # 'apiSchemaOverride'. We don't leave this data on the property in 
+        # in the generatedSchema, but rather we already used it to collect the 
+        # names of all API schema override properties for the schema class. 
+        # We store this list of API schema override properties as custom data 
+        # on the prim spec and delete the custom data on the property.
         for myproperty in p.GetAuthoredProperties():
             myproperty.ClearCustomData()
+
+        apiSchemaOverridePropertyNames = sorted(
+            primsToKeep[p.GetName()].apiSchemaOverridePropertyNames)
+        if apiSchemaOverridePropertyNames:
+            p.SetCustomDataByKey('apiSchemaOverridePropertyNames',
+                                 Vt.TokenArray(apiSchemaOverridePropertyNames))
 
     for p in pathsToDelete:
         flatStage.RemovePrim(p)

@@ -341,7 +341,9 @@ const TfTokenVector&
     static TfTokenVector localNames = {
 {% for attrName in cls.attrOrder %}
 {% set attr = cls.attrs[attrName] %}
+{% if attr.apiName != '' %}
         {{ tokensPrefix }}Tokens->{{ attr.name }},
+{% endif %}
 {% endfor %}
     };
     static TfTokenVector allNames =

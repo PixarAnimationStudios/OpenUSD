@@ -50,6 +50,11 @@ TF_MAKE_STATIC_DATA((map<int, int>), _initMap) {
 }
 #endif
 
+TF_MAKE_STATIC_DATA(const std::vector<int>, _constVector)
+{
+    *_constVector = { 1, 2, 3 };
+}
+
 class Count {
 public:
     Count() { ++count; }
@@ -115,6 +120,13 @@ Test_TfStaticData()
     TF_AXIOM((*_initMap)[1] == 11);
     TF_AXIOM((*_initMap)[2] == 22);
 #endif
+
+    // test accessing const static data
+    TF_AXIOM(!_constVector.IsInitialized());
+    TF_AXIOM(_constVector->size() == 3);
+    TF_AXIOM((*_constVector)[0] == 1);
+    TF_AXIOM((*_constVector)[1] == 2);
+    TF_AXIOM((*_constVector)[2] == 3);
 
     return true;
 }

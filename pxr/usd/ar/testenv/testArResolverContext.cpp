@@ -129,8 +129,6 @@ TestSingleContextObject()
     TF_AXIOM(ctx1 != ctx5);
 }
 
-#if AR_VERSION == 2
-
 static void
 TestMultipleContextObjects()
 {
@@ -220,8 +218,6 @@ TestMultipleContextObjects()
     }
 }
 
-#endif
-
 int main(int argc, char** argv)
 {
     printf("TestDefault ...\n");
@@ -230,10 +226,8 @@ int main(int argc, char** argv)
     printf("TestSingleContextObject ...\n");
     TestSingleContextObject();
 
-#if AR_VERSION == 2
     printf("TestMultipleContextObjects ...\n");
     TestMultipleContextObjects();
-#endif
 
     printf("All tests passed!\n");
     return 0;

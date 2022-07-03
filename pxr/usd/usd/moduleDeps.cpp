@@ -37,6 +37,7 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
     const std::vector<TfToken> reqs = {
         TfToken("ar"),
         TfToken("arch"),
+        TfToken("gf"),
         TfToken("kind"),
         TfToken("pcp"),
         TfToken("plug"),

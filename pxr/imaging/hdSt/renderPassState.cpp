@@ -109,6 +109,77 @@ _ComputeDataWindow(
     return fallbackViewport;
 }
 
+static
+const GfVec3i &
+_GetFramebufferSize(const HgiGraphicsCmdsDesc &desc)
+{
+    for (const HgiTextureHandle &color : desc.colorTextures) {
+        return color->GetDescriptor().dimensions;
+    }
+    if (desc.depthTexture) {
+        return desc.depthTexture->GetDescriptor().dimensions;
+    }
+    
+    static const GfVec3i fallback(0);
+    return fallback;
+}
+
+static
+GfVec4i
+_FlipViewport(const GfVec4i &viewport,
+              const GfVec3i &framebufferSize)
+{
+    const int height = framebufferSize[1];
+    if (height > 0) {
+        return GfVec4i(viewport[0],
+                       height - (viewport[1] + viewport[3]),
+                       viewport[2],
+                       viewport[3]);
+    } else {
+        return viewport;
+    }
+}
+
+static
+GfVec4i
+_ToVec4i(const GfVec4f &v)
+{
+    return GfVec4i(int(v[0]), int(v[1]), int(v[2]), int(v[3]));
+}
+
+static
+GfVec4i
+_ToVec4i(const GfRect2i &r)
+{
+    return GfVec4i(r.GetMinX(),  r.GetMinY(),
+                   r.GetWidth(), r.GetHeight());
+}
+
+
+GfVec4i
+HdStRenderPassState::ComputeViewport(
+    const HgiGraphicsCmdsDesc &desc,
+    const bool flip)
+{
+    const CameraUtilFraming &framing = GetFraming();
+    if (framing.IsValid()) {
+        // Use data window for clients using the new camera framing
+        // API.
+        const GfVec4i viewport = _ToVec4i(framing.dataWindow);
+        if (flip) {
+            // Note that in OpenGL, the coordinates for the viewport
+            // are y-Up but the camera framing is y-Down.
+            return _FlipViewport(viewport, _GetFramebufferSize(desc));
+        } else {
+            return viewport;
+        }
+    }
+
+    // For clients not using the new camera framing API, fallback
+    // to the viewport they specified.
+    return _ToVec4i(GetViewport());
+}
+
 void
 HdStRenderPassState::Prepare(
     HdResourceRegistrySharedPtr const &resourceRegistry)

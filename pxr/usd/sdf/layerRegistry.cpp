@@ -182,26 +182,6 @@ Sdf_LayerRegistry::Find(
     } else {
         ArResolver& resolver = ArGetResolver();
 
-#if AR_VERSION == 1
-        const string layerPath = 
-            resolver.ComputeNormalizedPath(inputLayerPath);
-
-        // If the layer path is relative, this may be either a search path
-        // or a layer relative to the current working directory. Use the
-        // look-here-first scheme to check whether the registry holds a
-        // layer with the correct absolute identifier.
-        //
-        // We call TfNormPath() so we get a platform independent
-        // representation;  specifically on Windows we get forward slashes.
-        const bool isRelativePath = resolver.IsRelativePath(layerPath);
-        if (isRelativePath)
-            foundLayer = FindByIdentifier(TfNormPath(TfAbsPath(layerPath)));
-
-        // If the layer path is not relative, and we haven't found a layer
-        // yet, look up the layer using the normalized identifier.
-        if (!foundLayer && !isRelativePath)
-            foundLayer = FindByIdentifier(layerPath);
-#else
         const string& layerPath = inputLayerPath;
 
         // If the layer path depends on context there may be multiple
@@ -212,24 +192,21 @@ Sdf_LayerRegistry::Find(
         if (!resolver.IsContextDependentPath(assetPath)) {
             foundLayer = FindByIdentifier(layerPath);
         }
-#endif
 
         // If the layer path is in repository form and we haven't yet
         // found the layer via the identifier, attempt to look up the
         // layer by repository path.
-#if AR_VERSION == 1
-        const bool isRepositoryPath = resolver.IsRepositoryPath(layerPath);
-#else
         const bool isRepositoryPath = resolver.IsRepositoryPath(assetPath);
-#endif
-        if (!foundLayer && isRepositoryPath)
-            foundLayer = FindByRepositoryPath(layerPath);
+        if (!foundLayer && isRepositoryPath) {
+            foundLayer = _FindByRepositoryPath(layerPath);
+        }
 
         // If the layer has not yet been found, this may be some other
         // form of path that requires path resolution and lookup in the
         // real path index in order to locate.
-        if (!foundLayer)
-            foundLayer = FindByRealPath(layerPath, resolvedPath);
+        if (!foundLayer) {
+            foundLayer = _FindByRealPath(layerPath, resolvedPath);
+        }
     }
 
     TF_DEBUG(SDF_LAYER).Msg(
@@ -263,7 +240,7 @@ Sdf_LayerRegistry::FindByIdentifier(
 }
 
 SdfLayerHandle
-Sdf_LayerRegistry::FindByRepositoryPath(
+Sdf_LayerRegistry::_FindByRepositoryPath(
     const string& layerPath) const
 {
     TRACE_FUNCTION();
@@ -280,7 +257,7 @@ Sdf_LayerRegistry::FindByRepositoryPath(
         foundLayer = *repoPathIt;
 
     TF_DEBUG(SDF_LAYER).Msg(
-        "Sdf_LayerRegistry::FindByRepositoryPath('%s') => %s\n",
+        "Sdf_LayerRegistry::_FindByRepositoryPath('%s') => %s\n",
         layerPath.c_str(),
         foundLayer ? "Found" : "Not Found");
 
@@ -288,7 +265,7 @@ Sdf_LayerRegistry::FindByRepositoryPath(
 }
 
 SdfLayerHandle
-Sdf_LayerRegistry::FindByRealPath(
+Sdf_LayerRegistry::_FindByRealPath(
     const string& layerPath,
     const string& resolvedPath) const
 {
@@ -319,7 +296,7 @@ Sdf_LayerRegistry::FindByRealPath(
             }
 
             TF_DEBUG(SDF_LAYER).Msg(
-                "Sdf_LayerRegistry::FindByRealPath('%s'): "
+                "Sdf_LayerRegistry::_FindByRealPath('%s'): "
                 "Failed to compute real path: %s\n",
                 layerPath.c_str(), TfStringJoin(errors, ", ").c_str());
 
@@ -328,13 +305,6 @@ Sdf_LayerRegistry::FindByRealPath(
     }
     searchPath = Sdf_CreateIdentifier(searchPath, arguments);
 
-#if AR_VERSION == 1
-    // Avoid ambiguity by converting the path to a platform dependent
-    // path.  (On Windows this converts slashes to backslashes.)  The
-    // real paths stored in the registry are in platform dependent form.
-    searchPath = TfAbsPath(searchPath);
-#endif
-
     const _LayersByRealPath& byRealPath = _layers.get<by_real_path>();
     _LayersByRealPath::const_iterator realPathIt =
         byRealPath.find(searchPath);
@@ -342,7 +312,7 @@ Sdf_LayerRegistry::FindByRealPath(
         foundLayer = *realPathIt;
 
     TF_DEBUG(SDF_LAYER).Msg(
-        "Sdf_LayerRegistry::FindByRealPath('%s') => %s\n",
+        "Sdf_LayerRegistry::_FindByRealPath('%s') => %s\n",
         searchPath.c_str(),
         foundLayer ? "Found" : "Not Found");
 

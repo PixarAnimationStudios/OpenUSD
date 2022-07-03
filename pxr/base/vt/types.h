@@ -130,6 +130,11 @@ VT_TYPE_IS_CHEAP_TO_COPY(TfToken);
 ((      GfQuatd,             Quatd ))       \
 ((      GfQuaternion,        Quaternion ))
 
+#define VT_DUALQUATERNION_VALUE_TYPES       \
+((      GfDualQuath,         DualQuath ))   \
+((      GfDualQuatf,         DualQuatf ))   \
+((      GfDualQuatd,         DualQuatd ))
+
 #define VT_NONARRAY_VALUE_TYPES                 \
 ((      GfFrustum,           Frustum))          \
 ((      GfMultiInterval,     MultiInterval))
@@ -152,7 +157,8 @@ VT_BUILTIN_NUMERIC_VALUE_TYPES VT_STRING_VALUE_TYPES
 VT_VEC_VALUE_TYPES \
 VT_MATRIX_VALUE_TYPES \
 VT_RANGE_VALUE_TYPES \
-VT_QUATERNION_VALUE_TYPES
+VT_QUATERNION_VALUE_TYPES \
+VT_DUALQUATERNION_VALUE_TYPES
 
 #define VT_SCALAR_VALUE_TYPES \
 VT_SCALAR_CLASS_VALUE_TYPES VT_BUILTIN_VALUE_TYPES 

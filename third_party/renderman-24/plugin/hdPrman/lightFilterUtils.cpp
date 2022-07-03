@@ -792,7 +792,8 @@ void HdPrmanLightFilterGenerateCoordSysAndLinks(
     attrs.SetString(RixStr.k_name, coordsysName);
 
     riley::CoordinateSystemId csId = riley->CreateCoordinateSystem(
-        riley::UserId::DefaultId(), xform, attrs);
+        riley::UserId(stats::AddDataLocation(filterPath.GetText()).GetValue()),
+        xform, attrs);
     (*coordsysIds).push_back(csId);
 
     // Only certain light filters require a coordsys, but we do not

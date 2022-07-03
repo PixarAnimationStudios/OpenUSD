@@ -165,12 +165,6 @@ struct HdMaterialNode2
     TfToken nodeTypeId;
     std::map<TfToken, VtValue> parameters;
     std::map<TfToken, std::vector<HdMaterialConnection2>> inputConnections;
-
-    bool operator==(const HdMaterialNode2 & rhs) const {
-        return nodeTypeId == rhs.nodeTypeId
-            && parameters == rhs.parameters
-            && inputConnections == rhs.inputConnections;
-    }
 };
 
 /// \struct HdMaterialNetwork2
@@ -215,6 +209,14 @@ bool operator==(const HdMaterialNetworkMap& lhs,
 HD_API
 bool operator!=(const HdMaterialNetworkMap& lhs,
                 const HdMaterialNetworkMap& rhs);
+
+// VtValue requirements
+HD_API
+std::ostream& operator<<(std::ostream& out, const HdMaterialNode2& pv);
+HD_API
+bool operator==(const HdMaterialNode2& lhs, const HdMaterialNode2& rhs);
+HD_API
+bool operator!=(const HdMaterialNode2& lhs, const HdMaterialNode2& rhs);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

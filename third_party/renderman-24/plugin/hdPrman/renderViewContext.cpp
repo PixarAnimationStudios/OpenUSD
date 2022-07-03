@@ -49,7 +49,7 @@ HdPrman_RenderViewContext::CreateRenderView(
         
         _renderOutputIds.push_back(
             riley->CreateRenderOutput(
-                riley::UserId::DefaultId(),
+                riley::UserId(stats::AddDataLocation(outputDesc.name.CStr()).GetValue()),
                 outputDesc.name,
                 outputDesc.type,
                 outputDesc.sourceName,
@@ -69,7 +69,7 @@ HdPrman_RenderViewContext::CreateRenderView(
 
     _renderTargetId =
         riley->CreateRenderTarget(
-            riley::UserId::DefaultId(),
+            riley::UserId(stats::AddDataLocation("/renderTarget").GetValue()),
             { static_cast<uint32_t>(_renderOutputIds.size()),
               _renderOutputIds.data() },
             rtResolution,
@@ -85,10 +85,9 @@ HdPrman_RenderViewContext::CreateRenderView(
             displayRenderOutputIds.push_back(
                 _renderOutputIds[renderOutputIndex]);
         }
-
         _displayIds.push_back(
             riley->CreateDisplay(
-                riley::UserId::DefaultId(),
+                riley::UserId(stats::AddDataLocation(displayDesc.name.CStr()).GetValue()),
                 _renderTargetId,
                 displayDesc.name,
                 displayDesc.driver,
@@ -99,12 +98,12 @@ HdPrman_RenderViewContext::CreateRenderView(
     
     _renderViewId =
         riley->CreateRenderView(
-            riley::UserId::DefaultId(),
+            riley::UserId(stats::AddDataLocation("/renderView").GetValue()),
             _renderTargetId,
             desc.cameraId,
             desc.integratorId,
             {0, nullptr},
-            {0, nullptr},
+            desc.sampleFilterList,
             RtParamList());
 }
 

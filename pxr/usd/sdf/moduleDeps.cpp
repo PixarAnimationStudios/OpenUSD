@@ -38,6 +38,7 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
         TfToken("ar"),
         TfToken("arch"),
         TfToken("gf"),
+        TfToken("plug"),
         TfToken("tf"),
         TfToken("trace"),
         TfToken("vt"),

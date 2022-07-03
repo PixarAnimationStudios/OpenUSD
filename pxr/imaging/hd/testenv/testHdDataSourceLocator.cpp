@@ -445,6 +445,8 @@ static bool
 TestLocatorSetIntersection()
 {
     {
+        // Excersie code-path where size is smaller than _binarySearchCuroff.
+
         HdDataSourceLocatorSet locators = {
             _Parse("a/b"),
             _Parse("c/d"),
@@ -454,17 +456,17 @@ TestLocatorSetIntersection()
         };
 
         bool result = 
-                _ValueCompare("Intersect single (parent)", 
+                _ValueCompare("Intersect single (parent, small set)", 
                     locators.Intersects(_Parse("a")), true)
-            && _ValueCompare("Intersect single (child)", 
+            && _ValueCompare("Intersect single (child, small set)", 
                    locators.Intersects(_Parse("a/b/e")), true)
-            && _ValueCompare("Intersect single (sibling)",
+            && _ValueCompare("Intersect single (sibling, small set)",
                    locators.Intersects(_Parse("a/c")), false)
-            && _ValueCompare("Intersect single (equal)",
+            && _ValueCompare("Intersect single (equal, small set)",
                    locators.Intersects(_Parse("f")), true)
-            && _ValueCompare("Intersect single (unrelated)",
+            && _ValueCompare("Intersect single (unrelated, small set)",
                    locators.Intersects(_Parse("x/y/z")), false)
-            && _ValueCompare("Intersect single (empty locator)",
+            && _ValueCompare("Intersect single (empty locator, small set)",
                    locators.Intersects(HdDataSourceLocator()), true);
         if (!result) {
             return false;
@@ -472,6 +474,42 @@ TestLocatorSetIntersection()
     }
 
     {
+        // Excersie code-path where size is larger than _binarySearchCuroff.
+
+        HdDataSourceLocatorSet locators = {
+            _Parse("a/b"),
+            _Parse("c/d"),
+            _Parse("f"),
+            _Parse("g/a"),
+            _Parse("g/b"),
+            _Parse("g/c"),
+            _Parse("g/d"),
+            _Parse("g/e"),
+            _Parse("g/f"),
+            _Parse("g/g"),
+        };
+
+        bool result = 
+                _ValueCompare("Intersect single (parent, large set)", 
+                    locators.Intersects(_Parse("a")), true)
+            && _ValueCompare("Intersect single (child, large set)", 
+                   locators.Intersects(_Parse("a/b/e")), true)
+            && _ValueCompare("Intersect single (sibling, large set)",
+                   locators.Intersects(_Parse("a/c")), false)
+            && _ValueCompare("Intersect single (equal, large set)",
+                   locators.Intersects(_Parse("f")), true)
+            && _ValueCompare("Intersect single (unrelated, large set)",
+                   locators.Intersects(_Parse("x/y/z")), false)
+            && _ValueCompare("Intersect single (empty locator, large set)",
+                   locators.Intersects(HdDataSourceLocator()), true);
+        if (!result) {
+            return false;
+        }
+    }
+
+    {
+        // Excersie code-path where size is smaller than _zipperCompareCutoff
+
         HdDataSourceLocatorSet locators = {
             _Parse("a/b"),
             _Parse("c/d"),
@@ -501,18 +539,72 @@ TestLocatorSetIntersection()
 
         const bool result = 
 
-            _ValueCompare("Intersect set (empty)", 
+            _ValueCompare("Intersect set (empty, small sets)", 
                         locators.Intersects(test1), false)
-         && _ValueCompare("Intersect set (empty locator)", 
+         && _ValueCompare("Intersect set (empty locator, small sets)", 
                         locators.Intersects(test2), true)
-         && _ValueCompare("Intersect set (unrelated)", 
+         && _ValueCompare("Intersect set (unrelated, small sets)", 
                         locators.Intersects(test3), false)
-         && _ValueCompare("Intersect set (child)", locators.Intersects(test4),
-                          true)
-         && _ValueCompare("Intersect set (parent)", locators.Intersects(test5),
-                          true)
-         && _ValueCompare("Intersect set (sibling)", locators.Intersects(test6),
-                          false);
+         && _ValueCompare("Intersect set (child, small sets)",
+                        locators.Intersects(test4), true)
+         && _ValueCompare("Intersect set (parent, small sets)",
+                        locators.Intersects(test5), true)
+         && _ValueCompare("Intersect set (sibling, small sets)",
+                        locators.Intersects(test6), false);
+
+        if (!result) {
+            return false;
+        }
+    }
+
+    {
+        // Excersie code-path where size is larger than _zipperCompareCutoff
+
+        HdDataSourceLocatorSet locators = {
+            _Parse("a/b"),
+            _Parse("c/d"),
+            _Parse("a/b/c"),
+            _Parse("f"),
+            _Parse("a/b/d"),
+            _Parse("g/a"),
+            _Parse("g/b"),
+            _Parse("g/c"),
+            _Parse("g/d"),
+            _Parse("g/e"),
+            _Parse("g/f"),
+            _Parse("g/g"),
+        };
+
+        HdDataSourceLocatorSet test2 = { HdDataSourceLocator() };
+        HdDataSourceLocatorSet test3 = {
+            _Parse("g/h/i"),
+            _Parse("q/r/s"),
+        };
+        HdDataSourceLocatorSet test4 = {
+            _Parse("a/b/z"),
+            _Parse("f/g/h"),
+        };
+        HdDataSourceLocatorSet test5 = {
+            _Parse("a"),
+            _Parse("z"),
+        };
+        HdDataSourceLocatorSet test6 = {
+            _Parse("a/c"),
+            _Parse("z"),
+        };
+
+        const bool result = 
+
+            _ValueCompare("Intersect set (empty locator, large sets)", 
+                        locators.Intersects(test2), true)
+         && _ValueCompare("Intersect set (unrelated, large sets)", 
+                        locators.Intersects(test3), false)
+         && _ValueCompare("Intersect set (child, large sets)",
+                        locators.Intersects(test4), true)
+         && _ValueCompare("Intersect set (parent, large sets)",
+                        locators.Intersects(test5), true)
+         && _ValueCompare("Intersect set (sibling, large sets)",
+                        locators.Intersects(test6), false);
 
         if (!result) {
             return false;
@@ -533,6 +625,151 @@ TestLocatorSetIntersection()
                           test2.Intersects(test2), true)
            && _ValueCompare("Intersect empty locator vs empty set", 
                           test2.Intersects(test1), false);
+
+        if (!result) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static bool
+TestLocatorSetContains()
+{
+    {
+        HdDataSourceLocatorSet locators;
+        
+        const bool result =
+                _ValueCompare(
+                    "Empty set contains nothing (empty locator)",
+                    locators.Contains(_Parse("")), false)
+            &&  _ValueCompare(
+                    "Empty set contains nothing (non-empty locator 1)",
+                    locators.Contains(_Parse("c")), false)
+            &&  _ValueCompare(
+                    "Empty set contains nothing (non-empty locator 2)",
+                    locators.Contains(_Parse("c/d")), false);
+        if (!result) {
+            return false;
+        }
+    }
+
+    {
+        HdDataSourceLocatorSet locators = {
+            _Parse("")
+        };
+
+        const bool result =
+                _ValueCompare(
+                    "Universal set contains everyhing (empty locator)",
+                    locators.Contains(_Parse("")), true)
+            &&  _ValueCompare(
+                    "Universal set contains everything (non-empty locator 1)",
+                    locators.Contains(_Parse("c")), true)
+            &&  _ValueCompare(
+                    "Universal set contains everyhing (non-empty locator 2)",
+                    locators.Contains(_Parse("c/d")), true);
+        if (!result) {
+            return false;
+        }
+    }
+
+    {
+        // Excersie code-path where size is smaller than _binarySearchCuroff.
+
+        HdDataSourceLocatorSet locators = {
+            _Parse("c"),
+            _Parse("f/g")
+        };
+
+        const bool result =
+                _ValueCompare(
+                    "Membership test 1 (small set)",
+                    locators.Contains(_Parse("")), false)
+            &&  _ValueCompare(
+                    "Membership test 2 (small set)",
+                    locators.Contains(_Parse("b")), false)
+            &&  _ValueCompare(
+                    "Membership test 3 (small set)",
+                    locators.Contains(_Parse("b/c")), false)
+            &&  _ValueCompare(
+                    "Membership test 4 (small set)",
+                    locators.Contains(_Parse("c")), true)
+            &&  _ValueCompare(
+                    "Membership test 5 (small set)",
+                    locators.Contains(_Parse("c/d")), true)
+            &&  _ValueCompare(
+                    "Membership test 6 (small set)",
+                    locators.Contains(_Parse("d")), false)
+            &&  _ValueCompare(
+                    "Membership test 7 (small set)",
+                    locators.Contains(_Parse("f")), false)
+            &&  _ValueCompare(
+                    "Membership test 8 (small set)",
+                    locators.Contains(_Parse("f/g")), true)
+            &&  _ValueCompare(
+                    "Membership test 9 (small set)",
+                    locators.Contains(_Parse("f/g/h")), true) 
+            &&  _ValueCompare(
+                    "Membership test 10 (small set)",
+                    locators.Contains(_Parse("g")), false); 
+
+        if (!result) {
+            return false;
+        }
+    }
+
+    {
+        // Excersie code-path where size is larger than _binarySearchCuroff.
+
+        HdDataSourceLocatorSet locators = {
+            _Parse("c"),
+            _Parse("e/a"),
+            _Parse("e/b"),
+            _Parse("e/c"),
+            _Parse("e/d"),
+            _Parse("e/e"),
+            _Parse("e/f"),
+            _Parse("e/g"),
+            _Parse("e/h"),
+            _Parse("e/i"),
+            _Parse("e/j"),
+            _Parse("e/k"),
+            _Parse("e/l"),
+            _Parse("f/g") };
+        
+        const bool result =
+                _ValueCompare(
+                    "Membership test 1 (large set)",
+                    locators.Contains(_Parse("")), false)
+            &&  _ValueCompare(
+                    "Membership test 2 (large set)",
+                    locators.Contains(_Parse("b")), false)
+            &&  _ValueCompare(
+                    "Membership test 3 (large set)",
+                    locators.Contains(_Parse("b/c")), false)
+            &&  _ValueCompare(
+                    "Membership test 4 (large set)",
+                    locators.Contains(_Parse("c")), true)
+            &&  _ValueCompare(
+                    "Membership test 5 (large set)",
+                    locators.Contains(_Parse("c/d")), true)
+            &&  _ValueCompare(
+                    "Membership test 6 (large set)",
+                    locators.Contains(_Parse("d")), false)
+            &&  _ValueCompare(
+                    "Membership test 7 (large set)",
+                    locators.Contains(_Parse("f")), false)
+            &&  _ValueCompare(
+                    "Membership test 8 (large set)",
+                    locators.Contains(_Parse("f/g")), true)
+            &&  _ValueCompare(
+                    "Membership test 9 (large set)",
+                    locators.Contains(_Parse("f/g/h")), true) 
+            &&  _ValueCompare(
+                    "Membership test 10 (large set)",
+                    locators.Contains(_Parse("g")), false); 
 
         if (!result) {
             return false;
@@ -563,6 +800,7 @@ int main(int argc, char**argv)
     TEST(TestIntersection);
     TEST(TestLocatorSet);
     TEST(TestLocatorSetIntersection);
+    TEST(TestLocatorSetContains);
 
     // ------------------------------------------------------------------------
     std::cout << "DONE testHdDataSourceLocator: SUCCESS" << std::endl;

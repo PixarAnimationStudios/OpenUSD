@@ -10,6 +10,8 @@ add_subdirectory(hgiMetal)
 add_subdirectory(hgiVulkan)
 add_subdirectory(hgiInterop)
 add_subdirectory(hd)
+add_subdirectory(hdGp)
+add_subdirectory(hdsi)
 
 if (${PXR_ENABLE_MATERIALX_SUPPORT})
     add_subdirectory(hdMtlx)

@@ -121,13 +121,6 @@ vec3 getNormal(MAT4 transform)
 --- --------------------------------------------------------------------------
 -- glsl Curves.Vertex.Wire
 
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-out CurveVertexData
-{
-    vec4 Peye;
-} outData;
-#endif
-
 // Fwd declare methods defined in pointId.glslfx, that are used below.
 FORWARD_DECL(int GetPointId());
 FORWARD_DECL(float GetPointRasterSize(int));
@@ -896,13 +889,6 @@ Coeffs evaluateBasis(float u, float u2, float u3)
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.Fragment.Wire
-
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-in CurveVertexData
-{
-    vec4 Peye;
-} inData;
-#endif
 
 void main(void)
 {

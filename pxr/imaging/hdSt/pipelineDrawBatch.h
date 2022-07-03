@@ -132,12 +132,10 @@ private:
 
     void _ExecuteDrawIndirect(
                 HgiGraphicsCmds * gfxCmds,
-                HdStDispatchBufferSharedPtr const & dispatchBuffer,
                 HdStBufferArrayRangeSharedPtr const & indexBar);
 
     void _ExecuteDrawImmediate(
                 HgiGraphicsCmds * gfxCmds,
-                HdStDispatchBufferSharedPtr const & dispatchBuffer,
                 HdStBufferArrayRangeSharedPtr const & indexBar);
 
     void _ExecuteFrustumCull(

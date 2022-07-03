@@ -83,12 +83,12 @@ class "LightAPI" (
 ) {
     uniform bool collection:lightLink:includeRoot = 1 (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
     )
     uniform bool collection:shadowLink:includeRoot = 1 (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
     )
     uniform token light:shaderId = "" (
@@ -236,13 +236,12 @@ class "MeshLightAPI" (
 ) {
     uniform token light:shaderId = "MeshLight" (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     uniform token light:materialSyncMode = "materialGlowTintsLight" (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
     )
 }
@@ -263,13 +262,12 @@ class "VolumeLightAPI" (
 ) {
     uniform token light:shaderId = "VolumeLight" (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     uniform token light:materialSyncMode = "materialGlowTintsLight" (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
     )
 }
@@ -599,7 +597,7 @@ class LightFilter "LightFilter" (
 ) {
     uniform bool collection:filterLink:includeRoot = 1 (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
     )
     uniform token lightFilter:shaderId = "" (
@@ -655,9 +653,8 @@ class DistantLight "DistantLight" (
 ) {
     uniform token light:shaderId = "DistantLight" (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     float inputs:angle = 0.53 (
         doc = """Angular size of the light in degrees.
@@ -673,6 +670,7 @@ class DistantLight "DistantLight" (
         The DistantLight has a high default intensity to approximate the Sun."""
         customData = {
             token apiName = "intensity"
+            bool apiSchemaOverride = true
         }
     )
 }
@@ -689,9 +687,8 @@ class DiskLight "DiskLight" (
 ) {
     uniform token light:shaderId = "DiskLight"  (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     float inputs:radius = 0.5 (
         doc = "Radius of the disk."
@@ -716,9 +713,8 @@ class RectLight "RectLight" (
 ) {
     uniform token light:shaderId = "RectLight"  (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     float inputs:width = 1 (
         doc = "Width of the rectangle, in the local X axis."
@@ -752,9 +748,8 @@ class SphereLight "SphereLight" (
 ) {
     uniform token light:shaderId = "SphereLight"  (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     float inputs:radius = 0.5 (
         doc = "Radius of the sphere."
@@ -784,9 +779,8 @@ class CylinderLight "CylinderLight" (
 ) {
     uniform token light:shaderId = "CylinderLight"  (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     float inputs:length = 1 (
         doc = "Width of the rectangle, in the local X axis."
@@ -819,9 +813,8 @@ class GeometryLight "GeometryLight" (
     )
     uniform token light:shaderId = "GeometryLight"  (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
 }
 
@@ -854,9 +847,8 @@ class DomeLight "DomeLight" (
 ) {
     uniform token light:shaderId = "DomeLight"  (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     asset inputs:texture:file (
         doc = """A color texture to use on the dome, such as an HDR (high
@@ -901,9 +893,8 @@ class PortalLight "PortalLight" (
 ) {
     uniform token light:shaderId = "PortalLight"  (
         customData = {
-            token apiName = ""
+            bool apiSchemaOverride = true
         }
-        displayGroup = "Internal"
     )
     float3[] extent = [(-0.5, -0.5, 0.0), (0.5, 0.5, 0.0)] (
         doc = """Boundary extent of the unit rectangle in the XY plane that 

@@ -337,6 +337,16 @@ function(_classes LIBRARY_NAME)
     set(${LIBRARY_NAME}_CPPFILES ${${LIBRARY_NAME}_CPPFILES} PARENT_SCOPE)
 endfunction() # _classes
 
+function(_get_library_prefix output)
+    if (PXR_LIB_PREFIX)
+      set(${output} ${PXR_LIB_PREFIX} PARENT_SCOPE)
+    elseif (PXR_BUILD_MONOLITHIC)
+      set(${output} ${CMAKE_SHARED_LIBRARY_PREFIX} PARENT_SCOPE)
+    else()
+      set(${output} ${CMAKE_SHARED_LIBRARY_PREFIX}usd_ PARENT_SCOPE)
+    endif()
+endfunction() # _get_library_prefix
+
 function(_get_install_dir path out)
     if (PXR_INSTALL_SUBDIR)
         set(${out} ${PXR_INSTALL_SUBDIR}/${path} PARENT_SCOPE)
@@ -734,7 +744,16 @@ function(_pxr_target_link_libraries NAME)
         set(finalIncs "")
         set(finalSystemIncs "")
         _pxr_transitive_internal_libraries("${internal}" internal)
-        foreach(lib ${internal})
+
+        set(all_libraries "")
+        list(APPEND all_libraries ${internal})
+        list(APPEND all_libraries ${external})
+
+        foreach(lib ${all_libraries})
+            if (NOT TARGET ${lib})
+                continue()
+            endif()
+
             get_property(defs TARGET ${lib} PROPERTY INTERFACE_COMPILE_DEFINITIONS)
             foreach(def ${defs})
                 if(NOT ";${finalDefs};" MATCHES ";${def};")

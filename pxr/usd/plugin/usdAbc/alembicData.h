@@ -28,10 +28,9 @@
 #include "pxr/usd/sdf/data.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/tf/declarePtrs.h"
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DECLARE_WEAK_AND_REF_PTRS(UsdAbc_AlembicData);
 
@@ -112,10 +111,9 @@ protected:
     virtual void _VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const;
 
 private:
-    boost::shared_ptr<class UsdAbc_AlembicDataReader> _reader;
+    std::shared_ptr<class UsdAbc_AlembicDataReader> _reader;
     const SdfFileFormat::FileFormatArguments _arguments;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

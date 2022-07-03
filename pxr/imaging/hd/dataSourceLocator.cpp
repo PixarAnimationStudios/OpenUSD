@@ -209,7 +209,7 @@ HdDataSourceLocator::HasPrefix(const HdDataSourceLocator &prefix) const
 HdDataSourceLocator
 HdDataSourceLocator::GetCommonPrefix(const HdDataSourceLocator &other) const
 {
-    size_t maxPossibleLen = std::min(_tokens.size(), other._tokens.size());
+    const size_t maxPossibleLen = std::min(_tokens.size(), other._tokens.size());
     size_t i = 0;
     for (; i < maxPossibleLen; ++i) {
         if (_tokens[i] != other._tokens[i]) {
@@ -465,7 +465,7 @@ HdDataSourceLocatorSet::Intersects(const HdDataSourceLocator &locator) const
     // hurt us and we want to just loop over everything: we'd do O(ceil(log a))
     // compares plus an intersects, vs O(a) intersects. (e.g. a = 4, we'd do
     // up to 3 compares plus an intersects).
-    const size_t _binarySearchCutoff = 5;
+    constexpr size_t _binarySearchCutoff = 5;
 
     if (_locators.size() < _binarySearchCutoff) {
         for (const auto &l : _locators) {
@@ -500,7 +500,7 @@ HdDataSourceLocatorSet::Intersects(
     // intersects, so for very small arrays where we do O(a+b) compares
     // and then an intersects, this can be more expensive than just doing
     // O(a*b) compares. (e.g. a=b=2 yields 5 vs 4 operations).
-    const size_t _zipperCompareCutoff = 9;
+    constexpr size_t _zipperCompareCutoff = 9;
 
     if (_locators.size() * locatorSet._locators.size() < _zipperCompareCutoff) {
         for (const auto &a : _locators) {
@@ -547,6 +547,30 @@ HdDataSourceLocatorSet::Intersects(
     }
 
     return false;
+}
+
+bool
+HdDataSourceLocatorSet::Contains(
+        const HdDataSourceLocator &locator) const
+{
+    // Note: See _binarySearchCutoff in Intersects.
+    constexpr size_t _binarySearchCutoff = 5;
+
+    if (_locators.size() < _binarySearchCutoff) {
+        for (const auto &l : _locators) {
+            if (locator.HasPrefix(l)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    TRACE_FUNCTION();
+
+    const auto it = std::lower_bound(
+        _locators.begin(), _locators.end(),
+        locator, _LessThanNotPrefix);
+    return it != _locators.end() && locator.HasPrefix(*it);    
 }
 
 bool

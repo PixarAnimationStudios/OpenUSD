@@ -14,8 +14,14 @@ set(optionalIncludeDirs "")
 set(optionalPublicClasses "")
 set(optionalPrivateClasses "")
 if (${PXR_ENABLE_MATERIALX_SUPPORT})
-    list(APPEND optionalLibs ${MATERIALX_LIBRARIES} hdMtlx)
-    list(APPEND optionalIncludeDirs ${MATERIALX_INCLUDE_DIRS})
+    list(APPEND optionalLibs
+        MaterialXGenShader
+        MaterialXRender
+        MaterialXCore
+        MaterialXFormat
+        MaterialXGenGlsl
+        hdMtlx
+    )
     list(APPEND optionalPrivateClasses
          materialXFilter
          materialXShaderGen
@@ -33,6 +39,7 @@ pxr_library(hdSt
         garch
         glf
         hd
+        hdsi
         hgiGL
         hgiInterop
         sdr
@@ -52,6 +59,8 @@ pxr_library(hdSt
         commandBuffer
         copyComputation
         debugCodes
+        dependencyForwardingSceneIndexPlugin
+        dependencySceneIndexPlugin
         dispatchBuffer
         domeLightComputations
         drawItem
@@ -75,6 +84,7 @@ pxr_library(hdSt
         hgiConversions
         hioConversions
         imageShaderRenderPass
+        implicitSurfaceSceneIndexPlugin
         instancer
         interleavedMemoryManager
         light      
@@ -176,6 +186,7 @@ pxr_library(hdSt
         shaders/terminals.glslfx
         shaders/visibility.glslfx
         shaders/volume.glslfx
+        textures/fallbackBlackDomeLight.png
 
     DOXYGEN_FILES
         overview.dox

@@ -60,13 +60,6 @@ void ProcessPointId(int pointId)
 --- --------------------------------------------------------------------------
 -- glsl PointId.Vertex.PointParam
 
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-// Plumb the pointId, for use in the FS.
-// XXX: This works only because the TES and GS stages are disabled when
-// rendering as points. If they are enabled, we need to add the plumbing.
-flat out int vsPointId;
-#endif
-
 // Fwd declare accessor method defined via code gen
 FORWARD_DECL(int GetBaseVertexOffset());
 int GetPointId()
@@ -104,10 +97,6 @@ int GetPointId()
 
 --- --------------------------------------------------------------------------
 -- glsl PointId.Fragment.PointParam
-
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-flat in int vsPointId;
-#endif
 
 int GetPointId()
 {
