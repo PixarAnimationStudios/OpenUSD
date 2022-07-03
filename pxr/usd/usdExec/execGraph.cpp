@@ -340,7 +340,7 @@ UsdExecGraph::ExecInterfaceInputConsumersMap
 UsdExecGraph::ComputeExecInterfaceInputConsumersMap(
     bool computeTransitiveConsumers) const
 {
-    ExecInterfaceInputConsumersMap result = 
+    UsdExecGraph::ExecInterfaceInputConsumersMap result = 
         _ComputeNonTransitiveInputConsumersMap(*this);
 
     if (!computeTransitiveConsumers)
@@ -355,7 +355,7 @@ UsdExecGraph::ComputeExecInterfaceInputConsumersMap(
     if (nodeGraphInputConsumers.empty())
         return result;
 
-    ExecInterfaceInputConsumersMap resolved;
+    UsdExecGraph::ExecInterfaceInputConsumersMap resolved;
     for (const auto &inputAndConsumers : result) {
         const std::vector<UsdExecInput> &consumers = inputAndConsumers.second;
 
