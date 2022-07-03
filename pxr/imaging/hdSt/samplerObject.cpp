@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/imaging/hdSt/samplerObject.h"
 #include "pxr/imaging/hdSt/ptexTextureObject.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -31,10 +29,7 @@
 #include "pxr/imaging/hdSt/udimTextureObject.h"
 #include "pxr/imaging/hdSt/hgiConversions.h"
 
-#include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/hgi/hgi.h"
-#include "pxr/imaging/hgiGL/texture.h"
-#include "pxr/imaging/hgiGL/sampler.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -89,7 +84,12 @@ _ToHgiSamplerDesc(HdSamplerParameters const &samplerParameters)
         HdStHgiConversions::GetHgiSamplerAddressMode(samplerParameters.wrapT);
     desc.addressModeW =
         HdStHgiConversions::GetHgiSamplerAddressMode(samplerParameters.wrapR);
-
+    desc.borderColor =
+        HdStHgiConversions::GetHgiBorderColor(samplerParameters.borderColor);
+    desc.enableCompare = samplerParameters.enableCompare;
+    desc.compareFunction = HdStHgiConversions::GetHgiCompareFunction(
+        samplerParameters.compareFunction);
+    
     return desc;
 }
 
@@ -116,85 +116,6 @@ _GenSampler(HdSt_SamplerObjectRegistry * const samplerObjectRegistry,
     }
 
     return hgi->CreateSampler(_ToHgiSamplerDesc(samplerParameters));
-}
-
-// Get texture sampler handle for bindless textures.
-static
-GLuint64EXT
-_GenGLTextureSamplerHandle(HgiTextureHandle const &textureHandle,
-                           HgiSamplerHandle const &samplerHandle,
-                           const bool createBindlessHandle)
-{
-    if (!createBindlessHandle) {
-        return 0;
-    }
-
-    HgiTexture * const texture = textureHandle.Get();
-    if (texture == nullptr) {
-        return 0;
-    }
-    HgiGLTexture * const glTexture = dynamic_cast<HgiGLTexture*>(texture);
-    if (glTexture == nullptr) {
-        TF_CODING_ERROR("Only OpenGL textures supported");
-        return 0;
-    }
-
-    GLuint textureName = glTexture->GetTextureId();
-    if (textureName == 0) {
-        return 0;
-    }
-
-    HgiSampler * const sampler = samplerHandle.Get();
-    if (sampler == nullptr) {
-        return 0;
-    }
-
-    HgiGLSampler * const glSampler = dynamic_cast<HgiGLSampler*>(sampler);
-    if (glSampler == nullptr) {
-        TF_CODING_ERROR("Only OpenGL samplers supported");
-        return 0;
-    }
-
-    const GLuint samplerName = glSampler->GetSamplerId();
-    if (samplerName == 0) {
-        return 0;
-    }
-
-    const GLuint64EXT result =
-        glGetTextureSamplerHandleARB(textureName, samplerName);
-
-    if (!glIsTextureHandleResidentARB(result)) {
-        glMakeTextureHandleResidentARB(result);
-    }
-
-    GLF_POST_PENDING_GL_ERRORS();
-
-    return result;
-}
-
-// Get texture handle for bindless textures.
-static
-GLuint64EXT
-_GenGlTextureHandle(HgiTextureHandle const &texture,
-                    const bool createGLTextureHandle)
-{
-    if (!createGLTextureHandle) {
-        return 0;
-    }
-
-    if (!texture) {
-        return 0;
-    }
-
-    const GLuint textureName = texture->GetRawResource();
-    const GLuint64EXT result = glGetTextureHandleARB(textureName);
-    if (!glIsTextureHandleResidentARB(result)) {
-        glMakeTextureHandleResidentARB(result);
-    }
-
-    GLF_POST_PENDING_GL_ERRORS();
-
-    return result;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -247,7 +168,6 @@ _ResolveUvSamplerParameters(
 HdStUvSamplerObject::HdStUvSamplerObject(
     HdStUvTextureObject const &texture,
     HdSamplerParameters const &samplerParameters,
-    const bool createBindlessHandle,
     HdSt_SamplerObjectRegistry * const samplerObjectRegistry)
   : HdStSamplerObject(samplerObjectRegistry)
   , _sampler(
@@ -256,27 +176,11 @@ HdStUvSamplerObject::HdStUvSamplerObject(
           _ResolveUvSamplerParameters(
               texture, samplerParameters),
           texture.IsValid()))
-  , _glTextureSamplerHandle(
-      _GenGLTextureSamplerHandle(
-          texture.GetTexture(),
-          _sampler,
-          createBindlessHandle && texture.IsValid()))
 {
 }
 
 HdStUvSamplerObject::~HdStUvSamplerObject()
 {
-    // Deleting the GL sampler automatically deletes the
-    // texture sampler handle.
-    // In fact, even destroying the underlying texture (which
-    // is out of our control here), deletes the texture sampler
-    // handle and the same texture sampler handle might be re-used
-    // by the driver, so it is unsafe to call
-    // glMakeTextureHandleNonResidentARB(_glTextureSamplerHandle);
-    // here: HdStTextureObject might destroy a GPU texture either
-    // because it itself was destroyed or because the file was
-    // reloaded or target memory was changed.
-
     if (Hgi * hgi = _GetHgi()) {
         hgi->DestroySampler(&_sampler);
     }
@@ -288,7 +192,6 @@ HdStUvSamplerObject::~HdStUvSamplerObject()
 HdStFieldSamplerObject::HdStFieldSamplerObject(
     HdStFieldTextureObject const &texture,
     HdSamplerParameters const &samplerParameters,
-    const bool createBindlessHandle,
     HdSt_SamplerObjectRegistry * const samplerObjectRegistry)
   : HdStSamplerObject(samplerObjectRegistry)
   , _sampler(
@@ -296,11 +199,6 @@ HdStFieldSamplerObject::HdStFieldSamplerObject(
           samplerObjectRegistry,
           samplerParameters,
           texture.IsValid()))
-  , _glTextureSamplerHandle(
-      _GenGLTextureSamplerHandle(
-          texture.GetTexture(),
-          _sampler,
-          createBindlessHandle && texture.IsValid()))
 {
 }
 
@@ -318,18 +216,20 @@ HdStFieldSamplerObject::~HdStFieldSamplerObject()
 // Wrap modes such as repeat or mirror do not make sense for ptex, so set them
 // to clamp.
 static
-HdSamplerParameters PTEX_SAMPLER_PARAMETERS{
+HdSamplerParameters PTEX_SAMPLER_PARAMETERS(
     HdWrapClamp,
     HdWrapClamp,
     HdWrapClamp,
     HdMinFilterLinear,
-    HdMagFilterLinear};
+    HdMagFilterLinear,
+    HdBorderColorTransparentBlack, 
+    /*enableCompare*/false, 
+    HdCmpFuncNever);
 
 HdStPtexSamplerObject::HdStPtexSamplerObject(
     HdStPtexTextureObject const &ptexTexture,
     // samplerParameters are ignored are ptex
     HdSamplerParameters const &samplerParameters,
-    const bool createBindlessHandle,
     HdSt_SamplerObjectRegistry * const samplerObjectRegistry)
   : HdStSamplerObject(samplerObjectRegistry)
   , _texelsSampler(
@@ -337,20 +237,15 @@ HdStPtexSamplerObject::HdStPtexSamplerObject(
           samplerObjectRegistry,
           PTEX_SAMPLER_PARAMETERS,
           ptexTexture.IsValid()))
-  , _texelsGLTextureHandle(
-      _GenGLTextureSamplerHandle(
-          ptexTexture.GetTexelTexture(),
-          _texelsSampler,
-          createBindlessHandle && ptexTexture.IsValid()))
-  , _layoutGLTextureHandle(
-      _GenGlTextureHandle(
-          ptexTexture.GetLayoutTexture(),
-          createBindlessHandle && ptexTexture.IsValid()))
 {
 }
 
-// See above comment about destroying bindless texture handles
-HdStPtexSamplerObject::~HdStPtexSamplerObject() = default;
+HdStPtexSamplerObject::~HdStPtexSamplerObject()
+{
+    if (Hgi * hgi = _GetHgi()) {
+        hgi->DestroySampler(&_texelsSampler);
+    }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Udim sampler
@@ -363,17 +258,19 @@ HdStPtexSamplerObject::~HdStPtexSamplerObject() = default;
 // The old texture system apparently never exercised the case of using
 // mipmaps for a udim.
 static
-HdSamplerParameters UDIM_SAMPLER_PARAMETERS{
+HdSamplerParameters UDIM_SAMPLER_PARAMETERS(
     HdWrapClamp,
     HdWrapClamp,
     HdWrapClamp,
     HdMinFilterLinearMipmapLinear,
-    HdMagFilterLinear};
+    HdMagFilterLinear,
+    HdBorderColorTransparentBlack, 
+    /*enableCompare*/false, 
+    HdCmpFuncNever);
 
 HdStUdimSamplerObject::HdStUdimSamplerObject(
     HdStUdimTextureObject const &udimTexture,
     HdSamplerParameters const &samplerParameters,
-    const bool createBindlessHandle,
     HdSt_SamplerObjectRegistry * const samplerObjectRegistry)
   : HdStSamplerObject(samplerObjectRegistry)
   , _texelsSampler(
@@ -381,22 +278,11 @@ HdStUdimSamplerObject::HdStUdimSamplerObject(
           samplerObjectRegistry,
           UDIM_SAMPLER_PARAMETERS,
           udimTexture.IsValid()))
-  , _texelsGLTextureHandle(
-      _GenGLTextureSamplerHandle(
-          udimTexture.GetTexelTexture(),
-          _texelsSampler,
-          createBindlessHandle && udimTexture.IsValid()))
-  , _layoutGLTextureHandle(
-      _GenGlTextureHandle(
-          udimTexture.GetLayoutTexture(),
-          createBindlessHandle && udimTexture.IsValid()))
 {
 }
 
 HdStUdimSamplerObject::~HdStUdimSamplerObject()
 {
-    // See above comment about destroying bindless texture handles
-
     if (Hgi * hgi = _GetHgi()) {
         hgi->DestroySampler(&_texelsSampler);
     }

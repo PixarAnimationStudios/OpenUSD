@@ -1,0 +1,70 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Y"
+)
+
+over "Collections" (
+    prepend apiSchemas = ["CollectionAPI:material:MainMaterial"]
+)
+{
+    uniform token collection:material:MainMaterial:expansionRule = "expandPrims"
+    rel collection:material:MainMaterial:includes = </Scene/Geom/Plane>
+}
+
+def Scope "Scene" (
+    kind = "component"
+)
+{
+    rel material:binding:collection:preview:MainMaterial = [
+        </Collections.collection:material:MainMaterial>,
+        </Scene/Looks/MainMaterial>,
+    ]
+
+    def Scope "Looks"
+    {
+        def Material "MainMaterial"
+        {
+            token outputs:displacement.connect = </Scene/Looks/MainMaterial/PbrPreview.outputs:displacement>
+            token outputs:surface.connect = </Scene/Looks/MainMaterial/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                float inputs:clearcoat = 0
+                color3f inputs:diffuseColor = (1, 0, 0)
+                color3f inputs:diffuseColor.connect = </Scene/Looks/MainMaterial/Primvar.outputs:result>
+
+                # Outputs available in this shader
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float3"
+                float3 inputs:fallback = (0, 0, 1)
+                token inputs:varname = "displayColo2r"
+                float3 outputs:result
+            }
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def Mesh "Plane"
+        {
+            float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-2, -2, -2), (2, -2, -2), (2, 2, -2), (-2, 2, -2)]
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                interpolation = "vertex"
+            )
+        }
+    }
+}
+

@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+  <nodedef name="pxr_nd_boolean" node="UsdMtlxTestNode">
+    <input name="in" type="boolean" />
+    <input name="note" type="string" value="" uniform="true" />
+    <output name="out" type="boolean" />
+  </nodedef>
+  <nodedef name="pxr_nd_booleanDefaults" node="UsdMtlxTestNodeWithDefaults">
+    <input name="inTrue" type="boolean" value="true" />
+    <input name="inFalse" type="boolean" value="false" />
+    <output name="out" type="boolean" />
+  </nodedef>
+  <nodedef name="pxr_nd_integer" node="UsdMtlxTestNode">
+    <input name="in" type="integer" />
+    <input name="note" type="string" value="" uniform="true" />
+    <output name="out" type="integer" />
+  </nodedef>
+  <nodedef name="pxr_nd_float" node="UsdMtlxTestNode">
+    <input name="in" type="float" />
+    <input name="note" type="string" value="" uniform="true" />
+    <output name="out" type="float" />
+  </nodedef>
+  <nodedef name="pxr_nd_string" node="UsdMtlxTestNode">
+    <input name="in" type="string" />
+    <input name="note" type="string" value="" uniform="true" />
+    <output name="out" type="string" />
+  </nodedef>
+  <nodedef name="pxr_nd_vector" node="UsdMtlxTestNode" version="1.0">
+    <input name="in" type="vector3" />
+    <input name="note" type="string" value="" uniform="true" />
+    <output name="out" type="vector3" />
+  </nodedef>
+  <nodedef name="pxr_nd_vector_2" node="UsdMtlxTestNode" version="2.0" isdefaultversion="true" inherit="pxr_nd_vector">
+    <output name="out" type="vector3" />
+  </nodedef>
+  <nodedef name="pxr_nd_vector_2_1" node="UsdMtlxTestNode" version="2.1" inherit="pxr_nd_vector_2">
+    <output name="out" type="vector3" />
+  </nodedef>
+  <nodedef name="pxr_nd_vector_noversion" node="UsdMtlxTestNode" inherit="pxr_nd_vector">
+    <output name="out" type="vector3" />
+  </nodedef>
+  <implementation name="im_boolean" nodedef="pxr_nd_boolean" file="mx_boolean.osl" function="mx_boolean" />
+  <implementation name="im_booleanDefaults" nodedef="pxr_nd_booleanDefaults" file="mx_boolean.osl" function="mx_booleanDefaults" />
+  <implementation name="im_integer" nodedef="pxr_nd_integer" file="mx_integer.osl" function="mx_integer" />
+  <implementation name="im_float" nodedef="pxr_nd_float" file="mx_float.osl" function="mx_float" />
+  <implementation name="im_string" nodedef="pxr_nd_string" file="mx_string.osl" function="mx_string" />
+  <implementation name="im_vector" nodedef="pxr_nd_vector" file="mx_vector.osl" function="mx_vector" />
+  <implementation name="im_vector_2" nodedef="pxr_nd_vector_2" file="mx_vector.osl" function="mx_vector_2" />
+  <implementation name="im_vector_2_1" nodedef="pxr_nd_vector_2_1" file="mx_vector.osl" function="mx_vector_2_1" />
+  <implementation name="im_vector_noversion" nodedef="pxr_nd_vector_noversion" file="mx_vector.osl" function="mx_vector_noversion" />
+</materialx>

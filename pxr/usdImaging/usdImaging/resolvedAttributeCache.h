@@ -454,8 +454,9 @@ struct UsdImaging_XfStrategy {
 
     static
     query_type MakeQuery(UsdPrim const& prim, bool *) {
-        if (UsdGeomXformable xf = UsdGeomXformable(prim))
+        if (const UsdGeomXformable xf = UsdGeomXformable(prim)) {
             return query_type(xf);
+        }
         return query_type();
     }
 
@@ -596,8 +597,10 @@ struct UsdImaging_PurposeStrategy {
 
     static
     query_type MakeQuery(UsdPrim const& prim, bool *) {
-        UsdGeomImageable im = UsdGeomImageable(prim);
-        return im ? query_type(im.GetPurposeAttr()) : query_type();
+        if (const UsdGeomImageable im = UsdGeomImageable(prim)) {
+            return query_type(im.GetPurposeAttr());
+        }
+        return query_type();
     }
 
     static 
@@ -781,8 +784,9 @@ struct UsdImaging_DrawModeStrategy
 
     static
     query_type MakeQuery(UsdPrim const& prim, bool *) {
-        if (UsdAttribute a = UsdGeomModelAPI(prim).GetModelDrawModeAttr())
-            return query_type(a);
+        if (const UsdGeomModelAPI modelApi = UsdGeomModelAPI(prim)) {
+            return query_type(modelApi.GetModelDrawModeAttr());
+        }
         return query_type();
     }
 
@@ -1013,6 +1017,137 @@ struct UsdImaging_CoordSysBindingStrategy
             }
         }
         return v;
+    }
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+// -------------------------------------------------------------------------- //
+// Nonlinear sample count Primvar Cache
+// -------------------------------------------------------------------------- //
+
+#include "pxr/usd/usdGeom/motionAPI.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+struct UsdImaging_NonlinearSampleCountStrategy;
+typedef UsdImaging_ResolvedAttributeCache<
+                                UsdImaging_NonlinearSampleCountStrategy>
+    UsdImaging_NonlinearSampleCountCache;
+
+struct UsdImaging_NonlinearSampleCountStrategy
+{
+    typedef int value_type;
+    typedef UsdAttributeQuery query_type;
+
+    // Used to indicate that no (valid) opinion exists
+    // for nonlinear sample count.
+    static constexpr value_type invalidValue = -1;
+
+    static
+    bool ValueMightBeTimeVarying() { return true; }
+
+    static
+    value_type MakeDefault() {
+        return invalidValue;
+    }
+
+    static
+    query_type MakeQuery(UsdPrim const& prim, bool *) {
+        if (const UsdGeomMotionAPI motionAPI = UsdGeomMotionAPI(prim)) {
+            return query_type(motionAPI.GetNonlinearSampleCountAttr());
+        }
+        return query_type();
+    }
+    
+    static
+    value_type
+    Compute(UsdImaging_NonlinearSampleCountCache const* owner, 
+            UsdPrim const& prim,
+            query_type const* query)
+    {
+        if (query->HasAuthoredValue()) {
+            int value;
+            if (query->Get(&value, owner->GetTime())) {
+                return value;
+            }
+        }
+        
+        return *owner->_GetValue(prim.GetParent());
+    }
+
+    static
+    value_type
+    ComputeNonlinearSampleCount(UsdPrim const &prim, UsdTimeCode time)
+    {
+        return UsdGeomMotionAPI(prim).ComputeNonlinearSampleCount(time);
+    }
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+// -------------------------------------------------------------------------- //
+// Blur scale Primvar Cache
+// -------------------------------------------------------------------------- //
+
+#include "pxr/usd/usdGeom/motionAPI.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+struct UsdImaging_BlurScaleStrategy;
+typedef UsdImaging_ResolvedAttributeCache<UsdImaging_BlurScaleStrategy>
+    UsdImaging_BlurScaleCache;
+
+struct UsdImaging_BlurScaleStrategy
+{
+    struct value_type {
+        float value;
+        bool has_value;
+    };
+
+    typedef UsdAttributeQuery query_type;
+
+    // Used to indicate that no (valid) opinion exists
+    // for blur scale.
+    static const value_type invalidValue;
+
+    static
+    bool ValueMightBeTimeVarying() { return true; }
+
+    static
+    value_type MakeDefault() {
+        return invalidValue;
+    }
+
+    static
+    query_type MakeQuery(UsdPrim const& prim, bool *) {
+        if (const UsdGeomMotionAPI motionAPI = UsdGeomMotionAPI(prim)) {
+            return query_type(motionAPI.GetMotionBlurScaleAttr());
+        }
+        return query_type();
+    }
+    
+    static
+    value_type
+    Compute(UsdImaging_BlurScaleCache const* owner, 
+            UsdPrim const& prim,
+            query_type const* query)
+    {
+        if (query->HasAuthoredValue()) {
+            float value;
+            if (query->Get(&value, owner->GetTime())) {
+                return { value, true };
+            }
+        }
+        
+        return *owner->_GetValue(prim.GetParent());
+    }
+
+    static
+    value_type
+    ComputeBlurScale(UsdPrim const &prim, UsdTimeCode time)
+    {
+        return { UsdGeomMotionAPI(prim).ComputeMotionBlurScale(time), true };
     }
 };
 

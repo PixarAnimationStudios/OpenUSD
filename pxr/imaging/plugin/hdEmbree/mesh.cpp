@@ -921,7 +921,8 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
             GfMatrix4f matf = _transform * GfMatrix4f(transforms[i]);
 
             // Update the transform in the BVH.
-            rtcSetGeometryTransform(rtcGetGeometry(scene,_rtcInstanceIds[i]),0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,matf.GetArray());
+            rtcSetGeometryTransform(_rtcInstanceGeometries[i],
+                0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, matf.GetArray());
             // // Update the transform in the instance context.
             _GetInstanceContext(scene, i)->objectToWorldMatrix = matf;
             // // Mark the instance as updated in the BVH.

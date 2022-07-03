@@ -144,7 +144,7 @@
                             "UsdImagingPrimAdapter"
                         ],
                         "isInternal": true,
-                        "primTypeName": "Light",
+                        "primTypeName": "LightAPI",
                         "includeDerivedPrimTypes" : true 
                     },
                     "UsdImagingLightFilterAdapter": {

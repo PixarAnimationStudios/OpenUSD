@@ -31,9 +31,7 @@ HdRenderBuffer::HdRenderBuffer(SdfPath const& id)
 {
 }
 
-HdRenderBuffer::~HdRenderBuffer()
-{
-}
+HdRenderBuffer::~HdRenderBuffer() = default;
 
 /*virtual*/
 HdDirtyBits

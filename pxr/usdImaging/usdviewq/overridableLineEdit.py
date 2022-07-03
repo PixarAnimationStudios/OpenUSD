@@ -21,6 +21,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+
+from __future__ import division
 from .qt import QtCore, QtWidgets
 
 # simple class to have a "clear" button on a line edit when the line edit

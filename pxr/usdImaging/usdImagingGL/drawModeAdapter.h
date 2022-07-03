@@ -94,6 +94,16 @@ public:
                                       SdfPath const& cachePath, 
                                       TfToken const& property) override;
 
+    // Note: Resync/Remove are overridden so that we can resync/remove the
+    // material and cards rprim together, since they are populated together.
+    USDIMAGINGGL_API
+    void ProcessPrimResync(SdfPath const& cachePath,
+                           UsdImagingIndexProxy* index) override;
+
+    USDIMAGINGGL_API
+    void ProcessPrimRemoval(SdfPath const& cachePath,
+                            UsdImagingIndexProxy* index) override;
+
     USDIMAGINGGL_API
     void MarkDirty(UsdPrim const& prim,
                    SdfPath const& cachePath,
@@ -236,6 +246,10 @@ private:
     // Map from cachePath to what drawMode it was populated as.
     using _DrawModeMap = TfHashMap<SdfPath, TfToken, SdfPath::Hash>;
     _DrawModeMap _drawModeMap;
+
+    // Map from cachePath (of gprim) to what material it's bound to.
+    using _MaterialMap = TfHashMap<SdfPath, SdfPath, SdfPath::Hash>;
+    _MaterialMap _materialMap;
 
     // The default value of model:drawModeColor, fetched from the schema
     // registry and stored for quick access...

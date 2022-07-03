@@ -30,6 +30,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 TF_WRAP_MODULE
 {
     TF_WRAP(ResolvedPath);
+    TF_WRAP(Timestamp);
 
     TF_WRAP(Resolver);
     TF_WRAP(ResolverContext);

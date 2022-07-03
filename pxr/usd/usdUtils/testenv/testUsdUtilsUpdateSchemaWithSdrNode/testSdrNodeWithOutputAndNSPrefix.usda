@@ -1,0 +1,19 @@
+#usda 1.0
+
+# Input USD file to test working of namespace prefix for a node which has an 
+# outputs terminal. Note that schema gen from sdrNode should throw an exception
+# for this usecase.
+
+def Shader "TestNamespacePrefix" (
+    sdrMetadata = {
+        token schemaPropertyNSPrefixOverride = ""
+        token schemaName = "TestOutsNSPrefix"
+        token tfTypeNameSuffix = "TestOutsNS"
+    }
+)
+{
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @testDummy.glslfx@
+
+    color3f outputs:out
+}

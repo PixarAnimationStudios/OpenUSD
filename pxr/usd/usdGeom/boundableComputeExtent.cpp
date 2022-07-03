@@ -192,11 +192,23 @@ private:
 
     void _DidRegisterPlugins(const PlugNotice::DidRegisterPlugins& n)
     {
-        // Invalidate the registry, since newly-registered plugins may
-        // provide functions that we did not see previously. This is
-        // a heavy hammer but we expect this situation to be uncommon.
+        // Erase the entries in _registry which have a null
+        // ComputeExtentFunction registered, since newly-registered plugins may 
+        // provide a valid computeExtentFunction for these type entries.
+        // Note that we retain entries which have valid ComputeExtentFunction
+        // defined.
+        //
         _RWMutex::scoped_lock lock(_mutex, /* write = */ true);
-        _registry.clear();
+        _Registry::iterator itr = _registry.begin(),
+            end = _registry.end();
+        while (itr != end) {
+            if (!itr->second) {
+                itr = _registry.erase(itr);
+                end = _registry.end();
+                continue;
+            }
+            itr++;
+        }
     }
 
     bool _FindFunctionForType(

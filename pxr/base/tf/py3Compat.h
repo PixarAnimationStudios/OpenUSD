@@ -41,6 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define TfPy_TPFLAGS_HAVE_NEWBUFFER 0
 #define TfPy_TPFLAGS_HAVE_GETCHARBUFFER 0
 
+#define TfPyBytes_Check PyBytes_Check
 #define TfPyString_Check(a) (PyBytes_Check(a) || PyUnicode_Check(a))
 #define TfPyString_AsString PyUnicode_AsUTF8
 
@@ -60,6 +61,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define TfPy_TPFLAGS_HAVE_NEWBUFFER Py_TPFLAGS_HAVE_NEWBUFFER 
 #define TfPy_TPFLAGS_HAVE_GETCHARBUFFER Py_TPFLAGS_HAVE_GETCHARBUFFER 
 
+#define TfPyBytes_Check PyString_Check 
+#define TfPyString_Check PyString_Check
+#define TfPyString_AsString PyString_AsString
+
 #define TfPyInt_Check PyInt_Check
 #define TfPyInt_AS_LONG PyInt_AS_LONG
 
@@ -68,12 +73,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define TfPyBoolBuiltinFuncName "__nonzero__"
 #define TfPyBuiltinModuleName "__builtin__"
 
-#define TfPyString_AsString PyString_AsString
-#define TfPyString_Check PyString_Check
-
 #endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_BASE_TF_PY_3_COMPAT_H
-

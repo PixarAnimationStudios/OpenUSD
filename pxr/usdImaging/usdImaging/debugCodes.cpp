@@ -41,6 +41,7 @@ TF_REGISTRY_FUNCTION(TfDebug)
                                 "Report PI prototype stats as they are created");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_POINT_INSTANCER_PROTO_CULLING,
                                 "Report PI culling debug info");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_POPULATION, "Report population events");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_SELECTION, "Report selection messages");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_SHADERS, "Report shader status messages");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_TEXTURES, "Report texture status messages");

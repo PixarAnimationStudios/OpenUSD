@@ -25,6 +25,7 @@
 #include "pxr/usd/usd/prim.h"
 
 #include "pxr/usd/usd/debugCodes.h"
+#include "pxr/usd/usd/errors.h"
 #include "pxr/usd/usd/instanceCache.h"
 #include "pxr/usd/usd/resolver.h"
 #include "pxr/usd/usd/stage.h"
@@ -33,6 +34,7 @@
 
 #include "pxr/usd/kind/registry.h"
 
+#include "pxr/base/tf/exception.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <algorithm>
@@ -248,9 +250,11 @@ Usd_DescribePrimData(const Usd_PrimData *p, SdfPath const &proxyPrimPath)
 }
 
 void
-Usd_IssueFatalPrimAccessError(const Usd_PrimData *p)
+Usd_ThrowExpiredPrimAccessError(const Usd_PrimData *p)
 {
-    TF_FATAL_ERROR("Used %s", Usd_DescribePrimData(p, SdfPath()).c_str());
+    TF_THROW(UsdExpiredPrimAccessError,
+             TfStringPrintf(
+                 "Used %s", Usd_DescribePrimData(p, SdfPath()).c_str()));
 }
 
 

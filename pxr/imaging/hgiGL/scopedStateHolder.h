@@ -27,6 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgiGL/api.h"
 
+#include <cstdint>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -59,18 +61,34 @@ private:
 
     int32_t _restoreRenderBuffer;
     int32_t _restoreVao;
+
     bool _restoreDepthTest;
     bool _restoreDepthWriteMask;
-    int32_t _restoreStencilWriteMask;
     int32_t _restoreDepthFunc;
+
+    bool _restoreDepthBias;
+    float _restoreDepthBiasConstantFactor;
+    float _restoreDepthBiasSlopeFactor;
+
+    bool _restoreStencilTest;
+    int32_t _restoreStencilCompareFn[2];
+    int32_t _restoreStencilReferenceValue[2];
+    int32_t _restoreStencilFail[2];
+    int32_t _restoreStencilReadMask[2];
+    int32_t _restoreStencilPass[2];
+    int32_t _restoreStencilDepthFail[2];
+    int32_t _restoreStencilDepthPass[2];
+    int32_t _restoreStencilWriteMask[2];
+
     int32_t _restoreViewport[4];
-    bool _restoreblendEnabled;
+    bool _restoreBlendEnabled;
     int32_t _restoreColorOp;
     int32_t _restoreAlphaOp;
     int32_t _restoreColorSrcFnOp;
     int32_t _restoreAlphaSrcFnOp;
     int32_t _restoreColorDstFnOp;
     int32_t _restoreAlphaDstFnOp;
+    float _restoreBlendColor[4];
     bool _restoreAlphaToCoverage;
     bool _restoreSampleAlphaToOne;
     float _lineWidth;
@@ -78,7 +96,13 @@ private:
     int32_t _cullMode;
     int32_t _frontFace;
     bool _rasterizerDiscard;
+    bool _restoreDepthClamp;
+    float _depthRange[2];
     bool _restoreFramebufferSRGB;
+    bool _restoreConservativeRaster;
+    std::vector<bool> _restoreClipDistances;
+    bool _restoreMultiSample;
+    bool _restorePointSmooth;
 };
 
 

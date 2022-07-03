@@ -129,11 +129,7 @@ protected:
         const std::string& assetPath) const override;
 
     AR_API
-    std::string _GetExtension(
-        const std::string& path) const override;
-
-    AR_API
-    VtValue _GetModificationTimestamp(
+    ArTimestamp _GetModificationTimestamp(
         const std::string& path,
         const ArResolvedPath& resolvedPath) const override;
 

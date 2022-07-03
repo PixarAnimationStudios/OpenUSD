@@ -1,0 +1,108 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+
+def Xform "Geom"
+{
+    def Xform "xform1"
+    {
+        float3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Mesh "cube1"
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 2, 3, 4, 5, 6, 7, 0, 6, 5, 1, 4, 7, 3, 2, 0, 3, 7, 6, 4, 2, 1, 5]
+            point3f[] points = [(1, 1, 1), (-1, 1, 1), (-1, -1, 1), (1, -1, 1), (-1, -1, -1), (-1, 1, -1), (1, 1, -1), (1, -1, -1)]
+        }
+    }
+
+    def Xform "xform2"
+    {
+        float3 xformOp:translate = (3, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Mesh "cube2"
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 2, 3, 4, 5, 6, 7, 0, 6, 5, 1, 4, 7, 3, 2, 0, 3, 7, 6, 4, 2, 1, 5]
+            point3f[] points = [(1, 1, 1), (-1, 1, 1), (-1, -1, 1), (1, -1, 1), (-1, -1, -1), (-1, 1, -1), (1, 1, -1), (1, -1, -1)]
+            int[] creaseIndices = [0, 1, 1, 2, 2, 3, 3, 0]
+            int[] creaseLengths = [2, 2, 2, 2]
+            float[] creaseSharpnesses = [2.0, 2.0, 5.0, 5.0]
+        }
+    }
+    def Xform "xform3"
+    {
+        float3 xformOp:translate = (-3, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Mesh "cube3"
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 2, 3, 4, 5, 6, 7, 0, 6, 5, 1, 4, 7, 3, 2, 0, 3, 7, 6, 4, 2, 1, 5]
+            point3f[] points = [(1, 1, 1), (-1, 1, 1), (-1, -1, 1), (1, -1, 1), (-1, -1, -1), (-1, 1, -1), (1, 1, -1), (1, -1, -1)]
+            int[] cornerIndices = [0, 1, 2, 3]
+            float[] cornerSharpnesses = [5.0, 5.0, 3.0, 3.0]
+        }
+    }
+
+    def Xform "xform4"
+    {
+        float3 xformOp:translate = (0, 0, -3)
+        float xformOp:rotateX = 45
+        uniform token[] xformOpOrder = ["xformOp:rotateX", "xformOp:translate"]
+        def Mesh "plane1"
+        {
+            float3[] extent = [(-0.5, 0, -0.5), (0.5, 0.5, 0.5)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 4, 5, 9, 8, 5, 6, 10, 9, 6, 7, 11, 10, 8, 9, 13, 12, 9, 10, 14, 13, 10, 11, 15, 14]
+            point3f[] points = [(-1, -1, 0), (-0.3333333, -1, 0), (0.33333337, -1, 0), (1, -1, 0),
+                                (-1, -0.3333333, 0), (-0.3333333, -0.3333333, 0.53879875), (0.33333337, -0.3333333, 0.53879875), (1, -0.3333333, 0),
+                                (-1, 0.33333337, 0), (-0.3333333, 0.33333337, 0.53879875), (0.33333337, 0.33333337, 0.53879875), (1, 0.33333337, 0),
+                                (-1, 1, 0), (-0.3333333, 1, 0), (0.33333337, 1, 0), (1, 1, 0)]
+            token interpolateBoundary = "edgeOnly"
+        }
+    }
+    def Xform "xform5"
+    {
+        float3 xformOp:translate = (3, 0, -3)
+        float xformOp:rotateX = 45
+        uniform token[] xformOpOrder = ["xformOp:rotateX", "xformOp:translate"]
+        def Mesh "plane2"
+        {
+            float3[] extent = [(-0.5, 0, -0.5), (0.5, 0.5, 0.5)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 4, 5, 9, 8, 5, 6, 10, 9, 6, 7, 11, 10, 8, 9, 13, 12, 9, 10, 14, 13, 10, 11, 15, 14]
+            point3f[] points = [(-1, -1, 0), (-0.3333333, -1, 0), (0.33333337, -1, 0), (1, -1, 0),
+                                (-1, -0.3333333, 0), (-0.3333333, -0.3333333, 0.53879875), (0.33333337, -0.3333333, 0.53879875), (1, -0.3333333, 0),
+                                (-1, 0.33333337, 0), (-0.3333333, 0.33333337, 0.53879875), (0.33333337, 0.33333337, 0.53879875), (1, 0.33333337, 0),
+                                (-1, 1, 0), (-0.3333333, 1, 0), (0.33333337, 1, 0), (1, 1, 0)]
+            token interpolateBoundary = "edgeAndCorner"
+        }
+    }
+    def Xform "xform6"
+    {
+        float3 xformOp:translate = (-3, 0, -3)
+        float xformOp:rotateX = 45
+        uniform token[] xformOpOrder = ["xformOp:rotateX", "xformOp:translate"]
+        def Mesh "plane3"
+        {
+            float3[] extent = [(-0.5, 0, -0.5), (0.5, 0.5, 0.5)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 4, 5, 9, 8, 5, 6, 10, 9, 6, 7, 11, 10, 8, 9, 13, 12, 9, 10, 14, 13, 10, 11, 15, 14]
+            point3f[] points = [(-1, -1, 0), (-0.3333333, -1, 0), (0.33333337, -1, 0), (1, -1, 0),
+                                (-1, -0.3333333, 0), (-0.3333333, -0.3333333, 0.53879875), (0.33333337, -0.3333333, 0.53879875), (1, -0.3333333, 0),
+                                (-1, 0.33333337, 0), (-0.3333333, 0.33333337, 0.53879875), (0.33333337, 0.33333337, 0.53879875), (1, 0.33333337, 0),
+                                (-1, 1, 0), (-0.3333333, 1, 0), (0.33333337, 1, 0), (1, 1, 0)]
+            token interpolateBoundary = "none"
+        }
+    }
+}
+
+

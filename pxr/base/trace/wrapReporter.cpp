@@ -129,6 +129,10 @@ void wrapReporter()
         .add_property("foldRecursiveCalls",
             &This::GetFoldRecursiveCalls, &This::SetFoldRecursiveCalls)
 
+        .add_property("shouldAdjustForOverheadAndNoise",
+            &This::ShouldAdjustForOverheadAndNoise,
+            &This::SetShouldAdjustForOverheadAndNoise)
+
         .add_static_property("globalReporter", &This::GetGlobalReporter)
         ;
 };

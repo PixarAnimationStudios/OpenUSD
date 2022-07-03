@@ -220,6 +220,18 @@ protected:
     UsdGeomPrimvar _GetInheritedPrimvar(UsdPrim const& prim,
                                         TfToken const& primvarName) const;
 
+    // Utility for gathering the names of primvars used by the gprim's 
+    // materials, used in primvar filtering.
+    USDIMAGING_API 
+    virtual TfTokenVector _CollectMaterialPrimvars(
+        SdfPathVector const& materialUsdPaths, 
+        UsdTimeCode time) const;
+
+    /// Returns the primvar names known to be supported for the rprims 
+    /// this adapter produces.  These primvar names are excepted from primvar
+    /// filtering.
+    USDIMAGING_API
+    virtual TfTokenVector const& _GetRprimPrimvarNames() const;
 };
 
 

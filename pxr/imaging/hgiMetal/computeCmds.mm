@@ -39,6 +39,7 @@ HgiMetalComputeCmds::HgiMetalComputeCmds(HgiMetal* hgi)
     , _hgi(hgi)
     , _pipelineState(nullptr)
     , _commandBuffer(nil)
+    , _argumentBuffer(nil)
     , _encoder(nil)
     , _secondaryCommandBuffer(false)
 {
@@ -54,12 +55,20 @@ void
 HgiMetalComputeCmds::_CreateEncoder()
 {
     if (!_encoder) {
-        _commandBuffer = _hgi->GetPrimaryCommandBuffer();
+        _commandBuffer = _hgi->GetPrimaryCommandBuffer(this);
         if (_commandBuffer == nil) {
             _commandBuffer = _hgi->GetSecondaryCommandBuffer();
             _secondaryCommandBuffer = true;
         }
         _encoder = [_commandBuffer computeCommandEncoder];
+    }
+}
+
+void
+HgiMetalComputeCmds::_CreateArgumentBuffer()
+{
+    if (!_argumentBuffer) {
+        _argumentBuffer = _hgi->GetArgBuffer();
     }
 }
 
@@ -78,7 +87,9 @@ HgiMetalComputeCmds::BindResources(HgiResourceBindingsHandle r)
         static_cast<HgiMetalResourceBindings*>(r.Get()))
     {
         _CreateEncoder();
-        rb->BindResources(_encoder);
+        _CreateArgumentBuffer();
+
+        rb->BindResources(_hgi, _encoder, _argumentBuffer);
     }
 }
 
@@ -90,54 +101,76 @@ HgiMetalComputeCmds::SetConstantValues(
     const void* data)
 {
     _CreateEncoder();
-    [_encoder setBytes:data
-                length:byteSize
-               atIndex:bindIndex];
+    _CreateArgumentBuffer();
+
+    HgiMetalResourceBindings::SetConstantValues(
+        _argumentBuffer, HgiShaderStageCompute, bindIndex, byteSize, data);
 }
 
 void
 HgiMetalComputeCmds::Dispatch(int dimX, int dimY)
 {
+    if (dimX == 0 || dimY == 0) {
+        return;
+    }
+
     uint32_t maxTotalThreads =
         [_pipelineState->GetMetalPipelineState() maxTotalThreadsPerThreadgroup];
     uint32_t exeWidth =
         [_pipelineState->GetMetalPipelineState() threadExecutionWidth];
 
     uint32_t thread_width, thread_height;
+    thread_width = MIN(maxTotalThreads, exeWidth);
     if (dimY == 1) {
-        thread_width = (maxTotalThreads / exeWidth) * exeWidth;
         thread_height = 1;
     }
     else {
         thread_width = exeWidth;
-        thread_height = maxTotalThreads / exeWidth;
+        thread_height = maxTotalThreads / thread_width;
+    }
+
+    if (_argumentBuffer.storageMode != MTLStorageModeShared &&
+        [_argumentBuffer respondsToSelector:@selector(didModifyRange:)]) {
+        NSRange range = NSMakeRange(0, _argumentBuffer.length);
+
+        ARCH_PRAGMA_PUSH
+        ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND
+        [_argumentBuffer didModifyRange:range];
+        ARCH_PRAGMA_POP
     }
 
     [_encoder dispatchThreads:MTLSizeMake(dimX, dimY, 1)
-       threadsPerThreadgroup:MTLSizeMake(MIN(thread_width, dimX),
-                                         MIN(thread_height, dimY), 1)];
+        threadsPerThreadgroup:MTLSizeMake(MIN(thread_width, dimX),
+                                          MIN(thread_height, dimY), 1)];
 
     _hasWork = true;
+    _argumentBuffer = nil;
 }
 
 void
 HgiMetalComputeCmds::PushDebugGroup(const char* label)
 {
     _CreateEncoder();
-    HGIMETAL_DEBUG_LABEL(_encoder, label)
+    HGIMETAL_DEBUG_PUSH_GROUP(_encoder, label)
 }
 
 void
 HgiMetalComputeCmds::PopDebugGroup()
 {
+    if (_encoder) {
+        HGIMETAL_DEBUG_POP_GROUP(_encoder)
+    }
 }
 
 void
 HgiMetalComputeCmds::MemoryBarrier(HgiMemoryBarrier barrier)
 {
-    TF_VERIFY(barrier==HgiMemoryBarrierAll, "Unknown barrier");
-    // Do nothing. All resource writes performed in a given kernel function
-    // are visible in the next kernel function.
+    if (TF_VERIFY(barrier == HgiMemoryBarrierAll)) {
+        _CreateEncoder();
+        MTLBarrierScope scope = MTLBarrierScopeBuffers|
+                                MTLBarrierScopeTextures;
+        [_encoder memoryBarrierWithScope:scope];
+    }
 }
 
 bool
@@ -171,6 +204,7 @@ HgiMetalComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
         _hgi->ReleaseSecondaryCommandBuffer(_commandBuffer);
     }
     _commandBuffer = nil;
+    _argumentBuffer = nil;
 
     return submittedWork;
 }

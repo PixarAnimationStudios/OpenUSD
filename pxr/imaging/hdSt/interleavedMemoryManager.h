@@ -52,34 +52,8 @@ struct HgiBufferCpuToGpuOp;
 /// Interleaved memory manager (base class).
 ///
 class HdStInterleavedMemoryManager : public HdAggregationStrategy {
-public:
-    /// Copy new data from CPU into staging buffer.
-    /// This reduces the amount of GPU copy commands we emit by first writing
-    /// to the CPU staging area of the buffer and only flushing it to the GPU
-    /// when we write to a non-consecutive area of a buffer.
-    void StageBufferCopy(HgiBufferCpuToGpuOp const& copyOp);
-
-    /// Flush the staging buffer to GPU.
-    /// Copy the new buffer data from staging area to GPU.
-    void Flush() override;
-
 protected:
     class _StripedInterleavedBuffer;
-
-    // BufferFlushListEntry lets use accumulate writes into the same GPU buffer
-    // into CPU staging buffers before flushing to GPU.
-    class _BufferFlushListEntry {
-        public:
-        _BufferFlushListEntry(
-            HgiBufferHandle const& buf, uint64_t start, uint64_t end);
-
-        HgiBufferHandle buffer;
-        uint64_t start;
-        uint64_t end;
-    };
-
-    using _BufferFlushMap = 
-        std::unordered_map<class HgiBuffer*, _BufferFlushListEntry>;
 
     /// specialized buffer array range
     class _StripedInterleavedBufferRange : public HdStBufferArrayRange
@@ -90,7 +64,8 @@ protected:
         : HdStBufferArrayRange(resourceRegistry)
         , _stripedBuffer(nullptr)
         , _index(NOT_ALLOCATED)
-        , _numElements(1) {}
+        , _numElements(1)
+        , _capacity(0) {}
 
         /// Destructor.
         HDST_API
@@ -108,6 +83,9 @@ protected:
 
         /// Returns true if this range is marked as immutable.
         bool IsImmutable() const override;
+
+        /// Returns true if this needs a staging buffer for CPU to GPU copies.
+        bool RequiresStaging() const override;
 
         /// Resize memory area for this range. Returns true if it causes container
         /// buffer reallocation.
@@ -145,6 +123,10 @@ protected:
         /// Returns the version of the buffer array.
         size_t GetVersion() const override {
             return _stripedBuffer->GetVersion();
+        }
+
+        int GetElementStride() const override {
+            return _stripedBuffer->GetElementStride();
         }
 
         /// Increment the version of the buffer array.
@@ -191,6 +173,16 @@ protected:
             _stripedBuffer = nullptr;
         }
 
+         /// Returns the capacity of allocated area
+        int GetCapacity() const {
+            return _capacity;
+        }
+
+        /// Set the capacity of allocated area for this range.
+        void SetCapacity(int capacity) {
+            _capacity = capacity;
+        }
+
     protected:
         /// Returns the aggregation container
         HDST_API
@@ -201,6 +193,7 @@ protected:
         _StripedInterleavedBuffer *_stripedBuffer;
         int _index;
         size_t _numElements;
+        int _capacity;
     };
 
     using _StripedInterleavedBufferSharedPtr =
@@ -258,6 +251,10 @@ protected:
         int GetStride() const {
             return _stride;
         }
+        
+        int GetElementStride() const {
+            return _elementStride;
+        }
 
         /// TODO: We need to distinguish between the primvar types here, we should
         /// tag each HdBufferSource and HdBufferResource with Constant, Uniform,
@@ -307,6 +304,18 @@ protected:
         int _bufferOffsetAlignment;  // ranged binding offset alignment
         size_t _maxSize;             // maximum size of single buffer
 
+        // _elementStride is similar to _stride but does account for any buffer
+        // offset alignment. If there are multiple elements in a buffer, this 
+        // will be the actual byte distance between the two values. 
+        // For example, imagine there are three buffers (A, B, C) in a buffer 
+        // array, and each buffer has two elements. 
+        // +------------------------------------------------------------+
+        // | a1 | b1 | c1 | a2 | b2 | c2 | padding for offset alignment |
+        // +------------------------------------------------------------+
+        // The _stride will be the size of a1 + b1 + c1 + padding, while the
+        // _elementStride will be the size of a1 + b1 + c1.
+        size_t _elementStride; 
+
         HdStBufferResourceNamedList _resourceList;
 
         _StripedInterleavedBufferRangeSharedPtr _GetRangeSharedPtr(size_t idx) const {
@@ -331,7 +340,6 @@ protected:
         VtDictionary &result) const override;
     
     HdStResourceRegistry* const _resourceRegistry;
-    _BufferFlushMap _queuedBuffers;
 };
 
 class HdStInterleavedUBOMemoryManager : public HdStInterleavedMemoryManager {

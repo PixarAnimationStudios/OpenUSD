@@ -146,10 +146,6 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedDerived
     const TfToken creaseLengths;
-    /// \brief "derived"
-    /// 
-    /// Property namespace prefix for the UsdContrivedDerivedMultipleApplyAPI schema.
-    const TfToken derived;
     /// \brief "double2"
     /// 
     /// UsdContrivedBase
@@ -470,18 +466,14 @@ struct UsdContrivedTokensType {
     /// 
     /// Property namespace prefix for the UsdContrivedMultipleApplyAPI schema.
     const TfToken test;
-    /// \brief "testAttrOne"
+    /// \brief "test:__INSTANCE_NAME__:testAttrOne"
     /// 
-    /// UsdContrivedPublicMultipleApplyAPI, UsdContrivedMultipleApplyAPI
-    const TfToken testAttrOne;
-    /// \brief "testAttrThree"
+    /// UsdContrivedMultipleApplyAPI
+    const TfToken test_MultipleApplyTemplate_TestAttrOne;
+    /// \brief "test:__INSTANCE_NAME__:testAttrTwo"
     /// 
-    /// UsdContrivedDerivedMultipleApplyAPI
-    const TfToken testAttrThree;
-    /// \brief "testAttrTwo"
-    /// 
-    /// UsdContrivedPublicMultipleApplyAPI, UsdContrivedMultipleApplyAPI
-    const TfToken testAttrTwo;
+    /// UsdContrivedMultipleApplyAPI
+    const TfToken test_MultipleApplyTemplate_TestAttrTwo;
     /// \brief "testingAsset"
     /// 
     /// UsdContrivedDerived
@@ -490,6 +482,14 @@ struct UsdContrivedTokensType {
     /// 
     /// Property namespace prefix for the UsdContrivedPublicMultipleApplyAPI schema.
     const TfToken testo;
+    /// \brief "testo:__INSTANCE_NAME__:testAttrOne"
+    /// 
+    /// UsdContrivedPublicMultipleApplyAPI
+    const TfToken testo_MultipleApplyTemplate_TestAttrOne;
+    /// \brief "testo:__INSTANCE_NAME__:testAttrTwo"
+    /// 
+    /// UsdContrivedPublicMultipleApplyAPI
+    const TfToken testo_MultipleApplyTemplate_TestAttrTwo;
     /// \brief "token"
     /// 
     /// Default value for UsdContrivedBase::GetTokenAttr(), UsdContrivedBase

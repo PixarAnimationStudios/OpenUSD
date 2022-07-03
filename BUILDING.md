@@ -603,10 +603,15 @@ platforms to avoid issues with Boost config files (introduced in Boost version
 to use Boost specified config files for their USD build, specify 
 -DBoost_NO_BOOST_CMAKE=OFF when running cmake.
 
-2. Windows and Python 3.8+
+2. Windows and Python 3.8+ (non-Anaconda)
 Python 3.8 and later on Windows will no longer search PATH for DLL dependencies.
 Instead, clients can call `os.add_dll_directory(p)` to set paths to search.
 By default on that platform USD will iterate over PATH and add all paths using
 `os.add_dll_directory()` when importing Python modules. Users may override
 this by setting the environment variable `PXR_USD_WINDOWS_DLL_PATH` to a PATH-like
 string. If this is set, USD will use these paths instead.
+
+Note that the above does not apply to Anaconda python 3.8+ interpreters, as they
+are modified to behave like pre-3.8 python interpreters, and so continue to use
+the PATH for DLL dependencies.  When running under Anaconda users should
+configure their system the same way they did for pre-python 3.8.

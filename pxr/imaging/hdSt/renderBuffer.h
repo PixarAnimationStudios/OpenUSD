@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec3i.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/textureUtils.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/enums.h"
@@ -72,6 +73,9 @@ public:
 
     HDST_API
     bool IsMultiSampled() const override;
+
+    HDST_API
+    uint32_t GetMSAASampleCount() const;
 
     /// Map the buffer for reading. The control flow should be Map(),
     /// before any I/O, followed by memory access, followed by Unmap() when
@@ -137,7 +141,7 @@ private:
     // The number of callers mapping this buffer.
     std::atomic<int> _mappers;
     // Texels are temp captured into this buffer between map and unmap.
-    std::vector<uint8_t> _mappedBuffer;
+    HdStTextureUtils::AlignedBuffer<uint8_t> _mappedBuffer;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

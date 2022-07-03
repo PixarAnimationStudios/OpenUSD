@@ -1,0 +1,45 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Xform "ProtoSphere"
+{
+    token visibility = "invisible"
+
+    def Sphere "geom" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+        rel material:binding = </ProtoSphere/mat>
+    }
+
+    def Material "mat"
+    {
+        token outputs:surface.connect = </ProtoSphere/mat/surf.outputs:surface>
+
+        def Shader "surf"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0,1,1)
+            token outputs:surface
+        }
+    }
+}
+
+def PointInstancer "Instancer"
+{
+    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+    point3f[] positions = [(0,0,0)]
+    int[] protoIndices = [0]
+    rel prototypes = </Instancer/Proto>
+
+    def "Proto" (
+        instanceable = true
+        references = </ProtoSphere>
+    )
+    {
+        token visibility = "visible"
+    }
+}

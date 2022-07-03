@@ -196,6 +196,13 @@ public:
     virtual bool IsPauseSupported() const;
 
     ///
+    /// Query the delegate's pause state. Returns true if the background
+    /// rendering threads are currently paused.
+    ///
+    HD_API
+    virtual bool IsPaused() const;
+
+    ///
     /// Pause all of this delegate's background rendering threads. Default
     /// implementation does nothing.
     ///
@@ -221,13 +228,21 @@ public:
     virtual bool IsStopSupported() const;
 
     ///
-    /// Stop all of this delegate's background rendering threads. Default
-    /// implementation does nothing.
-    ///
-    /// Returns \c true if successful.
+    /// Query the delegate's stop state. Returns true if the background
+    /// rendering threads are not currently active.
     ///
     HD_API
-    virtual bool Stop();
+    virtual bool IsStopped() const;
+
+    ///
+    /// Stop all of this delegate's background rendering threads; if blocking
+    /// is true, the function waits until they exit.
+    /// Default implementation does nothing.
+    ///
+    /// Returns \c true if successfully stopped.
+    ///
+    HD_API
+    virtual bool Stop(bool blocking = true);
 
     ///
     /// Restart all of this delegate's background rendering threads previously
@@ -454,6 +469,12 @@ public:
         const TfToken &command,
         const HdCommandArgs &args = HdCommandArgs());
 
+    ///
+    /// Populated when instantiated via the HdRendererPluginRegistry
+    HD_API
+    const std::string &GetRendererDisplayName() {
+        return _displayName;
+    }
 
 protected:
     /// This class must be derived from.
@@ -476,6 +497,19 @@ protected:
     /// Render settings state.
     HdRenderSettingsMap _settingsMap;
     unsigned int _settingsVersion;
+
+private:
+
+    friend class HdRendererPluginRegistry;
+    ///
+    /// Populated when instantiated via the HdRendererPluginRegistry and
+    /// currently used to associate a renderer delegate instance with related
+    /// code and resources. 
+    void _SetRendererDisplayName(const std::string &displayName) {
+        _displayName = displayName;
+    }
+    std::string _displayName;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

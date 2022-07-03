@@ -373,8 +373,7 @@ public:
     ///                     \p positions or empty. If it is empty, points
     ///                     are computed as if all accelerations were zero in 
     ///                     all dimensions.
-    /// \param velocityScale - factor used to artificially increase the effect
-    ///                        of velocity on positions.
+    /// \param velocityScale - \deprecated
     USDGEOM_API
     static bool
     ComputePointsAtTime(
@@ -385,7 +384,7 @@ public:
         const VtVec3fArray& velocities,
         UsdTimeCode velocitiesSampleTime,
         const VtVec3fArray& accelerations,
-        float velocityScale);
+        float velocityScale=1.0);
 
 };
 

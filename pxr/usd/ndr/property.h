@@ -77,7 +77,10 @@ public:
     NDR_API
     const TfToken& GetType() const { return _type; }
 
-    /// Gets this property's default value.
+    /// Gets this property's default value associated with the type of the
+    /// property.
+    /// 
+    /// \sa GetType()
     NDR_API
     const VtValue& GetDefaultValue() const { return _defaultValue; }
 
@@ -155,8 +158,20 @@ public:
     /// This base property class is generic and cannot know ahead of time how to
     /// perform this mapping reliably, thus it will always fall into the second
     /// scenario. It is up to specialized properties to perform the mapping.
+    ///
+    /// \sa GetDefaultValueAsSdfType()
     NDR_API
     virtual const NdrSdfTypeIndicator GetTypeAsSdfType() const;
+
+    /// Provides default value corresponding to the SdfValueTypeName returned 
+    /// by GetTypeAsSdfType. 
+    /// 
+    /// Derived classes providing an implementation for GetTypeAsSdfType should
+    /// also provide an implementation for this.
+    ///
+    /// \sa GetTypeAsSdfType()
+    NDR_API
+    virtual const VtValue& GetDefaultValueAsSdfType() const;
 
     /// @}
 

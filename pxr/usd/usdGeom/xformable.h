@@ -403,6 +403,10 @@ public:
             USDGEOM_API
             bool TransformMightBeTimeVarying() const;
 
+            /// Returns whether xformOpOrder is non-empty.
+            USDGEOM_API
+            bool HasNonEmptyXformOpOrder() const;
+
             /// Sets the vector of times at which xformOp samples have been 
             /// authored in the cached set of xform ops.
             /// 

@@ -349,11 +349,8 @@ _velocities_, and _accelerations_, let:
 <em>t<sub>points</sub></em> = the lower bracketing time sample for the 
 evaluated _points_ attribute
 
-\par
-_velocityScale_ = the inherited value from UsdGeomMotionAPI::ComputeVelocityScale()
-
 \par 
-_timeScale_ = _velocityScale_ / <tt>stage->GetTimeCodesPerSecond()</tt>
+_timeScale_ = 1.0 / <tt>stage->GetTimeCodesPerSecond()</tt>
 
 
 ... then
@@ -405,6 +402,85 @@ Two things to note:
   range, the topology must not change, so we specifically ignore any other
   _points_, _velocities_, or _accelerations_ samples that occur in the
   requested motion range.
+
+\section UsdGeom_MotionAPI MotionAPI: Modulating Motion and Motion Blur
+
+UsdGeomMotionAPI is an applied schema whose properties describe how 
+scene sampling should be adjusted to achieve artist-specified changes to
+perceived motion, such as adjusting the amount of motion-blur differently
+for different objects in a scene.  All of the properties defined by this schema
+should be inherited down namespace, so that one can adjust the blurring of an
+entire model with a single statement/opinion on the model's root prim.
+
+\subsection UsdGeomMotionAPI_blurScale Effectively Applying motion:blurScale
+
+The _motion:blurScale_ attribute allows artists to
+scale the __amount__ of motion blur to be rendered for parts of the scene
+without changing the recorded animation.  We stipulate that this should
+at least affect the primary geometric properties of prims, such as:
+
+- Points (UsdGeomPointBased)
+- Normals (UsdGeomPointBased)
+- Transforms (UsdGeomXformable)
+- Instance Transforms (UsdGeomPointInstancer)
+
+Beyond that "geometric motion core" of properties, renderers should apply
+_blurScale_ to any other attributes that they _can_ blur.
+
+We can implement this feature by either mutating (scaling) the sample values
+we send to a renderer, or by adjusting our sampling and sample times.  We
+suggest that the latter provides superior results, and therefore describe it
+in more detail.
+
+We begin by establishing the difference between the __sampling window__ and
+the __shutter window__ when preparing data for a renderer.  The __sampling
+window__ is the interval in _scene time_ in which we will sample the scene
+for rendering any particular frame, and changes as we render successive
+frames.  The __shutter window__ (as typically specified via UsdGeomCamera's
+_shutter:open_ and _shutter:close_ properties) is the interval in which the
+renderer will look for samples to consume, is often centered around zero,
+and is usually the same for all frames.
+
+This means we translate samples from the sampling domain to the shutter
+domain by simply subtracting the "current frame time" from the time ordinate
+of each sample.  However, by scaling the sampling window and adding in a
+compensatory inverse scale to the translation of sample time to shutter time,
+we can very simply implement the _motion:blurScale_ behavior.  More
+precisely: 
+\par
+We scale the sampling window by _motion:blurScale_, pivoting around the
+current frame time, and then scale the ordinates of the
+shutter-interval-space samples by 1.0 / _motion:blurScale_, pivoting around
+zero.
+
+For example, let us assume we are rendering a bouncing ball with a sampling
+window of `[frameTime, frameTime+0.5]` and a shutter window of `[0, 0.5]`.
+
+If we want to __reduce the blur by a factor of 2__, we set _motion:blurScale_
+to `0.5`, __scaling__ the sampling window by `0.5` (around the pivot of
+`frameTime`), and "pushing out" the smaller window of samples by a factor of
+two to make them fill the shutter window - we realize less blur by taking
+samples closer to the shutter-open and "looking at them" longer.  Concretely,
+if we are taking the usual two samples, the first sample is unchanged (as we
+would expect since it provides the anchoring pose); however, the _second_
+sample is evaluated at scene time `frameTime + 0.25` instead of `frameTime +
+0.5`, but the time ordinate we attach to it as we hand it to the renderer is
+`0.5`.
+
+If we want to __increase the blur by a factor of 3__, we set
+_motion:blurScale_ to `3.0`, __scaling__ the sampling window by a factor of
+three (around the pivot of `frameTime`) which, for high-quality
+render-preppers such as Hydra means that we will prepare __all__ the samples
+we find in the scene in the interval `[frameTime, frameTime+1.5]`, which will
+likely encompass __more__ samples, representing more motion.  For those
+samples to contribute to the render, they must be made to fit within the
+shutter window, so we rescale the sample times such that, for example, if the
+final sample were at frame-relative scene time `1.5`, it would be scaled by
+1/3 to rest at shutter time `0.5`.
+
+This technique works equally well for motion derived from simple,
+interpolation-based sampling, and also for samples computed using velocities
+and accelerations, as described in \ref UsdGeom_VelocityInterpolation .
 
 
 \section UsdGeom_StageMetrics Stage Metrics

@@ -29,6 +29,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class Hgi;
 
 ///
 /// \class HgiGLShaderFunction
@@ -61,7 +62,7 @@ protected:
     friend class HgiGL;
 
     HGIGL_API
-    HgiGLShaderFunction(HgiShaderFunctionDesc const& desc);
+    HgiGLShaderFunction(Hgi const* hgi, HgiShaderFunctionDesc const& desc);
 
 private:
     HgiGLShaderFunction() = delete;

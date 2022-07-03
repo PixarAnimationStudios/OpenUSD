@@ -81,9 +81,13 @@ endfunction() # _copy_headers
 # our naming conventions, e.g. Tf
 function(_get_python_module_name LIBRARY_FILENAME MODULE_NAME)
     # Library names are either something like tf.so for shared libraries
-    # or _tf.so for Python module libraries. We want to strip the leading
-    # "_" off.
-    string(REPLACE "_" "" LIBNAME ${LIBRARY_FILENAME})
+    # or _tf.pyd/_tf_d.pyd for Python module libraries.
+    # We want to strip off the leading "_" and the trailing "_d".
+    set(LIBNAME ${LIBRARY_FILENAME})
+    if (PXR_USE_DEBUG_PYTHON)
+        string(REGEX REPLACE "_d$" "" LIBNAME ${LIBNAME})
+    endif()
+    string(REGEX REPLACE "^_" "" LIBNAME ${LIBNAME})
     string(SUBSTRING ${LIBNAME} 0 1 LIBNAME_FL)
     string(TOUPPER ${LIBNAME_FL} LIBNAME_FL)
     string(SUBSTRING ${LIBNAME} 1 -1 LIBNAME_SUFFIX)
@@ -261,10 +265,17 @@ function(_install_pyside_ui_files LIBRARY_NAME)
         get_filename_component(outFileName ${uiFile} NAME_WE)
         get_filename_component(uiFilePath ${uiFile} ABSOLUTE)
         set(outFilePath "${CMAKE_CURRENT_BINARY_DIR}/${outFileName}.py")
+        get_filename_component(pysideUicBinName ${PYSIDEUICBINARY} NAME_WLE)
+        if("${pysideUicBinName}" STREQUAL "uic")
+            # Newer versions of Qt have deprecated pyside2-uic. It
+            # has been replaced by "uic" which needs extra arg for
+            # generating python output (instead of default C++ ).
+            set(PYSIDEUIC_EXTRA_ARGS -g python)
+        endif()
         add_custom_command(
             OUTPUT ${outFilePath}
             COMMAND "${PYSIDEUICBINARY}"
-            ARGS -o ${outFilePath} ${uiFilePath}
+            ARGS ${PYSIDEUIC_EXTRA_ARGS} -o ${outFilePath} ${uiFilePath}
             MAIN_DEPENDENCY "${uiFilePath}"
             COMMENT "Generating Python for ${uiFilePath} ..."
             VERBATIM
@@ -605,14 +616,11 @@ function(_pxr_install_rpath rpathRef NAME)
     # Canonicalize and uniquify paths.
     set(final "")
     foreach(path ${rpath})
-        # Absolutize on Mac.  SIP disallows relative rpaths.
+        # Replace $ORIGIN with @loader_path
         if(APPLE)
             if("${path}/" MATCHES "^[$]ORIGIN/")
                 # Replace with origin path.
-                string(REPLACE "$ORIGIN/" "${origin}/" path "${path}/")
-
-                # Simplify.
-                get_filename_component(path "${path}" REALPATH)
+                string(REPLACE "$ORIGIN/" "@loader_path/" path "${path}/")
             endif()
         endif()
 
@@ -892,7 +900,12 @@ function(_pxr_python_module NAME)
         return()
     endif()
 
-    set(LIBRARY_NAME "_${NAME}")
+    if (WIN32 AND PXR_USE_DEBUG_PYTHON)
+        # On Windows when compiling with debug python the library must be named with _d.
+        set(LIBRARY_NAME "_${NAME}_d")
+    else()
+        set(LIBRARY_NAME "_${NAME}")
+    endif()
 
     # Install .py files.
     if(args_PYTHON_FILES)
@@ -1026,7 +1039,7 @@ function(_pxr_python_module NAME)
     target_include_directories(${LIBRARY_NAME}
         SYSTEM
         PUBLIC
-            ${PYTHON_INCLUDE_DIR}
+            ${PYTHON_INCLUDE_DIRS}
     )
 
     install(
@@ -1103,6 +1116,35 @@ function(_pxr_library NAME)
         endif()
     endif()
 
+    # Figure plugin/resource install paths
+    if (isPlugin)
+        _get_install_dir("plugin" pluginInstallPrefix)
+        if (NOT PXR_INSTALL_SUBDIR)
+            # XXX --- Why this difference?
+            _get_install_dir("plugin/usd" pluginInstallPrefix)
+        endif()
+    else()
+        _get_install_dir("lib/usd" pluginInstallPrefix)
+    endif()
+    if(args_SUBDIR)
+        set(pluginInstallPrefix "${pluginInstallPrefix}/${args_SUBDIR}")
+    endif()
+
+    # ONLY add a library target, etc when there is source code associated.
+    # Example for codeless schemas, we can not add a built library and will only
+    # have the installed resources, if no source files are provided, simply
+    # install the resource files at appropriate install paths and return.
+    if (NOT (args_CPPFILES OR args_PUBLIC_HEADERS OR args_PRIVATE_HEADERS))
+        # We set the pluginToLibraryPath to an empty string, as resource only
+        # library do not have a shared library
+        _install_resource_files(
+            ${NAME}
+            "${pluginInstallPrefix}"
+            ""
+            ${args_RESOURCE_FILES})
+        return()
+    endif()
+
     # Add the target.  We also add the headers because that's the easiest
     # way to get them to appear in IDE projects.
     if(isObject)
@@ -1159,28 +1201,20 @@ function(_pxr_library NAME)
     # Compute names and paths.
     #
 
-    # Where do we install to?
+    # Where do we install library to?
     _get_install_dir("include" headerInstallDir)
     _get_install_dir("include/${PXR_PREFIX}/${NAME}" headerInstallPrefix)
     _get_install_dir("lib" libInstallPrefix)
     if(isPlugin)
-        _get_install_dir("plugin" pluginInstallPrefix)
-        if(NOT PXR_INSTALL_SUBDIR)
-            # XXX -- Why this difference?
-            _get_install_dir("plugin/usd" pluginInstallPrefix)
-        endif()
         if(NOT isObject)
             # A plugin embedded in the monolithic library is found in
             # the usual library location, otherwise plugin libraries
             # are in the plugin install location.
             set(libInstallPrefix "${pluginInstallPrefix}")
         endif()
-    else()
-        _get_install_dir("lib/usd" pluginInstallPrefix)
     endif()
     if(args_SUBDIR)
         set(libInstallPrefix "${libInstallPrefix}/${args_SUBDIR}")
-        set(pluginInstallPrefix "${pluginInstallPrefix}/${args_SUBDIR}")
     endif()
     # Return libInstallPrefix to caller.
     if(args_LIB_INSTALL_PREFIX_RESULT)
@@ -1217,13 +1251,20 @@ function(_pxr_library NAME)
     # we don't need to specify the library's location, so we leave
     # pluginToLibraryPath empty.
     if(NOT args_TYPE STREQUAL "STATIC")
-   	if(NOT (";${PXR_CORE_LIBS};" MATCHES ";${NAME};" AND _building_monolithic))
+        if(NOT (";${PXR_CORE_LIBS};" MATCHES ";${NAME};" AND _building_monolithic))
             file(RELATIVE_PATH
                 pluginToLibraryPath
                 ${CMAKE_INSTALL_PREFIX}/${pluginInstallPrefix}/${NAME}
                 ${CMAKE_INSTALL_PREFIX}/${libInstallPrefix}/${libraryFilename})
         endif()
     endif()
+
+    # Install resources for the NAME library, at appropriate paths
+    _install_resource_files(
+        ${NAME}
+        "${pluginInstallPrefix}"
+        "${pluginToLibraryPath}"
+        ${args_RESOURCE_FILES})
 
     #
     # Set up the compile/link.
@@ -1408,12 +1449,6 @@ function(_pxr_library NAME)
         endif()
 
     endif()
-
-    _install_resource_files(
-        ${NAME}
-        "${pluginInstallPrefix}"
-        "${pluginToLibraryPath}"
-        ${args_RESOURCE_FILES})
 
     #
     # Set up precompiled headers.

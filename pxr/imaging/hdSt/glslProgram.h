@@ -56,6 +56,10 @@ public:
     HDST_API
     bool CompileShader(HgiShaderStage stage, std::string const & source);
 
+    /// Compile shader source for a shader stage from an HgiShaderFunctionDesc.
+    HDST_API
+    bool CompileShader(HgiShaderFunctionDesc const &desc);
+
     /// Link the compiled shaders together.
     HDST_API
     bool Link();
@@ -90,6 +94,14 @@ public:
 
     HDST_API
     static HdStGLSLProgramSharedPtr GetComputeProgram(
+        TfToken const &shaderToken,
+        std::string const &defines,
+        HdStResourceRegistry *resourceRegistry,
+        PopulateDescriptorCallback populateDescriptor);
+
+    HDST_API
+    static HdStGLSLProgramSharedPtr GetComputeProgram(
+        TfToken const &shaderFileName,
         TfToken const &shaderToken,
         std::string const &defines,
         HdStResourceRegistry *resourceRegistry,

@@ -3,12 +3,16 @@
 class "TestSchemaAPI" (
     customData = {
         token[] apiSchemaAutoApplyTo = ["SomeConcreteType", "SomeAbstractType"]
+        token[] apiSchemaCanOnlyApplyTo = ["SomeConcreteType", "SomeAbstractType"]
         string apiSchemaType = "singleApply"
     }
     inherits = </APISchemaBase>
 )
 {
-    uniform string inputs:colorMapGamma (
+    bool[] inputs:boolArray
+    bool inputs:boolNotInt = 1
+    uniform token inputs:colorMapGamma (
+        allowedTokens = ["texture"]
         connectability = "interfaceOnly"
         displayGroup = "Basic"
         displayName = "Map Gamma"
@@ -24,6 +28,11 @@ class "TestSchemaAPI" (
                 intensity: Itensity of the flame thrower.
                 """
     )
+    int inputs:intNotBool = 0
+    uniform token myRenderContext:usda:shaderId = "TestSchemaAPI" (
+        displayGroup = "Internal"
+    )
     color3f outputs:resultRGB
+    float propNS:testShaderPropWithNS = 0
 }
 

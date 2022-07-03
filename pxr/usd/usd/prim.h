@@ -476,17 +476,14 @@ private:
     USD_API
     bool _IsA(const TfType& schemaType, bool validateSchemaType) const;
 
-    // The non-templated implementation of UsdPrim::HasAPI using the
-    // TfType system. 
-    // 
-    // \p validateSchemaType is provided for python clients
-    // because they can't use compile time assertions on the input type.
-    // 
-    // \p instanceName is used to determine whether a particular instance 
-    // of a multiple-apply API schema has been applied to the prim.
+    // Separate implementations for UsdPrim::HasAPI for single and multiple
+    // apply API schema TfTypes.
     USD_API
-    bool _HasAPI(const TfType& schemaType, bool validateSchemaType,
-                 const TfToken &instanceName) const;
+    bool _HasSingleApplyAPI(const TfType& schemaType) const;
+
+    USD_API
+    bool _HasMultiApplyAPI(const TfType& schemaType, 
+                           const TfToken &instanceName) const;
 
     // Private implementation for all ApplyAPI, CanApplyAPI, and RemoveAPI 
     // methods for both single apply and multiple apply APIs. The multiple 
@@ -536,16 +533,6 @@ public:
     USD_API
     bool IsA(const TfType& schemaType) const;
 
-    /// Return true if the UsdPrim has had an API schema represented by the C++ 
-    /// class type __T__ applied to it through the Apply() method provided 
-    /// on the API schema class. 
-    /// 
-    /// \p instanceName, if non-empty is used to determine if a particular 
-    /// instance of a multiple-apply API schema (eg. UsdCollectionAPI) has been 
-    /// applied to the prim. A coding error is issued if a non-empty 
-    /// \p instanceName is passed in and __T__ represents a single-apply API 
-    /// schema.
-    /// 
     /// __Using HasAPI in C++__
     /// \code 
     /// UsdPrim prim = stage->OverridePrim("/path/to/prim");
@@ -573,30 +560,53 @@ public:
     /// assert(prim.HasAPI(Usd.CollectionAPI))
     /// assert(prim.HasAPI(Usd.CollectionAPI, instanceName="geom"))
     /// \endcode
+    /// @{
+
+    /// Return true if the UsdPrim has had a single API schema represented by 
+    /// the C++ class type __T__ applied to it through the Apply() method 
+    /// provided on the API schema class. 
+    /// 
     template <typename T>
-    bool HasAPI(const TfToken &instanceName=TfToken()) const {
+    typename std::enable_if<T::schemaKind != UsdSchemaKind::MultipleApplyAPI, 
+        bool>::type
+    HasAPI() const {
         static_assert(std::is_base_of<UsdAPISchemaBase, T>::value,
                       "Provided type must derive UsdAPISchemaBase.");
         static_assert(!std::is_same<UsdAPISchemaBase, T>::value,
                       "Provided type must not be UsdAPISchemaBase.");
-        static_assert(
-            (T::schemaKind == UsdSchemaKind::SingleApplyAPI
-            || T::schemaKind == UsdSchemaKind::MultipleApplyAPI),
-            "Provided schema type must be an applied API schema.");
+        // Note that this function template is enabled for any schema kind, 
+        // other than MultipleApplyAPI, but is only valid for SingleApplyAPI. 
+        // This static assert provides better error information for calling 
+        // HasAPI with an invalid template type than if we limited HasAPI 
+        // substitution matching to just the two valid schema kinds.
+        static_assert(T::schemaKind == UsdSchemaKind::SingleApplyAPI,
+            "Provided schema type must be a single apply API schema.");
 
-        if (T::schemaKind != UsdSchemaKind::MultipleApplyAPI
-            && !instanceName.IsEmpty()) {
-            TF_CODING_ERROR("HasAPI: single application API schemas like %s do "
-                "not contain an application instanceName ( %s ).",
-                TfType::GetCanonicalTypeName(typeid(T)).c_str(),
-                instanceName.GetText());
-            return false;
-        }
-
-        return _HasAPI(TfType::Find<T>(), /*validateSchemaType=*/false, 
-                       instanceName);
+        return _HasSingleApplyAPI(TfType::Find<T>());
     }
-    
+
+    /// Return true if the UsdPrim has had a multiple-apply API schema 
+    /// represented by the C++ class type __T__ applied to it through the 
+    /// Apply() method provided on the API schema class. 
+    /// 
+    /// \p instanceName, if non-empty is used to determine if a particular 
+    /// instance of a multiple-apply API schema (eg. UsdCollectionAPI) has been 
+    /// applied to the prim, otherwise this returns true if any instance of
+    /// the multiple-apply API has been applied.
+    template <typename T>
+    typename std::enable_if<T::schemaKind == UsdSchemaKind::MultipleApplyAPI, 
+        bool>::type 
+    HasAPI(const TfToken &instanceName = TfToken()) const {
+        static_assert(std::is_base_of<UsdAPISchemaBase, T>::value,
+                      "Provided type must derive UsdAPISchemaBase.");
+        static_assert(!std::is_same<UsdAPISchemaBase, T>::value,
+                      "Provided type must not be UsdAPISchemaBase.");
+        static_assert(T::schemaKind == UsdSchemaKind::MultipleApplyAPI,
+            "Provided schema type must be a multi apply API schema.");
+
+        return _HasMultiApplyAPI(TfType::Find<T>(), instanceName);
+    }
+        
     /// Return true if a prim has an API schema with TfType \p schemaType.
     ///
     /// \p instanceName, if non-empty is used to determine if a particular 
@@ -604,9 +614,16 @@ public:
     /// applied to the prim. A coding error is issued if a non-empty 
     /// \p instanceName is passed in and __T__ represents a single-apply API 
     /// schema.
+    ///
+    /// This function behaves exactly like the templated HasAPI functions
+    /// except for the runtime schemaType validation which happens at compile 
+    /// time in the templated versions. This method is provided for python 
+    /// clients. Use of the templated HasAPI functions are preferred.
     USD_API
     bool HasAPI(const TfType& schemaType,
                 const TfToken& instanceName=TfToken()) const;
+
+    /// }@
 
     /// Returns whether a __single-apply__ API schema with the given C++ type 
     /// 'SchemaType' can be applied to this prim. If the return value is false, 

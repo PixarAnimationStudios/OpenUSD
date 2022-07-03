@@ -1,0 +1,94 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Xform "DormRoomDouble" (
+    kind = "prop"
+)
+{
+    def Xform "Geom"
+    {
+        def Mesh "cube1"
+        {
+#            token subdivisionScheme = "catmark"
+            float3[] extent = [(-2, -1, -1), (2, 1, 1)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 2, 3, 4, 5, 6, 7, 0, 6, 5, 1, 4, 7, 3, 2, 0, 3, 7, 6, 4, 2, 1, 5]
+            token interpolateBoundary = "edgeAndCorner"
+            uniform token orientation = "rightHanded"
+            float3[] points = [(1, 1, 1), (-1, 1, 1), (-1, -1, 1), (1, -1, 1), (-1, -1, -1), (-1, 1, -1), (1, 1, -1), (1, -1, -1)]
+            float3[] primvars:displayColor = [(0.5, 0.5, 0.5)]
+        }
+    }
+}
+
+def "Invis_Instance" (
+    active = true
+    instanceable = true
+    references = </DormRoomDouble>
+)
+{
+    custom double3 xformOp:translate = (0, 0, -3)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    token visibility = "invisible"
+}
+
+def Xform "Group_Single_Instance" (
+    active = true
+)
+{
+    def "Instance1_ni_cube1" (
+        active = true
+        instanceable = true
+        references = </DormRoomDouble>
+    )
+    {
+        custom double3 xformOp:translate = (-3, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "Instance2_ni_cube1" (
+        active = true
+        instanceable = true
+        references = </DormRoomDouble>
+    )
+    {
+        custom double3 xformOp:translate = (-6, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "NoInstance_ni_cube1" (
+        active = true
+        instanceable = false
+        references = </DormRoomDouble>
+    )
+    {
+        custom double3 xformOp:translate = (-9, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Xform "Group_Multiple_Instances"
+{
+    def "Instance1_Group_Single_Instance" (
+        active = true
+        instanceable = true
+        references = </Group_Single_Instance>
+    )
+    {
+        custom double3 xformOp:translate = (0, 0, -3)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "Instance2_Group_Single_Instance" (
+        active = true
+        instanceable = true
+        references = </Group_Single_Instance>
+    )
+    {
+        custom double3 xformOp:translate = (0, 0, -6)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+

@@ -33,6 +33,9 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdPhysics/tokens.h"
 
+#include "pxr/base/gf/matrix3f.h"
+#include "pxr/base/gf/quatf.h" 
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -309,6 +312,31 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Mass information for a collision, used in ComputeMassProperties MassInformationFn callback
+    struct MassInformation
+    {
+        float volume;           //< Collision volume
+        GfMatrix3f inertia;     //< Collision inertia
+        GfVec3f centerOfMass;   //< Collision center of mass
+        GfVec3f localPos;       //< Collision local position with respect to the rigid body
+        GfQuatf localRot;       //< Collision local rotation with respect to the rigid body
+    };
+
+    /// Mass information function signature, for given UsdPrim gather MassInformation
+    typedef MassInformation MassInformationFnSig(const UsdPrim&);    
+    typedef std::function<MassInformationFnSig> MassInformationFn;
+
+    /// Compute mass properties of the rigid body
+    /// \p diagonalInertia Computed diagonal of the inertial tensor for the rigid body.
+    /// \p com Computed center of mass for the rigid body.
+    /// \p principalAxes Inertia tensor's principal axes orienttion for the rigid body.
+    /// \p massInfoFn Callback function to get collision mass information.
+    /// \return Computed mass of the rigid body
+    USDPHYSICS_API
+    float ComputeMassProperties(GfVec3f* diagonalInertia, GfVec3f* com, GfQuatf* principalAxes, 
+        const MassInformationFn& massInfoFn) const;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

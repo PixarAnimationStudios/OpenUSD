@@ -69,7 +69,7 @@ public:
     void Sync(
         HdSceneDelegate* delegate,
         HdTaskContext* ctx,
-        HdDirtyBits* dirtyBits) final;
+        HdDirtyBits* dirtyBits) override final;
 
 protected:
     // This is called during the hydra Sync Phase via HdxTask::Sync.

@@ -86,6 +86,9 @@ public:
     HGIVULKAN_API
     void WaitForIdle();
 
+    /// Returns true if the provided extension is supported by the device
+    bool IsSupportedExtension(const char* extensionName) const;
+
     /// Device extension function pointers
     PFN_vkCreateRenderPass2KHR vkCreateRenderPass2KHR = 0;
     PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT = 0;
@@ -99,9 +102,6 @@ private:
     HgiVulkanDevice() = delete;
     HgiVulkanDevice & operator=(const HgiVulkanDevice&) = delete;
     HgiVulkanDevice(const HgiVulkanDevice&) = delete;
-
-    // Returns true if the provided extension is supported by the device
-    bool _IsSupportedExtension(const char* extensionName) const;
 
     // Vulkan device objects
     VkPhysicalDevice _vkPhysicalDevice;

@@ -32,6 +32,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HgiGLShaderFunction::HgiGLShaderFunction(
+    Hgi const* hgi,
     HgiShaderFunctionDesc const& desc)
     : HgiShaderFunction(desc)
     , _shaderId(0)
@@ -47,12 +48,11 @@ HgiGLShaderFunction::HgiGLShaderFunction(
         glObjectLabel(GL_SHADER, _shaderId, -1, _descriptor.debugName.c_str());
     }
 
-    HgiGLShaderGenerator shaderGenerator {desc};
-    std::stringstream ss;
-    shaderGenerator.Execute(ss);
-    std::string shaderStr = ss.str();
-    const char* src = shaderStr.c_str();
-    glShaderSource(_shaderId, 1, &src, nullptr);
+    HgiGLShaderGenerator shaderGenerator(hgi, desc);
+    shaderGenerator.Execute();
+    const char *shaderCode = shaderGenerator.GetGeneratedShaderCode();
+
+    glShaderSource(_shaderId, 1, &shaderCode, nullptr);
     glCompileShader(_shaderId);
 
     // Grab compile errors
@@ -67,7 +67,12 @@ HgiGLShaderFunction::HgiGLShaderFunction(
         _shaderId = 0;
     }
 
+    // Clear these pointers in our copy of the descriptor since we
+    // have to assume they could become invalid after we return.
+    _descriptor.shaderCodeDeclarations = nullptr;
     _descriptor.shaderCode = nullptr;
+    _descriptor.generatedShaderCodeOut = nullptr;
+
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 

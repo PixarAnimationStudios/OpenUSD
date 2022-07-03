@@ -32,6 +32,10 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/inttypes.h"
 
+#if defined(ARCH_COMPILER_MSVC)
+#include <intrin.h>
+#endif
+
 #include <cmath>
 #if !defined(M_PI)
 #define M_PI 3.14159265358979323846
@@ -123,6 +127,30 @@ inline void ArchSinCos(double v, double *s, double *c) {
 #else
 #error Unknown architecture.
 #endif
+
+
+/// Return the number of consecutive 0-bits in \p x starting from the least
+/// significant bit position.  If \p x is 0, the result is undefined.
+inline int
+ArchCountTrailingZeros(uint64_t x)
+{
+#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
+    return __builtin_ctzl(x);
+#elif defined(ARCH_COMPILER_MSVC)
+    unsigned long index;
+    _BitScanForward64(&index, x);
+    return index;
+#else
+    // Flip trailing zeros to 1s, and clear all other bits, then count.
+    x = (x ^ (x - 1)) >> 1;
+    int c = 0;
+    for (; x; ++c) {
+        x >>= 1;
+    }
+    return c;
+#endif
+}
+
 
 ///@}
 

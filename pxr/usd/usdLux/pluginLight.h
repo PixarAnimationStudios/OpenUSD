@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLux/api.h"
-#include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -61,7 +61,7 @@ class SdfAssetPath;
 /// \see \ref usdLux_PluginSchemas
 /// 
 ///
-class UsdLuxPluginLight : public UsdLuxLight
+class UsdLuxPluginLight : public UsdGeomXformable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -74,7 +74,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdLuxPluginLight(const UsdPrim& prim=UsdPrim())
-        : UsdLuxLight(prim)
+        : UsdGeomXformable(prim)
     {
     }
 
@@ -82,7 +82,7 @@ public:
     /// Should be preferred over UsdLuxPluginLight(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdLuxPluginLight(const UsdSchemaBase& schemaObj)
-        : UsdLuxLight(schemaObj)
+        : UsdGeomXformable(schemaObj)
     {
     }
 

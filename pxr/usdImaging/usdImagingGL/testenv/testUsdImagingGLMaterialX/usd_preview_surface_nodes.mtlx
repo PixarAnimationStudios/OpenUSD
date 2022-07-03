@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<!--
+  Combination of UsdPreviewSurface example nodes from MaterialX 
+-->
+<materialx version="1.38">
+  <UsdPreviewSurface name="SR_default" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.18, 0.18, 0.18"/>
+    <input name="emissiveColor" type="color3" value="0, 0, 0" />
+    <input name="useSpecularWorkflow" type="integer" value="0" />
+    <input name="specularColor" type="color3" value="0, 0, 0" />
+    <input name="metallic" type="float" value="0" />
+    <input name="roughness" type="float" value="0.01" />
+    <input name="clearcoat" type="float" value="0" />
+    <input name="clearcoatRoughness" type="float" value="0.01" />
+    <input name="opacity" type="float" value="1" />
+    <input name="opacityThreshold" type="float" value="0" />
+    <input name="ior" type="float" value="1.5" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Default" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_default" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_default_rough" type="surfaceshader">
+    <input name="roughness" type="float" value="0.95" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Default_Rough" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_default_rough" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_default_green" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.2, 0.4, 0.2"/>
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Default_Green" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_default_green" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_gold" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.944, 0.776, 0.373" />
+    <input name="useSpecularWorkflow" type="integer" value="0" />
+    <input name="specularColor" type="color3" value="0, 0, 0" />
+    <input name="metallic" type="float" value="1" />
+    <input name="roughness" type="float" value="0.15" />
+    <input name="ior" type="float" value="50" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Gold" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_gold" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_gold_rough" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.944, 0.776, 0.373" />
+    <input name="useSpecularWorkflow" type="integer" value="0" />
+    <input name="specularColor" type="color3" value="0, 0, 0" />
+    <input name="metallic" type="float" value="1" />
+    <input name="roughness" type="float" value="0.90" />
+    <input name="ior" type="float" value="50" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Gold_Rough" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_gold_rough" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_plastic" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.10470402, 0.24188282, 0.81800002" />
+    <input name="useSpecularWorkflow" type="integer" value="0" />
+    <input name="metallic" type="float" value="0" />
+    <input name="roughness" type="float" value="0.32467532157897949" />
+    <input name="clearcoat" type="float" value="0" />
+    <input name="clearcoatRoughness" type="float" value="0.01" />
+    <input name="ior" type="float" value="1.5" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Plastic" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_plastic" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_plastic_rough" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.10470402, 0.24188282, 0.81800002" />
+    <input name="useSpecularWorkflow" type="integer" value="0" />
+    <input name="metallic" type="float" value="0" />
+    <input name="roughness" type="float" value="0.75" />
+    <input name="clearcoat" type="float" value="0" />
+    <input name="clearcoatRoughness" type="float" value="0.01" />
+    <input name="ior" type="float" value="1.5" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Plastic_Rough" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_plastic_rough" />
+  </surfacematerial>
+
+</materialx>

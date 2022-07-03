@@ -295,8 +295,7 @@ HdStUdimTextureObject::_Commit()
 bool
 HdStUdimTextureObject::IsValid() const
 {
-    // Checking whether ptex texture is valid not supported yet.
-    return true;
+    return _hgiFormat != HgiFormatInvalid;
 }
 
 HdTextureType

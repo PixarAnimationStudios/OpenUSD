@@ -72,6 +72,10 @@ struct HdSt_ShaderKey {
     HDST_API
     virtual TfToken const *GetTES() const;
     HDST_API
+    virtual TfToken const *GetPTCS() const;
+    HDST_API
+    virtual TfToken const *GetPTVS() const;
+    HDST_API
     virtual TfToken const *GetGS() const;
     HDST_API
     virtual TfToken const *GetFS() const; 
@@ -96,6 +100,8 @@ struct HdSt_ShaderKey {
     virtual bool HasMirroredTransform() const;
     HDST_API
     virtual bool IsDoubleSided() const;
+    HDST_API
+    virtual bool UseMetalTessellation() const;
     HDST_API
     virtual HdPolygonMode GetPolygonMode() const;
     HDST_API

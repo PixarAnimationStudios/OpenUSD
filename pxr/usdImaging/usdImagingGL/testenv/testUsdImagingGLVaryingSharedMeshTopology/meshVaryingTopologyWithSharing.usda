@@ -1,0 +1,108 @@
+#usda 1.0
+( 
+    startTimeCode = 1
+    endTimeCode = 3
+    upAxis = "Y"
+)
+
+# The setup below has 3 cubes whose topologies change with time with the
+# points data kept constant.
+#
+# Each of the cubes cycles through the 3 topologies in a different order, such
+# that at each time step (besides the first), the topology used has already been
+# encountered. 
+# Hydra Storm uses several de-duplication strategies, one which is in sharing
+# of the topology buffers. It also batches "draw items" that share the same
+# resource signature, and tests for batch invalidation prior to draw submission.
+#
+# When the draw item's BARs are updated to use existing BARs with different
+# element offsets, we hit a limitation in the draw batch validation / 
+# memory manager systems, where the indirect draw batch's dispatch buffer is
+# reused incorrectly.
+# 
+# In this test, we cycle through frames 1->2->3 twice:
+# The first time we do it, we expect:
+#
+# 1 : 1 batch is created with 3 draw items (one for each of the cubes)
+#
+# 1->2 : The topology BAR is updated for each of the draw items.
+#     DirtyTopology triggers points to be refetched, resulting in an
+#     immutable->mutable BAR transition that triggers deep validation of batches
+#     Buffer arrays hash differs for the batch because the buffer array version
+#     used by the vertex BAR is different.
+#
+# 2->3 ; The topology BAR is updated again for each of the draw items.
+#     Unclear why the buffer array hash changes here to trigger batch rebuild.
+#     Images correctly though.
+# 
+# Cycle through the frames again and we end up the stale output from (3).
+# At each time step, we still update the topology BAR is updated again for each 
+# of the draw items. However, the buffer arrays hash stays the same, so the 
+# indirect draw batch's dispatch buffer is reused incorrectly.
+#
+
+def Mesh "MorphingCube1" {
+    int[] faceVertexCounts.timeSamples = {
+        1 : [4, 4],
+        2 : [4, 4, 4, 4],
+        3 : [4, 4, 4, 4, 4, 4],
+    }
+    int[] faceVertexIndices.timeSamples = {
+        1: [0, 1, 2, 3, 4, 5, 6, 7],
+        2: [0, 1, 2, 3, 4, 5, 6, 7, 0, 6, 5, 1, 4, 7, 3, 2],
+        3: [0, 1, 2, 3, 4, 5, 6, 7, 0, 6, 5, 1, 4, 7, 3, 2, 0, 3, 7, 6, 4, 2, 1, 5]
+    }
+    
+    point3f[] points = [(1, 1, 1), (-1, 1, 1), (-1, -1, 1), (1, -1, 1), (-1, -1, -1), (-1, 1, -1), (1, 1, -1), (1, -1, -1)]
+
+    float3[] primvars:displayColor = [(1,0,0)]
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (0,0,0)
+ }
+
+ def Mesh "MorphingCube2" {
+    int[] faceVertexCounts.timeSamples = {
+        1 : [4, 4, 4, 4],
+        2 : [4, 4, 4, 4, 4, 4],
+        3 : [4, 4],
+    }
+    int[] faceVertexIndices.timeSamples = {
+        1: [0, 1, 2, 3, 4, 5, 6, 7, 0, 6, 5, 1, 4, 7, 3, 2],
+        2: [0, 1, 2, 3, 4, 5, 6, 7, 0, 6, 5, 1, 4, 7, 3, 2, 0, 3, 7, 6, 4, 2, 1, 5],
+        3: [0, 1, 2, 3, 4, 5, 6, 7],
+    }
+    
+    point3f[] points = [(1, 1, 1), (-1, 1, 1), (-1, -1, 1), (1, -1, 1), (-1, -1, -1), (-1, 1, -1), (1, 1, -1), (1, -1, -1)]
+
+    float3[] primvars:displayColor = [(0,1,0)]
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (3,0,0)
+ }
+
+def Mesh "MorphingCube3" {
+    int[] faceVertexCounts.timeSamples = {
+        1 : [4, 4, 4, 4, 4, 4],
+        2 : [4, 4],
+        3 : [4, 4, 4, 4],
+    }
+    int[] faceVertexIndices.timeSamples = {
+        1: [0, 1, 2, 3, 4, 5, 6, 7, 0, 6, 5, 1, 4, 7, 3, 2, 0, 3, 7, 6, 4, 2, 1, 5],
+        2: [0, 1, 2, 3, 4, 5, 6, 7],
+        3: [0, 1, 2, 3, 4, 5, 6, 7, 0, 6, 5, 1, 4, 7, 3, 2],
+    }
+    
+    point3f[] points = [(1, 1, 1), (-1, 1, 1), (-1, -1, 1), (1, -1, 1), (-1, -1, -1), (-1, 1, -1), (1, 1, -1), (1, -1, -1)]
+
+    float3[] primvars:displayColor = [(0,0,1)]
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (6,0,0)
+ }
+
+ def Camera "MainCamera"
+{
+    float2 clippingRange = (0.1, 10000)
+    float focalLength = 18
+    float3 xformOp:rotateXYZ = (0, -100, 0)
+    double3 xformOp:translate = (-10, 2, -5)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+}

@@ -25,8 +25,13 @@
 
 #include "pxr/imaging/hdSt/textureHandleRegistry.h"
 
+#include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/samplerObject.h"
 #include "pxr/imaging/hdSt/samplerObjectRegistry.h"
+#include "pxr/imaging/hdSt/textureObjectRegistry.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
+
+#include "pxr/imaging/hgi/capabilities.h"
 
 #include "pxr/base/tf/diagnostic.h"
 
@@ -36,13 +41,11 @@ HdStTextureHandle::HdStTextureHandle(
     HdStTextureObjectSharedPtr const &textureObject,
     const HdSamplerParameters &samplerParams,
     const size_t memoryRequest,
-    const bool createBindlessHandle,
     HdStShaderCodePtr const & shaderCode,
     HdSt_TextureHandleRegistry *textureHandleRegistry)
   : _textureObject(textureObject)
   , _samplerParams(samplerParams)
   , _memoryRequest(memoryRequest)
-  , _createBindlessHandle(createBindlessHandle)
   , _shaderCode(shaderCode)
   , _textureHandleRegistry(textureHandleRegistry)
 {
@@ -65,7 +68,7 @@ void
 HdStTextureHandle::ReallocateSamplerIfNecessary()
 {
     if (_samplerObject) {
-        if (!_createBindlessHandle) {
+        if (!UseBindlessHandles()) {
             // There is no setter for sampler parameters,
             // so we only need to create a sampler once...
             return;
@@ -74,7 +77,7 @@ HdStTextureHandle::ReallocateSamplerIfNecessary()
         // ... except that the sampler object has a texture sampler
         // handle that needs to be re-created if the underlying texture
         // changes, so continue.
-     
+
         if (TF_VERIFY(_textureHandleRegistry)) {
             _textureHandleRegistry->MarkSamplerGarbageCollectionNeeded();
         }
@@ -88,7 +91,18 @@ HdStTextureHandle::ReallocateSamplerIfNecessary()
 
     _samplerObject =
         samplerObjectRegistry->AllocateSampler(
-            _textureObject, _samplerParams, _createBindlessHandle);
+            _textureObject, _samplerParams);
+}
+
+bool
+HdStTextureHandle::UseBindlessHandles() const
+{
+    if (TF_VERIFY(_textureHandleRegistry)) {
+        return _textureHandleRegistry->GetTextureObjectRegistry()->
+            GetResourceRegistry()->GetHgi()->GetCapabilities()->
+                IsSet(HgiDeviceCapabilitiesBitsBindlessTextures);
+    }
+    return false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

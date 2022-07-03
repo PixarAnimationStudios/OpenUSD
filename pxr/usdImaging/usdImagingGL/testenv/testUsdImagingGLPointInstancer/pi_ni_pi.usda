@@ -1,0 +1,41 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def PointInstancer "ParentInstancer1"
+{
+    float3[] extent = [(-6, -1, -1), (6, 5, 1)]
+    point3f[] positions = [(0, 0, 0), (0, 4, 0)]
+    int[] protoIndices = [0, 0]
+    rel prototypes = </ParentInstancer1/Protos/Proto1>
+
+    def Xform "Protos"
+    {
+        def Xform "Proto1" (
+            instanceable = true
+            references = @pi_ni_pi_ref.usda@</Root>
+        )
+        {
+        }
+    }
+}
+
+def PointInstancer "ParentInstancer2"
+{
+    float3[] extent = [(-6, -1, 4), (6, 1, 6)]
+    point3f[] positions = [(0, 0, 5)]
+    int[] protoIndices = [0]
+    rel prototypes = </ParentInstancer2/Protos/Proto1>
+
+    def Xform "Protos"
+    {
+        def Xform "Proto1" (
+            instanceable = true
+            references = @pi_ni_pi_ref.usda@</Root>
+        )
+        {
+        }
+    }
+}
+

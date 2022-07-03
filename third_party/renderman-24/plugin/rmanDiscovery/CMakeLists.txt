@@ -10,7 +10,6 @@ pxr_plugin(rmanDiscovery
         ar
         ndr
         sdr
-        rmanArgsParser
 
     PRIVATE_CLASSES
         rmanDiscovery

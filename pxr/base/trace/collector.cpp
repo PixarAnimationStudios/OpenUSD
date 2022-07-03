@@ -45,6 +45,7 @@
 
 #include <functional>
 #include <iostream>
+#include <numeric>
 #include <utility>
 
 using std::string;
@@ -57,7 +58,7 @@ TF_INSTANTIATE_SINGLETON(TraceCollector);
 
 std::atomic<int> TraceCollector::_isEnabled(0);
 
-TraceCollector::_PerThreadData* TraceCollector::_GetThreadData()
+TraceCollector::_PerThreadData* TraceCollector::_GetThreadData() noexcept
 {
     // Use nullptr initialization as sentinel to prevent guard variable from 
     // being emitted.
@@ -76,10 +77,20 @@ void _OutputGlobalReport()
 
 TraceCollector::TraceCollector()
     : _label("TraceRegistry global collector")
+    , _measuredScopeOverhead(0)
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     , _isPythonTracingEnabled(false)
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 {
+    TfSingleton<TraceCollector>::SetInstanceConstructed(*this);
+    
+    // Temporarily enable measurement to find the scope overhead, then disable
+    // and clear.
+    SetEnabled(true);
+    _MeasureScopeOverhead();
+    SetEnabled(false);
+    Clear();
+    
     const bool globalTracing = TfGetenvBool("PXR_ENABLE_GLOBAL_TRACE", false);
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
@@ -109,6 +120,16 @@ void
 TraceCollector::SetEnabled(bool isEnabled)
 {
     _isEnabled.store((int)isEnabled, std::memory_order_release);
+}
+
+
+void
+TraceCollector::Scope(
+    const TraceKey& key, TimeStamp start, TimeStamp stop) noexcept
+{
+    _PerThreadData *threadData = GetInstance()._GetThreadData();
+    threadData->EmplaceEvent(
+        TraceEvent::Timespan, key, start, stop, DefaultCategory::GetId());
 }
 
 TraceCollector::TimeStamp
@@ -186,6 +207,12 @@ TraceCollector::_MarkerEventAtTime(const Key& key, double ms, TraceCategoryId ca
     threadData->MarkerEventAtTime(key, ms, cat);
 }
 
+TraceCollector::TimeStamp
+TraceCollector::GetScopeOverhead() const
+{
+    return _measuredScopeOverhead;
+}
+
 void
 TraceCollector::Clear()
 {
@@ -201,6 +228,22 @@ TraceCollector::_EndScope(const TraceKey& key, TraceCategoryId cat)
     // need to cache key
     _PerThreadData *threadData = _GetThreadData();
     threadData->EndScope(key, cat);
+}
+
+// An externally visible variable used only to ensure the compiler cannot
+// optimize out certain operations for the purposes of overhead measurement.
+uint64_t externallyVisibleValue;
+
+void
+TraceCollector::_MeasureScopeOverhead()
+{
+    uint64_t *escape = &externallyVisibleValue;
+
+    _measuredScopeOverhead = ArchMeasureExecutionTime(
+        [escape]() {
+            TRACE_FUNCTION();
+            (*escape)++;
+        });
 }
 
 void

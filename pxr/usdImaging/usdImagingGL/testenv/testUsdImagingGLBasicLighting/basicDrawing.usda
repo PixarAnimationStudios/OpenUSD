@@ -1,0 +1,135 @@
+#usda 1.0
+(
+    endFrame = 40
+    startFrame = 1
+    upAxis = "Z"
+)
+
+def Xform "Meshes"
+{
+    custom matrix4d xformOp:transform = ( (10, 0, 0, 0), (0, 10, 0, 0), (0, 0, 10, 0), (-1000, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+
+    def Cube "MrCube"
+    {
+        float3[] extent = [(-6, -6, -6), (6, 6, 6)]
+        color3f[] primvars:displayColor = [(1, 1, 0)]
+        double size.timeSamples = {
+            1: 12,
+            5: 6,
+            10: 12,
+            20: 24,
+            25: 1,
+            30: 12,
+        }
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (50, 10, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Sphere "MrSphere"
+    {
+        float3[] extent = [(-12, -12, -12), (12, 12, 12)]
+        color3f[] primvars:displayColor = [(0.4, 1, 0.2)]
+        double radius = 12
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (100, 100, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Sphere "AnotherSphere"
+    {
+        float3[] extent = [(-6, -6, -6), (6, 6, 6)]
+        color3f[] primvars:displayColor = [(1, 0.4, 0.2)]
+        double radius = 6
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (80, 100, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+
+def Scope "BasisCurves"
+{
+    def Xform "Tree"
+    {
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1000, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def "Trunk" (
+            kind = "model"
+            add references = @./BasisCurves1.usda@</px_basisCurves1>
+        )
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+        }
+
+        def "Branches" (
+            active = false
+            kind = "model"
+            add references = @./BasisCurves2.usda@</px_basisCurves2>
+        )
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -10, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+        }
+
+        def "Twigs" (
+            active = false
+            kind = "model"
+            add references = @./BasisCurves3.usda@</px_basisCurves3>
+        )
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -20, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+        }
+    }
+
+    def Xform "Tree2"
+    {
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1000, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def "Trunk2" (
+            kind = "model"
+            add references = @./BasisCurves1.usda@</px_basisCurves1>
+        )
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+        }
+
+        def "Branches2" (
+            active = false
+            kind = "model"
+            add references = @./BasisCurves2.usda@</px_basisCurves2>
+        )
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -10, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+        }
+
+        def "Twigs2" (
+            active = false
+            kind = "model"
+            add references = @./BasisCurves3.usda@</px_basisCurves3>
+        )
+        {
+            custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -20, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+        }
+    }
+
+    def BasisCurves "Loop"
+    {
+        uniform token basis = "bspline"
+        int[] curveVertexCounts = [10]
+        float3[] extent = [(-3.77021, -1.95556, -1), (2.79944, 9.61911, 1)]
+        uniform token orientation = "rightHanded"
+        point3f[] points = [(-2.77021, 5.61911, 0), (-2.64559, 1.85052, 0), (-2.52098, -1.91808, 0), (2.3203, -1.95556, 0), (2.59944, 0.794341, 0), (2.0742, 2.59551, 0), (-0.058857, 2.60262, 0), (-1.44907, 0.768724, 0), (-1.55156, 2.82384, 0), (-1.65406, 4.87896, 0)]
+        color3f[] primvars:displayColor = [(1, 1, 1)]
+        uniform token type = "cubic"
+        float[] widths = [0.22]
+        uniform token wrap = "periodic"
+        custom matrix4d xformOp:transform = ( (100, 0, 0, 0), (0, 100, 0, 0), (0, 0, 100, 0), (-3.360874, -3.963977, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+

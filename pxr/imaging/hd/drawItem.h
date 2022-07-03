@@ -179,10 +179,15 @@ public:
 
     HD_API
     TfToken const& GetMaterialTag() const {
-        return _sharedData->materialTag;
+        return _materialTag;
     }
 
-    TopologyToPrimvarVector const& GetFvarTopologyToPrimvarVector() const {
+    HD_API
+    void SetMaterialTag(TfToken const &materialTag) {
+        _materialTag = materialTag;
+    }
+
+    TopologyToPrimvarVector const &GetFvarTopologyToPrimvarVector() const {
         return _sharedData->fvarTopologyToPrimvarVector;
     }
 
@@ -250,6 +255,12 @@ private:
     // pointer to shared data across reprs, owned by rprim:
     //    bufferArrayRanges, bounds, visibility
     HdRprimSharedData const *_sharedData;
+
+    /// The materialTag allows the draw items of rprims to be organized into 
+    /// different collections based on properties of the prim's material.
+    /// E.g. A renderer may wish to organize opaque and translucent prims 
+    /// into different collections so they can be rendered seperately.
+    TfToken _materialTag;
 };
 
 

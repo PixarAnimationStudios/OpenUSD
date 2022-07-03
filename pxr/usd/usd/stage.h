@@ -1813,7 +1813,6 @@ private:
         Usd_PrimDataPtr prim, Usd_PrimDataConstPtr parent,
         UsdStagePopulationMask const *mask,
         const SdfPath &primIndexPath = SdfPath());
-    void _ComposeSubtreeInParallel(Usd_PrimDataPtr prim);
     void _ComposeSubtreesInParallel(
         const std::vector<Usd_PrimDataPtr> &prims,
         const std::vector<SdfPath> *primIndexPaths = nullptr);
@@ -2206,6 +2205,7 @@ private:
 
     // The stage's EditTarget.
     UsdEditTarget _editTarget;
+    bool _editTargetIsLocalLayer;
 
     std::unique_ptr<PcpCache> _cache;
     std::unique_ptr<Usd_ClipCache> _clipCache;

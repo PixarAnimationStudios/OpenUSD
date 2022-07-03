@@ -104,7 +104,7 @@ public:
     /// At this time all Tasks and other prims have completed the phase synced.
     ///
     /// This is an opportunity for the task to pull data from other prims
-    /// (such as a camera prim), but accessing the render index.
+    /// (such as a camera prim) by querying the render index.
     ///
     /// The task can also use the phase to create, register and update temporary
     /// resources with the resource registry or other render delegate
@@ -140,11 +140,11 @@ public:
     /// Hydra prims are marked up with a render tag and only prims
     /// marked with the render tags in the current active set are Sync'ed.
     ///
-    /// Hydra's core will combine the sets from each task and deduplicated the
+    /// Hydra's core will combine the sets from each task and deduplicate the
     /// result.  So tasks don't need to co-ordinate with each other to
-    /// Optimize the set.
+    /// optimize the set.
     ///
-    /// For those tasks that use HdRenderPass, is the typically the set passed
+    /// For those tasks that use HdRenderPass, this set is passed
     /// to HdRenderPass's Execute method.
     ///
     /// The default implementation returns an empty set

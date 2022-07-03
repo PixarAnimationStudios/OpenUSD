@@ -51,10 +51,13 @@ HgiVulkanSampler::HgiVulkanSampler(
     sampler.addressModeW =
         HgiVulkanConversions::GetSamplerAddressMode(desc.addressModeW);
 
-    sampler.compareEnable = VK_FALSE; // Eg. Percentage-closer filtering
-    sampler.compareOp = VK_COMPARE_OP_ALWAYS;
+    // Eg. Percentage-closer filtering
+    sampler.compareEnable = desc.enableCompare ? VK_TRUE : VK_FALSE;
+    sampler.compareOp = 
+        HgiVulkanConversions::GetDepthCompareFunction(desc.compareFunction);
 
-    sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+    sampler.borderColor = 
+        HgiVulkanConversions::GetBorderColor(desc.borderColor);
     sampler.mipLodBias = 0.0f;
     sampler.mipmapMode = HgiVulkanConversions::GetMipFilter(desc.mipFilter);
     sampler.minLod = 0.0f;

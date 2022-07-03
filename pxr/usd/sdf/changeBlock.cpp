@@ -28,14 +28,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SdfChangeBlock::SdfChangeBlock() 
+SdfChangeBlock::SdfChangeBlock()
+    : _key(Sdf_ChangeManager::Get()._OpenChangeBlock(this))
 {
-    Sdf_ChangeManager::Get().OpenChangeBlock();
 }
 
-SdfChangeBlock::~SdfChangeBlock() 
+void
+SdfChangeBlock::_CloseChangeBlock(void const *key) const
 {
-    Sdf_ChangeManager::Get().CloseChangeBlock();
+    Sdf_ChangeManager::Get()._CloseChangeBlock(this, key);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

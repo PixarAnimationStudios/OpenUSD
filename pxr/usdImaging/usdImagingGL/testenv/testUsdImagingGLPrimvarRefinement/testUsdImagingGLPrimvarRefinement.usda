@@ -1,0 +1,166 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+class Mesh "QuadMeshProto"
+{
+    point3f[] points = [
+        (-1, 0, -1),
+        (-0.33333, 0, -1),
+        (0.33333, 0, -1),
+        (1, 0, -1),
+        (-1, 0, -0.33333),
+        (-0.33333, 0, -0.33333),
+        (0.3333, 0, -0.33333),
+        (1, 0, -0.33333),
+        (-1, 0, 0.33333),
+        (-0.33333, 0, 0.33333),
+        (0.33333, 0, 0.33333),
+        (1, 0, 0.33333),
+        (-1, 0, 1),
+        (-0.33333, 0, 1),
+        (0.33333, 0, 1),
+        (1, 0, 1)]
+
+    color3f[] primvars:displayColor = [
+        (1, 0, 0),
+        (0, 1, 0),
+        (0, 1, 0),
+        (0, 0, 1),
+        (1, 0, 0),
+        (0, 1, 0),
+        (0, 1, 0),
+        (0, 0, 1),
+        (1, 0, 0),
+        (0, 1, 0),
+        (0, 1, 0),
+        (0, 0, 1),
+        (1, 0, 0),
+        (0, 1, 0),
+        (0, 1, 0),
+        (0, 0, 1)]
+
+    float[] primvars:scalarField = [
+        -1, -0.696732, -0.696732, -1,
+        -0.696732, 0.499991, 0.499991, -0.696732,
+        -0.696732, 0.499991, 0.499991, -0.696732,
+        -1, -0.696732, -0.696732, -1] ( interpolation = "vertex" )
+
+    int[] holeIndices = [4]
+
+    int[] faceVertexCounts = [
+        4, 4, 4, 4, 4, 4, 4, 4, 4]
+    int[] faceVertexIndices = [
+        0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6,
+        4, 5, 9, 8, 5, 6, 10, 9, 6, 7, 11, 10,
+        8, 9, 13, 12, 9, 10, 14, 13, 10, 11, 15, 14]
+
+    uniform token subdivisionScheme = "catmullClark"
+    uniform token boundaryInterpolation = "edgeOnly"
+}
+
+class Mesh "TriangleMeshProto"
+{
+    point3f[] points = [
+        (-1, 0, -1),
+        (-0.33333, 0, -1),
+        (0.33333, 0, -1),
+        (1, 0, -1),
+        (-1, 0, -0.33333),
+        (-0.33333, 0, -0.33333),
+        (0.3333, 0, -0.33333),
+        (1, 0, -0.33333),
+        (-1, 0, 0.33333),
+        (-0.33333, 0, 0.33333),
+        (0.33333, 0, 0.33333),
+        (1, 0, 0.33333),
+        (-1, 0, 1),
+        (-0.33333, 0, 1),
+        (0.33333, 0, 1),
+        (1, 0, 1)]
+
+    color3f[] primvars:displayColor = [
+        (1, 0, 0),
+        (0, 1, 0),
+        (0, 1, 0),
+        (0, 0, 1),
+        (1, 0, 0),
+        (0, 1, 0),
+        (0, 1, 0),
+        (0, 0, 1),
+        (1, 0, 0),
+        (0, 1, 0),
+        (0, 1, 0),
+        (0, 0, 1),
+        (1, 0, 0),
+        (0, 1, 0),
+        (0, 1, 0),
+        (0, 0, 1)]
+
+    float[] primvars:scalarField = [
+        -1, -0.696732, -0.696732, -1,
+        -0.696732, 0.499991, 0.499991, -0.696732,
+        -0.696732, 0.499991, 0.499991, -0.696732,
+        -1, -0.696732, -0.696732, -1] ( interpolation = "vertex" )
+
+    int[] holeIndices = [8,9]
+
+    int[] faceVertexCounts = [
+        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+    int[] faceVertexIndices = [
+        0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6,
+        4, 5, 9, 4, 9, 8, 5, 6, 10, 5, 10, 9, 6, 7, 11, 6, 11, 10,
+        8, 9, 13, 8, 13, 12, 9, 10, 14, 9, 14, 13, 10, 11, 15, 10, 15, 14]
+
+    uniform token subdivisionScheme = "loop"
+    uniform token boundaryInterpolation = "edgeOnly"
+}
+
+def Scope "Scene" (
+    kind = "component"
+)
+{
+    def Scope "Geom"
+    {
+
+        def Mesh "QuadMeshVertexColor" ( references = </QuadMeshProto> )
+        {
+            double3 xformOp:translate = (-1.25, 0, 1.25)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            color3f[] primvars:displayColor (
+                interpolation = "vertex"
+            )
+        }
+        
+        def Mesh "QuadMeshVaryingColor" ( references = </QuadMeshProto> )
+        {
+            double3 xformOp:translate = (1.25, 0, 1.25)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            color3f[] primvars:displayColor (
+                interpolation = "varying"
+            )
+        }
+
+        def Mesh "TriangleMeshVertexColor" ( references = </TriangleMeshProto> )
+        {
+            double3 xformOp:translate = (-1.25, 0, -1.25)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            
+            color3f[] primvars:displayColor (
+                interpolation = "vertex"
+            )
+        }
+
+        def Mesh "TriangleMeshVaryingColor" ( references = </TriangleMeshProto> )
+        {
+            double3 xformOp:translate = (1.25, 0, -1.25)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            color3f[] primvars:displayColor (
+                interpolation = "varying"
+            )
+        }
+    }
+}

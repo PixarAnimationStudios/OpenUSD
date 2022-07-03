@@ -316,6 +316,7 @@ public:
     SdfAllowed IsValidValue(const VtValue& value) const;
 
     /// Returns all registered type names.
+    SDF_API
     std::vector<SdfValueTypeName> GetAllTypes() const;
 
     /// Return the type name object for the given type name token.

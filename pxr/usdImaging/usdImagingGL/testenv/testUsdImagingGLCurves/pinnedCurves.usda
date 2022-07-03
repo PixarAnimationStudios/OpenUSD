@@ -1,0 +1,23 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Xform "World"
+{
+    def BasisCurves "curve"
+    {
+        uniform token basis = "bspline"
+        int[] curveVertexCounts = [5]
+        float3[] extent = [(-1, -8.742278e-8, 0), (1, 1, 0)]
+        point3f[] points = [(1, 0, 0), (0.70710677, 0.70710677, 0), (-4.371139e-8, 1, 0), (-0.70710677, 0.70710677, 0), (-1, -8.742278e-8, 0)] (
+            interpolation = "vertex"
+        )
+        uniform token type = "cubic"
+        float[] widths = [0.05, 0.05, 0.05, 0.05, 0.05] (
+            interpolation = "vertex"
+        )
+        uniform token wrap = "pinned"
+    }
+}
+

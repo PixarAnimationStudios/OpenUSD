@@ -45,7 +45,8 @@ public:
     //
 
     HGIMETAL_API
-    static MTLPixelFormat GetPixelFormat(HgiFormat inFormat);
+    static MTLPixelFormat GetPixelFormat(HgiFormat inFormat,
+                                         HgiTextureUsage inUsage);
 
     HGIMETAL_API
     static MTLVertexFormat GetVertexFormat(HgiFormat inFormat);
@@ -72,7 +73,10 @@ public:
     static MTLStoreAction GetAttachmentStoreOp(HgiAttachmentStoreOp storeOp);
     
     HGIMETAL_API
-    static MTLCompareFunction GetDepthCompareFunction(HgiCompareFunction cf);
+    static MTLCompareFunction GetCompareFunction(HgiCompareFunction cf);
+
+    HGIMETAL_API
+    static MTLStencilOperation GetStencilOp(HgiStencilOp op);
     
     HGIMETAL_API
     static MTLTextureType GetTextureType(HgiTextureType tt);
@@ -86,6 +90,9 @@ public:
     HGIMETAL_API
     static MTLSamplerMipFilter GetMipFilter(HgiMipFilter mf);
 
+    HGIMETAL_API
+    static MTLSamplerBorderColor GetBorderColor(HgiBorderColor bc);
+
 #if (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15) \
     || __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
     HGIMETAL_API
@@ -97,6 +104,9 @@ public:
 
     HGIMETAL_API
     static MTLPrimitiveType GetPrimitiveType(HgiPrimitiveType pt);
+
+    HGIMETAL_API
+    static MTLColorWriteMask GetColorWriteMask(HgiColorMask mask);
 };
 
 

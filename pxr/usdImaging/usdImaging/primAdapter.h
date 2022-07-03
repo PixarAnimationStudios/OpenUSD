@@ -55,6 +55,8 @@ class UsdImagingIndexProxy;
 class UsdImagingInstancerContext;
 class HdExtComputationContext;
 
+class UsdImagingDataSourceStageGlobals;
+
 using UsdImagingPrimAdapterSharedPtr = 
     std::shared_ptr<class UsdImagingPrimAdapter>;
 
@@ -67,16 +69,32 @@ class UsdImagingPrimAdapter
 {
 public:
     
-    // ---------------------------------------------------------------------- //
-    /// \name Initialization
-    // ---------------------------------------------------------------------- //
- 
     UsdImagingPrimAdapter()
     {}
 
     USDIMAGING_API
     virtual ~UsdImagingPrimAdapter();
 
+    // ---------------------------------------------------------------------- //
+    /// \name Scene Index Support
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    virtual TfTokenVector GetImagingSubprims();
+
+    USDIMAGING_API
+    virtual TfToken GetImagingSubprimType(TfToken const& subprim);
+
+    USDIMAGING_API
+    virtual HdContainerDataSourceHandle GetImagingSubprimData(
+            TfToken const& subprim,
+            UsdPrim const& prim,
+            const UsdImagingDataSourceStageGlobals &stageGlobals);
+
+    // ---------------------------------------------------------------------- //
+    /// \name Initialization
+    // ---------------------------------------------------------------------- //
+ 
     /// Called to populate the RenderIndex for this UsdPrim. The adapter is
     /// expected to create one or more prims in the render index using the
     /// given proxy.
@@ -342,10 +360,16 @@ public:
     /// \name Selection
     // ---------------------------------------------------------------------- //
 
+    /// \deprecated Call and implement GetScenePrimPaths instead.
     USDIMAGING_API
     virtual SdfPath GetScenePrimPath(SdfPath const& cachePath,
-                                     int instanceIndex,
-                                     HdInstancerContext *instancerCtx) const;
+        int instanceIndex,
+        HdInstancerContext *instancerCtx) const;
+
+    USDIMAGING_API
+    virtual SdfPathVector GetScenePrimPaths(SdfPath const& cachePath,
+        std::vector<int> const& instanceIndices,
+        std::vector<HdInstancerContext> *instancerCtxs) const;
 
     // Add the given usdPrim to the HdSelection object, to mark it for
     // selection highlighting. cachePath is the path of the object referencing
@@ -610,6 +634,12 @@ protected:
     USDIMAGING_API
     UsdImagingPrimvarDescCache* _GetPrimvarDescCache() const;
 
+    UsdImaging_NonlinearSampleCountCache*
+        _GetNonlinearSampleCountCache() const;
+
+    UsdImaging_BlurScaleCache*
+        _GetBlurScaleCache() const;
+
     USDIMAGING_API
     UsdPrim _GetPrim(SdfPath const& usdPath) const;
 
@@ -653,6 +683,14 @@ protected:
     // Returns the material contexts from the renderer delegate.
     USDIMAGING_API
     TfTokenVector _GetMaterialRenderContexts() const;
+
+    /// Returns whether custom shading of prims is enabled.
+    USDIMAGING_API
+    bool _GetSceneMaterialsEnabled() const;
+
+    /// Returns whether lights found in the usdscene are enabled.
+    USDIMAGING_API
+    bool _GetSceneLightsEnabled() const;
 
     // Returns true if render delegate wants primvars to be filtered based.
     // This will filter the primvars based on the bound material primvar needs.

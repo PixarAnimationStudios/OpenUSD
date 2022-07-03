@@ -1,0 +1,169 @@
+#usda 1.0
+(
+    startTimeCode = 1
+    endTimeCode = 19
+    upAxis = "Z"
+)
+
+def Material "Material"
+{
+    token outputs:surface.connect = </Material/Preview.outputs:surface>
+
+    def Shader "Preview"
+    {
+        uniform token info:id = "UsdPreviewSurface"
+        color3f inputs:diffuseColor.connect = </Material/Texture.outputs:rgb>
+        float inputs:roughness = 0.8
+        token outputs:surface
+    }
+
+    def Shader "Primvar"
+    {
+        uniform token info:id = "UsdPrimvarReader_float2"
+        token inputs:varname = "st"
+        float2 outputs:result
+    }
+
+    def Shader "Texture"
+    {
+        uniform token info:id = "UsdUVTexture"
+        asset inputs:file = @./authoredMips.tex@
+        float2 inputs:st.connect = </Material/Primvar.outputs:result>
+        float3 outputs:rgb
+    }
+}
+
+over "Plane" (
+    instancable = true
+)
+{
+    float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 2, 3]
+    rel material:binding = </Material>
+    point3f[] points = [(-2, -2, 0), (2, -2, 0), (2, 2, 0), (-2, 2, 0)]
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+    float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+        interpolation = "vertex"
+    )
+}
+
+over "Row" (
+    instancable = true
+)
+{
+    def Mesh "Plane0" (
+        add inherits = </Plane>
+    )
+    {
+        double3 xformOp:translate = (-10, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Mesh "Plane1" (
+        add inherits = </Plane>
+    )
+    {
+        double3 xformOp:translate = (-5, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Mesh "Plane2" (
+        add inherits = </Plane>
+    )
+    {
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Mesh "Plane3" (
+        add inherits = </Plane>
+    )
+    {
+        double3 xformOp:translate = (5, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Mesh "Plane4" (
+        add inherits = </Plane>
+    )
+    {
+        double3 xformOp:translate = (10, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Xform "Row0" (
+    add inherits = </Row>
+)
+{
+    double3 xformOp:translate = (0, -10, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "Row1" (
+    add inherits = </Row>
+)
+{
+    double3 xformOp:translate = (0, -5, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "Row2" (
+    add inherits = </Row>
+)
+{
+    double3 xformOp:translate = (0, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "Row3" (
+    add inherits = </Row>
+)
+{
+    double3 xformOp:translate = (0, 5, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "Row4" (
+    add inherits = </Row>
+)
+{
+    double3 xformOp:translate = (0, 10, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Camera "main_cam"
+{
+    float focalLength = 150.0
+    float focalLength.timeSamples = {
+       1: 1000.0,
+       2: 750.0,
+       3: 500.0,
+       4: 400.0,
+       5: 300.0,
+       6: 200.0,
+       7: 175.0,
+       8: 150.0,
+       9: 125.0,
+       10: 100.0,
+       11: 90.0,
+       12: 75.0,
+       13: 65.0,
+       14: 50.0,
+       15: 35.0,
+       16: 20.0,
+       17: 15.0,
+       18: 10.0,
+       19: 5.0
+    }
+    float fStop = 100.0
+    float focusDistance = 200.0
+
+    double3 xformOp:translate = (0, 0, 200)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def DomeLight "Light"
+{
+}

@@ -52,6 +52,7 @@ class TestTrace(unittest.TestCase):
 
         gr = Trace.Reporter.globalReporter
         self.assertIsInstance(gr, Trace.Reporter)
+        gr.shouldAdjustForOverheadAndNoise = False
 
         if not os.getenv('PXR_ENABLE_GLOBAL_TRACE', False):
             self.assertEqual(gc.enabled , False)
@@ -204,11 +205,20 @@ class TestTrace(unittest.TestCase):
         gc.enabled = True
         sleepTime = 1.0
         b = gc.BeginEvent("Test tuple")
+        b2 = time.time()
         time.sleep(sleepTime)
         e = gc.EndEvent("Test tuple")
+        e2 = time.time()
+
         elapsedSeconds = Trace.GetElapsedSeconds(b, e)
+        expectedElapsedSeconds = e2 - b2
         gr.Report()
-        self.assertTrue(abs(elapsedSeconds - sleepTime) < 0.05)
+
+        elapsedDiff = abs(elapsedSeconds - expectedElapsedSeconds)
+        self.assertTrue(elapsedDiff < 0.005,
+                        "Elapsed: {} Expected: {} Diff: {}".format(
+                            elapsedSeconds, expectedElapsedSeconds, 
+                            elapsedDiff))
 
         print("")
 

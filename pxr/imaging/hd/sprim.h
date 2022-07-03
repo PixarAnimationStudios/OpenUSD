@@ -30,7 +30,6 @@
 #include "pxr/imaging/hd/types.h"
 
 #include "pxr/usd/sdf/path.h"
-#include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -49,7 +48,8 @@ class HdRenderParam;
 ///
 /// The lifetime of HdSprim is owned by HdRenderIndex.
 ///
-class HdSprim {
+class HdSprim
+{
 public:
     HD_API
     HdSprim(SdfPath const & id);

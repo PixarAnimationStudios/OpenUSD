@@ -30,21 +30,21 @@
 --- --------------------------------------------------------------------------
 -- glsl Instancing.Transform
 
-// quaternion to matrix. x=real, yzw=imaginary
+// quaternion to matrix. xyz = imaginary, w = real
 MAT4 GetRotationMatrix(vec4 q)
 {
     MAT4 r;
-    r[0].xyzw = vec4(1 - 2 * (q.z * q.z + q.w * q.w),
-                         2 * (q.y * q.z + q.w * q.x),
-                         2 * (q.y * q.w - q.z * q.x),
+    r[0].xyzw = vec4(1 - 2 * (q.y * q.y + q.z * q.z),
+                         2 * (q.x * q.y + q.z * q.w),
+                         2 * (q.x * q.z - q.y * q.w),
                      0);
-    r[1].xyzw = vec4(    2 * (q.y * q.z - q.w * q.x),
-                     1 - 2 * (q.y * q.y + q.w * q.w),
-                         2 * (q.z * q.w + q.y * q.x),
+    r[1].xyzw = vec4(    2 * (q.x * q.y - q.z * q.w),
+                     1 - 2 * (q.x * q.x + q.z * q.z),
+                         2 * (q.y * q.z + q.x * q.w),
                      0);
-    r[2].xyzw = vec4(    2 * (q.y * q.w + q.z * q.x),
-                         2 * (q.z * q.w - q.y * q.x),
-                     1 - 2 * (q.y * q.y + q.z * q.z),
+    r[2].xyzw = vec4(    2 * (q.x * q.z + q.y * q.w),
+                         2 * (q.y * q.z - q.x * q.w),
+                     1 - 2 * (q.x * q.x + q.y * q.y),
                      0);
     r[3] = vec4(0, 0, 0, 1);
     return r;
@@ -71,7 +71,7 @@ MAT4 GetInstanceTransform(int level)
                0,   0,   0, 1) * m;
 #endif
 
-#ifdef HD_HAS_INSTANCE_rotate // GfQuaternion(real, ix, iy, iz)
+#ifdef HD_HAS_INSTANCE_rotate // GfQuat(ix, iy, iz, real)
     vec4 q = HdGetInstance_rotate(level, /*default=*/vec4(0));
     m = GetRotationMatrix(q) * m;
 #endif
@@ -104,7 +104,7 @@ MAT4 GetInstanceTransformInverse(int level)
 
 #ifdef HD_HAS_INSTANCE_rotate
     vec4 q = HdGetInstance_rotate(level, /*default=*/vec4(0));
-    q.yzw = -q.yzw; // inverse rotataion axis
+    q.xyz = -q.xyz; // inverse rotataion axis
     m = GetRotationMatrix(q) * m;
 #endif
 
@@ -174,14 +174,14 @@ bool IsFlipped()
 #ifdef HD_HAS_INSTANCE_scale
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_scale(i, /*default=*/vec3(1));
-        flip = flip ^^ ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
+        flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
     }
 #endif
 
 #ifdef HD_HAS_INSTANCE_instanceTransform
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_instanceTransform(i, MAT4(1));
-        flip = flip ^^ (determinant(m) < 0.0);
+        flip = flip != (determinant(m) < 0.0);
     }
 #endif
 

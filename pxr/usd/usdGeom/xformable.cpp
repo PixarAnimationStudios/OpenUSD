@@ -428,6 +428,12 @@ UsdGeomXformOp
 UsdGeomXformable::MakeMatrixXform() const
 {
     ClearXformOpOrder();
+    bool unused = false;
+    if (!GetOrderedXformOps(&unused).empty()) {
+        TF_WARN("Could not clear xformOpOrder for <%s>",
+            GetPrim().GetPath().GetText());
+        return UsdGeomXformOp();
+    }
     return AddTransformOp();
 }
 
@@ -534,6 +540,12 @@ UsdGeomXformable::XformQuery::GetLocalTransformation(
     const UsdTimeCode time) const 
 {
     return UsdGeomXformable::GetLocalTransformation(transform, _xformOps, time);
+}
+
+bool
+UsdGeomXformable::XformQuery::HasNonEmptyXformOpOrder() const
+{
+    return !_xformOps.empty();
 }
 
 static

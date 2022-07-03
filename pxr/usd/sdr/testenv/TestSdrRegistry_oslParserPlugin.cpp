@@ -22,8 +22,14 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/vt/array.h"
 #include "pxr/usd/ndr/parserPlugin.h"
 #include "pxr/usd/sdr/shaderNode.h"
+#include "pxr/usd/sdr/shaderProperty.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,6 +47,49 @@ public:
     NdrNodeUniquePtr Parse(
         const NdrNodeDiscoveryResult& discoveryResult) override
     {
+        // Register some test properties
+        NdrPropertyUniquePtrVec properties;
+
+        #define ADD_PROPERTY(type, suffix, arrayLen, value, metadata)   \
+            properties.emplace_back(                                    \
+                SdrShaderPropertyUniquePtr(                             \
+                    new SdrShaderProperty(                              \
+                        TfToken(#type #suffix "Property"),              \
+                        SdrPropertyTypes->type,                         \
+                        VtValue(value),                                 \
+                        false,                                          \
+                        arrayLen,                                       \
+                        metadata,                                       \
+                        {},                                             \
+                        {})));
+
+        ADD_PROPERTY(Int,      , 0, 0               , {})
+        ADD_PROPERTY(String,   , 0, std::string()   , {})
+        ADD_PROPERTY(Float,    , 0, 0.0f            , {})
+        ADD_PROPERTY(Color,    , 0, GfVec3f(0.0f)   , {})
+        ADD_PROPERTY(Point,    , 0, GfVec3f(0.0f)   , {})
+        ADD_PROPERTY(Normal,   , 0, GfVec3f(0.0f)   , {})
+        ADD_PROPERTY(Vector,   , 0, GfVec3f(0.0f)   , {})
+        ADD_PROPERTY(Matrix,   , 0, GfMatrix4d(1.0) , {})
+        ADD_PROPERTY(Struct,   , 0,                 , {})
+        ADD_PROPERTY(Terminal, , 0,                 , {})
+        ADD_PROPERTY(Vstruct,  , 0,                 , {})
+
+        // Add different specialized float array versions
+        VtFloatArray v2 = {0.0f, 0.0f};
+        ADD_PROPERTY(Float, _Vec2, 2, v2, {})
+        VtFloatArray v3 = {0.0f, 0.0f, 0.0f};
+        ADD_PROPERTY(Float, _Vec3, 3, v3, {})
+        VtFloatArray v4 = {0.0f, 0.0f, 0.0f, 0.0f};
+        ADD_PROPERTY(Float, _Vec4, 4, v4, {})
+
+        // Add a String_Asset property
+        NdrTokenMap assetMetadata =
+            {{SdrPropertyMetadata->IsAssetIdentifier, std::string()}};
+        ADD_PROPERTY(String, _Asset, 0, std::string(), assetMetadata)
+
+        #undef ADD_PROPERTY
+
         return NdrNodeUniquePtr(
             new SdrShaderNode(
                 discoveryResult.identifier,
@@ -51,7 +100,8 @@ public:
                 discoveryResult.sourceType,
                 discoveryResult.resolvedUri,
                 discoveryResult.resolvedUri,
-                NdrPropertyUniquePtrVec()
+                std::move(properties),
+                discoveryResult.metadata
             )
         );
     }

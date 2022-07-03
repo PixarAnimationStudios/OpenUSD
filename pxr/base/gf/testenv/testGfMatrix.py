@@ -237,23 +237,31 @@ class TestGfMatrix(unittest.TestCase):
                 self.assertEqual(v, m.GetColumn(i))
                     
             m = Matrix(4)
+            m_original = m
             m *= Matrix(1./4)
             self.assertEqual(m, Matrix(1))
+            self.assertTrue(m is m_original)
             m = Matrix(4)
             self.assertEqual(m * Matrix(1./4), Matrix(1))
 
             self.assertEqual(Matrix(4) * 2, Matrix(8))
             self.assertEqual(2 * Matrix(4), Matrix(8))
             m = Matrix(4)
+            m_original = m
             m *= 2
             self.assertEqual(m, Matrix(8))
+            self.assertTrue(m is m_original)
 
             m = Matrix(3)
+            m_original = m
             m += Matrix(2)
             self.assertEqual(m, Matrix(5))
+            self.assertTrue(m is m_original)
             m = Matrix(3)
+            m_original = m
             m -= Matrix(2)
             self.assertEqual(m, Matrix(1))
+            self.assertTrue(m is m_original)
 
             self.assertEqual(Matrix(2) + Matrix(3), Matrix(5))
             self.assertEqual(Matrix(4) - Matrix(4), Matrix(0))

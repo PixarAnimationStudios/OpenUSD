@@ -39,15 +39,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// to each prim during Sync(). HdEmbree uses this class to pass top-level
 /// embree state around.
 /// 
-class HdEmbreeRenderParam final : public HdRenderParam {
+class HdEmbreeRenderParam final : public HdRenderParam
+{
 public:
     HdEmbreeRenderParam(RTCDevice device, RTCScene scene,
                         HdRenderThread *renderThread,
                         std::atomic<int> *sceneVersion)
         : _scene(scene), _device(device)
         , _renderThread(renderThread), _sceneVersion(sceneVersion)
-        {}
-    virtual ~HdEmbreeRenderParam() = default;
+    {}
 
     /// Accessor for the top-level embree scene.
     RTCScene AcquireSceneForEdit() {

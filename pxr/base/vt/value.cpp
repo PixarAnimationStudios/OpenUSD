@@ -440,8 +440,7 @@ void VtValue::_RegisterCast(type_info const &from,
 
 VtValue VtValue::_PerformCast(type_info const &to, VtValue const &val)
 {
-    if (TfSafeTypeCompare(val.GetTypeid(), to))
-        return val;
+    TF_DEV_AXIOM(!TfSafeTypeCompare(val.GetTypeid(), to));
     return Vt_CastRegistry::GetInstance().PerformCast(to, val);
 }
 
@@ -493,14 +492,12 @@ operator<<(std::ostream &out, const VtValue &self) {
     return self.IsEmpty() ? out : self._info->StreamOut(self._storage, out);
 }
 
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
 TfPyObjWrapper
 VtValue::_GetPythonObject() const
 {
     return _info.GetLiteral() ?
         _info.Get()->GetPyObj(_storage) : TfPyObjWrapper();
 }
-#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 static void const *
 _FindOrCreateDefaultValue(std::type_info const &type,

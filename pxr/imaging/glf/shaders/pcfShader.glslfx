@@ -44,28 +44,27 @@
 #define JITTER_NUM_SAMPLES 16
 #define PCF_NUM_SAMPLES JITTER_NUM_SAMPLES 
 
-float shadowSample(int index, vec4 coord);
-float shadowCompare(int index, vec4 coord);
+FORWARD_DECL(float shadowSample(int index, vec4 coord));
+FORWARD_DECL(float shadowCompare(int index, vec4 coord));
 
-vec2 jitter[JITTER_NUM_SAMPLES] =
-    vec2[JITTER_NUM_SAMPLES](
-        vec2(-0.94201624, -0.39906216),
-        vec2( 0.94558609, -0.76890725),
-        vec2(-0.09418410, -0.92938870),
-        vec2( 0.34495938,  0.29387760),
-        vec2(-0.91588581,  0.45771432),
-        vec2(-0.81544232, -0.87912464),
-        vec2(-0.38277543,  0.27676845),
-        vec2( 0.97484398,  0.75648379),
-        vec2( 0.44323325, -0.97511554),
-        vec2( 0.53742981, -0.47373420),
-        vec2(-0.26496911, -0.41893023),
-        vec2( 0.79197514,  0.19090188),
-        vec2(-0.24188840,  0.99706507),
-        vec2(-0.81409955,  0.91437590),
-        vec2( 0.19984126,  0.78641367),
-        vec2( 0.14383161, -0.14100790)
-    );
+vec2 jitter[JITTER_NUM_SAMPLES] = {
+    vec2(-0.94201624, -0.39906216),
+    vec2( 0.94558609, -0.76890725),
+    vec2(-0.09418410, -0.92938870),
+    vec2( 0.34495938,  0.29387760),
+    vec2(-0.91588581,  0.45771432),
+    vec2(-0.81544232, -0.87912464),
+    vec2(-0.38277543,  0.27676845),
+    vec2( 0.97484398,  0.75648379),
+    vec2( 0.44323325, -0.97511554),
+    vec2( 0.53742981, -0.47373420),
+    vec2(-0.26496911, -0.41893023),
+    vec2( 0.79197514,  0.19090188),
+    vec2(-0.24188840,  0.99706507),
+    vec2(-0.81409955,  0.91437590),
+    vec2( 0.19984126,  0.78641367),
+    vec2( 0.14383161, -0.14100790)
+};
 
 in vec2 FshadowFilterWidth[NUM_SHADOWS];
 
@@ -98,30 +97,30 @@ shadowFilter(int index, vec4 Pshadow, vec4 Peye)
 #define JITTER_NUM_SAMPLES 16
 #define PCF_NUM_SAMPLES JITTER_NUM_SAMPLES 
 
-float shadowSample(int index, vec4 coord);
-float shadowCompare(int index, vec4 coord);
+FORWARD_DECL(float shadowSample(int index, vec4 coord));
+FORWARD_DECL(float shadowCompare(int index, vec4 coord));
 
-vec2 jitter[JITTER_NUM_SAMPLES] =
-    vec2[JITTER_NUM_SAMPLES](
-        vec2(-0.94201624, -0.39906216),
-        vec2( 0.94558609, -0.76890725),
-        vec2(-0.09418410, -0.92938870),
-        vec2( 0.34495938,  0.29387760),
-        vec2(-0.91588581,  0.45771432),
-        vec2(-0.81544232, -0.87912464),
-        vec2(-0.38277543,  0.27676845),
-        vec2( 0.97484398,  0.75648379),
-        vec2( 0.44323325, -0.97511554),
-        vec2( 0.53742981, -0.47373420),
-        vec2(-0.26496911, -0.41893023),
-        vec2( 0.79197514,  0.19090188),
-        vec2(-0.24188840,  0.99706507),
-        vec2(-0.81409955,  0.91437590),
-        vec2( 0.19984126,  0.78641367),
-        vec2( 0.14383161, -0.14100790)
-    );
+vec2 jitter[JITTER_NUM_SAMPLES] = {
+    vec2(-0.94201624, -0.39906216),
+    vec2( 0.94558609, -0.76890725),
+    vec2(-0.09418410, -0.92938870),
+    vec2( 0.34495938,  0.29387760),
+    vec2(-0.91588581,  0.45771432),
+    vec2(-0.81544232, -0.87912464),
+    vec2(-0.38277543,  0.27676845),
+    vec2( 0.97484398,  0.75648379),
+    vec2( 0.44323325, -0.97511554),
+    vec2( 0.53742981, -0.47373420),
+    vec2(-0.26496911, -0.41893023),
+    vec2( 0.79197514,  0.19090188),
+    vec2(-0.24188840,  0.99706507),
+    vec2(-0.81409955,  0.91437590),
+    vec2( 0.19984126,  0.78641367),
+    vec2( 0.14383161, -0.14100790)
+};
 
-vec2 computeShadowFilterWidth(int index, vec4 Peye); // defined in simpleLighting.glslfx
+// defined in simpleLighting.glslfx
+FORWARD_DECL(vec2 computeShadowFilterWidth(int index, vec4 Peye));
 
 float
 shadowFilter(int index, vec4 Pshadow, vec4 Peye)

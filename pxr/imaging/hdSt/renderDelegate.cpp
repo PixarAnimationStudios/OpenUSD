@@ -25,6 +25,7 @@
 #include "pxr/imaging/hdSt/renderDelegate.h"
 
 #include "pxr/imaging/hdSt/basisCurves.h"
+#include "pxr/imaging/hdSt/drawItemsCache.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/extComputation.h"
 #include "pxr/imaging/hdSt/field.h"
@@ -53,7 +54,6 @@
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/hio/glslfx.h"
 
@@ -82,6 +82,9 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->extComputation,
     HdPrimTypeTokens->material,
     HdPrimTypeTokens->domeLight,
+    HdPrimTypeTokens->cylinderLight,
+    HdPrimTypeTokens->diskLight,
+    HdPrimTypeTokens->distantLight,
     HdPrimTypeTokens->rectLight,
     HdPrimTypeTokens->simpleLight,
     HdPrimTypeTokens->sphereLight
@@ -174,6 +177,7 @@ HdStRenderDelegate::HdStRenderDelegate(HdRenderSettingsMap const& settingsMap)
     : HdRenderDelegate(settingsMap)
     , _hgi(nullptr)
     , _renderParam(std::make_unique<HdStRenderParam>())
+    , _drawItemsCache(std::make_unique<HdSt_DrawItemsCache>())
 {
     // Initialize the settings and settings descriptors.
     _settingDescriptors = {
@@ -295,16 +299,37 @@ HdStRenderDelegate::GetResourceRegistry() const
     return _resourceRegistry;
 }
 
+static
+bool
+_AovHasIdSemantic(TfToken const & name)
+{
+    return name == HdAovTokens->primId ||
+           name == HdAovTokens->instanceId ||
+           name == HdAovTokens->elementId ||
+           name == HdAovTokens->edgeId ||
+           name == HdAovTokens->pointId;
+}
+
 HdAovDescriptor
 HdStRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
 {
     const bool colorDepthMSAA = true; // GL requires color/depth to be matching.
 
     if (name == HdAovTokens->color) {
-        HdFormat colorFormat = HdFormatFloat16Vec4;
-        return HdAovDescriptor(colorFormat,colorDepthMSAA, VtValue(GfVec4f(0)));
+        return HdAovDescriptor(
+                HdFormatFloat16Vec4, colorDepthMSAA, VtValue(GfVec4f(0)));
     } else if (HdAovHasDepthSemantic(name)) {
-        return HdAovDescriptor(HdFormatFloat32, colorDepthMSAA, VtValue(1.0f));
+        return HdAovDescriptor(
+                HdFormatFloat32, colorDepthMSAA, VtValue(1.0f));
+    } else if (HdAovHasDepthStencilSemantic(name)) {
+        return HdAovDescriptor(
+                HdFormatFloat32UInt8, colorDepthMSAA, VtValue(1.0f));
+    } else if (_AovHasIdSemantic(name)) {
+        return HdAovDescriptor(
+                HdFormatUNorm8Vec4, colorDepthMSAA, VtValue(GfVec4f(0)));
+    } else if (name == HdAovTokens->Neye) {
+        return HdAovDescriptor(
+                HdFormatUNorm8Vec4, colorDepthMSAA, VtValue(GfVec4f(0)));
     }
 
     return HdAovDescriptor();
@@ -376,6 +401,9 @@ HdStRenderDelegate::CreateSprim(TfToken const& typeId,
     } else if (typeId == HdPrimTypeTokens->domeLight ||
                 typeId == HdPrimTypeTokens->simpleLight ||
                 typeId == HdPrimTypeTokens->sphereLight ||
+                typeId == HdPrimTypeTokens->diskLight ||
+                typeId == HdPrimTypeTokens->distantLight ||
+                typeId == HdPrimTypeTokens->cylinderLight ||
                 typeId == HdPrimTypeTokens->rectLight) {
         return new HdStLight(sprimId, typeId);
     } else {
@@ -399,6 +427,9 @@ HdStRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
     } else if (typeId == HdPrimTypeTokens->domeLight ||
                 typeId == HdPrimTypeTokens->simpleLight ||
                 typeId == HdPrimTypeTokens->sphereLight ||
+                typeId == HdPrimTypeTokens->diskLight ||
+                typeId == HdPrimTypeTokens->distantLight ||
+                typeId == HdPrimTypeTokens->cylinderLight ||
                 typeId == HdPrimTypeTokens->rectLight) {
         return new HdStLight(SdfPath::EmptyPath(), typeId);
     } else {
@@ -454,13 +485,13 @@ HdSprim *
 HdStRenderDelegate::_CreateFallbackMaterialPrim()
 {
     HioGlslfxSharedPtr glslfx =
-        std::make_shared<HioGlslfx>(HdStPackageFallbackSurfaceShader());
+        std::make_shared<HioGlslfx>(HdStPackageFallbackMaterialNetworkShader());
 
-    HdStSurfaceShaderSharedPtr fallbackShaderCode =
+    HdSt_MaterialNetworkShaderSharedPtr fallbackShaderCode =
         std::make_shared<HdStGLSLFXShader>(glslfx);
 
     HdStMaterial *material = new HdStMaterial(SdfPath::EmptyPath());
-    material->SetSurfaceShader(fallbackShaderCode);
+    material->SetMaterialNetworkShader(fallbackShaderCode);
 
     return material;
 }
@@ -494,12 +525,14 @@ HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
     // see bug126621. currently dispatch buffers need to be released
     //                more frequently than we expect.
     _resourceRegistry->GarbageCollectDispatchBuffers();
+
+    _drawItemsCache->GarbageCollect();
 }
 
 bool
 HdStRenderDelegate::IsSupported()
 {
-    return (GlfContextCaps::GetInstance().glVersion >= 400);
+    return Hgi::IsSupported();
 }
 
 TfTokenVector
@@ -526,6 +559,12 @@ bool
 HdStRenderDelegate::IsPrimvarFilteringNeeded() const
 {
     return true;
+}
+
+HdStDrawItemsCachePtr
+HdStRenderDelegate::GetDrawItemsCache() const
+{
+    return _drawItemsCache.get();
 }
 
 Hgi*

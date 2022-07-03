@@ -78,14 +78,26 @@ struct UsdTokensType {
     /// 
     /// Property namespace prefix for the UsdCollectionAPI schema.
     const TfToken collection;
+    /// \brief "collection:__INSTANCE_NAME__:excludes"
+    /// 
+    /// UsdCollectionAPI
+    const TfToken collection_MultipleApplyTemplate_Excludes;
+    /// \brief "collection:__INSTANCE_NAME__:expansionRule"
+    /// 
+    /// UsdCollectionAPI
+    const TfToken collection_MultipleApplyTemplate_ExpansionRule;
+    /// \brief "collection:__INSTANCE_NAME__:includeRoot"
+    /// 
+    /// UsdCollectionAPI
+    const TfToken collection_MultipleApplyTemplate_IncludeRoot;
+    /// \brief "collection:__INSTANCE_NAME__:includes"
+    /// 
+    /// UsdCollectionAPI
+    const TfToken collection_MultipleApplyTemplate_Includes;
     /// \brief "exclude"
     /// 
     ///  This is the token used to exclude a path from a collection.  Although it is not a possible value for the "expansionRule" attribute, it is used as the expansionRule for excluded paths  in UsdCollectionAPI::MembershipQuery::IsPathIncluded. 
     const TfToken exclude;
-    /// \brief "excludes"
-    /// 
-    /// UsdCollectionAPI
-    const TfToken excludes;
     /// \brief "expandPrims"
     /// 
     /// Possible value for UsdCollectionAPI::GetExpansionRuleAttr(), Default value for UsdCollectionAPI::GetExpansionRuleAttr()
@@ -94,10 +106,6 @@ struct UsdTokensType {
     /// 
     /// Possible value for UsdCollectionAPI::GetExpansionRuleAttr()
     const TfToken expandPrimsAndProperties;
-    /// \brief "expansionRule"
-    /// 
-    /// UsdCollectionAPI
-    const TfToken expansionRule;
     /// \brief "explicitOnly"
     /// 
     /// Possible value for UsdCollectionAPI::GetExpansionRuleAttr()
@@ -106,14 +114,6 @@ struct UsdTokensType {
     /// 
     ///  A dictionary metadata that maps the name of a concrete schema prim type to an ordered list of schema prim types to use instead if the schema prim type doesn't exist in version of USD being used. 
     const TfToken fallbackPrimTypes;
-    /// \brief "includeRoot"
-    /// 
-    /// UsdCollectionAPI
-    const TfToken includeRoot;
-    /// \brief "includes"
-    /// 
-    /// UsdCollectionAPI
-    const TfToken includes;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

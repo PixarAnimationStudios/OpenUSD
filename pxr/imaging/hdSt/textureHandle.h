@@ -66,7 +66,6 @@ public:
         HdStTextureObjectSharedPtr const &textureObject,
         const HdSamplerParameters &samplerParams,
         size_t memoryRequest,
-        bool createBindlessHandle,
         HdStShaderCodePtr const & shaderCode,
         HdSt_TextureHandleRegistry *textureHandleRegistry);
 
@@ -107,18 +106,18 @@ public:
 
     /// Allocate sampler for this handle (not thread-safe).
     ///
-    /// This also creates the texture sampler handle (for bindless
-    /// textures) and updates it on subsequent calls.
-    ///
     HDST_API
     void ReallocateSamplerIfNecessary();
+
+    /// Get whether bindless texture handles are enabled.
+    ///
+    bool UseBindlessHandles() const;
 
 private:
     HdStTextureObjectSharedPtr _textureObject;
     HdStSamplerObjectSharedPtr _samplerObject;
     HdSamplerParameters _samplerParams;
     size_t _memoryRequest;
-    bool _createBindlessHandle;
     HdStShaderCodePtr _shaderCode;
     HdSt_TextureHandleRegistry *_textureHandleRegistry;
 };

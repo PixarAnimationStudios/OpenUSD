@@ -73,6 +73,7 @@ void wrapUsdRenderTokens()
     _AddToken(cls, "cropAperture", UsdRenderTokens->cropAperture);
     _AddToken(cls, "dataType", UsdRenderTokens->dataType);
     _AddToken(cls, "dataWindowNDC", UsdRenderTokens->dataWindowNDC);
+    _AddToken(cls, "disableMotionBlur", UsdRenderTokens->disableMotionBlur);
     _AddToken(cls, "expandAperture", UsdRenderTokens->expandAperture);
     _AddToken(cls, "full", UsdRenderTokens->full);
     _AddToken(cls, "includedPurposes", UsdRenderTokens->includedPurposes);

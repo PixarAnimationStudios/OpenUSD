@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    endFrame = 3
+    startFrame = 1
+    upAxis = "Z"
+)
+
+def Xform "Root" (
+    kind = "prop"
+)
+{
+    def Points "point1"
+    {
+        float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+        float3[] points.timeSamples = {
+            1: [(0, 0, 0)],
+            2: [(0, 0, 0), (1, 0, 0)],
+            3: [(1, 0, 0)],
+        }
+        color3f[] primvars:displayColor = [(1, 1, 0)]
+        float[] widths.timeSamples = {
+            1: [0.5],
+            2: [0.3, 0.3],
+            3: [0.8],
+        }
+    }
+
+    def Mesh "subdiv"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        int[] faceVertexCounts.timeSamples = {
+            1: [4],
+            2: [4, 3],
+            3: [3],
+        }
+        int[] faceVertexIndices.timeSamples = {
+            1: [0, 1, 2, 3],
+            2: [0, 1, 2, 3, 4, 5, 6],
+            3: [0, 1, 2],
+        }
+        token interpolateBoundary = "edgeAndCorner"
+        uniform token orientation = "rightHanded"
+        float3[] points.timeSamples = {
+            1: [(1, 1, 1), (-1, 1, 1), (-1, 1, -1), (1, 1, -1)],
+            2: [(1, 1, 1), (-1, 1, 1), (-1, 1, -1), (1, 1, -1), (2, 1, 1), (1, 1, 1), (1.5, 1, 0)],
+            3: [(2, 1, 1), (1, 1, 1), (1.5, 1, 0)],
+        }
+        float3[] primvars:displayColor = [(0, 0, 1)]
+        token subdivisionScheme = "catmullClark"
+    }
+}
+

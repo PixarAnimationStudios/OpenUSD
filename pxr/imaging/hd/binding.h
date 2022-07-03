@@ -66,6 +66,9 @@ public:
                 // shader parameter bindings
                 FALLBACK,             // fallback value
                 TEXTURE_2D,           // non-bindless uv texture
+                ARRAY_OF_TEXTURE_2D,  // non-bindless array of uv textures. Not 
+                                      // to be confused with a texture array 
+                                      // (what udim and ptex textures use).
                 TEXTURE_FIELD,        // non-bindless field texture
                                       // creates accessor that samples uvw
                                       // texture after transforming coordinates
@@ -75,6 +78,7 @@ public:
                 TEXTURE_PTEX_TEXEL,   // non-bindless ptex texels
                 TEXTURE_PTEX_LAYOUT,  // non-bindless ptex layout
                 BINDLESS_TEXTURE_2D,          // bindless uv texture
+                BINDLESS_ARRAY_OF_TEXTURE_2D, // bindless array of uv textures
                 BINDLESS_TEXTURE_FIELD,       // bindless field texture
                                               // (see above)
                 BINDLESS_TEXTURE_UDIM_ARRAY,  // bindless uv texture array
@@ -85,7 +89,7 @@ public:
                 FIELD_REDIRECT, // accesses a field texture by name and
                                 // uses fallbackValue if no accessor for
                                 // the texture exists.
-                TRANSFORM_2D    // transform2d          
+                TRANSFORM_2D    // transform2d
     };
     enum Location {
                 // NOT_EXIST is a special value of location for a uniform
@@ -135,6 +139,9 @@ public:
         , _resource(nullptr)
         , _bar(nullptr)
         , _isInterleaved(false)
+        , _isWritable(false)
+        , _arraySize(0)
+        , _concatenateNames(false)
     {}
 
     /// A data binding, not backed by neither BufferArrayRange nor
@@ -147,6 +154,9 @@ public:
         , _resource(nullptr)
         , _bar(nullptr)
         , _isInterleaved(false)
+        , _isWritable(false)
+        , _arraySize(0)
+        , _concatenateNames(false)
     {}
 
     /// A buffer resource binding. Binds a given buffer resource to a specified
@@ -159,6 +169,9 @@ public:
         , _resource(resource)
         , _bar(nullptr)
         , _isInterleaved(false)
+        , _isWritable(false)
+        , _arraySize(0)
+        , _concatenateNames(false)
     {}
 
     /// A named struct binding. From an interleaved BufferArray, an array of
@@ -167,14 +180,18 @@ public:
     /// identifier, hence must be interleaved and bindable as a single resource.
     /// Data types can be derived from each HdBufferResource of bar.
     HdBindingRequest(HdBinding::Type type, TfToken const& name,
-                    HdBufferArrayRangeSharedPtr bar,
-                    bool interleave)
+                     HdBufferArrayRangeSharedPtr bar,
+                     bool interleave, bool writable = false,
+                     size_t arraySize = 0, bool concatenateNames = false)
         : _bindingType(type)
         , _dataType(HdTypeInvalid)
         , _name(name)
         , _resource(nullptr)
         , _bar(bar)
         , _isInterleaved(interleave)
+        , _isWritable(writable)
+        , _arraySize(arraySize)
+        , _concatenateNames(concatenateNames)
     {}
 
     // ---------------------------------------------------------------------- //
@@ -200,6 +217,12 @@ public:
     ///  structs.
     bool IsInterleavedBufferArray() const {
         return _bar && _isInterleaved;
+    }
+
+    /// True when the resource is being bound so that it can be written to.
+    /// This affects whether it will be declared 'const' or not.
+    bool isWritable() const {
+        return _bar && _isWritable;
     }
 
     /// This binding is typelss. CodeGen only allocate location and
@@ -245,6 +268,17 @@ public:
     /// Return the data type of this request
     HdType GetDataType() const {
         return _dataType;
+    }
+
+    /// Array size if request is for an array of structs. 
+    size_t GetArraySize() const {
+        return _arraySize;
+    }
+
+    /// Returns whether the struct binding point and struct member names 
+    /// should be concatenated when codegen'ing the accessor.
+    bool ConcatenateNames() const {
+        return _concatenateNames;
     }
 
     // ---------------------------------------------------------------------- //
@@ -295,6 +329,11 @@ private:
     HdBufferArrayRangeSharedPtr _bar;
     bool _isInterleaved;
 
+    bool _isWritable;
+
+    size_t _arraySize;
+
+    bool _concatenateNames;
 };
 
 

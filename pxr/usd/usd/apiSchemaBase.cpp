@@ -113,14 +113,17 @@ UsdAPISchemaBase::_IsCompatible() const
     // This virtual function call tells us whether we're an applied 
     // API schema. For applied API schemas, we'd like to check whether 
     // the API schema has been applied properly on the prim.
-    if (IsAppliedAPISchema() && 
-        ! GetPrim()._HasAPI(_GetTfType(), /*validateSchemaType*/ false, 
-                            _instanceName)) {
-        return false;
-    }
-
-    if (IsMultipleApplyAPISchema() && _instanceName.IsEmpty()) {
-        return false;
+    if (IsAppliedAPISchema()) {
+        if (IsMultipleApplyAPISchema()) {
+            if (_instanceName.IsEmpty() ||
+                !GetPrim()._HasMultiApplyAPI(_GetTfType(), _instanceName)) {
+                return false;
+            }
+        } else {
+            if (!GetPrim()._HasSingleApplyAPI(_GetTfType())) {
+                return false;
+            }
+        }
     }
 
     return true;

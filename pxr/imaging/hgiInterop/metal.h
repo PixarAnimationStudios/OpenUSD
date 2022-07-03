@@ -95,7 +95,7 @@ private:
     };
 
     void _BlitToOpenGL(VtValue const &framebuffer, GfVec4i const& compRegion,
-                       bool flipY, int shaderIndex);
+                       int shaderIndex);
     void _FreeTransientTextureCacheRefs();
     void _CaptureOpenGlState();
     void _RestoreOpenGlState();

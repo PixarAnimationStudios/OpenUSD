@@ -36,6 +36,7 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 
 #include "pxr/usd/usdGeom/gprim.h"
+#include "pxr/usd/usdGeom/motionAPI.h"
 #include "pxr/usd/usdGeom/pointBased.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
 
@@ -56,7 +57,7 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 static TfTokenVector
-_CollectMaterialPrimvars(const VtValue & vtMaterial)
+_GetPrimvarsForMaterial(const VtValue & vtMaterial)
 {
     TfTokenVector primvars;
 
@@ -74,10 +75,6 @@ _CollectMaterialPrimvars(const VtValue & vtMaterial)
                 network.primvars.begin(), network.primvars.end());
         }
     }
-
-    std::sort(primvars.begin(), primvars.end());
-    primvars.erase(std::unique(primvars.begin(), primvars.end()),
-                   primvars.end());
 
     return primvars;
 }
@@ -146,9 +143,11 @@ UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
         index->AddDependency(cachePath, usdPrim);
     }
 
-    // Allow instancer context to override the material binding.
-    SdfPath resolvedUsdMaterialPath = instancerContext ?
-        instancerContext->instancerMaterialUsdPath : materialUsdPath;
+    // If there's no local material path, fall back to the instancer material.
+    SdfPath resolvedUsdMaterialPath = materialUsdPath;
+    if (materialUsdPath.IsEmpty() && instancerContext != nullptr) {
+        resolvedUsdMaterialPath = instancerContext->instancerMaterialUsdPath;
+    }
     UsdPrim materialPrim =
         usdPrim.GetStage()->GetPrimAtPath(resolvedUsdMaterialPath);
 
@@ -245,7 +244,20 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
                    HdChangeTracker::DirtyPoints,
                    UsdImagingTokens->usdVaryingPrimvar,
                    timeVaryingBits,
-                   false);
+                   false) ||
+            _IsVarying(prim,
+                       UsdGeomTokens->motionNonlinearSampleCount,
+                       HdChangeTracker::DirtyPoints,
+                       UsdImagingTokens->usdVaryingPrimvar,
+                       timeVaryingBits,
+                       true) ||
+                _IsVarying(prim,
+                           UsdGeomTokens->motionBlurScale,
+                           HdChangeTracker::DirtyPoints,
+                           UsdImagingTokens->usdVaryingPrimvar,
+                           timeVaryingBits,
+                           true);
+
     // XXX: "points" is handled by derived classes.
 
     // Discover time-varying double-sidedness.
@@ -320,18 +332,59 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                 HdInterpolationVertex,
                 HdPrimvarRoleTokens->vector);
         }
+
+        // Since nonlinearSampleCount is tied to the calculation
+        // of the motion-blurred points, we also use the points dirty
+        // bit here to know when to publish its value. Since it is
+        // inherited, we go through the corresponding resolved attribute
+        // cache.
+        UsdImaging_NonlinearSampleCountCache *nonlinearSampleCountCache =
+            _GetNonlinearSampleCountCache();
+        // Check that it has any opinions.
+        if (nonlinearSampleCountCache->GetValue(prim) !=
+                UsdImaging_NonlinearSampleCountStrategy::invalidValue) {
+            _MergePrimvar(
+                &vPrimvars,
+                HdTokens->nonlinearSampleCount,
+                HdInterpolationConstant,
+                HdPrimvarRoleTokens->none);
+        }
+
+        // Comment similar to above nonlinear sample count cache applies to
+        // blur scale.
+        UsdImaging_BlurScaleCache *blurScaleCache = _GetBlurScaleCache();
+        // Check that it has any opinions.
+        if (blurScaleCache->GetValue(prim).has_value) {
+            _MergePrimvar(
+                &vPrimvars,
+                HdTokens->blurScale,
+                HdInterpolationConstant,
+                HdPrimvarRoleTokens->none);
+        }
     }
 
-    SdfPath materialUsdPath;
+    SdfPathVector materialUsdPaths;
     if (requestedBits & (HdChangeTracker::DirtyPrimvar |
                          HdChangeTracker::DirtyMaterialId)) {
-        materialUsdPath = GetMaterialUsdPath(prim);
+        SdfPath materialUsdPath = GetMaterialUsdPath(prim);
+        if (!materialUsdPath.IsEmpty()) {
+            materialUsdPaths.push_back(materialUsdPath);
+        } else if (instancerContext) {
+            // If we're processing this gprim on behalf of an instancer,
+            // use the material binding specified by the instancer if we
+            // aren't able to find a material binding for this prim itself.
+            materialUsdPaths.push_back(instancerContext->instancerMaterialUsdPath);
+        }
+    }
 
-        // If we're processing this gprim on behalf of an instancer,
-        // use the material binding specified by the instancer if we
-        // aren't able to find a material binding for this prim itself.
-        if (instancerContext && materialUsdPath.IsEmpty()) {
-            materialUsdPath = instancerContext->instancerMaterialUsdPath;
+    if (requestedBits & HdChangeTracker::DirtyPrimvar) {
+        if (UsdGeomImageable imageable = UsdGeomImageable(prim)) {
+            for (const UsdGeomSubset &subset: UsdGeomSubset::GetAllGeomSubsets(imageable)) {
+                SdfPath materialUsdPath = GetMaterialUsdPath(subset.GetPrim());
+                if (!materialUsdPath.IsEmpty()) {
+                    materialUsdPaths.push_back(materialUsdPath);
+                }
+            }
         }
     }
 
@@ -388,32 +441,32 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         primvars.insert(primvars.end(), local.begin(), local.end());
 
         // Some backends may not want to load all primvars due to memory limits.
-        // We filter the list of primvars based on what the material needs.
+        // We filter the list of primvars, removing any the materials and rprims
+        // don't expect.
+        TfTokenVector rprimPrimvarNames;
         TfTokenVector matPrimvarNames;
-        if (_IsPrimvarFilteringNeeded() && !materialUsdPath.IsEmpty()) {
-            if (UsdPrim matPrim = _GetPrim(materialUsdPath)) {
-                // NOTE: We need to directly access the registered instance
-                //       of UsdImagingMaterialAdaptor in order to query its
-                //       material resource. Those are registered to match
-                //       the USD prim type name.
-                if (UsdImagingPrimAdapterSharedPtr materialAdapter
-                            =_GetAdapter(matPrim.GetTypeName())) {
-                    VtValue vtMaterial = 
-                            materialAdapter->GetMaterialResource(
-                                    matPrim, matPrim.GetPath(), time);
-                    matPrimvarNames = _CollectMaterialPrimvars(vtMaterial);
-                }
+        if (_IsPrimvarFilteringNeeded()) {
+            rprimPrimvarNames = _GetRprimPrimvarNames();
+            if (!materialUsdPaths.empty()) {
+                matPrimvarNames = _CollectMaterialPrimvars(materialUsdPaths,
+                                                           time);
             }
         }
 
         for (auto const &pv : primvars) {
             if (_IsBuiltinPrimvar(pv.GetPrimvarName())) {
+                // This primvar has been handled explicitly above already.
                 continue;
             }
             if (_IsPrimvarFilteringNeeded() &&
+                std::find(rprimPrimvarNames.begin(),
+                          rprimPrimvarNames.end(),
+                          pv.GetPrimvarName()) == rprimPrimvarNames.end() &&
                 std::find(matPrimvarNames.begin(),
                           matPrimvarNames.end(),
                           pv.GetPrimvarName()) == matPrimvarNames.end()) {
+                // No material or rprim expects this primvar, so it doesn't
+                // pass filtering, so skip it.
                 continue;
             }
 
@@ -443,7 +496,9 @@ UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
         return HdChangeTracker::DirtyDoubleSided;
 
     if (propertyName == UsdGeomTokens->velocities ||
-             propertyName == UsdGeomTokens->accelerations)
+             propertyName == UsdGeomTokens->accelerations ||
+             propertyName == UsdGeomTokens->motionNonlinearSampleCount ||
+             propertyName == UsdGeomTokens->motionBlurScale)
         // XXX: "points" is handled by derived classes.
         return HdChangeTracker::DirtyPoints;
 
@@ -701,7 +756,37 @@ UsdImagingGprimAdapter::Get(UsdPrim const& prim,
             pointBased.GetAccelerationsAttr().Get(&accelerations, time)) {
             return VtValue(accelerations);
         }
-
+    } else if (key == HdTokens->nonlinearSampleCount) {
+        UsdImaging_NonlinearSampleCountCache *cache =
+            _GetNonlinearSampleCountCache();
+        const int value =
+            cache->GetTime() == time
+                ? cache->GetValue(prim)
+                : UsdImaging_NonlinearSampleCountStrategy::
+                      ComputeNonlinearSampleCount(prim,time);
+        if (value !=
+                UsdImaging_NonlinearSampleCountStrategy::invalidValue) {
+            return VtValue(value);
+        } else {
+            // Default value from UsdGeom's
+            // MotionAPI.motion:nonlinearSampleCount
+            constexpr int defaultValue = 3;
+            return VtValue(defaultValue);
+        }
+    } else if (key == HdTokens->blurScale) {
+        UsdImaging_BlurScaleCache *cache = _GetBlurScaleCache();
+        const UsdImaging_BlurScaleStrategy::value_type value =
+            cache->GetTime() == time
+                ? cache->GetValue(prim)
+                : UsdImaging_BlurScaleStrategy::ComputeBlurScale(prim,time);
+        if (value.has_value) {
+            return VtValue(value.value);
+        } else {
+            // Default value from UsdGeom's
+            // MotionAPI.motion:blurScale
+            constexpr float defaultValue = 1.0f;
+            return VtValue(defaultValue);
+        }
     } else if (UsdGeomPrimvar pv = gprim.GetPrimvar(key)) {
         if (outIndices) {
             if (pv && pv.Get(&value, time)) {
@@ -967,6 +1052,45 @@ UsdImagingGprimAdapter::_GetInheritedPrimvar(UsdPrim const& prim,
     }
     return UsdGeomPrimvar();
 }
+
+TfTokenVector
+UsdImagingGprimAdapter::_CollectMaterialPrimvars(
+    SdfPathVector const& materialUsdPaths, 
+    UsdTimeCode time) const
+{
+    TfTokenVector primvars;
+
+    for (SdfPath const& materialUsdPath : materialUsdPaths) {
+        if (UsdPrim matPrim = _GetPrim(materialUsdPath)) {
+            // NOTE: We need to directly access the registered instance
+            //       of UsdImagingMaterialAdapter in order to query its
+            //       material resource. Those are registered to match
+            //       the USD prim type name.
+            if (UsdImagingPrimAdapterSharedPtr materialAdapter
+                    =_GetAdapter(matPrim.GetTypeName())) {
+                VtValue vtMaterial = materialAdapter->GetMaterialResource(
+                    matPrim, matPrim.GetPath(), time);
+                TfTokenVector pvNames = _GetPrimvarsForMaterial(vtMaterial);
+                primvars.insert(primvars.end(), pvNames.begin(), 
+                    pvNames.end());
+            }
+         }
+    }
+
+    std::sort(primvars.begin(), primvars.end());
+    primvars.erase(std::unique(primvars.begin(), primvars.end()),
+        primvars.end());
+
+    return primvars;
+}
+
+TfTokenVector const&
+UsdImagingGprimAdapter::_GetRprimPrimvarNames() const
+{
+    static TfTokenVector primvarNames;
+    return primvarNames;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

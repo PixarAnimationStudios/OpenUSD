@@ -1,0 +1,50 @@
+-- glslfx version 0.1
+
+-- configuration
+{
+    "techniques" : {
+        "default" : {
+            "surfaceShader" : {
+                "source": [ "My.SurfaceShader" ]
+            }
+        }
+    },
+
+    "textures" : {
+        "diffuseColor": {
+            "description":"Diffuse color."
+        }
+    },
+
+    "attributes" : {
+        "st": {
+            "description":"primvar.",
+            "type": "vec2"
+        }
+    },
+
+    "parameters" : {
+        "roughness": {
+            "default": 0.5,
+            "description":"primvar."
+        },
+        "result": {
+            "default": [0.5, 0.0],
+            "description":"primvar."
+        }
+    },
+
+    "metadata" : {
+        "materialTag": "translucent",
+        "limitSurfaceEvaluation": true
+    }
+}
+
+-- glsl My.SurfaceShader
+vec4
+surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    //return vec4(HdGet_result().xy,0.0,1.0);
+    return vec4(HdGet_diffuseColor( ).xyz ,1.0);
+    //return HdGet_diffuseColor( HdGet_st() );
+}

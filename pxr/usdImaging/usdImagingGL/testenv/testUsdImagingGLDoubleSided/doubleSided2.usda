@@ -1,0 +1,100 @@
+#usda 1.0
+(
+    doc = "Test DoubleSided Imaging"
+    endFrame = 40
+    startFrame = 1
+    upAxis = "Z"
+)
+
+def Xform "Meshes"
+{
+    custom matrix4d xformOp:transform = ( (300, 0, 0, 0), (0, 300, 0, 0), (0, 0, 300, 0), (0, -600, 1400, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+
+    def "SingleSided" (
+        kind = "model"
+        add references = @./Ring.usda@</mesh>
+    )
+    {
+        custom matrix4d xformOp:transform = ( (0, 0, -1, 0), (0, 1, 0, 0), (1, 0, 0, 0), (3, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def "DoubleSided" (
+        kind = "model"
+        add references = @./Ring.usda@</mesh>
+    )
+    {
+        bool doubleSided = 1
+        custom matrix4d xformOp:transform = ( (0, 0, -1, 0), (0, 1, 0, 0), (1, 0, 0, 0), (1, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def "SingleSidedLeftHanded" (
+        kind = "model"
+        add references = @./Ring.usda@</mesh>
+    )
+    {
+        uniform token orientation = "leftHanded"
+        custom matrix4d xformOp:transform = ( (0, 0, -1, 0), (0, 1, 0, 0), (1, 0, 0, 0), (-1, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def "DoubleSidedLeftHanded" (
+        kind = "model"
+        add references = @./Ring.usda@</mesh>
+    )
+    {
+        bool doubleSided = 1
+        uniform token orientation = "leftHanded"
+        custom matrix4d xformOp:transform = ( (0, 0, -1, 0), (0, 1, 0, 0), (1, 0, 0, 0), (-3, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+
+def Xform "FlippedMeshes"
+{
+    custom matrix4d xformOp:transform = ( (-300, 0, 0, 0), (0, -300, 0, 0), (0, 0, -300, 0), (0, -600, 600, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+
+    def "SingleSided" (
+        kind = "model"
+        add references = @./Ring.usda@</mesh>
+    )
+    {
+        custom matrix4d xformOp:transform = ( (0, 0, -1, 0), (0, 1, 0, 0), (1, 0, 0, 0), (-3, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def "DoubleSided" (
+        kind = "model"
+        add references = @./Ring.usda@</mesh>
+    )
+    {
+        bool doubleSided = 1
+        custom matrix4d xformOp:transform = ( (0, 0, -1, 0), (0, 1, 0, 0), (1, 0, 0, 0), (-1, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def "SingleSidedLeftHanded" (
+        kind = "model"
+        add references = @./Ring.usda@</mesh>
+    )
+    {
+        uniform token orientation = "leftHanded"
+        custom matrix4d xformOp:transform = ( (0, 0, -1, 0), (0, 1, 0, 0), (1, 0, 0, 0), (1, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def "DoubleSidedLeftHanded" (
+        kind = "model"
+        add references = @./Ring.usda@</mesh>
+    )
+    {
+        bool doubleSided = 1
+        uniform token orientation = "leftHanded"
+        custom matrix4d xformOp:transform = ( (0, 0, -1, 0), (0, 1, 0, 0), (1, 0, 0, 0), (3, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+

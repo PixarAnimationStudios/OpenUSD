@@ -271,6 +271,8 @@ void
 Marquee::Draw(float width, float height, 
               GfVec2f const& startPos, GfVec2f const& endPos)
 {
+    glViewport(0, 0, width, height);
+
     glDisable(GL_DEPTH_TEST);
     glUseProgram(_program);
 

@@ -211,6 +211,7 @@ bool _IsValidCompression(HgiTextureDesc const & desc)
 HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
     : HgiTexture(desc)
     , _textureId(0)
+    , _bindlessHandle(0)
 {
     GLenum glInternalFormat = 0;
     GLenum glFormat = 0;
@@ -350,6 +351,7 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
 HgiGLTexture::HgiGLTexture(HgiTextureViewDesc const & desc)
     : HgiTexture(desc.sourceTexture->GetDescriptor())
     , _textureId(0)
+    , _bindlessHandle(0)
 {
     // Update the texture descriptor to reflect the view desc
     _descriptor.debugName = desc.debugName;
@@ -440,5 +442,23 @@ HgiGLTexture::GetRawResource() const
 {
     return (uint64_t) _textureId;
 }
+
+uint64_t
+HgiGLTexture::GetBindlessHandle()
+{
+    if (!_bindlessHandle) {
+        const GLuint64EXT result = glGetTextureHandleARB(_textureId);
+        if (!glIsTextureHandleResidentARB(result)) {
+            glMakeTextureHandleResidentARB(result);
+        }
+
+        _bindlessHandle = result;
+
+        HGIGL_POST_PENDING_GL_ERRORS();
+    }
+
+    return _bindlessHandle;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

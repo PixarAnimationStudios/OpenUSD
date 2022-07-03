@@ -24,15 +24,6 @@ over "GLOBAL" (
 {
 }
 
-class "DerivedSingleApplyAPI" (
-    inherits = </SingleApplyAPI>
-    customData = {
-        token apiSchemaType = "singleApply"
-    }
-)
-{
-}
-
 class DerivedTestPxHairman "DerivedTestPxHairman" (
     inherits = </TestPxHairman>
     customData = {

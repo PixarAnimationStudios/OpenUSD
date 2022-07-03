@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    subLayers = [@primitives.usda@]
+    fallbackPrimTypes = {
+        token[] UnknownCapsule = ["Sphere"]
+        token[] UnknownCone = ["Sphere"]
+        token[] UnknownSphere = ["Sphere"]
+        token[] Cube = ["Sphere"]
+        token[] UnknownCylinder = ["Sphere"]
+    }
+    upAxis = "Z"
+)

@@ -30,25 +30,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdPrman_Context;
+class HdPrman_RenderParam;
 class HdSceneDelegate;
 class SdfPath;
 class TfToken;
 
 bool HdPrmanLightFilterPopulateNodesFromLightParams(
     std::vector<riley::ShadingNode> *filterNodes,
-    SdfPath &filterPath,
+    const SdfPath &filterPath,
     HdSceneDelegate *sceneDelegate);
 
 void HdPrmanLightFilterGenerateCoordSysAndLinks(
     riley::ShadingNode *filter,
-    SdfPath &filterPath,
+    const SdfPath &filterPath,
     std::vector<riley::CoordinateSystemId> *coordsysIds,
     std::vector<TfToken> *filterLinks,
     HdSceneDelegate *sceneDelegate,
-    HdPrman_Context *context,
-    riley::Riley *riley,
-    const riley::ShadingNode &lightNode);
+    HdPrman_RenderParam *renderParam,
+    riley::Riley *riley);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

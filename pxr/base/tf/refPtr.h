@@ -564,8 +564,7 @@ struct Tf_RefPtr_Counter {
 // Helper to post a fatal error when a NULL Tf pointer is dereferenced.
 [[noreturn]]
 TF_API void
-Tf_PostNullSmartPtrDereferenceFatalError(
-    const TfCallContext &, const std::type_info &);
+Tf_PostNullSmartPtrDereferenceFatalError(const TfCallContext &, const char *);
 
 /// \class TfRefPtr
 /// \ingroup group_tf_Memory
@@ -971,11 +970,11 @@ public:
 
     /// Accessor to \c T's public members.
     T* operator ->() const {
-        if (ARCH_LIKELY(_refBase)) {
+        if (_refBase) {
             return static_cast<T*>(const_cast<TfRefBase*>(_refBase));
         }
-        static const TfCallContext ctx(TF_CALL_CONTEXT);
-        Tf_PostNullSmartPtrDereferenceFatalError(ctx, typeid(TfRefPtr));
+        Tf_PostNullSmartPtrDereferenceFatalError(
+            TF_CALL_CONTEXT, typeid(TfRefPtr).name());
     }
 
     /// Dereferences the stored pointer.

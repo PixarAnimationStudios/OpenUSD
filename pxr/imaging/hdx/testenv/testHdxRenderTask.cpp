@@ -21,13 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
-#include "pxr/imaging/garch/glApi.h"
-
-#include "pxr/imaging/glf/contextCaps.h"
-#include "pxr/imaging/glf/diagnostic.h"
-#include "pxr/imaging/glf/drawTarget.h"
-#include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/garch/glDebugWindow.h"
 
 #include "pxr/imaging/hd/driver.h"
@@ -58,12 +51,6 @@ int main(int argc, char *argv[])
     // prepare GL context
     GarchGLDebugWindow window("Hdx Test", 256, 256);
     window.Init();
-    GarchGLApiLoad();
-
-    glViewport(0, 0, 256, 256);
-    // wrap into GlfGLContext so that GlfDrawTarget works
-    GlfGLContextSharedPtr ctx = GlfGLContext::GetCurrentGLContext();
-    GlfContextCaps::InitInstance();
 
     // Hgi and HdDriver should be constructed before HdEngine to ensure they
     // are destructed last. Hgi may be used during engine/delegate destruction.
@@ -84,12 +71,54 @@ int main(int argc, char *argv[])
     delegate->AddRenderSetupTask(renderSetupTask1);
     delegate->AddRenderTask(renderTask1);
 
+    // setup AOVs
+    const SdfPath colorAovId = SdfPath("/aov_color");
+    const SdfPath depthAovId = SdfPath("/aov_depth");
+    HdRenderPassAovBindingVector aovBindings;
+
+    // color AOV
+    {
+        HdRenderPassAovBinding colorAovBinding;
+        const HdAovDescriptor colorAovDesc = 
+            renderDelegate.GetDefaultAovDescriptor(HdAovTokens->color);
+        colorAovBinding.aovName = HdAovTokens->color;
+        colorAovBinding.clearValue = VtValue(GfVec4f(0.1f, 0.1f, 0.1f, 1.0f));
+        colorAovBinding.renderBufferId = colorAovId;
+        colorAovBinding.aovSettings = colorAovDesc.aovSettings;
+        aovBindings.push_back(std::move(colorAovBinding));
+
+        HdRenderBufferDescriptor colorRbDesc;
+        colorRbDesc.dimensions = GfVec3i(512, 512, 1);
+        colorRbDesc.format = colorAovDesc.format;
+        colorRbDesc.multiSampled = false;
+        delegate->AddRenderBuffer(colorAovId, colorRbDesc);
+    }
+
+    // depth AOV
+    {
+        HdRenderPassAovBinding depthAovBinding;
+        const HdAovDescriptor depthAovDesc = 
+            renderDelegate.GetDefaultAovDescriptor(HdAovTokens->depth);
+        depthAovBinding.aovName = HdAovTokens->depth;
+        depthAovBinding.clearValue = VtValue(1.f);
+        depthAovBinding.renderBufferId = depthAovId;
+        depthAovBinding.aovSettings = depthAovDesc.aovSettings;
+        aovBindings.push_back(std::move(depthAovBinding));
+
+        HdRenderBufferDescriptor depthRbDesc;
+        depthRbDesc.dimensions = GfVec3i(512, 512, 1);
+        depthRbDesc.format = depthAovDesc.format;
+        depthRbDesc.multiSampled = false;
+        delegate->AddRenderBuffer(depthAovId, depthRbDesc);
+    }
+
     // update viewport param (defaults to (0,0,512,512) otherwise)
     {
         VtValue vParam = delegate->GetTaskParam(renderSetupTask1,
                                                 HdTokens->params);
         HdxRenderTaskParams param = vParam.Get<HdxRenderTaskParams>();
         param.viewport = GfVec4d(0, 0, 256, 256);
+        param.aovBindings = aovBindings;
         delegate->SetTaskParam(renderSetupTask1, HdTokens->params,
                                VtValue(param));
     }
@@ -101,24 +130,9 @@ int main(int argc, char *argv[])
     // prep scene
     delegate->AddGrid(SdfPath("/grid"), GfMatrix4d(1));
 
-    // prep draw target
-    GlfDrawTargetRefPtr drawTarget = GlfDrawTarget::New(GfVec2i(512, 512));
-    drawTarget->Bind();
-    drawTarget->AddAttachment("color", GL_RGBA, GL_FLOAT, GL_RGBA);
-    drawTarget->AddAttachment("depth", GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8,
-                              GL_DEPTH24_STENCIL8);
-    drawTarget->Unbind();
-
-    GLfloat clearColor[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
-    GLfloat clearDepth[1] = { 1.0f };
-
     // draw #1
-    drawTarget->Bind();
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
     engine.Execute(index.get(), &tasks);
-    drawTarget->Unbind();
-    drawTarget->WriteToFile("color", "color1.png");
+    delegate->WriteRenderBufferToFile(colorAovId, "color1.png");
 
     // update render param
     VtValue vParam = delegate->GetTaskParam(renderSetupTask1, HdTokens->params);
@@ -127,12 +141,8 @@ int main(int argc, char *argv[])
     delegate->SetTaskParam(renderSetupTask1, HdTokens->params, VtValue(param));
 
     // draw #2
-    drawTarget->Bind();
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
     engine.Execute(index.get(), &tasks);
-    drawTarget->Unbind();
-    drawTarget->WriteToFile("color", "color2.png");
+    delegate->WriteRenderBufferToFile(colorAovId, "color2.png");
 
     // update collection
     index->GetChangeTracker().AddCollection(_tokens->testCollection);
@@ -141,14 +151,8 @@ int main(int argc, char *argv[])
     delegate->SetTaskParam(renderTask1, HdTokens->collection, VtValue(collection));
 
     // draw #3
-    drawTarget->Bind();
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
     engine.Execute(index.get(), &tasks);
-    drawTarget->Unbind();
-    drawTarget->WriteToFile("color", "color3.png");
-
-    GLF_POST_PENDING_GL_ERRORS();
+    delegate->WriteRenderBufferToFile(colorAovId, "color3.png");
 
     std::cout << "OK" << std::endl;
 }

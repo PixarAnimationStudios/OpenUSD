@@ -74,6 +74,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((VstructConditionalExpr, "vstructConditionalExpr"))\
     ((IsAssetIdentifier, "__SDR__isAssetIdentifier"))\
     ((ImplementationName, "__SDR__implementationName"))\
+    ((SdrUsdDefinitionType, "sdrUsdDefinitionType"))\
     ((DefaultInput, "__SDR__defaultinput"))          \
     ((Target, "__SDR__target"))                      \
     ((Colorspace, "__SDR__colorspace"))
@@ -229,8 +230,22 @@ public:
     /// a TfToken, will be empty. In the second scenario, the Sdf type will be
     /// set to `Token` to indicate an unclean mapping, and the second element
     /// will be set to the original type returned by `GetType()`.
+    ///
+    /// \sa GetDefaultValueAsSdfType
     SDR_API
     const NdrSdfTypeIndicator GetTypeAsSdfType() const override;
+
+    /// Accessor for default value corresponding to the SdfValueTypeName
+    /// returned by GetTypeAsSdfType. Note that this is different than 
+    /// GetDefaultValue which returns the default value associated with the 
+    /// SdrPropertyType and may differ from the SdfValueTypeName, example when
+    /// sdrUsdDefinitionType metadata is specified for a sdr property.
+    ///
+    /// \sa GetTypeAsSdfType
+    SDR_API
+    const VtValue& GetDefaultValueAsSdfType() const override {
+        return _sdfTypeDefaultValue;
+    }
 
     /// Determines if the value held by this property is an asset identifier
     /// (eg, a file path); the logic for this is left up to the parser.
@@ -256,6 +271,20 @@ protected:
     // time.
     friend void SdrShaderNode::_PostProcessProperties();
 
+    // Set the USD encoding version to something other than the default.
+    // This can be set in SdrShaderNode::_PostProcessProperties for all the
+    // properties on a shader node.
+    void _SetUsdEncodingVersion(int usdEncodingVersion);
+
+    // Convert this property to a VStruct, which has a special type and a
+    // different default value
+    void _ConvertToVStruct();
+
+    // This function is called by SdrShaderNode::_PostProcessProperties once all
+    // information is locked in and won't be changed anymore. This allows each
+    // property to take some extra steps once all information is available.
+    void _FinalizeProperty();
+
     // Some metadata values cannot be returned by reference from the main
     // metadata dictionary because they need additional parsing.
     const NdrTokenMap _hints;
@@ -269,6 +298,12 @@ protected:
     TfToken _vstructMemberOf;
     TfToken _vstructMemberName;
     TfToken _vstructConditionalExpr;
+
+    VtValue _sdfTypeDefaultValue;
+
+    // Metadatum to control the behavior of GetTypeAsSdfType and indirectly
+    // CanConnectTo
+    int _usdEncodingVersion;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

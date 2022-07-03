@@ -27,23 +27,40 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderPass.h"
 
+#include "Riley.h"
+
+#include <chrono>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// A placeholder render pass that does nothing.
-/// This is meant for clients that use Hydra to push scene data
-/// to Riley, but do not use Hydra to coordinate image generation
-/// and presentation.
-class HdPrman_RenderPass final : public HdRenderPass 
+class HdPrman_RenderParam;
+
+class HdPrman_RenderPass final : public HdRenderPass
 {
 public:
-    HdPrman_RenderPass(HdRenderIndex *index,
-                       HdRprimCollection const &collection);
-    virtual ~HdPrman_RenderPass();
+    HdPrman_RenderPass(
+        HdRenderIndex *index,
+        HdRprimCollection const &collection,
+        std::shared_ptr<HdPrman_RenderParam> renderParam);
+    ~HdPrman_RenderPass() override;
+
+    bool IsConverged() const override;
 
 protected:
-    void _Execute(
-        HdRenderPassStateSharedPtr const& renderPassState,
-        TfTokenVector const &renderTags) override;
+    void _Execute(HdRenderPassStateSharedPtr const& renderPassState,
+                  TfTokenVector const &renderTags) override;
+
+private:
+    void _RenderInMainThread();
+    void _RestartRenderIfNecessary(HdRenderDelegate * renderDelegate);
+    std::shared_ptr<HdPrman_RenderParam> _renderParam;
+    bool _converged;
+    int _lastRenderedVersion;
+    int _lastTaskRenderTagsVersion;
+    int _lastRprimRenderTagVersion;
+
+    std::chrono::steady_clock::time_point _frameStart;
+    float _quickIntegrateTime;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -30,7 +30,7 @@ class TestUsdUtilsDependencies(unittest.TestCase):
     def test_ComputeAllDependencies(self):
         """Basic test for UsdUtils.ComputeAllDependencies"""
 
-        def _test(rootLayer):
+        def _testLayer(rootLayer):
             layers, assets, unresolved = \
                 UsdUtils.ComputeAllDependencies(rootLayer)
 
@@ -77,6 +77,13 @@ class TestUsdUtilsDependencies(unittest.TestCase):
                                "v_meta_nonexist.usd",
                                "v_attr_a_nonexist.txt",
                                "v_attr_nonexist.usd"]]))
+
+        def _test(rootLayer):
+            _testLayer(rootLayer)
+
+            layer = Sdf.Layer.FindOrOpen(rootLayer)
+            layer.SetPermissionToEdit(False)
+            _testLayer(rootLayer)
 
         _test("computeAllDependencies/ascii.usda")
         _test("computeAllDependencies/ascii.usd")

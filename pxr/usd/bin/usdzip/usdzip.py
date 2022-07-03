@@ -54,8 +54,15 @@ def _CheckCompliance(rootLayer, arkit=False):
     checker.CheckCompliance(rootLayer)
     errors = checker.GetErrors()
     failedChecks = checker.GetFailedChecks()
+    warnings = checker.GetWarnings()
     for msg in errors + failedChecks:
         _Err(msg)
+    if len(warnings) > 0:
+        _Err("*********************************************\n"
+             "Possible correctness problems to investigate:\n"
+             "*********************************************\n")
+        for msg in warnings:
+            _Err(msg)
     return len(errors) == 0 and len(failedChecks) == 0
 
 def _CreateUsdzPackage(usdzFile, filesToAdd, recurse, checkCompliance, verbose):
@@ -226,7 +233,7 @@ def main():
     else:
         if args.checkCompliance:
             parser.error("--checkCompliance should only be specified when "
-                "creatinga usdz package. Please use 'usdchecker' to check "
+                "creating a usdz package. Please use 'usdchecker' to check "
                 "compliance of an existing .usdz file.")
 
 

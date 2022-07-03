@@ -61,8 +61,6 @@ class SdfAssetPath;
 /// for inherited attributes.  Anticpating this, StatementsAPI
 /// can smooth the way via a few environment variables:
 /// 
-/// * USDRI_STATEMENTS_WRITE_NEW_ENCODING: Causes StatementsAPI to write
-/// attributes to primvars in the "ri:" namespace.
 /// * USDRI_STATEMENTS_READ_OLD_ENCODING: Causes StatementsAPI to read
 /// old-style attributes instead of primvars in the "ri:"
 /// namespace.

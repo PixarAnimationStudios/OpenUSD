@@ -1,0 +1,118 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Y"
+)
+
+def Scope "Scene" (
+    kind = "component"
+)
+{
+    def Scope "Looks"
+    {
+        def Material "MaterialBg"
+        {
+            token outputs:surface.connect = </Scene/Looks/MaterialBg/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0, 0, 0)
+                token outputs:surface
+            }
+        }
+
+        def Material "MaterialA"
+        {
+            token outputs:surface.connect = </Scene/Looks/MaterialA/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 0, 1)
+                float inputs:opacity = 0.8
+                token outputs:surface
+            }
+        }
+
+        def Material "MaterialB"
+        {
+            token outputs:surface.connect = </Scene/Looks/MaterialB/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0, 1, 0)
+                float inputs:opacity = 0.6
+                token outputs:surface
+            }
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def Mesh "Background"
+        {
+            uniform bool doubleSided = 0
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            rel material:binding = </Scene/Looks/MaterialBg>
+            point3f[] points = [(-3, -3, -3), (3, -3, -3), (3, 3, -3), (-3, 3, -3)]
+            color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+            float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                interpolation = "vertex"
+            )
+            float2[] primvars:st_inverted = [(0, 2), (2, 2), (2, 0), (0, 0)] (
+                interpolation = "vertex"
+            )
+            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            double3 xformOp:translate = (0, 0, -2)
+            uniform token[] xformOpOrder = ["xformOp:transform", "xformOp:translate"]
+        }
+
+        def Mesh "Plane"
+        {
+            uniform bool doubleSided = 0
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            rel material:binding = </Scene/Looks/MaterialA>
+            point3f[] points = [(-1, -1, -1), (1, -1, -1), (1, 1, -1), (-1, 1, -1)]
+            color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+            float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                interpolation = "vertex"
+            )
+            float2[] primvars:st_inverted = [(0, 2), (2, 2), (2, 0), (0, 0)] (
+                interpolation = "vertex"
+            )
+        }
+
+        def Cube "MyCube2"
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            rel material:binding = </Scene/Looks/MaterialA>
+            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            double3 xformOp:translate = (1, 0, -3)
+            uniform token[] xformOpOrder = ["xformOp:transform", "xformOp:translate"]
+        }
+
+        def Sphere "Sphere1"
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            rel material:binding = </Scene/Looks/MaterialB>
+            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            double3 xformOp:translate = (-1, 0, -3)
+            uniform token[] xformOpOrder = ["xformOp:transform", "xformOp:translate"]
+        }
+
+        def Sphere "Sphere2"
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            double3 xformOp:translate = (-1, 0, -5)
+            uniform token[] xformOpOrder = ["xformOp:transform", "xformOp:translate"]
+        }
+    }
+}
+

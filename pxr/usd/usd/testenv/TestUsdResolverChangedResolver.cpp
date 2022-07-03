@@ -31,6 +31,7 @@
 #include "pxr/usd/ar/notice.h"
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/timestamp.h"
 
 #include "pxr/base/plug/interfaceFactory.h"
 #include "pxr/base/plug/staticInterface.h"
@@ -208,21 +209,11 @@ protected:
         return ArResolvedPath();
     }
 
-    std::string _GetExtension(const std::string& assetPath) const final
-    {
-        return TfGetExtension(assetPath);
-    }
-
-    VtValue _GetModificationTimestamp(
+    ArTimestamp _GetModificationTimestamp(
         const std::string& assetPath,
         const ArResolvedPath& resolvedPath) const final
     {
-        double time;
-        if (ArchGetModificationTime(
-                resolvedPath.GetPathString().c_str(), &time)) {
-            return VtValue(time);
-        }
-        return VtValue();
+        return ArFilesystemAsset::GetModificationTimestamp(resolvedPath);
     }
 
     std::shared_ptr<ArAsset> _OpenAsset(

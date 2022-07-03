@@ -1,0 +1,26 @@
+#usda 1.0 
+(
+    subLayers = [ 
+        @baseSchema.usda@
+    ]  
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "schemaFail11"
+        string libraryPath      = "pxr/usd/fakelib"
+    }
+)
+{
+}
+
+# A non-apply API schema can't include 'apiSchemas'
+class "MultipleApplyAPI" (
+    inherits = </APISchemaBase>
+    apiSchemas = ["BuiltinAPI"]
+    customData = {
+        token apiSchemaType = "nonApplied"
+    }
+)
+{
+}

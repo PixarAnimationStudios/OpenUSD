@@ -28,6 +28,11 @@
 
 #include "pxr/base/tf/api.h"
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+// Include this header first to pick up additional mitigations
+// for build issues when including Python.h
+#include "pxr/base/tf/pySafePython.h"
+
 #include <boost/functional/hash.hpp>
 #include <boost/python/object_fwd.hpp>
 #include <boost/python/object_operators.hpp>
@@ -35,7 +40,26 @@
 #include <iosfwd>
 #include <memory>
 
+#else
+
+#include <type_traits>
+
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+// We define the empty stub for ABI compatibility even if Python support is
+// enabled so we can make sure size and alignment is the same.
+class TfPyObjWrapperStub
+{
+public:
+    static constexpr std::size_t Size = 16;
+    static constexpr std::size_t Align = 8;
+
+private:
+    std::aligned_storage<Size, Align>::type _stub;
+};
+
 
 /// \class TfPyObjWrapper
 ///
@@ -63,6 +87,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// provides, by virtue of deriving from boost::python::api::object_operators<T>.
 /// However it is important to note that callers must ensure the GIL is held
 /// before using these operators!
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 class TfPyObjWrapper
     : public boost::python::api::object_operators<TfPyObjWrapper>
 {
@@ -125,6 +150,19 @@ private:
     // Store a shared_ptr to a python object.
     std::shared_ptr<object> _objectPtr;
 };
+
+static_assert(sizeof(TfPyObjWrapper) == sizeof(TfPyObjWrapperStub),
+              "ABI break: Incompatible class sizes.");
+static_assert(alignof(TfPyObjWrapper) == alignof(TfPyObjWrapperStub),
+              "ABI break: Incompatible class alignments.");
+
+#else // PXR_PYTHON_SUPPORT_ENABLED
+
+class TfPyObjWrapper : TfPyObjWrapperStub
+{
+};
+
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

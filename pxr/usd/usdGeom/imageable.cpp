@@ -275,24 +275,87 @@ UsdGeomImageable::ComputeVisibility(UsdTimeCode const &time) const
     return _ComputeVisibility(GetPrim(), time);
 }
 
-TfToken
-UsdGeomImageable::ComputeVisibility(
-    const TfToken &parentVisibility, 
-    UsdTimeCode const &time) const
+UsdAttribute
+UsdGeomImageable::GetPurposeVisibilityAttr(
+    const TfToken &purpose) const
 {
-    if (parentVisibility == UsdGeomTokens->invisible) {
-        return UsdGeomTokens->invisible;
+    if (purpose == UsdGeomTokens->default_) {
+        return GetVisibilityAttr();
+    }
+    if (purpose == UsdGeomTokens->guide) {
+        return GetPrim().GetAttribute(UsdGeomTokens->guideVisibility);
+    }
+    if (purpose == UsdGeomTokens->proxy) {
+        return GetPrim().GetAttribute(UsdGeomTokens->proxyVisibility);
+    }
+    if (purpose == UsdGeomTokens->render) {
+        return GetPrim().GetAttribute(UsdGeomTokens->renderVisibility);
     }
 
-    TfToken localVis;
-    if (UsdGeomImageable ip = UsdGeomImageable(GetPrim())) {
-        if (ip.GetVisibilityAttr().Get(&localVis, time) && 
-            localVis == UsdGeomTokens->invisible) {
-            return UsdGeomTokens->invisible;
+    TF_CODING_ERROR(
+        "Unexpected purpose '%s' getting purpose visibility attribute for "
+        "<%s>.",
+        purpose.GetText(),
+        GetPrim().GetPath().GetText());
+    return {};
+}
+
+static
+TfToken
+_ComputePurposeVisibility(
+    const UsdPrim &prim,
+    const TfToken &purpose,
+    const UsdTimeCode &time)
+{
+    // If we find an authored purpose visibility opinion, return it.
+    if (const UsdGeomImageable ip = UsdGeomImageable(prim)) {
+        TfToken localVis;
+        const UsdAttribute attr = ip.GetPurposeVisibilityAttr(purpose);
+        if (attr.HasAuthoredValue() && attr.Get(&localVis, time)) {
+            return localVis;
         }
     }
 
-    return UsdGeomTokens->inherited;
+    // Otherwise, we inherit purpose visibiliy from the parent.
+    if (const UsdPrim parent = prim.GetParent()) {
+        return _ComputePurposeVisibility(parent, purpose, time);
+    }
+
+    // If we don't have an authored opinion and we don't have a parent,
+    // return a fallback value, depending on the purpose.
+    if (purpose == UsdGeomTokens->guide) {
+        return UsdGeomTokens->invisible;
+    }
+    if (purpose == UsdGeomTokens->proxy ||
+        purpose == UsdGeomTokens->render) {
+        return UsdGeomTokens->inherited;
+    }
+
+    TF_CODING_ERROR(
+        "Unexpected purpose '%s' computing purpose visibility for <%s>.",
+        purpose.GetText(),
+        prim.GetPath().GetText());
+    return UsdGeomTokens->invisible;
+}
+
+TfToken
+UsdGeomImageable::ComputeEffectiveVisibility(
+    const TfToken &purpose,
+    UsdTimeCode const &time) const
+{
+    // If overall visibility is invisible, effective purpose visibility is
+    // invisible.
+    if (ComputeVisibility(time) == UsdGeomTokens->invisible) {
+        return UsdGeomTokens->invisible;
+    }
+    
+    // Default visibility is entirely determined by overall visibility, so
+    // no need to traverse further.
+    if (purpose == UsdGeomTokens->default_) {
+        return UsdGeomTokens->visible;
+    }
+
+    return _ComputePurposeVisibility(GetPrim(), purpose, time);
 }
 
 static void

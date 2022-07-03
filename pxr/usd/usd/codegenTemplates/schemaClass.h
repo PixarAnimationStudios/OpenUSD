@@ -130,28 +130,26 @@ public:
     {% endif -%}
     virtual ~{{ cls.cppClassName }}() {%- if cls.isAPISchemaBase %} = 0{% endif %};
 
+    /// Return a vector of names of all pre-declared attributes for this schema
+    /// class and all its ancestor classes.  Does not include attributes that
+    /// may be authored by custom/extended methods of the schemas involved.
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    static const TfTokenVector &
+    GetSchemaAttributeNames(bool includeInherited=true);
 {% if cls.isMultipleApply %}
+
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes for a given instance name.  Does not
     /// include attributes that may be authored by custom/extended methods of
     /// the schemas involved. The names returned will have the proper namespace
     /// prefix.
-{% else %}
-    /// Return a vector of names of all pre-declared attributes for this schema
-    /// class and all its ancestor classes.  Does not include attributes that
-    /// may be authored by custom/extended methods of the schemas involved.
-{% endif %}
     {% if useExportAPI -%}
     {{ Upper(libraryName) }}_API
     {% endif -%}
-    static const TfTokenVector &
-{% if cls.isMultipleApply %}
-    GetSchemaAttributeNames(
-        bool includeInherited=true, const TfToken instanceName=TfToken());
-{% else %}
-    GetSchemaAttributeNames(bool includeInherited=true);
-{% endif %}
-{% if cls.isMultipleApply %}
+    static TfTokenVector
+    GetSchemaAttributeNames(bool includeInherited, const TfToken &instanceName);
 
     /// Returns the name of this multiple-apply schema instance
     TfToken GetName() const {

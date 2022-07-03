@@ -37,7 +37,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiVulkanShaderFunction::HgiVulkanShaderFunction(
     HgiVulkanDevice* device,
-    HgiShaderFunctionDesc const& desc)
+    Hgi const* hgi,
+    HgiShaderFunctionDesc const& desc,
+    int shaderVersion)
     : HgiShaderFunction(desc)
     , _device(device)
     , _spirvByteSize(0)
@@ -52,11 +54,9 @@ HgiVulkanShaderFunction::HgiVulkanShaderFunction(
     const char* debugLbl = _descriptor.debugName.empty() ?
         "unknown" : _descriptor.debugName.c_str();
 
-    HgiVulkanShaderGenerator shaderGenerator {desc};
-    std::stringstream ss;
-    shaderGenerator.Execute(ss);
-    std::string shaderStr = ss.str();
-    const char* shaderCode = shaderStr.c_str();
+    HgiVulkanShaderGenerator shaderGenerator(hgi, desc);
+    shaderGenerator.Execute();
+    const char *shaderCode = shaderGenerator.GetGeneratedShaderCode();
 
     // Compile shader and capture errors
     bool result = HgiVulkanCompileGLSL(
@@ -102,7 +102,11 @@ HgiVulkanShaderFunction::HgiVulkanShaderFunction(
         _descriptorSetInfo = HgiVulkanGatherDescriptorSetInfo(spirv);
     }
 
+    // Clear these pointers in our copy of the descriptor since we
+    // have to assume they could become invalid after we return.
+    _descriptor.shaderCodeDeclarations = nullptr;
     _descriptor.shaderCode = nullptr;
+    _descriptor.generatedShaderCodeOut = nullptr;
 }
 
 HgiVulkanShaderFunction::~HgiVulkanShaderFunction()

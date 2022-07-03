@@ -27,7 +27,7 @@ from pxr import Sdf, Usd, UsdLux, UsdRi
 import unittest
 
 def SetEaseOut(spline):
-    spline.CreateInterpolationAttr().Set(UsdRi.Tokens.catmull_rom)
+    spline.CreateInterpolationAttr().Set(UsdRi.Tokens.catmullRom)
     spline.CreatePositionsAttr().Set([0.0, 0.3, 0.7, 1.0])
     spline.CreateValuesAttr().Set([1.0, 0.8, 0.2, 0.0])
 
@@ -44,11 +44,15 @@ class TestUsdRiSplineAPI(unittest.TestCase):
             bogusSpline.Validate()[0]
 
         light = UsdLux.SphereLight.Define(stage, '/Light')
-        rod = UsdRi.PxrRodLightFilter.Define(stage, '/Light/Rod')
+        rod = stage.DefinePrim("/Light/Rod", "PxrRodLightFilter")
         light.GetFiltersRel().SetTargets([rod.GetPath()])
 
-        falloffRamp = rod.GetFalloffRampAPI()
-        colorRamp = rod.GetColorRampAPI()
+        # Create SplineAPI for "fallOffRamp" spline for the Rod prim
+        falloffRamp = UsdRi.SplineAPI(rod, "falloffRamp", 
+                Sdf.ValueTypeNames.FloatArray, True)
+        # Create SplineAPI for "colorRamp" spline for the Rod prim
+        colorRamp = UsdRi.SplineAPI(rod, "colorRamp", 
+                Sdf.ValueTypeNames.Color3fArray, True)
 
         # initially invalid since no spline exists
         assert not IsValid(falloffRamp)

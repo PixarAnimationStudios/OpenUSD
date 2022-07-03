@@ -233,7 +233,7 @@ struct Vt_ValueFromPython {
             data->convertible = storage;
             return;
         }
-        if (TfPyString_Check(obj_ptr) || PyUnicode_Check(obj_ptr)) {
+        if (TfPyBytes_Check(obj_ptr) || PyUnicode_Check(obj_ptr)) {
             // Py string or unicode -> std::string.
             new (storage) VtValue(std::string(extract<std::string>(obj_ptr)));
             data->convertible = storage;

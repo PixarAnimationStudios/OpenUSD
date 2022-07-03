@@ -31,6 +31,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
+#include "pxr/usdImaging/usdImaging/delegate.h"
 
 #include <string>
 #include <vector>
@@ -56,6 +57,8 @@ public:
     bool IsEnabledSceneLights() const { return _sceneLights; }
     bool IsEnabledCameraLight() const { return _cameraLight; }
     bool IsEnabledIdRender() const { return _testIdRender; }
+    bool IsEnabledSceneMaterials() const { return _enableSceneMaterials; }
+    bool IsEnabledUnloadedAsBounds() const { return _unloadedAsBounds; }
     
     bool IsShowGuides() const { return _showGuides; }
     bool IsShowRender() const { return _showRender; }
@@ -109,6 +112,11 @@ protected:
         engine->RenderBatch(roots, params);
     }
 
+    void _SetDisplayUnloadedPrimsWithBounds(UsdImagingGLEngine *engine,
+                                            bool enable) {
+        engine->_sceneDelegate->SetDisplayUnloadedPrimsWithBounds(enable);
+    }
+
 private:
     struct _Args;
     void _Parse(int argc, char *argv[], _Args* args);
@@ -120,6 +128,8 @@ private:
     bool _cameraLight;
     std::string _cameraPath;
     bool _testIdRender;
+    bool _enableSceneMaterials;
+    bool _unloadedAsBounds;
 
     std::string _stageFilePath;
     std::string _outputFilePath;

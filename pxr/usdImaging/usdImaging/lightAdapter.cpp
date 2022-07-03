@@ -31,7 +31,7 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/usd/ar/resolverScopedCache.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
-#include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/lightAPI.h"
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -104,7 +104,7 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
         true);
     
     // Determine if the light material network is time varying.
-    if (UsdImaging_IsHdMaterialNetworkTimeVarying(prim)) {
+    if (UsdImagingIsHdMaterialNetworkTimeVarying(prim)) {
         *timeVaryingBits |= HdLight::DirtyBits::DirtyResource;
     }
 
@@ -125,7 +125,7 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
 
     UsdImagingPrimvarDescCache* primvarDescCache = _GetPrimvarDescCache();
 
-    UsdLuxLight light(prim);
+    UsdLuxLightAPI light(prim);
     if (TF_VERIFY(light)) {
         UsdImaging_CollectionCache &collectionCache = _GetCollectionCache();
         collectionCache.UpdateCollection(light.GetLightLinkCollectionAPI());
@@ -223,12 +223,14 @@ UsdImagingLightAdapter::GetMaterialResource(UsdPrim const &prim,
                                             SdfPath const& cachePath, 
                                             UsdTimeCode time) const
 {
-    UsdLuxLight light(prim);
-    if (!light) {
-        TF_RUNTIME_ERROR("Expected light prim at <%s> to be a subclass of type "
-                         "'UsdLuxLight', not type '%s'; ignoring",
-                         prim.GetPath().GetText(),
-                         prim.GetTypeName().GetText());
+    if (!_GetSceneLightsEnabled()) {
+        return VtValue();
+    }
+
+    if (!prim.HasAPI<UsdLuxLightAPI>()) {
+        TF_RUNTIME_ERROR("Expected light prim at <%s> to have an applied API "
+                         "of type 'UsdLuxLightAPI'; ignoring",
+                         prim.GetPath().GetText());
         return VtValue();
     }
 
@@ -238,10 +240,11 @@ UsdImagingLightAdapter::GetMaterialResource(UsdPrim const &prim,
 
     HdMaterialNetworkMap networkMap;
 
-    UsdImaging_BuildHdMaterialNetworkFromTerminal(
+    UsdImagingBuildHdMaterialNetworkFromTerminal(
         prim, 
         HdMaterialTerminalTokens->light,
         _GetShaderSourceTypes(),
+        _GetMaterialRenderContexts(),
         &networkMap,
         time);
 

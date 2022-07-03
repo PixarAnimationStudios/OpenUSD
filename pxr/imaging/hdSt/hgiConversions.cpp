@@ -88,6 +88,65 @@ constexpr bool _CompileTimeValidateFormatTable() {
 static_assert(_CompileTimeValidateFormatTable(), 
               "_FormatDesc array out of sync with HdFormat/HgiFormat enum");
 
+struct _VertexFormatFromTypeDesc {
+    HdType hdType;
+    HgiFormat hgiFormat;
+};
+
+const _VertexFormatFromTypeDesc VERTEX_FORMAT_FROM_TYPE_DESC[] =
+{
+    {HdTypeBool,                 HgiFormatInvalid}, // Unsupported by HgiFormat
+    {HdTypeUInt8,                HgiFormatInvalid}, // Unsupported by HgiFormat
+    {HdTypeUInt16,               HgiFormatUInt16},
+    {HdTypeInt8,                 HgiFormatInvalid}, // Unsupported by HgiFormat
+    {HdTypeInt16,                HgiFormatInt16},
+
+    {HdTypeInt32,                HgiFormatInt32},
+    {HdTypeInt32Vec2,            HgiFormatInt32Vec2},
+    {HdTypeInt32Vec3,            HgiFormatInt32Vec3},
+    {HdTypeInt32Vec4,            HgiFormatInt32Vec4},
+
+    {HdTypeUInt32,               HgiFormatInvalid}, // Unsupported by HgiFormat
+    {HdTypeUInt32Vec2,           HgiFormatInvalid}, // Unsupported by HgiFormat
+    {HdTypeUInt32Vec3,           HgiFormatInvalid}, // Unsupported by HgiFormat
+    {HdTypeUInt32Vec4,           HgiFormatInvalid}, // Unsupported by HgiFormat
+
+    {HdTypeFloat,                HgiFormatFloat32},
+    {HdTypeFloatVec2,            HgiFormatFloat32Vec2},
+    {HdTypeFloatVec3,            HgiFormatFloat32Vec3},
+    {HdTypeFloatVec4,            HgiFormatFloat32Vec4},
+    {HdTypeFloatMat3,            HgiFormatInvalid}, // Unsupported by HgiFormat
+    {HdTypeFloatMat4,            HgiFormatInvalid}, // Unsupported by HgiFormat
+
+    {HdTypeDouble,               HgiFormatInvalid}, // Unsupported by HgiFormat
+    {HdTypeDoubleVec2,           HgiFormatInvalid}, // Unsupported by HgiFormat
+    {HdTypeDoubleVec3,           HgiFormatInvalid}, // Unsupported by HgiFormat
+    {HdTypeDoubleVec4,           HgiFormatInvalid}, // Unsupported by HgiFormat
+    {HdTypeDoubleMat3,           HgiFormatInvalid}, // Unsupported by HgiFormat
+    {HdTypeDoubleMat4,           HgiFormatInvalid}, // Unsupported by HgiFormat
+
+    {HdTypeHalfFloat,            HgiFormatFloat16},
+    {HdTypeHalfFloatVec2,        HgiFormatFloat16Vec2},
+    {HdTypeHalfFloatVec3,        HgiFormatFloat16Vec3},
+    {HdTypeHalfFloatVec4,        HgiFormatFloat16Vec4},
+
+    {HdTypeInt32_2_10_10_10_REV, HgiFormatPackedInt1010102},
+};
+
+// A few random format validations to make sure that the format conversion
+// table stays up-to-date with changes to HdFormat and HgiFormat.
+constexpr bool _CompileTimeValidateVertexFormatFromTypeTable() {
+    return
+        HdTypeCount == 30 &&
+        HdTypeUInt8 == 1 && HgiFormatUNorm8 == 0 &&
+        HdTypeHalfFloatVec4 == 28 && HgiFormatFloat16Vec4 == 9 &&
+        HdTypeFloatVec4 == 16 && HgiFormatFloat32Vec4 == 13 &&
+        HdTypeInt32Vec4 == 8 && HgiFormatInt32Vec4 == 25;
+}
+
+static_assert(_CompileTimeValidateVertexFormatFromTypeTable(),
+              "_FormatDesc array out of sync with HdType/HgiFormat enum");
+
 struct _WrapDesc {
     HdWrap hdWrap;
     HgiSamplerAddressMode hgiSamplerAddressMode;
@@ -165,6 +224,80 @@ constexpr bool _CompileTimeValidateMinTable() {
 static_assert(_CompileTimeValidateMinTable(),
               "_MinDesc array out of sync with HdMinFilter");
 
+struct _BorderColorDesc {
+    HdBorderColor hdBorderColor;
+    HgiBorderColor hgiBorderColor;
+};
+
+const _BorderColorDesc BORDER_COLOR_DESC[] =
+{
+    {HdBorderColorTransparentBlack, HgiBorderColorTransparentBlack}, 
+    {HdBorderColorOpaqueBlack,      HgiBorderColorOpaqueBlack}, 
+    {HdBorderColorOpaqueWhite,      HgiBorderColorOpaqueWhite},
+};
+
+constexpr bool _CompileTimeValidateBorderColorTable() {
+    return
+        HdBorderColorTransparentBlack == 0 && 
+        HgiBorderColorTransparentBlack == 0 &&
+        HdBorderColorOpaqueWhite == 2 && HdBorderColorOpaqueWhite == 2;
+}
+
+static_assert(_CompileTimeValidateBorderColorTable(), 
+              "_BorderColorDesc array out of sync with "
+              "HdBorderColor/HgiBorderColor enum");
+
+struct _CompareFunctionDesc {
+    HdCompareFunction hdCompareFunction;
+    HgiCompareFunction hgiCompareFunction;
+};
+
+const _CompareFunctionDesc _COMPARE_FUNCTION_DESC[] =
+{
+    {HdCmpFuncNever,    HgiCompareFunctionNever},
+    {HdCmpFuncLess,     HgiCompareFunctionLess},
+    {HdCmpFuncEqual,    HgiCompareFunctionEqual},
+    {HdCmpFuncLEqual,   HgiCompareFunctionLEqual},
+    {HdCmpFuncGreater,  HgiCompareFunctionGreater},
+    {HdCmpFuncNotEqual, HgiCompareFunctionNotEqual},
+    {HdCmpFuncGEqual,   HgiCompareFunctionGEqual},
+    {HdCmpFuncAlways,   HgiCompareFunctionAlways},
+};
+
+constexpr bool _CompileTimeValidateCompareFunctionTable() {
+    return
+        HdCmpFuncNever == 0 &&
+        HdCmpFuncLast == 8;
+}
+
+static_assert(_CompileTimeValidateCompareFunctionTable(),
+              "_compareFunctionDesc array out of sync with HdCompareFunction");
+
+struct _StencilOpDesc {
+    HdStencilOp hdStencilOp;
+    HgiStencilOp hgiStencilOp;
+};
+
+const _StencilOpDesc _STENCIL_OP_DESC[] =
+{
+    {HdStencilOpKeep,           HgiStencilOpKeep},
+    {HdStencilOpZero,           HgiStencilOpZero},
+    {HdStencilOpReplace,        HgiStencilOpReplace},
+    {HdStencilOpIncrement,      HgiStencilOpIncrementClamp},
+    {HdStencilOpIncrementWrap,  HgiStencilOpIncrementWrap},
+    {HdStencilOpDecrement,      HgiStencilOpDecrementClamp},
+    {HdStencilOpDecrementWrap,  HgiStencilOpDecrementWrap},
+    {HdStencilOpInvert,         HgiStencilOpInvert},
+};
+
+constexpr bool _CompileTimeValidateStencilOpTable() {
+    return
+        HdStencilOpKeep == 0 &&
+        HdStencilOpLast == 8;
+}
+
+static_assert(_CompileTimeValidateStencilOpTable(),
+              "_stencilOpDesc array out of sync with HdStencilOp");
 }
 
 HgiFormat
@@ -179,6 +312,23 @@ HdStHgiConversions::GetHgiFormat(const HdFormat hdFormat)
     HgiFormat hgiFormat = FORMAT_DESC[hdFormat].hgiFormat;
     if (ARCH_UNLIKELY(hgiFormat == HgiFormatInvalid)) {
         TF_CODING_ERROR("Unsupported format");
+    }
+
+    return hgiFormat;
+}
+
+HgiFormat
+HdStHgiConversions::GetHgiVertexFormat(const HdType hdType)
+{
+    if ((hdType < 0) || (hdType >= HdTypeCount))
+    {
+        TF_CODING_ERROR("Unexpected HdType %d", hdType);
+        return HgiFormatInvalid;
+    }
+
+    HgiFormat hgiFormat = VERTEX_FORMAT_FROM_TYPE_DESC[hdType].hgiFormat;
+    if (ARCH_UNLIKELY(hgiFormat == HgiFormatInvalid)) {
+        TF_CODING_ERROR("Unsupported type");
     }
 
     return hgiFormat;
@@ -219,6 +369,39 @@ HdStHgiConversions::GetHgiMinAndMipFilter(
     }
     *hgiSamplerFilter = MIN_DESC[hdMinFilter].hgiSamplerFilter;
     *hgiMipFilter     = MIN_DESC[hdMinFilter].hgiMipFilter;
+}
+
+HgiBorderColor
+HdStHgiConversions::GetHgiBorderColor(HdBorderColor hdBorderColor)
+{
+    if ((hdBorderColor < 0) || (hdBorderColor > HdBorderColorOpaqueWhite)) {
+        TF_CODING_ERROR("Unexpected HdBorderColor %d", hdBorderColor);
+        return HgiBorderColorTransparentBlack;
+    }
+    
+    return BORDER_COLOR_DESC[hdBorderColor].hgiBorderColor;  
+}
+
+HgiCompareFunction
+HdStHgiConversions::GetHgiCompareFunction(HdCompareFunction hdCompareFunc)
+{
+    if ((hdCompareFunc < 0) ||
+        (hdCompareFunc >= HdCmpFuncLast)) {
+        TF_CODING_ERROR("Unexpected HdCompareFunction %d", hdCompareFunc);
+        return HgiCompareFunctionAlways;
+    }
+    return _COMPARE_FUNCTION_DESC[hdCompareFunc].hgiCompareFunction;
+}
+
+HgiStencilOp
+HdStHgiConversions::GetHgiStencilOp(HdStencilOp hdStencilOp)
+{
+    if ((hdStencilOp < 0) ||
+        (hdStencilOp >= HdStencilOpLast)) {
+        TF_CODING_ERROR("Unexpected HdStencilOp %d", hdStencilOp);
+        return HgiStencilOpKeep;
+    }
+    return _STENCIL_OP_DESC[hdStencilOp].hgiStencilOp;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

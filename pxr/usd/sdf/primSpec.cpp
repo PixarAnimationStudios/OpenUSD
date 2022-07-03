@@ -840,7 +840,7 @@ _FindOrCreateVariantSpec(SdfLayer *layer, const SdfPath &vsPath)
     // Create a new variant set spec and add it to the variant set list.
     if (!varSetSpec) {
         if ((varSetSpec = SdfVariantSetSpec::New(primSpec, varSel.first)))
-            primSpec->GetVariantSetNameList().Add(varSel.first);
+            primSpec->GetVariantSetNameList().Prepend(varSel.first);
     }
 
     if (!TF_VERIFY(varSetSpec, "Failed to create variant set for '%s' in @%s@",

@@ -31,6 +31,7 @@
 
 #include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/resolverScopedCache.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -124,6 +125,15 @@ UsdUsdzFileFormat::Read(
     bool metadataOnly) const
 {
     TRACE_FUNCTION();
+
+    // Use a scoped cache here so we only open the .usdz asset once.
+    //
+    // If the call to Read below calls ArResolver::OpenAsset, it will
+    // ultimately ask Usd_UsdzResolver to open the .usdz asset. The
+    // scoped cache will ensure that will pick up the asset opened
+    // in _GetFirstFileInZipFile instead of asking the resolver to
+    // open the asset again.
+    ArResolverScopedCache scopedCache;
 
     const std::string firstFile = _GetFirstFileInZipFile(resolvedPath);
     if (firstFile.empty()) {

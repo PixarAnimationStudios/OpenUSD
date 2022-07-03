@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/perfLog.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -32,19 +33,15 @@ HdMaterial::HdMaterial(SdfPath const& id)
     // NOTHING
 }
 
-HdMaterial::~HdMaterial()
-{
-    // NOTHING
-}
+HdMaterial::~HdMaterial() = default;
 
-
-void
-HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
+HdMaterialNetwork2
+HdConvertToHdMaterialNetwork2(
     const HdMaterialNetworkMap & hdNetworkMap,
-    HdMaterialNetwork2 *result,
     bool *isVolume)
 {
     HD_TRACE_FUNCTION();
+    HdMaterialNetwork2 result;
 
     for (auto const& iter: hdNetworkMap.map) {
         const TfToken & terminalName = iter.first;
@@ -63,22 +60,22 @@ HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
             continue;
         }
         for (const HdMaterialNode & node : hdNetwork.nodes) {
-            HdMaterialNode2 & materialNode2 = result->nodes[node.path];
+            HdMaterialNode2 & materialNode2 = result.nodes[node.path];
             materialNode2.nodeTypeId = node.identifier;
             materialNode2.parameters = node.parameters;
         }
         // Assume that the last entry is the terminal 
-        result->terminals[terminalName].upstreamNode = 
+        result.terminals[terminalName].upstreamNode = 
                 hdNetwork.nodes.back().path;
 
         // Transfer relationships to inputConnections on receiving/downstream nodes.
         for (const HdMaterialRelationship & rel : hdNetwork.relationships) {
             
             // outputId (in hdMaterial terms) is the input of the receiving node
-            auto iter = result->nodes.find(rel.outputId);
+            auto iter = result.nodes.find(rel.outputId);
 
             // skip connection if the destination node doesn't exist
-            if (iter == result->nodes.end()) {
+            if (iter == result.nodes.end()) {
                 continue;
             }
 
@@ -94,8 +91,9 @@ HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
         }
 
         // Transfer primvars:
-        result->primvars = hdNetwork.primvars;
+        result.primvars = hdNetwork.primvars;
     }
+    return result;
 }
 
 
@@ -118,14 +116,6 @@ bool operator==(const HdMaterialRelationship& lhs,
            lhs.inputName  == rhs.inputName;
 }
 
-size_t hash_value(const HdMaterialRelationship& rel)
-{
-    size_t hash = hash_value(rel.inputId);
-    boost::hash_combine(hash, rel.inputName);
-    boost::hash_combine(hash, rel.outputId);
-    boost::hash_combine(hash, rel.outputName);
-    return hash;
-}
 
 bool operator==(const HdMaterialNode& lhs, const HdMaterialNode& rhs)
 {
@@ -134,13 +124,6 @@ bool operator==(const HdMaterialNode& lhs, const HdMaterialNode& rhs)
            lhs.parameters == rhs.parameters;
 }
 
-size_t hash_value(const HdMaterialNode& node)
-{
-    size_t hash = hash_value(node.path);
-    boost::hash_combine(hash, node.identifier);
-    boost::hash_combine(hash, node.parameters);
-    return hash;
-}
 
 bool operator==(const HdMaterialNetwork& lhs, const HdMaterialNetwork& rhs) 
 {
@@ -154,14 +137,6 @@ bool operator!=(const HdMaterialNetwork& lhs, const HdMaterialNetwork& rhs)
     return !(lhs == rhs);
 }
 
-size_t hash_value(const HdMaterialNetwork& network)
-{
-    size_t hash = 0;
-    boost::hash_combine(hash, network.relationships);
-    boost::hash_combine(hash, network.nodes);
-    boost::hash_combine(hash, network.primvars);
-    return hash;
-}
 
 std::ostream& operator<<(std::ostream& out, const HdMaterialNetworkMap& pv)
 {
@@ -182,12 +157,5 @@ bool operator!=(const HdMaterialNetworkMap& lhs,
     return !(lhs == rhs);
 }
 
-size_t hash_value(const HdMaterialNetworkMap& networkMap)
-{
-    size_t hash = 0;
-    boost::hash_combine(hash, networkMap.map);
-    boost::hash_combine(hash, networkMap.terminals);
-    return hash;
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE

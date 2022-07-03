@@ -33,7 +33,9 @@
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/material.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/primUtils.h"
+#include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
@@ -61,6 +63,7 @@ HdStBasisCurves::HdStBasisCurves(SdfPath const& id)
     , _refineLevel(0)
     , _displayOpacity(false)
     , _occludedSelectionShowsThrough(false)
+    , _pointsShadingEnabled(false)
 {
     /*NOTHING*/
 }
@@ -69,26 +72,37 @@ HdStBasisCurves::HdStBasisCurves(SdfPath const& id)
 HdStBasisCurves::~HdStBasisCurves() = default;
 
 void
+HdStBasisCurves::UpdateRenderTag(HdSceneDelegate *delegate,
+                                 HdRenderParam *renderParam)
+{
+    HdStUpdateRenderTag(delegate, renderParam, this);
+}
+
+
+void
 HdStBasisCurves::Sync(HdSceneDelegate *delegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits,
                       TfToken const   &reprToken)
 {
-    bool updateMaterialTag = false;
+    _UpdateVisibility(delegate, dirtyBits);
+
+    bool updateMaterialTags = false;
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         HdStSetMaterialId(delegate, renderParam, this);
-        updateMaterialTag = true;
+        updateMaterialTags = true;
     }
-    if (*dirtyBits & HdChangeTracker::DirtyDisplayStyle) {
-        updateMaterialTag = true;
+    if (*dirtyBits & (HdChangeTracker::DirtyDisplayStyle|
+                      HdChangeTracker::NewRepr)) {
+        updateMaterialTags = true;
     }
 
     // Check if either the material or geometric shaders need updating for
     // draw items of all the reprs.
-    bool updateMaterialShader = false;
+    bool updateMaterialNetworkShader = false;
     if (*dirtyBits & (HdChangeTracker::DirtyMaterialId |
                       HdChangeTracker::NewRepr)) {
-        updateMaterialShader = true;
+        updateMaterialNetworkShader = true;
     }
 
     bool updateGeometricShader = false;
@@ -102,17 +116,16 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
     bool displayOpacity = _displayOpacity;
     _UpdateRepr(delegate, renderParam, reprToken, dirtyBits);
 
-    if (updateMaterialTag || 
+    if (updateMaterialTags || 
         (GetMaterialId().IsEmpty() && displayOpacity != _displayOpacity)) { 
-
-        HdStSetMaterialTag(delegate, renderParam, this, _displayOpacity,
-                           _occludedSelectionShowsThrough);
+        _UpdateMaterialTagsForAllReprs(delegate, renderParam);
     }
 
-    if (updateMaterialShader || updateGeometricShader) {
+    if (updateMaterialNetworkShader || updateGeometricShader) {
         _UpdateShadersForAllReprs(delegate, renderParam,
-                                  updateMaterialShader, updateGeometricShader);
+                          updateMaterialNetworkShader, updateGeometricShader);
     }
+
 
     // This clears all the non-custom dirty bits. This ensures that the rprim
     // doesn't have pending dirty bits that add it to the dirty list every
@@ -126,6 +139,27 @@ void
 HdStBasisCurves::Finalize(HdRenderParam *renderParam)
 {
     HdStMarkGarbageCollectionNeeded(renderParam);
+
+    HdStRenderParam * const stRenderParam =
+        static_cast<HdStRenderParam*>(renderParam);
+
+    // Decrement material tag counts for each draw item material tag
+    for (auto const& reprPair : _reprs) {
+        const TfToken &reprToken = reprPair.first;
+        _BasisCurvesReprConfig::DescArray const &descs =
+            _GetReprDesc(reprToken);
+        HdReprSharedPtr repr = reprPair.second;
+        int drawItemIndex = 0;
+        for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+            if (descs[descIdx].geomStyle == HdBasisCurvesGeomStyleInvalid) {
+                continue;
+            }
+            HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                repr->GetDrawItem(drawItemIndex++));
+            stRenderParam->DecreaseMaterialTagCount(drawItem->GetMaterialTag());
+        }
+    }
+    stRenderParam->DecreaseRenderTagCount(GetRenderTag());
 }
 
 void
@@ -140,13 +174,11 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     SdfPath const& id = GetId();
 
-    /* VISIBILITY */
-    _UpdateVisibility(sceneDelegate, dirtyBits);
-
     /* MATERIAL SHADER (may affect subsequent primvar population) */
     if ((*dirtyBits & HdChangeTracker::NewRepr) ||
         HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        drawItem->SetMaterialShader(HdStGetMaterialShader(this, sceneDelegate));
+        drawItem->SetMaterialNetworkShader(
+                HdStGetMaterialNetworkShader(this, sceneDelegate));
     }
 
     // Reset value of _displayOpacity
@@ -252,10 +284,21 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
     if (!TF_VERIFY(_topology)) return;
 
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-
+    
+    HdStResourceRegistrySharedPtr resourceRegistry =
+        std::static_pointer_cast<HdStResourceRegistry>(
+            renderIndex.GetResourceRegistry());
+    
+    // For the time being, don't use complex curves on Metal. Support for this
+    // is planned for the future.
+    const bool hasMetalTessellation =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
+    
     TfToken curveType = _topology->GetCurveType();
     TfToken curveBasis = _topology->GetCurveBasis();
-    bool supportsRefinement = _SupportsRefinement(_refineLevel);
+    bool supportsRefinement = _SupportsRefinement(_refineLevel) &&
+        !hasMetalTessellation;
     if (!supportsRefinement) {
         // XXX: Rendering non-linear (i.e., cubic) curves as linear segments
         // when unrefined can be confusing. Should we continue to do this?
@@ -286,7 +329,8 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
     case HdBasisCurvesGeomStylePatch:
     {
         if (_SupportsRefinement(_refineLevel) &&
-            _SupportsUserWidths(drawItem)) {
+            _SupportsUserWidths(drawItem) &&
+            !hasMetalTessellation) {
             if (_SupportsUserNormals(drawItem)){
                 drawStyle = HdSt_BasisCurvesShaderKey::RIBBON;
                 normalStyle = HdSt_BasisCurvesShaderKey::ORIENTED;
@@ -327,22 +371,29 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
     bool hasAuthoredTopologicalVisiblity =
         (bool) drawItem->GetTopologyVisibilityRange();
 
+    // Process shadingTerminal (including shadingStyle)
+    TfToken shadingTerminal = desc.shadingTerminal;
+    if (shadingTerminal == HdBasisCurvesReprDescTokens->surfaceShader) {
+        TfToken shadingStyle =
+            sceneDelegate->GetShadingStyle(GetId()).GetWithDefault<TfToken>();
+        if (shadingStyle == HdStTokens->constantLighting) {
+            shadingTerminal = HdBasisCurvesReprDescTokens->surfaceShaderUnlit;
+        }
+    }
+
     HdSt_BasisCurvesShaderKey shaderKey(curveType,
                                         curveBasis,
                                         drawStyle,
                                         normalStyle,
                                         _basisWidthInterpolation,
                                         _basisNormalInterpolation,
-                                        desc.shadingTerminal,
-                                        hasAuthoredTopologicalVisiblity);
+                                        shadingTerminal,
+                                        hasAuthoredTopologicalVisiblity,
+                                        _pointsShadingEnabled);
 
     TF_DEBUG(HD_RPRIM_UPDATED).
             Msg("HdStBasisCurves(%s) - Shader Key PrimType: %s\n ",
                 GetId().GetText(), HdSt_PrimTypeToString(shaderKey.primType));
-
-    HdStResourceRegistrySharedPtr resourceRegistry =
-        std::static_pointer_cast<HdStResourceRegistry>(
-            renderIndex.GetResourceRegistry());
 
     HdSt_GeometricShaderSharedPtr geomShader =
         HdSt_GeometricShader::Create(shaderKey, resourceRegistry);
@@ -369,7 +420,8 @@ HdStBasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
     // propagate scene-based dirtyBits into rprim-custom dirtyBits
     if (bits & HdChangeTracker::DirtyTopology) {
         bits |= _customDirtyBitsInUse &
-            (DirtyIndices|DirtyHullIndices|DirtyPointsIndices);
+            (DirtyIndices|DirtyHullIndices|DirtyPointsIndices|
+                HdChangeTracker::DirtyPrimvar);
     }
 
     return bits;
@@ -481,17 +533,64 @@ HdStBasisCurves::_UpdateRepr(HdSceneDelegate *sceneDelegate,
 void
 HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                                            HdRenderParam *renderParam,
-                                           bool updateMaterialShader,
+                                           bool updateMaterialNetworkShader,
                                            bool updateGeometricShader)
 {
     TF_DEBUG(HD_RPRIM_UPDATED). Msg(
         "(%s) - Updating geometric and material shaders for draw "
         "items of all reprs.\n", GetId().GetText());
 
-    HdStShaderCodeSharedPtr materialShader;
-    if (updateMaterialShader) {
-        materialShader = HdStGetMaterialShader(this, sceneDelegate);
+    HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader;
+    if (updateMaterialNetworkShader) {
+        materialNetworkShader =
+                HdStGetMaterialNetworkShader(this, sceneDelegate);
     }
+
+    const bool materialIsFinal = GetDisplayStyle(sceneDelegate).materialIsFinal;
+    bool materialIsFinalChanged = false;
+    for (auto const& reprPair : _reprs) {
+        const TfToken &reprToken = reprPair.first;
+        _BasisCurvesReprConfig::DescArray const &descs =
+            _GetReprDesc(reprToken);
+        HdReprSharedPtr repr = reprPair.second;
+        int drawItemIndex = 0;
+        for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+            if (descs[descIdx].geomStyle == HdBasisCurvesGeomStyleInvalid) {
+                continue;
+            }
+
+            HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                repr->GetDrawItem(drawItemIndex++));
+            if (materialIsFinal != drawItem->GetMaterialIsFinal()) {
+                materialIsFinalChanged = true;
+            }
+            drawItem->SetMaterialIsFinal(materialIsFinal);
+
+            if (updateMaterialNetworkShader) {
+                drawItem->SetMaterialNetworkShader(materialNetworkShader);
+            }
+            if (updateGeometricShader) {
+                _UpdateDrawItemGeometricShader(
+                    sceneDelegate, renderParam, drawItem, descs[descIdx]);
+            }
+        }
+    }
+
+    if (materialIsFinalChanged) {
+        HdStMarkDrawBatchesDirty(renderParam);
+        TF_DEBUG(HD_RPRIM_UPDATED).Msg(
+            "%s: Marking all batches dirty to trigger deep validation because "
+            "the materialIsFinal was updated.\n", GetId().GetText());
+    }
+}
+
+void
+HdStBasisCurves::_UpdateMaterialTagsForAllReprs(HdSceneDelegate *sceneDelegate,
+                                                HdRenderParam *renderParam)
+{
+    TF_DEBUG(HD_RPRIM_UPDATED). Msg(
+        "(%s) - Updating material tags for draw items of all reprs.\n", 
+        GetId().GetText());
 
     for (auto const& reprPair : _reprs) {
         const TfToken &reprToken = reprPair.first;
@@ -506,13 +605,9 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
             HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
                 repr->GetDrawItem(drawItemIndex++));
 
-            if (updateMaterialShader) {
-                drawItem->SetMaterialShader(materialShader);
-            }
-            if (updateGeometricShader) {
-                _UpdateDrawItemGeometricShader(
-                    sceneDelegate, renderParam, drawItem, descs[descIdx]);
-            }
+            HdStSetMaterialTag(sceneDelegate, renderParam, drawItem, 
+                this->GetMaterialId(), _displayOpacity, 
+                _occludedSelectionShowsThrough);
         }
     }
 }
@@ -538,6 +633,7 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         HdDisplayStyle ds = GetDisplayStyle(sceneDelegate);
         _refineLevel = ds.refineLevel;
         _occludedSelectionShowsThrough = ds.occludedSelectionShowsThrough;
+        _pointsShadingEnabled = ds.pointsShadingEnabled;
     }
 
     // XXX: is it safe to get topology even if it's not dirty?
@@ -551,11 +647,16 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         // Topological visibility (of points, curves) comes in as DirtyTopology.
         // We encode this information in a separate BAR.
         if (dirtyTopology) {
+            // The points primvar is permitted to be larger than the number of
+            // CVs implied by the topology.  So here we allow for
+            // invisiblePoints being larger as well.
+            size_t minInvisiblePointsCapacity = srcTopology.GetNumPoints();
+
             HdStProcessTopologyVisibility(
                 srcTopology.GetInvisibleCurves(),
                 srcTopology.GetNumCurves(),
                 srcTopology.GetInvisiblePoints(),
-                srcTopology.CalculateNeededNumberOfControlPoints(),
+                minInvisiblePointsCapacity,
                 &_sharedData,
                 drawItem,
                 renderParam,
@@ -1147,6 +1248,40 @@ HdStBasisCurves::GetInitialDirtyBitsMask() const
         ;
 
     return mask;
+}
+
+/*override*/
+TfTokenVector const &
+HdStBasisCurves::GetBuiltinPrimvarNames() const
+{
+    // screenSpaceWidths toggles the interpretation of widths to be in
+    // screen-space pixels.  We expect this to be useful for implementing guides
+    // or other UI elements drawn with BasisCurves.  The pointsSizeScale primvar
+    // similarly is intended to give clients a way to emphasize or supress
+    // certain  points by scaling their default size.
+
+    // minScreenSpaceWidth gives a minimum screen space width in pixels for
+    // BasisCurves when rendered as tubes or camera-facing ribbons. We expect
+    // this to be useful for preventing thin curves such as hair from 
+    // undesirably aliasing when their screen space width would otherwise dip
+    // below one pixel.
+
+    // pointSizeScale, screenSpaceWidths, and minScreenSpaceWidths are
+    // explicitly claimed here as "builtin" primvar names because they are 
+    // consumed in the low-level baisCurves.glslfx rather than declared as 
+    // inputs in any material shader's metadata.  Mentioning them here means
+    // they will always survive primvar filtering.
+
+    auto _ComputePrimvarNames = [this](){
+        TfTokenVector primvarNames =
+            this->HdBasisCurves::GetBuiltinPrimvarNames();
+        primvarNames.push_back(HdStTokens->pointSizeScale);
+        primvarNames.push_back(HdStTokens->screenSpaceWidths);
+        primvarNames.push_back(HdStTokens->minScreenSpaceWidths);
+        return primvarNames;
+    };
+    static TfTokenVector primvarNames = _ComputePrimvarNames();
+    return primvarNames;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

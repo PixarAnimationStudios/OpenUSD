@@ -43,7 +43,7 @@ HgiMetalBuffer::HgiMetalBuffer(HgiMetal *hgi, HgiBufferDesc const & desc)
     }
 
     MTLResourceOptions options = MTLResourceCPUCacheModeDefaultCache |
-        hgi->GetCapabilities().defaultStorageMode;
+        hgi->GetCapabilities()->defaultStorageMode;
     
     if (desc.initialData) {
         _bufferId = [hgi->GetPrimaryDevice() newBufferWithBytes:desc.initialData

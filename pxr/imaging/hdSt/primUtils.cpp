@@ -26,8 +26,11 @@
 
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/glslfxShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/material.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
+#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
@@ -45,12 +48,12 @@
 #include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/hf/diagnostic.h"
 
 #include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/staticData.h"
 #include "pxr/base/arch/hash.h"
 
 #include <algorithm>
@@ -59,6 +62,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_SHARED_VERTEX_PRIMVAR, 1,
                       "Enable sharing of vertex primvar");
+
+TF_MAKE_STATIC_DATA(
+    HdSt_MaterialNetworkShaderSharedPtr,
+    _fallbackWidgetShader)
+{
+    *_fallbackWidgetShader = std::make_shared<HdStGLSLFXShader>(
+        std::make_shared<HioGlslfx>(HdStPackageWidgetShader()));
+}
 
 // -----------------------------------------------------------------------------
 // Draw invalidation utilities
@@ -84,6 +95,16 @@ HdStMarkMaterialTagsDirty(HdRenderParam *renderParam)
 }
 
 void
+HdStMarkGeomSubsetDrawItemsDirty(HdRenderParam *renderParam)
+{
+    if (TF_VERIFY(renderParam)) {
+        HdStRenderParam *stRenderParam =
+            static_cast<HdStRenderParam*>(renderParam);
+        stRenderParam->MarkGeomSubsetDrawItemsDirty();
+    }
+}
+
+void
 HdStMarkGarbageCollectionNeeded(HdRenderParam *renderParam)
 {
     if (TF_VERIFY(renderParam)) {
@@ -97,9 +118,25 @@ HdStMarkGarbageCollectionNeeded(HdRenderParam *renderParam)
 // Primvar descriptor filtering utilities
 // -----------------------------------------------------------------------------
 static bool
-_IsEnabledPrimvarFiltering(HdStDrawItem const * drawItem) {
-    HdStShaderCodeSharedPtr materialShader = drawItem->GetMaterialShader();
-    return materialShader && materialShader->IsEnabledPrimvarFiltering();
+_IsEnabledPrimvarFiltering(HdStDrawItem const * drawItem)
+{
+    HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader =
+        drawItem->GetMaterialNetworkShader();
+    return materialNetworkShader &&
+           materialNetworkShader->IsEnabledPrimvarFiltering();
+}
+
+static TfTokenVector const &
+_GetFilterNamesForMaterial(HdStDrawItem const * drawItem)
+{
+    HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader =
+        drawItem->GetMaterialNetworkShader();
+    if (materialNetworkShader) {
+        return materialNetworkShader->GetPrimvarNames();
+    }
+
+    static const TfTokenVector fallback = TfTokenVector();
+    return fallback;
 }
 
 static TfTokenVector
@@ -109,11 +146,10 @@ _GetFilterNames(HdRprim const * prim,
 {
     TfTokenVector filterNames = prim->GetBuiltinPrimvarNames();
 
-    HdStShaderCodeSharedPtr materialShader = drawItem->GetMaterialShader();
-    if (materialShader) {
-        TfTokenVector const & names = materialShader->GetPrimvarNames();
-        filterNames.insert(filterNames.end(), names.begin(), names.end());
-    }
+    const TfTokenVector &matPvNames = _GetFilterNamesForMaterial(drawItem);
+    filterNames.insert(filterNames.end(), matPvNames.begin(), 
+        matPvNames.end());
+
     if (instancer) {
         TfTokenVector const & names = instancer->GetBuiltinPrimvarNames();
         filterNames.insert(filterNames.end(), names.begin(), names.end());
@@ -141,18 +177,49 @@ HdStGetPrimvarDescriptors(
     HdRprim const * prim,
     HdStDrawItem const * drawItem,
     HdSceneDelegate * delegate,
-    HdInterpolation interpolation)
+    HdInterpolation interpolation,
+    HdReprSharedPtr const &repr,
+    HdMeshGeomStyle descGeomStyle,
+    int geomSubsetDescIndex,
+    size_t numGeomSubsets)
 {
+    HD_TRACE_FUNCTION();
+
     HdPrimvarDescriptorVector primvars =
         prim->GetPrimvarDescriptors(delegate, interpolation);
 
+    TfTokenVector filterNames;
     if (_IsEnabledPrimvarFiltering(drawItem)) {
-        TfTokenVector filterNames = _GetFilterNames(prim, drawItem);
-
-        return _FilterPrimvarDescriptors(primvars, filterNames);
+        filterNames = _GetFilterNames(prim, drawItem);
     }
 
-    return primvars;
+    if (numGeomSubsets != 0 && 
+        repr && 
+        descGeomStyle != HdMeshGeomStyleInvalid && 
+        descGeomStyle != HdMeshGeomStylePoints) {
+        for (size_t i = 0; i < numGeomSubsets; ++i) {
+            HdStDrawItem const * subsetDrawItem =
+                static_cast<HdStDrawItem*>(repr->GetDrawItemForGeomSubset(
+                    geomSubsetDescIndex, numGeomSubsets, i));
+            if (!TF_VERIFY(subsetDrawItem)) {
+                continue;
+            }
+            if (_IsEnabledPrimvarFiltering(subsetDrawItem)) {
+                const TfTokenVector matPvNames = _GetFilterNamesForMaterial(
+                    subsetDrawItem);
+                filterNames.insert(filterNames.end(), matPvNames.begin(), 
+                    matPvNames.end());
+            }
+        }
+        std::sort(filterNames.begin(), filterNames.end());
+        filterNames.erase(std::unique(filterNames.begin(), filterNames.end()),
+            filterNames.end());
+    }
+
+    if (filterNames.empty()) {
+        return primvars;
+    }
+    return _FilterPrimvarDescriptors(primvars, filterNames);
 }
 
 HdPrimvarDescriptorVector
@@ -166,6 +233,28 @@ HdStGetInstancerPrimvarDescriptors(
 
     // XXX: Can we do filtering?
     return primvars;
+}
+
+// -----------------------------------------------------------------------------
+// Tracking render tag changes
+// -----------------------------------------------------------------------------
+
+void
+HdStUpdateRenderTag(HdSceneDelegate *delegate,
+                    HdRenderParam *renderParam,
+                    HdRprim *rprim)
+{
+    HdStRenderParam * const stRenderParam =
+        static_cast<HdStRenderParam*>(renderParam);
+
+    const TfToken prevRenderTag = rprim->GetRenderTag();
+    rprim->HdRprim::UpdateRenderTag(delegate, renderParam);
+    const TfToken &renderTag = rprim->GetRenderTag();
+    if (renderTag == prevRenderTag) {
+        return;
+    }
+    stRenderParam->DecreaseRenderTagCount(prevRenderTag);
+    stRenderParam->IncreaseRenderTagCount(renderTag);
 }
 
 // -----------------------------------------------------------------------------
@@ -188,61 +277,111 @@ HdStSetMaterialId(HdSceneDelegate *delegate,
 }
 
 void
-HdStSetMaterialTag(HdSceneDelegate *delegate,
-                   HdRenderParam *renderParam,
-                   HdRprim *rprim,
-                   bool hasDisplayOpacityPrimvar,
-                   bool occludedSelectionShowsThrough)
+HdStSetMaterialTag(HdRenderParam * const renderParam,
+                   HdDrawItem *drawItem,
+                   const TfToken &materialTag)
 {
-    TfToken prevMaterialTag = rprim->GetMaterialTag();
-    TfToken newMaterialTag;
+    HdStRenderParam * const stRenderParam =
+        static_cast<HdStRenderParam*>(renderParam);
 
-    // Opinion precedence:
-    //   Show occluded selection > Material opinion > displayOpacity primvar
+    {
+        // prevMaterialTag scoped to express that it is a reference
+        // to a field modified by SetMaterialTag later.
+        const TfToken &prevMaterialTag = drawItem->GetMaterialTag();
 
-    if (occludedSelectionShowsThrough) {
-        newMaterialTag = HdStMaterialTagTokens->translucentToSelection;
-    } else {
-        const HdStMaterial *material =
-            static_cast<const HdStMaterial *>(
-                    delegate->GetRenderIndex().GetSprim(
-                        HdPrimTypeTokens->material, rprim->GetMaterialId()));
-        if (material) {
-            newMaterialTag = material->GetMaterialTag();
-        } else {
-            newMaterialTag = hasDisplayOpacityPrimvar?
-                HdStMaterialTagTokens->masked :
-                HdMaterialTagTokens->defaultMaterialTag;
+        if (materialTag == prevMaterialTag) {
+            return;
         }
+        
+        stRenderParam->DecreaseMaterialTagCount(prevMaterialTag);
+    }
+    {
+        stRenderParam->IncreaseMaterialTagCount(materialTag);
+        drawItem->SetMaterialTag(materialTag);
     }
 
-    if (prevMaterialTag != newMaterialTag) {
-        rprim->SetMaterialTag(newMaterialTag);
-        // Trigger invalidation of the draw items cache of the render pass(es).
-        HdStMarkMaterialTagsDirty(renderParam);
-    }
+    // Trigger invalidation of the draw items cache of the render pass(es).
+    HdStMarkMaterialTagsDirty(renderParam);
 }
 
-HdStShaderCodeSharedPtr
-HdStGetMaterialShader(
+// Opinion precedence:
+// Show occluded selection > Material opinion > displayOpacity primvar
+//
+static
+TfToken
+_ComputeMaterialTag(HdSceneDelegate * const delegate,
+                    SdfPath const & materialId,
+                    const bool hasDisplayOpacityPrimvar,
+                    const bool occludedSelectionShowsThrough)
+{
+    if (occludedSelectionShowsThrough) {
+        return HdStMaterialTagTokens->translucentToSelection;
+    }
+
+    const HdStMaterial *material =
+        static_cast<const HdStMaterial *>(
+            delegate->GetRenderIndex().GetSprim(
+                HdPrimTypeTokens->material, materialId));
+    if (material) {
+        return material->GetMaterialTag();
+    }
+
+    if (hasDisplayOpacityPrimvar) {
+        return HdStMaterialTagTokens->masked;
+    }
+
+    return HdMaterialTagTokens->defaultMaterialTag;
+}
+
+void
+HdStSetMaterialTag(HdSceneDelegate * const delegate,
+                   HdRenderParam * const renderParam,
+                   HdDrawItem *drawItem,
+                   SdfPath const & materialId,
+                   const bool hasDisplayOpacityPrimvar,
+                   const bool occludedSelectionShowsThrough)
+{
+    HdStSetMaterialTag(
+        renderParam, drawItem,
+        _ComputeMaterialTag(
+            delegate, materialId, hasDisplayOpacityPrimvar, 
+            occludedSelectionShowsThrough));
+}
+
+HdSt_MaterialNetworkShaderSharedPtr
+HdStGetMaterialNetworkShader(
     HdRprim const * prim,
     HdSceneDelegate * delegate)
 {
-    SdfPath const & materialId = prim->GetMaterialId();
+    return HdStGetMaterialNetworkShader(prim, delegate, prim->GetMaterialId());
+}
 
+HdSt_MaterialNetworkShaderSharedPtr
+HdStGetMaterialNetworkShader(
+    HdRprim const * prim,
+    HdSceneDelegate * delegate,
+    SdfPath const & materialId)
+{
     // Resolve the prim's material or use the fallback material.
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     HdStMaterial const * material = static_cast<HdStMaterial const *>(
             renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
     if (material == nullptr) {
-        TF_DEBUG(HD_RPRIM_UPDATED).Msg("Using fallback material for %s\n",
-            prim->GetId().GetText());
+        if (prim->GetRenderTag(delegate) == HdRenderTagTokens->widget) {
+            TF_DEBUG(HD_RPRIM_UPDATED).Msg("Using built-in widget material for "
+                "%s\n", prim->GetId().GetText());
+               
+            return *_fallbackWidgetShader;
+        } else {
+            TF_DEBUG(HD_RPRIM_UPDATED).Msg("Using fallback material for %s\n",
+                prim->GetId().GetText());
 
-        material = static_cast<HdStMaterial const *>(
+            material = static_cast<HdStMaterial const *>(
                 renderIndex.GetFallbackSprim(HdPrimTypeTokens->material));
+        }
     }
 
-    return material->GetShaderCode();
+    return material->GetMaterialNetworkShader();
 }
 
 // -----------------------------------------------------------------------------
@@ -923,9 +1062,7 @@ _GetBitmaskEncodedVisibilityBuffer(VtIntArray invisibleIndices,
     for (VtIntArray::const_iterator i = invisibleIndices.begin(),
                                   end = invisibleIndices.end(); i != end; ++i) {
         if (*i >= numTotalIndices || *i < 0) {
-            HF_VALIDATION_WARN(rprimId,
-                "Topological invisibility data (%d) is not in the range [0, %d)"
-                ".", *i, numTotalIndices);
+            // This invisible index is out of range.  Ignore it silently.
             continue;
         }
         const size_t arrayIndex = *i/numBitsPerUInt;

@@ -29,7 +29,6 @@
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/plug/plugin.h"
 #include "rmanDiscovery.h"
-#include "rmanArgsParser/rmanArgsParser.h"
 #include "pxr/usd/ndr/filesystemDiscoveryHelpers.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -38,9 +37,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     _allowedExtensionTokens,
     (args)
     (oso)
-    // The sdraliases extension is only used for the aliases files. Any results
-    // discovered with this extension will be filtered out of the final results.
-    (sdraliases)
 );
 
 NDR_REGISTER_DISCOVERY_PLUGIN(RmanDiscoveryPlugin)
@@ -131,25 +127,6 @@ RmanDiscoveryPlugin::RmanDiscoveryPlugin(Filter filter)
 
 RmanDiscoveryPlugin::~RmanDiscoveryPlugin() = default;
 
-// Helper for getting the aliases from the special ".sdraliases" files if 
-// found during discovery. These files are immediately parsed to extract aliases
-// that may be applied to the other discovery results via the alias map. 
-// Returns true if the discovery result is an aliases file as we want to filter
-// it out of the final discovery results.
-static bool
-_GetAliasesFromAliasesDiscoveryResult(
-    const NdrNodeDiscoveryResult &dr, 
-    std::map<NdrIdentifier, NdrTokenVec> *aliasMap)
-{
-    static const std::string aliasExtension = 
-        std::string(".") + _allowedExtensionTokens->sdraliases.GetString();
-    if (TfStringEndsWith(dr.uri, aliasExtension)) {
-        RmanArgsParserPlugin::ParseShaderAliases(dr, aliasMap);
-        return true;
-    }
-    return false;
-};
-
 NdrNodeDiscoveryResultVec
 RmanDiscoveryPlugin::DiscoverNodes(const Context& context)
 {
@@ -157,35 +134,11 @@ RmanDiscoveryPlugin::DiscoverNodes(const Context& context)
         _searchPaths, _allowedExtensions, _followSymlinks, &context
     );
 
-    std::map<NdrIdentifier, NdrTokenVec> aliasMap;
-
-    // Filter predicate includes filtering out the aliases args as well
-    // as anything failing the filter function if present. This has the side 
-    // effect of populating the identifier to aliases map along with any side 
-    // effects of the filter
-    // function itself.
-    auto filterPredicate = [&](NdrNodeDiscoveryResult &dr) {
-        if (_GetAliasesFromAliasesDiscoveryResult(dr, &aliasMap)) {
-            return true;
-        }
-        if (this->_filter) {
-            return !this->_filter(dr);
-        }
-        return false;
-    };
-
-    // Filter results and populate aliases.
-    result.erase(std::remove_if(result.begin(), result.end(), filterPredicate), 
-                 result.end());
-
-    // If we found aliases, go back and add them to the appropriate results.
-    if (!aliasMap.empty()) {
-        for (NdrNodeDiscoveryResult &dr : result) {
-            const auto it = aliasMap.find(dr.identifier);
-            if (it != aliasMap.end()) {
-                dr.aliases = it->second;
-            }
-        }
+    // Filter results.
+    if (_filter) {
+        result.erase(std::remove_if(result.begin(), result.end(), 
+            [this](NdrNodeDiscoveryResult &dr) { return !this->_filter(dr); }), 
+            result.end());
     }
 
     return result;

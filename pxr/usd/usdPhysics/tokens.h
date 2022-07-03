@@ -98,6 +98,30 @@ struct UsdPhysicsTokensType {
     /// 
     /// Property namespace prefix for the UsdPhysicsDriveAPI schema.
     const TfToken drive;
+    /// \brief "drive:__INSTANCE_NAME__:physics:damping"
+    /// 
+    /// UsdPhysicsDriveAPI
+    const TfToken drive_MultipleApplyTemplate_PhysicsDamping;
+    /// \brief "drive:__INSTANCE_NAME__:physics:maxForce"
+    /// 
+    /// UsdPhysicsDriveAPI
+    const TfToken drive_MultipleApplyTemplate_PhysicsMaxForce;
+    /// \brief "drive:__INSTANCE_NAME__:physics:stiffness"
+    /// 
+    /// UsdPhysicsDriveAPI
+    const TfToken drive_MultipleApplyTemplate_PhysicsStiffness;
+    /// \brief "drive:__INSTANCE_NAME__:physics:targetPosition"
+    /// 
+    /// UsdPhysicsDriveAPI
+    const TfToken drive_MultipleApplyTemplate_PhysicsTargetPosition;
+    /// \brief "drive:__INSTANCE_NAME__:physics:targetVelocity"
+    /// 
+    /// UsdPhysicsDriveAPI
+    const TfToken drive_MultipleApplyTemplate_PhysicsTargetVelocity;
+    /// \brief "drive:__INSTANCE_NAME__:physics:type"
+    /// 
+    /// UsdPhysicsDriveAPI
+    const TfToken drive_MultipleApplyTemplate_PhysicsType;
     /// \brief "force"
     /// 
     /// Possible value for UsdPhysicsDriveAPI::GetTypeAttr(), Default value for UsdPhysicsDriveAPI::GetTypeAttr()
@@ -110,6 +134,14 @@ struct UsdPhysicsTokensType {
     /// 
     /// Property namespace prefix for the UsdPhysicsLimitAPI schema.
     const TfToken limit;
+    /// \brief "limit:__INSTANCE_NAME__:physics:high"
+    /// 
+    /// UsdPhysicsLimitAPI
+    const TfToken limit_MultipleApplyTemplate_PhysicsHigh;
+    /// \brief "limit:__INSTANCE_NAME__:physics:low"
+    /// 
+    /// UsdPhysicsLimitAPI
+    const TfToken limit_MultipleApplyTemplate_PhysicsLow;
     /// \brief "linear"
     /// 
     ///  This token represents the linear degree of freedom used in Prismatic Joint Drive. 
@@ -166,10 +198,6 @@ struct UsdPhysicsTokensType {
     /// 
     /// UsdPhysicsSphericalJoint
     const TfToken physicsConeAngle1Limit;
-    /// \brief "physics:damping"
-    /// 
-    /// UsdPhysicsDriveAPI
-    const TfToken physicsDamping;
     /// \brief "physics:density"
     /// 
     /// UsdPhysicsMaterialAPI, UsdPhysicsMassAPI
@@ -202,10 +230,6 @@ struct UsdPhysicsTokensType {
     /// 
     /// UsdPhysicsScene
     const TfToken physicsGravityMagnitude;
-    /// \brief "physics:high"
-    /// 
-    /// UsdPhysicsLimitAPI
-    const TfToken physicsHigh;
     /// \brief "physics:jointEnabled"
     /// 
     /// UsdPhysicsJoint
@@ -230,10 +254,6 @@ struct UsdPhysicsTokensType {
     /// 
     /// UsdPhysicsJoint
     const TfToken physicsLocalRot1;
-    /// \brief "physics:low"
-    /// 
-    /// UsdPhysicsLimitAPI
-    const TfToken physicsLow;
     /// \brief "physics:lowerLimit"
     /// 
     /// UsdPhysicsPrismaticJoint, UsdPhysicsRevoluteJoint
@@ -246,10 +266,6 @@ struct UsdPhysicsTokensType {
     /// 
     /// UsdPhysicsDistanceJoint
     const TfToken physicsMaxDistance;
-    /// \brief "physics:maxForce"
-    /// 
-    /// UsdPhysicsDriveAPI
-    const TfToken physicsMaxForce;
     /// \brief "physics:minDistance"
     /// 
     /// UsdPhysicsDistanceJoint
@@ -278,22 +294,6 @@ struct UsdPhysicsTokensType {
     /// 
     /// UsdPhysicsMaterialAPI
     const TfToken physicsStaticFriction;
-    /// \brief "physics:stiffness"
-    /// 
-    /// UsdPhysicsDriveAPI
-    const TfToken physicsStiffness;
-    /// \brief "physics:targetPosition"
-    /// 
-    /// UsdPhysicsDriveAPI
-    const TfToken physicsTargetPosition;
-    /// \brief "physics:targetVelocity"
-    /// 
-    /// UsdPhysicsDriveAPI
-    const TfToken physicsTargetVelocity;
-    /// \brief "physics:type"
-    /// 
-    /// UsdPhysicsDriveAPI
-    const TfToken physicsType;
     /// \brief "physics:upperLimit"
     /// 
     /// UsdPhysicsPrismaticJoint, UsdPhysicsRevoluteJoint

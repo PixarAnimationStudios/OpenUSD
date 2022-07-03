@@ -33,9 +33,6 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdRender/tokens.h"
 
-#include "pxr/base/gf/frustum.h"
-
-
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"

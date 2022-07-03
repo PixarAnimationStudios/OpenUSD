@@ -85,7 +85,7 @@ void wrapUsdLuxRectLight()
 {
     typedef UsdLuxRectLight This;
 
-    class_<This, bases<UsdLuxLight> >
+    class_<This, bases<UsdLuxBoundableLightBase> >
         cls("RectLight");
 
     cls

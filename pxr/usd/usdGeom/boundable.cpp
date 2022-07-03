@@ -141,3 +141,44 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdGeom/debugCodes.h" 
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+bool
+UsdGeomBoundable::ComputeExtent(const UsdTimeCode &time, VtVec3fArray *extent)
+{
+    UsdAttributeQuery extentAttrQuery = UsdAttributeQuery(GetExtentAttr());
+
+    bool success = false;
+    if (extentAttrQuery.HasAuthoredValue()) {
+        success = extentAttrQuery.Get(extent, time);
+        if (success) {
+            //validate the result
+            success = extent->size() == 2;
+            if (!success) {
+                TF_WARN("[Boundable Extent] Authored extent for <%s> is of "
+                        "size %zu instead of 2.\n", 
+                        GetPath().GetString().c_str(), extent->size());
+            }
+        }
+    }
+
+    if (!success) {
+        TF_DEBUG(USDGEOM_EXTENT).Msg(
+            "[Boundable Extent] WARNING: No valid extent authored for "
+            "<%s>. Computing extent from source geometry data dynamically..\n", 
+            GetPath().GetString().c_str());
+        success = ComputeExtentFromPlugins(*this, time, extent);
+        if (!success) {
+            TF_DEBUG(USDGEOM_EXTENT).Msg(
+                "[Boundable Extent] WARNING: Unable to compute extent for "
+                "<%s>.\n", GetPath().GetString().c_str());
+        }
+    }
+
+    return success;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

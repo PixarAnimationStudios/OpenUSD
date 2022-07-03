@@ -430,8 +430,7 @@ PcpLayerStack::~PcpLayerStack()
     // Update layer-stack-to-layer maps in the registry.
     _BlowLayers();
     if (_registry) {
-        _registry->_SetLayers(this);
-        _registry->_Remove(_identifier, this);
+        _registry->_SetLayersAndRemove(_identifier, this);
     }
 }
 

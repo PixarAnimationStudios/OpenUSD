@@ -25,7 +25,7 @@
 from __future__ import print_function
 
 import sys, os, unittest
-from pxr import Sdf, Usd, UsdGeom
+from pxr import Sdf, Tf, Usd, UsdGeom
 
 class TestUsdGeomPurposeVisibility(unittest.TestCase):
     def test_ComputeVisibility(self):
@@ -36,17 +36,24 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         ni_Root  = stage.DefinePrim("/ni_Root")
         ni_sub   =  stage.DefinePrim("/ni_Root/ni_Sub")
         ni_leaf  =  stage.DefinePrim("/ni_Root/ni_Sub/ni_leaf")
+
         img = UsdGeom.Imageable(ni_Root)
-        self.assertEqual(img.ComputeVisibility(), UsdGeom.Tokens.inherited, 
-                    img.GetPrim().GetPath())
+        self.assertEqual(
+            img.ComputeVisibility(),
+            UsdGeom.Tokens.inherited, 
+            img.GetPrim().GetPath())
+
         img = UsdGeom.Imageable(ni_sub)
-        self.assertEqual(img.ComputeVisibility(), UsdGeom.Tokens.inherited, 
-                    img.GetPrim().GetPath())
+        self.assertEqual(
+            img.ComputeVisibility(),
+            UsdGeom.Tokens.inherited, 
+            img.GetPrim().GetPath())
+
         img = UsdGeom.Imageable(ni_leaf)
-        self.assertEqual(img.ComputeVisibility(
-                    parentVisibility=UsdGeom.Tokens.inherited),
-                UsdGeom.Tokens.inherited, 
-                img.GetPrim().GetPath())
+        self.assertEqual(
+            img.ComputeVisibility(),
+            UsdGeom.Tokens.inherited, 
+            img.GetPrim().GetPath())
         
         print("Ensuring non-imageable prims WITH opinions STILL evaluate to defaults")
         ni_sub.CreateAttribute(UsdGeom.Tokens.visibility, Sdf.ValueTypeNames.Token).Set(UsdGeom.Tokens.invisible)
@@ -65,10 +72,10 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         
         i_leaf.GetVisibilityAttr().Set(UsdGeom.Tokens.invisible)
         
-        self.assertEqual(i_leaf.ComputeVisibility(
-                    parentVisibility=UsdGeom.Tokens.inherited), 
-                UsdGeom.Tokens.invisible, 
-                i_leaf.GetPrim().GetPath())
+        self.assertEqual(
+            i_leaf.ComputeVisibility(),
+            UsdGeom.Tokens.invisible, 
+            i_leaf.GetPrim().GetPath())
         
         print("Ensuring imageable leaf prim is shadowed by Imageable parent opinions")
         i_leaf.GetVisibilityAttr().Set(UsdGeom.Tokens.inherited)
@@ -99,11 +106,183 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
 
         # Verify that the Compute*() API that takes parent visibility
         # works correctly.
-        self.assertEqual(i_leaf.ComputeVisibility(
-                    parentVisibility=i_sub.ComputeVisibility()), 
-                UsdGeom.Tokens.invisible, 
-                i_leaf.GetPrim().GetPath())
+        self.assertEqual(
+            i_leaf.ComputeVisibility(),
+            UsdGeom.Tokens.invisible, 
+            i_leaf.GetPrim().GetPath())
         
+
+    def test_ComputePurposeVisibility(self):
+        """
+        Test purpose visibility functionality, which allows purpose-specific
+        visibility control.
+        """
+
+        stage = Usd.Stage.CreateInMemory()
+
+        rootPrim = stage.DefinePrim("/Root", "Scope")
+        imageablePrim = stage.DefinePrim("/Root/Imageable", "Scope")
+        nonImageablePrim = stage.DefinePrim("/Root/NonImageable")
+
+        root = UsdGeom.Imageable(rootPrim)
+        self.assertTrue(root)
+        imageable = UsdGeom.Imageable(imageablePrim)
+        self.assertTrue(imageable)
+
+        # Test that overall visibility is initially visible and that purpose
+        # visibility gives use the expected fallback values.
+        self.assertEqual(
+            imageable.ComputeEffectiveVisibility(),
+            UsdGeom.Tokens.visible)
+        self.assertEqual(
+            imageable.ComputeEffectiveVisibility(UsdGeom.Tokens.guide),
+            UsdGeom.Tokens.invisible)
+        self.assertEqual(
+            imageable.ComputeEffectiveVisibility(UsdGeom.Tokens.proxy),
+            UsdGeom.Tokens.inherited)
+        self.assertEqual(
+            imageable.ComputeEffectiveVisibility(UsdGeom.Tokens.render),
+            UsdGeom.Tokens.inherited)
+
+        # Test that GeomVisibilityAPI can only apply to Imageable
+        # prims.
+        self.assertTrue(UsdGeom.VisibilityAPI.CanApply(imageablePrim))
+        self.assertFalse(UsdGeom.VisibilityAPI.CanApply(nonImageablePrim))
+        
+        self.assertTrue(
+            imageable.GetPurposeVisibilityAttr())
+        self.assertFalse(
+            imageable.GetPurposeVisibilityAttr(UsdGeom.Tokens.guide))
+        self.assertFalse(
+            imageable.GetPurposeVisibilityAttr(UsdGeom.Tokens.proxy))
+        self.assertFalse(
+            imageable.GetPurposeVisibilityAttr(UsdGeom.Tokens.render))
+
+        # Test that GeomVisibilityAPI adds the expected purpose
+        # visibility attributes.
+        UsdGeom.VisibilityAPI.Apply(imageablePrim)
+
+        guideVisibility = \
+            imageable.GetPurposeVisibilityAttr(UsdGeom.Tokens.guide)
+        self.assertEqual(guideVisibility.Get(), UsdGeom.Tokens.invisible)
+        self.assertEqual(
+            imageable.ComputeEffectiveVisibility(UsdGeom.Tokens.guide),
+            UsdGeom.Tokens.invisible)
+
+        proxyVisibility = \
+            imageable.GetPurposeVisibilityAttr(UsdGeom.Tokens.proxy)
+        self.assertEqual(proxyVisibility.Get(), UsdGeom.Tokens.inherited)
+        self.assertEqual(
+            imageable.ComputeEffectiveVisibility(UsdGeom.Tokens.proxy),
+            UsdGeom.Tokens.inherited)
+
+        renderVisibility = \
+            imageable.GetPurposeVisibilityAttr(UsdGeom.Tokens.render)
+        self.assertEqual(renderVisibility.Get(), UsdGeom.Tokens.inherited)
+        self.assertEqual(
+            imageable.ComputeEffectiveVisibility(UsdGeom.Tokens.render),
+            UsdGeom.Tokens.inherited)
+
+
+        # Set purpose visibility on the root and ensure that it inherits as
+        # expected.
+        UsdGeom.VisibilityAPI.Apply(rootPrim)
+
+        guideVisibility = root.GetPurposeVisibilityAttr(UsdGeom.Tokens.guide)
+        guideVisibility.Set(UsdGeom.Tokens.visible)
+        self.assertEqual(
+            root.ComputeEffectiveVisibility(UsdGeom.Tokens.guide),
+            UsdGeom.Tokens.visible)
+        self.assertEqual(
+            imageable.ComputeEffectiveVisibility(UsdGeom.Tokens.guide),
+            UsdGeom.Tokens.visible)
+
+
+        # Set overall visibility to invisible, causing purpose visibility to
+        # also become invisible.
+        overallVisibility = root.GetPurposeVisibilityAttr()
+        overallVisibility.Set(UsdGeom.Tokens.invisible)
+        self.assertEqual(
+            root.ComputeEffectiveVisibility(),
+            UsdGeom.Tokens.invisible)
+        self.assertEqual(
+            imageable.ComputeEffectiveVisibility(),
+            UsdGeom.Tokens.invisible)
+        self.assertEqual(
+            root.ComputeEffectiveVisibility(UsdGeom.Tokens.guide),
+            UsdGeom.Tokens.invisible)
+        self.assertEqual(
+            imageable.ComputeEffectiveVisibility(UsdGeom.Tokens.guide),
+            UsdGeom.Tokens.invisible)
+
+
+    def test_ComputePurposeVisibilityWithInstancing(self):
+        """
+        Test inherited purpose visibility in combination with native
+        instancing.
+        """
+
+        stage = Usd.Stage.CreateInMemory()
+        stage.GetRootLayer().ImportFromString('''#usda 1.0
+        def Scope "_prototype" (
+            prepend apiSchemas = ["VisibilityAPI"]
+        )
+        {
+            token guideVisibility = "visible"
+
+            def Scope "child" (
+                prepend apiSchemas = ["VisibilityAPI"]
+            )
+            {
+            }
+        }
+
+        def Scope "instance" (
+            instanceable = true
+            references = </_prototype>
+        )
+        {
+        }
+        ''')
+
+        # The instance child prim (which proxies _prototype/child) is
+        # initially visible, due to the guideVisibility opinion on _prototype.
+        childPrim = stage.GetPrimAtPath('/instance/child')
+        self.assertTrue(childPrim)
+        self.assertTrue(childPrim.IsInstanceProxy())
+
+        child = UsdGeom.Imageable(childPrim)
+        self.assertEqual(
+            child.ComputeEffectiveVisibility(UsdGeom.Tokens.guide),
+            UsdGeom.Tokens.visible)
+
+        # If we invis guides on the instance root, this is inherited by the
+        # instance child.
+        instancePrim = stage.GetPrimAtPath('/instance')
+        self.assertTrue(instancePrim)
+        self.assertFalse(instancePrim.IsInstanceProxy())
+
+        instance = UsdGeom.Imageable(instancePrim)
+        guideVisibility = \
+            instance.GetPurposeVisibilityAttr(UsdGeom.Tokens.guide)
+        guideVisibility.Set(UsdGeom.Tokens.invisible)
+        self.assertEqual(
+            child.ComputeEffectiveVisibility(UsdGeom.Tokens.guide),
+            UsdGeom.Tokens.invisible)
+
+        # ...but the prototype child doesn't inherit guide visibility, since
+        # it doesn't have any properties, etc.
+        prototypeChildPrim = \
+            stage.GetPrimAtPath('/instance').GetPrototype().GetChild('child')
+        self.assertTrue(prototypeChildPrim)
+        self.assertFalse(prototypeChildPrim.IsInstanceProxy())
+
+        prototypeChild = UsdGeom.Imageable(prototypeChildPrim)
+        self.assertEqual(
+            prototypeChild.ComputeEffectiveVisibility(UsdGeom.Tokens.guide),
+            UsdGeom.Tokens.invisible)
+
+
     def test_ComputePurpose(self):
         stage = Usd.Stage.CreateInMemory()
 

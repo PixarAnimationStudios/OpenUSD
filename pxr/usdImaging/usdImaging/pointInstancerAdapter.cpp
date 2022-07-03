@@ -232,13 +232,6 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
         _PopulatePrototype(protoIndex, instrData, protoRootPrim, index, &ctx);
     }
 
-    // Make sure we populate instancer data to the value cache the first time
-    // through UpdateForTime.
-    index->MarkInstancerDirty(instancerCachePath,
-        HdChangeTracker::DirtyTransform |
-        HdChangeTracker::DirtyPrimvar |
-        HdChangeTracker::DirtyInstanceIndex);
-
     return instancerCachePath;
 }
 
@@ -1366,6 +1359,29 @@ UsdImagingPointInstancerAdapter::GetScenePrimPath(
     return _GetPrimPathFromInstancerChain(paths);
 }
 
+/* virtual */
+SdfPathVector
+UsdImagingPointInstancerAdapter::GetScenePrimPaths(
+    SdfPath const& cachePath,
+    std::vector<int> const& instanceIndices,
+    std::vector<HdInstancerContext> *instancerCtxs) const
+{
+    SdfPathVector result;
+    HdInstancerContext instanceCtx;
+
+    result.reserve(instanceIndices.size());
+    if (instancerCtxs)
+        instancerCtxs->reserve(instanceIndices.size());
+    for (size_t i = 0; i < instanceIndices.size(); i++) {
+        result.push_back(
+            GetScenePrimPath(cachePath, instanceIndices[i], &instanceCtx));
+        if (instancerCtxs)
+            instancerCtxs->push_back(std::move(instanceCtx));
+    }
+
+    return result;
+}
+
 static 
 size_t
 _GatherAuthoredTransformTimeSamples(
@@ -1882,20 +1898,7 @@ UsdImagingPointInstancerAdapter::Get(UsdPrim const& usdPrim,
             UsdGeomPointInstancer instancer(usdPrim);
             VtQuathArray orientations;
             if (instancer.GetOrientationsAttr().Get(&orientations, time)) {
-                // convert to Vec4Array that hydra instancer requires.
-                // Also note that hydra's instancer takes GfQuaterion layout
-                // (real, imaginary) which differs from GfQuath's
-                // (imaginary, real)
-                VtVec4fArray rotations;
-                rotations.reserve(orientations.size());
-                for (const GfQuath& orientation : orientations) {
-                    rotations.push_back(
-                        GfVec4f(orientation.GetReal(),
-                                orientation.GetImaginary()[0],
-                                orientation.GetImaginary()[1],
-                                orientation.GetImaginary()[2]));
-                }
-                return VtValue(rotations);
+                return VtValue(orientations);
             }
 
         } else if (key == _tokens->scale) {

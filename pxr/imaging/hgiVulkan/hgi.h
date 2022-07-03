@@ -29,6 +29,7 @@
 #include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/imaging/hgiVulkan/api.h"
+#include "pxr/imaging/hgiVulkan/capabilities.h"
 #include "pxr/imaging/hgiVulkan/commandQueue.h"
 #include "pxr/imaging/hgiVulkan/device.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
@@ -54,6 +55,9 @@ public:
 
     HGIVULKAN_API
     ~HgiVulkan() override;
+
+    HGIVULKAN_API
+    bool IsBackendSupported() const override;
 
     HGIVULKAN_API
     HgiGraphicsCmdsUniquePtr CreateGraphicsCmds(
@@ -130,6 +134,9 @@ public:
 
     HGIVULKAN_API
     TfToken const& GetAPIName() const override;
+
+    HGIVULKAN_API
+    HgiVulkanCapabilities const* GetCapabilities() const override;
 
     HGIVULKAN_API
     void StartFrame() override;

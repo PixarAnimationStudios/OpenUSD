@@ -11,7 +11,6 @@ pxr_plugin(hioOiio
     LIBRARIES
         ar
         arch
-        garch
         gf
         hio
         tf
@@ -24,6 +23,7 @@ pxr_plugin(hioOiio
 
     CPPFILES
         oiioImage.cpp
+        metadata.cpp
 
     RESOURCE_FILES
         plugInfo.json

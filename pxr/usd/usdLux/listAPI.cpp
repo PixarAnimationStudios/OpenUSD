@@ -180,7 +180,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // --(BEGIN CUSTOM CODE)--
 
 #include "pxr/usd/usd/primRange.h"
-#include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/lightAPI.h"
 #include "pxr/usd/usdLux/lightFilter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -218,7 +218,7 @@ _Traverse(const UsdPrim &prim,
         }
     }
     // Accumulate discovered prims.
-    if (prim.IsA<UsdLuxLight>() || prim.IsA<UsdLuxLightFilter>()) {
+    if (prim.HasAPI<UsdLuxLightAPI>() || prim.IsA<UsdLuxLightFilter>()) {
         lights->insert(prim.GetPath());
     }
     // Traverse descendants.

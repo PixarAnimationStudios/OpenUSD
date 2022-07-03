@@ -156,6 +156,122 @@ class "Imageable" (
     )
 }
 
+class "VisibilityAPI"
+(
+    inherits = </APISchemaBase>
+    customData = {
+        token[] apiSchemaCanOnlyApplyTo = [
+            "Imageable"
+        ]
+    }
+    doc = """
+    UsdGeomVisibilityAPI introduces properties that can be used to author
+    visibility opinions.
+   
+    \\note
+    Currently, this schema only introduces the attributes that are used to
+    control purpose visibility. Later, this schema will define _all_
+    visibility-related properties and UsdGeomImageable will no longer define
+    those properties.
+   
+    The purpose visibility attributes added by this schema,
+    _guideVisibility_, _proxyVisibility_, and _renderVisibility_ can each be
+    used to control visibility for geometry of the corresponding purpose
+    values, with the overall _visibility_ attribute acting as an
+    override. I.e., if _visibility_ evaluates to "invisible", purpose
+    visibility is invisible; otherwise, purpose visibility is determined by
+    the corresponding purpose visibility attribute.
+
+    Note that the behavior of _guideVisibility_ is subtly different from the
+    _proxyVisibility_ and _renderVisibility_ attributes, in that "guide"
+    purpose visibility always evaluates to either "invisible" or "visible",
+    whereas the other attributes may yield computed values of "inherited" if
+    there is no authored opinion on the attribute or inherited from an
+    ancestor. This is motivated by the fact that, in Pixar"s user workflows,
+    we have never found a need to have all guides visible in a scene by
+    default, whereas we do find that flexibility useful for "proxy" and
+    "render" geometry.
+
+    This schema can only be applied to UsdGeomImageable prims. The
+    UseGeomImageable schema provides API for computing the purpose visibility
+    values that result from the attributes introduced by this schema.
+    """
+)
+{
+    uniform token guideVisibility = "invisible" (
+        allowedTokens = ["inherited", "invisible", "visible"]
+        doc = """
+        This attribute controls visibility for geometry with purpose "guide".
+
+        Unlike overall _visibility_, _guideVisibility_ is uniform, and
+        therefore cannot be animated.
+
+        Also unlike overall _visibility_, _guideVisibility_ is tri-state, in
+        that a descendant with an opinion of "visible" overrides an ancestor
+        opinion of "invisible".
+
+        The _guideVisibility_ attribute works in concert with the overall
+        _visibility_ attribute: The visibility of a prim with purpose "guide"
+        is determined by the inherited values it receives for the _visibility_
+        and _guideVisibility_ attributes. If _visibility_ evaluates to
+        "invisible", the prim is invisible. If _visibility_ evaluates to
+        "inherited" and _guideVisibility_ evaluates to "visible", then the
+        prim is visible. __Otherwise, it is invisible.__
+        """
+    )
+
+    uniform token proxyVisibility = "inherited" (
+        allowedTokens = ["inherited", "invisible", "visible"]
+        doc = """
+        This attribute controls visibility for geometry with purpose "proxy".
+
+        Unlike overall _visibility_, _proxyVisibility_ is uniform, and
+        therefore cannot be animated.
+
+        Also unlike overall _visibility_, _proxyVisibility_ is tri-state, in
+        that a descendant with an opinion of "visible" overrides an ancestor
+        opinion of "invisible".
+
+        The _proxyVisibility_ attribute works in concert with the overall
+        _visibility_ attribute: The visibility of a prim with purpose "proxy"
+        is determined by the inherited values it receives for the _visibility_
+        and _proxyVisibility_ attributes. If _visibility_ evaluates to
+        "invisible", the prim is invisible. If _visibility_ evaluates to
+        "inherited" then: If _proxyVisibility_ evaluates to "visible", then
+        the prim is visible; if _proxyVisibility_ evaluates to "invisible",
+        then the prim is invisible; if _proxyVisibility_ evaluates to
+        "inherited", then the prim may either be visible or invisible,
+        depending on a fallback value determined by the calling context.
+        """
+    )
+
+    uniform token renderVisibility = "inherited" (
+        allowedTokens = ["inherited", "invisible", "visible"]
+        doc = """
+        This attribute controls visibility for geometry with purpose
+        "render".
+
+        Unlike overall _visibility_, _renderVisibility_ is uniform, and
+        therefore cannot be animated.
+
+        Also unlike overall _visibility_, _renderVisibility_ is tri-state, in
+        that a descendant with an opinion of "visible" overrides an ancestor
+        opinion of "invisible".
+
+        The _renderVisibility_ attribute works in concert with the overall
+        _visibility_ attribute: The visibility of a prim with purpose "render"
+        is determined by the inherited values it receives for the _visibility_
+        and _renderVisibility_ attributes. If _visibility_ evaluates to
+        "invisible", the prim is invisible. If _visibility_ evaluates to
+        "inherited" then: If _renderVisibility_ evaluates to "visible", then
+        the prim is visible; if _renderVisibility_ evaluates to "invisible",
+        then the prim is invisible; if _renderVisibility_ evaluates to
+        "inherited", then the prim may either be visible or invisible,
+        depending on a fallback value determined by the calling context.
+        """
+    )
+}
+
 class "PrimvarsAPI" (
     inherits = </APISchemaBase>
     doc = """UsdGeomPrimvarsAPI encodes geometric "primitive variables",
@@ -457,9 +573,14 @@ class "Boundable" (
         doc = """Extent is a three dimensional range measuring the geometric
         extent of the authored gprim in its own local space (i.e. its own
         transform not applied), \\em without accounting for any shader-induced
-        displacement.  Whenever any geometry-affecting attribute is authored
-        for any gprim in a layer, extent must also be authored at the same
-        timesample; failure to do so will result in incorrect bounds-computation.
+        displacement. If __any__ extent value has been authored for a given 
+        Boundable, then it should be authored at every timeSample at which 
+        geometry-affecting properties are authored, to ensure correct 
+        evaluation via ComputeExtent(). If __no__ extent value has been 
+        authored, then ComputeExtent() will call the Boundable's registered 
+        ComputeExtentFunction(), which may be expensive, which is why we 
+        strongly encourage proper authoring of extent.
+        \\sa ComputeExtent()
         \\sa \\ref UsdGeom_Boundable_Extent.
         
         An authored extent on a prim which has children is expected to include
@@ -1635,11 +1756,6 @@ class PointInstancer "PointInstancer" (
     ( 1.0 / UsdStage::GetTimeCodesPerSecond() ), because velocities are recorded
     in units/second, while we are interpolating in UsdTimeCode ordinates.
     
-    Additionally, if *motion:velocityScale* is authored or inherited (see
-    UsdGeomMotionAPI::ComputeVelocityScale()), it is used to scale both the
-    velocity and angular velocity by a constant value during computation. The
-    *motion:velocityScale* attribute is encoded by UsdGeomMotionAPI.
-
     We provide both high and low-level API's for dealing with the
     transformation as a matrix, both will compute the instance matrices using
     multiple threads; the low-level API allows the client to cache unvarying
@@ -1895,6 +2011,27 @@ class Camera "Camera" (
     will transform the world such that the camera is at the origin, looking 
     down the -Z axis, with +Y as the up axis, and +X pointing to the right.
     This describes a __right handed coordinate system__. 
+
+    \\section UsdGeom_CameraUnits Units of Measure for Camera Properties
+
+    Despite the familiarity of millimeters for specifying some physical
+    camera properties, UsdGeomCamera opts for greater consistency with all
+    other UsdGeom schemas, which measure geometric properties in scene units,
+    as determined by UsdGeomGetStageMetersPerUnit().  We do make a
+    concession, however, in that lens and filmback properties are measured in
+    __tenths of a scene unit__ rather than "raw" scene units.  This means
+    that with the fallback value of .01 for _metersPerUnit_ - i.e. scene unit
+    of centimeters - then these "tenth of scene unit" properties are
+    effectively millimeters.
+
+    \\note If one adds a Camera prim to a UsdStage whose scene unit is not
+    centimeters, the fallback values for filmback properties will be
+    incorrect (or at the least, unexpected) in an absolute sense; however,
+    proper imaging through a "default camera" with focusing disabled depends
+    only on ratios of the other properties, so the camera is still usable.
+    However, it follows that if even one property is authored in the correct
+    scene units, then they all must be.
+
     
     \\sa \\ref UsdGeom_LinAlgBasics
      """
@@ -1908,13 +2045,13 @@ class Camera "Camera" (
     token projection = "perspective" (
         allowedTokens = ["perspective", "orthographic"])
     float horizontalAperture  = 20.9550 (
-        doc = """Horizontal aperture in millimeters (or, more general, tenths
-                 of a world unit).
-                 Defaults to the standard 35mm spherical projector aperture.""")
+        doc = """Horizontal aperture in tenths of a scene unit; see 
+                 \\ref UsdGeom_CameraUnits . Default is the equivalent of 
+                 the standard 35mm spherical projector aperture.""")
     float verticalAperture  = 15.2908 (
-        doc = """Vertical aperture in millimeters (or, more general, tenths of
-                 a world unit).
-                 Defaults to the standard 35mm spherical projector aperture.""")
+        doc = """Vertical aperture in tenths of a scene unit; see 
+                 \\ref UsdGeom_CameraUnits . Default is the equivalent of 
+                 the standard 35mm spherical projector aperture.""")
     float horizontalApertureOffset = 0.0 (
         doc = """Horizontal aperture offset in the same units as
                  horizontalAperture. Defaults to 0.""")
@@ -1922,11 +2059,11 @@ class Camera "Camera" (
         doc = """Vertical aperture offset in the same units as
                  verticalAperture. Defaults to 0.""")
     float focalLength = 50.0 (
-        doc = """Perspective focal length in millimeters (or, more general,
-                 tenths of a world unit).""")
+        doc = """Perspective focal length in tenths of a scene unit; see 
+                 \\ref UsdGeom_CameraUnits .""")
     float2 clippingRange = (1, 1000000) (
-        doc = """Near and far clipping distances in centimeters (or, more
-                 general, world units).""")
+        doc = """Near and far clipping distances in scene units; see 
+                 \\ref UsdGeom_CameraUnits .""")
     float4[] clippingPlanes = [] (
         doc = """Additional, arbitrarily oriented clipping planes.
                  A vector (a,b,c,d) encodes a clipping plane that cuts off
@@ -1937,8 +2074,8 @@ class Camera "Camera" (
     float fStop = 0.0 (
         doc = """Lens aperture. Defaults to 0.0, which turns off focusing.""")
     float focusDistance = 0.0 (
-        doc = """Distance from the camera to the focus plane in centimeters (or
-                 more general, world units).""")
+        doc = """Distance from the camera to the focus plane in scene units; see 
+                 \\ref UsdGeom_CameraUnits .""")
 
     # stereoscopic 3D
     uniform token stereoRole = "mono" (
@@ -2130,16 +2267,43 @@ class "MotionAPI"
     - computed motion for motion blur
     - sampling for motion blur
     
-    For example, UsdGeomMotionAPI provides *velocityScale* 
-    (GetVelocityScaleAttr()) for controlling how motion-blur samples should
-    be computed by velocity-consuming schemas."""
+    The \\ref GetMotionBlurScaleAttr() "motion:blurScale" attribute allows
+    artists to scale the __amount__ of motion blur to be rendered for parts
+    of the scene without changing the recorded animation.  See
+    \\ref UsdGeomMotionAPI_blurScale for use and implementation details.
+    
+    """
 )
 {
+    float motion:blurScale = 1.0 (
+        doc = """BlurScale is an __inherited__ float attribute that stipulates
+        the rendered motion blur (as typically specified via UsdGeomCamera's
+        _shutter:open_ and _shutter:close_ properties) should be scaled for
+        __all objects__ at and beneath the prim in namespace on which the
+        _motion:blurScale_ value is specified.
+        
+        Without changing any other data in the scene, _blurScale_ allows artists to
+        "dial in" the amount of blur on a per-object basis.  A _blurScale_
+        value of zero removes all blur, a value of 0.5 reduces blur by half, 
+        and a value of 2.0 doubles the blur.  The legal range for _blurScale_
+        is [0, inf), although very high values may result in extremely expensive
+        renders, and may exceed the capabilities of some renderers.
+        
+        Although renderers are free to implement this feature however they see
+        fit, see \\ref UsdGeomMotionAPI_blurScale for our guidance on implementing
+        the feature universally and efficiently.
+        
+        \\sa ComputeMotionBlurScale()
+        """
+    )
+
     float motion:velocityScale = 1.0 (
         customData = {
             string apiName = "velocityScale"
         }
-        doc = """VelocityScale is an **inherited** float attribute that
+        doc = """\\deprecated
+        
+        VelocityScale is an **inherited** float attribute that
         velocity-based schemas (e.g. PointBased, PointInstancer) can consume
         to compute interpolated positions and orientations by applying
         velocity and angularVelocity, which is required for interpolating 
@@ -2148,9 +2312,33 @@ class "MotionAPI"
         we require more or less motion-blur to achieve the desired look.  
         VelocityScale allows artists to dial-in, as a post-sim correction, 
         a scale factor to be applied to the velocity prior to computing 
-        interpolated positions from it.
+        interpolated positions from it."""
+    )
+
+    int motion:nonlinearSampleCount = 3 (
+        customData = {
+            string apiName = "nonlinearSampleCount"
+        }
+        doc = """Determines the number of position or transformation samples
+        created when motion is described by attributes contributing non-linear
+        terms.
         
-        See also ComputeVelocityScale()"""
+        To give an example, imagine an application (such as a
+        renderer) consuming 'points' and the USD document also
+        contains 'accelerations' for the same prim. Unless the
+        application can consume these 'accelerations' itself, an
+        intermediate layer has to compute samples within the sampling
+        interval for the point positions based on the value of
+        'points', 'velocities' and 'accelerations'. The number of these
+        samples is given by 'nonlinearSampleCount'. The samples are
+        equally spaced within the sampling interval.
+
+        Another example involves the PointInstancer where
+        'nonlinearSampleCount' is relevant when 'angularVelocities'
+        or 'accelerations' are authored.
+
+        'nonlinearSampleCount' is an **inherited** attribute, also
+        see ComputeNonlinearSampleCount()"""
     )
 }
 

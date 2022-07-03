@@ -23,13 +23,13 @@
 //
 #include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/tf/diagnostic.h"
-
-
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/sampler.h"
+#include "pxr/imaging/hgiGL/texture.h"
+
+#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/tf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -37,6 +37,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiGLSampler::HgiGLSampler(HgiSamplerDesc const& desc)
     : HgiSampler(desc)
     , _samplerId(0)
+    , _bindlessTextureId(0)
+    , _bindlessHandle(0)
 {
     glCreateSamplers(1, &_samplerId);
 
@@ -69,26 +71,42 @@ HgiGLSampler::HgiGLSampler(HgiSamplerDesc const& desc)
         GL_TEXTURE_MAG_FILTER,
         HgiGLConversions::GetMagFilter(desc.magFilter));
 
-    static const GfVec4f borderColor(0);
     glSamplerParameterfv(
         _samplerId,
         GL_TEXTURE_BORDER_COLOR,
-        borderColor.GetArray());
+        HgiGLConversions::GetBorderColor(desc.borderColor).GetArray());
 
     static const float maxAnisotropy = 16.0;
-
     glSamplerParameterf(
         _samplerId,
         GL_TEXTURE_MAX_ANISOTROPY_EXT,
         maxAnisotropy);
+
+    glSamplerParameteri(
+        _samplerId, 
+        GL_TEXTURE_COMPARE_MODE, 
+        desc.enableCompare ? GL_COMPARE_REF_TO_TEXTURE : GL_NONE);
+        
+    glSamplerParameteri(
+        _samplerId, 
+        GL_TEXTURE_COMPARE_FUNC, 
+        HgiGLConversions::GetCompareFunction(desc.compareFunction));
 
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 
 HgiGLSampler::~HgiGLSampler()
 {
+    // Deleting the GL sampler automatically deletes the bindless
+    // sampler handle. In fact, even destroying the underlying
+    // texture (which is out of our control here), deletes the
+    // bindless sampler handle and the same bindless sampler handle
+    // value might be re-used by the driver. So it is unsafe to
+    // call glMakeTextureHandleNonResidentARB(_bindlessHandle) here.
     glDeleteSamplers(1, &_samplerId);
     _samplerId = 0;
+    _bindlessTextureId = 0;
+    _bindlessHandle = 0;
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 
@@ -103,5 +121,31 @@ HgiGLSampler::GetSamplerId() const
 {
     return _samplerId;
 }
+
+uint64_t
+HgiGLSampler::GetBindlessHandle(HgiTextureHandle const &textureHandle)
+{
+    GLuint textureId = textureHandle->GetRawResource();
+    if (textureId == 0) {
+        return 0;
+    }
+
+    if (!_bindlessHandle || _bindlessTextureId != textureId) {
+        const GLuint64EXT result =
+            glGetTextureSamplerHandleARB(textureId, _samplerId);
+
+        if (!glIsTextureHandleResidentARB(result)) {
+            glMakeTextureHandleResidentARB(result);
+        }
+
+        _bindlessTextureId = textureId;
+        _bindlessHandle = result;
+
+        HGIGL_POST_PENDING_GL_ERRORS();
+    }
+
+    return _bindlessHandle;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

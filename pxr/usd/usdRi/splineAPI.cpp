@@ -236,7 +236,7 @@ UsdRiSplineAPI::Validate(std::string *reason) const
     interpAttr.Get(&interp);
     if (interp != UsdRiTokens->constant &&
         interp != UsdRiTokens->linear &&
-        interp != UsdRiTokens->catmull_rom &&
+        interp != UsdRiTokens->catmullRom &&
         interp != UsdRiTokens->bspline) {
         *reason += "Interpolation attribute has invalid value '" +
             interp.GetString() + "'";

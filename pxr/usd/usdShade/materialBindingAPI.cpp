@@ -646,6 +646,14 @@ UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
     }
 }
 
+/* static */
+TfTokenVector
+UsdShadeMaterialBindingAPI::GetMaterialPurposes()
+{
+    return { UsdShadeTokens->allPurpose, UsdShadeTokens->preview, 
+             UsdShadeTokens->full };
+}
+
 UsdShadeMaterial 
 UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
     BindingsCache *bindingsCache,

@@ -1,0 +1,69 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Z"
+)
+
+def Xform "Scene" (
+    kind = "component"
+)
+{
+    def Scope "Looks"
+    {
+        def Material "Material"
+        {
+            float inputs:roughness = 0.8
+            token inputs:textureCoords = "st"
+            asset inputs:textureFile = @grid.png@
+            token outputs:surface.connect = </Scene/Looks/Material/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 0, 0)
+                color3f inputs:diffuseColor.connect = </Scene/Looks/Material/Texture.outputs:rgb>
+                float inputs:roughness.connect = </Scene/Looks/Material.inputs:roughness>
+                token outputs:surface
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Scene/Looks/Material.inputs:textureCoords>
+                float2 outputs:result
+            }
+
+            def Shader "Texture"
+            {
+                uniform token info:id = "UsdUVTexture"
+
+                # Since this input is connected to an interface input on a 
+                # Material, the authored value (i.e. grid_1.png) should be 
+                # ignored.
+                asset inputs:file = @grid_1.png@
+                asset inputs:file.connect = </Scene/Looks/Material.inputs:textureFile>
+                float2 inputs:st.connect = </Scene/Looks/Material/Primvar.outputs:result>
+                float3 outputs:rgb
+            }
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def Mesh "Plane"
+        {
+            float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            rel material:binding = </Scene/Looks/Material>
+            point3f[] points = [(-2, -2, -2), (2, -2, -2), (2, -2, 2), (-2, -2, 2)]
+            color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+            float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                interpolation = "vertex"
+            )
+        }
+    }
+}
+

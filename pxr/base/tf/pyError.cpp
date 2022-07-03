@@ -114,6 +114,21 @@ TfPyConvertPythonExceptionToTfErrors()
             TF_ERROR(exc, TF_PYTHON_EXCEPTION, "Tf Python Exception");
         }
     }
+    else if (exc.GetValue()) {
+        object exception(exc.GetValue());
+        if (PyObject_HasAttrString(exception.ptr(), "_pxr_SavedTfException")) {
+            extract<uintptr_t>
+                extractor(exception.attr("_pxr_SavedTfException"));
+            std::exception_ptr *excPtrPtr;
+            if (extractor.check()) {
+                uintptr_t addr = extractor();
+                memcpy(&excPtrPtr, &addr, sizeof(addr));
+                std::exception_ptr eptr = *excPtrPtr;
+                delete excPtrPtr;
+                std::rethrow_exception(eptr);
+            }
+        }
+    }                
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

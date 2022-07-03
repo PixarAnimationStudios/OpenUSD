@@ -89,13 +89,14 @@ public:
     HGIGL_API
     void Draw(
         uint32_t vertexCount,
-        uint32_t firstVertex,
-        uint32_t instanceCount) override;
+        uint32_t baseVertex,
+        uint32_t instanceCount,
+        uint32_t baseInstance) override;
 
     HGIGL_API
     void DrawIndirect(
         HgiBufferHandle const& drawParameterBuffer,
-        uint32_t drawBufferOffset,
+        uint32_t drawBufferByteOffset,
         uint32_t drawCount,
         uint32_t stride) override;
 
@@ -104,16 +105,19 @@ public:
         HgiBufferHandle const& indexBuffer,
         uint32_t indexCount,
         uint32_t indexBufferByteOffset,
-        uint32_t vertexOffset,
-        uint32_t instanceCount) override;
+        uint32_t baseVertex,
+        uint32_t instanceCount,
+        uint32_t baseInstance) override;
 
     HGIGL_API
     void DrawIndexedIndirect(
         HgiBufferHandle const& indexBuffer,
         HgiBufferHandle const& drawParameterBuffer,
-        uint32_t drawBufferOffset,
+        uint32_t drawBufferByteOffset,
         uint32_t drawCount,
-        uint32_t stride) override;
+        uint32_t stride,
+        std::vector<uint32_t> const& drawParameterBufferUInt32,
+        uint32_t patchBaseVertexByteOffset) override;
 
     HGIGL_API
     void MemoryBarrier(HgiMemoryBarrier barrier) override;
@@ -140,8 +144,11 @@ private:
     bool _recording;
     HgiGraphicsCmdsDesc _descriptor;
     HgiPrimitiveType _primitiveType;
+    int _primitiveIndexSize;
     HgiGLOpsVector _ops;
     int _pushStack;
+    int32_t _restoreReadFramebuffer;
+    int32_t _restoreDrawFramebuffer;
 
     // Cmds is used only one frame so storing multi-frame state on will not
     // survive.

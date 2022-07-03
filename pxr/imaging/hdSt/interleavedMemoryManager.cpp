@@ -21,18 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/contextCaps.h"
-
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
 #include "pxr/imaging/hdSt/bufferResource.h"
-#include "pxr/imaging/hdSt/glUtils.h"
+#include "pxr/imaging/hdSt/bufferUtils.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/stagingBuffer.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/capabilities.h"
 
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -115,7 +115,10 @@ HdStInterleavedUBOMemoryManager::CreateBufferArray(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
 {
-    const GlfContextCaps &caps = GlfContextCaps::GetInstance();
+    const int uniformBufferOffsetAlignment = _resourceRegistry->GetHgi()->
+        GetCapabilities()->GetUniformBufferOffsetAlignment();
+    const int maxUniformBlockSize = _resourceRegistry->GetHgi()->
+        GetCapabilities()->GetMaxUniformBlockSize();
 
     return std::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
@@ -124,9 +127,9 @@ HdStInterleavedUBOMemoryManager::CreateBufferArray(
             role,
             bufferSpecs,
             usageHint,
-            caps.uniformBufferOffsetAlignment,
+            uniformBufferOffsetAlignment,
             /*structAlignment=*/sizeof(float)*4,
-            caps.maxUniformBlockSize,
+            maxUniformBlockSize,
             HdPerfTokens->garbageCollectedUbo);
 }
 
@@ -155,7 +158,8 @@ HdStInterleavedSSBOMemoryManager::CreateBufferArray(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
 {
-    const GlfContextCaps &caps = GlfContextCaps::GetInstance();
+    const int maxShaderStorageBlockSize = _resourceRegistry->GetHgi()->
+        GetCapabilities()->GetMaxShaderStorageBlockSize();
 
     return std::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
@@ -166,7 +170,7 @@ HdStInterleavedSSBOMemoryManager::CreateBufferArray(
             usageHint,
             /*bufferOffsetAlignment=*/0,
             /*structAlignment=*/0,
-            caps.maxShaderStorageBlockSize,
+            maxShaderStorageBlockSize,
             HdPerfTokens->garbageCollectedSsbo);
 }
 
@@ -266,7 +270,11 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
       shader storage blocks using the "std140" layout, except that the base
       alignment of arrays of scalars and vectors in rule (4) and of structures
       in rule (9) are not rounded up a multiple of the base alignment of a vec4.
+     
+      ***Unless we're using Metal, and then we use C++ alignment padding rules.
      */
+    const bool useCppShaderPadding = _resourceRegistry->GetHgi()->
+        GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsCppShaderPadding);
 
     TF_FOR_ALL(it, bufferSpecs) {
         // Figure out the alignment we need for this type of data
@@ -278,11 +286,17 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
         structAlignment = std::max(structAlignment, alignment);
 
         _stride += HdDataSizeOfTupleType(it->tupleType);
+        
+        if (useCppShaderPadding) {
+            _stride += _ComputePadding(alignment, _stride);
+        }
     }
 
     // Our struct stride needs to be aligned to the max alignment needed within
     // our struct.
     _stride += _ComputePadding(structAlignment, _stride);
+
+    _elementStride = _stride;
 
     // and also aligned if bufferOffsetAlignment exists (for UBO binding)
     if (_bufferOffsetAlignment > 0) {
@@ -308,7 +322,11 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
                      "  %s : offset = %d, alignment = %d\n",
                      it->name.GetText(), offset, alignment);
 
-        offset += HdDataSizeOfTupleType(it->tupleType);
+        const int thisSize = HdDataSizeOfTupleType(it->tupleType);
+        offset += thisSize;
+        if (useCppShaderPadding) {
+            offset += _ComputePadding(alignment, thisSize);
+        }
     }
 
     _SetMaxNumRanges(_maxSize / _stride);
@@ -430,7 +448,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     HgiBufferHandle newBuf;
 
     Hgi* hgi = _resourceRegistry->GetHgi();
-    
+
     // Skip buffers of zero size.
     if (totalSize > 0) {
         HgiBufferDesc bufDesc;
@@ -460,7 +478,10 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
                 // copy old data
                 ptrdiff_t readOffset = oldIndex * _stride;
                 ptrdiff_t writeOffset = index * _stride;
-                ptrdiff_t copySize = _stride * range->GetNumElements();
+
+                int const oldSize = range->GetCapacity();
+                int const newSize = range->GetNumElements();
+                ptrdiff_t copySize = _stride * std::min(oldSize, newSize);
 
                 relocator.AddRange(readOffset, writeOffset, copySize);
             }
@@ -497,6 +518,19 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     // update allocation to all buffer resources
     TF_FOR_ALL(it, GetResources()) {
         it->second->SetAllocation(newBuf, totalSize);
+    }
+
+    // update ranges
+    for (size_t idx = 0; idx < ranges.size(); ++idx) {
+        _StripedInterleavedBufferRangeSharedPtr range =
+            std::static_pointer_cast<_StripedInterleavedBufferRange>(
+                ranges[idx]);
+        if (!range) {
+            TF_CODING_ERROR(
+                "_StripedInterleavedBufferRange expired unexpectedly.");
+            continue;
+        }
+        range->SetCapacity(range->GetNumElements());
     }
 
     blitCmds->PopDebugGroup();
@@ -609,6 +643,11 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::IsImmutable() cons
          && _stripedBuffer->IsImmutable();
 }
 
+bool
+HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::RequiresStaging() const
+{
+    return true;
+}
 
 bool
 HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::Resize(int numElements)
@@ -618,102 +657,31 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::Resize(int numElem
 
     if (!TF_VERIFY(_stripedBuffer)) return false;
 
-    // interleaved BAR never needs to be resized, since numElements in buffer
-    // resources is always 1. Note that the arg numElements of this function
-    // could be more than 1 for static array.
-    // ignore Resize request.
-
-    // XXX: this could be a problem if a client allows to change the array size
-    //      dynamically -- e.g. instancer nesting level changes.
-    //
-    return false;
-}
-
-HdStInterleavedMemoryManager::_BufferFlushListEntry::_BufferFlushListEntry(
-    HgiBufferHandle const& buf, uint64_t s, uint64_t e)
-    : buffer(buf)
-    , start(s)
-    , end(e)
-{
-}
-
-void
-HdStInterleavedMemoryManager::StageBufferCopy(
-    HgiBufferCpuToGpuOp const& copyOp)
-{
-    if (copyOp.byteSize == 0 ||
-        !copyOp.cpuSourceBuffer ||
-        !copyOp.gpuDestinationBuffer)
-    {
-        return;
+    // XXX Some tests rely on an interleaved buffer being valid, even if given
+    // no data.
+    if (numElements == 0) {
+        numElements = 1;
     }
 
-    HgiBlitCmds* blitCmds = _resourceRegistry->GetGlobalBlitCmds();
+    bool needsReallocation = false;
 
-    // When the to-be-copied data is 'large' doing the extra memcpy into the
-    // stating buffer to avoid many small GPU buffer upload can be more
-    // expensive than just submitting the CPU to GPU copy operation directly.
-    // The value of 'queueThreshold' is estimated (when is the extra memcpy
-    // into the staging buffer slower than immediately issuing a gpu upload)
-    static const int queueThreshold = 512*1024;
-    if (copyOp.byteSize > queueThreshold) {
-        blitCmds->CopyBufferCpuToGpu(copyOp);
-        return;
-    }
+    if (_capacity != numElements) {
+        const size_t numMaxElements = GetMaxNumElements();
 
-    // Place the data into the staging buffer.
-    uint8_t * const cpuStaging = static_cast<uint8_t*>(
-        copyOp.gpuDestinationBuffer->GetCPUStagingAddress());
-    uint8_t const* const srcData =
-        static_cast<uint8_t const*>(copyOp.cpuSourceBuffer) +
-        copyOp.sourceByteOffset;
-    memcpy(cpuStaging + copyOp.destinationByteOffset, srcData, copyOp.byteSize);
+        if (static_cast<size_t>(numElements) > numMaxElements) {
+            TF_WARN("Attempting to resize the BAR with 0x%x elements when the "
+                    "max number of elements in the buffer array is 0x%lx. "
+                    "Clamping BAR size to the latter.",
+                     numElements, numMaxElements);
 
-    auto const &it = _queuedBuffers.find(copyOp.gpuDestinationBuffer.Get());
-    if (it != _queuedBuffers.end()) {
-        _BufferFlushListEntry &bufferEntry = it->second;
-        if (copyOp.destinationByteOffset == bufferEntry.end) {
-            // Accumulate the copy
-            bufferEntry.end += copyOp.byteSize;
-        } else {
-            // This buffer copy doesn't contiguously extend the queued copy
-            // Submit the accumulated work to date
-            HgiBufferCpuToGpuOp op;
-            op.cpuSourceBuffer = cpuStaging;
-            op.sourceByteOffset = bufferEntry.start;
-            op.gpuDestinationBuffer = copyOp.gpuDestinationBuffer;
-            op.destinationByteOffset = bufferEntry.start;
-            op.byteSize = bufferEntry.end - bufferEntry.start;
-            blitCmds->CopyBufferCpuToGpu(op);
-
-            // Update this entry for our new pending copy
-            bufferEntry.start = copyOp.destinationByteOffset;
-            bufferEntry.end = copyOp.destinationByteOffset + copyOp.byteSize;
+            numElements = numMaxElements;
         }
-    } else {
-        uint64_t const start = copyOp.destinationByteOffset;
-        uint64_t const end = copyOp.destinationByteOffset + copyOp.byteSize;
-        _queuedBuffers.emplace(copyOp.gpuDestinationBuffer.Get(),
-            _BufferFlushListEntry(copyOp.gpuDestinationBuffer, start, end));
+        _stripedBuffer->SetNeedsReallocation();
+        needsReallocation = true;
     }
-}
 
-void
-HdStInterleavedMemoryManager::Flush()
-{
-    HgiBlitCmds* blitCmds = _resourceRegistry->GetGlobalBlitCmds();
-
-    HgiBufferCpuToGpuOp op;
-    for(auto &copy: _queuedBuffers) {
-        _BufferFlushListEntry const &entry = copy.second;
-        op.cpuSourceBuffer = entry.buffer->GetCPUStagingAddress();
-        op.sourceByteOffset = entry.start;
-        op.gpuDestinationBuffer = entry.buffer;
-        op.destinationByteOffset = entry.start;
-        op.byteSize = entry.end - entry.start;
-        blitCmds->CopyBufferCpuToGpu(op);
-    }
-    _queuedBuffers.clear();
+    _numElements = numElements;
+    return needsReallocation;
 }
 
 void
@@ -755,6 +723,8 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     int vboStride = VBO->GetStride();
     size_t vboOffset = VBO->GetOffset() + vboStride * _index;
     int dataSize = HdDataSizeOfTupleType(VBO->GetTupleType());
+    size_t const elementStride = _stripedBuffer->GetElementStride();
+
     const unsigned char *data =
         (const unsigned char*)bufferSource->GetData();
 
@@ -762,14 +732,17 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     blitOp.gpuDestinationBuffer = VBO->GetHandle();
     blitOp.sourceByteOffset = 0;
     blitOp.byteSize = dataSize;
+    
+    HdStStagingBuffer *stagingBuffer =
+        GetResourceRegistry()->GetStagingBuffer();
 
     for (size_t i = 0; i < _numElements; ++i) {
         blitOp.cpuSourceBuffer = data;
-        
         blitOp.destinationByteOffset = vboOffset;
-        _stripedBuffer->GetManager()->StageBufferCopy(blitOp);
 
-        vboOffset += vboStride;
+        stagingBuffer->StageCopy(blitOp);
+        
+        vboOffset += elementStride;
         data += dataSize;
     }
 
@@ -794,11 +767,13 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::ReadData(
         return result;
     }
 
-    result = HdStGLUtils::ReadBuffer(VBO->GetHandle()->GetRawResource(),
-                                   VBO->GetTupleType(),
-                                   VBO->GetOffset() + VBO->GetStride() * _index,
-                                   VBO->GetStride(),
-                                   _numElements);
+    result = HdStReadBuffer(VBO->GetHandle(),
+                            VBO->GetTupleType(),
+                            VBO->GetOffset() + VBO->GetStride() * _index,
+                            VBO->GetStride(),
+                            _numElements,
+                            _stripedBuffer->GetElementStride(),
+                            GetResourceRegistry());
 
     return result;
 }

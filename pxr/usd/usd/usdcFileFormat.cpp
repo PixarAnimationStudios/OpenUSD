@@ -83,17 +83,46 @@ UsdUsdcFileFormat::CanRead(const string& filePath) const
 }
 
 bool
+UsdUsdcFileFormat::_CanReadFromAsset(const string& filePath,
+                                     const std::shared_ptr<ArAsset>& asset) const
+{
+    return Usd_CrateData::CanRead(filePath, asset);
+}
+
+bool
 UsdUsdcFileFormat::Read(SdfLayer* layer,
                         const string& resolvedPath,
                         bool metadataOnly) const
 {
     TRACE_FUNCTION();
+    return _ReadHelper(layer, resolvedPath, metadataOnly);
+}
 
+bool
+UsdUsdcFileFormat::_ReadFromAsset(SdfLayer* layer,
+                                  const string& resolvedPath,
+                                  const std::shared_ptr<ArAsset>& asset,
+                                  bool metadataOnly) const
+{
+    TRACE_FUNCTION();
+    return _ReadHelper(layer, resolvedPath, metadataOnly, asset);
+}
+
+template <class ...Args>
+bool
+UsdUsdcFileFormat::_ReadHelper(
+    SdfLayer* layer, 
+    const std::string& resolvedPath,
+    bool metadataOnly,
+    Args&&... args) const
+{
     SdfAbstractDataRefPtr data = InitData(layer->GetFileFormatArguments());
     auto crateData = TfDynamic_cast<Usd_CrateDataRefPtr>(data);
 
-    if (!crateData || !crateData->Open(resolvedPath))
+    if (!crateData || 
+        !crateData->Open(resolvedPath, std::forward<Args>(args)...)) {
         return false;
+    }
 
     _SetLayerData(layer, data);
     return true;

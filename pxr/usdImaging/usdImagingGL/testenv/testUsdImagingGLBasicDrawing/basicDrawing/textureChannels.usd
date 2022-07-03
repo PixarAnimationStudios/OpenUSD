@@ -1,0 +1,172 @@
+#usda 1.0
+(
+    endFrame = 10
+    startFrame = 1
+    upAxis = "Z"
+)
+
+class Mesh "MeshProto"
+{
+    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4]
+    int[] faceVertexIndices = [0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 4, 5, 9, 8, 5, 6, 10, 9, 6, 7, 11, 10, 8, 9, 13, 12, 9, 10, 14, 13, 10, 11, 15, 14]
+    point3f[] points = [(-1, 0, -1), (-0.33333, 0, -1), (0.33333, 0, -1), (1, 0, -1), (-1, 0, -0.33333), (-0.33333, 0, -0.33333), (0.3333, 0, -0.33333), (1, 0, -0.33333), (-1, 0, 0.33333), (-0.33333, 0, 0.33333), (0.33333, 0, 0.33333), (1, 0, 0.33333), (-1, 0, 1), (-0.33333, 0, 1), (0.33333, 0, 1), (1, 0, 1)]
+    texCoord2f[] primvars:texCoord = [(0, 1), (0.33333, 1), (0.66667, 1), (1, 1), (0, 0.66667), (0.33333, 0.66667), (0.66667, 0.66667), (1, 0.66667), (0, 0.33333), (0.33333, 0.33333), (0.66667, 0.33333), (1, 0.33333), (0, 0), (0.33333, 0), (0.66667, 0), (1, 0)] (
+        interpolation = "faceVarying"
+    )
+    int[] primvars:texCoord:indices = [0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 4, 5, 9, 8, 5, 6, 10, 9, 6, 7, 11, 10, 8, 9, 13, 12, 9, 10, 14, 13, 10, 11, 15, 14]
+    uniform token subdivisionScheme = "catmullClark"
+    uniform token boundaryInterpolation = "edgeAndCorner"
+}
+
+def Xform "Model"
+{
+    def "Mesh1" (
+        references = </MeshProto>
+    )
+    {
+        double3 xformOp:translate = (-1.5, 0, 1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        rel material:binding = </Model/Mesh1/TextureChannels1>
+
+        def Material "TextureChannels1" {
+            token outputs:surface.connect = </Model/Mesh1/TextureChannels1/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "TextureSurface"
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:glslfx:sourceAsset = @basicDrawing/textureChannels.glslfx@
+                float4 inputs:textureChannels1.connect = </Model/Mesh1/TextureChannels1/Texture.outputs:color>
+                token outputs:surface
+            }
+            def Shader "Texture"
+            {
+                uniform token info:id = "HwUvTexture_1"
+                uniform asset inputs:file = @basicDrawing/textureChannels1.png@
+                float2 uv
+                add uniform float2 inputs:uv.connect = </Model/Mesh1/TextureChannels1/TextureCoord.outputs:result>
+                float4 outputs:color
+            }
+
+            def Shader "TextureCoord"
+            {
+                uniform token info:id = "HwPrimvar_1"
+                uniform token inputs:varname = "texCoord"
+                float2 outputs:result
+            }
+        }
+    }
+    def "Mesh2" (
+        references = </MeshProto>
+    )
+    {
+        double3 xformOp:translate = ( 1.5, 0, 1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        rel material:binding = </Model/Mesh2/TextureChannels2>
+
+        def Material "TextureChannels2" {
+            token outputs:surface.connect = </Model/Mesh2/TextureChannels2/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "TextureSurface"
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:glslfx:sourceAsset = @basicDrawing/textureChannels.glslfx@
+                float4 inputs:textureChannels2.connect = </Model/Mesh2/TextureChannels2/Texture.outputs:color>
+                token outputs:surface
+            }
+            def Shader "Texture"
+            {
+                uniform token info:id = "HwUvTexture_1"
+                uniform asset inputs:file = @basicDrawing/textureChannels2.png@
+                float2 uv
+                add uniform float2 inputs:uv.connect = </Model/Mesh2/TextureChannels2/TextureCoord.outputs:result>
+                float4 outputs:color
+            }
+
+            def Shader "TextureCoord"
+            {
+                uniform token info:id = "HwPrimvar_1"
+                uniform token inputs:varname = "texCoord"
+                float2 outputs:result
+            }
+        }
+    }
+    def "Mesh3" (
+        references = </MeshProto>
+    )
+    {
+        double3 xformOp:translate = (-1.5, 0,-1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        rel material:binding = </Model/Mesh3/TextureChannels3>
+
+        def Material "TextureChannels3" {
+            token outputs:surface.connect = </Model/Mesh3/TextureChannels3/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "TextureSurface"
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:glslfx:sourceAsset = @basicDrawing/textureChannels.glslfx@
+                float4 inputs:textureChannels3.connect = </Model/Mesh3/TextureChannels3/Texture.outputs:color>
+                token outputs:surface
+            }
+            def Shader "Texture"
+            {
+                uniform token info:id = "HwUvTexture_1"
+                uniform asset inputs:file = @basicDrawing/textureChannels3.png@
+                float2 uv
+                add uniform float2 inputs:uv.connect = </Model/Mesh3/TextureChannels3/TextureCoord.outputs:result>
+                float4 outputs:color
+            }
+
+            def Shader "TextureCoord"
+            {
+                uniform token info:id = "HwPrimvar_1"
+                uniform token inputs:varname = "texCoord"
+                float2 outputs:result
+            }
+        }
+    }
+    def "Mesh4" (
+        references = </MeshProto>
+    )
+    {
+        double3 xformOp:translate = ( 1.5, 0,-1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        rel material:binding = </Model/Mesh4/TextureChannels4>
+
+        def Material "TextureChannels4" {
+            token outputs:surface.connect = </Model/Mesh4/TextureChannels4/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "TextureSurface"
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:glslfx:sourceAsset = @basicDrawing/textureChannels.glslfx@
+                float4 inputs:textureChannels4.connect = </Model/Mesh4/TextureChannels4/Texture.outputs:color>
+                token outputs:surface
+            }
+            def Shader "Texture"
+            {
+                uniform token info:id = "HwUvTexture_1"
+                uniform asset inputs:file = @basicDrawing/textureChannels4.png@
+                float2 uv
+                add uniform float2 inputs:uv.connect = </Model/Mesh4/TextureChannels4/TextureCoord.outputs:result>
+                float4 outputs:color
+            }
+
+            def Shader "TextureCoord"
+            {
+                uniform token info:id = "HwPrimvar_1"
+                uniform token inputs:varname = "texCoord"
+                float2 outputs:result
+            }
+        }
+    }
+}
+

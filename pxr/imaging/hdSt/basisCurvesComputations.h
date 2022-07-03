@@ -198,9 +198,13 @@ public:
                 }
             } else if (size == numVerts) {
                 primvars = _authoredPrimvar;
-            } else if (size < numVerts && _topology->HasIndices()) { 
-                for (size_t i = 0; i < size; ++ i) {
-                    primvars[i] = _authoredPrimvar[i];
+            } else if (_topology->HasIndices()) {
+                if (size < numVerts) {
+                    for (size_t i = 0; i < size; ++ i) {
+                        primvars[i] = _authoredPrimvar[i];
+                    }
+                } else {  // size > numVerts
+                    primvars = _authoredPrimvar;
                 }
             } else {
                 for (size_t i = 0; i < numVerts; ++ i) {
@@ -234,8 +238,16 @@ public:
             }
         }
 
-        _SetResult(std::make_shared<HdVtBufferSource>(
-            _name, VtValue(primvars)));
+        auto resultSource = std::make_shared<HdVtBufferSource>(
+            _name, VtValue(primvars));
+
+        if (size > numVerts) {
+            if (_topology->HasIndices()) {
+                resultSource->Truncate(_topology->GetNumPoints());
+            }
+        }
+
+        _SetResult(resultSource);
 
         _SetResolved();
         return true;

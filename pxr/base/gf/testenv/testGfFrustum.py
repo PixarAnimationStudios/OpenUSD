@@ -251,7 +251,8 @@ class TestGfFrustum(unittest.TestCase):
         f = Gf.Frustum()
         f.projectionType = f.Orthographic
         r = f.ComputePickRay(Gf.Vec2d(2, 2))
-        self.assertTrue(Gf.IsClose( r.startPoint, Gf.Vec3d(2, 2, -1), 0.00001 ))
+
+        self.assertTrue(Gf.IsClose( r.startPoint, Gf.Vec3d(2, 2, -2), 0.00001 ))
         self.assertTrue(Gf.IsClose( r.direction, Gf.Vec3d(0, 0, -1), 0.00001 ))
 
         r = Gf.Frustum().ComputePickRay(Gf.Vec3d(0, 0, -2))

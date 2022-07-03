@@ -37,6 +37,7 @@
 
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -130,6 +131,7 @@ struct InitVisitor : bp::def_visitor<InitVisitor<CTOR> > {
 
 };
 
+TF_API
 bp::object _DummyInit(bp::tuple const & /* args */,
                       bp::dict const & /* kw */);
 

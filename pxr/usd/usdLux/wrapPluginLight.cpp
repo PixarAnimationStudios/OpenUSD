@@ -64,7 +64,7 @@ void wrapUsdLuxPluginLight()
 {
     typedef UsdLuxPluginLight This;
 
-    class_<This, bases<UsdLuxLight> >
+    class_<This, bases<UsdGeomXformable> >
         cls("PluginLight");
 
     cls

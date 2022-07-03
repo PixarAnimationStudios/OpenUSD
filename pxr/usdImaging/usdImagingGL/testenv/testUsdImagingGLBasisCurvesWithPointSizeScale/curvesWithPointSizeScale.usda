@@ -1,0 +1,46 @@
+#usda 1.0
+
+(
+    upAxis = "Y"
+)
+
+def Xform "Curves"{
+
+    def Scope "Tubes" {
+        def BasisCurves "Default" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (0, 0, 0)
+
+            uniform token type = "cubic"
+            uniform token basis = "bezier"
+            int[] curveVertexCounts = [7]
+            point3f[] points = [(0, 0, 0), (1, 1, 0), (1, 2, 0), (0, 3, 0), (-1, 4, 0), (-1, 5, 0), (0, 6, 0)]
+            float[] widths = [5] (interpolation = "constant")
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "Constant" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (5, 0, 0)
+
+            uniform token type = "cubic"
+            uniform token basis = "bezier"
+            int[] curveVertexCounts = [7]
+            point3f[] points = [(0, 0, 0), (1, 1, 0), (1, 2, 0), (0, 3, 0), (-1, 4, 0), (-1, 5, 0), (0, 6, 0)]
+            float[] widths = [5] (interpolation = "constant")
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            float[] primvars:pointSizeScale = [4] (interpolation = "constant")
+        }
+        def BasisCurves "Vertex" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (10, 0, 0)
+
+            uniform token type = "cubic"
+            uniform token basis = "bezier"
+            int[] curveVertexCounts = [7]
+            point3f[] points = [(0, 0, 0), (1, 1, 0), (1, 2, 0), (0, 3, 0), (-1, 4, 0), (-1, 5, 0), (0, 6, 0)]
+            float[] widths = [5] (interpolation = "constant")
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] primvars:pointSizeScale = [0.5, 1, 2, 4, 8, 16, 32] (interpolation = "vertex")
+        }
+    }
+}

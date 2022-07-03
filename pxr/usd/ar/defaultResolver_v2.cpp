@@ -174,12 +174,6 @@ ArDefaultResolver::_CreateIdentifierForNewAsset(
     return TfNormPath(assetPath);
 }
 
-std::string
-ArDefaultResolver::_GetExtension(const std::string& path) const
-{
-    return TfGetExtension(path);
-}
-
 static ArResolvedPath
 _ResolveAnchored(
     const std::string& anchorPath,
@@ -250,19 +244,12 @@ ArDefaultResolver::_ResolveForNewAsset(
     return ArResolvedPath(assetPath.empty() ? assetPath : TfAbsPath(assetPath));
 }
 
-VtValue
+ArTimestamp
 ArDefaultResolver::_GetModificationTimestamp(
     const std::string& path,
     const ArResolvedPath& resolvedPath) const
 {
-    // Since the default resolver always resolves paths to local
-    // paths, we can just look at the mtime of the file indicated
-    // by resolvedPath.
-    double time;
-    if (ArchGetModificationTime(resolvedPath.GetPathString().c_str(), &time)) {
-        return VtValue(time);
-    }
-    return VtValue();
+    return ArFilesystemAsset::GetModificationTimestamp(resolvedPath);
 }
 
 std::shared_ptr<ArAsset> 

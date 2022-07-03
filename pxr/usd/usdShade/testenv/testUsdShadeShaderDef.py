@@ -29,20 +29,6 @@ import unittest
 import os
 
 class TestUsdShadeShaderDef(unittest.TestCase):
-    def test_testSplitShaderIdentifier(self):
-        SSI = UsdShade.ShaderDefUtils.SplitShaderIdentifier
-        self.assertEqual(SSI('Primvar'), 
-                ('Primvar', 'Primvar', Ndr.Version()))
-        self.assertEqual(SSI('Primvar_float2'), 
-                ('Primvar', 'Primvar_float2', Ndr.Version()))
-        self.assertEqual(SSI('Primvar_float2_3'), 
-                ('Primvar', 'Primvar_float2', Ndr.Version(3, 0)))
-        self.assertEqual(SSI('Primvar_float_3_4'), 
-                ('Primvar', 'Primvar_float', Ndr.Version(3, 4)))
-
-        self.assertIsNone(SSI('Primvar_float2_3_nonNumber'))
-        self.assertIsNone(SSI('Primvar_4_nonNumber'))
-
     def test_ShaderDefParser_NodeDefAPI(self):
         # Test the NodeDefAPI path.
         self.test_ShaderDefParser(useForwardedAPI=False)
@@ -179,7 +165,47 @@ class TestUsdShadeShaderDef(unittest.TestCase):
                 "TestShaderPropertiesNode.glslfx")
         self.assertEqual(os.path.basename(node.GetResolvedDefinitionURI()),
                 "shaderDefs.usda")
+        
+        # Test GetOptions on an attribute via allowdTokens and 
+        # sdrMetadata["options"]
+        expectedOptionsList = [('token1', ''), ('token2', '')]
+        self.assertEqual(node.GetInput("testAllowedTokens").GetOptions(), 
+                expectedOptionsList)
+        self.assertEqual(node.GetInput("testMetadataOptions").GetOptions(), 
+                expectedOptionsList)
 
+        # sdrMetadata options will win over explicitly specified allowedTokens
+        # on the attr.
+        attr = shaderDef.GetPrim(). \
+                GetAttribute('inputs:testAllowedTokenAndMetdataOptions')
+        expectedMetdataOptions = "token3|token4"
+        expectedAttrAllowedTokens = ["token1", "token2"]
+        expectedOptionsList = [('token3', ''), ('token4', '')]
+        self.assertEqual(node.GetInput("testAllowedTokenAndMetdataOptions"). \
+                GetMetadata()["options"], expectedMetdataOptions)
+        self.assertEqual([t for t in attr.GetMetadata('allowedTokens')], 
+                expectedAttrAllowedTokens)
+        self.assertEqual(node.GetInput("testAllowedTokenAndMetdataOptions"). \
+                GetOptions(), expectedOptionsList)
+
+        # Test sdrUsdDefinitionType sdrMetadata and GetTypeAsSdfType
+        actualBoolInput = node.GetInput('actualBool')
+        attr = shaderDef.GetPrim(). \
+                GetAttribute('inputs:actualBool')
+        self.assertEqual(attr.GetTypeName(), Sdf.ValueTypeNames.Bool)
+        # Bool types are registered as Int via sdr, if no sdrUsdDefinitionType
+        # provided
+        self.assertEqual(actualBoolInput.GetTypeAsSdfType()[0], 
+                Sdf.ValueTypeNames.Bool) 
+        self.assertEqual(actualBoolInput.GetType(), Sdf.ValueTypeNames.Int)
+
+        intButBoolInput = node.GetInput('intButBool')
+        attr = shaderDef.GetPrim(). \
+                GetAttribute('inputs:intButBool')
+        self.assertEqual(attr.GetTypeName(), Sdf.ValueTypeNames.Int)
+        self.assertEqual(intButBoolInput.GetTypeAsSdfType()[0], 
+                Sdf.ValueTypeNames.Bool)
+        self.assertEqual(intButBoolInput.GetType(), Sdf.ValueTypeNames.Int)
 
         utils.TestShaderPropertiesNode(node)
 

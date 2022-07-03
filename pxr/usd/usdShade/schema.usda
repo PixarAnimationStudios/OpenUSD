@@ -71,7 +71,7 @@ class NodeGraph "NodeGraph" (
     """
     customData = {
         dictionary extraPlugInfo = {
-            bool implementsUsdShadeConnectableAPIBehavior = 1
+            bool providesUsdShadeConnectableAPIBehavior = 1
         }
         string extraIncludes = '''
 #include <utility>
@@ -137,7 +137,7 @@ class Material "Material" (
     """
     customData = {
         dictionary extraPlugInfo = {
-            bool implementsUsdShadeConnectableAPIBehavior = 1
+            bool providesUsdShadeConnectableAPIBehavior = 1
         }
         string extraIncludes = '''
 #include "pxr/usd/usd/variantSets.h"
@@ -237,7 +237,7 @@ class Shader "Shader" (
     """ 
     customData = {
         dictionary extraPlugInfo = {
-            bool implementsUsdShadeConnectableAPIBehavior = 1
+            bool providesUsdShadeConnectableAPIBehavior = 1
         }
         string extraIncludes = '''
 #include "pxr/usd/usdShade/input.h"

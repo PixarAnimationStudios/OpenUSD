@@ -1,0 +1,25 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Xform "Scene"
+{
+    over "Instance1" (
+        instanceable = true
+        references = @cube.usda@</Group>
+    )
+    {
+        float3 xformOp:translate = (-10, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    over "Instance2" (
+        instanceable = true
+        references = @cube.usda@</Group>
+    )
+    {
+        float3 xformOp:translate = (10, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

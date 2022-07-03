@@ -50,7 +50,7 @@
 void main(void)
 {
     vec2 fragCoord = uvOut * screenSize;
-    vec4 color = HdTexelFetch_colorIn(ivec2(fragCoord));
+    vec4 color = HgiTexelFetch_colorIn(ivec2(fragCoord));
 
     // Display Channel
     if (channel == CHANNEL_RED) {

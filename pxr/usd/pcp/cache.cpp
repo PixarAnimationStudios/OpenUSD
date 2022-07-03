@@ -1194,6 +1194,13 @@ PcpCache::_RemovePropertyCaches(const SdfPath& root, PcpLifeboat* lifeboat)
 // Private helper methods.
 
 void
+PcpCache::_ForEachLayerStack(
+    const TfFunctionRef<void(const PcpLayerStackPtr&)>& fn) const
+{
+    _layerStackCache->ForEachLayerStack(fn);
+}
+
+void
 PcpCache::_ForEachPrimIndex(
     const TfFunctionRef<void(const PcpPrimIndex&)>& fn) const
 {

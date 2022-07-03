@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "hdPrman/api.h"
-#include "hdPrman/interactiveContext.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -39,10 +38,10 @@ class HdPrman_ResourceRegistry final : public HdResourceRegistry
 public:
     HDPRMAN_API
     HdPrman_ResourceRegistry(
-        std::shared_ptr<HdPrman_InteractiveContext> const& context);
+        std::shared_ptr<class HdPrman_RenderParam> const& renderParam);
 
     HDPRMAN_API
-    virtual ~HdPrman_ResourceRegistry();
+    ~HdPrman_ResourceRegistry() override;
 
     HDPRMAN_API
     void ReloadResource(
@@ -50,7 +49,7 @@ public:
         std::string const& path) override;
 
 private:
-    std::shared_ptr<HdPrman_InteractiveContext> _context;
+    std::shared_ptr<class HdPrman_RenderParam> _renderParam;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

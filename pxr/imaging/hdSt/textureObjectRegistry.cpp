@@ -24,6 +24,7 @@
 
 #include "pxr/imaging/hdSt/textureObjectRegistry.h"
 
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/ptexTextureObject.h"
 #include "pxr/imaging/hdSt/textureObject.h"
 #include "pxr/imaging/hdSt/udimTextureObject.h"
@@ -208,6 +209,9 @@ HdSt_TextureObjectRegistry::Commit()
 
     _dirtyFilePaths.clear();
     _dirtyTextures.clear();
+
+    // MipMap generation for textures requiers us to submit blit work.
+    _resourceRegistry->SubmitBlitWork();
 
     return result;
 }

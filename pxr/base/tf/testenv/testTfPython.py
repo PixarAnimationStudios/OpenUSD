@@ -124,7 +124,7 @@ class TestPython(unittest.TestCase):
         self.assertIs(Tf._DerivedNullFactory(), None)
 
 
-    def test_Exception(self):
+    def test_ErrorException(self):
         with self.assertRaises(RuntimeError):
             Tf._TakesBase(Raiser())
 
@@ -142,6 +142,14 @@ class TestPython(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             Tf._doErrors()
 
+    def test_CppException(self):
+        with self.assertRaises(Tf.CppException) as cm:
+            Tf._ThrowTest('hello')
+        print(cm.exception)
+
+        with self.assertRaises(Tf.CppException) as cm:
+            Tf._CallThrowTest(lambda : Tf._ThrowTest('py-to-cpp-to-py'))
+        print(cm.exception)
 
     def test_StaticMethodPosting(self):
         with self.assertRaises(Tf.ErrorException):

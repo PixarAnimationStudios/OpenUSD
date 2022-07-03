@@ -23,12 +23,12 @@
 //
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/primUtils.h"
 #include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
-#include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
 #include "pxr/imaging/hdSt/textureHandle.h"
@@ -39,7 +39,8 @@
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
+#include "pxr/imaging/hgi/capabilities.h"
+
 #include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -57,7 +58,7 @@ HioGlslfx *HdStMaterial::_fallbackGlslfx = nullptr;
 
 HdStMaterial::HdStMaterial(SdfPath const &id)
  : HdMaterial(id)
- , _surfaceShader(std::make_shared<HdStSurfaceShader>())
+ , _materialNetworkShader(std::make_shared<HdSt_MaterialNetworkShader>())
  , _isInitialized(false)
  , _hasPtex(false)
  , _hasLimitSurfaceEvaluation(false)
@@ -119,7 +120,10 @@ _GetTextureHandleHash(
         samplerParams.wrapT,
         samplerParams.wrapR,
         samplerParams.minFilter,
-        samplerParams.magFilter);
+        samplerParams.magFilter,
+        samplerParams.borderColor,
+        samplerParams.enableCompare,
+        samplerParams.compareFunction);
 }
 
 void
@@ -132,9 +136,6 @@ HdStMaterial::_ProcessTextureDescriptors(
     HdBufferSpecVector * const specs,
     HdBufferSourceSharedPtrVector * const sources)
 {
-    const bool bindlessTextureEnabled
-        = GlfContextCaps::GetInstance().bindlessTextureEnabled;
-
     for (HdStMaterialNetwork::TextureDescriptor const &desc : descs) {
         HdStTextureHandleSharedPtr const textureHandle = 
             resourceRegistry->AllocateTextureHandle(
@@ -142,7 +143,6 @@ HdStMaterial::_ProcessTextureDescriptors(
                 desc.type,
                 desc.samplerParameters,
                 desc.memoryRequest,
-                bindlessTextureEnabled,
                 shaderCode);
         
         // Note about batching hashes:
@@ -176,8 +176,11 @@ HdStMaterial::_ProcessTextureDescriptors(
                   : _GetTextureHandleHash(textureHandle) });
     }
 
-    HdSt_TextureBinder::GetBufferSpecs(
-        *texturesFromStorm, bindlessTextureEnabled, specs);
+    bool const doublesSupported = resourceRegistry->GetHgi()->
+        GetCapabilities()->IsSet(
+            HgiDeviceCapabilitiesBitsShaderDoublePrecision);
+    HdSt_TextureBinder::GetBufferSpecs(*texturesFromStorm, specs,
+                                       doublesSupported);
 }
 
 /* virtual */
@@ -205,6 +208,8 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
     std::string fragmentSource;
     std::string geometrySource;
+    std::string displacementSource;
+    std::string volumeSource;
     VtDictionary materialMetadata;
     TfToken materialTag = _materialTag;
     HdSt_MaterialParamVector params;
@@ -218,15 +223,22 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
             _networkProcessor.ProcessMaterialNetwork(GetId(), hdNetworkMap,
                                                     resourceRegistry.get());
             fragmentSource = _networkProcessor.GetFragmentCode();
+            volumeSource = _networkProcessor.GetVolumeCode();
             geometrySource = _networkProcessor.GetGeometryCode();
+            displacementSource = _networkProcessor.GetDisplacementCode();
             materialMetadata = _networkProcessor.GetMetadata();
             materialTag = _networkProcessor.GetMaterialTag();
             params = _networkProcessor.GetMaterialParams();
                 textureDescriptors = _networkProcessor.GetTextureDescriptors();
-            }
         }
+    }
 
-    if (fragmentSource.empty() && geometrySource.empty()) {
+    // Use fallback shader when there is no source for
+    // fragment and geometry and displacement shader.
+    if (fragmentSource.empty() &&
+        geometrySource.empty() &&
+        displacementSource.empty()) {
+
         _InitFallbackShader();
         fragmentSource = _fallbackGlslfx->GetSurfaceSource();
         // Note that we don't want displacement on purpose for the 
@@ -235,20 +247,43 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         materialMetadata = _fallbackGlslfx->GetMetadata();
     }
 
-    // If we're updating the fragment or geometry source, we need to rebatch
-    // anything that uses this material.
+    // Update volume material data.
+    if (_volumeMaterialData.source != volumeSource) {
+        // If we're updating the volume source, we need to rebatch anything that
+        // uses this material.
+        markBatchesDirty = true;
+        _volumeMaterialData.source = std::move(volumeSource);
+
+        if (_volumeMaterialData.source.empty()) {
+            // Material does not provide a volume shader.
+            // In this case, we leave it to _ComputeVolumeMaterialData in
+            // volume.cpp to use the fallback volume data.
+            // The params of this material are also irrelevant for volumes in
+            // this case.
+            _volumeMaterialData.params = {};
+        } else {
+            _volumeMaterialData.params = params;
+        }
+    }
+
+    // If we're updating the fragment or geometry source, we need to
+    // rebatch anything that uses this material.
     std::string const& oldFragmentSource = 
-        _surfaceShader->GetSource(HdShaderTokens->fragmentShader);
+        _materialNetworkShader->GetSource(HdShaderTokens->fragmentShader);
     std::string const& oldGeometrySource = 
-        _surfaceShader->GetSource(HdShaderTokens->geometryShader);
+        _materialNetworkShader->GetSource(HdShaderTokens->geometryShader);
+    std::string const& oldDisplacementSource =
+        _materialNetworkShader->GetSource(HdShaderTokens->displacementShader);
 
     markBatchesDirty |= (oldFragmentSource!=fragmentSource) || 
-                        (oldGeometrySource!=geometrySource);
+                        (oldGeometrySource!=geometrySource) ||
+                        (oldDisplacementSource!=displacementSource);
 
-    _surfaceShader->SetFragmentSource(fragmentSource);
-    _surfaceShader->SetGeometrySource(geometrySource);
+    _materialNetworkShader->SetFragmentSource(fragmentSource);
+    _materialNetworkShader->SetGeometrySource(geometrySource);
+    _materialNetworkShader->SetDisplacementSource(displacementSource);
 
-    bool hasDisplacement = !(geometrySource.empty());
+    bool hasDisplacement = !(displacementSource.empty());
 
     if (_hasDisplacement != hasDisplacement) {
         _hasDisplacement = hasDisplacement;
@@ -265,19 +300,19 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
     if (_materialTag != materialTag) {
         _materialTag = materialTag;
-        _surfaceShader->SetMaterialTag(_materialTag);
+        _materialNetworkShader->SetMaterialTag(_materialTag);
         needsRprimMaterialStateUpdate = true;
 
         // If the material tag changes, we'll need to rebatch.
         markBatchesDirty = true;
     }
 
-    _surfaceShader->SetEnabledPrimvarFiltering(true);
+    _materialNetworkShader->SetEnabledPrimvarFiltering(true);
 
     //
     // Update material parameters
     //
-    _surfaceShader->SetParams(params);
+    _materialNetworkShader->SetParams(params);
 
     HdBufferSpecVector specs;
     HdBufferSourceSharedPtrVector sources;
@@ -286,13 +321,13 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     for (HdSt_MaterialParam const & param: params) {
         if (param.IsPrimvarRedirect() || param.IsFallback() || 
             param.IsTransform2d()) {
-            HdStSurfaceShader::AddFallbackValueToSpecsAndSources(
+            HdSt_MaterialNetworkShader::AddFallbackValueToSpecsAndSources(
                 param, &specs, &sources);
         } else if (param.IsTexture()) {
             // Fallback value only supported for Uv and Field textures.
             if (param.textureType == HdTextureType::Uv ||
                 param.textureType == HdTextureType::Field) {
-                HdStSurfaceShader::AddFallbackValueToSpecsAndSources(
+                HdSt_MaterialNetworkShader::AddFallbackValueToSpecsAndSources(
                     param, &specs, &sources);
             }
             if (param.textureType == HdTextureType::Ptex) {
@@ -307,7 +342,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     _ProcessTextureDescriptors(
         sceneDelegate,
         resourceRegistry,
-        _surfaceShader,
+        _materialNetworkShader,
         textureDescriptors,
         &textures,
         &specs,
@@ -327,8 +362,8 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         markBatchesDirty = true;
     }
 
-    _surfaceShader->SetNamedTextureHandles(textures);
-    _surfaceShader->SetBufferSources(
+    _materialNetworkShader->SetNamedTextureHandles(textures);
+    _materialNetworkShader->SetBufferSources(
         specs, std::move(sources), resourceRegistry);
 
     if (_hasPtex != hasPtex) {
@@ -381,16 +416,17 @@ HdStMaterial::GetInitialDirtyBitsMask() const
     return AllDirty;
 }
 
-HdStShaderCodeSharedPtr
-HdStMaterial::GetShaderCode() const
+HdSt_MaterialNetworkShaderSharedPtr
+HdStMaterial::GetMaterialNetworkShader() const
 {
-    return _surfaceShader;
+    return _materialNetworkShader;
 }
 
 void
-HdStMaterial::SetSurfaceShader(HdStSurfaceShaderSharedPtr &shaderCode)
+HdStMaterial::SetMaterialNetworkShader(
+        HdSt_MaterialNetworkShaderSharedPtr &materialNetworkShader)
 {
-    _surfaceShader = shaderCode;
+    _materialNetworkShader = materialNetworkShader;
 }
 
 void
@@ -400,7 +436,7 @@ HdStMaterial::_InitFallbackShader()
         return;
     }
 
-    const TfToken &filePath = HdStPackageFallbackSurfaceShader();
+    const TfToken &filePath = HdStPackageFallbackMaterialNetworkShader();
 
     _fallbackGlslfx = new HioGlslfx(filePath);
 

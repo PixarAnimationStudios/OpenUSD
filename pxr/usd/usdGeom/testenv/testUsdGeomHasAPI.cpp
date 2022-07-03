@@ -61,14 +61,6 @@ TestHasAPI()
     prim.ApplyAPI<UsdGeomModelAPI>();
     TF_AXIOM(prim.HasAPI<UsdGeomModelAPI>());
 
-    std::cerr << "--- BEGIN EXPECTED ERROR --" << std::endl;
-    TfErrorMark mark;
-    // Passing in a non-empty instance name with a single-apply API schema like
-    // UsdGeomMotionAPI results in a coding error
-    TF_AXIOM(!prim.HasAPI<UsdGeomMotionAPI>(/*instanceName*/ TfToken("instance")));
-    TF_VERIFY(!mark.IsClean());
-    std::cerr << "--- END EXPECTED ERROR --" << std::endl;
-
     // The following cases won't compile, uncomment them to confirm
     // TF_AXIOM(prim.HasAPI<UsdGeomImageable>()); // can't be typed
     // TF_AXIOM(prim.HasAPI<UsdGeomXform>());     // can't be concrete
@@ -80,6 +72,7 @@ TestHasAPI()
     // TF_AXIOM(prim.RemoveAPI<UsdGeomXform>());  
     // 
     // // must be multiple apply for instance name
+    // TF_AXIOM(!prim.HasAPI<UsdGeomMotionAPI>(TfToken("instance")));
     // TF_AXIOM(prim.CanApplyAPI<UsdGeomModelAPI>(TfToken("instance")));
     // TF_AXIOM(prim.ApplyAPI<UsdGeomModelAPI>(TfToken("instance")));   
     // TF_AXIOM(prim.RemoveAPI<UsdGeomModelAPI>(TfToken("instance")));

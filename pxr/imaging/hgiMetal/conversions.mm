@@ -80,6 +80,8 @@ static const MTLPixelFormat _PIXEL_FORMAT_DESC[] =
     MTLPixelFormatBC3_RGBA,           // HgiFormatBC3UNorm8Vec4
 
     MTLPixelFormatDepth32Float_Stencil8, // HgiFormatFloat32UInt8
+
+    MTLPixelFormatInvalid,      // Unsupported by Metal
     
     // Note: Update _VERTEX_FORMAT_DESC as well.
 };
@@ -151,6 +153,8 @@ static const MTLVertexFormat _VERTEX_FORMAT_DESC[] =
     MTLVertexFormatInvalid,             // HgiFormatBC3UNorm8Vec4
 
     MTLVertexFormatInvalid,             // HgiFormatFloat32UInt8
+
+    MTLVertexFormatInt1010102Normalized,// HgiFormatPackedInt1010102
 };
 
 constexpr bool _CompileTimeValidateHgiVertexFormatTable() {
@@ -257,8 +261,11 @@ struct {
     MTLWinding metalWinding;
 } static const _windingTable[] =
 {
-    {HgiWindingClockwise,           MTLWindingClockwise},
-    {HgiWindingCounterClockwise,    MTLWindingCounterClockwise},
+    // Winding order is inverted because our viewport is inverted.
+    // This combination allows us to emulate the OpenGL coordinate space on
+    // Metal
+    {HgiWindingClockwise,           MTLWindingCounterClockwise},
+    {HgiWindingCounterClockwise,    MTLWindingClockwise},
 };
 
 static_assert(TfArraySize(_windingTable) == HgiWindingCount,
@@ -316,6 +323,27 @@ struct {
 static_assert(TfArraySize(_compareFnTable) == HgiCompareFunctionCount,
               "_compareFnTable array out of sync with HgiFormat enum");
 
+//
+// HgiStencilOp
+//
+struct {
+    HgiStencilOp hgiStencilOp;
+    MTLStencilOperation metalStencilOp;
+} static const _stencilOpTable[] =
+{
+    {HgiStencilOpKeep,           MTLStencilOperationKeep},
+    {HgiStencilOpZero,           MTLStencilOperationZero},
+    {HgiStencilOpReplace,        MTLStencilOperationReplace},
+    {HgiStencilOpIncrementClamp, MTLStencilOperationIncrementClamp},
+    {HgiStencilOpDecrementClamp, MTLStencilOperationDecrementClamp},
+    {HgiStencilOpInvert,         MTLStencilOperationInvert},
+    {HgiStencilOpIncrementWrap,  MTLStencilOperationIncrementWrap},
+    {HgiStencilOpDecrementWrap,  MTLStencilOperationDecrementWrap},
+};
+
+static_assert(TfArraySize(_stencilOpTable) == HgiStencilOpCount,
+              "_stencilOpTable array out of sync with HgiStencilOp enum");
+
 struct {
     HgiTextureType hgiTextureType;
     MTLTextureType metalTT;
@@ -362,6 +390,16 @@ struct {
     {HgiMipFilterLinear,       MTLSamplerMipFilterLinear}
 };
 
+struct {
+    HgiBorderColor hgiBorderColor;
+    MTLSamplerBorderColor metalBC;
+} static const _borderColorTable[HgiBorderColorCount] =
+{
+    {HgiBorderColorTransparentBlack, MTLSamplerBorderColorTransparentBlack},
+    {HgiBorderColorOpaqueBlack,      MTLSamplerBorderColorOpaqueBlack},
+    {HgiBorderColorOpaqueWhite,      MTLSamplerBorderColorOpaqueWhite}
+};
+
 #if (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15) \
     || __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
 struct {
@@ -387,7 +425,9 @@ struct {
     {HgiPrimitiveTypeLineList,     MTLPrimitiveTopologyClassLine},
     {HgiPrimitiveTypeLineStrip,    MTLPrimitiveTopologyClassLine},
     {HgiPrimitiveTypeTriangleList, MTLPrimitiveTopologyClassTriangle},
-    {HgiPrimitiveTypePatchList,    MTLPrimitiveTopologyClassUnspecified}
+    {HgiPrimitiveTypePatchList,    MTLPrimitiveTopologyClassUnspecified},
+    {HgiPrimitiveTypeLineListWithAdjacency,
+                                MTLPrimitiveTopologyClassUnspecified}
 };
 
 struct {
@@ -399,11 +439,13 @@ struct {
     {HgiPrimitiveTypeLineList,     MTLPrimitiveTypeLine},
     {HgiPrimitiveTypeLineStrip,    MTLPrimitiveTypeLineStrip},
     {HgiPrimitiveTypeTriangleList, MTLPrimitiveTypeTriangle},
-    {HgiPrimitiveTypePatchList,    MTLPrimitiveTypeTriangle /*Invalid*/}
+    {HgiPrimitiveTypePatchList,    MTLPrimitiveTypeTriangle /*Invalid*/},
+    {HgiPrimitiveTypeLineListWithAdjacency,
+                                MTLPrimitiveTypeTriangle /*Invalid*/}
 };
 
 MTLPixelFormat
-HgiMetalConversions::GetPixelFormat(HgiFormat inFormat)
+HgiMetalConversions::GetPixelFormat(HgiFormat inFormat, HgiTextureUsage inUsage)
 {
     if (inFormat == HgiFormatInvalid) {
         return MTLPixelFormatInvalid;
@@ -415,6 +457,14 @@ HgiMetalConversions::GetPixelFormat(HgiFormat inFormat)
         return MTLPixelFormatRGBA8Unorm;
     }
 
+    if (inUsage & HgiTextureUsageBitsDepthTarget) {
+        if (inFormat == HgiFormatFloat32UInt8) {
+            return MTLPixelFormatDepth32Float_Stencil8;
+        } else {
+            return MTLPixelFormatDepth32Float;
+        }
+    }
+    
     MTLPixelFormat outFormat = _PIXEL_FORMAT_DESC[inFormat];
     if (outFormat == MTLPixelFormatInvalid)
     {
@@ -485,9 +535,15 @@ HgiMetalConversions::GetAttachmentStoreOp(HgiAttachmentStoreOp storeOp)
 }
 
 MTLCompareFunction
-HgiMetalConversions::GetDepthCompareFunction(HgiCompareFunction cf)
+HgiMetalConversions::GetCompareFunction(HgiCompareFunction cf)
 {
     return _compareFnTable[cf].metalCF;
+}
+
+MTLStencilOperation
+HgiMetalConversions::GetStencilOp(HgiStencilOp op)
+{
+    return _stencilOpTable[op].metalStencilOp;
 }
 
 MTLTextureType
@@ -514,6 +570,12 @@ HgiMetalConversions::GetMipFilter(HgiMipFilter mf)
     return _mipFilterTable[mf].metalMF;
 }
 
+MTLSamplerBorderColor
+HgiMetalConversions::GetBorderColor(HgiBorderColor bc)
+{
+    return _borderColorTable[bc].metalBC;
+}
+
 #if (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15) \
     || __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
 MTLTextureSwizzle
@@ -532,10 +594,20 @@ HgiMetalConversions::GetPrimitiveClass(HgiPrimitiveType pt)
 MTLPrimitiveType
 HgiMetalConversions::GetPrimitiveType(HgiPrimitiveType pt)
 {
-    if (pt == HgiPrimitiveTypePatchList) {
-        TF_CODING_ERROR("Patch primitives invalid for Metal");
-    }
     return _primitiveTypeTable[pt].metalPT;
+}
+
+MTLColorWriteMask
+HgiMetalConversions::GetColorWriteMask(HgiColorMask mask)
+{
+    MTLColorWriteMask mtlMask;
+    
+    mtlMask = ((mask & HgiColorMaskRed) ? MTLColorWriteMaskRed : 0)
+            | ((mask & HgiColorMaskGreen) ? MTLColorWriteMaskGreen : 0)
+            | ((mask & HgiColorMaskBlue) ? MTLColorWriteMaskBlue : 0)
+            | ((mask & HgiColorMaskAlpha) ? MTLColorWriteMaskAlpha : 0);
+    
+    return mtlMask;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -35,7 +35,8 @@ shader UsdPreviewSurfaceParameters
     float opacity = 1.0,
     float opacityThreshold = 0.0,
     float ior = 1.5,
-    vector normalIn = vector(0.0, 0.0, 1.0),
+    normal normalIn = normal(0.0, 0.0, 1.0),
+    float displacement = 0.0,
     float occlusion = 1.0,
 
     // Diffuse outputs
@@ -80,6 +81,12 @@ shader UsdPreviewSurfaceParameters
 
     // Presence output    
     output float presenceOut = 1.0
+        [[ string widget = "null" ]],
+    
+    // Displacement output
+    output float dispAmountOut = 0.0
+        [[ string widget = "null" ]],
+    output float dispScalarOut = 0.0
         [[ string widget = "null" ]],
 )
 {
@@ -151,9 +158,9 @@ shader UsdPreviewSurfaceParameters
         vector Bn = normalize(cross(N, Tn));
 
         // Convert from tangent-space normal to current space
-        bumpNormalOut = -Tn * normalIn[0] +
-                     -Bn * normalIn[1] + 
-                      N * normalIn[2];
+        bumpNormalOut = Tn * normalIn[0] +
+                        Bn * normalIn[1] + 
+                         N * normalIn[2];
         bumpNormalOut = normalize(bumpNormalOut);
 
         normal Ngn = N;
@@ -163,5 +170,12 @@ shader UsdPreviewSurfaceParameters
         if (dot(Ngn, bumpNormalOut) < 0.0) {
             bumpNormalOut = -bumpNormalOut;
         }
+    }
+
+    // Displacement
+    if (displacement != 0.0)
+    {
+        dispAmountOut = 0.1;
+        dispScalarOut = displacement;
     }
 }

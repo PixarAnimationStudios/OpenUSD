@@ -52,11 +52,11 @@ _TestIntersection(
     const UsdPrim& root, 
     UsdImagingGLRenderParams params)
 {
-    GfVec3d hitPoint;
-    GfVec3d hitNormal;
+    GfVec3d hitPoint(0);
+    GfVec3d hitNormal(0);
     SdfPath hitPrimPath;
     SdfPath hitInstancerPath;
-    int hitInstanceIndex;
+    int hitInstanceIndex = -1;
     HdInstancerContext hitInstancerContext;
 
     self.TestIntersection(

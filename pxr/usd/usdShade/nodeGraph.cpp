@@ -375,28 +375,32 @@ UsdShadeNodeGraph::ComputeInterfaceInputConsumersMap(
     return resolved;
 }
 
-bool
-UsdShadeNodeGraph::ConnectableAPIBehavior::CanConnectOutputToSource(
-    const UsdShadeOutput &output,
-    const UsdAttribute &source,
-    std::string *reason) const
+class UsdShadeNodeGraph_ConnectableAPIBehavior : 
+    public UsdShadeConnectableAPIBehavior
 {
-    return UsdShadeConnectableAPIBehavior::_CanConnectOutputToSource(
-            output, source, reason);
-}
+public:
+    // By default all NodeGraph Connectable Behavior should be
+    // container (of nodes) and exhibit encapsulation behavior.
+    USDSHADE_API
+    UsdShadeNodeGraph_ConnectableAPIBehavior() 
+        : UsdShadeConnectableAPIBehavior(
+                true /*isContainer*/, true /*requiresEncapsulation*/) {}
 
-bool
-UsdShadeNodeGraph::ConnectableAPIBehavior::IsContainer() const
-{
-    // NodeGraph does act as a namespace container for connected nodes
-    return true;
-}
+    USDSHADE_API
+    bool
+    CanConnectOutputToSource(const UsdShadeOutput &output,
+                             const UsdAttribute &source,
+                             std::string *reason) const override
+    {
+        return _CanConnectOutputToSource(output, source, reason);
+    }
+};
 
 TF_REGISTRY_FUNCTION(UsdShadeConnectableAPI)
 {
     UsdShadeRegisterConnectableAPIBehavior<
         UsdShadeNodeGraph,
-        UsdShadeNodeGraph::ConnectableAPIBehavior>();
+        UsdShadeNodeGraph_ConnectableAPIBehavior>();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

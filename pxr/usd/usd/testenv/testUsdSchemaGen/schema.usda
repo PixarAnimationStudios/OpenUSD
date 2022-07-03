@@ -33,8 +33,18 @@ class "NonAppliedAPI" (
 {
 }
 
+class "DerivedNonAppliedAPI" (
+    inherits = </NonAppliedAPI>
+    customData = {
+        token apiSchemaType = "nonApplied"
+    }
+)
+{
+}
+
 class "SingleApplyAPI" (
     inherits = </APISchemaBase>
+    prepend apiSchemas = ["BuiltinAPI"]
     customData = {
         token apiSchemaType = "singleApply"
         token[] apiSchemaAutoApplyTo = ["Derived", "ExternalPluginType"]
@@ -80,19 +90,9 @@ class "MultipleApplyAPI" (
     double testAttrTwo
 }
 
-class "DerivedMultipleApplyAPI" (
-    inherits = </MultipleApplyAPI>
-    customData = {
-        token apiSchemaType = "multipleApply"
-        token propertyNamespacePrefix = "derived"
-    }
-)
-{
-    int testAttrThree
-}
-
 class "PublicMultipleApplyAPI" (
     inherits = </APISchemaBase>
+    prepend apiSchemas = ["MultiApplyAPI", "BuiltinMultiApplyAPI:builtin"]
     customData = {
         token apiSchemaType = "multipleApply"
         token propertyNamespacePrefix  = "testo"
@@ -105,6 +105,7 @@ class "PublicMultipleApplyAPI" (
 
 class "Base" (
     inherits = </Typed>
+    prepend apiSchemas = ["BuiltinAPI"]
     doc = "This doc should only exist on the \"Base\" class."
     customData = {
         dictionary schemaTokens = {

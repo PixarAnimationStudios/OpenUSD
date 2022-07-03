@@ -34,6 +34,7 @@
 #include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolverContext.h"
+#include "pxr/usd/ar/timestamp.h"
 
 #include <memory>
 #include <string>
@@ -166,12 +167,18 @@ public:
 
     /// Return an ArResolverContext that may be bound to this resolver
     /// to resolve assets when no other context is explicitly specified.
+    ///
+    /// The returned ArResolverContext will contain the default context 
+    /// returned by the primary resolver and all URI resolvers.
     AR_API
     ArResolverContext CreateDefaultContext() const;
 
     /// Return an ArResolverContext that may be bound to this resolver
-    /// to resolve the asset located at \p assetPath when no other context is
-    /// explicitly specified.
+    /// to resolve the asset located at \p assetPath or referenced by
+    /// that asset when no other context is explicitly specified.
+    ///
+    /// The returned ArResolverContext will contain the default context 
+    /// for \p assetPath returned by the primary resolver and all URI resolvers.
     AR_API
     ArResolverContext CreateDefaultContextForAsset(
         const std::string& assetPath) const;
@@ -273,15 +280,12 @@ public:
         const std::string& assetPath,
         const ArResolvedPath& resolvedPath) const;
 
-    /// Return a value representing the last time the asset at the given 
+    /// Returns an ArTimestamp representing the last time the asset at
     /// \p assetPath was modified. \p resolvedPath is the resolved path
     /// computed for the given \p assetPath. If a timestamp cannot be
-    /// retrieved, return an empty VtValue.
-    ///
-    /// This timestamp may be equality compared to determine if an asset
-    /// has been modified.
+    /// retrieved, return an invalid ArTimestamp.
     AR_API
-    VtValue GetModificationTimestamp(
+    ArTimestamp GetModificationTimestamp(
         const std::string& assetPath,
         const ArResolvedPath& resolvedPath) const;
 
@@ -422,25 +426,56 @@ protected:
     ///
     /// @{
 
-    /// Return an identifier for the given \p assetPath. If \p anchorAssetPath
-    /// is non-empty, it should be used as the anchoring asset if \p assetPath
-    /// is relative.
+    /// Return an identifier for the asset at the given \p assetPath. 
+    /// See \ref ArResolver_identifier "Identifiers" for more information.
     ///
-    /// Two different (assetPath, anchorAssetPath) inputs should return the
-    /// same identifier only if they refer to the same asset. Identifiers may 
-    /// be compared to determine given paths refer to the same asset, so
-    /// implementations should take care to canonicalize and normalize the
-    /// returned identifier to a consistent format.
+    /// If \p anchorAssetPath is non-empty, it should be used as the anchoring 
+    /// asset if \p assetPath is relative. For example, for a filesystem-based
+    /// implementation _CreateIdentifier might return:
+    ///
+    /// _CreateIdentifier(
+    ///     /* assetPath = */ "/abs/path/to/model.usd",
+    ///     /* anchorAssetPath = */ ArResolvedPath("/abs/path/to/shot.usd"))
+    ///      => "/abs/path/to/model.usd"
+    ///
+    /// _CreateIdentifier(
+    ///     /* assetPath = */ "relative/model.usd",
+    ///     /* anchorAssetPath = */ ArResolvedPath("/abs/path/to/shot.usd"))
+    ///      => "/abs/path/to/relative/model.usd"
+    ///
+    /// Identifiers may be compared to determine if given paths refer to the
+    /// same asset, so implementations should take care to canonicalize and
+    /// normalize the returned identifier to a consistent format.
+    ///
+    /// If either \p assetPath or \p anchorAssetPath have a URI scheme, this
+    /// function will be called on the resolver associated with that URI scheme,
+    /// if any.
+    ///
+    /// Example uses:
+    /// - When opening a layer via SdfLayer::FindOrOpen or Find,
+    ///   CreateIdentifier will be called with the asset path given to those
+    ///   functions and no anchoring asset path.  The result will be used as the
+    ///   layer's identifier.
+    ///
+    /// - When processing composition arcs that refer to other layers, this
+    ///   function will be called with the asset path of the referenced layer
+    ///   and the resolved path of the layer where the composition arc was
+    ///   authored. The result will be passed to SdfLayer::FindOrOpen to
+    ///   open the referenced layer.
     virtual std::string _CreateIdentifier(
         const std::string& assetPath,
         const ArResolvedPath& anchorAssetPath) const = 0;
 
-    /// Return an identifier for a new asset at the given \p assetPath.  If
-    /// \p anchorAssetPath is non-empty, it should be used as the anchoring
-    /// asset if \p assetPath is relative.
+    /// Return an identifier for a new asset at the given \p assetPath.
     ///
     /// This is similar to _CreateIdentifier but is used to create identifiers
-    /// for new assets that are being created.
+    /// for assets that may not exist yet and are being created.
+    ///
+    /// Example uses:
+    /// - When creating a new layer via SdfLayer::CreateNew,
+    ///   CreateIdentifierForNewAsset will be called with the asset path given
+    ///   to the function. The result will be used as the new layer's
+    ///   identifier.
     virtual std::string _CreateIdentifierForNewAsset(
         const std::string& assetPath,
         const ArResolvedPath& anchorAssetPath) const = 0;
@@ -521,23 +556,52 @@ protected:
     /// Return a default ArResolverContext that may be bound to this resolver
     /// to resolve assets when no other context is explicitly specified.
     ///
+    /// When CreateDefaultContext is called on the configured asset resolver,
+    /// Ar will call this method on the primary resolver and all URI resolvers
+    /// and merge the results into a single ArResolverContext that will be
+    /// returned to the consumer.
+    ///
     /// This function should not automatically bind this context, but should
     /// create one that may be used later.
     ///
     /// The default implementation returns a default-constructed
     /// ArResolverContext.
+    ///
+    /// Example uses: 
+    /// - UsdStage will call CreateDefaultContext when creating a new stage with
+    ///   an anonymous root layer and without a given context. The returned
+    ///   context will be bound when resolving asset paths on that stage.
     AR_API
     virtual ArResolverContext _CreateDefaultContext() const;
 
     /// Return an ArResolverContext that may be bound to this resolver
-    /// to resolve the asset located at \p assetPath when no other context is
-    /// explicitly specified.
+    /// to resolve the asset located at \p assetPath or referenced by
+    /// that asset when no other context is explicitly specified.
+    ///
+    /// When CreateDefaultContextForAsset is called on the configured asset
+    /// resolver, Ar will call this method on the primary resolver and all URI
+    /// resolvers and merge the results into a single ArResolverContext that
+    /// will be returned to the consumer.
+    ///
+    /// Note that this means this method may be called with asset paths that
+    /// are not associated with this resolver. For example, this method may
+    /// be called on a URI resolver with a non-URI asset path. This is to
+    /// support cases where the asset at \p assetPath references other
+    /// assets with URI schemes that differ from the URI scheme (if any)
+    /// in \p assetPath.
     ///
     /// This function should not automatically bind this context, but should
     /// create one that may be used later.
     ///
     /// The default implementation returns a default-constructed
     /// ArResolverContext.
+    ///
+    /// Example uses: 
+    /// - UsdStage will call CreateDefaultContextForAsset when creating a new
+    ///   stage with a non-anonymous root layer and without a given context. The
+    ///   resolved path of the root layer will be passed in as the
+    ///   \p assetPath. The returned context will be bound when resolving asset
+    ///   paths on that stage.
     AR_API
     virtual ArResolverContext _CreateDefaultContextForAsset(
         const std::string& assetPath) const;
@@ -583,6 +647,15 @@ protected:
     /// Resolve is called, false otherwise.
     ///
     /// The default implementation returns false.
+    ///
+    /// Example uses:
+    /// - SdfLayer will call this function to check if the identifier given
+    ///   to SdfLayer::Find or SdfLayer::FindOrOpen is context-dependent.
+    ///   If it is and a layer exists with the same identifier, SdfLayer
+    ///   can return it without resolving the identifier. If it is not,
+    ///   SdfLayer must resolve the identifier and search for a layer with
+    ///   the same resolved path, even if a layer exists with the same
+    ///   identifier.
     AR_API
     virtual bool _IsContextDependentPath(
         const std::string& assetPath) const;
@@ -597,8 +670,15 @@ protected:
 
     /// Return the file extension for the given \p assetPath. This extension
     /// should not include a "." at the beginning of the string.
+    ///
+    /// The default implementation returns the string after the last "."
+    /// in \p assetPath. If \p assetPath begins with a ".", the extension
+    /// will be empty unless there is another "." in the path. If 
+    /// \p assetPath has components separated by '/' (or '\' on Windows),
+    /// only the last component will be considered.
+    AR_API
     virtual std::string _GetExtension(
-        const std::string& assetPath) const = 0;
+        const std::string& assetPath) const;
 
     /// Return an ArAssetInfo populated with additional metadata (if any)
     /// about the asset at the given \p assetPath. \p resolvedPath is the
@@ -609,19 +689,23 @@ protected:
         const std::string& assetPath,
         const ArResolvedPath& resolvedPath) const;
 
-    /// Return a value representing the last time the asset at the given 
+    /// Return an ArTimestamp representing the last time the asset at
     /// \p assetPath was modified. \p resolvedPath is the resolved path
     /// computed for the given \p assetPath. If a timestamp cannot be
-    /// retrieved, return an empty VtValue.
+    /// retrieved, return an invalid ArTimestamp.
     ///
-    /// Implementations may use whatever value is most appropriate
-    /// for this timestamp. The value must be equality comparable, 
-    /// and this function must return a different timestamp whenever 
-    /// an asset has been modified. For instance, if an asset is stored 
-    /// as a file on disk, the timestamp may simply be that file's mtime. 
-    virtual VtValue _GetModificationTimestamp(
+    /// The default implementation returns an invalid ArTimestamp.
+    ///
+    /// Example uses:
+    /// - SdfLayer will call GetModificationTimestamp when opening a
+    ///   layer and store the returned timestamp. When SdfLayer::Reload
+    ///   is called on that layer, this method will be called again.
+    ///   If the returned timestamp differs from the stored timestamp,
+    ///   or if it is invalid, the layer will be reloaded.
+    AR_API
+    virtual ArTimestamp _GetModificationTimestamp(
         const std::string& assetPath,
-        const ArResolvedPath& resolvedPath) const = 0;
+        const ArResolvedPath& resolvedPath) const;
 
     /// Return an ArAsset object for the asset located at \p resolvedPath.
     /// Return an invalid std::shared_ptr if object could not be created

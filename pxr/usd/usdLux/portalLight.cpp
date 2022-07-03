@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdLuxPortalLight,
-        TfType::Bases< UsdLuxLight > >();
+        TfType::Bases< UsdLuxBoundableLightBase > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
@@ -103,13 +103,30 @@ UsdLuxPortalLight::_GetTfType() const
     return _GetStaticTfType();
 }
 
+namespace {
+static inline TfTokenVector
+_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
+{
+    TfTokenVector result;
+    result.reserve(left.size() + right.size());
+    result.insert(result.end(), left.begin(), left.end());
+    result.insert(result.end(), right.begin(), right.end());
+    return result;
+}
+}
+
 /*static*/
 const TfTokenVector&
 UsdLuxPortalLight::GetSchemaAttributeNames(bool includeInherited)
 {
-    static TfTokenVector localNames;
+    static TfTokenVector localNames = {
+        UsdLuxTokens->lightShaderId,
+        UsdLuxTokens->extent,
+    };
     static TfTokenVector allNames =
-        UsdLuxLight::GetSchemaAttributeNames(true);
+        _ConcatenateAttributeNames(
+            UsdLuxBoundableLightBase::GetSchemaAttributeNames(true),
+            localNames);
 
     if (includeInherited)
         return allNames;
@@ -127,3 +144,27 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdGeom/boundableComputeExtent.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+static bool
+_ComputeExtent(
+    const UsdGeomBoundable &boundable,
+    const UsdTimeCode &time,
+    const GfMatrix4d *transform,
+    VtVec3fArray *extent)
+{
+    // Schema defined constant Boundary extent of the unit rectangle in the XY 
+    // plane that defines the portal.
+    return boundable.GetPrim().GetPrimDefinition().GetAttributeFallbackValue(
+            UsdLuxTokens->extent, extent);
+}
+
+TF_REGISTRY_FUNCTION(UsdGeomBoundable)
+{
+    UsdGeomRegisterComputeExtentFunction<UsdLuxPortalLight>(_ComputeExtent);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -137,18 +137,24 @@ main(int argc, char** argv)
         "shotC.usda", _TestResolverContext("toy_story"));
     TF_AXIOM(shotC);
 
+    UsdStageRefPtr woody = UsdStage::Open(
+        "Woody.usda", _TestResolverContext("toy_story"));
+    TF_AXIOM(woody);
+
     UsdStageRefPtr unrelatedShot = UsdStage::CreateInMemory(
         "unrelated", _TestResolverContext("unrelated"));
     TF_AXIOM(unrelatedShot);
 
     NoticeTester shotAListener(shotA), shotBListener(shotB),
-        shotCListener(shotC), unrelatedListener(unrelatedShot);
+        shotCListener(shotC), woodyListener(woody),
+        unrelatedListener(unrelatedShot);
 
     // We always expect to see resyncs for the pseudo-root for the
     // following test cases. Resolver changes currently invalidate
     // the whole stage because there may be asset path-valued attributes
     // that clients need to re-resolve.
     shotAListener.test = shotBListener.test = shotCListener.test =
+        woodyListener.test =
         [](const UsdNotice::ObjectsChanged& n) {
             TF_AXIOM(
                 SdfPathVector(n.GetResyncedPaths()) ==
@@ -169,11 +175,12 @@ main(int argc, char** argv)
     ValidateValue(shotB, "/BonniesRoom/Buzz.movie", "toy_story_1");
     ValidateValue(shotC, "/AntiquesRoom/Woody.movie", "toy_story_1");
     ValidateValue(shotC, "/AntiquesRoom/Buzz.movie", "toy_story_1");
+    ValidateValue(woody, "/Woody.movie", "toy_story_1");
 
     // Change the asset path associated with Buzz and reload. This
     // should cause the _TestResolver to emit a ResolverChanged notice,
-    // which should cause shotA and shotB to update since both use
-    // equivalent contexts.
+    // which should cause all other stages using equivalent contexts
+    // to update.
     assetPaths["Buzz"] = "ts2/Buzz.usda";
     _ResolverInterface->SetAssetPathsForConfig("toy_story", assetPaths);
 
@@ -183,6 +190,7 @@ main(int argc, char** argv)
     TF_AXIOM(shotAListener.noticeCount == 1);
     TF_AXIOM(shotBListener.noticeCount == 1);
     TF_AXIOM(shotCListener.noticeCount == 1);
+    TF_AXIOM(woodyListener.noticeCount == 1);
     TF_AXIOM(unrelatedListener.noticeCount == 0);
     
     ValidateValue(shotA, "/AndysRoom/Woody.movie", "toy_story_1");
@@ -191,9 +199,7 @@ main(int argc, char** argv)
     ValidateValue(shotB, "/BonniesRoom/Buzz.movie", "toy_story_2");
     ValidateValue(shotC, "/AntiquesRoom/Woody.movie", "toy_story_1");
     ValidateValue(shotC, "/AntiquesRoom/Buzz.movie", "toy_story_2");
-
-    shotAListener.noticeCount = shotBListener.noticeCount = 
-        shotCListener.noticeCount = 0;
+    ValidateValue(woody, "/Woody.movie", "toy_story_1");
 
     // Change the version associated with Woody and reload. Same
     // thing should happen as above.
@@ -202,9 +208,10 @@ main(int argc, char** argv)
     printf("Reloading stage...\n");
     shotA->Reload();
     
-    TF_AXIOM(shotAListener.noticeCount == 1);
-    TF_AXIOM(shotBListener.noticeCount == 1);
-    TF_AXIOM(shotCListener.noticeCount == 1);
+    TF_AXIOM(shotAListener.noticeCount == 2);
+    TF_AXIOM(shotBListener.noticeCount == 2);
+    TF_AXIOM(shotCListener.noticeCount == 2);
+    TF_AXIOM(woodyListener.noticeCount == 2);
     TF_AXIOM(unrelatedListener.noticeCount == 0);
 
     ValidateValue(shotA, "/AndysRoom/Woody.movie", "toy_story_2");
@@ -213,6 +220,7 @@ main(int argc, char** argv)
     ValidateValue(shotB, "/BonniesRoom/Buzz.movie", "toy_story_2");
     ValidateValue(shotC, "/AntiquesRoom/Woody.movie", "toy_story_2");
     ValidateValue(shotC, "/AntiquesRoom/Buzz.movie", "toy_story_2");
+    ValidateValue(woody, "/Woody.movie", "toy_story_2");
 
     printf("PASSED!\n");
 

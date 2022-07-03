@@ -23,9 +23,3 @@
 //
 
 #include "pxr/imaging/hioOpenVDB/vdbAssetInterface.h"
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-HioOpenVDBArAssetInterface::~HioOpenVDBArAssetInterface() = default;
-
-PXR_NAMESPACE_CLOSE_SCOPE

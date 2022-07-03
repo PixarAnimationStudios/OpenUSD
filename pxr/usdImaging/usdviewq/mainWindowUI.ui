@@ -205,11 +205,11 @@
            <attribute name="headerCascadingSectionResizes">
             <bool>true</bool>
            </attribute>
-           <attribute name="headerDefaultSectionSize">
-            <number>150</number>
-           </attribute>
            <attribute name="headerMinimumSectionSize">
             <number>20</number>
+           </attribute>
+           <attribute name="headerDefaultSectionSize">
+            <number>150</number>
            </attribute>
            <attribute name="headerStretchLastSection">
             <bool>false</bool>
@@ -704,11 +704,11 @@
                      <attribute name="horizontalHeaderCascadingSectionResizes">
                       <bool>true</bool>
                      </attribute>
-                     <attribute name="horizontalHeaderDefaultSectionSize">
-                      <number>220</number>
-                     </attribute>
                      <attribute name="horizontalHeaderMinimumSectionSize">
                       <number>30</number>
+                     </attribute>
+                     <attribute name="horizontalHeaderDefaultSectionSize">
+                      <number>220</number>
                      </attribute>
                      <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
                       <bool>false</bool>
@@ -719,11 +719,11 @@
                      <attribute name="verticalHeaderVisible">
                       <bool>false</bool>
                      </attribute>
-                     <attribute name="verticalHeaderDefaultSectionSize">
-                      <number>30</number>
-                     </attribute>
                      <attribute name="verticalHeaderMinimumSectionSize">
                       <number>20</number>
+                     </attribute>
+                     <attribute name="verticalHeaderDefaultSectionSize">
+                      <number>30</number>
                      </attribute>
                      <attribute name="verticalHeaderStretchLastSection">
                       <bool>false</bool>
@@ -812,11 +812,11 @@
                      <attribute name="horizontalHeaderCascadingSectionResizes">
                       <bool>true</bool>
                      </attribute>
-                     <attribute name="horizontalHeaderDefaultSectionSize">
-                      <number>220</number>
-                     </attribute>
                      <attribute name="horizontalHeaderMinimumSectionSize">
                       <number>30</number>
+                     </attribute>
+                     <attribute name="horizontalHeaderDefaultSectionSize">
+                      <number>220</number>
                      </attribute>
                      <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
                       <bool>false</bool>
@@ -827,11 +827,11 @@
                      <attribute name="verticalHeaderVisible">
                       <bool>false</bool>
                      </attribute>
-                     <attribute name="verticalHeaderDefaultSectionSize">
-                      <number>30</number>
-                     </attribute>
                      <attribute name="verticalHeaderMinimumSectionSize">
                       <number>20</number>
+                     </attribute>
+                     <attribute name="verticalHeaderDefaultSectionSize">
+                      <number>30</number>
                      </attribute>
                      <attribute name="verticalHeaderStretchLastSection">
                       <bool>false</bool>
@@ -1617,9 +1617,8 @@
     <addaction name="actionStop"/>
     <addaction name="separator"/>
     <addaction name="actionReset_View"/>
-    <addaction name="actionAdjust_FOV"/>
     <addaction name="actionAuto_Compute_Clipping_Planes"/>
-    <addaction name="actionAdjust_Clipping"/>
+    <addaction name="actionAdjust_Free_Camera"/>
     <addaction name="actionAdjust_Default_Material"/>
     <addaction name="menuComplexity"/>
     <addaction name="menuBBox"/>
@@ -1769,17 +1768,6 @@
   <action name="actionFrame_Backwards">
    <property name="text">
     <string>Frame Backward</string>
-   </property>
-  </action>
-  <action name="actionAdjust_FOV">
-   <property name="text">
-    <string>Adjust FO&amp;V...</string>
-   </property>
-   <property name="shortcut">
-    <string/>
-   </property>
-   <property name="shortcutContext">
-    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="actionReopen_Stage">
@@ -2441,12 +2429,12 @@
     <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
-  <action name="actionAdjust_Clipping">
+  <action name="actionAdjust_Free_Camera">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Adjust Clipping Planes...</string>
+    <string>Adjust Free Camera...</string>
    </property>
   </action>
   <action name="actionIncrementComplexity2">

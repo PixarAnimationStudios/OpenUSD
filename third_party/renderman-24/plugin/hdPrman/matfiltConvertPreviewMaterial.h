@@ -29,15 +29,23 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdMaterialNetworkInterface;
+
 /// MatfiltFilterChain::FilterFnc implementation which converts
 /// USD preview shading nodes to Renderman equivalents.
 void
 MatfiltConvertPreviewMaterial(
-    const SdfPath & networkId,
-    HdMaterialNetwork2 & network,
-    const std::map<TfToken, VtValue> & contextValues,
-    const NdrTokenVec & shaderTypePriority,
-    std::vector<std::string> * outputErrorMessages);
+    const SdfPath &networkId,
+    HdMaterialNetwork2 &network,
+    const std::map<TfToken, VtValue> &contextValues,
+    const NdrTokenVec &shaderTypePriority,
+    std::vector<std::string> *outputErrorMessages);
+
+/// Implementation that uses the abstract material interface instead.
+void
+MatfiltConvertPreviewMaterial(
+    HdMaterialNetworkInterface *networkInterface,
+    std::vector<std::string> *outputErrorMessages);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

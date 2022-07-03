@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/imaging/hdx/oitRenderTask.h"
 #include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hdx/oitBufferAccessor.h"
@@ -72,15 +70,12 @@ HdxOitRenderTask::Prepare(HdTaskContext* ctx,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-
-    if (_isOitEnabled) {
+ 
+    // OIT buffers take up significant GPU resources. Skip if there are no
+    // oit draw items (i.e. no translucent draw items)
+    if (_isOitEnabled && HdxRenderTask::_HasDrawItems()) {
         HdxRenderTask::Prepare(ctx, renderIndex);
-
-        // OIT buffers take up significant GPU resources. Skip if there are no
-        // oit draw items (i.e. no translucent or volumetric draw items)
-        if (HdxRenderTask::_HasDrawItems()) {
-            HdxOitBufferAccessor(ctx).RequestOitBuffers();
-        }
+        HdxOitBufferAccessor(ctx).RequestOitBuffers();
     }
 }
 
@@ -92,9 +87,10 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
 
     GLF_GROUP_FUNCTION();
 
-    if (!_isOitEnabled) return;
-    if (!HdxRenderTask::_HasDrawItems()) return;
-
+    if (!_isOitEnabled || !HdxRenderTask::_HasDrawItems()) {
+        return;
+    }
+    
     //
     // Pre Execute Setup
     //
@@ -102,7 +98,7 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
         HdxOitBufferAccessor oitBufferAccessor(ctx);
 
         oitBufferAccessor.RequestOitBuffers();
-        oitBufferAccessor.InitializeOitBuffersIfNecessary();
+        oitBufferAccessor.InitializeOitBuffersIfNecessary(_GetHgi());
         if (!oitBufferAccessor.AddOitBufferBindings(
                 _oitTranslucentRenderPassShader)) {
             TF_CODING_ERROR(
@@ -129,27 +125,8 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
         extendedState->SetAlphaThreshold(0.f);
     }
 
-    
-    // We render into a SSBO -- not MSSA compatible
-    bool oldMSAA = glIsEnabled(GL_MULTISAMPLE);
-    glDisable(GL_MULTISAMPLE);
-    // XXX When rendering HdStPoints we set GL_POINTS and assume that
-    //     GL_POINT_SMOOTH is enabled by default. This renders circles instead
-    //     of squares. However, when toggling MSAA off (above) we see GL_POINTS
-    //     start to render squares (driver bug?).
-    //     For now we always enable GL_POINT_SMOOTH. 
-    // XXX Switch points rendering to emit quad with FS that draws circle.
-    bool oldPointSmooth = glIsEnabled(GL_POINT_SMOOTH);
-    glEnable(GL_POINT_SMOOTH);
-
-    // XXX HdxRenderTask::Prepare calls HdStRenderPassState::Prepare.
-    // This sets the cullStyle for the render pass shader.
-    // Since Oit uses a custom render pass shader, we must manually
-    // set cullStyle.
-    _oitOpaqueRenderPassShader->SetCullStyle(
-        extendedState->GetCullStyle());
-    _oitTranslucentRenderPassShader->SetCullStyle(
-        extendedState->GetCullStyle());
+    // We render into an SSBO -- not MSAA compatible
+    renderPassState->SetMultiSampleEnabled(false);
 
     //
     // 1. Opaque pixels pass
@@ -162,6 +139,7 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
     {
         extendedState->SetRenderPassShader(_oitOpaqueRenderPassShader);
         renderPassState->SetEnableDepthMask(true);
+        renderPassState->SetColorMaskUseDefault(false);
         renderPassState->SetColorMasks({HdRenderPassState::ColorMaskRGBA});
 
         HdxRenderTask::Execute(ctx);
@@ -177,18 +155,6 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
         renderPassState->SetEnableDepthMask(false);
         renderPassState->SetColorMasks({HdRenderPassState::ColorMaskNone});
         HdxRenderTask::Execute(ctx);
-    }
-
-    //
-    // Post Execute Restore
-    //
-
-    if (oldMSAA) {
-        glEnable(GL_MULTISAMPLE);
-    }
-
-    if (!oldPointSmooth) {
-        glDisable(GL_POINT_SMOOTH);
     }
 }
 

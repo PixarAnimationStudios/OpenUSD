@@ -75,7 +75,7 @@
                         "bases": [
                             "UsdShadeNodeGraph"
                         ], 
-                        "implementsUsdShadeConnectableAPIBehavior": true, 
+                        "providesUsdShadeConnectableAPIBehavior": true, 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdShadeMaterialBindingAPI": {
@@ -106,7 +106,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
-                        "implementsUsdShadeConnectableAPIBehavior": true, 
+                        "providesUsdShadeConnectableAPIBehavior": true, 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdShadeShader": {
@@ -117,7 +117,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
-                        "implementsUsdShadeConnectableAPIBehavior": true, 
+                        "providesUsdShadeConnectableAPIBehavior": true, 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdShadeShaderDefParserPlugin": {

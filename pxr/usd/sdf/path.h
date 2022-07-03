@@ -82,6 +82,8 @@ private:
     typedef Sdf_PathNodeHandleImpl this_type;
 
 public:
+    static constexpr bool IsCounted = Counted;
+
     constexpr Sdf_PathNodeHandleImpl() noexcept {};
 
     explicit
@@ -100,7 +102,7 @@ public:
         }
     }
 
-    Sdf_PathNodeHandleImpl(Sdf_PathNodeHandleImpl const &rhs)
+    Sdf_PathNodeHandleImpl(Sdf_PathNodeHandleImpl const &rhs) noexcept
         : _poolHandle(rhs._poolHandle) {
         if (_poolHandle) {
             _AddRef();
@@ -964,6 +966,11 @@ private:
     explicit SdfPath(Sdf_PathPrimNodeHandle &&primNode)
         : _primPart(std::move(primNode)) {}
 
+    SdfPath(Sdf_PathPrimNodeHandle &&primPart,
+            Sdf_PathPropNodeHandle &&propPart)
+        : _primPart(std::move(primPart))
+        , _propPart(std::move(propPart)) {}
+
     // Construct from prim & prop parts.
     SdfPath(Sdf_PathPrimNodeHandle const &primPart,
             Sdf_PathPropNodeHandle const &propPart)
@@ -1009,6 +1016,9 @@ private:
         lhs._primPart.swap(rhs._primPart);
         lhs._propPart.swap(rhs._propPart);
     }
+
+    SDF_API friend char const *
+    Sdf_PathGetDebuggerPathText(SdfPath const &);
 
     Sdf_PathPrimNodeHandle _primPart;
     Sdf_PathPropNodeHandle _propPart;
@@ -1362,6 +1372,15 @@ SdfPathFindLongestStrictPrefix(
         std::map<SdfPath, T> &>(map, path, /*strictPrefix=*/true,
                                 TfGet<0>());
 }
+
+// A helper function for debugger pretty-printers, etc.  This function is *not*
+// thread-safe.  It writes to a static buffer and returns a pointer to it.
+// Subsequent calls to this function overwrite the memory written in prior
+// calls.  If the given path's string representation exceeds the static buffer
+// size, return a pointer to a message indicating so.
+SDF_API
+char const *
+Sdf_PathGetDebuggerPathText(SdfPath const &);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

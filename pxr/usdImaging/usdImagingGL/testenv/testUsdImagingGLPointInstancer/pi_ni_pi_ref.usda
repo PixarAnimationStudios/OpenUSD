@@ -1,0 +1,20 @@
+#usda 1.0
+
+def Xform "Root"
+{
+    def PointInstancer "CubeInstancer"
+    {
+        float3[] extent = [(-6, -1, -1), (6, 1, 1)]
+        point3f[] positions = [(-5, 0, 0), (0, 0, 0), (5, 0, 0)]
+        int[] protoIndices = [0, 0, 0]
+        rel prototypes = </Root/CubeInstancer/Protos/Cube1>
+
+        def Xform "Protos"
+        {
+            def Cube "Cube1"
+            {
+            }
+        }
+    }
+}
+

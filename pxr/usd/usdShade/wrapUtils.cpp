@@ -30,6 +30,7 @@
 #include <boost/python/tuple.hpp>
 
 #include "pxr/usd/usdShade/utils.h"
+#include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
 
@@ -61,6 +62,11 @@ void wrapUsdShadeUtils()
         .def("GetPrefixForAttributeType", 
             UsdShadeUtils::GetPrefixForAttributeType)
         .staticmethod("GetPrefixForAttributeType")
+
+        .def("GetConnectedSourcePath", 
+             UsdShadeUtils::GetConnectedSourcePath, 
+             (arg("connectionSourceInfo")))
+        .staticmethod("GetConnectedSourcePath")
 
         .def("GetBaseNameAndType", _GetBaseNameAndType)
         .staticmethod("GetBaseNameAndType")

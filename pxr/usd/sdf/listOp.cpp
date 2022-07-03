@@ -500,7 +500,6 @@ SdfListOp<T>::_AppendKeys(
     _ApplyMap* search) const
 {
     const ItemVector& items = GetItems(op);
-    typename _ApplyList::iterator insertPos = result->begin();
     if (callback) {
         for (const T& item: items) {
             if (boost::optional<T> mappedItem = callback(op, item)) {

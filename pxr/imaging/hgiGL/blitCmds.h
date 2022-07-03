@@ -71,6 +71,9 @@ public:
 
     HGIGL_API
     void GenerateMipMaps(HgiTextureHandle const& texture) override;
+    
+    HGIGL_API
+    void FillBuffer(HgiBufferHandle const& buffer, uint8_t value) override;
 
     HGIGL_API
     void MemoryBarrier(HgiMemoryBarrier barrier) override;

@@ -49,7 +49,7 @@ vec4
 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
 {
     // Calculate scalar displacement.
-    float texDisplacement = HdGet_displacement(index).x;
+    float texDisplacement = HdGetScalar_displacement(index);
     return Peye + vec4(Neye*texDisplacement, 0);
 }
 
@@ -59,18 +59,18 @@ displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
 vec4
 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
-    float clearcoatAmount    = HdGet_clearcoat().x;
-    float clearcoatRoughness = HdGet_clearcoatRoughness().x;
+    float clearcoatAmount    = HdGetScalar_clearcoat();
+    float clearcoatRoughness = HdGetScalar_clearcoatRoughness();
     vec3 diffuseColor        = HdGet_diffuseColor().xyz;
     vec3 emissiveColor       = HdGet_emissiveColor().xyz;
-    float ior                = HdGet_ior().x;
-    float metallic           = HdGet_metallic().x;
-    float occlusion          = HdGet_occlusion().x;
-    float opacity            = HdGet_opacity().x;
-    float opacityThreshold   = HdGet_opacityThreshold().x;
-    float roughness          = HdGet_roughness().x;
+    float ior                = HdGetScalar_ior();
+    float metallic           = HdGetScalar_metallic();
+    float occlusion          = HdGetScalar_occlusion();
+    float opacity            = HdGetScalar_opacity();
+    float opacityThreshold   = HdGetScalar_opacityThreshold();
+    float roughness          = HdGetScalar_roughness();
     vec3 specularColor       = HdGet_specularColor().xyz;
-    bool useSpecularWorkflow = (HdGet_useSpecularWorkflow().x == 1);
+    bool useSpecularWorkflow = (HdGetScalar_useSpecularWorkflow() == 1);
 
     vec3 clearcoatColor      = vec3(1.0);
     float specularAmount     = 1.0;
@@ -333,8 +333,7 @@ evaluateIndirectLighting(
     float lod = roughness * MAX_REFLECTION_LOD;
     vec3 Rdir = normalize((transformationMatrix * vec4(Reye,0.0)).xyz);
     vec2 Rcoord = projectToLatLong(Rdir);
-    vec3 prefilter = textureLod(HdGetSampler_domeLightPrefilter(),
-                                Rcoord, lod).rgb;
+    vec3 prefilter = HdTextureLod_domeLightPrefilter(Rcoord, lod).rgb;
 
     vec2 brdf = HdGet_domeLightBRDF(vec2(NdotE, roughness)).rg;
 
@@ -348,8 +347,7 @@ evaluateIndirectLighting(
             clearcoatColor,         // Clearcoat F90
             fresnel);
         lod = clearcoatRoughness * MAX_REFLECTION_LOD;
-        prefilter = textureLod(HdGetSampler_domeLightPrefilter(),
-                                Rcoord, lod).rgb;
+        prefilter = HdTextureLod_domeLightPrefilter(Rcoord, lod).rgb;
         clearcoat = prefilter * (clearcoatF * brdf.x + brdf.y);
     }
 
@@ -388,11 +386,12 @@ evaluateLights(
 
 #if NUM_LIGHTS > 0
     for (int i = 0; i < NUM_LIGHTS; ++i) {
+        LightSource light = GetLightSource(i);
 
         // Calculate necessary vector information for lighting
-        vec4 Plight = (lightSource[i].isIndirectLight)
+        vec4 Plight = light.isIndirectLight
                         ? vec4(0,0,0,1)
-                        : lightSource[i].position;
+                        : light.position;
         vec3 l = (Plight.w == 0.0)
                     ? normalize(Plight.xyz)
                     : normalize(Plight - Peye).xyz;
@@ -408,14 +407,14 @@ evaluateLights(
         // Calculate the shadow factor
         float shadow = 1.0;
     #if USE_SHADOWS
-        shadow = (lightSource[i].hasShadow) ?
+        shadow = light.hasShadow ?
             shadowing(/*lightIndex=*/i, Peye) : 1.0;
     #endif
 
         float intensity = atten * spot * shadow;
 
-        vec3 lightDiffuseIrradiance = intensity * lightSource[i].diffuse.rgb;
-        vec3 lightSpecularIrradiance = intensity * lightSource[i].specular.rgb;
+        vec3 lightDiffuseIrradiance = intensity * light.diffuse.rgb;
+        vec3 lightSpecularIrradiance = intensity * light.specular.rgb;
 
         LightingContributions lightingContrib = evaluateLight(
             diffuseColor,
@@ -437,7 +436,7 @@ evaluateLights(
             lightSpecularIrradiance);
 
         // calculate the indirect light (DomeLight)
-        if (lightSource[i].isIndirectLight) {
+        if (light.isIndirectLight) {
 
             indirectLight = evaluateIndirectLighting(diffuseColor,
                                     specularColor, Neye, Reye, NdotE,
@@ -445,7 +444,7 @@ evaluateLights(
                                     specularRoughness, useSpecularWorkflow,
                                     clearcoatAmount, clearcoatColor, 
                                     clearcoatRoughness, 
-                                    lightSource[i].worldToLightTransform);
+                                    light.worldToLightTransform);
         }
         // all other light sources contribute to the direct lighting
         else {
@@ -467,7 +466,7 @@ perturbFragmentNormal(vec3 P, vec3 N)
     // Calculation of TBN matrix and terminology based on "Surface 
     // Gradient-Based Bump Mapping Framework" (2020)
     vec3 Nt = normalize(HdGet_normal().xyz);
-    vec2 st = HdGetCoord_normal().st;
+    vec2 st = HdGetCoord_normal().xy;
 
     // Get screen space derivatives of position
     vec3 dPdx = dFdx(P);

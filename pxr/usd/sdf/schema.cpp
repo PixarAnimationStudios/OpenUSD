@@ -1467,7 +1467,7 @@ _ParseValue(const std::string &valueTypeName, const JsValue &value,
 
     // Feed the ParserValueContext the values in the correct format.
     // A better solution would be to have the default value be a string,
-    // which is parsed using the menva file format syntax for typed values.
+    // which is parsed using the sdf text file format syntax for typed values.
     // This would involve extracting the typed value rule out of the parser
     // and into a new parser.
     if (context.valueIsShaped)

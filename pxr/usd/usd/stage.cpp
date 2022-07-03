@@ -472,6 +472,7 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
     , _rootLayer(rootLayer)
     , _sessionLayer(sessionLayer)
     , _editTarget(_rootLayer)
+    , _editTargetIsLocalLayer(true)
     , _cache(new PcpCache(PcpLayerStackIdentifier(
                               _rootLayer, _sessionLayer, pathResolverContext),
                           UsdUsdFileFormatTokens->Target,
@@ -1284,18 +1285,37 @@ UsdStage::_GetSchemaRelationshipSpec(const UsdRelationship &rel) const
 bool
 UsdStage::_ValidateEditPrim(const UsdPrim &prim, const char* operation) const
 {
-    if (ARCH_UNLIKELY(prim.IsInPrototype())) {
-        TF_CODING_ERROR("Cannot %s at path <%s>; "
-                        "authoring to an instancing prototype is not allowed.",
-                        operation, prim.GetPath().GetText());
-        return false;
-    }
+    // This function would ideally issue an error if editing the given prim
+    // at the stage's edit target would not have any visible effect on the
+    // prim. For example, this could happen if the edit target maps the prim's
+    // path to a site that is not part of the prim's composition structure.
+    //
+    // However, doing this requires that we query the prim's dependencies,
+    // which is too expensive to do here. So we just allow edits to
+    // non-local layers or that are mapped to a different path under the
+    // assumption that the user has set up the stage's edit target to author
+    // to the site they desire. In the most common case where the edit target
+    // just targets a local layer with the identity path mapping, we can use
+    // cached bits in the UsdPrim to check for instancing-related errors.
+    if (_editTargetIsLocalLayer &&
+        (_editTarget.GetMapFunction().IsIdentityPathMapping() ||
+         _editTarget.MapToSpecPath(prim.GetPath()) == prim.GetPath())) {
+        
+        if (ARCH_UNLIKELY(prim.IsInPrototype())) {
+            TF_CODING_ERROR(
+                "Cannot %s at path <%s>; "
+                "authoring to an instancing prototype is not allowed.",
+                operation, prim.GetPath().GetText());
+            return false;
+        }
 
-    if (ARCH_UNLIKELY(prim.IsInstanceProxy())) {
-        TF_CODING_ERROR("Cannot %s at path <%s>; "
-                        "authoring to an instance proxy is not allowed.",
-                        operation, prim.GetPath().GetText());
-        return false;
+        if (ARCH_UNLIKELY(prim.IsInstanceProxy())) {
+            TF_CODING_ERROR(
+                "Cannot %s at path <%s>; "
+                "authoring to an instance proxy is not allowed.",
+                operation, prim.GetPath().GetText());
+            return false;
+        }
     }
 
     return true;
@@ -1305,18 +1325,26 @@ bool
 UsdStage::_ValidateEditPrimAtPath(const SdfPath &primPath, 
                                   const char* operation) const
 {
-    if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathInPrototype(primPath))) {
-        TF_CODING_ERROR("Cannot %s at path <%s>; "
-                        "authoring to an instancing prototype is not allowed.",
-                        operation, primPath.GetText());
-        return false;
-    }
+    // See comments in _ValidateEditPrim
+    if (_editTargetIsLocalLayer &&
+        (_editTarget.GetMapFunction().IsIdentityPathMapping() ||
+         _editTarget.MapToSpecPath(primPath) == primPath)) {
 
-    if (ARCH_UNLIKELY(_IsObjectDescendantOfInstance(primPath))) {
-        TF_CODING_ERROR("Cannot %s at path <%s>; "
-                        "authoring to an instance proxy is not allowed.",
-                        operation, primPath.GetText());
-        return false;
+        if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathInPrototype(primPath))) {
+            TF_CODING_ERROR(
+                "Cannot %s at path <%s>; "
+                "authoring to an instancing prototype is not allowed.",
+                operation, primPath.GetText());
+            return false;
+        }
+
+        if (ARCH_UNLIKELY(_IsObjectDescendantOfInstance(primPath))) {
+            TF_CODING_ERROR(
+                "Cannot %s at path <%s>; "
+                "authoring to an instance proxy is not allowed.",
+                operation, primPath.GetText());
+            return false;
+        }
     }
 
     return true;
@@ -2407,7 +2435,11 @@ UsdStage::_IsObjectDescendantOfInstance(const SdfPath& path) const
     // prim index, it would not be computed during composition unless
     // it is also serving as the source prim index for a prototype prim
     // on this stage.
-    return (_instanceCache->IsPathDescendantToAnInstance(
+    //
+    // Check if we have any instancing in this stage to avoid unnecessary
+    // path operations for performance.
+    return (_instanceCache->GetNumPrototypes() > 0 && 
+        _instanceCache->IsPathDescendantToAnInstance(
             path.GetAbsoluteRootOrPrimPath()));
 }
 
@@ -2896,12 +2928,6 @@ _ComposeAuthoredAppliedSchemas(
 }
 
 void
-UsdStage::_ComposeSubtreeInParallel(Usd_PrimDataPtr prim)
-{
-    _ComposeSubtreesInParallel(vector<Usd_PrimDataPtr>(1, prim));
-}
-
-void
 UsdStage::_ComposeSubtreesInParallel(
     const vector<Usd_PrimDataPtr> &prims,
     const vector<SdfPath> *primIndexPaths)
@@ -2929,10 +2955,12 @@ UsdStage::_ComposeSubtreesInParallel(
             try {
                 for (size_t i = 0; i != prims.size(); ++i) {
                     Usd_PrimDataPtr p = prims[i];
-                    _dispatcher->Run(
-                        &UsdStage::_ComposeSubtreeImpl, this, p, p->GetParent(),
-                        &_populationMask,
-                        primIndexPaths ? (*primIndexPaths)[i] : p->GetPath());
+                    _dispatcher->Run([this, p, &primIndexPaths, i]() {
+                        _ComposeSubtreeImpl(
+                            p, p->GetParent(), &_populationMask,
+                            primIndexPaths
+                            ? (*primIndexPaths)[i] : p->GetPath());
+                    });
                 }
             }
             catch (...) {
@@ -2953,9 +2981,9 @@ UsdStage::_ComposeSubtree(
     const SdfPath& primIndexPath)
 {
     if (_dispatcher) {
-        _dispatcher->Run(
-            &UsdStage::_ComposeSubtreeImpl, this,
-            prim, parent, mask, primIndexPath);
+        _dispatcher->Run([this, prim, parent, mask, primIndexPath]() {
+            _ComposeSubtreeImpl(prim, parent, mask, primIndexPath);
+        });
     } else {
         // TF_DEBUG(USD_COMPOSITION).Msg("Composing Subtree at <%s>\n",
         //                               prim->GetPath().GetText());
@@ -3053,7 +3081,10 @@ UsdStage::_DestroyDescendents(Usd_PrimDataPtr prim)
     prim->_firstChild = nullptr;
     while (childIt != childEnd) {
         if (_dispatcher) {
-            _dispatcher->Run(&UsdStage::_DestroyPrim, this, *childIt++);
+            // Make sure we advance to the next sibling before we destroy
+            // the current child so we don't read from a deleted prim.
+            Usd_PrimDataPtr child = *childIt++;
+            _dispatcher->Run([this, child]() { _DestroyPrim(child); });
         } else {
             _DestroyPrim(*childIt++);
         }
@@ -3079,7 +3110,9 @@ UsdStage::_DestroyPrimsInParallel(const vector<SdfPath>& paths)
                 // so we preserve a guard for resiliency.  See
                 // testUsdBug141491.py
                 if (TF_VERIFY(prim)) {
-                    _dispatcher->Run(&UsdStage::_DestroyPrim, this, prim);
+                    _dispatcher->Run([this, prim]() {
+                            _DestroyPrim(prim);
+                        });
                 }
             }
             _dispatcher = boost::none;
@@ -3163,15 +3196,24 @@ UsdStage::Reload()
     ArGetResolver().RefreshContext(GetPathResolverContext());
 #endif
 
-    // Reload layers that are reached via composition.
-    PcpChanges& changes = _pendingChanges->pcpChanges;
-    _cache->Reload(&changes);
+    // Reload layers in a change block to batch together change notices.
+    { 
+        SdfChangeBlock block;
+    
+        // Reload layers that are reached via composition.
+        PcpChanges& changes = _pendingChanges->pcpChanges;
+        _cache->Reload(&changes);
+        
+        // Reload all clip layers that are opened.
+        _clipCache->Reload();
+    }
 
-    // Reload all clip layers that are opened.
-    _clipCache->Reload();
-
-    // Process changes.
-    _ProcessPendingChanges();
+    // Process changes if they haven't already been processed in response
+    // to layer change notices above. If they have already been processed,
+    // _pendingChanges would have been reset to NULL.
+    if (_pendingChanges == &localPendingChanges) {
+        _ProcessPendingChanges();
+    }
 }
 
 /*static*/
@@ -3495,18 +3537,27 @@ UsdStage::SetEditTarget(const UsdEditTarget &editTarget)
         return;
     }
     // Do some extra error checking if the EditTarget specifies a local layer.
-    if (editTarget.GetMapFunction().IsIdentity() &&
-        !HasLocalLayer(editTarget.GetLayer())) {
-        TF_CODING_ERROR("Layer @%s@ is not in the local LayerStack rooted "
-                        "at @%s@",
-                        editTarget.GetLayer()->GetIdentifier().c_str(),
-                        GetRootLayer()->GetIdentifier().c_str());
-        return;
+    bool isLocalLayer = true;
+    bool* computedIsLocalLayer = nullptr; 
+
+    if (editTarget.GetMapFunction().IsIdentity()) {
+        isLocalLayer = HasLocalLayer(editTarget.GetLayer());
+        computedIsLocalLayer = &isLocalLayer;
+
+        if (!isLocalLayer) {
+            TF_CODING_ERROR(
+                "Layer @%s@ is not in the local LayerStack rooted at @%s@",
+                editTarget.GetLayer()->GetIdentifier().c_str(),
+                GetRootLayer()->GetIdentifier().c_str());
+            return;
+        }
     }
 
     // If different from current, set EditTarget and notify.
     if (editTarget != _editTarget) {
         _editTarget = editTarget;
+        _editTargetIsLocalLayer = computedIsLocalLayer ? 
+            *computedIsLocalLayer : HasLocalLayer(editTarget.GetLayer());
         UsdStageWeakPtr self(this);
         UsdNotice::StageEditTargetChanged(self).Send(self);
     }
@@ -4032,10 +4083,15 @@ UsdStage::_HandleLayersDidChange(
         changes.DidChangeSignificantly(_cache.get(), p);
     }
 
-    // See comments on _pendingChanges above.
-    if (_pendingChanges == &localPendingChanges) {
-        _ProcessPendingChanges();
-    }
+    // Normally we'd call _ProcessPendingChanges only if _pendingChanges
+    // pointed to localPendingChanges. If it didn't, it would mean that an
+    // upstream caller initialized _pendingChanges and that caller would be
+    // expected to call _ProcessPendingChanges itself.
+    // 
+    // However, the _PathsToChangesMap objects in _pendingChanges may hold
+    // raw pointers to entries stored in the notice, so we must process these
+    // changes immediately while the notice is still alive.
+    _ProcessPendingChanges();
 }
 
 void
@@ -4126,6 +4182,15 @@ UsdStage::_ProcessPendingChanges()
         // Now we want to remove all elements of otherInfoChanges that are
         // prefixed by elements in recomposeChanges or beneath instances.
         _MergeAndRemoveDescendentEntries(&recomposeChanges, &otherInfoChanges);
+    }
+
+    // If the local layer stack has changed, recompute whether the edit target
+    // layer is a local layer. We need to do this after the Pcp changes
+    // have been applied so that the local layer stack has been updated.
+    if (TfMapLookupPtr(
+            _pendingChanges->pcpChanges.GetLayerStackChanges(), 
+            _cache->GetLayerStack())) {
+        _editTargetIsLocalLayer = HasLocalLayer(_editTarget.GetLayer());
     }
 
     // Reset _pendingChanges before sending notices so that any changes to

@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 from __future__ import print_function
-from pxr import UsdUtils
+from pxr import UsdUtils, Sdf
 import argparse, contextlib, sys, os
 
 @contextlib.contextmanager
@@ -49,6 +49,11 @@ if __name__ == '__main__':
     if not os.path.exists(args.infile):
         print('Error: cannot access file {}'.format(args.infile), file=sys.stderr)
         sys.exit(1)
+
+    # Open layer and turn off edit permission, to validate that the dependency
+    # extractor does not require modifying the layer
+    layer = Sdf.Layer.FindOrOpen(args.infile)
+    layer.SetPermissionToEdit(False)
 
     sublayers, references, payloads = \
         UsdUtils.ExtractExternalReferences(args.infile)
