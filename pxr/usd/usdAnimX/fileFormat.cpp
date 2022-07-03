@@ -163,6 +163,7 @@ UsdAnimXFileFormat::WriteToFile(
     if(TF_VERIFY(data))
         writer.Write(data);
     writer.Close();
+    return true;
 }
 
 bool 

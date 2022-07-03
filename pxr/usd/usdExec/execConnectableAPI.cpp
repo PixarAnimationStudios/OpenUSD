@@ -242,13 +242,13 @@ static bool _CanConnectOutputToSource(
         return false;
     }
 
-    const SdfPath sourcePrimPath = source.GetPrim().GetPath();
-    const SdfPath outputPrimPath = output.GetPrim().GetPath();
+    const SdfPath sourcePrimParentPath = source.GetPrim().GetParent().GetPath();
+    const SdfPath outputPrimParentPath = output.GetPrim().GetParent().GetPath();
 
     if (UsdExecInput::IsInput(source)) {
         // output can connect to an input of the same container as a
         // passthrough.
-        if (sourcePrimPath != outputPrimPath) {
+        if (sourcePrimParentPath != outputPrimParentPath) {
             if (reason) {
                 *reason = TfStringPrintf("Encapsulation check failed - output "
                         "'%s' and input source '%s' must be encapsulated by "
@@ -263,7 +263,7 @@ static bool _CanConnectOutputToSource(
         // output can connect to other node's output directly encapsulated by
         // it, unless explicitly marked to ignore encapsulation rule.
 
-        if (sourcePrimPath.GetParentPath() != outputPrimPath) {
+        if (sourcePrimParentPath != output.GetPrim().GetPath()) {
             if (reason) {
                 *reason = TfStringPrintf("Encapsulation check failed - prim "
                         "owning the output '%s' is not an immediate descendent "
