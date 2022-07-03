@@ -25,6 +25,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/textParserContext.h"
 #include "pxr/usd/sdf/parserHelpers.h"
@@ -70,7 +71,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
        magic token */
 [[:blank:]]+ {}
 "#"[^\r\n]* {
-        if (yyextra->menvaLineNo == 1) {
+        if (yyextra->sdfLineNo == 1) {
             (*yylval_param) = std::string(yytext, yyleng);
             return TOK_MAGIC;
         }
@@ -85,7 +86,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
      * as part of the token and do NOT emit a separate TOK_NL.
      */
 ((\r\n)|\r|\n) {
-        yyextra->menvaLineNo++;
+        yyextra->sdfLineNo++;
         return TOK_NL;
     }
 
@@ -159,17 +160,19 @@ PXR_NAMESPACE_USING_DIRECTIVE
     }
 
     /* Single '@'-delimited asset references */
-@([^[:cntrl:]@]+)?@ {
+@[^@\n]*@ {
+        TfErrorMark m;
         (*yylval_param) = 
             Sdf_EvalAssetPath(yytext, yyleng, /* tripleDelimited = */ false);
-        return TOK_ASSETREF;
+        return m.IsClean() ? TOK_ASSETREF : TOK_SYNTAX_ERROR;
     }
 
     /* Triple '@'-delimited asset references. */
-@@@(([^[:cntrl:]@]|@{1,2}[^@]|\\@@@)+)?(@{0,2})@@@ {
+@@@([^@\n]|@{1,2}[^@\n]|\\@@@)*@{0,2}@@@ {
+        TfErrorMark m;
         (*yylval_param) = 
             Sdf_EvalAssetPath(yytext, yyleng, /* tripleDelimited = */ true);
-        return TOK_ASSETREF;
+        return m.IsClean() ? TOK_ASSETREF : TOK_SYNTAX_ERROR;
     }
 
     /* Singly quoted, single line strings with escapes.
@@ -200,7 +203,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
         unsigned int numlines = 0;
         (*yylval_param) = Sdf_EvalQuotedString(yytext, yyleng, 3, &numlines);
-        yyextra->menvaLineNo += numlines;
+        yyextra->sdfLineNo += numlines;
         return TOK_STRING;
     }
 
@@ -219,7 +222,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
         if (outOfRange) {
            TF_WARN("Integer literal '%s' on line %d%s%s out of range, parsing "
                    "as double.  Consider exponential notation for large "
-                   "floating point values.", yytext, yyextra->menvaLineNo,
+                   "floating point values.", yytext, yyextra->sdfLineNo,
                    yyextra->fileContext.empty() ? "" : " in file ",
                    yyextra->fileContext.empty() ? "" :
                    yyextra->fileContext.c_str());
@@ -235,7 +238,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
         if (outOfRange) {
            TF_WARN("Integer literal '%s' on line %d%s%s out of range, parsing "
                    "as double.  Consider exponential notation for large "
-                   "floating point values.", yytext, yyextra->menvaLineNo,
+                   "floating point values.", yytext, yyextra->sdfLineNo,
                    yyextra->fileContext.empty() ? "" : " in file ",
                    yyextra->fileContext.empty() ? "" :
                    yyextra->fileContext.c_str());

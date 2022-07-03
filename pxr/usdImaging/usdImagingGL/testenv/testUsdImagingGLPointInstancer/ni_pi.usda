@@ -1,0 +1,44 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def PointInstancer "PointInstancer"
+    {
+        float3[] extent = [(-6, 2, -1), (6, 4, 4)]
+        int[] protoIndices = [0, 0, 0]
+        point3f[] positions = [(0, 3, 0), (5, 3, 0), (-5, 3, 0)]
+        rel prototypes = [
+            </World/PointInstancer/prototypes/Model>,
+        ]
+        def "prototypes"
+        {
+            def "Model" (
+                instanceable = true
+                references = @ni_pi_variant.usda@</Root>
+                variants = {
+                    string modelingVariant = "VAR_S"
+                }
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "Prop"
+    {
+        def Xform "Model" (
+            instanceable = true
+            references = @ni_pi_variant.usda@</Root>
+            variants = {
+                string modelingVariant = "VAR_S"
+            }
+        )
+        {
+        }
+    }
+}
+
+

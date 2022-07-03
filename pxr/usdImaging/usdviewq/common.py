@@ -21,6 +21,10 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+
+# pylint: disable=round-builtin
+
+from __future__ import division
 from __future__ import print_function
 
 from .qt import QtCore, QtGui, QtWidgets
@@ -349,16 +353,43 @@ def GetPropertyColor(prop, frame, hasValue=None, hasAuthoredValue=None,
 
 # Gathers information about a layer used as a subLayer, including its
 # position in the layerStack hierarchy.
-class SubLayerInfo(object):
-    def __init__(self, sublayer, offset, containingLayer, prefix):
-        self.layer = sublayer
-        self.offset = offset
-        self.parentLayer = containingLayer
+class LayerInfo(object):
+    def __init__(self, layerOrIdentifier, offset, stage, parentLayer, prefix):
+        self._layer = layerOrIdentifier
+        self._offset = offset
+        self._stage = stage
+        self._parentLayer = parentLayer
         self._prefix = prefix
 
+    def GetIdentifier(self):
+        return self._layer if self.IsMuted() else self._layer.identifier
+
+    def GetRealPath(self):
+        if not self.IsMuted():
+            return self._layer.realPath
+
+        try:
+            resolver = Ar.GetResolver()
+            with Ar.ResolverContextBinder(self._stage.GetPathResolverContext()):
+                return resolver.Resolve(resolver.CreateIdentifier(
+                         self._layer, self._parentLayer.resolvedPath))\
+                         .GetPathString()
+        except Exception as e:
+            PrintWarning('Failed to resolve identifier {} '
+                         .format(self._layer), e)
+            return 'unknown'
+            
+    def IsMuted(self):
+        return bool(not isinstance(self._layer, Sdf.Layer))
+
+    def GetOffset(self):
+        return self._offset
+    
     def GetOffsetString(self):
-        o = self.offset.offset
-        s = self.offset.scale
+        if self._offset == None:
+            return '-'
+        o = self._offset.offset
+        s = self._offset.scale
         if o == 0:
             if s == 1:
                 return ""
@@ -370,13 +401,26 @@ class SubLayerInfo(object):
             return str.format("(offset = {0}; scale = {1})", o, s)
 
     def GetHierarchicalDisplayString(self):
-        return self._prefix + self.layer.GetDisplayName()
+        displayName = self._layer.GetDisplayName() \
+                        if not self.IsMuted() \
+                          else os.path.basename(self._layer)
+        return self._prefix + displayName
 
-def _AddSubLayers(layer, layerOffset, prefix, parentLayer, layers):
+def _AddSubLayers(stage, layer, layerOffset, prefix, parentLayer, layers):
     offsets = layer.subLayerOffsets
-    layers.append(SubLayerInfo(layer, layerOffset, parentLayer, prefix))
+    layers.append(LayerInfo(layer, layerOffset, stage, parentLayer, prefix))
+    prefixIncr = '    '
     for i, l in enumerate(layer.subLayerPaths):
-        offset = offsets[i] if offsets is not None and len(offsets) > i else Sdf.LayerOffset()
+        offset = offsets[i] if offsets is not None \
+                  and len(offsets) > i else Sdf.LayerOffset()
+        
+        if stage.IsLayerMuted(l):
+            # if the layer is muted it may not be Find-able so we supply
+            # the identifier instead and don't traverse any deeper.
+            layers.append(LayerInfo(l, offset, stage, layer,
+                                    prefix + prefixIncr))
+            continue
+        
         subLayer = Sdf.Layer.FindRelativeToLayer(layer, l)
         # Due to an unfortunate behavior of the Pixar studio resolver,
         # FindRelativeToLayer() may fail to resolve certain paths.  We will
@@ -387,17 +431,15 @@ def _AddSubLayers(layer, layerOffset, prefix, parentLayer, layers):
             subLayer = Sdf.Layer.Find(l)
 
         if subLayer:
-            # This gives a 'tree'-ish presentation, but it looks sad in
-            # a QTableWidget.  Just use spaces for now
-            # addedPrefix = "|-- " if parentLayer is None else "|    "
-            addedPrefix = "     "
-            _AddSubLayers(subLayer, offset, addedPrefix + prefix, layer, layers)
+            _AddSubLayers(stage, subLayer, offset, prefixIncr + prefix,
+                          layer, layers)
         else:
             print("Could not find layer " + l)
 
-def GetRootLayerStackInfo(layer):
+def GetRootLayerStackInfo(stage):
     layers = []
-    _AddSubLayers(layer, Sdf.LayerOffset(), "", None, layers)
+    _AddSubLayers(stage, stage.GetRootLayer(), Sdf.LayerOffset(),
+                  "", None, layers)
     return layers
 
 def PrettyFormatSize(sz):
@@ -426,16 +468,17 @@ class Timer(object):
        t.PrintTime("did some stuff")
     """
     def __enter__(self):
-        self._start = time.time()
+        self._stopwatch = Tf.Stopwatch()
+        self._stopwatch.Start()
         self.interval = 0
         return self
 
     def __exit__(self, *args):
-        self._end = time.time()
-        self.interval = self._end - self._start
+        self._stopwatch.Stop()
+        self.interval = self._stopwatch.seconds
 
     def PrintTime(self, action):
-        print("Time to %s: %2.3fs" % (action, self.interval))
+        print("Time to %s: %2.6fs" % (action, self.interval))
 
 
 class BusyContext(object):

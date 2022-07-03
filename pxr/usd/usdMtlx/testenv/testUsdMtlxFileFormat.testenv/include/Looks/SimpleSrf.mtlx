@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!-- Based on MaterialX SimpleSrf.mtlx example. -->
+<materialx version="1.38" cms="ocio" colorspace="lin_rec709">
+  <nodedef name="shader1" node="simple_srf">
+    <input name="diffColor" type="color3" value="0.18, 0.18, 0.18" />
+    <input name="specColor" type="color3" value="0.05, 0.05, 0.05" />
+    <input name="specRoughness" type="float" value="0.25" />
+    <input name="otherColor1" type="color3" value="0.1, 0.1, 0.1" uniform="true" />
+    <input name="otherColor2" type="color3" value="0.1, 0.1, 0.1" colorspace="acescg" uniform="true" />
+    <input name="otherColor3" type="color3" value="0.1, 0.1, 0.1" colorspace="lin_rec709" uniform="true" />
+    <output name="out" type="surfaceshader" />
+  </nodedef>
+  <nodedef name="shader2" node="simple_vol">
+    <input name="diffColor" type="color3" value="0.2, 0.2, 0.2" />
+    <input name="specColor" type="color3" value="0.75, 0.75, 0.75" />
+    <input name="specRoughness" type="float" value="0.05" />
+    <output name="out" type="volumeshader" />
+  </nodedef>
+</materialx>

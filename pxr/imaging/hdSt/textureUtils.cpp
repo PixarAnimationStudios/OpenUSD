@@ -28,6 +28,12 @@
 #include "pxr/base/gf/math.h"
 #include "pxr/base/trace/trace.h"
 
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/blitCmds.h"
+#include "pxr/imaging/hgi/blitCmdsOps.h"
+#include "pxr/imaging/hgi/capabilities.h"
+#include "pxr/imaging/hgi/texture.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -37,6 +43,26 @@ constexpr T
 _OpaqueAlpha() {
     return std::numeric_limits<T>::is_integer ?
         std::numeric_limits<T>::max() : T(1);
+}
+
+template<typename T>
+void
+_ConvertRGToRGBA(
+    const void * const src,
+    const size_t numTexels,
+    void * const dst)
+{
+    TRACE_FUNCTION();
+
+    const T * const typedSrc = reinterpret_cast<const T*>(src);
+    T * const typedDst = reinterpret_cast<T*>(dst);
+
+    for (size_t i = 0; i < numTexels; i++) {
+        typedDst[4 * i + 0] = typedSrc[2 * i + 0];
+        typedDst[4 * i + 1] = typedSrc[2 * i + 0];
+        typedDst[4 * i + 2] = typedSrc[2 * i + 0];
+        typedDst[4 * i + 3] = typedSrc[2 * i + 1];
+    }
 }
 
 template<typename T>
@@ -171,7 +197,7 @@ _GetHgiFormatAndConversion(
         case HioFormatUNorm8:
             return { HgiFormatUNorm8, nullptr };
         case HioFormatUNorm8Vec2:
-            return { HgiFormatUNorm8Vec2, nullptr };
+            return { HgiFormatUNorm8Vec4, _ConvertRGToRGBA<unsigned char> };
         case HioFormatUNorm8Vec3:
             // RGB (24bit) is not supported on MTL, so we need to
             // always convert it.
@@ -249,7 +275,7 @@ _GetHgiFormatAndConversion(
         case HioFormatUInt16:
             return { HgiFormatUInt16, nullptr };
         case HioFormatUInt16Vec2:
-            return { HgiFormatUInt16Vec2, nullptr };
+            return { HgiFormatUInt16Vec4, _ConvertRGToRGBA<uint16_t> };
         case HioFormatUInt16Vec3:
             // HgiFormatUInt16Vec3 exists but maps to MTLPixelFormatInvalid
             // on Metal because there is no corresponding pixel format in
@@ -533,6 +559,55 @@ HdStTextureUtils::ReadAndConvertImage(
     }
 
     return true;
+}
+
+HdStTextureUtils::AlignedBuffer<uint8_t>
+HdStTextureUtils::HgiTextureReadback(
+    Hgi * const hgi,
+    HgiTextureHandle const & texture,
+    size_t * bufferSize)
+{
+    if (!bufferSize) {
+        return AlignedBuffer<uint8_t>();
+    }
+
+    *bufferSize = 0;
+
+    if (!texture) {
+        return AlignedBuffer<uint8_t>();
+    }
+
+    const HgiTextureDesc& textureDesc = texture.Get()->GetDescriptor();
+    const size_t formatByteSize = HgiGetDataSizeOfFormat(textureDesc.format);
+    const size_t width = textureDesc.dimensions[0];
+    const size_t height = textureDesc.dimensions[1];
+    const size_t dataByteSize = width * height * formatByteSize;
+
+    if (dataByteSize == 0) {
+        return AlignedBuffer<uint8_t>();
+    }
+
+    // For Metal the CPU buffer has to be rounded up to a multiple of the page
+    // size.
+    const size_t alignment = hgi->GetCapabilities()->GetPageSizeAlignment();
+    const size_t bitMask = alignment - 1;
+    *bufferSize = (dataByteSize + bitMask) & (~bitMask);
+
+    uint8_t* rawBuffer = (uint8_t*)ArchAlignedAlloc(alignment, *bufferSize);
+    AlignedBuffer<uint8_t> buffer(rawBuffer);
+
+    HgiBlitCmdsUniquePtr const blitCmds = hgi->CreateBlitCmds();
+    HgiTextureGpuToCpuOp copyOp;
+    copyOp.gpuSourceTexture = texture;
+    copyOp.sourceTexelOffset = GfVec3i(0);
+    copyOp.mipLevel = 0;
+    copyOp.cpuDestinationBuffer = rawBuffer;
+    copyOp.destinationByteOffset = 0;
+    copyOp.destinationBufferByteSize = *bufferSize;
+    blitCmds->CopyTextureGpuToCpu(copyOp);
+    hgi->SubmitCmds(blitCmds.get(), HgiSubmitWaitTypeWaitUntilCompleted);
+
+    return buffer;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

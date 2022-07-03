@@ -34,8 +34,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdLux_DiscoveryPlugin
 ///
-/// Discovers nodes for corresponding concrete light and light filter types that
-/// come from derived UsdLuxLight and UsdLuxLightFilter schema classes.
+/// Discovers nodes for corresponding concrete light types that are defined in 
+/// the UsdLux library.
 ///
 class UsdLux_DiscoveryPlugin : public NdrDiscoveryPlugin {
 public:

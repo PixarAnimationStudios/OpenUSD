@@ -1,0 +1,71 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Xform "ProtoRed"
+{
+    token visibility = "invisible"
+
+    def Cube "cube"
+    {
+        color3f[] primvars:displayColor = [(1, 0, 0)]
+    }
+}
+
+def Xform "ProtoGreen"
+{
+    token visibility = "invisible"
+
+    def Cube "cube"
+    {
+        color3f[] primvars:displayColor = [(0, 1, 0)]
+    }
+}
+
+def Xform "Cube"
+{
+    def PointInstancer "Instancer"
+    {
+        float3[] extent = [(-1, -1, -1), (6, 1, 1)]
+        point3f[] positions = [(0, 0, 0), (2.5, 0, 0), (5, 0, 0)]
+        int[] protoIndices = [0, 1, 1]
+        rel prototypes = [
+            </Cube/Instancer/Protos/Proto1>,
+            </Cube/Instancer/Protos/Proto2>,
+        ]
+
+        def "Protos"
+        {
+            rel material:binding = </PreviewSurface>
+
+            def "Proto1" (
+                instanceable = true
+                references = </ProtoRed>
+            )
+            {
+                token visibility = "visible"
+            }
+
+            def Xform "Proto2" (
+                instanceable = true
+                references = </ProtoGreen>
+            )
+            {
+                token visibility = "visible"
+            }
+        }
+    }
+}
+
+def Material "PreviewSurface"
+{
+    token outputs:surface.connect = </PreviewSurface/Shader.outputs:surface>
+
+    def Shader "Shader"
+    {
+        uniform token info:id = "UsdPreviewSurface"
+        color3f inputs:diffuseColor = (0, 0.5, 0.5)
+        token outputs:surface
+    }
+}

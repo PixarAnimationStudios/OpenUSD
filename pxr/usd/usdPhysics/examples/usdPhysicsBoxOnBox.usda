@@ -1,0 +1,59 @@
+#usda 1.0
+#Very basic example for using the Physics USD schema.
+#Should show a box shaped rigid body that will fall on a flat 
+#static box when simulated.
+(
+    defaultPrim = "World"
+    endTimeCode = 100
+    metersPerUnit = 0.01
+    startTimeCode = 0
+    timeCodesPerSecond = 24
+    upAxis = "Z"
+    #new mass scaling
+    kilogramsPerUnit = 1.0
+)
+def Xform "World"
+{
+    #Scene mandatory for simulation.  If rigid bodies don't explicitly
+    #specify a scene, they implicitly belong to this one.
+    #by default, the scene will have earth gravity.
+    def PhysicsScene "PhysicsScene"
+    {
+    }
+    #This cube becomes a rigid body and a collider thanks to two applied 
+    #schemas.
+    def Cube "BoxActor" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI"]
+    )
+    {
+        #optional non zero starting velocities.  
+        #All other physics behavior is left at defaults.
+        vector3f physics:velocity = (2, 1, 2)
+        vector3f physics:angularVelocity = (1, 0, 0)
+        color3f[] primvars:displayColor = [(0.2784314, 0.4117647, 1)]
+        double size = 25
+        double3 xformOp:translate = (0, 0, 500)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    #This cube becomes a static ground box because it only has a collider
+    #but no rigid body.
+    def Cube "Ground" (
+        prepend apiSchemas = ["PhysicsCollisionAPI"]
+    )
+    {
+        color3f[] primvars:displayColor = [(0.5, 0.5, 0.5)]
+        #scale the cube to be flat
+        float3 xformOp:scale = (750, 750, 10)
+        uniform token[] xformOpOrder = ["xformOp:scale"]
+    }
+    #Just to make this scene render pretty, not relevant for physics
+    def SphereLight "SphereLight"
+    {
+        float intensity = 30000
+        float radius = 150
+        double3 xformOp:translate = (650, 0, 1150)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+

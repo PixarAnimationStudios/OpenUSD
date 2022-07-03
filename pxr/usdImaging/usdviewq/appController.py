@@ -22,6 +22,9 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+# pylint: disable=round-builtin
+
+from __future__ import division
 from __future__ import print_function
 
 # Qt Components
@@ -55,7 +58,8 @@ from .primTreeWidget import PrimTreeWidget, PrimViewColumnIndex
 from .primViewItem import PrimViewItem
 from .variantComboBox import VariantComboBox
 from .legendUtil import ToggleLegendWithBrowser
-from . import prettyPrint, adjustClipping, adjustDefaultMaterial, preferences, settings
+from . import (prettyPrint, adjustFreeCamera, adjustDefaultMaterial,
+               preferences, settings)
 from .selectionDataModel import ALL_INSTANCES, SelectionDataModel
 
 # Common Utilities
@@ -70,7 +74,7 @@ from .common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
                      PropTreeWidgetTypeIsRel, PrimNotFoundException,
                      GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
                      GetPrimsLoadability, ClearColors,
-                     HighlightColors, KeyboardShortcuts)
+                     HighlightColors, KeyboardShortcuts, PrintWarning)
 
 from . import settings2
 from .settings2 import StateSource
@@ -277,8 +281,6 @@ class MainWindow(QtWidgets.QMainWindow):
         
 class AppController(QtCore.QObject):
 
-    HYDRA_DISABLED_OPTION_STRING = "HydraDisabled"
-
     ###########
     # Signals #
     ###########
@@ -346,11 +348,11 @@ class AppController(QtCore.QObject):
         smallFontSizeStr = "%spt" % str(smallSize)
 
         # Apply the style sheet to it
-        sheet = open(os.path.join(resourceDir, 'usdviewstyle.qss'), 'r')
-        sheetString = sheet.read() % {
-            'RESOURCE_DIR'  : resourceDir,
-            'BASE_FONT_SZ'  : baseFontSizeStr,
-            'SMALL_FONT_SZ' : smallFontSizeStr}
+        with open(os.path.join(resourceDir, 'usdviewstyle.qss'), 'r') as sheet:
+            sheetString = sheet.read() % {
+                'RESOURCE_DIR'  : resourceDir,
+                'BASE_FONT_SZ'  : baseFontSizeStr,
+                'SMALL_FONT_SZ' : smallFontSizeStr}
 
         app = QtWidgets.QApplication.instance()
         app.setStyleSheet(sheetString)
@@ -397,14 +399,11 @@ class AppController(QtCore.QObject):
             # be restored later.
             self._viewerModeEscapeSizes = None
 
-            self._rendererNameOpt = parserData.renderer
-
-            if self._rendererNameOpt:
-                if self._rendererNameOpt == \
-                            AppController.HYDRA_DISABLED_OPTION_STRING:
-                    os.environ['HD_ENABLED'] = '0'
-                else:
-                    os.environ['HD_DEFAULT_RENDERER'] = self._rendererNameOpt
+            if parserData.rendererPlugin == \
+                  UsdAppUtils.rendererArgs.HYDRA_DISABLED_OPTION_STRING:
+                os.environ['HD_ENABLED'] = '0'
+            elif parserData.rendererPlugin:
+                os.environ['HD_DEFAULT_RENDERER'] = parserData.rendererPlugin
 
             self._openSettings2(parserData.defaultSettings)
 
@@ -431,6 +430,7 @@ class AppController(QtCore.QObject):
             # statusBar saves considerable GUI configuration time.
             self._mainWindow.show()
             self._mainWindow.setFocus()
+            self._mainWindow.activateWindow()
             
             # Install our custom event filter.  The member assignment of the
             # filter is just for lifetime management
@@ -445,11 +445,10 @@ class AppController(QtCore.QObject):
             self._usdviewApi = UsdviewApi(self)
             if not self._noPlugins:
                 self._configurePlugins()
-
             # read the stage here
             stage = self._openStage(
                 self._parserData.usdFile, self._parserData.sessionLayer,
-                self._parserData.populationMask)
+                self._parserData.populationMask, self._parserData.muteLayersRe)
             if not stage:
                 sys.exit(0)
 
@@ -650,6 +649,10 @@ class AppController(QtCore.QObject):
                 self._ui.actionOpenColorIO)
             for action in self._colorCorrectionActions:
                 self._ui.colorCorrectionActionGroup.addAction(action)
+            # OCIO menu items are populated in _configureColorManagement()
+            self._ui.ocioDisplayMenus = []
+            self._ui.ocioColorSpacesActionGroup = None
+            self._ui.ocioLooksActionGroup = None
 
             # XXX This should be a validator in ViewSettingsDataModel.
             if self._dataModel.viewSettings.renderMode not in RenderModes:
@@ -837,8 +840,8 @@ class AppController(QtCore.QObject):
                 self._ui.actionAuto_Compute_Clipping_Planes.triggered.connect(
                     self._toggleAutoComputeClippingPlanes)
 
-            self._ui.actionAdjust_Clipping.triggered[bool].connect(
-                self._adjustClippingPlanes)
+            self._ui.actionAdjust_Free_Camera.triggered[bool].connect(
+                self._adjustFreeCamera)
 
             self._ui.actionAdjust_Default_Material.triggered[bool].connect(
                 self._adjustDefaultMaterial)
@@ -876,8 +879,6 @@ class AppController(QtCore.QObject):
             self._ui.actionReload_All_Layers.triggered.connect(self._reloadStage)
 
             self._ui.actionToggle_Framed_View.triggered.connect(self._toggleFramedView)
-
-            self._ui.actionAdjust_FOV.triggered.connect(self._adjustFOV)
 
             self._ui.complexityGroup = QtWidgets.QActionGroup(self._mainWindow)
             self._ui.complexityGroup.setExclusive(True)
@@ -942,7 +943,7 @@ class AppController(QtCore.QObject):
             self._ui.renderModeActionGroup.triggered.connect(self._changeRenderMode)
 
             self._ui.colorCorrectionActionGroup.triggered.connect(
-                self._changeColorCorrection)
+                lambda mode: self._changeColorCorrection(str(mode.text())))
 
             self._ui.pickModeActionGroup.triggered.connect(self._changePickMode)
 
@@ -1169,7 +1170,43 @@ class AppController(QtCore.QObject):
         if self._printTiming:
             t.PrintTime("'%s'" % msg)
 
-    def _openStage(self, usdFilePath, sessionFilePath, populationMaskPaths):
+    def _applyStageOpenLayerMutes(self, stage, muteLayersRe):
+        # note this function should only be called once, during _openStage().
+        if not muteLayersRe:
+            return
+        
+        def _MuteMatchingLayers():
+            layersToMute = []
+            for layer in stage.GetUsedLayers():
+                if matcher.search(layer.identifier):
+                    print('(usdview) Muting layer {}'.format(layer.identifier))
+                    layersToMute.append(layer.identifier)
+            if layersToMute:
+                stage.MuteAndUnmuteLayers(layersToMute, [])
+
+        try:
+            pattern = '|'.join(x[0] for x in muteLayersRe)
+            # fix up bad input on the users behalf since any leading, trailing
+            # or duplicate | operators result in a match for every layer and
+            # thus break the stage.
+            pattern =  re.sub('^\||(?<=\|)\|+|\|$', '', pattern)
+            if not pattern:
+                return
+            matcher = re.compile(pattern)
+        except:
+            PrintWarning('Ignoring invalid mute layers regular '
+                         'expression(s):', muteLayersRe)
+            return
+        
+        _MuteMatchingLayers()
+        if not self._unloaded:
+            stage.Load()
+            # second pass in order to mute additional 
+            # layers populated after loading
+            _MuteMatchingLayers()
+            
+    def _openStage(self, usdFilePath, sessionFilePath,
+                   populationMaskPaths, muteLayersRe):
 
         def _GetFormattedError(reasons=None):
             err = ("Error: Unable to open stage '{0}'\n".format(usdFilePath))
@@ -1185,7 +1222,8 @@ class AppController(QtCore.QObject):
             Tf.MallocTag.Initialize()
 
         with Timer() as t:
-            loadSet = Usd.Stage.LoadNone if self._unloaded else Usd.Stage.LoadAll
+            loadSet = Usd.Stage.LoadNone if (self._unloaded or muteLayersRe) \
+                                         else Usd.Stage.LoadAll
             popMask = (None if populationMaskPaths is None else
                        Usd.StagePopulationMask())
 
@@ -1223,6 +1261,8 @@ class AppController(QtCore.QObject):
                                        sessionLayer,
                                        self._resolverContextFn(usdFilePath), 
                                        loadSet)
+
+            self._applyStageOpenLayerMutes(stage, muteLayersRe)
 
         if not stage:
             sys.stderr.write(_GetFormattedError())
@@ -1362,19 +1402,6 @@ class AppController(QtCore.QObject):
         self._dataModel._clearCaches()
 
         self._refreshCameraListAndMenu(preserveCurrCamera = preserveCamera)
-
-    @staticmethod
-    def GetRendererOptionChoices():
-        ids = UsdImagingGL.Engine.GetRendererPlugins()
-        choices = []
-        if ids:
-            choices = [UsdImagingGL.Engine.GetRendererDisplayName(x) 
-                        for x in ids]
-            choices.append(AppController.HYDRA_DISABLED_OPTION_STRING)
-        else:
-            choices = [AppController.HYDRA_DISABLED_OPTION_STRING]
-
-        return choices
 
     # Render plugin support
     def _rendererPluginChanged(self, plugin):
@@ -1666,10 +1693,112 @@ class AppController(QtCore.QObject):
             self._ui.actionStop.setChecked(self._stopped and
                 self._stageView.IsStopRendererSupported())
 
+    def _disableOCIOAction(self):
+        for action in self._ui.colorCorrectionActionGroup.actions():
+            if action is self._ui.actionOpenColorIO:
+                action.setEnabled(False)
+
     def _configureColorManagement(self):
         enableMenu = (not self._noRender and 
                       UsdImagingGL.Engine.IsColorCorrectionCapable())
         self._ui.menuColorCorrection.setEnabled(enableMenu)
+
+        # Usage of OCIO is driven by the OCIO env var.
+        # * Disable OCIO color management option if env var isn't set.
+        # * Populate the OCIO menu items iff PyOpenColorIO module and
+        #   a valid config file was found.
+        if not os.environ.get('OCIO'):
+            self._disableOCIOAction()
+            return
+
+        try:
+            import PyOpenColorIO as OCIO
+        except ImportError as e:
+            PrintWarning(
+                "Could not import PyOpenColorIO. OCIO may be configured via the"
+                "interpreter and will fallback to the default display, view "
+                "and color space.", e)
+            # NOTE: This only disallows population of the OCIO menu in usdview.
+            # The OCIO plugin may be enabled, so we don't disable OCIO here.
+            return
+        
+        try:
+            config = OCIO.GetCurrentConfig()
+        except Exception as e:
+            PrintWarning("OpenColorIO: ", e)
+            # Fallback to sRGB if a valid config wasn't found.
+            self._disableOCIOAction()
+            if self._dataModel.viewSettings.colorCorrectionMode ==\
+                    ColorCorrectionModes.OPENCOLORIO:
+                self._dataModel.viewSettings.colorCorrectionMode =\
+                    ColorCorrectionModes.SRGB
+            return
+        
+        def addAction(menu, name):
+            action = menu.addAction(name)
+            action.setCheckable(True)
+            return action
+
+        def setColorSpace(action):
+            self._dataModel.viewSettings.setOcioSettings(\
+                colorSpace = str(action.text()))
+            self._dataModel.viewSettings.colorCorrectionMode =\
+                ColorCorrectionModes.OPENCOLORIO
+
+        def setOcioConfig(action):
+            display = str(action.parent().title())
+            view = str(action.text())
+            colorSpace = config.getDisplayColorSpaceName(display, view)
+            self._dataModel.viewSettings.setOcioSettings(colorSpace,\
+                display, view)
+            self._dataModel.viewSettings.colorCorrectionMode =\
+                ColorCorrectionModes.OPENCOLORIO
+
+        def addLabelSeparator(text, parent):
+            label = QtWidgets.QLabel(text)
+            label.setAlignment(QtCore.Qt.AlignCenter)
+            labelAction = QtWidgets.QWidgetAction(parent)
+            labelAction.setDefaultWidget(label)
+            parent.addAction(labelAction)
+
+        ocioMenu = QtWidgets.QMenu('OCIO Config')
+
+        # Displays & Views
+        displays = config.getDisplays()
+        if displays:
+            addLabelSeparator("<i> Displays </i>", ocioMenu)
+            for d in displays:
+                displayMenu = QtWidgets.QMenu(d)
+                group = QtWidgets.QActionGroup(displayMenu)
+                group.setExclusive(True)
+
+                for v in config.getViews(d):
+                    a = addAction(displayMenu, v)
+                    group.addAction(a)
+                group.triggered.connect(setOcioConfig)
+                ocioMenu.addMenu(displayMenu)
+                self._ui.ocioDisplayMenus.append(displayMenu)
+
+        # Colorspaces
+        colorSpaces = config.getColorSpaces()
+        if colorSpaces:
+            ocioMenu.addSeparator()
+            addLabelSeparator("<i> Colorspaces </i>", ocioMenu)
+            group = QtWidgets.QActionGroup(ocioMenu)
+            group.setExclusive(True)
+            for cs in colorSpaces:
+                colorSpace = cs.getName()
+                a = addAction(ocioMenu, colorSpace)
+                group.addAction(a)
+            group.triggered.connect(setColorSpace)
+            self._ui.ocioColorSpacesActionGroup = group
+
+        # TODO Populate looks menu (config.getLooks())
+
+        self._ui.menuColorCorrection.addMenu(ocioMenu)
+        # Since this method is called from _drawFirstImage, refresh UI to
+        # account for view settings.
+        self._refreshColorCorrectionModeMenu()
 
     # Topology-dependent UI changes
     def _reloadVaryingUI(self):
@@ -1865,25 +1994,21 @@ class AppController(QtCore.QObject):
         """Update the complexity from a selected QAction."""
         self._setComplexity(RefinementComplexities.fromName(action.text()))
 
-    def _adjustFOV(self):
-        fov = QtWidgets.QInputDialog.getDouble(self._mainWindow, "Adjust FOV",
-            "Enter a value between 0 and 180", self._dataModel.viewSettings.freeCameraFOV, 0, 180)
-        if (fov[1]):
-            self._dataModel.viewSettings.freeCameraFOV = fov[0]
-
-    def _adjustClippingPlanes(self, checked):
+    def _adjustFreeCamera(self, checked):
         # Eventually, this will not be accessible when _stageView is None.
         # Until then, silently ignore.
         if self._stageView:
             if (checked):
-                self._adjustClippingDlg = adjustClipping.AdjustClipping(self._mainWindow,
-                                                                     self._stageView)
-                self._adjustClippingDlg.finished.connect(
-                    lambda status : self._ui.actionAdjust_Clipping.setChecked(False))
+                self._adjustFreeCameraDlg = adjustFreeCamera.AdjustFreeCamera(
+                    self._mainWindow, self._dataModel,
+                    self._stageView.signalFrustumChanged)
+                self._adjustFreeCameraDlg.finished.connect(
+                    lambda status :
+                    self._ui.actionAdjust_Free_Camera.setChecked(False))
 
-                self._adjustClippingDlg.show()
+                self._adjustFreeCameraDlg.show()
             else:
-                self._adjustClippingDlg.close()
+                self._adjustFreeCameraDlg.close()
 
     def _adjustDefaultMaterial(self, checked):
         if (checked):
@@ -2315,21 +2440,32 @@ class AppController(QtCore.QObject):
             self._viewerModeEscapeSizes = None
 
     def _toggleViewerMode(self):
+        self.setViewerMode(not self.isViewerMode())
+
+    def isViewerMode(self):
+        """Returns True if the extra UI around the stage view is collapsed."""
         topHeight, bottomHeight = self._ui.topBottomSplitter.sizes()
         primViewWidth, stageViewWidth = self._ui.primStageSplitter.sizes()
-        if bottomHeight > 0 or primViewWidth > 0:
+        return bottomHeight <= 0 and primViewWidth <= 0        
+
+    def setViewerMode(self, viewerMode):
+        """Sets whether the UI should be displayed in viewer mode, where the
+        extra UI around the stage view is collapsed."""
+        topHeight, bottomHeight = self._ui.topBottomSplitter.sizes()
+        primViewWidth, stageViewWidth = self._ui.primStageSplitter.sizes()
+        if viewerMode:
             topHeight += bottomHeight
             bottomHeight = 0
             stageViewWidth += primViewWidth
             primViewWidth = 0
+        elif self._viewerModeEscapeSizes is not None:
+            topHeight, bottomHeight, primViewWidth, stageViewWidth = \
+                self._viewerModeEscapeSizes
         else:
-            if self._viewerModeEscapeSizes is not None:
-                topHeight, bottomHeight, primViewWidth, stageViewWidth = self._viewerModeEscapeSizes
-            else:
-                bottomHeight = UIDefaults.BOTTOM_HEIGHT
-                topHeight = UIDefaults.TOP_HEIGHT
-                primViewWidth = UIDefaults.PRIM_VIEW_WIDTH
-                stageViewWidth = UIDefaults.STAGE_VIEW_WIDTH
+            bottomHeight = UIDefaults.BOTTOM_HEIGHT
+            topHeight = UIDefaults.TOP_HEIGHT
+            primViewWidth = UIDefaults.PRIM_VIEW_WIDTH
+            stageViewWidth = UIDefaults.STAGE_VIEW_WIDTH
         self._ui.topBottomSplitter.setSizes([topHeight, bottomHeight])
         self._ui.primStageSplitter.setSizes([primViewWidth, stageViewWidth])
 
@@ -2369,7 +2505,7 @@ class AppController(QtCore.QObject):
         self._dataModel.viewSettings.renderMode = str(mode.text())
 
     def _changeColorCorrection(self, mode):
-        self._dataModel.viewSettings.colorCorrectionMode = str(mode.text())
+        self._dataModel.viewSettings.colorCorrectionMode = mode
 
     def _changePickMode(self, mode):
         self._dataModel.viewSettings.pickMode = str(mode.text())
@@ -2521,10 +2657,11 @@ class AppController(QtCore.QObject):
 
         return windowShot
 
-    def GrabViewportShot(self):
+    def GrabViewportShot(self, cropToAspectRatio=False):
         '''Returns a QImage of the current stage view in usdview.'''
         if self._stageView:
-            return self._stageView.grabFrameBuffer()
+            return self._stageView.grabFrameBuffer(
+                cropToAspectRatio=cropToAspectRatio)
         else:
             return None
 
@@ -2693,7 +2830,7 @@ class AppController(QtCore.QObject):
             self._closeStage()
             stage = self._openStage(
                 self._parserData.usdFile, self._parserData.sessionLayer,
-                self._parserData.populationMask)
+                self._parserData.populationMask, self._parserData.muteLayersRe)
             # We need this for layers which were cached in memory but changed on
             # disk. The additional Reload call should be cheap when nothing
             # actually changed.
@@ -4078,7 +4215,7 @@ class AppController(QtCore.QObject):
 
             item.setExpanded(True)
             item.setToolTip(0, layer.identifier)
-            if not spec:
+            if not spec or not node.CanContributeSpecs():
                 for i in range(item.columnCount()):
                     item.setForeground(i, UIPropertyValueSourceColors.NONE)
             for subtree in layerTree.childTrees:
@@ -4119,30 +4256,36 @@ class AppController(QtCore.QObject):
 
         path = obj.GetPath()
 
+        mutedLayerColor = QtGui.QColor(151, 151, 151)
+                
         # The pseudoroot is different enough from prims and properties that
         # it makes more sense to process it separately
         if path == Sdf.Path.absoluteRootPath:
-            layers = GetRootLayerStackInfo(
-                self._dataModel.stage.GetRootLayer())
+            layers = GetRootLayerStackInfo(self._dataModel.stage)
             tableWidget.setColumnCount(2)
             tableWidget.horizontalHeaderItem(1).setText('Layer Offset')
 
             tableWidget.setRowCount(len(layers))
 
             for i, layer in enumerate(layers):
-                layerItem = QtWidgets.QTableWidgetItem(layer.GetHierarchicalDisplayString())
-                layerItem.layerPath = layer.layer.realPath
-                layerItem.identifier = layer.layer.identifier
+                layerItem = QtWidgets.QTableWidgetItem(
+                              layer.GetHierarchicalDisplayString())
+                layerItem.stage = self._dataModel.stage
+                layerItem.layerPath = layer.GetRealPath()
+                layerItem.identifier = layer.GetIdentifier()
                 toolTip = "<b>identifier:</b> @%s@ <br> <b>resolved path:</b> %s" % \
-                    (layer.layer.identifier, layerItem.layerPath)
+                           (layerItem.identifier, layerItem.layerPath)
                 toolTip = self._limitToolTipSize(toolTip)
                 layerItem.setToolTip(toolTip)
+                if layer.IsMuted():
+                    layerItem.setForeground(QtGui.QBrush(mutedLayerColor))
                 tableWidget.setItem(i, 0, layerItem)
 
                 offsetItem = QtWidgets.QTableWidgetItem(layer.GetOffsetString())
-                offsetItem.layerPath = layer.layer.realPath
-                offsetItem.identifier = layer.layer.identifier
-                toolTip = self._limitToolTipSize(str(layer.offset))
+                offsetItem.stage = layerItem.stage
+                offsetItem.layerPath = layerItem.layerPath
+                offsetItem.identifier = layerItem.identifier
+                toolTip = self._limitToolTipSize(str(layer.GetOffset))
                 offsetItem.setToolTip(toolTip)
                 tableWidget.setItem(i, 1, offsetItem)
 
@@ -4160,9 +4303,10 @@ class AppController(QtCore.QObject):
                 prop = obj.GetPrim().GetProperty(path.name)
                 specs = prop.GetPropertyStack(self._dataModel.currentFrame)
                 c3 = "Value" if (len(specs) == 0 or
-                                 isinstance(specs[0], Sdf.AttributeSpec)) else "Target Paths"
+                               isinstance(specs[0], Sdf.AttributeSpec)) \
+                                 else "Target Paths"
                 tableWidget.setHorizontalHeaderItem(2,
-                                                    QtWidgets.QTableWidgetItem(c3))
+                                                 QtWidgets.QTableWidgetItem(c3))
             else:
                 specs = obj.GetPrim().GetPrimStack()
                 tableWidget.setHorizontalHeaderItem(2,
@@ -4204,9 +4348,12 @@ class AppController(QtCore.QObject):
                 # Add the data the context menu needs
                 for j in range(3):
                     item = tableWidget.item(i, j)
+                    item.stage = self._dataModel.stage
                     item.layerPath = spec.layer.realPath
                     item.path = spec.path.pathString
                     item.identifier = spec.layer.identifier
+                    if self._dataModel.stage.IsLayerMuted(item.identifier):
+                        item.setForeground(QtGui.QBrush(mutedLayerColor))
 
     def _isHUDVisible(self):
         """Checks if the upper HUD is visible by looking at the global HUD
@@ -4896,9 +5043,22 @@ class AppController(QtCore.QObject):
                 str(action.text()) == self._dataModel.viewSettings.renderMode)
 
     def _refreshColorCorrectionModeMenu(self):
+        # Color correction mode
         for action in self._colorCorrectionActions:
             action.setChecked(
                 str(action.text()) == self._dataModel.viewSettings.colorCorrectionMode)
+
+        # OCIO menu
+        def setChecked(action, text):
+            action.setChecked(str(action.text()) == text)
+
+        for menu in self._ui.ocioDisplayMenus:
+            for viewAction in menu.actions():
+                setChecked(viewAction, self._dataModel.viewSettings.ocioSettings.view)
+        
+        if self._ui.ocioColorSpacesActionGroup:
+            for csAction in self._ui.ocioColorSpacesActionGroup.actions():
+                setChecked(csAction, self._dataModel.viewSettings.ocioSettings.colorSpace)
 
     def _refreshPickModeMenu(self):
         for action in self._pickModeActions:

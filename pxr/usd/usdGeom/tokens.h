@@ -76,7 +76,7 @@ struct UsdGeomTokensType {
     const TfToken angularVelocities;
     /// \brief "axis"
     /// 
-    /// UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder
+    /// UsdGeomPlane, UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder
     const TfToken axis;
     /// \brief "basis"
     /// 
@@ -184,7 +184,7 @@ struct UsdGeomTokensType {
     const TfToken default_;
     /// \brief "doubleSided"
     /// 
-    /// UsdGeomGprim
+    /// UsdGeomPlane, UsdGeomGprim
     const TfToken doubleSided;
     /// \brief "edgeAndCorner"
     /// 
@@ -208,7 +208,7 @@ struct UsdGeomTokensType {
     const TfToken exposure;
     /// \brief "extent"
     /// 
-    /// UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder, UsdGeomSphere, UsdGeomCube, UsdGeomBoundable
+    /// UsdGeomPlane, UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder, UsdGeomSphere, UsdGeomCube, UsdGeomBoundable
     const TfToken extent;
     /// \brief "extentsHint"
     /// 
@@ -258,6 +258,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomImageable::GetPurposeAttr()
     const TfToken guide;
+    /// \brief "guideVisibility"
+    /// 
+    /// UsdGeomVisibilityAPI
+    const TfToken guideVisibility;
     /// \brief "height"
     /// 
     /// UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder
@@ -292,7 +296,7 @@ struct UsdGeomTokensType {
     const TfToken indices;
     /// \brief "inherited"
     /// 
-    /// Possible value for UsdGeomModelAPI::GetModelDrawModeAttr(), Default value for UsdGeomModelAPI::GetModelDrawModeAttr(), Possible value for UsdGeomImageable::GetVisibilityAttr(), Default value for UsdGeomImageable::GetVisibilityAttr()
+    /// Possible value for UsdGeomModelAPI::GetModelDrawModeAttr(), Default value for UsdGeomModelAPI::GetModelDrawModeAttr(), Possible value for UsdGeomVisibilityAPI::GetGuideVisibilityAttr(), Possible value for UsdGeomVisibilityAPI::GetProxyVisibilityAttr(), Default value for UsdGeomVisibilityAPI::GetProxyVisibilityAttr(), Possible value for UsdGeomVisibilityAPI::GetRenderVisibilityAttr(), Default value for UsdGeomVisibilityAPI::GetRenderVisibilityAttr(), Possible value for UsdGeomImageable::GetVisibilityAttr(), Default value for UsdGeomImageable::GetVisibilityAttr()
     const TfToken inherited;
     /// \brief "interpolateBoundary"
     /// 
@@ -304,7 +308,7 @@ struct UsdGeomTokensType {
     const TfToken interpolation;
     /// \brief "invisible"
     /// 
-    /// Possible value for UsdGeomImageable::GetVisibilityAttr()
+    /// Possible value for UsdGeomVisibilityAPI::GetGuideVisibilityAttr(), Default value for UsdGeomVisibilityAPI::GetGuideVisibilityAttr(), Possible value for UsdGeomVisibilityAPI::GetProxyVisibilityAttr(), Possible value for UsdGeomVisibilityAPI::GetRenderVisibilityAttr(), Possible value for UsdGeomImageable::GetVisibilityAttr()
     const TfToken invisible;
     /// \brief "invisibleIds"
     /// 
@@ -322,6 +326,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomGprim::GetOrientationAttr()
     const TfToken leftHanded;
+    /// \brief "length"
+    /// 
+    /// UsdGeomPlane
+    const TfToken length;
     /// \brief "linear"
     /// 
     /// Possible value for UsdGeomBasisCurves::GetTypeAttr()
@@ -378,6 +386,14 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomCamera::GetStereoRoleAttr(), Default value for UsdGeomCamera::GetStereoRoleAttr()
     const TfToken mono;
+    /// \brief "motion:blurScale"
+    /// 
+    /// UsdGeomMotionAPI
+    const TfToken motionBlurScale;
+    /// \brief "motion:nonlinearSampleCount"
+    /// 
+    /// UsdGeomMotionAPI
+    const TfToken motionNonlinearSampleCount;
     /// \brief "motion:velocityScale"
     /// 
     /// UsdGeomMotionAPI
@@ -486,6 +502,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomImageable
     const TfToken proxyPrim;
+    /// \brief "proxyVisibility"
+    /// 
+    /// UsdGeomVisibilityAPI
+    const TfToken proxyVisibility;
     /// \brief "purpose"
     /// 
     /// UsdGeomImageable
@@ -502,6 +522,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomImageable::GetPurposeAttr()
     const TfToken render;
+    /// \brief "renderVisibility"
+    /// 
+    /// UsdGeomVisibilityAPI
+    const TfToken renderVisibility;
     /// \brief "right"
     /// 
     /// Possible value for UsdGeomCamera::GetStereoRoleAttr()
@@ -638,6 +662,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomImageable
     const TfToken visibility;
+    /// \brief "visible"
+    /// 
+    /// Possible value for UsdGeomVisibilityAPI::GetGuideVisibilityAttr(), Possible value for UsdGeomVisibilityAPI::GetProxyVisibilityAttr(), Possible value for UsdGeomVisibilityAPI::GetRenderVisibilityAttr()
+    const TfToken visible;
     /// \brief "vKnots"
     /// 
     /// UsdGeomNurbsPatch
@@ -654,6 +682,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomNurbsPatch
     const TfToken vVertexCount;
+    /// \brief "width"
+    /// 
+    /// UsdGeomPlane
+    const TfToken width;
     /// \brief "widths"
     /// 
     /// UsdGeomPoints, UsdGeomCurves
@@ -664,7 +696,7 @@ struct UsdGeomTokensType {
     const TfToken wrap;
     /// \brief "X"
     /// 
-    /// Possible value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCylinder::GetAxisAttr()
+    /// Possible value for UsdGeomPlane::GetAxisAttr(), Possible value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCylinder::GetAxisAttr()
     const TfToken x;
     /// \brief "xformOpOrder"
     /// 
@@ -672,11 +704,11 @@ struct UsdGeomTokensType {
     const TfToken xformOpOrder;
     /// \brief "Y"
     /// 
-    /// Possible value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCylinder::GetAxisAttr()
+    /// Possible value for UsdGeomPlane::GetAxisAttr(), Possible value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCylinder::GetAxisAttr()
     const TfToken y;
     /// \brief "Z"
     /// 
-    /// Possible value for UsdGeomCone::GetAxisAttr(), Default value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Default value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCylinder::GetAxisAttr(), Default value for UsdGeomCylinder::GetAxisAttr()
+    /// Possible value for UsdGeomPlane::GetAxisAttr(), Default value for UsdGeomPlane::GetAxisAttr(), Possible value for UsdGeomCone::GetAxisAttr(), Default value for UsdGeomCone::GetAxisAttr(), Possible value for UsdGeomCapsule::GetAxisAttr(), Default value for UsdGeomCapsule::GetAxisAttr(), Possible value for UsdGeomCylinder::GetAxisAttr(), Default value for UsdGeomCylinder::GetAxisAttr()
     const TfToken z;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

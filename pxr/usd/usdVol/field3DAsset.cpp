@@ -75,13 +75,9 @@ UsdVolField3DAsset::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdVolField3DAsset::_GetSchemaKind() const {
+UsdSchemaKind UsdVolField3DAsset::_GetSchemaKind() const
+{
     return UsdVolField3DAsset::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdVolField3DAsset::_GetSchemaType() const {
-    return UsdVolField3DAsset::schemaType;
 }
 
 /* static */

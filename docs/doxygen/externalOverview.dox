@@ -194,6 +194,12 @@ modules that layer on top of the core.  In low-to-high order, the modules are:
   of the schema classes are produced entirely via the \em usdGenSchema code
   generator included with the core.
 
+- \ref usdPhysics_page_front : The primary physics-supporting schema module, 
+  UsdPhysics provides physics description of the USD prims (rigid bodies, 
+  joints, scenes, collisions, etc.). Physics schema also defines physics 
+  related metrics like the mass units, kilogramsPerUnit (\ref 
+  UsdPhysicsTokensType::kilogramsPerUnit).
+
 - \ref usdShade_page_front Schema module that defines Looks, Shaders,
   connectible Parameters, with API for building shading networks and
   user-facing "Look Interfaces" that allow shading networks to be shared (via

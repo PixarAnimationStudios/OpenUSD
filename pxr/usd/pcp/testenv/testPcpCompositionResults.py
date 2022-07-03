@@ -178,6 +178,7 @@ for layerPath in args.layer:
         # Gather all applied variant selections.
         vselMap = {}
         nodesWithOffsets = []
+        allNodes = []
         for node in WalkNodes(primIndex.rootNode):
             if node.path.IsPrimVariantSelectionPath():
                 vset, vsel = node.path.GetVariantSelection()
@@ -186,6 +187,7 @@ for layerPath in args.layer:
             if (not node.mapToParent.timeOffset.IsIdentity() or
                 any([not o.IsIdentity() for o in node.layerStack.layerOffsets])):
                 nodesWithOffsets.append(node)
+            allNodes.append(node)
         
         # Gather name child and property names
         childNames, prohibitedChildNames = primIndex.ComputePrimChildNames()
@@ -244,7 +246,7 @@ for layerPath in args.layer:
 
         if len(nodesWithOffsets) > 0:
             print('\nTime Offsets:')
-            for node in nodesWithOffsets:
+            for node in allNodes:
                 print('    %-20s %-15s %-10s (offset=%.2f, scale=%.2f)' % \
                     (GetLayerLabel(node.layerStack.layers[0]),
                      node.path, node.arcType.displayName,

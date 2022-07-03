@@ -1,0 +1,328 @@
+#usda 1.0
+(
+    endTimeCode = 1
+    startTimeCode = 0
+    upAxis = "Z"
+)
+# Test the robust handling of color and opacity primvars in 
+# UsdImagingGprimAdapter.
+def Scope "Materials"
+{
+    def Material "matBlueColor"
+    {
+        custom color3f displayColor = (0, 0, 1)
+        token outputs:surface.connect = </Materials/matBlueColor/PbrPreview.outputs:surface>
+
+        def Shader "PbrPreview"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            token outputs:surface
+        }
+    }
+
+    def Material "matHalfOpacity"
+    {
+        float displayOpacity = 0.5
+        token outputs:surface.connect = </Materials/matHalfOpacity/PbrPreview.outputs:surface>
+
+        def Shader "PbrPreview"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            token outputs:surface
+        }
+    }
+
+    def Material "matGreenColorHalfOpacity"
+    {
+        custom color3f displayColor = (0, 1, 0)
+        float displayOpacity = 0.5
+        token outputs:surface.connect = </Materials/matGreenColorHalfOpacity/PbrPreview.outputs:surface>
+
+        def Shader "PbrPreview"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            token outputs:surface
+        }
+    }
+}
+
+##================== First row: Cubes with materials =========================##
+def Xform "CubesWithMaterialRel"
+{
+    #custom double3 xformOp:translate = (0, 10, 0)
+    #uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    # Fully-opaque grey color cube (default color/opacity)
+    def Cube "NoColorNoOpacity"
+    {
+        custom rel material:binding = </Materials/Nonexistent>
+        custom double3 xformOp:translate = (-5, 0, 10)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # Blue cube with default 1.0 opacity
+    def Cube "YesColorNoOpacity"
+    {
+        custom rel material:binding = </Materials/matBlueColor>
+        custom double3 xformOp:translate = (0, 0, 10)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # Grey cube with half opacity
+    def Cube "NoColorYesOpacity"
+    {
+        custom rel material:binding = </Materials/matHalfOpacity>
+        custom double3 xformOp:translate = (5, 0, 10)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # Green cube with half opacity
+    def Cube "YesColorYesOpacity"
+    {
+        custom rel material:binding = </Materials/matGreenColorHalfOpacity>
+        custom double3 xformOp:translate = (10, 0, 10)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+##================= Second row: Cubes with local primvars ====================##
+def Xform "CubesWithLocalPrimvars"
+{
+    # even though interp modes are different, opacity will be splatted
+    # across the colors. no warnings expected.
+    def Cube "NoWarnUniformColorConstantOpacity"
+    {
+        color3f[] primvars:displayColor = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (0, 1, 1), (1, 0, 1)] (
+            interpolation = "uniform"
+        )
+        float[] primvars:displayOpacity = [1] (
+            interpolation = "constant"
+        )
+        custom double3 xformOp:translate = (-5, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # color is replicated across faces with each of the opacities.
+    # no warning expected.
+    def Cube "NoWarnConstantColorUniformOpacity"
+    {
+        color3f[] primvars:displayColor = [(1, 0, 0)] (
+            interpolation = "constant"
+        )
+        float[] primvars:displayOpacity = [0.5, 1, 0.7, 0.3, 0.7, 0.6] (
+            interpolation = "uniform"
+        )
+        custom double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # incorrect number of opacity values; only the first is used for all colors
+    def Cube "WarnUniformColorBadConstantOpacity"
+    {
+        color3f[] primvars:displayColor = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (0, 1, 1), (1, 0, 1)] (
+            interpolation = "uniform"
+        )
+        float[] primvars:displayOpacity = [0.7, 1] (
+            interpolation = "constant"
+        )
+        custom double3 xformOp:translate = (5, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # same interp mode, incorrect number of color values.
+    # the default color (grey) will be used for the unspecified faces
+    def Cube "WarnBadUniformColorUniformOpacity"
+    {
+        color3f[] primvars:displayColor = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0)] (
+            interpolation = "uniform"
+        )
+        float[] primvars:displayOpacity = [0.8, 1, 0.6, 1, 0.7, 0.9] (
+            interpolation = "uniform"
+        )
+        custom double3 xformOp:translate = (10, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # diferent interp modes with neither being constant should raise a warning.
+    # for length differences, default value should be splatted across
+    def Cube "WarnVertexColorUniformOpacity"
+    {
+        color3f[] primvars:displayColor = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1)] (
+            interpolation = "vertex"
+        )
+        float[] primvars:displayOpacity = [0.4, 1, 1, 0.5, 0.7, 0.8] (
+            interpolation = "uniform"
+        )
+        custom double3 xformOp:translate = (15, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+##================ Third row: Cubes with material/local primvars =============##
+def Xform "CubesWithPrimvarOverrides"
+{
+    # material should override any local primvars specified.     
+    def Cube "NoWarnColorAndOpacityFromMaterialRel"
+    {
+        custom rel material:binding = </Materials/matGreenColorHalfOpacity>
+        color3f[] primvars:displayColor = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (0, 1, 1), (1, 0, 1)] (
+            interpolation = "uniform"
+        )
+        float[] primvars:displayOpacity = [1] (
+            interpolation = "constant"
+        )
+        custom double3 xformOp:translate = (-5, 0, -5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # blue color with different face opacities from primvar data.
+    def Cube "NoWarnColorFromMaterialRelOpacityFromPrimvar"
+    {
+        custom rel material:binding = </Materials/matBlueColor>
+        color3f[] primvars:displayColor = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (0, 1, 1), (1, 0, 1)] (
+            interpolation = "uniform"
+        )
+        float[] primvars:displayOpacity = [0.4, 1, 1, 0.5, 0.7, 0.8] (
+            interpolation = "uniform"
+        )
+        custom double3 xformOp:translate = (0, 0, -5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # vertex color from local primvar with constant opacity from 
+    # material.
+    # even though we have different non-constant interpolation modes below, 
+    # since material overrides opacity (always with a constant), 
+    # we won't trigger a warning.
+    def Cube "NoWarnColorFromPrimvarOpacityFromMaterial"
+    {
+        custom rel material:binding = </Materials/matHalfOpacity>
+        color3f[] primvars:displayColor = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1)] (
+            interpolation = "vertex"
+        )
+        float[] primvars:displayOpacity = [0.4, 1, 0.6, 0.8, 0.7, 0.5] (
+            interpolation = "uniform"
+        )
+        custom double3 xformOp:translate = (5, 0, -5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # since material has neither color nor opacity, we get color and opacity 
+    # from the local primvars, and thus, trigger a warning since interp modes
+    # are different, and neither of them are constant
+    def Cube "WarnColorAndOpacityFromPrimvar"
+    {
+        custom rel material:binding = </Materials/matNonExistent>
+        color3f[] primvars:displayColor = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1)] (
+            interpolation = "vertex"
+        )
+        float[] primvars:displayOpacity = [0.4, 1, 1, 0.5, 0.7, 0.8] (
+            interpolation = "uniform"
+        )
+        custom double3 xformOp:translate = (10, 0, -5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+##====== Fourth row: Time-varying mesh with empty or None local primvars =====##
+# Previously, we returned a default color with constant interp if no color
+# primvar data was found. For vfx assets, it is common to have vertex colors
+# with no data in the beginning and populate it over time. This resulted in
+# erroneous warnings of expecting constant primvar (because of the initial
+# state).
+def Xform "TimeVaryingMeshWithEmptyVertexPrimvar"
+{
+    def Mesh "EmptyColorNoOpacity"
+    {
+        float3[] extent
+        int[] faceVertexCounts.timeSamples = {
+            0: [0],
+            1: [3],
+        }
+        int[] faceVertexIndices.timeSamples = {
+            0: [],
+            1: [0, 1, 2],
+        }
+        point3f[] points.timeSamples = {
+            0: [],
+            1: [(1, 0, 0), (0, 0, 1), (-1, 0, 0)],
+        }
+        color3f[] primvars:displayColor (
+            interpolation = "vertex"
+        )
+        color3f[] primvars:displayColor.timeSamples = {
+            0: [],
+            1: [(1, 0, 0), (0, 1, 0), (0, 0, 1)],
+        }
+        custom double3 xformOp:translate = (0, 0, -10)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Mesh "NoColorEmptyOpacity"
+    {
+        float3[] extent
+        int[] faceVertexCounts.timeSamples = {
+            0: [0],
+            1: [3],
+        }
+        int[] faceVertexIndices.timeSamples = {
+            0: [],
+            1: [0, 1, 2],
+        }
+        point3f[] points.timeSamples = {
+            0: [],
+            1: [(1, 0, 0), (0, 0, 1), (-1, 0, 0)],
+        }
+        float[] primvars:displayOpacity (
+            interpolation = "vertex"
+        )
+        float[] primvars:displayOpacity.timeSamples = {
+            0: [],
+            1: [0.5, 0.7, 0.9],
+        }
+        custom double3 xformOp:translate = (5, 0, -10)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Mesh "NoneColorNoneOpacity"
+    {
+        float3[] extent
+        int[] faceVertexCounts.timeSamples = {
+            0: [0],
+            1: [3],
+        }
+        int[] faceVertexIndices.timeSamples = {
+            0: [],
+            1: [0, 1, 2],
+        }
+        point3f[] points.timeSamples = {
+            0: [],
+            1: [(1, 0, 0), (0, 0, 1), (-1, 0, 0)],
+        }
+        color3f[] primvars:displayColor (
+            interpolation = "vertex"
+        )
+        color3f[] primvars:displayColor.timeSamples = {
+            0: None,
+            1: [(1, 0, 0), (0, 1, 0), (0, 0, 1)],
+        }
+        float[] primvars:displayOpacity (
+            interpolation = "vertex"
+        )
+        float[] primvars:displayOpacity.timeSamples = {
+            0: None,
+            1: [0.5, 0.7, 0.9],
+        }
+        custom double3 xformOp:translate = (10, 0, -10)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Sphere "SphereWithEmptyOpacity"
+{
+    float[] primvars:displayOpacity = []
+    float radius = 1
+    custom double3 xformOp:translate = (15, 0, -10)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+

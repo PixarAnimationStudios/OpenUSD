@@ -30,16 +30,21 @@
 #import $TOOLS/hdSt/shaders/instancing.glslfx
 
 --- --------------------------------------------------------------------------
--- glsl ViewFrustumCull.Counting
+-- layout ViewFrustumCull.Counting
 
-layout (std430, binding = drawIndirectResult_Binding) buffer ResultData {
-    int numVisibleInstances;
-};
+[
+    ["buffer readWrite", "ResultData", "drawIndirectResult",
+        ["atomic_int", "numVisibleInstances"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl ViewFrustumCull.Counting
 
 void
 FrustumCullCountVisibleInstances(int resultInstanceCount)
 {
-    atomicAdd(numVisibleInstances, resultInstanceCount);
+    ATOMIC_ADD(numVisibleInstances[0], resultInstanceCount);
 }
 
 --- --------------------------------------------------------------------------
@@ -135,28 +140,31 @@ FrustumCullIsVisible(MAT4 toClip, vec4 localMin, vec4 localMax, vec2 drawRangeND
         clipFlags |= ivec3(clip0) /* bit 0 */ + 2*ivec3(clip1) /*bit 1*/;
     }
 
-    return clipFlags == ivec3(3);
+    return all(equal(clipFlags, ivec3(3)));
 }
+
+--- --------------------------------------------------------------------------
+-- layout ViewFrustumCull.Vertex
+
+[
+    ["in", "int", "instanceCountInput"],
+    ["in", "int", "drawCommandIndex"],
+    ["uniform block", "Uniforms", "ulocCullParams",
+        ["mat4", "cullMatrix"],
+        ["vec2", "drawRangeNDC"],
+        ["uint", "drawCommandNumUints"]
+    ],
+    ["buffer readWrite", "DispatchBuffer", "dispatchBuffer",
+        ["uint", "drawCommands", "[]"]
+    ]
+]
 
 --- --------------------------------------------------------------------------
 -- glsl ViewFrustumCull.Vertex
 
-layout (location = instanceCountInput_Binding) in int instanceCountInput;
-layout (location = drawCommandIndex_Binding) in int drawCommandIndex;
-
-layout(std140, binding=ulocCullParams_Binding) uniform Uniforms {
-    mat4 cullMatrix;
-    vec2 drawRangeNDC;
-    uint drawCommandNumUints;
-} cullParams;
-
-layout (std430, binding = dispatchBuffer_Binding) buffer DispatchBuffer {
-    uint drawCommands[];
-};
-
 MAT4 GetCullMatrix()
 {
-    return MAT4(cullParams.cullMatrix);
+    return MAT4(cullMatrix);
 }
 
 void main()
@@ -172,11 +180,11 @@ void main()
     vec4 localMax = HdGet_bboxLocalMax();
 
     bool isVisible = FrustumCullIsVisible(
-        toClip, localMin, localMax, cullParams.drawRangeNDC);
+        toClip, localMin, localMax, drawRangeNDC);
 
     // Compute the index to the 'instanceCount' struct member in drawCommands.
     uint index = uint(drawCommandIndex) * 
-        cullParams.drawCommandNumUints + instanceCountOffset;
+        drawCommandNumUints + instanceCountOffset;
 
     // Set the resulting instance count to 0 if the primitive is culled
     // otherwise pass through the original incoming instance count.
@@ -186,6 +194,21 @@ void main()
     FrustumCullCountVisibleInstances(int(resultInstanceCount));
 }
 
+--- --------------------------------------------------------------------------
+-- layout ViewFrustumCull.VertexInstancing
+
+[
+    ["in", "int", "drawCommandIndex"],
+    ["uniform block", "Uniforms", "ulocCullParams",
+        ["mat4", "cullMatrix"],
+        ["vec2", "drawRangeNDC"],
+        ["uint", "drawCommandNumUints"],
+        ["int",  "resetPass"]
+    ],
+    ["buffer readWrite", "DispatchBuffer", "dispatchBuffer",
+        ["atomic_uint", "drawCommands", "[]"]
+    ]
+]
 
 --- --------------------------------------------------------------------------
 -- glsl ViewFrustumCull.VertexInstancing
@@ -234,22 +257,9 @@ void main()
                             x:undefined value
 */
 
-layout (location = drawCommandIndex_Binding) in int drawCommandIndex;
-
-layout(std140, binding=ulocCullParams_Binding) uniform Uniforms {
-    mat4 cullMatrix;
-    vec2 drawRangeNDC;
-    uint drawCommandNumUints;
-    int resetPass;
-} cullParams;
-
-layout (std430, binding = dispatchBuffer_Binding) buffer DispatchBuffer {
-    uint drawCommands[];
-};
-
 MAT4 GetCullMatrix()
 {
-    return MAT4(cullParams.cullMatrix);
+    return MAT4(cullMatrix);
 }
 
 void main()
@@ -258,11 +268,15 @@ void main()
     // it's a second entry in both DrawArraysCommand and DrawElementsCommand.
     const uint instanceCountOffset = 1;
 
+    const uint instanceCountBufferOffset =
+        drawCommandIndex * drawCommandNumUints + instanceCountOffset;
+
     // reset pass
-    if (cullParams.resetPass == 1) {
-        // note: we expect all instance invocations of this draw command is clearing
-        // same field to zero, and intentionally chosen to not guard this access as atomic.
-        drawCommands[drawCommandIndex * cullParams.drawCommandNumUints + instanceCountOffset] = 0;
+    if (resetPass == 1) {
+        // note: we expect all instance invocations of this draw command
+        // are clearing same field to zero, and and so might not guard this
+        // access as atomic.
+        ATOMIC_STORE(drawCommands[instanceCountBufferOffset], 0);
         return;
     }
 
@@ -276,14 +290,12 @@ void main()
     MAT4 toClip = GetCullMatrix() * ApplyInstanceTransform(HdGet_transform());
 
     bool isVisible = FrustumCullIsVisible(
-        toClip, localMin, localMax, cullParams.drawRangeNDC);
+        toClip, localMin, localMax, drawRangeNDC);
 
     if (isVisible) {
         // increment the instance count and store instanceIndex to culledInstanceIndices.
 
-        uint id = atomicAdd(drawCommands[
-            drawCommandIndex * cullParams.drawCommandNumUints +
-            instanceCountOffset], 1);
+        uint id = ATOMIC_ADD(drawCommands[instanceCountBufferOffset], 1);
 
         SetCulledInstanceIndex(id);
         FrustumCullCountVisibleInstances(1);

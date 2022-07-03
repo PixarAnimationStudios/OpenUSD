@@ -47,9 +47,14 @@ class Volume "Volume" (
         doc = """Extent is a three dimensional range measuring the geometric
         extent of the authored gprim in its own local space (i.e. its own
         transform not applied), without accounting for any shader-induced
-        displacement.  Whenever any geometry-affecting attribute is authored
-        for any gprim in a layer, extent must also be authored at the same
-        timesample; failure to do so will result in incorrect bounds-computation.
+        displacement. If __any__ extent value has been authored for a given 
+        Boundable, then it should be authored at every timeSample at which 
+        geometry-affecting properties are authored, to ensure correct 
+        evaluation via ComputeExtent(). If __no__ extent value has been 
+        authored, then ComputeExtent() will call the Boundable's registered 
+        ComputeExtentFunction(), which may be expensive, which is why we 
+        strongly encourage proper authoring of extent.
+        \\sa ComputeExtent()
         \\sa \\ref UsdGeom_Boundable_Extent.
         
         An authored extent on a prim which has children is expected to include
@@ -134,19 +139,6 @@ class "FieldBase" (
     doc = "Base class for field primitives."
 )
 {
-    float3[] extent (
-        doc = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e. its own
-        transform not applied), without accounting for any shader-induced
-        displacement.  Whenever any geometry-affecting attribute is authored
-        for any gprim in a layer, extent must also be authored at the same
-        timesample; failure to do so will result in incorrect bounds-computation.
-        \\sa \\ref UsdGeom_Boundable_Extent.
-        
-        An authored extent on a prim which has children is expected to include
-        the extent of all children, as they will be pruned from BBox computation
-        during traversal."""
-    )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -204,19 +196,6 @@ class "FieldAsset" (
     doc = "Base class for field primitives defined by an external file."
 )
 {
-    float3[] extent (
-        doc = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e. its own
-        transform not applied), without accounting for any shader-induced
-        displacement.  Whenever any geometry-affecting attribute is authored
-        for any gprim in a layer, extent must also be authored at the same
-        timesample; failure to do so will result in incorrect bounds-computation.
-        \\sa \\ref UsdGeom_Boundable_Extent.
-        
-        An authored extent on a prim which has children is expected to include
-        the extent of all children, as they will be pruned from BBox computation
-        during traversal."""
-    )
     token fieldDataType (
         doc = """Token which is used to indicate the data type of an
                  individual field. Authors use this to tell consumers more
@@ -309,19 +288,6 @@ class Field3DAsset "Field3DAsset" (
              specify a file in the Field3D format on disk."""
 )
 {
-    float3[] extent (
-        doc = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e. its own
-        transform not applied), without accounting for any shader-induced
-        displacement.  Whenever any geometry-affecting attribute is authored
-        for any gprim in a layer, extent must also be authored at the same
-        timesample; failure to do so will result in incorrect bounds-computation.
-        \\sa \\ref UsdGeom_Boundable_Extent.
-        
-        An authored extent on a prim which has children is expected to include
-        the extent of all children, as they will be pruned from BBox computation
-        during traversal."""
-    )
     token fieldDataType (
         allowedTokens = ["half", "float", "double", "half3", "float3", "double3"]
         doc = """Token which is used to indicate the data type of an
@@ -420,19 +386,6 @@ class OpenVDBAsset "OpenVDBAsset" (
              specify a file in the OpenVDB format on disk."""
 )
 {
-    float3[] extent (
-        doc = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e. its own
-        transform not applied), without accounting for any shader-induced
-        displacement.  Whenever any geometry-affecting attribute is authored
-        for any gprim in a layer, extent must also be authored at the same
-        timesample; failure to do so will result in incorrect bounds-computation.
-        \\sa \\ref UsdGeom_Boundable_Extent.
-        
-        An authored extent on a prim which has children is expected to include
-        the extent of all children, as they will be pruned from BBox computation
-        during traversal."""
-    )
     token fieldClass (
         allowedTokens = ["levelSet", "fogVolume", "staggered", "unknown"]
         doc = """Optional token which can be used to indicate the class of

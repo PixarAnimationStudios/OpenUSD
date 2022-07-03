@@ -1,0 +1,903 @@
+#usda 1.0
+(
+    endFrame = 30
+    startFrame = 0
+    upAxis = "Z"
+)
+
+# ---------------------------------------------------------------------------- #
+# In the tests below, each instancer is named with the times at which it is
+# active, for example, Instancer0_3 is active on frames 0,1,2, and 3.
+# ---------------------------------------------------------------------------- #
+def PointInstancer "Instancer__DEFAULT"
+{
+    # Set a non-default purpose here to explicitly verify that inherited purpose
+    # works as expected (purpose from the instancer should not inherit down to
+    # prototypes).
+    token purpose = "proxy"
+
+    float3[] extent = [(-15, -3, 0), (15, 3, 10)]
+    point3f[] positions = [(0, 0, 0)]
+    int[] protoIndices = [0]
+    rel prototypes = </Instancer__DEFAULT/Protos/Proto1>
+    token visibility = "inherited"
+    token visibility.timeSamples = {
+        # XXX: Need two time samples here to avoid a bug in UsdImaging.
+        # See http://bug/106503
+        0: "invisible",
+        1: "invisible",
+    }
+
+    def "Protos"
+    {
+        def "Proto1"
+        {
+            def Cube "Cube"
+            {
+            }
+
+            def Sphere "HiddenSphere" 
+            {
+                # This sphere should be hidden due to purpose=render, despite
+                # the fact that the inherited purpose is "proxy", because the
+                # point instancer should only inherit purposes down from the
+                # prototype root.
+                token purpose = "render"
+                double radius = 5
+            }
+        }
+    }
+}
+
+def PointInstancer "Instancer0_3"
+{
+    float3[] extent = [(-15, -3, 0), (15, 3, 10)]
+    int64[] invisibleIds.timeSamples = {
+        0: [],
+        1: [0, 2],
+        2: [0, 1],
+        3: [1],
+    }
+    quath[] orientations
+    point3f[] positions = [(-5, 0, 0), (10, 0, 0), (20, 0, 0)]
+    int[] protoIndices = [0, 1, 1]
+    rel prototypes = [
+        </Instancer0_3/Protos/Proto1>,
+        </Instancer0_3/Protos/Proto2>,
+    ]
+    # Explicitly setting an empty array should be fine
+    float3[] scales = []
+    token visibility = "invisible"
+    token visibility.timeSamples = {
+        0: "inherited",
+        4: "invisible",
+    }
+
+    def "Protos"
+    {
+        def Scope "Proto1"
+        {
+            # Verify that purpose *does* inherit from the prototype root if
+            # it's an imageable prim.
+            token purpose = "proxy"
+
+            def Cube "Cube"
+            {
+                # This purpose should be overridden by the Proto1 purpose and
+                # should continue to draw. If inheritance is working
+                # correctly, this prim will be visible due to the parent "proxy"
+                # purpose inheriting down to override the fallback purpose
+            }
+
+            def Xform "SomeScope"
+            {
+                token visibility.timeSamples = {
+                    0: "invisible",
+                }
+
+                def Sphere "HiddenSphere"
+                {
+                    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1, 3, 1, 1) )
+                    uniform token[] xformOpOrder = ["xformOp:transform"]
+                }
+            }
+        }
+
+        def "Proto2"
+        {
+            def Cube "Cube"
+            {
+                color3f[] primvars:displayColor = [(1, 0, 0)]
+            }
+        }
+    }
+}
+
+def PointInstancer "Instancer4_5"
+{
+    float3[] extent = [(-15, -3, 0), (15, 3, 10)]
+    quath[] orientations
+
+    # XXX: Default value is needed to avoid bug in update.
+    # The problem is, attribute variability is tracked for a given time, if we
+    # switch from reading time samples to reading Default, variability will be
+    # incorrect, in fact, this attribute value no longer exists. To avoid that
+    # state, we author both a default and time-varying value.
+    #
+    # See http://bug/106503
+    point3f[] positions = [(-15, -20, 0), (0, -20, 0), (15, -20, 0)]
+    point3f[] positions.timeSamples = {
+        4: [(-15, -20, 0), (0, -20, 0), (15, -20, 0)],
+        5: [(-15, -15, 0), (0, -15, 0), (15, -15, 0)],
+    }
+    int[] protoIndices = [0, 1, 1]
+    rel prototypes = [
+        </Instancer4_5/Protos/Proto1>,
+        </Instancer4_5/Protos/Proto2>,
+    ]
+    # Explicitly setting an empty array should be fine
+    float3[] scales = []
+    token visibility = "invisible"
+    token visibility.timeSamples = {
+        0: "invisible",
+        4: "inherited",
+        5: "inherited",
+        6: "invisible",
+    }
+
+    def "Protos"
+    {
+        def "Proto1"
+        {
+            def Sphere "Cube"
+            {
+            }
+
+            def Xform "SomeScope"
+            {
+                token visibility = "invisible"
+
+                def Sphere "HiddenSphere"
+                {
+                    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1, 3, 1, 1) )
+                    uniform token[] xformOpOrder = ["xformOp:transform"]
+                }
+            }
+        }
+
+        def "Proto2"
+        {
+            def Sphere "Cube"
+            {
+                color3f[] primvars:displayColor = [(1, 0, 0)]
+            }
+
+            def Sphere "HiddenSphere"
+            {
+                color3f[] primvars:displayColor = [(1, 0, 0)]
+                # Verify that a single purpose value is respected.
+                token purpose = "guide"
+                double radius = 5
+            }
+        }
+    }
+}
+
+# This point instancer should be hidden, due to its purpose being set to guide.
+def PointInstancer "Instancer6Hidden"
+{
+    float3[] extent = [(-15, -3, 0), (15, 3, 10)]
+    point3f[] positions = [(0, 15, 0)]
+    int[] protoIndices = [0]
+    rel prototypes = </Instancer6Hidden/Protos/Proto1>
+    token purpose = "guide"
+    # Explicitly setting an empty array should be fine
+    float3[] scales = []
+    token visibility = "invisible"
+    token visibility.timeSamples = {
+        0: "invisible",
+        6: "inherited",
+        7: "invisible",
+    }
+
+    def "Protos"
+    {
+        def "Proto1"
+        {
+            def Sphere "VisibleSphere"
+            {
+                color3f[] primvars:displayColor = [(0.9, 0, 0)]
+                double radius = 10
+            }
+        }
+    }
+}
+
+def PointInstancer "Instancer6"
+{
+    float3[] extent = [(-15, -3, 0), (15, 3, 10)]
+    quath[] orientations
+    point3f[] positions = [(0, 15, 0), (20, 15, 0)]
+    int[] protoIndices = [0, 1]
+    rel prototypes = [
+        </Instancer6/Protos/Proto1>,
+        </Instancer6/Protos/Proto2>,
+    ]
+    float3[] scales = [(4, 4, 4), (4, 4, 4)]
+    token visibility = "invisible"
+    token visibility.timeSamples = {
+        0: "invisible",
+        6: "inherited",
+        7: "invisible",
+    }
+
+    def "Protos"
+    {
+        def "Proto1"
+        {
+            def Cube "Cube"
+            {
+                color3f[] primvars:displayColor = [(0.4, 0.4, 1)]
+            }
+
+            def Xform "SomeScope"
+            {
+                def Sphere "HiddenSphere"
+                {
+                    token visibility = "invisible"
+                    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1, 3, 1, 1) )
+                    uniform token[] xformOpOrder = ["xformOp:transform"]
+                }
+            }
+        }
+
+        def "Proto2"
+        {
+            def Cube "Cube"
+            {
+                color3f[] primvars:displayColor = [(1, 0.8, 0)]
+            }
+        }
+    }
+}
+
+def PointInstancer "Instancer7"
+{
+    float3[] extent = [(-15, -3, 0), (15, 3, 10)]
+    quath[] orientations
+    point3f[] positions = [(0, 0, 20), (20, 0, 20)]
+    int[] protoIndices = [0, 1]
+    rel prototypes = [
+        </Instancer7/Protos/Proto1>,
+        </Instancer7/Protos/Proto2>,
+    ]
+    float3[] scales = [(4, 0.5, 1), (0.5, 1, 4)]
+    token visibility = "invisible"
+    token visibility.timeSamples = {
+        0: "invisible",
+        7: "inherited",
+        8: "invisible",
+    }
+
+    def "Protos"
+    {
+        # This visibility should be ignored.
+        token visibility = "invisible"
+
+        def "Proto1"
+        {
+            def Cube "Cube"
+            {
+                color3f[] primvars:displayColor = [(0.4, 0.4, 1)]
+            }
+        }
+
+        def "Proto2"
+        {
+            def Cube "Cube"
+            {
+                color3f[] primvars:displayColor = [(1, 0.8, 0)]
+            }
+        }
+    }
+}
+
+def PointInstancer "Instancer8_9"
+{
+    float3[] extent = [(-15, -3, 0), (15, 3, 10)]
+    quath[] orientations
+    point3f[] positions = [(-15, 30, 10), (0, 30, 10), (15, 30, 10)]
+    int[] protoIndices = [0, 1, 1]
+    rel prototypes = [
+        </Instancer8_9/Protos/Proto1>,
+        </Instancer8_9/Protos/Proto2>,
+    ]
+    float3[] scales = [(0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (0.5, 0.5, 0.5)]
+    float3[] scales.timeSamples = {
+        8: [(0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (0.5, 0.5, 0.5)],
+        9: [(5, 5, 5), (5, 5, 5), (5, 5, 5)],
+    }
+    token visibility = "invisible"
+    token visibility.timeSamples = {
+        0: "invisible",
+        8: "inherited",
+        9: "inherited",
+        10: "invisible",
+    }
+
+    def "Protos"
+    {
+        def "Proto1"
+        {
+            def Cube "Cube"
+            {
+                color3f[] primvars:displayColor = [(0.176, 0.72, 0.58)]
+            }
+        }
+
+        def "Proto2"
+        {
+            def Cube "Cube"
+            {
+                color3f[] primvars:displayColor = [(0.9, 0.564, 0.2)]
+            }
+        }
+    }
+}
+
+def PointInstancer "Instancer10_11"
+{
+    float3[] extent = [(-15, -3, 0), (15, 3, 10)]
+
+    # XXX: Default value is needed to avoid bug in update.
+    # See http://bug/106503
+    quath[] orientations = [(0.899902, 0.399902, 0, 0), (0.899902, 0.399902, 0, 0), (0.899902, 0.399902, 0, 0)]
+    quath[] orientations.timeSamples = {
+        10: [(0.899902, 0.399902, 0, 0), (0.899902, 0.399902, 0, 0), (0.899902, 0.399902, 0, 0)],
+        11: [(0.919922, 0.47998, 0, 0), (0.919922, 0.47998, 0, 0), (0.919922, 0.47998, 0, 0)],
+    }
+    point3f[] positions = [(-5, -10, 0), (10, -10, 0), (20, -10, 0)]
+    int[] protoIndices = [0, 1, 1]
+    rel prototypes = [
+        </Instancer10_11/Protos/Proto1>,
+        </Instancer10_11/Protos/Proto2>,
+    ]
+    float3[] scales
+    token visibility = "invisible"
+    token visibility.timeSamples = {
+        0: "invisible",
+        10: "inherited",
+        11: "inherited",
+        12: "invisible",
+    }
+
+    def "Protos"
+    {
+        def "Proto1"
+        {
+            def Cube "Cube"
+            {
+            }
+        }
+
+        def "Proto2"
+        {
+            def Cube "Cube"
+            {
+                color3f[] primvars:displayColor = [(1, 0, 0)]
+            }
+        }
+    }
+}
+
+def PointInstancer "Instancer12_13"
+{
+    float3[] extent = [(-15, -3, 0), (15, 3, 10)]
+    quath[] orientations
+    point3f[] positions = [(-20, 0, 30), (20, 0, 30)]
+    int[] protoIndices = [1, 0]
+    rel prototypes = [
+        </Instancer12_13/Protos/Proto1>,
+        </Instancer12_13/Protos/Proto2>,
+    ]
+    float3[] scales
+    token visibility = "invisible"
+    token visibility.timeSamples = {
+        0: "invisible",
+        12: "inherited",
+        13: "inherited",
+        14: "invisible",
+    }
+
+    def "Protos"
+    {
+        def "Proto1"
+        {
+            def Cube "Cube"
+            {
+                color3f[] primvars:displayColor = [(0.4, 0.4, 1)]
+                double size.timeSamples = {
+                    12: 2,
+                    13: 3,
+                }
+            }
+        }
+
+        def "Proto2"
+        {
+            def Cube "Cube"
+            {
+                color3f[] primvars:displayColor = [(1, 0.8, 0)]
+                double size.timeSamples = {
+                    12: 2,
+                    13: 3,
+                }
+            }
+        }
+    }
+}
+
+def PointInstancer "Instancer14_15"
+{
+    float3[] extent = [(-15, -3, 0), (15, 3, 10)]
+    quath[] orientations
+    point3f[] positions = [(0, 0, 0), (0, 0, 0), (0, 0, 0)]
+    int[] protoIndices = [0, 1]
+    rel prototypes = [
+        </Instancer14_15/Protos/Proto1>,
+        </Instancer14_15/Protos/Proto2>,
+    ]
+    float3[] scales
+    float[] times.timeSamples = {
+        14: [14, 15],
+        15: [15, 14],
+    }
+    token visibility = "invisible"
+    token visibility.timeSamples = {
+        0: "invisible",
+        14: "inherited",
+        15: "inherited",
+        16: "invisible",
+    }
+
+    def Xform "Protos"
+    {
+        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (999, 999, 999, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def "Proto1"
+        {
+            def Xform "P1Transform"
+            {
+                matrix4d xformOp:transform.timeSamples = {
+                    14: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-15, 30, 10, 1) ),
+                }
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+
+                def Cube "Cube"
+                {
+                    color3f[] primvars:displayColor = [(0.176, 0.72, 0.58)]
+                    double size = 8
+                    matrix4d xformOp:transform.timeSamples = {
+                        14: ( (1, 0, 0, 0), (0, 0.86, 0.5, 0), (0, -0.5, 0.86, 0), (0, 0, 0, 1) ),
+                        15: ( (0.3, 0.91, -0.24, 0), (-0.24, 0.3, 0.91, 0), (0.91, -0.24, 0.33, 0), (0, 0, 0, 1) ),
+                    }
+                    uniform token[] xformOpOrder = ["xformOp:transform"]
+                }
+            }
+        }
+
+        def "Proto2"
+        {
+            def Xform "P2Transform"
+            {
+                matrix4d xformOp:transform.timeSamples = {
+                    14: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (15, 30, 20, 1) ),
+                    15: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (15, 30, 10, 1) ),
+                }
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+
+                def Cube "Cube"
+                {
+                    color3f[] primvars:displayColor = [(0.9, 0.564, 0.2)]
+                    double size = 8
+                }
+            }
+        }
+    }
+}
+
+def PointInstancer "Instancer16_17"
+{
+    float3[] extent = [(-15, -3, 0), (15, 3, 10)]
+    double hydra:smallPrimCutoff = 1
+    quath[] orientations
+    point3f[] positions = [(-20, 0, 30), (20, 0, 30)]
+    int[] protoIndices = [1, 0]
+    rel prototypes = [
+        </Instancer16_17/Protos/Proto1>,
+        </Instancer16_17/Protos/Proto2>,
+    ]
+    float3[] scales
+    double timeOverride = 19
+    float[] times.timeSamples = {
+        16: [110, 111],
+        17: [111, 110],
+    }
+    token visibility = "invisible"
+    token visibility.timeSamples = {
+        0: "invisible",
+        16: "inherited",
+        17: "inherited",
+        18: "invisible",
+    }
+
+    def "Protos"
+    {
+        def "Proto1"
+        {
+            def Cube "Cube"
+            {
+                color3f[] primvars:displayColor = [(0.4, 0.4, 1)]
+                double size.timeSamples = {
+                    110: 3,
+                    111: 2,
+                }
+            }
+        }
+
+        def "Proto2"
+        {
+            def Cube "Cube"
+            {
+                color3f[] primvars:displayColor = [(1, 0.8, 0)]
+                double size.timeSamples = {
+                    110: 2,
+                    111: 3,
+                }
+            }
+        }
+    }
+}
+
+def PointInstancer "Instancer18_19"
+{
+    float3[] extent = [(-15, -3, 0), (15, 3, 10)]
+    quath[] orientations
+    point3f[] positions = [(0, 0, 0)]
+    int[] protoIndices = [0]
+    rel prototypes = </Instancer18_19/Protos/Proto1>
+    float3[] scales
+    float[] times.timeSamples = {
+        18: [20],
+        19: [21],
+    }
+    token visibility = "invisible"
+    token visibility.timeSamples = {
+        0: "invisible",
+        18: "inherited",
+        19: "inherited",
+        20: "invisible",
+    }
+    matrix4d xformOp:transform.timeSamples = {
+        18: ( (1, 0, 0, 0), (0, 0.86, 0.5, 0), (0, -0.5, 0.86, 0), (0, 0, 0, 1) ),
+        19: ( (0.3, 0.91, -0.24, 0), (-0.24, 0.3, 0.91, 0), (0.91, -0.24, 0.33, 0), (0, 0, 0, 1) ),
+        20: ( (6, 0, 0, 0), (0, 6, 0, 0), (0, 0, 6, 0), (10, 0, 6, 1) ),
+        21: ( (0.1, 0, 0, 0), (0, 0.1, 0, 0), (0, 0, 0.1, 0), (-10, 0, 0, 1) ),
+    }
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+
+    def Xform "Protos"
+    {
+        def Xform "Proto1"
+        {
+            def Cube "Cube"
+            {
+                color3f[] primvars:displayColor = [(0.176, 0.72, 0.58)]
+                double size = 8
+            }
+        }
+    }
+}
+
+def PointInstancer "Instancer20_21"
+{
+    float3[] extent = [(-1, -1, -1), (2, 2, 2)]
+    point3f[] positions = [(0, 0, 0), (1, 1, 1)]
+    int[] protoIndices = [0, 0]
+    rel prototypes = </Instancer20_21/Protos/Proto1>
+
+    # Here is the critical bit of this test: on the first time sample, a single
+    # proto-group can be shared, on the second sample it cannot. This tests the
+    # ability to load an unused proto-group.
+    float[] times.timeSamples = {
+        20: [20, 20],
+        21: [20, 21],
+    }
+    token visibility = "invisible"
+    token visibility.timeSamples = {
+        0: "invisible",
+        20: "inherited",
+        21: "inherited",
+        22: "invisible",
+    }
+
+    def "Protos"
+    {
+        def "Proto1"
+        {
+            def Cube "Cube"
+            {
+            }
+        }
+    }
+}
+
+def PointInstancer "Instancer22_24"
+{
+    float3[] extent = [(-1, -1, -1), (2, 2, 2)]
+
+    # XXX: Default value is needed to avoid bug in update.
+    # See http://bug/106503
+    point3f[] positions = []
+    point3f[] positions.timeSamples = {
+        22: [],
+        23: [(0, 0, 0)],
+        24: [(0, 0, 0), (1, 1, 1)],
+    }
+
+    # Test emission of instances over time. In particular this tests that
+    # having an empty protoIndices array on one time sample (which may be needed
+    # prior to instance emission) doesn't invalidate the remaining frames.
+    #
+    # XXX: Default value is needed to avoid bug in update.
+    # See http://bug/106503
+    int[] protoIndices = []
+    int[] protoIndices.timeSamples = {
+        22: [],
+        23: [0],
+        24: [0, 1],
+    }
+    rel prototypes = [
+        </Instancer22_24/Protos/Proto1>,
+        </Instancer22_24/Protos/Proto2>,
+    ]
+    token visibility = "invisible"
+    token visibility.timeSamples = {
+        0: "invisible",
+        22: "inherited",
+        24: "inherited",
+        25: "invisible",
+    }
+
+    def "Protos"
+    {
+        def "Proto1"
+        {
+            def Sphere "Sphere"
+            {
+            }
+        }
+
+        def "Proto2"
+        {
+            def Cube "Cube"
+            {
+            }
+        }
+    }
+}
+
+class Scope "__ProtoClass"
+{
+    def Cube "Cube"
+    {
+    }
+
+    def Sphere "Sphere"
+    {
+        color3f[] primvars:displayColor = [(0, 1, 0)]
+        token purpose = "proxy"
+        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 10, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Cone "Cone"
+    {
+        color3f[] primvars:displayColor = [(0, 0, 1)]
+        token purpose = "guide"
+        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 20, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+
+def PointInstancer "Instancer25_26"
+{
+    float3[] extent = [(-15, -3, 0), (15, 3, 10)]
+    quath[] orientations
+    # XXX: Default value is needed to avoid bug in update.
+    # The problem is, attribute variability is tracked for a given time, if we
+    # switch from reading time samples to reading Default, variability will be
+    # incorrect, in fact, this attribute value no longer exists. To avoid that
+    # state, we author both a default and time-varying value.
+    #
+    # See http://bug/106503
+    point3f[] positions = [(-15, -20, 0), (-10, -20, 0), (0, -20, 0), (10, -20, 0), (15, -20, 0)]
+    point3f[] positions.timeSamples = {
+        25: [(-15, -20, 0), (-10, -20, 0), (0, -20, 0), (10, -20, 0), (15, -20, 0)],
+        26: [(-15, -15, 0), (-10, -15, 0), (0, -15, 0), (10, -15, 0), (15, -15, 0)],
+    }
+    int[] protoIndices = [0, 1, 2, 1, 0]
+    rel prototypes = [
+        </Instancer25_26/Protos/Proto1>,
+        </Instancer25_26/Protos/Proto2>,
+        </Instancer25_26/Protos/Proto3>,
+    ]
+    # Explicitly setting an empty array should be fine
+    float3[] scales = []
+    token visibility = "invisible"
+    token visibility.timeSamples = {
+        0: "invisible",
+        25: "inherited",
+        26: "inherited",
+        27: "invisible",
+    }
+
+    def "Protos"
+    {
+        # This purpose is ignored as this prim is not imageable
+        token purpose = "guide"
+
+        def Scope "Proto1" (
+            inherits = </__ProtoClass>
+        )
+        {
+        }
+
+        def Scope "Proto2" (
+            inherits = </__ProtoClass>
+        )
+        {
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            token purpose = "proxy"
+        }
+
+        def Scope "Proto3" (
+            inherits = </__ProtoClass>
+        )
+        {
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            token purpose = "guide"
+        }
+    }
+}
+
+def PointInstancer "Instancer27_28"
+{
+    float3[] extent = [(-15, -3, 0), (15, 3, 10)]
+    quath[] orientations
+    # XXX: Default value is needed to avoid bug in update.
+    # The problem is, attribute variability is tracked for a given time, if we
+    # switch from reading time samples to reading Default, variability will be
+    # incorrect, in fact, this attribute value no longer exists. To avoid that
+    # state, we author both a default and time-varying value.
+    #
+    # See http://bug/106503
+    point3f[] positions = [(-15, -20, 0), (-10, -20, 0), (0, -20, 0), (10, -20, 0), (15, -20, 0)]
+    point3f[] positions.timeSamples = {
+        27: [(-15, -20, 0), (-10, -20, 0), (0, -20, 0), (10, -20, 0), (15, -20, 0)],
+        28: [(-15, -15, 0), (-10, -15, 0), (0, -15, 0), (10, -15, 0), (15, -15, 0)],
+    }
+    color3f[] primvars:displayColor = [(1, 0, 0)]
+    int[] protoIndices = [0, 1, 2, 1, 0]
+    rel prototypes = [
+        </Instancer27_28/Protos/Proto1>,
+        </Instancer27_28/Protos/Proto2>,
+        </Instancer27_28/Protos/Proto3>,
+    ]
+    token purpose = "render"
+    # Explicitly setting an empty array should be fine
+    float3[] scales = []
+    token visibility = "invisible"
+    token visibility.timeSamples = {
+        0: "invisible",
+        27: "inherited",
+        28: "inherited",
+        29: "invisible",
+    }
+
+    def "Protos"
+    {
+        # This purpose is ignored as this prim is not imageable
+        token purpose = "guide"
+
+        def Scope "Proto1" (
+            inherits = </__ProtoClass>
+        )
+        {
+        }
+
+        def Scope "Proto2" (
+            inherits = </__ProtoClass>
+        )
+        {
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            token purpose = "proxy"
+        }
+
+        def Scope "Proto3" (
+            inherits = </__ProtoClass>
+        )
+        {
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            token purpose = "guide"
+        }
+    }
+}
+
+def PointInstancer "Instancer29_30"
+{
+    float3[] extent = [(-15, -3, 0), (15, 3, 10)]
+    quath[] orientations
+    # XXX: Default value is needed to avoid bug in update.
+    # The problem is, attribute variability is tracked for a given time, if we
+    # switch from reading time samples to reading Default, variability will be
+    # incorrect, in fact, this attribute value no longer exists. To avoid that
+    # state, we author both a default and time-varying value.
+    #
+    # See http://bug/106503
+    point3f[] positions = [(-15, -20, 0), (-10, -20, 0), (0, -20, 0), (10, -20, 0), (15, -20, 0)]
+    point3f[] positions.timeSamples = {
+        29: [(-15, -20, 0), (-10, -20, 0), (0, -20, 0), (10, -20, 0), (15, -20, 0)],
+        30: [(-15, -15, 0), (-10, -15, 0), (0, -15, 0), (10, -15, 0), (15, -15, 0)],
+    }
+    color3f[] primvars:displayColor = [(1, 0, 0)]
+    int[] protoIndices = [0, 1, 2, 1, 0]
+    rel prototypes = [
+        </Instancer29_30/Protos/Proto1>,
+        </Instancer29_30/Protos/Proto2>,
+        </Instancer29_30/Protos/Proto3>,
+    ]
+    token purpose = "render"
+    # Explicitly setting an empty array should be fine
+    float3[] scales = []
+    token visibility = "invisible"
+    token visibility.timeSamples = {
+        0: "invisible",
+        29: "inherited",
+        30: "inherited",
+        31: "invisible",
+    }
+
+    def "Protos"
+    {
+        # This purpose is ignored as this prim is not imageable
+        token purpose = "guide"
+
+        def Scope "Proto1" (
+            inherits = </__ProtoClass>
+            instanceable = true
+        )
+        {
+        }
+
+        def Scope "Proto2" (
+            inherits = </__ProtoClass>
+            instanceable = true
+        )
+        {
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            token purpose = "proxy"
+        }
+
+        def Scope "Proto3" (
+            inherits = </__ProtoClass>
+            instanceable = true
+        )
+        {
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            token purpose = "guide"
+        }
+    }
+}
+

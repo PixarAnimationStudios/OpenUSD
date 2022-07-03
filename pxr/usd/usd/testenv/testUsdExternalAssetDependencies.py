@@ -32,13 +32,14 @@ class TestUsdExternalAssetDependencies(unittest.TestCase):
     def setUpClass(cls):
         testRoot = os.path.join(os.path.dirname(__file__), 'UsdPlugins')
         testPluginsDso = testRoot + '/lib'
-        testPluginsDsoSearch = testPluginsDso + '/*/Resources/'
+        testPluginsDsoSearch = testPluginsDso + \
+            '/TestUsdProceduralExternalAssetsFileFormatPlugin*/Resources/'
 
-        # Register dso plugins.  Discard possible exception due to TestPlugDsoEmpty.
-        # The exception only shows up here if it happens in the main thread so we
-        # can't rely on it.
         try:
-            Plug.Registry().RegisterPlugins(testPluginsDsoSearch)
+            plugins = Plug.Registry().RegisterPlugins(testPluginsDsoSearch)
+            assert len(plugins) == 1
+            assert plugins[0].name == \
+                "Test_UsdProceduralExternalAssetsFileFormatPlugin"
         except RuntimeError:
             pass
 

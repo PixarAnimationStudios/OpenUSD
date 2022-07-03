@@ -1,0 +1,39 @@
+#usda 1.0
+
+class "NOTTOUCHED" (
+    customData = {
+        string apiSchemaAutoApplyTo = "SomeConcreteType,SomeAbstractType"
+        string apiSchemaType = "singleApply"
+        string className = "MyTestSchemaAPI"
+    }
+    inherits = </APISchemaBase>
+)
+{
+    uniform token inputs:colorMapGamma (
+        allowedTokens = [""]
+        displayGroup = "Basic"
+        displayName = "Map Gamma"
+        doc = """
+                uniform color mapping for gamma.
+             """
+    )
+    float inputs:intensity = 1 (
+        displayGroup = "Basic"
+        displayName = "Intensity"
+        doc = """
+                intensity:  Itensity of the flame thrower.
+            """
+    )
+    color3f outputs:resultRGB
+}
+
+class "TestSchemaAPI" (
+    inherits = </APISchemaBase>
+)
+{
+    float inputs:MyTest:previousAttr = 10 (
+        displayGroup = "Previous"
+        displayName = "prev"
+    )
+}
+

@@ -28,11 +28,9 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 
-#include "pxr/imaging/hdSt/surfaceShader.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-class HdRenderDelegate;
 
 using HdSt_VolumeShaderSharedPtr = std::shared_ptr<class HdSt_VolumeShader>;
 using HdSt_MaterialParamVector = std::vector<class HdSt_MaterialParam>;
@@ -41,7 +39,7 @@ using HdVolumeFieldDescriptorVector =
 
 /// \class HdSt_VolumeShader
 ///
-/// Adds the following behaviors to HdStSurfaceShader:
+/// Adds the following behaviors to HdSt_MaterialNetworkShader:
 /// - walk through field descriptors to allocate textures and update
 ///   the NamedTextureHandle's.
 /// - compute volume bounding box, adds it to the shader bar and
@@ -49,27 +47,23 @@ using HdVolumeFieldDescriptorVector =
 /// - bind raymarching step sizes (querried from render delegate)
 ///   to uniforms in the shader
 ///
-class HdSt_VolumeShader final : public HdStSurfaceShader
+class HdSt_VolumeShader final : public HdSt_MaterialNetworkShader
 {
 public:
-    explicit HdSt_VolumeShader(HdRenderDelegate * const renderDelegate);
+    explicit HdSt_VolumeShader();
     ~HdSt_VolumeShader() override;
 
-    /// Adds custom bindings for step sizes so that codegen will make them
-    /// available as HdGet_stepSize and HdGet_stepSizeLighting.
-    ///
+    /// Adds custom bindings.
     void AddBindings(HdBindingRequestVector * customBindings) override;
     
     /// Querries render delegate for step sizes and binds the uniforms and
     /// calls base class's method.
     ///
     void BindResources(int program,
-                       HdSt_ResourceBinder const &binder,
-                       HdRenderPassState const &state) override;
+                       HdSt_ResourceBinder const &binder) override;
 
     void UnbindResources(int program,
-                         HdSt_ResourceBinder const &binder,
-                         HdRenderPassState const &state) override;
+                         HdSt_ResourceBinder const &binder) override;
 
     /// Adds buffer sources to the shader bar (for volume bounding
     /// box) and points bar if requested (besides calling
@@ -115,14 +109,16 @@ public:
     ///
     static void GetParamsAndBufferSpecsForBBoxAndSampleDistance(
         HdSt_MaterialParamVector *params,
-        HdBufferSpecVector *specs);
+        HdBufferSpecVector *specs,
+        bool doublesSupported);
 
     /// Add buffer sources to communicate volume bounding box and sample
     /// distance to shader.
     ///
     static void GetBufferSourcesForBBoxAndSampleDistance(
         const std::pair<GfBBox3d, float> &bboxAndSampleDistance,
-        HdBufferSourceSharedPtrVector * sources);
+        HdBufferSourceSharedPtrVector * sources,
+        bool doublesSupported);
 
     /// GfRange3d encodes empty range by (infinity, -infinity).
     /// Avoid those insane values by returning (0,0).
@@ -135,12 +131,6 @@ public:
     static GfVec3d GetSafeMax(const GfRange3d &range);
 
 private:
-
-    HdRenderDelegate * const _renderDelegate;
-    int _lastRenderSettingsVersion;
-    float _stepSize;
-    float _stepSizeLighting;
-
     HdBufferArrayRangeSharedPtr _pointsBar;
     bool _fillsPointsBar;
 

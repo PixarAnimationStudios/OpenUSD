@@ -1,0 +1,24 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "HdGpSceneIndexPlugin": {
+                        "bases": [
+                            "HdSceneIndexPlugin"
+                        ], 
+                        "displayName":
+                            "HdGpGenerativeProceduralResolvingSceneIndex",
+                        "loadWithRenderer": "",
+                        "priority": 0
+                    }
+                }
+            }, 
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@", 
+            "Name": "hdGp", 
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@", 
+            "Root": "@PLUG_INFO_ROOT@", 
+            "Type": "library"
+        }
+    ]
+}

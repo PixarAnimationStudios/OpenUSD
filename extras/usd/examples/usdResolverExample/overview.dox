@@ -1,0 +1,104 @@
+/*!
+\mainpage
+
+UsdResolverExample is an example ArResolver implementation demonstrating
+URI resolver functionality. This is a toy example and not production-ready,
+but shows how one might implement a URI resolver and integrate it with USD.
+
+# Setup
+
+The example resolver is not registered with the plugin system by default. To
+register it, set the `PXR_PLUGINPATH_NAME` environment variable to include the
+directory containing the library's installed plugInfo.json file. Typically, 
+this will be:
+
+    <inst>/share/usd/examples/plugin/usdResolverExample/resources
+
+# Asset Paths
+
+UsdResolverExample supports URI asset paths of the form:
+
+     asset:<asset_name>/<path_to_file>
+
+The URI path is a relative path that will be anchored to the asset root
+directory. The asset root directory may be specified by setting the
+`USD_RESOLVER_EXAMPLE_ASSET_DIR` environment variable. By default, it
+is set to the current working directory.
+
+These asset paths can be used in reference, payload, or sublayer composition
+statements or asset path-valued attributes in USD. For example:
+
+    #usda 1.0
+
+    def "Woody" (
+        references = @asset:Woody/Woody.usd@</Woody>
+    )
+    {
+    }
+
+In this case, USD would look for the referenced asset at
+`<asset_root_dir>/Woody/Woody.usd`.
+
+# Version Substitution and Context Objects
+
+UsdResolverExample supports substitution of the string `{$VERSION}` in its
+URIs with an arbitrary string during asset resolution. By default, this
+string will be substituted with the string "latest". For example, when
+resolving the asset path:
+
+    asset:Woody/{$VERSION}/Woody.usd
+
+becomes:
+
+    asset:Woody/latest/Woody.usd
+
+which will then be resolved as normal.
+
+Users can create a version mapping file that associates an asset with a version
+string, then use a UsdResolverExampleContext to indicate the mapping file
+to use when resolving asset paths on a UsdStage.
+
+The version mapping file is a .json file containing a dictionary that maps asset
+names to version strings. For example:
+
+    {
+        "Buzz" : "1",
+        "Woody": "2"
+    }
+
+Clients can use a UsdResolverExampleResolverContext to specify the mapping
+file to use during asset resolution. When resolving an asset path, the resolver 
+will read the mapping file specified in the currently-bound context and look
+up the version associated with the asset named in the asset path. Any
+occurrences of `{$VERSION}` will be substituted with this version. If no
+version is found, "latest" will be used.
+
+For example, if the above mapping was written to a file called "versions.json"
+in the current working directory:
+
+    with Ar.ResolverContextBinder(
+        UsdResolverExample.ResolverContext('versions.json')):
+
+        # This will return the same result as calling
+        # Resolve('asset:Woody/2/Woody.usd')
+        Ar.GetResolver().Resolve('asset:Woody/{$VERSION}/Woody.usd')
+
+        # This will return the same result as calling
+        # Resolve('asset:Buzz/1/Buzz.usd')
+        Ar.GetResolver().Resolve('asset:Buzz/{$VERSION}/Woody.usd')
+
+A UsdResolverExampleResolverContext may be passed to `UsdStage::Open` to specify
+the mapping file to use for all asset resolution operations on that stage. If
+no context is given `UsdStage` will ask the resolver to create a default context
+for the layer being opened. The resolver will look for a file named
+`versions.json` in the same directory as the layer and, if it exists, will
+return a UsdResolverExampleResolverContext using that file.
+
+# Debug Flags
+
+The `TF_DEBUG` environment variable can be set to `USD_RESOLVER_EXAMPLE`
+to enable debugging output from the resolver. This may be helpful to see
+the calls to the resolver that are made when opening a stage or other
+operations.
+
+*/

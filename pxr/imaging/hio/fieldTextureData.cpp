@@ -70,8 +70,9 @@ _FieldTextureDataFactoryRegistry::GetFactory(
     TfType const & pluginType = _typeMap.Find(fileExtension);
     if (!pluginType) {
         // Unknown prim type.
-        TF_CODING_ERROR("[PluginLoad] Unknown field data type '%s'\n",
-                fileExtension.GetText());
+        TF_CODING_ERROR(
+            "[PluginLoad] Unknown field data type '%s' for file '%s'\n",
+            fileExtension.GetText(), filePath.c_str());
         return nullptr;
     }
 

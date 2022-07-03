@@ -80,6 +80,10 @@ public:
     ~HdStBasisCurves() override;
 
     HDST_API
+    void UpdateRenderTag(HdSceneDelegate *delegate,
+                         HdRenderParam *renderParam) override;
+
+    HDST_API
     void Sync(HdSceneDelegate *delegate,
               HdRenderParam   *renderParam,
               HdDirtyBits     *dirtyBits,
@@ -90,6 +94,9 @@ public:
 
     HDST_API
     HdDirtyBits GetInitialDirtyBitsMask() const override;
+
+    HDST_API
+    TfTokenVector const & GetBuiltinPrimvarNames() const override;
 
 protected:
     HDST_API
@@ -162,9 +169,11 @@ private:
     
     void _UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                                    HdRenderParam *renderParam,
-                                   bool updateMaterialShader,
+                                   bool updateMaterialNetworkShader,
                                    bool updateGeometricShader);
 
+    void _UpdateMaterialTagsForAllReprs(HdSceneDelegate *sceneDelegate,
+                                        HdRenderParam *renderParam);
 
     HdSt_BasisCurvesTopologySharedPtr _topology;
     HdTopology::ID _topologyId;
@@ -172,6 +181,7 @@ private:
     int _refineLevel;  // XXX: could be moved into HdBasisCurveTopology.
     bool _displayOpacity : 1;
     bool _occludedSelectionShowsThrough : 1;
+    bool _pointsShadingEnabled : 1;
 };
 
 

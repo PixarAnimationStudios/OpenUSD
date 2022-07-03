@@ -232,21 +232,21 @@ public:
     }
 
     /// unary sum.
-    GfRange2d operator +=(const GfRange2d &b) {
+    GfRange2d &operator +=(const GfRange2d &b) {
         _min += b._min;
         _max += b._max;
         return *this;
     }
 
     /// unary difference.
-    GfRange2d operator -=(const GfRange2d &b) {
+    GfRange2d &operator -=(const GfRange2d &b) {
         _min -= b._max;
         _max -= b._min;
         return *this;
     }
 
     /// unary multiply.
-    GfRange2d operator *=(double m) {
+    GfRange2d &operator *=(double m) {
         if (m > 0) {
             _min *= m;
             _max *= m;
@@ -259,7 +259,7 @@ public:
     }
 
     /// unary division.
-    GfRange2d operator /=(double m) {
+    GfRange2d &operator /=(double m) {
         return *this *= (1.0 / m);
     }
 

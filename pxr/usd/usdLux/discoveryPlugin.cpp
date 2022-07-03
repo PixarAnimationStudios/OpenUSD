@@ -23,11 +23,13 @@
 //
 #include "pxr/usd/usdLux/discoveryPlugin.h"
 
-#include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/boundableLightBase.h"
 #include "pxr/usd/usdLux/lightDefParser.h"
-#include "pxr/usd/usdLux/lightFilter.h"
+#include "pxr/usd/usdLux/nonboundableLightBase.h"
 
-#include "pxr/base/plug/registry.h"
+#include "pxr/base/plug/thisPlugin.h"
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/tf/staticTokens.h"
 
 #include "pxr/usd/usd/schemaRegistry.h"
 
@@ -46,36 +48,64 @@ UsdLux_DiscoveryPlugin::DiscoverNodes(const Context &context)
     NdrNodeDiscoveryResultVec result;
 
     // We want to discover nodes for all concrete schema types that derive from 
-    // UsdLuxLight and UsdLuxLightFilter.
-    static const TfType lightType = TfType::Find<UsdLuxLight>();
-    static const TfType lightFilterType = TfType::Find<UsdLuxLightFilter>();
-    // LightFilter is a concrete type and is legit to instantiate while Light 
-    // is abstract and cannot be instantiated. However since the loop below 
-    // filters out abstract types, there's no harm in including Light in 
-    // addition to LightFilter. If Light were to be changed to be a concrete 
-    // type at any point for any reason, this code would not have to change.
-    std::set<TfType> types({lightType, lightFilterType});
-    PlugRegistry::GetAllDerivedTypes(lightType, &types);
-    PlugRegistry::GetAllDerivedTypes(lightFilterType, &types);
+    // UsdLuxBoundableLightBase and UsdLuxNonboundableLightBase. We'll filter
+    // out types that aren't defined in UsdLux as we process them.
+    static const TfType boundableLightType = 
+        TfType::Find<UsdLuxBoundableLightBase>();
+    static const TfType nonboundableLightType = 
+        TfType::Find<UsdLuxNonboundableLightBase>();
 
+    std::set<TfType> types;
+    PlugRegistry::GetAllDerivedTypes(boundableLightType, &types);
+    PlugRegistry::GetAllDerivedTypes(nonboundableLightType, &types);
+
+    // We include certain API schema types in the discovery results.
+    // - MeshLightAPI
+    // - VolumeLightAPI
+    // Current UsdLux OM specified MeshLightAPI and VolumeLightAPI as basically 
+    // the types for MeshLight and VolumeLight, also notice shaderId defined for
+    // these API types is MeshLight and VolumeLight respectively.
+    const UsdLux_LightDefParserPlugin::ShaderIdToAPITypeNameMap 
+        &shaderIdToAPITypeNameMap = 
+            UsdLux_LightDefParserPlugin::_GetShaderIdToAPITypeNameMap();
+
+    // Collect all typenames for which we need to associate discovered nodes.
+    TfTokenVector typeNames;
+    typeNames.reserve(types.size() + shaderIdToAPITypeNameMap.size());
     for (const TfType &type : types) {
+        // Filter out types that weren't declared in the UsdLux library itself.
+        static PlugPluginPtr thisPlugin = PLUG_THIS_PLUGIN;
+        if (!thisPlugin->DeclaresType(type)) {
+            continue;
+        }
+
         const TfToken name = UsdSchemaRegistry::GetConcreteSchemaTypeName(type);
+
         // The type name from the schema registry will be empty if the type is 
         // not concrete (i.e. abstract); we skip abstract types.
         if (!name.IsEmpty()) {
-            // The schema type name is the name and identifier. The URIs are 
-            // left empty as these nodes can be populated from the schema
-            // registry prim definitions. 
-            result.emplace_back(
-                /*identifier=*/ name,
+            // The schema type name is the name and identifier.  
+            typeNames.push_back(name);
+        }
+    }
+
+    for (const auto& shaderIdAPITypeNamePair : shaderIdToAPITypeNameMap) {
+        typeNames.push_back(shaderIdAPITypeNamePair.first);
+    }
+
+    result.reserve(typeNames.size());
+    for(const TfToken &typeName : typeNames) {
+        // The URIs are left empty as these nodes can be populated from the 
+        // schema registry prim definitions.
+        result.emplace_back(
+                typeName,
                 NdrVersion().GetAsDefault(),
-                name,
-                /*family=*/ TfToken(), 
+                typeName,
+                /*family*/ TfToken(),
                 UsdLux_LightDefParserPlugin::_GetDiscoveryType(),
                 UsdLux_LightDefParserPlugin::_GetSourceType(),
-                /*uri=*/ "", 
+                /*uri=*/ "",
                 /*resolvedUri=*/ "");
-        }
     }
 
     return result;

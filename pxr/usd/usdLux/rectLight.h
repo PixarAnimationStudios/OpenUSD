@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLux/api.h"
-#include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/boundableLightBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdLux/tokens.h"
@@ -58,7 +58,7 @@ class SdfAssetPath;
 /// position, a texture file's min coordinates should be at (+X, +Y) and 
 /// max coordinates at (-X, -Y).
 ///
-class UsdLuxRectLight : public UsdLuxLight
+class UsdLuxRectLight : public UsdLuxBoundableLightBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -66,17 +66,12 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
 
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::ConcreteTyped;
-
     /// Construct a UsdLuxRectLight on UsdPrim \p prim .
     /// Equivalent to UsdLuxRectLight::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdLuxRectLight(const UsdPrim& prim=UsdPrim())
-        : UsdLuxLight(prim)
+        : UsdLuxBoundableLightBase(prim)
     {
     }
 
@@ -84,7 +79,7 @@ public:
     /// Should be preferred over UsdLuxRectLight(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdLuxRectLight(const UsdSchemaBase& schemaObj)
-        : UsdLuxLight(schemaObj)
+        : UsdLuxBoundableLightBase(schemaObj)
     {
     }
 
@@ -144,12 +139,6 @@ protected:
     /// \sa UsdSchemaKind
     USDLUX_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDLUX_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.

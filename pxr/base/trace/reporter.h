@@ -58,7 +58,7 @@ class TraceCollectionAvailable;
 ////////////////////////////////////////////////////////////////////////////////
 /// \class TraceReporter
 ///
-/// This class converters streams of TraceEvent objects into call trees which
+/// This class converts streams of TraceEvent objects into call trees which
 /// can then be used as a data source to a GUI or written out to a file.
 ///
 class TraceReporter : 
@@ -176,6 +176,14 @@ public:
     /// event reporting.
     TRACE_API bool GetFoldRecursiveCalls() const;
 
+    /// Set whether or not the reporter should adjust scope times for overhead
+    /// and noise.
+    TRACE_API void SetShouldAdjustForOverheadAndNoise(bool adjust);
+
+    /// Returns the current setting for addjusting scope times for overhead and
+    /// noise.
+    TRACE_API bool ShouldAdjustForOverheadAndNoise() const;
+
     /// @}
 
     /// Creates a valid TraceAggregateNode::Id object.
@@ -199,6 +207,7 @@ private:
 
     bool _groupByFunction;
     bool _foldRecursiveCalls;
+    bool _shouldAdjustForOverheadAndNoise;
 
     TraceAggregateTreeRefPtr _aggregateTree;
     TraceEventTreeRefPtr _eventTree;

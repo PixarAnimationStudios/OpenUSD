@@ -1,0 +1,50 @@
+#usda 1.0
+
+# Input USD file to test duplicate properties between sdr node and base USD
+# schema, example: intensity property should not be visible in the updated
+# baseline schema
+
+def Shader "TestDuplicatePropsAPI" (
+    sdrMetadata = {
+        token schemaName = "TestDuplicatePropsAPI"
+        token apiSchemasForAttrPruning = "BaseOneAPI|BaseTwoAPI"
+        token typedSchemaForAttrPruning = "RectLight"
+        token schemaKind = "singleApply"
+        token schemaBase = "APISchemaBase"
+        token apiSchemaAutoApplyTo = "RectLight"
+    }
+)
+{
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @testDummy.glslfx@
+    
+    float inputs:one = 1.0
+    float inputs:two = 2.0
+
+    float inputs:intensity = 1.0 (
+        connectability = "interfaceOnly"
+        sdrMetadata = {
+            token label = "Intensity"
+            token page = "Basic"
+            token help = """
+                intensity: Itensity of the flame thrower.
+                """
+        }
+    )
+
+    string inputs:colorMapGamma (
+        connectability = "interfaceOnly"
+        sdrMetadata = {
+            token label = "Map Gamma"
+            token page = "Basic"
+            token usdVariability = "Uniform"
+            token options = "texture"
+            token help = """
+                uniform color mapping for gamma.
+                """
+        }
+    )
+
+    color3f outputs:resultRGB
+}
+

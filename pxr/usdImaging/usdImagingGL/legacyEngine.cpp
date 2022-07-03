@@ -85,6 +85,24 @@ struct _HitData {
 };
 typedef TfHashMap< int32_t, _HitData > _HitDataById;
 
+void _InitGL()
+{
+    static std::once_flag initFlag;
+
+    std::call_once(initFlag, []{
+
+        // Initialize GL library for GL Extensions if needed
+        GarchGLApiLoad();
+
+        // Initialize if needed and switch to shared GL context.
+        GlfSharedGLContextScopeHolder sharedContext;
+
+        // Initialize GL context caps based on shared context
+        GlfContextCaps::InitInstance();
+
+    });
+}
+
 }
 
 // Sentinel value for prim restarts, so that multiple prims can be lumped into a
@@ -283,6 +301,8 @@ UsdImagingGLLegacyEngine::Render(const UsdPrim& root,
     const UsdImagingGLRenderParams& params)
 {
     TRACE_FUNCTION();
+
+    _InitGL();
 
     // Start listening for change notices from this stage.
     UsdImagingGLLegacyEnginePtr self = TfCreateWeakPtr(this);
@@ -517,6 +537,8 @@ UsdImagingGLLegacyEngine::SetLightingState(GlfSimpleLightVector const &lights,
                                         GlfSimpleMaterial const &material,
                                         GfVec4f const &sceneAmbient)
 {
+    _InitGL();
+
     if (lights.empty()) {
         glDisable(GL_LIGHTING);
     } else {

@@ -22,8 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 import setuptools
-
-import glob, os, platform, re, shutil
+import argparse, glob, os, platform, re, shutil, sys
 
 # This setup.py script expects to be run from an inst directory in a typical
 # USD build run from build_usd.py.
@@ -34,6 +33,20 @@ import glob, os, platform, re, shutil
 # to point to the new locations of those shared library dependencies. How this
 # is done depends on platform, and is mostly accomplished by steps in the CI
 # system.
+
+# Define special arguments for setup.py to customize behavior.
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--post-release-tag", type=str,
+    help="Post release tag to append to version number")
+
+args, remaining = parser.parse_known_args()
+
+# Remove our special arguments from sys.argv so that setuptools doesn't choke on
+# them. argparse will also eat the "setup.py" argument in sys.argv[0] which is
+# apparently necessary for setuptools, so we manually prepend that to the
+# remaining unprocessed arguments.
+sys.argv = [sys.argv[0]] + remaining
 
 def windows():
     return platform.system() == "Windows"
@@ -73,9 +86,16 @@ if windows():
 import os, sys
 dllPath = os.path.split(os.path.realpath(__file__))[0]
 if sys.version_info >= (3, 8, 0):
-    os.add_dll_directory(dllPath)
-else:
-    os.environ['PATH'] = dllPath + os.pathsep + os.environ['PATH']
+    os.environ['PXR_USD_WINDOWS_DLL_PATH'] = dllPath
+# Note that we ALWAYS modify the PATH, even for python-3.8+. This is because:
+#    - Anaconda python interpreters are modified to use the old, pre-3.8, PATH-
+#      based method of loading dlls
+#    - extra calls to os.add_dll_directory won't hurt these anaconda
+#      interpreters
+#    - similarly, adding the extra PATH entry shouldn't hurt standard python
+#      interpreters
+#    - there's no canonical/bulletproof way to check for an anaconda interpreter
+os.environ['PATH'] = dllPath + os.pathsep + os.environ['PATH']
 ''')
 
 # Get the readme text
@@ -96,6 +116,9 @@ with open(os.path.join(USD_BUILD_OUTPUT, "include/pxr/pxr.h"), "r") as fh:
             continue
 
 version = "{}.{}".format(minorVersion, patchVersion)
+
+if args.post_release_tag:
+    version = "{}.{}".format(version, args.post_release_tag)
 
 # Config
 setuptools.setup(
@@ -128,5 +151,5 @@ setuptools.setup(
         "Environment :: Console",
         "Topic :: Multimedia :: Graphics",
     ],
-    python_requires='>=3.6, <3.8',
+    python_requires='>=3.6, <3.10',
 )

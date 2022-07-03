@@ -133,16 +133,16 @@ TfLogCrash(
     // Create a nicely formatted message describing the crash
     std::string fullMessage = TfStringPrintf(
         "%s crashed. %s: %s\n"
-        "in %s at line %zu of %s\n",
+        "in %s at line %zu of %s",
         ArchGetProgramNameForErrors(), reason.c_str(), message.c_str(),
         context.GetFunction(), context.GetLine(), context.GetFile());
 
     if (!additionalInfo.empty()) {
-        fullMessage += additionalInfo + "\n";
+        fullMessage += "\n" + additionalInfo;
     }
 
     Tf_ScopeDescriptionStackReportLock descStackReport;
-    ArchLogPostMortem(
+    ArchLogFatalProcessState(
         nullptr, fullMessage.c_str(), descStackReport.GetMessage());
 }
 

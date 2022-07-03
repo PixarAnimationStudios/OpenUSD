@@ -90,11 +90,6 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
 
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::ConcreteTyped;
-
     /// Construct a UsdShadeShader on UsdPrim \p prim .
     /// Equivalent to UsdShadeShader::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -169,12 +164,6 @@ protected:
     USDSHADE_API
     UsdSchemaKind _GetSchemaKind() const override;
 
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDSHADE_API
-    UsdSchemaKind _GetSchemaType() const override;
-
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -205,9 +194,12 @@ public:
     /// @{
 
     /// Constructor that takes a ConnectableAPI object.
-    /// Allow implicit (auto) conversion of UsdShadeShader to 
-    /// UsdShadeConnectableAPI, so that a shader can be passed into any function
-    /// that accepts a ConnectableAPI.
+    /// Allow implicit (auto) conversion of UsdShadeConnectableAPI to 
+    /// UsdShadeShader, so that a ConnectableAPI can be passed into any function
+    /// that accepts a Shader.
+    ///
+    /// \note that the conversion may produce an invalid Shader object, because
+    /// not all UsdShadeConnectableAPI%s are Shader%s
     USDSHADE_API
     UsdShadeShader(const UsdShadeConnectableAPI &connectable);
 

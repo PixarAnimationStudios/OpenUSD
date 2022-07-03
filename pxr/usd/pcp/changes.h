@@ -122,6 +122,9 @@ public:
     /// indicates the order in which the namespace edits occur.
     std::vector<std::pair<SdfPath, SdfPath>> didChangePath;
 
+    /// Layers used in the composition may have changed.
+    bool didMaybeChangeLayers = false;
+
 private:
     friend class PcpCache;
     friend class PcpChanges;
@@ -265,6 +268,13 @@ public:
     PCP_API
     void DidDestroyCache(const PcpCache* cache);
 
+    /// The asset resolver has changed, invalidating previously-resolved
+    /// asset paths. This function will check all prim indexes in \p cache
+    /// for composition arcs that may now refer to a different asset and
+    /// mark them as needing significant resyncs.
+    PCP_API
+    void DidChangeAssetResolver(const PcpCache* cache);
+
     /// Swap the contents of this and \p other.
     PCP_API
     void Swap(PcpChanges& other);
@@ -367,10 +377,12 @@ private:
                             bool *significant);
 
     // Mark the layer stack as having changed.
-    void _DidChangeLayerStack(const PcpLayerStackPtr& layerStack,
-                               bool requiresLayerStackChange,
-                               bool requiresLayerStackOffsetsChange,
-                               bool requiresSignificantChange);
+    void _DidChangeLayerStack(
+        const TfSpan<const PcpCache*>& caches,
+        const PcpLayerStackPtr& layerStack,
+        bool requiresLayerStackChange,
+        bool requiresLayerStackOffsetsChange,
+        bool requiresSignificantChange);
 
     // Mark the layer stack's relocations as having changed.
     // Recompute the new relocations, storing the result in the Changes,
@@ -386,6 +398,7 @@ private:
     void _DidChangeLayerStackResolvedPath(
         const TfSpan<const PcpCache*>& caches,
         const PcpLayerStackPtr& layerStack,
+        bool requiresLayerStackChange,
         std::string* debugSummary);
 
     // The spec stack for the prim or property index at \p path must be

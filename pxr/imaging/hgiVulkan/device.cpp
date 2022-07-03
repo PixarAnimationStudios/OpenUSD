@@ -179,8 +179,8 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     // Allow certain buffers/images to have dedicated memory allocations to
     // improve performance on some GPUs.
     bool dedicatedAllocations = false;
-    if (_IsSupportedExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME)
-        && _IsSupportedExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME))
+    if (IsSupportedExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME)
+        && IsSupportedExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME))
     {
         dedicatedAllocations = true;
         extensions.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
@@ -188,8 +188,8 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     }
 
     // Allow OpenGL interop - Note requires two extensions in HgiVulkanInstance.
-    if (_IsSupportedExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME) &&
-        _IsSupportedExtension(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME))
+    if (IsSupportedExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME) &&
+        IsSupportedExtension(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME))
     {
         extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
         extensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
@@ -197,13 +197,13 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
 
     // Memory budget query extension
     bool supportsMemExtension = false;
-    if (_IsSupportedExtension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME)) {
+    if (IsSupportedExtension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME)) {
         supportsMemExtension = true;
         extensions.push_back(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
     }
 
     // Resolve depth during render pass resolve extension
-    if (_IsSupportedExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME)) {
+    if (IsSupportedExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME)) {
         extensions.push_back(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
         extensions.push_back(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
         extensions.push_back(VK_KHR_MULTIVIEW_EXTENSION_NAME);
@@ -212,11 +212,26 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
 
     // Allows the same layout in structs between c++ and glsl (share structs).
     // This means instead of 'std430' you can now use 'scalar'.
-    if (_IsSupportedExtension(VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME)) {
+    if (IsSupportedExtension(VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME)) {
         extensions.push_back(VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME);
     } else {
         TF_WARN("Unsupported VK_EXT_scalar_block_layout."
                 "Update gfx driver?");
+    }
+
+    // Allow conservative rasterization.
+    if (IsSupportedExtension(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME)) {
+        extensions.push_back(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
+    }
+
+    // Allow use of built-in shader barycentrics.
+    if (IsSupportedExtension(VK_NV_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME)) {
+        extensions.push_back(VK_NV_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
+    }
+
+    // Allow use of shader draw parameters.
+    if (IsSupportedExtension(VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME)) {
+        extensions.push_back(VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME);
     }
 
     // This extension is needed to allow the viewport to be flipped in Y so that
@@ -379,7 +394,7 @@ HgiVulkanDevice::WaitForIdle()
 }
 
 bool
-HgiVulkanDevice::_IsSupportedExtension(const char* extensionName) const
+HgiVulkanDevice::IsSupportedExtension(const char* extensionName) const
 {
     for (VkExtensionProperties const& ext : _vkExtensions) {
         if (!strcmp(extensionName, ext.extensionName)) {

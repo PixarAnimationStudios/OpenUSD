@@ -1,0 +1,10 @@
+#usda 1.0
+(
+    subLayers = [
+        @./Woody_sublayer.usda@
+    ]
+)
+
+over "Woody"
+{
+}

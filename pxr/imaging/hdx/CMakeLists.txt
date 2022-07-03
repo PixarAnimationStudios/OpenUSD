@@ -59,6 +59,7 @@ pxr_library(hdx
         selectionTracker
         shadowTask
         simpleLightTask
+        skydomeTask
         task
         taskController
         tokens
@@ -95,14 +96,16 @@ pxr_library(hdx
         shaders/renderPassOitVolumeShader.glslfx
         shaders/renderPassShadowShader.glslfx
         shaders/selection.glslfx
+        shaders/skydome.glslfx
         shaders/visualize.glslfx
-        textures/StinsonBeach.exr
+        textures/StinsonBeach.hdr
+        textures/StinsonBeach.tex
 
     DOXYGEN_FILES
         overview.dox
 )
 
-if (X11_FOUND)
+if (X11_FOUND OR APPLE)
 pxr_build_test(testHdxRenderTask
     LIBRARIES
         hdx
@@ -127,6 +130,9 @@ pxr_build_test(testHdxLightAndShadow
     CPPFILES
         testenv/testHdxLightAndShadow.cpp
 )
+endif()
+
+if (X11_FOUND)
 pxr_build_test(testHdxIdRender
     LIBRARIES
         hdx

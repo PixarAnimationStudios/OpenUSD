@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<!-- Based on MaterialX Looks.mtlx example. -->
+<materialx version="1.38" cms="ocio" colorspace="acescg" geomprefix="/X/Y" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="Looks/Looks.mtlx" />
+</materialx>

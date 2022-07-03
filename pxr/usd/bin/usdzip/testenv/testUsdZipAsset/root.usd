@@ -3,9 +3,11 @@
     customLayerData = {
         asset baseAsset = @./base_a.usd@
     }
+    defaultPrim = "foo"
+    metersPerUnit = 0.01
     subLayers = [
         @./sub_a.usd@,
-        @./sub_b.usd@,
+        @./sub_b.usd@
     ]
     upAxis = "Y"
 )
@@ -21,7 +23,6 @@ over "foo" (
 {
     asset attr_a = @./attr_a.usd@
     asset[] attr_b = [@./attr_b.usd@, @./attr_c.usd@]
-
     variantSet "standin" = {
         "full" (
             assetInfo = {
@@ -31,6 +32,8 @@ over "foo" (
         ) {
             asset v_attr_a = @./v_attr_a.usd@
             asset[] v_attr_b = [@./v_attr_b.usd@, @./v_attr_c.usd@]
+
         }
     }
 }
+

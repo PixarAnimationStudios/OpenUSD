@@ -62,13 +62,17 @@ UsdRiSplineAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdRiSplineAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdRiSplineAPI::_GetSchemaKind() const
+{
     return UsdRiSplineAPI::schemaKind;
 }
 
-/* virtual */
-UsdSchemaKind UsdRiSplineAPI::_GetSchemaType() const {
-    return UsdRiSplineAPI::schemaType;
+/* static */
+bool
+UsdRiSplineAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdRiSplineAPI>(whyNot);
 }
 
 /* static */
@@ -232,7 +236,7 @@ UsdRiSplineAPI::Validate(std::string *reason) const
     interpAttr.Get(&interp);
     if (interp != UsdRiTokens->constant &&
         interp != UsdRiTokens->linear &&
-        interp != UsdRiTokens->catmull_rom &&
+        interp != UsdRiTokens->catmullRom &&
         interp != UsdRiTokens->bspline) {
         *reason += "Interpolation attribute has invalid value '" +
             interp.GetString() + "'";

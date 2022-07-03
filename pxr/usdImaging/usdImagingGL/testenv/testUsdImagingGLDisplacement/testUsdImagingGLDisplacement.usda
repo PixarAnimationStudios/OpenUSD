@@ -1,0 +1,128 @@
+#usda 1.0
+(
+    endFrame = 10
+    startFrame = 1
+    upAxis = "Y"
+)
+
+class Xform "QuadMeshProto"
+{
+    def Mesh "Mesh"
+    {
+        uniform token subdivisionScheme = "catmullClark"
+        uniform token interpolateBoundary = "edgeOnly"
+        int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4]
+        int[] faceVertexIndices = [0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 4, 5, 9, 8, 5, 6, 10, 9, 6, 7, 11, 10, 8, 9, 13, 12, 9, 10, 14, 13, 10, 11, 15, 14]
+        point3f[] points = [(-1, -1, 0), (-0.333333, -1, 0), ( 0.333333, -1, 0), ( 1, -1, 0), (-1, -0.33333, 0), (-0.333333, -0.33333, 0), ( 0.333333, -0.33333, 0), ( 1, -0.33333, 0), (-1, 0.33333, 0), (-0.333333, 0.33333, 0), ( 0.333333, 0.33333, 0), ( 1, 0.33333, 0), (-1, 1, 0), (-0.333333, 1, 0), ( 0.333333, 1, 0), ( 1, 1, 0)]
+        texCoord2f[] primvars:st_faceVarying = [(0, 0), (0.33333, 0), (0.66666, 0), (1, 0), (0, 0.33333), (0.33333, 0.33333), (0.66666, 0.33333), (1, 0.33333), (0, 0.66666), (0.33333, 0.66666), (0.66666, 0.66666), (1, 0.66666), (0, 1), (0.33333, 1), (0.66666, 1), (1, 1)] (
+            interpolation = "faceVarying"
+        )
+        int[] primvars:st_faceVarying:indices = [0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 4, 5, 9, 8, 5, 6, 10, 9, 6, 7, 11, 10, 8, 9, 13, 12, 9, 10, 14, 13, 10, 11, 15, 14] (
+            interpolation = "faceVarying"
+        )
+    }
+}
+
+class Xform "TriangleMeshProto"
+{
+    def Mesh "Mesh"
+    {
+        uniform token subdivisionScheme = "loop"
+        uniform token interpolateBoundary = "edgeOnly"
+        int[] faceVertexCounts = [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+        int[] faceVertexIndices = [0, 2, 4, 0, 4, 1, 1, 4, 6, 1, 6, 3, 2, 5, 7, 2, 7, 4, 3, 6, 8, 4, 7, 9, 4, 9, 6, 5, 10, 7, 6, 9, 11, 6, 11, 8, 7, 10, 12, 7, 12, 9, 8, 11, 13, 9, 12, 14, 9, 14, 11, 10, 15, 12, 11, 14, 16, 11, 16, 13, 12, 15, 17, 12, 17, 14, 14, 17, 18, 14, 18, 16]
+        point3f[] points = [( 0, -1, 0), (-0.433, -0.75, 0), ( 0.433, -0.75, 0), (-0.866, -0.5, 0), ( 0, -0.5, 0), ( 0.866, -0.5, 0), (-0.433, -0.25, 0), ( 0.433, -0.25, 0), (-0.866, 0, 0), ( 0, 0, 0), ( 0.866, 0, 0), (-0.433, 0.25, 0), ( 0.433, 0.25, 0), (-0.866, 0.5, 0), ( 0, 0.5, 0), ( 0.866, 0.5, 0), (-0.433, 0.75, 0), ( 0.433, 0.75, 0), ( 0, 1, 0)]
+        texCoord2f[] primvars:st_faceVarying = [(0.5, 0), (0.2835, 0.125), (0.7165, 0.125), (0.067, 0.25), (0.5, 0.25), (0.933, 0.25), (0.2835, 0.375), (0.7165, 0.375), (0.067, 0.5), (0.5, 0.5), (0.933, 0.5), (0.2835, 0.625), (0.7165, 0.625), (0.067, 0.75), (0.5, 0.75), (0.933, 0.75), (0.2835, 0.875), (0.7165, 0.875), (0.5, 1)] (
+            interpolation = "faceVarying"
+        )
+        int[] primvars:st_faceVarying:indices = [0, 2, 4, 0, 4, 1, 1, 4, 6, 1, 6, 3, 2, 5, 7, 2, 7, 4, 3, 6, 8, 4, 7, 9, 4, 9, 6, 5, 10, 7, 6, 9, 11, 6, 11, 8, 7, 10, 12, 7, 12, 9, 8, 11, 13, 9, 12, 14, 9, 14, 11, 10, 15, 12, 11, 14, 16, 11, 16, 13, 12, 15, 17, 12, 17, 14, 14, 17, 18, 14, 18, 16] (
+            interpolation = "faceVarying"
+        )
+    }
+}
+
+def Material "Material"
+{
+    string inputs:coords = "st_faceVarying"
+    token outputs:displacement.connect = </Material/Surface.outputs:displacement>
+    token outputs:surface.connect = </Material/Surface.outputs:surface>
+
+    def Shader "Surface"
+    {
+        token info:id = "UsdPreviewSurface"
+        color3f inputs:diffuseColor.connect = </Material/DiffuseColor.outputs:rgb>
+        float inputs:displacement.connect = </Material/Displacement.outputs:r>
+        token outputs:displacement
+        token outputs:surface
+    }
+
+    def Shader "DiffuseColor"
+    {
+        token info:id = "UsdUVTexture"
+        asset inputs:file = @DispTestColor.png@
+        float2 inputs:st.connect = </Material/TextureCoords.outputs:result>
+        float3 outputs:rgb
+    }
+
+    def Shader "Displacement"
+    {
+        token info:id = "UsdUVTexture"
+        asset inputs:file = @DispTestDisp.png@
+        float2 inputs:st.connect = </Material/TextureCoords.outputs:result>
+        float3 outputs:r
+    }
+
+    def Shader "TextureCoords"
+    {
+        token info:id = "UsdPrimvarReader_float2"
+        string inputs:varname.connect = </Material.inputs:coords>
+        float2 outputs:result
+    }
+}
+
+def Xform "QuadModel" (
+    references = </QuadMeshProto>
+)
+{
+    def "Mesh"
+    {
+        rel material:binding = </Material>
+        double xformOp:rotateY = 0
+        double3 xformOp:scale = (10, 10, 10)
+        double3 xformOp:translate = (-10, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY", "xformOp:scale"]
+    }
+}
+
+def Xform "TriangleModel" (
+    references = </TriangleMeshProto>
+)
+{
+    def "Mesh"
+    {
+        rel material:binding = </Material>
+        double xformOp:rotateY = 0
+        double3 xformOp:scale = (10, 10, 10)
+        double3 xformOp:translate = (10, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY", "xformOp:scale"]
+    }
+}
+
+def Camera "Camera"
+{
+    float2 clippingRange = (1, 100)
+    float focalLength = 48.012722
+    float focusDistance = 68.466736
+    float fStop = 0
+    float horizontalAperture = 28.577318
+    float horizontalApertureOffset = 0
+    token projection = "perspective"
+    float verticalAperture = 20.955
+    float verticalApertureOffset = 0
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.6700000166893005, 0, 68.4667340275037, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def DirectionalLight "Light"
+{
+}

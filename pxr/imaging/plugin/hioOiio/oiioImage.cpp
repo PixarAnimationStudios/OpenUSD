@@ -316,7 +316,7 @@ _FindAttribute(ImageSpec const & spec, std::string const & metadataKey)
     case TypeDesc::SCALAR:
         switch (type.basetype) {
         case TypeDesc::STRING:
-            return VtValue(std::string((char*)param->data()));
+            return VtValue(std::string(*(const char**)param->data()));
         case TypeDesc::INT8:
             return VtValue(*((char*)param->data()));
         case TypeDesc::UINT8:
@@ -418,9 +418,7 @@ HioOIIO_Image::HioOIIO_Image()
 }
 
 /* virtual */
-HioOIIO_Image::~HioOIIO_Image()
-{
-}
+HioOIIO_Image::~HioOIIO_Image() = default;
 
 /* virtual */
 std::string const &
@@ -474,6 +472,12 @@ HioOIIO_Image::IsColorSpaceSRGB() const
 
 }
 
+bool
+HioOIIO_ExtractCustomMetadata(
+    const ImageSpec &imagespec,
+    TfToken const & key,
+    VtValue * value);
+
 /* virtual */
 bool
 HioOIIO_Image::GetMetadata(TfToken const & key, VtValue * value) const
@@ -483,7 +487,8 @@ HioOIIO_Image::GetMetadata(TfToken const & key, VtValue * value) const
         *value = result;
         return true;
     }
-    return false;
+
+    return HioOIIO_ExtractCustomMetadata(_imagespec, key, value);
 }
 
 static HioAddressMode

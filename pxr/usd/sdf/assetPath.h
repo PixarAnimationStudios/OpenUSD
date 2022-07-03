@@ -38,7 +38,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfAssetPath
 ///
-/// Contains an asset path and an optional resolved path.
+/// Contains an asset path and an optional resolved path.  Asset paths may
+/// contain non-control UTF-8 encoded characters.  Specifically, U+0000..U+001F
+/// (C0 controls), U+007F (delete), and U+0080..U+009F (C1 controls) are
+/// disallowed.  Attempts to construct asset paths with such characters will
+/// issue a TfError and produce the default-constructed empty asset path.
 ///
 class SdfAssetPath:
     public boost::totally_ordered<SdfAssetPath>
@@ -51,11 +55,20 @@ public:
     /// Construct an empty asset path.
     SDF_API SdfAssetPath();
 
-    /// Construct asset path with no associated resolved path.
+    /// Construct an asset path with \p path and no associated resolved path.
+    ///
+    /// If the passed \p path is not valid UTF-8 or contains C0 or C1 control
+    /// characters, raise a TfError and return the default-constructed empty
+    /// asset path.
     SDF_API explicit SdfAssetPath(const std::string &path);
 
-    /// Construct an asset path with an associated resolved path.
-    SDF_API SdfAssetPath(const std::string &path, const std::string &resolvedPath);
+    /// Construct an asset path with \p path and an associated \p resolvedPath.
+    ///
+    /// If either the passed \path or \p resolvedPath are not valid UTF-8 or
+    /// either contain C0 or C1 control characters, raise a TfError and return
+    /// the default-constructed empty asset path.
+    SDF_API
+    SdfAssetPath(const std::string &path, const std::string &resolvedPath);
 
     /// @}
 
@@ -101,9 +114,9 @@ public:
 
     /// Return the resolved asset path, if any.
     ///
-    /// Note that SdfAssetPath only carries a resolved path if the creator of
-    /// an instance supplied one to the constructor.  SdfAssetPath will never
-    /// perform any resolution itself.
+    /// Note that SdfAssetPath carries a resolved path only if its creator
+    /// passed one to the constructor.  SdfAssetPath never performs resolution
+    /// itself.
     const std::string &GetResolvedPath() const {
         return _resolvedPath;
     }
@@ -127,7 +140,7 @@ private:
 ///
 /// \note This always encodes only the result of GetAssetPath().  The resolved
 ///       path is ignored for the purpose of this operator.  This means that
-///       two SdfAssetPath that do not compare equal may produce
+///       two SdfAssetPath s that do not compare equal may produce
 ///       indistinguishable ostream output.
 SDF_API std::ostream& operator<<(std::ostream& out, const SdfAssetPath& ap);
 

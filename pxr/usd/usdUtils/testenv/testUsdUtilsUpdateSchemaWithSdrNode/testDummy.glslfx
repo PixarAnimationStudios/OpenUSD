@@ -1,0 +1,13 @@
+-- glslfx version 0.1
+
+// TestShaderPropertiesNode
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+        }
+    }
+}
+
+-- This file is intentionally empty.

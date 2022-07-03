@@ -63,11 +63,6 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::AbstractTyped;
 
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::AbstractTyped;
-
     /// Construct a UsdGeomPointBased on UsdPrim \p prim .
     /// Equivalent to UsdGeomPointBased::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -116,12 +111,6 @@ protected:
     /// \sa UsdSchemaKind
     USDGEOM_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDGEOM_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -263,7 +252,7 @@ public:
     /// attribute.
     ///
     /// Although 'normals' is not classified as a generic UsdGeomPrimvar (and
-    /// will not be included in the results of UsdGeomImageable::GetPrimvars() )
+    /// will not be included in the results of UsdGeomPrimvarsAPI::GetPrimvars() )
     /// it does require an interpolation specification.  The fallback
     /// interpolation, if left unspecified, is UsdGeomTokens->vertex , 
     /// which will generally produce smooth shading on a polygonal mesh.
@@ -384,8 +373,7 @@ public:
     ///                     \p positions or empty. If it is empty, points
     ///                     are computed as if all accelerations were zero in 
     ///                     all dimensions.
-    /// \param velocityScale - factor used to artificially increase the effect
-    ///                        of velocity on positions.
+    /// \param velocityScale - \deprecated
     USDGEOM_API
     static bool
     ComputePointsAtTime(
@@ -396,7 +384,7 @@ public:
         const VtVec3fArray& velocities,
         UsdTimeCode velocitiesSampleTime,
         const VtVec3fArray& accelerations,
-        float velocityScale);
+        float velocityScale=1.0);
 
 };
 

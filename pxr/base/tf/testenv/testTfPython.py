@@ -124,7 +124,7 @@ class TestPython(unittest.TestCase):
         self.assertIs(Tf._DerivedNullFactory(), None)
 
 
-    def test_Exception(self):
+    def test_ErrorException(self):
         with self.assertRaises(RuntimeError):
             Tf._TakesBase(Raiser())
 
@@ -142,6 +142,14 @@ class TestPython(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             Tf._doErrors()
 
+    def test_CppException(self):
+        with self.assertRaises(Tf.CppException) as cm:
+            Tf._ThrowTest('hello')
+        print(cm.exception)
+
+        with self.assertRaises(Tf.CppException) as cm:
+            Tf._CallThrowTest(lambda : Tf._ThrowTest('py-to-cpp-to-py'))
+        print(cm.exception)
 
     def test_StaticMethodPosting(self):
         with self.assertRaises(Tf.ErrorException):
@@ -306,6 +314,16 @@ class TestPython(unittest.TestCase):
 
         # The auto-generated python object should be convertible to the original type.
         Tf._takesTestEnum(value1)
+
+    def test_EnumPythonKeywords(self):
+        '''Verify that enum names/values matching Python keywords are sanitized
+        to avoid syntax errors.'''
+        self.assertTrue(hasattr(Tf._Enum.TestKeywords, 'None_'))
+        self.assertTrue(hasattr(Tf._Enum.TestKeywords, 'False_'))
+        self.assertTrue(hasattr(Tf._Enum.TestKeywords, 'True_'))
+        self.assertTrue(hasattr(Tf._Enum.TestKeywords, 'print_'))
+        self.assertTrue(hasattr(Tf._Enum.TestKeywords, 'import_'))
+        self.assertTrue(hasattr(Tf._Enum.TestKeywords, 'global_'))
 
     def test_ByteArrayConversion(self):
         '''Verify we can convert buffers to byte arrays.'''

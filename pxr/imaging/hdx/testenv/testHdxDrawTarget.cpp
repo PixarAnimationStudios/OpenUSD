@@ -24,7 +24,6 @@
 
 #include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/testGLContext.h"
 #include "pxr/base/gf/frustum.h"
@@ -67,7 +66,6 @@ int main(int argc, char *argv[])
     GlfTestGLContext::RegisterGLContextCallbacks();
     GarchGLApiLoad();
     GlfSharedGLContextScopeHolder sharedContext;
-    GlfContextCaps::InitInstance();
 
     // Hgi and HdDriver should be constructed before HdEngine to ensure they
     // are destructed last. Hgi may be used during engine/delegate destruction.

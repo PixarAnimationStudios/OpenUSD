@@ -48,7 +48,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// A simple delegate class for unit test driver.
 ///
-class HdUnitTestDelegate : public HdSceneDelegate {
+class HdUnitTestDelegate : public HdSceneDelegate
+{
 public:
     HD_API
     HdUnitTestDelegate(HdRenderIndex *parentIndex,
@@ -183,6 +184,7 @@ public:
     void AddBasisCurves(SdfPath const &id,
                         VtVec3fArray const &points,
                         VtIntArray const &curveVertexCounts,
+                        VtIntArray const &curveIndices,
                         VtVec3fArray const &normals,
                         TfToken const &type,
                         TfToken const &basis,
@@ -279,8 +281,11 @@ public:
 
     /// Render buffers
     HD_API
-    void AddRenderBuffer(SdfPath const &id, GfVec3i const& dims,
-                         HdFormat format, bool multiSampled);
+    void AddRenderBuffer(SdfPath const &id, 
+                         HdRenderBufferDescriptor const &desc);
+    HD_API
+    void UpdateRenderBuffer(SdfPath const &id, 
+                            HdRenderBufferDescriptor const &desc);
 
     /// Camera
     HD_API
@@ -359,6 +364,8 @@ public:
     HD_API
     virtual TfToken GetRenderTag(SdfPath const& id) override;
     HD_API
+    virtual TfTokenVector GetTaskRenderTags(SdfPath const &taskId) override;
+    HD_API
     virtual PxOsdSubdivTags GetSubdivTags(SdfPath const& id) override;
     HD_API
     virtual GfRange3d GetExtent(SdfPath const & id) override;
@@ -385,6 +392,10 @@ public:
     HD_API
     virtual VtIntArray GetInstanceIndices(SdfPath const& instancerId,
                                           SdfPath const& prototypeId) override;
+
+    HD_API
+    virtual SdfPathVector GetInstancerPrototypes(SdfPath const& instancerId)
+        override;
 
     HD_API
     virtual GfMatrix4d GetInstancerTransform(SdfPath const& instancerId)
@@ -450,13 +461,15 @@ private:
         _Curves() { }
         _Curves(VtVec3fArray const &points,
                 VtIntArray const &curveVertexCounts,
+                VtIntArray const &curveIndices,
                 TfToken const &type,
                 TfToken const &basis) :
             points(points), curveVertexCounts(curveVertexCounts), 
-            type(type), basis(basis) { }
+            curveIndices(curveIndices), type(type), basis(basis) { }
 
         VtVec3fArray points;
         VtIntArray curveVertexCounts;
+        VtIntArray curveIndices;
         TfToken type;
         TfToken basis;
     };
@@ -511,6 +524,7 @@ private:
 
     struct _Camera {
         VtDictionary params;
+        GfMatrix4f transform;
     };
     struct _Light {
         VtDictionary params;

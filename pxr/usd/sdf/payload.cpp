@@ -43,7 +43,9 @@ SdfPayload::SdfPayload(
     const std::string &assetPath,
     const SdfPath &primPath,
     const SdfLayerOffset &layerOffset) :
-    _assetPath(assetPath),
+    // Pass through SdfAssetPath() to issue an error and produce empty string if
+    // \p assetPath contains invalid characters.
+    _assetPath(SdfAssetPath(assetPath).GetAssetPath()),
     _primPath(primPath),
     _layerOffset(layerOffset)
 {

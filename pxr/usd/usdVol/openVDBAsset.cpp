@@ -75,13 +75,9 @@ UsdVolOpenVDBAsset::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdVolOpenVDBAsset::_GetSchemaKind() const {
+UsdSchemaKind UsdVolOpenVDBAsset::_GetSchemaKind() const
+{
     return UsdVolOpenVDBAsset::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdVolOpenVDBAsset::_GetSchemaType() const {
-    return UsdVolOpenVDBAsset::schemaType;
 }
 
 /* static */

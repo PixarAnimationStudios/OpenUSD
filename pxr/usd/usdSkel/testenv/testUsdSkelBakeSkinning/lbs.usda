@@ -213,6 +213,39 @@ def SkelRoot "Root" (
         uniform token subdivisionScheme = "none"
     }
 
+    def Mesh "MeshWithFaceVaryingNormals" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        matrix4d primvars:skel:geomBindTransform = ( (0, 0, 1, 0), (1, 0, 0, 0), (0, 1, 0, 0), (1, 0, 0, 1) )
+
+        int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+        int[] faceVertexIndices = [1, 4, 5, 0, 4, 8, 9, 5, 8, 10, 11, 9, 10, 6, 7, 11, 6, 2, 3, 7, 2, 1, 0, 3, 2, 6, 4, 1, 6, 10, 8, 4, 0, 5, 7, 3, 5, 9, 11, 7]
+        point3f[] points = [(1.05, -1, 0.55), (1.1500001, -1, 0.55), (1.1500001, -1, 0.45), (1.05, -1, 0.45), (1.1500001, 0, 0.55), (1.05, 0, 0.55), (1.1500001, 0, 0.45), (1.05, 0, 0.45), (1.1500001, 1, 0.55), (1.05, 1, 0.55), (1.1500001, 1, 0.45), (1.05, 1, 0.45)]
+        uniform token subdivisionScheme = "none"
+
+        normal3f[] normals = [(0, 0, 1), (0, 0, 1), (-0, -0, 1), (-0, -0, 1), (0, 0, 1), (-0, -0, 1), (-0, -0, 1), (-0, -0, 1), (-0, 1, -0), (-0, 1, -0), (-0, 1, -0), (0, 1, 0), (-0, 0, -1), (-0, 0, -1), (0, -0, -1), (-0, -0, -1), (-0, 0, -1), (-0, -0, -1), (0, -0, -1), (0, -0, -1), (-0, -1, -0), (0, -1, -0), (-0, -1, -0), (-0, -1, 0), (1, -0, -0), (1, 0, 0), (1, -0, -0), (1, -0, -0), (1, 0, 0), (1, 0, 0), (1, -0, -0), (1, -0, -0), (-1, -0, -0), (-1, -0, 0), (-1, 0, -0), (-1, 0, -0), (-1, -0, 0), (-1, -0, 0), (-1, -0, -0), (-1, 0, -0)] (
+            interpolation = "faceVarying"
+        )
+
+        int[] primvars:skel:jointIndices = [
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 1, 0, 1, 0, 1, 0, 1,
+            2, 2, 2, 2, 2, 2, 2, 2,
+        ] (
+            interpolation = "vertex"
+            elementSize = 2
+        )
+        float[] primvars:skel:jointWeights = [
+            1, 0, 1, 0, 1, 0, 1, 0,
+            0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+            1, 0, 1, 0, 1, 0, 1, 0,
+        ] (
+            interpolation = "vertex"
+            elementSize = 2
+        )
+    }
+
     def Mesh "MeshWithNormals" (
         prepend apiSchemas = ["SkelBindingAPI"]
     )

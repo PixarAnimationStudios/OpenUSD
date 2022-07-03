@@ -46,10 +46,16 @@ process follows.
 - UsdRenderSpec is a self-contained, evaluated specification
   of render settings, suitable for consumption by a backend.
 
-- UsdRenderSettingsAPI is a base class for renderer-specific
-  API schemas (provided by other schema libraries) that encode
-  renderer-specific settings.
-
+- UsdRenderPass bridges the rest of usdRender to the broader set
+  of renderers in order to facilitate multiple invocations
+  of different renderers, some of which may not describe a render 
+  in terms of UsdRenderSettings. In addition to organizing the 
+  different renders and processes (like denoising) that composite to 
+  produce a "final frame", UsdRenderPass codifies the dependencies 
+  between passes, and that a single Pass generally represents not 
+  a single set of Products, but a sequence of temporally varying 
+  frames of outputs that depend on temporally varying inputs.
+  
 ## Reading settings {#UsdRenderReadingSettings}
 
 A UsdStage may contain multiple UsdRenderSettings prims representing
@@ -253,6 +259,22 @@ The following example is provided to illustrate the above concepts.
             def RenderVar "id" {
                 token dataType = "int"
                 string sourceName = "id"
+            }
+        }
+
+        def Scope "Passes"
+        {
+            def RenderPass "beauty"{
+                string passType = "prman"
+                rel renderNode = "Render/PrimarySettings"
+                string exeuctable = "prman"
+            }
+            def RenderPass "composite"{
+                string passType = "nuke"
+                string fileName = "composite.nk"
+                rel renderNode = "WriteFinalComposite"
+                string executable = "nuke -x -c 32G"
+                rel inputPasses = "/Render/Passes/beauty"
             }
         }
     }

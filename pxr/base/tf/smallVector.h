@@ -65,9 +65,9 @@ protected:
     // Invoke std::uninitialized_copy that either moves or copies entries,
     // depending on whether the type is move constructible or not.
     template <typename Iterator>
-    static void _UninitializedMove(
+    static Iterator _UninitializedMove(
         Iterator first, Iterator last, Iterator dest) {
-        std::uninitialized_copy(
+        return std::uninitialized_copy(
             std::make_move_iterator(first),
             std::make_move_iterator(last),
             dest);
@@ -863,6 +863,8 @@ private:
     // a rvalue reference or const reference.
     template < typename U >
     iterator _Insert(const_iterator it, U &&v) {
+        value_type *newEntry;
+
         // If the iterator points to the end, simply push back.
         if (it == end()) {
             push_back(std::forward<U>(v));
@@ -877,49 +879,37 @@ private:
             value_type *newStorage = _Allocate(newCapacity);
             
             value_type *i = const_cast<value_type *>(&*it);
-            value_type *d = newStorage;
-            value_type *b = data();
-            for (; b != i; ++d, ++b) {
-                *d = std::forward<U>(*b);
-            }
+            value_type *curData = data();
+            newEntry = _UninitializedMove(curData, i, newStorage);
 
-            value_type *current = d;
-            new (current) value_type(std::forward<U>(v));
+            new (newEntry) value_type(std::forward<U>(v));
 
-            const value_type *e = data() + size();
-            for (++d; b != e; ++d, ++b) {
-                *d = std::forward<U>(*b);
-            }
+            _UninitializedMove(i, curData + size(), newEntry + 1);
 
             _Destruct();
             _FreeStorage();
 
             _data.SetRemoteStorage(newStorage);
             _capacity = newCapacity;
-            return iterator(current);
         }
 
         // Our current capacity is big enough to allow us to simply shift
         // elements up one slot and insert v at it.
         else {
             // Move all the elements after it up by one slot.
-            value_type *i = const_cast<value_type *>(&*it);
-            value_type *p = const_cast<value_type *>(&back());
-            new (data() + size()) value_type(std::forward<U>(*(p--)));
-            for (; p >= i; --p) {
-                *(p + 1) = std::forward<U>(*p);
-            }
+            newEntry = const_cast<value_type *>(&*it);
+            value_type *last = const_cast<value_type *>(&back());
+            new (data() + size()) value_type(std::move(*last));
+            std::move_backward(newEntry, last, last + 1);
 
             // Move v into the slot at the supplied iterator position.
-            i->~value_type();
-            new (i) value_type(std::forward<U>(v));
-
-            // Bump up the size;
-            _size += 1;
-
-            // Return an iterator to the newly inserted entry.
-            return iterator(i);
+            newEntry->~value_type();
+            new (newEntry) value_type(std::forward<U>(v));
         }
+
+        // Bump size and return an iterator to the newly inserted entry.
+        ++_size;
+        return iterator(newEntry);
     }
 
     // The vector storage, which is a union of the local storage and a pointer

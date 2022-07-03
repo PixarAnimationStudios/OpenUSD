@@ -35,6 +35,8 @@
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
+#include "pxr/imaging/hdSt/tokens.h"
+#include "pxr/imaging/hdSt/volume.h"
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 
@@ -82,12 +84,21 @@ void
 HdxRenderSetupTask::Prepare(HdTaskContext* ctx,
                             HdRenderIndex* renderIndex)
 {
-
     _PrepareAovBindings(ctx, renderIndex);
     PrepareCamera(renderIndex);
 
     HdRenderPassStateSharedPtr &renderPassState =
-            _GetRenderPassState(renderIndex);
+        _GetRenderPassState(renderIndex);
+
+    const float stepSize = renderIndex->GetRenderDelegate()->
+        GetRenderSetting<float>(
+            HdStRenderSettingsTokens->volumeRaymarchingStepSize,
+            HdStVolume::defaultStepSize);
+    const float stepSizeLighting = renderIndex->GetRenderDelegate()->
+        GetRenderSetting<float>(
+            HdStRenderSettingsTokens->volumeRaymarchingStepSizeLighting,
+            HdStVolume::defaultStepSizeLighting);
+    renderPassState->SetVolumeRenderingConstants(stepSize, stepSizeLighting);
 
     renderPassState->Prepare(renderIndex->GetResourceRegistry());
     (*ctx)[HdxTokens->renderPassState] = VtValue(_renderPassState);
@@ -180,6 +191,7 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
     _overrideWindowPolicy = params.overrideWindowPolicy;
     _cameraId = params.camera;
     _aovBindings = params.aovBindings;
+    _aovInputBindings = params.aovInputBindings;
 }
 
 void
@@ -188,6 +200,10 @@ HdxRenderSetupTask::_PrepareAovBindings(HdTaskContext* ctx,
 {
     // Walk the aov bindings, resolving the render index references as they're
     // encountered.
+    //
+    // This is somewhat fragile. One of the clients is _BindTexture in
+    // hdSt/renderPassShader.cpp.
+    //
     for (size_t i = 0; i < _aovBindings.size(); ++i) {
         if (_aovBindings[i].renderBuffer == nullptr) {
             _aovBindings[i].renderBuffer = static_cast<HdRenderBuffer*>(
@@ -199,14 +215,7 @@ HdxRenderSetupTask::_PrepareAovBindings(HdTaskContext* ctx,
     HdRenderPassStateSharedPtr &renderPassState =
             _GetRenderPassState(renderIndex);
     renderPassState->SetAovBindings(_aovBindings);
-
-    if (!_aovBindings.empty()) {
-        // XXX Tasks that are not RenderTasks (OIT, ColorCorrection etc) also
-        // need access to AOVs, but cannot access SetupTask or RenderPassState.
-        // One option is to let them know about the aovs directly (as task
-        // parameters), but instead we do so via the task context.
-        (*ctx)[HdxTokens->aovBindings] = VtValue(_aovBindings);
-    }
+    renderPassState->SetAovInputBindings(_aovInputBindings);
 }
 
 void
@@ -220,7 +229,12 @@ HdxRenderSetupTask::PrepareCamera(HdRenderIndex* renderIndex)
 
     const HdCamera *camera = static_cast<const HdCamera *>(
         renderIndex->GetSprim(HdPrimTypeTokens->camera, _cameraId));
-    TF_VERIFY(camera);
+    if (!camera) {
+        // We don't require a valid camera to accommodate setup tasks used
+        // solely for specifying the AOV bindings for clearing or resolving the
+        // AOVs. The viewport transform is irrelevant in this scenario as well.
+        return;
+    }
 
     HdRenderPassStateSharedPtr const &renderPassState =
             _GetRenderPassState(renderIndex);
@@ -301,6 +315,9 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
     for (auto const& a : pv.aovBindings) {
         out << a << " ";
     }
+    for (auto const& a : pv.aovInputBindings) {
+        out << a << " (input) ";
+    }
     return out;
 }
 
@@ -321,6 +338,7 @@ bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
            lhs.pointSelectedSize        == rhs.pointSelectedSize        &&
  
            lhs.aovBindings              == rhs.aovBindings              &&
+           lhs.aovInputBindings         == rhs.aovInputBindings         &&
            
            lhs.depthBiasUseDefault      == rhs.depthBiasUseDefault      &&
            lhs.depthBiasEnable          == rhs.depthBiasEnable          &&

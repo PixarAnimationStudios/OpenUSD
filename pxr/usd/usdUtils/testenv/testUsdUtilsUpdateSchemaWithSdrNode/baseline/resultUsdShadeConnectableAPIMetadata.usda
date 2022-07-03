@@ -1,0 +1,20 @@
+#usda 1.0
+
+class "TestUsdShadeConnectableAPIMetadataAPI" (
+    customData = {
+        string apiSchemaType = "singleApply"
+        dictionary extraPlugInfo = {
+            bool isUsdShadeContainer = 1
+            bool providesUsdShadeConnectableAPIBehavior = 1
+            bool requiresUsdShadeEncapsulation = 0
+        }
+    }
+    inherits = </APISchemaBase>
+)
+{
+    uniform token myRenderContext:usda:shaderId = "TestUsdShadeConnectableAPIMetadataAPI" (
+        displayGroup = "Internal"
+    )
+    color3f outputs:resultRGB
+}
+

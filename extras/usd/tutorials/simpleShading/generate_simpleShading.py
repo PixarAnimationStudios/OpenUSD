@@ -46,7 +46,7 @@ billboard.CreatePointsAttr([(-430, -145, 0), (430, -145, 0), (430, 145, 0), (-43
 billboard.CreateFaceVertexCountsAttr([4])
 billboard.CreateFaceVertexIndicesAttr([0,1,2,3])
 billboard.CreateExtentAttr([(-430, -145, 0), (430, 145, 0)])
-texCoords = billboard.CreatePrimvar("st", 
+texCoords = UsdGeom.PrimvarsAPI(billboard).CreatePrimvar("st", 
                                     Sdf.ValueTypeNames.TexCoord2fArray, 
                                     UsdGeom.Tokens.varying)
 texCoords.Set([(0, 0), (1, 0), (1,1), (0, 1)])

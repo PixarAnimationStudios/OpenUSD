@@ -147,12 +147,6 @@ SdfFileFormat::ShouldSkipAnonymousReload() const
     return _ShouldSkipAnonymousReload();
 }
 
-bool
-SdfFileFormat::LayersAreFileBased() const
-{
-    return _LayersAreFileBased();
-}
-
 bool 
 SdfFileFormat::ShouldReadAnonymousLayers() const
 {
@@ -340,12 +334,6 @@ SdfFileFormat::FindByExtension(
 
 bool
 SdfFileFormat::_ShouldSkipAnonymousReload() const
-{
-    return true;
-}
-
-bool 
-SdfFileFormat::_LayersAreFileBased() const
 {
     return true;
 }

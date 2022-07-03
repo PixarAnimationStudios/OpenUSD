@@ -25,6 +25,44 @@
 Tf -- Tools Foundation
 """
 
+# Type to help handle DLL import paths on Windows with python interpreters v3.8
+# and newer. These interpreters don't search for DLLs in the path anymore, you
+# have to provide a path explicitly. This re-enables path searching for USD 
+# dependency libraries
+import platform, sys
+if sys.version_info >= (3, 8) and platform.system() == "Windows":
+    import contextlib
+
+    @contextlib.contextmanager
+    def WindowsImportWrapper():
+        import os
+        dirs = []
+        import_paths = os.getenv('PXR_USD_WINDOWS_DLL_PATH')
+        if import_paths is None:
+            import_paths = os.getenv('PATH', '')
+        for path in import_paths.split(os.pathsep):
+            # Calling add_dll_directory raises an exception if paths don't
+            # exist, or if you pass in dot
+            if os.path.exists(path) and path != '.':
+                dirs.append(os.add_dll_directory(path))
+        # This block guarantees we clear the dll directories if an exception
+        # is raised in the with block.
+        try:
+            yield
+        finally:
+            for dll_dir in dirs:
+                dll_dir.close()
+        del os
+    del contextlib
+else:
+    class WindowsImportWrapper(object):
+        def __enter__(self):
+            pass
+        def __exit__(self, exc_type, ex_val, exc_tb):
+            pass
+del platform, sys
+
+
 def PreparePythonModule(moduleName=None):
     """Prepare an extension module at import time.  This will import the
     Python module associated with the caller's module (e.g. '_tf' for 'pxr.Tf')
@@ -46,7 +84,10 @@ def PreparePythonModule(moduleName=None):
             moduleName = f_locals["__name__"].split(".")[-1]
             moduleName = "_" + moduleName[0].lower() + moduleName[1:]
 
-        module = importlib.import_module("." + moduleName, f_locals["__name__"])
+        with WindowsImportWrapper():
+            module = importlib.import_module(
+                    "." + moduleName, f_locals["__name__"])
+
         PrepareModule(module, f_locals)
         try:
             del f_locals[moduleName]

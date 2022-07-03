@@ -62,13 +62,17 @@ UsdRiMaterialAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdRiMaterialAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdRiMaterialAPI::_GetSchemaKind() const
+{
     return UsdRiMaterialAPI::schemaKind;
 }
 
-/* virtual */
-UsdSchemaKind UsdRiMaterialAPI::_GetSchemaType() const {
-    return UsdRiMaterialAPI::schemaType;
+/* static */
+bool
+UsdRiMaterialAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdRiMaterialAPI>(whyNot);
 }
 
 /* static */
@@ -206,27 +210,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-
     ((defaultOutputName, "outputs:out"))
-
-    // These tokens are required for backwards compatibility. They're 
-    // redefined here so we can stop relying on UsdRiLookAPI entirely.
     (ri)
-    ((riLookDisplacement, "riLook:displacement"))
-    ((riLookSurface, "riLook:surface"))
-    ((riLookVolume, "riLook:volume"))
 
     // deprecated tokens for handling backwards compatibility.
     ((bxdfOutputName, "ri:bxdf"))
     ((bxdfOutputAttrName, "outputs:ri:bxdf"))
     ((riLookBxdf, "riLook:bxdf"))
 );
-
-TF_DEFINE_ENV_SETTING(
-    USD_RI_WRITE_BXDF_OUTPUT, false, 
-    "If set to false, then \"ri:surface\" output is created instead of the "
-    "\"ri:bxdf\" output, when UsdRiMaterialAPI::SetSurfaceSource() is "
-    "invoked.");
 
 UsdShadeShader
 UsdRiMaterialAPI::_GetSourceShaderObject(const UsdShadeOutput &output,
@@ -313,21 +304,6 @@ UsdRiMaterialAPI::GetVolumeOutput() const
 bool
 UsdRiMaterialAPI::SetSurfaceSource(const SdfPath &surfacePath) const
 {
-    static const bool writeBxdfOutput = 
-            TfGetEnvSetting(USD_RI_WRITE_BXDF_OUTPUT);
-    if (writeBxdfOutput) {
-        if (UsdShadeOutput bxdfOutput = UsdShadeMaterial(GetPrim())
-                .CreateOutput(_tokens->bxdfOutputName, 
-                              SdfValueTypeNames->Token)) {
-            const SdfPath sourcePath = surfacePath.IsPropertyPath() ? 
-                surfacePath : 
-                surfacePath.AppendProperty(_tokens->defaultOutputName);
-            return UsdShadeConnectableAPI::ConnectToSource(
-                bxdfOutput, sourcePath);
-        }
-        return false;
-    }
-
     UsdShadeOutput surfaceOutput = UsdShadeMaterial(GetPrim())
             .CreateSurfaceOutput(/*purpose*/ _tokens->ri);
     return UsdShadeConnectableAPI::ConnectToSource(

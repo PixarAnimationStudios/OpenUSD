@@ -26,8 +26,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
+#include "pxr/base/vt/dictionary.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -63,7 +65,13 @@ public:
     std::string const& GetFragmentCode() const;
 
     HDST_API
+    std::string const& GetVolumeCode() const;
+
+    HDST_API
     std::string const& GetGeometryCode() const;
+
+    HDST_API
+    std::string const& GetDisplacementCode() const;
 
     HDST_API
     VtDictionary const& GetMetadata() const;
@@ -103,7 +111,9 @@ public:
 private:
     TfToken _materialTag;
     std::string _fragmentSource;
+    std::string _volumeSource;
     std::string _geometrySource;
+    std::string _displacementSource;
     VtDictionary _materialMetadata;
     HdSt_MaterialParamVector _materialParams;
     TextureDescriptorVector _textureDescriptors;

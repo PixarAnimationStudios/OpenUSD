@@ -32,6 +32,7 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usd/collectionAPI.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
+#include "pxr/usd/usdRender/settingsBase.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderDelegate.h"
@@ -88,10 +89,45 @@ UsdImagingPrimAdapter::~UsdImagingPrimAdapter()
 {
 }
 
+TfTokenVector
+UsdImagingPrimAdapter::GetImagingSubprims()
+{
+    TF_WARN("Datasource support not yet added for adapter '%s'",
+            TfType::GetCanonicalTypeName(typeid(*this)).c_str());
+    return TfTokenVector();
+}
+
+TfToken
+UsdImagingPrimAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingPrimAdapter::GetImagingSubprimData(
+        TfToken const& subprim,
+        UsdPrim const& prim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingPrimAdapter::InvalidateImagingSubprim(
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    return HdDataSourceLocatorSet();
+}
+
 /*static*/
 bool
 UsdImagingPrimAdapter::ShouldCullSubtree(UsdPrim const& prim)
 {
+    // Do not skip RenderSettings prims even though they are non-imageable
+    if (prim.IsA<UsdRenderSettingsBase>() && !prim.GetTypeName().IsEmpty()) {
+        return false;
+    }
     // Skip population of non-imageable prims during population traversal
     // (although they can still be populated by reference).
     return (!prim.IsA<UsdGeomImageable>() && !prim.GetTypeName().IsEmpty());
@@ -131,7 +167,7 @@ UsdImagingPrimAdapter::ProcessPrimChange(UsdPrim const& prim,
                                          SdfPath const& cachePath,
                                          TfTokenVector const& changedFields)
 {
-    // By default, resync the prim if there are any changes to non-plugin
+    // By default, resync the prim if there are any changes to plugin
     // fields and ignore changes to built-in fields. Schemas typically register
     // their own plugin metadata fields instead of relying on built-in fields.
     const SdfSchema& schema = SdfSchema::GetInstance();
@@ -165,6 +201,38 @@ UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& cachePath,
 
 /*virtual*/
 void
+UsdImagingPrimAdapter::_ResyncDependents(SdfPath const& usdPath,
+                                         UsdImagingIndexProxy* index)
+{
+    auto const range = _delegate->_dependencyInfo.equal_range(usdPath);
+    for (auto it = range.first; it != range.second; ++it) {
+        SdfPath const& depCachePath = it->second;
+        // If _ResyncDependents is called by the resync method of hydra prim
+        // /Foo, there's a strong chance the hydra prim has a declared
+        // dependency on USD prim /Foo.  (This is true pretty much except for
+        // instancing cases that aren't expected to call this function).
+        //
+        // In order to avoid infinite loops, if the hydra dependency we get has
+        // the same path as the passed in usdPath, skip resyncing it.
+        if (depCachePath == usdPath) {
+            continue;
+        }
+
+        TF_DEBUG(USDIMAGING_CHANGES)
+            .Msg("<%s> Resyncing dependent %s\n",
+                    usdPath.GetText(), depCachePath.GetText());
+
+        UsdImagingDelegate::_HdPrimInfo *primInfo =
+            _delegate->_GetHdPrimInfo(depCachePath);
+        if (primInfo != nullptr &&
+            TF_VERIFY(primInfo->adapter != nullptr)) {
+            primInfo->adapter->ProcessPrimResync(depCachePath, index);
+        }
+    }
+}
+
+/*virtual*/
+void
 UsdImagingPrimAdapter::ProcessPrimRemoval(SdfPath const& cachePath,
                                           UsdImagingIndexProxy* index)
 {
@@ -184,6 +252,14 @@ void
 UsdImagingPrimAdapter::MarkReprDirty(UsdPrim const& prim,
                                      SdfPath const& cachePath,
                                      UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkCollectionsDirty(UsdPrim const& prim,
+                                            SdfPath const& cachePath,
+                                            UsdImagingIndexProxy* index)
 {
 }
 
@@ -447,6 +523,17 @@ UsdImagingPrimAdapter::GetScenePrimPath(
 }
 
 /*virtual*/
+SdfPathVector
+UsdImagingPrimAdapter::GetScenePrimPaths(SdfPath const& cachePath,
+    std::vector<int> const& instanceIndices,
+    std::vector<HdInstancerContext> *instancerCtxs) const
+{
+    // Note: if we end up here, we're not instanced, since primInfo
+    // holds the instance adapter for instanced gprims.
+    return SdfPathVector(instanceIndices.size(), cachePath);
+}
+
+/*virtual*/
 bool
 UsdImagingPrimAdapter::PopulateSelection(
     HdSelection::HighlightMode const& mode,
@@ -519,6 +606,18 @@ UsdImagingPrimvarDescCache*
 UsdImagingPrimAdapter::_GetPrimvarDescCache() const
 {
     return &_delegate->_primvarDescCache; 
+}
+
+UsdImaging_NonlinearSampleCountCache* 
+UsdImagingPrimAdapter::_GetNonlinearSampleCountCache() const
+{
+    return &_delegate->_nonlinearSampleCountCache;
+}
+
+UsdImaging_BlurScaleCache* 
+UsdImagingPrimAdapter::_GetBlurScaleCache() const
+{
+    return &_delegate->_blurScaleCache;
 }
 
 GfMatrix4d 
@@ -624,6 +723,18 @@ UsdImagingPrimAdapter::_GetMaterialRenderContexts() const
 {
     return _delegate->GetRenderIndex().GetRenderDelegate()->
         GetMaterialRenderContexts();
+}
+
+bool 
+UsdImagingPrimAdapter::_GetSceneMaterialsEnabled() const
+{
+    return _delegate->_sceneMaterialsEnabled;
+}
+
+bool 
+UsdImagingPrimAdapter::_GetSceneLightsEnabled() const
+{
+    return _delegate->_sceneLightsEnabled;
 }
 
 bool
@@ -757,53 +868,11 @@ UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
 
 namespace {
 
-// The types of primvar changes expected
-enum PrimvarChange {
-    PrimvarChangeValue,
-    PrimvarChangeAdd,
-    PrimvarChangeRemove,
-    PrimvarChangeDesc
-};
-
-// Maps the primvar changes (above) to the dirty bit that needs to be set.
+// Figure out what changed about the primvar and update the primvar descriptors
+// if necessary
 /*static*/
-HdDirtyBits
-_GetDirtyBitsForPrimvarChange(
-    PrimvarChange changeType,
-    HdDirtyBits valueChangeDirtyBit)
-{
-    HdDirtyBits dirty = HdChangeTracker::Clean;
-
-    switch (changeType) {
-        case PrimvarChangeAdd:
-        case PrimvarChangeRemove:
-        case PrimvarChangeDesc:
-        {
-            // XXX: Once we have a bit for descriptor changes, we should use
-            // that instead.
-            dirty = HdChangeTracker::DirtyPrimvar;
-            break;
-        }
-        case PrimvarChangeValue:
-        {
-            dirty = valueChangeDirtyBit;
-            break;
-        }
-        default:
-        {
-            TF_CODING_ERROR("Unsupported PrimvarChange %d\n", changeType);
-        }
-    }
-
-    return dirty;
-}
-
-// Figure out what changed about the primvar and returns the appropriate dirty
-// bit.
-/*static*/
-PrimvarChange
+void
 _ProcessPrimvarChange(bool primvarOnPrim,
-                      HdInterpolation primvarInterpOnPrim,
                       TfToken const& primvarName,
                       HdPrimvarDescriptorVector* primvarDescs,
                       SdfPath const& cachePath/*debug*/)
@@ -819,25 +888,14 @@ _ProcessPrimvarChange(bool primvarOnPrim,
     }
     bool primvarInValueCache = primvarIt != primvarDescs->end();
 
-    PrimvarChange changeType = PrimvarChangeValue;
-    if (primvarOnPrim && !primvarInValueCache) {
-        changeType = PrimvarChangeAdd;
-    } else if (!primvarOnPrim && primvarInValueCache) {
-        changeType = PrimvarChangeRemove;
-
+    if (!primvarOnPrim && primvarInValueCache) {
         TF_DEBUG(USDIMAGING_CHANGES).Msg(
             "Removing primvar descriptor %s for cachePath %s.\n",
             primvarIt->name.GetText(), cachePath.GetText());
 
         // Remove the value cache entry.
         primvarDescs->erase(primvarIt);
-
-    } else if (primvarInValueCache && primvarOnPrim &&
-               (primvarIt->interpolation != primvarInterpOnPrim)) {
-        changeType = PrimvarChangeDesc;
     }
-
-    return changeType;
 }
 
 } // anonymous namespace
@@ -849,7 +907,7 @@ UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
         TfToken const& propertyName,
         TfToken const& primvarName,
         HdInterpolation const& primvarInterp,
-        HdDirtyBits valueChangeDirtyBit
+        HdDirtyBits primvarDirtyBit
             /*= HdChangeTracker::DirtyPrimvar*/) const
 {
     // Determine if primvar exists on the prim.
@@ -870,13 +928,11 @@ UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
     }
 
     HdPrimvarDescriptorVector& primvarDescs =
-        _GetPrimvarDescCache()->GetPrimvars(cachePath);  
-    
-    PrimvarChange changeType =
-        _ProcessPrimvarChange(primvarOnPrim, primvarInterp,
-                              primvarName, &primvarDescs, cachePath);
+        _GetPrimvarDescCache()->GetPrimvars(cachePath);
 
-    return _GetDirtyBitsForPrimvarChange(changeType, valueChangeDirtyBit);
+    _ProcessPrimvarChange(primvarOnPrim, primvarName, &primvarDescs, cachePath);
+
+    return primvarDirtyBit;
 }
 
 HdDirtyBits
@@ -884,14 +940,13 @@ UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
         UsdPrim const& prim,
         SdfPath const& cachePath,
         TfToken const& propertyName,
-        HdDirtyBits valueChangeDirtyBit/*= HdChangeTracker::DirtyPrimvar*/,
+        HdDirtyBits primvarDirtyBit/*= HdChangeTracker::DirtyPrimvar*/,
         bool inherited/*=true*/) const
 {
     // Determine if primvar exists on the prim.
     bool primvarOnPrim = false;
     UsdAttribute attr;
     TfToken interpOnPrim;
-    HdInterpolation hdInterpOnPrim = HdInterpolationConstant;
     UsdGeomPrimvarsAPI api(prim);
     if (inherited) {
         UsdGeomPrimvar pv = api.FindPrimvarWithInheritance(propertyName);
@@ -906,25 +961,29 @@ UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
     }
     if (attr && attr.HasValue()) {
         primvarOnPrim = true;
-        hdInterpOnPrim = _UsdToHdInterpolation(interpOnPrim);
     }
 
     // Determine if primvar is in the value cache.
     TfToken primvarName = UsdGeomPrimvar::StripPrimvarsName(propertyName);
     HdPrimvarDescriptorVector& primvarDescs =
-        _GetPrimvarDescCache()->GetPrimvars(cachePath);  
-    
-    PrimvarChange changeType = _ProcessPrimvarChange(primvarOnPrim,
-                                 hdInterpOnPrim,
-                                 primvarName, &primvarDescs, cachePath);
+        _GetPrimvarDescCache()->GetPrimvars(cachePath);
 
-    return _GetDirtyBitsForPrimvarChange(changeType, valueChangeDirtyBit);          
+    _ProcessPrimvarChange(primvarOnPrim, primvarName, &primvarDescs,
+                          cachePath);
+
+    return primvarDirtyBit;
 }
 
 UsdImaging_CollectionCache&
 UsdImagingPrimAdapter::_GetCollectionCache() const
 {
     return _delegate->_collectionCache;
+}
+
+UsdStageRefPtr
+UsdImagingPrimAdapter::_GetStage() const
+{
+    return _delegate->_stage;
 }
 
 UsdImaging_CoordSysBindingStrategy::value_type
@@ -937,6 +996,22 @@ UsdImaging_InheritedPrimvarStrategy::value_type
 UsdImagingPrimAdapter::_GetInheritedPrimvars(UsdPrim const& prim) const
 {
     return _delegate->_inheritedPrimvarCache.GetValue(prim);
+}
+
+UsdGeomPrimvar
+UsdImagingPrimAdapter::_GetInheritedPrimvar(UsdPrim const& prim,
+                                             TfToken const& primvarName) const
+{
+    UsdImaging_InheritedPrimvarStrategy::value_type inheritedPrimvarRecord =
+        _GetInheritedPrimvars(prim.GetParent());
+    if (inheritedPrimvarRecord) {
+        for (UsdGeomPrimvar const& pv : inheritedPrimvarRecord->primvars) {
+            if (pv.GetPrimvarName() == primvarName) {
+                return pv;
+            }
+        }
+    }
+    return UsdGeomPrimvar();
 }
 
 bool

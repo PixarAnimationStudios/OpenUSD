@@ -257,11 +257,6 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::AbstractTyped;
 
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::AbstractTyped;
-
     /// Construct a UsdGeomXformable on UsdPrim \p prim .
     /// Equivalent to UsdGeomXformable::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -310,12 +305,6 @@ protected:
     /// \sa UsdSchemaKind
     USDGEOM_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDGEOM_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -413,6 +402,10 @@ public:
             /// Returns whether the xform value might change over time.
             USDGEOM_API
             bool TransformMightBeTimeVarying() const;
+
+            /// Returns whether xformOpOrder is non-empty.
+            USDGEOM_API
+            bool HasNonEmptyXformOpOrder() const;
 
             /// Sets the vector of times at which xformOp samples have been 
             /// authored in the cached set of xform ops.

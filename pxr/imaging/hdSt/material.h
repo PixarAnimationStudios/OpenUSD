@@ -35,7 +35,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using HdStSurfaceShaderSharedPtr = std::shared_ptr<class HdStSurfaceShader>;
+using HdSt_MaterialNetworkShaderSharedPtr =
+        std::shared_ptr<class HdSt_MaterialNetworkShader>;
 
 class HioGlslfx;
 
@@ -43,6 +44,17 @@ class HdStMaterial final: public HdMaterial
 {
 public:
     HF_MALLOC_TAG_NEW("new HdStMaterial");
+
+    /// For volumes, the corresponding draw items do not use the
+    /// HdStShaderCode produced by HdStMaterial. Instead HdStVolume is
+    /// using some data from the material to produce its own HdStShaderCode
+    /// based on the volume field bindings.
+    struct VolumeMaterialData final
+    {
+        /// glslfx source code for volume
+        std::string source;
+        HdSt_MaterialParamVector params;
+    };
 
     HDST_API
     HdStMaterial(SdfPath const& id);
@@ -64,9 +76,14 @@ public:
     HDST_API
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
-    /// Obtains the render delegate specific representation of the shader.
+    /// Obtains the GLSLFX code together with supporting information
+    /// such as material params and textures to render surfaces.
     HDST_API
-    HdStShaderCodeSharedPtr GetShaderCode() const;
+    HdSt_MaterialNetworkShaderSharedPtr GetMaterialNetworkShader() const;
+
+    /// Obtains the GLSLFLX code together with material params to
+    /// render volumes.
+    inline const VolumeMaterialData &GetVolumeMaterialData() const;
 
     /// Summary flag. Returns true if the material is bound to one or more
     /// textures and any of those textures is a ptex texture.
@@ -87,7 +104,8 @@ public:
     /// Used to set the fallback shader for prim.
     /// This class takes ownership of the passed in object.
     HDST_API
-    void SetSurfaceShader(HdStSurfaceShaderSharedPtr &shaderCode);
+    void SetMaterialNetworkShader(
+        HdSt_MaterialNetworkShaderSharedPtr &shaderCode);
 
 private:
     // Processes the texture descriptors from a material network to
@@ -111,7 +129,8 @@ private:
 
     static HioGlslfx *_fallbackGlslfx;
 
-    HdStSurfaceShaderSharedPtr _surfaceShader;
+    HdSt_MaterialNetworkShaderSharedPtr _materialNetworkShader;
+    VolumeMaterialData _volumeMaterialData;
 
     bool _isInitialized : 1;
     bool _hasPtex : 1;
@@ -143,6 +162,12 @@ inline const TfToken& HdStMaterial::GetMaterialTag() const
 {
     return _materialTag;
 }
+
+inline const HdStMaterial::VolumeMaterialData &
+HdStMaterial::GetVolumeMaterialData() const {
+    return _volumeMaterialData;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

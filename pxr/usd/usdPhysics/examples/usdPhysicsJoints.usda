@@ -1,0 +1,74 @@
+#usda 1.0
+#Shows a joint which is driven to rotate
+#around the vertical axis with a constant
+#speed.
+(
+    defaultPrim = "World"
+    endTimeCode = 100
+    metersPerUnit = 0.01
+    startTimeCode = 0
+    timeCodesPerSecond = 24
+    upAxis = "Z"
+    
+    kilogramsPerUnit = 1.0
+)
+def Xform "World"
+{
+    def PhysicsScene "physicsScene"
+    {
+        float3 gravity = (0, 0, -1000)
+    }
+    def Cube "StaticBox" (
+        prepend apiSchemas = ["PhysicsCollisionAPI"]
+    )
+    {
+        color3f[] primvars:displayColor = [(0.64705884, 0.08235294, 0.08235294)]
+        double size = 100
+        quatf xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:scale = (0.1, 1, 0.1)
+        double3 xformOp:translate = (0, 0, 1000)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+    }
+    def Cube "DynamicBox" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI"]
+    )
+    {
+        color3f[] primvars:displayColor = [(0.2784314, 0.64705884, 1)]
+        double size = 100
+        quatf xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:scale = (0.1, 1, 0.1)
+        double3 xformOp:translate = (0, 120, 1000)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+    }
+    #Joint with 5 limits and one drive
+    def PhysicsJoint "D6Joint" (
+        prepend apiSchemas = ["PhysicsLimitAPI:transX", "PhysicsLimitAPI:transY", "PhysicsLimitAPI:transZ", "PhysicsLimitAPI:rotX", "PhysicsLimitAPI:rotY", "PhysicsDriveAPI:rotZ"]
+    )
+    {
+        rel physics:body0 = </World/StaticBox>
+        rel physics:body1 = </World/DynamicBox>
+        float limit:rotX:physics:high = -1
+        float limit:rotX:physics:low = 1
+        float limit:rotY:physics:high = -1
+        float limit:rotY:physics:low = 1
+        float limit:transX:physics:high = -1
+        float limit:transX:physics:low = 1
+        float limit:transY:physics:high = -1
+        float limit:transY:physics:low = 1
+        float limit:transZ:physics:high = -1
+        float limit:transZ:physics:low = 1
+        float drive:rotZ:physics:targetVelocity = 10.0
+        float drive:rotZ:physics:damping = 9999.0
+        point3f physics:localPos0 = (0, 60, 0)
+        point3f physics:localPos1 = (0, -60, 0)
+        quatf physics:localRot0 = (1, 0, 0, 0)
+        quatf physics:localRot1 = (1, 0, 0, 0)
+    }
+    def SphereLight "SphereLight"
+    {
+        float intensity = 30000
+        float radius = 150
+        double3 xformOp:translate = (650, 0, 1150)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

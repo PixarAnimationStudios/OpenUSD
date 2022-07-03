@@ -30,6 +30,35 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// Fixed indexes within the argument buffer for resource types.
+/// Chosen to be at the top of the range of indexs to not interfere
+/// with the vertex attributes.
+enum HgiMetalArgumentIndex {
+    HgiMetalArgumentIndexConstants = 27,
+    HgiMetalArgumentIndexSamplers = 28,
+    HgiMetalArgumentIndexTextures = 29,
+    HgiMetalArgumentIndexBuffers = 30,
+};
+
+enum HgiMetalArgumentOffset {
+    HgiMetalArgumentOffsetBufferVS = 0,
+    HgiMetalArgumentOffsetBufferFS = 512,
+    HgiMetalArgumentOffsetSamplerVS = 1024,
+    HgiMetalArgumentOffsetSamplerFS = 1536,
+    HgiMetalArgumentOffsetTextureVS = 2048,
+    HgiMetalArgumentOffsetTextureFS = 2560,
+
+    HgiMetalArgumentOffsetBufferCS = 0,
+    HgiMetalArgumentOffsetSamplerCS = 1024,
+    HgiMetalArgumentOffsetTextureCS = 2048,
+    
+    HgiMetalArgumentOffsetConstants = 3072,
+    
+    HgiMetalArgumentOffsetSize = 4096
+};
+
+
+class HgiMetal;
 
 ///
 /// \class HgiMetalResourceBindings
@@ -48,10 +77,22 @@ public:
 
     /// Binds the resources to GPU.
     HGIMETAL_API
-    void BindResources(id<MTLRenderCommandEncoder> renderEncoder);
+    void BindResources(HgiMetal *hgi,
+                       id<MTLRenderCommandEncoder> renderEncoder,
+                       id<MTLBuffer> argBuffer);
 
     HGIMETAL_API
-    void BindResources(id<MTLComputeCommandEncoder> computeEncoder);
+    void BindResources(HgiMetal *hgi,
+                       id<MTLComputeCommandEncoder> computeEncoder,
+                       id<MTLBuffer> argBuffer);
+    
+    HGIMETAL_API
+    static void SetConstantValues(
+        id<MTLBuffer> argumentBuffer,
+        HgiShaderStage stages,
+        uint32_t bindIndex,
+        uint32_t byteSize,
+        const void* data);
 
 private:
     HgiMetalResourceBindings() = delete;

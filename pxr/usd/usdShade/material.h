@@ -116,11 +116,6 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
 
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::ConcreteTyped;
-
     /// Construct a UsdShadeMaterial on UsdPrim \p prim .
     /// Equivalent to UsdShadeMaterial::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -194,12 +189,6 @@ protected:
     /// \sa UsdSchemaKind
     USDSHADE_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDSHADE_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -360,7 +349,7 @@ public:
     /// \deprecated Use the form that takes a TfTokenVector or renderContexts.
     USDSHADE_API
     UsdShadeShader ComputeSurfaceSource(
-        const TfToken &renderContext=UsdShadeTokens->universalRenderContext,
+        const TfToken &renderContext,
         TfToken *sourceName=nullptr, 
         UsdShadeAttributeType *sourceType=nullptr) const;
 
@@ -417,7 +406,7 @@ public:
     /// \deprecated Use the form that takes a TfTokenVector or renderContexts 
     USDSHADE_API
     UsdShadeShader ComputeDisplacementSource(
-        const TfToken &renderContext=UsdShadeTokens->universalRenderContext,
+        const TfToken &renderContext,
         TfToken *sourceName=nullptr, 
         UsdShadeAttributeType *sourceType=nullptr) const;
 
@@ -473,7 +462,7 @@ public:
     /// \deprecated Use the form that takes a TfTokenVector or renderContexts 
     USDSHADE_API
     UsdShadeShader ComputeVolumeSource(
-        const TfToken &renderContext=UsdShadeTokens->universalRenderContext,
+        const TfToken &renderContext,
         TfToken *sourceName=nullptr, 
         UsdShadeAttributeType *sourceType=nullptr) const;
 

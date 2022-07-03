@@ -48,27 +48,33 @@ void ProcessPointId(int pointId)
 }
 
 --- --------------------------------------------------------------------------
+-- layout PointId.Vertex.PointParam
+
+# Plumb the pointId, for use in the FS.
+# XXX: This works only because the TES and GS stages are disabled when
+# rendering as points. If they are enabled, we need to add the plumbing.
+[
+    ["out", "int", "vsPointId", "flat"]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl PointId.Vertex.PointParam
 
 // Fwd declare accessor method defined via code gen
-int GetBaseVertexOffset();
+FORWARD_DECL(int GetBaseVertexOffset());
 int GetPointId()
 {
     return gl_VertexID - GetBaseVertexOffset();
 }
 
 // Fwd declare selection decoder method defined in hdx/shaders/selection.glslfx
-bool IsPointSelected(int);
+FORWARD_DECL(bool IsPointSelected(int));
 float GetPointRasterSize(int pointId)
 {
     return IsPointSelected(pointId)? 
                         GetPointSelectedSize() : GetPointSize();
 }
 
-// Plumb the pointId, for use in the FS.
-// XXX: This works only because the TES and GS stages are disabled when
-// rendering as points. If they are enabled, we need to add the plumbing.
-flat out int vsPointId;
 void ProcessPointId(int pointId)
 {
     vsPointId = pointId;
@@ -82,20 +88,17 @@ int GetPointId()
     return -1;
 }
 
-bool IsFragmentOnPoint() {
-    return false;
-}
+--- --------------------------------------------------------------------------
+-- layout PointId.Fragment.PointParam
+
+[
+    ["in", "int", "vsPointId", "flat"]
+]
 
 --- --------------------------------------------------------------------------
 -- glsl PointId.Fragment.PointParam
 
-flat in int vsPointId;
-
 int GetPointId()
 {
     return vsPointId;
-}
-
-bool IsFragmentOnPoint() {
-    return true;
 }

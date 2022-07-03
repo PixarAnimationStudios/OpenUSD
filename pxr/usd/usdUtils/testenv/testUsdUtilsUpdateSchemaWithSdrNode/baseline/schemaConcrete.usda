@@ -1,0 +1,48 @@
+#usda 1.0
+
+class TestSchemaConcrete "TestSchemaConcrete" (
+    customData = {
+        string className = "EnvDayLight"
+    }
+    inherits = </Light>
+)
+{
+    float inputs:exposure = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Exposure"
+        doc = """
+              exposure:  Specify the intensity of the light source as a power of 2 (in stops).
+              Increasing the exposure by 1 will double the energy emitted by the light source.
+              A value of 0 produces an intensity of 1, -1 produces .5. You may wonder why you
+              might use Exposure, and the answer is that real world lighting has high energies
+              and typical exposures are low values while you may have to type a really large
+              number for equivalent Intensity. This is also comfortable to artists familiar with
+              photographic measurements.
+                """
+    )
+    float inputs:intensity = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Intensity"
+        doc = """
+              intensity: Scales the contribution of this light linearly.
+                """
+    )
+    vector3f inputs:sunDirection = (0, 1, 0) (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Direction"
+        doc = """
+              sunDirection: The *apparent* direction towards the center of
+              the sun.  The zenith is at +Y (for noon light) and the
+              horizon is in the XZ plane (for sunrise/set).  Note that the
+              Y component must non-negative.  Ignored if a month is given.
+                """
+    )
+    uniform token myRenderContext:usda:shaderId = "TestSchemaConcrete" (
+        displayGroup = "Internal"
+    )
+    float propNS:testShaderPropWithNS = 0
+}
+

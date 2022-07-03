@@ -91,7 +91,7 @@ The high-level grouping of C++ classes and functions is as follows:
 	<li> \link group_tf_Path \b Path \b Utilities - \endlink
 		TfRealPath, TfNormPath, TfAbsPath, TfReadLink, TfGlob
 	<li> \link group_tf_Diagnostic \b Diagnostic \b Utilities - \endlink 
-		TF_AXIOM(),  TF_FATAL_ERROR(),  TF_CODING_ERROR(), TF_RUNTIME_ERROR(),  TF_WARN(),  TF_STATUS()
+		TF_AXIOM(), TF_VERIFY(), TF_FATAL_ERROR(), TF_THROW(), TF_CODING_ERROR(), TF_RUNTIME_ERROR(), TF_WARN(), TF_STATUS()
 	<li> \link group_tf_DebuggingOutput \b Output \b For \b Debugging - \endlink 
 		TfDebug,  TF_DEBUG(),  TF_FUNC_NAME() 
 	<li> \link group_tf_String \b String \b Utilities - \endlink 

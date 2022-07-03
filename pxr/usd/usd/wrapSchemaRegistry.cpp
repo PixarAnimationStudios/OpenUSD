@@ -107,6 +107,14 @@ void wrapUsdSchemaRegistry()
              (arg("primType")))
         .staticmethod("IsConcrete")
 
+        .def("IsAbstract",
+             (bool (*)(const TfType &)) &This::IsAbstract,
+             (arg("primType")))
+        .def("IsAbstract",
+             (bool (*)(const TfToken&)) &This::IsAbstract,
+             (arg("primType")))
+        .staticmethod("IsAbstract")
+
         .def("IsAppliedAPISchema", 
              (bool (*)(const TfType &)) &This::IsAppliedAPISchema,
              (arg("apiSchemaType")))
@@ -127,16 +135,46 @@ void wrapUsdSchemaRegistry()
             (arg("typeName")))
         .staticmethod("GetTypeFromName")
 
-        .def("GetTypeAndInstance", &This::GetTypeAndInstance,
+        .def("GetTypeNameAndInstance", &This::GetTypeNameAndInstance,
             (arg("typeName")), return_value_policy<TfPyPairToTuple>())
-        .staticmethod("GetTypeAndInstance")
+        .staticmethod("GetTypeNameAndInstance")
+
+        .def("IsAllowedAPISchemaInstanceName", 
+             &This::IsAllowedAPISchemaInstanceName,
+             (arg("apiSchemaName"), arg("instanceName")))
+        .staticmethod("IsAllowedAPISchemaInstanceName")
+
+        .def("GetAPISchemaCanOnlyApplyToTypeNames", 
+             &This::GetAPISchemaCanOnlyApplyToTypeNames,
+             (arg("apiSchemaName"), arg("instanceName")=TfToken()),
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetAPISchemaCanOnlyApplyToTypeNames")
 
         .def("GetAutoApplyAPISchemas", &This::GetAutoApplyAPISchemas,
              return_value_policy<TfPyMapToDictionary>())
         .staticmethod("GetAutoApplyAPISchemas")
 
-        .def("GetPropertyNamespacePrefix", &This::GetPropertyNamespacePrefix, 
-            (arg("multiApplyAPISchemaName")))
+        .def("MakeMultipleApplyNameTemplate", 
+             &This::MakeMultipleApplyNameTemplate,
+             arg("namespacePrefix"),
+             arg("baseName"))
+        .staticmethod("MakeMultipleApplyNameTemplate")
+
+        .def("MakeMultipleApplyNameInstance", 
+             &This::MakeMultipleApplyNameInstance,
+             arg("nameTemplate"),
+             arg("instanceName"))
+        .staticmethod("MakeMultipleApplyNameInstance")
+
+        .def("GetMultipleApplyNameTemplateBaseName", 
+             &This::GetMultipleApplyNameTemplateBaseName,
+             arg("nameTemplate"))
+        .staticmethod("GetMultipleApplyNameTemplateBaseName")
+
+        .def("IsMultipleApplyNameTemplate", 
+             &This::IsMultipleApplyNameTemplate,
+             arg("nameTemplate"))
+        .staticmethod("IsMultipleApplyNameTemplate")
 
         .def("FindConcretePrimDefinition", 
              &This::FindConcretePrimDefinition,

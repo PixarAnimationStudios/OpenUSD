@@ -1,0 +1,38 @@
+#usda 1.0
+
+# Input USD file to test type mis-match for duplicate properties between sdr and
+# base USD schema -- example, intensity is marked int here vs float in usdLux
+# schema
+
+def Shader "TestDuplicatePropsAPI" (
+    sdrMetadata = {
+        token schemaName = "TestDuplicatePropsAPI"
+        token apiSchemasForAttrPruning = "BaseOneAPI|BaseTwoAPI"
+        token schemaKind = "singleApply"
+        token schemaBase = "APISchemaBase"
+        token apiSchemaAutoApplyTo = "RectLight"
+    }
+)
+{
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @testDummy.glslfx@
+
+    int inputs:one = 1
+    int inputs:two = 2
+    
+    string inputs:colorMapGamma (
+        connectability = "interfaceOnly"
+        sdrMetadata = {
+            token label = "Map Gamma"
+            token page = "Basic"
+            token usdVariability = "Uniform"
+            token options = "texture"
+            token help = """
+                uniform color mapping for gamma.
+                """
+        }
+    )
+
+    color3f outputs:resultRGB
+}
+

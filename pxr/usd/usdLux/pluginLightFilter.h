@@ -55,7 +55,7 @@ class SdfAssetPath;
 ///
 /// Light filter that provides properties that allow it to identify an 
 /// external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
-/// provided to render delegates without the need to provide a dynamic schema 
+/// provided to render delegates without the need to provide a schema 
 /// definition for the light filter's type.
 /// 
 /// \see \ref usdLux_PluginSchemas
@@ -68,11 +68,6 @@ public:
     ///
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
-
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::ConcreteTyped;
 
     /// Construct a UsdLuxPluginLightFilter on UsdPrim \p prim .
     /// Equivalent to UsdLuxPluginLightFilter::Get(prim.GetStage(), prim.GetPath())
@@ -147,12 +142,6 @@ protected:
     /// \sa UsdSchemaKind
     USDLUX_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDLUX_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.

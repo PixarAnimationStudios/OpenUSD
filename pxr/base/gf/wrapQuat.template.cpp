@@ -59,17 +59,15 @@ static string __repr__({{ QUAT }} const &self) {
         TfPyRepr(self.GetImaginary()) + ")";
 }
 
-#if PY_MAJOR_VERSION == 2
 static {{ QUAT }} __truediv__(const {{ QUAT }} &self, {{ SCL }} value)
 {
     return self / value;
 }
 
-static {{ QUAT }} __itruediv__({{ QUAT }} &self, {{ SCL }} value)
+static {{ QUAT }}& __itruediv__({{ QUAT }} &self, {{ SCL }} value)
 {
     return self /= value;
 }
-#endif
 
 // Zero-initialized default ctor for python.
 static {{ QUAT }} *__init__() { return new {{ QUAT }}(0); }
@@ -100,7 +98,8 @@ void wrapQuat{{ SUFFIX }}()
         ({{ SCL }} (*)(const {{ QUAT }}&, const {{ QUAT }}&))
         GfDot);
     
-    class_<{{ QUAT }}>("Quat{{ SUFFIX }}", no_init)
+    class_<{{ QUAT }}> cls("Quat{{ SUFFIX }}", no_init);
+    cls
         .def("__init__", make_constructor(__init__))
                           
         .def(TfTypePythonClass())
@@ -114,6 +113,9 @@ void wrapQuat{{ SUFFIX }}()
 {% for S in SCALARS if S != SCL and not ALLOW_IMPLICIT_CONVERSION(S, SCL) %}
         .def(init<const GfQuat{{ SCALAR_SUFFIX(S) }} & >())
 {% endfor %}
+
+        .def("GetZero", &{{ QUAT }}::GetZero)
+        .staticmethod("GetZero")
 
         .def("GetIdentity", &{{ QUAT }}::GetIdentity)
         .staticmethod("GetIdentity")
@@ -154,14 +156,6 @@ void wrapQuat{{ SUFFIX }}()
         .def(self * {{ SCL }}())
         .def({{ SCL }}() * self)
         .def(self / {{ SCL }}())
-
-#if PY_MAJOR_VERSION == 2
-        // Needed only to support "from __future__ import division" in
-        // python 2. In python 3 builds boost::python adds this for us.
-        .def("__truediv__", __truediv__ )
-        .def("__itruediv__", __itruediv__ )
-#endif
-
         .def("__repr__", __repr__)
 
         ;
@@ -172,5 +166,19 @@ void wrapQuat{{ SUFFIX }}()
 
     to_python_converter<std::vector<{{ QUAT }}>,
         TfPySequenceToPython<std::vector<{{ QUAT }}> > >();
-    
+
+    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
+        // __truediv__ not added by .def( self / {{ SCL }}() ) above, which
+        // happens when building with python 2, but we need it to support
+        // "from __future__ import division"
+        cls.def("__truediv__", __truediv__);
+    }
+    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
+        // __itruediv__ not added by .def( self /= {{ SCL }}() ) above, which
+        // happens when building with python 2, but we need it to support
+        // "from __future__ import division". This is also a workaround for a 
+        // bug in the current version of boost::python that incorrectly wraps
+        // in-place division with __idiv__ when building with python 3.
+        cls.def("__itruediv__", __itruediv__, return_self<>());
+    }
 }

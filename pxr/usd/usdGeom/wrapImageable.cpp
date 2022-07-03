@@ -184,30 +184,22 @@ static bool _Nonzero(const UsdGeomImageable::PurposeInfo &purposeInfo)
 WRAP_CUSTOM {
 
     _class
-        .def("CreatePrimvar", &UsdGeomImageable::CreatePrimvar,
-             (arg("attrName"), arg("typeName"), arg("interpolation")=TfToken(),
-              arg("elementSize")=-1))
-        .def("GetPrimvar", &UsdGeomImageable::GetPrimvar, arg("name"))
-        .def("GetPrimvars", &UsdGeomImageable::GetPrimvars,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetAuthoredPrimvars", &UsdGeomImageable::GetAuthoredPrimvars,
-             return_value_policy<TfPySequenceToList>())
-        .def("HasPrimvar", &UsdGeomImageable::HasPrimvar, arg("name"))
         .def("GetOrderedPurposeTokens",
              &UsdGeomImageable::GetOrderedPurposeTokens,
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetOrderedPurposeTokens")
 
         .def("ComputeVisibility", 
-             (TfToken (UsdGeomImageable::*)(UsdTimeCode const &) const)
-                &UsdGeomImageable::ComputeVisibility,
+             &UsdGeomImageable::ComputeVisibility,
              arg("time")=UsdTimeCode::Default())
-        .def("ComputeVisibility", 
-             (TfToken (UsdGeomImageable::*)(TfToken const &, 
-                                            UsdTimeCode const &) const)
-                &UsdGeomImageable::ComputeVisibility,
-             (arg("parentVisibility"),
-              arg("time")=UsdTimeCode::Default()))
+
+        .def("GetPurposeVisibilityAttr",
+             &UsdGeomImageable::GetPurposeVisibilityAttr,
+             (arg("purpose") = UsdGeomTokens->default_))
+        .def("ComputeEffectiveVisibility",
+             &UsdGeomImageable::ComputeEffectiveVisibility,
+             (arg("purpose") = UsdGeomTokens->default_,
+              arg("time") = UsdTimeCode::Default()))
 
         .def("ComputePurpose", 
              (TfToken (UsdGeomImageable::*)() const)
@@ -258,7 +250,7 @@ WRAP_CUSTOM {
             class_<UsdGeomImageable::PurposeInfo>("PurposeInfo")
                 .def(init<>())
                 .def(init<const TfToken &, bool>())
-                .def("__nonzero__", &_Nonzero)
+                .def(TfPyBoolBuiltinFuncName, &_Nonzero)
                 .def(self == self)
                 .def(self != self)
                 .add_property("purpose", &_GetPurpose, &_SetPurpose)

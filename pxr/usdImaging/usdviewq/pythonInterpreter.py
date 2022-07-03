@@ -21,6 +21,9 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+
+# pylint: disable=dict-keys-not-iterating
+
 from __future__ import print_function
 
 from pxr import Tf
@@ -316,9 +319,14 @@ class Controller(QtCore.QObject):
         # various startup scripts, so that they can access the location from
         # which they are being run.
         # also, update the globals dict after we exec the file (bug 9529)
-        self.interpreter.runsource( 'g = dict(globals()); g["__file__"] = ' +
-                                    '"%s"; execfile("%s", g);' % (path, path) +
-                                    'del g["__file__"]; globals().update(g);' )
+        self.interpreter.runsource( 
+            'g = dict(globals());' 
+            'g["__file__"] = "{0}";'
+            'f = open("{0}", "rb");'
+            'exec(compile(f.read(), "{0}", "exec"), g);'
+            'f.close();'
+            'del g["__file__"];'
+            'globals().update(g);'.format(path))
         self.SetInputStart()
         self.lines = []
 

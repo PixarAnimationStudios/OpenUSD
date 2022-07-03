@@ -75,13 +75,9 @@ UsdShadeNodeGraph::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdShadeNodeGraph::_GetSchemaKind() const {
+UsdSchemaKind UsdShadeNodeGraph::_GetSchemaKind() const
+{
     return UsdShadeNodeGraph::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdShadeNodeGraph::_GetSchemaType() const {
-    return UsdShadeNodeGraph::schemaType;
 }
 
 /* static */
@@ -260,15 +256,14 @@ _ComputeNonTransitiveInputConsumersMap(
 
         std::vector<UsdShadeInput> internalInputs = connectable.GetInputs();
         for (const auto &internalInput: internalInputs) {
-            UsdShadeConnectableAPI source;
-            TfToken sourceName;
-            UsdShadeAttributeType sourceType;
-            if (UsdShadeConnectableAPI::GetConnectedSource(internalInput,
-                    &source, &sourceName, &sourceType)) {
-                if (source.GetPrim() == nodeGraph.GetPrim() && 
-                    _IsValidInput(source, sourceType))
+            UsdShadeSourceInfoVector sources = 
+                UsdShadeConnectableAPI::GetConnectedSources(internalInput);
+
+            for (const auto& sourceInfo : sources) {
+                if (sourceInfo.source.GetPrim() == nodeGraph.GetPrim() && 
+                    _IsValidInput(sourceInfo.source, sourceInfo.sourceType))
                 {
-                    result[nodeGraph.GetInput(sourceName)].push_back(
+                    result[nodeGraph.GetInput(sourceInfo.sourceName)].push_back(
                         internalInput);
                 }
             }
@@ -379,28 +374,32 @@ UsdShadeNodeGraph::ComputeInterfaceInputConsumersMap(
     return resolved;
 }
 
-bool
-UsdShadeNodeGraph::ConnectableAPIBehavior::CanConnectOutputToSource(
-    const UsdShadeOutput &output,
-    const UsdAttribute &source,
-    std::string *reason)
+class UsdShadeNodeGraph_ConnectableAPIBehavior : 
+    public UsdShadeConnectableAPIBehavior
 {
-    return UsdShadeConnectableAPIBehavior::_CanConnectOutputToSource(
-            output, source, reason);
-}
+public:
+    // By default all NodeGraph Connectable Behavior should be
+    // container (of nodes) and exhibit encapsulation behavior.
+    USDSHADE_API
+    UsdShadeNodeGraph_ConnectableAPIBehavior() 
+        : UsdShadeConnectableAPIBehavior(
+                true /*isContainer*/, true /*requiresEncapsulation*/) {}
 
-bool
-UsdShadeNodeGraph::ConnectableAPIBehavior::IsContainer() const
-{
-    // NodeGraph does act as a namespace container for connected nodes
-    return true;
-}
+    USDSHADE_API
+    bool
+    CanConnectOutputToSource(const UsdShadeOutput &output,
+                             const UsdAttribute &source,
+                             std::string *reason) const override
+    {
+        return _CanConnectOutputToSource(output, source, reason);
+    }
+};
 
 TF_REGISTRY_FUNCTION(UsdShadeConnectableAPI)
 {
     UsdShadeRegisterConnectableAPIBehavior<
         UsdShadeNodeGraph,
-        UsdShadeNodeGraph::ConnectableAPIBehavior>();
+        UsdShadeNodeGraph_ConnectableAPIBehavior>();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

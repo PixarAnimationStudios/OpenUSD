@@ -60,6 +60,11 @@ public:
         return false;
     }
 
+    /// Dispatch buffer array range does not require staging
+    bool RequiresStaging() const override {
+        return false;
+    }
+
     /// Resize memory area for this range. Returns true if it causes container
     /// buffer reallocation.
     bool Resize(int numElements) override {
@@ -78,7 +83,7 @@ public:
         return VtValue();
     }
 
-    /// Returns the offset at which this range begins in the underlying buffer 
+    /// Returns the offset at which this range begins in the underlying buffer
     /// array in terms of elements.
     int GetElementOffset() const override {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
@@ -105,7 +110,7 @@ public:
     }
 
     /// Returns the version of the buffer array.
-    virtual size_t GetVersion() const {
+    size_t GetVersion() const override {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
         return 0;
     }
@@ -185,21 +190,20 @@ HdStDispatchBuffer::HdStDispatchBuffer(
     
     // just allocate uninitialized
     HgiBufferDesc bufDesc;
-    bufDesc.usage = HgiBufferUsageUniform;
+    bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageVertex;
     bufDesc.byteSize = dataSize;
+    bufDesc.vertexStride = stride;
     HgiBufferHandle buffer = _resourceRegistry->GetHgi()->CreateBuffer(bufDesc);
 
     // monolithic resource
-    _entireResource = HdStBufferResourceSharedPtr(
-        new HdStBufferResource(
-            role, {HdTypeInt32, 1},
-            /*offset=*/0, stride));
+    _entireResource = std::make_shared<HdStBufferResource>(
+        role, HdTupleType{HdTypeInt32, 1}, /*offset=*/0, stride);
     _entireResource->SetAllocation(buffer, dataSize);
 
     // create a buffer array range, which aggregates all views
     // (will be added by AddBufferResourceView)
-    _bar = HdStBufferArrayRangeSharedPtr(
-        new Hd_DispatchBufferArrayRange(resourceRegistry, this));
+    _bar = std::make_shared<Hd_DispatchBufferArrayRange>(
+        resourceRegistry, this);
 }
 
 HdStDispatchBuffer::~HdStDispatchBuffer()
@@ -319,9 +323,9 @@ HdStDispatchBuffer::_AddResource(TfToken const& name,
         }
     }
 
-    HdStBufferResourceSharedPtr bufferRes = HdStBufferResourceSharedPtr(
-        new HdStBufferResource(GetRole(), tupleType,
-                                 offset, stride));
+    HdStBufferResourceSharedPtr bufferRes = 
+        std::make_shared<HdStBufferResource>(
+            GetRole(), tupleType, offset, stride);
 
     _resourceList.emplace_back(name, bufferRes);
     return bufferRes;

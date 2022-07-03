@@ -476,9 +476,10 @@ HdMeshUtil::ComputeQuadInfo(HdQuadInfo* quadInfo) const
 }
 
 void
-HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
-                               VtVec2iArray *primitiveParams,
-                               VtVec2iArray *edgeIndices/*=nullptr*/) const
+HdMeshUtil::_ComputeQuadIndices(VtIntArray *indices,
+                                VtIntArray *primitiveParams,
+                                VtVec2iArray *edgeIndices/*=nullptr*/,
+                                bool triangulate/*=false*/) const
 {
     HD_TRACE_FUNCTION();
 
@@ -491,8 +492,6 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
         TF_CODING_ERROR("No output buffer provided for quadrangulation");
         return;
     }
-
-    // TODO: create ptex id remapping buffer here.
 
     int const * numVertsPtr = _topology->GetFaceVertexCounts().cdata();
     int const * vertsPtr = _topology->GetFaceVertexIndices().cdata();
@@ -515,7 +514,14 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
 
     int holeIndex = 0;
 
-    indices->resize(numQuads);
+    int const numIndicesPerQuad =
+        triangulate
+            ? HdMeshTriQuadBuilder::NumIndicesPerTriQuad
+            : HdMeshTriQuadBuilder::NumIndicesPerQuad;
+    indices->resize(numQuads * numIndicesPerQuad);
+
+    HdMeshTriQuadBuilder outputIndices(indices->data(), triangulate);
+
     primitiveParams->resize(numQuads);
     if (edgeIndices) {
         edgeIndices->resize(numQuads);
@@ -525,9 +531,6 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
     bool flip = (_topology->GetOrientation() != HdTokens->rightHanded);
     int vertIndex = numPoints;
 
-    // TODO: We need to support ptex index in addition to coarse indices.
-    //int ptexIndex = 0;
-    
     // i  -> authored face index [0, numFaces)
     // qv -> quadrangulated face index [0, numQuads)
     // v  -> index to the first vertex (index) for face i
@@ -553,10 +556,10 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
         if (v+nv > numVertIndices) {
             invalidTopology = true;
             if (nv == 4) {
-                (*indices)[qv++] = GfVec4i(0);
+                outputIndices.EmitQuadFace(GfVec4i(0));
             } else {
                 for (int j = 0; j < nv; ++j) {
-                    (*indices)[qv++] = GfVec4i(0);
+                    outputIndices.EmitQuadFace(GfVec4i(0));
                 }
             }
             v += nv;
@@ -566,17 +569,19 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
 
         int edgeIndex = ev;
         if (nv == 4) {
+            GfVec4i quadIndices;
             if (flip) {
-                (*indices)[qv][0] = (vertsPtr[v+0]);
-                (*indices)[qv][1] = (vertsPtr[v+3]);
-                (*indices)[qv][2] = (vertsPtr[v+2]);
-                (*indices)[qv][3] = (vertsPtr[v+1]);
+                quadIndices[0] = (vertsPtr[v+0]);
+                quadIndices[1] = (vertsPtr[v+3]);
+                quadIndices[2] = (vertsPtr[v+2]);
+                quadIndices[3] = (vertsPtr[v+1]);
             } else {
-                (*indices)[qv][0] = (vertsPtr[v+0]);
-                (*indices)[qv][1] = (vertsPtr[v+1]);
-                (*indices)[qv][2] = (vertsPtr[v+2]);
-                (*indices)[qv][3] = (vertsPtr[v+3]);
+                quadIndices[0] = (vertsPtr[v+0]);
+                quadIndices[1] = (vertsPtr[v+1]);
+                quadIndices[2] = (vertsPtr[v+2]);
+                quadIndices[3] = (vertsPtr[v+3]);
             }
+            outputIndices.EmitQuadFace(quadIndices);
 
             //  Case             EdgeFlag    Draw
             //  Quad/Refined face   0        hide common edge for the tri-pair
@@ -586,8 +591,7 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
             //  The first quad of a non-quad face is marked 1; the last as 2; and
             //  intermediate quads as 3.
 
-            (*primitiveParams)[qv] = GfVec2i(
-                EncodeCoarseFaceParam(i, /*edgeFlag=*/0), qv);
+            (*primitiveParams)[qv] = EncodeCoarseFaceParam(i, /*edgeFlag=*/0);
 
             if (edgeIndices) {
                 (*edgeIndices)[qv][0] = edgeIndex;
@@ -608,23 +612,26 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
             // *second non-quad
             //   ...
             for (int j = 0; j < nv; ++j) {
+                GfVec4i quadIndices;
                 // vertex
-                (*indices)[qv][0] = vertsPtr[v+j];
+                quadIndices[0] = vertsPtr[v+j];
                 if (flip) {
                     // edge prev
-                    (*indices)[qv][1] = vertIndex + (j+nv-1)%nv;
+                    quadIndices[1] = vertIndex + (j+nv-1)%nv;
                     // center
-                    (*indices)[qv][2] = vertIndex + nv;
+                    quadIndices[2] = vertIndex + nv;
                     // edge next
-                    (*indices)[qv][3] = vertIndex + j;
+                    quadIndices[3] = vertIndex + j;
                 } else {
                     // edge next
-                    (*indices)[qv][1] = vertIndex + j;
+                    quadIndices[1] = vertIndex + j;
                     // center
-                    (*indices)[qv][2] = vertIndex + nv;
+                    quadIndices[2] = vertIndex + nv;
                     // edge prev
-                    (*indices)[qv][3] = vertIndex + (j+nv-1)%nv;
+                    quadIndices[3] = vertIndex + (j+nv-1)%nv;
                 }
+                outputIndices.EmitQuadFace(quadIndices);
+
                 // edge flag != 0 => quad face is from quadrangulation
                 // it is used to hide internal edges (edge-center) of the quad
                 // The first quad gets flag = 1, intermediate quads get flag = 3
@@ -638,8 +645,7 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
                 } else {
                     edgeFlag = 3;
                 }
-                (*primitiveParams)[qv] = GfVec2i(
-                    EncodeCoarseFaceParam(i, edgeFlag), qv);
+                (*primitiveParams)[qv] = EncodeCoarseFaceParam(i, edgeFlag);
 
                 if (edgeIndices) {
                     if (flip) {
@@ -661,6 +667,24 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
     if (invalidTopology) {
         TF_WARN("numVerts and verts are incosistent [%s]", _id.GetText());
     }
+}
+
+void
+HdMeshUtil::ComputeQuadIndices(VtIntArray *indices,
+                               VtIntArray *primitiveParams,
+                               VtVec2iArray *edgeIndices/*=nullptr*/) const
+{
+    _ComputeQuadIndices(
+        indices, primitiveParams, edgeIndices);
+}
+
+void
+HdMeshUtil::ComputeTriQuadIndices(VtIntArray *indices,
+                                  VtIntArray *primitiveParams,
+                                  VtVec2iArray *edgeIndices/*=nullptr*/) const
+{
+    _ComputeQuadIndices(
+        indices, primitiveParams, edgeIndices, /*triangulate=*/true);
 }
 
 template <typename T>

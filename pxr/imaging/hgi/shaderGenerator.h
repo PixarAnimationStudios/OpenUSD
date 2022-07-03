@@ -47,39 +47,43 @@ struct HgiShaderFunctionDesc;
 class HgiShaderGenerator
 {
 public:
-    //Write the generated code to the stringstream given once set up
-    HGI_API
-    void Execute(std::ostream &ss);
-
     HGI_API
     virtual ~HgiShaderGenerator();
+
+    // Execute shader generation.
+    HGI_API
+    void Execute();
+
+    // Return generated shader source.
+    HGI_API
+    const char *GetGeneratedShaderCode() const;
 
 protected:
     HGI_API
     explicit HgiShaderGenerator(const HgiShaderFunctionDesc &descriptor);
 
     HGI_API
-    virtual void _Execute(
-        std::ostream &ss,
-        const std::string &originalShaderCode) = 0;
+    virtual void _Execute(std::ostream &ss) = 0;
 
     HGI_API
-    const std::string& _GetOriginalShader() const;
+    const char *_GetShaderCodeDeclarations() const;
+
+    HGI_API
+    const char *_GetShaderCode() const;
 
     HGI_API
     HgiShaderStage _GetShaderStage() const;
 
-    HGI_API
-    const std::string& _GetVersion() const;
-
 private:
+    const HgiShaderFunctionDesc &_descriptor;
+
+    // This is used if the descriptor does not specify a string
+    // to be used as the destination for generated output.
+    std::string _localGeneratedShaderCode;
+
     HgiShaderGenerator() = delete;
     HgiShaderGenerator & operator=(const HgiShaderGenerator&) = delete;
     HgiShaderGenerator(const HgiShaderGenerator&) = delete;
-
-    const std::string _version;
-    const std::string _originalShader;
-    const HgiShaderStage _stage;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

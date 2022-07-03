@@ -24,7 +24,6 @@
 #include "pxr/imaging/hd/renderPass.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/dirtyList.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -56,35 +55,6 @@ HdRenderPass::SetRprimCollection(HdRprimCollection const& col)
 
     _collection = col; 
 
-    // update dirty list subscription for the new collection.
-    // holding shared_ptr for the lifetime of the dirty list.
-    bool isMinorChange = true;
-    if (!_dirtyList || !_dirtyList->ApplyEdit(col)) {
-        _dirtyList.reset(new HdDirtyList(_collection, *_renderIndex));
-        isMinorChange = false;
-    }
-
-    if (TfDebug::IsEnabled(HD_DIRTY_LIST)) {
-        std::stringstream s;
-        s << "  Include: \n";
-        for (auto i : col.GetRootPaths()) {
-            s << "    - " << i << "\n";
-        }
-        s << "  Exclude: \n";
-        for (auto i : col.GetExcludePaths()) {
-            s << "    - " << i << "\n";
-        }
-        s << "  Repr: " << col.GetReprSelector() << "\n";
-
-        TF_DEBUG(HD_DIRTY_LIST).Msg("RenderPass(%p)::SetRprimCollection (%s) - "
-            "constructing new DirtyList(%p) minorChange(%d) \n%s\n",
-            (void*)this,
-            col.GetName().GetText(),
-            (void*)&*_dirtyList,
-            isMinorChange,
-            s.str().c_str());
-    }
-
     // Mark the collection dirty in derived classes.
     _MarkCollectionDirty();
 }
@@ -102,20 +72,14 @@ HdRenderPass::Sync()
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // Enqueue the dirty list of prims to be synced during Hydra Sync.
-    _renderIndex->EnqueuePrimsToSync(_dirtyList, _collection);
+    // Enqueue the collection to be synced during Hydra Sync.
+    // XXX: This is currently necessary for Hydra's core to know the reprs to
+    // sync for the dirty rprims.
+    // The collection paths are ignored.
+    _renderIndex->EnqueueCollectionToSync(_collection);
 
     // Give derived classes a chance to sync.
     _Sync();
-}
-
-void
-HdRenderPass::Prepare(TfTokenVector const &renderTags)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    _Prepare(renderTags);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

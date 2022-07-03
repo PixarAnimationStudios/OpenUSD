@@ -26,14 +26,15 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgiMetal/api.h"
+#include "pxr/imaging/hgiMetal/capabilities.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
 #import <Metal/Metal.h>
+#include <stack>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HgiMetalCapabilities;
 
 enum {
     APIVersion_Metal1_0 = 0,
@@ -59,6 +60,9 @@ public:
 
     HGIMETAL_API
     ~HgiMetal() override;
+
+    HGIMETAL_API
+    bool IsBackendSupported() const override;
 
     HGIMETAL_API
     HgiGraphicsCmdsUniquePtr CreateGraphicsCmds(
@@ -135,7 +139,10 @@ public:
 
     HGIMETAL_API
     TfToken const& GetAPIName() const override;
-    
+
+    HGIMETAL_API
+    HgiMetalCapabilities const* GetCapabilities() const override;
+
     HGIMETAL_API
     void StartFrame() override;
 
@@ -161,16 +168,14 @@ public:
     // For example, the client code may record in a HgiBlitCmds and a
     // HgiComputeCmds at the same time.
     HGIMETAL_API
-    id<MTLCommandBuffer> GetPrimaryCommandBuffer(bool flush = true);
+    id<MTLCommandBuffer> GetPrimaryCommandBuffer(HgiCmds *requester = nullptr,
+                                                 bool flush = true);
 
     HGIMETAL_API
     id<MTLCommandBuffer> GetSecondaryCommandBuffer();
 
     HGIMETAL_API
     int GetAPIVersion() const;
-    
-    HGIMETAL_API
-    HgiMetalCapabilities const & GetCapabilities() const;
     
     HGIMETAL_API
     void CommitPrimaryCommandBuffer(
@@ -184,6 +189,15 @@ public:
 
     HGIMETAL_API
     void ReleaseSecondaryCommandBuffer(id<MTLCommandBuffer> commandBuffer);
+    
+    HGIMETAL_API
+    id<MTLArgumentEncoder> GetBufferArgumentEncoder() const;
+    HGIMETAL_API
+    id<MTLArgumentEncoder> GetSamplerArgumentEncoder() const;
+    HGIMETAL_API
+    id<MTLArgumentEncoder> GetTextureArgumentEncoder() const;
+    HGIMETAL_API
+    id<MTLBuffer> GetArgBuffer();
 
 protected:
     HGIMETAL_API
@@ -205,13 +219,22 @@ private:
     id<MTLCommandQueue> _commandQueue;
     id<MTLCommandBuffer> _commandBuffer;
     id<MTLCaptureScope> _captureScopeFullFrame;
+    id<MTLArgumentEncoder> _argEncoderBuffer;
+    id<MTLArgumentEncoder> _argEncoderSampler;
+    id<MTLArgumentEncoder> _argEncoderTexture;
+    std::stack<id<MTLBuffer>> _freeArgBuffers;
+    std::mutex _freeArgMutex;
+
     HgiCmds* _currentCmds;
 
     std::unique_ptr<HgiMetalCapabilities> _capabilities;
 
     int _frameDepth;
-    int _apiVersion;
     bool _workToFlush;
+
+#if !__has_feature(objc_arc)
+    NSAutoreleasePool *_pool;
+#endif
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

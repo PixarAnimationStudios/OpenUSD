@@ -284,6 +284,19 @@ _StageTag(const std::string &id)
     return "UsdStage: @" + id + "@";
 }
 
+class UsdStage::_PendingChanges
+{
+public:
+    // Set to true to force ObjectsChanged notice to indicate recomposition
+    // of the pseudo-root regardless of what was actually recomposed.
+    bool notifyPseudoRootResync = false;
+
+    PcpChanges pcpChanges;
+
+    using PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
+    PathsToChangesMap recomposeChanges, otherResyncChanges, otherInfoChanges;
+};
+
 // ------------------------------------------------------------------------- //
 // UsdStage implementation
 // ------------------------------------------------------------------------- //
@@ -459,14 +472,17 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
     , _rootLayer(rootLayer)
     , _sessionLayer(sessionLayer)
     , _editTarget(_rootLayer)
+    , _editTargetIsLocalLayer(true)
     , _cache(new PcpCache(PcpLayerStackIdentifier(
                               _rootLayer, _sessionLayer, pathResolverContext),
                           UsdUsdFileFormatTokens->Target,
                           /*usdMode=*/true))
     , _clipCache(new Usd_ClipCache)
     , _instanceCache(new Usd_InstanceCache)
+    , _usedLayersRevision(0)
     , _interpolationType(UsdInterpolationTypeLinear)
     , _lastChangeSerialNumber(0)
+    , _pendingChanges(nullptr)
     , _initialLoadSet(load)
     , _populationMask(mask)
     , _isClosingStage(false)
@@ -523,6 +539,7 @@ UsdStage::_Close()
                 wd.Run([this]() {
                         for (auto &p: _layersAndNoticeKeys)
                             TfNotice::Revoke(p.second);
+                        TfNotice::Revoke(_resolverChangeKey);
                     });
                 
                 if (_pseudoRoot) {
@@ -684,6 +701,7 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
         subtreesToCompose, &primIndexPathsForSubtrees);
 
     stage->_RegisterPerLayerNotices();
+    stage->_RegisterResolverChangeNotice();
 
     // Publish this stage into all current writable caches.
     for (const auto cache : UsdStageCacheContext::_GetWritableCaches()) {
@@ -1267,18 +1285,37 @@ UsdStage::_GetSchemaRelationshipSpec(const UsdRelationship &rel) const
 bool
 UsdStage::_ValidateEditPrim(const UsdPrim &prim, const char* operation) const
 {
-    if (ARCH_UNLIKELY(prim.IsInPrototype())) {
-        TF_CODING_ERROR("Cannot %s at path <%s>; "
-                        "authoring to an instancing prototype is not allowed.",
-                        operation, prim.GetPath().GetText());
-        return false;
-    }
+    // This function would ideally issue an error if editing the given prim
+    // at the stage's edit target would not have any visible effect on the
+    // prim. For example, this could happen if the edit target maps the prim's
+    // path to a site that is not part of the prim's composition structure.
+    //
+    // However, doing this requires that we query the prim's dependencies,
+    // which is too expensive to do here. So we just allow edits to
+    // non-local layers or that are mapped to a different path under the
+    // assumption that the user has set up the stage's edit target to author
+    // to the site they desire. In the most common case where the edit target
+    // just targets a local layer with the identity path mapping, we can use
+    // cached bits in the UsdPrim to check for instancing-related errors.
+    if (_editTargetIsLocalLayer &&
+        (_editTarget.GetMapFunction().IsIdentityPathMapping() ||
+         _editTarget.MapToSpecPath(prim.GetPath()) == prim.GetPath())) {
+        
+        if (ARCH_UNLIKELY(prim.IsInPrototype())) {
+            TF_CODING_ERROR(
+                "Cannot %s at path <%s>; "
+                "authoring to an instancing prototype is not allowed.",
+                operation, prim.GetPath().GetText());
+            return false;
+        }
 
-    if (ARCH_UNLIKELY(prim.IsInstanceProxy())) {
-        TF_CODING_ERROR("Cannot %s at path <%s>; "
-                        "authoring to an instance proxy is not allowed.",
-                        operation, prim.GetPath().GetText());
-        return false;
+        if (ARCH_UNLIKELY(prim.IsInstanceProxy())) {
+            TF_CODING_ERROR(
+                "Cannot %s at path <%s>; "
+                "authoring to an instance proxy is not allowed.",
+                operation, prim.GetPath().GetText());
+            return false;
+        }
     }
 
     return true;
@@ -1288,18 +1325,26 @@ bool
 UsdStage::_ValidateEditPrimAtPath(const SdfPath &primPath, 
                                   const char* operation) const
 {
-    if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathInPrototype(primPath))) {
-        TF_CODING_ERROR("Cannot %s at path <%s>; "
-                        "authoring to an instancing prototype is not allowed.",
-                        operation, primPath.GetText());
-        return false;
-    }
+    // See comments in _ValidateEditPrim
+    if (_editTargetIsLocalLayer &&
+        (_editTarget.GetMapFunction().IsIdentityPathMapping() ||
+         _editTarget.MapToSpecPath(primPath) == primPath)) {
 
-    if (ARCH_UNLIKELY(_IsObjectDescendantOfInstance(primPath))) {
-        TF_CODING_ERROR("Cannot %s at path <%s>; "
-                        "authoring to an instance proxy is not allowed.",
-                        operation, primPath.GetText());
-        return false;
+        if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathInPrototype(primPath))) {
+            TF_CODING_ERROR(
+                "Cannot %s at path <%s>; "
+                "authoring to an instancing prototype is not allowed.",
+                operation, primPath.GetText());
+            return false;
+        }
+
+        if (ARCH_UNLIKELY(_IsObjectDescendantOfInstance(primPath))) {
+            TF_CODING_ERROR(
+                "Cannot %s at path <%s>; "
+                "authoring to an instance proxy is not allowed.",
+                operation, primPath.GetText());
+            return false;
+        }
     }
 
     return true;
@@ -1888,21 +1933,21 @@ UsdStage::GetRelationshipAtPath(const SdfPath &path) const
 Usd_PrimDataConstPtr
 UsdStage::_GetPrimDataAtPath(const SdfPath &path) const
 {
-    tbb::spin_rw_mutex::scoped_lock lock;
-    if (_primMapMutex)
-        lock.acquire(*_primMapMutex, /*write=*/false);
-    PathToNodeMap::const_iterator entry = _primMap.find(path);
-    return entry != _primMap.end() ? entry->second.get() : nullptr;
+    PathToNodeMap::const_accessor acc;
+    if (_primMap.find(acc, path)) {
+        return acc->second.get();
+    }
+    return nullptr;
 }
 
 Usd_PrimDataPtr
 UsdStage::_GetPrimDataAtPath(const SdfPath &path)
 {
-    tbb::spin_rw_mutex::scoped_lock lock;
-    if (_primMapMutex)
-        lock.acquire(*_primMapMutex, /*write=*/false);
-    PathToNodeMap::const_iterator entry = _primMap.find(path);
-    return entry != _primMap.end() ? entry->second.get() : nullptr;
+    PathToNodeMap::const_accessor acc;
+    if (_primMap.find(acc, path)) {
+        return acc->second.get();
+    }
+    return nullptr;
 }
 
 Usd_PrimDataConstPtr 
@@ -2332,12 +2377,6 @@ UsdStage::ExpandPopulationMask(
 // ------------------------------------------------------------------------- //
 
 vector<UsdPrim>
-UsdStage::GetMasters() const
-{
-    return GetPrototypes();
-}
-
-vector<UsdPrim>
 UsdStage::GetPrototypes() const
 {
     // Sort the instance prototype paths to provide a stable ordering for
@@ -2396,7 +2435,11 @@ UsdStage::_IsObjectDescendantOfInstance(const SdfPath& path) const
     // prim index, it would not be computed during composition unless
     // it is also serving as the source prim index for a prototype prim
     // on this stage.
-    return (_instanceCache->IsPathDescendantToAnInstance(
+    //
+    // Check if we have any instancing in this stage to avoid unnecessary
+    // path operations for performance.
+    return (_instanceCache->GetNumPrototypes() > 0 && 
+        _instanceCache->IsPathDescendantToAnInstance(
             path.GetAbsoluteRootOrPrimPath()));
 }
 
@@ -2445,18 +2488,11 @@ UsdStage::_InstantiatePrim(const SdfPath &primPath)
 
     // Instantiate new prim data instance.
     Usd_PrimDataPtr p = new Usd_PrimData(this, primPath);
-    pair<PathToNodeMap::iterator, bool> result;
-    std::pair<SdfPath, Usd_PrimDataPtr> payload(primPath, p);
-    {
-        tbb::spin_rw_mutex::scoped_lock lock;
-        if (_primMapMutex)
-            lock.acquire(*_primMapMutex);
-        result = _primMap.insert(payload);
-    }
 
     // Insert entry into the map -- should always succeed.
-    TF_VERIFY(result.second, "Newly instantiated prim <%s> already present in "
-              "_primMap", primPath.GetText());
+    TF_VERIFY(_primMap.emplace(primPath, p),
+              "Newly instantiated prim <%s> already present in _primMap",
+              primPath.GetText());
     return p;
 }
 
@@ -2837,6 +2873,10 @@ UsdStage::_ReportErrors(const PcpErrorVector &errors,
 static Usd_PrimTypeInfoCache &
 _GetPrimTypeInfoCache()
 {
+    // As noted in prim.h, our current guarantee of the lifetime of the objects
+    // referenced by the return value of UsdPrim::GetPrimTypeInfo is (at least)
+    // as long as the owning stage is open. This is currently true as we never
+    // clear either this cache or its contents.
     static Usd_PrimTypeInfoCache cache;
     return cache;
 }
@@ -2885,12 +2925,6 @@ _ComposeAuthoredAppliedSchemas(
 }
 
 void
-UsdStage::_ComposeSubtreeInParallel(Usd_PrimDataPtr prim)
-{
-    _ComposeSubtreesInParallel(vector<Usd_PrimDataPtr>(1, prim));
-}
-
-void
 UsdStage::_ComposeSubtreesInParallel(
     const vector<Usd_PrimDataPtr> &prims,
     const vector<SdfPath> *primIndexPaths)
@@ -2909,7 +2943,6 @@ UsdStage::_ComposeSubtreesInParallel(
 
     // Begin a subtree composition in parallel.
     WorkWithScopedParallelism([this, &prims, &primIndexPaths]() {
-            _primMapMutex = boost::in_place();
             _dispatcher = boost::in_place();
             // We populate the clip cache concurrently during composition, so we
             // need to enable concurrent population here.
@@ -2918,20 +2951,20 @@ UsdStage::_ComposeSubtreesInParallel(
             try {
                 for (size_t i = 0; i != prims.size(); ++i) {
                     Usd_PrimDataPtr p = prims[i];
-                    _dispatcher->Run(
-                        &UsdStage::_ComposeSubtreeImpl, this, p, p->GetParent(),
-                        &_populationMask,
-                        primIndexPaths ? (*primIndexPaths)[i] : p->GetPath());
+                    _dispatcher->Run([this, p, &primIndexPaths, i]() {
+                        _ComposeSubtreeImpl(
+                            p, p->GetParent(), &_populationMask,
+                            primIndexPaths
+                            ? (*primIndexPaths)[i] : p->GetPath());
+                    });
                 }
             }
             catch (...) {
                 _dispatcher = boost::none;
-                _primMapMutex = boost::none;
                 throw;
             }
             
             _dispatcher = boost::none;
-            _primMapMutex = boost::none;
         });
 }
 
@@ -2942,9 +2975,9 @@ UsdStage::_ComposeSubtree(
     const SdfPath& primIndexPath)
 {
     if (_dispatcher) {
-        _dispatcher->Run(
-            &UsdStage::_ComposeSubtreeImpl, this,
-            prim, parent, mask, primIndexPath);
+        _dispatcher->Run([this, prim, parent, mask, primIndexPath]() {
+            _ComposeSubtreeImpl(prim, parent, mask, primIndexPath);
+        });
     } else {
         // TF_DEBUG(USD_COMPOSITION).Msg("Composing Subtree at <%s>\n",
         //                               prim->GetPath().GetText());
@@ -3042,7 +3075,10 @@ UsdStage::_DestroyDescendents(Usd_PrimDataPtr prim)
     prim->_firstChild = nullptr;
     while (childIt != childEnd) {
         if (_dispatcher) {
-            _dispatcher->Run(&UsdStage::_DestroyPrim, this, *childIt++);
+            // Make sure we advance to the next sibling before we destroy
+            // the current child so we don't read from a deleted prim.
+            Usd_PrimDataPtr child = *childIt++;
+            _dispatcher->Run([this, child]() { _DestroyPrim(child); });
         } else {
             _DestroyPrim(*childIt++);
         }
@@ -3056,24 +3092,24 @@ UsdStage::_DestroyPrimsInParallel(const vector<SdfPath>& paths)
 
     TRACE_FUNCTION();
 
-    TF_AXIOM(!_dispatcher && !_primMapMutex);
+    TF_AXIOM(!_dispatcher);
 
     WorkWithScopedParallelism([&]() {
-            _primMapMutex = boost::in_place();
-            _dispatcher = boost::in_place();
-            for (const auto& path : paths) {
-                Usd_PrimDataPtr prim = _GetPrimDataAtPath(path);
-                // We *expect* every prim in paths to be valid as we iterate,
-                // but at one time had issues with deactivated prototype prims,
-                // so we preserve a guard for resiliency.  See
-                // testUsdBug141491.py
-                if (TF_VERIFY(prim)) {
-                    _dispatcher->Run(&UsdStage::_DestroyPrim, this, prim);
-                }
+        _dispatcher = boost::in_place();
+        for (const auto& path : paths) {
+            Usd_PrimDataPtr prim = _GetPrimDataAtPath(path);
+            // We *expect* every prim in paths to be valid as we iterate,
+            // but at one time had issues with deactivated prototype prims,
+            // so we preserve a guard for resiliency.  See
+            // testUsdBug141491.py
+            if (TF_VERIFY(prim)) {
+                _dispatcher->Run([this, prim]() {
+                    _DestroyPrim(prim);
+                });
             }
-            _dispatcher = boost::none;
-            _primMapMutex = boost::none;
-        });
+        }
+        _dispatcher = boost::none;
+    });
 }
 
 void
@@ -3109,17 +3145,10 @@ UsdStage::_DestroyPrim(Usd_PrimDataPtr prim)
     // NOTE: The above was true in gcc 4.4 but not in gcc 4.8, nor is it
     //       true in boost::unordered_map or std::unordered_map.
     if (!_isClosingStage) {
-        SdfPath primPath = prim->GetPath(); 
-        tbb::spin_rw_mutex::scoped_lock lock;
-        const bool hasMutex = static_cast<bool>(_primMapMutex);
-        if (hasMutex)
-            lock.acquire(*_primMapMutex);
-        bool erased = _primMap.erase(primPath);
-        if (hasMutex)
-            lock.release();
-        TF_VERIFY(erased, 
+        SdfPath primPath = prim->GetPath();
+        TF_VERIFY(_primMap.erase(primPath),
                   "Destroyed prim <%s> not present in stage's data structures",
-                  prim->GetPath().GetString().c_str());
+                  primPath.GetString().c_str());
     }
 }
 
@@ -3128,20 +3157,46 @@ UsdStage::Reload()
 {
     TfAutoMallocTag2 tag("Usd", _mallocTagID);
 
+    // This UsdStage may receive layer change notices due to layers being
+    // reloaded below. However, we won't receive that notice for any layers
+    // that we failed to load previously but are now loadable. For example,
+    // if a prim had a reference to a non-existent layer, but then that
+    // layer was created, the only indication of that would be a prim resync
+    // in the PcpChanges object returned by Reload.
+    //
+    // We want to combine the stage changes from processing the layer changes
+    // with the stage changes indicated in the PcpChanges returned by Reload
+    // so that this stage only goes through one round of change processing
+    // and notification. So, we create a _PendingChanges object that will
+    // be filled in by _HandleLayersDidChange and the call to Reload, then
+    // process all of that information in _ProcessPendingChanges().
+    _PendingChanges localPendingChanges;
+    _pendingChanges = &localPendingChanges;
+
     ArResolverScopedCache resolverCache;
 
-    // Reload layers that are reached via composition.
-    PcpChanges changes;
-    _cache->Reload(&changes);
+    // Refresh the resolver to pick up changes that might have
+    // affected asset resolution.
+    ArGetResolver().RefreshContext(GetPathResolverContext());
 
-    // Reload all clip layers that are opened.
-    _clipCache->Reload();
+    // Reload layers in a change block to batch together change notices.
+    { 
+        SdfChangeBlock block;
+    
+        // Reload layers that are reached via composition.
+        PcpChanges& changes = _pendingChanges->pcpChanges;
+        _cache->Reload(&changes);
+        
+        // Reload all clip layers that are opened.
+        _clipCache->Reload();
+    }
 
-    // Process changes.  This won't be invoked automatically if we didn't
-    // reload any layers but only loaded layers that we failed to load
-    // previously (because loading a previously unloaded layer doesn't
-    // invoke change processing).
-    _Recompose(changes);
+    // Process changes if they haven't already been processed in response
+    // to layer change notices above. If they have already been processed,
+    // _pendingChanges would have been reset to NULL.
+    if (_pendingChanges == &localPendingChanges) {
+        _ProcessPendingChanges();
+    }
 }
 
 /*static*/
@@ -3465,18 +3520,27 @@ UsdStage::SetEditTarget(const UsdEditTarget &editTarget)
         return;
     }
     // Do some extra error checking if the EditTarget specifies a local layer.
-    if (editTarget.GetMapFunction().IsIdentity() &&
-        !HasLocalLayer(editTarget.GetLayer())) {
-        TF_CODING_ERROR("Layer @%s@ is not in the local LayerStack rooted "
-                        "at @%s@",
-                        editTarget.GetLayer()->GetIdentifier().c_str(),
-                        GetRootLayer()->GetIdentifier().c_str());
-        return;
+    bool isLocalLayer = true;
+    bool* computedIsLocalLayer = nullptr; 
+
+    if (editTarget.GetMapFunction().IsIdentity()) {
+        isLocalLayer = HasLocalLayer(editTarget.GetLayer());
+        computedIsLocalLayer = &isLocalLayer;
+
+        if (!isLocalLayer) {
+            TF_CODING_ERROR(
+                "Layer @%s@ is not in the local LayerStack rooted at @%s@",
+                editTarget.GetLayer()->GetIdentifier().c_str(),
+                GetRootLayer()->GetIdentifier().c_str());
+            return;
+        }
     }
 
     // If different from current, set EditTarget and notify.
     if (editTarget != _editTarget) {
         _editTarget = editTarget;
+        _editTargetIsLocalLayer = computedIsLocalLayer ? 
+            *computedIsLocalLayer : HasLocalLayer(editTarget.GetLayer());
         UsdStageWeakPtr self(this);
         UsdNotice::StageEditTargetChanged(self).Send(self);
     }
@@ -3833,12 +3897,24 @@ UsdStage::_HandleLayersDidChange(
 
     _lastChangeSerialNumber = serial;
 
-    TF_DEBUG(USD_CHANGES).Msg("\nHandleLayersDidChange received\n");
+    TF_DEBUG(USD_CHANGES).Msg(
+        "\nHandleLayersDidChange received (%s)\n", UsdDescribe(this).c_str());
+
+    // If a function up the call stack has set up _PendingChanges, merge in
+    // all of the information from layer changes so it can be processed later.
+    // Otherwise, fill in our own _PendingChanges and process it at the end
+    // of this function.
+    _PendingChanges localPendingChanges;
+    if (!_pendingChanges) {
+        _pendingChanges = &localPendingChanges;
+    }
 
     // Keep track of paths to USD objects that need to be recomposed or
     // have otherwise changed.
     using _PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
-    _PathsToChangesMap recomposeChanges, otherResyncChanges, otherInfoChanges;
+    _PathsToChangesMap& recomposeChanges = _pendingChanges->recomposeChanges;
+    _PathsToChangesMap& otherResyncChanges = _pendingChanges->otherResyncChanges;
+    _PathsToChangesMap& otherInfoChanges = _pendingChanges->otherInfoChanges;
 
     SdfPathVector changedActivePaths;
 
@@ -3976,7 +4052,7 @@ UsdStage::_HandleLayersDidChange(
     // invalidation based on composition metadata (reference, inherits, variant
     // selections, etc).
 
-    PcpChanges changes;
+    PcpChanges& changes = _pendingChanges->pcpChanges;
     const PcpCache *cache = _cache.get();
     changes.DidChange(
         TfSpan<const PcpCache*>(&cache, 1), n.GetChangeListVec());
@@ -3990,76 +4066,189 @@ UsdStage::_HandleLayersDidChange(
         changes.DidChangeSignificantly(_cache.get(), p);
     }
 
+    // Normally we'd call _ProcessPendingChanges only if _pendingChanges
+    // pointed to localPendingChanges. If it didn't, it would mean that an
+    // upstream caller initialized _pendingChanges and that caller would be
+    // expected to call _ProcessPendingChanges itself.
+    // 
+    // However, the _PathsToChangesMap objects in _pendingChanges may hold
+    // raw pointers to entries stored in the notice, so we must process these
+    // changes immediately while the notice is still alive.
+    _ProcessPendingChanges();
+}
+
+void
+UsdStage::_ProcessPendingChanges()
+{
+    if (!TF_VERIFY(_pendingChanges)) {
+        return;
+    }
+
+    TF_DEBUG(USD_CHANGES).Msg(
+        "\nProcessPendingChanges (%s)\n", UsdDescribe(this).c_str());
+
+    PcpChanges& changes = _pendingChanges->pcpChanges;
+
+    using _PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
+    _PathsToChangesMap& recomposeChanges = _pendingChanges->recomposeChanges;
+    _PathsToChangesMap& otherResyncChanges=_pendingChanges->otherResyncChanges;
+    _PathsToChangesMap& otherInfoChanges = _pendingChanges->otherInfoChanges;
+
     _Recompose(changes, &recomposeChanges);
 
-    // Filter out all changes to objects beneath instances and remap
-    // them to the corresponding object in the instance's prototype. Do this
-    // after _Recompose so that the instancing cache is up-to-date.
-    auto remapChangesToPrototypes = [this](_PathsToChangesMap* changes) {
-        std::vector<_PathsToChangesMap::value_type> prototypeChanges;
-        for (auto it = changes->begin(); it != changes->end(); ) {
-            if (_IsObjectDescendantOfInstance(it->first)) {
-                const SdfPath primIndexPath = 
-                    it->first.GetAbsoluteRootOrPrimPath();
-                for (const SdfPath& pathInPrototype :
-                     _instanceCache->GetPrimsInPrototypesUsingPrimIndexPath(
-                         primIndexPath)) {
-                    prototypeChanges.emplace_back(
-                        it->first.ReplacePrefix(
-                            primIndexPath, pathInPrototype), 
-                        it->second);
-                }
-                it = changes->erase(it);
-                continue;
-            }
-            ++it;
-        }
+    if (_pendingChanges->notifyPseudoRootResync) {
+        recomposeChanges.clear();
+        recomposeChanges[SdfPath::AbsoluteRootPath()];
 
-        for (const auto& entry : prototypeChanges) {
-            auto& value = (*changes)[entry.first];
-            value.insert(value.end(), entry.second.begin(), entry.second.end());
-        }
-    };
-
-    remapChangesToPrototypes(&recomposeChanges);
-    remapChangesToPrototypes(&otherResyncChanges);
-    remapChangesToPrototypes(&otherInfoChanges);
-
-    // Add in all other paths that are marked as resynced.
-    if (recomposeChanges.empty()) {
-        recomposeChanges.swap(otherResyncChanges);
-    }
-    else {
-        _RemoveDescendentEntries(&recomposeChanges);
-        _MergeAndRemoveDescendentEntries(&recomposeChanges, &otherResyncChanges);
-        for (auto& entry : otherResyncChanges) {
-            recomposeChanges[entry.first] = std::move(entry.second);
-        }
-    }
-
-    // Collect the paths in otherChangedPaths that aren't under paths that
-    // were recomposed.  If the pseudo-root had been recomposed, we can
-    // just clear out otherChangedPaths since everything was recomposed.
-    if (!recomposeChanges.empty() &&
-        recomposeChanges.begin()->first == SdfPath::AbsoluteRootPath()) {
-        // If the pseudo-root is present, it should be the only path in the
-        // changes.
-        TF_VERIFY(recomposeChanges.size() == 1);
+        otherResyncChanges.clear();
         otherInfoChanges.clear();
     }
+    else {
+        // Filter out all changes to objects beneath instances and remap
+        // them to the corresponding object in the instance's prototype. Do this
+        // after _Recompose so that the instancing cache is up-to-date.
+        auto remapChangesToPrototypes = [this](_PathsToChangesMap* changes) {
+            std::vector<_PathsToChangesMap::value_type> prototypeChanges;
+            for (auto it = changes->begin(); it != changes->end(); ) {
+                if (_IsObjectDescendantOfInstance(it->first)) {
+                    const SdfPath primIndexPath = 
+                        it->first.GetAbsoluteRootOrPrimPath();
+                    for (const SdfPath& pathInPrototype :
+                         _instanceCache->GetPrimsInPrototypesUsingPrimIndexPath(
+                             primIndexPath)) {
+                        prototypeChanges.emplace_back(
+                            it->first.ReplacePrefix(
+                                primIndexPath, pathInPrototype), 
+                            it->second);
+                    }
+                    it = changes->erase(it);
+                    continue;
+                }
+                ++it;
+            }
 
-    // Now we want to remove all elements of otherInfoChanges that are
-    // prefixed by elements in recomposeChanges or beneath instances.
-    _MergeAndRemoveDescendentEntries(&recomposeChanges, &otherInfoChanges);
+            for (const auto& entry : prototypeChanges) {
+                auto& value = (*changes)[entry.first];
+                value.insert(
+                    value.end(), entry.second.begin(), entry.second.end());
+            }
+        };
 
-    UsdStageWeakPtr self(this);
+        remapChangesToPrototypes(&recomposeChanges);
+        remapChangesToPrototypes(&otherResyncChanges);
+        remapChangesToPrototypes(&otherInfoChanges);
 
-    // Notify about changed objects.
-    UsdNotice::ObjectsChanged(
-        self, &recomposeChanges, &otherInfoChanges).Send(self);
+        // Add in all other paths that are marked as resynced.
+        if (recomposeChanges.empty()) {
+            recomposeChanges.swap(otherResyncChanges);
+        }
+        else {
+            _RemoveDescendentEntries(&recomposeChanges);
+            _MergeAndRemoveDescendentEntries(
+                &recomposeChanges, &otherResyncChanges);
+            for (auto& entry : otherResyncChanges) {
+                recomposeChanges[entry.first] = std::move(entry.second);
+            }
+        }
 
-    // Receivers can now refresh their caches... or just dirty them
-    UsdNotice::StageContentsChanged(self).Send(self);
+        // Collect the paths in otherChangedPaths that aren't under paths that
+        // were recomposed.  If the pseudo-root had been recomposed, we can
+        // just clear out otherChangedPaths since everything was recomposed.
+        if (!recomposeChanges.empty() &&
+            recomposeChanges.begin()->first == SdfPath::AbsoluteRootPath()) {
+            // If the pseudo-root is present, it should be the only path in the
+            // changes.
+            TF_VERIFY(recomposeChanges.size() == 1);
+            otherInfoChanges.clear();
+        }
+
+        // Now we want to remove all elements of otherInfoChanges that are
+        // prefixed by elements in recomposeChanges or beneath instances.
+        _MergeAndRemoveDescendentEntries(&recomposeChanges, &otherInfoChanges);
+    }
+
+    // If the local layer stack has changed, recompute whether the edit target
+    // layer is a local layer. We need to do this after the Pcp changes
+    // have been applied so that the local layer stack has been updated.
+    if (TfMapLookupPtr(
+            _pendingChanges->pcpChanges.GetLayerStackChanges(), 
+            _cache->GetLayerStack())) {
+        _editTargetIsLocalLayer = HasLocalLayer(_editTarget.GetLayer());
+    }
+
+    // Reset _pendingChanges before sending notices so that any changes to
+    // this stage that happen in response to the notices are handled
+    // properly. The object that _pendingChanges referred to should remain
+    // alive, so the references we took above are still valid.
+    _pendingChanges = nullptr;
+
+    if (!recomposeChanges.empty() || !otherInfoChanges.empty()) {
+        UsdStageWeakPtr self(this);
+
+        // Notify about changed objects.
+        UsdNotice::ObjectsChanged(
+            self, &recomposeChanges, &otherInfoChanges).Send(self);
+
+        // Receivers can now refresh their caches... or just dirty them
+        UsdNotice::StageContentsChanged(self).Send(self);
+    }
+}
+
+void
+UsdStage::_HandleResolverDidChange(
+    const ArNotice::ResolverChanged& n)
+{
+    // A ResolverChanged notice that affects our resolver context means that
+    // any asset paths that have been resolved on this stage may now resolve
+    // to a different resolved path. This includes asset paths that were
+    // resolved during composition and asset path-valued attributes.
+    //
+    // Handling this notice correctly must be done downstream of Sdf, since
+    // asset paths have to be re-resolved under the contexts they were
+    // originally resolved with. Sdf does not have the information needed to do
+    // this, since it only tracks the context a layer was originally opened
+    // with and not any other contexts.
+    //
+    // For example: let's say we have stage A that opens a layer with asset path
+    // L, then we create stage B with a different context that also references
+    // L. If L happens to resolve to the same file under B's context, then A and
+    // B will share that layer.  However, at the Sdf level that layer only knows
+    // about A's context since that's what it was opened under. If we get a
+    // ResolverChanged notice that affects stage B, we need to re-resolve L
+    // under stage B's context to determine if anything needs to change.
+    if (!n.AffectsContext(GetPathResolverContext())) {
+        return;
+    }
+
+    TF_DEBUG(USD_CHANGES).Msg(
+        "\nHandleResolverDidChange received (%s)\n", UsdDescribe(this).c_str());
+
+    // Merge stage changes computed in this function with other pending changes
+    // or start up our own pending changes batch so we can process them at the
+    // end of the function.
+    _PendingChanges localPendingChanges;
+    if (!_pendingChanges) {
+        _pendingChanges = &localPendingChanges;
+    }
+
+    // Inform Pcp of the change to the resolver to determine prims that
+    // may need to be resynced. Pcp will re-resolve asset paths for all prim
+    // indexes to see if any now refer to a different resolved path and
+    // indicate that resyncs are necessary for those prims.
+    PcpChanges& changes = _pendingChanges->pcpChanges;
+    changes.DidChangeAssetResolver(_GetPcpCache());
+
+    // Asset-path valued attributes on this stage may be invalidated.
+    // We don't want to incur the expense of scanning the entire stage
+    // to see if any such attributes exist so we conservatively notify
+    // clients that the pseudo-root has resynced, even though we may
+    // only be recomposing a subset of the stage.
+    _pendingChanges->notifyPseudoRootResync = true;
+
+    // Process pending changes if we are the originators of the batch.
+    if (_pendingChanges == &localPendingChanges) {
+        _ProcessPendingChanges();
+    }
 }
 
 void 
@@ -4093,19 +4282,11 @@ UsdStage::_Recompose(const PcpChanges &changes,
     const PcpChanges::LayerStackChanges &layerStackChanges = 
         changes.GetLayerStackChanges();
 
-    // Some changes may cause the stage's used layers to change so we track
-    // them to see if we may need to update layer notices.
-    bool changedUsedLayers = false;
-
     for (const auto& layerStackChange : layerStackChanges) {
         const PcpLayerStackPtr& layerStack = layerStackChange.first;
         const PcpErrorVector& errors = layerStack->GetLocalErrors();
         if (!errors.empty()) {
             _ReportPcpErrors(errors, "Recomposing stage");
-        }
-        if (layerStackChange.second.didChangeLayers ||
-            layerStackChange.second.didChangeSignificantly) {
-            changedUsedLayers = true;
         }
     }
 
@@ -4116,16 +4297,13 @@ UsdStage::_Recompose(const PcpChanges &changes,
 
         for (const auto& path : ourChanges.didChangeSignificantly) {
             (*pathsToRecompose)[path];
-            changedUsedLayers = true;
             TF_DEBUG(USD_CHANGES).Msg("Did Change Significantly: %s\n",
                                       path.GetText());
         }
 
         for (const auto& path : ourChanges.didChangePrims) {
             (*pathsToRecompose)[path];
-            changedUsedLayers = true;
-            TF_DEBUG(USD_CHANGES).Msg("Did Change Prim: %s\n",
-                                      path.GetText());
+            TF_DEBUG(USD_CHANGES).Msg("Did Change Prim: %s\n", path.GetText());
         }
 
     } else {
@@ -4137,9 +4315,7 @@ UsdStage::_Recompose(const PcpChanges &changes,
     // Update layer change notice listeners if changes may affect
     // the set of used layers. This is potentially expensive which is why we
     // try to make sure the changes require it.
-    if (changedUsedLayers) {
-        _RegisterPerLayerNotices();
-    }
+    _RegisterPerLayerNotices();
 }
 
 template <class T>
@@ -4321,12 +4497,13 @@ UsdStage::_ComputeSubtreesToRecompose(
 
         // Add prototypes to list of subtrees to recompose and instantiate any 
         // new prototype not present in the primMap from before
+        PathToNodeMap::const_accessor acc;
         if (_instanceCache->IsPrototypePath(*i)) {
-            PathToNodeMap::const_iterator itr = _primMap.find(*i);
             Usd_PrimDataPtr prototypePrim;
-            if (itr != _primMap.end()) {
+            if (_primMap.find(acc, *i)) {
                 // should be a changed prototype if already in the primMap
-                prototypePrim = itr->second.get();
+                prototypePrim = acc->second.get();
+                acc.release();
             } else {
                 // newPrototype should be absent from the primMap, instantiate
                 // these now to be added to subtreesToRecompose
@@ -4340,8 +4517,7 @@ UsdStage::_ComputeSubtreesToRecompose(
         // Collect all non-prototype prims (including descendants of prototypes)
         // to be added to subtreesToRecompute
         SdfPath const &parentPath = i->GetParentPath();
-        PathToNodeMap::const_iterator parentIt = _primMap.find(parentPath);
-        if (parentIt != _primMap.end()) {
+        if (_primMap.find(acc, parentPath)) {
 
             // Since our input range contains no descendant paths, siblings
             // must appear consecutively.  We want to process all siblings that
@@ -4350,16 +4526,17 @@ UsdStage::_ComputeSubtreesToRecompose(
             // parent to find the range of siblings.
 
             // Recompose parent's list of children.
-            auto parent = parentIt->second.get();
+            auto parent = acc->second.get();
+            acc.release();
             _ComposeChildren(
                 parent, parent->IsInPrototype() ? nullptr : &_populationMask,
                 /*recurse=*/false);
 
             // Recompose the subtree for each affected sibling.
             do {
-                PathToNodeMap::const_iterator primIt = _primMap.find(*i);
-                if (primIt != _primMap.end()) {
-                    subtreesToRecompose->push_back(primIt->second.get());
+                if (_primMap.find(acc, *i)) {
+                    subtreesToRecompose->push_back(acc->second.get());
+                    acc.release();
                 } else if (_instanceCache->IsPrototypePath(*i)) {
                     // If this path is a prototype path and is not present in
                     // the primMap, then this must be a new prototype added
@@ -4471,7 +4648,16 @@ UsdStage::_RegisterPerLayerNotices()
     // works because the PcpCache::GetUsedLayers() returns a std::set, so we
     // always retain things in a stable order.
 
+    // Check to see if the set of used layers hasn't changed, and skip all this
+    // if so.
+    size_t currentUsedLayersRevision = _cache->GetUsedLayersRevision();
+    if (_usedLayersRevision &&
+        _usedLayersRevision == currentUsedLayersRevision) {
+        return;
+    }
+
     SdfLayerHandleSet usedLayers = _cache->GetUsedLayers();
+    _usedLayersRevision = currentUsedLayersRevision;
 
     SdfLayerHandleSet::const_iterator
         usedLayersIter = usedLayers.begin(),
@@ -4519,6 +4705,13 @@ UsdStage::_RegisterPerLayerNotices()
 
     // Swap new set into place.
     _layersAndNoticeKeys.swap(newLayersAndNoticeKeys);
+}
+
+void
+UsdStage::_RegisterResolverChangeNotice()
+{
+    _resolverChangeKey = TfNotice::Register(
+        TfCreateWeakPtr(this), &UsdStage::_HandleResolverDidChange);
 }
 
 SdfPrimSpecHandle
@@ -7720,34 +7913,6 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
     // This is the lowest-level site for guaranteeing that all GetTimeSample
     // queries clear out the return vector
     times->clear();
-    const auto copySamplesInInterval = [](const std::set<double>& samples, 
-                                          vector<double>* target, 
-                                          const GfInterval& interval) 
-    {
-        std::set<double>::iterator samplesBegin, samplesEnd; 
-
-        if (interval.IsMinOpen()) {
-            samplesBegin = std::upper_bound(samples.begin(), 
-                                            samples.end(), 
-                                            interval.GetMin()); 
-        } else {
-            samplesBegin = std::lower_bound(samples.begin(), 
-                                            samples.end(), 
-                                            interval.GetMin());
-        }
-
-        if (interval.IsMaxOpen()) {
-            samplesEnd = std::lower_bound(samplesBegin,
-                                          samples.end(), 
-                                          interval.GetMax());
-        } else {
-            samplesEnd = std::upper_bound(samplesBegin,
-                                          samples.end(),
-                                          interval.GetMax());
-        }
-
-        target->insert(target->end(), samplesBegin, samplesEnd);
-    };
 
     if (info._source == UsdResolveInfoSourceTimeSamples) {
         const SdfPath specPath =
@@ -7760,7 +7925,7 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
             if (info._layerToStageOffset.IsIdentity()) {
                 // The layer offset is identity, so we can use the interval
                 // directly, and do not need to remap the sample times.
-                copySamplesInInterval(samples, times, interval);
+                Usd_CopyTimeSamplesInInterval(samples, interval, times);
             } else {
                 // Map the interval (expressed in stage time) to layer time.
                 const SdfLayerOffset stageToLayer =
@@ -7768,7 +7933,7 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
                 const GfInterval layerInterval =
                     interval * stageToLayer.GetScale()
                     + stageToLayer.GetOffset();
-                copySamplesInInterval(samples, times, layerInterval);
+                Usd_CopyTimeSamplesInInterval(samples, layerInterval, times);
                 // Map the layer sample times to stage times.
                 for (auto &time : *times) {
                     time = info._layerToStageOffset * time;
@@ -7799,9 +7964,7 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
 
             // See comments in _GetValueImpl regarding layer
             // offsets and why they're not applied here.
-            const std::set<double> samples =
-                clipSet->ListTimeSamplesForPath(specPath);
-            copySamplesInInterval(samples, times, interval);;
+            *times = clipSet->GetTimeSamplesInInterval(specPath, interval);
             return true;
         }
     }
@@ -8487,26 +8650,24 @@ std::string
 UsdStage::ResolveIdentifierToEditTarget(std::string const &identifier) const
 {
     const SdfLayerHandle &anchor = _editTarget.GetLayer();
-    
+        
     // This check finds anonymous layers, which we consider to always resolve
-    if (SdfLayerHandle lyr = SdfLayer::Find(identifier)){
-        if (lyr->IsAnonymous()){
-            TF_DEBUG(USD_PATH_RESOLUTION).Msg("Resolved identifier %s because "
-                                              "it was anonymous\n",
-                                              identifier.c_str());
+    if (SdfLayer::IsAnonymousLayerIdentifier(identifier)) {
+        if (SdfLayerHandle lyr = SdfLayer::Find(identifier)){
+            TF_DEBUG(USD_PATH_RESOLUTION).Msg(
+                "Resolved identifier %s because it was anonymous\n",
+                identifier.c_str());
             return identifier;
         }
-        else if (anchor->IsAnonymous() && 
-                 ArGetResolver().IsRelativePath(identifier)){
-            TF_DEBUG(USD_PATH_RESOLUTION).Msg("Cannot resolve identifier %s "
-                                              "because anchoring layer %s is"
-                                              "anonymous\n",
-                                              identifier.c_str(),
-                                              anchor->GetIdentifier().c_str());
+        else {
+            TF_DEBUG(USD_PATH_RESOLUTION).Msg(
+                "Resolved identifier %s to \"\" because it was anonymous but "
+                "no layer is open with that identifier\n",
+                identifier.c_str());
             return std::string();
         }
     }
-    
+
     ArResolverContextBinder binder(GetPathResolverContext());
 
     // Handles non-relative paths also

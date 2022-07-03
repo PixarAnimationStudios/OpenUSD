@@ -106,6 +106,7 @@ pxr_test_scripts(
     testenv/testPcpRegressionBugs_bug90706.py
     testenv/testPcpRegressionBugs_bug92955.py
     testenv/testPcpRegressionBugs_bug101300.py
+    testenv/testPcpResolvedPathChange.py
     testenv/testPcpStreamingLayerReload.py
     testenv/testPcpCompositionResults.py
 )
@@ -295,6 +296,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpRegressionBugs_USD-6755.testenv
+    DEST testPcpRegressionBugs_USD-6755
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpRegressionBugs_case1.testenv
     DEST testPcpRegressionBugs_case1
 )
@@ -445,6 +451,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ReferenceListOpsWithOffsets.testenv
+    DEST testPcpMuseum_ReferenceListOpsWithOffsets
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_RelativePathPayloads.testenv
     DEST testPcpMuseum_RelativePathPayloads
 )
@@ -465,6 +476,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_SpecializesAndAncestralArcs2.testenv
+    DEST testPcpMuseum_SpecializesAndAncestralArcs2
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_SubrootInheritsAndVariants.testenv
     DEST testPcpMuseum_SubrootInheritsAndVariants
 )
@@ -472,6 +488,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_SubrootReferenceAndClasses.testenv
     DEST testPcpMuseum_SubrootReferenceAndClasses
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_SubrootReferenceAndRelocates.testenv
+    DEST testPcpMuseum_SubrootReferenceAndRelocates
 )
 
 pxr_install_test_dir(
@@ -712,6 +733,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_TrickySpecializesAndInherits2.testenv
     DEST testPcpMuseum_TrickySpecializesAndInherits2
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_TrickySpecializesAndInherits3.testenv
+    DEST testPcpMuseum_TrickySpecializesAndInherits3
 )
 
 pxr_install_test_dir(
@@ -1074,6 +1100,13 @@ pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs
     DIFF_COMPARE compositionResults_PayloadsAndAncestralArcs.txt 
 )
 
+pxr_register_test(testPcpMuseum_ReferenceListOpsWithOffsets
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults ReferenceListOpsWithOffsets/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ReferenceListOpsWithOffsets.txt
+    DIFF_COMPARE compositionResults_ReferenceListOpsWithOffsets.txt 
+)
+
 pxr_register_test(testPcpMuseum_RelativePathPayloads
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults RelativePathPayloads/root.sdf" 
@@ -1102,6 +1135,13 @@ pxr_register_test(testPcpMuseum_SpecializesAndAncestralArcs
     DIFF_COMPARE compositionResults_SpecializesAndAncestralArcs.txt 
 )
 
+pxr_register_test(testPcpMuseum_SpecializesAndAncestralArcs2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SpecializesAndAncestralArcs2/root.sdf" 
+    STDOUT_REDIRECT compositionResults_SpecializesAndAncestralArcs2.txt
+    DIFF_COMPARE compositionResults_SpecializesAndAncestralArcs2.txt 
+)
+
 pxr_register_test(testPcpMuseum_SubrootInheritsAndVariants
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SubrootInheritsAndVariants/root.sdf" 
@@ -1114,6 +1154,13 @@ pxr_register_test(testPcpMuseum_SubrootReferenceAndClasses
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SubrootReferenceAndClasses/root.sdf" 
     STDOUT_REDIRECT compositionResults_SubrootReferenceAndClasses.txt
     DIFF_COMPARE compositionResults_SubrootReferenceAndClasses.txt 
+)
+
+pxr_register_test(testPcpMuseum_SubrootReferenceAndRelocates
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SubrootReferenceAndRelocates/root.sdf" 
+    STDOUT_REDIRECT compositionResults_SubrootReferenceAndRelocates.txt
+    DIFF_COMPARE compositionResults_SubrootReferenceAndRelocates.txt 
 )
 
 pxr_register_test(testPcpMuseum_SubrootReferenceAndVariants
@@ -1469,6 +1516,13 @@ pxr_register_test(testPcpMuseum_TrickySpecializesAndInherits2
     DIFF_COMPARE compositionResults_TrickySpecializesAndInherits2.txt 
 )
 
+pxr_register_test(testPcpMuseum_TrickySpecializesAndInherits3
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpecializesAndInherits3/root.sdf" 
+    STDOUT_REDIRECT compositionResults_TrickySpecializesAndInherits3.txt
+    DIFF_COMPARE compositionResults_TrickySpecializesAndInherits3.txt 
+)
+
 pxr_register_test(testPcpMuseum_TrickySpecializesAndRelocates
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpecializesAndRelocates/root.sdf" 
@@ -1702,11 +1756,25 @@ pxr_register_test(testPcpRegressionBugs_bug101300
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testPcpRegressionBugs_USD-6755
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors.txt root.sdf" 
+    STDOUT_REDIRECT compositionResults.txt
+    DIFF_COMPARE compositionResults.txt compositionErrors.txt
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testPcpRegressionBugs_case1
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults case1/root.sdf"
     STDOUT_REDIRECT compositionResults_case1.txt
     DIFF_COMPARE  compositionResults_case1.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testPcpResolvedPathChange
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpResolvedPathChange"
     EXPECTED_RETURN_CODE 0
 )
 

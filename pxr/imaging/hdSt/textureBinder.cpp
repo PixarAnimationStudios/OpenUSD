@@ -21,9 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/imaging/hdSt/textureBinder.h"
 #include "pxr/imaging/hdSt/ptexTextureObject.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
@@ -32,8 +29,7 @@
 #include "pxr/imaging/hdSt/textureObject.h"
 #include "pxr/imaging/hdSt/udimTextureObject.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
-#include "pxr/imaging/hgiGL/texture.h"
-#include "pxr/imaging/hgiGL/sampler.h"
+#include "pxr/base/gf/matrix4f.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -49,9 +45,12 @@ _Concat(const TfToken &a, const TfToken &b)
 void
 HdSt_TextureBinder::GetBufferSpecs(
     const NamedTextureHandleVector &textures,
-    const bool useBindlessHandles,
-    HdBufferSpecVector * const specs)
+    HdBufferSpecVector * const specs,
+    bool doublesSupported)
 {
+    const bool useBindlessHandles = textures.empty() ? false :
+        textures[0].handle->UseBindlessHandles();
+
     for (const NamedTextureHandle & texture : textures) {
         switch (texture.type) {
         case HdTextureType::Uv:
@@ -83,7 +82,8 @@ HdSt_TextureBinder::GetBufferSpecs(
                 _Concat(
                     texture.name,
                     HdSt_ResourceBindingSuffixTokens->samplingTransform),
-                HdTupleType{HdTypeDoubleMat4, 1});
+                HdTupleType{ (doublesSupported ?
+                    HdTypeDoubleMat4 : HdTypeFloatMat4), 1});
             break;
         case HdTextureType::Ptex:
             if (useBindlessHandles) {
@@ -121,7 +121,7 @@ namespace {
 class HdSt_BindlessSamplerBufferSource : public HdBufferSource {
 public:
     HdSt_BindlessSamplerBufferSource(TfToken const &name,
-                                     const GLuint64EXT value)
+                                     const uint64_t value)
     : HdBufferSource()
     , _name(name)
     , _value(value)
@@ -158,7 +158,7 @@ protected:
 
 private:
     const TfToken _name;
-    const GLuint64EXT _value;
+    const uint64_t _value;
 };
 
 class _ComputeBufferSourcesFunctor {
@@ -167,14 +167,16 @@ public:
         TfToken const &name,
         HdStUvTextureObject const &texture,
         HdStUvSamplerObject const &sampler,
-        const bool useBindlessHandles,
-        HdBufferSourceSharedPtrVector * const sources)
+        HdBufferSourceSharedPtrVector * const sources,
+        bool useBindlessHandles,
+        bool doublesSupported)
     {
         if (useBindlessHandles) {
             sources->push_back(
                 std::make_shared<HdSt_BindlessSamplerBufferSource>(
                     name,
-                    sampler.GetGLTextureSamplerHandle()));
+                    HdSt_ResourceBinder::GetSamplerBindlessHandle(
+                        sampler.GetSampler(), texture.GetTexture())));
         } else {
             sources->push_back(
                 std::make_shared<HdVtBufferSource>(
@@ -189,21 +191,36 @@ public:
         TfToken const &name,
         HdStFieldTextureObject const &texture,
         HdStFieldSamplerObject const &sampler,
-        const bool useBindlessHandles,
-        HdBufferSourceSharedPtrVector * const sources)
+        HdBufferSourceSharedPtrVector * const sources,
+        bool useBindlessHandles,
+        bool doublesSupported)
     {
+        VtValue matrixVal;
+        if (doublesSupported) {
+            matrixVal = VtValue(texture.GetSamplingTransform());
+        } else {
+            GfMatrix4d dmatrix = texture.GetSamplingTransform();
+            GfMatrix4f fmatrix(
+                dmatrix[0][0], dmatrix[0][1], dmatrix[0][2], dmatrix[0][3],
+                dmatrix[1][0], dmatrix[1][1], dmatrix[1][2], dmatrix[1][3],
+                dmatrix[2][0], dmatrix[2][1], dmatrix[2][2], dmatrix[2][3],
+                dmatrix[3][0], dmatrix[3][1], dmatrix[3][2], dmatrix[3][3]);
+            matrixVal = VtValue(fmatrix);
+        }
+
         sources->push_back(
             std::make_shared<HdVtBufferSource>(
                 _Concat(
                     name,
                     HdSt_ResourceBindingSuffixTokens->samplingTransform),
-                VtValue(texture.GetSamplingTransform())));
+                matrixVal));
 
         if (useBindlessHandles) {
             sources->push_back(
                 std::make_shared<HdSt_BindlessSamplerBufferSource>(
                     name,
-                    sampler.GetGLTextureSamplerHandle()));
+                    HdSt_ResourceBinder::GetSamplerBindlessHandle(
+                        sampler.GetSampler(), texture.GetTexture())));
         } else {
             sources->push_back(
                 std::make_shared<HdVtBufferSource>(
@@ -218,8 +235,9 @@ public:
         TfToken const &name,
         HdStPtexTextureObject const &texture,
         HdStPtexSamplerObject const &sampler,
-        const bool useBindlessHandles,
-        HdBufferSourceSharedPtrVector * const sources)
+        HdBufferSourceSharedPtrVector * const sources,
+        bool useBindlessHandles,
+        bool doublesSupported)
     {
         if (!useBindlessHandles) {
             return;
@@ -228,22 +246,25 @@ public:
         sources->push_back(
             std::make_shared<HdSt_BindlessSamplerBufferSource>(
                 name,
-                sampler.GetTexelsGLTextureHandle()));
+                HdSt_ResourceBinder::GetSamplerBindlessHandle(
+                    sampler.GetTexelsSampler(), texture.GetTexelTexture())));
 
         sources->push_back(
             std::make_shared<HdSt_BindlessSamplerBufferSource>(
                 _Concat(
                     name,
                     HdSt_ResourceBindingSuffixTokens->layout),
-                sampler.GetLayoutGLTextureHandle()));
+                HdSt_ResourceBinder::GetTextureBindlessHandle(
+                    texture.GetLayoutTexture())));
     }
 
     static void Compute(
         TfToken const &name,
         HdStUdimTextureObject const &texture,
         HdStUdimSamplerObject const &sampler,
-        const bool useBindlessHandles,
-        HdBufferSourceSharedPtrVector * const sources)
+        HdBufferSourceSharedPtrVector * const sources,
+        bool useBindlessHandles,
+        bool doublesSupported)
     {
         if (!useBindlessHandles) {
             return;
@@ -252,54 +273,18 @@ public:
         sources->push_back(
             std::make_shared<HdSt_BindlessSamplerBufferSource>(
                 name,
-                sampler.GetTexelsGLTextureHandle()));
+                HdSt_ResourceBinder::GetSamplerBindlessHandle(
+                    sampler.GetTexelsSampler(), texture.GetTexelTexture())));
 
         sources->push_back(
             std::make_shared<HdSt_BindlessSamplerBufferSource>(
                 _Concat(
                     name,
                     HdSt_ResourceBindingSuffixTokens->layout),
-                sampler.GetLayoutGLTextureHandle()));
+                HdSt_ResourceBinder::GetTextureBindlessHandle(
+                    texture.GetLayoutTexture())));
     }
 };
-
-void
-_BindTexture(const GLenum target,
-             HgiTextureHandle const &textureHandle,
-             HgiSamplerHandle const &samplerHandle,
-             const TfToken &name,
-             HdSt_ResourceBinder const &binder,
-             const bool bind)
-{
-    const HdBinding binding = binder.GetBinding(name);
-    const int samplerUnit = binding.GetTextureUnit();
-
-    glActiveTexture(GL_TEXTURE0 + samplerUnit);
-
-    const HgiTexture * const tex = textureHandle.Get();
-    const HgiGLTexture * const glTex =
-        dynamic_cast<const HgiGLTexture*>(tex);
-
-    if (tex && !glTex) {
-        TF_CODING_ERROR("Storm texture binder only supports OpenGL");
-    }
-
-    const GLuint texName =
-        (bind && glTex) ? glTex->GetTextureId() : 0;
-    glBindTexture(target, texName);
-
-    const HgiSampler * const sampler = samplerHandle.Get();
-    const HgiGLSampler * const glSampler =
-        dynamic_cast<const HgiGLSampler*>(sampler);
-
-    if (sampler && !glSampler) {
-        TF_CODING_ERROR("Storm texture binder only supports OpenGL");
-    }
-
-    const GLuint samplerName =
-        (bind && glSampler) ? glSampler->GetSamplerId() : 0;
-    glBindSampler(samplerUnit, samplerName);
-}
 
 class _BindFunctor {
 public:
@@ -310,12 +295,10 @@ public:
         HdSt_ResourceBinder const &binder,
         const bool bind)
     {
-        _BindTexture(
-            GL_TEXTURE_2D,
-            texture.GetTexture(),
-            sampler.GetSampler(),
+        binder.BindTexture(
             name,
-            binder,
+            sampler.GetSampler(),
+            texture.GetTexture(),
             bind);
     }
 
@@ -326,12 +309,10 @@ public:
         HdSt_ResourceBinder const &binder,
         const bool bind)
     {
-        _BindTexture(
-            GL_TEXTURE_3D,
-            texture.GetTexture(),
-            sampler.GetSampler(),
+        binder.BindTexture(
             name,
-            binder,
+            sampler.GetSampler(),
+            texture.GetTexture(),
             bind);
     }
 
@@ -342,31 +323,12 @@ public:
         HdSt_ResourceBinder const &binder,
         const bool bind)
     {
-        const HdBinding texelBinding = binder.GetBinding(name);
-        const int texelSamplerUnit = texelBinding.GetTextureUnit();
-
-        glActiveTexture(GL_TEXTURE0 + texelSamplerUnit);
-        glBindTexture(GL_TEXTURE_2D_ARRAY,
-                      bind ? texture.GetTexelTexture()->GetRawResource() : 0);
-
-        HgiSampler * const texelSampler = sampler.GetTexelsSampler().Get();
-
-        const HgiGLSampler * const glSampler =
-            bind ? dynamic_cast<HgiGLSampler*>(texelSampler) : nullptr;
-
-        if (glSampler) {
-            glBindSampler(texelSamplerUnit, (GLuint)glSampler->GetSamplerId());
-        } else {
-            glBindSampler(texelSamplerUnit, 0);
-        }
-
-        const HdBinding layoutBinding = binder.GetBinding(
-            _Concat(name, HdSt_ResourceBindingSuffixTokens->layout));
-        const int layoutSamplerUnit = layoutBinding.GetTextureUnit();
-
-        glActiveTexture(GL_TEXTURE0 + layoutSamplerUnit);
-        glBindTexture(GL_TEXTURE_1D_ARRAY,
-                      bind ? texture.GetLayoutTexture()->GetRawResource() : 0);
+        binder.BindTextureWithLayout(
+            name,
+            sampler.GetTexelsSampler(),
+            texture.GetTexelTexture(),
+            texture.GetLayoutTexture(),
+            bind);
     }
 
     static void Compute(
@@ -376,31 +338,73 @@ public:
         HdSt_ResourceBinder const &binder,
         const bool bind)
     {
-        const HdBinding texelBinding = binder.GetBinding(name);
-        const int texelSamplerUnit = texelBinding.GetTextureUnit();
+        binder.BindTextureWithLayout(
+            name,
+            sampler.GetTexelsSampler(),
+            texture.GetTexelTexture(),
+            texture.GetLayoutTexture(),
+            bind);
+    }
+};
 
-        glActiveTexture(GL_TEXTURE0 + texelSamplerUnit);
-        glBindTexture(GL_TEXTURE_2D_ARRAY,
-                      bind ? texture.GetTexelTexture()->GetRawResource() : 0);
+class _BindingDescsFunctor {
+public:
+    static void Compute(
+        TfToken const &name,
+        HdStUvTextureObject const &texture,
+        HdStUvSamplerObject const &sampler,
+        HdSt_ResourceBinder const &binder,
+        HgiResourceBindingsDesc * bindingsDesc)
+    {
+        binder.GetTextureBindingDesc(
+                bindingsDesc,
+                name,
+                sampler.GetSampler(),
+                texture.GetTexture());
+    }
 
-        HgiSampler * const texelSampler = sampler.GetTexelsSampler().Get();
+    static void Compute(
+        TfToken const &name,
+        HdStFieldTextureObject const &texture,
+        HdStFieldSamplerObject const &sampler,
+        HdSt_ResourceBinder const &binder,
+        HgiResourceBindingsDesc * bindingsDesc)
+    {
+        binder.GetTextureBindingDesc(
+                bindingsDesc,
+                name,
+                sampler.GetSampler(),
+                texture.GetTexture());
+    }
 
-        const HgiGLSampler * const glSampler =
-            bind ? dynamic_cast<HgiGLSampler*>(texelSampler) : nullptr;
+    static void Compute(
+        TfToken const &name,
+        HdStPtexTextureObject const &texture,
+        HdStPtexSamplerObject const &sampler,
+        HdSt_ResourceBinder const &binder,
+        HgiResourceBindingsDesc * bindingsDesc)
+    {
+        binder.GetTextureWithLayoutBindingDesc(
+                bindingsDesc,
+                name,
+                sampler.GetTexelsSampler(),
+                texture.GetTexelTexture(),
+                texture.GetLayoutTexture());
+    }
 
-        if (glSampler) {
-            glBindSampler(texelSamplerUnit, (GLuint)glSampler->GetSamplerId());
-        } else {
-            glBindSampler(texelSamplerUnit, 0);
-        }
-
-        const HdBinding layoutBinding = binder.GetBinding(
-            _Concat(name, HdSt_ResourceBindingSuffixTokens->layout));
-        const int layoutSamplerUnit = layoutBinding.GetTextureUnit();
-
-        glActiveTexture(GL_TEXTURE0 + layoutSamplerUnit);
-        glBindTexture(GL_TEXTURE_1D,
-                      bind ? texture.GetLayoutTexture()->GetRawResource() : 0);
+    static void Compute(
+        TfToken const &name,
+        HdStUdimTextureObject const &texture,
+        HdStUdimSamplerObject const &sampler,
+        HdSt_ResourceBinder const &binder,
+        HgiResourceBindingsDesc * bindingsDesc)
+    {
+        binder.GetTextureWithLayoutBindingDesc(
+                bindingsDesc,
+                name,
+                sampler.GetTexelsSampler(),
+                texture.GetTexelTexture(),
+                texture.GetLayoutTexture());
     }
 };
 
@@ -479,37 +483,39 @@ void _Dispatch(
 void
 HdSt_TextureBinder::ComputeBufferSources(
     const NamedTextureHandleVector &textures,
-    const bool useBindlessHandles,
-    HdBufferSourceSharedPtrVector * const sources)
+    HdBufferSourceSharedPtrVector * const sources,
+    bool doublesSupported)
 {
-    _Dispatch<_ComputeBufferSourcesFunctor>(
-        textures, useBindlessHandles, sources);
+    const bool useBindlessHandles = textures.empty() ? false :
+        textures[0].handle->UseBindlessHandles();
+
+    _Dispatch<_ComputeBufferSourcesFunctor>(textures, sources, 
+        useBindlessHandles, doublesSupported);
 }
 
 void
 HdSt_TextureBinder::BindResources(
     HdSt_ResourceBinder const &binder,
-    const bool useBindlessHandles,
     const NamedTextureHandleVector &textures)
 {
-    if (useBindlessHandles) {
-        return;
-    }
-
     _Dispatch<_BindFunctor>(textures, binder, /* bind = */ true);
 }
 
 void
 HdSt_TextureBinder::UnbindResources(
     HdSt_ResourceBinder const &binder,
-    const bool useBindlessHandles,
     const NamedTextureHandleVector &textures)
 {
-    if (useBindlessHandles) {
-        return;
-    }
-
     _Dispatch<_BindFunctor>(textures, binder, /* bind = */ false);
+}
+
+void
+HdSt_TextureBinder::GetBindingDescs(
+        HdSt_ResourceBinder const &binder,
+        HgiResourceBindingsDesc * bindingsDesc,
+        const NamedTextureHandleVector &textures)
+{
+    _Dispatch<_BindingDescsFunctor>(textures, binder, bindingsDesc);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

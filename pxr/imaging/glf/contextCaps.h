@@ -72,8 +72,6 @@ public:
     GLF_API
     static const GlfContextCaps &GetInstance();
 
-
-
     // GL version
     int glVersion;                    // 400 (4.0), 410 (4.1), ...
 
@@ -82,31 +80,6 @@ public:
 
     // Max constants
     int maxArrayTextureLayers;
-    int maxUniformBlockSize;
-    int maxShaderStorageBlockSize;
-    int maxTextureBufferSize;
-    int uniformBufferOffsetAlignment;
-
-    // GL extensions (ordered by version)
-    bool arrayTexturesEnabled;        // EXT_texture_array                (3.0)
-    bool shaderStorageBufferEnabled;  // ARB_shader_storage_buffer_object (4.3)
-    bool bufferStorageEnabled;        // ARB_buffer_storage               (4.4)
-    bool directStateAccessEnabled;    // ARB_direct_state_access          (4.5)
-    bool multiDrawIndirectEnabled;    // ARB_multi_draw_indirect          (4.5)
-
-    bool bindlessTextureEnabled;      // ARB_bindless_texture
-    bool bindlessBufferEnabled;       // NV_shader_buffer_load
-
-    // GLSL version and extensions 
-    int glslVersion;                  // 400, 410, ...
-    bool explicitUniformLocation;     // ARB_explicit_uniform_location    (4.3)
-    bool shadingLanguage420pack;      // ARB_shading_language_420pack     (4.2)
-    bool shaderDrawParametersEnabled; // ARB_shader_draw_parameters       (4.5)
-
-    // workarounds for driver issues
-    bool copyBufferEnabled;
-
-    bool floatingPointBuffersEnabled;
 
 private:
     void _LoadCaps();

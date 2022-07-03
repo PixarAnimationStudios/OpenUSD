@@ -1,0 +1,201 @@
+#usda 1.0
+(
+    "This file describes the Pixar-specific USD Geometric schemata for code generation."
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName           = "usdHydra"
+        string libraryPath           = "pxr/usd/usdHydra"
+        dictionary libraryTokens = {
+
+            dictionary HwPrimvar_1 = {
+                string doc = """The id value of a Primvar shader."""
+            }
+
+            dictionary HwPtexTexture_1 = {
+                string doc = """The id value of a PtexTexture shader."""
+            }
+
+            dictionary HwUvTexture_1 = {
+                string doc = """The id value of a UvTexture shader."""
+            }
+
+            dictionary displayLookBxdf = {
+                string value = "displayLook:bxdf"
+                string doc = """\deprecated This has been deprecated in favor of
+                the glslfx:surface output.
+                
+                Relationship on a material that targets the "bxdf" or the
+                surface shader prim."""
+            }
+
+            dictionary infoFilename = {
+                string value = "inputs:file"
+                string doc = """ The special "info:filename" property of a hydra
+                Texture shader, which points to a resolvable texture asset."""
+            }
+
+
+            dictionary infoVarname = {
+                string value = "inputs:varname"
+                string doc = """
+                """
+            }
+
+            dictionary textureMemory = {
+                string doc = """A shader input on a hydra Texture shader."""
+            }
+
+            dictionary frame = {
+                string doc = """A shader input on a "Texture" shader."""
+            }
+
+            dictionary uv = {
+                string doc = """A shader input on a hydra UvTexture shader."""
+            }
+
+            dictionary wrapS = {
+                string doc = """A shader input on a hydra UvTexture shader which
+                defines the behavior of texture coordinates that are outside the
+                bounds of the texture."""
+            }
+
+
+            dictionary wrapT = {
+                string doc = """A shader input on a hydra UvTexture shader which
+                defines the behavior of texture coordinates that are outside the
+                bounds of the texture."""
+            }
+
+            dictionary black = {
+                string doc = """Possible value for "wrapT" and "wrapS" inputs on
+                a "UvTexture" shader prim.
+                Causes black to be returned when sampling outside the bounds of
+                the texture."""
+            }
+
+            dictionary clamp = {
+                string doc = """Possible value for "wrapT" and "wrapS" inputs on
+                a "UvTexture" shader prim.
+                Causes the the texture coordinate to be clamped to [0,1]."""
+            }
+
+            dictionary mirror = {
+                string doc = """Possible value for "wrapT" and "wrapS" inputs on
+                a "UvTexture" shader prim.
+                Causes the texture coordinate to wrap around like a mirror. -0.2
+                becomes 0.2, -1.2 becomes 0.8, etc. ,"""
+            }
+
+            dictionary repeat = {
+                string doc = """Possible value for "wrapT" and "wrapS" inputs on
+                a "UvTexture" shader prim. 
+                Causes the texture coordinate to wrap around the texture. So a
+                texture coordinate of -0.2 becomes the equivalent of 0.8."""
+            }
+
+            dictionary useMetadata = {
+                string doc = """Possible value for "wrapT" and "wrapS" inputs on
+                a "UvTexture" shader prim.
+                Causes the wrap value to be loaded from the texture file instead
+                of being specified in the prim.  If the texture file doesn't
+                support metadata or the metadata doesn't contain a wrap mode, 
+                the "black" wrap mode is used."""
+            }
+
+            dictionary magFilter = {
+                string doc = """An input on a UvTexture shader."""
+            }
+
+            dictionary minFilter = {
+                string doc = """An input on a UvTexture shader."""
+            }
+
+            dictionary linearMipmapLinear = {
+                string doc = """See https://www.opengl.org/wiki/Sampler_Object ,
+                Possible value for the "minFilter" input on a UvTexture shader.
+                """
+            }
+
+            dictionary linearMipmapNearest = {
+                string doc = """See https://www.opengl.org/wiki/Sampler_Object 
+                Possible value for the "minFilter" input on a UvTexture shader.
+                """
+            }
+
+            dictionary nearestMipmapNearest = {
+                string doc = """See https://www.opengl.org/wiki/Sampler_Object
+                Possible value for the "minFilter" input on a UvTexture shader.
+                """
+            }
+
+            dictionary linear = {
+                string doc = """A weighted linear blend of nearest adjacent
+                samples.
+                Possible value for "minFilter" and "magFilter" inputs on a
+                UvTextureshader."""
+            }
+
+            dictionary nearest = {
+                string doc = """Selects the nearest sample for the given
+                coordinate 
+                Possible value for "minFilter" and "magFilter" inputs on a
+                UvTexture shader."""
+            }
+
+            dictionary nearestMipmapLinear = {
+                string doc = """See https://www.opengl.org/wiki/Sampler_Object
+                Possible value for "minFilter" and "magFilter" inputs on a
+                UvTexture shader."""
+            }
+
+            dictionary faceIndex = {
+                string doc = """The "faceIndex" shader input on a hydra
+                "PtexTexture" shader."""
+            }
+
+            dictionary faceOffset = {
+                string doc = """The "faceOffset" shader input on a hydra
+                "PtexTexture" shader."""
+            }
+        }
+    }
+){
+}
+
+class "HydraGenerativeProceduralAPI" (
+    inherits = </APISchemaBase>
+    doc = """
+    This API extends and configures the core UsdProcGenerativeProcedural schema
+    defined within usdProc for use with hydra generative procedurals as defined
+    within hdGp.
+    """
+    customData = {
+        string className = "GenerativeProceduralAPI"
+        token[] apiSchemaCanOnlyApplyTo = ["GenerativeProcedural"]
+    }
+){
+    token primvars:hdGp:proceduralType (
+        doc = """The registered name of a HdGpGenerativeProceduralPlugin to
+        be executed."""
+
+        customData = {
+            string apiName = "proceduralType"
+        }
+    )
+
+    token proceduralSystem = "hydraGenerativeProcedural" (
+        doc = """
+        This value should correspond to a configured instance of
+        HdGpGenerativeProceduralResolvingSceneIndex which will evaluate the
+        procedural. The default value of "hydraGenerativeProcedural" matches
+        the equivalent default of HdGpGenerativeProceduralResolvingSceneIndex.
+        Multiple instances of the scene index can be used to determine where
+        within a scene index chain a given procedural will be evaluated.
+        """
+    )
+}

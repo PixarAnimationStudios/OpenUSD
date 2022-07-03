@@ -187,7 +187,9 @@ bool HdRprimCollection::operator!=(HdRprimCollection const & other) const
 
 std::ostream& operator<<(std::ostream& out, HdRprimCollection const & v)
 {
-    out << v._name
+    out << "name: " << v._name
+        << ", repr sel: " << v._reprSelector
+        << ", mat tag: " << v._materialTag
         ;
     return out;
 }

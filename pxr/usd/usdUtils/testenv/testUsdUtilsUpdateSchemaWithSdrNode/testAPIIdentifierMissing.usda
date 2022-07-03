@@ -1,0 +1,29 @@
+#usda 1.0
+
+# Input USD file to test for missing "API" prefix for API schema identifier
+
+def Shader "APIIdentifierMissing" (
+    sdrMetadata = {
+        token schemaName = "APIIdentifierMissing"
+        token schemaKind = "singleApply"
+        token schemaBase = "APISchemaBase"
+        token apiSchemaAutoApplyTo = "SomeConcreteType|SomeAbstractType"
+    }
+)
+{
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @testDummy.glslfx@
+    
+    float inputs:intensity = 1.0 (
+        connectability = "interfaceOnly"
+        sdrMetadata = {
+            token label = "Intensity"
+            token page = "Basic"
+            token help = """
+                intensity: Itensity of the flame thrower.
+                """
+        }
+    )
+
+    color3f outputs:resultRGB
+}

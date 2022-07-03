@@ -1,0 +1,389 @@
+#usda 1.0
+(
+    defaultPrim = "Volume"
+    doc = """A test scene for volumes.
+
+This combines several effects and serves as a regression test. Hopefully, once we have a volume material, we have more targeted test, e.g., a non-scattering absorbing volume showing."""
+    endFrame = 100
+    startFrame = 1
+    upAxis = "Y"
+)
+
+def Camera "main_cam"
+{
+    float focalLength = 150
+    double3 xformOp:translate = (0, 0, 110)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Material "EllipsoidalVolumeMaterial" (
+    doc = "A simple material producing an ellipsoidal volume with constant density"
+)
+{
+    token outputs:volume.connect = </EllipsoidalVolumeMaterial/Volume.outputs:volume>
+
+    def Shader "Volume"
+    {
+        uniform asset info:glslfx:sourceAsset = @ellipsoidalVolume.glslfx@
+        uniform token info:implementationSource = "sourceAsset"
+        token outputs:volume
+    }
+}
+
+def Xform "Lights"
+{
+    def DistantLight "Left"
+    {
+        color3f inputs:color = (1, 0, 0)
+        float xformOp:rotateY = -90
+        float inputs:exposure = 2
+        uniform token[] xformOpOrder = ["xformOp:rotateY"]
+    }
+
+    def DistantLight "Right"
+    {
+        color3f inputs:color = (0, 1, 0)
+        float xformOp:rotateY = 90
+        float inputs:exposure = 2
+        uniform token[] xformOpOrder = ["xformOp:rotateY"]
+    }
+
+    def DistantLight "top"
+    {
+        color3f inputs:color = (0, 0, 1)
+        float xformOp:rotateX = -90
+        float inputs:exposure = 2
+        uniform token[] xformOpOrder = ["xformOp:rotateX"]
+    }
+}
+
+def Scope "Prototypes" (
+    active = false
+)
+{
+    def Xform "SphereAndVolume"
+    {
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Material "EllipsoidalVolumeMaterial" (
+            doc = "A simple material producing an ellipsoidal volume with constant density"
+        )
+        {
+            token outputs:volume.connect = </Prototypes/SphereAndVolume/EllipsoidalVolumeMaterial/Volume.outputs:volume>
+
+            def Shader "Volume"
+            {
+                uniform asset info:glslfx:sourceAsset = @ellipsoidalVolume.glslfx@
+                uniform token info:implementationSource = "sourceAsset"
+                token outputs:volume
+            }
+        }
+
+        def Sphere "Sphere"
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            color3f[] primvars:displayColor = [(0.05, 0.05, 0.5)] (
+                interpolation = "constant"
+            )
+            double3 xformOp:scale = (0.8, 0.8, 0.8)
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Volume "Volume"
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            rel material:binding:preview = </Prototypes/SphereAndVolume/EllipsoidalVolumeMaterial>
+            double3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+    }
+}
+
+def Scope "SpherePassingThroughVolume" (
+    doc = "A sphere passing through a volume in roughly the direction away from the camera. Note that volume fragment shader keeps raymarching even after hitting solid geometry so the sphere appears more occluded by the volume than it should be."
+)
+{
+    def "Case1" (
+        references = </Prototypes/SphereAndVolume>
+    )
+    {
+        double3 xformOp:translate = (-6, 4, 0)
+
+        over "Sphere"
+        {
+            double3 xformOp:translate = (0, 0, 1)
+        }
+    }
+
+    def "Case2" (
+        references = </Prototypes/SphereAndVolume>
+    )
+    {
+        double3 xformOp:translate = (-4, 4, 0)
+
+        over "Sphere"
+        {
+            double3 xformOp:translate = (0, 0, 0.5)
+        }
+    }
+
+    def "Case3" (
+        references = </Prototypes/SphereAndVolume>
+    )
+    {
+        double3 xformOp:translate = (-2, 4, 0)
+
+        over "Sphere"
+        {
+            double3 xformOp:translate = (0, 0, 0)
+        }
+    }
+
+    def "Case4" (
+        references = </Prototypes/SphereAndVolume>
+    )
+    {
+        double3 xformOp:translate = (0, 4, 0)
+
+        over "Sphere"
+        {
+            double3 xformOp:translate = (0, 0, -0.5)
+        }
+    }
+
+    def "Case5" (
+        references = </Prototypes/SphereAndVolume>
+    )
+    {
+        double3 xformOp:translate = (2, 4, 0)
+
+        over "Sphere"
+        {
+            double3 xformOp:translate = (0, 0, -1)
+        }
+    }
+
+    def "Case6" (
+        references = </Prototypes/SphereAndVolume>
+    )
+    {
+        double3 xformOp:translate = (4, 4, 0)
+
+        over "Sphere"
+        {
+            double3 xformOp:translate = (0, 0, -1.5)
+        }
+    }
+
+    def "Case7" (
+        references = </Prototypes/SphereAndVolume>
+    )
+    {
+        double3 xformOp:translate = (6, 4, 0)
+
+        over "Sphere"
+        {
+            double3 xformOp:translate = (0, 0, -2)
+        }
+    }
+}
+
+def Scope "SphereFallingThroughVolume" (
+    doc = "A sphere moving through a volume in direction roughly perpendicular to camera."
+)
+{
+    def "Case1" (
+        references = </Prototypes/SphereAndVolume>
+    )
+    {
+        double3 xformOp:translate = (-6, 1, 0)
+
+        over "Sphere"
+        {
+            double3 xformOp:translate = (0, 0.6, 0)
+        }
+    }
+
+    def "Case2" (
+        references = </Prototypes/SphereAndVolume>
+    )
+    {
+        double3 xformOp:translate = (-4, 1, 0)
+
+        over "Sphere"
+        {
+            double3 xformOp:translate = (0, 0.4, 0)
+        }
+    }
+
+    def "Case3" (
+        references = </Prototypes/SphereAndVolume>
+    )
+    {
+        double3 xformOp:translate = (-2, 1, 0)
+
+        over "Sphere"
+        {
+            double3 xformOp:translate = (0, 0.2, 0)
+        }
+    }
+}
+
+def Xform "StackedVolumes" (
+    doc = "Volumes not intersecting spatially, but intersecting visually, and a translucent rectangle intersecting one volume."
+)
+{
+    double3 xformOp:translate = (2, -2, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Volume "Volume1"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        rel material:binding:preview = </EllipsoidalVolumeMaterial>
+        double3 xformOp:scale = (2.5, 2.5, 2.5)
+        double3 xformOp:translate = (0, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+
+    def Volume "Volume2"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        rel material:binding:preview = </EllipsoidalVolumeMaterial>
+        double3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (1.5, 1.5, 3)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+
+    def Volume "Volume3"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        rel material:binding:preview = </EllipsoidalVolumeMaterial>
+        double3 xformOp:scale = (0.5, 0.5, 0.5)
+        double3 xformOp:translate = (2.2, 1, 5)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+
+    def Scope "TranslucentGeometry" (
+        doc = "A shadeless semi-transparent green rectangle intersecting one volume."
+    )
+    {
+        def Mesh "Rectangle"
+        {
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            rel material:binding = </StackedVolumes/TranslucentGeometry/TranslucentTagMat>
+            point3f[] points = [(-1.8, -1.5, -6), (-1.8, 1, -6), (1, 1, 0), (1, -1.5, 0)]
+            double3 xformOp:translate = (-1, -1, 5)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Material "TranslucentTagMat"
+        {
+            token outputs:surface.connect = </StackedVolumes/TranslucentGeometry/TranslucentTagMat/Surface.outputs:surface>
+
+            def Shader "Surface" (
+                doc = "Shadeless semi-transparent green"
+            )
+            {
+                uniform asset info:glslfx:sourceAsset = @constantShader.glslfx@
+                uniform token info:implementationSource = "sourceAsset"
+                token outputs:surface
+            }
+        }
+    }
+}
+
+over "Master" (
+    instancable = true
+)
+{
+    def Volume "Volume1"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        rel material:binding:preview = </EllipsoidalVolumeMaterial>
+    }
+
+    def Volume "Volume2"
+    {
+        float3[] extent = [(0, 0, -1), (2, 2, 1)]
+        rel material:binding:preview = </EllipsoidalVolumeMaterial>
+        double3 xformOp:translate = (1, -1, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Xform "InstancedVolumes" (
+    doc = "Tests instancing for volumes"
+)
+{
+    double3 xformOp:translate = (-6, -4, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Xform "One" (
+        add inherits = </Master>
+    )
+    {
+        double3 xformOp:scale = (0.25, 0.5, 0.5)
+        double3 xformOp:translate = (0, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+
+    def Xform "Two" (
+        add inherits = </Master>
+    )
+    {
+        double3 xformOp:scale = (0.5, 0.5, 0.5)
+        double3 xformOp:translate = (0, 1, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+}
+
+over "RecursiveMaster" (
+    instancable = true
+)
+{
+    def Xform "M1" (
+        add inherits = </Master>
+    )
+    {
+        double3 xformOp:translate = (0, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "M2" (
+        add inherits = </Master>
+    )
+    {
+        double3 xformOp:translate = (5, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Xform "RecursivelyInstancedVolumes" (
+    doc = "Tests recursive instancing for volumes"
+)
+{
+    double3 xformOp:translate = (-6, -2, 0)
+    token[] xformOpOrder = ["xformOp:translate"]
+
+    def Xform "One" (
+        add inherits = </RecursiveMaster>
+    )
+    {
+        double3 xformOp:scale = (0.5, 0.5, 0.5)
+        double3 xformOp:translate = (0, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+
+    def Xform "Two" (
+        add inherits = </RecursiveMaster>
+    )
+    {
+        double3 xformOp:scale = (0.5, 0.5, 0.5)
+        double3 xformOp:translate = (0, 1, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+}
+

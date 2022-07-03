@@ -208,6 +208,10 @@ public:
     HDX_API
     void SetSelectionColor(GfVec4f const& color);
 
+    /// Set the selection locate (over) color.
+    HDX_API
+    void SetSelectionLocateColor(GfVec4f const& color);
+
     /// Set if the selection highlight should be rendered as an outline around
     /// the selected objects or as a solid color overlaid on top of them.
     HDX_API
@@ -270,6 +274,7 @@ private:
 
     void _CreateLightingTask();
     void _CreateShadowTask();
+    SdfPath _CreateSkydomeTask();
     SdfPath _CreateRenderTask(TfToken const& materialTag);
     void _CreateOitResolveTask();
     void _CreateSelectionTask();
@@ -303,9 +308,19 @@ private:
     SdfPath _GetAovPath(TfToken const& aov) const;
     SdfPathVector _GetAovEnabledTasks() const;
 
-    // Helper function to set the parameters of a light, get a particular light 
+    // Helper functions to set up the lighting state for the built-in lights
+    bool _SupportBuiltInLightTypes();
+    void _SetBuiltInLightingState(GlfSimpleLightingContextPtr const& src);
+
+    // Helper function to get the built-in Camera light type SimpleLight for
+    // Storm, and DistantLight otherwise
+    TfToken _GetCameraLightType();
+    
+    // Helper functions to set the parameters of a light, get a particular light 
     // in the scene, replace and remove Sprims from the scene 
     void _SetParameters(SdfPath const& pathName, GlfSimpleLight const& light);
+    void _SetMaterialNetwork(SdfPath const& pathName, 
+                             GlfSimpleLight const& light);
     GlfSimpleLight _GetLightAtId(size_t const& pathIdx);
     void _RemoveLightSprim(size_t const& pathIdx);
     void _ReplaceLightSprim(size_t const& pathIdx, GlfSimpleLight const& light, 
@@ -353,6 +368,7 @@ private:
         GfMatrix4d GetTransform(SdfPath const& id) override;
         VtValue GetLightParamValue(SdfPath const& id, 
                                    TfToken const& paramName) override;
+        VtValue GetMaterialResource(SdfPath const& id) override;
         bool IsEnabled(TfToken const& option) const override;
         HdRenderBufferDescriptor
             GetRenderBufferDescriptor(SdfPath const& id) override;

@@ -30,8 +30,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using HdSt_GeometricShaderSharedPtr = std::shared_ptr<class HdSt_GeometricShader>;
-using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
+using HdSt_GeometricShaderSharedPtr =
+        std::shared_ptr<class HdSt_GeometricShader>;
+using HdSt_MaterialNetworkShaderSharedPtr =
+        std::shared_ptr<class HdSt_MaterialNetworkShader>;
 
 class HdStDrawItem : public HdDrawItem
 {
@@ -52,12 +54,22 @@ public:
         return _geometricShader;
     }
 
-    HdStShaderCodeSharedPtr const &GetMaterialShader() const {
-        return _materialShader;
+    HdSt_MaterialNetworkShaderSharedPtr const &
+    GetMaterialNetworkShader() const {
+        return _materialNetworkShader;
     }
 
-    void SetMaterialShader(HdStShaderCodeSharedPtr const &shader) {
-        _materialShader = shader;
+    void SetMaterialNetworkShader(
+                HdSt_MaterialNetworkShaderSharedPtr const &shader) {
+        _materialNetworkShader = shader;
+    }
+
+    bool GetMaterialIsFinal() const {
+        return _materialIsFinal;
+    }
+
+    void SetMaterialIsFinal(bool isFinal) {
+        _materialIsFinal = isFinal;
     }
 
 protected:
@@ -66,7 +78,8 @@ protected:
 
 private:
     HdSt_GeometricShaderSharedPtr _geometricShader;
-    HdStShaderCodeSharedPtr _materialShader;
+    HdSt_MaterialNetworkShaderSharedPtr _materialNetworkShader;
+    bool _materialIsFinal;
 };
 
 

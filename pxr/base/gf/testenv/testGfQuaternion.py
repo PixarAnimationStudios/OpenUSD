@@ -83,9 +83,11 @@ class TestGfQuaternion(unittest.TestCase):
     def test_Methods(self):
         for quatType, vec3Type, closeVal in testClasses:
             q = quatType()
+            self.assertEqual(quatType.GetZero(), quatType(0))
             self.assertEqual(quatType.GetIdentity(), quatType(1, vec3Type()))
 
-            self.assertTrue(quatType.GetIdentity().GetLength() == 1)
+            self.assertTrue(quatType.GetZero().GetLength() == 0 and
+                            quatType.GetIdentity().GetLength() == 1)
             self.assertTrue(Gf.IsClose(quatType(1,vec3Type(2,3,4)).GetLength(),
                                        5.4772255750516612, closeVal))
             
@@ -124,29 +126,44 @@ class TestGfQuaternion(unittest.TestCase):
             q2.real = 2
             self.assertTrue(q1 != q2)
 
+            q = quatType(1, vec3Type(2,3,4)) * quatType.GetZero()
+            self.assertEqual(q, quatType.GetZero())
+
             q = quatType(1, vec3Type(2,3,4)) * quatType.GetIdentity()
             self.assertEqual(q, quatType(1, vec3Type(2,3,4)))
 
             q = quatType(1, vec3Type(2,3,4))
+            q *= quatType.GetZero()
+            self.assertEqual(q, quatType.GetZero())
+
+            q = quatType(1, vec3Type(2,3,4))
+            q_original = q
             q *= quatType.GetIdentity()
             self.assertEqual(q, quatType(1, vec3Type(2,3,4)))
+            self.assertTrue(q is q_original)
 
             q *= 10
             self.assertEqual(q, quatType(10, vec3Type(20,30,40)))
+            self.assertTrue(q is q_original)
             q = q * 10
             self.assertEqual(q, quatType(100, vec3Type(200,300,400)))
             q = 10 * q
             self.assertEqual(q, quatType(1000, vec3Type(2000,3000,4000)))
+            q_original = q
             q /= 100
             self.assertEqual(q, quatType(10, vec3Type(20,30,40)))
+            self.assertTrue(q is q_original)
             q = q / 10
             self.assertEqual(q, quatType(1, vec3Type(2,3,4)))
 
+            q_original = q
             q += q
             self.assertEqual(q, quatType(2, vec3Type(4,6,8)))
+            self.assertTrue(q is q_original)
 
             q -= quatType(1, vec3Type(2,3,4))
             self.assertEqual(q, quatType(1, vec3Type(2,3,4)))
+            self.assertTrue(q is q_original)
 
             q = q + q
             self.assertEqual(q, quatType(2, vec3Type(4,6,8)))

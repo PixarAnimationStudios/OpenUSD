@@ -1,0 +1,216 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Xform "Cube"
+{
+    def PointInstancer "Instancer"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 6, 1)]
+        point3f[] positions = [(0, 0, 0), (0, 2.5, 0), (0, 5, 0)]
+        int[] protoIndices = [0, 1, 1]
+        rel prototypes = [
+            </Cube/Instancer/Protos/Proto1>,
+            </Cube/Instancer/Protos/Proto2>,
+        ]
+
+        def "Protos"
+        {
+            def "Proto1"
+            {
+                def Cube "P1"
+                {
+                    color3f[] primvars:displayColor = [(1, 0, 0)]
+                }
+            }
+
+            def "Proto2"
+            {
+                def Cube "P2"
+                {
+                    color3f[] primvars:displayColor = [(0, 1, 0)]
+                }
+            }
+        }
+    }
+}
+
+def Xform "Cube1" (
+    active = false
+)
+{
+    def PointInstancer "Instancer"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 6, 1)]
+        point3f[] positions = [(0, 0, 0), (0, 2.5, 0), (0, 5, 0)]
+        int[] protoIndices = [0, 1, 1]
+        rel prototypes = [
+            </Cube1/Instancer/Protos/Proto1>,
+            </Cube1/Instancer/Protos/Proto2>,
+        ]
+
+        def "Protos"
+        {
+            def "Proto1"
+            {
+                def Cube "P1"
+                {
+                    color3f[] primvars:displayColor = [(1, 0, 0)]
+                }
+            }
+
+            def "Proto2"
+            {
+                def Cube "P2"
+                {
+                    color3f[] primvars:displayColor = [(0, 1, 0)]
+                }
+            }
+        }
+    }
+}
+
+def Xform "Foo"
+{
+    def PointInstancer "C1"
+    {
+        float3[] extent = [(4, -1.4088321, -1.4088321), (16, 5.980176, 5.696152)]
+        quath[] orientations = [(0.984863, 0.173706, 0, 0), (0.939453, 0.342041, 0, 0), (0.866211, 0.5, 0, 0)]
+        point3f[] positions = [(5, 0, 0), (10, 0, 0), (15, 0, 0)]
+        int[] protoIndices = [0, 1, 0]
+        rel prototypes = [
+            </Foo/C1/Protos/Cube>,
+            </Foo/C1/Protos/Cube1>,
+        ]
+
+        def "Protos"
+        {
+            def "Cube" (
+                references = </Cube>
+            )
+            {
+            }
+
+            def "Cube1" (
+                active = true
+                references = </Cube1>
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "Bar"
+    {
+        custom double3 xformOp:translate = (0, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def PointInstancer "C"
+        {
+            float3[] extent = [(-1, -1, -1), (1, 6, 1)]
+            point3f[] positions = [(0, 0, 0), (0, 2.5, 0), (0, 5, 0)]
+            int[] protoIndices = [0, 1, 1]
+            rel prototypes = [
+                </Foo/Bar/C/Protos/Proto1>,
+                </Foo/Bar/C/Protos/Proto2>,
+            ]
+
+            def "Protos"
+            {
+                def "Proto1"
+                {
+                    def Cube "P1"
+                    {
+                        color3f[] primvars:displayColor = [(1, 1, 0)]
+                    }
+                }
+
+                def "Proto2"
+                {
+                    def Cube "P2"
+                    {
+                        color3f[] primvars:displayColor = [(1, 1, 1)]
+                    }
+                }
+            }
+        }
+
+        def Xform "X4"
+        {
+            def PointInstancer "C4"
+            {
+                float3[] extent = [(4, -1, -1), (6, 6, 1)]
+                point3f[] positions = [(5, 0, 0)]
+                int[] protoIndices = [0]
+                rel prototypes = </Foo/Bar/X4/C4/Protos/Cube>
+
+                def "Protos"
+                {
+                    def "Cube" (
+                        references = </Cube>
+                    )
+                    {
+                    }
+                }
+            }
+        }
+    }
+}
+
+def Xform "Bar"
+{
+    custom double3 xformOp:translate = (0, 0, -5)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def PointInstancer "C"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 6, 1)]
+        point3f[] positions = [(0, 0, 0), (0, 2.5, 0), (0, 5, 0)]
+        int[] protoIndices = [0, 1, 1]
+        rel prototypes = [
+            </Bar/C/Protos/Proto1>,
+            </Bar/C/Protos/Proto2>,
+        ]
+
+        def "Protos"
+        {
+            def "Proto1"
+            {
+                def Cube "P1"
+                {
+                    color3f[] primvars:displayColor = [(0, 0, 1)]
+                }
+            }
+
+            def "Proto2"
+            {
+                def Cube "P2"
+                {
+                    color3f[] primvars:displayColor = [(0, 1, 1)]
+                }
+            }
+        }
+    }
+
+    def Xform "X5"
+    {
+        def PointInstancer "C5"
+        {
+            float3[] extent = [(4, -1, -1), (6, 6, 1)]
+            point3f[] positions = [(5, 0, 0)]
+            int[] protoIndices = [0]
+            rel prototypes = </Bar/X5/C5/Protos/Cube>
+
+            def "Protos"
+            {
+                def "Cube" (
+                    references = </Cube>
+                )
+                {
+                }
+            }
+        }
+    }
+}
+

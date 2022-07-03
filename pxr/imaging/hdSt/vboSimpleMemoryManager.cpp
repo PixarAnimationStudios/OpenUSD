@@ -26,7 +26,7 @@
 #include "pxr/base/tf/iterator.h"
 
 #include "pxr/imaging/hdSt/bufferResource.h"
-#include "pxr/imaging/hdSt/glUtils.h"
+#include "pxr/imaging/hdSt/bufferUtils.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
 
@@ -184,8 +184,9 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::_AddResource(
         }
     }
 
-    HdStBufferResourceSharedPtr bufferRes = HdStBufferResourceSharedPtr(
-        new HdStBufferResource(GetRole(), tupleType, offset, stride));
+    HdStBufferResourceSharedPtr bufferRes = 
+        std::make_shared<HdStBufferResource>(
+            GetRole(), tupleType, offset, stride);
     _resourceList.emplace_back(name, bufferRes);
     return bufferRes;
 }
@@ -285,15 +286,18 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
         size_t bytesPerElement = HdDataSizeOfTupleType(bres->GetTupleType());
         size_t bufferSize = bytesPerElement * numElements;
 
+        // Clamp for 0-sized buffers, Metal doesn't support them.
+        bufferSize = std::max(bufferSize, static_cast<size_t>(256));
+
         HgiBufferHandle oldBuf = bres->GetHandle();
         HgiBufferHandle newBuf;
 
-        if(bufferSize > 0) {
-            HgiBufferDesc bufDesc;
-            bufDesc.byteSize = bufferSize;
-            bufDesc.usage = HgiBufferUsageUniform;
-            newBuf = hgi->CreateBuffer(bufDesc);
-        }
+        HgiBufferDesc bufDesc;
+        bufDesc.byteSize = bufferSize;
+        bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageVertex;
+        bufDesc.vertexStride = bytesPerElement;
+        bufDesc.debugName = bresIt->first.GetText();
+        newBuf = hgi->CreateBuffer(bufDesc);
 
         // copy the range. There are three cases:
         //
@@ -419,6 +423,12 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::IsImmutable() const
          && _bufferArray->IsImmutable();
 }
 
+bool
+HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::RequiresStaging() const
+{
+    return false;
+}
+
 void
 HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
     HdBufferSourceSharedPtr const &bufferSource)
@@ -427,8 +437,6 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
     HF_MALLOC_TAG_FUNCTION();
 
     if (!TF_VERIFY(_bufferArray)) return;
-
-    int offset = 0;
 
     HdStBufferResourceSharedPtr VBO =
         _bufferArray->GetResource(bufferSource->GetName());
@@ -452,8 +460,6 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
         srcSize = dstSize;
     }
 
-    size_t vboOffset = bytesPerElement * offset;
-
     HD_PERF_COUNTER_INCR(HdStPerfTokens->copyBufferCpuToGpu);
 
     HgiBufferCpuToGpuOp blitOp;
@@ -462,14 +468,15 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
     
     blitOp.sourceByteOffset = 0;
     blitOp.byteSize = srcSize;
-    blitOp.destinationByteOffset = vboOffset;
+    blitOp.destinationByteOffset = 0;
 
     HgiBlitCmds* blitCmds = GetResourceRegistry()->GetGlobalBlitCmds();
     blitCmds->CopyBufferCpuToGpu(blitOp);
 }
 
 VtValue
-HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(TfToken const &name) const
+HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(
+    TfToken const &name) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -483,11 +490,13 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(TfToken const &nam
         return VtValue();
     }
 
-    return HdStGLUtils::ReadBuffer(VBO->GetHandle()->GetRawResource(),
-                                   VBO->GetTupleType(),
-                                 /*offset=*/0,
-                                 /*stride=*/0,  // not interleaved.
-                                 _numElements);
+    return HdStReadBuffer(VBO->GetHandle(),
+                          VBO->GetTupleType(),
+                          /*offset=*/0,
+                          /*stride=*/0,  // not interleaved.
+                          _numElements,
+                          /*elementStride=*/0,
+                          GetResourceRegistry());
 }
 
 size_t

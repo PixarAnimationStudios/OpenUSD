@@ -41,10 +41,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStDrawItem;
 class HdStDrawItemInstance;
+class HgiCapabilities;
+class HgiGraphicsCmds;
 
 using HdStRenderPassStateSharedPtr = std::shared_ptr<class HdStRenderPassState>;
 using HdStResourceRegistrySharedPtr = 
         std::shared_ptr<class HdStResourceRegistry>;
+
+using HdDrawItemConstPtrVector = std::vector<class HdDrawItem const*>;
+using HdDrawItemConstPtrVectorSharedPtr
+    = std::shared_ptr<HdDrawItemConstPtrVector>;
 
 using HdSt_DrawBatchSharedPtr = std::shared_ptr<class HdSt_DrawBatch>;
 using HdSt_DrawBatchSharedPtrVector = std::vector<HdSt_DrawBatchSharedPtr>;
@@ -71,7 +77,8 @@ public:
 
     /// Execute the command buffer
     HDST_API
-    void ExecuteDraw(HdStRenderPassStateSharedPtr const &renderPassState,
+    void ExecuteDraw(HgiGraphicsCmds *gfxCmds,
+                     HdStRenderPassStateSharedPtr const &renderPassState,
                      HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     /// Cull drawItemInstances based on passed in combined view and projection matrix
@@ -81,35 +88,44 @@ public:
     /// Sync visibility state from RprimSharedState to DrawItemInstances.
     HDST_API
     void SyncDrawItemVisibility(unsigned visChangeCount);
-
-    /// Destructively swaps the contents of \p items with the internal list of
-    /// all draw items. Culling state is reset, with no items visible.
+ 
+    /// Sets the draw items to use for batching.
+    /// If the shared pointer or version is different, batches are rebuilt and
+    /// the batch version is updated.
     HDST_API
-    void SwapDrawItems(std::vector<HdStDrawItem const*>* items,
-                       unsigned currentBatchVersion);
+    void SetDrawItems(HdDrawItemConstPtrVectorSharedPtr const &drawItems,
+                      unsigned currentBatchVersion,
+                      HgiCapabilities const *hgiCapabilities);
 
     /// Rebuild all draw batches if any underlying buffer array is invalidated.
     HDST_API
-    void RebuildDrawBatchesIfNeeded(unsigned currentBatchVersion);
+    void RebuildDrawBatchesIfNeeded(unsigned currentBatchVersion,
+                                    HgiCapabilities const *hgiCapabilities);
 
     /// Returns the total number of draw items, including culled items.
-    size_t GetTotalSize() const { return _drawItems.size(); }
+    size_t GetTotalSize() const {
+        if (_drawItems) return _drawItems->size();
+        return 0;
+    }
 
     /// Returns the number of draw items, excluding culled items.
     size_t GetVisibleSize() const { return _visibleSize; }
 
     /// Returns the number of culled draw items.
-    size_t GetCulledSize() const { 
-        return _drawItems.size() - _visibleSize; 
+    size_t GetCulledSize() const {
+        if (_drawItems) {
+            return _drawItems->size() - _visibleSize; 
+        }
+        return 0;
     }
 
     HDST_API
     void SetEnableTinyPrimCulling(bool tinyPrimCulling);
 
 private:
-    void _RebuildDrawBatches();
+    void _RebuildDrawBatches(HgiCapabilities const *hgiCapabilities);
 
-    std::vector<HdStDrawItem const*> _drawItems;
+    HdDrawItemConstPtrVectorSharedPtr _drawItems;
     std::vector<HdStDrawItemInstance> _drawItemInstances;
     HdSt_DrawBatchSharedPtrVector _drawBatches;
     size_t _visibleSize;

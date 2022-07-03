@@ -1,0 +1,151 @@
+#usda 1.0
+(
+    endFrame = 2
+    startFrame = 0
+    upAxis = "Z"
+)
+
+def Xform "Root"
+{
+    def PointInstancer "Instancer"
+    {
+        float3[] extent = [(-11, -1, -1), (11, 1, 6)]
+        point3f[] positions = [(-10, 0, 0), (-5, 0, 0), (0, 0, 0), (5, 0, 0), (10, 0, 0)]
+        int[] protoIndices = [0, 1, 2, 3, 4]
+        rel prototypes = [
+            </Root/Instancer/prototypes/Proto1>,
+            </Root/Instancer/prototypes/Proto2>,
+            </Root/Instancer/prototypes/Proto3>,
+            </Root/Instancer/prototypes/Proto4>,
+            </Root/Instancer/prototypes/Proto5>,
+        ]
+        double3 xformOp:translate.timeSamples = {
+            0: (0, 0, 0),
+            1: (1, 0, 0),
+            2: (1, 0, 0),
+        }
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def "prototypes"
+        {
+            def Xform "Proto1"
+            {
+                # prototype root transform must be ignored.
+                double3 xformOp:translate.timeSamples = {
+                    0: (0, 0, 0),
+                    1: (0, 0, 0),
+                    2: (0, 0, 1),
+                }
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+
+                def Cube "cube"
+                {
+                }
+            }
+
+            def Xform "Proto2"
+            {
+                def Xform "cubexform"
+                {
+                    # not a root transform should be considered.
+                    double3 xformOp:translate.timeSamples = {
+                        0: (0, 0, 0),
+                        1: (0, 0, 0),
+                        2: (0, 0, 1),
+                    }
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+                    def Cube "cube"
+                    {
+                    }
+                }
+            }
+
+            def PointInstancer "Proto3"
+            {
+                float3[] extent = [(-1, -1, -1), (1, 1, 6)]
+                point3f[] positions = [(0, 0, 0), (0, 0, 5)]
+                int[] protoIndices = [0, 0]
+                rel prototypes = </Root/Instancer/prototypes/Proto3/prototypes>
+                # prototype root transform must be ignored ??
+                double3 xformOp:translate.timeSamples = {
+                    0: (0, 0, 0),
+                    1: (0, 0, 0),
+                    2: (0, 0, 1),
+                }
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+
+                def "prototypes"
+                {
+                    def Xform "Proto1"
+                    {
+                        def Cube "cube"
+                        {
+                        }
+                    }
+                }
+            }
+
+            def Xform "Proto4"
+            {
+                # prototype root transform must be ignored.
+                double3 xformOp:translate.timeSamples = {
+                    0: (0, 0, 0),
+                    1: (0, 0, 0),
+                    2: (0, 0, 1),
+                }
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+
+                def PointInstancer "Instancer2"
+                {
+                    float3[] extent = [(-1, -1, -1), (1, 1, 6)]
+                    point3f[] positions = [(0, 0, 0), (0, 0, 5)]
+                    int[] protoIndices = [0, 0]
+                    rel prototypes = </Root/Instancer/prototypes/Proto4/Instancer2/prototypes>
+
+                    def "prototypes"
+                    {
+                        def Xform "Proto1"
+                        {
+                            def Cube "cube"
+                            {
+                            }
+                        }
+                    }
+                }
+            }
+
+            def Xform "Proto5"
+            {
+                def Xform "root"
+                {
+                    double3 xformOp:translate.timeSamples = {
+                        0: (0, 0, 0),
+                        1: (0, 0, 0),
+                        2: (0, 0, 1),
+                    }
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+                    def PointInstancer "Instancer2"
+                    {
+                        float3[] extent = [(-1, -1, -1), (1, 1, 6)]
+                        point3f[] positions = [(0, 0, 0), (0, 0, 5)]
+                        int[] protoIndices = [0, 0]
+                        rel prototypes = </Root/Instancer/prototypes/Proto5/root/Instancer2/prototypes>
+
+                        def "prototypes"
+                        {
+                            def Xform "Proto1"
+                            {
+                                def Cube "cube"
+                                {
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

@@ -1,0 +1,20 @@
+-- glslfx version 0.1
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "surfaceShader": {
+                "source": [ "Surface.Fallback" ]
+            }
+        }
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Surface.Fallback
+                                                                                    
+vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    return vec4(0.8, 0, 0.8, 0.8);
+}

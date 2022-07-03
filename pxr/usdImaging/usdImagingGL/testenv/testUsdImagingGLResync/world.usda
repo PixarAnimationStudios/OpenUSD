@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+def Scope "World" 
+{
+   def "Model" (
+       instanceable=true
+       payload = @instancer.usda@</Root>
+   ) {}
+}
+

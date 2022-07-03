@@ -121,11 +121,6 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::AbstractBase;
 
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::AbstractBase;
-
     /// Construct a UsdAPISchemaBase on UsdPrim \p prim .
     /// Equivalent to UsdAPISchemaBase::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -161,12 +156,6 @@ protected:
     /// \sa UsdSchemaKind
     USD_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USD_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -221,73 +210,6 @@ protected:
     }
 
 protected:        
-    /// Helper method to apply a <b>single-apply</b> API schema with the given 
-    /// schema name \p apiSchemaName' and C++ type 'APISchemaType'. The schema 
-    /// is applied on the given \p prim in the current edit target. 
-    /// 
-    /// This information is stored by adding \p apiSchemaName value to the 
-    /// token-valued, listOp metadata \em apiSchemas on the prim.
-    /// 
-    /// A valid schema object of type \em APISchemaType is returned upon 
-    /// success. 
-    /// 
-    /// A coding error is issued and an invalid schema object is returned if 
-    /// <li>if \p prim is invalid or is an instance proxy prim or is contained 
-    /// within an instance prototype OR</li>
-    /// <li>\p apiSchemaName cannot be added to the apiSchemas listOp 
-    /// metadata.</li></ul>
-    /// 
-    /// A run-time error is issued and an invalid schema object is returned 
-    /// if the given prim is valid, but cannot be reached or overridden in the 
-    /// current edit target. 
-    /// 
-    template <typename APISchemaType>
-    static APISchemaType _ApplyAPISchema(
-        const UsdPrim &prim, 
-        const TfToken &apiSchemaName) 
-    {
-        if (prim.ApplyAPI<APISchemaType>()) {
-            return APISchemaType(prim);
-        }
-        return APISchemaType();
-    }
-
-    /// Helper method to apply a </b>multiple-apply</b> API schema with the 
-    /// given schema name \p apiSchemaName', C++ type 'APISchemaType' and 
-    /// instance name \p instanceName. The schema is applied on the given 
-    /// \p prim in the current edit target. 
-    /// 
-    /// This information is stored in the token-valued, listOp metadata
-    /// \em apiSchemas on the prim. For example, if \p apiSchemaName is
-    /// 'CollectionAPI' and \p instanceName is 'plasticStuff', the name 
-    /// 'CollectionAPI:plasticStuff' is added to 'apiSchemas' listOp metadata. 
-    /// 
-    /// A valid schema object of type \em APISchemaType is returned upon 
-    /// success. 
-    /// 
-    /// A coding error is issued and an invalid schema object is returned if 
-    /// <li>the \p prim is invalid or is an instance proxy prim or is contained 
-    /// within an instance prototype OR</li>
-    /// <li>\p instanceName is empty OR</li>
-    /// <li><i>apiSchemaName:instanceName</i> cannot be added to the apiSchemas 
-    /// listOp metadata.</li></ul>
-    /// 
-    /// A run-time error is issued and an invalid schema object is returned 
-    /// if the given prim is valid, but cannot be reached or overridden in the 
-    /// current edit target. 
-    /// 
-    template <typename APISchemaType>
-    static APISchemaType _MultipleApplyAPISchema(
-        const UsdPrim &prim, 
-        const TfToken &apiSchemaName,
-        const TfToken &instanceName) 
-    {
-        if (prim.ApplyAPI<APISchemaType>(instanceName)) {
-            return APISchemaType(prim, instanceName);
-        }
-        return APISchemaType();
-    }
-
     /// Check whether this APISchema object is valid for the currently held  
     /// prim. 
     /// 

@@ -1,0 +1,194 @@
+#usda 1.0
+(
+    "Test schema file for testUsdShadeConnectableAPIBehavior"
+    subLayers = [
+        @usd/schema.usda@,
+        @usdShade/schema.usda@
+    ]
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "testUsdShadeConnectableAPIBehavior"
+        bool skipCodeGeneration = true
+    }
+)
+{
+}
+
+class "AutoApplyDefaultConnectableBehaviorAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """Test default UsdShadeConnectableAPIBehavior through an auto apply 
+    schema. This will be auto applied to a type which has a behavior defined but
+    different than the default, and will also be auto applied to a type which
+    has no connectableAPIBehavior defined in its plug.
+    """
+    customData = {
+        string className = "AutoApplyDefaultConnectableBehaviorAPI"
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+        }
+        token[] apiSchemaAutoApplyTo = [
+            "UsdShadeMaterial", 
+            "UsdShadeTestTypedHasAutoApplyDefault"
+        ] 
+    }
+)
+{
+}
+
+class "AutoApplyConnectableBehaviorContainerSetAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """Test UsdShadeConnectableAPIBehavior overrding isUsdShadeContainer 
+    through plug metadata. This will be auto applied to a type which has a 
+    behavior defined but different than the default, and will also be auto 
+    applied to a type which has no connectableAPIBehavior defined in its plug.
+    """
+    customData = {
+        string className = "AutoApplyConnectableBehaviorContainerSetAPI"
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+            bool isUsdShadeContainer = 1
+        }
+        token[] apiSchemaAutoApplyTo = [
+            "UsdShadeShader", 
+            "UsdShadeTestTypedHasAutoApplyContainer"
+        ] 
+    }
+)
+{
+}
+
+class "AutoApplyConnectableBehaviorNoRequiresEncapsulationAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """Test UsdShadeConnectableAPIBehavior overriding
+    requiresUsdShadeEncapsulation through plug metadata. This will be auto 
+    applied to a type which has a behavior defined but different than the 
+    default, and will also be auto applied to a type which has no 
+    connectableAPIBehavior defined in its plug.
+    """
+    customData = {
+        string className = "AutoApplyConnectableBehaviorNoRequiresEncapsulationAPI"
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+            bool requiresUsdShadeEncapsulation = 0
+        }
+        token[] apiSchemaAutoApplyTo = [
+            "UsdShadeMaterial", 
+            "UsdShadeTestTypedHasAutoApplyRequiresEncapsulation"
+        ] 
+    }
+)
+{
+}
+
+class "DefaultConnectableBehaviorAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """Test default UsdShadeConnectableAPIBehavior through an applied API
+    schema. This will be applied to a type which has a behavior defined, showing
+    the api schema overrides the behavior defined for the type.
+    """
+    customData = {
+        string className = "DefaultConnectableBehaviorAPI"
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+        }
+    }
+)
+{
+}
+
+class "ModifiedDefaultConnectableBehaviorAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """Test UsdShadeConnectableAPIBehavior through an applied API
+    schema. This will be applied to a type which has a behavior defined, showing
+    the api schema overrides the behavior defined for the type by imparting
+    traits defined by its own plug metadata, that is isUsdShadeContainer to true 
+    and requiresUsdShadeEncapsulation to false.
+    """
+    customData = {
+        string className = "ModifiedDefaultConnectableBehaviorAPI"
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+            bool requiresUsdShadeEncapsulation = 0
+            bool isUsdShadeContainer = 1
+        }
+    }
+)
+{
+}
+
+class UsdShadeTestTypedHasAutoApplyDefault "UsdShadeTestTypedHasAutoApplyDefault" (
+    inherits = </Typed>
+    doc = """A typed schema with no plug metadata for connectableAPIBehavior.
+    A connectable behavior defining auto apply api schema imparts connectability
+    behavior to this type.
+    """
+)
+{
+}
+
+class UsdShadeTestTypedHasAutoApplyContainer "UsdShadeTestTypedHasAutoApplyContainer" (
+    inherits = </Typed>
+    doc = """A typed schema with no plug metadata for connectableAPIBehavior.
+    A connectable behavior defining auto apply api schema imparts connectability
+    behavior to this type and set isUsdShadeContainer to true.
+    """
+)
+{
+}
+
+class UsdShadeTestTypedHasAutoApplyRequiresEncapsulation "UsdShadeTestTypedHasAutoApplyRequiresEncapsulation" (
+    inherits = </Typed>
+    doc = """A typed schema with no plug metadata for connectableAPIBehavior.
+    A connectable behavior defining auto apply api schema imparts connectability
+    behavior to this type and set requiresUsdShadeEncapsulation to true.
+    """
+)
+{
+}
+
+class UsdShadeTestTyped "UsdShadeTestTyped" (
+    inherits = </Typed>
+    doc = """A typed schema with no plug metadata for connectableAPIBehavior.
+    Prims of this type could have an apiSchema providing ConnectableAPIBehavior 
+    applied to impart UsdShade connectableAPIBehavior.
+    """
+)
+{
+}
+
+class UsdShadeTestPlugConfiguredType "UsdShadeTestPlugConfiguredType" (
+    inherits = </NodeGraph>
+    doc = """A typed schema which inherits NodeGraph but provides its
+    connectableAPIBehavior through plug configuration."""
+    customData = {
+        string className = "UsdShadeTestPlugConfiguredType"
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+            # Notice these are opposite of NodeGraph Default, for ease of
+            # testing
+            bool isUsdShadeContainer = 0 
+            bool requiresUsdShadeEncapsulation = 0
+        }
+    }
+)
+{
+}
+
+class UsdShadeTestAncestorConfiguredType "UsdShadeTestAncestorConfiguredType" (
+    inherits = </NodeGraph>
+    doc = """A typed schema which inherits NodeGraph and does not provide any of
+    its own behavior, hence getting a connectableAPI Behavior, thanks to
+    UsdSHadeNodeGraph."""
+    customData = {
+        string className = "UsdShadeTestAncestorConfiguredType"
+    }
+)
+{
+}

@@ -146,6 +146,14 @@ SdfTextFileFormat::CanRead(const string& filePath) const
 }
 
 bool
+SdfTextFileFormat::_CanReadFromAsset(
+    const std::string& resolvedPath,
+    const std::shared_ptr<ArAsset>& asset) const
+{
+    return _CanReadImpl(asset, GetFileCookie());
+}
+
+bool
 SdfTextFileFormat::Read(
     SdfLayer* layer,
     const string& resolvedPath,
@@ -159,6 +167,16 @@ SdfTextFileFormat::Read(
         return false;
     }
 
+    return _ReadFromAsset(layer, resolvedPath, asset, metadataOnly);
+}
+
+bool
+SdfTextFileFormat::_ReadFromAsset(
+    SdfLayer* layer,
+    const string& resolvedPath,
+    const std::shared_ptr<ArAsset>& asset,
+    bool metadataOnly) const
+{
     // Quick check to see if the file has the magic cookie before spinning up
     // the parser.
     if (!_CanReadImpl(asset, GetFileCookie())) {
@@ -322,25 +340,6 @@ SdfTextFileFormat::WriteToFile(
     const std::string& comment,
     const FileFormatArguments& args) const
 {
-#if AR_VERSION == 1
-    // open file
-    string reason;
-    TfAtomicOfstreamWrapper wrapper(filePath);
-    if (!wrapper.Open(&reason)) {
-        TF_RUNTIME_ERROR(reason);
-        return false;
-    }
-
-    Sdf_TextOutput out(wrapper.GetStream());
-
-    const bool ok = _WriteLayer(
-        &layer, out, GetFileCookie(), GetVersionString(), comment);
-
-    if (ok && !wrapper.Commit(&reason)) {
-        TF_RUNTIME_ERROR(reason);
-        return false;
-    }
-#else
     std::shared_ptr<ArWritableAsset> asset = 
         ArGetResolver().OpenAssetForWrite(
             ArResolvedPath(filePath), ArResolver::WriteMode::Replace);
@@ -359,7 +358,7 @@ SdfTextFileFormat::WriteToFile(
         TF_RUNTIME_ERROR("Could not close %s", filePath.c_str());
         return false;
     }
-#endif
+
     return ok;
 }
 

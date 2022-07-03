@@ -29,6 +29,7 @@
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/safeOutputFile.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -38,6 +39,14 @@ ArFilesystemWritableAsset::Create(
     const ArResolvedPath& resolvedPath,
     ArResolver::WriteMode writeMode)
 {
+    const std::string dir = TfGetPathName(resolvedPath);
+    if (!dir.empty() && !TfIsDir(dir) && !TfMakeDirs(dir)) {
+        TF_RUNTIME_ERROR(
+            "Could not create directory '%s' for asset '%s'", 
+            dir.c_str(), resolvedPath.GetPathString().c_str());
+        return nullptr;
+    }
+
     TfErrorMark m;
 
     TfSafeOutputFile f;

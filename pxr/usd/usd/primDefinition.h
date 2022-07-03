@@ -33,7 +33,8 @@
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/base/tf/hash.h"
-#include "pxr/base/tf/hashmap.h"
+
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -63,7 +64,7 @@ public:
     /// SdfSpecTypeUnknown.
     SdfSpecType GetSpecType(const TfToken &propName) const    
     {
-        if (const SdfPath *path = TfMapLookupPtr(_propPathMap, propName)) {
+        if (const SdfPath *path = _GetPropertySpecPath(propName)) {
             return _GetSchematics()->GetSpecType(*path);
         }
         return SdfSpecTypeUnknown;
@@ -74,7 +75,7 @@ public:
     /// if there is no such property spec.
     SdfPropertySpecHandle GetSchemaPropertySpec(const TfToken& propName) const
     {
-        if (const SdfPath *path = TfMapLookupPtr(_propPathMap, propName)) {
+        if (const SdfPath *path = _GetPropertySpecPath(propName)) {
             return _GetSchematics()->GetPropertyAtPath(*path);
         }
         return TfNullPtr;
@@ -85,7 +86,7 @@ public:
     ///     GetSchemaPropertySpec(primType, attrName));
     SdfAttributeSpecHandle GetSchemaAttributeSpec(const TfToken& attrName) const
     {
-        if (const SdfPath *path = TfMapLookupPtr(_propPathMap, attrName)) {
+        if (const SdfPath *path = _GetPropertySpecPath(attrName)) {
             return _GetSchematics()->GetAttributeAtPath(*path);
         }
         return TfNullPtr;
@@ -96,7 +97,7 @@ public:
     ///     GetSchemaPropertySpec(primType, relName));
     SdfRelationshipSpecHandle GetSchemaRelationshipSpec(const TfToken& relName) const
     {
-        if (const SdfPath *path = TfMapLookupPtr(_propPathMap, relName)) {
+        if (const SdfPath *path = _GetPropertySpecPath(relName)) {
             return _GetSchematics()->GetRelationshipAtPath(*path);
         }
         return TfNullPtr;
@@ -282,7 +283,7 @@ private:
                    const TfToken& fieldName,
                    T* value) const
     {
-        if (const SdfPath *path = TfMapLookupPtr(_propPathMap, propName)) {
+        if (const SdfPath *path = _GetPropertySpecPath(propName)) {
             return _GetSchematics()->HasField(*path, fieldName, value);
         }
         return false;
@@ -294,7 +295,7 @@ private:
                           const TfToken& keyPath,
                           T* value) const
     {
-        if (const SdfPath *path = TfMapLookupPtr(_propPathMap, propName)) {
+        if (const SdfPath *path = _GetPropertySpecPath(propName)) {
             return _GetSchematics()->HasFieldDictKey(
                 *path, fieldName, keyPath, value);
         }
@@ -303,11 +304,25 @@ private:
 
     UsdPrimDefinition() = default;
 
-    UsdPrimDefinition(const SdfPrimSpecHandle &primSpec, bool isAPISchema);
+    // Constructor that initializes the prim definition with prim path of 
+    // the primary prim spec of this definition's schema type in the schematics.
+    // This does not populate any of the properties of the prim definition.
+    UsdPrimDefinition(const SdfPath &schematicsPrimPath, bool isAPISchema);
 
     // Access to the schema registry's schematics.
     const SdfLayerRefPtr &_GetSchematics() const {
         return UsdSchemaRegistry::GetInstance()._schematics;
+    }
+
+    // Accessors for looking property spec paths by name.
+    const SdfPath *_GetPropertySpecPath(const TfToken& propName) const
+    {
+        return TfMapLookupPtr(_propPathMap, propName);
+    }
+
+    SdfPath *_GetPropertySpecPath(const TfToken& propName)
+    {
+        return TfMapLookupPtr(_propPathMap, propName);
     }
 
     USD_API
@@ -315,33 +330,22 @@ private:
 
     // Helpers for constructing the prim definition.
     USD_API
-    void _SetPrimSpec(const SdfPrimSpecHandle &primSpec, 
-                      bool providesPrimMetadata);
+    void _AddProperties(
+        std::vector<std::pair<TfToken, SdfPath>> &&propNameToPathVec);
 
     USD_API
-    void _ApplyPropertiesFromPrimDef(const UsdPrimDefinition &primDef, 
-                                     const std::string &propPrefix = "");
+    void _ComposePropertiesFromPrimDef(
+        const UsdPrimDefinition &weakerPrimDef, 
+        bool useWeakerPropertyForTypeConflict,
+        const std::string &instanceName = "");
 
-    void _AddProperty(const TfToken &name, const SdfPath &schemaPath) 
-    {
-        // Adds the property name with schema path to the prim def. This makes 
-        // sure we overwrite the original property path with the new path if it 
-        // already exists, but makes sure we don't end up with duplicate names 
-        // in the property names list.
-        auto it = _propPathMap.insert(std::make_pair(name, schemaPath));
-        if (it.second) {
-            _properties.push_back(name);
-        } else {
-            it.first->second = schemaPath;
-        }
-    }
-
-    SdfPrimSpecHandle _primSpec;
+    // Path to the prim in the schematics for this prim definition.
+    SdfPath _schematicsPrimPath;
 
     // Map for caching the paths to each property spec in the schematics by 
     // property name.
     using _PrimTypePropNameToPathMap = 
-        TfHashMap<TfToken, SdfPath, TfToken::HashFunctor>;
+        std::unordered_map<TfToken, SdfPath, TfToken::HashFunctor>;
     _PrimTypePropNameToPathMap _propPathMap;
     TfTokenVector _appliedAPISchemas;
 

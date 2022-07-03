@@ -130,6 +130,18 @@ void wrapUsdGeomBoundable()
 namespace {
 
 static object
+_ComputeExtent(
+    UsdGeomBoundable &boundable,
+    const UsdTimeCode &time)
+{
+    VtVec3fArray extent;
+    if (!boundable.ComputeExtent(time, &extent)) {
+        return object();
+    }
+    return object(extent);
+}
+
+static object
 _ComputeExtentFromPlugins(
     const UsdGeomBoundable &boundable,
     const UsdTimeCode &time)
@@ -161,6 +173,9 @@ _ComputeExtentFromPluginsWithTransform(
 
 WRAP_CUSTOM {
     _class
+        .def("ComputeExtent",
+             &_ComputeExtent,
+             (arg("time")))
         .def("ComputeExtentFromPlugins", &_ComputeExtentFromPlugins,
              (arg("boundable"), arg("time")))
         .def("ComputeExtentFromPlugins", &_ComputeExtentFromPluginsWithTransform,

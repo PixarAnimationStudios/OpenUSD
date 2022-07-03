@@ -164,7 +164,6 @@ HdSt_TextureHandleRegistry::AllocateTextureHandle(
         HdTextureType textureType,
         HdSamplerParameters const &samplerParams,
         size_t memoryRequest,
-        bool createBindlessHandle,
         HdStShaderCodePtr const &shaderCode)
 {
     TRACE_FUNCTION();
@@ -179,7 +178,6 @@ HdSt_TextureHandleRegistry::AllocateTextureHandle(
             textureObject,
             samplerParams,
             memoryRequest,
-            createBindlessHandle,
             shaderCode,
             this);
 

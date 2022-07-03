@@ -45,13 +45,34 @@ HgiGLGraphicsCmds::HgiGLGraphicsCmds(
     , _descriptor(desc)
     , _primitiveType(HgiPrimitiveTypeTriangleList)
     , _pushStack(0)
+    , _restoreReadFramebuffer(0)
+    , _restoreDrawFramebuffer(0)
 {
     if (desc.HasAttachments()) {
+        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &_restoreReadFramebuffer);    
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &_restoreDrawFramebuffer);
         _ops.push_back( HgiGLOps::BindFramebufferOp(device, desc) );
     }
 }
 
-HgiGLGraphicsCmds::~HgiGLGraphicsCmds() = default;
+static bool
+_IsValidFbo(int32_t id)
+{
+    return id == 0 || glIsFramebuffer(id) == GL_TRUE;
+}
+
+HgiGLGraphicsCmds::~HgiGLGraphicsCmds()
+{
+    if (_descriptor.HasAttachments()) {
+        // Restore framebuffer state.
+        if (_IsValidFbo(_restoreReadFramebuffer)) {
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, _restoreReadFramebuffer);
+        }
+        if (_IsValidFbo(_restoreDrawFramebuffer)) {
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _restoreDrawFramebuffer);
+        }
+    }
+}
 
 void
 HgiGLGraphicsCmds::InsertFunctionOp(std::function<void(void)> const& fn)
@@ -75,6 +96,8 @@ void
 HgiGLGraphicsCmds::BindPipeline(HgiGraphicsPipelineHandle pipeline)
 {
     _primitiveType = pipeline->GetDescriptor().primitiveType;
+    _primitiveIndexSize =
+        pipeline->GetDescriptor().tessellationState.primitiveIndexSize;
     _ops.push_back( HgiGLOps::BindPipeline(pipeline) );
 }
 
@@ -104,41 +127,43 @@ HgiGLGraphicsCmds::SetConstantValues(
 
 void
 HgiGLGraphicsCmds::BindVertexBuffers(
-    uint32_t firstBinding,
-    HgiBufferHandleVector const& vertexBuffers,
-    std::vector<uint32_t> const& byteOffsets)
+    HgiVertexBufferBindingVector const &bindings)
 {
     _ops.push_back( 
-        HgiGLOps::BindVertexBuffers(firstBinding, vertexBuffers, byteOffsets) );
+        HgiGLOps::BindVertexBuffers(bindings) );
 }
 
 void
 HgiGLGraphicsCmds::Draw(
     uint32_t vertexCount,
-    uint32_t vertexOffset,
-    uint32_t instanceCount)
+    uint32_t baseVertex,
+    uint32_t instanceCount,
+    uint32_t baseInstance)
 {
     _ops.push_back(
         HgiGLOps::Draw(
             _primitiveType,
+            _primitiveIndexSize,
             vertexCount,
-            vertexOffset,
-            instanceCount)
+            baseVertex,
+            instanceCount,
+            baseInstance)
         );
 }
 
 void
 HgiGLGraphicsCmds::DrawIndirect(
     HgiBufferHandle const& drawParameterBuffer,
-    uint32_t drawBufferOffset,
+    uint32_t drawBufferByteOffset,
     uint32_t drawCount,
     uint32_t stride)
 {
     _ops.push_back(
         HgiGLOps::DrawIndirect(
             _primitiveType,
+            _primitiveIndexSize,
             drawParameterBuffer,
-            drawBufferOffset,
+            drawBufferByteOffset,
             drawCount,
             stride)
         );
@@ -149,17 +174,20 @@ HgiGLGraphicsCmds::DrawIndexed(
     HgiBufferHandle const& indexBuffer,
     uint32_t indexCount,
     uint32_t indexBufferByteOffset,
-    uint32_t vertexOffset,
-    uint32_t instanceCount)
+    uint32_t baseVertex,
+    uint32_t instanceCount,
+    uint32_t baseInstance)
 {
     _ops.push_back(
         HgiGLOps::DrawIndexed(
             _primitiveType,
+            _primitiveIndexSize,
             indexBuffer,
             indexCount,
             indexBufferByteOffset,
-            vertexOffset,
-            instanceCount)
+            baseVertex,
+            instanceCount,
+            baseInstance)
         );
 }
 
@@ -167,16 +195,19 @@ void
 HgiGLGraphicsCmds::DrawIndexedIndirect(
     HgiBufferHandle const& indexBuffer,
     HgiBufferHandle const& drawParameterBuffer,
-    uint32_t drawBufferOffset,
+    uint32_t drawBufferByteOffset,
     uint32_t drawCount,
-    uint32_t stride)
+    uint32_t stride,
+    std::vector<uint32_t> const& /*drawParameterBufferUInt32*/,
+    uint32_t /*patchBaseVertexByteOffset*/)
 {
     _ops.push_back(
         HgiGLOps::DrawIndexedIndirect(
             _primitiveType,
+            _primitiveIndexSize,
             indexBuffer,
             drawParameterBuffer,
-            drawBufferOffset,
+            drawBufferByteOffset,
             drawCount,
             stride)
         );

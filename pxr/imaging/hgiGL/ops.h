@@ -134,40 +134,44 @@ public:
 
     HGIGL_API
     static HgiGLOpsFn BindVertexBuffers(
-        uint32_t firstBinding,
-        HgiBufferHandleVector const& buffers,
-        std::vector<uint32_t> const& byteOffsets);
+        HgiVertexBufferBindingVector const &bindings);
 
     HGIGL_API
     static HgiGLOpsFn Draw(
         HgiPrimitiveType primitiveType,
+        uint32_t primitiveIndexSize,
         uint32_t vertexCount,
-        uint32_t firstVertex,
-        uint32_t instanceCount);
+        uint32_t baseVertex,
+        uint32_t instanceCount,
+        uint32_t baseInstance);
 
     HGIGL_API
     static HgiGLOpsFn DrawIndirect(
         HgiPrimitiveType primitiveType,
+        uint32_t primitiveIndexSize,
         HgiBufferHandle const& drawParameterBuffer,
-        uint32_t drawBufferOffset,
+        uint32_t drawBufferByteOffset,
         uint32_t drawCount,
         uint32_t stride);
 
     HGIGL_API
     static HgiGLOpsFn DrawIndexed(
         HgiPrimitiveType primitiveType,
+        uint32_t primitiveIndexSize,
         HgiBufferHandle const& indexBuffer,
         uint32_t indexCount,
         uint32_t indexBufferByteOffset,
-        uint32_t vertexOffset,
-        uint32_t instanceCount);
+        uint32_t baseVertex,
+        uint32_t instanceCount,
+        uint32_t baseInstance);
 
     HGIGL_API
     static HgiGLOpsFn DrawIndexedIndirect(
         HgiPrimitiveType primitiveType,
+        uint32_t primitiveIndexSize,
         HgiBufferHandle const& indexBuffer,
         HgiBufferHandle const& drawParameterBuffer,
-        uint32_t drawBufferOffset,
+        uint32_t drawBufferByteOffset,
         uint32_t drawCount,
         uint32_t stride);
 
@@ -178,6 +182,9 @@ public:
 
     HGIGL_API
     static HgiGLOpsFn Dispatch(int dimX, int dimY);
+
+    HGIGL_API
+    static HgiGLOpsFn FillBuffer(HgiBufferHandle const& buffer, uint8_t value);
 
     HGIGL_API
     static HgiGLOpsFn GenerateMipMaps(HgiTextureHandle const& texture);

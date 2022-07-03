@@ -73,17 +73,6 @@ HdxSelectionTask::Sync(HdSceneDelegate* delegate,
         _lastVersion = -1;
     }
 
-    // Update the selected objects on the tracker. This hook point
-    // allows applications to transform their notion of selected 
-    // objects into Hydra rprims. This is done during the Sync phase
-    // as a preparatory step to render selected prims in a separate
-    // task, where the collection for the render pass needs to be
-    // created during Sync.
-    HdxSelectionTrackerSharedPtr sel;
-    if (_GetTaskContextData(ctx, HdxTokens->selectionState, &sel)) {
-        sel->UpdateSelection(&(delegate->GetRenderIndex()));
-    }
-
     *dirtyBits = HdChangeTracker::Clean;
 }
 
@@ -92,7 +81,12 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
                           HdRenderIndex* renderIndex)
 {
     HdxSelectionTrackerSharedPtr sel;
-    _GetTaskContextData(ctx, HdxTokens->selectionState, &sel);
+    if (_GetTaskContextData(ctx, HdxTokens->selectionState, &sel)) {
+        // Update the Hydra selection held by the tracker. This hook point
+        // allows applications to transform their notion of selected 
+        // objects into Hydra selection entries.
+        sel->UpdateSelection(renderIndex);
+    }
 
     HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
         std::dynamic_pointer_cast<HdStResourceRegistry>(

@@ -73,6 +73,7 @@ void wrapUsdHydraTokens()
     _AddToken(cls, "HwPrimvar_1", UsdHydraTokens->HwPrimvar_1);
     _AddToken(cls, "HwPtexTexture_1", UsdHydraTokens->HwPtexTexture_1);
     _AddToken(cls, "HwUvTexture_1", UsdHydraTokens->HwUvTexture_1);
+    _AddToken(cls, "hydraGenerativeProcedural", UsdHydraTokens->hydraGenerativeProcedural);
     _AddToken(cls, "infoFilename", UsdHydraTokens->infoFilename);
     _AddToken(cls, "infoVarname", UsdHydraTokens->infoVarname);
     _AddToken(cls, "linear", UsdHydraTokens->linear);
@@ -84,8 +85,11 @@ void wrapUsdHydraTokens()
     _AddToken(cls, "nearest", UsdHydraTokens->nearest);
     _AddToken(cls, "nearestMipmapLinear", UsdHydraTokens->nearestMipmapLinear);
     _AddToken(cls, "nearestMipmapNearest", UsdHydraTokens->nearestMipmapNearest);
+    _AddToken(cls, "primvarsHdGpProceduralType", UsdHydraTokens->primvarsHdGpProceduralType);
+    _AddToken(cls, "proceduralSystem", UsdHydraTokens->proceduralSystem);
     _AddToken(cls, "repeat", UsdHydraTokens->repeat);
     _AddToken(cls, "textureMemory", UsdHydraTokens->textureMemory);
+    _AddToken(cls, "useMetadata", UsdHydraTokens->useMetadata);
     _AddToken(cls, "uv", UsdHydraTokens->uv);
     _AddToken(cls, "wrapS", UsdHydraTokens->wrapS);
     _AddToken(cls, "wrapT", UsdHydraTokens->wrapT);

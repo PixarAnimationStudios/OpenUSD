@@ -27,7 +27,7 @@ def Xform "lights"
         color3f inputs:color = (0.5, 0.5, 0.75)
         float inputs:diffuse = 1
         bool inputs:enableColorTemperature = 0
-        float inputs:exposure = 4
+        float inputs:exposure = 6
         float inputs:intensity = 0.35
         bool inputs:normalize = 0
         float inputs:radius = 0.5

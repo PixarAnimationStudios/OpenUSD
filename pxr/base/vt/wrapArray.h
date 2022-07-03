@@ -459,7 +459,7 @@ void VtWrapArray()
     string typeStr = ArchGetDemangled(typeid(Type));
     string docStr = TfStringPrintf("An array of type %s.", typeStr.c_str());
     
-    class_<This>(name.c_str(), docStr.c_str(), no_init)
+    auto selfCls = class_<This>(name.c_str(), docStr.c_str(), no_init)
         .setattr("_isVtArray", true)
         .def(TfTypePythonClass())
         .def(init<>())
@@ -525,6 +525,19 @@ void VtWrapArray()
 
         ;
 
+#if PY_MAJOR_VERSION == 2
+    // The above generates bindings for scalar division of arrays, but we
+    // need to explicitly add bindings for __truediv__ and __rtruediv__
+    // in Python 2 to support "from __future__ import division".
+    if (PyObject_HasAttrString(selfCls.ptr(), "__div__")) {
+        selfCls.attr("__truediv__") = selfCls.attr("__div__");
+    }
+
+    if (PyObject_HasAttrString(selfCls.ptr(), "__rdiv__")) {
+        selfCls.attr("__rtruediv__") = selfCls.attr("__rdiv__");
+    }
+#endif
+
 #define WRITE(z, n, data) BOOST_PP_COMMA_IF(n) data
 #define VtCat_DEF(z, n, unused) \
     def("Cat",(VtArray<Type> (*)( BOOST_PP_REPEAT(n, WRITE, VtArray<Type> const &) ))VtCat<Type>);
@@ -565,7 +578,7 @@ void VtWrapComparisonFunctions()
 
 template <class Array>
 VtValue
-Vt_ConvertFromPySequence(TfPyObjWrapper const &obj)
+Vt_ConvertFromPySequenceOrIter(TfPyObjWrapper const &obj)
 {
     typedef typename Array::ElementType ElemType;
     TfPyLock lock;
@@ -584,6 +597,21 @@ Vt_ConvertFromPySequence(TfPyObjWrapper const &obj)
             if (!e.check())
                 return VtValue();
             *elem++ = e();
+        }
+        return VtValue(result);
+    } else if (PyIter_Check(obj.ptr())) {
+        Array result;
+        while (PyObject *item = PyIter_Next(obj.ptr())) {
+            boost::python::handle<> h(item);
+            if (!h) {
+                if (PyErr_Occurred())
+                    PyErr_Clear();
+                return VtValue();
+            }
+            boost::python::extract<ElemType> e(h.get());
+            if (!e.check())
+                return VtValue();
+            result.push_back(e());
         }
         return VtValue(result);
     }
@@ -612,7 +640,7 @@ Vt_CastToArray(VtValue const &v) {
     TfPyObjWrapper obj;
     // Attempt to convert from either python sequence or vector<VtValue>.
     if (v.IsHolding<TfPyObjWrapper>()) {
-        ret = Vt_ConvertFromPySequence<T>(v.UncheckedGet<TfPyObjWrapper>());
+        ret = Vt_ConvertFromPySequenceOrIter<T>(v.UncheckedGet<TfPyObjWrapper>());
     } else if (v.IsHolding<std::vector<VtValue> >()) {
         std::vector<VtValue> const &vec = v.UncheckedGet<std::vector<VtValue> >();
         ret = Vt_ConvertFromRange<T>(vec.begin(), vec.end());

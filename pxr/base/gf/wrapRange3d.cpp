@@ -55,17 +55,15 @@ static string _Repr(GfRange3d const &self) {
         TfPyRepr(self.GetMin()) + ", " + TfPyRepr(self.GetMax()) + ")";
 }
 
-#if PY_MAJOR_VERSION == 2
 static GfRange3d __truediv__(const GfRange3d &self, double value)
 {
     return self / value;
 }
 
-static GfRange3d __itruediv__(GfRange3d &self, double value)
+static GfRange3d& __itruediv__(GfRange3d &self, double value)
 {
     return self /= value;
 }
-#endif
 
 static size_t __hash__(GfRange3d const &r) { return hash_value(r); }
 
@@ -79,7 +77,8 @@ void wrapRange3d()
     object getMax = make_function(&GfRange3d::GetMax,
                                   return_value_policy<return_by_value>());
 
-    class_<GfRange3d>("Range3d", init<>())
+    class_<GfRange3d> cls("Range3d", init<>());
+    cls
         .def(init<GfRange3d>())
         .def(init<const GfVec3d &, const GfVec3d &>())
         
@@ -138,14 +137,6 @@ void wrapRange3d()
         .def(self != GfRange3f())
         .def(self == self)
         .def(self != self)
-    
-#if PY_MAJOR_VERSION == 2
-        // Needed only to support "from __future__ import division" in
-        // python 2. In python 3 builds boost::python adds this for us.
-        .def("__truediv__", __truediv__ )
-        .def("__itruediv__", __itruediv__ )
-#endif
-
         .def("__repr__", _Repr)
         .def("__hash__", __hash__)
 
@@ -156,5 +147,20 @@ void wrapRange3d()
         ;
     to_python_converter<std::vector<GfRange3d>,
         TfPySequenceToPython<std::vector<GfRange3d> > >();
-    
+
+    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
+        // __truediv__ not added by .def( self / double() ) above, which
+        // happens when building with python 2, but we need it to support
+        // "from __future__ import division"
+        cls.def("__truediv__", __truediv__);
+    }
+    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
+        // __itruediv__ not added by .def( self /= double() ) above, which
+        // happens when building with python 2, but we need it to support
+        // "from __future__ import division". This is also a workaround for a 
+        // bug in the current version of boost::python that incorrectly wraps
+        // in-place division with __idiv__ when building with python 3.
+        cls.def("__itruediv__", __itruediv__, return_self<>());
+    }
+
 }

@@ -1378,6 +1378,20 @@ SdfSchemaBase::IsValidSubLayer(const std::string& sublayer)
         return SdfAllowed("Sublayer paths must not be empty");
     }
 
+    // 'sublayer' must be a valid asset path as well, attempt to construct one
+    // to check.
+    TfErrorMark m;
+    SdfAssetPath test(sublayer);
+    if (!m.IsClean()) {
+        std::vector<std::string> errs;
+        for (TfError const &err: m) {
+            errs.push_back(err.GetCommentary());
+        }
+        m.Clear();
+        return SdfAllowed(
+            TfStringPrintf("Invalid sublayer path: %s",
+                           TfStringJoin(errs, "; ").c_str()));
+    }
     return true;
 }
 
@@ -1453,7 +1467,7 @@ _ParseValue(const std::string &valueTypeName, const JsValue &value,
 
     // Feed the ParserValueContext the values in the correct format.
     // A better solution would be to have the default value be a string,
-    // which is parsed using the menva file format syntax for typed values.
+    // which is parsed using the sdf text file format syntax for typed values.
     // This would involve extracting the typed value rule out of the parser
     // and into a new parser.
     if (context.valueIsShaped)

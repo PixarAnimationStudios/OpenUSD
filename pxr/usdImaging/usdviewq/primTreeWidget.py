@@ -389,11 +389,12 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
         return col != PrimViewColumnIndex.VIS and col != PrimViewColumnIndex.DRAWMODE
 
     def ExpandItemRecursively(self, item):
-        item = item.parent()
-        while item.parent():
-            if not item.isExpanded():
-                self.expandItem(item)
+        if (item.parent() != None):        
             item = item.parent()
+            while item.parent():
+                if not item.isExpanded():
+                    self.expandItem(item)
+                item = item.parent()
 
     def FrameSelection(self):
         if (self._appController):

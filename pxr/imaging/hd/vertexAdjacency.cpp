@@ -46,15 +46,22 @@ Hd_VertexAdjacency::~Hd_VertexAdjacency()
                              _adjacencyTable.size() * sizeof(int));
 }
 
-bool
+void
 Hd_VertexAdjacency::BuildAdjacencyTable(HdMeshTopology const *topology)
 {
     // compute adjacency
 
     int const * numVertsPtr = topology->GetFaceVertexCounts().cdata();
     int const * vertsPtr = topology->GetFaceVertexIndices().cdata();
-    int numFaces = topology->GetFaceVertexCounts().size();
+    const int numFaces = topology->GetFaceVertexCounts().size();
     bool flip = (topology->GetOrientation() != HdTokens->rightHanded);
+
+    if (numFaces > 0 && !vertsPtr) {
+        TF_WARN("Topology missing face vertex indices.");
+        _numPoints = 0;
+        _adjacencyTable.clear();
+        return;
+    }
 
     // compute numPoints from topology indices
     _numPoints = topology->GetNumPoints();
@@ -74,11 +81,11 @@ Hd_VertexAdjacency::BuildAdjacencyTable(HdMeshTopology const *topology)
         for (int j=0; j<nv; ++j) {
             int index = vertsPtr[vertIndex++];
             if (index < 0 || index >= _numPoints) {
-                TF_CODING_ERROR("vertex index out of range "
-                                "index: %d numPoints: %d", index, _numPoints);
+                TF_WARN("vertex index out of range "
+                        "index: %d numPoints: %d", index, _numPoints);
                 _numPoints = 0;
                 _adjacencyTable.clear();
-                return false;
+                return;
             }
             ++vertexValence[index];
         }
@@ -130,8 +137,6 @@ Hd_VertexAdjacency::BuildAdjacencyTable(HdMeshTopology const *topology)
         }
         vertIndex += nv;
     }
-
-    return true;
 }
 
 HdBufferSourceSharedPtr
@@ -178,9 +183,7 @@ Hd_AdjacencyBuilderComputation::Resolve()
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    if (!_adjacency->BuildAdjacencyTable(_topology)) {
-        return false;
-    }
+    _adjacency->BuildAdjacencyTable(_topology);
 
     // call base class to mark as resolved.
     _SetResolved();

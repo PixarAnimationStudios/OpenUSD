@@ -238,6 +238,8 @@ WRAP_CUSTOM {
 
     _class
         .def("IsContainer", &UsdShadeConnectableAPI::IsContainer)
+        .def("RequiresEncapsulation", 
+                &UsdShadeConnectableAPI::RequiresEncapsulation)
 
         .def("CanConnect", CanConnect_Input,
             (arg("input"), arg("source")))
@@ -339,7 +341,7 @@ WRAP_CUSTOM {
 
         .def("__repr__", _ConnectionSourceInfoRepr)
         .def("IsValid", &ConnectionSourceInfo::IsValid)
-        .def("__nonzero__", &ConnectionSourceInfo::IsValid)
+        .def(TfPyBoolBuiltinFuncName, &ConnectionSourceInfo::IsValid)
         .def("__eq__", &ConnectionSourceInfo::operator==)
         .def("__ne__", &ConnectionSourceInfo::operator!=)
     ;

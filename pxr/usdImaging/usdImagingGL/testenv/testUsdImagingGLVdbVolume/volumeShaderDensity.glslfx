@@ -1,0 +1,120 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2019 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "volumeShader": {
+                "source": [ "VolumeShaderDensity.VolumeShader" ]
+            }
+        }
+    },
+
+    "parameters" : {
+        "density": {
+            "default": 0.0,
+            "type": "float",
+            "description":"density."
+        },
+        "densityScale": {
+            "default": 0.1,
+            "type": "float",
+            "description":"density."
+        },
+        "albedo": {
+            "default": [0.0, 0.0, 0.0],
+            "type": "vec3",
+            "description":"albedo."
+        },
+        "fallbackReader": {
+            "default":  [0.0, 0.0, 0.0],
+            "type": "vec3",
+            "description":"fallback reader."
+        }
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl VolumeShaderDensity.VolumeShader
+
+// Return zero density unless the value we read for fallbackReader is (1,4,9).
+// This tests that a field reader node defaults to its fallback value when the
+// corresponding field does not exist on the volume.
+float
+checkFallbackValue(vec3 s)
+{
+    vec3 expectedFallbackValue = vec3(1,4,9);
+    float diffFromExpected = length(HdGet_fallbackReader(s) - expectedFallbackValue);
+
+    return step(diffFromExpected, 0.01);
+}
+
+float
+getDensitySample(vec3 p)
+{
+    return HdGet_density(p) * checkFallbackValue(p) * HdGet_densityScale();
+}
+
+// Extinction function, returns sum of absorption and out-scattering cross
+// ratio.
+//
+float
+extinctionFunction(vec3 p)
+{
+    return getDensitySample(p);
+}
+
+// Scattering function, returns in-scattering cross-section (will be combined
+// with phase function).
+float
+scatteringFunction(vec3 p)
+{
+    return getDensitySample(p) * HdGet_albedo();
+}
+
+// Emission function, returns emission cross-section.
+//
+// Here: constant on ellipsoid and zero outside.
+vec3
+emissionFunction(vec3 p)
+{
+    return vec3(0.0);
+}
+
+// Phase function in volume rendering equation.
+//
+// Here: isotropic.
+float
+phaseFunction(vec3 direction1, vec3 direction2)
+{
+    const float pi = 3.14159265358979;
+    const float sphereArea = 4.0 * pi;
+    const float inverseSphereArea = 1.0 / sphereArea;
+
+    return inverseSphereArea;
+}
+

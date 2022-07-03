@@ -28,6 +28,7 @@
 #include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/primDefinition.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/tf/hash.h"
 
 #include <atomic>
 
@@ -146,19 +147,14 @@ private:
         }
 
         // Hash function for hash map keying.
+        template <class HashState>
+        friend void TfHashAppend(HashState &h, const _TypeId &id)
+        {
+            h.Append(id.primTypeName, id.mappedTypeName, id.appliedAPISchemas);
+        }
+
         size_t Hash() const {
-            size_t hash = primTypeName.Hash();
-            if (!mappedTypeName.IsEmpty()) {
-                boost::hash_combine(hash, mappedTypeName.Hash());
-            }
-            if (!appliedAPISchemas.empty()) {
-                size_t appliedHash = appliedAPISchemas.size();
-                for (const TfToken &apiSchema : appliedAPISchemas) {
-                    boost::hash_combine(appliedHash, apiSchema);
-                }
-                boost::hash_combine(hash, appliedHash);
-            }
-            return hash;
+            return TfHash()(*this);
         }
 
         bool operator==(const _TypeId &other) const {

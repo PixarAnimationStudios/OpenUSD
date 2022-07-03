@@ -21,6 +21,9 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+
+# pylint: disable=map-builtin-not-iterating
+
 from .qt import QtCore, QtGui, QtWidgets
 
 

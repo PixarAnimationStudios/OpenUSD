@@ -1,0 +1,167 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Z"
+)
+
+def Xform "Scene" (
+kind = "component"
+)
+{
+    def Scope "Looks"
+    {
+        def Material "Material_0"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1.0, 0.0, 0.0)
+                float  inputs:metallic = 0.5
+                float  inputs:roughness = 0.01
+                color3f inputs:diffuseColor.connect  = </Scene/Looks/Material_0/Primvar.outputs:result>
+                token outputs:surface
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float3"
+                string inputs:varname = "displayColor"
+                float3 outputs:result
+            }
+        }
+
+        def Material "Material_1"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_1/PbrPreview.outputs:surface>
+
+            def Shader "PrimvarIllegal0"
+            {
+                uniform token info:id = "UsdPrimvarReader_float3"
+                float3 outputs:result
+
+                # Case (1) in </Prototypes/Sphere>
+                string inputs:varname = "_displayColorRed"
+            }
+
+            def Shader "PrimvarIllegal1"
+            {
+                uniform token info:id = "UsdPrimvarReader_float3"
+                float3 outputs:result
+
+                # Case (2) in </Prototypes/Sphere>
+                string inputs:varname = "displayColor:green"
+            }
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1.0, 0.0, 0.0)
+                float  inputs:metallic = 0.5
+                float  inputs:roughness = 0.01
+                int     inputs:useSpecularWorkflow = 1
+                color3f inputs:diffuseColor.connect  = </Scene/Looks/Material_1/PrimvarIllegal0.outputs:result>
+                color3f inputs:specularColor.connect  = </Scene/Looks/Material_1/PrimvarIllegal1.outputs:result>
+                token outputs:surface
+            }
+        }
+
+        def Material "Material_2"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_2/PbrPreview.outputs:surface>
+
+            def Shader "PrimvarIllegal0"
+            {
+                uniform token info:id = "UsdPrimvarReader_float3"
+                float3 outputs:result
+
+                # Case (3) in </Prototypes/Sphere>
+                string inputs:varname = "display__Color"
+            }
+
+            def Shader "PrimvarIllegal1"
+            {
+                uniform token info:id = "UsdPrimvarReader_float3"
+                float3 outputs:result
+
+                # Case (4) in </Prototypes/Sphere>
+                string inputs:varname = "displayColor:__blue"
+            }
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1.0, 0.0, 0.0)
+                float  inputs:metallic = 0.5
+                float  inputs:roughness = 0.01
+                int     inputs:useSpecularWorkflow = 1
+                color3f inputs:diffuseColor.connect  = </Scene/Looks/Material_2/PrimvarIllegal0.outputs:result>
+                color3f inputs:specularColor.connect  = </Scene/Looks/Material_2/PrimvarIllegal1.outputs:result>
+
+                token outputs:surface
+            }
+        }
+    }
+
+    def Xform "Spheres"
+    {
+        def "pSphere0" (
+            references = </Prototypes/Sphere>
+        )
+        {
+            rel material:binding = </Scene/Looks/Material_0>
+            double3 xformOp:translate = (0, 0, 27)
+        }
+
+        def "pSphere1" (
+            references = </Prototypes/Sphere>
+        )
+        {
+            rel material:binding = </Scene/Looks/Material_1>
+            double3 xformOp:translate = (3, 0, 27)
+        }
+
+        def "pSphere2" (
+            references = </Prototypes/Sphere>
+        )
+        {
+            rel material:binding = </Scene/Looks/Material_2>
+            double3 xformOp:translate = (6, 0, 27)
+        }
+    }
+}
+
+def Scope "Prototypes"(
+    active=false
+    )
+{
+    def Sphere "Sphere"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+
+        # 0. Legal GL primvar name.
+        color3f[] primvars:displayColor = [(1.0, 1.0, 1.0)]
+
+        # Primvars with non-GL compatible names, that require sanitization
+        # Note: usd attributes have a naming convention that doesn't allow
+        # most special characters.
+
+        # XXX: WBN to link that/paste the rules here
+        # 1. Does not begin with an alphabet
+        color3f[] primvars:_displayColorRed = [(1.0, 0.0, 0.0)]
+
+        # 2. Has invalid chars (not in [a-zA-z0-9_].
+        color3f[] primvars:displayColor:green = [(0.0, 1.0, 0.0)]
+
+        # 3. Has double underscore
+        color3f[] primvars:display__Color = [(0.0, 1.0, 1.0)]
+
+        # 4. Has underscore, followed by invalid char, followed by underscore
+        color3f[] primvars:displayColor:__blue = [(0.0, 1.0, 0.0)]
+
+        uniform token[] xformOpOrder = [ "xformOp:translate" ]
+    }
+}

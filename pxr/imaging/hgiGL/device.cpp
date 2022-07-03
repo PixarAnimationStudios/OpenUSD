@@ -32,20 +32,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiGLDevice::HgiGLDevice()
 {
+    _activeArena = &_defaultArena;
     HgiGLSetupGL4Debug();
 }
 
 HgiGLDevice::~HgiGLDevice()
 {
-    _framebufferCache.Clear();
-}
-
-uint32_t
-HgiGLDevice::AcquireFramebuffer(
-    HgiGraphicsCmdsDesc const& desc,
-    bool resolved)
-{
-    return _framebufferCache.AcquireFramebuffer(desc, resolved);
 }
 
 void
@@ -56,11 +48,46 @@ HgiGLDevice::SubmitOps(HgiGLOpsVector const& ops)
     }
 }
 
+void
+HgiGLDevice::SetCurrentArena(HgiGLContextArenaHandle const& arena)
+{
+    if (arena) {
+        _activeArena = arena.Get();
+    } else {
+        _activeArena = &_defaultArena;
+    }
+}
+
+uint32_t
+HgiGLDevice::AcquireFramebuffer(
+    HgiGraphicsCmdsDesc const& desc,
+    bool resolved)
+{
+    return _GetArena()->_AcquireFramebuffer(desc, resolved);
+}
+
+void
+HgiGLDevice::GarbageCollect()
+{
+    return _GetArena()->_GarbageCollect();
+}
+
+HgiGLContextArena const *
+HgiGLDevice::_GetArena() const
+{
+    return _activeArena;
+}
+HgiGLContextArena *
+HgiGLDevice::_GetArena()
+{
+    return _activeArena;
+}
+
 std::ofstream& operator<<(
     std::ofstream& out,
     const HgiGLDevice& dev)
-{
-    out << dev._framebufferCache;
+{                           
+    out << *dev._GetArena();
     return out;
 }
 

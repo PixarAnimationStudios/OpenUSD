@@ -29,6 +29,8 @@
 
 #include <boost/python.hpp>
 
+#include <memory>
+
 using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -37,50 +39,27 @@ namespace {
 
 class Sdf_PythonChangeBlock {
 public:
-    Sdf_PythonChangeBlock() : _block(0)
-    {
-        // Do nothing.
-    }
-
-    ~Sdf_PythonChangeBlock()
-    {
-        delete _block;
-    }
-
-    void Open()
-    {
-        if (!TF_VERIFY(_block == 0)) {
+    explicit Sdf_PythonChangeBlock(bool enabled) : _enabled(enabled) {}
+    
+    void Open() {
+        if (!_enabled || !TF_VERIFY(!_block)) {
             return;
         }
-        _block = new SdfChangeBlock;
+        _block.reset(new SdfChangeBlock);
     }
 
     void Close(object, object, object)
     {
-        if (!TF_VERIFY(_block != 0)) {
+        if (!_enabled || !TF_VERIFY(_block)) {
             return;
         }
-        delete _block;
-        _block = 0;
+        _block.reset();
     }
 
 private:
-    SdfChangeBlock* _block;
+    std::unique_ptr<SdfChangeBlock> _block;
+    const bool _enabled;
 };
-
-static
-void
-_BeginBlock()
-{
-    Sdf_ChangeManager::Get().OpenChangeBlock();
-}
-
-static
-void
-_EndBlock()
-{
-    Sdf_ChangeManager::Get().CloseChangeBlock();
-}
 
 } // anonymous namespace 
 
@@ -90,14 +69,9 @@ wrapChangeBlock()
     // This allows SdfChangeBlocks to be used in an RAII fashion in Python 
     // with the 'with' statement.
     typedef Sdf_PythonChangeBlock This;
-    class_<This, boost::noncopyable>("ChangeBlock", init<>())
+    class_<This, boost::noncopyable>("ChangeBlock",
+                                     init<bool>(arg("enabled")=true))
         .def("__enter__", &This::Open)
         .def("__exit__", &This::Close)
         ;
-
-    // Helpers to open/close change blocks in a non-RAII fashion. Primarily
-    // here for API compatibility, consumers should prefer the ChangeBlock
-    // object above.
-    def("BeginChangeBlock", &_BeginBlock);
-    def("EndChangeBlock", &_EndBlock);
 }

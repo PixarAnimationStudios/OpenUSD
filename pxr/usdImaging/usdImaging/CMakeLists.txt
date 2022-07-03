@@ -15,6 +15,7 @@ pxr_library(usdImaging
         usd
         usdGeom
         usdLux
+        usdRender
         usdShade
         usdVol
         ar
@@ -26,15 +27,32 @@ pxr_library(usdImaging
     PUBLIC_CLASSES
         adapterRegistry
         collectionCache
+        dataSourceAttribute
+        dataSourceBasisCurves
+        dataSourceCamera
+        dataSourceGprim
+        dataSourceMaterial
+        dataSourceMesh
+        dataSourcePoints
+        dataSourcePrim
+        dataSourcePrimvars
+        dataSourceRelationship
+        dataSourceStageGlobals
+        dataSourceVolume
         debugCodes
         delegate
         indexProxy
+        materialParamUtils
+        modelSchema
         resolvedAttributeCache
         instancerContext
+        stageSceneIndex
         tokens
+        apiSchemaAdapter
         basisCurvesAdapter
         capsuleAdapter
         cameraAdapter
+        collectionAPIAdapter
         coneAdapter
         coordSysAdapter
         cubeAdapter
@@ -52,9 +70,11 @@ pxr_library(usdImaging
         lightAdapter
         lightFilterAdapter
         materialAdapter
+        materialBindingAPIAdapter
         meshAdapter
         nurbsCurvesAdapter
         nurbsPatchAdapter
+        planeAdapter
         pluginLightAdapter
         pluginLightFilterAdapter
         pointsAdapter
@@ -63,18 +83,20 @@ pxr_library(usdImaging
         primAdapter
         primvarDescCache
         rectLightAdapter
+        renderSettingsAdapter
+        sampleFilterAdapter
         sphereAdapter
         sphereLightAdapter
         textureUtils
         volumeAdapter
 
-    PRIVATE_CLASSES
-        materialParamUtils
-
     PUBLIC_HEADERS
         api.h
         unitTestHelper.h
         version.h
+
+    PRIVATE_HEADERS
+        dataSourceImplicits-Impl.h
 
     RESOURCE_FILES
         plugInfo.json

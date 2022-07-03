@@ -78,10 +78,14 @@ bool
 UsdCollectionAPI::IsSchemaPropertyBaseName(const TfToken &baseName)
 {
     static TfTokenVector attrsAndRels = {
-        UsdTokens->expansionRule,
-        UsdTokens->includeRoot,
-        UsdTokens->includes,
-        UsdTokens->excludes,
+        UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
+            UsdTokens->collection_MultipleApplyTemplate_ExpansionRule),
+        UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
+            UsdTokens->collection_MultipleApplyTemplate_IncludeRoot),
+        UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
+            UsdTokens->collection_MultipleApplyTemplate_Includes),
+        UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
+            UsdTokens->collection_MultipleApplyTemplate_Excludes),
     };
 
     return find(attrsAndRels.begin(), attrsAndRels.end(), baseName)
@@ -119,36 +123,23 @@ UsdCollectionAPI::IsCollectionAPIPath(
 }
 
 /* virtual */
-UsdSchemaKind UsdCollectionAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdCollectionAPI::_GetSchemaKind() const
+{
     return UsdCollectionAPI::schemaKind;
 }
 
-/* virtual */
-UsdSchemaKind UsdCollectionAPI::_GetSchemaType() const {
-    return UsdCollectionAPI::schemaType;
+/* static */
+bool
+UsdCollectionAPI::CanApply(
+    const UsdPrim &prim, const TfToken &name, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdCollectionAPI>(name, whyNot);
 }
 
 /* static */
 UsdCollectionAPI
 UsdCollectionAPI::Apply(const UsdPrim &prim, const TfToken &name)
 {
-    // Ensure that the instance name is valid.
-    TfTokenVector tokens = SdfPath::TokenizeIdentifierAsTokens(name);
-
-    if (tokens.empty()) {
-        TF_CODING_ERROR("Invalid CollectionAPI name '%s'.", 
-                        name.GetText());
-        return UsdCollectionAPI();
-    }
-
-    const TfToken &baseName = tokens.back();
-    if (IsSchemaPropertyBaseName(baseName)) {
-        TF_CODING_ERROR("Invalid CollectionAPI name '%s'. "
-                        "The base-name '%s' is a schema property name.", 
-                        name.GetText(), baseName.GetText());
-        return UsdCollectionAPI();
-    }
-
     if (prim.ApplyAPI<UsdCollectionAPI>(name)) {
         return UsdCollectionAPI(prim, name);
     }
@@ -185,9 +176,7 @@ static inline
 TfToken
 _GetNamespacedPropertyName(const TfToken instanceName, const TfToken propName)
 {
-    TfTokenVector identifiers =
-        {_schemaTokens->collection, instanceName, propName};
-    return TfToken(SdfPath::JoinIdentifier(identifiers));
+    return UsdSchemaRegistry::MakeMultipleApplyNameInstance(propName, instanceName);
 }
 
 UsdAttribute
@@ -196,7 +185,7 @@ UsdCollectionAPI::GetExpansionRuleAttr() const
     return GetPrim().GetAttribute(
         _GetNamespacedPropertyName(
             GetName(),
-            UsdTokens->expansionRule));
+            UsdTokens->collection_MultipleApplyTemplate_ExpansionRule));
 }
 
 UsdAttribute
@@ -205,7 +194,7 @@ UsdCollectionAPI::CreateExpansionRuleAttr(VtValue const &defaultValue, bool writ
     return UsdSchemaBase::_CreateAttr(
                        _GetNamespacedPropertyName(
                             GetName(),
-                           UsdTokens->expansionRule),
+                           UsdTokens->collection_MultipleApplyTemplate_ExpansionRule),
                        SdfValueTypeNames->Token,
                        /* custom = */ false,
                        SdfVariabilityUniform,
@@ -219,7 +208,7 @@ UsdCollectionAPI::GetIncludeRootAttr() const
     return GetPrim().GetAttribute(
         _GetNamespacedPropertyName(
             GetName(),
-            UsdTokens->includeRoot));
+            UsdTokens->collection_MultipleApplyTemplate_IncludeRoot));
 }
 
 UsdAttribute
@@ -228,7 +217,7 @@ UsdCollectionAPI::CreateIncludeRootAttr(VtValue const &defaultValue, bool writeS
     return UsdSchemaBase::_CreateAttr(
                        _GetNamespacedPropertyName(
                             GetName(),
-                           UsdTokens->includeRoot),
+                           UsdTokens->collection_MultipleApplyTemplate_IncludeRoot),
                        SdfValueTypeNames->Bool,
                        /* custom = */ false,
                        SdfVariabilityUniform,
@@ -242,7 +231,7 @@ UsdCollectionAPI::GetIncludesRel() const
     return GetPrim().GetRelationship(
         _GetNamespacedPropertyName(
             GetName(),
-            UsdTokens->includes));
+            UsdTokens->collection_MultipleApplyTemplate_Includes));
 }
 
 UsdRelationship
@@ -251,7 +240,7 @@ UsdCollectionAPI::CreateIncludesRel() const
     return GetPrim().CreateRelationship(
                        _GetNamespacedPropertyName(
                            GetName(),
-                           UsdTokens->includes),
+                           UsdTokens->collection_MultipleApplyTemplate_Includes),
                        /* custom = */ false);
 }
 
@@ -261,7 +250,7 @@ UsdCollectionAPI::GetExcludesRel() const
     return GetPrim().GetRelationship(
         _GetNamespacedPropertyName(
             GetName(),
-            UsdTokens->excludes));
+            UsdTokens->collection_MultipleApplyTemplate_Excludes));
 }
 
 UsdRelationship
@@ -270,25 +259,17 @@ UsdCollectionAPI::CreateExcludesRel() const
     return GetPrim().CreateRelationship(
                        _GetNamespacedPropertyName(
                            GetName(),
-                           UsdTokens->excludes),
+                           UsdTokens->collection_MultipleApplyTemplate_Excludes),
                        /* custom = */ false);
 }
 
 namespace {
 static inline TfTokenVector
-_ConcatenateAttributeNames(
-    const TfToken instanceName,
-    const TfTokenVector& left,
-    const TfTokenVector& right)
+_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 {
     TfTokenVector result;
     result.reserve(left.size() + right.size());
     result.insert(result.end(), left.begin(), left.end());
-
-    for (const TfToken attrName : right) {
-        result.push_back(
-            _GetNamespacedPropertyName(instanceName, attrName));
-    }
     result.insert(result.end(), right.begin(), right.end());
     return result;
 }
@@ -296,16 +277,14 @@ _ConcatenateAttributeNames(
 
 /*static*/
 const TfTokenVector&
-UsdCollectionAPI::GetSchemaAttributeNames(
-    bool includeInherited, const TfToken instanceName)
+UsdCollectionAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdTokens->expansionRule,
-        UsdTokens->includeRoot,
+        UsdTokens->collection_MultipleApplyTemplate_ExpansionRule,
+        UsdTokens->collection_MultipleApplyTemplate_IncludeRoot,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
-            instanceName,
             UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 
@@ -313,6 +292,24 @@ UsdCollectionAPI::GetSchemaAttributeNames(
         return allNames;
     else
         return localNames;
+}
+
+/*static*/
+TfTokenVector
+UsdCollectionAPI::GetSchemaAttributeNames(
+    bool includeInherited, const TfToken &instanceName)
+{
+    const TfTokenVector &attrNames = GetSchemaAttributeNames(includeInherited);
+    if (instanceName.IsEmpty()) {
+        return attrNames;
+    }
+    TfTokenVector result;
+    result.reserve(attrNames.size());
+    for (const TfToken &attrName : attrNames) {
+        result.push_back(
+            UsdSchemaRegistry::MakeMultipleApplyNameInstance(attrName, instanceName));
+    }
+    return result;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

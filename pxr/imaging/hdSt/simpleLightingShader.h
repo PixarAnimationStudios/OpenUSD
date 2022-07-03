@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/lightingShader.h"
 
+#include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/glf/simpleLightingContext.h"
@@ -38,9 +39,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdRenderIndex;
+class HdRenderParam;
 class HdSceneDelegate;
+class HdStRenderBuffer;
+struct HdRenderPassAovBinding;
 using HdStSimpleLightingShaderSharedPtr =
     std::shared_ptr<class HdStSimpleLightingShader>;
+using HdRenderPassAovBindingVector = std::vector<HdRenderPassAovBinding>;
+
 TF_DECLARE_REF_PTRS(GlfBindingMap);
 
 /// \class HdStSimpleLightingShader
@@ -62,12 +69,23 @@ public:
     std::string GetSource(TfToken const &shaderStageKey) const override;
     HDST_API
     void BindResources(int program,
-                       HdSt_ResourceBinder const &binder,
-                       HdRenderPassState const &state) override;
+                       HdSt_ResourceBinder const &binder) override;
     HDST_API
     void UnbindResources(int program,
-                         HdSt_ResourceBinder const &binder,
-                         HdRenderPassState const &state) override;
+                         HdSt_ResourceBinder const &binder) override;
+
+    /// Add a custom binding request for use when this shader executes.
+    HDST_API
+    void AddBufferBinding(HdBindingRequest const& req);
+
+    /// Remove \p name from custom binding.
+    HDST_API
+    void RemoveBufferBinding(TfToken const &name);
+
+    /// Clear all custom bindings associated with this shader.
+    HDST_API
+    void ClearBufferBindings();
+
     HDST_API
     void AddBindings(HdBindingRequestVector *customBindings) override;
 
@@ -100,7 +118,7 @@ public:
     /// Call after lighting context has been set or updated in Sync-phase.
     ///
     HDST_API
-    void AllocateTextureHandles(HdSceneDelegate *delegate);
+    void AllocateTextureHandles(HdRenderIndex const &renderIndex);
 
     /// The dome light environment map used as source for the other
     /// dome light textures.
@@ -120,11 +138,20 @@ public:
     const HdStTextureHandleSharedPtr &GetTextureHandle(
         const TfToken &name) const;
 
+    HdRenderPassAovBindingVector const& GetShadowAovBindings() {
+        return _shadowAovBindings;
+    }
+
 private:
+    SdfPath _GetAovPath(TfToken const &aov, size_t shadowIndex) const;
+    void _ResizeOrCreateBufferForAov(size_t shadowIndex) const;
+    void _CleanupAovBindings();
+
     GlfSimpleLightingContextRefPtr _lightingContext; 
-    GlfBindingMapRefPtr _bindingMap;
     bool _useLighting;
     std::unique_ptr<class HioGlslfx> _glslfx;
+
+    TfHashMap<TfToken, HdBindingRequest, TfToken::HashFunctor> _customBuffers;
 
     // The environment map used as source for the dome light textures.
     //
@@ -134,8 +161,16 @@ private:
 
     // Other dome light textures.
     NamedTextureHandleVector _namedTextureHandles;
+
+    NamedTextureHandleVector _domeLightTextureHandles;
+    NamedTextureHandleVector _shadowTextureHandles;
     
     HdSt_MaterialParamVector _lightTextureParams;
+
+    HdRenderParam *_renderParam;
+
+    HdRenderPassAovBindingVector _shadowAovBindings;
+    std::vector<std::unique_ptr<HdStRenderBuffer>> _shadowAovBuffers;
 };
 
 

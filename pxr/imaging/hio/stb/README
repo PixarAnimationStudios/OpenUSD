@@ -1,9 +1,11 @@
 stb_image_write 
 
-Current version : 1.09
+Current version : see file source versions in each .h file.
 Source: https://github.com/nothings/stb
 
 Patch file:
-- Download original source code from github
-- diff -ruN <path to original source> stb_image_write.h > stb_image_write.patch
-- diff -ruN <path to original source> stb_image.h > stb_image.patch
+- Download original/new source code from github.
+- Inspect current .patch file to understand local modifications.
+- Merge existing code with new code to incorporate patches.
+- Generate new patch:
+     diff -ruN <path to original/new source> stb_image.h > stb_image.patch

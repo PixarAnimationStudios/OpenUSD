@@ -62,13 +62,9 @@ UsdShadeCoordSysAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdShadeCoordSysAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdShadeCoordSysAPI::_GetSchemaKind() const
+{
     return UsdShadeCoordSysAPI::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdShadeCoordSysAPI::_GetSchemaType() const {
-    return UsdShadeCoordSysAPI::schemaType;
 }
 
 /* static */

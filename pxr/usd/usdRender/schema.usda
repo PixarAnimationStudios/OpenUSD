@@ -103,10 +103,16 @@ class "RenderSettingsBase" (
         """
     )
     uniform bool instantaneousShutter = false (
-        doc = """Override the targeted _camera_'s _shutterClose_ to be
-        equal to the value of its _shutterOpen_, to produce a zero-width
-        shutter interval.  This gives us a convenient way to disable
-        motion blur."""
+        doc = """Deprecated - use disableMotionBlur instead. Override
+        the targeted _camera_'s _shutterClose_ to be equal to the
+        value of its _shutterOpen_, to produce a zero-width shutter
+        interval.  This gives us a convenient way to disable motion
+        blur."""
+    )
+    uniform bool disableMotionBlur = false (
+        doc = """Disable all motion blur by setting the shutter interval
+        of the targeted camera to [0,0] - that is, take only one sample,
+        namely at the current time code."""
     )
 }
  
@@ -118,9 +124,6 @@ class RenderSettings "RenderSettings" (
     be rendered.  \\ref UsdRenderHowSettingsAffectRendering"""
     customData = {
          string className = "Settings"
-         string extraIncludes = """
-#include "pxr/base/gf/frustum.h"
-"""
     }
 )
 {
@@ -145,17 +148,6 @@ class RenderSettings "RenderSettings" (
     )
 }
 
-class "RenderSettingsAPI" (
-    inherits = </APISchemaBase>
-    customData = {
-        token apiSchemaType = "singleApply"
-        string className = "SettingsAPI"
-    }
-    doc = """UsdRenderSettingsAPI is a base class for API schemas
-    to encode renderer-specific settings."""
-) {
-}
- 
 class RenderVar "RenderVar" (
     inherits = </Typed>
     doc = """A UsdRenderVar describes a custom data variable for
@@ -163,8 +155,11 @@ class RenderVar "RenderVar" (
     can be a shader output or an LPE (Light Path Expression), and also
     allows encoding of (generally renderer-specific) parameters that
     configure the renderer for computing the variable.
+
+    \\note The name of the RenderVar prim drives the name of the data 
+    variable that the renderer will produce.
  
-    \note In the future, UsdRender may standardize RenderVar representation
+    \\note In the future, UsdRender may standardize RenderVar representation
     for well-known variables under the sourceType `intrinsic`,
     such as _r_, _g_, _b_, _a_, _z_, or _id_.
     """
@@ -230,7 +225,7 @@ class RenderProduct "RenderProduct" (
         doc = """The type of output to produce.
         The default, "raster", indicates a 2D image.
 
-        \note In the future, UsdRender may define additional product
+        \\note In the future, UsdRender may define additional product
         types."""
     )
     token productName = "" (
@@ -245,4 +240,129 @@ class RenderProduct "RenderProduct" (
         output driver, then the ordering of targets in this relationship
         provides the order to use."""
     )
+}
+
+
+class RenderPass "RenderPass" (
+    inherits = </Typed>
+    doc = """A RenderPass prim encapsulates the necessary information
+    to generate multipass renders.  It houses properties for generating
+    dependencies and the necessary commands to run to generate renders, as 
+    well as visibility controls for the scene.  While RenderSettings
+    describes the information needed to generate images from a single 
+    invocation of a renderer, RenderPass describes the additional information
+    needed to generate a time varying set of images.
+
+    There are two consumers of RenderPass prims - a runtime executable that
+    generates images from usdRender prims, and pipeline specific code that
+    translates between usdRender prims and the pipeline's resource scheduling
+    software.  We'll refer to the latter as 'job submission code'.
+
+    The name of the prim is used as the pass's name.
+    """
+    customData = {
+         string className = "Pass"
+    }
+) {
+    uniform token passType (
+        doc = """A string used to categorize differently structured 
+        or executed types of passes within a customized pipeline.
+
+        For example, when multiple DCC's (e.g. Houdini, Katana, Nuke) 
+        each compute and contribute different Products to a final result, 
+        it may be clearest and most flexible to create a separate 
+        RenderPass for each.
+        """
+        )
+
+    uniform string[] command (
+        doc = """The command to run in order to generate
+        renders for this pass.  The job submission code can use
+        this to properly send tasks to the job scheduling software
+        that will generate products.
+
+        The command can contain variables that will be substituted
+        appropriately during submission, as seen in the example below 
+        with {fileName}.
+
+        For example:
+        command[0] = "prman"
+        command[1] = "-progress"
+        command[2] = "-pixelvariance"
+        command[3] = "-0.15"
+        command[4] = "{fileName}" # the fileName property will be substituted
+        """
+    )
+ 
+    rel renderSource (
+        doc = """The source prim to render from.  If _fileName_ is not present,
+        the source is assumed to be a RenderSettings prim present in the current 
+        Usd stage. If fileName is present, the source should be found in the
+        file there. This relationship might target a string attribute on this 
+        or another prim that identifies the appropriate object in the external 
+        container.
+ 
+        For example, for a Usd-backed pass, this would point to a RenderSettings
+        prim.  Houdini passes would point to a Rop.  Nuke passes would point to 
+        a write node.
+        """
+    )
+ 
+    rel inputPasses (
+        doc = """The set of other Passes that this Pass depends on
+        in order to be constructed properly.  For example, a Pass A
+        may generate a texture, which is then used as an input to
+        Pass B.
+ 
+        By default, usdRender makes some assumptions about the
+        relationship between this prim and the prims listed in inputPasses.
+        Namely, when per-frame tasks are generated from these pass prims,
+        usdRender will assume a one-to-one relationship between tasks
+        that share their frame number.  Consider a pass named 'composite'
+        whose _inputPasses_ targets a Pass prim named 'beauty`.  
+        By default, each frame for 'composite' will depend on the 
+        same frame from 'beauty':
+        beauty.1 -> composite.1
+        beauty.2 -> composite.2
+        etc
+
+        The consumer of this RenderPass graph of inputs will need to resolve
+        the transitive dependencies.
+        """
+    )
+ 
+    uniform asset fileName (
+        doc = """The asset that contains the rendering prims or other 
+        information needed to render this pass.
+        """
+    )
+
+    uniform bool denoise:enable = false (
+        doc = """When True, this Pass pass should be denoised."""
+    )
+
+    rel denoise:pass (
+        doc = """The The UsdRenderDenoisePass prim from which to 
+        source denoise settings.
+        """
+    )
+}
+ 
+ 
+class RenderDenoisePass "RenderDenoisePass" (
+    inherits = </Typed>
+    doc = """A RenderDenoisePass generates renders via a denoising process.
+    This may be the same renderer that a pipeline uses for UsdRender, 
+    or may be a separate one.  Notably, a RenderDenoisePass requires
+    another Pass to be present for it to operate.  The denoising process 
+    itself is not generative, and requires images inputs to operate.
+ 
+    As denoising integration varies so widely across pipelines, all
+    implementation details are left to pipeline-specific prims
+    that inherit from RenderDenoisePass.
+    """
+    customData = {
+         string className = "DenoisePass"
+    }
+) {
 }

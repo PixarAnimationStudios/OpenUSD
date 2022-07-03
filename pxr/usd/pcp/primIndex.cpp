@@ -29,6 +29,7 @@
 #include "pxr/usd/pcp/dynamicFileFormatContext.h"
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/debugCodes.h"
+#include "pxr/usd/pcp/dependencies.h"
 #include "pxr/usd/pcp/diagnostic.h"
 #include "pxr/usd/pcp/dynamicFileFormatInterface.h"
 #include "pxr/usd/pcp/instancing.h"
@@ -380,6 +381,11 @@ PcpPrimIndexOutputs::Append(PcpPrimIndexOutputs&& childOutputs,
     dynamicFileFormatDependency.AppendDependencyData(
         std::move(childOutputs.dynamicFileFormatDependency));
 
+    culledDependencies.insert(
+        culledDependencies.end(),
+        std::make_move_iterator(childOutputs.culledDependencies.begin()),
+        std::make_move_iterator(childOutputs.culledDependencies.end()));
+
     allErrors.insert(
         allErrors.end(), 
         childOutputs.allErrors.begin(), childOutputs.allErrors.end());
@@ -460,98 +466,6 @@ _HasClassBasedChild(const PcpNodeRef & parent)
     return false;
 }
 
-// Find the starting node of the class hierarchy of which node n is a part.
-// This is the prim that starts the class chain, aka the 'instance' of the
-// class hierarchy. Also returns the node for the first class in the
-// chain that the instance inherits opinions from.
-//
-// For example, consider an inherits chain like this: I --> C1 --> C2 --> C3.  
-// When given either C1, C2, or C3, this method will return (I, C1).
-// What will it do when given I?  Keep reading.
-//
-// One tricky aspect is that we need to distinguish nested class
-// hierarchies at different levels of namespace, aka ancestral classes.
-// Returning to the example above, consider if I -> ... -> C3 were all
-// nested as sibling children under a class, G, with instance M:
-//
-//          inherits
-// M ------------------------> G (depth=1)
-// |                           |                 
-// +- I  (depth=1)             +- I  (depth=1)
-// |  :                        |  :
-// |  : inherits               |  : inherits
-// |  v                        |  v
-// +- C1 (depth=2)             +- C1 (depth=2)
-// |  :                        |  :
-// |  : inherits               |  : inherits
-// |  v                        |  v
-// +- C2 (depth=2)             +- C2 (depth=2)
-// |  :                        |  :
-// |  : inherits               |  : inherits
-// |  v                        |  v
-// +- C3 (depth=2)             +- C3 (depth=2)
-//
-// Asking for the starting node of M/C1 .. M/C3 should all return (M/I, M/C1).
-// Asking for the starting node of G/C1 .. G/C3 should all return (G/I, G/C1).
-//
-// However, asking for the starting node of G/I should return (M/I, G/I),
-// because it is walking up the ancestral classes (M->G) instead.
-//
-// We distinguish ancestral class chains by considering, for the
-// nodes being examined, how far they are below the point in namespace
-// where they were introduced, using GetDepthBelowIntroduction().
-// This lets us distinguish the hierarchy connecting the children
-// G/C1, G/C2, and G/C3 (all at depth=2) from the ancestral hierarchy
-// connecting G/I to M/I, which was introduced at depth=1 and thus up
-// one level of ancestry.
-//
-// Note that this approach also handles a chain of classes that
-// happen to live at different levels of namespace but which are not
-// ancestrally connected to one another.  For example, consider if C2 
-// was tucked under a parent scope D:
-//
-//          inherits
-// M ------------------------> G
-// |                           |                 
-// +- I  (depth=1)             +- I  (depth=1)  
-// |  :                        |  :             
-// |  : inherits               |  : inherits    
-// |  v                        |  v             
-// +- C1 (depth=2)             +- C1 (depth=2)  
-// |    :                      |    :           
-// +- D  : inherits            +- D  : inherits
-// |  |  v                     |  |  v          
-// |  +- C2 (depth=3)          |  +- C2 (depth=3)
-// |    :                      |    :          
-// |   : inherits              |   : inherits 
-// |  v                        |  v          
-// +- C3 (depth=2)             +- C3 (depth=2)
-//
-// Here, G/C1, G/D/C2, and G/C3 are all still identified as part of
-// the same hierarchy.  C1 and C3 are at depth=2 and have 2 path
-// components; C2 is at depth=3 and has 3 path components.  Thus,
-// they all have the same GetDepthBelowIntroduction().
-//
-static 
-std::pair<PcpNodeRef, PcpNodeRef>
-_FindStartingNodeOfClassHierarchy(const PcpNodeRef& n)
-{
-    TF_VERIFY(PcpIsClassBasedArc(n.GetArcType()));
-
-    const int depth = n.GetDepthBelowIntroduction();
-    PcpNodeRef instanceNode = n;
-    PcpNodeRef classNode;
-
-    while (PcpIsClassBasedArc(instanceNode.GetArcType())
-           && instanceNode.GetDepthBelowIntroduction() == depth) {
-        TF_VERIFY(instanceNode.GetParentNode());
-        classNode = instanceNode;
-        instanceNode = instanceNode.GetParentNode();
-    }
-
-    return std::make_pair(instanceNode, classNode);
-}
-
 // Given class-based node n, returns the 'starting' node where implied class
 // processing should begin in order to correctly propagate n through the
 // graph.
@@ -563,7 +477,7 @@ _FindStartingNodeOfClassHierarchy(const PcpNodeRef& n)
 //  I ---> C1 ---> C2 ---> C3 ...
 //
 // Given any of { C1, C2, C3, ... }, the starting node would be I 
-// (See _FindStartingNodeOfClassHierarchy). This causes the entire class
+// (See Pcp_FindStartingNodeOfClassHierarchy). This causes the entire class
 // hierarchy to be propagated as a unit. If we were to propagate each class
 // individually, it would be as if I inherited directly from C1, C2, and C3,
 // which is incorrect.
@@ -635,7 +549,7 @@ _FindStartingNodeForImpliedClasses(const PcpNodeRef& n)
 
     while (PcpIsClassBasedArc(startNode.GetArcType())) {
         const std::pair<PcpNodeRef, PcpNodeRef> instanceAndClass = 
-            _FindStartingNodeOfClassHierarchy(startNode);
+            Pcp_FindStartingNodeOfClassHierarchy(startNode);
 
         const PcpNodeRef& instanceNode = instanceAndClass.first;
         const PcpNodeRef& classNode = instanceAndClass.second;
@@ -1400,7 +1314,9 @@ _CheckForCycle(
             const SdfPath& currentPathForCurrentGraph = 
                 it.node.GetRootNode().GetPath();
 
-            childSiteInStackFrame.path = 
+            childSiteInStackFrame.path =
+                currentPathForCurrentGraph == childSiteInStackFrame.path ?
+                requestedPathForCurrentGraph :
                 requestedPathForCurrentGraph.ReplacePrefix(
                     currentPathForCurrentGraph,
                     childSiteInStackFrame.path);
@@ -1431,6 +1347,20 @@ _CheckForCycle(
 
     return PcpErrorArcCyclePtr();
 }
+
+static void
+_AddCulledDependencies(
+    const PcpNodeRef& node,
+    std::vector<PcpCulledDependency>* culledDeps)
+{
+    if (node.IsCulled()) {
+        Pcp_AddCulledDependency(node, culledDeps);
+    }
+
+    TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
+        _AddCulledDependencies(*child, culledDeps);
+    }
+};
 
 // Add an arc of the given type from the parent node to the child site,
 // and track any new tasks that result.  Return the new node.
@@ -1664,6 +1594,17 @@ _AddArc(
         newNode = indexer->outputs->Append(std::move(childOutputs), newArc,
                                            &newNodeError);
         if (newNode) {
+            // Record any culled nodes from this subtree that introduced
+            // ancestral dependencies. These nodes may be removed from the prim
+            // index when Finalize() is called, so they must be saved separately
+            // for later use. Only do this in the top-level call to _AddArc
+            // to avoid running over the same subtree multiple times if there
+            // were multiple levels of recursive prim indexing.
+            if (!indexer->previousFrame) {
+                _AddCulledDependencies(
+                    newNode, &indexer->outputs->culledDependencies);
+            }
+
             PCP_INDEXING_UPDATE(
                 indexer, newNode, 
                 "Added subtree for site %s to graph",
@@ -1876,13 +1817,13 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
                       const std::vector<RefOrPayloadType> &arcs,
                       const PcpSourceArcInfoVector &infoVec)
 {
-    const SdfPath & srcPath = node.GetPath();
-
+    // This loop will be adding arcs and therefore can grow the node
+    // storage vector, so we need to avoid holding any references
+    // into that storage outside the loop.
     for (size_t arcNum=0; arcNum < arcs.size(); ++arcNum) {
         const RefOrPayloadType & refOrPayload = arcs[arcNum];
         const PcpSourceArcInfo& info = infoVec[arcNum];
         const SdfLayerHandle & srcLayer = info.layer;
-        const SdfLayerOffset & srcLayerOffset = info.layerOffset;
         SdfLayerOffset layerOffset = refOrPayload.GetLayerOffset();
 
         PCP_INDEXING_MSG(
@@ -1907,22 +1848,25 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
             fail = true;
         }
 
-        // Validate layer offset in original reference or payload (not the 
-        // composed layer offset stored in refOrPayload).
-        if (!srcLayerOffset.IsValid() ||
-            !srcLayerOffset.GetInverse().IsValid()) {
+        // Validate layer offset in original reference or payload.
+        if (!layerOffset.IsValid() ||
+            !layerOffset.GetInverse().IsValid()) {
             PcpErrorInvalidReferenceOffsetPtr err =
                 PcpErrorInvalidReferenceOffset::New();
             err->rootSite = PcpSite(node.GetRootNode().GetSite());
             err->layer      = srcLayer;
-            err->sourcePath = srcPath;
+            err->sourcePath = node.GetPath();
             err->assetPath  = info.authoredAssetPath;
             err->targetPath = refOrPayload.GetPrimPath();
-            err->offset     = srcLayerOffset;
+            err->offset     = layerOffset;
             indexer->RecordError(err);
 
             // Don't set fail, just reset the offset.
             layerOffset = SdfLayerOffset();
+        } else {
+            // Apply the layer stack offset for the introducing layer to the 
+            // reference or payload's layer offset.
+            layerOffset = info.layerStackOffset * layerOffset;
         }
 
         // Go no further if we've found any problems.
@@ -2130,9 +2074,8 @@ _EvalNodePayloads(
         return;
     }
 
-    const SdfPath & srcPath = node.GetPath();
     PCP_INDEXING_MSG(
-        indexer, node, "Found payload for node %s", srcPath.GetText());
+        indexer, node, "Found payload for node %s", node.GetPath().GetText());
 
     // Mark that this prim index contains a payload.
     // However, only process the payload if it's been requested.
@@ -2473,11 +2416,21 @@ _EvalImpliedRelocations(
         "Evaluating relocations implied by %s", 
         Pcp_FormatSite(node.GetSite()).c_str());
 
-    if (PcpNodeRef parent = node.GetParentNode()) {
-        if (PcpNodeRef gp = parent.GetParentNode()) {
-            SdfPath gpRelocSource =
+    if (const PcpNodeRef parent = node.GetParentNode()) {
+        if (const PcpNodeRef gp = parent.GetParentNode()) {
+
+            // Determine the path of the relocation source prim in the parent's
+            // layer stack. Note that this mapping may fail in some cases. For
+            // example, if prim /A/B was relocated to /A/C, and then in another
+            // layer stack prim /D sub-root referenced /A/C, there would be no
+            // corresponding prim for the source /A/B in that layer stack.
+            // See SubrootReferenceAndRelocates for a concrete example.
+            const SdfPath gpRelocSource =
                 parent.GetMapToParent().MapSourceToTarget(node.GetPath());
-            if (!TF_VERIFY(!gpRelocSource.IsEmpty())) {
+            if (gpRelocSource.IsEmpty()) {
+                PCP_INDEXING_PHASE(
+                    indexer, node,
+                    "No implied site for relocation source -- skipping");
                 return;
             }
 

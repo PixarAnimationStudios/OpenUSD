@@ -38,3 +38,10 @@ def "NonExistentSpecializes" (
     {
     }
 }
+
+def "Ref_1" (
+    references = @./ref2.sdf@</Ref_2>
+    specializes = </Specializes_1>
+)
+{
+}

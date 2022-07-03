@@ -30,13 +30,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdPrimDefinition::UsdPrimDefinition(const SdfPrimSpecHandle &primSpec, 
-                                     bool isAPISchema) 
+UsdPrimDefinition::UsdPrimDefinition(
+    const SdfPath &schematicsPrimPath, bool isAPISchema)
+    : _schematicsPrimPath(schematicsPrimPath)
 {
-    // Cache the property names and the paths to each property spec from the
-    // prim spec. For API schemas, the prim spec will not provide metadata for
-    // the prim itself.
-    _SetPrimSpec(primSpec, /*providesPrimMetadata =*/ !isAPISchema);
+    // If this prim definition is not for an API schema, the primary prim spec 
+    // will provide the prim metadata. map the empty property name to the prim 
+    // path in the schematics for the field accessor functions.
+    // Note that this mapping aids the efficiency of value resolution by 
+    // allowing UsdStage to access fallback metadata from both prims and 
+    // properties through the same code path without extra conditionals.
+    if (!isAPISchema) {
+        _propPathMap.emplace(TfToken(), _schematicsPrimPath);
+    }
 }
 
 std::string 
@@ -45,9 +51,13 @@ UsdPrimDefinition::GetDocumentation() const
     // Special case for prim documentation. Pure API schemas don't map their
     // prim spec paths to the empty token as they aren't meant to provide 
     // metadata fallbacks so _HasField will always return false. To get 
-    // documentation for an API schema, we have to ask the prim spec (which
-    // will work for all definitions).
-    return _primSpec ? _primSpec->GetDocumentation() : std::string();
+    // documentation for an API schema, we have to get the documentation
+    // field from the schematics for the prim path (which we store for all 
+    // definitions specifically to access the documentation).
+    std::string docString;
+    _GetSchematics()->HasField(
+        _schematicsPrimPath, SdfFieldKeys->Documentation, &docString);
+    return docString;
 }
 
 std::string 
@@ -77,46 +87,130 @@ UsdPrimDefinition::_ListMetadataFields(const TfToken &propName) const
 }
 
 void 
-UsdPrimDefinition::_SetPrimSpec(
-    const SdfPrimSpecHandle &primSpec, bool providesPrimMetadata)
+UsdPrimDefinition::_AddProperties(
+    std::vector<std::pair<TfToken, SdfPath>> &&propNameToPathVec)
 {
-    _primSpec = primSpec;
+    _properties.reserve(_properties.size() + propNameToPathVec.size());
 
-    // If there are no properties yet, we can just copy them all from the prim
-    // spec without worrying about handling duplicates. Otherwise we have to
-    // _AddProperty.
-    if (_propPathMap.empty()) {
-        for (SdfPropertySpecHandle prop: primSpec->GetProperties()) {
-            _propPathMap[prop->GetNameToken()] = prop->GetPath();
-            _properties.push_back(prop->GetNameToken());
+    for (auto &propNameAndPath : propNameToPathVec) {
+        auto insertIt = _propPathMap.insert(std::move(propNameAndPath));
+        if (insertIt.second) {
+            _properties.push_back(insertIt.first->first);
         }
-    } else {
-        for (SdfPropertySpecHandle prop: primSpec->GetProperties()) {
-            _AddProperty(prop->GetNameToken(), prop->GetPath());
-        }
-    }
-
-    // If this prim spec will provide the prim metadata, map the empty property
-    // name to the prim path for the field accessor functions.
-    if (providesPrimMetadata) {
-        _propPathMap[TfToken()] = primSpec->GetPath();
     }
 }
 
-void 
-UsdPrimDefinition::_ApplyPropertiesFromPrimDef(
-    const UsdPrimDefinition &primDef, const std::string &propPrefix)
+// Returns true if the property with the given name in these two separate prim
+// definitions have the same type. "Same type" here means that they are both
+// the same kind of property (attribute or relationship) and if they are 
+// attributes, that their attributes type names are the same.
+static bool _PropertyTypesMatch(
+    const UsdPrimDefinition &strongerPrimDef,
+    const UsdPrimDefinition &weakerPrimDef,
+    const TfToken &propName)
 {
-    if (propPrefix.empty()) {
-        for (const auto &it : primDef._propPathMap) {
-            _AddProperty(it.first, it.second);
+    // Empty prop name represents the schema's prim level metadata. This 
+    // doesn't have a "property type" so it always matches.
+    if (propName.IsEmpty()) {
+        return true;
+    }
+
+    const SdfSpecType specType = strongerPrimDef.GetSpecType(propName);
+    const bool specIsAttribute = (specType == SdfSpecTypeAttribute);
+
+    // Compare spec types (relationship vs attribute)
+    if (specType != weakerPrimDef.GetSpecType(propName)) {
+        TF_WARN("%s '%s' from stronger schema failed to override %s '%s' "
+                "from weaker schema during schema prim definition composition "
+                "because of the property spec types do not match.",
+                specIsAttribute ? "Attribute" : "Relationsip",
+                propName.GetText(),
+                specIsAttribute ? "relationsip" : "attribute",
+                propName.GetText());
+        return false;
+    }
+
+    // Done comparing if its not an attribute.
+    if (!specIsAttribute) {
+        return true;
+    }
+
+    // Compare the type name field of the attributes.
+    TfToken strongerTypeName;
+    strongerPrimDef.GetPropertyMetadata(
+        propName, SdfFieldKeys->TypeName, &strongerTypeName);
+    TfToken weakerTypeName;
+    weakerPrimDef.GetPropertyMetadata(
+        propName, SdfFieldKeys->TypeName, &weakerTypeName);
+    if (weakerTypeName != strongerTypeName) {
+        TF_WARN("Attribute '%s' with type name '%s' from stronger schema "
+                "failed to override attribute '%s' with type name '%s' from "
+                "weaker schema during schema prim definition composition "
+                "because of the attribute type names do not match.",
+                propName.GetText(),
+                strongerTypeName.GetText(),
+                propName.GetText(),
+                weakerTypeName.GetText());
+        return false;
+    }
+    return true;
+}
+
+void 
+UsdPrimDefinition::_ComposePropertiesFromPrimDef(
+    const UsdPrimDefinition &weakerPrimDef, 
+    bool useWeakerPropertyForTypeConflict,
+    const std::string &instanceName)
+{
+    _properties.reserve(_properties.size() + weakerPrimDef._properties.size());
+
+    // Copy over property to path mappings from the weaker prim definition that 
+    // aren't already in this prim definition.
+    if (instanceName.empty()) {
+        for (const auto &it : weakerPrimDef._propPathMap) {
+            // Note that the prop name may be empty as we use the empty path to
+            // map to the spec containing the prim level metadata. We need to 
+            // make sure we don't add the empty name to properties list if 
+            // we successfully insert a metadata mapping.
+            auto insertResult = _propPathMap.insert(it);
+            if (insertResult.second){
+                if (!it.first.IsEmpty()) {
+                    _properties.push_back(it.first);
+                }
+            } else {
+                // The property exists already. If we need to use the weaker 
+                // property in the event of a property type conflict, then we
+                // check if the weaker property's type matches the existing, and
+                // replace the existing with the weaker property if the types
+                // do not match.
+                if (useWeakerPropertyForTypeConflict &&
+                    !_PropertyTypesMatch(*this, weakerPrimDef, it.first)) {
+                    insertResult.first->second = it.second;
+                }
+            }
         }
     } else {
-        for (const auto &it : primDef._propPathMap) {
+        for (const auto &it : weakerPrimDef._propPathMap) {
             // Apply the prefix to each property name before adding it.
-            const TfToken prefixedPropName(
-                SdfPath::JoinIdentifier(propPrefix, it.first.GetString()));
-            _AddProperty(prefixedPropName, it.second);
+            const TfToken instancedPropName = 
+                UsdSchemaRegistry::MakeMultipleApplyNameInstance(
+                    it.first, instanceName);
+            auto insertResult = _propPathMap.emplace(
+                instancedPropName, it.second);
+            if (insertResult.second) {
+                _properties.push_back(instancedPropName);
+            } else {
+                // The property exists already. If we need to use the weaker 
+                // property in the event of a property type conflict, then we
+                // check if the weaker property's type matches the existing, and
+                // replace the existing with the weaker property if the types
+                // do not match.
+                if (useWeakerPropertyForTypeConflict && 
+                    !_PropertyTypesMatch(
+                        *this, weakerPrimDef, instancedPropName)) {
+                    insertResult.first->second = it.second;
+                }
+            }
         }
     }
 }

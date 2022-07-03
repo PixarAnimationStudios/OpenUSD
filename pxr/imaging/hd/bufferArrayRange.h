@@ -72,6 +72,9 @@ public:
     /// Returns true if this range is marked as immutable.
     virtual bool IsImmutable() const = 0;
 
+    /// Returns true if this needs a staging buffer for CPU to GPU copies.
+    virtual bool RequiresStaging() const = 0;
+
     /// Resize memory area for this range. Returns true if it causes container
     /// buffer reallocation.
     virtual bool Resize(int numElements) = 0;

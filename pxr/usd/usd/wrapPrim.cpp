@@ -36,11 +36,13 @@
 #include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/primSpec.h"
 
+#include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
 #include <boost/python/operators.hpp>
 
 #include <string>
@@ -140,10 +142,46 @@ _WrapGetAuthoredProperties(const UsdPrim &prim, boost::python::object predicate)
     return prim.GetAuthoredProperties(pred);
 }
 
+struct Usd_PrimCanApplyAPIResult : public TfPyAnnotatedBoolResult<string>
+{
+    Usd_PrimCanApplyAPIResult(bool val, string const &msg) :
+        TfPyAnnotatedBoolResult<string>(val, msg) {}
+};
+
+static Usd_PrimCanApplyAPIResult
+_WrapCanApplyAPI(
+    const UsdPrim &prim,
+    const TfType& schemaType)
+{
+    std::string whyNot;
+    bool result = prim.CanApplyAPI(schemaType, &whyNot);
+    return Usd_PrimCanApplyAPIResult(result, whyNot);
+}
+
+static Usd_PrimCanApplyAPIResult
+_WrapCanApplyAPI_2(
+    const UsdPrim &prim,
+    const TfType& schemaType,
+    const TfToken& instanceName)
+{
+    std::string whyNot;
+    bool result = prim.CanApplyAPI(schemaType, instanceName, &whyNot);
+    return Usd_PrimCanApplyAPIResult(result, whyNot);
+}
+
+static UsdStageWeakPtr
+_UnsafeGetStageForTesting(UsdObject const &obj)
+{
+    return obj.GetStage();
+}
+
 } // anonymous namespace 
 
 void wrapUsdPrim()
 {
+    Usd_PrimCanApplyAPIResult::Wrap<Usd_PrimCanApplyAPIResult>(
+        "_CanApplyAPIResult", "whyNot");
+
     // Predicate signature for FindAllRelationshipTargetPaths().
     TfPyFunctionFromPython<bool (UsdRelationship const &)>();
 
@@ -239,14 +277,28 @@ void wrapUsdPrim()
             (bool (UsdPrim::*)(const TfType&, const TfToken&) const)
             &UsdPrim::HasAPI,
             (arg("schemaType"), arg("instanceName")=TfToken()))
+        .def("CanApplyAPI", 
+            &_WrapCanApplyAPI,
+            (arg("schemaType")))
+        .def("CanApplyAPI", 
+            &_WrapCanApplyAPI_2,
+            (arg("schemaType"), arg("instanceName")))
+        .def("ApplyAPI", 
+            (bool (UsdPrim::*)(const TfType&) const)
+            &UsdPrim::ApplyAPI,
+            (arg("schemaType")))
         .def("ApplyAPI", 
             (bool (UsdPrim::*)(const TfType&, const TfToken&) const)
             &UsdPrim::ApplyAPI,
-            (arg("schemaType"), arg("instanceName")=TfToken()))
+            (arg("schemaType"), arg("instanceName")))
+        .def("RemoveAPI", 
+            (bool (UsdPrim::*)(const TfType&) const)
+            &UsdPrim::RemoveAPI,
+            (arg("schemaType")))
         .def("RemoveAPI", 
             (bool (UsdPrim::*)(const TfType&, const TfToken&) const)
             &UsdPrim::RemoveAPI,
-            (arg("schemaType"), arg("instanceName")=TfToken()))
+            (arg("schemaType"), arg("instanceName")))
 
         .def("AddAppliedSchema", &UsdPrim::AddAppliedSchema)
         .def("RemoveAppliedSchema", &UsdPrim::RemoveAppliedSchema)
@@ -380,21 +432,12 @@ void wrapUsdPrim()
         .def("IsPathInPrototype", &UsdPrim::IsPathInPrototype, arg("path"))
         .staticmethod("IsPathInPrototype")
 
-        .def("IsMasterPath", &UsdPrim::IsMasterPath, arg("path"))
-        .staticmethod("IsMasterPath")
-        .def("IsPathInMaster", &UsdPrim::IsPathInMaster, arg("path"))
-        .staticmethod("IsPathInMaster")
-
         .def("IsInstance", &UsdPrim::IsInstance)
-        .def("IsMaster", &UsdPrim::IsMaster)
-        .def("IsInMaster", &UsdPrim::IsInMaster)
-        .def("GetMaster", &UsdPrim::GetMaster)
         .def("IsPrototype", &UsdPrim::IsPrototype)
         .def("IsInPrototype", &UsdPrim::IsInPrototype)
         .def("GetPrototype", &UsdPrim::GetPrototype)
 
         .def("IsInstanceProxy", &UsdPrim::IsInstanceProxy)
-        .def("GetPrimInMaster", &UsdPrim::GetPrimInMaster)
         .def("GetPrimInPrototype", &UsdPrim::GetPrimInPrototype)
 
         .def("GetPrimAtPath", &UsdPrim::GetPrimAtPath, arg("path"))
@@ -415,4 +458,11 @@ void wrapUsdPrim()
                         TfPySequenceToPython<std::vector<UsdPrim>>>();
 
     TfPyRegisterStlSequencesFromPython<UsdPrim>();
+
+    // This is wrapped in order to let python call an API that will get through
+    // our usual Python API guards to access an invalid prim and throw an
+    // exception.
+    boost::python::def(
+        "_UnsafeGetStageForTesting", &_UnsafeGetStageForTesting);
+    
 }

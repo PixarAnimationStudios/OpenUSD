@@ -79,11 +79,6 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::AbstractTyped;
 
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::AbstractTyped;
-
     /// Construct a UsdGeomImageable on UsdPrim \p prim .
     /// Equivalent to UsdGeomImageable::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -132,12 +127,6 @@ protected:
     /// \sa UsdSchemaKind
     USDGEOM_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDGEOM_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -253,36 +242,6 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    
-    // --------------------------------------------------------------------- //
-    /// \name Primvar Creation and Introspection
-    /// @{
-    // --------------------------------------------------------------------- //
- 
-    /// \deprecated Please use UsdGeomPrimvarsAPI::CreatePrimvar() instead.
-    USDGEOM_API
-    UsdGeomPrimvar CreatePrimvar(const TfToken& attrName,
-                                 const SdfValueTypeName &typeName,
-                                 const TfToken& interpolation = TfToken(),
-                                 int elementSize = -1) const;
-
-    /// \deprecated Please use UsdGeomPrimvarsAPI::GetPrimvar() instead.
-    USDGEOM_API
-    UsdGeomPrimvar GetPrimvar(const TfToken &name) const;
-    
-    /// \deprecated Please use UsdGeomPrimvarsAPI::GetPrimvars() instead.
-    USDGEOM_API
-    std::vector<UsdGeomPrimvar> GetPrimvars() const;
-
-    /// \deprecated Please use UsdGeomPrimvarsAPI::GetAuthoredPrimvars() instead.
-    USDGEOM_API
-    std::vector<UsdGeomPrimvar> GetAuthoredPrimvars() const;
-
-    /// \deprecated Please use UsdGeomPrimvarsAPI::HasPrimvar() instead.
-    USDGEOM_API
-    bool HasPrimvar(const TfToken &name) const;
-
-
     /// Returns an ordered list of allowed values of the purpose attribute.
     /// 
     /// The ordering is important because it defines the protocol between 
@@ -384,14 +343,50 @@ public:
     USDGEOM_API
     TfToken ComputeVisibility(UsdTimeCode const &time = UsdTimeCode::Default()) const;
 
-    /// \overload 
-    /// Calculates the effective visibility of this prim, given the computed 
-    /// visibility of its parent prim at the given \p time.
-    /// 
-    /// \sa GetVisibilityAttr()
+    /// Return the attribute that is used for expressing visibility opinions
+    /// for the given \p purpose.
+    ///
+    /// For "default" purpose, return the overall *visibility* attribute.
+    /// Otherwise, return *guideVisibility*, *proxyVisibility*, or
+    /// *renderVisibility*.
+    ///
+    /// \sa UsdGeomVisibilityAPI
     USDGEOM_API
-    TfToken ComputeVisibility(const TfToken &parentVisibility,
-                              UsdTimeCode const &time = UsdTimeCode::Default()) const;
+    UsdAttribute GetPurposeVisibilityAttr(
+        const TfToken &purpose = UsdGeomTokens->default_) const;
+
+    /// Calculate the effective purpose visibility of this prim for the
+    /// given \p purpose, taking into account opinions for the corresponding
+    /// purpose attribute, along with overall visibility opinions.
+    ///
+    /// If ComputeVisibility() returns "invisible", then
+    /// ComputeEffectiveVisibility() is "invisible" for all purpose
+    /// values. Otherwise, ComputeEffectiveVisibility() returns the value of
+    /// the nearest ancestral authored opinion for the corresponding purpose
+    /// visibility attribute, as retured by
+    /// GetPurposeVisibilityAttr(purpose).
+    ///
+    /// Note that the value returned here can be "invisible" (indicating the
+    /// prim is invisible for the given purpose), "visible" (indicating that
+    /// it's visible), or "inherited" (indicating that the purpose visibility
+    /// is context-dependent and the fallback behavior must be determined by
+    /// the caller.
+    ///
+    /// This function should be considered a reference implementation for
+    /// correctness. <b>If called on each prim in the context of a traversal
+    /// we will perform massive overcomputation, because sibling prims share
+    /// sub-problems in the query that can be efficiently cached, but are not
+    /// (cannot be) by this simple implementation.</b> If you have control of
+    /// your traversal, it will be far more efficient to manage visibility
+    /// on a stack as you traverse.
+    ///
+    /// \sa UsdGeomVisibilityAPI
+    /// \sa GetPurposeVisibilityAttr()
+    /// \sa ComputeVisibility()
+    USDGEOM_API
+    TfToken ComputeEffectiveVisibility(
+        const TfToken &purpose = UsdGeomTokens->default_,
+        const UsdTimeCode &time = UsdTimeCode::Default()) const;
 
     /// Value type containing information about a prim's computed effective
     /// purpose as well as storing whether the prim's purpose value can be

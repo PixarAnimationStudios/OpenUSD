@@ -50,7 +50,6 @@ UsdGeom_GetPositionsVelocitiesAndAccelerations(
     VtVec3fArray* velocities,
     UsdTimeCode* velocitiesSampleTime,
     VtVec3fArray* accelerations,
-    float* velocityScale,
     UsdPrim const &prim);
 
 /// Get the authored scales. This method fails if the scales can't be fetched. 
@@ -79,11 +78,9 @@ UsdGeom_GetOrientationsAndAngularVelocities(
     UsdTimeCode* angularVelocitiesSampleTime,
     UsdPrim const &prim);
 
-/// Compute the scaled time difference based on velocity scale and
-/// timeCodesPerSecond
-float
+/// Compute the scaled time difference based on timeCodesPerSecond
+double
 UsdGeom_CalculateTimeDelta(
-    const float velocityScale,
     const UsdTimeCode time,
     const UsdTimeCode sampleTime,
     const double timeCodesPerSecond);

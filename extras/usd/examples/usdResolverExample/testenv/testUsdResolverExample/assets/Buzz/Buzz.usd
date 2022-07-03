@@ -1,0 +1,10 @@
+#usda 1.0
+(
+    defaultPrim = "Buzz"
+)
+
+def "Buzz" (
+   payload = @asset:Buzz/{$VERSION}/Buzz.usd@
+)
+{
+}

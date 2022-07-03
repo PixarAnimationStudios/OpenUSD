@@ -56,13 +56,9 @@ UsdVolFieldAsset::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdVolFieldAsset::_GetSchemaKind() const {
+UsdSchemaKind UsdVolFieldAsset::_GetSchemaKind() const
+{
     return UsdVolFieldAsset::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdVolFieldAsset::_GetSchemaType() const {
-    return UsdVolFieldAsset::schemaType;
 }
 
 /* static */

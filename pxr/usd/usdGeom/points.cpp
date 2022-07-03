@@ -75,13 +75,9 @@ UsdGeomPoints::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdGeomPoints::_GetSchemaKind() const {
+UsdSchemaKind UsdGeomPoints::_GetSchemaKind() const
+{
     return UsdGeomPoints::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdGeomPoints::_GetSchemaType() const {
-    return UsdGeomPoints::schemaType;
 }
 
 /* static */

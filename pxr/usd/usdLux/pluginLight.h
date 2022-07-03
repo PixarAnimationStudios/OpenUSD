@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLux/api.h"
-#include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -55,13 +55,13 @@ class SdfAssetPath;
 ///
 /// Light that provides properties that allow it to identify an 
 /// external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
-/// provided to render delegates without the need to provide a dynamic schema 
+/// provided to render delegates without the need to provide a schema 
 /// definition for the light's type.
 /// 
 /// \see \ref usdLux_PluginSchemas
 /// 
 ///
-class UsdLuxPluginLight : public UsdLuxLight
+class UsdLuxPluginLight : public UsdGeomXformable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -69,17 +69,12 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
 
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::ConcreteTyped;
-
     /// Construct a UsdLuxPluginLight on UsdPrim \p prim .
     /// Equivalent to UsdLuxPluginLight::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdLuxPluginLight(const UsdPrim& prim=UsdPrim())
-        : UsdLuxLight(prim)
+        : UsdGeomXformable(prim)
     {
     }
 
@@ -87,7 +82,7 @@ public:
     /// Should be preferred over UsdLuxPluginLight(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdLuxPluginLight(const UsdSchemaBase& schemaObj)
-        : UsdLuxLight(schemaObj)
+        : UsdGeomXformable(schemaObj)
     {
     }
 
@@ -147,12 +142,6 @@ protected:
     /// \sa UsdSchemaKind
     USDLUX_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDLUX_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.

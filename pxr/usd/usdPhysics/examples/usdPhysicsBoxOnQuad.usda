@@ -1,0 +1,62 @@
+#usda 1.0
+#More advanced example showing mesh collisions
+#and center of mass offset.  We expect to have the
+#quad be represented as a convex mesh and have the 
+#cube come to rest on it, balanced on one of its corners.
+(
+    defaultPrim = "World"
+    endTimeCode = 100
+    metersPerUnit = 0.01
+    startTimeCode = 0
+    timeCodesPerSecond = 24
+    upAxis = "Z"
+    kilogramsPerUnit = 1
+)
+def Xform "World"
+{
+    def PhysicsScene "PhysicsScene"
+    {
+    }
+    #Added a mass API so we can offset the center of mass.
+    def Cube "BoxActor" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        #explicit mass
+        float physics:mass = 10.0
+        #Offset center of mass so the cube settles on its corner
+        point3f physics:centerOfMass = (40.0, 40.0, 40.0)
+        color3f[] primvars:displayColor = [(0.2784314, 0.4117647, 1)]
+        double size = 25
+        double3 xformOp:translate = (0, 0, 500)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    #A quad mesh that serves as the ground.
+    def Mesh "Ground" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+    )
+    {
+        #Approximate with a convex hull, if we remove this, it will
+        #be used directly
+        uniform token physics:approximation = "convexHull"
+        uniform token subdivisionScheme = "none"
+        uniform bool doubleSided = 1
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+        normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)]
+        point3f[] points = [(-1, 1, 0), (1, 1, 0), (1, -1, 0), (-1, -1, 0)]
+        color3f[] primvars:displayColor = [(0.5, 0.5, 0.5)]
+        texCoord2f[] primvars:st = [(0, 1), (1, 1), (1, 0), (0, 0)] (
+            interpolation = "varying"
+        )
+        float3 xformOp:scale = (750, 750, 750)
+        uniform token[] xformOpOrder = ["xformOp:scale"]
+    }
+    def SphereLight "SphereLight"
+    {
+        float intensity = 30000
+        float radius = 150
+        double3 xformOp:translate = (650, 0, 1150)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

@@ -121,9 +121,9 @@ HdEngine::Execute(HdRenderIndex *index, HdTaskSharedPtrVector *tasks)
             "==============================================================\n"
             "      HdEngine [Data Discovery Phase](RenderIndex::SyncAll)   \n"
             "--------------------------------------------------------------\n");
-
     index->SyncAll(tasks, &_taskContext);
 
+    const size_t numTasks = tasks->size();
 
     // --------------------------------------------------------------------- //
     // PREPARE PHASE
@@ -144,14 +144,14 @@ HdEngine::Execute(HdRenderIndex *index, HdTaskSharedPtrVector *tasks)
             "==============================================================\n"
             "             HdEngine [Prepare Phase](Task::Prepare)          \n"
             "--------------------------------------------------------------\n");
+    {
+        TRACE_FUNCTION_SCOPE("Task Prepare");
+        for (size_t taskNum = 0; taskNum < numTasks; ++taskNum) {
+            const HdTaskSharedPtr &task = (*tasks)[taskNum];
 
-    size_t numTasks = tasks->size();
-    for (size_t taskNum = 0; taskNum < numTasks; ++taskNum) {
-        const HdTaskSharedPtr &task = (*tasks)[taskNum];
-
-        task->Prepare(&_taskContext, index);
+            task->Prepare(&_taskContext, index);
+        }
     }
-
 
     // --------------------------------------------------------------------- //
     // DATA COMMIT PHASE
@@ -165,7 +165,6 @@ HdEngine::Execute(HdRenderIndex *index, HdTaskSharedPtrVector *tasks)
             "==============================================================\n"
             " HdEngine [Data Commit Phase](RenderDelegate::CommitResources)\n"
             "--------------------------------------------------------------\n");
-    
     HdRenderDelegate *renderDelegate = index->GetRenderDelegate();
     renderDelegate->CommitResources(&index->GetChangeTracker());
 
@@ -174,16 +173,19 @@ HdEngine::Execute(HdRenderIndex *index, HdTaskSharedPtrVector *tasks)
     // --------------------------------------------------------------------- //
     // Having updated all the necessary data buffers, we can finally execute
     // the rendering tasks.
-    TF_DEBUG(HD_ENGINE_PHASE_INFO).Msg(
+    {
+        TRACE_FUNCTION_SCOPE("Task Execution");
+        TF_DEBUG(HD_ENGINE_PHASE_INFO).Msg(
             "\n"
             "==============================================================\n"
             "             HdEngine [Execute Phase](Task::Execute)          \n"
             "--------------------------------------------------------------\n");
 
-    for (size_t taskNum = 0; taskNum < numTasks; ++taskNum) {
-        const HdTaskSharedPtr &task = (*tasks)[taskNum];
+        for (size_t taskNum = 0; taskNum < numTasks; ++taskNum) {
+            const HdTaskSharedPtr &task = (*tasks)[taskNum];
 
-        task->Execute(&_taskContext);
+            task->Execute(&_taskContext);
+        }
     }
 }
 

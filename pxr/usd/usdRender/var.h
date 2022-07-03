@@ -58,8 +58,10 @@ class SdfAssetPath;
 /// allows encoding of (generally renderer-specific) parameters that
 /// configure the renderer for computing the variable.
 /// 
+/// \note The name of the RenderVar prim drives the name of the data 
+/// variable that the renderer will produce.
 /// 
-/// ote In the future, UsdRender may standardize RenderVar representation
+/// \note In the future, UsdRender may standardize RenderVar representation
 /// for well-known variables under the sourceType `intrinsic`,
 /// such as _r_, _g_, _b_, _a_, _z_, or _id_.
 /// 
@@ -76,11 +78,6 @@ public:
     ///
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
-
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::ConcreteTyped;
 
     /// Construct a UsdRenderVar on UsdPrim \p prim .
     /// Equivalent to UsdRenderVar::Get(prim.GetStage(), prim.GetPath())
@@ -155,12 +152,6 @@ protected:
     /// \sa UsdSchemaKind
     USDRENDER_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDRENDER_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.

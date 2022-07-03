@@ -53,7 +53,7 @@ HdStExtCompGpuComputationResource::HdStExtCompGpuComputationResource(
 }
 
 bool
-HdStExtCompGpuComputationResource::Resolve()
+HdStExtCompGpuComputationResource::_Resolve()
 {
     // Non-in-place sources should have been registered as resource registry
     // sources already and Resolved. They go to an internal buffer range that
@@ -95,9 +95,11 @@ HdStExtCompGpuComputationResource::Resolve()
         // let resourcebinder resolve bindings and populate metadata
         // which is owned by codegen.
         _resourceBinder.ResolveComputeBindings(_outputBufferSpecs,
-                                              inputBufferSpecs,
-                                              shaders,
-                                              codeGen.GetMetaData());
+                                               inputBufferSpecs,
+                                               shaders,
+                                               codeGen.GetMetaData(),
+                                               _registry->GetHgi()->
+                                                   GetCapabilities());
 
         HdStGLSLProgram::ID registryID = codeGen.ComputeHash();
 

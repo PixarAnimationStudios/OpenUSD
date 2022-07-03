@@ -1,0 +1,38 @@
+#usda 1.0
+
+class "TestSchemaAPI" (
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["SomeConcreteType", "SomeAbstractType"]
+        token[] apiSchemaCanOnlyApplyTo = ["SomeConcreteType", "SomeAbstractType"]
+        string apiSchemaType = "singleApply"
+    }
+    inherits = </APISchemaBase>
+)
+{
+    bool[] inputs:boolArray
+    bool inputs:boolNotInt = 1
+    uniform token inputs:colorMapGamma (
+        allowedTokens = ["texture"]
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Map Gamma"
+        doc = """
+                uniform color mapping for gamma.
+                """
+    )
+    float inputs:intensity = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Intensity"
+        doc = """
+                intensity: Itensity of the flame thrower.
+                """
+    )
+    int inputs:intNotBool = 0
+    uniform token myRenderContext:usda:shaderId = "TestSchemaAPI" (
+        displayGroup = "Internal"
+    )
+    color3f outputs:resultRGB
+    float propNS:testShaderPropWithNS = 0
+}
+

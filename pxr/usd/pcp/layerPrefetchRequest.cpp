@@ -97,7 +97,7 @@ PcpLayerPrefetchRequest::RequestSublayerStack(
 void
 PcpLayerPrefetchRequest::Run(const Pcp_MutedLayers& mutedLayers)
 {
-    if (WorkGetConcurrencyLimit() <= 1) {
+    if (!WorkHasConcurrency()) {
         // Do not bother pre-fetching if we do not have extra threads
         // available.
         return;

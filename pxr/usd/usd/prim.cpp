@@ -47,9 +47,11 @@
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/singularTask.h"
+#include "pxr/base/work/utils.h"
 #include "pxr/base/work/withScopedParallelism.h"
 
 #include "pxr/base/tf/ostreamMethods.h"
+#include "pxr/base/tf/pxrTslRobinMap/robin_set.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -93,56 +95,9 @@ UsdPrim::IsA(const TfType& schemaType) const
 }
 
 bool
-UsdPrim::_HasAPI(
-    const TfType& schemaType, 
-    bool validateSchemaType, 
-    const TfToken &instanceName) const 
+UsdPrim::_HasSingleApplyAPI(const TfType& schemaType) const 
 {
     TRACE_FUNCTION();
-
-    static const auto apiSchemaBaseType = 
-            TfType::Find<UsdAPISchemaBase>();
-
-    const bool isMultipleApplyAPISchema = 
-        UsdSchemaRegistry::GetInstance().IsMultipleApplyAPISchema(schemaType);
-
-    // Note that this block of code is only hit in python code paths,
-    // C++ clients would hit the static_asserts defined inline in 
-    // UsdPrim::HasAPI().
-    if (validateSchemaType) {
-        if (schemaType.IsUnknown()) {
-            TF_CODING_ERROR("HasAPI: Invalid unknown schema type (%s) ",
-                            schemaType.GetTypeName().c_str());
-            return false;
-        }
-
-        if (UsdSchemaRegistry::GetInstance().IsTyped(schemaType)) {
-            TF_CODING_ERROR("HasAPI: provided schema type ( %s ) is typed.",
-                            schemaType.GetTypeName().c_str());
-            return false;
-        }
-
-        if (!UsdSchemaRegistry::GetInstance().IsAppliedAPISchema(schemaType)) {
-            TF_CODING_ERROR("HasAPI: provided schema type ( %s ) is not an "
-                "applied API schema type.", schemaType.GetTypeName().c_str());
-            return false;
-        }
-
-        if (!schemaType.IsA(apiSchemaBaseType) || 
-            schemaType == apiSchemaBaseType) {
-            TF_CODING_ERROR("HasAPI: provided schema type ( %s ) does not "
-                "derive from UsdAPISchemaBase.", 
-                schemaType.GetTypeName().c_str());
-            return false;
-        }
-
-        if (!isMultipleApplyAPISchema && !instanceName.IsEmpty()) {
-            TF_CODING_ERROR("HasAPI: single application API schemas like %s do "
-                "not contain an application instanceName ( %s ).",
-                schemaType.GetTypeName().c_str(), instanceName.GetText());
-            return false;
-        }
-    }
 
     // Get our composed set of all applied schemas.
     auto appliedSchemas = GetAppliedSchemas();
@@ -150,66 +105,302 @@ UsdPrim::_HasAPI(
         return false;
     }
 
-    auto foundMatch = [&appliedSchemas, isMultipleApplyAPISchema, &instanceName]
-            (const std::string &alias) {
-        // If instanceName is not empty, look for an exact match in the 
-        // apiSchemas list.
-        if (!instanceName.IsEmpty()) {
-            const TfToken apiName(SdfPath::JoinIdentifier(
-                    alias, instanceName.GetString()));
-            return std::find(appliedSchemas.begin(), appliedSchemas.end(), 
-                             apiName) != appliedSchemas.end();
-        } 
-        // If we're looking for a multiple-apply API schema, then we return 
-        // true if we find an applied schema name that starts with "<alias>:".
-        else if (isMultipleApplyAPISchema) {
-            return std::any_of(appliedSchemas.begin(), appliedSchemas.end(), 
-                [&alias](const TfToken &appliedSchema) {
-                    return TfStringStartsWith(appliedSchema, 
-                            alias + UsdObject::GetNamespaceDelimiter());
-                });
-        } else {
-            // If instanceName is empty and if schemaType is not a multiple 
-            // apply API schema, then we can look for an exact match.
-            return std::find(appliedSchemas.begin(), appliedSchemas.end(), 
-                             alias) != appliedSchemas.end();
-        }
-    };
+    // The compile time and runtime schema type validation of HasAPI should
+    // ensure that this schemaName won't be empty so we don't check for that 
+    // here.
+    const TfToken schemaName = 
+        UsdSchemaRegistry::GetAPISchemaTypeName(schemaType);
 
-    // See if our schema is directly authored
-    static const auto schemaBaseType = TfType::Find<UsdSchemaBase>();
-    for (const auto& alias : schemaBaseType.GetAliases(schemaType)) {
-        if (foundMatch(alias)) {
-            return true; 
-        }
+    // Since this is a single apply API we're just looking for schemaName being
+    // in the list.
+    return std::find(appliedSchemas.begin(), appliedSchemas.end(), schemaName) 
+        != appliedSchemas.end();
+}
+
+bool 
+UsdPrim::_HasMultiApplyAPI(const TfType& schemaType,
+                           const TfToken &instanceName) const
+{
+    TRACE_FUNCTION();
+
+    // Get our composed set of all applied schemas.
+    auto appliedSchemas = GetAppliedSchemas();
+    if (appliedSchemas.empty()) {
+        return false;
     }
 
-    // If we couldn't find it directly authored in apiSchemas, 
-    // consider derived types. For example, if a user queries
-    // prim.HasAPI<UsdModelAPI>() on a prim with 
-    // apiSchemas = ["UsdGeomModelAPI"], we should return true
-    std::set<TfType> derivedTypes;
-    schemaType.GetAllDerivedTypes(&derivedTypes);
-    for (const auto& derived : derivedTypes) {
-        for (const auto& alias : schemaBaseType.GetAliases(derived)) {
-            if (foundMatch(alias)) { 
-                return true; 
-            }
-        }
-    }
+    // The compile time and runtime schema type validation of HasAPI should
+    // ensure that this schemaName won't be empty so we don't check for that 
+    // here.
+    const TfToken schemaName = 
+        UsdSchemaRegistry::GetAPISchemaTypeName(schemaType);
 
-    return false;
+    // If instance name is empty, we're looking for any instance of a multiple
+    // apply schema of the schemaType. Thus we search for name in the list that
+    // starts with the "<schemaName>:" prefix.
+    if (instanceName.IsEmpty()) {
+        const std::string schemaPrefix = 
+            schemaName.GetString() + UsdObject::GetNamespaceDelimiter();
+        return std::any_of(appliedSchemas.begin(), appliedSchemas.end(), 
+            [&schemaPrefix](const TfToken &appliedSchema) {
+                return TfStringStartsWith(appliedSchema, schemaPrefix);
+            });
+    } 
+
+    // Otherwise we have an instance name so we're looking for exact match of
+    // "<schemaType>:<instanceName>"
+    const TfToken apiName(SdfPath::JoinIdentifier(schemaName, instanceName));
+    return std::find(appliedSchemas.begin(), appliedSchemas.end(), apiName) 
+        != appliedSchemas.end();
 }
 
 bool
 UsdPrim::HasAPI(const TfType& schemaType, const TfToken& instanceName) const
 {
-    return _HasAPI(schemaType, true, instanceName);
+    if (schemaType.IsUnknown()) {
+        TF_CODING_ERROR("HasAPI: Invalid unknown schema type (%s) ",
+                        schemaType.GetTypeName().c_str());
+        return false;
+    }
+
+    if (!UsdSchemaRegistry::GetInstance().IsAppliedAPISchema(schemaType)) {
+        TF_CODING_ERROR("HasAPI: provided schema type ( %s ) is not an "
+            "applied API schema type.", schemaType.GetTypeName().c_str());
+        return false;
+    }
+
+    static const auto apiSchemaBaseType = TfType::Find<UsdAPISchemaBase>();
+    if (!schemaType.IsA(apiSchemaBaseType) || schemaType == apiSchemaBaseType) {
+        TF_CODING_ERROR("HasAPI: provided schema type ( %s ) does not "
+            "derive from UsdAPISchemaBase.", 
+            schemaType.GetTypeName().c_str());
+        return false;
+    }
+
+    // If the type is a multi apply API call the multi apply implementation.
+    if (UsdSchemaRegistry::GetInstance().IsMultipleApplyAPISchema(schemaType)) {
+        return _HasMultiApplyAPI(schemaType, instanceName);
+    }
+
+    // Otherwise it's a single apply API 
+    if (!instanceName.IsEmpty()) {
+        TF_CODING_ERROR("HasAPI: single application API schemas like %s do "
+            "not contain an application instanceName ( %s ).",
+            schemaType.GetTypeName().c_str(), instanceName.GetText());
+        return false;
+    }
+    return _HasSingleApplyAPI(schemaType);
+}
+
+// Runtime validation for the single apply schema non-templated 
+// ApplyAPI/CanApplyAPI/RemoveAPI functions. The templated versions perform this
+// verification through compile time asserts.
+static bool 
+_ValidateSingleApplySchemaType(
+    const TfType& schemaType, std::string *reason)
+{
+    if (UsdSchemaRegistry::GetSchemaKind(schemaType) != 
+            UsdSchemaKind::SingleApplyAPI) {
+        if (reason) {
+            *reason = TfStringPrintf(
+                "Provided schema type '%s' is not a single-apply API schema "
+                "type.", 
+                schemaType.GetTypeName().c_str());
+        }
+        return false;
+    }
+    return true;
+}
+
+// Runtime validation for the multiple apply schema non-templated 
+// ApplyAPI/CanApplyAPI/RemoveAPI functions. The templated versions perform this
+// verification through compile time asserts.
+static bool 
+_ValidateMultipleApplySchemaType(
+    const TfType& schemaType, std::string *reason)
+{
+    if (UsdSchemaRegistry::GetSchemaKind(schemaType) != 
+            UsdSchemaKind::MultipleApplyAPI) {
+        if (reason) {
+            *reason = TfStringPrintf(
+                "Provided schema type '%s' is not a mutiple-apply API schema "
+                "type.", 
+                schemaType.GetTypeName().c_str());
+        }
+        return false;
+    }
+    return true;
+}
+
+// Determines whether the given prim type can have the given API schema applied 
+// to it based on a list of types the API "can only be applied to". If the 
+// list is empty, this always returns true, otherwise the prim type must be in 
+// the list or derived from a type in the list.
+static bool 
+_IsPrimTypeValidApplyToTarget(const TfType &primType, 
+                              const TfToken &apiSchemaTypeName,
+                              const TfToken &instanceName,
+                              std::string *whyNot)
+{
+    // Get the list of prim types this API "can only apply to" if any.
+    const TfTokenVector &canOnlyApplyToTypes =
+        UsdSchemaRegistry::GetAPISchemaCanOnlyApplyToTypeNames(
+            apiSchemaTypeName, instanceName);
+
+    // If no "can only apply to" types are found, the schema can be 
+    // applied to any prim type (including empty or invalid prims types)
+    if (canOnlyApplyToTypes.empty()) {
+        return true;
+    }
+
+    // If the prim type or any of its ancestor types are in the list, then it's
+    // valid!
+    if (!primType.IsUnknown()) {
+        for (const TfToken &allowedPrimTypeName : canOnlyApplyToTypes) {
+            const TfType allowedPrimType = 
+                UsdSchemaRegistry::GetTypeFromSchemaTypeName(
+                    allowedPrimTypeName);
+            if (primType.IsA(allowedPrimType)) {
+                return true;
+            }
+        }
+    }
+
+    // Otherwise, it wasn't in the list and can't be applied to.
+    if (whyNot) {
+        *whyNot = TfStringPrintf(
+            "API schema '%s' can only be applied to prims of the following "
+            "types: %s.", 
+            SdfPath::JoinIdentifier(apiSchemaTypeName, instanceName).c_str(), 
+            TfStringJoin(canOnlyApplyToTypes.begin(),
+                         canOnlyApplyToTypes.end(), ", ").c_str());
+    }
+    return false;
+}
+
+
+bool
+UsdPrim::_CanApplyAPI(const TfType& apiSchemaType, 
+                      std::string *whyNot) const
+{
+    // The callers of this function will have already validated the schema is
+    // single apply either through static asserts or runtime validation 
+    // _ValidateSingleApplySchemaType.
+
+    // Can't apply API schemas to an invalid prim
+    if (!IsValid()) {
+        if (whyNot) {
+            *whyNot = "Prim is not valid.";
+        }
+        return false;
+    }
+
+    // Return whether this prim's type is a valid target for applying the given
+    // API schema.
+    const TfToken apiSchemaTypeName = 
+        UsdSchemaRegistry::GetSchemaTypeName(apiSchemaType);
+    return _IsPrimTypeValidApplyToTarget(
+        GetPrimTypeInfo().GetSchemaType(), 
+        apiSchemaTypeName,
+        /*instanceName=*/ TfToken(),
+        whyNot);
 }
 
 bool
-UsdPrim::_ApplyAPI(const TfType& schemaType, const TfToken& instanceName) const
+UsdPrim::_CanApplyAPI(const TfType& apiSchemaType, 
+                      const TfToken& instanceName,
+                      std::string *whyNot) const
 {
+    // The callers of this function will have already validated the schema is
+    // mulitple apply either through static asserts or runtime validation 
+    // _ValidateMultipleApplySchemaType.
+
+    // Instance name can only be validated at runtime. All API schema functions 
+    // treat an empty instance for a multiple apply schema as a coding error.
+    if (instanceName.IsEmpty()) {
+        TF_CODING_ERROR("CanApplyAPI: for multiple apply API schema %s, a "
+                        "non-empty instance name must be provided.",
+            apiSchemaType.GetTypeName().c_str());
+        return false;
+    }
+
+    // Can't apply API schemas to an invalid prim
+    if (!IsValid()) {
+        if (whyNot) {
+            *whyNot = "Prim is not valid.";
+        }
+        return false;
+    }
+
+    const TfToken apiSchemaTypeName = 
+        UsdSchemaRegistry::GetSchemaTypeName(apiSchemaType);
+
+    // Multiple apply API schemas may have limitations on what instance names
+    // are allowed to be used. Check if the requested instance name is valid.
+    if (!UsdSchemaRegistry::IsAllowedAPISchemaInstanceName(
+            apiSchemaTypeName, instanceName)) {
+        if (whyNot) {
+            *whyNot = TfStringPrintf(
+                "'%s' is not an allowed instance name for multiple apply API "
+                "schema '%s'.", 
+                instanceName.GetText(), apiSchemaTypeName.GetText());
+        }
+        return false;
+    }
+
+    // Return whether this prim's type is a valid target for applying the given
+    // API schema and instance name.
+    return _IsPrimTypeValidApplyToTarget(
+        GetPrimTypeInfo().GetSchemaType(), 
+        apiSchemaTypeName,
+        instanceName,
+        whyNot);
+}
+
+bool 
+UsdPrim::CanApplyAPI(const TfType& schemaType, 
+                     std::string *whyNot) const
+{
+    // Validate that this function is being called on a single apply API schema.
+    // Failure is a coding error as the matching template function would fail
+    // to compile.
+    std::string errorMsg;
+    if (!_ValidateSingleApplySchemaType(schemaType, &errorMsg)) {
+        TF_CODING_ERROR("CanApplyAPI: %s", errorMsg.c_str());
+        if (whyNot) {
+            *whyNot = std::move(errorMsg);
+        }
+        return false;
+    }
+    return _CanApplyAPI(schemaType, whyNot);
+}
+
+bool 
+UsdPrim::CanApplyAPI(const TfType& schemaType, 
+                     const TfToken& instanceName,
+                     std::string *whyNot) const
+{
+    // Validate that this function is being called on a multiple apply API 
+    // schema. Failure is a coding error as the matching template function would
+    // fail to compile.
+    std::string errorMsg;
+    if (!_ValidateMultipleApplySchemaType(schemaType, &errorMsg)) {
+        TF_CODING_ERROR("CanApplyAPI: %s", errorMsg.c_str());
+        if (whyNot) {
+            *whyNot = std::move(errorMsg);
+        }
+        return false;
+    }
+    return _CanApplyAPI(schemaType, instanceName, whyNot);
+}
+
+bool
+UsdPrim::_ApplyAPI(const TfType& schemaType) const
+{
+    // The callers of this function will have already validated the schema is
+    // single apply either through static asserts or runtime validation 
+    // _ValidateSingleApplySchemaType.
+
     // Validate the prim to protect against crashes in the schema generated 
     // SchemaClass::Apply(const UsdPrim &prim) functions when called with a null
     // prim as these generated functions call prim.ApplyAPI<SchemaClass>
@@ -225,77 +416,129 @@ UsdPrim::_ApplyAPI(const TfType& schemaType, const TfToken& instanceName) const
     }
 
     const TfToken typeName = UsdSchemaRegistry::GetSchemaTypeName(schemaType);
+    return AddAppliedSchema(typeName);
+}
+
+bool
+UsdPrim::_ApplyAPI(const TfType& schemaType, const TfToken& instanceName) const
+{
+    // The callers of this function will have already validated the schema is
+    // mulitple apply either through static asserts or runtime validation 
+    // _ValidateMultipleApplySchemaType.
+
+    // Instance name can only be validated at runtime. All API schema functions 
+    // treat an empty instance for a multiple apply schema as a coding error.
     if (instanceName.IsEmpty()) {
-        return AddAppliedSchema(typeName);
+        TF_CODING_ERROR("ApplyAPI: for mutiple apply API schema %s, a "
+                        "non-empty instance name must be provided.",
+            schemaType.GetTypeName().c_str());
+        return false;
     }
+
+    // Validate the prim to protect against crashes in the schema generated 
+    // SchemaClass::Apply(const UsdPrim &prim) functions when called with a null
+    // prim as these generated functions call prim.ApplyAPI<SchemaClass>
+    //
+    // While we don't typically validate "this" prim for public UsdPrim C++ API,
+    // for performance reasons, we opt to do so here since ApplyAPI isn't 
+    // performance critical. If ApplyAPI becomes performance critical in the
+    // future, we may have to move this validation elsewhere if this validation
+    // is problematic.
+    if (!IsValid()) {
+        TF_CODING_ERROR("Invalid prim '%s'", GetDescription().c_str());
+        return false;
+    }
+
+    const TfToken typeName = UsdSchemaRegistry::GetSchemaTypeName(schemaType);
     TfToken apiName(SdfPath::JoinIdentifier(typeName, instanceName));
     return AddAppliedSchema(apiName);
 }
 
 bool
-UsdPrim::ApplyAPI(const TfType& schemaType, const TfToken& instanceName) const
+UsdPrim::ApplyAPI(const TfType& schemaType) const
 {
-    if (!UsdSchemaRegistry::GetInstance().IsAppliedAPISchema(schemaType)) {
-        TF_CODING_ERROR("ApplyAPI: provided schema type ( %s ) is not an "
-            "applied API schema type.", schemaType.GetTypeName().c_str());
+    // Validate that this function is being called on a single apply API schema.
+    // Failure is a coding error as the matching template function would fail
+    // to compile.
+    std::string errorMsg;
+    if (!_ValidateSingleApplySchemaType(schemaType, &errorMsg)) {
+        TF_CODING_ERROR("ApplyAPI: %s", errorMsg.c_str());
         return false;
     }
+    return _ApplyAPI(schemaType);
+}
 
-    if (UsdSchemaRegistry::GetInstance().IsMultipleApplyAPISchema(schemaType)) {
-        if (instanceName.IsEmpty()) {
-            TF_CODING_ERROR("ApplyAPI: Multiple application API schemas like "
-                            "%s must have an application instanceName.", 
-                            schemaType.GetTypeName().c_str());
-            return false;
-        }
-    } else {
-        if (!instanceName.IsEmpty()) {
-            TF_CODING_ERROR("ApplyAPI: Single application API schemas like "
-                            "%s cannot have an application instanceName.", 
-                            schemaType.GetTypeName().c_str());
-            return false;
-        }
+bool
+UsdPrim::ApplyAPI(const TfType& schemaType, const TfToken& instanceName) const
+{
+    // Validate that this function is being called on a multiple apply API 
+    // schema. Failure is a coding error as the matching template function would
+    // fail to compile.
+    std::string errorMsg;
+    if (!_ValidateMultipleApplySchemaType(schemaType, &errorMsg)) {
+        TF_CODING_ERROR("ApplyAPI: %s", errorMsg.c_str());
+        return false;
     }
-
     return _ApplyAPI(schemaType, instanceName);
+}
+
+bool
+UsdPrim::_RemoveAPI(const TfType& schemaType) const
+{
+    // The callers of this function will have already validated the schema is
+    // single apply either through static asserts or runtime validation 
+    // _ValidateSingleApplySchemaType.
+
+    const TfToken typeName = UsdSchemaRegistry::GetSchemaTypeName(schemaType);
+    return RemoveAppliedSchema(typeName);
 }
 
 bool
 UsdPrim::_RemoveAPI(const TfType& schemaType, const TfToken& instanceName) const
 {
-    const TfToken typeName = UsdSchemaRegistry::GetSchemaTypeName(schemaType);
+    // The callers of this function will have already validated the schema is
+    // mulitple apply either through static asserts or runtime validation 
+    // _ValidateMultipleApplySchemaType.
+
+    // Instance name can only be validated at runtime. All API schema functions 
+    // treat an empty instance for a multiple apply schema as a coding error.
     if (instanceName.IsEmpty()) {
-        return RemoveAppliedSchema(typeName);
+        TF_CODING_ERROR("RemoveAPI: for mutiple apply API schema %s, a "
+                        "non-empty instance name must be provided.",
+            schemaType.GetTypeName().c_str());
+        return false;
     }
+
+    const TfToken typeName = UsdSchemaRegistry::GetSchemaTypeName(schemaType);
     TfToken apiName(SdfPath::JoinIdentifier(typeName, instanceName));
     return RemoveAppliedSchema(apiName);
 }
 
 bool
-UsdPrim::RemoveAPI(const TfType& schemaType, const TfToken& instanceName) const
+UsdPrim::RemoveAPI(const TfType& schemaType) const
 {
-    if (!UsdSchemaRegistry::GetInstance().IsAppliedAPISchema(schemaType)) {
-        TF_CODING_ERROR("RemoveAPI: provided schema type ( %s ) is not an "
-            "applied API schema type.", schemaType.GetTypeName().c_str());
+    // Validate that this function is being called on a single apply API schema.
+    // Failure is a coding error as the matching template function would fail
+    // to compile.
+    std::string errorMsg;
+    if (!_ValidateSingleApplySchemaType(schemaType, &errorMsg)) {
+        TF_CODING_ERROR("RemoveAPI: %s", errorMsg.c_str());
         return false;
     }
+    return _RemoveAPI(schemaType);
+}
 
-    if (UsdSchemaRegistry::GetInstance().IsMultipleApplyAPISchema(schemaType)) {
-        if (instanceName.IsEmpty()) {
-            TF_CODING_ERROR("RemoveAPI: Multiple application API schemas like "
-                            "%s must have an application instanceName.", 
-                            schemaType.GetTypeName().c_str());
-            return false;
-        }
-    } else {
-        if (!instanceName.IsEmpty()) {
-            TF_CODING_ERROR("RemoveAPI: Single application API schemas like "
-                            "%s cannot have an application instanceName.", 
-                            schemaType.GetTypeName().c_str());
-            return false;
-        }
+bool
+UsdPrim::RemoveAPI(const TfType& schemaType, const TfToken& instanceName) const
+{
+    // Validate that this function is being called on a multiple apply API 
+    // schema. Failure is a coding error as the matching template function would
+    // fail to compile.
+    std::string errorMsg;
+    if (!_ValidateMultipleApplySchemaType(schemaType, &errorMsg)) {
+        TF_CODING_ERROR("RemoveAPI: %s", errorMsg.c_str());
+        return false;
     }
-
     return _RemoveAPI(schemaType, instanceName);
 }
 
@@ -483,69 +726,49 @@ UsdPrim::GetPropertyOrder() const
     return order;
 }
 
+using TokenRobinSet = pxr_tsl::robin_set<TfToken, TfToken::HashFunctor>;
+
+// This function was copied from Pcp/{PrimIndex,ComposeSite} and optimized for
+// Usd.
 static void
 _ComposePrimPropertyNames( 
     const PcpPrimIndex& primIndex,
-    const PcpNodeRef& node,
     const UsdPrim::PropertyPredicateFunc &predicate,
-    TfTokenVector *names,
-    TfTokenVector *localNames)
+    TokenRobinSet *inOutNames)
 {
-    if (node.IsCulled()) {
-        return;
-    }
+    
+    auto const &nodeRange = primIndex.GetNodeRange();
+    const bool hasPredicate = static_cast<bool>(predicate);
 
-    // Strength-order does not matter here, since we're just collecting all 
-    // names.
-    TF_FOR_ALL(child, node.GetChildrenRange()) {
-        _ComposePrimPropertyNames(primIndex, *child, predicate, names,
-                                  localNames);
-    }
-
-    // Compose the site's local names over the current result.
-    if (node.CanContributeSpecs()) {
-        for (auto &layer : node.GetLayerStack()->GetLayers()) {
-            if (layer->HasField<TfTokenVector>(node.GetPath(), 
-                    SdfChildrenKeys->PropertyChildren, localNames)) {
-                // If predicate is valid, then append only the names that pass 
-                // the predicate. If not, add all names (including duplicates).
-                if (predicate) {
-                    for(auto &name: *localNames) {
-                        if (predicate(name)) {
-                            names->push_back(name);
+    for (PcpNodeRef node: nodeRange) {
+        if (node.IsCulled() || !node.CanContributeSpecs()) {
+            continue;
+        }
+        for (auto const &layer : node.GetLayerStack()->GetLayers()) {
+            VtValue namesVal;
+            if (layer->HasField(node.GetPath(),
+                                SdfChildrenKeys->PropertyChildren,
+                                &namesVal) &&
+                namesVal.IsHolding<TfTokenVector>()) {
+                // If we have a predicate, then check to see if the name is
+                // already included to avoid redundantly invoking it.  The most
+                // common case for us is repeated names already present.
+                TfTokenVector
+                    localNames = namesVal.UncheckedRemove<TfTokenVector>();
+                if (hasPredicate) {
+                    for (auto &name: localNames) {
+                        if (!inOutNames->count(name) && predicate(name)) {
+                            inOutNames->insert(std::move(name));
                         }
-                    }    
+                    }
                 } else {
-                    names->insert(names->end(), localNames->begin(), 
-                                  localNames->end());
+                    inOutNames->insert(
+                        std::make_move_iterator(localNames.begin()),
+                        std::make_move_iterator(localNames.end()));
                 }
             }
         }
     }
-}
-
-// This function and the one above (_ComposePrimPropertyNames) were copied 
-// from Pcp/{PrimIndex,ComposeSite} and optimized for Usd.
-static void
-_ComputePrimPropertyNames(
-    const PcpPrimIndex &primIndex,
-    const UsdPrim::PropertyPredicateFunc &predicate,
-    TfTokenVector *names)
-{
-    if (!primIndex.IsValid()) {
-        return;
-    }
-
-    TRACE_FUNCTION();
-
-    // Temporary shared vector for collecting local property names.
-    // This is used to re-use storage allocated for the local property 
-    // names in each layer.
-    TfTokenVector localNames;
-
-    // Walk the graph to compose prim child names.
-    _ComposePrimPropertyNames(primIndex, primIndex.GetRootNode(), predicate, 
-                              names, &localNames);
 }
 
 TfTokenVector
@@ -554,37 +777,37 @@ UsdPrim::_GetPropertyNames(
     bool applyOrder,
     const UsdPrim::PropertyPredicateFunc &predicate) const
 {
-    TfTokenVector names;
+    TRACE_FUNCTION();
+    
+    TokenRobinSet names;
+    TfTokenVector namesVec;
 
     // If we're including unauthored properties, take names from definition, if
     // present.
     const UsdPrimDefinition &primDef = _Prim()->GetPrimDefinition();
     if (!onlyAuthored) {   
-        if (predicate) {
-            const TfTokenVector &builtInNames = primDef.GetPropertyNames();
-            for (const auto &builtInName : builtInNames) {
-                if (predicate(builtInName)) {
-                    names.push_back(builtInName);
-                }
+        const TfTokenVector &builtInNames = primDef.GetPropertyNames();
+        for (const auto &builtInName : builtInNames) {
+            if (!predicate || predicate(builtInName)) {
+                names.insert(builtInName);
             }
-        } else {
-            names = primDef.GetPropertyNames();
         }
     }
 
     // Add authored names, then sort and apply ordering.
-    _ComputePrimPropertyNames(GetPrimIndex(), predicate, &names);
+    _ComposePrimPropertyNames(GetPrimIndex(), predicate, &names);
 
     if (!names.empty()) {
         // Sort and uniquify the names.
-        sort(names.begin(), names.end(), TfDictionaryLessThan());
-        names.erase(std::unique(names.begin(), names.end()), names.end());
+        namesVec.resize(names.size());
+        std::copy(names.begin(), names.end(), namesVec.begin());
+        sort(namesVec.begin(), namesVec.end(), TfDictionaryLessThan());
         if (applyOrder) {
-            _ApplyOrdering(GetPropertyOrder(), &names);
+            _ApplyOrdering(GetPropertyOrder(), &namesVec);
         }
     }
 
-    return names;
+    return namesVec;
 }
 
 TfTokenVector
@@ -650,7 +873,9 @@ UsdPrim::_GetPropertiesInNamespace(
                    s[terminator] == delim;
         });
 
-    return _MakeProperties(names);
+    std::vector<UsdProperty> properties(_MakeProperties(names));
+    WorkSwapDestroyAsync(names);
+    return properties;
 }
 
 std::vector<UsdProperty>
@@ -1165,24 +1390,6 @@ bool
 UsdPrim::IsPathInPrototype(const SdfPath& path)
 {
     return Usd_InstanceCache::IsPathInPrototype(path);
-}
-
-bool
-UsdPrim::IsMasterPath(const SdfPath& path)
-{
-    return IsPrototypePath(path);
-}
-
-bool
-UsdPrim::IsPathInMaster(const SdfPath& path)
-{
-    return IsPathInPrototype(path);
-}
-
-UsdPrim
-UsdPrim::GetMaster() const
-{
-    return GetPrototype();
 }
 
 UsdPrim

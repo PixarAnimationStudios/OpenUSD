@@ -1,0 +1,88 @@
+#usda 1.0
+#Shows two spheres, one with high
+#and one with low bounce, by using materials.
+#Also uses a trimesh ground quad.
+(
+    defaultPrim = "World"
+    endTimeCode = 100
+    metersPerUnit = 0.01
+    startTimeCode = 0
+    timeCodesPerSecond = 24
+    upAxis = "Z"
+    
+    #New mass scaling
+    kilogramsPerUnit = 1.0
+    
+)
+def Xform "World"
+{
+    def PhysicsScene "PhysicsScene"
+    {
+    }
+
+    def Sphere "RegularSphere" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI"]
+    )
+    {
+        rel material:binding:physics = </World/Looks/RegularMaterial>
+
+        color3f[] primvars:displayColor = [(0.2784314, 0.4117647, 1)]
+        double3 xformOp:translate = (0, 0, 500)
+        float3 xformOp:scale = (25, 25, 25)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+    def Sphere "BouncySphere" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI"]
+    )
+    {
+        rel material:binding:physics = </World/Looks/BouncyMaterial> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+
+        color3f[] primvars:displayColor = [(0.8784314, 0.2117647, 0.1)]
+        double3 xformOp:translate = (300, 0, 500)
+        float3 xformOp:scale = (25, 25, 25)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+    def Mesh "Ground" (
+        prepend apiSchemas = ["PhysicsCollisionAPI"]
+    )
+    {
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [3, 2, 1, 0]
+        uniform token subdivisionScheme = "none"
+        normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)]
+        point3f[] points = [(-1, 1, 0), (1, 1, 0), (1, -1, 0), (-1, -1, 0)]
+        color3f[] primvars:displayColor = [(0.5, 0.5, 0.5)]
+        texCoord2f[] primvars:st = [(0, 1), (1, 1), (1, 0), (0, 0)] (
+            interpolation = "varying"
+        )
+        float3 xformOp:scale = (750, 750, 750)
+        uniform token[] xformOpOrder = ["xformOp:scale"]
+    }
+
+    def Scope "Looks"
+    {
+        def Material "RegularMaterial" (
+            prepend apiSchemas = ["PhysicsMaterialAPI"]
+        )
+        {
+            double physics:density = 10
+            float physics:restitution = 0.1
+        }
+        def Material "BouncyMaterial" (
+            prepend apiSchemas = ["PhysicsMaterialAPI"]
+        )
+        {
+            double physics:density = 10
+            float physics:restitution = 0.8
+        }
+    }
+    def SphereLight "SphereLight"
+    {
+        float intensity = 30000
+        float radius = 150
+        double3 xformOp:translate = (650, 0, 1150)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

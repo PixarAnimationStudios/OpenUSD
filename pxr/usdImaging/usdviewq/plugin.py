@@ -30,7 +30,7 @@ import importlib
 from pxr import Tf
 from pxr import Plug
 
-from .qt import QtGui
+from .qt import QtGui, QtWidgets
 
 
 class DuplicateCommandPlugin(Exception):
@@ -276,6 +276,18 @@ class PluginUIBuilder(object):
         self._mainWindow = mainWindow
 
         self._menus = dict()
+
+        # Insert built-in menus to allow for plug-ins to add to them rather
+        # than creating a new menu with duplicate title.
+        for c in self._mainWindow.menuBar().children():
+            if isinstance(c, QtWidgets.QMenu):
+                # Strip keyboard shortcut characters so that insertion is based
+                # on title alone.
+                # '&'' is the only meaningful keyboard shortcut character that
+                # might be present in the title. "&&" is used to insert the
+                # literal '&' character but that's rare enough to not worry
+                # about here.
+                self._menus[str(c.title()).replace('&', '')] = PluginMenu(c)
 
     def findOrCreateMenu(self, menuName):
         """Get a PluginMenu object for the menu with the given name. If no menu

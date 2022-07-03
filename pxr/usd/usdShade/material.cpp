@@ -75,13 +75,9 @@ UsdShadeMaterial::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdShadeMaterial::_GetSchemaKind() const {
+UsdSchemaKind UsdShadeMaterial::_GetSchemaKind() const
+{
     return UsdShadeMaterial::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdShadeMaterial::_GetSchemaType() const {
-    return UsdShadeMaterial::schemaType;
 }
 
 /* static */
@@ -422,9 +418,9 @@ UsdShadeMaterial::GetBaseMaterialPath() const
     if (parentMaterialPath != SdfPath::EmptyPath()) {
         UsdPrim p = GetPrim().GetStage()->GetPrimAtPath(parentMaterialPath);
         if (p.IsInstanceProxy()) {
-            // this looks like an instance but it's acting as the master path.
-            // Return the master path
-            parentMaterialPath = p.GetPrimInMaster().GetPath();
+            // this looks like an instance but it's acting as the prototype path
+            // Return the prototype path
+            parentMaterialPath = p.GetPrimInPrototype().GetPath();
         }
     }
     return parentMaterialPath;
@@ -751,12 +747,17 @@ UsdShadeMaterial::ComputeVolumeSource(
 }
 
 class UsdShadeMaterial_ConnectableAPIBehavior : 
-    public UsdShadeNodeGraph::ConnectableAPIBehavior
+    public UsdShadeConnectableAPIBehavior
 {
+public:
+    // By default all Material Connectable Behavior should be
+    // container (of nodes) and exhibit encapsulation behavior.
+    UsdShadeMaterial_ConnectableAPIBehavior() : UsdShadeConnectableAPIBehavior(
+            true /*isContainer*/, true /*requiresEncapsulation*/) {}
     bool
     CanConnectInputToSource(const UsdShadeInput &input,
                             const UsdAttribute &source,
-                            std::string *reason) override
+                            std::string *reason) const override
     {
         return _CanConnectInputToSource(input, source, reason, 
                 ConnectableNodeTypes::DerivedContainerNodes);
@@ -765,16 +766,10 @@ class UsdShadeMaterial_ConnectableAPIBehavior :
     bool
     CanConnectOutputToSource(const UsdShadeOutput &output,
                              const UsdAttribute &source,
-                             std::string *reason)
+                             std::string *reason) const override
     {
         return _CanConnectOutputToSource(output, source, reason,
-                ConnectableAPIBehavior::DerivedContainerNodes);
-    }
-
-    bool IsContainer() const
-    {
-        // Material does act as a namespace container for connected nodes
-        return true;
+                ConnectableNodeTypes::DerivedContainerNodes);
     }
 };
 

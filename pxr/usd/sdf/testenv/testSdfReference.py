@@ -102,5 +102,13 @@ class TestSdfReferences(unittest.TestCase):
         # ref0 is an internal referennce because it has an empty assetPath
         self.assertTrue(ref0.IsInternal())
 
+        # Test invalid asset paths.
+        with self.assertRaises(Tf.ErrorException):
+            p = Sdf.Reference('\x01\x02\x03')
+
+        with self.assertRaises(Tf.ErrorException):
+            p = Sdf.AssetPath('\x01\x02\x03')
+            p = Sdf.AssetPath('foobar', '\x01\x02\x03')
+
 if __name__ == "__main__":
     unittest.main()

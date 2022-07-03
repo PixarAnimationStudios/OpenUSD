@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2021 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -23,12 +23,34 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/filesystemAsset.h"
+#include "pxr/usd/ar/resolvedPath.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/arch/errno.h"
 #include "pxr/base/arch/fileSystem.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+std::shared_ptr<ArFilesystemAsset>
+ArFilesystemAsset::Open(const ArResolvedPath& resolvedPath)
+{
+    FILE* f = ArchOpenFile(resolvedPath.GetPathString().c_str(), "rb");
+    if (!f) {
+        return nullptr;
+    }
+
+    return std::make_shared<ArFilesystemAsset>(f);
+}
+
+ArTimestamp
+ArFilesystemAsset::GetModificationTimestamp(const ArResolvedPath& resolvedPath)
+{
+    double time;
+    if (ArchGetModificationTime(resolvedPath.GetPathString().c_str(), &time)) {
+        return ArTimestamp(time);
+    }
+    return ArTimestamp();
+}
 
 ArFilesystemAsset::ArFilesystemAsset(FILE* file) 
     : _file(file) 
@@ -44,13 +66,13 @@ ArFilesystemAsset::~ArFilesystemAsset()
 }
 
 size_t
-ArFilesystemAsset::GetSize()
+ArFilesystemAsset::GetSize() const
 {
     return ArchGetFileLength(_file);
 }
 
 std::shared_ptr<const char> 
-ArFilesystemAsset::GetBuffer()
+ArFilesystemAsset::GetBuffer() const
 {
     ArchConstFileMapping mapping = ArchMapFileReadOnly(_file);
     if (!mapping) {
@@ -75,7 +97,7 @@ ArFilesystemAsset::GetBuffer()
 }
 
 size_t
-ArFilesystemAsset::Read(void* buffer, size_t count, size_t offset)
+ArFilesystemAsset::Read(void* buffer, size_t count, size_t offset) const
 {
     int64_t numRead = ArchPRead(_file, buffer, count, offset);
     if (numRead == -1) {
@@ -87,7 +109,7 @@ ArFilesystemAsset::Read(void* buffer, size_t count, size_t offset)
 }
         
 std::pair<FILE*, size_t>
-ArFilesystemAsset::GetFileUnsafe()
+ArFilesystemAsset::GetFileUnsafe() const
 {
     return std::make_pair(_file, 0);
 }

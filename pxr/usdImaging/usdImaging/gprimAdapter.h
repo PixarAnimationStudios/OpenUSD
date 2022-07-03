@@ -128,6 +128,11 @@ public:
                                    SdfPath const& cachePath,
                                    UsdImagingIndexProxy* index) override;
 
+    USDIMAGING_API
+    virtual void MarkCollectionsDirty(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingIndexProxy* index) override;
+
     // ---------------------------------------------------------------------- //
     /// \name Utility methods
     // ---------------------------------------------------------------------- //
@@ -215,11 +220,18 @@ protected:
     USDIMAGING_API
     virtual bool _IsBuiltinPrimvar(TfToken const& primvarName) const;
 
-    // Utility for derived classes to try to find an inherited primvar.
-    USDIMAGING_API
-    UsdGeomPrimvar _GetInheritedPrimvar(UsdPrim const& prim,
-                                        TfToken const& primvarName) const;
+    // Utility for gathering the names of primvars used by the gprim's 
+    // materials, used in primvar filtering.
+    USDIMAGING_API 
+    virtual TfTokenVector _CollectMaterialPrimvars(
+        SdfPathVector const& materialUsdPaths, 
+        UsdTimeCode time) const;
 
+    /// Returns the primvar names known to be supported for the rprims 
+    /// this adapter produces.  These primvar names are excepted from primvar
+    /// filtering.
+    USDIMAGING_API
+    virtual TfTokenVector const& _GetRprimPrimvarNames() const;
 };
 
 

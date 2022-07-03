@@ -62,13 +62,17 @@ UsdRiStatementsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdRiStatementsAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdRiStatementsAPI::_GetSchemaKind() const
+{
     return UsdRiStatementsAPI::schemaKind;
 }
 
-/* virtual */
-UsdSchemaKind UsdRiStatementsAPI::_GetSchemaType() const {
-    return UsdRiStatementsAPI::schemaType;
+/* static */
+bool
+UsdRiStatementsAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdRiStatementsAPI>(whyNot);
 }
 
 /* static */
@@ -139,11 +143,6 @@ using std::string;
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
-    USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING, true,
-    "If off, UsdRiStatementsAPI will write old-style attributes.  "
-    "Otherwise, primvars in the ri: namespace will be written instead.");
-
-TF_DEFINE_ENV_SETTING(
     USDRI_STATEMENTS_READ_OLD_ATTR_ENCODING, true,
     "If on, UsdRiStatementsAPI will read old-style attributes.  "
     "Otherwise, primvars in the ri: namespace will be read instead.");
@@ -175,17 +174,8 @@ UsdRiStatementsAPI::CreateRiAttribute(
 {
     TfToken fullName = _MakeRiAttrNamespace(nameSpace, name.GetString());
     SdfValueTypeName usdType = UsdRi_GetUsdType(riType);
-    if (TfGetEnvSetting(USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING)) {
-        return UsdGeomPrimvarsAPI(GetPrim())
-            .CreatePrimvar(fullName, usdType).GetAttr();
-    } else {
-        UsdAttribute attr = GetPrim().CreateAttribute(fullName, usdType, 
-                                                      /* custom = */ false);
-        if (!TF_VERIFY(attr)) {
-            return UsdAttribute();
-        }
-        return attr;
-    }
+    return UsdGeomPrimvarsAPI(GetPrim())
+        .CreatePrimvar(fullName, usdType).GetAttr();
 }
 
 UsdAttribute
@@ -196,17 +186,8 @@ UsdRiStatementsAPI::CreateRiAttribute(
 {
     TfToken fullName = _MakeRiAttrNamespace(nameSpace, name.GetString());
     SdfValueTypeName usdType = SdfSchema::GetInstance().FindType(tfType);
-    if (TfGetEnvSetting(USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING)) {
-        return UsdGeomPrimvarsAPI(GetPrim())
-            .CreatePrimvar(fullName, usdType).GetAttr();
-    } else {
-        UsdAttribute attr = GetPrim().CreateAttribute(fullName, usdType,
-                                                      /* custom = */ false);
-        if (!TF_VERIFY(attr)) {
-            return UsdAttribute();
-        }
-        return attr;
-    }
+    return UsdGeomPrimvarsAPI(GetPrim())
+        .CreatePrimvar(fullName, usdType).GetAttr();
 }
 
 UsdAttribute
@@ -320,11 +301,9 @@ UsdRiStatementsAPI::MakeRiAttributePropertyName(const std::string &attrName)
     std::vector<string> names = TfStringTokenize(attrName, ":");
 
     // If this is an already-encoded name, return it unchanged.
-    if (TfGetEnvSetting(USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING)) {
-        if (names.size() == 5 &&
-            TfStringStartsWith(attrName, _tokens->primvarAttrNamespace)) {
-            return attrName;
-        }
+    if (names.size() == 5 &&
+        TfStringStartsWith(attrName, _tokens->primvarAttrNamespace)) {
+        return attrName;
     }
     if (names.size() == 4 &&
         TfStringStartsWith(attrName, _tokens->fullAttributeNamespace)) {
@@ -344,12 +323,8 @@ UsdRiStatementsAPI::MakeRiAttributePropertyName(const std::string &attrName)
         names.insert(names.begin(), "user");
     }
 
-    TfToken prefix =
-        TfGetEnvSetting(USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING) ?
-        _tokens->primvarAttrNamespace :
-        _tokens->fullAttributeNamespace;
-
-    string fullName = prefix.GetString() + 
+    string fullName =
+        _tokens->primvarAttrNamespace.GetString() +
         names[0] + ":" + ( names.size() > 2 ?
                            TfStringJoin(names.begin() + 1, names.end(), "_")
                            : names[1]);

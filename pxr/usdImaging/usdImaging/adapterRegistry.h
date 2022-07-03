@@ -41,6 +41,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdImagingPrimAdapter;
 using UsdImagingPrimAdapterSharedPtr = std::shared_ptr<UsdImagingPrimAdapter>;
 
+class UsdImagingAPISchemaAdapter;
+using UsdImagingAPISchemaAdapterSharedPtr =
+    std::shared_ptr<UsdImagingAPISchemaAdapter>;
+
 #define USD_IMAGING_ADAPTER_KEY_TOKENS          \
     ((instanceAdapterKey, "__instanceAdapter")) \
     ((drawModeAdapterKey, "__drawModeAdapter"))       \
@@ -51,7 +55,9 @@ TF_DECLARE_PUBLIC_TOKENS(UsdImagingAdapterKeyTokens,
 
 /// \class UsdImagingAdapterRegistry
 ///
-/// Registry of PrimAdapter plug-ins.
+/// Registry of PrimAdapter plug-ins. Note: this is a registry of adapter
+/// factories, and not adapter instances; we expect to store adapter instances
+/// (created via ConstructAdapter) with per-stage data.
 ///
 class UsdImagingAdapterRegistry : public TfSingleton<UsdImagingAdapterRegistry> 
 {
@@ -60,6 +66,13 @@ class UsdImagingAdapterRegistry : public TfSingleton<UsdImagingAdapterRegistry>
 
     typedef std::unordered_map<TfToken,TfType,TfToken::HashFunctor> _TypeMap;
     _TypeMap _typeMap;
+    TfTokenVector _adapterKeys;
+    _TypeMap _apiSchemaTypeMap;
+    TfTokenVector _apiSchemaAdapterKeys;
+
+    template <typename T, typename factoryT>
+    std::shared_ptr<T> _ConstructAdapter(
+        TfToken const& adapterKey, const _TypeMap &tm);
 
 public:
 
@@ -89,6 +102,31 @@ public:
     /// Returns NULL if no adapter was registered for this key.
     USDIMAGING_API
     UsdImagingPrimAdapterSharedPtr ConstructAdapter(TfToken const& adapterKey);
+
+    /// Returns the set of adapter keys this class responds to; i.e. the set of
+    /// usd prim types for which we've registered a prim adapter.
+    USDIMAGING_API
+    const TfTokenVector& GetAdapterKeys();
+
+    /// Returns true if an api schema adapter has been registered to handle
+    /// the given \p adapterKey.
+    USDIMAGING_API
+    bool HasAPISchemaAdapter(TfToken const& adapterKey);
+
+    /// Returns a new instance of the UsdImagingAPISchemaAdapter that has been
+    /// registered to handle the given \p adapterKey.
+    /// Returns NULL if no adapter was registered for this key.
+    USDIMAGING_API
+    UsdImagingAPISchemaAdapterSharedPtr ConstructAPISchemaAdapter(
+        TfToken const& adapterKey);
+
+    /// Returns the set of api schema adapter keys this class responds to;
+    /// i.e. the set of usd api schema types for which we've registered an
+    /// adapter.
+    USDIMAGING_API
+    const TfTokenVector& GetAPISchemaAdapterKeys();
+
+
 };
 
 USDIMAGING_API_TEMPLATE_CLASS(TfSingleton<UsdImagingAdapterRegistry>);

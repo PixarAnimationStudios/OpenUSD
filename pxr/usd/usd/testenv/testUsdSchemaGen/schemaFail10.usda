@@ -23,11 +23,11 @@ class "SingleApplyAPI" (
 {
 }
 
-# A multiple apply API schema can't inherit from a single-apply API schema
-class "MultipleApplyAPI" (
+# A single apply API schema can't inherit from another API schema
+class "DerivedSingleApplyAPI" (
     inherits = </SingleApplyAPI>
     customData = {
-        token apiSchemaType = "multipleApply"
+        token apiSchemaType = "singleApply"
     }
 )
 {

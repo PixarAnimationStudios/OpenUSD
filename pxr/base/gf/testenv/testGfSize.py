@@ -68,19 +68,28 @@ class TestGfSize(unittest.TestCase):
             self.assertEqual(s1 * s2, makeValue(Size, (3,8,15)))
 
             s1 = makeValue(Size, (1,2,3))
+            s1_original = s1
             s1 -= makeValue(Size, (1,1,1))
             self.assertEqual(s1, makeValue(Size, (0,1,2)))
+            self.assertTrue(s1 is s1_original)
             s1 = makeValue(Size, (1,2,3))
+            s1_original = s1
             s1 += makeValue(Size, (1,1,1))
             self.assertEqual(s1, makeValue(Size, (2,3,4)))
+            self.assertTrue(s1 is s1_original)
 
             s1 = makeValue(Size, (1,2,3))
+            s1_original = s1
+
             s1 *= 10
             self.assertEqual(s1, makeValue(Size, (10,20,30)))
+            self.assertTrue(s1 is s1_original)
 
             s1 = makeValue(Size, (30,60,90))
+            s1_original = s1
             s1 /= 10
             self.assertEqual(s1, makeValue(Size, (3,6,9)))
+            self.assertTrue(s1 is s1_original)
 
             self.assertEqual(makeValue(Size,(1,2,3)) * 10, makeValue(Size,(10,20,30)))
             self.assertEqual(10 * makeValue(Size,(1,2,3)), makeValue(Size,(10,20,30)))

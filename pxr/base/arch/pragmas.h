@@ -41,6 +41,14 @@
     #define ARCH_PRAGMA_POP \
         _Pragma("GCC diagnostic pop")
 
+    #define ARCH_PRAGMA(x) _Pragma(#x)
+
+    #define ARCH_PRAGMA_PUSH_MACRO(macro_name) \
+        ARCH_PRAGMA(push_macro(#macro_name))
+
+    #define ARCH_PRAGMA_POP_MACRO(macro_name) \
+        ARCH_PRAGMA(pop_macro(#macro_name))
+
     // Convert errors about variables that may be used before initialization
     // into warnings.
     //
@@ -64,6 +72,14 @@
 
     #define ARCH_PRAGMA_POP \
         _Pragma("clang diagnostic pop")
+
+    #define ARCH_PRAGMA(x) _Pragma(#x)
+
+    #define ARCH_PRAGMA_PUSH_MACRO(macro_name) \
+        ARCH_PRAGMA(push_macro(#macro_name))
+
+    #define ARCH_PRAGMA_POP_MACRO(macro_name) \
+        ARCH_PRAGMA(pop_macro(#macro_name))
 
     #define ARCH_PRAGMA_MACRO_REDEFINITION \
         _Pragma("clang diagnostic ignored \"-Wbuiltin-macro-redefined\"")
@@ -90,6 +106,14 @@
 
     #define ARCH_PRAGMA_POP \
         __pragma(warning(pop)) 
+
+    #define ARCH_PRAGMA(x) __pragma(x)
+
+    #define ARCH_PRAGMA_PUSH_MACRO(macro_name) \
+        __pragma(push_macro(#macro_name))
+
+    #define ARCH_PRAGMA_POP_MACRO(macro_name) \
+        __pragma(pop_macro(#macro_name))
 
     #define ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS \
         __pragma(warning(disable:4003)) 
@@ -141,6 +165,18 @@
 
 #if !defined ARCH_PRAGMA_POP
     #define ARCH_PRAGMA_POP
+#endif
+
+#if !defined ARCH_PRAGMA
+    #define ARCH_PRAGMA
+#endif
+
+#if !defined ARCH_PRAGMA_PUSH_MACRO
+    #define ARCH_PRAGMA_PUSH_MACRO
+#endif
+
+#if !defined ARCH_PRAGMA_POP_MACRO
+    #define ARCH_PRAGMA_POP_MACRO
 #endif
 
 #if !defined ARCH_PRAGMA_MAYBE_UNINITIALIZED

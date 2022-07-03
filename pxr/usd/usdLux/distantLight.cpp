@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdLuxDistantLight,
-        TfType::Bases< UsdLuxLight > >();
+        TfType::Bases< UsdLuxNonboundableLightBase > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
@@ -75,13 +75,9 @@ UsdLuxDistantLight::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdLuxDistantLight::_GetSchemaKind() const {
+UsdSchemaKind UsdLuxDistantLight::_GetSchemaKind() const
+{
     return UsdLuxDistantLight::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdLuxDistantLight::_GetSchemaType() const {
-    return UsdLuxDistantLight::schemaType;
 }
 
 /* static */
@@ -124,23 +120,6 @@ UsdLuxDistantLight::CreateAngleAttr(VtValue const &defaultValue, bool writeSpars
                        writeSparsely);
 }
 
-UsdAttribute
-UsdLuxDistantLight::GetIntensityAttr() const
-{
-    return GetPrim().GetAttribute(UsdLuxTokens->inputsIntensity);
-}
-
-UsdAttribute
-UsdLuxDistantLight::CreateIntensityAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsIntensity,
-                       SdfValueTypeNames->Float,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
-}
-
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -159,11 +138,10 @@ UsdLuxDistantLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdLuxTokens->inputsAngle,
-        UsdLuxTokens->inputsIntensity,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
-            UsdLuxLight::GetSchemaAttributeNames(true),
+            UsdLuxNonboundableLightBase::GetSchemaAttributeNames(true),
             localNames);
 
     if (includeInherited)

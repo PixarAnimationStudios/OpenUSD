@@ -72,10 +72,9 @@ HdSt_TriangleIndexBuilderComputation::Resolve()
             &primitiveParam,
             &trianglesEdgeIndices);
 
-    _SetResult(HdBufferSourceSharedPtr(
-                   new HdVtBufferSource(
+    _SetResult(std::make_shared<HdVtBufferSource>(
                        HdTokens->indices,
-                       VtValue(trianglesFaceVertexIndices))));
+                       VtValue(trianglesFaceVertexIndices)));
 
     _primitiveParam.reset(new HdVtBufferSource(
                               HdTokens->primitiveParam,
@@ -135,10 +134,9 @@ HdSt_TriangulateFaceVaryingComputation::Resolve()
             _source->GetNumElements(),
             _source->GetTupleType().type,
             &result)) {
-        _SetResult(HdBufferSourceSharedPtr(
-                    new HdVtBufferSource(
+        _SetResult(std::make_shared<HdVtBufferSource>(
                         _source->GetName(),
-                        result)));
+                        result));
     } else {
         _SetResult(_source);
     }

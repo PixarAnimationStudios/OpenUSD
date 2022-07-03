@@ -56,13 +56,9 @@ UsdContrivedBase::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdContrivedBase::_GetSchemaKind() const {
+UsdSchemaKind UsdContrivedBase::_GetSchemaKind() const
+{
     return UsdContrivedBase::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdContrivedBase::_GetSchemaType() const {
-    return UsdContrivedBase::schemaType;
 }
 
 /* static */
@@ -1720,6 +1716,57 @@ UsdContrivedBase::CreateFrame4dArrayAttr(VtValue const &defaultValue, bool write
                        writeSparsely);
 }
 
+UsdAttribute
+UsdContrivedBase::GetOverrideBaseFalseDerivedFalseAttr() const
+{
+    return GetPrim().GetAttribute(UsdContrivedTokens->overrideBaseFalseDerivedFalse);
+}
+
+UsdAttribute
+UsdContrivedBase::CreateOverrideBaseFalseDerivedFalseAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->overrideBaseFalseDerivedFalse,
+                       SdfValueTypeNames->Int,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdContrivedBase::GetOverrideBaseFalseDerivedNoneAttr() const
+{
+    return GetPrim().GetAttribute(UsdContrivedTokens->overrideBaseFalseDerivedNone);
+}
+
+UsdAttribute
+UsdContrivedBase::CreateOverrideBaseFalseDerivedNoneAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->overrideBaseFalseDerivedNone,
+                       SdfValueTypeNames->Int,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdContrivedBase::GetOverrideBaseNoneDerivedFalseAttr() const
+{
+    return GetPrim().GetAttribute(UsdContrivedTokens->overrideBaseNoneDerivedFalse);
+}
+
+UsdAttribute
+UsdContrivedBase::CreateOverrideBaseNoneDerivedFalseAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->overrideBaseNoneDerivedFalse,
+                       SdfValueTypeNames->Int,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -1833,6 +1880,9 @@ UsdContrivedBase::GetSchemaAttributeNames(bool includeInherited)
         UsdContrivedTokens->matrix3dArray,
         UsdContrivedTokens->matrix4dArray,
         UsdContrivedTokens->frame4dArray,
+        UsdContrivedTokens->overrideBaseFalseDerivedFalse,
+        UsdContrivedTokens->overrideBaseFalseDerivedNone,
+        UsdContrivedTokens->overrideBaseNoneDerivedFalse,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

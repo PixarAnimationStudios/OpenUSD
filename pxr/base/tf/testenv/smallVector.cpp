@@ -676,6 +676,10 @@ testInsertNoMoveConstructor()
             return *this;
         }
 
+        bool operator==(_Foo const &other) const {
+            return i == other.i;
+        }
+
         // 32-bit size.
         int i;
 
@@ -694,15 +698,22 @@ testInsertNoMoveConstructor()
     su.push_back(f);
 
     // Grow via insertion.
-    TfSmallVector<_Foo, 1> v;
+    TfSmallVector<_Foo, 2> v;
+    TF_AXIOM(v.size() == 0);
     v.insert(v.begin(), f);
+    TF_AXIOM(v.size() == 1);
     v.insert(v.begin(), f);
+    TF_AXIOM(v.size() == 2);
     v.insert(v.begin(), f);
+    TF_AXIOM(v.size() == 3);
 
     std::vector<_Foo> sv;
     sv.insert(sv.begin(), f);
     sv.insert(sv.begin(), f);
     sv.insert(sv.begin(), f);
+
+    TF_AXIOM(v.size() == sv.size());
+    TF_AXIOM(std::equal(v.begin(), v.end(), sv.begin()));
 
     // Attempt to move between local storage by swapping.
     TfSmallVector<_Foo, 1> x;

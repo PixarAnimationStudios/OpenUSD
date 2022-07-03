@@ -28,15 +28,7 @@ import unittest
 
 Test = Tf.Tf_TestPyOptional
 
-# sys.maxint was removed in python 3, because all ints are longs in the
-# newer version. Note that on some python 2 systems this was (2**64)-1,
-# for instance, that was the case on centos 64 bit cpython.
-# Choosing a 32 bit int here arbitrarily, this was the value on windows
-# in a 64 bit build.
-if sys.version_info.major >= 3:
-    maxint = (2 ** 31) - 1
-else:
-    maxint = sys.maxint
+maxint = (2 ** 31) - 1
 
 class TestTfPyOptional(unittest.TestCase):
 

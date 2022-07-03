@@ -38,7 +38,7 @@ def _setLights(appController, ambientChecked, domeChecked):
 
     appController._stageView.updateGL()
 
-# Test the ambient light with key/fill/back lights off.
+# Test with only the camera light.
 def _testCameraLight(appController):
     _setLights(appController, True, False)
     appController._takeShot("camera.png")
@@ -53,7 +53,7 @@ def _testDomeLight(appController):
     _setLights(appController, False, True)
     appController._takeShot("dome.png")
 
-# Test with only the dome and camera lights.
+# Test with both the dome and camera lights.
 def _testBothLights(appController):
     _setLights(appController, True, True)
     appController._takeShot("bothLights.png")

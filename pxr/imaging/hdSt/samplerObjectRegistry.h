@@ -41,8 +41,7 @@ class HdStResourceRegistry;
 
 /// \class HdSt_SamplerObjectRegistry
 ///
-/// A simple registry for GPU samplers and GL texture sampler handles
-/// (for bindless textures).
+/// A simple registry for GPU samplers.
 ///
 /// The registry makes no attempt at de-duplication. But construction
 /// is dispatched by texture type returing a matching sampler (e.g.,
@@ -63,14 +62,12 @@ public:
 
     /// Create new sampler object matching the given texture object.
     ///
-    /// If createBindlessHandle, also creates a texture sampler handle
-    /// (for bindless textures). The associated GPU resource is
-    /// created immediately and the call is not thread-safe.
+    /// The associated GPU resource is created immediately and
+    /// the call is not thread-safe.
     HDST_API 
     HdStSamplerObjectSharedPtr AllocateSampler(
         HdStTextureObjectSharedPtr const &texture,
-        HdSamplerParameters const &samplerParameters,
-        bool createBindlessHandle);
+        HdSamplerParameters const &samplerParameters);
 
     /// Delete samplers no longer used by a client.
     HDST_API 

@@ -165,14 +165,17 @@ main(int argc, char **argv)
             "threading when PXR_WORK_THREAD_LIMIT is set...\n";
         _uniqueThreads->clear();
         tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, 100000), _RawTBBCounter());
+            tbb::blocked_range<size_t>(0, 100000), _RawTBBCounter(),
+            tbb::simple_partitioner());
         std::cout << "   default TBB used " << _uniqueThreads->size() 
                   << " threads\n";
         
         if (envVal == 0) {
             if (_uniqueThreads->size() < WorkGetPhysicalConcurrencyLimit()) {
                 TF_FATAL_ERROR("tbb only used %zu threads when it should be "
-                               "unlimited\n", _uniqueThreads->size());
+                               "unlimited (expected >= %d threads)\n", 
+                               _uniqueThreads->size(),
+                               WorkGetPhysicalConcurrencyLimit());
             }
         }
         else if (_uniqueThreads->size() > WorkGetConcurrencyLimit()) {

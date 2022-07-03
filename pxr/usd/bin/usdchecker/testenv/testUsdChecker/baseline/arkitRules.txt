@@ -1,14 +1,65 @@
 Checking rules: 
-[1] Files within a usdz package must be laid out properly, i.e. they should be aligned to 64 bytes.
-[2] Files withing a usdz package should not be compressed or encrypted.
-[3] The composed USD stage should not contain any unresolvable asset dependencies (in every possible variation of the asset), when using the default asset resolver. 
-[4] Texture files should be .jpg or .png.
-[5] All included layers that participate in composition should have one of the core supported file formats.
-[6] UsdGeomPointInstancers and custom schemas not provided by core USD are not allowed.
-[7] ('The stage and all fo the assets referenced within it should be Y-up.',)
-[8] Shader nodes must have "id" as the implementationSource, with id values that begin with "Usd*". Also, shader inputs with connections must each have a single, valid connection source.
-[9] All material binding relationships must have valid targets.
-[10] Only layer files and textures are allowed in a package.
-[11] If the root layer is a package, then the composed stage should not contain references to files outside the package. In other words, the package should be entirely self-contained.
-[12] The root layer of the package must be a usdc file and must not include any external dependencies that participate in stage composition.
+------------------------------
+[ByteAlignmentChecker]:
+ Files within a usdz package must be laid out properly, i.e. they should be aligned to 64 bytes.
+------------------------------
+[CompressionChecker]:
+ Files within a usdz package should not be compressed or encrypted.
+------------------------------
+[MissingReferenceChecker]:
+ The composed USD stage should not contain any unresolvable asset dependencies (in every possible variation of the asset), when using the default asset resolver. 
+------------------------------
+[StageMetadataChecker]:
+ All stages should declare their 'upAxis' and 'metersPerUnit'.  
+Stages that can be consumed as referencable assets should furthermore have
+a valid 'defaultPrim' declared, and stages meant for consumer-level packaging
+should always have upAxis set to 'Y'
+------------------------------
+[TextureChecker]:
+ Texture files should be readable by intended client 
+(only .jpg or .png for consumer-level USDZ).
+------------------------------
+[PrimEncapsulationChecker]:
+ Check for basic prim encapsulation rules:
+   - Boundables may not be nested under Gprims
+   - Connectable prims (e.g. Shader, Material, etc) can only be nested 
+     inside other Container-like Connectable prims. Container-like prims
+     include Material, NodeGraph, Light, LightFilter, and *exclude Shader*
+------------------------------
+[NormalMapTextureChecker]:
+ UsdUVTexture nodes that feed the _inputs:normals_ of a
+UsdPreviewSurface must ensure that the data is encoded and scaled properly.
+Specifically:
+   - Since normals are expected to be in the range [(-1,-1,-1), (1,1,1)],
+     the Texture node must transform 8-bit textures from their [0..1] range by
+     setting its _inputs:scale_ to [2, 2, 2, 1] and 
+     _inputs:bias_ to [-1, -1, -1, 0]
+   - Normal map data is commonly expected to be linearly encoded.  However, many
+     image-writing tools automatically set the profile of three-channel, 8-bit
+     images to SRGB.  To prevent an unwanted transformation, the UsdUVTexture's
+     _inputs:sourceColorSpace_ must be set to "raw".  This program cannot
+     currently read the texture metadata itself, so for now we emit warnings
+     about this potential infraction for all 8 bit image formats.
+
+------------------------------
+[ARKitLayerChecker]:
+ All included layers that participate in composition should have one of the core supported file formats.
+------------------------------
+[ARKitPrimTypeChecker]:
+ UsdGeomPointInstancers and custom schemas not provided by core USD are not allowed.
+------------------------------
+[ARKitShaderChecker]:
+ Shader nodes must have "id" as the implementationSource, with id values that begin with "Usd*". Also, shader inputs with connections must each have a single, valid connection source.
+------------------------------
+[ARKitMaterialBindingChecker]:
+ All material binding relationships must have valid targets.
+------------------------------
+[ARKitFileExtensionChecker]:
+ Only layer files and textures are allowed in a package.
+------------------------------
+[ARKitPackageEncapsulationChecker]:
+ If the root layer is a package, then the composed stage should not contain references to files outside the package. In other words, the package should be entirely self-contained.
+------------------------------
+[ARKitRootLayerChecker]:
+ The root layer of the package must be a usdc file and must not include any external dependencies that participate in stage composition.
 ------------------------------

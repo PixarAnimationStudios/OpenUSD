@@ -33,6 +33,7 @@
 #endif
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/api.h"
 #include "pxr/base/arch/defines.h"
 #include <cstddef>
 #include <cstdint>
@@ -82,6 +83,16 @@ ArchAlignMemory(void *base)
 #else
 #define ARCH_CACHE_LINE_SIZE 64
 #endif
+
+/// Aligned memory allocation.
+ARCH_API
+void *
+ArchAlignedAlloc(size_t alignment, size_t size);
+
+/// Free memory allocated by ArchAlignedAlloc.
+ARCH_API
+void
+ArchAlignedFree(void* ptr);
 
 ///@}
 

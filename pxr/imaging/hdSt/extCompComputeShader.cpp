@@ -25,12 +25,7 @@
 #include "pxr/imaging/hdSt/extComputation.h"
 
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hd/resource.h"
-#include "pxr/imaging/hdSt/resourceBinder.h"
-#include "pxr/imaging/hdSt/materialParam.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/base/arch/hash.h"
 
@@ -66,8 +61,7 @@ HdSt_ExtCompComputeShader::GetSource(TfToken const &shaderStageKey) const
 /*virtual*/
 void
 HdSt_ExtCompComputeShader::BindResources(const int program,
-                                 HdSt_ResourceBinder const &binder,
-                                 HdRenderPassState const &state)
+                                         HdSt_ResourceBinder const &binder)
 {
     // Compute shaders currently serve GPU ExtComputations, wherein
     // resource binding is managed explicitly.
@@ -78,8 +72,7 @@ HdSt_ExtCompComputeShader::BindResources(const int program,
 /*virtual*/
 void
 HdSt_ExtCompComputeShader::UnbindResources(const int program,
-                                   HdSt_ResourceBinder const &binder,
-                                   HdRenderPassState const &state)
+                                           HdSt_ResourceBinder const &binder)
 {
     // Resource binding is managed explicitly. See above comment.
 }

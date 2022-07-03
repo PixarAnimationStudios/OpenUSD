@@ -1,0 +1,30 @@
+-- glslfx version 0.1
+
+--- This is what an import might look like.
+--- #import $TOOLS/hd/shaders/fallbackSurface.glslfx
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "surfaceShader": {
+                "source": [ "Surface.Fallback" ]
+            }
+        }
+    },
+    "parameters" : {
+        "diffuseColor": {
+            "default": [0.0, 0.0, 0.0]
+        }
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Surface.Fallback
+                                                                                    
+vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    // lighting
+    color.rgb = FallbackLighting(Peye.xyz, Neye, HdGet_diffuseColor().rgb);
+    return color;
+}

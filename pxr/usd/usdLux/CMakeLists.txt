@@ -13,15 +13,18 @@ pxr_library(usdLux
 
     PUBLIC_CLASSES
         blackbody
+        boundableLightBase
         cylinderLight
         diskLight
         distantLight
         domeLight
         geometryLight
-        light
+        lightAPI
         lightFilter
-        lightPortal
+        lightListAPI
         listAPI
+        meshLightAPI
+        nonboundableLightBase
         pluginLight
         pluginLightFilter
         portalLight
@@ -30,6 +33,7 @@ pxr_library(usdLux
         shapingAPI
         sphereLight
         tokens
+        volumeLightAPI
 
     PUBLIC_HEADERS
         api.h
@@ -43,15 +47,18 @@ pxr_library(usdLux
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapBoundableLightBase.cpp
         wrapCylinderLight.cpp
         wrapDiskLight.cpp
         wrapDistantLight.cpp
         wrapDomeLight.cpp
         wrapGeometryLight.cpp
-        wrapLight.cpp
+        wrapLightAPI.cpp
         wrapLightFilter.cpp
-        wrapLightPortal.cpp
+        wrapLightListAPI.cpp
         wrapListAPI.cpp
+        wrapMeshLightAPI.cpp
+        wrapNonboundableLightBase.cpp
         wrapPluginLight.cpp
         wrapPluginLightFilter.cpp
         wrapPortalLight.cpp
@@ -60,6 +67,7 @@ pxr_library(usdLux
         wrapShapingAPI.cpp
         wrapSphereLight.cpp
         wrapTokens.cpp
+        wrapVolumeLightAPI.cpp
 
     PYMODULE_FILES 
         __init__.py
@@ -76,7 +84,7 @@ pxr_library(usdLux
 pxr_test_scripts(
     testenv/testUsdLuxLight.py
     testenv/testUsdLuxLinkingAPI.py
-    testenv/testUsdLuxListAPI.py
+    testenv/testUsdLuxLightListAPI.py
 )
 
 pxr_register_test(testUsdLuxLight
@@ -97,13 +105,13 @@ pxr_register_test(testUsdLuxLinkingAPI
 )
 
 pxr_install_test_dir(
-    DEST testUsdLuxListAPI
-    SRC testenv/testUsdLuxListAPI
+    DEST testUsdLuxLightListAPI
+    SRC testenv/testUsdLuxLightListAPI
 )
 
-pxr_register_test(testUsdLuxListAPI
+pxr_register_test(testUsdLuxLightListAPI
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdLuxListAPI"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdLuxLightListAPI"
     EXPECTED_RETURN_CODE 0
 )
 

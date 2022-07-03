@@ -28,13 +28,14 @@
 
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/types.h"
-#include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/graphicsPipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/texture.h"
 
+#include <map>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -129,6 +130,13 @@ public:
     void Draw(HgiTextureHandle const& colorDst,
               HgiTextureHandle const& depthDst);
 
+    HDX_API
+    void Draw(HgiTextureHandle const& colorDst,
+              HgiTextureHandle const& colorResolveDst,
+              HgiTextureHandle const& depthDst,
+              HgiTextureHandle const& depthResolveDst,
+              GfVec4i const& viewport);
+
 private:
     HdxFullscreenShader() = delete;
 
@@ -157,10 +165,14 @@ private:
     bool _CreateSampler();
 
     // Internal draw method
-    void _Draw(TextureMap const& textures, 
-              HgiTextureHandle const& colorDst,
-              HgiTextureHandle const& depthDst,
-              bool depthWrite);
+    void _Draw(
+        TextureMap const& textures, 
+        HgiTextureHandle const& colorDst,
+        HgiTextureHandle const& colorResolveDst,
+        HgiTextureHandle const& depthDst,
+        HgiTextureHandle const& depthResolveDst,
+        GfVec4i const &viewport,
+        bool depthWrite);
     
     static HgiShaderFunctionDesc GetFullScreenVertexDesc();
 

@@ -1,0 +1,39 @@
+#usda 1.0
+(
+    startTimeCode = 0
+    endTimeCode = 2
+    upAxis = "Y"
+)
+
+def Cube "MyCube1" {
+    uniform token purpose = "default"
+    float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+    float3[] primvars:displayColor = [(0.7,0,0)]
+
+    uniform token[] xformOpOrder = [ "xformOp:translate" ]
+    float3 xformOp:translate.timeSamples = {
+        0: (0,0,0),
+        1: (2,0,0),
+        2: (4,0,0)
+    }
+}
+
+def Cube "MyCube2" {
+    uniform token purpose = "default"
+    Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+    float3[] primvars:displayColor = [(0,0,0.7)]
+
+    uniform token[] xformOpOrder = [ "xformOp:translate" ]
+    float3 xformOp:translate.timeSamples = {
+        0: (2,0,0),
+        1: (2,2,0),
+        2: (2,4,0)
+    }
+}
+
+def Camera "main_cam"
+{
+    float focalLength = 150
+    double3 xformOp:translate = (0, 0, 110)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}

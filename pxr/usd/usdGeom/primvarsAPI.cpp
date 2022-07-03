@@ -62,13 +62,9 @@ UsdGeomPrimvarsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdGeomPrimvarsAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdGeomPrimvarsAPI::_GetSchemaKind() const
+{
     return UsdGeomPrimvarsAPI::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdGeomPrimvarsAPI::_GetSchemaType() const {
-    return UsdGeomPrimvarsAPI::schemaType;
 }
 
 /* static */
@@ -215,7 +211,7 @@ _MakePrimvars(std::vector<UsdProperty> const &props,
               bool (filterPass)(UsdGeomPrimvar const &))
 {
     std::vector<UsdGeomPrimvar> primvars;
-    
+    primvars.reserve(props.size());
     for (UsdProperty const &prop : props) {
         // All prefixed properties except the ones that contain extra
         // namespaces (eg. the ":indices" attributes belonging to indexed

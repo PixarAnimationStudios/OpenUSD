@@ -43,11 +43,6 @@ IsClose(double a, double b, double epsilon=1e-3)
            && diff <= epsilon * abs(b);
 }
 
-// XXX: We use a rather large epsilon to account for
-// systems with very large sleep times. We still expect
-// variance to be within 10% (see IsClose above) for details.
-static constexpr double EPSILON = 1e-1;
-
 static bool
 Test_TfStopwatch()
 {
@@ -70,30 +65,39 @@ Test_TfStopwatch()
     // Delay .5 seconds (500 million nanoseconds)
     //
     watch1.Start();
+    auto start = std::chrono::steady_clock::now();
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     watch1.Stop();
+    auto end = std::chrono::steady_clock::now();
 
-    // The value of watch1 should be near 0.5 seconds
-    if (!IsClose(watch1.GetSeconds(), 0.5, EPSILON)) {
-        cout << "Sleep for .5 seconds but measured time was "
-             << watch1.GetSeconds()
-             << " seconds."
-             << endl;
+    std::chrono::duration<double> elapsed = end - start;
+
+    // The value of watch1 should match the elapsed duration
+    // measured via std::chrono. This should be roughly .5 seconds,
+    // but may be higher since sleep_for may overshoot the requested
+    // time.
+    if (!IsClose(watch1.GetSeconds(), elapsed.count())) {
+        cout << "Sleep for .5 seconds but got: " << endl
+             << "TfStopwatch: " << watch1.GetSeconds() << endl
+             << "std::chrono: " << elapsed.count() << endl;
         ok = false;
     }
 
     // Delay another .5 seconds and see if watch is near 1
     //
     watch1.Start();
+    start = std::chrono::steady_clock::now();
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     watch1.Stop();
+    end = std::chrono::steady_clock::now();
 
-    // The value of watch1 should be near 1.0 seconds
-    if (!IsClose(watch1.GetSeconds(), 1.0, EPSILON)) {
-        cout << "Sleep for 1.0 seconds but measured time was "
-             << watch1.GetSeconds()
-             << " seconds."
-             << endl;
+    elapsed += (end - start);
+
+    // The value of watch1 should match the updated elapsed duration.
+    if (!IsClose(watch1.GetSeconds(), elapsed.count())) {
+        cout << "Sleep for 1.0 seconds but got: " << endl
+             << "TfStopwatch: " << watch1.GetSeconds() << endl
+             << "std::chrono: " << elapsed.count() << endl;
         ok = false;
     }
 

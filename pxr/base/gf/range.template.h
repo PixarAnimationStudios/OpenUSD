@@ -254,21 +254,21 @@ public:
     }
 
     /// unary sum.
-    {{ RNG }} operator +=(const {{ RNG }} &b) {
+    {{ RNG }} &operator +=(const {{ RNG }} &b) {
         _min += b._min;
         _max += b._max;
         return *this;
     }
 
     /// unary difference.
-    {{ RNG }} operator -=(const {{ RNG }} &b) {
+    {{ RNG }} &operator -=(const {{ RNG }} &b) {
         _min -= b._max;
         _max -= b._min;
         return *this;
     }
 
     /// unary multiply.
-    {{ RNG }} operator *=(double m) {
+    {{ RNG }} &operator *=(double m) {
         if (m > 0) {
             _min *= m;
             _max *= m;
@@ -281,7 +281,7 @@ public:
     }
 
     /// unary division.
-    {{ RNG }} operator /=(double m) {
+    {{ RNG }} &operator /=(double m) {
         return *this *= (1.0 / m);
     }
 

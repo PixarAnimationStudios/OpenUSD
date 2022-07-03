@@ -69,11 +69,6 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::AbstractTyped;
 
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::AbstractTyped;
-
     /// Construct a UsdRenderSettingsBase on UsdPrim \p prim .
     /// Equivalent to UsdRenderSettingsBase::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -122,12 +117,6 @@ protected:
     /// \sa UsdSchemaKind
     USDRENDER_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDRENDER_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -292,10 +281,11 @@ public:
     // --------------------------------------------------------------------- //
     // INSTANTANEOUSSHUTTER 
     // --------------------------------------------------------------------- //
-    /// Override the targeted _camera_'s _shutterClose_ to be
-    /// equal to the value of its _shutterOpen_, to produce a zero-width
-    /// shutter interval.  This gives us a convenient way to disable
-    /// motion blur.
+    /// Deprecated - use disableMotionBlur instead. Override
+    /// the targeted _camera_'s _shutterClose_ to be equal to the
+    /// value of its _shutterOpen_, to produce a zero-width shutter
+    /// interval.  This gives us a convenient way to disable motion
+    /// blur.
     ///
     /// | ||
     /// | -- | -- |
@@ -313,6 +303,31 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDRENDER_API
     UsdAttribute CreateInstantaneousShutterAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // DISABLEMOTIONBLUR 
+    // --------------------------------------------------------------------- //
+    /// Disable all motion blur by setting the shutter interval
+    /// of the targeted camera to [0,0] - that is, take only one sample,
+    /// namely at the current time code.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform bool disableMotionBlur = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    USDRENDER_API
+    UsdAttribute GetDisableMotionBlurAttr() const;
+
+    /// See GetDisableMotionBlurAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRENDER_API
+    UsdAttribute CreateDisableMotionBlurAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //

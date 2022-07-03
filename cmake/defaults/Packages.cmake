@@ -71,17 +71,15 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         find_package(PythonLibs 2.7 REQUIRED)
     endif()
 
+    if(WIN32 AND PXR_USE_DEBUG_PYTHON)
+        set(Boost_USE_DEBUG_PYTHON ON)
+    endif()
+
     # This option indicates that we don't want to explicitly link to the python
     # libraries. See BUILDING.md for details.
     if(PXR_PY_UNDEFINED_DYNAMIC_LOOKUP AND NOT WIN32 )
         set(PYTHON_LIBRARIES "")
     endif()
-
-    find_package(Boost
-        COMPONENTS
-            program_options
-        REQUIRED
-    )
 
     if (${boost_version_string} VERSION_GREATER_EQUAL "1.67")
         # As of boost 1.67 the boost_python component name includes the
@@ -122,12 +120,14 @@ else()
             find_package(PythonInterp 2.7 REQUIRED)
         endif()
     endif()
- 
-    # --Boost
+endif()
+
+# --USD tools
+if(PXR_BUILD_USD_TOOLS OR PXR_BUILD_TESTS)
     find_package(Boost
-        COMPONENTS
-            program_options
-        REQUIRED
+    COMPONENTS
+        program_options
+    REQUIRED
     )
 endif()
 
@@ -190,6 +190,9 @@ if (PXR_BUILD_IMAGING)
         find_package(OpenEXR REQUIRED)
         find_package(OpenImageIO REQUIRED)
         add_definitions(-DPXR_OIIO_PLUGIN_ENABLED)
+        if (OIIO_idiff_BINARY)
+            set(IMAGE_DIFF_TOOL ${OIIO_idiff_BINARY} CACHE STRING "Uses idiff for image diffing")
+        endif()
     endif()
     # --OpenColorIO
     if (PXR_BUILD_OPENCOLORIO_PLUGIN)
@@ -221,8 +224,7 @@ if (PXR_BUILD_IMAGING)
             list(APPEND VULKAN_LIBS Vulkan::Vulkan)
 
             # Find the extra vulkan libraries we need
-            # XXX In cmake 3.18+ we can instead use: Vulkan::glslc
-            set(EXTRA_VULKAN_LIBS glslang OGLCompiler OSDependent MachineIndependent GenericCodeGen SPIRV SPIRV-Tools SPIRV-Tools-opt SPIRV-Tools-shared)
+            set(EXTRA_VULKAN_LIBS shaderc_combined)
             foreach(EXTRA_LIBRARY ${EXTRA_VULKAN_LIBS})
                 find_library("${EXTRA_LIBRARY}_PATH" NAMES "${EXTRA_LIBRARY}" PATHS $ENV{VULKAN_SDK}/lib)
                 list(APPEND VULKAN_LIBS "${${EXTRA_LIBRARY}_PATH}")

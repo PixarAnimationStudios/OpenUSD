@@ -33,8 +33,19 @@
 # escaping errors.
 
 from __future__ import print_function
-import sys, os, difflib, unittest
+import sys, os, difflib, unittest, platform
 from pxr import Tf, Sdf
+
+# Default encoding on Windows in python 3+ is not UTF-8, but it is on Linux &
+# Mac.  Provide a wrapper here so we specify that in that case.  Python 2.x does
+# not support an 'encoding' argument.
+def _open(*args, **kw):
+    if sys.version_info.major >= 3 and platform.system() == "Windows":
+        kw['encoding'] = 'utf8'
+        return open(*args, **kw)
+    else:
+        return open(*args, **kw)
+
 
 def removeFiles(*filenames):
     """Removes the given files (if one of the args is itself a tuple or list, "unwrap" it.)"""
@@ -54,6 +65,9 @@ class TestSdfParsing(unittest.TestCase):
         # This will mean that your new test runs first and you can spot
         # failures much quicker.
         testFiles = '''
+        205_bad_assetPaths.sdf
+        204_really_empty.sdf
+        203_newlines.sdf
         202_displayGroups.sdf
         201_format_specifiers_in_strings.sdf
         200_bad_emptyFile.sdf
@@ -231,6 +245,7 @@ class TestSdfParsing(unittest.TestCase):
         
         layerFileOut = CreateTempFile('Export')
         layerFileOut2 = CreateTempFile('ExportToString')
+        layerFileOut3 = CreateTempFile('MetadataOnly')
 
         layerDir = os.path.join(os.getcwd(), 'testSdfParsing.testenv')
         baselineDir = os.path.join(layerDir, 'baseline')
@@ -302,6 +317,12 @@ class TestSdfParsing(unittest.TestCase):
             layer = Sdf.Layer.FindOrOpen(layerFile)
             self.assertTrue(layer is not None,
                             "failed to open @%s@" % layerFile)
+
+            metadataOnlyLayer = Sdf.Layer.OpenAsAnonymous(
+                layerFile, metadataOnly=True)
+            self.assertTrue(metadataOnlyLayer is not None,
+                            "failed to open @%s@ for metadata only" % layerFile)
+
             print('\tWriting...')
             try:
                 # Use Sdf.Layer.Export to write out the layer contents directly.
@@ -309,9 +330,11 @@ class TestSdfParsing(unittest.TestCase):
 
                 # Use Sdf.Layer.ExportToString and write out the returned layer
                 # string to a file.
-                with open(layerFileOut2.name, 'w') as f:
+                with _open(layerFileOut2.name, 'w') as f:
                     f.write(layer.ExportToString())
 
+                self.assertTrue(metadataOnlyLayer.Export(layerFileOut3.name))
+                    
             except Exception as e:
                 if '_badwrite_' in file:
                     # Write errors should always be Tf.ErrorExceptions
@@ -329,14 +352,27 @@ class TestSdfParsing(unittest.TestCase):
 
             expectedFile = "%s/%s" % (baselineDir, file)
 
-            def doDiff(testFile, expectedFile):
+            def doDiff(testFile, expectedFile, metadataOnly=False):
 
-                fd = open(testFile, "r")
+                fd = _open(testFile, "r")
                 layerData = fd.readlines()
                 fd.close()
-                fd = open(expectedFile, "r")
+                fd = _open(expectedFile, "r")
                 expectedLayerData = fd.readlines()
                 fd.close()
+
+                # If we're expecting metadata only, find the metadata section in
+                # the baseline output by looking for the "(" and ")" delimiters
+                # and use that as the expected layer data.
+                if metadataOnly:
+                    try:
+                        mdStart = expectedLayerData.index("(\n", 1)
+                        mdEnd = expectedLayerData.index(")\n", mdStart)
+                        expectedLayerData = expectedLayerData[0:mdEnd+1]+["\n"]
+                    except ValueError:
+                        # If there's no layer metadata, we expect to just have
+                        # the first line of the baseline with the #sdf cookie.
+                        expectedLayerData = [expectedLayerData[0], "\n"]
 
                 diff = list(difflib.unified_diff(
                     layerData, expectedLayerData,
@@ -350,6 +386,7 @@ class TestSdfParsing(unittest.TestCase):
 
             doDiff(layerFileOut.name, expectedFile)
             doDiff(layerFileOut2.name, expectedFile)
+            doDiff(layerFileOut3.name, expectedFile, metadataOnly=True)
             
             print('\tPassed')
 

@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Xform "Scene"
+{
+
+    over "Instance1_cubeShaded" (
+        instanceable = true
+        references = @cubeShaded.usda@</Group>
+    )
+    {
+        rel material:binding = </Scene/Green>
+        float3 xformOp:translate = (-10, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    over "Instance2_cubeShaded" (
+        instanceable = true
+        references = @cubeShaded.usda@</Group>
+    )
+    {
+        rel material:binding = </Scene/Green>
+        float3 xformOp:translate = (10, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Material "Green"
+    {
+        token outputs:surface.connect = </Scene/Green/PbrPreview.outputs:surface>
+        def Shader "PbrPreview"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+
+            color3f inputs:diffuseColor = (0, 1, 0)
+            float  inputs:opacity = 1.0
+            int    inputs:useSpecularWorkflow = 0
+            color3f inputs:specularColor = (1, 1, 1)
+            float  inputs:metallic = 0.1
+            float  inputs:roughness = .25
+            float  inputs:clearcoat = 0.0
+            float  inputs:clearcoatRoughness = 1.0
+            color3f inputs:emissiveColor = (0, 0, 0)
+            float  inputs:displacement = 0
+            float  inputs:occlusion = 1
+            float3 inputs:normal = (0, 0, 1)
+            float  inputs:ior = 1.5
+            token outputs:surface
+        }
+    }
+}

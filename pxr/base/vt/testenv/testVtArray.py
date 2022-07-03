@@ -22,7 +22,9 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-
+# pylint: disable=range-builtin-not-iterating
+#
+from __future__ import division
 import unittest
 import sys, math
 from pxr import Gf, Vt
@@ -193,6 +195,15 @@ class TestVtArray(unittest.TestCase):
                 arrayType=Vt.QuatfArray, expLen=3, expVal=Gf.Quatf(4, (1,2,3))),
             dict(length=12, fill=(1,2,3,4),
                 arrayType=Vt.QuathArray, expLen=3, expVal=Gf.Quath(4, (1,2,3))),
+            dict(length=48, fill=(1,2,3,4,5,6,7,8),
+                arrayType=Vt.DualQuatdArray, expLen=6,
+                expVal=Gf.DualQuatd(Gf.Quatd(4, (1,2,3)), Gf.Quatd(8, (5,6,7)))),
+            dict(length=48, fill=(1,2,3,4,5,6,7,8),
+                arrayType=Vt.DualQuatfArray, expLen=6,
+                expVal=Gf.DualQuatf(Gf.Quatf(4, (1,2,3)), Gf.Quatf(8, (5,6,7)))),
+            dict(length=48, fill=(1,2,3,4,5,6,7,8),
+                arrayType=Vt.DualQuathArray, expLen=6,
+                expVal=Gf.DualQuath(Gf.Quath(4, (1,2,3)), Gf.Quath(8, (5,6,7)))),
             dict(length=40, fill=(1,0,0,1),
                 arrayType=Vt.Matrix2fArray, expLen=10, expVal=Gf.Matrix2f()),
             dict(length=40, fill=(1,0,0,1),
@@ -268,6 +279,83 @@ class TestVtArray(unittest.TestCase):
         # Vec3dArray.
         va = Vt.Vec3dArray(10, [(1,2,3),(2,3,4)])
         self.assertEqual(Vt.Vec3dArray.FromNumpy(numpy.array(va)), va)
+
+    def test_IntArrayDivide(self):
+        self.assertEqual(Vt.IntArray() / 5, Vt.IntArray())
+        self.assertEqual(5 / Vt.IntArray(), Vt.IntArray())
+
+        self.assertEqual(Vt.IntArray([1, 5, 10]) / 5, 
+                         Vt.IntArray([0, 1, 2]))
+        self.assertEqual(5 / Vt.IntArray([1, 5, 10]),
+                         Vt.IntArray([5, 1, 0]))
+
+        a = Vt.IntArray([1, 5, 10])
+        a /= 5
+        self.assertEqual(a, Vt.IntArray([0, 1, 2]))
+
+        # Can't divide Vt.IntArray by floating point numbers.
+        with self.assertRaises(TypeError):
+            a /= 5.0
+
+        with self.assertRaises(TypeError):
+            Vt.IntArray([1, 2, 3]) / 5.0
+
+    def test_FloatArrayDivide(self):
+        def _TestDivision(ArrayType):
+            self.assertEqual(ArrayType() / 5, ArrayType())
+            self.assertEqual(5 / ArrayType(), ArrayType())
+
+            self.assertEqual(ArrayType([1, 5, 10]) / 5,
+                             ArrayType([0.2, 1, 2]))
+
+            self.assertEqual(ArrayType([1, 5, 10]) / 5.0,
+                             ArrayType([0.2, 1, 2]))
+
+            self.assertEqual(5 / ArrayType([1, 5, 10]),
+                             ArrayType([5, 1, 0.5]))
+
+            self.assertEqual(5.0 / ArrayType([1, 5, 10]),
+                             ArrayType([5, 1, 0.5]))
+
+            a = ArrayType([1, 5, 10])
+            a /= 5
+            self.assertEqual(a, ArrayType([0.2, 1, 2]))
+
+            a = ArrayType([1, 5, 10])
+            a /= 5.0
+            self.assertEqual(a, ArrayType([0.2, 1, 2]))
+
+        _TestDivision(Vt.FloatArray)
+        _TestDivision(Vt.DoubleArray)
+
+    def test_QuatArrayDivision(self):
+        def _TestDivision(ArrayType, QuatType, ImgType):
+            self.assertEqual(ArrayType() / 5, ArrayType())
+
+            self.assertEqual(
+                ArrayType([QuatType(0, ImgType(i)) for i in [1, 5, 10]]) / 5,
+                ArrayType([QuatType(0, ImgType(i)) for i in [0.2, 1, 2]]))
+
+            self.assertEqual(
+                ArrayType([QuatType(0, ImgType(i)) for i in [1, 5, 10]]) / 5.0,
+                ArrayType([QuatType(0, ImgType(i)) for i in [0.2, 1, 2]]))
+
+            a = ArrayType([QuatType(0, ImgType(i)) for i in [1, 5, 10]])
+            a /= 5
+            self.assertEqual(
+                a, 
+                ArrayType([QuatType(0, ImgType(i)) for i in [0.2, 1, 2]]))
+
+            a = ArrayType([QuatType(0, ImgType(i)) for i in [1, 5, 10]])
+            a /= 5.0
+            self.assertEqual(
+                a, 
+                ArrayType([QuatType(0, ImgType(i)) for i in [0.2, 1, 2]]))
+
+        _TestDivision(Vt.QuathArray, Gf.Quath, Gf.Vec3h)
+        _TestDivision(Vt.QuatfArray, Gf.Quatf, Gf.Vec3f)
+        _TestDivision(Vt.QuatdArray, Gf.Quatd, Gf.Vec3d)
+        _TestDivision(Vt.QuaternionArray, Gf.Quaternion, Gf.Vec3d)
 
 if __name__ == '__main__':
     unittest.main()

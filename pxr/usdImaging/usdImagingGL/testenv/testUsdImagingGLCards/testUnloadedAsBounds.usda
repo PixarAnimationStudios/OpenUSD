@@ -1,0 +1,31 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Xform "World" (
+    kind = "group"
+)
+{
+    def Xform "Sphere2" (
+        kind = "component"
+        prepend payload = @./sphere.usda@</Sphere>
+        instanceable = true
+    )
+    {
+        custom double3 xformOp:translate = (-2, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        float3[] extentsHint = [(-1, -1, -1), (1, 1, 1)]
+    }
+
+    def Xform "Sphere3" (
+        kind = "component"
+        prepend payload = @./sphere.usda@</Sphere>
+    )
+    {
+        custom double3 xformOp:translate = (2, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        float3[] extentsHint = [(-1, -1, -1), (1, 1, 1)]
+    }
+}
+

@@ -24,13 +24,16 @@
 
 from __future__ import print_function
 
+from pxr import Tf
+Tf.PreparePythonModule()
+
 import sys, argparse, os
 
 from .qt import QtWidgets, QtCore
 from .common import Timer
 from .appController import AppController
 
-from pxr import UsdAppUtils, Tf
+from pxr import UsdAppUtils
 
 
 class InvalidUsdviewOption(Exception):
@@ -118,14 +121,13 @@ class Launcher(object):
         '''
         from pxr import UsdUtils
 
-        parser.add_argument('--renderer', action='store',
-                            type=str, dest='renderer',
-                            choices=AppController.GetRendererOptionChoices(),
-                            help="Which render backend to use (named as it "
+        UsdAppUtils.rendererArgs.AddCmdlineArgs(parser,
+                altHelpText=("Which render backend to use (named as it "
                             "appears in the menu).  Use '%s' to "
                             "turn off Hydra renderers." %
-                            AppController.HYDRA_DISABLED_OPTION_STRING,
-                            default='')
+                        UsdAppUtils.rendererArgs.HYDRA_DISABLED_OPTION_STRING
+                            ),
+                allowHydraDisabled=True)
         
         parser.add_argument('--select', action='store', default='/',
                             dest='primPath', type=str,
@@ -235,6 +237,15 @@ class Launcher(object):
                             "will include the opinions in the persistent "
                             "session layer.")
 
+        parser.add_argument('--mute', default=None, type=str,
+                            dest='muteLayersRe', action='append', nargs=1,
+                            help="Layer identifiers searched against this "
+                                 "regular expression will be muted on the "
+                                 "stage prior to, and after loading. Multiple "
+                                 "expressions can be supplied using the | "
+                                 "regex separator operator. Alternatively the "
+                                 "argument may be used multiple times.")
+
     def ParseOptions(self, parser):
         '''
         runs the parser on the arguments
@@ -302,7 +313,12 @@ class Launcher(object):
         from pxr import Ar
         
         r = Ar.GetResolver()
-        r.ConfigureResolverForAsset(usdFile)
+
+        # ConfigureResolverForAsset no longer exists under Ar 2.0; this
+        # is here for backwards compatibility with Ar 1.0.
+        if hasattr(r, "ConfigureResolverForAsset"):
+            r.ConfigureResolverForAsset(usdFile)
+
         return r.CreateDefaultContextForAsset(usdFile)
 
 
@@ -311,6 +327,11 @@ class Launcher(object):
         # respected by subsequent imports.
         from pxr import Work
         Work.SetConcurrencyLimitArgument(arg_parse_result.numThreads)
+
+        # XXX Override HdPrman's defaults using the env var.  In the
+        # future we expect there may be more formal ways to represent
+        # per-app settings for particular Hydra plugins.
+        os.environ.setdefault('HD_PRMAN_MAX_SAMPLES', '1024')
 
         if arg_parse_result.clearSettings:
             AppController.clearSettings()

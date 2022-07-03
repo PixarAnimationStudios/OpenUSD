@@ -107,10 +107,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// other worker threads continue unhindered.
 ///
 template <class Fn>
-void
+auto
 WorkWithScopedParallelism(Fn &&fn)
 {
-    tbb::this_task_arena::isolate(std::forward<Fn>(fn));
+    return tbb::this_task_arena::isolate(std::forward<Fn>(fn));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

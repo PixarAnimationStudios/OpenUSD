@@ -38,6 +38,10 @@
                 "source": [ "RenderPass.Camera",
                             "RenderPass.ApplyClipPlanes" ]
             },
+            "postTessVertexShader" : {
+                "source": [ "RenderPass.Camera",
+                            "RenderPass.ApplyClipPlanes" ]
+            },
             "tessControlShader" : {
                 "source": [ "RenderPass.Camera",
                             "RenderPass.ApplyClipPlanes" ]
@@ -52,7 +56,6 @@
             },
             "fragmentShader" : {
                 "source": [ "RenderPass.Camera",
-                            "RenderPass.ShouldCullFace",
                             "RenderPass.NoSelection",
                             "RenderPass.NoColorOverrides",
                             "RenderPass.RenderId" ]

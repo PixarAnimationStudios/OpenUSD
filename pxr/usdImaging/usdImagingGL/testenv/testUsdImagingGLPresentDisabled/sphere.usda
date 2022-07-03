@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    startTimeCode = 1 
+    endTimeCode = 10 
+    upAxis = "Z"
+)
+
+def Sphere "SphereWithFloatRadius" 
+{ 
+    float radius = 10 
+    float radius.timeSamples = { 
+        1: 1, 
+        10: 10, 
+    }
+}

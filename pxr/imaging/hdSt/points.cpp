@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdSt/points.h"
 #include "pxr/imaging/hdSt/pointsShaderKey.h"
 #include "pxr/imaging/hdSt/primUtils.h"
+#include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
@@ -57,25 +58,36 @@ HdStPoints::HdStPoints(SdfPath const& id)
 HdStPoints::~HdStPoints() = default;
 
 void
+HdStPoints::UpdateRenderTag(HdSceneDelegate *delegate,
+                            HdRenderParam *renderParam)
+{
+    HdStUpdateRenderTag(delegate, renderParam, this);
+}
+
+
+void
 HdStPoints::Sync(HdSceneDelegate *delegate,
                  HdRenderParam   *renderParam,
                  HdDirtyBits     *dirtyBits,
                  TfToken const   &reprToken)
 {
-    bool updateMaterialTag = false;
+    _UpdateVisibility(delegate, dirtyBits);
+
+    bool updateMaterialTags = false;
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         HdStSetMaterialId(delegate, renderParam, this);
-        updateMaterialTag = true;
+        updateMaterialTags = true;
+    }
+    if (*dirtyBits & HdChangeTracker::NewRepr) {
+        updateMaterialTags = true;
     }
 
     bool displayOpacity = _displayOpacity;
     _UpdateRepr(delegate, renderParam, reprToken, dirtyBits);
 
-    if (updateMaterialTag || 
+    if (updateMaterialTags || 
         (GetMaterialId().IsEmpty() && displayOpacity != _displayOpacity)) {
-
-        HdStSetMaterialTag(delegate, renderParam, this, _displayOpacity,
-                           /*occludedSelectionShowsThrough = */false);
+        _UpdateMaterialTagsForAllReprs(delegate, renderParam);
     }
 
     // This clears all the non-custom dirty bits. This ensures that the rprim
@@ -90,6 +102,28 @@ void
 HdStPoints::Finalize(HdRenderParam *renderParam)
 {
     HdStMarkGarbageCollectionNeeded(renderParam);
+
+    HdStRenderParam * const stRenderParam =
+        static_cast<HdStRenderParam*>(renderParam);
+
+    // Decrement material tag counts for each draw item material tag
+    if (!_reprs.empty()) {
+        const std::pair<TfToken, HdReprSharedPtr> &reprPair = _reprs.front();
+        const TfToken &reprToken = reprPair.first;
+        _PointsReprConfig::DescArray const &descs = _GetReprDesc(reprToken);
+        HdReprSharedPtr repr = reprPair.second;
+        int drawItemIndex = 0;
+        for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+            if (descs[descIdx].geomStyle == HdPointsGeomStyleInvalid) {
+                continue;
+            }
+            HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                _smoothHullRepr->GetDrawItem(drawItemIndex++));
+            stRenderParam->DecreaseMaterialTagCount(drawItem->GetMaterialTag());
+        }
+    }
+
+    stRenderParam->DecreaseRenderTagCount(GetRenderTag());
 }
 
 void
@@ -103,11 +137,9 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     SdfPath const& id = GetId();
 
-    /* VISIBILITY */
-    _UpdateVisibility(sceneDelegate, dirtyBits);
-
     /* MATERIAL SHADER (may affect subsequent primvar population) */
-    drawItem->SetMaterialShader(HdStGetMaterialShader(this, sceneDelegate));
+    drawItem->SetMaterialNetworkShader(
+        HdStGetMaterialNetworkShader(this, sceneDelegate));
 
     // Reset value of _displayOpacity
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
@@ -256,8 +288,8 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
 
         if (!value.IsEmpty()) {
-            HdBufferSourceSharedPtr source(
-                new HdVtBufferSource(primvar.name, value));
+            HdBufferSourceSharedPtr source =
+                std::make_shared<HdVtBufferSource>(primvar.name, value);
             sources.push_back(source);
 
             if (primvar.name == HdTokens->displayOpacity) {
@@ -327,6 +359,34 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     }
 }
 
+void
+HdStPoints::_UpdateMaterialTagsForAllReprs(HdSceneDelegate *sceneDelegate,
+                                           HdRenderParam *renderParam)
+{
+    TF_DEBUG(HD_RPRIM_UPDATED). Msg(
+        "(%s) - Updating material tags for draw items of all reprs.\n", 
+        GetId().GetText());
+
+    // All reprs in _reprs point to same repr for now.
+    if (!_reprs.empty()) {
+        const std::pair<TfToken, HdReprSharedPtr> &reprPair = _reprs.front();
+        const TfToken &reprToken = reprPair.first;
+        _PointsReprConfig::DescArray const &descs = _GetReprDesc(reprToken);
+        HdReprSharedPtr repr = reprPair.second;
+        int drawItemIndex = 0;
+        for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+            if (descs[descIdx].geomStyle == HdPointsGeomStyleInvalid) {
+                continue;
+            }
+            HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                _smoothHullRepr->GetDrawItem(drawItemIndex++));
+            HdStSetMaterialTag(sceneDelegate, renderParam, drawItem, 
+                this->GetMaterialId(), _displayOpacity, 
+                /*occludedSelectionShowsThrough = */false);
+        }
+    }
+}
+
 HdDirtyBits 
 HdStPoints::GetInitialDirtyBitsMask() const
 {
@@ -359,7 +419,7 @@ HdStPoints::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
     // We only support smoothHull for now, everything else points to it.
     // TODO: Handle other styles
     if (!_smoothHullRepr) {
-        _smoothHullRepr = HdReprSharedPtr(new HdRepr());
+        _smoothHullRepr = std::make_shared<HdRepr>();
         *dirtyBits |= HdChangeTracker::NewRepr;
 
         _PointsReprConfig::DescArray const &descs = _GetReprDesc(reprToken);

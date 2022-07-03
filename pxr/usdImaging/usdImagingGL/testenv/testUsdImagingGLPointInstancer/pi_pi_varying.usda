@@ -1,0 +1,92 @@
+#usda 1.0
+(
+    endFrame = 24
+    startFrame = 0
+    upAxis = "Z"
+)
+
+def PointInstancer "TopInstancer"
+{
+    float3[] extent = [(-6, -1, -1), (21, 9, 5)]
+    int64[] invisibleIds.timeSamples = {
+        0: [],
+        6: [1, 2],
+        7: [0, 2],
+        8: [0, 1],
+        9: [1],
+        10: [2],
+        11: [9],
+        12: [],
+    }
+    point3f[] positions = [(0, 0, 0), (0, 4, 2), (0, 8, 4)]
+    int[] protoIndices = [0, 0, 0]
+    rel prototypes = </TopInstancer/TopProtos/protoInstancer>
+    float3[] scales = [(0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (0.5, 0.5, 0.5)]
+    matrix4d xformOp:transform.timeSamples = {
+        0: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ),
+        1: ( (1, 0, 0, 0), (0, 0.86, 0.5, 0), (0, -0.5, 0.86, 0), (0, 0, 0, 1) ),
+    }
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+
+    def "TopProtos"
+    {
+        def Xform "protoInstancer"
+        {
+            def PointInstancer "Instancer0_3"
+            {
+                float3[] extent = [(-6, -1, -1), (21, 9, 5)]
+                int64[] invisibleIds.timeSamples = {
+                    0: [],
+                    12: [1, 2],
+                    13: [0, 2],
+                    14: [0, 1],
+                    15: [1],
+                    16: [2],
+                    17: [0],
+                }
+                quath[] orientations = [(0.899902, 0.399902, 0, 0), (0.899902, 0.399902, 0, 0), (0.899902, 0.399902, 0, 0)]
+                quath[] orientations.timeSamples = {
+                    0: [(1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0)],
+                    4: [(-0.899902, 0.399902, 0, 0), (0.899902, 0.399902, 0, 0), (0.899902, -0.399902, 0, 0)],
+                    5: [(-0.919922, 0.47998, 0, 0), (0.919922, 0.47998, 0, 0), (0.919922, -0.47998, 0, 0)],
+                }
+                point3f[] positions = [(-5, 0, 0), (10, 0, 0), (20, 0, 0)]
+                int[] protoIndices = [0, 0, 0]
+                rel prototypes = </TopInstancer/TopProtos/protoInstancer/Instancer0_3/Protos/Proto2>
+                float3[] scales = [(2, 2, 2), (2, 2, 2), (2, 2, 2)]
+                float3 xformOp:translate.timeSamples = {
+                    1: (0, 0, 0),
+                    2: (1, 1, 1),
+                    3: (0, 0, 0),
+                }
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+
+                def "Protos"
+                {
+                    def "Proto2"
+                    {
+                        def Cube "Cube"
+                        {
+                            color3f[] primvars:displayColor = [(1, 0, 0)]
+                        }
+
+                        def Sphere "Sphere1"
+                        {
+                            color3f[] primvars:displayColor = [(1, 0, 0.5)]
+                            float3 xformOp:translate = (1, 1, 1)
+                            uniform token[] xformOpOrder = ["xformOp:translate"]
+                        }
+
+                        def Sphere "Sphere2"
+                        {
+                            color3f[] primvars:displayColor = [(0.5, 0, 1)]
+                            float3 xformOp:translate = (-1, 1, 1)
+                            uniform token[] xformOpOrder = ["xformOp:translate"]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

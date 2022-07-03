@@ -1,0 +1,295 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Xform "World"{
+    uniform token[] xformOpOrder = ["xformOp:rotateX"]
+    double xformOp:rotateX = -90
+
+    def Sphere "ReferenceSphere" (){
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        double3 xformOp:translate = (-5, -5, 0)
+    }
+
+    # as many primitives are tubes, it's useful to have a cylinder
+    # to evaluate lighting / normal correctness
+    def Cylinder "ReferenceCylinder" (){
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX"]
+        double3 xformOp:translate = (-5, 15, 0)
+        double xformOp:rotateX = 90.0
+    }
+
+    def Xform "Lines"{
+
+        def BasisCurves "Lines_Wire_Straight"(){
+            double3 xformOp:translate = (-5, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "linear"
+            point3f[] points = [(0, 1, 0), (0, 4, 0), (0, 7, 0)]
+            int[] curveVertexCounts = [3]
+            int ri:attributes:dice:roundcurve = 1
+        }
+
+        def BasisCurves "Lines_Wire"(){
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "linear"
+            point3f[] points = [(0, 1, 0), (0, 4, 1), (0, 7, 0)]
+            int[] curveVertexCounts = [3]
+            int ri:attributes:dice:roundcurve = 1
+        }
+
+        def BasisCurves "Lines_Tube"(){
+            double3 xformOp:translate = (5, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "linear"
+            point3f[] points = [(0, 1, 0), (0, 4, 1), (0, 7, 0)]
+            float[] widths = [.5, 1, .5] (interpolation = "varying")
+            int[] curveVertexCounts = [3]
+            int ri:attributes:dice:roundcurve = 1
+        }
+
+        def BasisCurves "Lines_Ribbon"(){
+            double3 xformOp:translate = (10, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "linear"
+            point3f[] points = [(0, 1, 0), (0, 4, 1), (0, 7, 0)]
+            float[] widths = [.5, 1, .5] (interpolation = "varying")
+            normal3f[] normals = [(0, -1, 1), (0, 0, 1), (0, 1, 1)] (interpolation = "varying")
+            int[] curveVertexCounts = [3]
+        }
+    }
+
+    def Xform "Bezier"{
+
+
+        def BasisCurves "Bezier_Wire"(){
+            double3 xformOp:translate = (15, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "cubic"
+            token basis = "bezier"
+            point3f[] points = [(0, 1, 0), (0, 2, 1), (0, 3, 1), (0, 4, 0), (0, 5, 1), (0, 6, 1), (0, 7, 0)]
+            int[] curveVertexCounts = [7]
+            int ri:attributes:dice:roundcurve = 1
+        }
+
+        def BasisCurves "Bezier_Tube_varying"(){
+            double3 xformOp:translate = (20, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "cubic"
+            token basis = "bezier"
+            point3f[] points = [(0, 1, 0), (0, 2, 1), (0, 3, 1), (0, 4, 0), (0, 5, 1), (0, 6, 1), (0, 7, 0)]
+            float[] widths = [.5, 1, .5] (interpolation = "varying")
+            int[] curveVertexCounts = [7]
+            int ri:attributes:dice:roundcurve = 1
+        }
+
+        def BasisCurves "Bezier_Tube_vertex"(){
+            double3 xformOp:translate = (25, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "cubic"
+            token basis = "bezier"
+            point3f[] points = [(0, 1, 0), (0, 2, 1), (0, 3, 1), (0, 4, 0), (0, 5, 1), (0, 6, 1), (0, 7, 0)]
+            float[] widths = [.1, 1, 1, .2, 1, 1, .1] (interpolation = "vertex")
+            int[] curveVertexCounts = [7]
+            int ri:attributes:dice:roundcurve = 1
+        }
+
+        def BasisCurves "Bezier_ribbon_vertex"(){
+            double3 xformOp:translate = (30, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "cubic"
+            token basis = "bezier"
+            point3f[] points = [(0, 1, 0), (0, 2, 1), (0, 3, 1), (0, 4, 0), (0, 5, 1), (0, 6, 1), (0, 7, 0)]
+            float[] widths = [.1, 1, 1, .2, 1, 1, .1] (interpolation = "vertex")
+            int[] curveVertexCounts = [7]
+            normal3f[] normals = [(0, -1, 1), (0, .5, 1), (0, 1, 1)] (interpolation = "varying")
+        }
+
+        def BasisCurves "Bezier_ribbon_varying"(){
+            double3 xformOp:translate = (35, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "cubic"
+            token basis = "bezier"
+            point3f[] points = [(0, 1, 0), (0, 2, 1), (0, 3, 1), (0, 4, 0), (0, 5, 1), (0, 6, 1), (0, 7, 0)]
+            float[] widths = [.5, 1, .5] (interpolation = "varying")
+            int[] curveVertexCounts = [7]
+            normal3f[] normals = [(0, -1, 1), (0, 0, 1), (0, 1, 1)] (interpolation = "varying")
+        }
+    }    
+
+
+
+    def Xform "Bspline" {
+        def BasisCurves "Bspline_Wire"(){
+            double3 xformOp:translate = (40, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "cubic"
+            token basis = "bspline"
+            point3f[] points = [(0, 1, 0), (0, 1, 0), (0, 4, 1), (0, 7, 0), (0, 7, 0)]
+            int[] curveVertexCounts = [5]
+            int ri:attributes:dice:roundcurve = 1
+        }
+
+        def BasisCurves "Bspline_Tube_varying"(){
+            double3 xformOp:translate = (45, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "cubic"
+            token basis = "bspline"
+            point3f[] points = [(0, 1, 0), (0, 1, 0), (0, 4, 1), (0, 7, 0), (0, 7, 0)]
+            float[] widths = [.5, 1, .5] (interpolation = "varying")
+            int[] curveVertexCounts = [5]
+            int ri:attributes:dice:roundcurve = 1
+        }
+
+        def BasisCurves "Bspline_Tube_vertex"(){
+            double3 xformOp:translate = (50, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "cubic"
+            token basis = "bspline"
+            point3f[] points = [(0, 1, 0), (0, 1, 0), (0, 4, 1), (0, 7, 0), (0, 7, 0)]
+            float[] widths = [.1, 1, .2, 1, .1] (interpolation = "vertex")
+            int[] curveVertexCounts = [5]
+            int ri:attributes:dice:roundcurve = 1
+        }
+
+        def BasisCurves "Bspline_ribbon_vertex"(){
+            double3 xformOp:translate = (55, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "cubic"
+            token basis = "bspline"
+            point3f[] points = [(0, 1, 0), (0, 1, 0), (0, 4, 1), (0, 7, 0), (0, 7, 0)]
+            float[] widths = [.1, 1, .2, 1, .1] (interpolation = "vertex")
+            int[] curveVertexCounts = [5]
+            normal3f[] normals = [(0, -1, 1), (0, 0, 1), (0, 1, 1)] (interpolation = "varying")
+        }
+
+        def BasisCurves "Bspline_ribbon_varying"(){
+            double3 xformOp:translate = (60, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "cubic"
+            token basis = "bspline"
+            point3f[] points = [(0, 1, 0), (0, 1, 0), (0, 4, 1), (0, 7, 0), (0, 7, 0)]
+            float[] widths = [.5, 1, .5] (interpolation = "varying")
+            int[] curveVertexCounts = [5]
+            normal3f[] normals = [(0, -1, 1), (0, 0, 1), (0, 1, 1)] (interpolation = "varying")
+        }
+    }
+
+    def Xform "CatmullRom" {
+
+        def BasisCurves "CatmullRom_Wire"(){
+            double3 xformOp:translate = (65, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "cubic"
+            token basis = "catmullRom"
+            point3f[] points = [(0, 0, 0), (0, 1, 0), (0, 4, 1), (0, 7, 0), (0, 8, 0)]
+            int[] curveVertexCounts = [5]
+            int ri:attributes:dice:roundcurve = 1
+        }
+
+        def BasisCurves "CatmullRom_Tube_varying"(){
+            double3 xformOp:translate = (70, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "cubic"
+            token basis = "catmullRom"
+            point3f[] points = [(0, 0, 0), (0, 1, 0), (0, 4, 1), (0, 7, 0), (0, 8, 0)]
+            float[] widths = [.5, 1, .5] (interpolation = "varying")
+            int[] curveVertexCounts = [5]
+            int ri:attributes:dice:roundcurve = 1
+        }
+
+        def BasisCurves "CatmullRom_Tube_vertex"(){
+            double3 xformOp:translate = (75, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "cubic"
+            token basis = "catmullRom"
+            point3f[] points = [(0, 0, 0), (0, 1, 0), (0, 4, 1), (0, 7, 0), (0, 8, 0)]
+            float[] widths = [.1, 1, .2, 1, .1] (interpolation = "vertex")
+            int[] curveVertexCounts = [5]
+            int ri:attributes:dice:roundcurve = 1
+        }
+
+        def BasisCurves "CatmullRom_ribbon_vertex"(){
+            double3 xformOp:translate = (80, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "cubic"
+            token basis = "catmullRom"
+            point3f[] points = [(0, 0, 0), (0, 1, 0), (0, 4, 1), (0, 7, 0), (0, 8, 0)]
+            float[] widths = [.1, 1, .2, 1, .1] (interpolation = "vertex")
+            int[] curveVertexCounts = [5]
+            normal3f[] normals = [(0, -1, 1), (0, 0, 1), (0, 1, 1)] (interpolation = "varying")
+        }
+
+        def BasisCurves "CatmullRom_ribbon_varying"(){
+            double3 xformOp:translate = (85, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token type = "cubic"
+            token basis = "catmullRom"
+            point3f[] points = [(0, 0, 0), (0, 1, 0), (0, 4, 1), (0, 7, 0), (0, 8, 0)]
+            float[] widths = [.5, 1, .5] (interpolation = "varying")
+            int[] curveVertexCounts = [5]
+            normal3f[] normals = [(0, -1, 1), (0, 0, 1), (0, 1, 1)] (interpolation = "varying")
+        }
+
+
+    }
+
+
+    def "LinesInstanced" (references = </World/Lines>
+                          instanceable = True){
+        double3 xformOp:translate = (0, 20, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+
+    def "BezierInstanced" (references = </World/Bezier>
+                          instanceable = True){
+        double3 xformOp:translate = (0, 20, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "BsplineInstanced" (references = </World/Bspline>
+                          instanceable = True){
+        double3 xformOp:translate = (0, 20, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "CatmullRomInstanced" (references = </World/CatmullRom>
+                               instanceable = True){
+        double3 xformOp:translate = (0, 20, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+
+    def "LinesInstancedScaled" (references = </World/Lines>
+                                instanceable = True){
+        double3 xformOp:translate = (0, 40, 0)
+        double3 xformOp:scale = (2, 2, 2)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+
+
+    def "BezierInstancedScaled" (references = </World/Bezier>
+                          instanceable = True){
+        double3 xformOp:translate = (0, 40, 0)
+        double3 xformOp:scale = (2, 2, 2)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+
+    def "BsplineInstancedScaled" (references = </World/Bspline>
+                          instanceable = True){
+        double3 xformOp:translate = (0, 40, 0)
+        double3 xformOp:scale = (2, 2, 2)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+
+    }
+
+    def "CatmullRomInstancedScaled" (references = </World/CatmullRom>
+                               instanceable = True){
+        double3 xformOp:translate = (0, 40, 0)
+        double3 xformOp:scale = (2, 2, 2)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+}

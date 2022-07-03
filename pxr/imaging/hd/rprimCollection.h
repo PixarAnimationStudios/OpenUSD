@@ -166,7 +166,7 @@ public:
     /// A MaterialTag can be used to ensure only prims whos material have
     /// a matching tag will end up in the collection. Different rendering 
     /// backends can control what material properties are useful for splitting 
-    /// up collections. For example, when Stream finds the 'translucent'
+    /// up collections. For example, when Storm finds the 'translucent'
     /// MaterialTag in a material it will transfer this tag onto the
     /// prim's DrawItem. This ensures that opaque and translucent prims end up
     /// in different collections so they can be rendered seperately.

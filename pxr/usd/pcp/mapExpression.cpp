@@ -52,22 +52,6 @@ _AddRootIdentity(const PcpMapFunction &value)
 
 ////////////////////////////////////////////////////////////////////////
 
-PcpMapExpression::PcpMapExpression()
-{
-}
-
-bool
-PcpMapExpression::IsNull() const
-{
-    return !_node;
-}
-
-void
-PcpMapExpression::Swap(PcpMapExpression &other)
-{
-    _node.swap(other._node);
-}
-
 const PcpMapExpression::Value &
 PcpMapExpression::Evaluate() const
 {

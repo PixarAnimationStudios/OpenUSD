@@ -26,7 +26,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
-#include "pxr/imaging/hdSt/extCompGpuComputationBufferSource.h"
+#include "pxr/imaging/hdSt/extCompGpuComputationResource.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
+#include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/types.h"
@@ -59,9 +61,8 @@ using HdStExtCompGpuComputationSharedPtr =
 ///
 /// The computation is performed in three stages by three companion classes:
 /// 
-/// 1. HdStExtCompGpuComputationBufferSource is responsible for loading
-/// input HdBuffersources into the input HdBufferArrayRange during the Resolve
-/// phase of the HdResourceRegistry::Commit processing.
+/// 1. Input HdBuffersources are committed into the input HdBufferArrayRange
+/// during the Resolve phase of the HdResourceRegistry::Commit processing.
 ///
 /// 2. HdStExtCompGpuComputationResource holds the committed GPU resident
 /// resources along with the compiled compute shading kernel to execute.
@@ -75,7 +76,6 @@ using HdStExtCompGpuComputationSharedPtr =
 /// allocated by the owning HdRprim that registers the computation with the
 /// HdResourceRegistry by calling HdResourceRegistry::AddComputation.
 /// 
-/// \see HdStExtCompGpuComputationBufferSource
 /// \see HdStExtCompGpuComputationResource
 /// \see HdRprim
 /// \see HdComputation
@@ -99,10 +99,9 @@ public:
             int elementCount);
 
     /// Creates a GPU computation implementing the given abstract computation.
-    /// When created this allocates HdStExtCompGpuComputationResource to be
-    /// shared with the HdStExtCompGpuComputationBufferSource. Nothing
-    /// is assigned GPU resources unless the source is subsequently added to 
-    /// the hdResourceRegistry and the registry is committed.
+    /// When created this allocates HdStExtCompGpuComputationResource.
+    /// Nothing is assigned GPU resources unless the source is subsequently
+    /// added to the hdResourceRegistry and the registry is committed.
     /// 
     /// This delayed allocation allow Rprims to share computed primvar data and
     /// avoid duplicate allocations GPU resources for computation inputs and
@@ -157,8 +156,6 @@ public:
     virtual int GetNumOutputElements() const override;
     
     /// Gets the shared GPU resource holder for the computation.
-    /// HdStExtCompGPUComputationBufferSource will copy its data into this if
-    /// it had been added to the HdResourceRegistry.
     HDST_API
     virtual HdStExtCompGpuComputationResourceSharedPtr const &
     GetResource() const;

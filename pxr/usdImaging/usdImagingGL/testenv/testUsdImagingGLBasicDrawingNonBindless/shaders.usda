@@ -1,0 +1,163 @@
+#usda 1.0
+(
+    endFrame = 10
+    startFrame = 1
+    upAxis = "Z"
+)
+
+def Scope "Looks"
+{
+    def Material "UvLook1"
+    {
+        token outputs:surface.connect = </Looks/UvLook1/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform asset info:glslfx:sourceAsset = @shader1.glslfx@
+            uniform token info:implementationSource = "sourceAsset"
+            uniform float3 inputs:diffuseColor = (1, 0, 1)
+            add uniform float3 inputs:diffuseColor.connect = </Looks/UvLook1/Tex.outputs:color>
+            token outputs:surface
+        }
+
+        def Shader "Tex"
+        {
+            uniform token info:id = "HwUvTexture_1"
+            uniform asset inputs:file = @tiledGradient.png@
+            add uniform float2 inputs:uv.connect = </Looks/UvLook1/Primvar.outputs:result>
+            float3 outputs:color
+        }
+
+        def Shader "Primvar"
+        {
+            uniform token info:id = "HwPrimvar_1"
+            uniform token inputs:varname = "map1_uv"
+            float2 outputs:result
+        }
+    }
+
+    def Material "UvLook2"
+    {
+        token outputs:surface.connect = </Looks/UvLook2/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform asset info:glslfx:sourceAsset = @shader1.glslfx@
+            uniform token info:implementationSource = "sourceAsset"
+            uniform float3 inputs:diffuseColor = (1, 0, 1)
+            add uniform float3 inputs:diffuseColor.connect = </Looks/UvLook2/Tex.outputs:color>
+            token outputs:surface
+        }
+
+        def Shader "Tex"
+        {
+            uniform token info:id = "HwUvTexture_1"
+            uniform asset inputs:file = @grid_rotated.png@
+            add uniform float2 inputs:uv.connect = </Looks/UvLook2/Primvar.outputs:result>
+            float3 outputs:color
+        }
+
+        def Shader "Primvar"
+        {
+            uniform token info:id = "HwPrimvar_1"
+            uniform token inputs:varname = "map1_uv"
+            float2 outputs:result
+        }
+    }
+
+    def Material "UvLook3"
+    {
+        token outputs:surface.connect = </Looks/UvLook3/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform asset info:glslfx:sourceAsset = @shader1.glslfx@
+            uniform token info:implementationSource = "sourceAsset"
+            uniform float3 inputs:diffuseColor = (1, 0, 1)
+            add uniform float3 inputs:diffuseColor.connect = </Looks/UvLook3/Tex.outputs:color>
+            token outputs:surface
+        }
+
+        def Shader "Tex"
+        {
+            uniform token info:id = "HwUvTexture_1"
+            uniform asset inputs:file = @grid.png@
+            add uniform float2 inputs:uv.connect = </Looks/UvLook3/Primvar.outputs:result>
+            float3 outputs:color
+        }
+
+        def Shader "Primvar"
+        {
+            uniform token info:id = "HwPrimvar_1"
+            uniform token inputs:varname = "map1_uv"
+            float2 outputs:result
+        }
+    }
+}
+
+def Xform "Parent"
+{
+    def Xform "Meshes"
+    {
+        def Scope "UV"
+        {
+            def Mesh "MeshTest_Uv1"
+            {
+                float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+                token faceVaryingLinearInterpolation = "boundaries"
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                token interpolateBoundary = "edgeAndCorner"
+                rel material:binding = </Looks/UvLook1>
+                point3f[] points = [(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
+                color3f[] primvars:displayColor = [(0.5, 0.5, 0.9)] (
+                    interpolation = "uniform"
+                )
+                color3f[] primvars:displayColor2 = [(0, 0.1, 0.9), (0.9, 0.1, 0), (0.1, 0.9, 0), (0, 0.9, 0.9)] (
+                    interpolation = "vertex"
+                )
+                custom float2[] primvars:map1_uv = [(0, 1), (1, 1), (0, 0), (1, 0)] (
+                    interpolation = "vertex"
+                )
+                uniform token subdivisionScheme = "catmullClark"
+                custom double3 xformOp:translate = (-4.25, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Mesh "MeshTest_Uv2"
+            {
+                float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+                token faceVaryingLinearInterpolation = "boundaries"
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                token interpolateBoundary = "edgeAndCorner"
+                rel material:binding = </Looks/UvLook2>
+                point3f[] points = [(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
+                custom float2[] primvars:map1_uv = [(0, 1), (0.4, 1), (0, 0), (0.4, 0)] (
+                    interpolation = "vertex"
+                )
+                uniform token subdivisionScheme = "catmullClark"
+                custom double3 xformOp:translate = (-4.25, 0, -4.25)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Mesh "MeshTest_Uv3"
+            {
+                float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+                token faceVaryingLinearInterpolation = "boundaries"
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 3, 2]
+                token interpolateBoundary = "edgeAndCorner"
+                rel material:binding = </Looks/UvLook3>
+                point3f[] points = [(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
+                custom float2[] primvars:map1_uv = [(0, 1), (0.4, 1), (0, 0), (0.4, 0)] (
+                    interpolation = "vertex"
+                )
+                uniform token subdivisionScheme = "catmullClark"
+                custom double3 xformOp:translate = (0, 0, -4.25)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+    }
+}
+

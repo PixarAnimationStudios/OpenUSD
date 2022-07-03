@@ -9,9 +9,10 @@ pxr_library(usdRender
         usdGeom
 
     PUBLIC_CLASSES
+        denoisePass
+        pass
         product
         settings
-        settingsAPI
         settingsBase
         spec
         tokens
@@ -25,8 +26,9 @@ pxr_library(usdRender
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapDenoisePass.cpp
+        wrapPass.cpp
         wrapProduct.cpp
-        wrapSettingsAPI.cpp
         wrapSettingsBase.cpp
         wrapSettings.cpp
         wrapTokens.cpp
@@ -42,4 +44,8 @@ pxr_library(usdRender
 
     DOXYGEN_FILES
         overview.dox
+        images/aperture.svg
+        images/dataWindow.svg
+        images/nonSquarePixels.svg
+        images/pixelAspectRatio.svg
 )

@@ -1,0 +1,24 @@
+#usda 1.0
+(
+    upAxis = "Y"
+    metersPerUnit = 0.01
+    defaultPrim = "World"
+)
+
+def "World"
+{
+    def Material "material"
+    {
+        # non-Container Connectable nesting is a separately tested for case
+        def Shader "UVTexture"
+        {
+            uniform token info:id = "UsdUVTexture"
+
+            def Shader "TexCoord"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+            }
+        }
+    }
+}
+

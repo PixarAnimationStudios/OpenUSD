@@ -1,0 +1,153 @@
+Loading @SpecializesAndAncestralArcs2/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </_shared_HumanHair>
+
+Prim Stack:
+    root.sdf             /_shared_HumanHair
+
+Child names:
+     ['Hair_Chiang_Head_Chiang_Hair', 'Hair_Chiang']
+
+------------------------------------------------------------------------
+Results for composing </_shared_HumanHair/Hair_Chiang_Head_Chiang_Hair>
+
+Prim Stack:
+    root.sdf             /_shared_HumanHair/Hair_Chiang_Head_Chiang_Hair
+
+Child names:
+     ['Class', 'Inner']
+
+------------------------------------------------------------------------
+Results for composing </_shared_HumanHair/Hair_Chiang_Head_Chiang_Hair/Class>
+
+Prim Stack:
+    root.sdf             /_shared_HumanHair/Hair_Chiang_Head_Chiang_Hair/Class
+
+------------------------------------------------------------------------
+Results for composing </_shared_HumanHair/Hair_Chiang_Head_Chiang_Hair/Inner>
+
+Prim Stack:
+    root.sdf             /_shared_HumanHair/Hair_Chiang_Head_Chiang_Hair/Inner
+
+------------------------------------------------------------------------
+Results for composing </_shared_HumanHair/Hair_Chiang>
+
+Prim Stack:
+    root.sdf             /_shared_HumanHair/Hair_Chiang
+
+Child names:
+     ['Class', 'Inner']
+
+------------------------------------------------------------------------
+Results for composing </_shared_HumanHair/Hair_Chiang/Class>
+
+Prim Stack:
+    root.sdf             /_shared_HumanHair/Hair_Chiang/Class
+
+------------------------------------------------------------------------
+Results for composing </_shared_HumanHair/Hair_Chiang/Inner>
+
+Prim Stack:
+    root.sdf             /_shared_HumanHair/Hair_Chiang/Inner
+
+------------------------------------------------------------------------
+Results for composing </HumanMaleStdHair>
+
+Prim Stack:
+    root.sdf             /HumanMaleStdHair
+    ref.sdf              /HumanMaleStdHair
+    root.sdf             /_shared_HumanHair
+    ref.sdf              /_shared_HumanHair
+
+Child names:
+     ['Hair_Chiang_Head_Chiang_Hair', 'Hair_Chiang']
+
+------------------------------------------------------------------------
+Results for composing </HumanMaleStdHair/Hair_Chiang_Head_Chiang_Hair>
+
+Prim Stack:
+    root.sdf             /HumanMaleStdHair/Hair_Chiang_Head_Chiang_Hair
+    ref.sdf              /HumanMaleStdHair/Hair_Chiang_Head_Chiang_Hair
+    root.sdf             /_shared_HumanHair/Hair_Chiang_Head_Chiang_Hair
+    ref.sdf              /_shared_HumanHair/Hair_Chiang_Head_Chiang_Hair
+    root.sdf             /HumanMaleStdHair/Hair_Chiang
+    ref.sdf              /HumanMaleStdHair/Hair_Chiang
+    root.sdf             /_shared_HumanHair/Hair_Chiang
+    ref.sdf              /_shared_HumanHair/Hair_Chiang
+
+Child names:
+     ['Class', 'Inner']
+
+------------------------------------------------------------------------
+Results for composing </HumanMaleStdHair/Hair_Chiang_Head_Chiang_Hair/Class>
+
+Prim Stack:
+    root.sdf             /HumanMaleStdHair/Hair_Chiang_Head_Chiang_Hair/Class
+    ref.sdf              /HumanMaleStdHair/Hair_Chiang_Head_Chiang_Hair/Class
+    root.sdf             /_shared_HumanHair/Hair_Chiang_Head_Chiang_Hair/Class
+    ref.sdf              /_shared_HumanHair/Hair_Chiang_Head_Chiang_Hair/Class
+    root.sdf             /HumanMaleStdHair/Hair_Chiang/Class
+    ref.sdf              /HumanMaleStdHair/Hair_Chiang/Class
+    root.sdf             /_shared_HumanHair/Hair_Chiang/Class
+    ref.sdf              /_shared_HumanHair/Hair_Chiang/Class
+
+------------------------------------------------------------------------
+Results for composing </HumanMaleStdHair/Hair_Chiang_Head_Chiang_Hair/Inner>
+
+Prim Stack:
+    root.sdf             /HumanMaleStdHair/Hair_Chiang_Head_Chiang_Hair/Inner
+    ref.sdf              /HumanMaleStdHair/Hair_Chiang_Head_Chiang_Hair/Inner
+    root.sdf             /_shared_HumanHair/Hair_Chiang_Head_Chiang_Hair/Inner
+    ref.sdf              /_shared_HumanHair/Hair_Chiang_Head_Chiang_Hair/Inner
+    root.sdf             /HumanMaleStdHair/Hair_Chiang/Inner
+    ref.sdf              /HumanMaleStdHair/Hair_Chiang/Inner
+    root.sdf             /_shared_HumanHair/Hair_Chiang/Inner
+    ref.sdf              /_shared_HumanHair/Hair_Chiang/Inner
+    root.sdf             /HumanMaleStdHair/Hair_Chiang_Head_Chiang_Hair/Class
+    ref.sdf              /HumanMaleStdHair/Hair_Chiang_Head_Chiang_Hair/Class
+    root.sdf             /_shared_HumanHair/Hair_Chiang_Head_Chiang_Hair/Class
+    ref.sdf              /_shared_HumanHair/Hair_Chiang_Head_Chiang_Hair/Class
+    root.sdf             /HumanMaleStdHair/Hair_Chiang/Class
+    ref.sdf              /HumanMaleStdHair/Hair_Chiang/Class
+    root.sdf             /_shared_HumanHair/Hair_Chiang/Class
+    ref.sdf              /_shared_HumanHair/Hair_Chiang/Class
+
+------------------------------------------------------------------------
+Results for composing </HumanMaleStdHair/Hair_Chiang>
+
+Prim Stack:
+    root.sdf             /HumanMaleStdHair/Hair_Chiang
+    ref.sdf              /HumanMaleStdHair/Hair_Chiang
+    root.sdf             /_shared_HumanHair/Hair_Chiang
+    ref.sdf              /_shared_HumanHair/Hair_Chiang
+
+Child names:
+     ['Class', 'Inner']
+
+------------------------------------------------------------------------
+Results for composing </HumanMaleStdHair/Hair_Chiang/Class>
+
+Prim Stack:
+    root.sdf             /HumanMaleStdHair/Hair_Chiang/Class
+    ref.sdf              /HumanMaleStdHair/Hair_Chiang/Class
+    root.sdf             /_shared_HumanHair/Hair_Chiang/Class
+    ref.sdf              /_shared_HumanHair/Hair_Chiang/Class
+
+------------------------------------------------------------------------
+Results for composing </HumanMaleStdHair/Hair_Chiang/Inner>
+
+Prim Stack:
+    root.sdf             /HumanMaleStdHair/Hair_Chiang/Inner
+    ref.sdf              /HumanMaleStdHair/Hair_Chiang/Inner
+    root.sdf             /_shared_HumanHair/Hair_Chiang/Inner
+    ref.sdf              /_shared_HumanHair/Hair_Chiang/Inner
+    root.sdf             /HumanMaleStdHair/Hair_Chiang/Class
+    ref.sdf              /HumanMaleStdHair/Hair_Chiang/Class
+    root.sdf             /_shared_HumanHair/Hair_Chiang/Class
+    ref.sdf              /_shared_HumanHair/Hair_Chiang/Class
+

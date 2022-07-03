@@ -95,11 +95,6 @@ HdxColorizeSelectionTask::_Sync(HdSceneDelegate* delegate,
         _GetTaskParams(delegate, &_params);
     }
     *dirtyBits = HdChangeTracker::Clean;
-
-    HdxSelectionTrackerSharedPtr sel;
-    if (_GetTaskContextData(ctx, HdxTokens->selectionState, &sel)) {
-        sel->UpdateSelection(&(delegate->GetRenderIndex()));
-    }
 }
 
 void
@@ -108,6 +103,11 @@ HdxColorizeSelectionTask::Prepare(HdTaskContext* ctx,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+
+    HdxSelectionTrackerSharedPtr sel;
+    if (_GetTaskContextData(ctx, HdxTokens->selectionState, &sel)) {
+        sel->UpdateSelection(renderIndex);
+    }
 
     _primId = static_cast<HdRenderBuffer*>(
         renderIndex->GetBprim(HdPrimTypeTokens->renderBuffer,
@@ -118,9 +118,6 @@ HdxColorizeSelectionTask::Prepare(HdTaskContext* ctx,
     _elementId = static_cast<HdRenderBuffer*>(
         renderIndex->GetBprim(HdPrimTypeTokens->renderBuffer,
                               _params.elementIdBufferPath));
-
-    HdxSelectionTrackerSharedPtr sel;
-    _GetTaskContextData(ctx, HdxTokens->selectionState, &sel);
 
     if (sel && sel->GetVersion() != _lastVersion) {
         _lastVersion = sel->GetVersion();

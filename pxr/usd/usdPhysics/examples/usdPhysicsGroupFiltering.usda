@@ -1,0 +1,64 @@
+#usda 1.0
+#Shows two boxes that collide with a ground box
+#but do not collide with each other thanks to
+#group based filtering.
+(
+    defaultPrim = "World"
+    endTimeCode = 100
+    metersPerUnit = 0.01
+    startTimeCode = 0
+    timeCodesPerSecond = 24
+    upAxis = "Z"
+    kilogramsPerUnit = 1.0
+)
+def Xform "World"
+{
+    def PhysicsScene "PhysicsScene"
+    {
+    }
+    def Cube "Box1" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI"]
+    )
+    {   
+        color3f[] primvars:displayColor = [(0.2784314, 0.4117647, 1)]
+        double size = 25
+        double3 xformOp:translate = (0, 0, 50)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Cube "Box2" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsRigidBodyAPI"]
+    )
+    {        
+        color3f[] primvars:displayColor = [(0.2784314, 0.4117647, 1)]
+        double size = 25
+        double3 xformOp:translate = (0, 0, 100)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def PhysicsCollisionGroup "DynamicGroup" (
+    prepend apiSchemas = ["CollectionAPI:colliders"]
+    )
+    {     
+        prepend rel collection:colliders:includes = [
+            </World/Box1>,
+            </World/Box2>
+        ]
+        prepend rel physics:filteredGroups = [
+            </World/DynamicGroup>
+        ]
+    }
+    def Cube "Ground" (
+        prepend apiSchemas = ["PhysicsCollisionAPI"]
+    )
+    {
+        color3f[] primvars:displayColor = [(0.5, 0.5, 0.5)]
+        float3 xformOp:scale = (750, 750, 10)
+        uniform token[] xformOpOrder = ["xformOp:scale"]
+    }
+    def SphereLight "SphereLight"
+    {
+        float intensity = 30000
+        float radius = 150
+        double3 xformOp:translate = (650, 0, 1150)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

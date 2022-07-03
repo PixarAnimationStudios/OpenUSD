@@ -1,0 +1,209 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+class "_Depth_2"
+{
+    custom token purpose = "proxy"
+
+    def Cube "FallbackCube"
+    {
+        double size = 1
+        double3 xformOp:translate = (0, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "RenderSphere"
+    {
+        color3f[] primvars:displayColor = [(1, 0.6, 0.6)]
+        uniform token purpose = "render"
+        double radius = 0.5
+        double3 xformOp:translate = (-1.5, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "DefaultSphere"
+    {
+        color3f[] primvars:displayColor = [(1, 1, 0.6)]
+        uniform token purpose = "default"
+        double radius = 0.5
+        double3 xformOp:translate = (-3, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "GuideSphere"
+    {
+        color3f[] primvars:displayColor = [(0.6, 0.6, 1)]
+        uniform token purpose = "guide"
+        double radius = 0.5
+        double3 xformOp:translate = (1.5, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "ProxySphere"
+    {
+        color3f[] primvars:displayColor = [(0.6, 1, 0.6)]
+        uniform token purpose = "proxy"
+        double radius = 0.5
+        double3 xformOp:translate = (3, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+class "_Depth_1"
+{
+    def Sphere "Geom"
+    {
+        double radius = 1.5
+    }
+
+    def Xform "FallbackXform"
+    {
+        double3 xformOp:translate = (0, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cube "FallbackCube"
+        {
+        }
+
+        def "Scope" (
+            inherits = </_Depth_2>
+            instanceable = true
+        )
+        {
+        }
+    }
+
+    def Xform "RenderXform"
+    {
+        color3f[] primvars:displayColor = [(1, 0.3, 0.3)]
+        uniform token purpose = "render"
+        double3 xformOp:translate = (-10, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Sphere "RenderSphere"
+        {
+        }
+
+        def "Scope" (
+            inherits = </_Depth_2>
+            instanceable = true
+        )
+        {
+        }
+    }
+
+    def Xform "DefaultXform"
+    {
+        color3f[] primvars:displayColor = [(1, 1, 0.3)]
+        uniform token purpose = "default"
+        double3 xformOp:translate = (-20, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Sphere "DefaultSphere"
+        {
+        }
+
+        def "Scope" (
+            inherits = </_Depth_2>
+            instanceable = true
+        )
+        {
+        }
+    }
+
+    def Xform "GuideXform"
+    {
+        color3f[] primvars:displayColor = [(0.3, 0.3, 1)]
+        uniform token purpose = "guide"
+        double3 xformOp:translate = (10, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Sphere "GuideSphere"
+        {
+        }
+
+        def "Scope" (
+            inherits = </_Depth_2>
+            instanceable = true
+        )
+        {
+        }
+    }
+
+    def Xform "ProxyXform"
+    {
+        color3f[] primvars:displayColor = [(0.3, 1, 0.3)]
+        uniform token purpose = "proxy"
+        double3 xformOp:translate = (20, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Sphere "ProxySphere"
+        {
+        }
+
+        def "Scope" (
+            inherits = </_Depth_2>
+            instanceable = true
+        )
+        {
+        }
+    }
+}
+
+def Xform "Root"
+{
+    def Xform "FallbackXform" (
+        inherits = </_Depth_1>
+        instanceable = true
+    )
+    {
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "RenderXform" (
+        inherits = </_Depth_1>
+        instanceable = true
+    )
+    {
+        color3f[] primvars:displayColor = [(1, 0, 0)]
+        uniform token purpose = "render"
+        double3 xformOp:translate = (0, 0, -15)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "DefaultXform" (
+        inherits = </_Depth_1>
+        instanceable = true
+    )
+    {
+        color3f[] primvars:displayColor = [(1, 1, 0)]
+        uniform token purpose = "default"
+        double3 xformOp:translate = (0, 0, -30)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "GuideXform" (
+        inherits = </_Depth_1>
+        instanceable = true
+    )
+    {
+        color3f[] primvars:displayColor = [(0, 0, 1)]
+        uniform token purpose = "guide"
+        double3 xformOp:translate = (0, 0, 15)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "ProxyXform" (
+        inherits = </_Depth_1>
+        instanceable = true
+    )
+    {
+        color3f[] primvars:displayColor = [(0, 1, 0)]
+        uniform token purpose = "proxy"
+        double3 xformOp:translate = (0, 0, 30)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+

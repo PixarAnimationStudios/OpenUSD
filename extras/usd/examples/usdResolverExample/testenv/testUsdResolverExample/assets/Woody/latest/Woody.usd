@@ -1,0 +1,11 @@
+#usda 1.0
+(
+    defaultPrim = "Woody"
+    subLayers = [
+        @./Woody_sublayer.usd@
+    ]    
+)
+
+over "Woody"
+{
+}

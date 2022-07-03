@@ -56,13 +56,9 @@ UsdGeomCurves::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdGeomCurves::_GetSchemaKind() const {
+UsdSchemaKind UsdGeomCurves::_GetSchemaKind() const
+{
     return UsdGeomCurves::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdGeomCurves::_GetSchemaType() const {
-    return UsdGeomCurves::schemaType;
 }
 
 /* static */

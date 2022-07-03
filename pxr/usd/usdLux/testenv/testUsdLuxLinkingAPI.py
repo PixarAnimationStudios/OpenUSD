@@ -51,7 +51,7 @@ class TestUsdLuxLinkingAPI(unittest.TestCase):
             ('/Lights/FaceSetLinking/include_faceSet_example', '/Geom/meshWithFaceSet/faceSet', True),
         )
         for light_path, test_path, expected_result in test_cases:
-            light = UsdLux.Light(stage.GetPrimAtPath(light_path))
+            light = UsdLux.LightAPI(stage.GetPrimAtPath(light_path))
             links = light.GetLightLinkCollectionAPI()
             query = links.ComputeMembershipQuery()
             actual_result = query.IsPathIncluded(test_path)
@@ -63,7 +63,7 @@ class TestUsdLuxLinkingAPI(unittest.TestCase):
         sphere = UsdGeom.Sphere.Define(stage, '/Geom/Sphere')
         light_scope = UsdGeom.Scope.Define(stage, '/Lights')
         light_1 = UsdLux.SphereLight.Define(stage, '/Lights/light_1')
-        light_1_links = UsdLux.Light(light_1).GetLightLinkCollectionAPI()
+        light_1_links = UsdLux.LightAPI(light_1).GetLightLinkCollectionAPI()
 
         # Schema default: link everything
         query = light_1_links.ComputeMembershipQuery()
@@ -88,7 +88,7 @@ class TestUsdLuxLinkingAPI(unittest.TestCase):
 
     def test_FilterLinking(self):
         light_path = '/Lights/FilterLinking/filter_exclude_a'
-        light = UsdLux.Light(stage.GetPrimAtPath(light_path))
+        light = UsdLux.LightAPI(stage.GetPrimAtPath(light_path))
         filter_paths = light.GetFiltersRel().GetForwardedTargets()
         self.assertEqual(len(filter_paths), 1)
         light_filter = UsdLux.LightFilter(stage.GetPrimAtPath(filter_paths[0]))

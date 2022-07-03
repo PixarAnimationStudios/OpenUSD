@@ -62,13 +62,17 @@ UsdSchemaExamplesParamsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdSchemaExamplesParamsAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdSchemaExamplesParamsAPI::_GetSchemaKind() const
+{
     return UsdSchemaExamplesParamsAPI::schemaKind;
 }
 
-/* virtual */
-UsdSchemaKind UsdSchemaExamplesParamsAPI::_GetSchemaType() const {
-    return UsdSchemaExamplesParamsAPI::schemaType;
+/* static */
+bool
+UsdSchemaExamplesParamsAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdSchemaExamplesParamsAPI>(whyNot);
 }
 
 /* static */

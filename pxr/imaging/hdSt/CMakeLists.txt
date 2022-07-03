@@ -9,23 +9,19 @@ if (NOT ${PXR_BUILD_GPU_SUPPORT} OR NOT ${PXR_ENABLE_GL_SUPPORT})
     return()
 endif()
 
-if (OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK)
-    add_definitions(-DOPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK)
-endif()
-if (OPENSUBDIV_HAS_GLSL_COMPUTE)
-    add_definitions(-DOPENSUBDIV_HAS_GLSL_COMPUTE)
-endif()
-
 set(optionalLibs "")
 set(optionalIncludeDirs "")
 set(optionalPublicClasses "")
 set(optionalPrivateClasses "")
 if (${PXR_ENABLE_MATERIALX_SUPPORT})
-    add_definitions(-DPXR_MATERIALX_STDLIB_DIR="${MATERIALX_STDLIB_DIR}")
-    add_definitions(-DPXR_MATERIALX_BASE_DIR="${MATERIALX_BASE_DIR}")
-
-    list(APPEND optionalLibs ${MATERIALX_LIBRARIES} hdMtlx)
-    list(APPEND optionalIncludeDirs ${MATERIALX_INCLUDE_DIRS})
+    list(APPEND optionalLibs
+        MaterialXGenShader
+        MaterialXRender
+        MaterialXCore
+        MaterialXFormat
+        MaterialXGenGlsl
+        hdMtlx
+    )
     list(APPEND optionalPrivateClasses
          materialXFilter
          materialXShaderGen
@@ -43,7 +39,9 @@ pxr_library(hdSt
         garch
         glf
         hd
+        hdsi
         hgiGL
+        hgiInterop
         sdr
         tf
         trace
@@ -61,6 +59,8 @@ pxr_library(hdSt
         commandBuffer
         copyComputation
         debugCodes
+        dependencyForwardingSceneIndexPlugin
+        dependencySceneIndexPlugin
         dispatchBuffer
         domeLightComputations
         drawItem
@@ -70,7 +70,6 @@ pxr_library(hdSt
         dynamicUvTextureObject
         extComputation
         extCompGpuComputation
-        extCompGpuComputationBufferSource
         extCompGpuComputationResource
         extCompGpuPrimvarBufferSource
         fallbackLightingShader
@@ -81,10 +80,11 @@ pxr_library(hdSt
         glConversions
         glslfxShader
         glslProgram
-        glUtils
+        bufferUtils
         hgiConversions
         hioConversions
         imageShaderRenderPass
+        implicitSurfaceSceneIndexPlugin
         instancer
         interleavedMemoryManager
         light      
@@ -92,7 +92,6 @@ pxr_library(hdSt
         material
         materialNetwork
         mesh
-        mixinShader
         package
         points
         primUtils
@@ -109,8 +108,8 @@ pxr_library(hdSt
         shaderCode
         simpleLightingShader
         smoothNormals
+        stagingBuffer
         subtextureIdentifier
-        surfaceShader
         textureBinder
         textureCpuData
         textureHandle
@@ -139,20 +138,22 @@ pxr_library(hdSt
         codeGen
         cullingShaderKey
         drawBatch
+        drawItemsCache
         extCompComputeShader
         fieldTextureCpuData
         imageShaderShaderKey
-        immediateDrawBatch
         indirectDrawBatch
+        materialNetworkShader
         materialParam
         meshShaderKey
         meshTopology 
+        pipelineDrawBatch
         pointsShaderKey
         quadrangulate
         resourceBinder
+        resourceLayout
         shaderKey
         subdivision
-        subdivision3
         triangulate
         unitTestHelper
         volumeShader
@@ -167,13 +168,11 @@ pxr_library(hdSt
         shaders/edgeId.glslfx
         shaders/fallbackLighting.glslfx
         shaders/fallbackLightingShader.glslfx
-        shaders/fallbackSurface.glslfx
+        shaders/fallbackMaterialNetwork.glslfx
         shaders/fallbackVolume.glslfx
         shaders/frustumCull.glslfx
         shaders/imageShader.glslfx
         shaders/instancing.glslfx
-        shaders/lighting.glslfx
-        shaders/lightingIntegrationShader.glslfx
         shaders/mesh.glslfx
         shaders/meshFaceCull.glslfx
         shaders/meshNormal.glslfx
@@ -187,6 +186,7 @@ pxr_library(hdSt
         shaders/terminals.glslfx
         shaders/visibility.glslfx
         shaders/volume.glslfx
+        textures/fallbackBlackDomeLight.png
 
     DOXYGEN_FILES
         overview.dox

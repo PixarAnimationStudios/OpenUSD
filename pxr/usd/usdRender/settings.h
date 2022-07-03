@@ -33,9 +33,6 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdRender/tokens.h"
 
-#include "pxr/base/gf/frustum.h"
-
-
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -67,11 +64,6 @@ public:
     ///
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
-
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::ConcreteTyped;
 
     /// Construct a UsdRenderSettings on UsdPrim \p prim .
     /// Equivalent to UsdRenderSettings::Get(prim.GetStage(), prim.GetPath())
@@ -146,12 +138,6 @@ protected:
     /// \sa UsdSchemaKind
     USDRENDER_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDRENDER_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.

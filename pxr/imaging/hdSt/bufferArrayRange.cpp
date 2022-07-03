@@ -57,6 +57,12 @@ HdStBufferArrayRange::GetResourceRegistry()
     return _resourceRegistry;
 }
 
+HdStResourceRegistry*
+HdStBufferArrayRange::GetResourceRegistry() const
+{
+    return _resourceRegistry;
+}
+
 std::ostream &operator <<(std::ostream &out,
                           const HdStBufferArrayRange &self)
 {
