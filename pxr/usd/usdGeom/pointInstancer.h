@@ -246,7 +246,7 @@ class SdfAssetPath;
 /// \code
 /// 01 def PointInstancer "Crowd_Mid"
 /// 02 {
-/// 03     rel prototypes = [ </Crowd_Mid/Prototypes/MaleThin_Business>, </Crowd_Mid/Prototypes/MaleTine_Casual> ]
+/// 03     rel prototypes = [ </Crowd_Mid/Prototypes/MaleThin_Business>, </Crowd_Mid/Prototypes/MaleThin_Casual> ]
 /// 04     
 /// 05     over "Prototypes" 
 /// 06     {
