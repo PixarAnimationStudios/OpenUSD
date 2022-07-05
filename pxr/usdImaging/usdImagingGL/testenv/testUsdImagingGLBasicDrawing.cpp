@@ -176,10 +176,10 @@ My_TestGLDrawing::InitTest()
     }
 
     if(IsEnabledTestLighting()) {
+        _lightingContext = GlfSimpleLightingContext::New();
         if(UsdImagingGLEngine::IsHydraEnabled()) {
             // set same parameter as GlfSimpleLightingContext::SetStateFromOpenGL
             // OpenGL defaults
-            _lightingContext = GlfSimpleLightingContext::New();
             if (!IsEnabledSceneLights()) {
                 GlfSimpleLight light;
                 if (IsEnabledCameraLight()) {
@@ -311,7 +311,8 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         if(UsdImagingGLEngine::IsHydraEnabled()) {
             _engine->SetLightingState(_lightingContext);
         } else {
-            _engine->SetLightingStateFromOpenGL();
+            _lightingContext->SetStateFromOpenGL();
+            _engine->SetLightingState(_lightingContext);
         }
     }
 

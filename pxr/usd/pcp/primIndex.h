@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/composeSite.h"
+#include "pxr/usd/pcp/dependency.h"
 #include "pxr/usd/pcp/dynamicFileFormatDependencyData.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/iterator.h"
@@ -301,12 +302,16 @@ public:
     /// value was requested for. 
     PcpDynamicFileFormatDependencyData dynamicFileFormatDependency;
 
+    /// Site dependencies from nodes in the prim index that have been culled.
+    std::vector<PcpCulledDependency> culledDependencies;
+
     /// Swap content with \p r.
     inline void swap(PcpPrimIndexOutputs &r) {
         primIndex.swap(r.primIndex);
         allErrors.swap(r.allErrors);
         std::swap(payloadState, r.payloadState);
         dynamicFileFormatDependency.swap(r.dynamicFileFormatDependency);
+        culledDependencies.swap(r.culledDependencies);
     }
 
     /// Appends the outputs from \p childOutputs to this object, using 

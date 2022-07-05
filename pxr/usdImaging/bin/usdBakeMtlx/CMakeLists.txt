@@ -1,8 +1,3 @@
-if (WIN32)
-    message(WARNING "UsdBakeMtlx is not supported on Windows")
-    return()
-endif()
-
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdBakeMtlx)
 
@@ -25,6 +20,9 @@ pxr_library(usdBakeMtlx
 
     PUBLIC_CLASSES
         bakeMaterialX
+
+    PUBLIC_HEADERS
+        api.h
 
     PYTHON_CPPFILES
         moduleDeps.cpp

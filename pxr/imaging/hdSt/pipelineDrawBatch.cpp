@@ -1137,51 +1137,42 @@ _GetVertexBuffersForDrawing(_BindingState const & state)
 }
 
 uint32_t
-_BindVertexBuffersForViewTransformation(
-    HgiGraphicsCmds * gfxCmds,
+_VertexBufferBindingsForViewTransformation(
+    HgiVertexBufferBindingVector &bindings,
     _BindingState const & state)
 {
-    uint32_t const nextBinding = 0; // start binding from zero
-
     // Bind the dispatchBuffer drawing coordinate resource views
     HdStBufferResourceSharedPtr resource =
                 state.dispatchBuffer->GetEntireResource();
+    
+    bindings.emplace_back(resource->GetHandle(),
+                          (uint32_t)resource->GetOffset(),
+                          0);
 
-    HgiBufferHandleVector buffers{resource->GetHandle()};
-    std::vector<uint32_t> byteOffsets{
-        static_cast<uint32_t>(resource->GetOffset())};
-
-    gfxCmds->BindVertexBuffers(nextBinding, buffers, byteOffsets);
-
-    return static_cast<uint32_t>(nextBinding + buffers.size());
+    return static_cast<uint32_t>(bindings.size());
 }
 
 uint32_t
-_BindVertexBuffersForDrawing(
-    HgiGraphicsCmds * gfxCmds,
+_VertexBufferBindingsForDrawing(
+    HgiVertexBufferBindingVector &bindings,
     _BindingState const & state)
 {
-    uint32_t const nextBinding = // continue binding subsequent locations
-        _BindVertexBuffersForViewTransformation(gfxCmds, state);
-
-    // Bind the vertexBar resources
-    HgiBufferHandleVector buffers;
-    std::vector<uint32_t> byteOffsets;
+    uint32_t nextBinding = // continue binding subsequent locations
+        _VertexBufferBindingsForViewTransformation(bindings, state);
 
     for (auto const & namedResource : state.vertexBar->GetResources()) {
         HdBinding const binding = state.binder.GetBinding(namedResource.first);
         HdStBufferResourceSharedPtr const & resource = namedResource.second;
 
         if (binding.GetType() == HdBinding::VERTEX_ATTR) {
-            buffers.push_back(resource->GetHandle());
-            byteOffsets.push_back(
-                static_cast<uint32_t>(resource->GetOffset()));
+            bindings.emplace_back(resource->GetHandle(),
+                                  static_cast<uint32_t>(resource->GetOffset()),
+                                  nextBinding);
+            nextBinding++;
         }
     }
 
-    gfxCmds->BindVertexBuffers(nextBinding, buffers, byteOffsets);
-
-    return static_cast<uint32_t>(nextBinding + buffers.size());
+    return nextBinding;
 }
 
 } // annonymous namespace
@@ -1280,7 +1271,9 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
             hgi->CreateResourceBindings(bindingsDesc);
     gfxCmds->BindResources(resourceBindings);
 
-    _BindVertexBuffersForDrawing(gfxCmds, state);
+    HgiVertexBufferBindingVector bindings;
+    _VertexBufferBindingsForDrawing(bindings, state);
+    gfxCmds->BindVertexBuffers(bindings);
 
     if (drawIndirect) {
         _ExecuteDrawIndirect(gfxCmds, state.indexBar);
@@ -1532,7 +1525,9 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
             hgi->CreateResourceBindings(bindingsDesc);
     cullGfxCmds->BindResources(resourceBindings);
 
-    _BindVertexBuffersForViewTransformation(cullGfxCmds.get(), state);
+    HgiVertexBufferBindingVector bindings;
+    _VertexBufferBindingsForDrawing(bindings, state);
+    cullGfxCmds->BindVertexBuffers(bindings);
 
     GfMatrix4f const &cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
     GfVec2f const &drawRangeNdc = renderPassState->GetDrawingRangeNDC();

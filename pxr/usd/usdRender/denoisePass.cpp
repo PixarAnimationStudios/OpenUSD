@@ -38,10 +38,10 @@ TF_REGISTRY_FUNCTION(TfType)
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
-    // TfType::Find<UsdSchemaBase>().FindDerivedByName("DenoisePass")
+    // TfType::Find<UsdSchemaBase>().FindDerivedByName("RenderDenoisePass")
     // to find TfType<UsdRenderDenoisePass>, which is how IsA queries are
     // answered.
-    TfType::AddAlias<UsdSchemaBase, UsdRenderDenoisePass>("DenoisePass");
+    TfType::AddAlias<UsdSchemaBase, UsdRenderDenoisePass>("RenderDenoisePass");
 }
 
 /* virtual */
@@ -65,7 +65,7 @@ UsdRenderDenoisePass
 UsdRenderDenoisePass::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
-    static TfToken usdPrimTypeName("DenoisePass");
+    static TfToken usdPrimTypeName("RenderDenoisePass");
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdRenderDenoisePass();

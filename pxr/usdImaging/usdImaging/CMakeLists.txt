@@ -48,9 +48,11 @@ pxr_library(usdImaging
         instancerContext
         stageSceneIndex
         tokens
+        apiSchemaAdapter
         basisCurvesAdapter
         capsuleAdapter
         cameraAdapter
+        collectionAPIAdapter
         coneAdapter
         coordSysAdapter
         cubeAdapter
@@ -68,6 +70,7 @@ pxr_library(usdImaging
         lightAdapter
         lightFilterAdapter
         materialAdapter
+        materialBindingAPIAdapter
         meshAdapter
         nurbsCurvesAdapter
         nurbsPatchAdapter

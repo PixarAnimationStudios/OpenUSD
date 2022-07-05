@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDRENDER_GENERATED_RENDERPASS_H
-#define USDRENDER_GENERATED_RENDERPASS_H
+#ifndef USDRENDER_GENERATED_PASS_H
+#define USDRENDER_GENERATED_PASS_H
 
-/// \file usdRender/renderPass.h
+/// \file usdRender/pass.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdRender/api.h"
@@ -50,7 +50,7 @@ class SdfAssetPath;
 // RENDERPASS                                                                 //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdRenderRenderPass
+/// \class UsdRenderPass
 ///
 /// A RenderPass prim encapsulates the necessary information
 /// to generate multipass renders.  It houses properties for generating
@@ -73,7 +73,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdRenderTokens->rightHanded
 /// as the value.
 ///
-class UsdRenderRenderPass : public UsdTyped
+class UsdRenderPass : public UsdTyped
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -81,26 +81,26 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
 
-    /// Construct a UsdRenderRenderPass on UsdPrim \p prim .
-    /// Equivalent to UsdRenderRenderPass::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdRenderPass on UsdPrim \p prim .
+    /// Equivalent to UsdRenderPass::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdRenderRenderPass(const UsdPrim& prim=UsdPrim())
+    explicit UsdRenderPass(const UsdPrim& prim=UsdPrim())
         : UsdTyped(prim)
     {
     }
 
-    /// Construct a UsdRenderRenderPass on the prim held by \p schemaObj .
-    /// Should be preferred over UsdRenderRenderPass(schemaObj.GetPrim()),
+    /// Construct a UsdRenderPass on the prim held by \p schemaObj .
+    /// Should be preferred over UsdRenderPass(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdRenderRenderPass(const UsdSchemaBase& schemaObj)
+    explicit UsdRenderPass(const UsdSchemaBase& schemaObj)
         : UsdTyped(schemaObj)
     {
     }
 
     /// Destructor.
     USDRENDER_API
-    virtual ~UsdRenderRenderPass();
+    virtual ~UsdRenderPass();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -109,17 +109,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdRenderRenderPass holding the prim adhering to this
+    /// Return a UsdRenderPass holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdRenderRenderPass(stage->GetPrimAtPath(path));
+    /// UsdRenderPass(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDRENDER_API
-    static UsdRenderRenderPass
+    static UsdRenderPass
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
@@ -145,7 +145,7 @@ public:
     /// the opinion at the current EditTarget.
     ///
     USDRENDER_API
-    static UsdRenderRenderPass
+    static UsdRenderPass
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 protected:

@@ -80,14 +80,28 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     }
 
     _maxClipDistances = vkDeviceProperties.limits.maxClipDistances;
-    
+    _maxUniformBlockSize = vkDeviceProperties.limits.maxUniformBufferRange;
+    _maxShaderStorageBlockSize =
+        vkDeviceProperties.limits.maxStorageBufferRange;
+    _uniformBufferOffsetAlignment =
+        vkDeviceProperties.limits.minUniformBufferOffsetAlignment;
+
     const bool conservativeRasterEnabled = (device->IsSupportedExtension(
         VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME));
+    const bool hasBuiltinBarycentrics = (device->IsSupportedExtension(
+        VK_NV_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME));
+    const bool shaderDrawParametersEnabled = (device->IsSupportedExtension(
+        VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME));
 
     _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne, false);
+    _SetFlag(HgiDeviceCapabilitiesBitsStencilReadback, true);
+    _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect, true);
     _SetFlag(HgiDeviceCapabilitiesBitsConservativeRaster, 
         conservativeRasterEnabled);
-    _SetFlag(HgiDeviceCapabilitiesBitsStencilReadback, true);
+    _SetFlag(HgiDeviceCapabilitiesBitsBuiltinBarycentrics, 
+        hasBuiltinBarycentrics);
+    _SetFlag(HgiDeviceCapabilitiesBitsShaderDrawParameters, 
+        shaderDrawParametersEnabled);
 }
 
 HgiVulkanCapabilities::~HgiVulkanCapabilities() = default;

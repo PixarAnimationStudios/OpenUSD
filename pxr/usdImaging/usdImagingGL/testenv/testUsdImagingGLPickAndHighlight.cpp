@@ -49,6 +49,7 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
+#include "pxr/imaging/glf/simpleLightingContext.h"
 
 #include <iomanip>
 #include <iostream>
@@ -281,7 +282,9 @@ My_TestGLDrawing::Draw(bool render)
     glEnable(GL_DEPTH_TEST);
 
     if(IsEnabledTestLighting()) {
-        _engine->SetLightingStateFromOpenGL();
+        GlfSimpleLightingContextRefPtr lightingContext = GlfSimpleLightingContext::New();
+        lightingContext->SetStateFromOpenGL();
+        _engine->SetLightingState(lightingContext);
     }
 
     if (!GetClipPlanes().empty()) {

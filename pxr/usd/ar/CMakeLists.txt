@@ -4,6 +4,7 @@ set(PXR_PACKAGE ar)
 pxr_library(ar
     LIBRARIES
         arch
+        js
         tf
         plug
         vt
@@ -12,60 +13,44 @@ pxr_library(ar
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
 
+    PUBLIC_CLASSES
+        asset
+        assetInfo
+        defaultResolver
+        defaultResolverContext
+        filesystemAsset
+        filesystemWritableAsset
+        notice
+        packageResolver
+        packageUtils
+        resolvedPath
+        resolver
+        resolverContext
+        resolverContextBinder
+        resolverScopedCache
+        timestamp
+        writableAsset
+
     PUBLIC_HEADERS
-        ar.h
         api.h
-        asset.h
-        assetInfo.h
-        defaultResolver.h
-        defaultResolverContext.h
+        ar.h
         definePackageResolver.h
         defineResolver.h
         defineResolverContext.h
-        filesystemAsset.h
-        filesystemWritableAsset.h
-        notice.h
-        packageResolver.h
-        packageUtils.h
-        resolvedPath.h
-        resolver.h
-        resolverContext.h
-        resolverContextBinder.h
-        resolverScopedCache.h
-        resolver.h
         threadLocalScopedCache.h
-        timestamp.h
-        writableAsset.h
-
-    PYTHON_PUBLIC_HEADERS
-        pyResolverContext.h
 
     PRIVATE_HEADERS
         debugCodes.h
         testenv/TestArURIResolver_plugin.h
 
     CPPFILES
-        assetInfo.cpp
-        asset.cpp
         debugCodes.cpp
-        defaultResolverContext.cpp
-        defaultResolver.cpp
-        filesystemAsset.cpp
-        filesystemWritableAsset.cpp
-        notice.cpp
-        packageResolver.cpp
-        packageUtils.cpp
-        resolvedPath.cpp
-        resolverContextBinder.cpp
-        resolverContext.cpp
-        resolverScopedCache.cpp
-        resolver.cpp
-        timestamp.cpp
-        writableAsset.cpp
+
+    PYTHON_PUBLIC_CLASSES
+        pyResolverContext
 
     PYTHON_CPPFILES
         moduleDeps.cpp
-        pyResolverContext.cpp
 
     PYMODULE_CPPFILES
         module.cpp

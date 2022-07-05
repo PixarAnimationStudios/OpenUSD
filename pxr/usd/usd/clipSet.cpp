@@ -28,9 +28,11 @@
 #include "pxr/usd/usd/clipSetDefinition.h"
 #include "pxr/usd/usd/debugCodes.h"
 #include "pxr/usd/usd/usdaFileFormat.h"
+#include "pxr/usd/usd/valueUtils.h"
 
 #include "pxr/base/tf/staticTokens.h"
 
+#include <algorithm>
 #include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -595,6 +597,59 @@ Usd_ClipSet::ListTimeSamplesForPath(const SdfPath& path) const
     }
 
     return samples;
+}
+
+std::vector<double>
+Usd_ClipSet::GetTimeSamplesInInterval(
+    const SdfPath& path, const GfInterval& interval) const
+{
+    std::vector<double> timeSamples;
+
+    for (const Usd_ClipRefPtr& clip : valueClips) {
+        if (interval.IsMaxOpen() ? 
+            clip->startTime >= interval.GetMax() :
+            clip->startTime > interval.GetMax()) {
+            // Clips are ordered by increasing start time. Once we hit a clip
+            // whose start time is greater than the given interval, we can stop
+            // looking.
+            break;
+        }
+
+        if (!interval.Intersects(GfInterval(
+                clip->startTime, clip->endTime, 
+                /* minClosed = */ true, /* maxClosed = */ false))) {
+            continue;
+        }
+
+        if (!_ClipContributesValue(clip, path)) {
+            continue;
+        }
+        
+        Usd_CopyTimeSamplesInInterval(
+            clip->ListTimeSamplesForPath(path), interval, &timeSamples);
+    }
+
+    // If we haven't found any time samples in the interval, we need to check
+    // whether there are any clips that provide samples. If there are none,
+    // we always add the start time of the first clip as the sole time sample.
+    // See ListTimeSamplesForPath.
+    //
+    // Note that in the common case where interpolation of missing values is
+    // disabled, all clips contribute time samples.
+    if (timeSamples.empty() &&
+        std::none_of(
+            valueClips.begin(), valueClips.end(), 
+            [this, &path](const Usd_ClipRefPtr& clip) {
+                return _ClipContributesValue(clip, path);
+            })) {
+
+        const Usd_ClipRefPtr& firstClip = valueClips.front();
+        if (interval.Contains(firstClip->authoredStartTime)) {
+            timeSamples.push_back(firstClip->authoredStartTime);
+        }
+    }
+
+    return timeSamples;
 }
 
 size_t

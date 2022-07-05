@@ -50,6 +50,11 @@
                         "isInternal": true,
                         "primTypeName": "Capsule"
                     },
+                    "UsdImagingCollectionAPIAdapter" : {
+                        "bases": ["UsdImagingAPISchemaAdapter"],
+                        "isInternal": true,
+                        "apiSchemaName": "CollectionAPI"
+                    },
                     "UsdImagingConeAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"
@@ -89,6 +94,11 @@
                         "bases": ["UsdImagingPrimAdapter"],
                         "isInternal": true,
                         "primTypeName": "Material"
+                    },
+                    "UsdImagingMaterialBindingAPIAdapter" : {
+                        "bases": ["UsdImagingAPISchemaAdapter"],
+                        "isInternal": true,
+                        "apiSchemaName": "MaterialBindingAPI"
                     },
                     "UsdImagingMeshAdapter": {
                         "bases": [
