@@ -38,3 +38,4 @@ Our test machines have the following software versions installed
 | GraphViz      | 2.40.1               |                              |                                |
 | OpenVDB       | 7.1.0                | 7.1.0                        | 7.1.0                          |
 | Vulkan SDK    | 1.2.135.0            | 1.2.135.0                    | 1.2.135.0                      |
+| Draco         | 1.3.6                | 1.3.6                        | 1.3.6                          |

@@ -1400,16 +1400,12 @@ ALEMBIC = Dependency("Alembic", InstallAlembic, "include/Alembic/Abc/Base.h")
 ############################################################
 # Draco
 
-DRACO_URL = "https://github.com/google/draco/archive/refs/tags/1.3.5.zip"
+DRACO_URL = "https://github.com/google/draco/archive/refs/tags/1.3.6.zip"
 
 def InstallDraco(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(DRACO_URL, context, force)):
         cmakeOptions = [
             '-DBUILD_USD_PLUGIN=ON',
-            # Must explicitly specify building shared libs to ensure symbols are
-            # exported on Windows. See Draco's CMakeLists.txt where 
-            # CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS is set.
-            '-DBUILD_SHARED_LIBS=ON'
         ]
         cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
