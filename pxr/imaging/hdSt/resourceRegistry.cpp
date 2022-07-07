@@ -1115,11 +1115,24 @@ HdStResourceRegistry::_UpdateBufferArrayRange(
         }
     }
 
-    // Create new BAR ...
-    HdBufferSpecVector newBufferSpecs =
-        HdBufferSpec::ComputeUnion(updatedOrAddedSpecs,
-            HdBufferSpec::ComputeDifference(curBufferSpecs, removedSpecs));
-    
+    // Create new BAR, avoiding changing the order of existing specs, to 
+    // avoid unnecessary invalidation of the shader cache.
+    HdBufferSpecVector newBufferSpecs;
+    {
+        // Compute eXclusive members of the add and remove lists, because 
+        // we can't guarantee here that removedSpecs and updatedOrAddedSpecs
+        // have no elements in common, and ignoring overlaps is required for
+        // order preservation here.
+        const HdBufferSpecVector specsAddX =
+            HdBufferSpec::ComputeDifference(updatedOrAddedSpecs, removedSpecs);
+        const HdBufferSpecVector specsRemoveX =
+            HdBufferSpec::ComputeDifference(removedSpecs, updatedOrAddedSpecs);
+
+        newBufferSpecs = HdBufferSpec::ComputeUnion(
+            HdBufferSpec::ComputeDifference(curBufferSpecs, specsRemoveX),
+                specsAddX);
+    }
+
     HdBufferArrayRangeSharedPtr newRange = _AllocateBufferArrayRange(
         strategy, bufferArrayRegistry, role, newBufferSpecs, usageHint);
 
