@@ -55,12 +55,13 @@ class ExclusiveFile:
             while True:
                 try:
                     fcntl.flock(self._file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    return self._file
+                    break
                 except OSError as timeout_exc:
                     num_retries -= 1
                     if num_retries < 0:
                         raise timeout_exc
                     time.sleep(.5)
+        return self._file
         
 
     def __exit__(self, *args):
