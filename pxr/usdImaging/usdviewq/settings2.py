@@ -25,7 +25,9 @@
 # pylint: disable=unicode-builtin
 
 from __future__ import print_function
-import os, sys, json
+import os, sys, time, json
+if os.name == "posix":
+    import fcntl
 
 
 class _StateProp(object):
@@ -36,6 +38,38 @@ class _StateProp(object):
         self.default = default
         self.propType = propType
         self.validator = validator
+
+
+class ExclusiveFile:
+    """Wraps around file objects to ensure process has locked writes"""
+
+    def __init__(self, *args, **kwargs):
+        self._args = args
+        self._kwargs = kwargs
+
+    def __enter__(self):
+        self._file = open(*self._args, **self._kwargs)
+        # for now, only support locking *nix
+        if os.name == "posix":
+            num_retries = 10
+            while True:
+                try:
+                    fcntl.flock(self._file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    return self._file
+                except OSError as timeout_exc:
+                    num_retries -= 1
+                    if num_retries < 0:
+                        raise timeout_exc
+                    time.sleep(.5)
+        
+
+    def __exit__(self, *args):
+        self._file.flush()
+        try:
+            if os.name == "posix":
+                fcntl.flock(self._file.fileno(), fcntl.LOCK_UN)
+        finally:
+            self._file.close()
 
 
 class StateSource(object):
@@ -252,7 +286,7 @@ class Settings(StateSource):
         if not self._isEphemeral:
             self._saveState()
             try:
-                with open(self._stateFilePath, "w") as fp:
+                with ExclusiveFile(self._stateFilePath, "w") as fp:
                     json.dump(self._versionsStateBuffer, fp,
                             indent=2, separators=(",", ": "))
             except IOError as e:
