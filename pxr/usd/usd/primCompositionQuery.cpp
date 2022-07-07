@@ -122,6 +122,18 @@ _GetIntroducingComposeInfo(const UsdPrimCompositionQueryArc &arc,
     return true;
 }
 
+SdfLayerHandle
+UsdPrimCompositionQueryArc::GetTargetLayer() const
+{
+    return _node.GetLayerStack()->GetIdentifier().rootLayer;
+}
+
+SdfPath
+UsdPrimCompositionQueryArc::GetTargetPrimPath() const
+{
+    return _node.GetPath();
+}
+
 SdfLayerHandle 
 UsdPrimCompositionQueryArc::GetIntroducingLayer() const
 {
@@ -358,13 +370,14 @@ UsdPrimCompositionQuery::UsdPrimCompositionQuery(const UsdPrim & prim,
     // We need the unculled prim index so that we can query all possible 
     // composition dependencies even if they don't currently contribute 
     // opinions.
-    _expandedPrimIndex = _prim.ComputeExpandedPrimIndex();
+    _expandedPrimIndex = std::make_shared<PcpPrimIndex>();
+    _prim.ComputeExpandedPrimIndex().Swap(*_expandedPrimIndex);
 
     // Compute the unfiltered list of composition arcs from all non-inert nodes.
     // We still skip inert nodes in the unfiltered query so we don't pick up
     // things like the original copies of specialize nodes that have been
     // moved for strength ordering purposes. 
-    for(const PcpNodeRef &node: _expandedPrimIndex.GetNodeRange()) { 
+    for(const PcpNodeRef &node: _expandedPrimIndex->GetNodeRange()) { 
         if (!node.IsInert()) {
             _unfilteredArcs.push_back(UsdPrimCompositionQueryArc(node));
         }
@@ -535,31 +548,31 @@ UsdPrimCompositionQuery::GetCompositionArcs()
             std::placeholders::_1, _filter));
     }
 
-    // No test, return unfiltered resuslts.
+    std::vector<UsdPrimCompositionQueryArc> filteredArcs;
+
     if (filterTests.empty()) {
-        return _unfilteredArcs;
-    }
-
-    // Runs the filter tests on an arc, failing in any test fails
-    auto _RunFilterTests = 
-        [&filterTests](const UsdPrimCompositionQueryArc &compArc)
-        {
-            for (auto test : filterTests) {
-                if (!test(compArc)) {
-                    return false;
-                }
+        // No test, copy the unfiltered results.
+        filteredArcs = _unfilteredArcs;
+    } else {
+        // Otherwise return only the arcs that pass all the filter tests.
+        filteredArcs.reserve(_unfilteredArcs.size());
+        for (const UsdPrimCompositionQueryArc &compArc : _unfilteredArcs) {
+            const bool passedFilters = std::all_of(
+                filterTests.begin(), filterTests.end(), 
+                [&compArc](const _TestFunc &test) { return test(compArc); });
+            if (passedFilters) {
+                filteredArcs.push_back(compArc);
             }
-            return true;
-        };
-
-    // Create the filtered arc list from the unfiltered arcs.
-    std::vector<UsdPrimCompositionQueryArc> result;
-    for (const UsdPrimCompositionQueryArc &compArc : _unfilteredArcs) {
-        if (_RunFilterTests(compArc)) {
-            result.push_back(compArc);
         }
     }
-    return result;
+
+    // The result query arcs also hold on to the expanded prim index to 
+    // allow them to still be queryable even if this query object itself is
+    // destroyed.
+    for (UsdPrimCompositionQueryArc &compArc : filteredArcs) {
+        compArc._primIndex = _expandedPrimIndex;
+    }
+    return filteredArcs;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
