@@ -1379,15 +1379,20 @@ class AppController(QtCore.QObject):
                 self._dataModel.currentFrame = Usd.TimeCode(self._timeSamples[-1])
         else:
             self._dataModel.currentFrame = Usd.TimeCode(0.0)
-        
+
         if not resetStageDataOnly:
             self._ui.frameField.setText(
                 str(self._dataModel.currentFrame.GetValue()))
 
         if self._playbackAvailable:
             if not resetStageDataOnly:
+                if self._hasTimeSamples:
+                    currentFrame = self._dataModel.currentFrame.GetValue()
+                    frameSliderValue = self._findClosestFrameIndex(currentFrame)
+                else:
+                    frameSliderValue = 0
                 self._ui.frameSlider.setRange(0, len(self._timeSamples) - 1)
-                self._ui.frameSlider.setValue(0)
+                self._ui.frameSlider.setValue(frameSliderValue)
             self._setPlayShortcut()
             self._ui.playButton.setCheckable(True)
             # Ensure the play button state respects the current playback state
