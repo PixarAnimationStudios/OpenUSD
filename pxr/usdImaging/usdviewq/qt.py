@@ -142,12 +142,18 @@ elif PySideModule == 'PySide6':
     from PySide6.QtGui import QSurfaceFormat as QGLFormat
     from PySide6 import QtGui as QtActionWidgets
 
+    if not hasattr(QtCore.Qt, 'MatchRegExp'):
+        QtCore.Qt.MatchRegExp = QtCore.Qt.MatchRegularExpression
+
     def isContextInitialised(self):
         return True
 
     QGLWidget.isContextInitialised = isContextInitialised
 
     QGLWidget.updateGL = QGLWidget.update
+
+    if not hasattr(QGLWidget, 'grabFrameBuffer'):
+        QGLWidget.grabFrameBuffer = QGLWidget.grabFramebuffer
 
     def bindTexture(self, qimage):
         tex = QtOpenGL.QOpenGLTexture(qimage)

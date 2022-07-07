@@ -36,19 +36,33 @@ class TestUsdAppUtilsFrameRecorder(unittest.TestCase):
     @staticmethod
     def _SetupOpenGLContext():
         try:
-            from PySide2 import QtOpenGL
-            from PySide2.QtWidgets import QApplication
+            from PySide6.QtOpenGLWidgets import QOpenGLWidget
+            from PySide6.QtGui import QSurfaceFormat
+            from PySide6.QtWidgets import QApplication
+            PySideModule = 'PySide6'
         except ImportError:
-            from PySide import QtOpenGL
-            from PySide.QtGui import QApplication
+            try:
+                from PySide2 import QtOpenGL
+                from PySide2.QtWidgets import QApplication
+                PySideModule = 'PySide2'
+            except ImportError:
+                from PySide import QtOpenGL
+                from PySide.QtGui import QApplication
+                PySideModule = 'PySide'
 
         application = QApplication(sys.argv)
 
-        glFormat = QtOpenGL.QGLFormat()
-        glFormat.setSampleBuffers(True)
-        glFormat.setSamples(4)
+        if PySideModule == 'PySide6':
+            glFormat = QSurfaceFormat()
+            glFormat.setSamples(4)
+            glWidget = QOpenGLWidget()
+            glWidget.setFormat(glFormat)
+        else:
+            glFormat = QtOpenGL.QGLFormat()
+            glFormat.setSampleBuffers(True)
+            glFormat.setSamples(4)
+            glWidget = QtOpenGL.QGLWidget(glFormat)
 
-        glWidget = QtOpenGL.QGLWidget(glFormat)
         glWidget.setFixedSize(640, 480)
         glWidget.show()
         glWidget.setHidden(True)
