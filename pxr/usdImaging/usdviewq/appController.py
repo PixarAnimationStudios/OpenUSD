@@ -2754,6 +2754,15 @@ class AppController(QtCore.QObject):
             'Save Overrides As', recommendedFilename)
         if len(saveName) == 0:
             return
+        elif (os.path.isfile(saveName) and
+            os.path.samefile(saveName, self._parserData.usdFile)):
+            msg = QtWidgets.QMessageBox()
+            msg.setIcon(QtWidgets.QMessageBox.Critical)
+            msg.setWindowTitle("Error")
+            msg.setText("Error")
+            msg.setInformativeText("Cannot save overrides to current file")
+            msg.exec_()
+            return
 
         if not self._dataModel.stage:
             return
