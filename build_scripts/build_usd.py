@@ -985,12 +985,22 @@ PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.29.tar.gz"
 
 def InstallPNG(context, force, buildArgs):
     macArgs = []
-    if MacOS() and Arm():
-        # ensure libpng's build doesn't erroneously activate inappropriate
-        # Neon extensions
-        macArgs = ["-DPNG_HARDWARE_OPTIMIZATIONS=OFF", 
-                   "-DPNG_ARM_NEON=off"] # case is significant
     with CurrentWorkingDirectory(DownloadURL(PNG_URL, context, force)):
+        if MacOS():
+            if Arm():
+                # ensure libpng's build doesn't erroneously activate inappropriate
+                # Neon extensions
+                macArgs = ["-DPNG_HARDWARE_OPTIMIZATIONS=OFF",
+                          "-DPNG_ARM_NEON=off"] # case is significant
+            # This patch is needed to work around a build issue on MacOS in libpng 
+            # described at https://github.com/glennrp/libpng/issues/344
+            # This was observed on Cmake 3.24.0-rc3, Xcode 14.0 Beta 3
+            PatchFile("CMakeLists.txt",
+                [('add_custom_target(gensym DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/libpng.sym")',
+                  'add_custom_target(gensym DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/libpng.sym" genvers)'),
+                 ("add_custom_target(genfiles DEPENDS",
+                  "add_custom_target(genfiles DEPENDS gensym symbol-check")])
+
         RunCMake(context, force, buildArgs + macArgs)
 
 PNG = Dependency("PNG", InstallPNG, "include/png.h")
