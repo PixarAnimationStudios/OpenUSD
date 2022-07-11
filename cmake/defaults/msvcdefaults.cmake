@@ -99,6 +99,9 @@ if (NOT Boost_USE_STATIC_LIBS)
     _add_define("BOOST_ALL_DYN_LINK")
 endif()
 
+# Stop Boost trying to be "helpful" and baking lib names in via `#pragma lib`
+_add_define("BOOST_ALL_NO_LIB")
+
 if(${PXR_USE_DEBUG_PYTHON})
     _add_define("BOOST_DEBUG_PYTHON")
     _add_define("BOOST_LINKING_PYTHON")
