@@ -129,7 +129,37 @@ static void DoUnitTest()
     TF_AXIOM(table.size() == 4);
     TF_AXIOM(!table.empty());
 
+    // Test NodeHandle interface.
+    Table::NodeHandle node;
+    TF_AXIOM(!node);
+    node = Table::NodeHandle::New(SdfPath("/foo/node"), "/foo/node");
+    TF_AXIOM(node);
+    SdfPath const *stablePathAddr = &node.GetKey();
+    std::string const *stableMappedAddr = &node.GetMapped();
+    TF_AXIOM(stablePathAddr);
+    TF_AXIOM(stableMappedAddr);
+    result = table.insert(std::move(node));
+    TF_AXIOM(result.second);
+    TF_AXIOM(result.first->first == SdfPath("/foo/node"));
+    TF_AXIOM(result.first->second == "/foo/node");
+    TF_AXIOM(&result.first->first == stablePathAddr);
+    TF_AXIOM(&result.first->second == stableMappedAddr);
+    
+    TF_AXIOM(table.size() == 5);
 
+    TF_AXIOM(!node);
+    node = Table::NodeHandle::New(SdfPath("/foo/node"), "dupe");
+    TF_AXIOM(node);
+    result = table.insert(std::move(node));
+    TF_AXIOM(!result.second);
+    TF_AXIOM(result.first->first == SdfPath("/foo/node"));
+    TF_AXIOM(result.first->second == "/foo/node");
+    TF_AXIOM(table.size() == 5);
+
+    table.erase(result.first);
+    TF_AXIOM(table.size() == 4);
+
+    // Test implicit ancestor insertion.
     result = table.
         insert(make_pair(SdfPath("/foo/anim/chars/MeridaGroup/Merida"),
                          "Merida"));
