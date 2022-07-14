@@ -171,6 +171,12 @@ PcpCache::GetLayerStack() const
     return _layerStack;
 }
 
+bool
+PcpCache::HasRootLayerStack(PcpLayerStackPtr const &layerStack) const
+{
+    return get_pointer(layerStack) == get_pointer(_layerStack);
+}
+
 PcpLayerStackPtr
 PcpCache::FindLayerStack(const PcpLayerStackIdentifier &id) const
 {
