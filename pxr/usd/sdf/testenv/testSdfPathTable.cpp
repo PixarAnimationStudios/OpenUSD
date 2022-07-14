@@ -154,6 +154,8 @@ static void DoUnitTest()
     TF_AXIOM(!result.second);
     TF_AXIOM(result.first->first == SdfPath("/foo/node"));
     TF_AXIOM(result.first->second == "/foo/node");
+    TF_AXIOM(node.GetKey() == SdfPath("/foo/node"));
+    TF_AXIOM(node.GetMapped() == "dupe");
     TF_AXIOM(table.size() == 5);
 
     table.erase(result.first);

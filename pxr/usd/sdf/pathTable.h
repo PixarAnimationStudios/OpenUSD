@@ -566,6 +566,11 @@ public:
     }
 
     /// \overload
+    ///
+    /// Insert the entry held by \p node into this table.  If the insertion is
+    /// successful, the contents of \p node are moved-from and indeterminate.
+    /// Otherwise if the insertion is unsuccessful, the contents of \p node are
+    /// unmodified.
     _IterBoolPair insert(NodeHandle &&node) {
         // Insert in table.
         _IterBoolPair result = _InsertInTable(std::move(node));
