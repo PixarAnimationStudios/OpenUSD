@@ -183,6 +183,22 @@ public:
     USD_API
     SdfPrimSpecHandleVector GetPrimStack() const;
 
+    /// Return all the authored SdfPrimSpecs that may contain opinions for this
+    /// prim in order from strong to weak paired with the cumulative layer 
+    /// offset from the stage's root layer to the layer containing the prim 
+    /// spec.
+    ///
+    /// This behaves exactly the same as UsdPrim::GetPrimStack with the 
+    /// addition of providing the cumulative layer offset of each spec's layer.
+    ///
+    /// \note Use this method for debugging and diagnostic purposes.  It is
+    /// **not** advisable to retain a PrimStack for expedited metadata value
+    /// resolution, since not all metadata resolves with simple "strongest
+    /// opinion wins" semantics.
+    USD_API
+    std::vector<std::pair<SdfPrimSpecHandle, SdfLayerOffset>> 
+    GetPrimStackWithLayerOffsets() const;
+
     /// Author an opinion for this Prim's specifier at the current edit
     /// target.
     bool SetSpecifier(SdfSpecifier specifier) const {

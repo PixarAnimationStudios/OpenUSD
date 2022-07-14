@@ -1409,20 +1409,13 @@ UsdPrim::GetInstances() const
 SdfPrimSpecHandleVector 
 UsdPrim::GetPrimStack() const
 {
-    SdfPrimSpecHandleVector primStack;
+    return UsdStage::_GetPrimStack(*this);
+}
 
-    for (Usd_Resolver resolver(&(_Prim()->GetPrimIndex())); 
-                      resolver.IsValid(); resolver.NextLayer()) {
-
-        auto primSpec = resolver.GetLayer()
-            ->GetPrimAtPath(resolver.GetLocalPath());
-
-        if (primSpec) { 
-            primStack.push_back(primSpec); 
-        }
-    }
-
-    return primStack;
+std::vector<std::pair<SdfPrimSpecHandle, SdfLayerOffset>> 
+UsdPrim::GetPrimStackWithLayerOffsets() const
+{
+    return UsdStage::_GetPrimStackWithLayerOffsets(*this);
 }
 
 PcpPrimIndex 

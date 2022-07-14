@@ -7491,6 +7491,11 @@ UsdStage::_GetValueImpl(UsdTimeCode time, const UsdAttribute &attr,
 // as we need to gather all relevant property specs in the LayerStack
 struct UsdStage::_PropertyStackResolver {
     SdfPropertySpecHandleVector propertyStack;
+    std::vector<std::pair<SdfPropertySpecHandle, SdfLayerOffset>> 
+        propertyStackWithLayerOffsets;
+
+    _PropertyStackResolver(bool withLayerOffsets) : 
+        _withLayerOffsets(withLayerOffsets) {}
 
     bool ProcessFallback() { return false; }
 
@@ -7504,7 +7509,12 @@ struct UsdStage::_PropertyStackResolver {
             = node.GetLayerStack()->GetLayers()[layerStackPosition];
         const auto propertySpec = layer->GetPropertyAtPath(specPath);
         if (propertySpec) {
-            propertyStack.push_back(propertySpec); 
+            if (_withLayerOffsets) {
+                propertyStackWithLayerOffsets.emplace_back(
+                    propertySpec, _GetLayerToStageOffset(node, layer)); 
+            } else {
+                propertyStack.push_back(propertySpec); 
+            }
         }
 
         return false;
@@ -7540,21 +7550,81 @@ struct UsdStage::_PropertyStackResolver {
 
             if (const auto propertySpec = 
                     sourceClip->GetPropertyAtPath(specPath)) {
-                propertyStack.push_back(propertySpec);
+                if (_withLayerOffsets) {
+                    // The layer offset for the clip is the layer offset of the
+                    // source layer of the clip set.
+                    const auto layer = clipSet->sourceLayerStack->GetLayers()[
+                        clipSet->sourceLayerIndex];
+                    propertyStackWithLayerOffsets.emplace_back(
+                        propertySpec, _GetLayerToStageOffset(node, layer)); 
+                } else {
+                    propertyStack.push_back(propertySpec);
+                }
             }
         }
      
         return false;
     }
+
+private:
+    bool _withLayerOffsets;
 };
 
 SdfPropertySpecHandleVector
 UsdStage::_GetPropertyStack(const UsdProperty &prop,
                             UsdTimeCode time) const
 {
-    _PropertyStackResolver resolver;
+    _PropertyStackResolver resolver(/* withLayerOffsets = */ false);
     _GetResolvedValueImpl(prop, &resolver, &time);
     return resolver.propertyStack; 
+}
+
+std::vector<std::pair<SdfPropertySpecHandle, SdfLayerOffset>> 
+UsdStage::_GetPropertyStackWithLayerOffsets(
+    const UsdProperty &prop, UsdTimeCode time) const
+{
+    _PropertyStackResolver resolver(/* withLayerOffsets = */ true);
+    _GetResolvedValueImpl(prop, &resolver, &time);
+    return resolver.propertyStackWithLayerOffsets; 
+}
+
+SdfPrimSpecHandleVector 
+UsdStage::_GetPrimStack(const UsdPrim &prim)
+{
+    SdfPrimSpecHandleVector primStack;
+
+    for (Usd_Resolver resolver(&(prim._Prim()->GetPrimIndex())); 
+                      resolver.IsValid(); resolver.NextLayer()) {
+
+        auto primSpec = resolver.GetLayer()
+            ->GetPrimAtPath(resolver.GetLocalPath());
+
+        if (primSpec) { 
+            primStack.push_back(primSpec); 
+        }
+    }
+
+    return primStack;
+}
+
+std::vector<std::pair<SdfPrimSpecHandle, SdfLayerOffset>> 
+UsdStage::_GetPrimStackWithLayerOffsets(const UsdPrim &prim)
+{
+    std::vector<std::pair<SdfPrimSpecHandle, SdfLayerOffset>>  primStack;
+
+    for (Usd_Resolver resolver(&(prim._Prim()->GetPrimIndex())); 
+                      resolver.IsValid(); resolver.NextLayer()) {
+
+        auto primSpec = resolver.GetLayer()
+            ->GetPrimAtPath(resolver.GetLocalPath());
+
+        if (primSpec) { 
+            primStack.emplace_back(primSpec, 
+                _GetLayerToStageOffset(resolver.GetNode(), resolver.GetLayer())); 
+        }
+    }
+
+    return primStack;
 }
 
 // A 'Resolver' for filling UsdResolveInfo.

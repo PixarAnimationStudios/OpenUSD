@@ -1633,6 +1633,16 @@ private:
     SdfPropertySpecHandleVector
     _GetPropertyStack(const UsdProperty &prop, UsdTimeCode time) const;
 
+    std::vector<std::pair<SdfPropertySpecHandle, SdfLayerOffset>> 
+    _GetPropertyStackWithLayerOffsets(
+        const UsdProperty &prop, UsdTimeCode time) const;
+
+    static SdfPrimSpecHandleVector 
+    _GetPrimStack(const UsdPrim &prim);
+
+    static std::vector<std::pair<SdfPrimSpecHandle, SdfLayerOffset>> 
+    _GetPrimStackWithLayerOffsets(const UsdPrim &prim);
+
     SdfPropertySpecHandle
     _GetSchemaPropertySpec(const UsdPrim &prim, const TfToken &propName) const;
 

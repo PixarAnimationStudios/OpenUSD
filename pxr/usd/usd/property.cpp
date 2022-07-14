@@ -38,6 +38,12 @@ UsdProperty::GetPropertyStack(UsdTimeCode time) const
     return _GetStage()->_GetPropertyStack(*this, time); 
 }
 
+std::vector<std::pair<SdfPropertySpecHandle, SdfLayerOffset>> 
+UsdProperty::GetPropertyStackWithLayerOffsets(UsdTimeCode time) const
+{
+    return _GetStage()->_GetPropertyStackWithLayerOffsets(*this, time); 
+}
+
 TfToken
 UsdProperty::GetBaseName() const
 {
