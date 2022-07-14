@@ -67,7 +67,7 @@ class Launcher(object):
 
         traceCollector = None
 
-        with Timer() as totalTimer:
+        with Timer('open and close usdview') as totalTimer:
             self.RegisterPositionals(parser)
             self.RegisterOptions(parser)
             arg_parse_result = self.ParseOptions(parser)
@@ -88,7 +88,7 @@ class Launcher(object):
             traceCollector.enabled = False
 
         if arg_parse_result.timing and arg_parse_result.quitAfterStartup:
-            totalTimer.PrintTime('open and close usdview')
+            totalTimer.PrintTime()
 
         if traceCollector:
             if arg_parse_result.traceFormat == 'trace':

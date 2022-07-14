@@ -90,7 +90,7 @@ class DrawModeWidget(QtWidgets.QWidget):
         clear ('x') button for clearing an authored drawMode override in the 
         session layer. 
     """
-    def __init__(self, primViewItem, refreshFunc, printTiming=False, 
+    def __init__(self, primViewItem, refreshFunc, makeTimer,
                  parent=None):
         QtWidgets.QWidget.__init__(self, parent)
 
@@ -124,7 +124,7 @@ class DrawModeWidget(QtWidgets.QWidget):
         self._firstPaint = True
 
         self._refreshFunc = refreshFunc
-        self._printTiming = printTiming
+        self._makeTimer = makeTimer
 
         self._comboBox.signalPopupHidden.connect(self._PopupHidden)
         self._comboBox.activated.connect(self._UpdateDrawMode)
@@ -175,7 +175,8 @@ class DrawModeWidget(QtWidgets.QWidget):
         newDrawModeSelection = str(self._comboBox.currentText())
         currentDrawMode = self._modelAPI.ComputeModelDrawMode()
         if currentDrawMode != newDrawModeSelection:
-            with Timer() as t:
+            with self._makeTimer("change model:drawMode on <%s> to %s" % 
+                             (self._modelAPI.GetPath(), newDrawModeSelection)):
                 self._modelAPI.CreateModelDrawModeAttr().Set(
                         newDrawModeSelection)
 
@@ -183,13 +184,11 @@ class DrawModeWidget(QtWidgets.QWidget):
 
                 # We need to redraw the scene to pick up updates to draw mode.
                 self._refreshFunc(self._primViewItem)
-            if self._printTiming:
-                t.PrintTime("change model:drawMode on <%s> to %s" % 
-                        (self._modelAPI.GetPath(), newDrawModeSelection))
         self._CloseEditorIfNoEdit()
 
     def _ClearDrawMode(self):
-        with Timer() as t:
+        with self._makeTimer("clear model:drawMode on <%s>" % 
+                         self._modelAPI.GetPath()):
             drawModeAttr = self._modelAPI.GetModelDrawModeAttr()
             if drawModeAttr:
                 sessionSpec = _GetPropertySpecInSessionLayer(drawModeAttr)
@@ -209,10 +208,6 @@ class DrawModeWidget(QtWidgets.QWidget):
                 PrintWarning(self._modelAPI.GetPath(), "Failed to get "
                     "model:drawMode attribute")
                 return
-        if self._printTiming:
-            t.PrintTime("clear model:drawMode on <%s> to %s" % 
-                        (self._modelAPI.GetPath(), 
-                         self._comboBox.currentText()))
 
     def _CloseEditorIfNoEdit(self):
         # If the clear button isn't present, then there's no edit.
@@ -226,10 +221,10 @@ class DrawModeWidget(QtWidgets.QWidget):
         QtCore.QTimer.singleShot(0, self._CloseEditorIfNoEdit)
 
 class DrawModeItemDelegate(QtWidgets.QStyledItemDelegate):
-    def __init__(self, printTiming, parent=None):
+    def __init__(self, makeTimer, parent=None):
         QtWidgets.QStyledItemDelegate.__init__(self, parent=parent)
         self._treeWidget = parent
-        self._printTiming = printTiming
+        self._makeTimer = makeTimer
 
     # We need to override paint in this delegate as well so that the
     # Draw Mode column will match with the behavior of the other
@@ -250,7 +245,7 @@ class DrawModeItemDelegate(QtWidgets.QStyledItemDelegate):
 
         drawModeWidget = DrawModeWidget(primViewItem, 
             refreshFunc=self._treeWidget.UpdatePrimViewDrawMode,
-            printTiming=self._printTiming,
+            makeTimer=self._makeTimer,
             parent=parent)
         # Store a copy of the widget in the primViewItem, for use when 
         # propagating changes to draw mode down a prim hierarchy.
@@ -357,7 +352,7 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
         self._appController = appController
         selectedAncestorItemDelegate = SelectedAncestorItemDelegate(parent=self)
         self.setItemDelegate(selectedAncestorItemDelegate)
-        drawModeItemDelegate = DrawModeItemDelegate(appController._printTiming, 
+        drawModeItemDelegate = DrawModeItemDelegate(appController._makeTimer,
                                                     parent=self)
         self.setItemDelegateForColumn(PrimViewColumnIndex.DRAWMODE, 
                                       drawModeItemDelegate)
@@ -367,7 +362,7 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
 
     def UpdatePrimViewDrawMode(self, rootItem=None):
         """Updates browser's "Draw Mode" columns."""
-        with Timer() as t:
+        with self._appController._makeTimer("update draw mode column"):
             self.setUpdatesEnabled(False)
             # Update draw-model for the entire prim tree if the given
             # rootItem is None.
@@ -380,8 +375,6 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
             for item in rootsToProcess:
                 PrimViewItem.propagateDrawMode(item, self)
             self.setUpdatesEnabled(True)
-        if self._appController._printTiming:
-            t.PrintTime("update draw mode column")
 
     def ColumnPressCausesSelection(self, col):
         """If this method returns True for column `col`, then we want a

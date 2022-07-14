@@ -463,23 +463,52 @@ def PrettyFormatSize(sz):
 
 class Timer(object):
     """Use as a context object with python's "with" statement, like so:
-       with Timer() as t:
+       with Timer("do some stuff", printTiming=True):
            doSomeStuff()
-       t.PrintTime("did some stuff")
+
+       If you want to defer printing timing information, one way to do so is as
+       follows:
+       with Timer("do some stuff") as t:
+           doSomeStuff()
+       if wantToPrintTime:
+           t.PrintTime()
     """
+    def __init__(self, label, printTiming=False):
+        self._printTiming = printTiming
+        self._ittUtilTaskEnd = lambda : None
+        self._label = label
+        self._isValid = False
+
     def __enter__(self):
         self._stopwatch = Tf.Stopwatch()
         self._stopwatch.Start()
+        self._isValid = True
         self.interval = 0
+        # Annotate for performance tools if we're in the Pixar environment.
+        # Silently skip this if the IttUtil module is not available.
+        try:
+            from pixar import IttUtil
+            self._ittUtilTaskEnd = IttUtil.TaskEnd
+            IttUtil.TaskBegin(self._label)
+        except ImportError:
+            pass
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, excType, excVal, excTB):
         self._stopwatch.Stop()
         self.interval = self._stopwatch.seconds
+        # Annotate for performance tools if we're in the Pixar environment
+        self._ittUtilTaskEnd()
+        # Only report if we are valid and exiting cleanly (i.e. no exception).
+        if self._printTiming and excType is None:
+            self.PrintTime()
 
-    def PrintTime(self, action):
-        print("Time to %s: %2.6fs" % (action, self.interval))
+    def Invalidate(self):
+        self._isValid = False
 
+    def PrintTime(self):
+        if self._isValid:
+            print("Time to %s: %2.6fs" % (self._label, self.interval))
 
 class BusyContext(object):
     """When used as a context object with python's "with" statement,

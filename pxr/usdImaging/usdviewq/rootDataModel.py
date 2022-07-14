@@ -24,7 +24,7 @@
 
 from pxr import Usd, UsdGeom, UsdShade
 from .qt import QtCore
-from .common import Timer, IncludedPurposes
+from .common import IncludedPurposes, Timer
 from pxr.UsdUtils.constantsGroup import ConstantsGroup
 
 class ChangeNotice(ConstantsGroup):
@@ -41,12 +41,12 @@ class RootDataModel(QtCore.QObject):
     signalStageReplaced = QtCore.Signal()
     signalPrimsChanged = QtCore.Signal(ChangeNotice, ChangeNotice)
 
-    def __init__(self, printTiming=False):
+    def __init__(self, makeTimer=None):
 
         QtCore.QObject.__init__(self)
 
         self._stage = None
-        self._printTiming = printTiming
+        self._makeTimer = makeTimer if makeTimer is not None else Timer
 
         self._currentFrame = Usd.TimeCode.Default()
         self._playing = False
@@ -80,10 +80,8 @@ class RootDataModel(QtCore.QObject):
                 self._pcListener = None
 
             if value is None:
-                with Timer() as t:
+                with self._makeTimer('close stage'):
                     self._stage = None
-                if self._printTiming:
-                    t.PrintTime('close stage')
             else:
                 self._stage = value
 

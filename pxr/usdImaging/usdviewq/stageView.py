@@ -831,7 +831,7 @@ class StageView(QGLWidget):
     def rendererAovName(self):
         return self._rendererAovName
 
-    def __init__(self, parent=None, dataModel=None, printTiming=False):
+    def __init__(self, parent=None, dataModel=None, makeTimer=Timer):
         # Note: The default format *disables* the alpha component and so the
         # default backbuffer uses GL_RGB.
         glFormat = QGLFormat()
@@ -843,7 +843,7 @@ class StageView(QGLWidget):
         super(StageView, self).InitQGLWidget(glFormat, parent)
 
         self._dataModel = dataModel or StageView.DefaultDataModel()
-        self._printTiming = printTiming
+        self._makeTimer = makeTimer
 
         self._isFirstImage = True
 
@@ -971,10 +971,8 @@ class StageView(QGLWidget):
 
     def closeRenderer(self):
         '''Close the current renderer.'''
-        with Timer() as t:
+        with self._makeTimer('shut down Hydra'):
             self._renderer = None
-        if self._printTiming:
-            t.PrintTime('shut down Hydra')
 
     def GetRendererPlugins(self):
         if self._renderer:
@@ -2341,31 +2339,33 @@ class StageView(QGLWidget):
 
     def glDraw(self):
         # override glDraw so we can time it.
-        with Timer() as t:
+
+        # If this is the first time an image is being drawn, report how long it
+        # took to do so.
+        with self._makeTimer("create first image",
+                             printTiming=self._isFirstImage) as t:
+
+            # This needs to be done before invoking QGLWidget.glDraw, since it
+            # seems we get recursion??
+            self._isFirstImage = False
+
             QGLWidget.glDraw(self)
 
-        # Render creation is a deferred operation, so the render may not
-        # be initialized on entry to the function.
-        #
-        # This function itself can not create the render, as to create the
-        # renderer we need a valid GL context, which QT has not made current
-        # yet.
-        #
-        # So instead check that the render has been created after the fact.
-        # The point is to avoid reporting an invalid first image time.
-        
-        if not self._renderer:
-            # error has already been issued
-            return
-
+            # Render creation is a deferred operation, so the render may not
+            # be initialized on entry to the function.
+            #
+            # This function itself can not create the render, as to create the
+            # renderer we need a valid GL context, which QT has not made current
+            # yet.
+            #
+            # So instead check that the render has been created after the fact.
+            # The point is to avoid reporting an invalid first image time.
+            if not self._renderer:
+                # error has already been issued -- mark the timer invalid.
+                t.Invalidate()
+                return
 
         self._renderTime = t.interval
-
-        # If timings are being printed and this is the first time an image is
-        # being drawn, report how long it took to do so.
-        if self._printTiming and self._isFirstImage:
-            self._isFirstImage = False
-            t.PrintTime("create first image")
 
     def SetForceRefresh(self, val):
         self._forceRefresh = val or self._forceRefresh

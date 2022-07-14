@@ -118,8 +118,8 @@ QT_BINDING = QtCore.__name__.split('.')[0]
 
 class UsdviewDataModel(RootDataModel):
 
-    def __init__(self, printTiming, settings2):
-        super(UsdviewDataModel, self).__init__(printTiming)
+    def __init__(self, makeTimer, settings2):
+        super(UsdviewDataModel, self).__init__(makeTimer)
 
         self._selectionDataModel = SelectionDataModel(self)
         self._viewSettingsDataModel = ViewSettingsDataModel(self, settings2)
@@ -305,14 +305,14 @@ class AppController(QtCore.QObject):
 
         print('INFO: Settings restored to default.')
 
-    def _configurePlugins(self):
+    def _makeTimer(self, label, printTiming=True):
+        return Timer(label=label,
+                     printTiming = printTiming and self._printTiming)
 
-        with Timer() as t:
+    def _configurePlugins(self):
+        with self._makeTimer("configure and load plugins"):
             self._plugRegistry = plugin.loadPlugins(
                 self._usdviewApi, self._mainWindow)
-
-        if self._printTiming:
-            t.PrintTime("configure and load plugins.")
 
     def _openSettings2(self, defaultSettings):
         settingsPathDir = self._outputBaseDirectory()
@@ -366,7 +366,11 @@ class AppController(QtCore.QObject):
     def __init__(self, parserData, resolverContextFn):
         QtCore.QObject.__init__(self)
 
-        with Timer() as uiOpenTimer:
+        # Must set this first before using a timer.
+        self._debug = os.getenv('USDVIEW_DEBUG', False)
+        self._printTiming = parserData.timing or self._debug
+
+        with self._makeTimer('bring up the UI'):
 
             self._primToItemMap = {}
             self._itemsToPush = []
@@ -380,8 +384,6 @@ class AppController(QtCore.QObject):
             self._noPlugins = parserData.noPlugins
             self._unloaded = parserData.unloaded
             self._resolverContextFn = resolverContextFn
-            self._debug = os.getenv('USDVIEW_DEBUG', False)
-            self._printTiming = parserData.timing or self._debug
             self._lastViewContext = {}
             self._paused = False
             self._stopped = False
@@ -407,8 +409,7 @@ class AppController(QtCore.QObject):
 
             self._openSettings2(parserData.defaultSettings)
 
-            self._dataModel = UsdviewDataModel(
-                self._printTiming, self._settings2)
+            self._dataModel = UsdviewDataModel(self._makeTimer, self._settings2)
 
             # Setup Default bundled fonts (Roboto)
             self._setupCustomFont()
@@ -547,11 +548,11 @@ class AppController(QtCore.QObject):
 
             QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
-            self._timer = QtCore.QTimer(self)
+            self._qtimer = QtCore.QTimer(self)
             # Timeout interval in ms. We set it to 0 so it runs as fast as
             # possible. In advanceFrameForPlayback we use the sleep() call
             # to slow down rendering to self.framesPerSecond fps.
-            self._timer.setInterval(0)
+            self._qtimer.setInterval(0)
             self._lastFrameTime = time()
 
             # Initialize the upper HUD info
@@ -789,7 +790,7 @@ class AppController(QtCore.QObject):
             self._ui.primView.header().customContextMenuRequested.connect(
                 self._primViewHeaderContextMenu)
 
-            self._timer.timeout.connect(self._advanceFrameForPlayback)
+            self._qtimer.timeout.connect(self._advanceFrameForPlayback)
 
             self._ui.primView.customContextMenuRequested.connect(
                 self._primViewContextMenu)
@@ -1130,9 +1131,6 @@ class AppController(QtCore.QObject):
 
             QtWidgets.QApplication.processEvents()
 
-        if self._printTiming:
-            uiOpenTimer.PrintTime('bring up the UI')
-
         self._drawFirstImage()
 
         QtWidgets.QApplication.restoreOverrideCursor()
@@ -1164,11 +1162,10 @@ class AppController(QtCore.QObject):
             self._mainWindow.setWindowTitle(title + ' *')
 
         self.statusMessage(msg, 12)
-        with Timer() as t:
+        with self._makeTimer("'%s'" % msg):
             if self._stageView:
-                self._stageView.updateView(resetCam=False, forceComputeBBox=True)
-        if self._printTiming:
-            t.PrintTime("'%s'" % msg)
+                self._stageView.updateView(resetCam=False,
+                                           forceComputeBBox=True)
 
     def _applyStageOpenLayerMutes(self, stage, muteLayersRe):
         # note this function should only be called once, during _openStage().
@@ -1221,7 +1218,7 @@ class AppController(QtCore.QObject):
         if self._mallocTags != 'none':
             Tf.MallocTag.Initialize()
 
-        with Timer() as t:
+        with self._makeTimer('open stage "%s"' % usdFilePath):
             loadSet = Usd.Stage.LoadNone if (self._unloaded or muteLayersRe) \
                                          else Usd.Stage.LoadAll
             popMask = (None if populationMaskPaths is None else
@@ -1267,8 +1264,6 @@ class AppController(QtCore.QObject):
         if not stage:
             sys.stderr.write(_GetFormattedError())
         else:
-            if self._printTiming:
-                t.PrintTime('open stage "%s"' % usdFilePath)
             stage.SetEditTarget(stage.GetSessionLayer())
 
         if self._mallocTags == 'stage':
@@ -1283,13 +1278,11 @@ class AppController(QtCore.QObject):
         self._dataModel.stage = None
 
     def _startQtShutdownTimer(self):
-        self._qtShutdownTimer = Timer()
+        self._qtShutdownTimer = self._makeTimer('tear down the UI')
         self._qtShutdownTimer.__enter__()
 
     def _stopQtShutdownTimer(self):
-        self._qtShutdownTimer.__exit__()
-        if self._printTiming:
-            self._qtShutdownTimer.PrintTime('tear down the UI')
+        self._qtShutdownTimer.__exit__(None, None, None)
 
     def _setPlayShortcut(self):
         self._ui.playButton.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Space))
@@ -1829,9 +1822,10 @@ class AppController(QtCore.QObject):
                 self._ui.primStageSplitter.addWidget(self._ui.attributeBrowserFrame)
 
             else:
-                self._stageView = StageView(parent=self._mainWindow,
+                self._stageView = StageView(
+                    parent=self._mainWindow,
                     dataModel=self._dataModel,
-                    printTiming=self._printTiming)
+                    makeTimer=self._makeTimer)
 
                 self._stageView.fpsHUDInfo = self._fpsHUDInfo
                 self._stageView.fpsHUDKeys = self._fpsHUDKeys
@@ -1895,8 +1889,9 @@ class AppController(QtCore.QObject):
     def _resetPrimView(self, restoreSelection=True):
         expandedPrims = self._getExpandedPrimViewPrims()
 
-        with Timer() as t, BusyContext():
-            startingDepth = 3
+        startingDepth = 3
+        with self._makeTimer("reset Prim Browser to depth %d" %
+                             startingDepth), BusyContext():
             self._computeDisplayPredicate()
             with self._primViewSelectionBlocker:
                 self._ui.primView.setUpdatesEnabled(False)
@@ -1916,8 +1911,6 @@ class AppController(QtCore.QObject):
                     self._refreshPrimViewSelection(expandedPrims)
                 self._ui.primView.setUpdatesEnabled(True)
             self._refreshCameraListAndMenu(preserveCurrCamera = True)
-        if self._printTiming:
-            t.PrintTime("reset Prim Browser to depth %d" % startingDepth)
 
     def _resetGUI(self):
         """Perform a full refresh/resync of all GUI contents. This should be
@@ -1958,15 +1951,13 @@ class AppController(QtCore.QObject):
         items (and their descendants and ancestors), or all items in the
         primView.  When authoredVisHasChanged is True, we force each item
         to discard any value caches it may be holding onto."""
-        with Timer() as t:
+        with self._makeTimer("update vis column"):
             self._ui.primView.setUpdatesEnabled(False)
             rootsToProcess = self.getSelectedItems() if selItemsOnly else \
                 [self._ui.primView.invisibleRootItem()]
             for item in rootsToProcess:
                 PrimViewItem.propagateVis(item, authoredVisHasChanged)
             self._ui.primView.setUpdatesEnabled(True)
-        if self._printTiming:
-            t.PrintTime("update vis column")
 
     def _updatePrimView(self):
         # Process some more prim view items.
@@ -2078,7 +2069,7 @@ class AppController(QtCore.QObject):
             # Qt thinks it should be based on the text.  We know better.
             self._setPlayShortcut()
             self._fpsHUDInfo[HUDEntries.PLAYBACK]  = "..."
-            self._timer.start()
+            self._qtimer.start()
             # For performance, don't update the prim tree view while playing.
             self._primViewUpdateTimer.stop()
             self._playbackIndex = 0
@@ -2091,7 +2082,7 @@ class AppController(QtCore.QObject):
             # Qt thinks it should be based on the text.  We know better.
             self._setPlayShortcut()
             self._fpsHUDInfo[HUDEntries.PLAYBACK]  = "N/A"
-            self._timer.stop()
+            self._qtimer.stop()
             self._primViewUpdateTimer.start()
             self._updateOnFrameChange()
 
@@ -2235,9 +2226,10 @@ class AppController(QtCore.QObject):
             # path to an item
         else:
             # Begin a new search
-            with Timer() as t:
-                self._primSearchString = self._ui.primViewLineEdit.text()
-                self._primSearchResults = self._findPrims(str(self._ui.primViewLineEdit.text()))
+            self._primSearchString = str(self._ui.primViewLineEdit.text())
+            with self._makeTimer("match '%s'" % self._primSearchString):
+                self._primSearchResults = self._findPrims(
+                    self._primSearchString)
 
                 self._primSearchResults = deque(self._primSearchResults)
                 self._lastPrimSearched = self._dataModel.selection.getFocusPrim()
@@ -2261,10 +2253,6 @@ class AppController(QtCore.QObject):
 
                 if (len(self._primSearchResults) > 0):
                     self._primViewFindNext()
-            if self._printTiming:
-                t.PrintTime("match '%s' (%d matches)" %
-                            (self._primSearchString,
-                             len(self._primSearchResults)))
 
     # returns -1 if path1 appears before path2 in flattened tree
     # returns 0 if path1 and path2 are equal
@@ -2698,8 +2686,8 @@ class AppController(QtCore.QObject):
         
         # If the timer is currently active, stop it from being invoked while
         # the USD stage is being torn down.
-        if self._timer.isActive():
-            self._timer.stop()
+        if self._qtimer.isActive():
+            self._qtimer.stop()
 
         # Close stage and release renderer resources (if applicable).
         self._closeStage()
@@ -3108,7 +3096,9 @@ class AppController(QtCore.QObject):
     def _expandToDepth(self, depth, suppressTiming=False):
         """Expands treeview prims to the given depth
         """
-        with Timer() as t, BusyContext():
+        with self._makeTimer("expand Prim browser to depth %d" % depth,
+                             printTiming=not suppressTiming), BusyContext():
+                
             # Populate items down to depth.  Qt will expand items at depth
             # depth-1 so we need to have items at depth.  We know something
             # changed if any items were added to _itemsToPush.
@@ -3132,9 +3122,6 @@ class AppController(QtCore.QObject):
                 # performance.
                 if not self._dataModel.playing:
                     self._primViewUpdateTimer.start()
-
-        if self._printTiming and not suppressTiming:
-            t.PrintTime("expand Prim browser to depth %d" % depth)
 
     def _primViewExpanded(self, index):
         """Signal handler for expanded(index), facilitates lazy tree population
@@ -3566,7 +3553,7 @@ class AppController(QtCore.QObject):
                     self._getItemAtPath(prim.GetPath(), ensureExpanded=True)
                     for prim in self._dataModel.selection.getPrims()]
             changedAny = False
-            with Timer() as t:
+            with self._makeTimer("update vis column"):
                 for toToggle in itemsToToggle:
                     # toggleVis() returns True if the click caused a visibility
                     # change.
@@ -3576,9 +3563,6 @@ class AppController(QtCore.QObject):
                         changedAny = True
             if changedAny:
                 self.editComplete('Updated prim visibility')
-            if self._printTiming:
-                t.PrintTime("update vis column")
-            
 
     def _itemPressed(self, item, col):
         if col == PrimViewColumnIndex.DRAWMODE:
@@ -3878,7 +3862,7 @@ class AppController(QtCore.QObject):
 
     def _updatePropertyView(self):
         """ Sets the contents of the attribute value viewer """
-        cursorOverride = not self._timer.isActive()
+        cursorOverride = not self._qtimer.isActive()
         if cursorOverride:
             QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
         try:
@@ -4143,8 +4127,8 @@ class AppController(QtCore.QObject):
             tableWidget.setItem(rowIndex, 0, attrName)
             tableWidget.setCellWidget(rowIndex, 1, combo)
             combo.currentIndexChanged.connect(
-                lambda i, combo=combo: combo.updateVariantSelection(
-                    i, self._printTiming))
+                lambda i, combo=combo:
+                combo.updateVariantSelection(i, self._makeTimer))
             rowIndex += 1
 
         # Add all the setless variant selections directly after the variant 
