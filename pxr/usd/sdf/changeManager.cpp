@@ -67,24 +67,25 @@ Sdf_ChangeManager::_SendNoticesForChangeList( const SdfLayerHandle & layer,
         SdfNotice::LayerDirtinessChanged().Send(layer);
     }
 
-    const SdfChangeList::EntryList & entryList = changeList.GetEntryList();
-    TF_FOR_ALL(pathChanges, entryList) {
-        const SdfPath & path = pathChanges->first;
-        const SdfChangeList::Entry & entry = pathChanges->second;
+    const SdfChangeList::const_iterator layerEntry = 
+        changeList.FindEntry(SdfPath::AbsoluteRootPath());
+    if (layerEntry != changeList.end()) {
+        const SdfChangeList::Entry& entry = layerEntry->second;
 
-        TF_FOR_ALL(it, entry.infoChanged) {
-            if (path == SdfPath::AbsoluteRootPath())
-                SdfNotice::LayerInfoDidChange(it->first).Send(layer);
+        for (const auto& keyAndChange : entry.infoChanged) {
+            SdfNotice::LayerInfoDidChange(keyAndChange.first).Send(layer);
         }
 
         if (entry.flags.didChangeIdentifier) {
             SdfNotice::LayerIdentifierDidChange(
                 entry.oldIdentifier, layer->GetIdentifier()).Send(layer);
         }
-        if (entry.flags.didReplaceContent)
+        if (entry.flags.didReplaceContent) {
             SdfNotice::LayerDidReplaceContent().Send(layer);
-        if (entry.flags.didReloadContent)
+        }
+        if (entry.flags.didReloadContent) {
             SdfNotice::LayerDidReloadContent().Send(layer);
+        }
     }
 }
 
