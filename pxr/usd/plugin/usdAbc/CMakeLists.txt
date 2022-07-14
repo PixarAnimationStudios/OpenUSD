@@ -165,7 +165,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdAbcAlembicData
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcAlembicData"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcAlembicData'"
     EXPECTED_RETURN_CODE 0
     ENV 
         USD_ABC_NUM_OGAWA_STREAMS=2
@@ -173,37 +173,37 @@ pxr_register_test(testUsdAbcAlembicData
 
 pxr_register_test(testUsdAbcBugs
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcBugs"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcBugs'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdAbcCamera
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcCamera"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcCamera'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdAbcConversionSubdiv
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcConversionSubdiv"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcConversionSubdiv'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdAbcConversionBasisCurves
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcConversionBasisCurves"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcConversionBasisCurves'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdAbcFaceset
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcFaceset"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcFaceset'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdAbcIndexedProperties
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcIndexedProperties"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcIndexedProperties'"
     DIFF_COMPARE indexedTextureCoordinates.def.usda
     EXPECTED_RETURN_CODE 0
     ENV
@@ -212,7 +212,7 @@ pxr_register_test(testUsdAbcIndexedProperties
 
 pxr_register_test(testUsdAbcIndexedGeomArb
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat hasColorSet.abc --out good_primvars_namespace_after_fix.usda"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdcat' hasColorSet.abc --out good_primvars_namespace_after_fix.usda"
     DIFF_COMPARE good_primvars_namespace_after_fix.usda
     EXPECTED_RETURN_CODE 0
     ENV
@@ -221,7 +221,7 @@ pxr_register_test(testUsdAbcIndexedGeomArb
 
 pxr_register_test(testUsdAbcInstancing
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcInstancing"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcInstancing'"
     DIFF_COMPARE nestedInstancing.def.usda
     EXPECTED_RETURN_CODE 0
     ENV
@@ -230,7 +230,7 @@ pxr_register_test(testUsdAbcInstancing
 
 pxr_register_test(testUsdAbcInstancingXinst
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcInstancing"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcInstancing'"
     DIFF_COMPARE nestedInstancing.xinst.usda
     EXPECTED_RETURN_CODE 0
     ENV
@@ -240,7 +240,7 @@ pxr_register_test(testUsdAbcInstancingXinst
 
 pxr_register_test(testUsdAbcInstancingPinst
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcInstancing"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcInstancing'"
     DIFF_COMPARE nestedInstancing.pinst.usda
     EXPECTED_RETURN_CODE 0
     ENV
@@ -250,7 +250,7 @@ pxr_register_test(testUsdAbcInstancingPinst
 
 pxr_register_test(testUsdAbcInstancingNinst
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcInstancing"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcInstancing'"
     DIFF_COMPARE nestedInstancing.ninst.usda
     EXPECTED_RETURN_CODE 0
     ENV
@@ -260,19 +260,19 @@ pxr_register_test(testUsdAbcInstancingNinst
 
 pxr_register_test(testUsdAbcIsConstant
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcIsConstant"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcIsConstant'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdAbcP_OldEncoding
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcP_OldEncoding"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcP_OldEncoding'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdAbcUvReadWrite
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcUvReadWrite"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcUvReadWrite'"
     EXPECTED_RETURN_CODE 0
     ENV
         USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY=1
@@ -280,7 +280,7 @@ pxr_register_test(testUsdAbcUvReadWrite
 
 pxr_register_test(testUsdAbcUvReadWrite_OldEncoding
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcUvReadWrite_OldEncoding"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcUvReadWrite_OldEncoding'"
     EXPECTED_RETURN_CODE 0
     ENV
         USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY=0
@@ -288,6 +288,6 @@ pxr_register_test(testUsdAbcUvReadWrite_OldEncoding
 
 pxr_register_test(testUsdAbcSDFArguments
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcSDFArguments"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcSDFArguments'"
     EXPECTED_RETURN_CODE 0
 )

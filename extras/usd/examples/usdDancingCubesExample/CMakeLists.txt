@@ -44,7 +44,7 @@ if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux" AND
     "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     pxr_register_test(testUsdDancingCubesExample
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdDancingCubesExample"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdDancingCubesExample'"
         DIFF_COMPARE dynamicContents.usda newDynamicContents.usda
         EXPECTED_RETURN_CODE 0
         ENV
@@ -53,7 +53,7 @@ if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux" AND
 else()
     pxr_register_test(testUsdDancingCubesExample
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdDancingCubesExample"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdDancingCubesExample'"
         EXPECTED_RETURN_CODE 0
         ENV
             ${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/usdDancingCubesExample/resources

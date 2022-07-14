@@ -89,7 +89,7 @@ pxr_test_scripts(
 
 pxr_register_test(testUsdLuxLight
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdLuxLight"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdLuxLight'"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -100,7 +100,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdLuxLinkingAPI
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdLuxLinkingAPI"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdLuxLinkingAPI'"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -111,7 +111,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdLuxLightListAPI
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdLuxLightListAPI"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdLuxLightListAPI'"
     EXPECTED_RETURN_CODE 0
 )
 

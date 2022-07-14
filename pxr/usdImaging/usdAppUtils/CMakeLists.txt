@@ -62,19 +62,19 @@ pxr_install_test_dir(
 )
 pxr_register_test(testUsdAppUtilsCamera
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAppUtilsCamera"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAppUtilsCamera'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdAppUtilsCmdlineArgs
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAppUtilsCmdlineArgs"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAppUtilsCmdlineArgs'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdAppUtilsComplexity
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAppUtilsComplexity"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAppUtilsComplexity'"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -85,7 +85,7 @@ pxr_install_test_dir(
 if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_register_test(testUsdAppUtilsFrameRecorder
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAppUtilsFrameRecorder"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdAppUtilsFrameRecorder'"
         EXPECTED_RETURN_CODE 0
     )
 endif()

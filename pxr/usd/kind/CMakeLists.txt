@@ -38,6 +38,6 @@ pxr_install_test_dir(
 
 pxr_register_test(testKindRegistry
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testKindRegistry"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testKindRegistry'"
     EXPECTED_RETURN_CODE 0
 )

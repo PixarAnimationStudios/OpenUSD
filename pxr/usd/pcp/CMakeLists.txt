@@ -882,7 +882,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testPcpMuseum_BasicInstancing
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicInstancing/root.sdf"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicInstancing/root.sdf"
     STDOUT_REDIRECT compositionResults_BasicInstancing.txt
     DIFF_COMPARE compositionResults_BasicInstancing.txt 
     ENV 
@@ -891,7 +891,7 @@ pxr_register_test(testPcpMuseum_BasicInstancing
 
 pxr_register_test(testPcpMuseum_BasicInstancingAndNestedInstances
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicInstancingAndNestedInstances/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicInstancingAndNestedInstances/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicInstancingAndNestedInstances.txt
     DIFF_COMPARE compositionResults_BasicInstancingAndNestedInstances.txt 
     ENV 
@@ -900,7 +900,7 @@ pxr_register_test(testPcpMuseum_BasicInstancingAndNestedInstances
 
 pxr_register_test(testPcpMuseum_BasicInstancingAndVariants
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicInstancingAndVariants/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicInstancingAndVariants/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicInstancingAndVariants.txt
     DIFF_COMPARE compositionResults_BasicInstancingAndVariants.txt 
     ENV 
@@ -909,7 +909,7 @@ pxr_register_test(testPcpMuseum_BasicInstancingAndVariants
 
 pxr_register_test(testPcpMuseum_BasicPayloadDiamond
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --payloads ^(?!/RootUnloaded) BasicPayloadDiamond/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' --payloads ^(?!/RootUnloaded) BasicPayloadDiamond/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicPayloadDiamond.txt
     DIFF_COMPARE compositionResults_BasicPayloadDiamond.txt 
     ENV 
@@ -918,161 +918,161 @@ pxr_register_test(testPcpMuseum_BasicPayloadDiamond
 
 pxr_register_test(testPcpMuseum_BasicReference
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicReference/root.sdf --session BasicReference/session.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicReference/root.sdf --session BasicReference/session.sdf" 
     STDOUT_REDIRECT compositionResults_BasicReference.txt
     DIFF_COMPARE compositionResults_BasicReference.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicReferenceAndClass
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicReferenceAndClass/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicReferenceAndClass/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicReferenceAndClass.txt
     DIFF_COMPARE compositionResults_BasicReferenceAndClass.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicReferenceAndClassDiamond
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicReferenceAndClassDiamond/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicReferenceAndClassDiamond/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicReferenceAndClassDiamond.txt
     DIFF_COMPARE compositionResults_BasicReferenceAndClassDiamond.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicAncestralReference
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicAncestralReference/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicAncestralReference/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicAncestralReference.txt
     DIFF_COMPARE compositionResults_BasicAncestralReference.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicReferenceDiamond
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicReferenceDiamond/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicReferenceDiamond/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicReferenceDiamond_pcp.txt
     DIFF_COMPARE compositionResults_BasicReferenceDiamond_pcp.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicRelocateToAnimInterface
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicRelocateToAnimInterface/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicRelocateToAnimInterface/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicRelocateToAnimInterface.txt
     DIFF_COMPARE compositionResults_BasicRelocateToAnimInterface.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicInherits
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicInherits/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicInherits/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicInherits.txt
     DIFF_COMPARE compositionResults_BasicInherits.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicLocalAndGlobalClassCombination
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicLocalAndGlobalClassCombination/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicLocalAndGlobalClassCombination/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicLocalAndGlobalClassCombination.txt
     DIFF_COMPARE compositionResults_BasicLocalAndGlobalClassCombination.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicListEditing
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicListEditing/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicListEditing/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicListEditing.txt
     DIFF_COMPARE compositionResults_BasicListEditing.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicListEditingWithInherits
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicListEditingWithInherits/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicListEditingWithInherits/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicListEditingWithInherits_pcp.txt
     DIFF_COMPARE compositionResults_BasicListEditingWithInherits_pcp.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicDuplicateSublayer
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicDuplicateSublayer/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicDuplicateSublayer/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicDuplicateSublayer.txt
     DIFF_COMPARE compositionResults_BasicDuplicateSublayer.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicTimeOffset
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicTimeOffset/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicTimeOffset/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicTimeOffset.txt
     DIFF_COMPARE compositionResults_BasicTimeOffset.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicNestedPayload
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicNestedPayload/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicNestedPayload/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicNestedPayload.txt
     DIFF_COMPARE compositionResults_BasicNestedPayload.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicNestedVariants
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicNestedVariants/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicNestedVariants/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicNestedVariants_pcp.txt
     DIFF_COMPARE compositionResults_BasicNestedVariants_pcp.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicNestedVariantsWithSameName
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicNestedVariantsWithSameName/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicNestedVariantsWithSameName/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicNestedVariantsWithSameName.txt
     DIFF_COMPARE compositionResults_BasicNestedVariantsWithSameName.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicVariantWithConnections
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicVariantWithConnections/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicVariantWithConnections/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicVariantWithConnections.txt
     DIFF_COMPARE compositionResults_BasicVariantWithConnections.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicOwner
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --session BasicOwner/session.sdf BasicOwner/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' --session BasicOwner/session.sdf BasicOwner/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicOwner.txt
     DIFF_COMPARE compositionResults_BasicOwner.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicPayload
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --session BasicPayload/session.sdf --errorFile compositionErrors_BasicPayload_pcp.txt BasicPayload/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' --session BasicPayload/session.sdf --errorFile compositionErrors_BasicPayload_pcp.txt BasicPayload/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicPayload_pcp.txt
     DIFF_COMPARE compositionResults_BasicPayload_pcp.txt compositionErrors_BasicPayload_pcp.txt
 )
 
 pxr_register_test(testPcpMuseum_BasicSpecializes
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicSpecializes/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicSpecializes/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicSpecializes.txt
     DIFF_COMPARE compositionResults_BasicSpecializes.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicSpecializesAndInherits
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicSpecializesAndInherits/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicSpecializesAndInherits/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicSpecializesAndInherits.txt
     DIFF_COMPARE compositionResults_BasicSpecializesAndInherits.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicSpecializesAndReferences
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicSpecializesAndReferences/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicSpecializesAndReferences/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicSpecializesAndReferences.txt
     DIFF_COMPARE compositionResults_BasicSpecializesAndReferences.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicSpecializesAndVariants
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicSpecializesAndVariants/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' BasicSpecializesAndVariants/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicSpecializesAndVariants.txt
     DIFF_COMPARE compositionResults_BasicSpecializesAndVariants.txt 
 )
 
 pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults ImpliedAndAncestralInherits/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' ImpliedAndAncestralInherits/root.sdf" 
     STDOUT_REDIRECT compositionResults_ImpliedAndAncestralInherits.txt
     DIFF_COMPARE compositionResults_ImpliedAndAncestralInherits.txt
 )
@@ -1080,7 +1080,7 @@ pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits
 pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits_graph
     PYTHON
     TESTENV testPcpMuseum_ImpliedAndAncestralInherits
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --dumpPath /World/CharGroup/Sim/includes/Hand/Geom --dumpMaps ImpliedAndAncestralInherits/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' --dumpPath /World/CharGroup/Sim/includes/Hand/Geom --dumpMaps ImpliedAndAncestralInherits/root.sdf" 
     STDOUT_REDIRECT compositionResults_ImpliedAndAncestralInherits_graph.txt
     CLEAN_OUTPUT "[^@]*/ImpliedAndAncestralInherits/"
     DIFF_COMPARE compositionResults_ImpliedAndAncestralInherits_graph.txt 
@@ -1088,91 +1088,91 @@ pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits_graph
 
 pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits_ComplexEvaluation
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults ImpliedAndAncestralInherits_ComplexEvaluation/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' ImpliedAndAncestralInherits_ComplexEvaluation/root.sdf" 
     STDOUT_REDIRECT compositionResults_ImpliedAndAncestralInherits_ComplexEvaluation.txt
     DIFF_COMPARE compositionResults_ImpliedAndAncestralInherits_ComplexEvaluation.txt
 )
 
 pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --payloads ^(?!/Root/UnloadedInheritedPayload) PayloadsAndAncestralArcs/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' --payloads ^(?!/Root/UnloadedInheritedPayload) PayloadsAndAncestralArcs/root.sdf" 
     STDOUT_REDIRECT compositionResults_PayloadsAndAncestralArcs.txt
     DIFF_COMPARE compositionResults_PayloadsAndAncestralArcs.txt 
 )
 
 pxr_register_test(testPcpMuseum_ReferenceListOpsWithOffsets
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults ReferenceListOpsWithOffsets/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' ReferenceListOpsWithOffsets/root.sdf" 
     STDOUT_REDIRECT compositionResults_ReferenceListOpsWithOffsets.txt
     DIFF_COMPARE compositionResults_ReferenceListOpsWithOffsets.txt 
 )
 
 pxr_register_test(testPcpMuseum_RelativePathPayloads
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults RelativePathPayloads/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' RelativePathPayloads/root.sdf" 
     STDOUT_REDIRECT compositionResults_RelativePathPayloads.txt
     DIFF_COMPARE compositionResults_RelativePathPayloads.txt 
 )
 
 pxr_register_test(testPcpMuseum_RelativePathReferences
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults RelativePathReferences/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' RelativePathReferences/root.sdf" 
     STDOUT_REDIRECT compositionResults_RelativePathReferences.txt
     DIFF_COMPARE compositionResults_RelativePathReferences.txt 
 )
 
 pxr_register_test(testPcpMuseum_RelocatePrimsWithSameName
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults RelocatePrimsWithSameName/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' RelocatePrimsWithSameName/root.sdf" 
     STDOUT_REDIRECT compositionResults_RelocatePrimsWithSameName.txt
     DIFF_COMPARE compositionResults_RelocatePrimsWithSameName.txt 
 )
 
 pxr_register_test(testPcpMuseum_SpecializesAndAncestralArcs
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SpecializesAndAncestralArcs/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' SpecializesAndAncestralArcs/root.sdf" 
     STDOUT_REDIRECT compositionResults_SpecializesAndAncestralArcs.txt
     DIFF_COMPARE compositionResults_SpecializesAndAncestralArcs.txt 
 )
 
 pxr_register_test(testPcpMuseum_SpecializesAndAncestralArcs2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SpecializesAndAncestralArcs2/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' SpecializesAndAncestralArcs2/root.sdf" 
     STDOUT_REDIRECT compositionResults_SpecializesAndAncestralArcs2.txt
     DIFF_COMPARE compositionResults_SpecializesAndAncestralArcs2.txt 
 )
 
 pxr_register_test(testPcpMuseum_SubrootInheritsAndVariants
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SubrootInheritsAndVariants/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' SubrootInheritsAndVariants/root.sdf" 
     STDOUT_REDIRECT compositionResults_SubrootInheritsAndVariants.txt
     DIFF_COMPARE compositionResults_SubrootInheritsAndVariants.txt 
 )
 
 pxr_register_test(testPcpMuseum_SubrootReferenceAndClasses
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SubrootReferenceAndClasses/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' SubrootReferenceAndClasses/root.sdf" 
     STDOUT_REDIRECT compositionResults_SubrootReferenceAndClasses.txt
     DIFF_COMPARE compositionResults_SubrootReferenceAndClasses.txt 
 )
 
 pxr_register_test(testPcpMuseum_SubrootReferenceAndRelocates
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SubrootReferenceAndRelocates/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' SubrootReferenceAndRelocates/root.sdf" 
     STDOUT_REDIRECT compositionResults_SubrootReferenceAndRelocates.txt
     DIFF_COMPARE compositionResults_SubrootReferenceAndRelocates.txt 
 )
 
 pxr_register_test(testPcpMuseum_SubrootReferenceAndVariants
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SubrootReferenceAndVariants/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' SubrootReferenceAndVariants/root.sdf" 
     STDOUT_REDIRECT compositionResults_SubrootReferenceAndVariants.txt
     DIFF_COMPARE compositionResults_SubrootReferenceAndVariants.txt 
 )
 
 pxr_register_test(testPcpMuseum_TimeCodesPerSecond1
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TimeCodesPerSecond/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TimeCodesPerSecond/root.sdf" 
     STDOUT_REDIRECT compositionResults_TimeCodesPerSecond1.txt
     DIFF_COMPARE compositionResults_TimeCodesPerSecond1.txt 
     ENV 
@@ -1181,7 +1181,7 @@ pxr_register_test(testPcpMuseum_TimeCodesPerSecond1
 
 pxr_register_test(testPcpMuseum_TimeCodesPerSecond2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TimeCodesPerSecond/root_48tcps.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TimeCodesPerSecond/root_48tcps.sdf" 
     STDOUT_REDIRECT compositionResults_TimeCodesPerSecond2.txt
     DIFF_COMPARE compositionResults_TimeCodesPerSecond2.txt 
     ENV 
@@ -1190,7 +1190,7 @@ pxr_register_test(testPcpMuseum_TimeCodesPerSecond2
 
 pxr_register_test(testPcpMuseum_TimeCodesPerSecond3
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TimeCodesPerSecond/root_24tcps_12fps.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TimeCodesPerSecond/root_24tcps_12fps.sdf" 
     STDOUT_REDIRECT compositionResults_TimeCodesPerSecond3.txt
     DIFF_COMPARE compositionResults_TimeCodesPerSecond3.txt 
     ENV 
@@ -1199,7 +1199,7 @@ pxr_register_test(testPcpMuseum_TimeCodesPerSecond3
 
 pxr_register_test(testPcpMuseum_TimeCodesPerSecond4
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TimeCodesPerSecond/root_12fps.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TimeCodesPerSecond/root_12fps.sdf" 
     STDOUT_REDIRECT compositionResults_TimeCodesPerSecond4.txt
     DIFF_COMPARE compositionResults_TimeCodesPerSecond4.txt 
     ENV 
@@ -1208,7 +1208,7 @@ pxr_register_test(testPcpMuseum_TimeCodesPerSecond4
 
 pxr_register_test(testPcpMuseum_TimeCodesPerSecond_Legacy1
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TimeCodesPerSecond/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TimeCodesPerSecond/root.sdf" 
     STDOUT_REDIRECT compositionResults_TimeCodesPerSecond1_Legacy.txt
     DIFF_COMPARE compositionResults_TimeCodesPerSecond1_Legacy.txt 
     ENV 
@@ -1217,7 +1217,7 @@ pxr_register_test(testPcpMuseum_TimeCodesPerSecond_Legacy1
 
 pxr_register_test(testPcpMuseum_TimeCodesPerSecond_Legacy2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TimeCodesPerSecond/root_48tcps.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TimeCodesPerSecond/root_48tcps.sdf" 
     STDOUT_REDIRECT compositionResults_TimeCodesPerSecond2_Legacy.txt
     DIFF_COMPARE compositionResults_TimeCodesPerSecond2_Legacy.txt 
     ENV 
@@ -1226,7 +1226,7 @@ pxr_register_test(testPcpMuseum_TimeCodesPerSecond_Legacy2
 
 pxr_register_test(testPcpMuseum_TimeCodesPerSecond_Legacy3
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TimeCodesPerSecond/root_24tcps_12fps.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TimeCodesPerSecond/root_24tcps_12fps.sdf" 
     STDOUT_REDIRECT compositionResults_TimeCodesPerSecond3_Legacy.txt
     DIFF_COMPARE compositionResults_TimeCodesPerSecond3_Legacy.txt 
     ENV 
@@ -1235,7 +1235,7 @@ pxr_register_test(testPcpMuseum_TimeCodesPerSecond_Legacy3
 
 pxr_register_test(testPcpMuseum_TimeCodesPerSecond_Legacy4
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TimeCodesPerSecond/root_12fps.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TimeCodesPerSecond/root_12fps.sdf" 
     STDOUT_REDIRECT compositionResults_TimeCodesPerSecond4_Legacy.txt
     DIFF_COMPARE compositionResults_TimeCodesPerSecond4_Legacy.txt 
     ENV 
@@ -1244,7 +1244,7 @@ pxr_register_test(testPcpMuseum_TimeCodesPerSecond_Legacy4
 
 pxr_register_test(testPcpMuseum_TimeCodesPerSecondWithSessionLayer1
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TimeCodesPerSecond/root_24tcps_12fps.sdf --session TimeCodesPerSecond/session_48tcps.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TimeCodesPerSecond/root_24tcps_12fps.sdf --session TimeCodesPerSecond/session_48tcps.sdf" 
     STDOUT_REDIRECT compositionResults_TimeCodesPerSecondWithSessionLayer1.txt
     DIFF_COMPARE compositionResults_TimeCodesPerSecondWithSessionLayer1.txt 
     ENV 
@@ -1253,7 +1253,7 @@ pxr_register_test(testPcpMuseum_TimeCodesPerSecondWithSessionLayer1
 
 pxr_register_test(testPcpMuseum_TimeCodesPerSecondWithSessionLayer2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TimeCodesPerSecond/root_48tcps.sdf --session TimeCodesPerSecond/session_24fps.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TimeCodesPerSecond/root_48tcps.sdf --session TimeCodesPerSecond/session_24fps.sdf" 
     STDOUT_REDIRECT compositionResults_TimeCodesPerSecondWithSessionLayer2.txt
     DIFF_COMPARE compositionResults_TimeCodesPerSecondWithSessionLayer2.txt 
     ENV 
@@ -1262,7 +1262,7 @@ pxr_register_test(testPcpMuseum_TimeCodesPerSecondWithSessionLayer2
 
 pxr_register_test(testPcpMuseum_TimeCodesPerSecondWithSessionLayer3
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TimeCodesPerSecond/root_12fps.sdf --session TimeCodesPerSecond/session_24fps.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TimeCodesPerSecond/root_12fps.sdf --session TimeCodesPerSecond/session_24fps.sdf" 
     STDOUT_REDIRECT compositionResults_TimeCodesPerSecondWithSessionLayer3.txt
     DIFF_COMPARE compositionResults_TimeCodesPerSecondWithSessionLayer3.txt 
     ENV 
@@ -1271,7 +1271,7 @@ pxr_register_test(testPcpMuseum_TimeCodesPerSecondWithSessionLayer3
 
 pxr_register_test(testPcpMuseum_TimeCodesPerSecondWithSessionLayer4
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TimeCodesPerSecond/root_12fps.sdf --session TimeCodesPerSecond/session.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TimeCodesPerSecond/root_12fps.sdf --session TimeCodesPerSecond/session.sdf" 
     STDOUT_REDIRECT compositionResults_TimeCodesPerSecondWithSessionLayer4.txt
     DIFF_COMPARE compositionResults_TimeCodesPerSecondWithSessionLayer4.txt 
     ENV 
@@ -1280,394 +1280,394 @@ pxr_register_test(testPcpMuseum_TimeCodesPerSecondWithSessionLayer4
 
 pxr_register_test(testPcpMuseum_TypicalReferenceToRiggedModel
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TypicalReferenceToRiggedModel/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TypicalReferenceToRiggedModel/root.sdf" 
     STDOUT_REDIRECT compositionResults_TypicalReferenceToRiggedModel.txt
     DIFF_COMPARE compositionResults_TypicalReferenceToRiggedModel.txt 
 )
 
 pxr_register_test(testPcpMuseum_TypicalReferenceToChargroup
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TypicalReferenceToChargroup/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TypicalReferenceToChargroup/root.sdf" 
     STDOUT_REDIRECT compositionResults_TypicalReferenceToChargroup_pcp.txt
     DIFF_COMPARE compositionResults_TypicalReferenceToChargroup_pcp.txt 
 )
 
 pxr_register_test(testPcpMuseum_TypicalReferenceToChargroupWithRename
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TypicalReferenceToChargroupWithRename/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TypicalReferenceToChargroupWithRename/root.sdf" 
     STDOUT_REDIRECT compositionResults_TypicalReferenceToChargroupWithRename.txt
     DIFF_COMPARE compositionResults_TypicalReferenceToChargroupWithRename.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyListEditedTargetPaths
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyListEditedTargetPaths/root.sdf"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyListEditedTargetPaths/root.sdf"
     STDOUT_REDIRECT compositionResults_TrickyListEditedTargetPaths.txt
     DIFF_COMPARE compositionResults_TrickyListEditedTargetPaths.txt
 )
 
 pxr_register_test(testPcpMuseum_TrickySpookyInherits
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpookyInherits/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickySpookyInherits/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickySpookyInherits_pcp.txt
     DIFF_COMPARE compositionResults_TrickySpookyInherits_pcp.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickySpookyInheritsInSymmetricArmRig
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpookyInheritsInSymmetricArmRig/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickySpookyInheritsInSymmetricArmRig/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickySpookyInheritsInSymmetricArmRig.txt
     DIFF_COMPARE compositionResults_TrickySpookyInheritsInSymmetricArmRig.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickySpookyInheritsInSymmetricBrowRig
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpookyInheritsInSymmetricBrowRig/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickySpookyInheritsInSymmetricBrowRig/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickySpookyInheritsInSymmetricBrowRig.txt
     DIFF_COMPARE compositionResults_TrickySpookyInheritsInSymmetricBrowRig.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyInheritsAndRelocates2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyInheritsAndRelocates2/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyInheritsAndRelocates2/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyInheritsAndRelocates2.txt
     DIFF_COMPARE compositionResults_TrickyInheritsAndRelocates2.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyInheritsAndRelocates3
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyInheritsAndRelocates3/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyInheritsAndRelocates3/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyInheritsAndRelocates3.txt
     DIFF_COMPARE compositionResults_TrickyInheritsAndRelocates3.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyInheritsAndRelocates4
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyInheritsAndRelocates4/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyInheritsAndRelocates4/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyInheritsAndRelocates4.txt
     DIFF_COMPARE compositionResults_TrickyInheritsAndRelocates4.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyInheritsAndRelocates5
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyInheritsAndRelocates5/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyInheritsAndRelocates5/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyInheritsAndRelocates5.txt
     DIFF_COMPARE compositionResults_TrickyInheritsAndRelocates5.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyInheritsInVariants
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyInheritsInVariants/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyInheritsInVariants/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyInheritsInVariants.txt
     DIFF_COMPARE compositionResults_TrickyInheritsInVariants.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyInheritsInVariants2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyInheritsInVariants2/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyInheritsInVariants2/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyInheritsInVariants2.txt
     DIFF_COMPARE compositionResults_TrickyInheritsInVariants2.txt 
 )
 
 pxr_register_test(testPcpMuseum_SubrootReferenceNonCycle
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_SubrootReferenceNonCycle.txt SubrootReferenceNonCycle/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' --errorFile compositionErrors_SubrootReferenceNonCycle.txt SubrootReferenceNonCycle/root.sdf" 
     STDOUT_REDIRECT compositionResults_SubrootReferenceNonCycle.txt
     DIFF_COMPARE compositionResults_SubrootReferenceNonCycle.txt compositionErrors_SubrootReferenceNonCycle.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyVariantAncestralSelection
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantAncestralSelection/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyVariantAncestralSelection/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyVariantAncestralSelection_pcp.txt
     DIFF_COMPARE compositionResults_TrickyVariantAncestralSelection_pcp.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyVariantIndependentSelection
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantIndependentSelection/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyVariantIndependentSelection/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyVariantIndependentSelection_pcp.txt
     DIFF_COMPARE compositionResults_TrickyVariantIndependentSelection_pcp.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyVariantInPayload
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantInPayload/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyVariantInPayload/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyVariantInPayload.txt
     DIFF_COMPARE compositionResults_TrickyVariantInPayload.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyVariantOverrideOfLocalClass
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantOverrideOfLocalClass/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyVariantOverrideOfLocalClass/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyVariantOverrideOfLocalClass.txt
     DIFF_COMPARE compositionResults_TrickyVariantOverrideOfLocalClass.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyVariantOverrideOfRelocatedPrim
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantOverrideOfRelocatedPrim/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyVariantOverrideOfRelocatedPrim/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyVariantOverrideOfRelocatedPrim.txt
     DIFF_COMPARE compositionResults_TrickyVariantOverrideOfRelocatedPrim.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyVariantSelectionInVariant
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantSelectionInVariant/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyVariantSelectionInVariant/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyVariantSelectionInVariant_pcp.txt
     DIFF_COMPARE compositionResults_TrickyVariantSelectionInVariant_pcp.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyVariantWeakerSelection
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantWeakerSelection/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyVariantWeakerSelection/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyVariantWeakerSelection_pcp.txt
     DIFF_COMPARE compositionResults_TrickyVariantWeakerSelection_pcp.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyVariantWeakerSelection2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantWeakerSelection2/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyVariantWeakerSelection2/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyVariantWeakerSelection2.txt
     DIFF_COMPARE compositionResults_TrickyVariantWeakerSelection2.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyVariantWeakerSelection3
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyVariantWeakerSelection3/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyVariantWeakerSelection3/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyVariantWeakerSelection3.txt
     DIFF_COMPARE compositionResults_TrickyVariantWeakerSelection3.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyClassHierarchy
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyClassHierarchy/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyClassHierarchy/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyClassHierarchy.txt
     DIFF_COMPARE compositionResults_TrickyClassHierarchy.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyLocalClassHierarchyWithRelocates
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyLocalClassHierarchyWithRelocates/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyLocalClassHierarchyWithRelocates/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyLocalClassHierarchyWithRelocates.txt
     DIFF_COMPARE compositionResults_TrickyLocalClassHierarchyWithRelocates.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyNestedClasses
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyNestedClasses/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyNestedClasses/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyNestedClasses.txt
     DIFF_COMPARE compositionResults_TrickyNestedClasses.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyNestedClasses2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyNestedClasses2/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyNestedClasses2/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyNestedClasses2.txt
     DIFF_COMPARE compositionResults_TrickyNestedClasses2.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyNestedClasses3
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyNestedClasses3/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyNestedClasses3/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyNestedClasses3.txt
     DIFF_COMPARE compositionResults_TrickyNestedClasses3.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyNestedSpecializes
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyNestedSpecializes/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyNestedSpecializes/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyNestedSpecializes.txt
     DIFF_COMPARE compositionResults_TrickyNestedSpecializes.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyNestedSpecializes2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyNestedSpecializes2/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyNestedSpecializes2/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyNestedSpecializes2.txt
     DIFF_COMPARE compositionResults_TrickyNestedSpecializes2.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyNestedClasses4
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyNestedClasses4/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyNestedClasses4/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyNestedClasses4.txt
     DIFF_COMPARE compositionResults_TrickyNestedClasses4.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyNestedVariants
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyNestedVariants/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyNestedVariants/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyNestedVariants.txt
     DIFF_COMPARE compositionResults_TrickyNestedVariants.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickySpecializesAndInherits
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpecializesAndInherits/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickySpecializesAndInherits/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickySpecializesAndInherits.txt
     DIFF_COMPARE compositionResults_TrickySpecializesAndInherits.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickySpecializesAndInherits2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpecializesAndInherits2/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickySpecializesAndInherits2/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickySpecializesAndInherits2.txt
     DIFF_COMPARE compositionResults_TrickySpecializesAndInherits2.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickySpecializesAndInherits3
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpecializesAndInherits3/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickySpecializesAndInherits3/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickySpecializesAndInherits3.txt
     DIFF_COMPARE compositionResults_TrickySpecializesAndInherits3.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickySpecializesAndRelocates
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpecializesAndRelocates/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickySpecializesAndRelocates/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickySpecializesAndRelocates.txt
     DIFF_COMPARE compositionResults_TrickySpecializesAndRelocates.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickySpookyVariantSelection
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpookyVariantSelection/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickySpookyVariantSelection/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickySpookyVariantSelection_pcp.txt
     DIFF_COMPARE compositionResults_TrickySpookyVariantSelection_pcp.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickySpookyVariantSelectionInClass
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickySpookyVariantSelectionInClass/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickySpookyVariantSelectionInClass/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickySpookyVariantSelectionInClass_pcp.txt
     DIFF_COMPARE compositionResults_TrickySpookyVariantSelectionInClass_pcp.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyConnectionToRelocatedAttribute
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyConnectionToRelocatedAttribute/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyConnectionToRelocatedAttribute/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyConnectionToRelocatedAttribute.txt
     DIFF_COMPARE compositionResults_TrickyConnectionToRelocatedAttribute.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyRelocatedTargetInVariant
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyRelocatedTargetInVariant/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyRelocatedTargetInVariant/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyRelocatedTargetInVariant.txt
     DIFF_COMPARE compositionResults_TrickyRelocatedTargetInVariant.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyRelocationOfPrimFromPayload
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyRelocationOfPrimFromPayload/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyRelocationOfPrimFromPayload/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyRelocationOfPrimFromPayload_pcp.txt
     DIFF_COMPARE compositionResults_TrickyRelocationOfPrimFromPayload_pcp.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyRelocationOfPrimFromVariant
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyRelocationOfPrimFromVariant/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyRelocationOfPrimFromVariant/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyRelocationOfPrimFromVariant_pcp.txt
     DIFF_COMPARE compositionResults_TrickyRelocationOfPrimFromVariant_pcp.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyRelocationSquatter
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyRelocationSquatter/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyRelocationSquatter/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyRelocationSquatter.txt
     DIFF_COMPARE compositionResults_TrickyRelocationSquatter.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyMultipleRelocations
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyMultipleRelocations/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyMultipleRelocations/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyMultipleRelocations.txt
     DIFF_COMPARE compositionResults_TrickyMultipleRelocations.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyMultipleRelocations2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyMultipleRelocations2/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyMultipleRelocations2/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyMultipleRelocations2.txt
     DIFF_COMPARE compositionResults_TrickyMultipleRelocations2.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyMultipleRelocations3
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyMultipleRelocations3/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyMultipleRelocations3/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyMultipleRelocations3.txt
     DIFF_COMPARE compositionResults_TrickyMultipleRelocations3.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyMultipleRelocations4
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_TrickyMultipleRelocations4.txt TrickyMultipleRelocations4/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' --errorFile compositionErrors_TrickyMultipleRelocations4.txt TrickyMultipleRelocations4/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyMultipleRelocations4.txt
     DIFF_COMPARE compositionResults_TrickyMultipleRelocations4.txt compositionErrors_TrickyMultipleRelocations4.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyMultipleRelocationsAndClasses
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyMultipleRelocationsAndClasses/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyMultipleRelocationsAndClasses/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyMultipleRelocationsAndClasses.txt
     DIFF_COMPARE compositionResults_TrickyMultipleRelocationsAndClasses.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyMultipleRelocationsAndClasses2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyMultipleRelocationsAndClasses2/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyMultipleRelocationsAndClasses2/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyMultipleRelocationsAndClasses2.txt
     DIFF_COMPARE compositionResults_TrickyMultipleRelocationsAndClasses2.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyNonLocalVariantSelection
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyNonLocalVariantSelection/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' TrickyNonLocalVariantSelection/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyNonLocalVariantSelection.txt
     DIFF_COMPARE compositionResults_TrickyNonLocalVariantSelection.txt 
 )
 
 pxr_register_test(testPcpMuseum_ErrorOpinionAtRelocationSource
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_ErrorOpinionAtRelocationSource_pcp.txt ErrorOpinionAtRelocationSource/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' --errorFile compositionErrors_ErrorOpinionAtRelocationSource_pcp.txt ErrorOpinionAtRelocationSource/root.sdf" 
     STDOUT_REDIRECT compositionResults_ErrorOpinionAtRelocationSource.txt
     DIFF_COMPARE compositionResults_ErrorOpinionAtRelocationSource.txt
 )
 
 pxr_register_test(testPcpMuseum_ErrorRelocateToSelf
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_ErrorRelocateToSelf_pcp.txt ErrorRelocateToSelf/root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' --errorFile compositionErrors_ErrorRelocateToSelf_pcp.txt ErrorRelocateToSelf/root.sdf" 
     STDOUT_REDIRECT compositionResults_ErrorRelocateToSelf_pcp.txt
     DIFF_COMPARE compositionResults_ErrorRelocateToSelf_pcp.txt compositionErrors_ErrorRelocateToSelf_pcp.txt
 )
 
 
 pxr_register_test(testPcpIterator
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpIterator"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpIterator'"
     DIFF_COMPARE iteration_results.txt
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpMapExpression
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpMapExpression"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpMapExpression'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpPathTranslation_HardToReach
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpPathTranslation_HardToReach"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpPathTranslation_HardToReach'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpCache
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCache"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCache'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpChanges
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpChanges"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpChanges'"
     EXPECTED_RETURN_CODE 0
     ENV
         PCP_DISABLE_TIME_SCALING_BY_LAYER_TCPS=0
@@ -1675,30 +1675,30 @@ pxr_register_test(testPcpChanges
 
 pxr_register_test(testPcpDependencies
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpDependencies"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpDependencies'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpHardToReach
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpHardToReach"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpHardToReach'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpInstanceKey
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpInstanceKey"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpInstanceKey'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpLayerMuting
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpLayerMuting"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpLayerMuting'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpRegressionBugs_bug69932
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults bug69932/root.sdf"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' bug69932/root.sdf"
     STDOUT_REDIRECT compositionResults_bug69932.txt
     DIFF_COMPARE compositionResults_bug69932.txt
     EXPECTED_RETURN_CODE 0
@@ -1706,13 +1706,13 @@ pxr_register_test(testPcpRegressionBugs_bug69932
 
 pxr_register_test(testPcpRegressionBugs_bug70951
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpRegressionBugs_bug70951"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpRegressionBugs_bug70951'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpRegressionBugs_bug74847
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults bug74847/root.sdf"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' bug74847/root.sdf"
     STDOUT_REDIRECT compositionResults_bug74847.txt
     DIFF_COMPARE compositionResults_bug74847.txt
     EXPECTED_RETURN_CODE 0
@@ -1720,31 +1720,31 @@ pxr_register_test(testPcpRegressionBugs_bug74847
 
 pxr_register_test(testPcpRegressionBugs_bug82180
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpRegressionBugs_bug82180" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpRegressionBugs_bug82180'" 
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpRegressionBugs_bug90508
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpRegressionBugs_bug90508" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpRegressionBugs_bug90508'" 
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpRegressionBugs_bug90706
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpRegressionBugs_bug90706" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpRegressionBugs_bug90706'" 
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpRegressionBugs_bug92955
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpRegressionBugs_bug92955" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpRegressionBugs_bug92955'" 
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpRegressionBugs_bug92827
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults bug92827/root.sdf"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' bug92827/root.sdf"
     STDOUT_REDIRECT compositionResults_bug92827.txt
     DIFF_COMPARE compositionResults_bug92827.txt
     EXPECTED_RETURN_CODE 0
@@ -1752,13 +1752,13 @@ pxr_register_test(testPcpRegressionBugs_bug92827
 
 pxr_register_test(testPcpRegressionBugs_bug101300
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpRegressionBugs_bug101300" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpRegressionBugs_bug101300'" 
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpRegressionBugs_USD-6755
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors.txt root.sdf" 
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' --errorFile compositionErrors.txt root.sdf" 
     STDOUT_REDIRECT compositionResults.txt
     DIFF_COMPARE compositionResults.txt compositionErrors.txt
     EXPECTED_RETURN_CODE 0
@@ -1766,7 +1766,7 @@ pxr_register_test(testPcpRegressionBugs_USD-6755
 
 pxr_register_test(testPcpRegressionBugs_case1
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults case1/root.sdf"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults' case1/root.sdf"
     STDOUT_REDIRECT compositionResults_case1.txt
     DIFF_COMPARE  compositionResults_case1.txt
     EXPECTED_RETURN_CODE 0
@@ -1774,36 +1774,36 @@ pxr_register_test(testPcpRegressionBugs_case1
 
 pxr_register_test(testPcpResolvedPathChange
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpResolvedPathChange"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpResolvedPathChange'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpMapFunction
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpMapFunction"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpMapFunction'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpPathTranslation
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpPathTranslation"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpPathTranslation'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testPcpDynamicFileFormatPlugin
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpDynamicFileFormatPlugin"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpDynamicFileFormatPlugin'"
     EXPECTED_RETURN_CODE 0  
 )
 
 pxr_register_test(testPcpStreamingLayerReload
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpStreamingLayerReload"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpStreamingLayerReload'"
     EXPECTED_RETURN_CODE 0  
 )
 
 pxr_register_test(testPcpOwner
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpOwner"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPcpOwner'"
     EXPECTED_RETURN_CODE 0
 )

@@ -132,62 +132,62 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdSkelAnimMapper
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelAnimMapper"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelAnimMapper'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdSkelAnimQuery
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelAnimQuery"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelAnimQuery'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdSkelBakeSkinning
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelBakeSkinning"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelBakeSkinning'"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE blendshapes.baked.usda blendshapesWithNormals.baked.usda lbs.baked.usda lbs.bakedInterval.usda
 )
 
 pxr_register_test(testUsdSkelBindingAPI
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelBindingAPI"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelBindingAPI'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdSkelCache
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelCache"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelCache'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdSkelRoot
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelRoot"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelRoot'"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE root.computedExtents.usda
 )
 
 pxr_register_test(testUsdSkelSkeletonQuery
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelSkeletonQuery"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelSkeletonQuery'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdSkelSkinningQuery
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelSkinningQuery"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelSkinningQuery'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdSkelTopology
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelTopology"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelTopology'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdSkelUtils
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelUtils"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelUtils'"
     EXPECTED_RETURN_CODE 0
 )

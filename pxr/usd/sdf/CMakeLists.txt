@@ -318,121 +318,121 @@ pxr_install_test_dir(
 
 pxr_register_test(testSdfAttribute
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfAttribute"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfAttribute'"
 )
 
 pxr_register_test(testSdfAttributeBlocking
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfAttributeBlocking"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfAttributeBlocking'"
 )
 
 pxr_register_test(testSdfAttributeBlocking_Cpp
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfAttributeBlocking_Cpp"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfAttributeBlocking_Cpp'"
 )
 
 pxr_register_test(testSdfBatchNamespaceEdit
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfBatchNamespaceEdit"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfBatchNamespaceEdit'"
 )
 
 pxr_register_test(testSdfCopyUtils
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfCopyUtils"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfCopyUtils'"
 )
 
 pxr_register_test(testSdfCustomLayerData
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfCustomLayerData"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfCustomLayerData'"
 )
 
 pxr_register_test(testSdfHardToReach
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfHardToReach"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfHardToReach'"
 )
 
 pxr_register_test(testSdfFileFormat
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfFileFormat"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfFileFormat'"
 )
 
 pxr_register_test(testSdfLayer
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfLayer"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfLayer'"
 )
 
 pxr_register_test(testSdfLayerHints
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfLayerHints"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfLayerHints'"
 )
 
 pxr_register_test(testSdfLayerMuting
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfLayerMuting"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfLayerMuting'"
 )
 
 pxr_register_test(testSdfListOp
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfListOp"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfListOp'"
 )
 
 pxr_register_test(testSdfMetaDataPlugInfo
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfMetaDataPlugInfo"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfMetaDataPlugInfo'"
 )
 
 pxr_register_test(testSdfParsing
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing'"
 )
 
 pxr_register_test(testSdfParsingOld
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing'"
 )
 
 pxr_register_test(testSdfPath
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPath"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfPath'"
 )
 
 pxr_register_test(testSdfPath2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPath2"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfPath2'"
 )
 pxr_register_test(testSdfPath2Construct
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPath2Construct"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfPath2Construct'"
 )
 
 pxr_register_test(testSdfPathParser
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPathParser"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfPathParser'"
 )
 
 pxr_register_test(testSdfPathTable
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPathTable"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfPathTable'"
 )
 
 pxr_register_test(testSdfPathThreading
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPathThreading"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfPathThreading'"
 )
 pxr_register_test(testSdfPayload
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPayload"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfPayload'"
 )
 pxr_register_test(testSdfPrim
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPrim"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfPrim'"
 )
 pxr_register_test(testSdfReference
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfReference"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfReference'"
 )
 pxr_register_test(testSdfSpecHash
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfSpecHash"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfSpecHash'"
 )
 pxr_register_test(testSdfTimeCode
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTimeCode"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfTimeCode'"
 )
 pxr_register_test(testSdfTypes
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTypes"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdfTypes'"
 )

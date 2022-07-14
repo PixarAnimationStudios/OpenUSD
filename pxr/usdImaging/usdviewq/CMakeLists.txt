@@ -108,31 +108,31 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdviewqSettings2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqSettings2"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqSettings2'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdviewqRootDataModel
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqRootDataModel"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqRootDataModel'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdviewqSelectionDataModel
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqSelectionDataModel"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqSelectionDataModel'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdviewqLauncher
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqLauncher"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqLauncher'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdviewqViewSettingsDataModel
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqViewSettingsDataModel"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqViewSettingsDataModel'"
     EXPECTED_RETURN_CODE 0
 )
 

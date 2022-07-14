@@ -20,7 +20,7 @@ if (NOT WIN32)
 
     pxr_register_test(testResolveRelPath
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdresolve input.usda"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdresolve' input.usda"
         STDOUT_REDIRECT output.txt
         DIFF_COMPARE output.txt
         CLEAN_OUTPUT "(?:[A-Za-z]:)?\\/.*\\/"

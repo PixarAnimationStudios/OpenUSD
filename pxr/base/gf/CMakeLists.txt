@@ -198,94 +198,94 @@ pxr_test_scripts(
 
 pxr_register_test(testGfBBox3d
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfBBox3d"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfBBox3d'"
 )
 pxr_register_test(testGfDecomposeRotation
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfDecomposeRotation"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfDecomposeRotation'"
 )
 pxr_register_test(testGfDualQuaternion
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfDualQuaternion"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfDualQuaternion'"
 )
 if (NOT APPLE)
     pxr_register_test(testGfFrustum
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfFrustum"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfFrustum'"
     )
 endif()
 pxr_register_test(testGfGamma
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfGamma"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfGamma'"
 )
 pxr_register_test(testGfHardToReach
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfHardToReach"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfHardToReach'"
 )
 pxr_register_test(testGfHomogeneous
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfHomogeneous"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfHomogeneous'"
 )
 pxr_register_test(testGfInterval
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfInterval"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfInterval'"
 )
 pxr_register_test(testGfMultiInterval
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfMultiInterval"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfMultiInterval'"
 )
 pxr_register_test(testGfLine
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfLine"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfLine'"
 )
 pxr_register_test(testGfLineSeg
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfLineSeg"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfLineSeg'"
 )
 pxr_register_test(testGfMath
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfMath"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfMath'"
 )
 pxr_register_test(testGfMatrix
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfMatrix"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfMatrix'"
 )
 pxr_register_test(testGfPlane
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfPlane"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfPlane'"
 )
 pxr_register_test(testGfQuaternion
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfQuaternion"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfQuaternion'"
 )
 pxr_register_test(testGfRange
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfRange"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfRange'"
 )
 pxr_register_test(testGfRay
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfRay"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfRay'"
 )
 pxr_register_test(testGfRect2i
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfRect2i"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfRect2i'"
 )
 pxr_register_test(testGfRotation
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfRotation"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfRotation'"
 )
 pxr_register_test(testGfSize
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfSize"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfSize'"
 )
 pxr_register_test(testGfTransform
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfTransform"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfTransform'"
 )
 pxr_register_test(testGfVec
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfVec"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfVec'"
 )
 pxr_register_test(testGfCamera
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfCamera"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testGfCamera'"
 )

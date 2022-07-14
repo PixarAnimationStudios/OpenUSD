@@ -237,13 +237,13 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdGeomBasisCurves
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomBasisCurves"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomBasisCurves'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomBBoxCache
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomBBoxCache"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomBBoxCache'"
     EXPECTED_RETURN_CODE 0
     ENV 
         TF_DEBUG=USDGEOM_BBOX
@@ -252,59 +252,59 @@ pxr_register_test(testUsdGeomBBoxCache
 
 pxr_register_test(testUsdGeomCamera
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomCamera"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomCamera'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomConstraintTarget
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomConstraintTarget"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomConstraintTarget'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomConsts
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomConsts"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomConsts'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomCreateAttribute
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomCreateAttribute"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomCreateAttribute'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomCurves
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomCurves"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomCurves'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomMesh
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomMesh"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomMesh'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomMetrics
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomMetrics"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomMetrics'"
     EXPECTED_RETURN_CODE 0
 )
 
 
 pxr_register_test(testUsdGeomSubset
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomSubset"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomSubset'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomIsA
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomIsA"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomIsA'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomHasAPI
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomHasAPI"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomHasAPI'"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -313,73 +313,73 @@ pxr_register_test(testUsdGeomHasAPI
 if(NOT PXR_BUILD_MONOLITHIC)
 pxr_register_test(testUsdGeomNoPlugLoad
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomNoPlugLoad"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomNoPlugLoad'"
     EXPECTED_RETURN_CODE 0
 )
 endif()
 
 pxr_register_test(testUsdGeomPrimvar
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomPrimvar"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomPrimvar'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomPointInstancer
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomPointInstancer"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomPointInstancer'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomPurposeVisibility
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomPurposeVisibility"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomPurposeVisibility'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomSchemata
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomSchemata"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomSchemata'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomXformable
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomXformable"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomXformable'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomXformCache
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomXformCache"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomXformCache'"
     EXPECTED_RETURN_CODE 0 
 )
 
 pxr_register_test(testUsdGeomXformCommonAPI
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomXformCommonAPI"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomXformCommonAPI'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomExtentFromPlugins
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomExtentFromPlugins"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomExtentFromPlugins'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomExtentTransform
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomExtentTransform"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomExtentTransform'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomComputeAtTime
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomComputeAtTime"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomComputeAtTime'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomImageable
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomImageable"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomImageable'"
     EXPECTED_RETURN_CODE 0
 )
 

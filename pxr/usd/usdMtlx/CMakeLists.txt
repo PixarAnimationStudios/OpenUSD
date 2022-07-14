@@ -81,19 +81,19 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdMtlxDiscovery
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMtlxDiscovery"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdMtlxDiscovery'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdMtlxFileFormat
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMtlxFileFormat"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdMtlxFileFormat'"
     DIFF_COMPARE Looks.usda NodeGraphs.usda usd_preview_surface_gold.usda Include.usda Include_From_Usdz.usda
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdMtlxParser
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMtlxParser"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdMtlxParser'"
     EXPECTED_RETURN_CODE 0
 )

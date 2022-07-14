@@ -49,7 +49,7 @@ pxr_test_scripts(
 
 pxr_register_test(testUsdVolVolume
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdVolVolume"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdVolVolume'"
     EXPECTED_RETURN_CODE 0
 )
 

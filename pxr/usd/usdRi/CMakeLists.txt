@@ -60,18 +60,18 @@ pxr_test_scripts(
 
 pxr_register_test(testUsdRiSchemata
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdRiSchemata"  
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdRiSchemata'"  
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdRiSplineAPI
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdRiSplineAPI"  
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdRiSplineAPI'"  
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdRiUtilities
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdRiUtilities"  
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdRiUtilities'"  
     EXPECTED_RETURN_CODE 0
 )

@@ -168,6 +168,6 @@ pxr_create_test_module(TestPlugModuleIncomplete
 
 pxr_register_test(testPlug
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPlug"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testPlug'"
 )
 

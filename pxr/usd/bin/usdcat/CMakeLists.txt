@@ -15,7 +15,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCatOutToFile
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat input.usda --out output.usda"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdcat' input.usda --out output.usda"
     DIFF_COMPARE output.usda
     EXPECTED_RETURN_CODE 0
 )
@@ -27,7 +27,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCatVariadicCatting
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat a.usd b.usd c.usd"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdcat' a.usd b.usd c.usd"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -38,7 +38,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCatMissingOrInvalidFiles1
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat hello.txt"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdcat' hello.txt"
     EXPECTED_RETURN_CODE 1 
 )
 
@@ -49,7 +49,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCatMissingOrInvalidFiles2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat foo.usda"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdcat' foo.usda"
     EXPECTED_RETURN_CODE 1 
 )
 
@@ -60,14 +60,14 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCatMask
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --mask /InsideMask --flatten --skipSourceFileComment input.usda -o output.usda"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdcat' --mask /InsideMask --flatten --skipSourceFileComment input.usda -o output.usda"
     DIFF_COMPARE output.usda
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdCatMask2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --mask /InsideMask input.usda -o output.usda"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdcat' --mask /InsideMask input.usda -o output.usda"
     EXPECTED_RETURN_CODE 1
 )
 
@@ -78,7 +78,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCatLoadOnly
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --loadOnly input.usda"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdcat' --loadOnly input.usda"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -89,7 +89,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCatLayerMetadata
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --layerMetadata input.usda -o output.usda"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdcat' --layerMetadata input.usda -o output.usda"
     DIFF_COMPARE output.usda
     EXPECTED_RETURN_CODE 0
 )

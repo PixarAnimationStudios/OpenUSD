@@ -20,13 +20,13 @@ if (NOT PXR_HEADLESS_TEST_MODE)
 
     pxr_register_test(testUsdRecordSingleFrame
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord AnimCube.usda AnimCube.png"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdrecord' AnimCube.usda AnimCube.png"
         EXPECTED_RETURN_CODE 0
     )
 
     pxr_register_test(testUsdRecordMultipleFrames
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord AnimCube.usda AnimCube.#.png --frames 1,5,10"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdrecord' AnimCube.usda AnimCube.#.png --frames 1,5,10"
         EXPECTED_RETURN_CODE 0
     )
 

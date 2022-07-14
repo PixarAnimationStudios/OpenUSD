@@ -145,35 +145,35 @@ pxr_install_test_dir(
 
 pxr_register_test(testArOptionalImplementation_1
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestResolver"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation' _TestResolver"
     STDOUT_REDIRECT base.txt
     DIFF_COMPARE base.txt
 )
 
 pxr_register_test(testArOptionalImplementation_2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestResolverWithContextMethods"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation' _TestResolverWithContextMethods"
     STDOUT_REDIRECT resolver_with_context.txt
     DIFF_COMPARE resolver_with_context.txt
 )
 
 pxr_register_test(testArOptionalImplementation_3
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestDerivedResolverWithContextMethods"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation' _TestDerivedResolverWithContextMethods"
     STDOUT_REDIRECT derived_resolver_with_context.txt
     DIFF_COMPARE derived_resolver_with_context.txt
 )
 
 pxr_register_test(testArOptionalImplementation_4
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestResolverWithCacheMethods"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation' _TestResolverWithCacheMethods"
     STDOUT_REDIRECT resolver_with_cache.txt
     DIFF_COMPARE resolver_with_cache.txt
 )
 
 pxr_register_test(testArOptionalImplementation_5
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestDerivedResolverWithCacheMethods"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation' _TestDerivedResolverWithCacheMethods"
     STDOUT_REDIRECT derived_resolver_with_cache.txt
     DIFF_COMPARE derived_resolver_with_cache.txt
 )
@@ -202,7 +202,7 @@ if (BUILD_SHARED_LIBS)
     )
 
     pxr_register_test(testArURIResolver_CPP
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArURIResolver_CPP"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArURIResolver_CPP'"
     )
 endif()
 
@@ -225,7 +225,7 @@ pxr_build_test(testArNotice_CPP
 ) 
 
 pxr_register_test(testArNotice_CPP
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArNotice_CPP"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArNotice_CPP'"
 )
 
 pxr_build_test(testArResolverContext_CPP
@@ -239,38 +239,38 @@ pxr_build_test(testArResolverContext_CPP
 
 pxr_register_test(testArAdvancedAPI
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArAdvancedAPI"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArAdvancedAPI'"
 )
 
 pxr_register_test(testArDefaultResolver
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArDefaultResolver"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArDefaultResolver'"
 )
 
 pxr_register_test(testArDefaultResolver_CPP
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArDefaultResolver_CPP"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArDefaultResolver_CPP'"
 )
 
 pxr_register_test(testArPackageUtils
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArPackageUtils"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArPackageUtils'"
 )
 
 pxr_register_test(testArResolvedPath
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArResolvedPath"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArResolvedPath'"
 )
 
 pxr_register_test(testArTimestamp
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArTimestamp"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArTimestamp'"
 )
 
 pxr_register_test(testArResolverContext
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArResolverContext"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArResolverContext'"
 )
 
 pxr_register_test(testArResolverContext_CPP
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArResolverContext_CPP"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArResolverContext_CPP'"
 )

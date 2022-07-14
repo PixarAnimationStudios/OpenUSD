@@ -42,7 +42,7 @@ if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux" AND
     "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     pxr_register_test(testUsdRecursivePayloadsExample
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdRecursivePayloadsExample"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdRecursivePayloadsExample'"
         DIFF_COMPARE flattenedContents.usda newFlattenedContents.usda
         EXPECTED_RETURN_CODE 0
         ENV
@@ -51,7 +51,7 @@ if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux" AND
 else()
     pxr_register_test(testUsdRecursivePayloadsExample
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdRecursivePayloadsExample"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdRecursivePayloadsExample'"
         EXPECTED_RETURN_CODE 0
         ENV
             ${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/usdRecursivePayloadsExample/resources
