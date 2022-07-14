@@ -24,7 +24,7 @@
 
 #include "pxr/imaging/hgiMetal/stepFunctions.h"
 
-#include "pxr/imaging/hgi/graphicspipeline.h"
+#include "pxr/imaging/hgi/graphicsPipeline.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
