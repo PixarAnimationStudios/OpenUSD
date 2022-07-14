@@ -2349,12 +2349,13 @@ class AppController(QtCore.QObject):
                 QtCore.Qt.MatchContains,
                 PropertyViewIndex.NAME)
 
-            combinedItems = attrSearchItems + otherSearch
-            # We find properties first, then connections/targets
-            # Based on the default recursive match finding in Qt.
-            combinedItems.sort()
-
-            self._attrSearchResults = deque(combinedItems)
+            # Combine search results and sort by model index so that
+            # we iterate over results from top to bottom.
+            combinedItems = set(attrSearchItems + otherSearch)
+            self._attrSearchResults = deque(
+                sorted(combinedItems, 
+                       key=lambda i: self._ui.propertyView.indexFromItem(
+                           i, PropertyViewIndex.NAME)))
 
             self._lastPrimSearched = self._dataModel.selection.getFocusPrim()
             if (len(self._attrSearchResults) > 0):
