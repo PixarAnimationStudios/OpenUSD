@@ -55,9 +55,7 @@ VtArrayFromPyBuffer(TfPyObjWrapper const &obj, std::string *err=nullptr);
     ((GfQuatd, Quatd))                          \
     ((GfDualQuath, DualQuath))                  \
     ((GfDualQuatf, DualQuatf))                  \
-    ((GfDualQuatd, DualQuatd))                  \
-    ((long long, LongLong))                     \
-    ((unsigned long long, ULongLong))
+    ((GfDualQuatd, DualQuatd))
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
