@@ -27,6 +27,7 @@
 #include "pxr/usd/sdr/shaderMetadataHelpers.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 
+#include <algorithm>
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
