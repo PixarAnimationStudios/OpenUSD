@@ -380,8 +380,8 @@ approximation, it is recommended that it falls back to the most similar
 supported option.
 
 Note that use of the subdivision attribute (\ref
-UsdGeomMesh::GetSubdivisionSchemeAttr()) can cause features such as sharp
-corners to be removed from the graphical representation. In order to ensure the
+UsdGeomMesh::GetSubdivisionSchemeAttr()) can cause features such as corners and
+edgeds to be removed from the graphical representation. In order to ensure the
 physics representation accurately matches the graphical representation, this
 attribute should be accounted for when generating physics colliders.
 
