@@ -350,6 +350,7 @@ HdxColorCorrectionTask::_CreateResourceBindings(
     texBind0.stageUsage = HgiShaderStageFragment;
     texBind0.textures.push_back(aovTexture);
     texBind0.samplers.push_back(_sampler);
+    texBind0.readOnly = true;
     resourceDesc.textures.push_back(std::move(texBind0));
 
     if (useOCIO && _texture3dLUT) {

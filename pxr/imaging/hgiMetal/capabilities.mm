@@ -41,7 +41,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
         hasIntel = [device isLowPower];
     }
 
-    _SetFlag(HgiDeviceCapabilitiesBitsOIT, !hasIntel);
+    _SetFlag(HgiDeviceCapabilitiesBitsOIT, true);
 
     if (hasIntel) {
         bool vertexOffsettingFixes = true;
