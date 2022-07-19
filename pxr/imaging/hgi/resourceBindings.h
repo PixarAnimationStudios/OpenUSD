@@ -130,6 +130,7 @@ struct HgiTextureBindDesc
     HgiBindResourceType resourceType;
     uint32_t bindingIndex;
     HgiShaderStage stageUsage;
+    bool readOnly;
 };
 using HgiTextureBindDescVector = std::vector<HgiTextureBindDesc>;
 

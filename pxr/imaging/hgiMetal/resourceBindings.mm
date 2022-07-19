@@ -108,16 +108,19 @@ HgiMetalResourceBindings::BindResources(
                                   atIndex:0];
         }
         if (metalTexture) {
+            MTLResourceUsage usageFlags;
             if (metalSampler) {
-                [renderEncoder useResource:metalTexture
-                    usage:MTLResourceUsageSample|
-                          MTLResourceUsageRead|
-                          MTLResourceUsageWrite];
+                usageFlags = MTLResourceUsageSample|
+                MTLResourceUsageRead;
             }
             else {
-                [renderEncoder useResource:metalTexture
-                    usage:MTLResourceUsageRead|MTLResourceUsageWrite];
+                usageFlags = MTLResourceUsageRead;
             }
+            if (!texDesc.readOnly) {
+                usageFlags = usageFlags | MTLResourceUsageWrite;
+            }
+            [renderEncoder useResource:metalTexture
+                usage:usageFlags];
         }
     }
 
