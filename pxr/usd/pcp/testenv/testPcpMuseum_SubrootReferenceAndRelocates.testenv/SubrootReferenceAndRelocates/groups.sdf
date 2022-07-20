@@ -1,0 +1,24 @@
+#sdf 1.4.32
+
+def "Groups" (
+    relocates = {
+        <CharGroup/Char> : <CrowdGroup/Char>
+    }
+)
+{
+    def "CrowdGroup"
+    {
+        over "Char"
+        {
+        }
+    }
+
+    def "CharGroup" (
+        references = @./chargroup.sdf@</CharGroup>
+    )
+    {
+        over "_class_Char"
+        {
+        }
+    }
+}

@@ -12,6 +12,9 @@ pxr_library(gf
     PUBLIC_CLASSES
         bbox3d
         camera
+        dualQuatd
+        dualQuatf
+        dualQuath
         frustum
         gamma
         half
@@ -85,6 +88,9 @@ pxr_library(gf
         module.cpp
         wrapBBox3d.cpp
         wrapCamera.cpp
+        wrapDualQuatd.cpp
+        wrapDualQuatf.cpp
+        wrapDualQuath.cpp
         wrapFrustum.cpp
         wrapGamma.cpp
         wrapHalf.cpp
@@ -169,6 +175,7 @@ pxr_test_scripts(
     testenv/testGfBBox3d.py
     testenv/testGfCamera.py
     testenv/testGfDecomposeRotation.py
+    testenv/testGfDualQuaternion.py
     testenv/testGfFrustum.py
     testenv/testGfGamma.py
     testenv/testGfHomogeneous.py
@@ -196,6 +203,10 @@ pxr_register_test(testGfBBox3d
 pxr_register_test(testGfDecomposeRotation
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfDecomposeRotation"
+)
+pxr_register_test(testGfDualQuaternion
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfDualQuaternion"
 )
 if (NOT APPLE)
     pxr_register_test(testGfFrustum

@@ -30,6 +30,9 @@
 
 #include "pxr/base/tf/token.h"
 
+#include "pxr/base/gf/dualQuatd.h"
+#include "pxr/base/gf/dualQuatf.h"
+#include "pxr/base/gf/dualQuath.h"
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/interval.h"

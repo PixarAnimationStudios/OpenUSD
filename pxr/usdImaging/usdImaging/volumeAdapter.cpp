@@ -82,6 +82,18 @@ UsdImagingVolumeAdapter::GetImagingSubprimData(
     return nullptr;
 }
 
+HdDataSourceLocatorSet
+UsdImagingVolumeAdapter::InvalidateImagingSubprim(
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceVolumePrim::Invalidate(subprim, properties);
+    }
+
+    return HdDataSourceLocatorSet();
+}
+
 bool
 UsdImagingVolumeAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {

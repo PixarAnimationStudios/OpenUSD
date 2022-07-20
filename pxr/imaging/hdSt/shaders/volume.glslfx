@@ -43,14 +43,6 @@
 --- --------------------------------------------------------------------------
 -- glsl Volume.Vertex
 
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-out VertexData
-{
-    // Relying on perspectively correct interpolation.
-    vec3 Peye;
-} outData;
-#endif
-
 void main(void)
 {
     // Bounding box vertex in local spce
@@ -79,13 +71,6 @@ void main(void)
 
 --- --------------------------------------------------------------------------
 -- glsl Volume.Fragment
-
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-in VertexData
-{
-    vec3 Peye;
-} inData;
-#endif
 
 // Quality knobs, should eventually be configurable.
 //

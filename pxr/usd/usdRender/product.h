@@ -171,8 +171,7 @@ public:
     /// The type of output to produce.
     /// The default, "raster", indicates a 2D image.
     /// 
-    /// 
-    /// ote In the future, UsdRender may define additional product
+    /// \note In the future, UsdRender may define additional product
     /// types.
     ///
     /// | ||

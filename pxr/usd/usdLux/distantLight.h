@@ -55,11 +55,6 @@ class SdfAssetPath;
 /// Light emitted from a distant source along the -Z axis.
 /// Also known as a directional light.
 ///
-/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
-/// that are text/tokens, the actual token is published and defined in \ref UsdLuxTokens.
-/// So to set an attribute to the value "rightHanded", use UsdLuxTokens->rightHanded
-/// as the value.
-///
 class UsdLuxDistantLight : public UsdLuxNonboundableLightBase
 {
 public:
@@ -178,29 +173,6 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDLUX_API
     UsdAttribute CreateAngleAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // INTENSITY 
-    // --------------------------------------------------------------------- //
-    /// Scales the emission of the light linearly.
-    /// The DistantLight has a high default intensity to approximate the Sun.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `float inputs:intensity = 50000` |
-    /// | C++ Type | float |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
-    USDLUX_API
-    UsdAttribute GetIntensityAttr() const;
-
-    /// See GetIntensityAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDLUX_API
-    UsdAttribute CreateIntensityAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

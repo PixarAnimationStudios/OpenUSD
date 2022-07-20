@@ -268,14 +268,13 @@ For further information see the documentation on the Alembic plugin [here](http:
 
 Enable [MaterialX](https://github.com/materialx/materialx) support in the 
 build by specifying the cmake flag ```PXR_ENABLE_MATERIALX_SUPPORT=TRUE``` when 
-invoking cmake. Note that MaterialX with shared library support is required on 
-Linux and MacOS.
+invoking cmake. Note that MaterialX with shared library support is required.
 
 The additional dependencies that must be supplied when invoking cmake are:
 
-| Dependency Name    | Description                              |
-| ------------------ |----------------------------------------  |
-| MATERIALX_ROOT     | The root path to a MaterialX SDK install.| 
+| Dependency Name    | Description                                                 |
+| ------------------ |-----------------------------------------------------------  |
+| MaterialX_DIR      | Path to the CMake package config of a MaterialX SDK install.|
 
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 
@@ -292,6 +291,13 @@ when invoking cmake. This plugin is compatible with Draco 1.3.4. The additional 
 
 Disable unit testing and prevent tests from being built by specifying the cmake flag ```PXR_BUILD_TESTS=FALSE```
 when invoking cmake.
+
+In order to aid with diagnosing of failing tests, test generated files for failing test are explicitly put in the following directories, where
+<ctest_run_timestamp> (formatted as "%Y-%m-%dT%H.%M.%S") represents the timestamp when ctest was run for the failing test.
+```
+${CMAKE_BINARY_DIR}/Testing/Failed-Diffs/<ctest_run_timestamp>/${TEST_NAME}/${filename}.result.${ext}
+${CMAKE_BINARY_DIR}/Testing/Failed-Diffs/<ctest_run_timestamp>/${TEST_NAME}/${filename}.baseline.${ext}
+```
 
 ## Other Build Options
 

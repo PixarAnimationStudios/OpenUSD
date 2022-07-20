@@ -308,8 +308,8 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
                 formatId.c_str());
             continue;
         }
-        info.reset(
-            new _Info(formatIdToken, formatType, TfToken(target), plugin));
+        info = std::make_shared<_Info>(
+            formatIdToken, formatType, TfToken(target), plugin);
 
         // Record the extensions that this file format plugin can handle.
         // Note that an extension may be supported by multiple file format

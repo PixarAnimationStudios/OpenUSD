@@ -265,6 +265,7 @@ HdStUdimTextureObject::_Commit()
     {
         HgiTextureDesc texDesc;
         texDesc.debugName = _GetDebugName(GetTextureIdentifier());
+        texDesc.usage = HgiTextureUsageBitsShaderRead;
         texDesc.type = HgiTextureType2DArray;
         texDesc.dimensions = _dimensions;
         texDesc.layerCount = _tileCount;
@@ -279,6 +280,7 @@ HdStUdimTextureObject::_Commit()
     {
         HgiTextureDesc texDesc;
         texDesc.debugName = _GetDebugName(GetTextureIdentifier());
+        texDesc.usage = HgiTextureUsageBitsShaderRead;
         texDesc.type = HgiTextureType1D;
         texDesc.dimensions = GfVec3i(_layoutData.size(), 1, 1);
         texDesc.format = HgiFormatFloat32;

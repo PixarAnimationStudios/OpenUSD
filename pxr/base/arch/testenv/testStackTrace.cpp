@@ -36,8 +36,14 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 int main(int argc, char** argv)
 {
+    // Verify the "is crashing" flag is initialized properly, and doesn't
+    // get modified until we call the fatal process state handler below.
+    ARCH_AXIOM(!ArchIsAppCrashing());
+
     ArchSetProgramNameForErrors( "testArch ArchError" );
     ArchTestCrashArgParse(argc, argv);
+
+    ARCH_AXIOM(!ArchIsAppCrashing());
 
     std::string log = ArchMakeTmpFileName("statusLogTester");
     FILE *logFile;
@@ -46,12 +52,18 @@ int main(int argc, char** argv)
     fputs("fake log\n", logFile);
     fputs("let's throw in a weird printf %1024$s specifier\n", logFile);
     fclose(logFile);
-    
 
     ArchLogStackTrace("Crashing", true, log.c_str());
     ArchUnlinkFile(log.c_str());
 
-    ArchLogPostMortem("Test Crashing");
+    ARCH_AXIOM(!ArchIsAppCrashing());
+    ArchLogCurrentProcessState("Test Non-Fatal");
+
+    ARCH_AXIOM(!ArchIsAppCrashing());
+    ArchLogFatalProcessState("Test Fatal");
+
+    // Now we should be marked as crashing
+    ARCH_AXIOM(ArchIsAppCrashing());
 
     // test crashing with and without spawning
     ArchTestCrash(ArchTestCrashMode::ReadInvalidAddresses);

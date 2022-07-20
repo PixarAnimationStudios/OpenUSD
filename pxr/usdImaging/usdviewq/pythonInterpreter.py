@@ -319,9 +319,14 @@ class Controller(QtCore.QObject):
         # various startup scripts, so that they can access the location from
         # which they are being run.
         # also, update the globals dict after we exec the file (bug 9529)
-        self.interpreter.runsource( 'g = dict(globals()); g["__file__"] = ' +
-                                    '"%s"; execfile("%s", g);' % (path, path) +
-                                    'del g["__file__"]; globals().update(g);' )
+        self.interpreter.runsource( 
+            'g = dict(globals());' 
+            'g["__file__"] = "{0}";'
+            'f = open("{0}", "rb");'
+            'exec(compile(f.read(), "{0}", "exec"), g);'
+            'f.close();'
+            'del g["__file__"];'
+            'globals().update(g);'.format(path))
         self.SetInputStart()
         self.lines = []
 
@@ -663,7 +668,6 @@ class View(QtWidgets.QTextEdit):
         self.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
         self.tripleClickTimer = QtCore.QBasicTimer()
         self.tripleClickPoint = QtCore.QPoint()
-        self._ignoreKeyPresses = True
         self.ResetCharFormat()
 
     def SetStartOfInput(self, position):
@@ -759,20 +763,6 @@ class View(QtWidgets.QTextEdit):
         else:
             super(View, self).timerEvent(e)
 
-    def enterEvent(self, e):
-        self._ignoreKeyPresses = False
-
-    def leaveEvent(self, e):
-        self._ignoreKeyPresses = True
-
-    def dragEnterEvent(self, e):
-        self._ignoreKeyPresses = False
-        super(View, self).dragEnterEvent(e)
-
-    def dragLeaveEvent(self, e):
-        self._ignoreKeyPresses = True
-        super(View, self).dragLeaveEvent(e)
-
     def insertFromMimeData(self, source):
         if not self._CursorIsInInputArea():
             self._MoveCursorToEndOfInput()
@@ -796,10 +786,6 @@ class View(QtWidgets.QTextEdit):
         """
         Handle user input a key at a time.
         """
-
-        if (self._ignoreKeyPresses):
-            e.ignore()
-            return
 
         key = e.key()
 

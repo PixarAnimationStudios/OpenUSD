@@ -688,7 +688,7 @@ HdxFullscreenShader::_Draw(
     gfxCmds->PushDebugGroup(_debugName.c_str());
     gfxCmds->BindResources(_resourceBindings);
     gfxCmds->BindPipeline(_pipeline);
-    gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
+    gfxCmds->BindVertexBuffers({{_vertexBuffer, 0, 0}});
     gfxCmds->SetViewport(viewport);
 
     if (!_constantsData.empty()) {

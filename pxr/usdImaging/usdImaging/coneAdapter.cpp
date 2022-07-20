@@ -23,11 +23,13 @@
 //
 #include "pxr/usdImaging/usdImaging/coneAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourceImplicits-Impl.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/implicitSurfaceMeshUtils.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
+#include "pxr/imaging/hd/coneSchema.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -40,6 +42,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+using _PrimSource = UsdImagingDataSourceImplicitsPrim<UsdGeomCone, HdConeSchema>;
+}
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -50,6 +55,48 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdImagingConeAdapter::~UsdImagingConeAdapter() 
 {
+}
+
+TfTokenVector
+UsdImagingConeAdapter::GetImagingSubprims()
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingConeAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->cone;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingConeAdapter::GetImagingSubprimData(
+        TfToken const& subprim,
+        UsdPrim const& prim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return _PrimSource::New(
+            prim.GetPath(),
+            prim,
+            stageGlobals);
+    }
+    return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingConeAdapter::InvalidateImagingSubprim(
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return _PrimSource::Invalidate(subprim, properties);
+    }
+    
+    return HdDataSourceLocatorSet();
 }
 
 bool

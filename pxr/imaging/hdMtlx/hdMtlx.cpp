@@ -208,6 +208,16 @@ _AddMaterialXNode(
         _AddNodeToNodeGraph(mxNodeName, mxNodeCategory, 
                             mxNodeType, mxNodeGraph, addedNodeNames);
 
+    if(mxNode->getNodeDef()) {
+        // Sometimes mxNode->getNodeDef() starts failing.
+        // It seems to happen when there are connections with mismatched types.
+        // Explicitly setting the node def string appparently fixes the problem.
+        // If we don't do this code gen may fail.
+        if(mxNode->getNodeDefString().empty()) {
+            mxNode->setNodeDefString(hdNodeType.GetText());
+        }
+    }
+
     // For each of the HdNode parameters add the corresponding parameter/input 
     // to the mxNode
     TfTokenVector hdNodeParamNames =

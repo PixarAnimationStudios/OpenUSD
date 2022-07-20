@@ -142,7 +142,7 @@ TfLogCrash(
     }
 
     Tf_ScopeDescriptionStackReportLock descStackReport;
-    ArchLogPostMortem(
+    ArchLogFatalProcessState(
         nullptr, fullMessage.c_str(), descStackReport.GetMessage());
 }
 

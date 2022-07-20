@@ -164,7 +164,6 @@ UsdImagingDataSourceCamera::Get(const TfToken &name)
     // Note that scene index emulation calls this method with
     // "shutterOpen" (Usd attribute is shutter:open)
     // "shutterClose" (Usd attribute is shutter:close)
-    // "clipPlanes" (Usd attribute is clippingPlanes)
     // "windowPolicy" - does not exist on UsdGeomCamera
     //
     // We need to either do the right translation/ignore these values here
@@ -243,5 +242,28 @@ UsdImagingDataSourceCameraPrim::Get(const TfToken & name)
     return UsdImagingDataSourcePrim::Get(name);
 }
 
+HdDataSourceLocatorSet
+UsdImagingDataSourceCameraPrim::Invalidate(
+    const TfToken &subprim, const TfTokenVector &properties)
+{
+    TRACE_FUNCTION();
+
+    HdDataSourceLocatorSet locators =
+        UsdImagingDataSourcePrim::Invalidate(subprim, properties);
+
+    static TfTokenVector usdNames = 
+        UsdGeomCamera::GetSchemaAttributeNames(/* includeInherited = */ false);
+
+    for (const TfToken &propertyName : properties) {
+        for (const TfToken &usdName : usdNames) {
+            if (propertyName == usdName) {
+                locators.insert(
+                    HdCameraSchema::GetDefaultLocator().Append(propertyName));
+            }
+        }
+    }
+
+    return locators;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

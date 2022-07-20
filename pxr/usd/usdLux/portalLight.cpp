@@ -120,8 +120,6 @@ const TfTokenVector&
 UsdLuxPortalLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLuxTokens->lightShaderId,
-        UsdLuxTokens->extent,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

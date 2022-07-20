@@ -38,7 +38,8 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
         TfToken("ar"),
         TfToken("arch"),
         TfToken("js"),
-        TfToken("tf")
+        TfToken("tf"),
+        TfToken("vt")
     };
     TfScriptModuleLoader::GetInstance().
         RegisterLibrary(TfToken("usdResolverExample"), TfToken("pxr.UsdResolverExample"), reqs);

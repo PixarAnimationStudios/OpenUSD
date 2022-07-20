@@ -510,7 +510,7 @@ HdxVisualizeAovTask::_ApplyVisualizationKernel(
     gfxCmds->PushDebugGroup("Visualize AOV");
     gfxCmds->BindResources(_resourceBindings);
     gfxCmds->BindPipeline(_pipeline);
-    gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
+    gfxCmds->BindVertexBuffers({{_vertexBuffer, 0, 0}});
     const GfVec4i vp(0, 0, dimensions[0], dimensions[1]);
     _screenSize[0] = static_cast<float>(dimensions[0]);
     _screenSize[1] = static_cast<float>(dimensions[1]);

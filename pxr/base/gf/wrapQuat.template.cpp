@@ -114,6 +114,9 @@ void wrapQuat{{ SUFFIX }}()
         .def(init<const GfQuat{{ SCALAR_SUFFIX(S) }} & >())
 {% endfor %}
 
+        .def("GetZero", &{{ QUAT }}::GetZero)
+        .staticmethod("GetZero")
+
         .def("GetIdentity", &{{ QUAT }}::GetIdentity)
         .staticmethod("GetIdentity")
 

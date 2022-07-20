@@ -64,7 +64,7 @@ public:
     /// SdfSpecTypeUnknown.
     SdfSpecType GetSpecType(const TfToken &propName) const    
     {
-        if (const SdfPath *path = TfMapLookupPtr(_propPathMap, propName)) {
+        if (const SdfPath *path = _GetPropertySpecPath(propName)) {
             return _GetSchematics()->GetSpecType(*path);
         }
         return SdfSpecTypeUnknown;
@@ -75,7 +75,7 @@ public:
     /// if there is no such property spec.
     SdfPropertySpecHandle GetSchemaPropertySpec(const TfToken& propName) const
     {
-        if (const SdfPath *path = TfMapLookupPtr(_propPathMap, propName)) {
+        if (const SdfPath *path = _GetPropertySpecPath(propName)) {
             return _GetSchematics()->GetPropertyAtPath(*path);
         }
         return TfNullPtr;
@@ -86,7 +86,7 @@ public:
     ///     GetSchemaPropertySpec(primType, attrName));
     SdfAttributeSpecHandle GetSchemaAttributeSpec(const TfToken& attrName) const
     {
-        if (const SdfPath *path = TfMapLookupPtr(_propPathMap, attrName)) {
+        if (const SdfPath *path = _GetPropertySpecPath(attrName)) {
             return _GetSchematics()->GetAttributeAtPath(*path);
         }
         return TfNullPtr;
@@ -97,7 +97,7 @@ public:
     ///     GetSchemaPropertySpec(primType, relName));
     SdfRelationshipSpecHandle GetSchemaRelationshipSpec(const TfToken& relName) const
     {
-        if (const SdfPath *path = TfMapLookupPtr(_propPathMap, relName)) {
+        if (const SdfPath *path = _GetPropertySpecPath(relName)) {
             return _GetSchematics()->GetRelationshipAtPath(*path);
         }
         return TfNullPtr;
@@ -283,7 +283,7 @@ private:
                    const TfToken& fieldName,
                    T* value) const
     {
-        if (const SdfPath *path = TfMapLookupPtr(_propPathMap, propName)) {
+        if (const SdfPath *path = _GetPropertySpecPath(propName)) {
             return _GetSchematics()->HasField(*path, fieldName, value);
         }
         return false;
@@ -295,7 +295,7 @@ private:
                           const TfToken& keyPath,
                           T* value) const
     {
-        if (const SdfPath *path = TfMapLookupPtr(_propPathMap, propName)) {
+        if (const SdfPath *path = _GetPropertySpecPath(propName)) {
             return _GetSchematics()->HasFieldDictKey(
                 *path, fieldName, keyPath, value);
         }
@@ -314,15 +314,24 @@ private:
         return UsdSchemaRegistry::GetInstance()._schematics;
     }
 
+    // Accessors for looking property spec paths by name.
+    const SdfPath *_GetPropertySpecPath(const TfToken& propName) const
+    {
+        return TfMapLookupPtr(_propPathMap, propName);
+    }
+
+    SdfPath *_GetPropertySpecPath(const TfToken& propName)
+    {
+        return TfMapLookupPtr(_propPathMap, propName);
+    }
+
     USD_API
     TfTokenVector _ListMetadataFields(const TfToken &propName) const;
 
     // Helpers for constructing the prim definition.
     USD_API
-    void _ComposePropertiesFromPrimSpec(
-        const SdfLayerRefPtr &layer,
-        const SdfPath &weakerPrimSpecPath,
-        const std::string &instanceName = "");
+    void _AddProperties(
+        std::vector<std::pair<TfToken, SdfPath>> &&propNameToPathVec);
 
     USD_API
     void _ComposePropertiesFromPrimDef(

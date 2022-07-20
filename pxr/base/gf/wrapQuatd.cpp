@@ -111,6 +111,9 @@ void wrapQuatd()
         .def(init<double, double, double, double>(
                  (arg("real"), arg("i"), arg("j"), arg("k"))))
 
+        .def("GetZero", &GfQuatd::GetZero)
+        .staticmethod("GetZero")
+
         .def("GetIdentity", &GfQuatd::GetIdentity)
         .staticmethod("GetIdentity")
 

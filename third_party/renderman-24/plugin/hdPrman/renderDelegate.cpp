@@ -24,8 +24,13 @@
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/basisCurves.h"
 #include "hdPrman/camera.h"
+#include "hdPrman/cone.h"
+#include "hdPrman/cylinder.h"
+#include "hdPrman/sphere.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/renderBuffer.h"
+#include "hdPrman/renderSettings.h"
+#include "hdPrman/sampleFilter.h"
 #include "hdPrman/coordSys.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/renderParam.h"
@@ -73,6 +78,9 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanIntegratorTokens,
 
 const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
+    HdPrimTypeTokens->cone,
+    HdPrimTypeTokens->cylinder,
+    HdPrimTypeTokens->sphere,
     HdPrimTypeTokens->mesh,
     HdPrimTypeTokens->basisCurves,
     HdPrimTypeTokens->points,
@@ -94,12 +102,14 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->pluginLight,
     HdPrimTypeTokens->extComputation,
     HdPrimTypeTokens->coordSys,
+    HdPrimTypeTokens->sampleFilter,
     _tokens->prmanParams,
 };
 
 const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_BPRIM_TYPES =
 {
     HdPrimTypeTokens->renderBuffer,
+    HdPrimTypeTokens->renderSettings,
     _tokens->openvdbAsset,
     _tokens->field3dAsset,
 };
@@ -118,13 +128,18 @@ _ToLower(const std::string &s)
 HdPrmanRenderDelegate::HdPrmanRenderDelegate(
     HdRenderSettingsMap const& settingsMap)
   : HdRenderDelegate(settingsMap)
-  , _renderParam(
-      std::make_unique<HdPrman_RenderParam>(
-          _ToLower(
+{
+    std::string rileyVariant = _ToLower(
               GetRenderSetting<std::string>(
                   HdPrmanRenderSettingsTokens->rileyVariant,
-                  TfGetenv("RILEY_VARIANT")))))
-{
+                  TfGetenv("RILEY_VARIANT")));
+
+    std::string xpuDevices = GetRenderSetting<std::string>(
+        HdPrmanRenderSettingsTokens->xpuDevices, std::string());
+
+    _renderParam = std::make_unique<HdPrman_RenderParam>(
+        rileyVariant, xpuDevices);
+
     _Initialize();
 }
 
@@ -292,6 +307,12 @@ HdPrmanRenderDelegate::CreateRprim(TfToken const& typeId,
         return new HdPrman_Mesh(rprimId);
     } else if (typeId == HdPrimTypeTokens->basisCurves) {
         return new HdPrman_BasisCurves(rprimId);
+    } if (typeId == HdPrimTypeTokens->cone) {
+        return new HdPrman_Cone(rprimId);
+    } if (typeId == HdPrimTypeTokens->cylinder) {
+        return new HdPrman_Cylinder(rprimId);
+    } if (typeId == HdPrimTypeTokens->sphere) {
+        return new HdPrman_Sphere(rprimId);
     } else if (typeId == HdPrimTypeTokens->points) {
         return new HdPrman_Points(rprimId);
     } else if (typeId == HdPrimTypeTokens->volume) {
@@ -341,6 +362,8 @@ HdPrmanRenderDelegate::CreateSprim(TfToken const& typeId,
     
     } else if (typeId == _tokens->prmanParams) {
         sprim = new HdPrmanParamsSetter(sprimId);
+    } else if (typeId == HdPrimTypeTokens->sampleFilter) {
+        sprim = new HdPrman_SampleFilter(sprimId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -374,6 +397,8 @@ HdPrmanRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
         return new HdExtComputation(SdfPath::EmptyPath());
     } else if (typeId == _tokens->prmanParams) {
         return new HdPrmanParamsSetter(SdfPath::EmptyPath());
+    } else if (typeId == HdPrimTypeTokens->sampleFilter) {
+        return new HdPrman_SampleFilter(SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -401,6 +426,8 @@ HdPrmanRenderDelegate::CreateBprim(
         return new HdPrman_Field(typeId, bprimId);
     } else if (typeId == HdPrimTypeTokens->renderBuffer) {
         return new HdPrmanRenderBuffer(bprimId);
+    } else if (typeId == HdPrimTypeTokens->renderSettings) {
+        return new HdPrman_RenderSettings(bprimId);
     } else {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }
@@ -415,6 +442,8 @@ HdPrmanRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
         return new HdPrman_Field(typeId, SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->renderBuffer) {
         return new HdPrmanRenderBuffer(SdfPath::EmptyPath());
+    } else if (typeId == HdPrimTypeTokens->renderSettings) {
+        return new HdPrman_RenderSettings(SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }

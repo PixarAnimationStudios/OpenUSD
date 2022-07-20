@@ -147,7 +147,9 @@ public:
     /// API schemas, and any fallback types defined on the stage for 
     /// unrecognized prim type names. The returned type structure contains the 
     /// "true" schema type used to create this prim's prim definition and answer
-    /// the IsA query. This value is cached and efficient to query.
+    /// the IsA query. This value is cached and efficient to query. The cached
+    /// values are guaranteed to exist for (at least) as long as the prim's
+    /// stage is open.
     /// \sa GetTypeName
     /// \sa GetAppliedSchemas
     /// \sa \ref Usd_OM_FallbackPrimTypes

@@ -46,6 +46,7 @@
 #include "pxr/usdImaging/usdImaging/unitTestHelper.h"
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
+#include "pxr/imaging/glf/simpleLightingContext.h"
 
 #include <iostream>
 #include <sstream>
@@ -255,7 +256,9 @@ My_TestGLDrawing::DrawTest(bool offscreen)
 
 
     if(IsEnabledTestLighting()) {
-        _engine->SetLightingStateFromOpenGL();
+        GlfSimpleLightingContextRefPtr lightingContext = GlfSimpleLightingContext::New();
+        lightingContext->SetStateFromOpenGL();
+        _engine->SetLightingState(lightingContext);
     }
 
     // ---------------------------------------------------------------------- //

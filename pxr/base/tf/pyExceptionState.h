@@ -23,32 +23,32 @@
 //
 
 #include "pxr/pxr.h"
-
 #include "pxr/base/tf/api.h"
-#include "pxr/base/tf/pyLock.h"
-#include "pxr/base/tf/errorMark.h"
-
 #include <boost/python/handle.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct TfPyExceptionState {
     TfPyExceptionState(boost::python::handle<> const &type,
-                        boost::python::handle<> const &value,
-                        boost::python::handle<> const &trace) :
+                       boost::python::handle<> const &value,
+                       boost::python::handle<> const &trace) :
             _type(type), _value(value), _trace(trace) {}
+
+    TF_API
+    ~TfPyExceptionState();
+
     boost::python::handle<> const &GetType() const { return _type; }
     boost::python::handle<> const &GetValue() const { return _value; }
     boost::python::handle<> const &GetTrace() const { return _trace; }
-    void Release() {
-        _type.release();
-        _value.release();
-        _trace.release();
-    }
+
+    TF_API
+    void Release();
+
     TF_API
     std::string GetExceptionString() const;
-    private:
-        boost::python::handle<> _type, _value, _trace;
+
+private:
+    boost::python::handle<> _type, _value, _trace;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

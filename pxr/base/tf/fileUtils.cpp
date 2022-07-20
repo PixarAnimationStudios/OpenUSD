@@ -88,7 +88,9 @@ Tf_HasAttribute(
     const DWORD attribs =
         GetFileAttributesW(ArchWindowsUtf8ToUtf16(path).c_str());
     if (attribs == INVALID_FILE_ATTRIBUTES) {
-        if (attribute == 0 && GetLastError() == ERROR_FILE_NOT_FOUND) {
+        if (attribute == 0 &&
+            (GetLastError() == ERROR_FILE_NOT_FOUND ||
+             GetLastError() == ERROR_PATH_NOT_FOUND)) {
             // Don't report an error if we're just testing existence.
             SetLastError(ERROR_SUCCESS);
         }

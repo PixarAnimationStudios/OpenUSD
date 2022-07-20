@@ -37,11 +37,14 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
     const std::vector<TfToken> reqs = {
         TfToken("hd"),
         TfToken("hdMtlx"),
+        TfToken("sdf"),
         TfToken("sdr"),
         TfToken("tf"),
+        TfToken("usd"),
         TfToken("usdImaging"),
         TfToken("usdMtlx"),
-        TfToken("usdShade")
+        TfToken("usdShade"),
+        TfToken("work")
     };
     TfScriptModuleLoader::GetInstance().
         RegisterLibrary(TfToken("usdBakeMtlx"), TfToken("pxr.UsdBakeMtlx"), reqs);

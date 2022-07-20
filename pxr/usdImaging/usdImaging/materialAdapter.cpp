@@ -22,12 +22,14 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdImaging/materialAdapter.h"
+#include "pxr/usdImaging/usdImaging/dataSourceMaterial.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/materialParamUtils.h"
 
 #include "pxr/imaging/hd/material.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/perfLog.h"
 
 #include "pxr/usd/usdShade/material.h"
@@ -47,6 +49,37 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdImagingMaterialAdapter::~UsdImagingMaterialAdapter()
 {
+}
+
+TfTokenVector
+UsdImagingMaterialAdapter::GetImagingSubprims()
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingMaterialAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->material;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingMaterialAdapter::GetImagingSubprimData(
+        TfToken const& subprim,
+        UsdPrim const& prim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return HdRetainedContainerDataSource::New(
+            HdPrimTypeTokens->material,
+             UsdImagingDataSourceMaterial::New(
+                prim,
+                stageGlobals));
+    }
+    return nullptr;
 }
 
 bool

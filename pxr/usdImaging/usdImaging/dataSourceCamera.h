@@ -77,6 +77,10 @@ public:
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
+    static
+    HdDataSourceLocatorSet
+    Invalidate(const TfToken &subprim, const TfTokenVector &properties);
+
 private:
 
     // Private constructor, use static New() instead.

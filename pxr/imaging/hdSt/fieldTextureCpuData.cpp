@@ -69,6 +69,7 @@ HdSt_FieldTextureCpuData::HdSt_FieldTextureCpuData(
     // by now and left _textureDesc.initalData null indicating to
     // our clients that the texture is invalid.
 
+    _textureDesc.usage = HgiTextureUsageBitsShaderRead;
     _textureDesc.type = HgiTextureType3D;
 
     // Determine the format (e.g., float/byte, RED/RGBA) and give

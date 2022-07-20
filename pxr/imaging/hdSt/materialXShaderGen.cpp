@@ -273,8 +273,8 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     mx::ShaderStage& mxStage) const
 {
     // Add global constants and type definitions
-    emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
-                + "/lib/mx_defines.glsl", mxContext, mxStage);
+    emitLibraryInclude("stdlib/" + mx::GlslShaderGenerator::TARGET
+                       + "/lib/mx_math.glsl", mxContext, mxStage);
     emitLine("#if NUM_LIGHTS > 0", mxStage, false);
     emitLine("#define MAX_LIGHT_SOURCES NUM_LIGHTS", mxStage, false);
     emitLine("#else", mxStage, false);
@@ -318,8 +318,8 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
         emitLine("#define u_envRadiance HdGetSampler_domeLightPrefilter() ", mxStage, false);
         emitLine("#define u_envIrradiance HdGetSampler_domeLightIrradiance() ", mxStage, false);
         emitLine("#else", mxStage, false);
-        emitLine("uniform sampler2D u_envRadiance;", mxStage, false);
-        emitLine("uniform sampler2D u_envIrradiance;", mxStage, false);
+        emitLine("#define u_envRadiance HdGetSampler_domeLightFallback()", mxStage, false);
+        emitLine("#define u_envIrradiance HdGetSampler_domeLightFallback()", mxStage, false);
         emitLine("#endif", mxStage, false);
         emitLineBreak(mxStage);
 
@@ -327,6 +327,9 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
         if (!_mxHdTextureMap.empty()) {
             emitComment("Define MaterialX to Hydra Sampler mappings", mxStage);
             for (auto texturePair : _mxHdTextureMap) {
+                if (texturePair.first == "domeLightFallback") {
+                    continue;
+                }
                 emitLine(TfStringPrintf("#define %s_file HdGetSampler_%s()",
                                         texturePair.first.c_str(),
                                         texturePair.second.c_str()),
@@ -386,26 +389,21 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
         _EmitMxInitFunction(vertexData, mxStage);
     }
 
-    // Emit common math functions
-    emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
-                + "/lib/mx_math.glsl", mxContext, mxStage);
-    emitLineBreak(mxStage);
-
     // Emit lighting and shadowing code
     if (lighting) {
         emitSpecularEnvironment(mxContext, mxStage);
     }
     if (shadowing) {
-        emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
-                    + "/lib/mx_shadow.glsl", mxContext, mxStage);
+        emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
+                           + "/lib/mx_shadow.glsl", mxContext, mxStage);
     }
 
     // Emit directional albedo table code.
     if (mxContext.getOptions().hwDirectionalAlbedoMethod == 
             mx::HwDirectionalAlbedoMethod::DIRECTIONAL_ALBEDO_TABLE ||
         mxContext.getOptions().hwWriteAlbedoTable) {
-        emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
-                    + "/lib/mx_table.glsl", mxContext, mxStage);
+        emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
+                           + "/lib/mx_table.glsl", mxContext, mxStage);
         emitLineBreak(mxStage);
     }
 
@@ -413,19 +411,37 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     // depending on the vertical flip flag.
     if (mxContext.getOptions().fileTextureVerticalFlip) {
         _tokenSubstitutions[mx::ShaderGenerator::T_FILE_TRANSFORM_UV] = 
-            "stdlib/" + mx::GlslShaderGenerator::TARGET +
-            "/lib/mx_transform_uv_vflip.glsl";
+            "mx_transform_uv_vflip.glsl";
     }
     else {
         _tokenSubstitutions[mx::ShaderGenerator::T_FILE_TRANSFORM_UV] = 
-            "stdlib/" + mx::GlslShaderGenerator::TARGET + 
-            "/lib/mx_transform_uv.glsl";
+            "mx_transform_uv.glsl";
     }
 
     // Emit uv transform code globally if needed.
     if (mxContext.getOptions().hwAmbientOcclusion) {
-        emitInclude(ShaderGenerator::T_FILE_TRANSFORM_UV, mxContext, mxStage);
+        emitLibraryInclude(
+            "stdlib/" + mx::GlslShaderGenerator::TARGET + "/lib/" +
+            _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV],
+            mxContext, mxStage);
     }
+
+    // Prior to MaterialX 1.38.5 the token substitutions need to
+    // include the full path to the .glsl files, so we prepend that
+    // here.
+#if MATERIALX_MAJOR_VERSION == 1 &&  \
+    MATERIALX_MINOR_VERSION == 38
+    #if MATERIALX_BUILD_VERSION < 4
+        _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV].insert(
+            0, "stdlib/" + mx::GlslShaderGenerator::TARGET + "/lib/");
+    #elif MATERIALX_BUILD_VERSION == 4
+        _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV].insert(
+            0, "libraries/stdlib/" + mx::GlslShaderGenerator::TARGET + "/lib/");
+    #endif
+#endif
+
+    // Add light sampling functions
+    emitLightFunctionDefinitions(mxGraph, mxContext, mxStage);
 
     // Add all functions for node implementations
     emitFunctionDefinitions(mxGraph, mxContext, mxStage);
@@ -448,7 +464,8 @@ HdStMaterialXShaderGen::_EmitMxSurfaceShader(
     emitLine("mxInit(Peye, Neye)", mxStage);
 
     const mx::ShaderGraphOutputSocket* outputSocket = mxGraph.getOutputSocket();
-    if (mxGraph.hasClassification(mx::ShaderNode::Classification::CLOSURE)) {
+    if (mxGraph.hasClassification(mx::ShaderNode::Classification::CLOSURE) &&
+        !mxGraph.hasClassification(mx::ShaderNode::Classification::SHADER)) {
         // Handle the case where the mxGraph is a direct closure.
         // We don't support rendering closures without attaching 
         // to a surface shader, so just output black.
@@ -465,8 +482,25 @@ HdStMaterialXShaderGen::_EmitMxSurfaceShader(
                 mxStage);
     }
     else {
-        // Add all function calls
-        emitFunctionCalls(mxGraph, mxContext, mxStage);
+        // Surface shaders need special handling.
+        if (mxGraph.hasClassification(mx::ShaderNode::Classification::SHADER | 
+                                      mx::ShaderNode::Classification::SURFACE))
+        {
+            // Emit all texturing nodes. These are inputs to any
+            // closure/shader nodes and need to be emitted first.
+            emitFunctionCalls(mxGraph, mxContext, mxStage, mx::ShaderNode::Classification::TEXTURE);
+
+            // Emit function calls for all surface shader nodes.
+            // These will internally emit their closure function calls.
+            emitFunctionCalls(mxGraph, mxContext, mxStage, mx::ShaderNode::Classification::SHADER | 
+                                                           mx::ShaderNode::Classification::SURFACE);
+        }
+        else
+        {
+            // No surface shader graph so just generate all
+            // function calls in order.
+            emitFunctionCalls(mxGraph, mxContext, mxStage);
+        }
 
         // Emit final output
         std::string finalOutputReturn = "vec4 mxOut = " ;
@@ -572,19 +606,26 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
     // Note: only need to initialize textures when bindlessTextures are enabled,
     // when bindlessTextures are not enabled, mappings are defined in 
     // HdStMaterialXShaderGen::_EmitMxFunctions
-    emitLine("#ifdef HD_HAS_domeLightIrradiance", mxStage, false);
+    emitComment("Initialize Indirect Light Textures and values", mxStage);
     if (_bindlessTexturesEnabled) {
+        emitLine("#ifdef HD_HAS_domeLightIrradiance", mxStage, false);
         emitLine("u_envIrradiance = HdGetSampler_domeLightIrradiance()", mxStage);
         emitLine("u_envRadiance = HdGetSampler_domeLightPrefilter()", mxStage);
+        emitLine("#else", mxStage, false);
+        emitLine("u_envIrradiance = HdGetSampler_domeLightFallback()", mxStage);
+        emitLine("u_envRadiance = HdGetSampler_domeLightFallback()", mxStage);
+        emitLine("#endif", mxStage, false);
     }
     emitLine("u_envRadianceMips = textureQueryLevels(u_envRadiance)", mxStage);
-    emitLine("#endif", mxStage, false);
     emitLineBreak(mxStage);
 
     // Initialize MaterialX Texture samplers with HdGetSampler equivalents
     if (_bindlessTexturesEnabled && !_mxHdTextureMap.empty()) {
         emitComment("Initialize Material Textures", mxStage);
         for (auto texturePair : _mxHdTextureMap) {
+            if (texturePair.first == "domeLightFallback") {
+                continue;
+            }
             emitLine(texturePair.first + "_file = "
                     "HdGetSampler_" + texturePair.second + "()", mxStage);
         }
@@ -698,6 +739,25 @@ HdStMaterialXShaderGen::_EmitMxVertexDataLine(
     return hdVariableDef.empty() ? mx::EMPTY_STRING : hdVariableDef;
 }
 
+#if MATERIALX_MAJOR_VERSION <= 1 &&  \
+    MATERIALX_MINOR_VERSION <= 38 && \
+    MATERIALX_BUILD_VERSION <= 4
+void
+HdStMaterialXShaderGen::emitLibraryInclude(
+    const mx::FilePath& filename,
+    mx::GenContext& context,
+    mx::ShaderStage& stage) const
+{
+#if MATERIALX_MAJOR_VERSION == 1 && \
+    MATERIALX_MINOR_VERSION == 38 && \
+    MATERIALX_BUILD_VERSION == 3
+    emitInclude(filename, context, stage);
+#else
+    // Starting from MaterialX 1.38.4 at PR 877, we must add the "libraries" part:
+    emitInclude(mx::FilePath("libraries") / filename, context, stage);
+#endif
+}
+#endif
 
 void
 HdStMaterialXShaderGen::emitVariableDeclarations(

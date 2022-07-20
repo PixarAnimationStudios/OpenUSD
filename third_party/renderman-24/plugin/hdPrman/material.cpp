@@ -36,6 +36,7 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/imaging/hd/light.h"
+#include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hf/diagnostic.h"
 #include "RiTypesHelper.h"
@@ -59,6 +60,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (omitFromRender)
     (material)
     (light)
+    (PrimvarPass)
 );
 
 TF_MAKE_STATIC_DATA(NdrTokenVec, _sourceTypes) {
@@ -227,6 +229,13 @@ _ConvertNodes(
             _ConvertNodes(network, e.upstreamNode, result, visitedNodes);
         }
     }
+
+    // Ignore nodes of id "PrimvarPass". This node is a workaround for 
+    // UsdPreviewSurface materials and is not a registered shader node.
+    if (node.nodeTypeId == _tokens->PrimvarPass) {
+        return false;
+    }
+
     // Find shader registry entry.
     SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrEntry =
@@ -517,6 +526,12 @@ _ConvertNodes(
                 TF_WARN("Unknown upstream node %s", e.upstreamNode.GetText());
                 continue;
             }
+            // Ignore nodes of id "PrimvarPass". This node is a workaround for 
+            // UsdPreviewSurface materials and is not a registered shader node.
+            if (upstreamNode->nodeTypeId == _tokens->PrimvarPass) {
+                continue;
+            }
+
             SdrShaderNodeConstPtr upstreamSdrEntry =
                 sdrRegistry.GetShaderNodeByIdentifier(
                       upstreamNode->nodeTypeId, *_sourceTypes);
@@ -630,6 +645,7 @@ HdPrman_DumpNetwork(HdMaterialNetwork2 const& network, SdfPath const& id)
 // otherwise it will be created as needed.
 static void
 _ConvertHdMaterialNetwork2ToRman(
+    HdSceneDelegate *sceneDelegate,
     HdPrman_RenderParam *renderParam,
     SdfPath const& id,
     const HdMaterialNetwork2 &network,
@@ -650,7 +666,7 @@ _ConvertHdMaterialNetwork2ToRman(
                 materialFound = true;
                 if (*materialId == riley::MaterialId::InvalidId()) {
                     *materialId = riley->CreateMaterial(
-                        riley::UserId::DefaultId(),
+                        riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
                         {static_cast<uint32_t>(nodes.size()), &nodes[0]},
                         RtParamList());
                 } else {
@@ -668,14 +684,30 @@ _ConvertHdMaterialNetwork2ToRman(
                 displacementFound = true;
                 if (*displacementId == riley::DisplacementId::InvalidId()) {
                     *displacementId = riley->CreateDisplacement(
-                        riley::UserId::DefaultId(),
+                        riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
                         {static_cast<uint32_t>(nodes.size()), &nodes[0]},
                         RtParamList());
                 } else {
                     riley::ShadingNetwork const displacement = {
                         static_cast<uint32_t>(nodes.size()), &nodes[0]};
-                    riley->ModifyDisplacement(*displacementId, &displacement,
-                                              nullptr);
+                    riley::DisplacementResult const result =
+                            riley->ModifyDisplacement(*displacementId,
+                                                      &displacement,
+                                                      nullptr);
+                    if (result == riley::DisplacementResult::k_ResendPrimVars) {
+                        // Mark prims dirty so they pick up new displacement.
+                        HdRenderIndex& index =
+                                sceneDelegate->GetRenderIndex();
+                        HdChangeTracker& changeTracker =
+                                index.GetChangeTracker();
+                        for(auto rprimid : index.GetRprimIds()) {
+                            HdRprim const *rprim = index.GetRprim(rprimid);
+                            if(rprim->GetMaterialId() == id) {
+                                changeTracker.MarkRprimDirty(
+                                    rprimid, HdChangeTracker::DirtyPrimvar);
+                            }
+                        }
+                    }
                 }
                 if (*displacementId == riley::DisplacementId::InvalidId()) {
                     TF_RUNTIME_ERROR("Failed to create displacement %s\n",
@@ -713,7 +745,13 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
     if ((*dirtyBits & HdMaterial::DirtyResource) ||
         (*dirtyBits & HdMaterial::DirtyParams)) {
         VtValue hdMatVal = sceneDelegate->GetMaterialResource(id);
-        if (hdMatVal.IsHolding<HdMaterialNetworkMap>()) {
+
+        if (hdMatVal.IsEmpty()) {
+            if (TfDebug::IsEnabled(HDPRMAN_MATERIALS)) {
+                printf("no material network found for %s:\n", id.GetText());
+            }
+            _ResetMaterial(param);
+        } else if (hdMatVal.IsHolding<HdMaterialNetworkMap>()) {
             // Convert HdMaterial to HdMaterialNetwork2 form.
             _materialNetwork = HdConvertToHdMaterialNetwork2(
                     hdMatVal.UncheckedGet<HdMaterialNetworkMap>());
@@ -734,13 +772,13 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
             if (TfDebug::IsEnabled(HDPRMAN_MATERIALS)) {
                 HdPrman_DumpNetwork(_materialNetwork, id);
             }
-            _ConvertHdMaterialNetwork2ToRman(param, id, _materialNetwork,
+            _ConvertHdMaterialNetwork2ToRman(sceneDelegate,
+                                             param, id, _materialNetwork,
                                              &_materialId, &_displacementId);
         } else {
-            TF_WARN("HdPrmanMaterial: Expected material resource "
-                    "for <%s> to contain HdMaterialNodes, but "
-                    "found %s instead.",
-                    id.GetText(), hdMatVal.GetTypeName().c_str());
+            TF_CODING_ERROR("HdPrmanMaterial: Expected material resource "
+                "for <%s> to contain HdMaterialNodes, but found %s instead.",
+                id.GetText(), hdMatVal.GetTypeName().c_str());
             _ResetMaterial(param);
         }
     }

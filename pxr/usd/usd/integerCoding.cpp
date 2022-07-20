@@ -25,6 +25,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/fastCompression.h"
 #include "pxr/usd/usd/integerCoding.h"
+#include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
 
 #include <cstdint>
 #include <cstring>
@@ -85,7 +86,7 @@ input  = [123, 124, 125, 100125, 100125, 100126, 10026]
 output = [int32(1) 01 00 00 11 01 00 01 XX int8(123) int32(100000) int8(0) int8(0)]
 
 Where 'XX' represents unused bits in the last byte of the codes section to round
-up to an even number of bytes.
+up to a whole number of bytes.
 
 In this case the output size is 12 bytes compared to the original input which
 was 28 bytes.  In the best possible case the output is (asymptotically) 2 bits
@@ -294,7 +295,7 @@ _EncodeIntegers(Int const *begin, size_t numInts, char *output)
     SInt commonValue = 0;
     {
         size_t commonCount = 0;
-        std::unordered_map<SInt, size_t> counts;
+        pxr_tsl::robin_map<SInt, size_t> counts;
         SInt prevVal = 0;
         for (Int const *cur = begin, *end = begin + numInts;
              cur != end; ++cur) {

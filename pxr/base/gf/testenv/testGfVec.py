@@ -509,7 +509,7 @@ class TestGfVec(unittest.TestCase):
                 v3 = Gf.Slerp(0.75, v1, v2)
                 self.assertTrue(Gf.IsClose(v3, Vec(-.70711, 0, -.70711), eps))
                 v3 = Gf.Slerp(1, v1, v2)
-                self.assertTrue(Gf.IsClose(v3, v3, eps))
+                self.assertTrue(Gf.IsClose(v3, v2, eps))
 
                 # test Slerp w/ opposing vectors
                 SetVec( v1, [0,1,0] )
@@ -524,7 +524,7 @@ class TestGfVec(unittest.TestCase):
                 v3 = Gf.Slerp(0.75, v1, v2)
                 self.assertTrue(Gf.IsClose(v3, Vec(0, -.70711, .70711), eps))
                 v3 = Gf.Slerp(1, v1, v2)
-                self.assertTrue(Gf.IsClose(v3, v3, eps))
+                self.assertTrue(Gf.IsClose(v3, v2, eps))
 
     def test_Types(self):
         vecTypes = [Gf.Vec2d,

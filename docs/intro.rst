@@ -304,7 +304,7 @@ following plugin-points:
 
       A USD Layer can be taught to be populated with data translated from any
       kind of compatible file format, by implementing an :usdcpp:`SdfFileFormat`
-      plugin for the format. USD's own native *usda* (ascii), *usdc* (binary),
+      plugin for the format. USD's own native *usda* (text), *usdc* (binary),
       and *usdz* (packaged archive) formats are implemented this way, as is the
       included support for reading Alembic files via the :doc:`Alembic USD
       Plugin <plugins_alembic>`, as well as `MaterialX xml files
@@ -320,7 +320,7 @@ following plugin-points:
 
       USD includes :doc:`a tool for generating new schemas
       <tut_generating_new_schema>` (C++ classes, python bindings, and all
-      required boilerplate) from a simple usd ascii description of the
+      required boilerplate) from a simple usda text description of the
       schema. This can be used to add new USD prim schema types and API's to
       your pipeline or package, with which you will be able to interact in your
       application-level plugins just as if they were native USD schemas. For
@@ -345,7 +345,7 @@ flexibility of composition. In past iterations of USD, Pixar used a form of
 GUID at the model/asset granularity, and after carefully weighing the pros and
 cons, we have decided that for us, the cost of occasional "namespace fix-up"
 operations run over a collection of assets is worth paying for the ease of asset
-construction and aggregation, and readable ascii asset representations that we
+construction and aggregation, and readable text asset representations that we
 get from namespace-paths as identifiers.
 
 Not an execution or rigging system
@@ -398,7 +398,7 @@ could not always be used together effectively, because they were spread across
 three different formats and "composition engines". Presto delivered a second
 generation of scene description that was *unified*, enabling referencing,
 overriding, variation, and other operations at all granularities from a single
-mesh, to an entire model, to an environment or shot, encoded in a single ascii
+mesh, to an entire model, to an environment or shot, encoded in a single text
 format and evaluated with a single composition engine.
 
 However, at the same time, Pixar, along with much of the film and effects

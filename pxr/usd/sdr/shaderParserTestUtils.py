@@ -228,8 +228,8 @@ def TestShadingProperties(node):
         # ----------------------------------------------------------------------
         # Check nested page correctness
         # ----------------------------------------------------------------------
-        assert properties["vstruct1"].GetPage() == "VStructs.Nested"
-        assert properties["vstruct1_bump"].GetPage() == "VStructs.Nested.More"
+        assert properties["vstruct1"].GetPage() == "VStructs:Nested"
+        assert properties["vstruct1_bump"].GetPage() == "VStructs:Nested:More"
 
         # ----------------------------------------------------------------------
         # Check VStruct correctness
@@ -355,8 +355,8 @@ def TestShaderSpecificNode(node):
     category = "testing" if isOSL else ""
     vstructNames = [] if isOSL else ["vstruct1"]
     pages = {"", "inputs1", "inputs2", "results"} if isOSL else \
-            {"", "inputs1", "inputs2", "results", "VStructs.Nested",
-             "VStructs.Nested.More"}
+            {"", "inputs1", "inputs2", "results", "VStructs:Nested",
+                "VStructs:Nested:More"}
     # --------------------------------------------------------------------------
 
 

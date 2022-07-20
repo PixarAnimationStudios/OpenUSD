@@ -70,13 +70,45 @@ Tf_PyEnumRepr(object const &self) {
         name;
 }
 
-string Tf_PyCleanEnumName(string name)
+// Returns true if name is a Python keyword and cannot be used as an
+// identifier. This encompasses keywords from both Python 2 and 3 so
+// that enum names don't change depending on the version of Python
+// being used.
+static bool
+_IsPythonKeyword(const std::string& name)
 {
-    string pkgName =
-        Tf_PyWrapContextManager::GetInstance().GetCurrentContext();
-    if (TfStringStartsWith(name, pkgName) && name != pkgName) {
-        name.erase(0, pkgName.size());
+    static const char* _PythonKeywords[] = {
+        "False", "None", "True", "and", "as", "assert",
+        "async", "await", "break", "class", "continue", "def",
+        "del", "elif", "else", "except", "exec", "finally",
+        "for", "from", "global", "if", "import", "in",
+        "is", "lambda", "nonlocal", "not", "or", "pass",
+        "print", "raise", "return", "try", "while", "with",
+        "yield"
+    };
+
+    TF_DEV_AXIOM(std::is_sorted(
+        std::begin(_PythonKeywords), std::end(_PythonKeywords),
+        [](const char* x, const char* y) { return strcmp(x, y) < 0; }));
+
+    return std::binary_search(
+        std::begin(_PythonKeywords), std::end(_PythonKeywords), name);
+}
+
+string Tf_PyCleanEnumName(string name, bool stripPackageName)
+{
+    if (stripPackageName) {
+        const string pkgName =
+            Tf_PyWrapContextManager::GetInstance().GetCurrentContext();
+        if (TfStringStartsWith(name, pkgName) && name != pkgName) {
+            name.erase(0, pkgName.size());
+        }
     }
+
+    if (_IsPythonKeyword(name)) {
+        name += "_";
+    }
+
     return TfStringReplace(name, " ", "_");
 }
 

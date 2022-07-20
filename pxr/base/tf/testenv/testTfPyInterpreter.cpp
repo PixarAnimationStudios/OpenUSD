@@ -26,6 +26,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyInterpreter.h"
+#include "pxr/base/tf/pyLock.h"
 
 #include <boost/python/handle.hpp>
 
@@ -39,14 +40,8 @@ testInterpreter(bool verbose)
 {
     unsigned int numErrors = 0;
     
-    /*
-    putenv("PYTHONSTARTUP=/tmp/testTfPyInterpreter_Startup.py");
-    NSString *startupStr = @"import sys\n";
-    [[NSFileManager defaultManager] removeFileAtPath:@"/tmp/testTfPyInterpreter_Startup.py" handler:nil];
-    [startupStr writeToFile:@"/tmp/testTfPyInterpreter_Startup.py" atomically:YES];
-    */
-    
     TfPyInitialize();
+    TfPyLock pyLock;
     TfPyRunSimpleString("2+2");
     
     handle<> result = TfPyRunString("'hello'\n", Py_eval_input);
@@ -67,26 +62,6 @@ testInterpreter(bool verbose)
         printf("TfPyRunString, seems good.\n");
     }
     
-    std::string modPath = TfPyGetModulePath("os");
-    if (modPath.empty()) {
-        printf("ERROR: TfPyGetModulePath, no path returned.\n");
-        numErrors++;
-    } else if (verbose) {
-        printf("TfPyGetModulePath, module at path '%s', good.\n", modPath.c_str());
-    }
-
-    modPath = TfPyGetModulePath("badmodule");
-    if (!modPath.empty()) {
-        printf("ERROR: TfPyGetModulePath, bad module name returned result '%s'.\n", modPath.c_str());
-        numErrors++;
-    } else if (verbose) {
-        printf("TfPyGetModulePath, bad module name returned nil, good\n");
-    }
-    
-    /*
-    [[NSFileManager defaultManager] removeFileAtPath:@"/tmp/testTfPyInterpreter_Startup.py" handler:nil];
-    */
-
     return numErrors;
 }
 

@@ -315,6 +315,16 @@ class TestPython(unittest.TestCase):
         # The auto-generated python object should be convertible to the original type.
         Tf._takesTestEnum(value1)
 
+    def test_EnumPythonKeywords(self):
+        '''Verify that enum names/values matching Python keywords are sanitized
+        to avoid syntax errors.'''
+        self.assertTrue(hasattr(Tf._Enum.TestKeywords, 'None_'))
+        self.assertTrue(hasattr(Tf._Enum.TestKeywords, 'False_'))
+        self.assertTrue(hasattr(Tf._Enum.TestKeywords, 'True_'))
+        self.assertTrue(hasattr(Tf._Enum.TestKeywords, 'print_'))
+        self.assertTrue(hasattr(Tf._Enum.TestKeywords, 'import_'))
+        self.assertTrue(hasattr(Tf._Enum.TestKeywords, 'global_'))
+
     def test_ByteArrayConversion(self):
         '''Verify we can convert buffers to byte arrays.'''
         ba = Tf._ConvertByteListToByteArray(['a', 'b', 'c'])

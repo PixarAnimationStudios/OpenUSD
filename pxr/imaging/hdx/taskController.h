@@ -208,6 +208,10 @@ public:
     HDX_API
     void SetSelectionColor(GfVec4f const& color);
 
+    /// Set the selection locate (over) color.
+    HDX_API
+    void SetSelectionLocateColor(GfVec4f const& color);
+
     /// Set if the selection highlight should be rendered as an outline around
     /// the selected objects or as a solid color overlaid on top of them.
     HDX_API

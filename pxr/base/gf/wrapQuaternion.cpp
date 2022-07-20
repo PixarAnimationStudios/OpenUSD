@@ -76,6 +76,7 @@ void wrapQuaternion()
     object getImaginary =
         make_function(&This::GetImaginary,return_value_policy<return_by_value>());
 
+    def( "Dot", (double (*)(const GfQuaternion &, const GfQuaternion &))GfDot);
     def( "Slerp", (GfQuaternion (*)(double, const GfQuaternion&, const GfQuaternion&))GfSlerp);
     
     class_<This> cls( "Quaternion", "Quaternion class", init<>());
@@ -86,6 +87,9 @@ void wrapQuaternion()
         .def(init<double, const GfVec3d &>())
 
         .def( TfTypePythonClass() )
+
+        .def("GetZero", &This::GetZero)
+        .staticmethod("GetZero")
 
         .def("GetIdentity", &This::GetIdentity)
         .staticmethod("GetIdentity")
