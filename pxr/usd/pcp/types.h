@@ -28,7 +28,7 @@
 #include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/site.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/base/tf/denseHashSet.h"
+#include "pxr/base/tf/pxrTslRobinMap/robin_set.h"
 
 #include <limits>
 #include <vector>
@@ -187,7 +187,7 @@ typedef std::vector<Pcp_CompressedSdSite> Pcp_CompressedSdSiteVector;
 ///
 typedef std::map<std::string, std::vector<std::string>> PcpVariantFallbackMap;
 
-typedef TfDenseHashSet<TfToken, TfToken::HashFunctor> PcpTokenSet;
+using PcpTokenSet = pxr_tsl::robin_set<TfToken, TfToken::HashFunctor>;
 
 /// \var size_t PCP_INVALID_INDEX
 /// A value which indicates an invalid index. This is simply used inplace of

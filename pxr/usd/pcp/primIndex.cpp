@@ -5005,7 +5005,7 @@ PcpPrimIndex::ComputePrimPropertyNames( TfTokenVector *nameOrder ) const
 
     // Provide a set with any existing nameOrder contents.
     PcpTokenSet nameSet;
-    nameSet.insert_unique(nameOrder->begin(), nameOrder->end());
+    nameSet.insert(nameOrder->begin(), nameOrder->end());
 
     // Walk the graph to compose prim child names.
     _ComposePrimPropertyNames(
