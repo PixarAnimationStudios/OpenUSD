@@ -106,12 +106,16 @@ for applications that need it, which USD does not.
 + UsdMtlx expects additional nodes, other than the material and surface shader 
 nodes, to be contained inside a nodegraph. These additional nodes will be lost 
 when translating into UsdShade, if not contained in a nodegraph.
-+ Custom nodedefs are not fully supported. They currently work when the 
-custom node is directly providing the output of a nodegraph and not passed to 
-downstream nodes. The nodedef needs to be defined in a separate mtlx file that
-is included in the material mtlx file, and the filepath should be locatable by
-the PXR_MTLX_PLUGIN_SEARCH_PATHS environment variable. Note that the nodedef
-and material mtlx files should not be siblings.
++ Shared library custom nodes are not fully supported. The nodedef needs to be 
+defined in a separate mtlx file such that the nodedef and material mtlx files 
+are not be siblings, and the nodedef filepath should be locatable by the 
+PXR_MTLX_PLUGIN_SEARCH_PATHS environment variable. Library defined custom
+nodes that use textures or texture coordinates are not yet supported.
++ Locally defined custom nodes are not supported when the node is defined as a 
+source code in a specific shading language (<implementation/>) instead of a 
+nodegraph. Locally defined nodes are those defined either in the same file as
+the material, or in a separate file that is included at the top of the material 
+mtlx file.
 
 Note that the file format plugin uses the MaterialX XML reader so it
 can read any valid MaterialX file, even it contains features not supported

@@ -163,7 +163,6 @@ class TestFileFormat(unittest.TestCase):
             self.assertEqual(conn[0].GetPrim().GetPath().name, connNodeName)
             self.assertEqual(conn[1], connectionName)
 
-        
     def test_Looks(self):
         """
         Test general MaterialX look conversions.
@@ -186,6 +185,14 @@ class TestFileFormat(unittest.TestCase):
         input = material.GetInput("specularColor")
         self.assertTrue(input)
         self.assertEqual(input.GetFullName(),"inputs:specularColor")
+    
+    def test_customNodeDefs(self):
+        """
+        Test that custom nodedefs are flattend out and replaced with 
+        their associated nodegraph
+        """
+        stage = UsdMtlx._TestFile('CustomNodeDef.mtlx')
+        stage.GetRootLayer().Export('CustomNodeDef.usda')
 
     @unittest.skipIf(not hasattr(Ar.Resolver, "CreateIdentifier"),
                      "Requires Ar 2.0")
