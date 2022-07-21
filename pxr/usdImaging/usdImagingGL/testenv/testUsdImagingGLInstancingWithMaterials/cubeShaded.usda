@@ -1,10 +1,14 @@
 #usda 1.0
 
-def Xform "Group"
+def Xform "Group" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
 {
     def Xform "Geom"
     {
-        def Mesh "cube"
+        def Mesh "cube" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             float3[] extent = [(-2, -1, -1), (2, 1, 1)]
             int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]

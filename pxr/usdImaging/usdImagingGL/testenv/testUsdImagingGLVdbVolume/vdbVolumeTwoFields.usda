@@ -60,7 +60,9 @@ def Material "TwoFieldMaterial" (
     }
 }
 
-def Volume "Volume"
+def Volume "Volume" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
 {
     float3[] extent = [(-40, -30, -30), (30, 30, 100)]
     rel field:density = </Volume/Density>

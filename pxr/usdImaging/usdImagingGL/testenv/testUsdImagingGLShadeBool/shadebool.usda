@@ -36,7 +36,9 @@ def Scope "Materials"
 
 def Scope "Geom"
 {
-    def Mesh "GreenSubdiv"
+    def Mesh "GreenSubdiv" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         vec3f[] extent = [(-1.21273, -1.21273, -1.21273), (1.21273, 1.21273, 1.21273)]
         int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
@@ -48,7 +50,9 @@ def Scope "Geom"
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Mesh "RedSubdiv"
+    def Mesh "RedSubdiv" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         vec3f[] extent = [(-1.21273, -1.21273, -1.21273), (1.21273, 1.21273, 1.21273)]
         int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]

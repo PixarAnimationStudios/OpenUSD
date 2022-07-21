@@ -3,7 +3,10 @@
     upAxis = "Z"
 )
 
-def Sphere "Default" {
+def Sphere "Default" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
     rel material:binding = </MaterialX/Materials/Default>
 
     color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
@@ -14,7 +17,10 @@ def Sphere "Default" {
     uniform token[] xformOpOrder = ["xformOp:transform"]
 }
 
-def Sphere "Glass" {
+def Sphere "Glass" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
     rel material:binding = </MaterialX/Materials/Glass>
 
     color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
@@ -25,7 +31,10 @@ def Sphere "Glass" {
     uniform token[] xformOpOrder = ["xformOp:transform"]
 }
 
-def Sphere "USD_Default" {
+def Sphere "USD_Default" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
     rel material:binding = </MaterialX/Materials/USD_Default>
     
     color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
@@ -36,7 +45,10 @@ def Sphere "USD_Default" {
     uniform token[] xformOpOrder = ["xformOp:transform"]
 }
 
-def Sphere "USD_Glass" {
+def Sphere "USD_Glass" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
     rel material:binding = </MaterialX/Materials/USD_Glass>
 
     color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]

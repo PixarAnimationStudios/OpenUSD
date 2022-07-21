@@ -3,7 +3,9 @@
     defaultPrim = "Sphere"
 )
 
-def Mesh "Sphere"
+def Mesh "Sphere" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
 {
     float3[] extent = [(-8.4388, -9.13153, -9.36636), (9.36636, 9.13153, 9.36636)]
     int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]

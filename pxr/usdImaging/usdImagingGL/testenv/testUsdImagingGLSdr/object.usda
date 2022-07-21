@@ -4,7 +4,9 @@
 )
 def Xform "Geom"
 {
-    def Mesh "Plane"
+    def Mesh "Plane" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         rel material:binding = </Materials/MyMaterial>
 

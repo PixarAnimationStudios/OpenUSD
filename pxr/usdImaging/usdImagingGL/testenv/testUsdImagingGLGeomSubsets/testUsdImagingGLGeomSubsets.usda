@@ -101,21 +101,27 @@ def Scope "Geom" (
         double3 xformOp:translate = (-3, 0, 3)
         uniform token[] xformOpOrder = ["xformOp:translate"]
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [1, 3, 4, 6]
             rel material:binding = </Materials/Cyan>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [0, 2, 5, 7]
             rel material:binding = </Materials/Magenta>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [8, 10, 13, 15]
@@ -130,21 +136,27 @@ def Scope "Geom" (
         double3 xformOp:translate = (0, 0, 3)
         uniform token[] xformOpOrder = ["xformOp:translate"]
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [0, 1, 2, 3, 4]
             rel material:binding = </Materials/Cyan>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [5, 6, 7, 8, 9, 10, 16]
             rel material:binding = </Materials/Magenta>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [11, 12, 13, 14, 15, 17, 18]
@@ -159,21 +171,27 @@ def Scope "Geom" (
         double3 xformOp:translate = (-3, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX", "xformOp:scale"]
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [0]
             rel material:binding = </Materials/Cyan>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [1]
             rel material:binding = </Materials/Magenta>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [2]
@@ -190,21 +208,27 @@ def Scope "Geom" (
         double3 xformOp:translate = (-3, 0, -2)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX", "xformOp:scale"]
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [0]
             rel material:binding = </Materials/Cyan>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [1]
             rel material:binding = </Materials/Magenta>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [2]
@@ -221,21 +245,27 @@ def Scope "Geom" (
         double3 xformOp:translate = (-3, 0, -4)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX", "xformOp:scale"]
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [0]
             rel material:binding = </Materials/Cyan>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [1]
             rel material:binding = </Materials/Magenta>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [2]
@@ -252,21 +282,27 @@ def Scope "Geom" (
         double3 xformOp:translate = (-3, 0, -6)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX", "xformOp:scale"]
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [0]
             rel material:binding = </Materials/Cyan>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [1]
             rel material:binding = </Materials/Magenta>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [2]
@@ -283,21 +319,27 @@ def Scope "Geom" (
         double3 xformOp:translate = (-3, 0, -8)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX", "xformOp:scale"]
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [0]
             rel material:binding = </Materials/Cyan>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [1]
             rel material:binding = </Materials/Magenta>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [2]
@@ -307,6 +349,7 @@ def Scope "Geom" (
 
     def Mesh "QuadFaceVaryingUVs" (
         references = </QuadMeshProto>
+        prepend apiSchemas = ["MaterialBindingAPI"]
     )
     {
         double3 xformOp:translate = (3, 0, 3)
@@ -314,21 +357,27 @@ def Scope "Geom" (
 
         rel material:binding = </Materials/FaceVaryingUVs>
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [1, 3, 4, 6]
             rel material:binding = </Materials/FaceVaryingUVs>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [0, 2, 5, 7]
             rel material:binding = </Materials/FaceVaryingUVs>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [8, 10, 13, 15]
@@ -338,6 +387,7 @@ def Scope "Geom" (
 
     def Mesh "TriangleFaceVaryingUVs" (
         references = </TriangleMeshProto>
+        prepend apiSchemas = ["MaterialBindingAPI"]
     )
     {
         double3 xformOp:translate = (6, 0, 3)
@@ -345,21 +395,27 @@ def Scope "Geom" (
 
         rel material:binding = </Materials/FaceVaryingUVs>
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [0, 1, 2, 3, 4]
             rel material:binding = </Materials/FaceVaryingUVs>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [5, 6, 7, 8, 9, 10, 16]
             rel material:binding = </Materials/FaceVaryingUVs>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [11, 12, 13, 14, 15, 17, 18]
@@ -374,21 +430,27 @@ def Scope "Geom" (
         double3 xformOp:translate = (0, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX", "xformOp:scale"]
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [0]
             rel material:binding = </Materials/VaryingColor>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [1]
             rel material:binding = </Materials/VaryingColor>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [2]
@@ -403,21 +465,27 @@ def Scope "Geom" (
         double3 xformOp:translate = (0, 0, -2)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX", "xformOp:scale"]
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [0]
             rel material:binding = </Materials/FaceVaryingColor>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [1]
             rel material:binding = </Materials/FaceVaryingColor>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [2]
@@ -432,21 +500,27 @@ def Scope "Geom" (
         double3 xformOp:translate = (0, 0, -4)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX", "xformOp:scale"]
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [0]
             rel material:binding = </Materials/UniformColor>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [1]
             rel material:binding = </Materials/UniformColor>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [2]
@@ -465,21 +539,27 @@ def Scope "Geom" (
         color3f[] primvars:color2 = [(0, 1, 0)]
         color3f[] primvars:color3 = [(0, 0, 1)]
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [0]
             rel material:binding = </Materials/Color1>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [1]
             rel material:binding = </Materials/Color2>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [2]
@@ -494,21 +574,27 @@ def Scope "Geom" (
         double3 xformOp:translate = (3, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = []
             rel material:binding = </Materials/Cyan>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [0, 2, 5, 7]
             rel material:binding = </Materials/Magenta>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = []
@@ -549,21 +635,27 @@ def Scope "Geom" (
         double3 xformOp:translate = (3, 0, -6)
         uniform token[] xformOpOrder = ["xformOp:translate"]
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [1, 3, 4, 6, 0, 2, 5, 7]
             rel material:binding = </Materials/Cyan>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [1, 3, 4, 6, 0, 2, 5, 7]
             rel material:binding = </Materials/Magenta>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [8, 10, 13, 15]
@@ -584,14 +676,18 @@ def Scope "Geom" (
             {   double3 xformOp:translate = (6, 0, 0)
                 uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX", "xformOp:scale"]
 
-                def GeomSubset "Subset1"
+                def GeomSubset "Subset1" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
                 {
                     token familyName = "materialBind"
                     int[] indices = [0]
                     rel material:binding = </Materials/Cyan>
                 }
 
-                def GeomSubset "Subset3"
+                def GeomSubset "Subset3" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
                 {
                     token familyName = "materialBind"
                     int[] indices = [2]
@@ -613,7 +709,9 @@ def Scope "Geom" (
                 double3 xformOp:translate = (6, 0, -2)
                 uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX", "xformOp:scale"]
 
-                def GeomSubset "Subset2"
+                def GeomSubset "Subset2" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
                 {
                     token familyName = "materialBind"
                     int[] indices = [1]
@@ -667,7 +765,9 @@ def Scope "Geom" (
         }
     }
 
-    def Mesh "QuadMeshPtex"
+    def Mesh "QuadMeshPtex" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         int[] faceVertexCounts = [4, 4, 4, 4, 4]
         int[] faceVertexIndices = [0, 1, 2, 3, 1, 4, 5, 2, 4, 6, 7, 5, 6, 8, 9, 7, 8, 10, 11, 9]
@@ -684,21 +784,27 @@ def Scope "Geom" (
 
         rel material:binding = </Materials/PtexMat>
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [1]
             rel material:binding = </Materials/PtexMat>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [2]
             rel material:binding = </Materials/PtexMat>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [3]
@@ -713,21 +819,27 @@ def Scope "Geom" (
         double3 xformOp:translate = (6, 0, -6)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX", "xformOp:scale"]
 
-        def GeomSubset "Subset1"
+        def GeomSubset "Subset1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [0]
             rel material:binding = </Materials/DefaultMatTag>
         }
 
-        def GeomSubset "Subset2"
+        def GeomSubset "Subset2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [1]
             rel material:binding = </Materials/AdditiveMatTag>
         }
 
-        def GeomSubset "Subset3"
+        def GeomSubset "Subset3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             token familyName = "materialBind"
             int[] indices = [2]

@@ -66,7 +66,9 @@ def Scope "Background" (
     doc = "Checkerboard pattern"
 )
 {
-    def Mesh "Checkerboard"
+    def Mesh "Checkerboard" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         rel material:binding = </Background/CheckerboardMaterial>
         int[] faceVertexCounts = [4]
@@ -123,7 +125,9 @@ def Xform "Lights"
     }
 }
 
-def Volume "VdbVolume"
+def Volume "VdbVolume" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
 {
     rel material:binding:preview = </VolumeDensityField>
 

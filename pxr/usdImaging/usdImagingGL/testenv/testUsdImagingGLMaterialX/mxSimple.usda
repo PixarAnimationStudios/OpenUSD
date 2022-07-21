@@ -2,14 +2,20 @@
 (
     upAxis = "Z"
 )
-def Sphere "ball1" {
+def Sphere "ball1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
     rel material:binding = </Materials/MaterialX/Materials/Default_Smooth>
     color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
     matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1.5, 0, 0, 1) )
     uniform token[] xformOpOrder = ["xformOp:transform"]
 }
 
-def Sphere "ball2" {
+def Sphere "ball2" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
     rel material:binding = </Materials/MaterialX/Materials/Default_Green>
     color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
     matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1.5, 0, 0, 1) )

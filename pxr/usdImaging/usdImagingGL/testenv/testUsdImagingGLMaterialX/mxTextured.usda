@@ -3,7 +3,9 @@
     upAxis = "Z"
 )
 
-def Mesh "UsdBrassSphere"
+def Mesh "UsdBrassSphere" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
 {
     rel material:binding = </Materials/MaterialX/Materials/USD_Tiled_Brass>
 
@@ -21,7 +23,9 @@ def Mesh "UsdBrassSphere"
     uniform token[] xformOpOrder = ["xformOp:transform"]
 }
 
-def Mesh "SsBrassSphere"
+def Mesh "SsBrassSphere" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
 {
     rel material:binding = </Materials/MaterialX/Materials/Tiled_Brass>
 
@@ -34,7 +38,9 @@ def Mesh "SsBrassSphere"
     )
 }
 
-def Mesh "SsWoodSphere"
+def Mesh "SsWoodSphere" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
 {
     rel material:binding = </Materials/MaterialX/Materials/Tiled_Wood>
 
