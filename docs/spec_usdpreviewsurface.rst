@@ -333,10 +333,13 @@ Texture Reader
 Node that can be used to read UV textures, including tiled textures such as Mari
 UDIM's.
 
-.. note:: UDIM Tiling Constraint
+.. note:: UDIM Tiling Constraints
    
-   To keep interchange simple(r) and to aid in efficient processing, **we
-   stipulate a maximum of ten tiles in the U direction** for UDIM.
+   To keep interchange simple(r) and to aid in efficient processing of UDIM
+   textures:
+   
+   * **We stipulate a maximum of ten tiles in the U direction**
+   * **We stipulate that the tiles must be within the range [1001, 1099]**
 
 
 **Node Id**: 
