@@ -15,22 +15,20 @@ and interacting with MaterialX documents.
 
 MaterialX | USD | Notes
 --------- | --- | -----
-parameter | UsdShadeInput | Connectability is interfaceOnly
 input | UsdShadeInput | .
-output | UsdShadeOutput | A default output is named "out"
-material | UsdShadeMaterial | .
-nodegraph | UsdShadeNodeGraph | .
-collection | UsdCollectionAPI | See below
-geom | UsdCollectionAPI | See below
+output | UsdShadeOutput | A default output is named 'out'
 node | UsdShadeShader | .
 nodedef | UsdShadeShader | See below
+nodegraph | UsdShadeNodeGraph | .
 implementation | SdrShaderNode | .
+geom | UsdCollectionAPI | See below
+look | USD prim | See below
+collection | UsdCollectionAPI | See below
+material node | UsdShadeMaterial | A node of 'material' type
 materialassign | UsdShadeMaterialBindingAPI | .
 variant | USD variant | .
 variantset | USD variantset | .
 variantassign | USD variant selection | See below
-bindparam & bindinput | USD composition | See below
-look | USD prim | See below
 
 1. USD collections always contain absolute paths.  The file format
 plugin stores all collections on a single prim.
@@ -39,8 +37,7 @@ are converted to and stored with collections.  geomprefix is applied
 at the time of conversion so the prefix is baked in.  Equal collections
 share the same UsdCollectionAPI.
 3. The shader discovery and parsing parts of the plugin record the
-information for nodedefs and implementations.  (nodegraphs used to
-implement nodedefs aren't currently supported.)  However, the nodedef
+information for nodedefs and implementations. However, the nodedef
 is also translated by the file format.  This is so naive clients that
 don't look up the registered shader node will still see the attributes
 of a shader and so USD's composition can use the nodedef value's as
@@ -48,18 +45,20 @@ fallbacks.
 4. Variants are used both to support MaterialX variants and to select a
 look.
 5. USD leverages its composition features to implement several MaterialX
-features.  Parameters and inputs are bound simply by setting opinions on
-Material prims, which are stronger than the opinions on the shaders.
-Look inherits use references and material inherits use specializes.
-nodedef inherits are handled during conversion and don't map to USD
-composition.
+features.  Inputs are bound simply by setting opinions on Material prims, 
+which are stronger than the opinions on the shaders. Look inherits use 
+references and material inherits use specializes. Nodedef inherits are 
+handled during conversion and don't map to USD composition.
 6. MaterialX looks become variants on a single USD prim.  The expectation
 is that this prim will be referenced by various prims that will also set a
 variant selection to choose the desired look.  XXX -- How collection paths
 get mapped is still undecided.
-7. Materialx _bindtoken_ statements result in USD primvars added to the 
-Material being defined, as we expect future USD support for image filename
-token substitutions to be primvar-based.
+7. Custom nodes can be defined either locally or in a shared library. Locally 
+defined nodes need to have their associated nodedef/nodegraph either in the 
+same mtlx file, or included in the material mtlx file. Custom nodes defined in 
+a shared library do not need to be included in the material mtlx file, but do
+need to be defined in a separate mtlx file whose containing folder is indicated 
+with the PXR_MTLX_PLUGIN_SEARCH_PATHS environment variable.
 
 \section usdMtlx_unsupported Unsupported MaterialX Features
 
