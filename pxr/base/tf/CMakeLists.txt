@@ -425,30 +425,30 @@ pxr_install_test_dir(
 )
 
 pxr_register_test(TfAnyUniquePtr
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfAnyUniquePtr"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfAnyUniquePtr"
 )
 pxr_register_test(TfAtomicOfstreamWrapper
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfAtomicOfstreamWrapper"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfAtomicOfstreamWrapper"
 )
 pxr_register_test(TfBitUtils
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfBitUtils"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfBitUtils"
 )
 pxr_register_test(TfDl
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDl"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfDl"
 )
 pxr_register_test(TfDebug
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDebug"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfDebug"
 )
 pxr_register_test(TfDebugFatal_1
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDebugFatal_1"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfDebugFatal_1"
     EXPECTED_RETURN_CODE 134
 )
 pxr_register_test(TfDebugFatal_2
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDebugFatal_2"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfDebugFatal_2"
     EXPECTED_RETURN_CODE 134
 )
 pxr_register_test(TfDebugFatal_3
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDebugFatal_3"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfDebugFatal_3"
     EXPECTED_RETURN_CODE 134
 )
 # These tests will depend on downstream libraries when built monolithic.
@@ -456,7 +456,7 @@ pxr_register_test(TfDebugFatal_3
 # simply disable these tests in that case.
 if(NOT PXR_BUILD_MONOLITHIC)
 pxr_register_test(TfDebugTestEnv
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDebugTestEnv"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfDebugTestEnv"
     ENV TF_DEBUG="FOO* FLAM_* FLAM -FOOFLIMFLAM TF_DISCOVERY_D*"
     STDOUT_REDIRECT debugTestEnv.out
     DIFF_COMPARE debugTestEnv.out
@@ -464,22 +464,22 @@ pxr_register_test(TfDebugTestEnv
 endif()
 pxr_register_test(TfDebugTestEnvHelp
     ENV TF_DEBUG=help
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDebugTestEnvHelp"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfDebugTestEnvHelp"
 )
 pxr_register_test(TfDenseHashMap
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDenseHashMap"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfDenseHashMap"
 )
 pxr_register_test(TfDelegate
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDelegateAddRemove"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfDelegateAddRemove"
     STDOUT_REDIRECT output.txt 
     DIFF_COMPARE output.txt 
 )
 pxr_register_test(TfError
     ENV TF_FATAL_VERIFY=0
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfError"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfError"
 )
 pxr_register_test(TfErrorThreadTransport
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfErrorThreadTransport"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfErrorThreadTransport"
 )
 pxr_register_test(TfEnvSetting
     ENV
@@ -487,193 +487,193 @@ pxr_register_test(TfEnvSetting
         TF_TEST_INT_ENV_SETTING=123
         TF_TEST_STRING_ENV_SETTING=alpha
         TF_ENV_SETTING_ALERTS_ENABLED=0
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfEnvSetting"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfEnvSetting"
     STDERR_REDIRECT debugTfEnvSettingStderr.txt
     DIFF_COMPARE debugTfEnvSettingStderr.txt
 )
 pxr_register_test(TfException
     ENV TF_FATAL_THROW=0
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfException"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfException"
 )
 pxr_register_test(TfFileUtils
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfFileUtils"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfFileUtils"
 )
 pxr_register_test(TfFileUtils_Python
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfFileUtils"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfFileUtils'"
 )
 pxr_register_test(TfFunctionRef
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfFunctionRef"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfFunctionRef"
 )
 pxr_register_test(TfStringUtils_Python
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfStringUtils"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfStringUtils'"
 )
 pxr_register_test(TfGetenv
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfGetenv"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfGetenv"
 )
 pxr_register_test(TfHash
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfHash"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfHash"
 )
 pxr_register_test(TfIterator
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfIterator"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfIterator"
 )
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     pxr_register_test(TfMallocTag
         ENV GLIBCXX_FORCE_NEW=1
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfMallocTag"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfMallocTag"
     )
 endif()
 pxr_register_test(TfRefPtr
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfRefPtr"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfRefPtr"
 )
 pxr_register_test(TfEnum
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfEnum"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfEnum"
     STDOUT_REDIRECT enum.out
     DIFF_COMPARE enum.out
 )
 pxr_register_test(TfNotice
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfNotice"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfNotice"
     STDOUT_REDIRECT notice.out
     DIFF_COMPARE notice.out
 )
 pxr_register_test(TfNamedTemporaryFile
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfNamedTemporaryFile"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfNamedTemporaryFile'"
 )
 pxr_register_test(TfPathUtils
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPathUtils"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfPathUtils"
 )
 pxr_register_test(TfPathUtils_Python
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPathUtils"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfPathUtils'"
 )
 pxr_register_test(TfPatternMatcher
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPatternMatcher"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfPatternMatcher"
 )
 pxr_register_test(TfPointerAndBits
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPointerAndBits"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfPointerAndBits"
 )
 pxr_register_test(TfPreprocessorUtils
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPreprocessorUtils"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfPreprocessorUtils"
 )
 pxr_register_test(TfProbe
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfProbe"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfProbe"
 )
 pxr_register_test(TfRegistryManager
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfRegistryManager"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfRegistryManager"
 )
 pxr_register_test(TfRegistryManagerUnload
     REQUIRES_SHARED_LIBS
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfRegistryManagerUnload"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfRegistryManagerUnload"
 )
 pxr_register_test(TfRegTest
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf'"
     EXPECTED_RETURN_CODE 2
 )
 pxr_register_test(TfRegTest_TfScoped
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfScoped no args expected"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfScoped no args expected"
     EXPECTED_RETURN_CODE 2
 )
 pxr_register_test(TfRegTest_TfUndefinedTest
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfUndefinedTest"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfUndefinedTest"
     EXPECTED_RETURN_CODE 3
 )
 pxr_register_test(TfSafeOutputFile
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfSafeOutputFile"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfSafeOutputFile"
 )
 pxr_register_test(TfScopeDescription
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfScopeDescription"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfScopeDescription"
 )
 pxr_register_test(TfScoped
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfScoped"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfScoped"
 )
 pxr_register_test(TfScopedVar
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfScopedVar"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfScopedVar"
 )
 pxr_register_test(TfSetenv
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfSetenv"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfSetenv"
 )
 pxr_register_test(TfSmallVector
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfSmallVector"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfSmallVector"
 )
 pxr_register_test(TfStacked
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfStacked"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfStacked"
 )
 pxr_register_test(TfStaticData
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfStaticData"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfStaticData"
 )
 pxr_register_test(TfStaticTokens
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfStaticTokens"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfStaticTokens"
 )
 pxr_register_test(TfStl
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfStl"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfStl"
 )
 pxr_register_test(TfStopwatch
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfStopwatch"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfStopwatch"
 )
 pxr_register_test(TfStringUtils
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfStringUtils"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfStringUtils"
 )
 pxr_register_test(TfTemplateString
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfTemplateString"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfTemplateString"
 )
 pxr_register_test(testTfTemplateString
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfTemplateString"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfTemplateString'"
 )
 pxr_register_test(TfToken
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfToken"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfToken"
 )
 pxr_register_test(TfType
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfType"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfType"
 )
 pxr_register_test(TfTypeInfoMap
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfTypeInfoMap"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfTypeInfoMap"
 )
 pxr_register_test(TfType_MultipleInheritance
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfType_MultipleInheritance"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfType_MultipleInheritance"
 )
 pxr_register_test(TfWeakPtr
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfWeakPtr"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfWeakPtr"
 )
 pxr_register_test(TfWeakPtrConversion
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfWeakPtrConversion"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf' TfWeakPtrConversion"
 )
 
 if(PXR_ENABLE_PYTHON_SUPPORT)
     pxr_register_test(testTfPython
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPython"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfPython'"
     )
     pxr_register_test(testTfPyFunction
         REQUIRES_PYTHON_MODULES
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyFunction"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfPyFunction'"
     )
     pxr_register_test(testTfPyNotice
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyNotice"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfPyNotice'"
     )
     pxr_register_test(testTfPyInterpreter
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyInterpreter"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfPyInterpreter'"
     )
     pxr_register_test(testTfPyInvoke
         REQUIRES_PYTHON_MODULES
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyInvoke"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfPyInvoke'"
     )
     pxr_register_test(testTfPyLock
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyLock"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfPyLock'"
     )
     pxr_register_test(testTfPyResultConversions
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyResultConversions"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfPyResultConversions'"
     )
     pxr_register_test(testTfPyScopeDescription
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyScopeDescription"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfPyScopeDescription'"
     )
     pxr_register_test(testTfScriptModuleLoader
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfScriptModuleLoader"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfScriptModuleLoader'"
         STDOUT_REDIRECT scriptModuleLoader.out
         DIFF_COMPARE scriptModuleLoader.out
     )
@@ -681,31 +681,31 @@ endif()
 
 pxr_register_test(testTfType
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfType"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfType'"
 )
 pxr_register_test(testTfSIGSEGV
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfCrashHandler ${CMAKE_INSTALL_PREFIX}/tests/testTfSIGSEGV SIGSEGV"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfCrashHandler' ${CMAKE_INSTALL_PREFIX}/tests/testTfSIGSEGV SIGSEGV"
 )
 pxr_register_test(testTfSIGFPE
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfCrashHandler ${CMAKE_INSTALL_PREFIX}/tests/testTfSIGFPE SIGFPE"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfCrashHandler' ${CMAKE_INSTALL_PREFIX}/tests/testTfSIGFPE SIGFPE"
 )
 pxr_register_test(testTf_PyContainerConversions
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf_PyContainerConversions"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTf_PyContainerConversions'"
 )
 pxr_register_test(testTf_PyOptional
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyOptional"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfPyOptional'"
 )
 pxr_register_test(testTf_PyStaticTokens
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyStaticTokens"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfPyStaticTokens'"
 )
 pxr_register_test(testTfCxxCast
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfCast"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfCast'"
 )
 pxr_register_test(testTfSpan
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfSpan"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTfSpan'"
 )

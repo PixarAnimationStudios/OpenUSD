@@ -179,41 +179,41 @@ endif()
 
 
 pxr_register_test(testArchAbi
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchAbi"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArchAbi'"
 )
 pxr_register_test(testArchAttributes
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchAttributes"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArchAttributes'"
 )
 pxr_register_test(testArchDemangle
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchDemangle"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArchDemangle'"
 )
 pxr_register_test(testArchError
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchError"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArchError'"
 )
 pxr_register_test(testArchErrno
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchErrno"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArchErrno'"
 )
 pxr_register_test(testArchFileSystem
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchFileSystem"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArchFileSystem'"
 )
 pxr_register_test(testArchFunction
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchFunction"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArchFunction'"
 )
 pxr_register_test(testArchStackTrace
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchStackTrace"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArchStackTrace'"
 )
 pxr_register_test(testArchSymbols
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchSymbols"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArchSymbols'"
 )
 pxr_register_test(testArchSystemInfo
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchSystemInfo"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArchSystemInfo'"
 )
 pxr_register_test(testArchTiming
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchTiming"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArchTiming'"
 )
 pxr_register_test(testArchThreads
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchThreads"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArchThreads'"
 )
 pxr_register_test(testArchVsnprintf
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchVsnprintf"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testArchVsnprintf'"
 )

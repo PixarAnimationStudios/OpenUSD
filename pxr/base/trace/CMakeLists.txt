@@ -189,98 +189,98 @@ pxr_install_test_dir(
 )
 
 pxr_register_test(testTraceCategory
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceCategory"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceCategory'"
 )
 
 pxr_register_test(testTraceData
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceData"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceData'"
 )
 
 pxr_register_test(testTraceHash
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceHash"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceHash'"
 )
 
 pxr_register_test(testTraceMacros
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceMacros"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceMacros'"
 )
 
 pxr_register_test(testTraceThreading
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceThreading"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceThreading'"
 )
 
 pxr_register_test(testTrace
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTrace"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTrace'"
 )
 
 pxr_register_test(testTraceRecursion1
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion'"
     DIFF_COMPARE recursion_5begins.out
 )
 
 pxr_register_test(testTraceRecursion2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion'"
     DIFF_COMPARE recursion_typical.out
 )
 
 pxr_register_test(testTraceRecursion3
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion'"
     DIFF_COMPARE recursion_newnode.out
 )
 
 pxr_register_test(testTraceRecursion4
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion'"
     DIFF_COMPARE recursion_inner.out
 )
 
 pxr_register_test(testTraceRecursion5
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion'"
     DIFF_COMPARE recursion_1817.out
 )
 
 pxr_register_test(testTraceRecursion6
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion'"
     DIFF_COMPARE recursion_branch.out
 )
 
 pxr_register_test(testTraceRecursion7
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion'"
     DIFF_COMPARE recursion_marker_merge.out
 )
 
 pxr_register_test(testTraceReports
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceReports"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceReports'"
 )
 
 pxr_register_test(testTraceReporter
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceReporter"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceReporter'"
 )
 
 pxr_register_test(testTraceSerialization
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceSerialization"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceSerialization'"
 )
 
 pxr_register_test(testTraceCounters
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceCounters"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceCounters'"
 )
 
 pxr_register_test(testTraceMarkers
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceMarkers"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceMarkers'"
 )
 
 pxr_register_test(testTraceReportPerf
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceReportPerf"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceReportPerf'"
 )    
 
 pxr_register_test(testTraceEventContainer
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceEventContainer"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testTraceEventContainer'"
 )

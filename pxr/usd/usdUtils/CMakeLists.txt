@@ -119,7 +119,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdUtilsConstantsGroup
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConstantsGroup"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConstantsGroup'"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -200,13 +200,13 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdUtilsAuthoring
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsAuthoring"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsAuthoring'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsCoalescingDiagnosticDelegate
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCoalescingDiagnosticDelegate"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCoalescingDiagnosticDelegate'"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -372,109 +372,109 @@ pxr_register_test(testUsdUtilsConditionalAbortDiagnosticDelegateCase16
 )
 
 pxr_register_test(testUsdUtilsCoalescingDiagnosticDelegateCpp
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCoalescingDiagnosticDelegateCpp"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCoalescingDiagnosticDelegateCpp'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsCreateNewARKitUsdzPackage
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check --arkit -l contents_arkit.txt package.usdz root.usd"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage' --check --arkit -l contents_arkit.txt package.usdz root.usd"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsCreateNewUsdzPackage
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents.txt package.usdz root.usd"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage' --check -l contents.txt package.usdz root.usd"
     DIFF_COMPARE contents.txt
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsDependencies
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencies"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencies'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsDependencyExtractor1
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor ascii.usda ascii-usda.txt"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor' ascii.usda ascii-usda.txt"
     DIFF_COMPARE ascii-usda.txt
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsDependencyExtractor2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor ascii.usd ascii-usd.txt"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor' ascii.usd ascii-usd.txt"
     DIFF_COMPARE ascii-usd.txt
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsDependencyExtractor3
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor crate.usdc crate-usdc.txt"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor' crate.usdc crate-usdc.txt"
     DIFF_COMPARE crate-usdc.txt
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsDependencyExtractor4
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor crate.usd crate-usd.txt"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor' crate.usd crate-usd.txt"
     DIFF_COMPARE crate-usd.txt
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsFlattenLayerStack
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsFlattenLayerStack"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsFlattenLayerStack'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsIntrospection
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsIntrospection"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsIntrospection'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsModifyAssetPaths
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsModifyAssetPaths layer.usda modified.usda"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsModifyAssetPaths' layer.usda modified.usda"
     DIFF_COMPARE modified.usda
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsPipeline
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsPipeline"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsPipeline'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsSparseValueWriter
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsSparseValueWriter"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsSparseValueWriter'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsStageCache
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsStageCache"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsStageCache'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsStitch
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsStitch"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsStitch'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsStitchClips
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsStitchClips"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsStitchClips'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsUpdateSchemaWithSdrNode
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsUpdateSchemaWithSdrNode"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsUpdateSchemaWithSdrNode'"
     DIFF_COMPARE resultAPISchema.usda
     DIFF_COMPARE resultAPIIdentifierMissing.usda
     DIFF_COMPARE result_override.usda
@@ -490,28 +490,28 @@ pxr_register_test(testUsdUtilsUpdateSchemaWithSdrNode
 
 pxr_register_test(testUsdUtilsUpdateSchemaWithSdrNodeError
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsUpdateSchemaWithSdrNode TestUsdUpdateSchemaWithSdrNode True"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsUpdateSchemaWithSdrNode' TestUsdUpdateSchemaWithSdrNode True"
     EXPECTED_RETURN_CODE 1
 )
 
 pxr_register_test(testUsdUtilsStitchCpp
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsStitchCpp"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsStitchCpp'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsTimeCodeRange
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsTimeCodeRange"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsTimeCodeRange'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsTimeCodeRangeCpp
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsTimeCodeRangeCpp"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsTimeCodeRangeCpp'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsVarSelsSessionLayer
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsVarSelsSessionLayer"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsVarSelsSessionLayer'"
     EXPECTED_RETURN_CODE 0
 )

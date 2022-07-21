@@ -79,16 +79,16 @@ pxr_test_scripts(
 )
 pxr_register_test(testVtValue
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtValue"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testVtValue'"
 )
 pxr_register_test(testVtArray
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtArray"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testVtArray'"
 )
 pxr_register_test(testVtFunctions
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtFunctions"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testVtFunctions'"
 )
 pxr_register_test(testVtCpp
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtCpp"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testVtCpp'"
 )

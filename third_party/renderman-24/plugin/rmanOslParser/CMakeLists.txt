@@ -43,7 +43,7 @@ pxr_test_scripts(
 
 pxr_register_test(testRmanOslParser
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testRmanOslParser"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testRmanOslParser'"
     EXPECTED_RETURN_CODE 0
     ENV
       RMANTREE=${RMANTREE_PATH}

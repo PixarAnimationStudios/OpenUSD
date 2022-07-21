@@ -34,8 +34,8 @@ else()
 
     pxr_register_test(testUsdEditFilePermissions1
         PYTHON
-        PRE_COMMAND "${CHMODBIN} -w write_protected.usda"
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit write_protected.usda"
+        PRE_COMMAND "'${CHMODBIN}' -w write_protected.usda"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdedit' write_protected.usda"
         EXPECTED_RETURN_CODE 1 
         ENV
           USD_EDITOR="${HEADBIN}"
@@ -50,8 +50,8 @@ else()
 
     pxr_register_test(testUsdEditFilePermissions2
         PYTHON
-        PRE_COMMAND "${CHMODBIN} -w write_protected.usda"
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit -n write_protected.usda"
+        PRE_COMMAND "'${CHMODBIN}' -w write_protected.usda"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdedit' -n write_protected.usda"
         EXPECTED_RETURN_CODE 0
         ENV
           USD_EDITOR="${HEADBIN}"
@@ -66,8 +66,8 @@ else()
 
     pxr_register_test(testUsdEditFilePermissions3
         PYTHON
-        PRE_COMMAND "${CHMODBIN} -w write_protected.usda"
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit -f write_protected.usda"
+        PRE_COMMAND "'${CHMODBIN}' -w write_protected.usda"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdedit' -f write_protected.usda"
         EXPECTED_RETURN_CODE 0
         ENV
           USD_EDITOR="${HEADBIN}"
@@ -82,8 +82,8 @@ else()
 
     pxr_register_test(testUsdEditRespectFileFormat1
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit hello_ascii.usd"
-        POST_COMMAND "${HEADBIN} -c9 hello_ascii.usd"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdedit' hello_ascii.usd"
+        POST_COMMAND "'${HEADBIN}' -c9 hello_ascii.usd"
         POST_COMMAND_STDOUT_REDIRECT ascii_output.txt
         EXPECTED_RETURN_CODE 0
         DIFF_COMPARE ascii_output.txt
@@ -100,8 +100,8 @@ else()
 
     pxr_register_test(testUsdEditRespectFileFormat2
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit hello_crate.usd"
-        POST_COMMAND "${HEADBIN} -c8 hello_crate.usd"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdedit' hello_crate.usd"
+        POST_COMMAND "'${HEADBIN}' -c8 hello_crate.usd"
         POST_COMMAND_STDOUT_REDIRECT crate_output.txt   
         EXPECTED_RETURN_CODE 0
         DIFF_COMPARE crate_output.txt
@@ -118,7 +118,7 @@ else()
 
     pxr_register_test(testUsdEditPackageFile1
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit test.usdz"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdedit' test.usdz"
         EXPECTED_RETURN_CODE 0
         ENV
           USD_EDITOR="sed -i 's/Sphere/Sphere2/g'"
@@ -133,7 +133,7 @@ else()
 
     pxr_register_test(testUsdEditPackageFile2
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit test.usdz[test.usda]"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usdedit' test.usdz[test.usda]"
         EXPECTED_RETURN_CODE 0
         ENV
           USD_EDITOR="sed -i 's/Sphere/Sphere2/g'"

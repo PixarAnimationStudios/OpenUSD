@@ -33,6 +33,6 @@ pxr_test_scripts(
 
 pxr_register_test(testCameraUtil
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testCameraUtil"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testCameraUtil'"
     EXPECTED_RETURN_CODE 0
 )

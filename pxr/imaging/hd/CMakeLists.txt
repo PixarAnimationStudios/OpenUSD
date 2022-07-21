@@ -334,63 +334,63 @@ pxr_install_test_dir(
 
 
 pxr_register_test(testHdBufferSourceEmptyVal
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdBufferSourceEmptyVal"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testHdBufferSourceEmptyVal'"
 )
 
 pxr_register_test(testHdBufferSpec
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdBufferSpec"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testHdBufferSpec'"
 )
 
 # pxr_register_test(testHdChangeTracker
-#     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdChangeTracker"
+#     COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testHdChangeTracker'"
 # )
 
 pxr_register_test(testHdCommand
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdCommand"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testHdCommand'"
 )
 
 pxr_register_test(testHdDataSourceLocator
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDataSourceLocator"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testHdDataSourceLocator'"
 )
 
 pxr_register_test(testHdDirtyList
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDirtyList"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testHdDirtyList'"
 )
 
 pxr_register_test(testHdExtCompDependencySort
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdExtCompDependencySort"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testHdExtCompDependencySort'"
 )
 
 pxr_register_test(testHdExtComputationUtils
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdExtComputationUtils"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testHdExtComputationUtils'"
 )
 
 pxr_register_test(testHdPerfLog
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdPerfLog"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testHdPerfLog'"
 )
 
 # pxr_register_test(testHdRenderIndex
-#     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdRenderIndex"
+#     COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testHdRenderIndex'"
 # )
 
 pxr_register_test(testHdDataSource
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDataSource"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testHdDataSource'"
 )
 
 pxr_register_test(testHdSceneIndex
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdSceneIndex"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testHdSceneIndex'"
 )
 
 pxr_register_test(testHdSortedIds
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdSortedIds"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testHdSortedIds'"
     # XXX Disabling compare for now. testHdSortedId_removeTest.txt differs on Mac and Windows.
     # DIFF_COMPARE testHdSortedId_populateTest.txt testHdSortedId_singleInsertTest.txt testHdSortedId_multiInsertTest.txt testHdSortedId_removeTest.txt testHdSortedId_removeOnlyElementTest.txt testHdSortedId_removeRangeTest.txt testHdSortedId_removeBatchTest.txt testHdSortedId_removeSortedTest.txt testHdSortedId_removeUnsortedTest.txt testHdSortedId_removeAfterInsertNoSyncTest.txt
 )
 
 pxr_register_test(testHdTimeSampleArray
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTimeSampleArray"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testHdTimeSampleArray'"
 )
 
 pxr_register_test(testHdTypes
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTypes"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testHdTypes'"
 )

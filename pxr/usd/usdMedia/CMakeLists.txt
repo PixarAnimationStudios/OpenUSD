@@ -42,6 +42,6 @@ pxr_test_scripts(
 
 pxr_register_test(testUsdMediaSpatialAudio
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMediaSpatialAudio"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdMediaSpatialAudio'"
     EXPECTED_RETURN_CODE 0
 )

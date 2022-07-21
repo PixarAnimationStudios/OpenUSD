@@ -95,13 +95,13 @@ pxr_test_scripts(
 
 pxr_register_test(testUsdPhysicsMetrics
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPhysicsMetrics"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdPhysicsMetrics'"
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdPhysicsRigidBodyAPI
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPhysicsRigidBodyAPI"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testUsdPhysicsRigidBodyAPI'"
     EXPECTED_RETURN_CODE 0
 )
 

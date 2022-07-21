@@ -60,7 +60,7 @@ pxr_build_test_shared_lib(TestSdrRegistry
 
 pxr_register_test(testSdrRegistry
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdrRegistry"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/tests/testSdrRegistry'"
     ENV
         PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY=1
         PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY=1

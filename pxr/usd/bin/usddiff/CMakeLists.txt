@@ -14,7 +14,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdDiffExitCodesForDiff1
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff a.usda a.usda --noeffect"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' a.usda a.usda --noeffect"
     EXPECTED_RETURN_CODE 0
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
@@ -27,7 +27,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdDiffExitCodesForDiff2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff a.usda b.usda --noeffect"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' a.usda b.usda --noeffect"
     EXPECTED_RETURN_CODE 1
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
@@ -40,7 +40,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdDiffToolSelectionDefault
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff a.usda b.usda --noeffect"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' a.usda b.usda --noeffect"
     STDOUT_REDIRECT out.txt
     DIFF_COMPARE out.txt
     EXPECTED_RETURN_CODE 1
@@ -55,7 +55,7 @@ pxr_install_test_dir(
  
 pxr_register_test(testUsdDiffToolVariousFormats1
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff a.usda a.usd --noeffect"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' a.usda a.usd --noeffect"
     EXPECTED_RETURN_CODE 0
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
@@ -68,7 +68,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdDiffToolVariousFormats2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff a.usdc a.usd --noeffect"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' a.usdc a.usd --noeffect"
     EXPECTED_RETURN_CODE 0
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
@@ -126,7 +126,7 @@ if (PXR_BUILD_DRACO_PLUGIN)
 
     pxr_register_test(testUsdDiffWithDracoFiles
     PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect CubeWithGenericPrimvars.drc CubeWithGenericPrimvars.drc"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' --noeffect CubeWithGenericPrimvars.drc CubeWithGenericPrimvars.drc"
         EXPECTED_RETURN_CODE 0
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
@@ -141,7 +141,7 @@ if (PXR_BUILD_DRACO_PLUGIN)
 
     pxr_register_test(testUsdDiffWithUsdaAndDracoFiles
     PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect CubeWithGenericPrimvars.drc CubeWithGenericPrimvars.usda"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' --noeffect CubeWithGenericPrimvars.drc CubeWithGenericPrimvars.usda"
         EXPECTED_RETURN_CODE 0
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
@@ -157,7 +157,7 @@ if (PXR_BUILD_DRACO_PLUGIN)
 
     pxr_register_test(testUsdDiffWithReferredDracoFiles
     PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect --flatten CubeWithGenericPrimvarsCompressed.usda CubeWithGenericPrimvarsCompressed.usda"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' --noeffect --flatten CubeWithGenericPrimvarsCompressed.usda CubeWithGenericPrimvarsCompressed.usda"
         EXPECTED_RETURN_CODE 0
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
@@ -173,7 +173,7 @@ if (PXR_BUILD_DRACO_PLUGIN)
 
     pxr_register_test(testUsdDiffWithDracoUsdz
     PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect --flatten ComplexSetCompressed.usdz ComplexSetCompressed.usdz"
+        COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' --noeffect --flatten ComplexSetCompressed.usdz ComplexSetCompressed.usdz"
         EXPECTED_RETURN_CODE 0
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
@@ -189,7 +189,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdDiffComposedResults1
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff a.usd b.usd --noeffect"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' a.usd b.usd --noeffect"
     EXPECTED_RETURN_CODE 1 
     STDOUT_REDIRECT layer_diff.txt
     DIFF_COMPARE layer_diff.txt
@@ -204,7 +204,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdDiffComposedResults2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff a.usd b.usd --noeffect --flatten"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' a.usd b.usd --noeffect --flatten"
     EXPECTED_RETURN_CODE 1 
     STDOUT_REDIRECT composed_diff.txt
     DIFF_COMPARE composed_diff.txt
@@ -220,7 +220,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdDiffWithDirectories1
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect a/ a/"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' --noeffect a/ a/"
     EXPECTED_RETURN_CODE 0
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
@@ -233,7 +233,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdDiffWithDirectories2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect a/ b/"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' --noeffect a/ b/"
     EXPECTED_RETURN_CODE 1 
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
@@ -246,7 +246,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdDiffWithDirectories3
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect . a/"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' --noeffect . a/"
     EXPECTED_RETURN_CODE 0
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
@@ -259,7 +259,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdDiffWithDirectories4
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect a.usda a/"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' --noeffect a.usda a/"
     EXPECTED_RETURN_CODE 0
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
@@ -272,7 +272,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdDiffWithDirectories5
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect a.usda b/"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' --noeffect a.usda b/"
     EXPECTED_RETURN_CODE 1
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
@@ -285,7 +285,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdDiffWithDirectories6
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect b/ a.usda"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' --noeffect b/ a.usda"
     EXPECTED_RETURN_CODE 1
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
@@ -298,7 +298,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdDiffWithDirectories7
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect a.usda b.usda b/"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' --noeffect a.usda b.usda b/"
     EXPECTED_RETURN_CODE 1
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
@@ -311,7 +311,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdDiffWithDirectories8
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect b/ a.usda b.usda"
+    COMMAND "'${CMAKE_INSTALL_PREFIX}/bin/usddiff' --noeffect b/ a.usda b.usda"
     EXPECTED_RETURN_CODE 1
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
