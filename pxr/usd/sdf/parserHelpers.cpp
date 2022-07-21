@@ -560,7 +560,7 @@ Sdf_EvalQuotedString(const char* x, size_t n, size_t trimBothSides,
     const char *p = x + trimBothSides;
     const char * const end = x + trimBothSides + n;
 
-    while (p != end) {
+    while (p < end) {
         const char *escOrEnd =
             static_cast<const char *>(memchr(p, '\\', std::distance(p, end)));
         if (!escOrEnd) {
