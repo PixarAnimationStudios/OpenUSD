@@ -338,6 +338,7 @@ UsdImagingGLEngine::Render(
     const UsdPrim& root, 
     const UsdImagingGLRenderParams &params)
 {
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
     if (ARCH_UNLIKELY(_legacyImpl)) {
         return _legacyImpl->Render(root, params);
     }
