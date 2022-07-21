@@ -262,8 +262,11 @@ ParseMetadata(
 {
     const auto& value = element->getAttribute(attribute);
     if (!value.empty()) {
-        // Change the MaterialX Texture node role from 'texture2d' to 'texture' 
-        if (key == SdrNodeMetadata->Role && value == "texture2d") {
+        // Change the 'texture2d' role for stdlib MaterialX Texture nodes,
+        // and the 'textureuser' role for custom MaterialX nodes that use  
+        // textures, to 'texture' for Sdr.
+        if (key == SdrNodeMetadata->Role && 
+            (value == "texture2d" || value == "textureuser")) {
             builder->metadata[key] = "texture";
         }
         else {
@@ -335,6 +338,13 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
     if (nodeDef->getName() == "ND_texcoord_vector2") {
         primvars.push_back(_GetPrimaryUvSetName());
     }
+    // Add the default texturecoord primvar for custom nodes that use 
+    // textures/texcoords
+    // XXX custom nodes must use the default texture coord name
+    if (nodeDef->getNodeGroup() == "textureuser" ||
+        nodeDef->getNodeGroup() == "texcoorduser") {
+        primvars.push_back(_GetPrimaryUvSetName());
+    }
 
     // Also check internalgeomprops.
     static const std::string internalgeompropsName("internalgeomprops");
@@ -380,8 +390,7 @@ public:
 };
 
 NdrNodeUniquePtr
-UsdMtlxParserPlugin::Parse(
-    const NdrNodeDiscoveryResult& discoveryResult)
+UsdMtlxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
 {
     MaterialX::ConstDocumentPtr document = nullptr;
     // Get the MaterialX document.
@@ -393,8 +402,7 @@ UsdMtlxParserPlugin::Parse(
             return GetInvalidNode(discoveryResult);
         }
     } else if (!discoveryResult.sourceCode.empty()) {
-        document = UsdMtlxGetDocumentFromString(
-            discoveryResult.sourceCode);
+        document = UsdMtlxGetDocumentFromString(discoveryResult.sourceCode);
         if (!document) {
             TF_WARN("Invalid mtlx source code.");
             return GetInvalidNode(discoveryResult);

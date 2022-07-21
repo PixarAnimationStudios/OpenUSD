@@ -371,6 +371,33 @@ UsdMtlxGetDocumentFromString(const std::string &mtlxXml)
     return document;
 }
 
+static void
+_ImportLibraries(mx::DocumentPtr *document, const NdrStringVec &searchPaths)
+{
+    for (auto&& fileResult : NdrFsHelpersDiscoverFiles(searchPaths,
+                                UsdMtlxStandardFileExtensions(), false)) {
+
+        // Read the file. If this fails due to an exception, a runtime
+        // error will be raised so we can just skip to the next file.
+        auto doc = UsdMtlxReadDocument(fileResult.resolvedUri);
+        if (!doc) {
+            continue;
+        }
+
+        try {
+            // Merge this document into the global library
+            // This properly sets the attributes on the destination 
+            // elements, like source URI and namespace
+            (*document)->importLibrary(doc);
+        }
+        catch (mx::Exception& x) {
+            TF_RUNTIME_ERROR("MaterialX error reading '%s': %s",
+                                fileResult.resolvedUri.c_str(),
+                                x.what());
+        }
+    }
+}
+
 mx::ConstDocumentPtr
 UsdMtlxGetDocument(const std::string& resolvedUri)
 {
@@ -387,32 +414,8 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
     // Read the file or the standard library files.
     if (resolvedUri.empty()) {
         document = mx::createDocument();
-        for (auto&& fileResult:
-                NdrFsHelpersDiscoverFiles(
-                    UsdMtlxStandardLibraryPaths(),
-                    UsdMtlxStandardFileExtensions(),
-                    false)) {
-
-            // Read the file. If this fails due to an exception, a runtime
-            // error will be raised so we can just skip to the next file.
-            auto doc = UsdMtlxReadDocument(fileResult.resolvedUri);
-            if (!doc) {
-                continue;
-            }
-
-            try {
-                
-                // Merge this document into the global library
-                // This properly sets the attributes on the destination 
-                // elements, like source URI and namespace
-                document->importLibrary(doc);
-            }
-            catch (mx::Exception& x) {
-                TF_RUNTIME_ERROR("MaterialX error reading '%s': %s",
-                                 fileResult.resolvedUri.c_str(),
-                                 x.what());
-            }
-        }
+        _ImportLibraries(&document, UsdMtlxStandardLibraryPaths());
+        _ImportLibraries(&document, UsdMtlxCustomSearchPaths());
     }
     else {
         document = UsdMtlxReadDocument(resolvedUri);

@@ -347,7 +347,6 @@ _GetTextureCoordinateName(
             // Save the default texture coordinate name for the glslfx header
             *defaultTexcoordName = primvarName;
         }
-        
     }
 }
 
@@ -421,7 +420,22 @@ _UpdateTextureNodes(
         // HdStMaterialXShaderGen match up correctly
         std::string newConnName = texturePath.GetName() + "_" + 
                                 (*mxHdTextureMap)[texturePath.GetName()];
-        (*mxHdTextureMap)[texturePath.GetName()] = newConnName;
+
+        // Replace the texturePath.GetName() in the textureMap to the variable
+        // name used in the shader: textureName_fileInputName 
+        std::string fileInputName = "file";
+        const mx::NodeDefPtr mxNodeDef =
+            mxDoc->getNodeDef(hdTextureNode.nodeTypeId.GetString());
+        if (mxNodeDef) {
+            for (auto mxInput : mxNodeDef->getInputs()) {
+                if (mxInput->getType() == "filename") {
+                    fileInputName = mxInput->getName();
+                }
+            }
+        }
+        mxHdTextureMap->erase(texturePath.GetName());
+        mxHdTextureMap->insert(std::pair<std::string, std::string>(
+                texturePath.GetName() + "_" + fileInputName, newConnName));
 
         // Make and add a new connection to the terminal node
         HdMaterialConnection2 textureConn;

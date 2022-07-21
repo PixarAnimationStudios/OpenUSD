@@ -3376,6 +3376,25 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLMaterialX
     )
+    
+    pxr_install_test_dir(
+        SRC testenv/testUsdImagingGLMaterialXCustomNodes
+        DEST testUsdImagingGLMaterialXCustomNodes
+    )
+        
+    pxr_register_test(testUsdImagingGLMaterialXCustomNodes_customTexNode
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage customTexNode.usda -write customTexNode.png"
+        IMAGE_DIFF_COMPARE
+            customTexNode.png
+        FAIL 0.5
+        FAIL_PERCENT 0.005
+        WARN 0.05
+        WARN_PERCENT 0.2
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLMaterialXCustomNodes
+        ENV
+            PXR_MTLX_PLUGIN_SEARCH_PATHS=./customNodeDefs
+    )
 endif()
 
 pxr_register_test(testUsdImagingGLInstancePrimvars

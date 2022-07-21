@@ -194,26 +194,27 @@ _AddMaterialXNode(
     // Get the mxNode information
     TfToken hdNodeType = netInterface->GetNodeType(hdNodeName);
     mx::NodeDefPtr mxNodeDef = mxDoc->getNodeDef(hdNodeType.GetString());
-    if (!mxNodeDef){
+    if (!mxNodeDef) {
         TF_WARN("NodeDef not found for Node '%s'", hdNodeType.GetText());
         return mx::NodePtr();
     }
     const SdfPath hdNodePath(hdNodeName.GetString());
-    const std::string & mxNodeCategory = mxNodeDef->getNodeString();
-    const std::string & mxNodeType = mxNodeDef->getType();
-    const std::string & mxNodeName = hdNodePath.GetName();
+    const std::string &mxNodeCategory = mxNodeDef->getNodeString();
+    const std::string &mxNodeType = mxNodeDef->getType();
+    const std::string &mxNodeGroup = mxNodeDef->getNodeGroup();
+    const std::string &mxNodeName = hdNodePath.GetName();
 
     // Add the mxNode to the mxNodeGraph
     mx::NodePtr mxNode =
         _AddNodeToNodeGraph(mxNodeName, mxNodeCategory, 
                             mxNodeType, mxNodeGraph, addedNodeNames);
 
-    if(mxNode->getNodeDef()) {
+    if (mxNode->getNodeDef()) {
         // Sometimes mxNode->getNodeDef() starts failing.
         // It seems to happen when there are connections with mismatched types.
         // Explicitly setting the node def string appparently fixes the problem.
         // If we don't do this code gen may fail.
-        if(mxNode->getNodeDefString().empty()) {
+        if (mxNode->getNodeDefString().empty()) {
             mxNode->setNodeDefString(hdNodeType.GetText());
         }
     }
@@ -236,8 +237,9 @@ _AddMaterialXNode(
         mxNode->setInputValue(mxInputName, mxInputValue, mxInputType);
     }
 
-    // If this is a MaterialX Texture node
-    if (mxNodeCategory == "image" || mxNodeCategory == "tiledimage") {
+    // Stdlib MaterialX Texture node or a custom node that uses a texture
+    if (mxNodeCategory == "image" || mxNodeCategory == "tiledimage" ||
+        mxNodeGroup == "textureuser") {
         // Save the corresponding MaterialX and Hydra names for ShaderGen
         if (mxHdTextureMap) {
             (*mxHdTextureMap)[mxNodeName] = connectionName;
@@ -249,15 +251,16 @@ _AddMaterialXNode(
         }
     }
 
-    // If this is a MaterialX primvar node
+    // MaterialX primvar node
     if (mxNodeCategory == "geompropvalue") {
         // Save the path to have the primvarName declared in ShaderGen
         if (hdPrimvarNodes) {
             hdPrimvarNodes->insert(hdNodePath);
         }
     }
-    // If this is a MaterialX texture coordinate node
-    if (mxNodeCategory == "texcoord") {
+    // Stdlib MaterialX texture coordinate node or a custom node that 
+    // uses texture coordinates
+    if (mxNodeCategory == "texcoord" || mxNodeGroup == "texcoorduser") {
         if (hdPrimvarNodes) {
             // Make sure it has the index parameter set.
             if (std::find(hdNodeParamNames.begin(), hdNodeParamNames.end(), 
