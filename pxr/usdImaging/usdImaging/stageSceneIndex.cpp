@@ -34,6 +34,8 @@
 
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 
+#include "pxr/base/tf/denseHashSet.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
