@@ -324,7 +324,7 @@ private:
         bool hasOwnership = false;
     };
 
-    // This structure pulls together the underlying ArchMutableFileMapping
+    // This structure pulls together the underlying ArchConstFileMapping
     // representing the memory-mapped file plus all the information we need to
     // support "zero-copy" arrays where we create VtArray instances that point
     // directly into mapped memory.  It gets complicated because the
@@ -338,7 +338,7 @@ private:
         // memory-mapped region, and shares in the lifetime of the mapping.
         struct ZeroCopySource : public Vt_ArrayForeignDataSource {
             explicit ZeroCopySource(
-                CrateFile::_FileMapping *m, void *addr, size_t numBytes);
+                CrateFile::_FileMapping *m, void const *addr, size_t numBytes);
 
             // XXX --------------------------------
             // Hack for tbb bug -- types in tbb::concurrent_unordered_set
@@ -371,7 +371,7 @@ private:
             }
 
             // Return the address this source refers to.
-            void *GetAddr() const { return _addr; }
+            void const *GetAddr() const { return _addr; }
             
             // Return the number of bytes this source refers to.
             size_t GetNumBytes() const { return _numBytes; }
@@ -381,14 +381,14 @@ private:
             static void _Detached(Vt_ArrayForeignDataSource *selfBase);
 
             _FileMapping *_mapping;
-            void *_addr;
+            void const *_addr;
             size_t _numBytes;
         };
         friend struct ZeroCopySource;
         
         _FileMapping() : _refCount(0) {};
 
-        explicit _FileMapping(ArchMutableFileMapping mapping, int64_t offset=0,
+        explicit _FileMapping(ArchConstFileMapping mapping, int64_t offset=0,
                               int64_t length=-1)
             : _refCount(0)
             , _mapping(std::move(mapping))
@@ -400,12 +400,12 @@ private:
         
         // Add an an externally referenced page range.
         ZeroCopySource *
-        AddRangeReference(void *addr, size_t numBytes);
+        AddRangeReference(void const *addr, size_t numBytes);
 
         // Return the start address of the mapped file content.  Note that due
         // to having usdc files embedded into other files (like usdz files) the
         // map start address is NOT guaranteed to be page-aligned.
-        char *GetMapStart() const { return _start; }
+        const char *GetMapStart() const { return _start; }
 
         // Return the length of the relevant content range in the mapping.
         size_t GetLength() const { return _length; }
@@ -413,9 +413,11 @@ private:
     private:
         friend class CrateFile;
 
-        // "Silent-store" to touch outstanding page ranges to detach them in the
-        // copy-on-write sense from their file backing and make them
-        // swap-backed.  No new page ranges can be added once this is invoked.
+        // Set memory protection to read / copy-on-write and then "silent-store"
+        // to touch outstanding page ranges to detach them in the copy-on-write
+        // sense from their file backing and make them swap-backed.  No new page
+        // ranges can be added once this is invoked.  (i.e. a cratefile dtor
+        // cannot run concurrently with other code reading/writing the file.)
         void _DetachReferencedRanges();
 
         // This class is managed by a combination of boost::intrusive_ptr and
@@ -434,8 +436,8 @@ private:
         }
 
         mutable std::atomic<size_t> _refCount { 0 };
-        ArchMutableFileMapping _mapping;
-        char *_start;
+        ArchConstFileMapping _mapping;
+        char const *_start;
         int64_t _length;
         tbb::concurrent_unordered_set<ZeroCopySource> _outstandingRanges;
     };

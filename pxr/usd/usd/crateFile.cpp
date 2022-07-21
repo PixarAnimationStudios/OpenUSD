@@ -31,6 +31,7 @@
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/regex.h"
 #include "pxr/base/arch/systemInfo.h"
+#include "pxr/base/arch/virtualMemory.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/gf/matrix3d.h"
@@ -476,7 +477,7 @@ CrateFile::_FileMapping::~_FileMapping()
 }
 
 CrateFile::_FileMapping::ZeroCopySource *
-CrateFile::_FileMapping::AddRangeReference(void *addr, size_t numBytes)
+CrateFile::_FileMapping::AddRangeReference(void const *addr, size_t numBytes)
 {
     auto iresult = _outstandingRanges.emplace(this, addr, numBytes);
     // If we take the source's count from 0 -> 1, add a reference to the
@@ -522,15 +523,26 @@ CrateFile::_FileMapping::_DetachReferencedRanges()
             int64_t pageStart = addrAsInt / CRATE_PAGESIZE;
             int64_t pageEnd =
                 ((addrAsInt + zeroCopy.GetNumBytes() - 1) / CRATE_PAGESIZE) + 1;
-            TouchPages(reinterpret_cast<char *>(pageStart * CRATE_PAGESIZE),
-                       pageEnd - pageStart);
+            // Make the memory range read/copy-on-write.
+            char *startAddr =
+                reinterpret_cast<char *>(pageStart * CRATE_PAGESIZE);
+            if (ArchSetMemoryProtection(
+                    startAddr, (pageEnd-pageStart) * CRATE_PAGESIZE,
+                    ArchProtectReadWriteCopy)) {
+                TouchPages(reinterpret_cast<char *>(pageStart * CRATE_PAGESIZE),
+                           pageEnd - pageStart);
+            }
+            else {
+                TF_WARN("could not set address range permissions to "
+                        "copy-on-write");
+            }
         }
     }
 }
 
 CrateFile::_FileMapping::ZeroCopySource::ZeroCopySource(
     CrateFile::_FileMapping *m,
-    void *addr, size_t numBytes)
+    void const *addr, size_t numBytes)
     : Vt_ArrayForeignDataSource(_Detached)
     , _mapping(m)
     , _addr(addr)
@@ -633,9 +645,9 @@ struct _MmapStream {
     }
 
     Vt_ArrayForeignDataSource *
-    CreateZeroCopyDataSource(void *addr, size_t numBytes) {
+    CreateZeroCopyDataSource(void const *addr, size_t numBytes) {
         char const *mapStart = _mapping->GetMapStart();
-        char const *chAddr = static_cast<char *>(addr);
+        char const *chAddr = static_cast<char const *>(addr);
         size_t mapLen = _mapping->GetLength();
         bool inRange = mapStart <= chAddr &&
             (chAddr + numBytes) <= (mapStart + mapLen);
@@ -651,12 +663,12 @@ struct _MmapStream {
         return _mapping->AddRangeReference(addr, numBytes);
     }
 
-    inline void *TellMemoryAddress() const {
+    inline void const *TellMemoryAddress() const {
         return _cur;
     }
     
 private:
-    char *_cur;
+    char const *_cur;
     FileMappingPtr _mapping;
     char *_debugPageMap;
     int _prefetchKB;
@@ -1816,12 +1828,14 @@ _ReadUncompressedArray(
         // pass addRef=false here, because CreateZeroCopyDataSource does that
         // already -- it needs to know if it's taken the count from 0 to 1 or
         // not.
-        void *addr = reader.src.TellMemoryAddress();
+        void const *addr = reader.src.TellMemoryAddress();
 
         if (Vt_ArrayForeignDataSource *foreignSrc =
             reader.src.CreateZeroCopyDataSource(addr, numBytes)) {
             *out = VtArray<T>(
-                foreignSrc, static_cast<T *>(addr), size, /*addRef=*/false);
+                foreignSrc,
+                static_cast<T *>(const_cast<void *>(addr)),
+                size, /*addRef=*/false);
         }
         else {
             // In case of error, return an empty array.
@@ -2122,7 +2136,7 @@ CrateFile::_MmapAsset(char const *assetPath, ArAssetSharedPtr const &asset)
     std::tie(file, offset) = asset->GetFileUnsafe();
     std::string errMsg;
     auto mapping = _FileMappingIPtr(
-        new _FileMapping(ArchMapFileReadWrite(file, &errMsg),
+        new _FileMapping(ArchMapFileReadOnly(file, &errMsg),
                          offset, asset->GetSize()));
     if (!mapping->GetMapStart()) {
         TF_RUNTIME_ERROR("Couldn't map asset '%s'%s%s", assetPath,
@@ -2139,7 +2153,7 @@ CrateFile::_MmapFile(char const *fileName, FILE *file)
 {
     std::string errMsg;
     auto mapping = _FileMappingIPtr(
-        new _FileMapping(ArchMapFileReadWrite(file, &errMsg)));
+        new _FileMapping(ArchMapFileReadOnly(file, &errMsg)));
     if (!mapping->GetMapStart()) {
         TF_RUNTIME_ERROR("Couldn't map file '%s'%s%s", fileName,
                          !errMsg.empty() ? ": " : "",
