@@ -568,6 +568,10 @@ public:
     /// the given \p materialPurpose on this prim. It accomplishes this by 
     /// blocking the targets of the associated binding relationship in the 
     /// current edit target.
+    ///
+    /// If a binding was created without specifying a \p bindingName, then
+    /// the correct \p bindingName to use for unbinding is the instance name
+    /// of the targetted collection.
     USDSHADE_API
     bool UnbindCollectionBinding(
         const TfToken &bindingName, 
