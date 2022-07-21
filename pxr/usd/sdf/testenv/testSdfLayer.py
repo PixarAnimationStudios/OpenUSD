@@ -833,5 +833,89 @@ over "test"
         emptySet.RemoveVariant(layer.GetObjectAtPath('/test{empty=nothing}'))
         self.assertTrue(emptySet.isInert)
 
+    def test_FileFormatTargets(self):
+        # Export a dummy layer that we can try to open below.
+        Sdf.Layer.CreateAnonymous().Export('dummy.test_target_format')
+
+        # Opening a layer with the primary format target specified should
+        # give the same layer as opening the layer with no target specified.
+        # Note that the target argument does not show up in the identifier
+        # in this case.
+        layerA = Sdf.Layer.FindOrOpen(
+            'dummy.test_target_format', args={'target':'A'})
+        self.assertTrue(layerA)
+        self.assertTrue('target=A' not in layerA.identifier)
+        self.assertTrue('target' not in layerA.GetFileFormatArguments())
+        self.assertEqual(
+            layerA.GetFileFormat(),
+            Sdf.FileFormat.FindById('test_target_format_A'))
+
+        layerA2 = Sdf.Layer.FindOrOpen('dummy.test_target_format')
+        self.assertTrue(layerA2)
+        self.assertEqual(layerA, layerA2)
+
+        # Opening a layer with another target specified should yield
+        # a different layer, since this is a invoking a different file
+        # format.
+        layerB = Sdf.Layer.FindOrOpen(
+            'dummy.test_target_format', args={'target':'B'})
+        self.assertTrue(layerB)
+        self.assertTrue('target=B' in layerB.identifier)
+        self.assertTrue('target' in layerB.GetFileFormatArguments())
+        self.assertEqual(
+            layerB.GetFileFormat(),
+            Sdf.FileFormat.FindById('test_target_format_B'))
+        self.assertNotEqual(layerA, layerB)
+
+        # Saving changes to both layers should be allowed. However, there
+        # is no built-in synchronization so if both layers end up writing
+        # to the same file they may stomp over each other.
+        layerA.documentation = "From layerA"
+        self.assertTrue(layerA.Save())
+
+        layerB.documentation = "From layerB"
+        self.assertTrue(layerB.Save())
+
+        # Creating a new layer with a file format target should work. Since
+        # the specified target is the primary format target, it does not
+        # show up in the identifier.
+        newLayerA = Sdf.Layer.CreateNew(
+            'new_layer.test_target_format', args={'target':'A'})
+        self.assertTrue(newLayerA)
+        self.assertTrue('target=A' not in newLayerA.identifier)
+        self.assertTrue('target' not in newLayerA.GetFileFormatArguments())
+        self.assertEqual(
+            newLayerA.GetFileFormat(),
+            Sdf.FileFormat.FindById('test_target_format_A'))
+
+        # Creating a new layer without specifying a target will fail because
+        # the layer we created above has the same identifier.
+        with self.assertRaises(Tf.ErrorException):
+            newLayerA2 = Sdf.Layer.CreateNew('new_layer.test_target_format')
+
+        # However, creating a layer with a different target should work.
+        newLayerB = Sdf.Layer.CreateNew(
+            'new_layer.test_target_format', args={'target':'B'})
+        self.assertTrue(newLayerB)
+        self.assertTrue('target=B' in newLayerB.identifier)
+        self.assertTrue('target' in newLayerB.GetFileFormatArguments())
+        self.assertEqual(
+            newLayerB.GetFileFormat(),
+            Sdf.FileFormat.FindById('test_target_format_B'))
+        self.assertNotEqual(newLayerA, newLayerB)
+
+        # Looking up these newly-created layers with and without
+        # arguments should work as expected.
+        self.assertEqual(
+            newLayerA, Sdf.Layer.Find('new_layer.test_target_format'))
+        self.assertEqual(
+            newLayerA,
+            Sdf.Layer.Find('new_layer.test_target_format',
+                           args={'target':'A'}))
+        self.assertEqual(
+            newLayerB,
+            Sdf.Layer.Find('new_layer.test_target_format',
+                           args={'target':'B'}))
+
 if __name__ == "__main__":
     unittest.main()

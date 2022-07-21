@@ -400,150 +400,6 @@ SdfLayer::CreateNew(
     return _CreateNew(fileFormat, identifier, args);
 }
 
-SdfLayerRefPtr
-SdfLayer::_CreateNew(
-    SdfFileFormatConstPtr fileFormat,
-    const string& identifier,
-    const FileFormatArguments &args)
-{
-    string whyNot;
-    if (!Sdf_CanCreateNewLayerWithIdentifier(identifier, &whyNot)) {
-        TF_CODING_ERROR("Cannot create new layer '%s': %s",
-            identifier.c_str(),
-            whyNot.c_str());
-        return TfNullPtr;
-    }
-
-    ArResolver& resolver = ArGetResolver();
-
-    ArAssetInfo assetInfo;
-    string absIdentifier, localPath;
-    {
-        TfErrorMark m;
-        absIdentifier = resolver.CreateIdentifierForNewAsset(identifier);
-
-        // Resolve the identifier to the path where new assets should go.
-        localPath = resolver.ResolveForNewAsset(absIdentifier);
-
-        if (!m.IsClean()) {
-            std::vector<std::string> errors;
-            for (const TfError& error : m) {
-                errors.push_back(error.GetCommentary());
-            }
-            whyNot = TfStringJoin(errors, ", ");
-            m.Clear();
-        }
-    }
-
-    if (localPath.empty()) {
-        TF_CODING_ERROR(
-            "Cannot create new layer '%s': %s",
-            absIdentifier.c_str(), 
-            (whyNot.empty() ? "failed to compute path for new layer" 
-                : whyNot.c_str()));
-        return TfNullPtr;
-    }
-
-    // If not explicitly supplied one, try to determine the fileFormat 
-    // based on the local path suffix,
-    if (!fileFormat) {
-        fileFormat = SdfFileFormat::FindByExtension(localPath, args);
-        // XXX: This should be a coding error, not a failed verify.
-        if (!TF_VERIFY(fileFormat))
-            return TfNullPtr;
-    }
-
-    // Restrict creating package layers via the Sdf API. These layers
-    // are expected to be created via other libraries or external programs.
-    if (Sdf_IsPackageOrPackagedLayer(fileFormat, identifier)) {
-        TF_CODING_ERROR("Cannot create new layer '%s': creating %s %s "
-                        "layer is not allowed through this API.",
-                        identifier.c_str(), 
-                        fileFormat->IsPackage() ? "package" : "packaged",
-                        fileFormat->GetFormatId().GetText());
-        return TfNullPtr;
-    }
-
-    // In case of failure below, we want to release the layer
-    // registry mutex lock before destroying the layer.
-    SdfLayerRefPtr layer;
-    {
-        tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
-
-        // Check for existing layer with this identifier.
-        if (_layerRegistry->Find(absIdentifier)) {
-            TF_CODING_ERROR("A layer already exists with identifier '%s'",
-                absIdentifier.c_str());
-            return TfNullPtr;
-        }
-
-        layer = _CreateNewWithFormat(
-            fileFormat, absIdentifier, localPath, ArAssetInfo(), args);
-
-        if (!TF_VERIFY(layer)) {
-            return TfNullPtr;
-        }
-
-        // Stash away the existing layer hints.  The call to _Save below will
-        // invalidate them but they should still be good.
-        SdfLayerHints hints = layer->_hints;
-
-        // XXX 2011-08-19 Newly created layers should not be
-        // saved to disk automatically.
-        //
-        // Force the save here to ensure this new layer overwrites any
-        // existing layer on disk.
-        if (!layer->_Save(/* force = */ true)) {
-            // Dropping the layer reference will destroy it, and
-            // the destructor will remove it from the registry.
-            return TfNullPtr;
-        }
-
-        layer->_hints = hints;
-        // Once we have saved the layer, initialization is complete.
-        layer->_FinishInitialization(/* success = */ true);
-    }
-    // Return loaded layer or special-cased in-memory layer.
-    return layer;
-}
-
-SdfLayerRefPtr
-SdfLayer::New(
-    const SdfFileFormatConstPtr& fileFormat,
-    const string& identifier,
-    const FileFormatArguments& args)
-{
-    if (!fileFormat) {
-        TF_CODING_ERROR("Invalid file format");
-        return TfNullPtr;
-    }
-
-    if (identifier.empty()) {
-        TF_CODING_ERROR("Cannot construct a layer with an empty identifier.");
-        return TfNullPtr;
-    }
-
-    if (Sdf_IsPackageOrPackagedLayer(fileFormat, identifier)) {
-        TF_CODING_ERROR("Cannot construct new %s %s layer", 
-                        fileFormat->IsPackage() ? "package" : "packaged",
-                        fileFormat->GetFormatId().GetText());
-        return TfNullPtr;
-    }
-
-    tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
-
-    const string absIdentifier = 
-        ArGetResolver().CreateIdentifierForNewAsset(identifier);
-
-    SdfLayerRefPtr layer = _CreateNewWithFormat(
-        fileFormat, absIdentifier, std::string(), ArAssetInfo(), args);
-
-    // No further initialization required.
-    layer->_FinishInitialization(/* success = */ true);
-
-    return layer;
-}
-
 static SdfLayer::FileFormatArguments&
 _CanonicalizeFileFormatArguments(const std::string& filePath,
                                  const SdfFileFormatConstPtr& fileFormat,
@@ -618,6 +474,167 @@ _CanonicalizeFileFormatArguments(const std::string& filePath,
     }
 
     return args;
+}
+
+SdfLayerRefPtr
+SdfLayer::_CreateNew(
+    SdfFileFormatConstPtr fileFormat,
+    const string& identifier,
+    const FileFormatArguments &args)
+{
+    string whyNot;
+    if (!Sdf_CanCreateNewLayerWithIdentifier(identifier, &whyNot)) {
+        TF_CODING_ERROR("Cannot create new layer '%s': %s",
+            identifier.c_str(),
+            whyNot.c_str());
+        return TfNullPtr;
+    }
+
+    ArResolver& resolver = ArGetResolver();
+
+    ArAssetInfo assetInfo;
+    string absIdentifier, localPath;
+    {
+        TfErrorMark m;
+        absIdentifier = resolver.CreateIdentifierForNewAsset(identifier);
+
+        // Resolve the identifier to the path where new assets should go.
+        localPath = resolver.ResolveForNewAsset(absIdentifier);
+
+        if (!m.IsClean()) {
+            std::vector<std::string> errors;
+            for (const TfError& error : m) {
+                errors.push_back(error.GetCommentary());
+            }
+            whyNot = TfStringJoin(errors, ", ");
+            m.Clear();
+        }
+    }
+
+    if (localPath.empty()) {
+        TF_CODING_ERROR(
+            "Cannot create new layer '%s': %s",
+            absIdentifier.c_str(), 
+            (whyNot.empty() ? "failed to compute path for new layer" 
+                : whyNot.c_str()));
+        return TfNullPtr;
+    }
+
+    // If not explicitly supplied one, try to determine the fileFormat 
+    // based on the local path suffix,
+    if (!fileFormat) {
+        fileFormat = SdfFileFormat::FindByExtension(localPath, args);
+        // XXX: This should be a coding error, not a failed verify.
+        if (!TF_VERIFY(fileFormat))
+            return TfNullPtr;
+    }
+
+    // Restrict creating package layers via the Sdf API. These layers
+    // are expected to be created via other libraries or external programs.
+    if (Sdf_IsPackageOrPackagedLayer(fileFormat, identifier)) {
+        TF_CODING_ERROR("Cannot create new layer '%s': creating %s %s "
+                        "layer is not allowed through this API.",
+                        identifier.c_str(), 
+                        fileFormat->IsPackage() ? "package" : "packaged",
+                        fileFormat->GetFormatId().GetText());
+        return TfNullPtr;
+    }
+
+    // Canonicalize any file format arguments passed in.
+    FileFormatArguments finalArgs(args);
+    _CanonicalizeFileFormatArguments(absIdentifier, fileFormat, finalArgs);
+
+    // If a file format target is included in the arguments, it must be
+    // included in the identifier of the new layer. This ensures that
+    // FindOrOpen will find these layers if given the same target.
+    //
+    // All other arguments are currently assumed to contribute to how
+    // the file format creates the new layer but not to the identity
+    // of the layer.
+    auto targetArgIt = finalArgs.find(SdfFileFormatTokens->TargetArg);
+    if (targetArgIt != finalArgs.end()) {
+        absIdentifier = Sdf_CreateIdentifier(
+            absIdentifier, FileFormatArguments{*targetArgIt});
+    }
+
+    // In case of failure below, we want to release the layer
+    // registry mutex lock before destroying the layer.
+    SdfLayerRefPtr layer;
+    {
+        tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
+
+        // Check for existing layer with this identifier.
+        if (_layerRegistry->Find(absIdentifier)) {
+            TF_CODING_ERROR("A layer already exists with identifier '%s'",
+                absIdentifier.c_str());
+            return TfNullPtr;
+        }
+
+        layer = _CreateNewWithFormat(
+            fileFormat, absIdentifier, localPath, ArAssetInfo(), finalArgs);
+
+        if (!TF_VERIFY(layer)) {
+            return TfNullPtr;
+        }
+
+        // Stash away the existing layer hints.  The call to _Save below will
+        // invalidate them but they should still be good.
+        SdfLayerHints hints = layer->_hints;
+
+        // XXX 2011-08-19 Newly created layers should not be
+        // saved to disk automatically.
+        //
+        // Force the save here to ensure this new layer overwrites any
+        // existing layer on disk.
+        if (!layer->_Save(/* force = */ true)) {
+            // Dropping the layer reference will destroy it, and
+            // the destructor will remove it from the registry.
+            return TfNullPtr;
+        }
+
+        layer->_hints = hints;
+        // Once we have saved the layer, initialization is complete.
+        layer->_FinishInitialization(/* success = */ true);
+    }
+    // Return loaded layer or special-cased in-memory layer.
+    return layer;
+}
+
+SdfLayerRefPtr
+SdfLayer::New(
+    const SdfFileFormatConstPtr& fileFormat,
+    const string& identifier,
+    const FileFormatArguments& args)
+{
+    if (!fileFormat) {
+        TF_CODING_ERROR("Invalid file format");
+        return TfNullPtr;
+    }
+
+    if (identifier.empty()) {
+        TF_CODING_ERROR("Cannot construct a layer with an empty identifier.");
+        return TfNullPtr;
+    }
+
+    if (Sdf_IsPackageOrPackagedLayer(fileFormat, identifier)) {
+        TF_CODING_ERROR("Cannot construct new %s %s layer", 
+                        fileFormat->IsPackage() ? "package" : "packaged",
+                        fileFormat->GetFormatId().GetText());
+        return TfNullPtr;
+    }
+
+    tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
+
+    const string absIdentifier = 
+        ArGetResolver().CreateIdentifierForNewAsset(identifier);
+
+    SdfLayerRefPtr layer = _CreateNewWithFormat(
+        fileFormat, absIdentifier, std::string(), ArAssetInfo(), args);
+
+    // No further initialization required.
+    layer->_FinishInitialization(/* success = */ true);
+
+    return layer;
 }
 
 struct SdfLayer::_FindOrOpenLayerInfo
