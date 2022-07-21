@@ -152,8 +152,8 @@ class UIStateProxySource(StateSource):
 
         self._mainWindow = mainWindow
         primViewColumnVisibility = self.stateProperty("primViewColumnVisibility",
-                default=[True, True, True, False], validator=lambda value: 
-                len(value) == 4)
+                default=[True, True, True, True, False], validator=lambda value: 
+                len(value) == 5)
         propertyViewColumnVisibility = self.stateProperty("propertyViewColumnVisibility",
                 default=[True, True, True], validator=lambda value: len(value) == 3)
         attributeInspectorCurrentTab = self.stateProperty("attributeInspectorCurrentTab", default=PropertyIndex.VALUE)
@@ -747,11 +747,17 @@ class AppController(QtCore.QObject):
 
             # Set the prim view header to have a fixed size type and vis columns
             nvh = self._ui.primView.header()
-            nvh.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
-            nvh.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
-            nvh.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
-            nvh.resizeSection(3, 116)
-            nvh.setSectionResizeMode(3, QtWidgets.QHeaderView.Fixed)
+            nvh.setSectionResizeMode(PrimViewColumnIndex.NAME,
+                QtWidgets.QHeaderView.Stretch)
+            nvh.setSectionResizeMode(PrimViewColumnIndex.TYPE,
+                QtWidgets.QHeaderView.ResizeToContents)
+            nvh.setSectionResizeMode(PrimViewColumnIndex.VIS,
+                QtWidgets.QHeaderView.ResizeToContents)
+            nvh.setSectionResizeMode(PrimViewColumnIndex.GUIDES,
+                QtWidgets.QHeaderView.ResizeToContents)
+            nvh.resizeSection(PrimViewColumnIndex.DRAWMODE, 116)
+            nvh.setSectionResizeMode(PrimViewColumnIndex.DRAWMODE,
+                QtWidgets.QHeaderView.Fixed)
 
             pvh = self._ui.propertyView.header()
             pvh.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
@@ -2880,7 +2886,12 @@ class AppController(QtCore.QObject):
         currCamera = self._startingPrimCamera
         if self._stageView:
             currCamera = self._dataModel.viewSettings.cameraPrim
-            self._stageView.allSceneCameras = self._allSceneCameras
+            self._stageView.camerasWithGuides = [
+                cam for cam in self._allSceneCameras
+                if UsdGeom.Imageable(cam).ComputeEffectiveVisibility(
+                    UsdGeom.Tokens.guide)
+                != UsdGeom.Tokens.invisible
+            ]
             # if the stageView is holding an expired camera, clear it first
             # and force search for a new one
             if currCamera != None and not (currCamera and currCamera.IsActive()):
@@ -3547,22 +3558,31 @@ class AppController(QtCore.QObject):
         # If user clicked in a selected row, we will toggle all selected items;
         # otherwise, just the clicked one.
         if col == PrimViewColumnIndex.VIS:
-            itemsToToggle = [ item ]
-            if item.isSelected():
-                itemsToToggle =  [
-                    self._getItemAtPath(prim.GetPath(), ensureExpanded=True)
-                    for prim in self._dataModel.selection.getPrims()]
-            changedAny = False
-            with self._makeTimer("update vis column"):
-                for toToggle in itemsToToggle:
-                    # toggleVis() returns True if the click caused a visibility
-                    # change.
-                    changedOne = toToggle.toggleVis()
-                    if changedOne:
-                        PrimViewItem.propagateVis(toToggle)
-                        changedAny = True
-            if changedAny:
-                self.editComplete('Updated prim visibility')
+            toggleFunc = PrimViewItem.toggleVis
+            timerName = "update vis column"
+            editCompleteAlert = "Updated prim visibility"
+        elif col == PrimViewColumnIndex.GUIDES:
+            toggleFunc = PrimViewItem.toggleGuides
+            timerName = "update guides column"
+            editCompleteAlert = "Updated guide visibility"
+        else:
+            return
+
+        itemsToToggle = [item]
+        if item.isSelected():
+            itemsToToggle = [
+                self._getItemAtPath(prim.GetPath(), ensureExpanded=True)
+                for prim in self._dataModel.selection.getPrims()]
+        changedAny = False
+        with self._makeTimer(timerName):
+            # toggleFunc() returns True if the click caused a visibility change
+            # we force list comprehension since any short circuits w/ first True
+            changedAny = any(
+                [toggleFunc(toToggle) for toToggle in itemsToToggle]
+            )
+        if changedAny:
+            self.editComplete(editCompleteAlert)
+            
 
     def _itemPressed(self, item, col):
         if col == PrimViewColumnIndex.DRAWMODE:

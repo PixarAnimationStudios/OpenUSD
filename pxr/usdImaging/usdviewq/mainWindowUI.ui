@@ -234,6 +234,11 @@
            </column>
            <column>
             <property name="text">
+             <string>Guides</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
              <string>Draw Mode</string>
             </property>
            </column>

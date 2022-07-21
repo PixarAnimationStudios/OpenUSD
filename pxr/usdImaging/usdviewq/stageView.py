@@ -803,12 +803,12 @@ class StageView(QGLWidget):
         self._HUDStatKeys = keys
 
     @property
-    def allSceneCameras(self):
-        return self._allSceneCameras
+    def camerasWithGuides(self):
+        return self._camerasWithGuides
 
-    @allSceneCameras.setter
-    def allSceneCameras(self, value):
-        self._allSceneCameras = value
+    @camerasWithGuides.setter
+    def camerasWithGuides(self, value):
+        self._camerasWithGuides = value
 
     @property
     def gfCamera(self):
@@ -922,7 +922,7 @@ class StageView(QGLWidget):
         self._forceRefresh = False
         self._renderTime = 0
 
-        self._allSceneCameras = None
+        self._camerasWithGuides = None
 
         # HUD properties
         self._fpsHUDInfo = dict()
@@ -1084,7 +1084,7 @@ class StageView(QGLWidget):
         '''Set the USD Stage this widget will be displaying. To decommission
         (even temporarily) this widget, supply None as 'stage'.'''
 
-        self.allSceneCameras = None
+        self.camerasWithGuides = None
 
         if self._dataModel.stage:
             self._stageIsZup = (
@@ -1225,7 +1225,7 @@ class StageView(QGLWidget):
 
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._cameraGuidesVBO)
         data = []
-        for camera in self._allSceneCameras:
+        for camera in self._camerasWithGuides:
             # Don't draw guides for the active camera.
             if camera == self._dataModel.viewSettings.cameraPrim or not (camera and camera.IsActive()):
                 continue

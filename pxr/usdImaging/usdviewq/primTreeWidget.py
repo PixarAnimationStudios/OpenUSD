@@ -24,7 +24,7 @@
 from .qt import QtCore, QtGui, QtWidgets
 from pxr.UsdUtils.constantsGroup import ConstantsGroup
 from pxr import Sdf, Usd, UsdGeom
-from .primViewItem import PrimViewItem
+from .primViewItem import PrimViewColumnIndex, PrimViewItem
 from .common import PrintWarning, Timer, UIPrimTreeColors, KeyboardShortcuts
 
 def _GetPropertySpecInSessionLayer(usdAttribute):
@@ -62,9 +62,6 @@ def _GetBackgroundColor(item, option):
                 background = UIPrimTreeColors.SELECTED_HOVER
 
     return background
-
-class PrimViewColumnIndex(ConstantsGroup):
-    NAME, TYPE, VIS, DRAWMODE = range(4)
 
 class DrawModes(ConstantsGroup):
     DEFAULT = "default"
@@ -379,7 +376,9 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
     def ColumnPressCausesSelection(self, col):
         """If this method returns True for column `col`, then we want a
         click in that column to cause the item to be selected."""
-        return col != PrimViewColumnIndex.VIS and col != PrimViewColumnIndex.DRAWMODE
+        return col != PrimViewColumnIndex.VIS and \
+            col != PrimViewColumnIndex.GUIDES and \
+            col != PrimViewColumnIndex.DRAWMODE
 
     def ExpandItemRecursively(self, item):
         if (item.parent() != None):        
