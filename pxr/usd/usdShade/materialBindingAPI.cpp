@@ -134,8 +134,18 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // --(BEGIN CUSTOM CODE)--
 
 #include "pxr/base/work/loops.h"
+#include "pxr/base/tf/envSetting.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(USD_SHADE_MATERIAL_BINDING_API_CHECK, "strict",
+        "When querying material bindings on a prim, this environment variable"
+        "controls if an early return will happen if the prim has "
+        "MaterialBindingAPI applied or not. Default behavior 'strict', is to "
+        "do an early return if MaterialBindingAPI is not applied. Otherwise "
+        "depending on if the value of the environment variable is "
+        "'warnOnMissingAPI' or 'allowMissingAPI' will allow bindings to be "
+        "queried with or without warnings respectively.");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -144,6 +154,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((materialBindingCollectionFull, "material:binding:collection:full"))
     ((materialBindingCollectionPreview, "material:binding:collection:preview"))
+    // token values for USD_SHADE_MATERIAL_BINDING_API_CHECK
+    (strict)
+    (allowMissingAPI)
+    (warnOnMissingAPI)
 );
 
 static 
@@ -574,6 +588,29 @@ _GetCollectionBindingPropertyNames(
 UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
     const UsdPrim &prim, const TfToken &materialPurpose)
 {
+    auto MaterialBindingAPIChecker = []() {
+        // 0: strict
+        // 1: warnOnMissingAPI
+        // 2: allowMissingAPI
+        const std::string usdShadeMaterialBindingAPI = 
+            TfGetEnvSetting(USD_SHADE_MATERIAL_BINDING_API_CHECK);
+        return (usdShadeMaterialBindingAPI == _tokens->strict.GetString()) ? 0 : 
+            (usdShadeMaterialBindingAPI == 
+                _tokens->warnOnMissingAPI.GetString()) ? 1 :
+            (usdShadeMaterialBindingAPI == 
+                _tokens->allowMissingAPI.GetString()) ? 2 : 0;
+    };
+    static const int materialBindingAPICheck = MaterialBindingAPIChecker();
+
+    const bool materialBindingAPIApplied = 
+        prim.HasAPI<UsdShadeMaterialBindingAPI>();
+
+    // Return if MaterialBindingAPI is not applied on the prim and
+    // USD_SHADE_MATERIAL_BINDING_API_CHECK is set to default "strict" option
+    if (materialBindingAPICheck == 0 && !materialBindingAPIApplied) {
+        return;
+    }
+
     // These are the properties we need to consider when looking for 
     // bindings (both direct and collection-based) at the prim itself 
     // and each ancestor prim.
@@ -644,6 +681,17 @@ UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
         allPurposeCollBindings = 
             bindingAPI._GetCollectionBindings(collBindingPropertyNames);
     }
+
+    // Conditional warning if material bindings are found when
+    // USD_SHADE_MATERIAL_BINDING_API_CHECK is set to warnOnMissingAPI (1)
+    if (materialBindingAPICheck == 1 && !materialBindingAPIApplied &&
+        (directBinding || 
+        !restrictedPurposeCollBindings.empty() || 
+        !allPurposeCollBindings.empty())) {
+        TF_WARN("Found material bindings on prim at path (%s) but "
+                "MaterialBindingAPI is not applied on the prim", 
+                prim.GetPath().GetText());
+    }
 }
 
 /* static */
@@ -665,6 +713,7 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
         TF_CODING_ERROR("Invalid prim (%s)", UsdDescribe(GetPrim()).c_str());
         return UsdShadeMaterial();
     }
+
 
     TRACE_FUNCTION();
 
