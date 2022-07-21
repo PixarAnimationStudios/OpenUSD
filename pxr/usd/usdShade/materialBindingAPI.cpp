@@ -138,14 +138,20 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(USD_SHADE_MATERIAL_BINDING_API_CHECK, "strict",
+// XXX: The default here is being changed to warnOnMissingAPI instead of strict,
+// to give some buffer of couple of USD releases for external clients to update 
+// their assets. 
+TF_DEFINE_ENV_SETTING(USD_SHADE_MATERIAL_BINDING_API_CHECK, "warnOnMissingAPI",
         "When querying material bindings on a prim, this environment variable"
         "controls if an early return will happen if the prim has "
-        "MaterialBindingAPI applied or not. Default behavior 'strict', is to "
-        "do an early return if MaterialBindingAPI is not applied. Otherwise "
-        "depending on if the value of the environment variable is "
-        "'warnOnMissingAPI' or 'allowMissingAPI' will allow bindings to be "
-        "queried with or without warnings respectively.");
+        "MaterialBindingAPI applied or not. Current (temp) default is "
+        "'warnOnMissingAPI', which warns when API schema is not applied and "
+        "material binding is provided. Default behavior will be updated to "
+        "'strict' (in some future USD release), to do an early return if "
+        "MaterialBindingAPI is not applied. Otherwise depending on if the value "
+        "of the environment variable is 'warnOnMissingAPI' or 'allowMissingAPI'"
+        "will allow bindings to be queried with or without warnings "
+        "respectively.");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
