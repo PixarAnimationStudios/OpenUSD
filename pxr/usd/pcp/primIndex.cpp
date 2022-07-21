@@ -1379,7 +1379,6 @@ _AddArc(
     int namespaceDepth,
     bool directNodeShouldContributeSpecs,
     bool includeAncestralOpinions,
-    bool requirePrimAtTarget,
     bool skipDuplicateNodes,
     bool skipImpliedSpecializesCompletedNodes,
     Pcp_PrimIndexer *indexer )
@@ -1400,7 +1399,6 @@ _AddArc(
         "namespaceDepth: %d\n"
         "directNodeShouldContributeSpecs: %s\n"
         "includeAncestralOpinions: %s\n"
-        "requirePrimAtTarget: %s\n"
         "skipDuplicateNodes: %s\n"
         "skipImpliedSpecializesCompletedNodes: %s\n\n",
         origin ? Pcp_FormatSite(origin.GetSite()).c_str() : "<None>",
@@ -1408,7 +1406,6 @@ _AddArc(
         namespaceDepth,
         directNodeShouldContributeSpecs ? "true" : "false",
         includeAncestralOpinions ? "true" : "false",
-        requirePrimAtTarget ? "true" : "false",
         skipDuplicateNodes ? "true" : "false",
         skipImpliedSpecializesCompletedNodes ? "true" : "false");
 
@@ -1666,20 +1663,6 @@ _AddArc(
         newNode, skipAncestralCompletedNodes, 
         skipImpliedSpecializesCompletedNodes);
 
-    // If requested, recursively check if there is a prim spec at the 
-    // targeted site or at any of its descendants. If there isn't, 
-    // we report an error. Note that we still return the new node in this
-    // case because we want to propagate implied inherits, etc. in the graph.
-    if (requirePrimAtTarget &&
-        !_PrimSpecExistsUnderNode(newNode, indexer)) {
-        PcpErrorUnresolvedPrimPathPtr err = PcpErrorUnresolvedPrimPath::New();
-        err->rootSite = PcpSite(parent.GetRootNode().GetSite());
-        err->site = PcpSite(parent.GetSite());
-        err->unresolvedPath = newNode.GetPath();
-        err->arcType = arcType;
-        indexer->RecordError(err);
-    }
-
     // If the arc targets a site that is itself private, issue an error.
     if (newNode.GetPermission() == SdfPermissionPrivate) {
         PcpErrorArcPermissionDeniedPtr err = PcpErrorArcPermissionDenied::New();
@@ -1724,7 +1707,6 @@ _AddArc(
     int arcSiblingNum,
     bool directNodeShouldContributeSpecs,
     bool includeAncestralOpinions,
-    bool requirePrimAtTarget,
     bool skipDuplicateNodes,
     Pcp_PrimIndexer *indexer )
 {
@@ -1740,7 +1722,6 @@ _AddArc(
         arcSiblingNum, namespaceDepth,
         directNodeShouldContributeSpecs,
         includeAncestralOpinions,
-        requirePrimAtTarget,
         skipDuplicateNodes,
         /* skipImpliedSpecializes = */ false,
         indexer);
@@ -2010,7 +1991,7 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
         // not a root prim.
         const bool includeAncestralOpinions = !primPath.IsRootPrimPath();
 
-        _AddArc( ARC_TYPE,
+        const PcpNodeRef newNode = _AddArc( ARC_TYPE,
                  /* parent = */ node,
                  /* origin = */ node,
                  PcpLayerStackSite( layerStack, primPath ),
@@ -2018,9 +1999,21 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
                  /* arcSiblingNum = */ arcNum,
                  directNodeShouldContributeSpecs,
                  includeAncestralOpinions,
-                 /* requirePrimAtTarget = */ true,
                  /* skipDuplicateNodes = */ false,
                  indexer );
+                 
+        // Reference and payload arcs must target a prim that exists in the 
+        // referenced layer stack. If there isn't, we report an error. Note that
+        // the node representing this arc was already added to the graph for
+        // dependency tracking purposes.
+        if (newNode && !_PrimSpecExistsUnderNode(newNode, indexer)) {
+            PcpErrorUnresolvedPrimPathPtr err = PcpErrorUnresolvedPrimPath::New();
+            err->rootSite = PcpSite(node.GetRootNode().GetSite());
+            err->site = PcpSite(node.GetSite());
+            err->unresolvedPath = newNode.GetSite().path;
+            err->arcType = ARC_TYPE;
+            indexer->RecordError(err);
+        }
     }
 }
 
@@ -2366,7 +2359,6 @@ _EvalNodeRelocations(
                     ancestral arcs. */
                  /* directNodeShouldContributeSpecs = */ false,
                  /* includeAncestralOpinions = */ true,
-                 /* requirePrimAtTarget = */ false,
                  /* skipDuplicateNodes = */ false,
                  indexer );
 
@@ -2461,7 +2453,6 @@ _EvalImpliedRelocations(
                      /* arcSiblingNum = */ 0,
                      /* directNodeShouldContributeSpecs = */ false,
                      /* includeAncestralOpinions = */ false,
-                     /* requirePrimAtTarget = */ false,
                      /* skipDuplicateNodes = */ false,
                      indexer );
         }
@@ -2706,7 +2697,6 @@ _AddClassBasedArc(
                  inheritSite, inheritMap, inheritArcNum,
                  /* directNodeShouldContributeSpecs = */ shouldContributeSpecs,
                  includeAncestralOpinions,
-                 /* requirePrimAtTarget = */ false,
                  skipDuplicateNodes,
                  indexer );
 
@@ -3175,7 +3165,6 @@ _PropagateNodeToParent(
                     namespaceDepth,
                     /* directNodeShouldContributeSpecs = */ !srcNode.IsInert(),
                     /* includeAncestralOpinions = */ false,
-                    /* requirePrimAtTarget = */ false,
                     /* skipDuplicateNodes = */ false,
                     skipImpliedSpecializes,
                     indexer);
@@ -3826,7 +3815,6 @@ _AddVariantArc(Pcp_PrimIndexer *indexer,
                 /* arcSiblingNum = */ vsetNum, 
                 /* directNodeShouldContributeSpecs = */ true,
                 /* includeAncestralOpinions = */ false,
-                /* requirePrimAtTarget = */ false,
                 /* skipDuplicateNodes = */ false,
                 indexer )) {
         // If we expanded a variant set, it may have introduced new
