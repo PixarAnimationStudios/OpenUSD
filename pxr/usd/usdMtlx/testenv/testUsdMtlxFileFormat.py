@@ -162,6 +162,15 @@ class TestFileFormat(unittest.TestCase):
             conn = node.GetInput('in').GetConnectedSource()
             self.assertEqual(conn[0].GetPrim().GetPath().name, connNodeName)
             self.assertEqual(conn[1], connectionName)
+        
+    def test_nodesWithoutNodegraphs(self):
+        """
+        Test MaterialX material with nodes not contained in a nodegraph and no
+        explicit outputs
+        """
+    
+        stage = UsdMtlx._TestFile('GraphlessNodes.mtlx')
+        stage.GetRootLayer().Export('GraphlessNodes.usda')
 
     def test_Looks(self):
         """

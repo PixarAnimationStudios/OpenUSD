@@ -103,9 +103,6 @@ no corresponding concept.
 technically not unsupported since support is optional and only meaningful
 for applications that need it, which USD does not.
 + interfacename attributes are not supported
-+ UsdMtlx expects additional nodes, other than the material and surface shader 
-nodes, to be contained inside a nodegraph. These additional nodes will be lost 
-when translating into UsdShade, if not contained in a nodegraph.
 + Shared library custom nodes are not fully supported. The nodedef needs to be 
 defined in a separate mtlx file such that the nodedef and material mtlx files 
 are not be siblings, and the nodedef filepath should be locatable by the 

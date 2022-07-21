@@ -751,6 +751,12 @@ _NodeGraphBuilder::Build(ShaderNamesByOutputName* outputs)
 
     // Build the graph of nodes.
     for (auto& mtlxNode: _mtlxContainer->getChildrenOfType<mx::Node>()) {
+        // If the _mtlxContainer is the document (there is no nodegraph) the 
+        // nodes gathered here will include the material and surfaceshader 
+        // nodes which are not part of the implicit nodegraph. Ignore them.
+        const std::string &nodeType = _Attr(mtlxNode, names.type);
+        if (nodeType == "material" || nodeType == "surfaceshader")
+            continue;
         _AddNode(mtlxNode, usdPrim);
     }
     _ConnectNodes();
@@ -1571,6 +1577,20 @@ _Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
                                usdNodeGraph);
             }
         }
+
+        // Check if this input is directly connected to (references) a node
+        // Meaning the material inputs are coming from nodes not explicitly 
+        // contained in a nodegraph.
+        if (auto connNode = _Attr(mtlxInput, names.nodename)) {
+            // Create an implicit nodegrah to contain these nodes
+            if (_NodeGraph usdNodeGraph =
+                        AddImplicitNodeGraph(mtlxInput->getDocument())) {
+                _BindNodeGraph(mtlxInput,
+                               _usdMaterial.GetPath(),
+                               UsdShadeConnectableAPI(usdShader),
+                               usdNodeGraph);
+            }
+        }
     }
     if (auto primvars = UsdGeomPrimvarsAPI(_usdMaterial)) {
         for (auto mtlxToken: mtlxShaderNode->getChildren()) {
@@ -1866,7 +1886,7 @@ _Context::_BindNodeGraph(
     // Reference the instantiation.
     SdfPath referencingPath = referencingPathParent.AppendChild(
             usdNodeGraph.GetOwnerPrim().GetPath().GetNameToken());
-    TF_DEBUG(USDMTLX_READER).Msg("_BindNodeGraph %s %s\n",
+    TF_DEBUG(USDMTLX_READER).Msg("_BindNodeGraph %s - %s\n",
                                  mtlxInput->getName().c_str(),
                                  referencingPath.GetString().c_str());
     _NodeGraph refNodeGraph = usdNodeGraph.AddReference(referencingPath);
@@ -1875,15 +1895,43 @@ _Context::_BindNodeGraph(
     }
 
     // Connect the input to the nodegraph's output.
-    if (UsdShadeOutput output =
-            refNodeGraph.GetOutputByName(_Attr(mtlxInput, names.output))) {
+    const std::string &outputName = _Attr(mtlxInput, names.output);
+    if (UsdShadeOutput output = refNodeGraph.GetOutputByName(outputName)) {
         UsdShadeConnectableAPI::ConnectToSource(
             _AddInput(mtlxInput, connectable),
             output);
     }
+    // If this input is connected to a node's output.
+    else if (auto nodename =_Attr(mtlxInput, names.nodename)) {
+        // Find the conected node's UsdShadeShader node and output
+        const TfToken outputToken = (outputName.empty()) 
+            ? UsdMtlxTokens->DefaultOutputName
+            : TfToken(outputName);
+        const SdfPath shaderPath = referencingPath.AppendChild(TfToken(nodename));
+        if (UsdShadeShader usdShader = UsdShadeShader::Get(
+                usdNodeGraph.GetOwnerPrim().GetStage(),
+                referencingPath.AppendChild(TfToken(nodename)))) {
+            if (UsdShadeOutput output = usdShader.GetOutput(outputToken)) {
+                UsdShadeConnectableAPI::ConnectToSource(
+                    _AddInput(mtlxInput, connectable),
+                    output);
+            }
+            else {
+                TF_WARN("No output \"%s\" for input \"%s\" on <%s>",
+                    outputToken.GetText(),
+                    _Name(mtlxInput).c_str(),
+                    shaderPath.GetText());
+            }
+        }
+        else {
+            TF_WARN("Shader not found at <%s> for input \"%s\"",
+                shaderPath.GetText(),
+                _Name(mtlxInput).c_str());
+        }
+    }
     else {
         TF_WARN("No output \"%s\" for input \"%s\" on <%s>",
-                _Attr(mtlxInput, names.output).c_str(),
+                outputName.c_str(),
                 _Name(mtlxInput).c_str(),
                 connectable.GetPath().GetText());
     }

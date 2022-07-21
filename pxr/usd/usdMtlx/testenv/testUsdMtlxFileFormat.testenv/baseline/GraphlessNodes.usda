@@ -1,0 +1,102 @@
+#usda 1.0
+
+def "MaterialX"
+{
+    def "Materials"
+    {
+        def Material "surface_material_node"
+        {
+            float inputs:clearcoat
+            float inputs:clearcoatRoughness
+            color3f inputs:diffuseColor
+            float inputs:displacement
+            color3f inputs:emissiveColor
+            float inputs:ior = 0.9
+            float inputs:metallic
+            float3 inputs:normal
+            float inputs:occlusion
+            float inputs:opacity
+            float inputs:opacityThreshold
+            float inputs:roughness = 0.25
+            color3f inputs:specularColor
+            int inputs:useSpecularWorkflow = 1
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/surface_material_node/ND_UsdPreviewSurface_surfaceshader.outputs:surface>
+
+            def Shader "ND_UsdPreviewSurface_surfaceshader" (
+                prepend references = </MaterialX/Shaders/ND_UsdPreviewSurface_surfaceshader>
+            )
+            {
+                float inputs:clearcoat.connect = </MaterialX/Materials/surface_material_node.inputs:clearcoat>
+                float inputs:clearcoatRoughness.connect = </MaterialX/Materials/surface_material_node.inputs:clearcoatRoughness>
+                color3f inputs:diffuseColor.connect = </MaterialX/Materials/surface_material_node/NodeGraphs/myDiffColor.outputs:out>
+                float inputs:displacement.connect = </MaterialX/Materials/surface_material_node.inputs:displacement>
+                color3f inputs:emissiveColor.connect = </MaterialX/Materials/surface_material_node.inputs:emissiveColor>
+                float inputs:ior.connect = </MaterialX/Materials/surface_material_node.inputs:ior>
+                float inputs:metallic.connect = </MaterialX/Materials/surface_material_node.inputs:metallic>
+                float3 inputs:normal.connect = </MaterialX/Materials/surface_material_node.inputs:normal>
+                float inputs:occlusion.connect = </MaterialX/Materials/surface_material_node.inputs:occlusion>
+                float inputs:opacity.connect = </MaterialX/Materials/surface_material_node.inputs:opacity>
+                float inputs:opacityThreshold.connect = </MaterialX/Materials/surface_material_node.inputs:opacityThreshold>
+                float inputs:roughness.connect = </MaterialX/Materials/surface_material_node.inputs:roughness>
+                color3f inputs:specularColor.connect = </MaterialX/Materials/surface_material_node/NodeGraphs/mySpecColor.outputs:out>
+                int inputs:useSpecularWorkflow.connect = </MaterialX/Materials/surface_material_node.inputs:useSpecularWorkflow>
+            }
+
+            def "NodeGraphs" (
+                prepend references = </MaterialX/NodeGraphs>
+            )
+            {
+            }
+        }
+    }
+
+    def "Shaders"
+    {
+        def Shader "ND_UsdPreviewSurface_surfaceshader"
+        {
+            uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+            token outputs:surface
+        }
+    }
+
+    def "NodeGraphs"
+    {
+        def Shader "redClorVal"
+        {
+            uniform token info:id = "ND_constant_color3"
+            color3f inputs:value = (1, 0, 0)
+            color3f outputs:out
+        }
+
+        def Shader "blueColorVal"
+        {
+            uniform token info:id = "ND_constant_color3"
+            color3f inputs:value = (0, 0, 1)
+            color3f outputs:out
+        }
+
+        def Shader "multi1"
+        {
+            uniform token info:id = "ND_multiply_color3FA"
+            color3f inputs:in1.connect = </MaterialX/NodeGraphs/redClorVal.outputs:out>
+            float inputs:in2 = 0.5
+            color3f outputs:out
+        }
+
+        def Shader "myDiffColor"
+        {
+            uniform token info:id = "ND_add_color3"
+            color3f inputs:in1.connect = </MaterialX/NodeGraphs/multi1.outputs:out>
+            color3f inputs:in2.connect = </MaterialX/NodeGraphs/blueColorVal.outputs:out>
+            color3f outputs:out
+        }
+
+        def Shader "mySpecColor"
+        {
+            uniform token info:id = "ND_constant_color3"
+            color3f inputs:value = (0, 1, 0)
+            color3f outputs:out
+        }
+    }
+}
+
