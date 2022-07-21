@@ -1443,7 +1443,8 @@ private:
     static SdfLayerRefPtr _CreateNew(
         SdfFileFormatConstPtr fileFormat,
         const std::string& identifier,
-        const FileFormatArguments& args);
+        const FileFormatArguments& args,
+        bool saveLayer = true);
 
     static SdfLayerRefPtr _CreateNewWithFormat(
         const SdfFileFormatConstPtr &fileFormat,

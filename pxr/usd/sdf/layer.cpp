@@ -480,7 +480,8 @@ SdfLayerRefPtr
 SdfLayer::_CreateNew(
     SdfFileFormatConstPtr fileFormat,
     const string& identifier,
-    const FileFormatArguments &args)
+    const FileFormatArguments &args,
+    bool saveLayer)
 {
     string whyNot;
     if (!Sdf_CanCreateNewLayerWithIdentifier(identifier, &whyNot)) {
@@ -577,26 +578,29 @@ SdfLayer::_CreateNew(
             return TfNullPtr;
         }
 
-        // Stash away the existing layer hints.  The call to _Save below will
-        // invalidate them but they should still be good.
-        SdfLayerHints hints = layer->_hints;
+        if (saveLayer) {
+            // Stash away the existing layer hints.  The call to _Save below
+            // will invalidate them but they should still be good.
+            SdfLayerHints hints = layer->_hints;
 
-        // XXX 2011-08-19 Newly created layers should not be
-        // saved to disk automatically.
-        //
-        // Force the save here to ensure this new layer overwrites any
-        // existing layer on disk.
-        if (!layer->_Save(/* force = */ true)) {
-            // Dropping the layer reference will destroy it, and
-            // the destructor will remove it from the registry.
-            return TfNullPtr;
+            // XXX 2011-08-19 Newly created layers should not be
+            // saved to disk automatically.
+            //
+            // Force the save here to ensure this new layer overwrites any
+            // existing layer on disk.
+            if (!layer->_Save(/* force = */ true)) {
+                // Dropping the layer reference will destroy it, and
+                // the destructor will remove it from the registry.
+                return TfNullPtr;
+            }
+
+            layer->_hints = hints;
         }
 
-        layer->_hints = hints;
         // Once we have saved the layer, initialization is complete.
         layer->_FinishInitialization(/* success = */ true);
     }
-    // Return loaded layer or special-cased in-memory layer.
+
     return layer;
 }
 
@@ -606,35 +610,7 @@ SdfLayer::New(
     const string& identifier,
     const FileFormatArguments& args)
 {
-    if (!fileFormat) {
-        TF_CODING_ERROR("Invalid file format");
-        return TfNullPtr;
-    }
-
-    if (identifier.empty()) {
-        TF_CODING_ERROR("Cannot construct a layer with an empty identifier.");
-        return TfNullPtr;
-    }
-
-    if (Sdf_IsPackageOrPackagedLayer(fileFormat, identifier)) {
-        TF_CODING_ERROR("Cannot construct new %s %s layer", 
-                        fileFormat->IsPackage() ? "package" : "packaged",
-                        fileFormat->GetFormatId().GetText());
-        return TfNullPtr;
-    }
-
-    tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
-
-    const string absIdentifier = 
-        ArGetResolver().CreateIdentifierForNewAsset(identifier);
-
-    SdfLayerRefPtr layer = _CreateNewWithFormat(
-        fileFormat, absIdentifier, std::string(), ArAssetInfo(), args);
-
-    // No further initialization required.
-    layer->_FinishInitialization(/* success = */ true);
-
-    return layer;
+    return _CreateNew(fileFormat, identifier, args, /* saveLayer = */ false);
 }
 
 struct SdfLayer::_FindOrOpenLayerInfo
