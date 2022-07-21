@@ -108,6 +108,17 @@ class TestSdfLayer(unittest.TestCase):
         layer.identifier = Sdf.Layer.CreateIdentifier(
             "testSetIdentifierWithArgsNew.sdf", {"a":"b"})
 
+    def test_SaveWithArgs(self):
+        Sdf.Layer.CreateAnonymous().Export("testSaveWithArgs.sdf")
+
+        # Verify that a layer opened with file format arguments can be saved.
+        layer = Sdf.Layer.FindOrOpen("testSaveWithArgs.sdf", args={"a":"b"})
+        self.assertTrue("a=b" in layer.identifier)
+        self.assertTrue("a" in layer.GetFileFormatArguments())
+
+        layer.documentation = "test_SaveWithArgs"
+        self.assertTrue(layer.Save())
+
     def test_OpenWithInvalidFormat(self):
         l = Sdf.Layer.FindOrOpen('foo.invalid')
         self.assertIsNone(l)

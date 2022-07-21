@@ -266,24 +266,6 @@ SdfLayer::_WaitForInitializationAndCheckIfSuccessful()
     return _initializationWasSuccessful.get();
 }
 
-// For the given layer, gets a dictionary of resolved external asset dependency 
-// paths to the timestamp for each asset.
-static VtDictionary
-_GetExternalAssetModificationTimes(const SdfLayer& layer)
-{
-    VtDictionary result;
-    std::set<std::string> externalAssetDependencies = 
-        layer.GetExternalAssetDependencies();
-    for (const std::string& resolvedPath : externalAssetDependencies) {
-        // Get the modification timestamp for the path. Note that external
-        // asset dependencies only returns resolved paths so pass the same
-        // path for both params.
-        result[resolvedPath] = ArGetResolver().GetModificationTimestamp(
-            resolvedPath, ArResolvedPath(resolvedPath));
-    }
-    return result;
-}
-
 static bool
 _ModificationTimesEqual(const VtValue& v1, const VtValue& v2)
 {
@@ -949,7 +931,7 @@ SdfLayer::_Reload(bool force)
     else if (isAnonymous) {
         // Ask the current external asset dependency state.
         VtDictionary externalAssetTimestamps = 
-            _GetExternalAssetModificationTimes(*this);
+            Sdf_ComputeExternalAssetModificationTimestamps(*this);
 
         // See if we can skip reloading.
         if (!force && !IsDirty()
@@ -997,15 +979,11 @@ SdfLayer::_Reload(bool force)
         }
 
         // Get the layer's modification timestamp.
-        std::string layerPath, args;
-        Sdf_SplitIdentifier(GetIdentifier(), &layerPath, &args);
-
-        VtValue timestamp(ArGetResolver().GetModificationTimestamp(
-            layerPath, resolvedPath));
+        VtValue timestamp = Sdf_ComputeLayerModificationTimestamp(*this);
 
         // Ask the current external asset dependency state.
         VtDictionary externalAssetTimestamps = 
-            _GetExternalAssetModificationTimes(*this);
+            Sdf_ComputeExternalAssetModificationTimestamps(*this);
 
         // See if we can skip reloading.
         if (!force && !IsDirty()
@@ -3226,7 +3204,7 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
     // Store any external asset dependencies so we have an initial state to
     // compare during reload.
     layer->_externalAssetModificationTimes =
-        _GetExternalAssetModificationTimes(*layer);
+        Sdf_ComputeExternalAssetModificationTimestamps(*layer);
 
     layer->_MarkCurrentStateAsClean();
 
@@ -4679,9 +4657,7 @@ SdfLayer::_Save(bool force) const
     _hints = SdfLayerHints{};
 
     // Record modification timestamp.
-    VtValue timestamp(ArGetResolver().GetModificationTimestamp(
-        GetIdentifier(), path));
-    _assetModificationTime.Swap(timestamp);
+    _assetModificationTime = Sdf_ComputeLayerModificationTimestamp(*this);
 
     SdfNotice::LayerDidSaveLayerToFile().Send(_self);
 
