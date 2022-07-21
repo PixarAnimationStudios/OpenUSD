@@ -1688,21 +1688,29 @@ private:
     // Returns const handle to _data.
     SdfAbstractDataConstPtr _GetData() const;
 
-    // Inverse primitive for setting a single field.
+    // Inverse primitive for setting a single field. The previous value for the
+    // field may be given via \p oldValue. If \p oldValue is non-nullptr, the
+    // VtValue it points to will be moved-from after the function completes. If
+    // \p oldValue is nullptr, the old field value will be retrieved
+    // automatically.
     template <class T>
     void _PrimSetField(const SdfPath& path, 
                        const TfToken& fieldName,
                        const T& value,
-                       const VtValue *oldValue = NULL,
+                       VtValue *oldValue = nullptr,
                        bool useDelegate = true);
 
-    // Inverse primitive for setting a single key in a dict-valued field.
+    // Inverse primitive for setting a single key in a dict-valued field.  The
+    // previous dictionary value for the field (*not* the individual entry) may
+    // be supplied via \p oldValue. If \p oldValue is non-nullptr, the VtValue
+    // it points to will be moved-from after the function completes. If \p
+    // oldValue is nullptr, the old field value will be retrieved automatically.
     template <class T>
     void _PrimSetFieldDictValueByKey(const SdfPath& path,
                                      const TfToken& fieldName,
                                      const TfToken& keyPath,
                                      const T& value,
-                                     const VtValue *oldValue = NULL,
+                                     VtValue *oldValue = nullptr,
                                      bool useDelegate = true);
 
     // Primitive for appending a child to the list of children.

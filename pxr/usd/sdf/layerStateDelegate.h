@@ -71,14 +71,14 @@ public:
         const SdfPath& path,
         const TfToken& field,
         const VtValue& value,
-        const VtValue *oldValue=NULL);
+        VtValue *oldValue=NULL);
 
     SDF_API
     void SetField(
         const SdfPath& path,
         const TfToken& field,
         const SdfAbstractDataConstValue& value,
-        const VtValue *oldValue=NULL);
+        VtValue *oldValue=NULL);
 
     SDF_API
     void SetFieldDictValueByKey(
@@ -86,7 +86,7 @@ public:
         const TfToken& field,
         const TfToken& keyPath,
         const VtValue& value,
-        const VtValue *oldValue=NULL);
+        VtValue *oldValue=NULL);
 
     SDF_API
     void SetFieldDictValueByKey(
@@ -94,7 +94,7 @@ public:
         const TfToken& field,
         const TfToken& keyPath,
         const SdfAbstractDataConstValue& value,
-        const VtValue *oldValue=NULL);
+        VtValue *oldValue=NULL);
 
     SDF_API
     void SetTimeSample(

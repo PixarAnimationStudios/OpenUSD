@@ -3945,7 +3945,7 @@ void
 SdfLayer::_PrimSetField(const SdfPath& path, 
                         const TfToken& fieldName,
                         const T& value,
-                        const VtValue *oldValuePtr,
+                        VtValue* oldValuePtr,
                         bool useDelegate)
 {
     if (useDelegate && TF_VERIFY(_stateDelegate)) {
@@ -3953,25 +3953,25 @@ SdfLayer::_PrimSetField(const SdfPath& path,
         return;
     }
 
-    const VtValue& oldValue =
-        oldValuePtr ? *oldValuePtr : GetField(path, fieldName);
+    VtValue oldValue = 
+        oldValuePtr ? std::move(*oldValuePtr) : GetField(path, fieldName);
     const VtValue& newValue = _GetVtValue(value);
 
     // Send notification when leaving the change block.
     SdfChangeBlock block;
 
     Sdf_ChangeManager::Get().DidChangeField(
-        _self, path, fieldName, oldValue, newValue);
+        _self, path, fieldName, std::move(oldValue), newValue);
 
     _data->Set(path, fieldName, value);
 }
 
 template void SdfLayer::_PrimSetField(
     const SdfPath&, const TfToken&, 
-    const VtValue&, const VtValue *, bool);
+    const VtValue&, VtValue *, bool);
 template void SdfLayer::_PrimSetField(
     const SdfPath&, const TfToken&, 
-    const SdfAbstractDataConstValue&, const VtValue *, bool);
+    const SdfAbstractDataConstValue&, VtValue *, bool);
 
 template <class T>
 void
@@ -4075,7 +4075,7 @@ SdfLayer::_PrimSetFieldDictValueByKey(const SdfPath& path,
                                       const TfToken& fieldName,
                                       const TfToken& keyPath,
                                       const T& value,
-                                      const VtValue *oldValuePtr,
+                                      VtValue *oldValuePtr,
                                       bool useDelegate)
 {
     if (useDelegate && TF_VERIFY(_stateDelegate)) {
@@ -4097,15 +4097,15 @@ SdfLayer::_PrimSetFieldDictValueByKey(const SdfPath& path,
     VtValue newValue = GetField(path, fieldName);
 
     Sdf_ChangeManager::Get().DidChangeField(
-        _self, path, fieldName, oldValue, newValue);
+        _self, path, fieldName, std::move(oldValue), newValue);
 }
 
 template void SdfLayer::_PrimSetFieldDictValueByKey(
     const SdfPath&, const TfToken&, const TfToken &,
-    const VtValue&, const VtValue *, bool);
+    const VtValue&, VtValue *, bool);
 template void SdfLayer::_PrimSetFieldDictValueByKey(
     const SdfPath&, const TfToken&, const TfToken &,
-    const SdfAbstractDataConstValue&, const VtValue *, bool);
+    const SdfAbstractDataConstValue&, VtValue *, bool);
 
 bool
 SdfLayer::_MoveSpec(const SdfPath &oldPath, const SdfPath &newPath)

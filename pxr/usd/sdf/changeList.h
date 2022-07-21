@@ -93,7 +93,7 @@ public:
     void DidRemoveTarget(const SdfPath &targetPath);
 
     void DidChangeInfo(const SdfPath &path, const TfToken &key,
-                       const VtValue &oldValue, const VtValue &newValue);
+                       VtValue &&oldValue, const VtValue &newValue);
 
     /// \struct Entry
     ///
