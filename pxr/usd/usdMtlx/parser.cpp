@@ -338,8 +338,8 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
     if (nodeDef->getName() == "ND_texcoord_vector2") {
         primvars.push_back(_GetPrimaryUvSetName());
     }
-    // Add the default texturecoord primvar for custom nodes that use 
-    // textures/texcoords
+    // If the custom node uses textures/texcoords we want to add the default 
+    // texture coordinate name to the list of referenced primvars.
     // XXX custom nodes must use the default texture coord name
     if (nodeDef->getNodeGroup() == "textureuser" ||
         nodeDef->getNodeGroup() == "texcoorduser") {

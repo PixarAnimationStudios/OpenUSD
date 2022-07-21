@@ -53,12 +53,20 @@ handled during conversion and don't map to USD composition.
 is that this prim will be referenced by various prims that will also set a
 variant selection to choose the desired look.  XXX -- How collection paths
 get mapped is still undecided.
-7. Custom nodes can be defined either locally or in a shared library. Locally 
-defined nodes need to have their associated nodedef/nodegraph either in the 
-same mtlx file, or included in the material mtlx file. Custom nodes defined in 
-a shared library do not need to be included in the material mtlx file, but do
-need to be defined in a separate mtlx file whose containing folder is indicated 
-with the PXR_MTLX_PLUGIN_SEARCH_PATHS environment variable.
+7. Custom nodes can be defined either locally or in a shared library. 
+    + Locally defined nodes need to have their associated nodedef/nodegraph 
+    either in the same mtlx file as the material, or included in the material 
+    mtlx file. 
+    + Custom nodes defined in a shared library do not need to be included in 
+    the material mtlx file, but do need to be defined in a separate mtlx file 
+    such that the nodedef and material mtlx files are not siblings, and whose 
+    containing folder is indicated with the PXR_MTLX_PLUGIN_SEARCH_PATHS 
+    environment variable. 
+    + Library defined custom nodes that use textures need to set the nodegroup
+    on the nodedef to 'textureuser', and custom nodes that just use texture 
+    coordinates without textures need to set the nodedef nodegroup to 
+    'texcoorduser'. This is so the texture coordinates are available, and 
+    textures are properly initialized for rendering. 
 
 \section usdMtlx_unsupported Unsupported MaterialX Features
 
@@ -102,16 +110,13 @@ no corresponding concept.
 technically not unsupported since support is optional and only meaningful
 for applications that need it, which USD does not.
 + interfacename attributes are not supported
-+ Shared library custom nodes are not fully supported. The nodedef needs to be 
-defined in a separate mtlx file such that the nodedef and material mtlx files 
-are not be siblings, and the nodedef filepath should be locatable by the 
-PXR_MTLX_PLUGIN_SEARCH_PATHS environment variable. Library defined custom
-nodes that use textures or texture coordinates are not yet supported.
++ Shared library custom nodes are not fully supported. Library defined custom
+nodes that use textures or texture coordinates must use the primary texture
+coordinate name, which defaults to 'st' but can be altered by setting the 
+USDMTLX_PRIMARY_UV_NAME environment variable.
 + Locally defined custom nodes are not supported when the node is defined as a 
 source code in a specific shading language (<implementation/>) instead of a 
-nodegraph. Locally defined nodes are those defined either in the same file as
-the material, or in a separate file that is included at the top of the material 
-mtlx file.
+nodegraph.
 
 Note that the file format plugin uses the MaterialX XML reader so it
 can read any valid MaterialX file, even it contains features not supported
