@@ -136,6 +136,7 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
           self.abstract,
           self.isInPrototype,
           self.isInstance,
+          self.supportsGuides,
           self.supportsDrawMode,
           isVisibilityInherited,
           self.visVaries,
@@ -199,8 +200,12 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
             result = self._typeData(role)
         elif column == PrimViewColumnIndex.VIS:
             result = self._visData(role)
-        elif column == PrimViewColumnIndex.GUIDES:
-            result = self._guideData(role)
+        elif column == PrimViewColumnIndex.GUIDES and self.supportsGuides:
+            # XXX Temp fix to prevent API calls from throwing an exception since
+            # this method is being called on shutdown, after the stage has
+            # closed, on expired prims
+            if self.prim:
+                result = self._guideData(role)
         elif column == PrimViewColumnIndex.DRAWMODE and self.supportsDrawMode:
             result = self._drawModeData(role)
         if not result:
@@ -305,14 +310,11 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
 
     def _guideData(self, role):
         if role == QtCore.Qt.DisplayRole:
-            if self._shouldshowGuideWidget():
-                if UsdGeom.VisibilityAPI(self.prim).GetGuideVisibilityAttr() \
-                    .Get() == UsdGeom.Tokens.visible:
-                    return "V"
-                else:
-                    return "I"
+            if (UsdGeom.VisibilityAPI(self.prim).GetGuideVisibilityAttr().Get()
+                == UsdGeom.Tokens.visible):
+                return "V"
             else:
-                return ""
+                return "I"
         elif role == QtCore.Qt.TextAlignmentRole:
             return QtCore.Qt.AlignCenter
         elif role == QtCore.Qt.FontRole:
@@ -327,19 +329,13 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
             else:
                 return fgColor
         elif role == QtCore.Qt.ToolTipRole:
-            if self._shouldshowGuideWidget():
-                if UsdGeom.VisibilityAPI(self.prim).GetGuideVisibilityAttr() \
-                    .Get() == UsdGeom.Tokens.visible:
-                    return "Visible Guides"
-                else:
-                    return "Invisible Guides"
+            if (UsdGeom.VisibilityAPI(self.prim).GetGuideVisibilityAttr().Get()
+                == UsdGeom.Tokens.visible):
+                return "Visible Guides"
+            else:
+                return "Invisible Guides"
         else:
             return None
-
-    def _shouldshowGuideWidget(self):
-        # only show camera guides for now, until more guide generation logic is
-        # moved into usdImaging
-        return self.prim.IsA(UsdGeom.Camera)
 
     def needsChildrenPopulated(self):
         return self._needsChildrenPopulated
@@ -485,7 +481,7 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
 
     def toggleGuides(self):
         """Return True if the the prim's guide visibility state was toggled."""
-        if not self._shouldshowGuideWidget():
+        if not self.supportsGuides:
             return False
         attr = (
             UsdGeom.VisibilityAPI.Apply(self.prim).CreateGuideVisibilityAttr())

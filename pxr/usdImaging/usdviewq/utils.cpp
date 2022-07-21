@@ -32,6 +32,7 @@
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/primRange.h"
+#include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/imageable.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -75,6 +76,11 @@ UsdviewqUtils::PrimInfo::PrimInfo(const UsdPrim &prim, const UsdTimeCode time)
     // decouple the two concepts we can, but we're sensitive here to python
     // marshalling costs.
     isInPrototype = prim.IsInPrototype() || prim.IsInstanceProxy();
+
+
+    // only show camera guides for now, until more guide generation logic is
+    // moved into usdImaging
+    supportsGuides = prim.IsA<UsdGeomCamera>();
 
     supportsDrawMode = isActive && isDefined && 
         !isInPrototype && prim.GetPath() != SdfPath::AbsoluteRootPath() &&
