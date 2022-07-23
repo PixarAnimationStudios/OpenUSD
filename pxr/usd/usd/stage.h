@@ -54,6 +54,7 @@
 
 #include <tbb/concurrent_vector.h>
 #include <tbb/concurrent_unordered_set.h>
+#include <tbb/concurrent_hash_map.h>
 #include <tbb/spin_rw_mutex.h>
 
 #include <functional>
@@ -1053,19 +1054,10 @@ public:
     /// is as if the muted layer did not exist, which means a composition 
     /// error will be generated.
     ///
-#if AR_VERSION == 1
-    /// A canonical identifier for each layer in \p layersToMute will be
-    /// computed using ArResolver::ComputeRepositoryPath.  Any layer 
-    /// encountered during composition with the same repository path will
-    /// be considered muted and ignored.  Relative paths will be assumed to
-    /// be relative to the cache's root layer.  Search paths are immediately 
-    /// resolved and the result is used for computing the canonical path.
-#else
     /// A canonical identifier for each layer in \p layersToMute will be
     /// computed using ArResolver::CreateIdentifier using the stage's root
     /// layer as the anchoring asset. Any layer encountered during composition
     /// with the same identifier will be considered muted and ignored.
-#endif
     ///
     /// Note that muting a layer will cause this stage to release all
     /// references to that layer.  If no other client is holding on to
@@ -2215,11 +2207,18 @@ private:
 
     size_t _usedLayersRevision;
 
-    // A map from Path to Prim, for fast random access.
-    typedef TfHashMap<
-        SdfPath, Usd_PrimDataIPtr, SdfPath::Hash> PathToNodeMap;
+    // A concurrent map from Path to Prim, for fast random access.
+    struct _TbbHashEq {
+        inline bool equal(SdfPath const &l, SdfPath const &r) const {
+            return l == r;
+        }
+        inline size_t hash(SdfPath const &path) const {
+            return path.GetHash();
+        }
+    };
+    using PathToNodeMap = tbb::concurrent_hash_map<
+        SdfPath, Usd_PrimDataIPtr, _TbbHashEq>;
     PathToNodeMap _primMap;
-    mutable boost::optional<tbb::spin_rw_mutex> _primMapMutex;
 
     // The interpolation type used for all attributes on the stage.
     UsdInterpolationType _interpolationType;

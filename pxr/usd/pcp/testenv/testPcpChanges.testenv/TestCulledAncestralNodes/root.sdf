@@ -1,0 +1,44 @@
+#sdf 1.4.32
+
+def "FSToyCarA_defaultShadingVariant"
+{
+    def "Looks"
+    {
+    }
+}
+
+def "FSToyCarA_geom" 
+{
+    def "Looks"
+    {
+        def "PaintedWood"
+        {
+            custom float inputs:wood_diffuseK
+        }
+
+        def "PaintedWood_PaintedYellow" (
+            inherits = </FSToyCarA_geom/Looks/PaintedWood>
+        )
+        {
+        }
+    }
+}
+
+over "FSToyCarA" (
+    references = [ 
+        </FSToyCarA_defaultShadingVariant>,
+        </FSToyCarA_geom>
+    ]
+)
+{
+    over "Looks"
+    {
+        over "PaintedWood"
+        {
+        }
+
+        over "PaintedWood_PaintedYellow"
+        {
+        }
+    }
+}

@@ -193,7 +193,9 @@ successfully.
 
     * Schema typenames must be unique across all libraries.
 
-    * Attribute names and tokens must be camelCased valid identifiers.
+    * Attribute names and tokens must be camelCased valid identifiers. Refer to
+      detailed documentation for generating schemas for exceptions to this rule
+      and usage of "useLiteralIdentifier" metadata.
 
 In our examples, we'll use the following as the base layer (or starting point)
 for creating new schema classes in order to satisfy the first two requirements
@@ -455,3 +457,13 @@ and uses the API provided by schema code generation.
     print('velocity: %s' % paramsAPI.GetVelocityAttr().Get())
     print('volume: %s' % paramsAPI.GetVolumeAttr().Get())
 
+Codeless Schemas
+****************
+
+Clients also have an option of not generating any code by setting the 
+*skipCodeGeneration* metadata to True for a given schema, hence generating 
+**only generatedSchema.usda and plugInfo.json** which are the only essential 
+products for runtime schema registration.
+Since codeless schemas do not provide any code, clients do not need to recompile
+USD to use or update these schemas. This "dynamic" nature of codeless schemas 
+is the primary motivation behind using codeless schemas.

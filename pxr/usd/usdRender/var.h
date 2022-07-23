@@ -58,8 +58,10 @@ class SdfAssetPath;
 /// allows encoding of (generally renderer-specific) parameters that
 /// configure the renderer for computing the variable.
 /// 
+/// \note The name of the RenderVar prim drives the name of the data 
+/// variable that the renderer will produce.
 /// 
-/// ote In the future, UsdRender may standardize RenderVar representation
+/// \note In the future, UsdRender may standardize RenderVar representation
 /// for well-known variables under the sourceType `intrinsic`,
 /// such as _r_, _g_, _b_, _a_, _z_, or _id_.
 /// 

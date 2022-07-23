@@ -26,18 +26,6 @@ from pxr import Ar
 
 import unittest
 
-# XXX
-# For the Ar 2.0 rollout, skip this test if the Ar.ResolverContext object
-# does not exist. This object is only available if Ar 2.0 is enabled.
-def HasResolverContextClass():
-    try:
-        ctx = Ar.ResolverContext()
-        return True
-    except:
-        pass
-    return False
-
-@unittest.skipIf(not HasResolverContextClass(), "No Ar.ResolverContext object")
 class TestArResolverContext(unittest.TestCase):
     def test_Repr(self):
         ctxObj = Ar.DefaultResolverContext(["/test"])

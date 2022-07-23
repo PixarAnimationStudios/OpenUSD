@@ -542,33 +542,41 @@ _CopySpec(const T &srcSpec, const T &dstSpec)
 }
 
 static void
-_AddSchema(SdfLayerRefPtr const &source, SdfLayerRefPtr const &target)
+_CopyAttrSpec(const SdfAttributeSpecHandle &srcAttr, 
+              const SdfPrimSpecHandle &dstPrim,
+              const std::string &dstName)
 {
-    TRACE_FUNCTION();
-    for (SdfPrimSpecHandle const &prim: source->GetRootPrims()) {
-        if (!target->GetPrimAtPath(prim->GetPath())) {
+    SdfAttributeSpecHandle newAttr =
+        SdfAttributeSpec::New(
+            dstPrim, dstName, srcAttr->GetTypeName(),
+            srcAttr->GetVariability(), srcAttr->IsCustom());
+    _CopySpec(srcAttr, newAttr);
+}
 
-            SdfPrimSpecHandle newPrim =
-                SdfPrimSpec::New(target, prim->GetName(), prim->GetSpecifier(),
-                                 prim->GetTypeName());
-            _CopySpec(prim, newPrim);
+static void
+_CopyRelSpec(const SdfRelationshipSpecHandle &srcRel, 
+             const SdfPrimSpecHandle &dstPrim,
+             const std::string &dstName)
+{
+    SdfRelationshipSpecHandle newRel =
+        SdfRelationshipSpec::New(
+            dstPrim, dstName, srcRel->IsCustom());
+    _CopySpec(srcRel, newRel);
+}
 
-            for (SdfAttributeSpecHandle const &attr: prim->GetAttributes()) {
-                SdfAttributeSpecHandle newAttr =
-                    SdfAttributeSpec::New(
-                        newPrim, attr->GetName(), attr->GetTypeName(),
-                        attr->GetVariability(), attr->IsCustom());
-                _CopySpec(attr, newAttr);
-            }
-
-            for (SdfRelationshipSpecHandle const &rel:
-                     prim->GetRelationships()) {
-                SdfRelationshipSpecHandle newRel =
-                    SdfRelationshipSpec::New(
-                        newPrim, rel->GetName(), rel->IsCustom());
-                _CopySpec(rel, newRel);
-            }
-        }
+static void
+_CopyPropSpec(const SdfPropertySpecHandle &srcProp, 
+              const SdfPrimSpecHandle &dstPrim,
+              const std::string &dstName)
+{
+    if (SdfAttributeSpecHandle attr = 
+            TfDynamic_cast<SdfAttributeSpecHandle>(srcProp)) {
+        _CopyAttrSpec(attr, dstPrim, dstName);
+    } else if (SdfRelationshipSpecHandle attr = 
+            TfDynamic_cast<SdfRelationshipSpecHandle>(srcProp)) {
+        _CopyRelSpec(attr, dstPrim, dstName);
+    } else {
+        TF_CODING_ERROR("Property spec is neither an attribute or a relationship");
     }
 }
 
@@ -766,6 +774,13 @@ public:
     }
 
 private:
+    using _PropNameAndPath = std::pair<TfToken, SdfPath>;
+    using _PropNameAndPathVector = std::vector<_PropNameAndPath>;
+
+    using _PropNameAndPathsToCompose = std::pair<TfToken, SdfPathVector>;
+    using _PropNameAndPathsToComposeVector = 
+        std::vector<_PropNameAndPathsToCompose>;
+
     // Applied API schemas require some processing to determine the entire
     // expanded list of included API schemas that need to be composed into its 
     // prim definition. This structure is used to hold this info.
@@ -793,6 +808,14 @@ private:
         // be included. Used for cycle detection.
         const _BuiltinAPISchemaInfo *includedBy;
 
+        // Composition of API schema property overrides only happen across
+        // an individual branch of an built-in API schema inclusion hierarchy
+        // (i.e. sibling built-ins cannot compose in overrides to each others
+        // properties). Thus we have to maintain a stack of the found property
+        // overrides during built-in expansion through passing them in this
+        // schema info bundle.
+        _PropNameAndPathsToComposeVector *propsWithOversToComposePtr;
+
         // Checks if this info's apiSchemaDef would cause a cycle by checking
         // if it matches any of the recursively expanded API definitions that 
         // caused it to be included.
@@ -810,18 +833,46 @@ private:
 
     void _InitializePrimDefsAndSchematicsForPluginSchemas();
 
+    void _AddSchemaToSchematics(
+        SdfLayerRefPtr const &source);
+    void _AddOverridePropertyNamesFromSourceSpec(
+        const SdfPrimSpecHandle &prim);
+
     void _PrependAPISchemasFromSchemaPrim(
         const SdfPath &schematicsPrimPath,
-        TfTokenVector *appliedAPISchemas);
+        TfTokenVector *appliedAPISchemas) const;
 
     void _ExpandBuiltinAPISchemasRecursive(
         const _BuiltinAPISchemaInfo &builtinAPISchema,
         _BuiltinAPISchemaExpansionInfo *expansionInfo) const;
 
-    void _PopulateAppliedAPIPrimDefinitions();
-    void _PopulateConcretePrimDefinitions();
+    void _AddSchemaSpecPropertiesAndUpdateOversToCompose(
+        const _BuiltinAPISchemaInfo &includedSchemaInfo,
+        UsdPrimDefinition *primDef,
+        _PropNameAndPathsToComposeVector *propsWithOversToCompose) const;
+
+    _PropNameAndPathVector _GetPropertyPathsForSpec(
+        const SdfPath &primSpecPath, 
+        _PropNameAndPathVector *overrideProperties = nullptr) const;
+
+    _PropNameAndPathVector _GetPropertyPathsForSpec(
+        const SdfPath &primSpecPath, 
+        const TfToken &instanceName,
+        _PropNameAndPathVector *overrideProperties = nullptr) const;
+
+    void _ComposePropertiesWithOverrides(
+        UsdPrimDefinition *primDef,
+        _PropNameAndPathsToComposeVector *propsWithOversToCompose) const;
+
+    void _PopulateAppliedAPIPrimDefinitions() const;
+    void _PopulateConcretePrimDefinitions() const;
 
     UsdSchemaRegistry *_registry;
+
+    // Storage for the override property names that may be defined for each
+    // schema. See _AddOverridePropertyNamesFromSourceSpec for details.
+    std::unordered_map<TfToken, VtTokenArray, TfHash> 
+        _overridePropertyNamesPerSchema;
 };
 
 void
@@ -964,7 +1015,7 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
 
             bool hasErrors = false;
 
-            _AddSchema(generatedSchema, _registry->_schematics);
+            _AddSchemaToSchematics(generatedSchema);
 
             // Schema generation will have added any defined fallback prim 
             // types as a dictionary in layer metadata which will be composed
@@ -996,12 +1047,63 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
     }
 }
 
+void
+UsdSchemaRegistry::_SchemaDefInitHelper::_AddSchemaToSchematics(
+    SdfLayerRefPtr const &source)
+{
+    TRACE_FUNCTION();
+    const SdfLayerRefPtr &schematicsLayer = _registry->_schematics;
+    for (SdfPrimSpecHandle const &prim: source->GetRootPrims()) {
+        if (!schematicsLayer->GetPrimAtPath(prim->GetPath())) {
+
+            SdfPrimSpecHandle newPrim = SdfPrimSpec::New(
+                schematicsLayer, prim->GetName(), 
+                prim->GetSpecifier(), prim->GetTypeName());
+            _CopySpec(prim, newPrim);
+
+            for (SdfAttributeSpecHandle const &attr: prim->GetAttributes()) {
+                _CopyAttrSpec(attr, newPrim, attr->GetName());
+            }
+
+            for (SdfRelationshipSpecHandle const &rel:
+                     prim->GetRelationships()) {
+                _CopyRelSpec(rel, newPrim, rel->GetName());
+            }
+
+            _AddOverridePropertyNamesFromSourceSpec(prim);
+        }
+    }
+}
+
+void 
+UsdSchemaRegistry::_SchemaDefInitHelper::_AddOverridePropertyNamesFromSourceSpec(
+    const SdfPrimSpecHandle &prim)
+{
+    // Override property names are stored in a customData field for each schema
+    // prim spec in the generatedSchema layers that we combine into the full 
+    // schematics layer. But we don't copy customData fields into the final 
+    // schematics (nor do we want to) so we have to extract this information 
+    // from the prim specs in the generatedSchemas and store it away to used 
+    // during the rest of schema initialization.
+    static const TfToken apiSchemaOverridePropertyNamesToken(
+        "apiSchemaOverridePropertyNames");
+    VtTokenArray overridePropertyNames;
+    if (prim->GetLayer()->HasFieldDictKey(
+            prim->GetPath(), 
+            SdfFieldKeys->CustomData, 
+            apiSchemaOverridePropertyNamesToken, 
+            &overridePropertyNames)) {
+        _overridePropertyNamesPerSchema.emplace(
+            prim->GetName(), std::move(overridePropertyNames));
+    }
+}
+
 // Helper that gets the authored API schemas from the schema prim path in the
 // schematics layer and prepends them to the given applied API schemas list.
 void 
 UsdSchemaRegistry::_SchemaDefInitHelper::_PrependAPISchemasFromSchemaPrim(
     const SdfPath &schematicsPrimPath,
-    TfTokenVector *appliedAPISchemas)
+    TfTokenVector *appliedAPISchemas) const
 {
     // Get the API schemas from the list op field in the schematics.
     SdfTokenListOp apiSchemasListOp;
@@ -1057,15 +1159,37 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_ExpandBuiltinAPISchemasRecursive(
         MakeMultipleApplyNameInstance(
             appliedAPISchemas.front(), includedSchemaInfo.instanceName);
 
-    // Compose the included schema's properties from its schematic's prim
-    // spec into the prim definition we're expanding.
-    expansionInfo->primDef->_ComposePropertiesFromPrimSpec(
-        _registry->_schematics, 
-        includedSchemaInfo.apiSchemaDef->_schematicsPrimPath,
-        includedSchemaInfo.instanceName);
-
     // Add the included API schema to the expanded list.
     expansionInfo->allAPISchemaNames.push_back(includedAPISchemaName);
+
+    // Make a copy the parent's override properties to compose. We need a copy
+    // since the overrides from this branch of the API schema expansion do
+    // not apply to the other API schemas included by the parent schema. Note
+    // that we expect the number of property overrides to be very small (and 
+    // frequently empty) and we also expect that the depth of recursion of 
+    // API schema expansion to be very minimal, so the copying of this structure
+    // is unlikely to have a performance impact.
+    _PropNameAndPathsToComposeVector propsWithOversToCompose;
+    if (includedSchemaInfo.propsWithOversToComposePtr) {
+        propsWithOversToCompose = 
+            *(includedSchemaInfo.propsWithOversToComposePtr);
+    }
+
+    // Add the properties that come directly from the API schema's class 
+    // schematics. Any newly found defined properties that have overrides in
+    // propsWithOversToCompose will be fully composed into their final property
+    // spec for the expanded prim definition. Existing overrides in 
+    // propsWithOversToCompose that were able to be composed with a defined 
+    // property will be removed (we are done with them and won't need/want to
+    // compose them again). Any new properties that are declared as overrides in 
+    // this schematics spec will be added to propsWithOversToCompose so they
+    // can be composed with defined properties from API schemas that this 
+    // schema includes.
+    // \ref Usd_APISchemaStrengthOrdering
+    _AddSchemaSpecPropertiesAndUpdateOversToCompose(
+        includedSchemaInfo, 
+        expansionInfo->primDef,
+        &propsWithOversToCompose);
 
     // Recursively gather the built-in API schemas which are listed after the
     // included API schema in its applied API schemas list.
@@ -1151,7 +1275,8 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_ExpandBuiltinAPISchemasRecursive(
         // included both "OtherMultiApplyAPI:__INSTANCE_NAME__:foo" and 
         // "OtherMultiApplyAPI:__INSTANCE_NAME__:bar").
         _BuiltinAPISchemaInfo builtinApiSchemaInfo = 
-            {builtinApiSchemaDef, builtinInstanceName, &includedSchemaInfo};
+            {builtinApiSchemaDef, builtinInstanceName, 
+             &includedSchemaInfo, &propsWithOversToCompose};
         if (builtinApiSchemaInfo.CheckForCycle()) {
             TF_WARN("Found unrecoverable API schema cycle while expanding "
                     "built-in API schema chain '%s'. An API schema of the same "
@@ -1165,12 +1290,345 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_ExpandBuiltinAPISchemasRecursive(
 
         // Gather the built-in schemas prim specs and built-in API schemas.
         _ExpandBuiltinAPISchemasRecursive(builtinApiSchemaInfo, expansionInfo);
+
+        // Each of the API schemas we recursively expand in this loop may have 
+        // defined and composed any number of the properties that we have 
+        // overrides stored for. We remove the overrides for these composed 
+        // properties here so that we don't inadvertently compose over the 
+        // property again if one of the weaker sibling API schemas happens to 
+        // define the same property.
+        if (!propsWithOversToCompose.empty()) {
+            const auto removeIt = std::remove_if(
+                propsWithOversToCompose.begin(),
+                propsWithOversToCompose.end(),
+                [&](const _PropNameAndPathsToCompose &propWithOversToCompose) {
+                    return expansionInfo->primDef->_GetPropertySpecPath(
+                        propWithOversToCompose.first);
+                });
+            propsWithOversToCompose.erase(
+                removeIt, propsWithOversToCompose.end());
+        }
     }
+}
+
+void 
+UsdSchemaRegistry::_SchemaDefInitHelper::
+_AddSchemaSpecPropertiesAndUpdateOversToCompose(
+    const _BuiltinAPISchemaInfo &includedSchemaInfo,
+    UsdPrimDefinition *primDef,
+    _PropNameAndPathsToComposeVector *propsWithOversToCompose) const
+{
+    // Get all the defined property paths and override property paths from the
+    // API schema's schematics spec.
+    _PropNameAndPathVector overrideProperties;
+    _PropNameAndPathVector definedProperties = _GetPropertyPathsForSpec(
+        includedSchemaInfo.apiSchemaDef->_schematicsPrimPath,
+        includedSchemaInfo.instanceName,
+        &overrideProperties);
+
+    // Compose the schema's defined properties into the expanded prim 
+    // definition.
+    primDef->_AddProperties(std::move(definedProperties));
+
+    // With the new defined properties added, compose any overrides gathered
+    // from the schemas that caused this API schema to be included over the 
+    // defined property definitions to which they apply. The composed property
+    // specs will be added (or updated) under the schematics prim spec of the
+    // expanded prim definition's type. Note that this removes any
+    // properties that are composed from propsWithOversToCompose so that we
+    // don't process these overrides again. Any property overrides that we don't
+    // have a defined property for yet will remain in propsWithOversToCompose
+    // as they may be defined elsewhere in the schema expansion.
+    _ComposePropertiesWithOverrides(primDef, propsWithOversToCompose);
+
+    // Now process the API schema override properties that this schema itself
+    // defines.
+    for (_PropNameAndPath &overridePropNameAndPath : overrideProperties) {
+        TfToken &overridePropName = overridePropNameAndPath.first;
+        SdfPath &overridePropPath = overridePropNameAndPath.second;
+
+        // If the property name is already found in the composed prim 
+        // definition, then we've already found a def for the property and don't
+        // process any more overrides.
+        if (primDef->_GetPropertySpecPath(overridePropName)) {
+            continue;
+        }
+
+        // Add the override property's path to the list of schema specs that 
+        // will need to be composed for the property with that name, starting
+        // a new list of paths if necessary.
+        // 
+        // We expect the number of override properties to be extemely small 
+        // making linear search efficient.
+        auto findIt = std::find_if(
+            propsWithOversToCompose->begin(),
+            propsWithOversToCompose->end(),
+            [&](const _PropNameAndPathsToCompose &propWithOversToCompose){
+                return propWithOversToCompose.first == overridePropName;
+            });
+
+        if (findIt == propsWithOversToCompose->end()) {
+            propsWithOversToCompose->emplace_back(
+                std::move(overridePropName), 
+                SdfPathVector({std::move(overridePropPath)}));
+        } else {
+            findIt->second.push_back(std::move(overridePropPath));
+        }
+    }
+}
+
+UsdSchemaRegistry::_SchemaDefInitHelper::_PropNameAndPathVector 
+UsdSchemaRegistry::_SchemaDefInitHelper::_GetPropertyPathsForSpec(
+    const SdfPath &primSpecPath, 
+    _PropNameAndPathVector *overrideProperties) const
+{
+    _PropNameAndPathVector definedProperties;
+
+    // Get the names of all the properties defined in the prim spec.
+    TfTokenVector specPropertyNames;
+    if (!_registry->_schematics->HasField<TfTokenVector>(
+            primSpecPath, 
+            SdfChildrenKeys->PropertyChildren, 
+            &specPropertyNames)) {
+        // While its possible for the spec to have no properties, we expect 
+        // the prim spec itself to exist.
+        if (!_registry->_schematics->HasSpec(primSpecPath)) {
+            TF_WARN("No prim spec exists at path '%s' in schematics layer.",
+                    primSpecPath.GetText());
+        }
+        return definedProperties;
+    }
+
+    definedProperties.reserve(specPropertyNames.size());
+
+    // Get the override property names for this schema if there are any. If 
+    // there aren't any, return the path for each property name.
+    const VtTokenArray *overridePropertyNames = TfMapLookupPtr(
+        _overridePropertyNamesPerSchema, primSpecPath.GetNameToken());
+    if (!overridePropertyNames) {
+        for (TfToken &propName : specPropertyNames) {
+            definedProperties.emplace_back(
+                std::move(propName), 
+                primSpecPath.AppendProperty(propName));
+        }
+        return definedProperties;
+    } 
+
+    // Otherwish we have to filter out the override properties from the list
+    // and optionally return their paths via the output parameter.
+    if (overrideProperties) {
+        overrideProperties->reserve(overridePropertyNames->size());
+    }
+    for (TfToken &propName : specPropertyNames) {
+        if (std::find(overridePropertyNames->begin(),
+                      overridePropertyNames->end(), 
+                      propName) == overridePropertyNames->end()) {
+            definedProperties.emplace_back(
+                std::move(propName), 
+                primSpecPath.AppendProperty(propName));
+        } else if (overrideProperties) {
+            overrideProperties->emplace_back(
+                std::move(propName), 
+                primSpecPath.AppendProperty(propName));
+        }
+    }
+
+    return definedProperties;
+}
+
+UsdSchemaRegistry::_SchemaDefInitHelper::_PropNameAndPathVector 
+UsdSchemaRegistry::_SchemaDefInitHelper::_GetPropertyPathsForSpec(
+    const SdfPath &primSpecPath, 
+    const TfToken &instanceName,
+    _PropNameAndPathVector *overrideProperties) const
+{
+    // First get the property names and specs without the instance name.
+    _PropNameAndPathVector definedProperties = 
+        _GetPropertyPathsForSpec(primSpecPath, overrideProperties);
+    if (instanceName.IsEmpty()) {
+        return definedProperties;
+    }
+
+    // Apply the instance to all the property names before returning property
+    // paths.
+    for (_PropNameAndPath &propNameAndPath : definedProperties) {
+        propNameAndPath.first = 
+            UsdSchemaRegistry::MakeMultipleApplyNameInstance(
+                propNameAndPath.first, instanceName);
+    }
+    if (overrideProperties) {
+        for (_PropNameAndPath &propNameAndPath : *overrideProperties) {
+            propNameAndPath.first = 
+                UsdSchemaRegistry::MakeMultipleApplyNameInstance(
+                    propNameAndPath.first, instanceName);
+        }
+    }
+
+    return definedProperties;
+}
+
+// Returns true if the property with the given name in these two separate prim
+// definitions have the same type. "Same type" here means that they are both
+// the same kind of property (attribute or relationship), have the same 
+// variability (varying or uniform) and if they are attributes, that their 
+// attribute type names are the same.
+static bool _PropertyTypesMatch(
+    const SdfLayerRefPtr &layer,
+    const SdfPath &strongerPropPath,
+    const SdfPath &weakerPropPath)
+{
+    const SdfSpecType specType = layer->GetSpecType(strongerPropPath);
+    const bool specIsAttribute = (specType == SdfSpecTypeAttribute);
+
+    // Compare spec types (relationship vs attribute)
+    if (specType != layer->GetSpecType(weakerPropPath)) {
+        TF_WARN("%s at path '%s' from stronger schema failed to override %s at "
+                "'%s' from weaker schema during schema prim definition "
+                "composition because of the property spec types do not match.",
+                specIsAttribute ? "Attribute" : "Relationsip",
+                strongerPropPath.GetText(),
+                specIsAttribute ? "relationsip" : "attribute",
+                weakerPropPath.GetText());
+        return false;
+    }
+
+    // Compare variability
+    SdfVariability strongerVariability, weakerVariability;
+    layer->HasField(
+        strongerPropPath, SdfFieldKeys->Variability, &strongerVariability);
+    layer->HasField(
+        weakerPropPath, SdfFieldKeys->Variability, &weakerVariability);
+    if (weakerVariability != strongerVariability) {
+        TF_WARN("Property at path '%s' from stronger schema failed to override "
+                "property at path '%s' from weaker schema during schema prim "
+                "definition composition because their variability does not "
+                "match.",
+                strongerPropPath.GetText(),
+                weakerPropPath.GetText());
+        return false;
+    }
+
+    // Done comparing if its not an attribute.
+    if (!specIsAttribute) {
+        return true;
+    }
+
+    // Compare the type name field of the attributes.
+    TfToken strongerTypeName;
+    layer->HasField(strongerPropPath, SdfFieldKeys->TypeName, &strongerTypeName);
+    TfToken weakerTypeName;
+    layer->HasField(weakerPropPath, SdfFieldKeys->TypeName, &weakerTypeName);
+    if (weakerTypeName != strongerTypeName) {
+        TF_WARN("Attribute at path '%s' with type name '%s' from stronger "
+                "schema failed to override attribute at path '%s' with type "
+                "name '%s' from weaker schema during schema prim definition "
+                "composition because of the attribute type names do not match.",
+                strongerPropPath.GetText(),
+                strongerTypeName.GetText(),
+                weakerPropPath.GetText(),
+                weakerTypeName.GetText());
+        return false;
+    }
+    return true;
 }
 
 void
 UsdSchemaRegistry::_SchemaDefInitHelper::
-_PopulateAppliedAPIPrimDefinitions()
+_ComposePropertiesWithOverrides(
+    UsdPrimDefinition *primDef,
+    _PropNameAndPathsToComposeVector *propsWithOversToCompose) const
+{
+    if (propsWithOversToCompose->empty()) {
+        return;
+    }
+
+    _PropNameAndPathsToComposeVector uncomposedPropsWithOversToCompose;
+    const SdfLayerRefPtr &schematicsLayer = _registry->_schematics;
+
+    for (auto &propWithOversToCompose : *propsWithOversToCompose) {
+        const TfToken &propName = propWithOversToCompose.first;
+        SdfPathVector &propertyPaths = propWithOversToCompose.second;
+
+        // Get the defined property spec for the override property spec. If 
+        // there isn't one yet, move the override properties to the uncomposed
+        // list so we can return them back at the end.
+        SdfPath *defPath = primDef->_GetPropertySpecPath(propName);
+        if (!defPath) {
+            uncomposedPropsWithOversToCompose.push_back(
+                std::move(propWithOversToCompose));
+            continue;
+        }
+
+        // Property overrides are not allowed to change the type of a property
+        // from its defining spec so remove any override specs that are 
+        // invalid.
+        const auto badPropsIt = std::remove_if(
+            propertyPaths.begin(), propertyPaths.end(),
+            [&](const SdfPath &propPath) {
+                return !_PropertyTypesMatch(
+                    schematicsLayer, propPath, *defPath);
+            }
+        );
+        if (badPropsIt != propertyPaths.end()) {
+            propertyPaths.erase(badPropsIt, propertyPaths.end());
+            if (propertyPaths.empty()) {
+                continue;
+            }
+        }
+
+        // The composed property will always live under the prim definition's
+        // schematics prim spec, regardless of where the defs it is 
+        // composed from come from.
+        const SdfPath dstPath = 
+            primDef->_schematicsPrimPath.AppendProperty(propName);
+
+        // If the first override path is not from the composed prim 
+        // definition itself, then the schematics prim doesn't have a
+        // spec for this prorperty yet. Copy the first override to 
+        // create the needed property spec.
+        if (dstPath != propertyPaths.front()) {
+            SdfPrimSpecHandle dstPrim = 
+                schematicsLayer->GetPrimAtPath(primDef->_schematicsPrimPath);
+            SdfPropertySpecHandle srcProp = 
+                schematicsLayer->GetPropertyAtPath(propertyPaths.front());
+            _CopyPropSpec(srcProp, dstPrim, propName);
+        }
+
+        // Compose function. Any fields from the srcPath spec that aren't 
+        // already in the dstPath spec are copied into the dstPath spec.
+        auto composeFn = [&](const SdfPath &srcPath) {
+            for (const TfToken srcField : schematicsLayer->ListFields(srcPath)) {
+                if (!schematicsLayer->HasField(dstPath, srcField)) {
+                    schematicsLayer->SetField(dstPath, srcField, 
+                        schematicsLayer->GetField(srcPath, srcField));
+                }
+            }
+        };
+
+        // Now compose in the rest of the override property specs under
+        // our destination. We always skip the first entry as that will
+        // already be the spec the destination path starts with.
+        for (auto pathIt = propertyPaths.begin() + 1; 
+             pathIt != propertyPaths.end(); ++pathIt) {
+            composeFn(*pathIt);
+        }
+
+        // Last compose in the property definition itself.
+        composeFn(*defPath);
+
+        // Now that the spec is fully composed, set the definition's 
+        // path for the property to the composed property's path.
+        *defPath = dstPath;
+    }
+
+    // Update the propsWithOversToCompose to be the remaining prop overs that 
+    // weren't able to compose here.
+    propsWithOversToCompose->swap(uncomposedPropsWithOversToCompose);
+}
+
+void
+UsdSchemaRegistry::_SchemaDefInitHelper::
+_PopulateAppliedAPIPrimDefinitions() const
 {
     TRACE_FUNCTION();
     // All applied API schemas may contain other applied API schemas which may 
@@ -1211,8 +1669,9 @@ _PopulateAppliedAPIPrimDefinitions()
         // schema is itself), we can just add the prim spec's properties and be
         // done. 
         if (primDef->_appliedAPISchemas.size() == 1) {
-            primDef->_ComposePropertiesFromPrimSpec(
-                _registry->_schematics, primDef->_schematicsPrimPath);
+            _PropNameAndPathVector definedProperties = 
+                _GetPropertyPathsForSpec(primDef->_schematicsPrimPath);
+            primDef->_AddProperties(std::move(definedProperties));
             continue;
         }
 
@@ -1309,7 +1768,7 @@ _PopulateAppliedAPIPrimDefinitions()
 
 void 
 UsdSchemaRegistry::_SchemaDefInitHelper::
-_PopulateConcretePrimDefinitions()
+_PopulateConcretePrimDefinitions() const
 {
     TRACE_FUNCTION();
     // Populate all concrete API schema definitions; it is expected that all 
@@ -1331,10 +1790,15 @@ _PopulateConcretePrimDefinitions()
             primDef->_schematicsPrimPath,
             &primDef->_appliedAPISchemas);
 
-        // Compose the properties from the prim spec to the prim definition
-        // first as these are stronger than the built-in API schema properties.
-        primDef->_ComposePropertiesFromPrimSpec(
-            _registry->_schematics, primDef->_schematicsPrimPath);
+        // Get both the defined properties and API schema override properties
+        // from the concrete prim spec. We compose the defined properties from 
+        // the prim spec to the prim definition first as these are stronger 
+        // than the built-in API schema properties.
+        _PropNameAndPathVector overrideProperties;
+        _PropNameAndPathVector definedProperties = 
+            _GetPropertyPathsForSpec(primDef->_schematicsPrimPath, 
+                                     &overrideProperties);
+        primDef->_AddProperties(std::move(definedProperties));
 
         // If there are any applied API schemas in the list, compose them 
         // in now
@@ -1352,6 +1816,20 @@ _PopulateConcretePrimDefinitions()
             primDef->_appliedAPISchemas.clear();
             _registry->_ComposeAPISchemasIntoPrimDefinition(
                 primDef, apiSchemasToCompose);
+        }
+
+        // With all the built-in API schemas applied, we can now compose any
+        // API schema property overrides declared in the types schema over the 
+        // current defined properties.
+        if (!overrideProperties.empty()) {
+            _PropNameAndPathsToComposeVector overridePropertiesToCompose;
+            for (_PropNameAndPath &overrideProperty : overrideProperties) {
+                overridePropertiesToCompose.emplace_back(
+                    std::move(overrideProperty.first),
+                    SdfPathVector({std::move(overrideProperty.second)}));
+            }
+            _ComposePropertiesWithOverrides(
+                primDef, &overridePropertiesToCompose);
         }
     }
 }

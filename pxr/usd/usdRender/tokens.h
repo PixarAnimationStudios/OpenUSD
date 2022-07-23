@@ -86,6 +86,10 @@ struct UsdRenderTokensType {
     /// 
     /// Default value for UsdRenderVar::GetDataTypeAttr()
     const TfToken color3f;
+    /// \brief "command"
+    /// 
+    /// UsdRenderPass
+    const TfToken command;
     /// \brief "cropAperture"
     /// 
     /// Possible value for UsdRenderSettingsBase::GetAspectRatioConformPolicyAttr()
@@ -98,6 +102,14 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderSettingsBase
     const TfToken dataWindowNDC;
+    /// \brief "denoise:enable"
+    /// 
+    /// UsdRenderPass
+    const TfToken denoiseEnable;
+    /// \brief "denoise:pass"
+    /// 
+    /// UsdRenderPass
+    const TfToken denoisePass;
     /// \brief "disableMotionBlur"
     /// 
     /// UsdRenderSettingsBase
@@ -106,6 +118,10 @@ struct UsdRenderTokensType {
     /// 
     /// Possible value for UsdRenderSettingsBase::GetAspectRatioConformPolicyAttr(), Default value for UsdRenderSettingsBase::GetAspectRatioConformPolicyAttr()
     const TfToken expandAperture;
+    /// \brief "fileName"
+    /// 
+    /// UsdRenderPass
+    const TfToken fileName;
     /// \brief "full"
     /// 
     /// Possible value for UsdRenderSettings::GetMaterialBindingPurposesAttr()
@@ -114,6 +130,10 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderSettings
     const TfToken includedPurposes;
+    /// \brief "inputPasses"
+    /// 
+    /// UsdRenderPass
+    const TfToken inputPasses;
     /// \brief "instantaneousShutter"
     /// 
     /// UsdRenderSettingsBase
@@ -134,6 +154,10 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderProduct
     const TfToken orderedVars;
+    /// \brief "passType"
+    /// 
+    /// UsdRenderPass
+    const TfToken passType;
     /// \brief "pixelAspectRatio"
     /// 
     /// UsdRenderSettingsBase
@@ -170,6 +194,10 @@ struct UsdRenderTokensType {
     /// 
     /// Stage-level metadata that encodes the path to UsdRenderSettingsPrim to use for rendering.
     const TfToken renderSettingsPrimPath;
+    /// \brief "renderSource"
+    /// 
+    /// UsdRenderPass
+    const TfToken renderSource;
     /// \brief "resolution"
     /// 
     /// UsdRenderSettingsBase

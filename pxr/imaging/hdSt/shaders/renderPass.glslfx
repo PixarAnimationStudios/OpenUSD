@@ -235,10 +235,6 @@ vec4 ApplyColorOverridesPostLighting(vec4 color)
 
 -- glsl RenderPass.RenderColor
 
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-layout (location = 0) out vec4 colorOut;
-#endif
-
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     colorOut = color;
@@ -252,11 +248,6 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 ]
 
 -- glsl RenderPass.RenderId
-
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-layout (location = 0) out vec4 primIdOut;
-layout (location = 1) out vec4 instanceIdOut;
-#endif
 
 // XXX: This whole snippet is a little sketchy and should ideally be replaced
 // with AoVs.  We generate "primId" and "instanceId", and depending on how

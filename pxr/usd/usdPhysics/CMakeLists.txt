@@ -3,7 +3,6 @@ set(PXR_PACKAGE usdPhysics)
 
 pxr_library(usdPhysics
     LIBRARIES
-        js
         tf
         plug
         vt

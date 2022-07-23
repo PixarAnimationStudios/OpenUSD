@@ -264,19 +264,17 @@ pxr_build_test_shared_lib(TestUsdProceduralExternalAssetsFileFormatPlugin
         testenv/TestUsdProceduralExternalAssetsFileFormatPlugin.cpp
 )
 
-if (PXR_USE_AR_2)
-    pxr_build_test_shared_lib(TestUsdResolverChangedResolver
-        CREATE_FRAMEWORK
-        INSTALL_PREFIX UsdPlugins
-        LIBRARIES
-            ar
-            plug
-            tf
-    
-        CPPFILES
-            testenv/TestUsdResolverChangedResolver.cpp
-    )
-endif()
+pxr_build_test_shared_lib(TestUsdResolverChangedResolver
+    CREATE_FRAMEWORK
+    INSTALL_PREFIX UsdPlugins
+    LIBRARIES
+        ar
+        plug
+        tf
+
+    CPPFILES
+        testenv/TestUsdResolverChangedResolver.cpp
+)
 
 pxr_build_test(testUsdAttributeBlockingCpp
     LIBRARIES
@@ -321,18 +319,16 @@ pxr_build_test(testUsdMetadataCpp
         testenv/testUsdMetadata.cpp
 )
 
-if (PXR_USE_AR_2)
-    pxr_build_test(testUsdResolverChanged
-        LIBRARIES
-            arch
-            plug
-            sdf
-            tf
-            usd
-        CPPFILES
-            testenv/testUsdResolverChanged.cpp
-    )
-endif()
+pxr_build_test(testUsdResolverChanged
+    LIBRARIES
+        arch
+        plug
+        sdf
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdResolverChanged.cpp
+)
 
 pxr_build_test(testUsdInstancingCpp
     LIBRARIES
@@ -536,12 +532,10 @@ pxr_install_test_dir(
     DEST testUsdMetadata
 )
 
-if (PXR_USE_AR_2)
-    pxr_install_test_dir(
-        SRC testenv/testUsdResolverChanged
-        DEST testUsdResolverChanged
-    )
-endif()
+pxr_install_test_dir(
+    SRC testenv/testUsdResolverChanged
+    DEST testUsdResolverChanged
+)
 
 pxr_install_test_dir(
     SRC testenv/testUsdNotices.testenv
@@ -908,16 +902,14 @@ pxr_register_test(testUsdMetadataCpp
     EXPECTED_RETURN_CODE 0
 )
 
-if (PXR_USE_AR_2)
-    # This test relies on a plugin built specifically for this test.
-    # The build system currently doesn't support this for static library
-    # builds, so we only enable this test on shared library builds.
-    if (BUILD_SHARED_LIBS)
-        pxr_register_test(testUsdResolverChanged
-            COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdResolverChanged"
-            EXPECTED_RETURN_CODE 0
-        )
-    endif()
+# This test relies on a plugin built specifically for this test.
+# The build system currently doesn't support this for static library
+# builds, so we only enable this test on shared library builds.
+if (BUILD_SHARED_LIBS)
+    pxr_register_test(testUsdResolverChanged
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdResolverChanged"
+        EXPECTED_RETURN_CODE 0
+    )
 endif()
 
 pxr_register_test(testUsdStageNoPython

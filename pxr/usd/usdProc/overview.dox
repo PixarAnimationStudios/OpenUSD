@@ -1,0 +1,16 @@
+/*!
+\page usdProc_page_front UsdProc : USD Schemas for Procedurals
+\if ( PIXAR_MFB_BUILD )
+\mainpage UsdProc : USD Schemas for Procedurals
+\publicLib
+\endif
+
+\section usdProc_overview Overview
+
+UsdProc defines schemas for the scene description of procedural data meaningful
+to downstream systems.
+
+In its initial form, includes a single schema:
+    - UsdProcGenerativeProcedural
+
+*/

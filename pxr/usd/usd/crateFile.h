@@ -37,9 +37,7 @@
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/usd/ar/ar.h"
 #include "pxr/usd/ar/asset.h"
-#if AR_VERSION > 1
 #include "pxr/usd/ar/writableAsset.h"
-#endif
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
@@ -73,9 +71,7 @@ using std::tuple;
 using std::vector;
 
 using ArAssetSharedPtr = std::shared_ptr<ArAsset>;
-#if AR_VERSION > 1
 using ArWritableAssetSharedPtr = std::shared_ptr<ArWritableAsset>;
-#endif
 
 // Trait indicating trivially copyable types, a hack since gcc doesn't yet
 // implement is_trivially_copyable correctly.

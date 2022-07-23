@@ -91,6 +91,7 @@ public:
 
     /// Prepare draw commands and apply view frustum culling for this batch.
     virtual void PrepareDraw(
+        HgiGraphicsCmds *gfxCmds,
         HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const &resourceRegistry) = 0;
 

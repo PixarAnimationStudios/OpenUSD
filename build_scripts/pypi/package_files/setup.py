@@ -22,8 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 import setuptools
-
-import glob, os, platform, re, shutil
+import argparse, glob, os, platform, re, shutil, sys
 
 # This setup.py script expects to be run from an inst directory in a typical
 # USD build run from build_usd.py.
@@ -34,6 +33,20 @@ import glob, os, platform, re, shutil
 # to point to the new locations of those shared library dependencies. How this
 # is done depends on platform, and is mostly accomplished by steps in the CI
 # system.
+
+# Define special arguments for setup.py to customize behavior.
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--post-release-tag", type=str,
+    help="Post release tag to append to version number")
+
+args, remaining = parser.parse_known_args()
+
+# Remove our special arguments from sys.argv so that setuptools doesn't choke on
+# them. argparse will also eat the "setup.py" argument in sys.argv[0] which is
+# apparently necessary for setuptools, so we manually prepend that to the
+# remaining unprocessed arguments.
+sys.argv = [sys.argv[0]] + remaining
 
 def windows():
     return platform.system() == "Windows"
@@ -103,6 +116,9 @@ with open(os.path.join(USD_BUILD_OUTPUT, "include/pxr/pxr.h"), "r") as fh:
             continue
 
 version = "{}.{}".format(minorVersion, patchVersion)
+
+if args.post_release_tag:
+    version = "{}.{}".format(version, args.post_release_tag)
 
 # Config
 setuptools.setup(

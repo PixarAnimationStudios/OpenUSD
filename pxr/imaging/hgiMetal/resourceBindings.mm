@@ -31,21 +31,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-enum HgiMetalArgmentOffset {
-    HgiMetalArgumentOffsetBufferVS = 0,
-    HgiMetalArgumentOffsetBufferFS = 512,
-    HgiMetalArgumentOffsetSamplerVS = 1024,
-    HgiMetalArgumentOffsetSamplerFS = 1536,
-    HgiMetalArgumentOffsetTextureVS = 2048,
-    HgiMetalArgumentOffsetTextureFS = 2560,
-
-    HgiMetalArgumentOffsetBufferCS = 0,
-    HgiMetalArgumentOffsetSamplerCS = 1024,
-    HgiMetalArgumentOffsetTextureCS = 2048,
-    
-    HgiMetalArgumentOffsetConstants = 3072,
-};
-
 HgiMetalResourceBindings::HgiMetalResourceBindings(
     HgiResourceBindingsDesc const& desc)
     : HgiResourceBindings(desc)

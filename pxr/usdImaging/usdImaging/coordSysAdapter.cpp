@@ -123,7 +123,7 @@ UsdImagingCoordSysAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                       TfToken const& propertyName)
 {
     if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(propertyName)) {
-        return HdChangeTracker::DirtyTransform;
+        return HdCoordSys::DirtyTransform;
     }
     return HdChangeTracker::Clean;
 }
@@ -142,7 +142,7 @@ UsdImagingCoordSysAdapter::MarkTransformDirty(UsdPrim const& prim,
                                            SdfPath const& cachePath,
                                            UsdImagingIndexProxy* index)
 {
-    index->MarkSprimDirty(cachePath, HdChangeTracker::DirtyTransform);
+    index->MarkSprimDirty(cachePath, HdCoordSys::DirtyTransform);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

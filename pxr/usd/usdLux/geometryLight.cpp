@@ -133,7 +133,6 @@ const TfTokenVector&
 UsdLuxGeometryLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLuxTokens->lightShaderId,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

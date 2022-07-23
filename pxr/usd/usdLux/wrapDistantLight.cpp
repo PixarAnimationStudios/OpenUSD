@@ -55,13 +55,6 @@ _CreateAngleAttr(UsdLuxDistantLight &self,
     return self.CreateAngleAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
-        
-static UsdAttribute
-_CreateIntensityAttr(UsdLuxDistantLight &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateIntensityAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
 
 static std::string
 _Repr(const UsdLuxDistantLight &self)
@@ -109,13 +102,6 @@ void wrapUsdLuxDistantLight()
              &This::GetAngleAttr)
         .def("CreateAngleAttr",
              &_CreateAngleAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetIntensityAttr",
-             &This::GetIntensityAttr)
-        .def("CreateIntensityAttr",
-             &_CreateIntensityAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

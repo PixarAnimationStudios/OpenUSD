@@ -190,19 +190,6 @@ SdfComputeAssetPathRelativeToLayer(
         // the package, fall through to normal path resolution.
     }
 
-#if AR_VERSION == 1
-    // Relative paths are resolved using the look-here-first scheme, in
-    // which we first look relative to the layer, then fall back to search
-    // path resolution.
-    string finalLayerPath = anchor->ComputeAbsolutePath(assetPath);
-    if (!SdfLayer::IsAnonymousLayerIdentifier(finalLayerPath)) {
-        if (resolver.IsSearchPath(assetPath) &&
-            resolver.Resolve(finalLayerPath).empty())
-            return assetPath;
-    }
-    
-    return finalLayerPath;
-#else
     if (SdfLayer::IsAnonymousLayerIdentifier(assetPath)) {
         return assetPath;
     }
@@ -212,7 +199,6 @@ SdfComputeAssetPathRelativeToLayer(
     }
 
     return resolver.CreateIdentifier(assetPath, anchor->GetResolvedPath());
-#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

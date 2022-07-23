@@ -340,25 +340,6 @@ SdfTextFileFormat::WriteToFile(
     const std::string& comment,
     const FileFormatArguments& args) const
 {
-#if AR_VERSION == 1
-    // open file
-    string reason;
-    TfAtomicOfstreamWrapper wrapper(filePath);
-    if (!wrapper.Open(&reason)) {
-        TF_RUNTIME_ERROR(reason);
-        return false;
-    }
-
-    Sdf_TextOutput out(wrapper.GetStream());
-
-    const bool ok = _WriteLayer(
-        &layer, out, GetFileCookie(), GetVersionString(), comment);
-
-    if (ok && !wrapper.Commit(&reason)) {
-        TF_RUNTIME_ERROR(reason);
-        return false;
-    }
-#else
     std::shared_ptr<ArWritableAsset> asset = 
         ArGetResolver().OpenAssetForWrite(
             ArResolvedPath(filePath), ArResolver::WriteMode::Replace);
@@ -377,7 +358,7 @@ SdfTextFileFormat::WriteToFile(
         TF_RUNTIME_ERROR("Could not close %s", filePath.c_str());
         return false;
     }
-#endif
+
     return ok;
 }
 

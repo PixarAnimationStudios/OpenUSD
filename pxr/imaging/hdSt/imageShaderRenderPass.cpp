@@ -154,7 +154,7 @@ HdSt_ImageShaderRenderPass::_Execute(
         GetRenderIndex()->GetResourceRegistry());
     TF_VERIFY(resourceRegistry);
 
-    _drawBatch->PrepareDraw(stRenderPassState, resourceRegistry);
+    _drawBatch->PrepareDraw(nullptr, stRenderPassState, resourceRegistry);
 
     // Create graphics work to render into aovs.
     const HgiGraphicsCmdsDesc desc =

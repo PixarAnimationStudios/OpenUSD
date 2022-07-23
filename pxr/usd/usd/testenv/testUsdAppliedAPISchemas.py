@@ -72,7 +72,27 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestNestedAutoAppliedToAPI")
         cls.NestedAutoAppliedToAPIAppliedToPrimType = \
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestNestedAutoAppliedToAPIAppliedToPrim")
-    
+        cls.PropertyOversOneAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestPropertyOversOneAPI")
+        cls.PropertyOversTwoAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestPropertyOversTwoAPI")
+        cls.PropertyOversThreeAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestPropertyOversThreeAPI")
+        cls.PropertyOversFourAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestPropertyOversFourAPI")
+        cls.PropertyOversMultiOneAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestPropertyOversMultiOneAPI")
+        cls.PropertyOversMultiTwoAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestPropertyOversMultiTwoAPI")
+        cls.PropertyOversMultiThreeAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestPropertyOversMultiThreeAPI")
+        cls.PropertyOversAutoApplyAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestPropertyOversAutoApplyAPI")
+        cls.PropertyOversTypedPrimBasePrimType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestPropertyOversTypedPrimBase")
+        cls.PropertyOversTypedPrimDerivedPrimType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestPropertyOversTypedPrimDerived")
+
     def test_SimpleTypedSchemaPrimDefinition(self):
         """
         Tests the prim definition for a simple typed schema that has no
@@ -2837,6 +2857,788 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         _VerifyIsRel(prim,
             rel1 = (True, conflictPrimTypeDocStr),
             rel2 = (False, conflictPrimTypeDocStr))
+
+    @unittest.skipIf(Tf.GetEnvSetting('USD_DISABLE_AUTO_APPLY_API_SCHEMAS'),
+                    "Auto apply API schemas are disabled")
+    def test_PropertyOversInAPISchemas(self):
+        """
+        Tests the behavior of API schema override properties in schemas that
+        built-in API schemas.
+        """
+        stage = Usd.Stage.CreateInMemory()
+
+        # Simple helper for testing that a prim has expected attributes that 
+        # resolve to expected values.
+        def _VerifyAttrValues(prim, expectedAttrValues):
+            values = {name : prim.GetAttribute(name).Get() 
+                         for name in expectedAttrValues.keys()}
+            self.assertEqual(values, expectedAttrValues)
+
+        def _VerifyAttribute(prim, name, typeName,
+                             variability = Sdf.VariabilityVarying,
+                             custom = False,
+                             **kwargs):
+            kwargs['typeName'] = typeName
+            kwargs['variability'] = variability
+            kwargs['custom'] = custom
+            attr = prim.GetAttribute(name)
+            self.assertTrue(attr)
+            self.assertEqual(attr.GetAllMetadata(), kwargs)
+
+        # Built-in API schema inclusion structure for the PropertyOvers API 
+        # schemas defined for this test:
+        #
+        #                           OneAPI
+        #                             |
+        #                 -------------------------
+        #                 |                       |
+        #              TwoAPI                    ThreeAPI
+        #                 |                       |
+        #                 |                 -------------
+        #                 |                 |           |
+        #          MultiOneAPI:two       FourAPI   AutoApplyAPI (via auto-apply)
+        #                 |      
+        #        -------------------------------------------------
+        #        |                     |                         |
+        # MultiTwoAPI:two MultiTwoAPI:two:multiOne MultiThreeAPI:two:multiOne
+        #
+        # The Typed schemas structure is:
+        # 
+        #                           inherits
+        #      TypePrimDerived ------------------> TypedPrimBase
+        #             |                                  |
+        #             |                                  |
+        #             |                                  |
+        #          ThreeAPI                           TwoAPI
+        #             |                                  |
+        #            ...                                ...
+        #
+
+        # prim_1 : Prim with PropertyOversOneAPI applied which includes a tree
+        # of all instances of the API schemas we're testing.
+        prim_1 = stage.DefinePrim("/Prim1")
+        prim_1.ApplyAPI(self.PropertyOversOneAPIType)
+        self.assertEqual(prim_1.GetAppliedSchemas(), [
+            "TestPropertyOversOneAPI",
+            "TestPropertyOversTwoAPI",
+            "TestPropertyOversMultiOneAPI:two",
+            "TestPropertyOversMultiTwoAPI:two",
+            "TestPropertyOversMultiTwoAPI:two:multiOne",
+            "TestPropertyOversMultiThreeAPI:two:multiOne",
+            "TestPropertyOversThreeAPI",
+            "TestPropertyOversFourAPI",
+            "TestPropertyOversAutoApplyAPI"])
+
+        # prim_2 : Prim with PropertyOversTwoAPI applied which includes the 
+        # first subtree of the instances of the API schemas we're testing.
+        prim_2 = stage.DefinePrim("/Prim2")
+        prim_2.ApplyAPI(self.PropertyOversTwoAPIType)
+        self.assertEqual(prim_2.GetAppliedSchemas(), [
+            "TestPropertyOversTwoAPI",
+            "TestPropertyOversMultiOneAPI:two",
+            "TestPropertyOversMultiTwoAPI:two",
+            "TestPropertyOversMultiTwoAPI:two:multiOne",
+            "TestPropertyOversMultiThreeAPI:two:multiOne"])
+
+        # prim_3 : Prim with PropertyOversThreeAPI applied which includes the
+        # second subtree of the instances of the API schemas we're testing.
+        prim_3 = stage.DefinePrim("/Prim3")
+        prim_3.ApplyAPI(self.PropertyOversThreeAPIType)
+        self.assertEqual(prim_3.GetAppliedSchemas(), [
+            "TestPropertyOversThreeAPI",
+            "TestPropertyOversFourAPI",
+            "TestPropertyOversAutoApplyAPI"])
+
+        # prim_4 : Prim with PropertyOversFourAPI applied which doesn't include 
+        # any other API schemas of its own, but is included in the API schema
+        # trees of the prims mentioned above.
+        prim_4 = stage.DefinePrim("/Prim4")
+        prim_4.ApplyAPI(self.PropertyOversFourAPIType)
+        self.assertEqual(prim_4.GetAppliedSchemas(), [
+            "TestPropertyOversFourAPI"])
+
+        # prim_m_1 : Prim with an instance of multiple apply schema
+        # PropertyOversMultiOneAPI applied using the instance name "two". The
+        # API schema includes a tree of other multiple apply API schemas and
+        # this instance matches the subtree included by PropertyOversTwoAPI
+        prim_m_1 = stage.DefinePrim("/PrimM1")
+        prim_m_1.ApplyAPI(self.PropertyOversMultiOneAPIType, "two")
+        self.assertEqual(prim_m_1.GetAppliedSchemas(), [
+            "TestPropertyOversMultiOneAPI:two",
+            "TestPropertyOversMultiTwoAPI:two",
+            "TestPropertyOversMultiTwoAPI:two:multiOne",
+            "TestPropertyOversMultiThreeAPI:two:multiOne"
+            ])
+
+        # prim_m_1 : Prim with an instance of multiple apply schema
+        # PropertyOversMultiTwoAPI applied using the instance name "two". This
+        # schema doesn't include any other API schemas of its own, but this
+        # instance of the schema is included in the API schema trees of the
+        # prims mentioned above.
+        prim_m_2 = stage.DefinePrim("/PrimM2")
+        prim_m_2.ApplyAPI(self.PropertyOversMultiTwoAPIType, "two")
+        self.assertEqual(prim_m_2.GetAppliedSchemas(), [
+            "TestPropertyOversMultiTwoAPI:two",
+            ])
+
+        # primBase : Prim of type PropertyOversTypedPrimBase which includes the
+        # built-in PropertyOversTwoAPI and therefore all of the API schemas that
+        # includes.
+        primBase = stage.DefinePrim("/PrimBase", 
+                                    "TestPropertyOversTypedPrimBase")
+        self.assertTrue(primBase)
+        self.assertEqual(primBase.GetAppliedSchemas(), [
+            "TestPropertyOversTwoAPI",
+            "TestPropertyOversMultiOneAPI:two",
+            "TestPropertyOversMultiTwoAPI:two",
+            "TestPropertyOversMultiTwoAPI:two:multiOne",
+            "TestPropertyOversMultiThreeAPI:two:multiOne"])
+
+        # primDerived : Prim of type PropertyOversTypedPrimDerived which both
+        # inherits from PropertyOversTypedPrimBase and prepends its own built-in
+        # PropertyOversThreeAPI. Thus it includes properties from the base prim
+        # type as well as the all the include API schemas imparted by
+        # PropertyOversThreeAPI and PropertyOversTwoAPI
+        primDerived = stage.DefinePrim("/PrimDerived",
+                                       "TestPropertyOversTypedPrimDerived")
+        self.assertTrue(primDerived)
+        self.assertEqual(primDerived.GetAppliedSchemas(), [
+            "TestPropertyOversThreeAPI",
+            "TestPropertyOversFourAPI",
+            "TestPropertyOversAutoApplyAPI",
+            "TestPropertyOversTwoAPI",
+            "TestPropertyOversMultiOneAPI:two",
+            "TestPropertyOversMultiTwoAPI:two",
+            "TestPropertyOversMultiTwoAPI:two:multiOne",
+            "TestPropertyOversMultiThreeAPI:two:multiOne"])
+
+        # Verify the expected properties of all of the prims we defined above. 
+        # We check the exact fields of all of these expected properties later
+        # but this serves as a first verification that we got what we expected.
+        #
+        # But more importantly this is a useful way to test that none our prims
+        # include any form of the "overrides_nothing" property which is defined
+        # in every one of these test schemas as an API schema override but is
+        # never defined as a concrete property in any of them.
+        self.assertEqual(prim_1.GetPropertyNames(), [
+            "defined_in_auto",
+            "defined_in_four_1",
+            "defined_in_four_2",
+            "defined_in_three",
+            "defined_in_two",
+            "int_defined_in_two",
+            "multi:two:defined_in_m1",
+            "multi:two:defined_in_m2",
+            "multi:two:multiOne:defined_in_m2",
+            "otherMulti:two:multiOne:defined_in_m3",
+            "uniform_token_defined_in_four"
+            ])
+
+        self.assertEqual(prim_2.GetPropertyNames(), [
+            "defined_in_two",
+            "int_defined_in_two",
+            "multi:two:defined_in_m1",
+            "multi:two:defined_in_m2",
+            "multi:two:multiOne:defined_in_m2",
+            "otherMulti:two:multiOne:defined_in_m3"
+            ])
+
+        self.assertEqual(prim_3.GetPropertyNames(), [
+            "defined_in_auto",
+            "defined_in_four_1",
+            "defined_in_four_2",
+            "defined_in_three",
+            "uniform_token_defined_in_four"
+            ])
+
+        self.assertEqual(prim_4.GetPropertyNames(), [
+            "defined_in_four_1",
+            "defined_in_four_2",
+            "uniform_token_defined_in_four"
+            ])
+
+        self.assertEqual(prim_m_1.GetPropertyNames(), [
+            "multi:two:defined_in_m1",
+            "multi:two:defined_in_m2",
+            "multi:two:multiOne:defined_in_m2",
+            "otherMulti:two:multiOne:defined_in_m3"
+            ])
+
+        self.assertEqual(prim_m_2.GetPropertyNames(), [
+            "multi:two:defined_in_m2"
+            ])
+
+        self.assertEqual(primBase.GetPropertyNames(), [
+            "defined_in_base",
+            "defined_in_two",
+            "int_defined_in_two",
+            "multi:two:defined_in_m1",
+            "multi:two:defined_in_m2",
+            "multi:two:multiOne:defined_in_m2",
+            "otherMulti:two:multiOne:defined_in_m3"
+            ])
+
+        self.assertEqual(primDerived.GetPropertyNames(), [
+            "defined_in_auto",
+            "defined_in_base",
+            "defined_in_four_1",
+            "defined_in_four_2",
+            "defined_in_three",
+            "defined_in_two",
+            "int_defined_in_two",
+            "multi:two:defined_in_m1",
+            "multi:two:defined_in_m2",
+            "multi:two:multiOne:defined_in_m2",
+            "otherMulti:two:multiOne:defined_in_m3",
+            "over_in_base",
+            "uniform_token_defined_in_four"
+            ])
+
+        # Property: defined_in_two
+        # Defined in PropertyOversTwoAPI
+        #   value = "two"
+        #   allowedTokens = "two", "2"
+        #   doc = "Defined in Two"
+        # Override in PropertyOversOneAPI sets default value to "1"
+        # Override in PropertyOversThreeAPI tries to set doc string
+        # Override in PropertyOversFourAPI tries to set default value to "4"
+        # Override in PropertyOversTypedPrimBase sets default value to "base_over"
+        propName = "defined_in_two"
+        # Default value changed by OneAPI, overrides from ThreeAPI and FourAPI
+        # are ignored because they don't affect sibling TwoAPI. 
+        _VerifyAttribute(prim_1, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["two", "2"]),
+                         default = "1",
+                         documentation = "Defined in Two")
+        # Matches def in TwoAPI as there are no overrides.
+        _VerifyAttribute(prim_2, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["two", "2"]),
+                         default = "two",
+                         documentation = "Defined in Two")
+        # ThreeAPI and FourAPI only define overrides but there's no actual
+        # property def included in their built-ins, so the properties don't
+        # exist.
+        self.assertFalse(prim_3.GetAttribute(propName))
+        self.assertFalse(prim_4.GetAttribute(propName))
+
+        # The TypedPrimBase includes PropertyOversTwoAPI and overrides the
+        # default. Both the base and derived types get this property with the
+        # default value override.
+        _VerifyAttribute(primBase, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["two", "2"]),
+                         default = "base_over",
+                         documentation = "Defined in Two")
+        _VerifyAttribute(primDerived, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["two", "2"]),
+                         default = "base_over",
+                         documentation = "Defined in Two")
+
+        # Property: defined_in_three
+        # Defined in PropertyOversThreeAPI
+        #   value = "three"
+        #   allowedTokens = "three", "3"
+        #   doc = "Defined in Three"
+        # Override in PropertyOversTwoAPI tries to set doc string
+        # Override in PropertyOversTypedPrimBase sets default value to "base_over"
+        propName = "defined_in_three"
+        # Doc value override in built-in TwoAPI, which is a stronger sibling
+        # of built-in ThreeAPI, is ignored because we don't process overrides
+        # across sibling API schemas.
+        _VerifyAttribute(prim_1, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["three", "3"]),
+                         default = "three",
+                         documentation = "Defined in Three")
+        # TwoAPI defines an override but doesn't include any API schemas that
+        # define this property.
+        self.assertFalse(prim_2.GetAttribute(propName))
+        # Matches def in ThreeAPI as there are no overrides.
+        _VerifyAttribute(prim_3, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["three", "3"]),
+                         default = "three",
+                         documentation = "Defined in Three")
+        # Not defined in FourAPI at all.
+        self.assertFalse(prim_4.GetAttribute(propName))
+
+        # Since the TypedPrimBase overrides the default value of the property,
+        # the derived TypedPrimDerived inherits this override and applies it
+        # to this property it includes via PropertyOversThreeAPI. However, the
+        # TypedPrimBase does not itself include PropertyOversThreeAPI so it
+        # doesn't include the property at all.
+        self.assertFalse(primBase.GetAttribute(propName))
+        _VerifyAttribute(primDerived, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["three", "3"]),
+                         default = "base_over",
+                         documentation = "Defined in Three")
+
+        # Property: defined_in_four_1
+        # Defined in PropertyOversFourAPI
+        #   value = "four"
+        #   allowedTokens = "four", "4"
+        #   doc = "Defined in Four"
+        # Override in PropertyOversOneAPI sets default value to "1"
+        # Override in PropertyOversTwoAPI sets default value to "2" and
+        #   allowedTokens to ["two", "2"]
+        # Override in PropertyOversTypedPrimDerived sets default value to
+        #   "derived_over"
+        propName = "defined_in_four_1"
+        # Gets overrides from both OneAPI and TwoAPI. However TwoAPI's override
+        # is ignored since FourAPI is not included through TwoAPI or any of
+        # its built-in APIs. So only the default value is overridden to use
+        # OneAPI's value.
+        _VerifyAttribute(prim_1, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["four", "4"]),
+                         default = "1",
+                         documentation = "Defined in Four")
+        # TwoAPI defines an override but doesn't include any API schemas that
+        # define this property.
+        self.assertFalse(prim_2.GetAttribute(propName))
+        # ThreeAPI includes FourAPI but doesn't define overrides so it and
+        # FourAPI match the defined property.
+        _VerifyAttribute(prim_3, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["four", "4"]),
+                         default = "four",
+                         documentation = "Defined in Four")
+        _VerifyAttribute(prim_4, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["four", "4"]),
+                         default = "four",
+                         documentation = "Defined in Four")
+
+        # The TypedPrimDerived includes PropertyOversFourAPI and overrides the
+        # default value. The base type does not include this API schema and
+        # does not have this property.
+        self.assertFalse(primBase.GetAttribute(propName))
+        _VerifyAttribute(primDerived, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["four", "4"]),
+                         default = "derived_over",
+                         documentation = "Defined in Four")
+
+        # Property: defined_in_four_2
+        # Defined in PropertyOversFourAPI
+        #   value = "four"
+        #   allowedTokens = "four", "4"
+        #   doc = "Defined in Four also"
+        # Override in PropertyOversOneAPI sets default value to "1"
+        # Override in PropertyOversThreeAPI sets default value to "3" and
+        #   allowedTokens to ["three", "3"]
+        # Override in TypedPrimBase that sets the default value to "base_over"
+        #   and allowedTokens to ["base_over", "over_base"]
+        # Override in TypedPrimDerived that sets the default value to
+        #   "derived_over"
+        propName = "defined_in_four_2"
+        # Gets overrides from both OneAPI and ThreeAPI. OneAPI's default value
+        # override overwrites the default value override from ThreeAPI. OneAPI
+        # has no opinion on the allowedTokens so ThreeAPI's override comes 
+        # through.
+        _VerifyAttribute(prim_1, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["three", "3"]),
+                         default = "1",
+                         documentation = "Defined in Four also")
+        # TwoAPI doesn't include FourAPI
+        self.assertFalse(prim_2.GetAttribute(propName))
+        # ThreeAPI overrides both the default value and the allowed tokens.
+        _VerifyAttribute(prim_3, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["three", "3"]),
+                         default = "3",
+                         documentation = "Defined in Four also")
+        # FourAPI defines the property. 
+        _VerifyAttribute(prim_4, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["four", "4"]),
+                         default = "four",
+                         documentation = "Defined in Four also")
+
+        # TypedPrimDerived includes PropertyOversThreeAPI (which includes 
+        # PropertyOversFourAPI) and overrides the default value. But it also
+        # inherits from TypedPrimBase which also overrides the default value and
+        # the allowedTokens. Since TypePrimDerived has a stronger override
+        # opinion about the default value, its default value is used. Since
+        # TypePrimDerived does NOT have an opinion about the allowedTokens, the
+        # base's override for allowed Tokens is used.
+        # TypedPrimBase still does not include PropertyOversFourAPI itself so
+        # it does not have this property.
+        self.assertFalse(primBase.GetAttribute(propName))
+        _VerifyAttribute(primDerived, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["base_over", "over_base"]),
+                         default = "derived_over",
+                         documentation = "Defined in Four also")
+
+        # Property: multi:two:defined_in_m1
+        # Defined in PropertyOversMultiOneAPI as multi:_INST_:defined_in_m1
+        #   value = "multi_one"
+        #   allowedTokens = "multi_one", "m1"
+        #   doc = "Defined in MultiOne"
+        # Override in PropertyOversOneAPI sets default value to "1"
+        # Override in PropertyOversTypedPrimDerived sets default value to
+        # "derived_over"
+        propName = "multi:two:defined_in_m1"
+        # OneAPI overrides the explicit instance of multi-apply property to
+        # set its value to "1"
+        _VerifyAttribute(prim_1, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_one", "m1"]),
+                         default = "1",
+                         documentation = "Defined in MultiOne")
+        # TwoAPI includes MultiOneAPI:two but doesn't override this property
+        _VerifyAttribute(prim_2, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_one", "m1"]),
+                         default = "multi_one",
+                         documentation = "Defined in MultiOne")
+        # MultiOneAPI:two defines this property
+        _VerifyAttribute(prim_m_1, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_one", "m1"]),
+                         default = "multi_one",
+                         documentation = "Defined in MultiOne")
+        # MulitTwoAPI doesn't include a def for this property.
+        self.assertFalse(prim_m_2.GetAttribute(propName))
+
+        # TypedPrimBase includes OversTwoAPI which includes MultiOneAPI:two
+        # but does not define any overrides to the property. TypedPrimDerived
+        # does define a default value override so that value is used in the
+        # derived type prim.
+        _VerifyAttribute(primBase, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_one", "m1"]),
+                         default = "multi_one",
+                         documentation = "Defined in MultiOne")
+        _VerifyAttribute(primDerived, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_one", "m1"]),
+                         default = "derived_over",
+                         documentation = "Defined in MultiOne")
+
+        # Property: multi:two:defined_in_m2
+        # Defined in PropertyOversMultiTwoAPI as multi:_INST_:defined_in_m2
+        #   value = "multi_two"
+        #   allowedTokens = "multi_two", "m2"
+        #   doc = "Defined in MultiTwo"
+        # Override of multi:_INST_:defined_in_m2 in PropertyOversMultiOneAPI
+        #   sets default value to "m1"
+        # 
+        # Override of multi:two:defined_in_m2 in PropertyOversTypedPrimBase sets
+        #   default value to "base_over" and allowed tokens to
+        #   ["base_over", "over_base"]
+        # Override of multi:two:defined_in_m2 in PropertyOversTypedPrimDerived
+        #   sets default value to "default_over"
+        propName = "multi:two:defined_in_m2"
+        # The default value override from MultiOneAPI applies over the property
+        # defined in MultiTwoAPI for all API schemas that directly or
+        # indirectly include an instance of MultiOneAPI
+        _VerifyAttribute(prim_1, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_two", "m2"]),
+                         default = "m1",
+                         documentation = "Defined in MultiTwo")
+        _VerifyAttribute(prim_2, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_two", "m2"]),
+                         default = "m1",
+                         documentation = "Defined in MultiTwo")
+        _VerifyAttribute(prim_m_1, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_two", "m2"]),
+                         default = "m1",
+                         documentation = "Defined in MultiTwo")
+        # The prim that only includes the MultiTwoAPI:two instance uses
+        # MultiTwo's definition of the prim as it is defined.
+        _VerifyAttribute(prim_m_2, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_two", "m2"]),
+                         default = "multi_two",
+                         documentation = "Defined in MultiTwo")
+
+        # TypedPrimBase includes OversTwoAPI which includes MultiTwoAPI:two
+        # so this property is present. Since TypedPrimBase overrides the
+        # default value and allowed tokens, those values are used in the
+        # TypedPrimBase prim
+        _VerifyAttribute(primBase, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["base_over", "over_base"]),
+                         default = "base_over",
+                         documentation = "Defined in MultiTwo")
+        # TypedPrimDerived additionally overrides the default value with its
+        # own override so its default value is used. The override for allowed
+        # tokens from TypedPrimBase is used since the TypedPrimDerived doesn't
+        # specify its own value for the field.
+        _VerifyAttribute(primDerived, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["base_over", "over_base"]),
+                         default = "derived_over",
+                         documentation = "Defined in MultiTwo")
+
+        # Property: multi:two:multiOne:defined_in_m2
+        # Defined in PropertyOversMultiTwoAPI as multi:_INST_:defined_in_m2
+        #   value = "multi_two"
+        #   allowedTokens = "multi_two", "m2"
+        #   doc = "Defined in MultiTwo"
+        # Override of multi:_INST_:multiOne:defined_in_m2 in
+        #   PropertyOversMultiOneAPI sets default value to "m1"
+        propName = "multi:two:multiOne:defined_in_m2"
+
+        # This test case serves as a complement to the one above.
+        # MultiOneAPI includes MultiTwoAPI twice.
+        #   First as the MultiTwoAPI:_INST_
+        #   Second as the MultiTwoAPI:_INST_:multiOne.
+        # These two instances provide to MultiOneAPI definitions for the
+        # respective properties
+        #   multi:_INST_:defined_in_m2
+        #   multi:_INST_:multiOne:defined_in_m2
+        # MultiOneAPI provides overrides for both of these properties, in this
+        # case overriding the default value to "multiOne:m1"
+        _VerifyAttribute(prim_1, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_two", "m2"]),
+                         default = "multiOne:m1",
+                         documentation = "Defined in MultiTwo")
+        _VerifyAttribute(prim_2, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_two", "m2"]),
+                         default = "multiOne:m1",
+                         documentation = "Defined in MultiTwo")
+        _VerifyAttribute(prim_m_1, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_two", "m2"]),
+                         default = "multiOne:m1",
+                         documentation = "Defined in MultiTwo")
+        # This prim includes MultiTwoAPI:two not MultiTwoAPI:two:multiOne, so
+        # it doesn't have this property.
+        self.assertFalse(prim_m_2.GetAttribute(propName))
+
+        # No additional overrides in the typed prim schemas for this property
+        # so the properties match the one's from the other prim's above.
+        _VerifyAttribute(primBase, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_two", "m2"]),
+                         default = "multiOne:m1",
+                         documentation = "Defined in MultiTwo")
+        _VerifyAttribute(primDerived, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_two", "m2"]),
+                         default = "multiOne:m1",
+                         documentation = "Defined in MultiTwo")
+
+        # XXX: This case is meant to test the behavior of overriding an property
+        # in a multiple apply API schema that includes another multiple apply
+        # API schema with a different property namespace prefix. This is 
+        # supported in the generateSchema.usda layers, but there's currently 
+        # no way to specify this in the schema.usda for usdGenSchema to 
+        # produce generateSchema.usda files that do these overrides. The
+        # generatedSchema.usda for this test is manually updated to include this
+        # override so that we can still test this functionality until we're able
+        # to generate these types of overrides in usdGenSchema in the future.
+        #
+        # Property: otherMulti:two:multiOne:defined_in_m3
+        # Defined in PropertyOversMultiThreeAPI as otherMulti:_INST_:defined_in_m3
+        #   value = "multi_three"
+        #   allowedTokens = "multi_three", "m3"
+        #   doc = "Defined in MultiThree"
+        # Override of otherMulti:_INST_:multiOne:defined_in_m3 in
+        #   PropertyOversMultiOneAPI sets default value to "m1"
+        propName = "otherMulti:two:multiOne:defined_in_m3"
+
+        # This is similar to how there's a property override for
+        # multi:_INST_:defined_in_m2 in MultiOneAPI in an above case. Here,
+        # we're proving that we can define a multiple apply API schema property
+        # override in another multi apply API schema even if they have
+        # differing property namespace prefixes as long as we define the
+        # override using the correct prefix.
+        _VerifyAttribute(prim_1, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_three", "m3"]),
+                         default = "m1",
+                         documentation = "Defined in MultiThree")
+        _VerifyAttribute(prim_2, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_three", "m3"]),
+                         default = "m1",
+                         documentation = "Defined in MultiThree")
+        _VerifyAttribute(prim_m_1, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_three", "m3"]),
+                         default = "m1",
+                         documentation = "Defined in MultiThree")
+        self.assertFalse(prim_m_2.GetAttribute(propName))
+
+        # No overrides in the typed prim schemas.
+        _VerifyAttribute(primBase, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_three", "m3"]),
+                         default = "m1",
+                         documentation = "Defined in MultiThree")
+        _VerifyAttribute(primDerived, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["multi_three", "m3"]),
+                         default = "m1",
+                         documentation = "Defined in MultiThree")
+
+        # Property: int_defined_in_two
+        # Defined in PropertyOversTwoAPI
+        #   value = 2
+        #   typeName = int
+        #   doc = "Defined in Two"
+        # Override in PropertyOversOneAPI tries to override the typeName to 
+        #   'token' and set the value to "1"
+        # Override in PropertyOversTypedPrimBase overrides the default value to 
+        #   10 using the correct typeName 'int' and overrides the doc string.
+        # Override in PropertyOversTypedPrimDerived tries to override the 
+        #   typeName to 'token' and set the value to "1"
+        propName = "int_defined_in_two"
+        # It is invalid for an override to change the typeName of the defined
+        # property. The override in OneAPI is ignored.
+        _VerifyAttribute(prim_1, propName, 'int',
+                         default = 2,
+                         documentation = "Int defined in Two")
+        _VerifyAttribute(prim_2, propName, 'int',
+                         default = 2,
+                         documentation = "Int defined in Two")
+
+        # TypedPrimBase includes PropertyOversTwoAPI and has an override for
+        # the property (using the correct type) that sets the default to 10 and
+        # changes the doc string.
+        _VerifyAttribute(primBase, propName, 'int',
+                         default = 10,
+                         documentation = "Int override in Base")
+        # TypedPrimDerived has an override with a mismatched typeName. We 
+        # however compose all type inheritance first so the override from the 
+        # TypedPrimDerived is composed over TypedPrimBase's override before it
+        # is composed with the API schema properties so no override of this 
+        # property is applied because of the type mismatch. 
+        _VerifyAttribute(primDerived, propName, 'int',
+                         default = 2,
+                         documentation = "Int defined in Two")
+
+        # Property: uniform_token_defined_in_four
+        # Defined in PropertyOversFourAPI
+        #   value = "unt_form"
+        #   variability = uniform
+        #   allowedTokens = "uni_four", "uni_4"
+        #   doc = "Uniform token defined in Four"
+        # Override in PropertyOversThreeAPI tries to override the default value
+        #   and allowed token but declares the attribute as a non-uniform token
+        #   attribute.
+        # Override in PropertyOversOneAPI overrides the default value on a 
+        #   properly uniform attribute.
+        # Override in PropertyOversTypedPrimDerived tries to override the 
+        #   default value but declares the attribute as a non-uniform token
+        #   attribute.
+        propName = "uniform_token_defined_in_four"
+        # OversOneAPI includes OversThreeAPI which includes OversFourAPI.
+        # The OversThreeAPI's override is a variability mismatch which causes
+        # it to be ignored but that doesn't prevent the correctly matched
+        # override from OversOneAPI from overriding the default value.
+        _VerifyAttribute(prim_1, propName, 'token',
+                         variability = Sdf.VariabilityUniform,
+                         allowedTokens = Vt.TokenArray(["uni_four", "uni_4"]),
+                         default = "uni_1",
+                         documentation = "Uniform token defined in Four")
+        self.assertFalse(prim_2.GetAttribute(propName))
+        # The OversThreeAPI override variability mismatch causes it to be
+        # ignored.
+        _VerifyAttribute(prim_3, propName, 'token',
+                         variability = Sdf.VariabilityUniform,
+                         allowedTokens = Vt.TokenArray(["uni_four", "uni_4"]),
+                         default = "uni_four",
+                         documentation = "Uniform token defined in Four")
+        _VerifyAttribute(prim_4, propName, 'token',
+                         variability = Sdf.VariabilityUniform,
+                         allowedTokens = Vt.TokenArray(["uni_four", "uni_4"]),
+                         default = "uni_four",
+                         documentation = "Uniform token defined in Four")
+
+        # TypedPrimBase does not include the property. TypedPrimDerived's
+        # override is a variability mismatch and is ignored.
+        self.assertFalse(primBase.GetAttribute(propName))
+        _VerifyAttribute(primDerived, propName, 'token',
+                         variability = Sdf.VariabilityUniform,
+                         allowedTokens = Vt.TokenArray(["uni_four", "uni_4"]),
+                         default = "uni_four",
+                         documentation = "Uniform token defined in Four")
+
+        # Property: defined_in_auto
+        # Defined in PropertyOversAutoApplyAPI
+        #   value = "auto"
+        #   allowedTokens = "auto"
+        #   doc = "Defined in Auto"
+        # Override in PropertyOversOneAPI sets default value to "1"
+        # Override in PropertyOversThreeAPI sets default value to "3" and
+        #   allowedTokens to ["three", "3"]
+        # Override in PropertyOversFour attempts to set default value and 
+        #   doc string
+        #
+        # This case is to verify that API schema property overrides can apply
+        # to built-in schemas that are auto-applied which behave the same as
+        # other built-in API schemas.
+        propName = "defined_in_auto"
+        # OneAPI includes ThreeAPI which AutoApplyAPI is applied to. OneAPI
+        # composes its override with ThreeAPI's override which composes over
+        # the auto apply schemas attribute definition.
+        _VerifyAttribute(prim_1, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["three", "3"]),
+                         default = "1",
+                         documentation = "Defined in Auto")
+        # TwoAPI does not include AutoApplyAPI
+        self.assertFalse(prim_2.GetAttribute(propName))
+        # AutoApplyAPI is auto applied to ThreeAPI so ThreeAPI has the attribute
+        # with its override composed over it. Note that FourAPI (which ThreeAPI
+        # includes) declares an override that would change the doc string and
+        # default value, but it's a sibling of AutoApplyAPI under ThreeAPI so
+        # the override is not composed.
+        _VerifyAttribute(prim_3, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["three", "3"]),
+                         default = "3",
+                         documentation = "Defined in Auto")
+        # FourAPI defines an override for the attribute, but it does not include
+        # the AutoApplyAPI so it does not have the attribute.
+        self.assertFalse(prim_4.GetAttribute(propName))
+
+        # For comparison, define a prim with just the auto apply API applied.
+        # It has the originally defined field with no overrides for the 
+        # property.
+        prim_auto = stage.DefinePrim("/PrimAuto")
+        prim_auto.ApplyAPI(self.PropertyOversAutoApplyAPIType)
+        _VerifyAttribute(prim_auto, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["auto"]),
+                         default = "auto",
+                         documentation = "Defined in Auto")
+
+        # The TypedPrimDerived includes PropertyOversThreeAPI with no overrides
+        # of its own so the value matches ThreeAPI. The base type does not 
+        # include this API schema and does not have this property.
+        self.assertFalse(primBase.GetAttribute(propName))
+        _VerifyAttribute(primDerived, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["three", "3"]),
+                         default = "3",
+                         documentation = "Defined in Auto")
+
+        # Property: defined_in_base
+        # Defined in PropertyOversTypedPrimBase
+        #   value = "base_def"
+        #   allowedTokens = "base_def", "def_base"
+        #   doc = "Defined in Base"
+        # Property also defined in PropertyOversTypedPrimDerived setting just
+        #   the default value to "derived_over"
+        propName = "defined_in_base"
+        # These are Typed schemas with inheritance, no API schema overrides on 
+        # the property. This is just to verify that standard property 
+        # composition happens for Typed schema inheritance.
+        _VerifyAttribute(primBase, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["base_def", "def_base"]),
+                         default = "base_def",
+                         documentation = "Defined in Base")
+        # The derived schema's default value composes with the property 
+        # defintion from the base class.
+        _VerifyAttribute(primDerived, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["base_def", "def_base"]),
+                         default = "derived_over",
+                         documentation = "Defined in Base")
+        
+        # Property: over_in_base
+        # Defined in PropertyOversTypedPrimBase
+        #   value = "base_over"
+        #   allowedTokens = "base_over", "over_base"
+        #   doc = "Override in Base"
+        #   apiSchemaOverride = true
+        #
+        # Defined in PropertyOversTypedPrimDerived
+        #   value = "derived_def"
+        #   apiSchemaOverride = false
+        propName = "over_in_base"
+        # This is testing inheritance composition of a property in Typed schemas
+        # where a derived class turns an API schema override property into a
+        # defined property.
+        #
+        # TypedPrimBase defines this as an API schema override with but there's
+        # no property defined in its built-in API schemas to make it exist in 
+        # the base prim.
+        self.assertFalse(primBase.GetAttribute(propName))
+        # TypedPrimDerived changes the property to no longer be an API schema
+        # override so it is defined in the derived prim. The derived property
+        # is still composed with the base property to create the derived 
+        # schema's property even though the base was declared as an API schema 
+        # override.
+        _VerifyAttribute(primDerived, propName, 'token',
+                         allowedTokens = Vt.TokenArray(["base_over", "over_base"]),
+                         default = "derived_def",
+                         documentation = "Override in Base")
 
 if __name__ == "__main__":
     unittest.main()

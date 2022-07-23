@@ -78,7 +78,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     //bool isMacOs13OrLess = NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 13
     //bool requireBasePrimitiveOffset = hasAppleSilicon && isMacOs13OrLess;
     bool requiresBasePrimitiveOffset = hasAppleSilicon;
-    _SetFlag(HgiDeviceCapabilitiesBasePrimitiveOffset,
+    _SetFlag(HgiDeviceCapabilitiesBitsBasePrimitiveOffset,
              requiresBasePrimitiveOffset);
 
     if (!unifiedMemory) {

@@ -25,6 +25,46 @@ class "PxrSampleFilterPluginBase" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:sampleFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
+    )
 }
 
 class "PxrDisplayFilterPluginBase" (
@@ -36,6 +76,46 @@ class "PxrDisplayFilterPluginBase" (
     token outputs:result (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
         terminal to this output to add the filter for processing."""
+    )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -88,8 +168,1531 @@ class "PxrCameraProjectionAPI" (
     )
 }
 
+class "PxrAttributesAPI"
+{
+    int primvars:ri:attributes:grouping:id = 0 (
+        displayGroup = "Common"
+        displayName = "Grouping Id"
+        doc = """
+                Grouping id used for raytrace disambiguation purposes.
+            """
+    )
+    string primvars:ri:attributes:grouping:membership = "" (
+        displayGroup = "Common"
+        displayName = "Membership"
+        doc = """
+                Grouping membership used for linking.
+            """
+    )
+    int primvars:ri:attributes:identifier:id = 0 (
+        displayGroup = "Common"
+        displayName = "Identifier Id"
+        doc = """
+                Lower 32 bits of 64 bit object id.
+            """
+    )
+    int primvars:ri:attributes:identifier:id2 = 0 (
+        displayGroup = "Common"
+        displayName = "Identifier Id 2"
+        doc = """
+                Upper 32 bits of 64 bit object id.
+            """
+    )
+    string primvars:ri:attributes:identifier:lpegroup = "" (
+        displayGroup = "Common"
+        displayName = "Identifier LPE Group"
+        doc = """
+                Grouping membership used for light path expressions.
+            """
+    )
+    string primvars:ri:attributes:identifier:name = "" (
+        displayGroup = "Common"
+        displayName = "Identifier Name"
+        doc = """
+                Object instance name.
+            """
+    )
+    string primvars:ri:attributes:lightfilter:subset = "" (
+        displayGroup = "Shading"
+        displayName = "Light Filter Subset"
+        doc = """
+                Active light filter groups in lighting.
+            """
+    )
+    string primvars:ri:attributes:lighting:excludesubset = "" (
+        displayGroup = "Shading"
+        displayName = "Lighting Excludesubset"
+        doc = """
+                Exclude light groups from lighting.
+            """
+    )
+    int primvars:ri:attributes:lighting:mute = 0 (
+        displayGroup = "Shading"
+        displayName = "Lighting Mute"
+        doc = """
+                Mutes light emission.
+            """
+    )
+    string primvars:ri:attributes:lighting:subset = "" (
+        displayGroup = "Shading"
+        displayName = "Lighting Subset"
+        doc = """
+                Light groups active in lighting.
+            """
+    )
+    int primvars:ri:attributes:Ri:Matte = 0 (
+        displayGroup = "Shading"
+        displayName = "Matte"
+        doc = """
+                Indicates matte object.
+            """
+    )
+    int primvars:ri:attributes:Ri:ReverseOrientation = 0 (
+        displayGroup = "Shading"
+        displayName = "Reverse Orientation"
+        doc = """
+                Flip shading normals.
+            """
+    )
+    int primvars:ri:attributes:Ri:Sides = 2 (
+        displayGroup = "Shading"
+        displayName = "Sides"
+        doc = """
+                Geometry can be one or two sided.
+            """
+    )
+    float primvars:ri:attributes:shade:indexofrefraction = -1 (
+        displayGroup = "Shading"
+        displayName = "Index Of Refraction"
+        doc = """
+                Override material IOR for nested dielectrics.
+            """
+    )
+    int primvars:ri:attributes:shade:minsamples = 1 (
+        displayGroup = "Shading"
+        displayName = "Min Samples"
+        doc = """
+                Min Pixel Samples.  For fine-tuning adaptive sampling.
+            """
+    )
+    float primvars:ri:attributes:shade:relativepixelvariance = 1 (
+        displayGroup = "Shading"
+        displayName = "Relative Pixel Variance"
+        doc = """
+                PixelVariance multiplier for camera visible objects.  For fine-tuning adaptive sampling.
+            """
+    )
+    string primvars:ri:attributes:stats:identifier = "" (
+        displayGroup = "Common"
+        displayName = "Stats Identifier"
+        doc = """
+                Identifier string used by the stats system when referring to this instance.
+            """
+    )
+    int primvars:ri:attributes:trace:holdout = 0 (
+        displayGroup = "Shading"
+        displayName = "Holdout"
+        doc = """
+                Indicates holdout object.
+            """
+    )
+    int primvars:ri:attributes:trace:intersectpriority = 0 (
+        displayGroup = "Shading"
+        displayName = "Intersect Priority"
+        doc = """
+                Raytrace intersection priority for nested dielectrics.
+            """
+    )
+    int primvars:ri:attributes:trace:maxdiffusedepth = 1 (
+        displayGroup = "Shading"
+        displayName = "Max Diffuse Depth"
+        doc = """
+                Maximum diffuse light bounces.
+            """
+    )
+    int primvars:ri:attributes:trace:maxspeculardepth = 2 (
+        displayGroup = "Shading"
+        displayName = "Max Specular Depth"
+        doc = """
+                Maximum specular light bounces.
+            """
+    )
+    string primvars:ri:attributes:trace:reflectexcludesubset = "" (
+        displayGroup = "Shading"
+        displayName = "Reflect Exclude Subset"
+        doc = """
+                Exclude object groups from relections.
+            """
+    )
+    string primvars:ri:attributes:trace:reflectsubset = "" (
+        displayGroup = "Shading"
+        displayName = "Reflect Subset"
+        doc = """
+                Object groups visible to reflections.
+            """
+    )
+    string primvars:ri:attributes:trace:shadowexcludesubset = "" (
+        displayGroup = "Shading"
+        displayName = "Shadow Exclude Subset"
+        doc = """
+                Exclude object groups from casting shadows.
+            """
+    )
+    string primvars:ri:attributes:trace:shadowsubset = "" (
+        displayGroup = "Shading"
+        displayName = "Shadow Subset"
+        doc = """
+                Object groups active in shadows.
+            """
+    )
+    string primvars:ri:attributes:trace:transmitexcludesubset = "" (
+        displayGroup = "Shading"
+        displayName = "Transmit Exclude Subset"
+        doc = """
+                Exclude object groups from refractions.
+            """
+    )
+    string primvars:ri:attributes:trace:transmitsubset = "" (
+        displayGroup = "Shading"
+        displayName = "Transmit Subset"
+        doc = """
+                Object groups visible to refractions.
+            """
+    )
+    int primvars:ri:attributes:visibility:camera = 1 (
+        displayGroup = "Shading"
+        displayName = "Camera Visibility"
+        doc = """
+                Indicates if object is visible to camera rays.
+            """
+    )
+    int primvars:ri:attributes:visibility:indirect = 1 (
+        displayGroup = "Shading"
+        displayName = "Indirect Visibility"
+        doc = """
+                Indicates if object is visible to indirect (reflection and refraction) rays.
+            """
+    )
+    int primvars:ri:attributes:visibility:transmission = 1 (
+        displayGroup = "Shading"
+        displayName = "Transmission Visibility"
+        doc = """
+                Indicates if object is visible to shadow rays.
+            """
+    )
+}
+
+class "PxrCameraAPI"
+{
+    float ri:apertureAngle = 0 (
+        displayGroup = "Common"
+        displayName = "Aperture Angle"
+        doc = "<help />"
+    )
+    float ri:apertureDensity = 0 (
+        displayGroup = "Common"
+        displayName = "Aperture Density"
+        doc = "<help />"
+    )
+    int ri:apertureNSides = 0 (
+        displayGroup = "Common"
+        displayName = "Aperture Number Of Sides"
+        doc = "<help />"
+    )
+    float ri:apertureRoundness = 1 (
+        displayGroup = "Common"
+        displayName = "Aperture Roundness"
+        doc = "<help />"
+    )
+    float ri:dofaspect = 1 (
+        displayGroup = "Common"
+        displayName = "DOF Aspect"
+        doc = """
+                Depth of field aspect.
+            """
+    )
+    float ri:shutterCloseTime = 1 (
+        displayGroup = "Common"
+        displayName = "Shutter Close Time"
+        doc = "<help />"
+    )
+    float[] ri:shutterOpening = [0, 0, 0, 0, 1, 1, 1, 1] (
+        displayGroup = "Common"
+        displayName = "Shutter Opening"
+        doc = "<help />"
+    )
+    float ri:shutterOpenTime = 0 (
+        displayGroup = "Common"
+        displayName = "Shutter Open Time"
+        doc = "<help />"
+    )
+    float[] ri:stereoplanedepths = [] (
+        displayGroup = "Common"
+        displayName = "Stereo Plane Depths"
+        doc = '''
+                Control "ray bending" to enable multi-stereo camera workflows. Each depth element
+                defines a depth plane where camera rays bend by a horizontal (camera x) offset.
+                Every depth element must have a corresponding offset element. Values should be
+                positive and in increasing order.
+            '''
+    )
+    float[] ri:stereoplaneoffsets = [] (
+        displayGroup = "Common"
+        displayName = "Stereo Plane Offsets"
+        doc = '''
+                Control "ray bending" to enable multi-stereo camera workflows. Each offset element
+                defines a horizontal offset (camera x) of a virtual camera origin that bends rays
+                at the corresponding depth plane. Every offset element must have a corresponding
+                depth element.
+            '''
+    )
+}
+
+class "PxrDisplayChannelAPI"
+{
+    token ri:displayChannel:filter = "box" (
+        allowedTokens = ["min", "max", "average", "zmin", "zmax", "sum", "gaussian", "box", "triangle", "catmull-rom", "separable-catmull-rom", "mitchell", "blackman-harris", "sinc", "bessel", "disk", "lanczos"]
+        displayGroup = "Common"
+        displayName = "Filter Type"
+        doc = """
+                Reconstruction filter or rule.
+            """
+    )
+    float2 ri:displayChannel:filterwidth = (1, 1) (
+        displayGroup = "Common"
+        displayName = "Filter Width"
+        doc = "<help />"
+    )
+    float ri:displayChannel:relativepixelvariance = 0 (
+        displayGroup = "Common"
+        displayName = "Relative Pixel Variance"
+        doc = "<help />"
+    )
+    float3 ri:displayChannel:remap = (0, 0, 0) (
+        displayGroup = "Common"
+        displayName = "Remap"
+        doc = "<help />"
+    )
+    float ri:displayChannel:shadowthreshold = 0.01 (
+        displayGroup = "Common"
+        displayName = "Shadow Threshold"
+        doc = """
+                Threshold used to compute shadowing contributions in LPEs containing 
+                the 'shadow' token. 
+                If the shadow is cut, lower the threshold. 
+                If there are white pixels in shadowed areas, raise the threshold.
+            """
+    )
+    token ri:displayChannel:statistics = "none" (
+        allowedTokens = ["none", "variance", "mse", "even", "odd"]
+        displayGroup = "Common"
+        displayName = "Statistics"
+        doc = "<help />"
+    )
+}
+
+class "PxrOptionsAPI"
+{
+    token ri:bucket:order = "horizontal" (
+        allowedTokens = ["horizontal", "vertical", "zigzag-x", "zigzag-y", "spacefill", "random", "spiral", "circle"]
+        displayGroup = "Display"
+        displayName = "Bucket Order"
+        doc = """
+                Render bucket order.
+            """
+    )
+    int[] ri:bucket:orderorigin = [-1, -1] (
+        displayGroup = "Display"
+        displayName = "Bucket Origin"
+        doc = '''
+                First bucket for "spiral" and "circle" order. Image center is [-1 -1].
+            '''
+    )
+    bool ri:checkpoint:asfinal = 0 (
+        displayGroup = "Display"
+        displayName = "Checkpoint As Final"
+        doc = """
+                When enabled, this keeps the extra channels and the
+                checkpoint tag when writing the final image for the render.
+                The final image will be identical to any other checkpoint,
+                rather than a slimmed down image. This means that once your
+                image has reached the quality you've set and it completes,
+                it can always be restarted by the user later.
+            """
+    )
+    string ri:checkpoint:command = "" (
+        displayGroup = "Display"
+        displayName = "Checkpoint Command"
+        doc = """
+                System command to be called after checkpoint.  If
+                system calls are enabled, then after a checkpoint has been
+                written, the specified command will be called.  This is
+                synchronous; the rendering threads are quiescent while this
+                runs and will not resume again until the process returns,
+                avoiding possible race conditions if the command takes a
+                token %i will be replaced with the current increment,
+                zero-padded to 5 digits.  The token %e will be replaced
+                with the elapsed time in seconds, zero-padded to 6 digits.
+                The token %r will be replaced with the reason for this
+                update to the checkpoint files (either completely
+                `finished`, `exiting` early due to exitat option, or a
+                normal `checkpoint`).  Literal % characters may be inserted
+                with %%.
+            """
+    )
+    string ri:checkpoint:exitat = "" (
+        displayGroup = "Display"
+        displayName = "Checkpoint Exit At"
+        doc = '''
+                How long render should run before writing a final
+                checkpoint and terminating.  Value can also be a string such
+                as "10m" or "0.5h". Set to 0 or empty to disable.
+            '''
+    )
+    string ri:checkpoint:interval = "" (
+        displayGroup = "Display"
+        displayName = "Checkpoint Interval"
+        doc = '''
+                Write framebuffers to disk every N progressive steps.
+                If value is positive the units will be interpreted as
+                seconds.  If value is negative its units will be
+                interpreted as increments.  Value can also be a string such
+                as "10m" or "0.5h".  Setting option to 0 or empty will disable
+                checkpoints.
+            '''
+    )
+    bool ri:checkpoint:keepfiles = 0 (
+        displayGroup = "Display"
+        displayName = "Keep Files"
+        doc = """
+                If set to true then prman will write to a new,
+                numbered image for each checkpoint.  Note:  This will
+                disable the final write of a checkpoint file which means
+                the render cannot be recovered using the 'recover' option.
+            """
+    )
+    float ri:curve:minwidth = 0 (
+        displayGroup = "Dicing"
+        displayName = "Min Width"
+        doc = """
+                Minimum curve width in raster coordinates.
+            """
+    )
+    int ri:deep:flagvolumes = 1 (
+        displayGroup = "Display"
+        displayName = "Deep Flag Volumes"
+        doc = """
+                Auto is off for dtex, on otherwise.
+            """
+    )
+    float ri:dice:offscreenmultiplier = 1 (
+        displayGroup = "Dicing"
+        displayName = "Dice Off Screen Multiplier"
+        doc = """
+                Dicing rate multiplier for objects outside the viewing frustum.
+            """
+    )
+    token ri:dice:triangle = "trim" (
+        allowedTokens = ["trim", "blp"]
+        displayGroup = "Dicing"
+        displayName = "Dice Triangle"
+        doc = '''
+                The method used for dicing "triangles". The default method "trim" renders
+                triangles by trimming a quad. The "blp" method renders a quad with two points
+                being coincident.
+            '''
+    )
+    bool ri:hider:adaptall = 0 (
+        displayGroup = "Common"
+        displayName = "Adapt All"
+        doc = '''
+                Enable adaptive sampling of all AOVs. When enabled, all channels (beauty pass +
+                AOVs) are considered when deciding if a pixel is converging. The default (off)
+                will ignore the AOVs and only the beauty pass is considered for pixel
+                convergence. So turning off "adaptall" may speed up your render if some of
+                your AOVs never reach the specified variance threshold.
+            '''
+    )
+    token ri:hider:adaptivemetric = "variance" (
+        allowedTokens = ["contrast", "variance", "halfbuffer", "contrast-v22", "variance-v22"]
+        displayGroup = "Common"
+        displayName = "Adaptive Metric"
+        doc = '''
+                Specifies the metric used to drive adaptive sampling.
+                "contrast" measures the contrast between samples in a pixel.
+                "variance" measures the variance of the samples in a pixel.
+                "halfbuffer" splits the samples into two classes and measures the
+                  difference between the average of each of the two sample classes.
+                "contrast-v22" uses the relative contrast computation of RenderMan 22 and older.
+                "variance-v22" uses the relative variance computation of RenderMan 22 and older.
+            '''
+    )
+    point3f ri:hider:bakebboxmax = (1e30, 1e30, 1e30) (
+        displayGroup = "Baking"
+        displayName = "Baking bbox max"
+        doc = """
+                Bounding box max for baking 3D point clouds.  In world space.
+            """
+    )
+    point3f ri:hider:bakebboxmin = (-1e30, -1e30, -1e30) (
+        displayGroup = "Baking"
+        displayName = "Baking bbox min"
+        doc = """
+                Bounding box min for baking 3D point clouds.  In world space.
+            """
+    )
+    token ri:hider:bakemode = "pattern" (
+        allowedTokens = ["pattern", "integrator", "all"]
+        displayGroup = "Baking"
+        displayName = "Bake Mode"
+        doc = """
+                Specifies whether the renderer should bake Pattern results or Integrator results
+                or both.
+            """
+    )
+    int ri:hider:bakeudimoffset = 0 (
+        displayGroup = "Baking"
+        displayName = "Baking udim offset"
+        doc = """
+                Offset when baking for a subset of udims.  Used together with bakeudimstride.
+                Default 0 means bake all udims when bakeudimstride is 1.
+            """
+    )
+    int ri:hider:bakeudimstride = 1 (
+        displayGroup = "Baking"
+        displayName = "Baking udim stride"
+        doc = """
+                Stride when baking for a subset of udims.  Default 1 means bake all udims.
+            """
+    )
+    bool ri:hider:bluenoise = 1 (
+        displayGroup = "Common"
+        displayName = "Blue Noise Samples"
+        doc = """
+                Setting to control whether the samples should have a visually
+                pleasing blue noise distribution or not.  Default is 1 (on).
+                Set to 0 (off) if the samples in adjacent pixels need to be
+                completely decorrelated.
+            """
+    )
+    float ri:hider:darkfalloff = 0.025 (
+        displayGroup = "Common"
+        displayName = "Dark Falloff"
+        doc = """
+                De-prioritize low luminance samples in the adaptive sampler.
+                Use this parameter to avoid oversampling dark areas while maintaining
+                overall image quality. Higher values cull more samples, speeding
+                up render time while increasing noise in darker areas.
+            """
+    )
+    int ri:hider:decidither = 0 (
+        displayGroup = "Common"
+        displayName = "Interactive Refinement"
+        doc = """
+                Maximum allowed pixel decimation rate for interactive
+                rendering.  When making rapid edits to heavy scenes and
+                this setting is non-zero, the renderer will try to reduce
+                tearing by updating the whole screen progressively with a
+                dissolve-like effect.  Set this to zero to disable this and
+                force it to fully update the buckets that it can get to.
+            """
+    )
+    float2 ri:hider:exposurebracket = (-1, 1) (
+        displayGroup = "Common"
+        displayName = "Exposure Bracket"
+        doc = """
+                Intended exposure Bracket [min max] in post-production to help inform
+                the adaptive sampling.
+            """
+    )
+    bool ri:hider:extrememotiondof = 0 (
+        displayGroup = "Common"
+        displayName = "Extreme Motion DOF"
+        doc = """
+                Enable improved sampling accuracy. In some cases where a large amount of
+                motion blur is used with depth of field, sampling artifacts could cause an
+                undesirable result. This flag causes a slower but more accurate sampling
+                method to be used to alleviate the artifacts. Due to the performance
+                degradations of this sampling method, this flag should only be used when
+                necessary.
+            """
+    )
+    bool ri:hider:geomShadowTermBias = 1 (
+        displayGroup = "Common"
+        displayName = "Geometric Shadow Terminator on Poly Meshes"
+        doc = """
+                This setting will control when to compute and apply a bias to Poly Meshes
+                to avoid the geometric shadow terminator artifacts that appear for shading points
+                when they are visible from a light wrt their shading normal, but not visible wrt
+                their geometric normal. The default value is 1 (on). Set to 0 (off) if you don't
+                want this bias to be applied to the Poly Meshes in your scene.
+            """
+    )
+    bool ri:hider:incremental = 0 (
+        displayGroup = "Common"
+        displayName = "Incremental"
+        doc = """
+                Enables the progressive display of results (rather than bucketed results).
+            """
+    )
+    bool ri:hider:invert = 1 (
+        displayGroup = "Baking"
+        displayName = "Baking Invert T"
+        doc = """
+                Specifies whether or not to invert the T texture coordinate when baking integrator
+                results.
+            """
+    )
+    int ri:hider:maxsamples = 0 (
+        displayGroup = "Common"
+        displayName = "Max Samples"
+        doc = """
+                An explicit limit for the number of samples. If maxsamples is equal to its
+                default then the maximum number of samples will be set equal to 64.
+                Note that minsamples defaults to the square root of the maxsamples setting.
+            """
+    )
+    int ri:hider:minextrasamples = -1 (
+        displayGroup = "Common"
+        displayName = "Min Extra Samples"
+        doc = """
+                This is the minimum number of extra samples that a pixel
+                should continue shooting with after a sample fails to meet
+                its convergence test with the adaptive sampler.
+                Defaults to matching minsamples.
+            """
+    )
+    int ri:hider:minsamples = -1 (
+        displayGroup = "Common"
+        displayName = "Min Samples"
+        doc = """
+                Specifies the minimum number of samples for adaptive sampling. The default value
+                is the square root of maxsamples.
+            """
+    )
+    token ri:hider:pixelfiltermode = "importance" (
+        allowedTokens = ["weighted", "importance"]
+        displayGroup = "Common"
+        displayName = "Pixel Filter Mode"
+        doc = '''
+                Specifies how pixel filtering of camera samples is performed.
+                "Importance" (the default) warps the samples in screen space around the
+                pixel center, and does not share sample results between pixels. "Importance" is
+                needed by some postprocessing algorithms such as denoisers, and is necessary to
+                get the visual benefit of blue-noise samples. It is also needed to produce
+                variance AOVs.  "Weighted" is the older method that blends together sample results
+                 from neighboring pixels.
+            '''
+    )
+    string[] ri:hider:primvar = ["st"] (
+        displayGroup = "Baking"
+        displayName = "Baking PrimVars"
+        doc = """
+                Specifies dicing manifold used when baking integrator results.
+            """
+    )
+    bool ri:hider:samplemotion = 1 (
+        displayGroup = "Common"
+        displayName = "Sample Motion"
+        doc = """
+                This option toggles the sampling of motion blurred micropolygon in the
+                hider, and is thus only meaningful if motion blur is being used in your scene.
+                By default, this hider option is enabled (set to 1), meaning that micropolygons
+                will be blurred and sampled in the hider. When disabled (set to 0),
+                micropolygons will no longer be blurred before sampling; however, the dPdtime
+                variable will still be computed for all objects. This variable can be output
+                into a separate image using an arbitrary output variable (aov) and used to
+                perform motion blur as a postprocess.
+            """
+    )
+    int ri:hider:sampleoffset = 0 (
+        displayGroup = "Common"
+        displayName = "Sample Offset"
+        doc = """
+                This allows several images to be rendered in parallel (with different
+                sampleoffset values) and then combined.
+
+                With non-adaptive sampling:
+                Let's say you render four images with 256 samples each, with
+                sampleoffsets 0, 256, 512, and 768. If you combine those four images,
+                you'll get exactly the same image as if you had rendered a single image
+                with 1024 samples.
+
+                With adaptive sampling:
+                Let's say you again render four images, each with \"maxsamples\" 256,
+                with sampleoffsets 0, 256, 512, and 768. Let's say that due to
+                adaptive sampling, some given pixel only gets 64 pixel samples in each
+                of the four images. Then the combined image has been rendered with
+                sample numbers 0-63, 256-319, 512-575, and 768-831. Due to the
+                stratification of the samples, this is not quite as good as if you had
+                rendered a single image with 256 consecutive samples.  However, it
+                is still better than rendering a single image with only 64 samples.
+            """
+    )
+    int ri:hider:samplestride = 1 (
+        displayGroup = "Common"
+        displayName = "Sample Stride"
+        doc = """
+                This facilitates rendering several images in parallel (with the same 
+                aamplestride but different sampleoffset) and then combine them 
+                incrementally during interactive rendering.  Default value is 1.
+
+                With non-adaptive sampling:
+                Let's say you render four images with 256 samples each, with
+                samplestride 4 and sampleoffsets 0, 1, 2, and 3.  If you combine those
+                four images, you'll get exactly the same image as if you had rendered
+                a single image with 1024 samples, and during incremental/interactive
+                rendering you'll get the benefit of best use of the stratified
+                progressive sample sequences.  If you can \"assemble\" images with
+                samples 0-3, 4-7, 8-12, etc during interactive rendering, you've
+                got the benefits of faster rendering without jumping to high samples
+                early on.
+
+                With adaptive sampling:
+                Let's say you again render four images, each with \"maxsamples\" 256,
+                with samplestride 4 and sampleoffsets 0, 1, 2, and 3.  This time with
+                adaptive sampling (PixelVariance > 0).  Since each of the four images
+                is more noisy than the combined image, the adaptive sampling will use
+                more samples before deciding that the image error is acceptable than
+                if it had been rendered as a single image.  So the PixelVariance 
+                setting may need to be adjusted.
+            """
+    )
+    token ri:hider:type = "raytrace" (
+        allowedTokens = ["raytrace", "bake"]
+        displayGroup = "Common"
+        displayName = "Hider Type"
+        doc = """
+                Render mode.
+            """
+    )
+    float ri:lighting:minimumestimate = 0.000001 (
+        displayGroup = "Shading"
+        displayName = "Light Minimum Estimate"
+        doc = """
+                Minimum estimate for light selection. Local lights whose estimate 
+                falls below this value will be ignored. Increasing this value may 
+                help speed up direct lighting at the expense of accuracy.
+            """
+    )
+    bool ri:lighting:selectionlearningscheme = 1 (
+        displayGroup = "Shading"
+        displayName = "Light Learning Scheme"
+        doc = """
+                Employs a machine learning algorithm to more accurately importance
+                sample lights, taking into account occlusion and light filters.
+            """
+    )
+    int ri:limits:brickmemory = 2097152 (
+        displayGroup = "Configuration"
+        displayName = "Brick Memory Limit"
+        doc = """
+                Brickmap cache size in kB.
+            """
+    )
+    int[] ri:limits:bucketsize = [16, 16] (
+        displayGroup = "Configuration"
+        displayName = "Bucket Size Limit"
+        doc = """
+                Size of render buckets in pixels.
+            """
+    )
+    float ri:limits:deepshadowerror = 0.01 (
+        displayGroup = "Configuration"
+        displayName = "Deep Shadow Error Limit"
+        doc = """
+                Control lossy compression scheme to reduce file size of deep output. Setting to
+                a high value will result in lower numbers of samples stored for each pixel.
+            """
+    )
+    int ri:limits:geocachememory = 2097152 (
+        displayGroup = "Configuration"
+        displayName = "Geo Cache Memory Limit"
+        doc = """
+                Geometry cache size in kB.
+            """
+    )
+    int ri:limits:gridsize = 289 (
+        displayGroup = "Configuration"
+        displayName = "Grid Size Limit"
+        doc = "<help />"
+    )
+    int ri:limits:matrixcachememory = 0 (
+        displayGroup = "Configuration"
+        displayName = "Matrix Cache Memory"
+        doc = """
+                Matrix cache in kB.
+            """
+    )
+    int ri:limits:nurbcurvaturedicefactor = 3 (
+        displayGroup = "Configuration"
+        displayName = "Nurb Curvature Dice Factor Limit"
+        doc = """
+                NURBs max curvature multiplier.
+            """
+    )
+    int ri:limits:octreememory = 20480 (
+        displayGroup = "Configuration"
+        displayName = "Octree Memory Limit"
+        doc = """
+                None cache size in kB.
+            """
+    )
+    int ri:limits:opacitycachememory = 1048576 (
+        displayGroup = "Configuration"
+        displayName = "Opacity Cache Memory Limit"
+        doc = """
+                Opacity cache in kB.
+            """
+    )
+    float3 ri:limits:othreshold = (0.99609375, 0.99609375, 0.99609375) (
+        displayGroup = "Configuration"
+        displayName = "Opacity Threshold Limit"
+        doc = """
+                Opacity Culling: When rendering scenes with a large number
+                of semi-transparent layered objects (e.g. hair), the opacity
+                culling threshold can be set for a significant time and memory savings.
+                Essentially, a stack of visible points whose accumulated opacity is
+                greater (in each channel) than the specified limit will be considered
+                fully opaque by the hider, and objects behind the stack will be culled.
+            """
+    )
+    int ri:limits:pointmemory = 20480 (
+        displayGroup = "Configuration"
+        displayName = "Point Memory Limit"
+        doc = """
+                Point cache size in kB.
+            """
+    )
+    int ri:limits:proceduralbakingclumpsize = 0 (
+        displayGroup = "Configuration"
+        displayName = "Procedural Baking Clump Size Limit"
+        doc = "<help />"
+    )
+    int ri:limits:ptexturemaxfiles = 128 (
+        displayGroup = "Configuration"
+        displayName = "Ptex Max Files Limit"
+        doc = "<help />"
+    )
+    int ri:limits:ptexturememory = 32768 (
+        displayGroup = "Configuration"
+        displayName = "Ptex Memory Limit"
+        doc = """
+                PTex cache size in kB.
+            """
+    )
+    float ri:limits:rendermemory = 0 (
+        displayGroup = "Configuration"
+        displayName = "Render Memory Limit"
+        doc = """
+                Memory limit as percentage of machine memory.
+            """
+    )
+    int ri:limits:rendertime = 0 (
+        displayGroup = "Configuration"
+        displayName = "Render Time Limit"
+        doc = """
+                Maximum render time in minutes.
+            """
+    )
+    int ri:limits:shadesize = 289 (
+        displayGroup = "Configuration"
+        displayName = "Shade Size Limit"
+        doc = """
+                The maximum number of vertices, not grid.
+            """
+    )
+    int ri:limits:texturememory = 2097152 (
+        displayGroup = "Configuration"
+        displayName = "Texture Memory Limit"
+        doc = """
+                Texture cache size in kB.
+            """
+    )
+    float ri:limits:textureperthreadmemoryratio = 0.5 (
+        displayGroup = "Configuration"
+        displayName = "Texture Per Thread Memory Ratio"
+        doc = "<help />"
+    )
+    int ri:limits:threads = 0 (
+        displayGroup = "Configuration"
+        displayName = "Thread Limit"
+        doc = """
+                Set the number of threads that the renderer uses. If a value of 0 is specified
+                then all CPUs will be utilized for rendering.  If a negative value '-N' is
+                specified then prman will use all but N CPUs for rendering.
+            """
+    )
+    bool ri:osl:batched = 1 (
+        displayGroup = "OSL"
+        displayName = "SIMD Execution"
+        doc = """
+                Enable OSL optimizations that allow execution of multiple shading points
+                via vectorized instructions on supported processors (AVX, AVX2, AVX512).
+            """
+    )
+    int ri:osl:statisticslevel = 0 (
+        displayGroup = "OSL"
+        displayName = "Statistics Output Level"
+        doc = """
+                Set the level of OSL statistics to track. Level 2 and above
+                introduces timing which can have a small effect on performance.
+                Level 4 and above includes internal OSL statistics.
+                Level 5 includes statistics per shader. Other levels reserved
+                for future use.
+            """
+    )
+    int ri:osl:verbose = 4 (
+        displayGroup = "OSL"
+        displayName = "Message Verbosity"
+        doc = """
+               Sets the level of OSL messages to pass through.
+            """
+    )
+    float4 ri:Ri:CropWindow = (0, 1, 0, 1) (
+        displayGroup = "Display"
+        displayName = "Crop Window"
+        doc = """
+                Crop window [left right top bottom] in NDC space.
+            """
+    )
+    float ri:Ri:FormatPixelAspectRatio = 1 (
+        displayGroup = "Display"
+        displayName = "Pixel Aspect Ratio"
+        doc = """
+                Output image pixel aspect ratio.
+            """
+    )
+    int[] ri:Ri:FormatResolution = [640, 480] (
+        displayGroup = "Display"
+        displayName = "Resolution"
+        doc = """
+                Output image resolution.
+            """
+    )
+    int ri:Ri:Frame = 0 (
+        displayGroup = "Common"
+        displayName = "Frame Number"
+        doc = """
+                Frame number.
+            """
+    )
+    float ri:Ri:FrameAspectRatio = -1 (
+        displayGroup = "Display"
+        displayName = "Frame Aspect Ratio"
+        doc = """
+                Output image aspect ratio.
+            """
+    )
+    float ri:Ri:PixelVariance = 0.015 (
+        displayGroup = "Common"
+        displayName = "Pixel Variance"
+        doc = """
+                Controls adaptive sampling. This sets the upper bound on the acceptable estimated
+                variance of the pixel values from the true pixel values.
+            """
+    )
+    float4 ri:Ri:ScreenWindow = (0, 0, 0, 0) (
+        displayGroup = "Display"
+        displayName = "Screen Window"
+        doc = """
+                Screen window [left right top bottom] in screen space.
+            """
+    )
+    string ri:ribparse:varsubst = "" (
+        displayGroup = "RIB"
+        displayName = "RIB Varsubst"
+        doc = """
+                RIB parse only.
+            """
+    )
+    string ri:scenedump:filename = "" (
+        displayGroup = "RIB"
+        displayName = "Scene Dump Filename"
+        doc = '''
+                Path to dump RIB scene for rendermode "catrib".
+            '''
+    )
+    string ri:searchpath:archive = "" (
+        displayGroup = "Configuration"
+        displayName = "Archive Search Path"
+        doc = """
+                Search path for Rib archives and DelayedReadArchive.
+            """
+    )
+    string ri:searchpath:dirmap = "" (
+        displayGroup = "Configuration"
+        displayName = "Directory Map"
+        doc = """
+                Search path remapping.
+            """
+    )
+    string ri:searchpath:display = "" (
+        displayGroup = "Configuration"
+        displayName = "Display Search Path"
+        doc = """
+                Search path for display plug-ins.
+            """
+    )
+    string ri:searchpath:procedural = "" (
+        displayGroup = "Configuration"
+        displayName = "Procedural Search Path"
+        doc = """
+                Search path for DynamicLoad procedural plug-ins.
+            """
+    )
+    string ri:searchpath:rifilter = "" (
+        displayGroup = "Configuration"
+        displayName = "Rif Filter Search Path"
+        doc = """
+                Search path for Rif plug-ins.
+            """
+    )
+    string ri:searchpath:rixplugin = "" (
+        displayGroup = "Configuration"
+        displayName = "Rix Plugin Search Path"
+        doc = """
+                Search path for shading plug-ins.
+            """
+    )
+    string ri:searchpath:shader = "" (
+        displayGroup = "Configuration"
+        displayName = "Shader Search Path"
+        doc = """
+                Search path for OSL pattern plug-ins.
+            """
+    )
+    string ri:searchpath:texture = "" (
+        displayGroup = "Configuration"
+        displayName = "Texture Search Path"
+        doc = """
+                Search path for texture files.
+            """
+    )
+    float ri:shade:chiangCompatibilityVersion = 24 (
+        displayGroup = "Statistics"
+        displayName = "PxrChiangHair compatibility version"
+        doc = """
+                Setting to allow PxrChiang to work in compatibility mode for older versions
+                of the Bxdf, so renders from different versions can match their results.
+                The default value is 24.0.
+            """
+    )
+    bool ri:shade:debug = 0 (
+        displayGroup = "Statistics"
+        displayName = "Enable Shader Debug"
+        doc = """
+                Shading debug level.
+            """
+    )
+    float ri:shade:roughnessmollification = 1 (
+        displayGroup = "Statistics"
+        displayName = "Specular Roughness Mollification"
+        doc = """
+                Specular Roughness Mollification.  This selectively increases material
+                roughness on secondary bounces after diffuse or broad glossy reflections
+                and on highly curved surfaces.  This reduces noise and fireflies, but can
+                also make caustics blurrier or disappear entirely.  Set this value to 0.0
+                when you want to render ground-truth caustics.  The default value is 1.0.
+            """
+    )
+    bool ri:shade:shadowBumpTerminator = 1 (
+        displayGroup = "Statistics"
+        displayName = "Shadow bump terminator"
+        doc = """
+                Setting to control whether bump shadow terminators are smoothed in non-hair bxdfs.
+            """
+    )
+    float ri:Shutter:offset = 0 (
+        displayGroup = "Common"
+        displayName = "Shutter Offset"
+        doc = """
+                Offset shutter open/close.
+            """
+    )
+    float2 ri:statistics:displace_ratios = (0.1, 1) (
+        displayGroup = "Statistics"
+        displayName = "Displace Ratios"
+        doc = """
+                Suppress reporting of displacements that, when divided by the max
+                displacement, fall in the specified range.
+            """
+    )
+    string ri:statistics:filename = "" (
+        displayGroup = "Statistics"
+        displayName = "Filename"
+        doc = """
+                File name for summary statistics reported in plain text.
+            """
+    )
+    bool ri:statistics:level = 0 (
+        displayGroup = "Statistics"
+        displayName = "Enable Statistics"
+        doc = """
+                Enable statistics reporting.
+            """
+    )
+    int ri:statistics:maxdispwarnings = 100 (
+        displayGroup = "Statistics"
+        displayName = "Max Displace Warnings"
+        doc = """
+                Modify the maximum reported displacement issues. If the value is set to 0,
+                then all displacements issues are reported.
+            """
+    )
+    string ri:statistics:shaderprofile = "" (
+        displayGroup = "Statistics"
+        displayName = "Shader Profile"
+        doc = "<help />"
+    )
+    string ri:statistics:stylesheet = "" (
+        displayGroup = "Statistics"
+        displayName = "Style Sheet"
+        doc = """
+                Stylesheet for XML detailed statistics.
+            """
+    )
+    bool ri:statistics:texturestatslevel = 0 (
+        displayGroup = "Statistics"
+        displayName = "Enable Texture Statistics"
+        doc = """
+                Enable texture statistics reporting.
+            """
+    )
+    string ri:statistics:xmlfilename = "" (
+        displayGroup = "Statistics"
+        displayName = "Xml Filename"
+        doc = """
+                File name for detailed statistics reported as XML.
+            """
+    )
+    bool ri:stitch:refwarning = 1 (
+        displayGroup = "Dicing"
+        displayName = "Enable Stitch Ref Warning"
+        doc = """
+                Enable stitch warnings.
+            """
+    )
+    float ri:trace:bvhcompression = 0 (
+        displayGroup = "Shading"
+        displayName = "BVH Compression"
+        doc = """
+                Provides a hint to the system to favor memory utilization versus speed when
+                constructing the ray accelerator. Valid values are in the range [0, 1], where
+                the higher the values the more compact the memory representation.
+                The control behaves almost lineraly with some discontinuities in the compression
+                rate as different strategies are activated. The result obtained is likely to be
+                scene dependent.
+                As a rule of thumb, leave this control to 0 unless you need to reduce memory
+                utilization in order to render a given scene or sequence. When tuning, set the
+                control to 1 at first to see how much memory can be saved through compression and
+                what time overhead is generated, then dial the number back to a lower value (if
+                possible) and reach the deired balance between speed and memory usage.
+            """
+    )
+    float3 ri:trace:worldoffset = (0, 0, 0) (
+        displayGroup = "Shading"
+        displayName = "World Offset"
+        doc = '''
+                Used as the origin when the worldorigin option is set to "worldoffset".
+            '''
+    )
+    token ri:trace:worldorigin = "camera" (
+        allowedTokens = ["world", "worldoffset", "camera"]
+        displayGroup = "Shading"
+        displayName = "World Origin"
+        doc = """
+                Set a new world origin to give better floating point precision.
+            """
+    )
+}
+
+class "PxrPrimvarsAPI"
+{
+    int primvars:ri:curve:opacitysamples = 0 (
+        displayGroup = "Curves"
+        displayName = "Opacity Samples"
+        doc = """
+                number of opacity/presence shading samples along a curve for opacity caching, if equal to zero then the value is determined using the dicing oracle and the lenght of each curve.
+            """
+    )
+    bool primvars:ri:curve:widthaffectscurvature = 1 (
+        displayGroup = "Curves"
+        displayName = "Width Affects Curvature"
+        doc = """
+                When true the curve width of round curves is taken into account in the computation of the tube curvature, otherwise only the curvature along the curve is. This control does not affect curve ribbons.
+            """
+    )
+    token primvars:ri:derivatives:extrapolate (
+        displayGroup = "Shading"
+        displayName = "derivatives:extrapolate"
+        doc = """
+                Extrapolated smooth normals across grid boundaries.
+            """
+    )
+    float primvars:ri:dice:micropolygonlength = 1 (
+        displayGroup = "Dicing"
+        displayName = "Micropolygon Length"
+        doc = '''
+                Micropolygon distance in raster space for "instanceprojection" dicing. Values
+                are expressed in pixel size.
+            '''
+    )
+    float primvars:ri:dice:minlength = -1 (
+        displayGroup = "Volume"
+        displayName = "Min Length"
+        doc = """
+                Volume minimum dice length. Negative indicates to automatically compute this value.
+            """
+    )
+    string primvars:ri:dice:minlengthspace = "" (
+        displayGroup = "Volume"
+        displayName = "Min Length Space"
+        doc = """
+                Coordinate space of dice:minlength.
+            """
+    )
+    float primvars:ri:dice:offscreenmultiplier = -1 (
+        displayGroup = "Dicing"
+        displayName = "Dice Off Screen Multiplier"
+        doc = """
+                Dicing rate multiplier for objects outside the viewing frustum. If a value
+                less than zero is specified, the value from the Option with the same name 
+                will be used instead.
+            """
+    )
+    token primvars:ri:dice:offscreenstrategy = "viewfrustumdistance" (
+        allowedTokens = ["viewfrustumdistance", "worlddistance", "objectdistance", "planarprojection"]
+        displayGroup = "Dicing"
+        displayName = "Off Screen Dicing Strategy"
+        doc = """
+                Dicing method of objects outside the viewing frustum.
+            """
+    )
+    token primvars:ri:dice:pretessellate (
+        displayGroup = "SubdivisionMesh"
+        displayName = "Pretessellate"
+        doc = """
+                Pre-tessellate subdivision geometry to polygons.
+            """
+    )
+    token primvars:ri:dice:rasterorient (
+        displayGroup = "Dicing"
+        displayName = "Raster Oriented Dicing"
+        doc = """
+                Turning this off enables non-oriented dicing, a mode of dicing that
+                computes micropolygon sizes using non-oriented raster space rather than
+                screen-aligned raster space. Non-oriented dicing is useful for displacement
+                around edges where projected micropolygon distance can be arbitrarily small.
+            """
+    )
+    string primvars:ri:dice:referencecamera = "" (
+        displayGroup = "Dicing"
+        displayName = "Reference Camera"
+        doc = """
+                Specify the camera used for dicing. If no reference camera is specified, RenderMan
+                will use the primary camera.
+            """
+    )
+    string primvars:ri:dice:referenceinstance = "" (
+        displayGroup = "Dicing"
+        displayName = "Reference Instance"
+        doc = """
+                Specify the reference instance used for dicing and displacement shading.
+                The reference instance is used to drive dicing and displacement based on its
+                position, scale, user attributes, and scoped coordinate systems. Reference
+                instances are specified by its identifier:name attribute (instance name). If no
+                reference instance is specified, RenderMan will automatically pick the nearest
+                instance inside the primary camera's view frustum.
+            """
+    )
+    token primvars:ri:dice:strategy = "instanceprojection" (
+        allowedTokens = ["instanceprojection", "worlddistance", "objectdistance"]
+        displayGroup = "Dicing"
+        displayName = "Dicing strategy"
+        doc = """
+                Dicing method of objects within the viewing frustum.
+            """
+    )
+    token primvars:ri:dice:watertight (
+        displayGroup = "SubdivisionMesh"
+        displayName = "Watertight"
+        doc = """
+                Tessellate geometry with no holes. Watertight geometry requires less raytrace bias.
+            """
+    )
+    float primvars:ri:dice:worlddistancelength = -1 (
+        displayGroup = "Dicing"
+        displayName = "Dicing Distance Length"
+        doc = '''
+                Micropolygon distance in world space for "worlddistance" dicing or object space for
+                "objectdistance" dicing.
+            '''
+    )
+    int primvars:ri:displacement:ignorereferenceinstance = 0 (
+        displayGroup = "Shading"
+        displayName = "Displacement Ignores Reference Instance"
+        doc = """
+                Indicates if displacement shading should ignore properties of the reference instance.
+            """
+    )
+    string primvars:ri:displacementbound:CoordinateSystem = "object" (
+        displayGroup = "Shading"
+        displayName = "displacement Bound Coordinate System"
+        doc = """
+                The name of the coordinate system that the displacement bound is measured in.
+            """
+    )
+    int primvars:ri:displacementbound:offscreen = 0 (
+        displayGroup = "Shading"
+        displayName = "Displacement Bound Off Screen"
+        doc = """
+                Apply displacementbound to offscreen geometry when dicing. Geometry that is
+                entirely offscreen, but displaces into view may be prone to undertessellation
+                because of the offscreen dicing strategy. This can be corrected by enabling this
+                control and setting a reasonable displacementbound. Doing so will incur a
+                performance penalty commensurate with the size of the displacement bound.
+            """
+    )
+    float primvars:ri:displacementbound:sphere = 0 (
+        displayGroup = "Shading"
+        displayName = "Displacement Bound Radius"
+        doc = """
+                Maximum displacement distance used to compute object bounds. This value should
+                be as tight as possible.
+            """
+    )
+    float primvars:ri:falloffpower = 0 (
+        displayGroup = "Points"
+        displayName = "Falloff Power"
+        doc = '''
+                For use with points, if not supplied, or set to zero, the points will have a hard edge. A value of 1 is a "reasonable" value that emulates the usual cosine based falloff; this will likely be the goto value for most people doing volumetric particle effects. Values between 0 and 1 makes the falloff faster, eroding the point faster - point has "less presence". Values higher than 1 (up to infinity) makes the falloff slower to the point of being non-existent.
+            '''
+    )
+    string primvars:ri:identifier:object = "" (
+        displayGroup = "Common"
+        displayName = "Identifier Object"
+        doc = """
+                Object shape name.
+            """
+    )
+    token primvars:ri:polygon:concave (
+        displayGroup = "PolygonMesh"
+        displayName = "Concave"
+        doc = """
+                Allow concave polygons.
+            """
+    )
+    token primvars:ri:polygon:smoothdisplacement (
+        displayGroup = "PolygonMesh"
+        displayName = "Prevent Polygon Cracking"
+        doc = """
+                Output smoothed (per-vertex) normals as Ndsp primvar, if
+                polygon:smoothnormals hasn't already inserted smooth normals.
+            """
+    )
+    token primvars:ri:polygon:smoothnormals (
+        displayGroup = "PolygonMesh"
+        displayName = "Smooth Normals"
+        doc = """
+                Smooth (per-vertex) normals if not provided.
+            """
+    )
+    token primvars:ri:procedural:immediatesubdivide (
+        displayGroup = "Procedural"
+        displayName = "Immediate Subdivide"
+        doc = "<help />"
+    )
+    token primvars:ri:procedural:reentrant (
+        displayGroup = "Procedural"
+        displayName = "Reentrant"
+        doc = "<help />"
+    )
+    float[] primvars:ri:Ri:Bound = [0, 0, 0, 0, 0, 0] (
+        displayGroup = "Volume"
+        displayName = "Bound"
+        doc = """
+                Volume bounds.
+            """
+    )
+    float primvars:ri:Ri:GeometricApproximationFocusFactor = 0 (
+        displayGroup = "Dicing"
+        displayName = "Focus Factor"
+        doc = """
+                Allows the renderer to use more coarse dicing for blurry objects due to
+                depth of field.
+            """
+    )
+    float primvars:ri:Ri:GeometricApproximationMotionFactor = 0 (
+        displayGroup = "Dicing"
+        displayName = "Motion Factor"
+        doc = """
+                Allows the renderer to use more coarse dicing for blurry objects due to
+                motion blur.
+            """
+    )
+    token primvars:ri:Ri:Orientation = "outside" (
+        allowedTokens = ["inside", "outside"]
+        displayGroup = "Shading"
+        displayName = "Orientation"
+        doc = """
+                Geometry winding order that determines surface normal. This attribute effects
+                lighting and displacement.
+            """
+    )
+    token primvars:ri:shade:faceset (
+        displayGroup = "SubdivisionMesh"
+        displayName = "Face Set"
+        doc = """
+                Active geometry face indexes.
+            """
+    )
+    string primvars:ri:stats:prototypeIdentifier = "" (
+        displayGroup = "Common"
+        displayName = "Stats Master Identifier"
+        doc = """
+                Identifier string used by the stats system when referring to this master.
+            """
+    )
+    string primvars:ri:stitchbound:CoordinateSystem = "" (
+        displayGroup = "SubdivisionMesh"
+        displayName = "Stitch Bound Coordinate System"
+        doc = "<help />"
+    )
+    float primvars:ri:stitchbound:sphere = 0 (
+        displayGroup = "SubdivisionMesh"
+        displayName = "Stitch Bound Radius"
+        doc = "<help />"
+    )
+    token primvars:ri:trace:autobias (
+        displayGroup = "Shading"
+        displayName = "Auto Trace Bias"
+        doc = """
+                Enable automatic raytrace bias.
+            """
+    )
+    float primvars:ri:trace:bias = 0.01 (
+        displayGroup = "Shading"
+        displayName = "Trace Bias"
+        doc = """
+                Manual raytrace bias in object space. Small values should be used to avoid
+                artifacts such as shadow acne.
+            """
+    )
+    token primvars:ri:trace:displacements (
+        displayGroup = "Shading"
+        displayName = "Enable Displacement"
+        doc = """
+                Enable displacement shading.
+            """
+    )
+    token primvars:ri:trace:sssautobias (
+        displayGroup = "Shading"
+        displayName = "Auto Trace Bias for Subsurface scattering"
+        doc = """
+                Enable automatic raytrace bias for subsurface scattering rays.
+            """
+    )
+    float primvars:ri:trace:sssbias = 0.0001 (
+        displayGroup = "Shading"
+        displayName = "Trace Bias for Subsurface scattering"
+        doc = """
+                Manual raytrace bias (in object space) for subsurface scattering rays.
+                Small values should be used to avoid artifacts such as surface acne.
+            """
+    )
+    token primvars:ri:trimcurve:sense = "inside" (
+        allowedTokens = ["inside", "outside"]
+        displayGroup = "NuPatch"
+        displayName = "Trim Curve Sense"
+        doc = "<help />"
+    )
+    string primvars:ri:volume:aggregate = "" (
+        displayGroup = "Volume"
+        displayName = "Aggregate"
+        doc = """
+                The name of the volume aggregate to which a volume
+                belongs. If non-empty, the volume will only be
+                rendered if the integrator explicitly uses that named
+                aggregate, or if a surface shader such as PxrSurface
+                binds the named aggregate to its interior.
+            """
+    )
+    bool primvars:ri:volume:aggregaterespectvisibility = 0 (
+        displayGroup = "Volume"
+        displayName = "Aggregate Respect Visibility"
+        doc = """
+                If set to 1, standard visibility attributes will be respected by
+                the volume if it is part of an aggregate. If set to 0, the visibility 
+                attributes will be ignored and only the integrator visibility settings
+                will apply.
+            """
+    )
+    bool primvars:ri:volume:dsominmax (
+        displayGroup = "Volume"
+        displayName = "DSO Min/Max"
+        doc = """
+                Currently only used for aggregate volumes, and only
+                for volumes that use an ImplicitField DSO. If set to
+                1, the DSO may be able to use stored information from
+                the file directly to compute the minimum and maximum
+                values within the volume. This may allow the renderer to
+                avoid shading the volume up front, greatly decreasing
+                time to first pixel. This can only be enabled if the
+                density signal from the volume is used directly, or if
+                the density signal is modulated only by the DSO
+                itself. Any shading modifications of the density
+                signal requires setting this parameter to off.
+            """
+    )
+    float primvars:ri:volume:fps = 1 (
+        displayGroup = "Volume"
+        displayName = "Velocity frames per second"
+        doc = """
+                The frames per second for volumetric velocity data. The 
+                velocity data will be divided by this quantity to derive
+                the velocity for the frame.
+            """
+    )
+    float primvars:ri:volume:shutteroffset = 1 (
+        displayGroup = "Volume"
+        displayName = "Shutter offset"
+        doc = """
+                The shutter offset used to interpret volumetric velocity.
+                A value of 1 will use the current position of the 
+                object and the position of the object on the next frame 
+                as the time interval to use for motion blur. A value of -1 
+                will use the position of the object on the previous frame 
+                and the current position of the object as the time. A value 
+                of 0 will generate an interval which begins halfway through 
+                the previous frame and ends halfway into the next frame.
+            """
+    )
+    token primvars:ri:volume:temporalmethod (
+        allowedTokens = ["0", "1"]
+        displayGroup = "Volume"
+        displayName = "Temporal Method"
+        doc = """
+                Method of generating temporal data for volume rendering.
+            """
+    )
+    bool primvars:ri:volume:velocityshuttercorrection = 0 (
+        displayGroup = "Volume"
+        displayName = "Velocity Shutter Correction"
+        doc = """
+                If set to 1, volumetric velocity data for Eulerian motion 
+                blur will be assumed to be relative to the entire frame, 
+                and will be corrected to match the current shutter interval.
+                If set to 0, no correction will be made.
+            """
+    )
+}
+
 class PxrBlockerLightFilter "PxrBlockerLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
@@ -295,6 +1898,9 @@ class PxrBlockerLightFilter "PxrBlockerLightFilter" (
 
 class PxrGoboLightFilter "PxrGoboLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
@@ -527,12 +2133,12 @@ class PxrUnified "PxrUnified"
         """
     )
     float inputs:ri:causticClamp = 1000000 (
-        displayGroup = "Sampling.Intensity Clamping"
+        displayGroup = "Sampling:Intensity Clamping"
         displayName = "Max Caustics Value"
         doc = "Maximum value of caustics samples."
     )
     float inputs:ri:directClamp = 1000000 (
-        displayGroup = "Sampling.Intensity Clamping"
+        displayGroup = "Sampling:Intensity Clamping"
         displayName = "Max Direct Lighting Value"
         doc = "Maximum value of direct lighting samples."
     )
@@ -561,7 +2167,7 @@ class PxrUnified "PxrUnified"
             '''
     )
     float inputs:ri:indirectClamp = 8 (
-        displayGroup = "Sampling.Intensity Clamping"
+        displayGroup = "Sampling:Intensity Clamping"
         displayName = "Max Indirect Value"
         doc = "Maximum value of indirect samples."
     )
@@ -658,6 +2264,11 @@ class PxrUnified "PxrUnified"
         displayName = "Light Samples"
         doc = "Number of light samples for each iteration."
     )
+    int inputs:ri:numVolumeAggregateSamples = 1 (
+        displayGroup = "Sampling"
+        displayName = "Volume Aggregate Samples"
+        doc = "Number of volume aggregate samples for each iteration."
+    )
     bool inputs:ri:photonAdaptive = 0 (
         displayGroup = "Photons"
         displayName = "Adaptive Photons"
@@ -699,7 +2310,7 @@ class PxrUnified "PxrUnified"
         doc = "Use learnt results to guide indirect path sampling. Requires light learning to be enabled"
     )
     int inputs:ri:rouletteDepth = 1 (
-        displayGroup = "Sampling.Russian Roulette"
+        displayGroup = "Sampling:Russian Roulette"
         displayName = "Start Depth"
         doc = """
                     The path length at which the integrator will begin performing Russian roulette (a method of probabilistically terminating a ray path).
@@ -707,7 +2318,7 @@ class PxrUnified "PxrUnified"
                 """
     )
     int inputs:ri:rouletteLightDepth = 1 (
-        displayGroup = "Sampling.Russian Roulette"
+        displayGroup = "Sampling:Russian Roulette"
         displayName = "Light Start Depth"
         doc = """
                     Path length at which the integrator will start to drop low contribution lights.
@@ -715,7 +2326,7 @@ class PxrUnified "PxrUnified"
                 """
     )
     float inputs:ri:rouletteThreshold = 0.2 (
-        displayGroup = "Sampling.Russian Roulette"
+        displayGroup = "Sampling:Russian Roulette"
         displayName = "Threshold"
         doc = """
                     The path throughput threshold below which Russian roulette is applied.
@@ -923,6 +2534,17 @@ class "PxrCylinderLightAPI"
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
             """
     )
+    float inputs:ri:light:diffuseNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Diffuse Near Dist"
+        doc = """
+                diffuseNearDist: Near distance between the point with diffuse shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a diffuse surface.
+                Note that this value will not apply to lights as seen from the camera.
+            """
+    )
     bool inputs:ri:light:emissionFocusNormalize = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Refine"
@@ -1002,6 +2624,17 @@ class "PxrCylinderLightAPI"
                 Has no effect if msApprox is set to 0.
             """
     )
+    float inputs:ri:light:specularNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Specular Near Dist"
+        doc = """
+                specularNearDist: Near distance between the point with specular shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a specular surface. 
+                Note that this value will not apply to lights as seen from the camera.
+            """
+    )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -1020,10 +2653,12 @@ class "PxrCylinderLightAPI"
         displayGroup = "Advanced"
         displayName = "Trace Light Paths"
         doc = """
-                traceLightPaths: Enable light and photon tracing from this light. This value
-                enforces a physically-based light and as a side-effect disables the above
-                Shadows controls. Users may use this feature to selectively decide which
-                lights emit photons when using the PxrVCM or PxrUnified Integrators.
+                Enables light and photon tracing from this light. This value enforces a 
+                physically-based light and as a side-effect disables thinShadow and 
+                visibleInRefractionPath. Users may use this feature to selectively decide 
+                which lights emit photons when using the PxrVCM or PxrUnified Integrators. 
+                Because it will automatically disable thin shadows, this should not be 
+                enabled when using the PxrPathTracer integrator.
             """
     )
     bool inputs:ri:light:visibleInRefractionPath = 1 (
@@ -1057,6 +2692,17 @@ class "PxrDiskLightAPI"
         displayName = "Manifold Walk Exclude Group"
         doc = """
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
+            """
+    )
+    float inputs:ri:light:diffuseNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Diffuse Near Dist"
+        doc = """
+                diffuseNearDist: Near distance between the point with diffuse shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a diffuse surface.
+                Note that this value will not apply to lights as seen from the camera.
             """
     )
     bool inputs:ri:light:emissionFocusNormalize = 0 (
@@ -1138,6 +2784,17 @@ class "PxrDiskLightAPI"
                 Has no effect if msApprox is set to 0.
             """
     )
+    float inputs:ri:light:specularNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Specular Near Dist"
+        doc = """
+                specularNearDist: Near distance between the point with specular shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a specular surface.
+                Note that this value will not apply to lights as seen from the camera.
+            """
+    )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -1156,10 +2813,12 @@ class "PxrDiskLightAPI"
         displayGroup = "Advanced"
         displayName = "Trace Light Paths"
         doc = """
-                traceLightPaths: Enable light and photon tracing from this light. This value
-                enforces a physically-based light and as a side-effect disables the above
-                Shadows controls. Users may use this feature to selectively decide which
-                lights emit photons when using the PxrVCM or PxrUnified Integrators.
+                Enables light and photon tracing from this light. This value enforces a 
+                physically-based light and as a side-effect disables thinShadow and 
+                visibleInRefractionPath. Users may use this feature to selectively decide 
+                which lights emit photons when using the PxrVCM or PxrUnified Integrators. 
+                Because it will automatically disable thin shadows, this should not be 
+                enabled when using the PxrPathTracer integrator.
             """
     )
     bool inputs:ri:light:visibleInRefractionPath = 1 (
@@ -1283,10 +2942,12 @@ class "PxrDistantLightAPI"
         displayGroup = "Advanced"
         displayName = "Trace Light Paths"
         doc = """
-                traceLightPaths: Enable light and photon tracing from this light. This value
-                enforces a physically-based light and as a side-effect disables the above
-                Shadows controls. Users may use this feature to selectively decide which
-                lights emit photons when using the PxrVCM or PxrUnified Integrators.
+                Enables light and photon tracing from this light. This value enforces a 
+                physically-based light and as a side-effect disables thinShadow and 
+                visibleInRefractionPath. Users may use this feature to selectively decide 
+                which lights emit photons when using the PxrVCM or PxrUnified Integrators. 
+                Because it will automatically disable thin shadows, this should not be 
+                enabled when using the PxrPathTracer integrator.
             """
     )
     bool inputs:ri:light:visibleInRefractionPath = 1 (
@@ -1322,7 +2983,7 @@ class "PxrDomeLightAPI"
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
             """
     )
-    vector3f inputs:ri:light:colorMapGamma = (1, 1, 1) (
+    float3 inputs:ri:light:colorMapGamma = (1, 1, 1) (
         connectability = "interfaceOnly"
         displayGroup = "Basic"
         displayName = "Map Gamma"
@@ -1415,10 +3076,12 @@ class "PxrDomeLightAPI"
         displayGroup = "Advanced"
         displayName = "Trace Light Paths"
         doc = """
-                traceLightPaths: Enable light and photon tracing from this light. This value
-                enforces a physically-based light and as a side-effect disables the above
-                Shadows controls. Users may use this feature to selectively decide which
-                lights emit photons when using the PxrVCM or PxrUnified Integrators.
+                Enables light and photon tracing from this light. This value enforces a 
+                physically-based light and as a side-effect disables thinShadow and 
+                visibleInRefractionPath. Users may use this feature to selectively decide 
+                which lights emit photons when using the PxrVCM or PxrUnified Integrators. 
+                Because it will automatically disable thin shadows, this should not be 
+                enabled when using the PxrPathTracer integrator.
             """
     )
     bool inputs:ri:light:visibleInRefractionPath = 1 (
@@ -1652,10 +3315,12 @@ class PxrEnvDayLight "PxrEnvDayLight" (
         displayGroup = "Advanced"
         displayName = "Trace Light Paths"
         doc = """
-                traceLightPaths: Enable light and photon tracing from this light. This value
-                enforces a physically-based light and as a side-effect disables the above
-                Shadows controls. Users may use this feature to selectively decide which
-                lights emit photons when using the PxrVCM or PxrUnified Integrators.
+                Enables light and photon tracing from this light. This value enforces a 
+                physically-based light and as a side-effect disables thinShadow and 
+                visibleInRefractionPath. Users may use this feature to selectively decide 
+                which lights emit photons when using the PxrVCM or PxrUnified Integrators. 
+                Because it will automatically disable thin shadows, this should not be 
+                enabled when using the PxrPathTracer integrator.
             """
     )
     bool inputs:ri:light:visibleInRefractionPath = 1 (
@@ -1763,6 +3428,17 @@ class "PxrMeshLightAPI"
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic path.
             """
     )
+    float inputs:ri:light:diffuseNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Diffuse Near Dist"
+        doc = """
+                diffuseNearDist: Near distance between the point with diffuse shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a diffuse surface.
+                Note that this value will not apply to lights as seen from the camera.
+            """
+    )
     float inputs:ri:light:importanceMultiplier = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -1820,6 +3496,17 @@ class "PxrMeshLightAPI"
                 Has no effect if msApprox is set to 0.
             """
     )
+    float inputs:ri:light:specularNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Specular Near Dist"
+        doc = """
+                specularNearDist: Near distance between the point with specular shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a specular surface.
+                Note that this value will not apply to lights as seen from the camera.
+            """
+    )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -1838,10 +3525,12 @@ class "PxrMeshLightAPI"
         displayGroup = "Advanced"
         displayName = "Trace Light Paths"
         doc = """
-                traceLightPaths: Enable light and photon tracing from this light. This value
-                enforces a physically-based light and as a side-effect disables the above Shadows
-                controls. Users may use this feature to selectively decide which lights emit
-                photons when using the PxrVCM or PxrUnified Integrators.
+                Enables light and photon tracing from this light. This value enforces a 
+                physically-based light and as a side-effect disables thinShadow and 
+                visibleInRefractionPath. Users may use this feature to selectively decide 
+                which lights emit photons when using the PxrVCM or PxrUnified Integrators. 
+                Because it will automatically disable thin shadows, this should not be 
+                enabled when using the PxrPathTracer integrator.
             """
     )
     bool inputs:ri:light:visibleInRefractionPath = 0 (
@@ -1877,7 +3566,7 @@ class "PxrPortalLightAPI"
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
             """
     )
-    vector3f inputs:ri:light:colorMapGamma = (1, 1, 1) (
+    float3 inputs:ri:light:colorMapGamma = (1, 1, 1) (
         connectability = "interfaceOnly"
         displayGroup = "Basic"
         displayName = "Map Gamma"
@@ -2000,10 +3689,12 @@ class "PxrPortalLightAPI"
         displayGroup = "Advanced"
         displayName = "Trace Light Paths"
         doc = """
-                traceLightPaths: Enable light and photon tracing from this light. This value
-                enforces a physically-based light and as a side-effect disables the above
-                Shadows controls. Users may use this feature to selectively decide which
-                lights emit photons when using the PxrVCM or PxrUnified Integrators.
+                Enables light and photon tracing from this light. This value enforces a 
+                physically-based light and as a side-effect disables thinShadow and 
+                visibleInRefractionPath. Users may use this feature to selectively decide 
+                which lights emit photons when using the PxrVCM or PxrUnified Integrators. 
+                Because it will automatically disable thin shadows, this should not be 
+                enabled when using the PxrPathTracer integrator.
             """
     )
     bool inputs:ri:light:visibleInRefractionPath = 1 (
@@ -2039,7 +3730,7 @@ class "PxrRectLightAPI"
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
             """
     )
-    vector3f inputs:ri:light:colorMapGamma = (1, 1, 1) (
+    float3 inputs:ri:light:colorMapGamma = (1, 1, 1) (
         connectability = "interfaceOnly"
         displayGroup = "Basic"
         displayName = "Map Gamma"
@@ -2053,6 +3744,17 @@ class "PxrRectLightAPI"
         displayName = "Map Saturation"
         doc = """
                 colorMapSaturation: Adjust the texture's saturation.
+            """
+    )
+    float inputs:ri:light:diffuseNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Diffuse Near Dist"
+        doc = """
+                diffuseNearDist: Near distance between the point with diffuse shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a diffuse surface.
+                Note that this value will not apply to lights as seen from the camera.
             """
     )
     bool inputs:ri:light:emissionFocusNormalize = 0 (
@@ -2135,6 +3837,17 @@ class "PxrRectLightAPI"
                 Has no effect if msApprox is set to 0.
             """
     )
+    float inputs:ri:light:specularNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Specular Near Dist"
+        doc = """
+                specularNearDist: Near distance between the point with specular shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a specular surface. 
+                Note that this value will not apply to lights as seen from the camera.
+            """
+    )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -2153,10 +3866,12 @@ class "PxrRectLightAPI"
         displayGroup = "Advanced"
         displayName = "Trace Light Paths"
         doc = """
-                traceLightPaths: Enable light and photon tracing from this light. This value
-                enforces a physically-based light and as a side-effect disables the above
-                Shadows controls. Users may use this feature to selectively decide which
-                lights emit photons when using the PxrVCM or PxrUnified Integrators.
+                Enables light and photon tracing from this light. This value enforces a 
+                physically-based light and as a side-effect disables thinShadow and 
+                visibleInRefractionPath. Users may use this feature to selectively decide 
+                which lights emit photons when using the PxrVCM or PxrUnified Integrators. 
+                Because it will automatically disable thin shadows, this should not be 
+                enabled when using the PxrPathTracer integrator.
             """
     )
     bool inputs:ri:light:visibleInRefractionPath = 1 (
@@ -2190,6 +3905,17 @@ class "PxrSphereLightAPI"
         displayName = "Manifold Walk Caustics Exclude Group"
         doc = """
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
+            """
+    )
+    float inputs:ri:light:diffuseNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Diffuse Near Dist"
+        doc = """
+                diffuseNearDist: Near distance between the point with diffuse shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a diffuse surface.
+                Note that this value will not apply to lights as seen from the camera.
             """
     )
     bool inputs:ri:light:emissionFocusNormalize = 0 (
@@ -2271,6 +3997,17 @@ class "PxrSphereLightAPI"
                 Has no effect if msApprox is set to 0.
             """
     )
+    float inputs:ri:light:specularNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Specular Near Dist"
+        doc = """
+                specularNearDist: Near distance between the point with specular shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a specular surface.
+                Note that this value will not apply to lights as seen from the camera.
+            """
+    )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -2289,10 +4026,12 @@ class "PxrSphereLightAPI"
         displayGroup = "Advanced"
         displayName = "Trace Light Paths"
         doc = """
-                traceLightPaths: Enable light and photon tracing from this light. This value
-                enforces a physically-based light and as a side-effect disables the above
-                Shadows controls. Users may use this feature to selectively decide which
-                lights emit photons when using the PxrVCM or PxrUnified Integrators.
+                Enables light and photon tracing from this light. This value enforces a 
+                physically-based light and as a side-effect disables thinShadow and 
+                visibleInRefractionPath. Users may use this feature to selectively decide 
+                which lights emit photons when using the PxrVCM or PxrUnified Integrators. 
+                Because it will automatically disable thin shadows, this should not be 
+                enabled when using the PxrPathTracer integrator.
             """
     )
     bool inputs:ri:light:visibleInRefractionPath = 1 (
@@ -2311,6 +4050,9 @@ class "PxrSphereLightAPI"
 
 class PxrBarnLightFilter "PxrBarnLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
@@ -2336,13 +4078,13 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
     )
     float inputs:ri:lightFilter:bottom = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Barn Shape.Refine Shape"
+        displayGroup = "Barn Shape:Refine Shape"
         displayName = "Bottom"
         doc = "bottom: Additional offset of the bottom region (-y axis)."
     )
     float inputs:ri:lightFilter:bottomEdge = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Barn Shape.Scale Edges"
+        displayGroup = "Barn Shape:Scale Edges"
         displayName = "Bottom Edge"
         doc = """
                     bottomEdge: When edge is > 0, this scales the edge of the bottom region (-y axis).
@@ -2475,13 +4217,13 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
     )
     float inputs:ri:lightFilter:left = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Barn Shape.Refine Shape"
+        displayGroup = "Barn Shape:Refine Shape"
         displayName = "Left"
         doc = "left: Additional offset of the left region (-x axis)."
     )
     float inputs:ri:lightFilter:leftEdge = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Barn Shape.Scale Edges"
+        displayGroup = "Barn Shape:Scale Edges"
         displayName = "Left Edge"
         doc = """
                     leftEdge: When edge is > 0, this scales the edge of the left region (-x axis).
@@ -2501,13 +4243,13 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
     )
     float inputs:ri:lightFilter:right = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Barn Shape.Refine Shape"
+        displayGroup = "Barn Shape:Refine Shape"
         displayName = "Right"
         doc = "right: Additional offset of the right region (+x axis)."
     )
     float inputs:ri:lightFilter:rightEdge = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Barn Shape.Scale Edges"
+        displayGroup = "Barn Shape:Scale Edges"
         displayName = "Right Edge"
         doc = """
                     rightEdge: When edge is > 0, this scales the edge of the right region (+x axis).
@@ -2515,7 +4257,7 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
     )
     float inputs:ri:lightFilter:scaleHeight = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Barn Shape.Scale"
+        displayGroup = "Barn Shape:Scale"
         displayName = "Scale Height"
         doc = """
                    scaleHeight: Scale the height of the inner barn shape (y axis).
@@ -2524,7 +4266,7 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
     )
     float inputs:ri:lightFilter:scaleWidth = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Barn Shape.Scale"
+        displayGroup = "Barn Shape:Scale"
         displayName = "Scale Width"
         doc = """
                     scaleWidth: Scale the width of the inner barn shape (x axis).
@@ -2551,13 +4293,13 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
     )
     float inputs:ri:lightFilter:top = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Barn Shape.Refine Shape"
+        displayGroup = "Barn Shape:Refine Shape"
         displayName = "Top"
         doc = "top: Additional offset of the top region (+y axis)."
     )
     float inputs:ri:lightFilter:topEdge = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Barn Shape.Scale Edges"
+        displayGroup = "Barn Shape:Scale Edges"
         displayName = "Top Edge"
         doc = """
                     topEdge: When edge is > 0, this scales the edge of the top region (+y axis).
@@ -2649,6 +4391,9 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
 
 class PxrCombinerLightFilter "PxrCombinerLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
@@ -2755,6 +4500,9 @@ class PxrCombinerLightFilter "PxrCombinerLightFilter" (
 
 class PxrCookieLightFilter "PxrCookieLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
@@ -3200,6 +4948,9 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
 
 class PxrIntMultLightFilter "PxrIntMultLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
@@ -3343,6 +5094,9 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
 
 class PxrRampLightFilter "PxrRampLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
@@ -3536,18 +5290,21 @@ class PxrRampLightFilter "PxrRampLightFilter" (
 
 class PxrRodLightFilter "PxrRodLightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+    }
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
     float inputs:ri:lightFilter:back = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Rod Shape.Refine Shape"
+        displayGroup = "Rod Shape:Refine Shape"
         displayName = "Back"
         doc = "back: Additional size of the back region (-Z axis)."
     )
     float inputs:ri:lightFilter:backEdge = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Rod Shape.Scale Edges"
+        displayGroup = "Rod Shape:Scale Edges"
         displayName = "Back Edge"
         doc = """
                     backEdge: When edge is > 0, this scales the back edge up or down (-z axis).
@@ -3555,13 +5312,13 @@ class PxrRodLightFilter "PxrRodLightFilter" (
     )
     float inputs:ri:lightFilter:bottom = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Rod Shape.Refine Shape"
+        displayGroup = "Rod Shape:Refine Shape"
         displayName = "Bottom"
         doc = "bottom: Additional size of the bottom region (-Y axis)."
     )
     float inputs:ri:lightFilter:bottomEdge = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Rod Shape.Scale Edges"
+        displayGroup = "Rod Shape:Scale Edges"
         displayName = "Bottom Edge"
         doc = """
                     bottomEdge: When edge is > 0, this scales the bottom edge up or down (-y axis).
@@ -3657,13 +5414,13 @@ class PxrRodLightFilter "PxrRodLightFilter" (
     )
     float inputs:ri:lightFilter:front = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Rod Shape.Refine Shape"
+        displayGroup = "Rod Shape:Refine Shape"
         displayName = "Front"
         doc = "front: Additional size of the frontal region (+Z axis)."
     )
     float inputs:ri:lightFilter:frontEdge = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Rod Shape.Scale Edges"
+        displayGroup = "Rod Shape:Scale Edges"
         displayName = "Front Edge"
         doc = """
                     frontEdge: When edge is > 0, this scales the frontal edge up or down (+z axis).
@@ -3690,13 +5447,13 @@ class PxrRodLightFilter "PxrRodLightFilter" (
     )
     float inputs:ri:lightFilter:left = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Rod Shape.Refine Shape"
+        displayGroup = "Rod Shape:Refine Shape"
         displayName = "Left"
         doc = "left: Additional size of the left region (-X axis)."
     )
     float inputs:ri:lightFilter:leftEdge = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Rod Shape.Scale Edges"
+        displayGroup = "Rod Shape:Scale Edges"
         displayName = "Left Edge"
         doc = """
                    leftEdge: When edge is > 0, this scales the left edge up or down (-x axis).
@@ -3710,13 +5467,13 @@ class PxrRodLightFilter "PxrRodLightFilter" (
     )
     float inputs:ri:lightFilter:right = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Rod Shape.Refine Shape"
+        displayGroup = "Rod Shape:Refine Shape"
         displayName = "Right"
         doc = "right: Additional size of the right region (+X axis)."
     )
     float inputs:ri:lightFilter:rightEdge = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Rod Shape.Scale Edges"
+        displayGroup = "Rod Shape:Scale Edges"
         displayName = "Right Edge"
         doc = """
                     rightEdge: When edge is > 0, this scales the right edge up or down (+x axis).
@@ -3731,19 +5488,19 @@ class PxrRodLightFilter "PxrRodLightFilter" (
     )
     float inputs:ri:lightFilter:scaleDepth = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Rod Shape.Scale"
+        displayGroup = "Rod Shape:Scale"
         displayName = "Scale Depth"
         doc = "scaleDepth: Scale the depth of the inner rod shape (Z axis)."
     )
     float inputs:ri:lightFilter:scaleHeight = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Rod Shape.Scale"
+        displayGroup = "Rod Shape:Scale"
         displayName = "Scale Height"
         doc = "scaleHeight: Scale the height of the inner rod shape (Y axis)."
     )
     float inputs:ri:lightFilter:scaleWidth = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Rod Shape.Scale"
+        displayGroup = "Rod Shape:Scale"
         displayName = "Scale Width"
         doc = "scaleWidth: Scale the width of the inner rod shape (X axis)."
     )
@@ -3755,13 +5512,13 @@ class PxrRodLightFilter "PxrRodLightFilter" (
     )
     float inputs:ri:lightFilter:top = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Rod Shape.Refine Shape"
+        displayGroup = "Rod Shape:Refine Shape"
         displayName = "Top"
         doc = "top: Additional size of the top region (+Y axis)."
     )
     float inputs:ri:lightFilter:topEdge = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Rod Shape.Scale Edges"
+        displayGroup = "Rod Shape:Scale Edges"
         displayName = "Top Edge"
         doc = """
                     topEdge: When edge is > 0, this scales the top edge up or down (+y axis).
@@ -3903,7 +5660,7 @@ class PxrCamera "PxrCamera" (
         at the same time.
       """
     )
-    vector3f inputs:ri:enhance = (0, 0, 1) (
+    float3 inputs:ri:enhance = (0, 0, 1) (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
         displayName = "Enhancement"
@@ -4395,8 +6152,48 @@ class PxrBackgroundDisplayFilter "PxrBackgroundDisplayFilter" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:displayfilter:shaderId = "PxrBackgroundDisplayFilter" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -4421,8 +6218,48 @@ class PxrCopyAOVDisplayFilter "PxrCopyAOVDisplayFilter" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:displayfilter:shaderId = "PxrCopyAOVDisplayFilter" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -4442,8 +6279,48 @@ class PxrDisplayFilterCombiner "PxrDisplayFilterCombiner" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:displayfilter:shaderId = "PxrDisplayFilterCombiner" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -4467,8 +6344,48 @@ class PxrEdgeDetect "PxrEdgeDetect" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:displayfilter:shaderId = "PxrEdgeDetect" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -4544,8 +6461,48 @@ class PxrFilmicTonemapperDisplayFilter "PxrFilmicTonemapperDisplayFilter" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:displayfilter:shaderId = "PxrFilmicTonemapperDisplayFilter" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -4634,8 +6591,48 @@ class PxrGradeDisplayFilter "PxrGradeDisplayFilter" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:displayfilter:shaderId = "PxrGradeDisplayFilter" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -4674,8 +6671,48 @@ class PxrHalfBufferErrorFilter "PxrHalfBufferErrorFilter" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:displayfilter:shaderId = "PxrHalfBufferErrorFilter" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -4762,8 +6799,48 @@ class PxrImageDisplayFilter "PxrImageDisplayFilter" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:displayfilter:shaderId = "PxrImageDisplayFilter" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -4827,8 +6904,48 @@ class PxrLightSaturation "PxrLightSaturation" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:displayfilter:shaderId = "PxrLightSaturation" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -4860,8 +6977,48 @@ class PxrShadowDisplayFilter "PxrShadowDisplayFilter" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:displayfilter:shaderId = "PxrShadowDisplayFilter" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -5308,8 +7465,48 @@ class PxrStylizedHatching "PxrStylizedHatching" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:displayfilter:shaderId = "PxrStylizedHatching" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -5432,7 +7629,7 @@ Required AOVs:
         doc = """ During dilate sort, weighting
       """
     )
-    vector3f inputs:ri:HSV_Dark = (0, 1, 0) (
+    float3 inputs:ri:HSV_Dark = (0, 1, 0) (
         connectability = "interfaceOnly"
         displayGroup = "Line Color"
         displayName = "HSV Dark"
@@ -5440,7 +7637,7 @@ Required AOVs:
           HSV
       """
     )
-    vector3f inputs:ri:HSV_Light = (0, 1, 1) (
+    float3 inputs:ri:HSV_Light = (0, 1, 1) (
         connectability = "interfaceOnly"
         displayGroup = "Line Color"
         displayName = "HSV Light"
@@ -5691,8 +7888,48 @@ Required AOVs:
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:displayfilter:shaderId = "PxrStylizedLines" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -5828,8 +8065,48 @@ class PxrStylizedToon "PxrStylizedToon" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:displayfilter:shaderId = "PxrStylizedToon" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -5873,8 +8150,48 @@ class PxrWhitePointDisplayFilter "PxrWhitePointDisplayFilter" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:displayfilter:shaderId = "PxrWhitePointDisplayFilter" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -6084,6 +8401,13 @@ class PxrPathTracer "PxrPathTracer"
                 For thick volumes (alpha near 1) lit only by distant light sources, there is a performance benefit to disabling joint sampling.
             """
     )
+    float inputs:ri:jointScatteringBias = 0.5 (
+        displayGroup = "Aggregate Volumes"
+        displayName = "Joint Scattering Bias"
+        doc = """
+                By default, the joint sampling method will choose to scatter light proportionally to the opacity of each ray. This probability can be increased by raising the bias value (which does not bias the render itself), at the cost of undersampling objects behind the volume. For renders containing only volumes, this can be set to 1.0 to force a scatter event on all rays, even for thin volumes.
+            """
+    )
     int inputs:ri:maxContinuationLength = -1 (
         connectability = "interfaceOnly"
         displayName = "Continuation Depth"
@@ -6198,6 +8522,15 @@ class PxrPathTracer "PxrPathTracer"
     the number of subsurface rays to spawn per
     camera hit point. Ignored when sampleMode
     is set to Bxdf.
+    The default is 1.
+        """
+    )
+    int inputs:ri:numVolumeAggregateSamples = 1 (
+        connectability = "interfaceOnly"
+        displayName = "Volume Aggregate Samples"
+        doc = """
+    Controls the number of volume aggregate samples for direct
+    illumination taken on the first ray segment.
     The default is 1.
         """
     )
@@ -6592,8 +8925,48 @@ class PxrBackgroundSampleFilter "PxrBackgroundSampleFilter" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:sampleFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:sampleFilter:shaderId = "PxrBackgroundSampleFilter" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -6618,8 +8991,48 @@ class PxrCopyAOVSampleFilter "PxrCopyAOVSampleFilter" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:sampleFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:sampleFilter:shaderId = "PxrCopyAOVSampleFilter" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -6687,8 +9100,48 @@ class PxrCryptomatte "PxrCryptomatte" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:sampleFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:sampleFilter:shaderId = "PxrCryptomatte" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -6764,8 +9217,48 @@ class PxrFilmicTonemapperSampleFilter "PxrFilmicTonemapperSampleFilter" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:sampleFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:sampleFilter:shaderId = "PxrFilmicTonemapperSampleFilter" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -6854,8 +9347,48 @@ class PxrGradeSampleFilter "PxrGradeSampleFilter" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:sampleFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:sampleFilter:shaderId = "PxrGradeSampleFilter" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -6947,8 +9480,48 @@ class PxrImagePlaneFilter "PxrImagePlaneFilter" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:sampleFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:sampleFilter:shaderId = "PxrImagePlaneFilter" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -6968,8 +9541,48 @@ class PxrSampleFilterCombiner "PxrSampleFilterCombiner" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:sampleFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:sampleFilter:shaderId = "PxrSampleFilterCombiner" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -6996,8 +9609,48 @@ class PxrShadowFilter "PxrShadowFilter" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:sampleFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:sampleFilter:shaderId = "PxrShadowFilter" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -7059,8 +9712,48 @@ class PxrWatermarkFilter "PxrWatermarkFilter" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:sampleFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:sampleFilter:shaderId = "PxrWatermarkFilter" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
     )
 }
 
@@ -7104,8 +9797,252 @@ class PxrWhitePointSampleFilter "PxrWhitePointSampleFilter" (
         doc = """Connect PxrRenderTerminalsAPI's outputs:ri:sampleFilters
         terminal to this output to add the filter for processing."""
     )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals.
+
+        See for more detail about how 
+        purpose is computed and used."""
+    )
     uniform token ri:sampleFilter:shaderId = "PxrWhitePointSampleFilter" (
         displayGroup = "Internal"
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
+    )
+}
+
+class "PxrDspyDeepExrAPI" (
+    doc = """
+        Saves the image to a deep OpenEXR file.
+    """
+)
+{
+    int ri:displayDriver:asrgba = 1 (
+        displayName = "As RGBA"
+        doc = "As RGBA"
+    )
+    token ri:displayDriver:compression = "zips" (
+        allowedTokens = ["none", "rle", "zips"]
+        displayName = "Compression"
+        doc = "Compression"
+    )
+    float ri:displayDriver:forcepar = 0 (
+        displayName = "Force PAR"
+        doc = "Force PAR"
+    )
+    int ri:displayDriver:metadatacount = 0
+    token ri:displayDriver:storage = "scanline" (
+        allowedTokens = ["tiled", "scanline"]
+        displayName = "Storage"
+        doc = "Storage"
+    )
+    token ri:displayDriver:type = "half" (
+        allowedTokens = ["half", "float"]
+        displayName = "Type"
+        doc = "Type"
+    )
+}
+
+class "PxrDspyItAPI" (
+    doc = '''
+        Render to the "it" framebuffer.
+    '''
+)
+{
+}
+
+class "PxrDspyNullAPI" (
+    doc = """
+        Null display driver. No image will be written. 
+    """
+)
+{
+}
+
+class "PxrDspyOpenExrAPI" (
+    doc = """
+        Saves the image to an OpenEXR file.
+    """
+)
+{
+    int ri:displayDriver:asrgba = 1 (
+        displayName = "As RGBA"
+        doc = "As RGBA"
+    )
+    token ri:displayDriver:autocrop = "false" (
+        allowedTokens = ["false", "true"]
+        displayName = "Autocrop"
+        doc = "Autocrop"
+    )
+    token ri:displayDriver:compression = "zips" (
+        allowedTokens = ["none", "rle", "zip", "zips", "piz", "pixar", "b44", "b44a", "dwaa", "dwab"]
+        displayName = "Compression"
+        doc = "Compression"
+    )
+    float ri:displayDriver:compressionlevel = 45 (
+        displayName = "Compression Level"
+        doc = "Compression Level"
+    )
+    token ri:displayDriver:exrpixeltype = "half" (
+        allowedTokens = ["half", "float"]
+        displayName = "Type"
+        doc = "Type"
+    )
+    float ri:displayDriver:forcepar = 0 (
+        displayName = "Force PAR"
+        doc = "Force PAR"
+    )
+    int ri:displayDriver:metadatacount = 0
+    token ri:displayDriver:storage = "scanline" (
+        allowedTokens = ["scanline", "tiled"]
+        displayName = "Storage"
+        doc = "Storage"
+    )
+}
+
+class "PxrDspyPngAPI" (
+    doc = """
+        Saves the image to a PNG file.
+    """
+)
+{
+    int ri:displayDriver:quantize = 1 (
+        displayName = "Quantize"
+        doc = "Quantize"
+    )
+}
+
+class "PxrDspyPointCloudAPI" (
+    doc = """
+        Render to a RenderMan pointcloud file.
+    """
+)
+{
+}
+
+class "PxrDspyTargaAPI" (
+    doc = """
+        Saves the image to a TARGA file.
+    """
+)
+{
+    int ri:displayDriver:quantize = 1 (
+        displayName = "Quantize"
+        doc = "Quantize"
+    )
+}
+
+class "PxrDspyTextureAPI" (
+    doc = """
+        Saves the image to a texture file.
+        - Images rendered using this display driver must have power of two
+          dimensions - no attempt will be made to resize the image when using
+          this driver.
+    """
+)
+{
+    token ri:displayDriver:compression = "lossless" (
+        allowedTokens = ["none", "lossless", "lossy"]
+        displayName = "Compression"
+        doc = "Compression"
+    )
+    token ri:displayDriver:exrcompression = "DWAa" (
+        allowedTokens = ["none", "rle", "zip", "zips", "piz", "pixar", "B44", "B44A", "DWAa", "DWAb"]
+        displayName = "EXR Compression"
+        doc = "EXR Compression"
+    )
+    float ri:displayDriver:exrcompressionlevel = 45 (
+        displayName = "EXR Compression Level"
+        doc = "EXR Compression Level"
+    )
+    token ri:displayDriver:exrpixeltype = "half" (
+        allowedTokens = ["half", "float"]
+        displayName = "EXR Bit Depth"
+        doc = "EXR Bit Depth"
+    )
+    token ri:displayDriver:format = "pixar" (
+        allowedTokens = ["pixar", "openexr", "tiff"]
+        displayName = "Texture Format"
+        doc = "Texture Format"
+    )
+    token ri:displayDriver:smode = "black" (
+        allowedTokens = ["black", "clamp", "periodic"]
+        displayName = "S Wrap Mode"
+        doc = "S Wrap Mode"
+    )
+    token ri:displayDriver:tmode = "black" (
+        allowedTokens = ["black", "clamp", "periodic"]
+        displayName = "T Wrap Mode"
+        doc = "T Wrap Mode"
+    )
+    token ri:displayDriver:type = "byte" (
+        allowedTokens = ["byte", "short", "float"]
+        displayName = "Bit Depth"
+        doc = "Bit Depth"
+    )
+}
+
+class "PxrDspyTiffAPI" (
+    doc = '''
+        Saves the image to a Tagged Image File Format (TIFF).
+        It can be used to store "r", "rgb", "rgba", "rgbz", and "rgbaz" images
+        in 8, 16, or floating point 32-bit-per-component resolutions.
+    '''
+)
+{
+    token ri:displayDriver:compression = "lzw" (
+        allowedTokens = ["none", "lzw", "packbits", "deflate", "pixarlog"]
+        displayName = "Compression"
+        doc = "Compression"
+    )
+    token ri:displayDriver:format = "float32" (
+        allowedTokens = ["uint8", "uint16", "float32"]
+        displayName = "Format"
+        doc = "Format"
+    )
+    int ri:displayDriver:quantize = 1 (
+        displayName = "Quantize"
+        doc = "Quantize"
+    )
+    token ri:displayDriver:resolution (
+        displayGroup = "Advanced"
+        displayName = "Resolution"
+        doc = "Resolution"
+    )
+    token ri:displayDriver:resolutionunit = "none" (
+        allowedTokens = ["none", "centimeters", "inches"]
+        displayGroup = "Advanced"
     )
 }
 

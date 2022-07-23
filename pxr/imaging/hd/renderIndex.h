@@ -358,12 +358,12 @@ public:
     // ---------------------------------------------------------------------- //
     HD_API
     void InsertSceneIndex(
-            HdSceneIndexBaseRefPtr inputSceneIndex,
+            const HdSceneIndexBaseRefPtr &inputScene,
             SdfPath const& scenePathPrefix);
 
     HD_API
     void RemoveSceneIndex(
-            HdSceneIndexBaseRefPtr inputSceneIndex);
+            const HdSceneIndexBaseRefPtr &inputScene);
 
     // ---------------------------------------------------------------------- //
     /// \name Render Delegate

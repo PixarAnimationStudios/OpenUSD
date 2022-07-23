@@ -210,7 +210,7 @@ public:
     /// attribute.
     ///
     /// Although 'widths' is not classified as a generic UsdGeomPrimvar (and
-    /// will not be included in the results of UsdGeomImageable::GetPrimvars() )
+    /// will not be included in the results of UsdGeomPrimvarsAPI::GetPrimvars() )
     /// it does require an interpolation specification.  The fallback
     /// interpolation, if left unspecified, is UsdGeomTokens->vertex , 
     /// which means a width value is specified at the end of each curve segment.

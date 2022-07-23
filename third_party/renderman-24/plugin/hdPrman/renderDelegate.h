@@ -32,6 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HDPRMAN_RENDER_SETTINGS_TOKENS                                 \
     ((rileyVariant,                   "ri:variant"))                   \
+    ((xpuDevices,                     "ri:xpudevices"))                \
     ((integrator,                     "integrator"))                   \
     ((integratorName,                 "ri:integrator:name"))           \
     ((interactiveIntegrator,          "interactiveIntegrator"))        \

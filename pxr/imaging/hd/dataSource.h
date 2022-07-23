@@ -48,7 +48,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     static Handle AtomicLoad(AtomicHandle &ptr) { \
         return std::atomic_load(&ptr); \
     } \
-    static void AtomicStore(AtomicHandle &ptr, Handle &v) { \
+    static void AtomicStore(AtomicHandle &ptr, const Handle &v) { \
         std::atomic_store(&ptr, v); \
     } \
     static Handle Cast(const HdDataSourceBase::Handle &v) { \
@@ -228,6 +228,16 @@ public:
 HD_DECLARE_DATASOURCE_HANDLES(HdBlockDataSource);
 
 // Utilities //////////////////////////////////////////////////////////////////
+
+/// Merges contributing sample times from several data sources.
+HD_API
+bool
+HdGetMergedContributingSampleTimesForInterval(
+    size_t count,
+    const HdSampledDataSourceHandle *inputDataSources,
+    HdSampledDataSource::Time startTime,
+    HdSampledDataSource::Time endTime,
+    std::vector<HdSampledDataSource::Time> * outSampleTimes);
 
 /// Print a datasource to a stream, for debugging/testing.
 void HdDebugPrintDataSource(

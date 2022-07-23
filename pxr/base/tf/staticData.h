@@ -33,6 +33,7 @@
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 
 #include <atomic>
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -174,6 +175,18 @@ private:
 /// If the type uses commas to separate template arguments you need to enclose
 /// the type in parentheses as shown in the last example.
 ///
+/// If the data does not need to be mutated after initialization, you may
+/// specify a const type. The underlying data is non-const but the
+/// TfStaticData accessors only provide const access.
+///
+/// \code
+/// TF_MAKE_STATIC_DATA(const vector<string>, constNames) {
+///     constNames->push_back("hello");
+///     constNames->push_back("static const");
+///     constNames->push_back("world");
+/// }
+/// \endcode
+///
 /// Note that this macro may only be used at namespace scope (not function
 /// scope).
 ///
@@ -185,11 +198,11 @@ private:
 /// \hideinitializer
 #define TF_MAKE_STATIC_DATA(Type, Name)                                        \
     static void TF_PP_CAT(Name,_Tf_StaticDataFactoryImpl)(                     \
-        TF_PP_EAT_PARENS(Type) *);                                             \
+        std::remove_const_t<TF_PP_EAT_PARENS(Type)> *);                        \
     namespace {                                                                \
     struct TF_PP_CAT(Name,_Tf_StaticDataFactory) {                             \
         static TF_PP_EAT_PARENS(Type) *New() {                                 \
-            auto *p = new TF_PP_EAT_PARENS(Type);                              \
+            auto *p = new std::remove_const_t<TF_PP_EAT_PARENS(Type)>;         \
             TF_PP_CAT(Name,_Tf_StaticDataFactoryImpl)(p);                      \
             return p;                                                          \
         }                                                                      \
@@ -198,7 +211,7 @@ private:
     static TfStaticData<                                                       \
         TF_PP_EAT_PARENS(Type), TF_PP_CAT(Name,_Tf_StaticDataFactory)> Name;   \
     static void TF_PP_CAT(Name,_Tf_StaticDataFactoryImpl)(                     \
-        TF_PP_EAT_PARENS(Type) *Name)
+        std::remove_const_t<TF_PP_EAT_PARENS(Type)> *Name)
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

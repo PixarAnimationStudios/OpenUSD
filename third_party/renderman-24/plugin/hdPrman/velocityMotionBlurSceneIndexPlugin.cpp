@@ -53,8 +53,7 @@ static const float _minimumShutterInterval = 1.0e-10;
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdSceneIndexPluginRegistry::Define<
-        HdPrman_VelocityMotionBlurSceneIndexPlugin,
-        HdSceneIndexPlugin>();
+        HdPrman_VelocityMotionBlurSceneIndexPlugin>();
 }
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)

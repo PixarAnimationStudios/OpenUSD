@@ -1387,7 +1387,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     const bool metalTessellationEnabled =
         capabilities->IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
     const bool requiresBasePrimitiveOffset =
-        capabilities->IsSet(HgiDeviceCapabilitiesBasePrimitiveOffset);
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsBasePrimitiveOffset);
     const bool doublePrecisionEnabled =
         capabilities->IsSet(HgiDeviceCapabilitiesBitsShaderDoublePrecision);
     const bool minusOneToOneDepth =
@@ -1450,10 +1450,6 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // imaging system. It can also be used as API guards when
     // we need new versions of Storm shading. 
     _genDefines << "#define HD_SHADER_API " << HD_SHADER_API << "\n";
-
-    // Used in glslfx files to support backward compatible
-    // declaration of resource layouts.
-    _genDefines << "#define HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS\n";
 
     // XXX: this macro is still used in GlobalUniform.
     _genDefines << "#define MAT4 " <<
@@ -3135,7 +3131,7 @@ static void _EmitTextureAccessors(
                 << _GetPackedTypeAccessor(dataType, false)
                 << "(HgiGet_" << name;
             if (isArray) {
-                accessors << "(index, sampleCoord)\n";
+                accessors << "(index, sampleCoord)";
             } else {
                 accessors << "(sampleCoord)";
             }
@@ -5583,6 +5579,17 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                 << "\n}\n"
                 << "#define HD_HAS_" << it->second.name << " 1\n";
             
+            // Emit scalar accessors to support shading languages like MSL which
+            // do not support swizzle operators on scalar values.
+            if (_GetNumComponents(it->second.dataType) <= 4) {
+                accessors
+                    << _GetFlatType(it->second.dataType) << " HdGetScalar_"
+                    << it->second.name << "()"
+                    << " { return HdGet_" << it->second.name << "()"
+                    << _GetFlatTypeSwizzleString(it->second.dataType)
+                    << "; }\n";
+            }
+
             if (it->second.name == it->second.inPrimvars[0]) {
                 accessors
                     << "#endif\n";

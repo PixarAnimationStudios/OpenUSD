@@ -103,11 +103,15 @@ HdStVolume::_InitRepr(TfToken const &reprToken, HdDirtyBits* dirtyBits)
     // All representations point to _volumeRepr.
     if (!_volumeRepr) {
         _volumeRepr = std::make_shared<HdRepr>();
-        _volumeRepr->AddDrawItem(
-            std::make_unique<HdStDrawItem>(&_sharedData));
+        auto drawItem = std::make_unique<HdStDrawItem>(&_sharedData);
+        // Make sure we never replace this material by the default material
+        // network (_GetFallbackMaterialNetworkShader in drawBatch.cpp) which
+        // simply does not work with the volume render pass shader.
+        drawItem->SetMaterialIsFinal(true);
+        _volumeRepr->AddDrawItem(std::move(drawItem));
         *dirtyBits |= HdChangeTracker::NewRepr;
     }
-    
+
     _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
                                             _ReprComparator(reprToken));
     bool isNew = it == _reprs.end();

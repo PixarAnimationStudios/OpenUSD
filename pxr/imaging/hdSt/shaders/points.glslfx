@@ -43,13 +43,6 @@
 --- --------------------------------------------------------------------------
 -- glsl Point.Vertex
 
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-out VertexData
-{
-    vec4 Peye;
-} outData;
-#endif
-
 // Fwd declare methods defined in pointId.glslfx, that are used below.
 FORWARD_DECL(int GetPointId());
 FORWARD_DECL(void ProcessPointId(int));
@@ -97,13 +90,6 @@ void main(void)
 
 --- --------------------------------------------------------------------------
 -- glsl Point.Fragment
-
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-in VertexData
-{
-    vec4 Peye;
-} inData;
-#endif
 
 void main(void)
 {

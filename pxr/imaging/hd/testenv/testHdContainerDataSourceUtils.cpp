@@ -265,6 +265,43 @@ bool TestContainerEditor()
             test, baseline);
     }
 
+    {
+        // Setting with a container data source masks the children of an
+        // existing container on the editors initialContainer.
+
+        // Confirm that A/B and A/C are not present after setting A directly
+        // from a container.
+
+        HdContainerDataSourceHandle initialContainer =
+            HdContainerDataSourceEditor()
+                .Set(L("A"),
+                    HdRetainedContainerDataSource::New(
+                        TfToken("B"), I(1),
+                        TfToken("C"), I(2))
+                    )
+                .Finish();
+
+        HdContainerDataSourceHandle subcontainer =
+            HdContainerDataSourceEditor()
+                .Set(L("D"), I(3))
+                .Finish();
+
+        HdContainerDataSourceHandle test =
+            HdContainerDataSourceEditor(initialContainer)
+                .Overlay(L("A"), subcontainer)
+                .Finish();
+
+        HdContainerDataSourceHandle baseline =
+            HdContainerDataSourceEditor()
+                .Set(L("A/B"), I(1))
+                .Set(L("A/C"), I(2))
+                .Set(L("A/D"), I(3))
+                .Finish();
+
+        COMPARECONTAINERS("sub-container overlay:",
+            test, baseline);
+    }
+
     return true;
 }
 

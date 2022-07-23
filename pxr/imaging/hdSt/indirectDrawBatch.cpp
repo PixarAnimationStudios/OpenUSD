@@ -893,6 +893,7 @@ HdSt_IndirectDrawBatch::_HasNothingToDraw() const
 
 void
 HdSt_IndirectDrawBatch::PrepareDraw(
+    HgiGraphicsCmds *,
     HdStRenderPassStateSharedPtr const & renderPassState,
     HdStResourceRegistrySharedPtr const & resourceRegistry)
 {
@@ -916,6 +917,8 @@ HdSt_IndirectDrawBatch::PrepareDraw(
     }
 
     if (_useGpuCulling) {
+        // Ignore passed in gfxCmds for now since GPU frustum culling
+        // may still require multiple command buffer submissions.
         _ExecuteFrustumCull(updateBufferData,
                             renderPassState, resourceRegistry);
     }

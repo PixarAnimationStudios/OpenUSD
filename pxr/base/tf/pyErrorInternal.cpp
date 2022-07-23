@@ -26,6 +26,7 @@
 
 #include "pxr/base/tf/pyErrorInternal.h"
 
+#include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/registryManager.h"
 
 #include <boost/python/handle.hpp>

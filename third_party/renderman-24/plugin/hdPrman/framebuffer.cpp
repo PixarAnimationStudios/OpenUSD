@@ -112,6 +112,16 @@ static PtDspyError HydraDspyImageActiveRegion(
     return PkDspyErrorNone;
 }
 
+// Transform NDC space (-1, 1) depth to window space (0, 1).
+static float _ConvertAovDepth(const GfMatrix4d &m, const float depth) {
+    if (std::isfinite(depth)) {
+        return GfClamp(
+            (m.Transform(GfVec3f(0, 0, -depth))[2] * 0.5) + 0.5, 0, 1); 
+    } else {
+        return 0.f;
+    }
+}
+
 static PtDspyError HydraDspyImageData(
     PtDspyImageHandle handle,
     int xmin,
@@ -189,16 +199,8 @@ static PtDspyError HydraDspyImageData(
                         &aovBuffer.pixels[offset*cc + pixelOffset * cc]);
                     if(aovDesc.name == HdAovTokens->depth)
                     {
-                        if(std::isfinite(data_f32[dataIdx]))
-                        {
-                            aovData[0] =
-                                buf->proj.Transform(
-                                    GfVec3f(0,0,-data_f32[dataIdx++]))[2];
-                        }
-                        else
-                        {
-                            aovData[0] = -1.0f;
-                        }
+                        aovData[0] = _ConvertAovDepth(
+                            buf->proj, data_f32[dataIdx++]);
                     }
                     else if(cc == 4)
                     {
@@ -710,16 +712,7 @@ public:
                             for (uint32_t x = 0; x < m_width; x++)
                             {
                                 float value = *srcScalar;
-                                if(std::isfinite(value))
-                                {
-                                    value =
-                                        m_buf->proj.Transform(
-                                            GfVec3f(0,0,-value))[2];
-                                }
-                                else
-                                {
-                                    value = -1.0f;
-                                }
+                                value = _ConvertAovDepth(m_buf->proj, value);
                                 *aovData = value;
                             
                                 aovData++;

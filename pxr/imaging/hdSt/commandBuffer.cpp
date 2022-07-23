@@ -76,13 +76,14 @@ _NewDrawBatch(HdStDrawItemInstance * drawItemInstance,
 
 void
 HdStCommandBuffer::PrepareDraw(
+    HgiGraphicsCmds *gfxCmds,
     HdStRenderPassStateSharedPtr const &renderPassState,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
 
     for (auto const& batch : _drawBatches) {
-        batch->PrepareDraw(renderPassState, resourceRegistry);
+        batch->PrepareDraw(gfxCmds, renderPassState, resourceRegistry);
     }
 }
 

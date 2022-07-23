@@ -52,7 +52,8 @@ def _GetContextMenuItems(item):
             UsdviewLayerMenuItem(item),
             CopyLayerPathMenuItem(item),
             CopyLayerIdentifierMenuItem(item),
-            CopyPathMenuItem(item)]
+            CopyPathMenuItem(item),
+            MuteOrUnmuteLayerMenuItem(item)]
 
 #
 # The base class for layer stack context menu items.
@@ -219,3 +220,32 @@ class CopyPathMenuItem(LayerStackContextMenuItem):
 
     def IsEnabled(self):
         return hasattr(self._item, "path")
+
+#
+# Mute/Unmute the layer represented by this menu item
+#
+class MuteOrUnmuteLayerMenuItem(LayerStackContextMenuItem):
+    def GetText(self):
+        stage = getattr(self._item, "stage")
+        identifier = getattr(self._item, "identifier")
+        return 'Unmute Layer' \
+                 if stage.IsLayerMuted(identifier) \
+                    else 'Mute Layer'
+
+    def RunCommand(self):
+        if not self._item:
+            return
+
+        identifier = getattr(self._item, "identifier")
+        if not identifier:
+            return
+
+        stage = getattr(self._item, "stage")
+        
+        if not stage.IsLayerMuted(identifier):
+            stage.MuteLayer(identifier)
+        else:
+            stage.UnmuteLayer(identifier)
+        
+    def IsEnabled(self):
+        return True

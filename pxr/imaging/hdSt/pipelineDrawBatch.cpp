@@ -47,7 +47,6 @@
 
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
-#include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsPipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
 
@@ -932,6 +931,7 @@ HdSt_PipelineDrawBatch::_HasNothingToDraw() const
 
 void
 HdSt_PipelineDrawBatch::PrepareDraw(
+    HgiGraphicsCmds *,
     HdStRenderPassStateSharedPtr const & renderPassState,
     HdStResourceRegistrySharedPtr const & resourceRegistry)
 {
@@ -955,6 +955,8 @@ HdSt_PipelineDrawBatch::PrepareDraw(
     }
 
     if (_useGpuCulling) {
+        // Ignore passed in gfxCmds for now since GPU frustum culling
+        // may still require multiple command buffer submissions.
         _ExecuteFrustumCull(updateBufferData,
                             renderPassState, resourceRegistry);
     }
@@ -1138,51 +1140,42 @@ _GetVertexBuffersForDrawing(_BindingState const & state)
 }
 
 uint32_t
-_BindVertexBuffersForViewTransformation(
-    HgiGraphicsCmds * gfxCmds,
+_GetVertexBufferBindingsForViewTransformation(
+    HgiVertexBufferBindingVector *bindings,
     _BindingState const & state)
 {
-    uint32_t const nextBinding = 0; // start binding from zero
-
     // Bind the dispatchBuffer drawing coordinate resource views
     HdStBufferResourceSharedPtr resource =
                 state.dispatchBuffer->GetEntireResource();
+    
+    bindings->emplace_back(resource->GetHandle(),
+                          (uint32_t)resource->GetOffset(),
+                          0);
 
-    HgiBufferHandleVector buffers{resource->GetHandle()};
-    std::vector<uint32_t> byteOffsets{
-        static_cast<uint32_t>(resource->GetOffset())};
-
-    gfxCmds->BindVertexBuffers(nextBinding, buffers, byteOffsets);
-
-    return static_cast<uint32_t>(nextBinding + buffers.size());
+    return static_cast<uint32_t>(bindings->size());
 }
 
 uint32_t
-_BindVertexBuffersForDrawing(
-    HgiGraphicsCmds * gfxCmds,
+_GetVertexBufferBindingsForDrawing(
+    HgiVertexBufferBindingVector *bindings,
     _BindingState const & state)
 {
-    uint32_t const nextBinding = // continue binding subsequent locations
-        _BindVertexBuffersForViewTransformation(gfxCmds, state);
-
-    // Bind the vertexBar resources
-    HgiBufferHandleVector buffers;
-    std::vector<uint32_t> byteOffsets;
+    uint32_t nextBinding = // continue binding subsequent locations
+        _GetVertexBufferBindingsForViewTransformation(bindings, state);
 
     for (auto const & namedResource : state.vertexBar->GetResources()) {
         HdBinding const binding = state.binder.GetBinding(namedResource.first);
         HdStBufferResourceSharedPtr const & resource = namedResource.second;
 
         if (binding.GetType() == HdBinding::VERTEX_ATTR) {
-            buffers.push_back(resource->GetHandle());
-            byteOffsets.push_back(
-                static_cast<uint32_t>(resource->GetOffset()));
+            bindings->emplace_back(resource->GetHandle(),
+                                   static_cast<uint32_t>(resource->GetOffset()),
+                                   nextBinding);
+            nextBinding++;
         }
     }
 
-    gfxCmds->BindVertexBuffers(nextBinding, buffers, byteOffsets);
-
-    return static_cast<uint32_t>(nextBinding + buffers.size());
+    return nextBinding;
 }
 
 } // annonymous namespace
@@ -1281,12 +1274,14 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
             hgi->CreateResourceBindings(bindingsDesc);
     gfxCmds->BindResources(resourceBindings);
 
-    _BindVertexBuffersForDrawing(gfxCmds, state);
+    HgiVertexBufferBindingVector bindings;
+    _GetVertexBufferBindingsForDrawing(&bindings, state);
+    gfxCmds->BindVertexBuffers(bindings);
 
     if (drawIndirect) {
-        _ExecuteDrawIndirect(gfxCmds, _dispatchBuffer, state.indexBar);
+        _ExecuteDrawIndirect(gfxCmds, state.indexBar);
     } else {
-        _ExecuteDrawImmediate(gfxCmds, _dispatchBuffer, state.indexBar);
+        _ExecuteDrawImmediate(gfxCmds, state.indexBar);
     }
 
     hgi->DestroyResourceBindings(&resourceBindings);
@@ -1298,12 +1293,11 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
 void
 HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
     HgiGraphicsCmds * gfxCmds,
-    HdStDispatchBufferSharedPtr const & dispatchBuffer,
     HdStBufferArrayRangeSharedPtr const & indexBar)
 {
     TRACE_FUNCTION();
 
-    HdStBufferResourceSharedPtr paramBuffer = dispatchBuffer->
+    HdStBufferResourceSharedPtr paramBuffer = _dispatchBuffer->
         GetBufferArrayRange()->GetResource(HdTokens->drawDispatch);
     if (!TF_VERIFY(paramBuffer)) return;
 
@@ -1311,7 +1305,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
         gfxCmds->DrawIndirect(
             paramBuffer->GetHandle(),
             paramBuffer->GetOffset(),
-            dispatchBuffer->GetCount(),
+            _dispatchBuffer->GetCount(),
             paramBuffer->GetStride());
     } else {
         HdStBufferResourceSharedPtr indexBuffer =
@@ -1322,7 +1316,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
             indexBuffer->GetHandle(),
             paramBuffer->GetHandle(),
             paramBuffer->GetOffset(),
-            dispatchBuffer->GetCount(),
+            _dispatchBuffer->GetCount(),
             paramBuffer->GetStride(),
             _drawCommandBuffer,
             _patchBaseVertexByteOffset);
@@ -1332,13 +1326,12 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
 void
 HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
     HgiGraphicsCmds * gfxCmds,
-    HdStDispatchBufferSharedPtr const & dispatchBuffer,
     HdStBufferArrayRangeSharedPtr const & indexBar)
 {
     TRACE_FUNCTION();
 
-    uint32_t const drawCount = dispatchBuffer->GetCount();
-    uint32_t const strideUInt32 = dispatchBuffer->GetCommandNumUints();
+    uint32_t const drawCount = _dispatchBuffer->GetCount();
+    uint32_t const strideUInt32 = _dispatchBuffer->GetCommandNumUints();
 
     if (!_useDrawIndexed) {
         for (uint32_t i = 0; i < drawCount; ++i) {
@@ -1535,7 +1528,9 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
             hgi->CreateResourceBindings(bindingsDesc);
     cullGfxCmds->BindResources(resourceBindings);
 
-    _BindVertexBuffersForViewTransformation(cullGfxCmds.get(), state);
+    HgiVertexBufferBindingVector bindings;
+    _GetVertexBufferBindingsForViewTransformation(&bindings, state);
+    cullGfxCmds->BindVertexBuffers(bindings);
 
     GfMatrix4f const &cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
     GfVec2f const &drawRangeNdc = renderPassState->GetDrawingRangeNDC();

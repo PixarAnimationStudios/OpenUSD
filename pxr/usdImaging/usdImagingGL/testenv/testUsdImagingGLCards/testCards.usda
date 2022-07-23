@@ -94,7 +94,6 @@ def Xform "World" (
 
         def Sphere "MySphere" (
             kind = "component"
-            prepend apiSchemas = ["GeomModelAPI"]
         )
         {
             float3[] extent = [(-1, -1, -1), (1, 1, 1)]
@@ -135,6 +134,18 @@ def Xform "World" (
             uniform asset model:cardTextureXPos = @WoodPlanksDonut.png@
             uniform asset model:cardTextureYPos = @WoodPlanksDonut.png@
             custom double3 xformOp:translate = (-16, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cone "MyConeFromTexture" (
+            kind = "component"
+            prepend apiSchemas = ["GeomModelAPI"]
+        )
+        {
+            float3[] extent = [(-0.3, -1.3, -1.3), (1.3, 1.3, 1.3)]
+            uniform asset model:cardTextureXPos = @WoodPlanksDonut.exr@
+            uniform token model:cardGeometry = "fromTexture"
+            custom double3 xformOp:translate = (-20, 0, 0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
         }
     }

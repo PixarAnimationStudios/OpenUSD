@@ -83,9 +83,10 @@ private:
 
 template <typename T> 
 VtArray<T>
-HdSt_ExpandVarying(size_t numVerts, VtIntArray const &vertexCounts, 
-              const TfToken &wrap, const TfToken &basis, 
-              VtArray<T> const &authoredValues)
+HdSt_ExpandVarying(const SdfPath &id, const TfToken &name,
+    size_t numVerts, VtIntArray const &vertexCounts, 
+    const TfToken &wrap, const TfToken &basis, 
+    VtArray<T> const &authoredValues, const T fallbackValue)
 {
     VtArray<T> outputValues(numVerts);
 
@@ -93,17 +94,19 @@ HdSt_ExpandVarying(size_t numVerts, VtIntArray const &vertexCounts,
     size_t dstIndex = 0;
 
     if (wrap == HdTokens->periodic) {
-        // XXX : Add support for periodic curves
-        TF_WARN("Varying data is only supported for non-periodic curves.");
+        // XXX(HYD-2238): Add support for periodic curves.
+        TF_WARN("HdStBasisCurves(%s) - Periodic expansion hasn't been"
+                " implemented; expanding primvar %s as if non-periodic.",
+                id.GetText(), name.GetText());
     }
 
-    for (const int nVerts : vertexCounts) {
-        // Handling for the case of potentially incorrect vertex counts 
-        if (nVerts < 1) {
-            continue;
-        }
+    if (basis == HdTokens->catmullRom || basis == HdTokens->bSpline) {
+        for (const int nVerts : vertexCounts) {
+            // Handling for the case of potentially incorrect vertex counts 
+            if (nVerts < 1) {
+                continue;
+            }
 
-        if (basis == HdTokens->catmullRom || basis == HdTokens->bSpline) {
             // For splines with a vstep of 1, we are doing linear interpolation 
             // between segments, so all we do here is duplicate the first and 
             // last outputValues. Since these are never acutally used during 
@@ -118,7 +121,16 @@ HdSt_ExpandVarying(size_t numVerts, VtIntArray const &vertexCounts,
             ++dstIndex;
             outputValues[dstIndex] = authoredValues[srcIndex];
             ++dstIndex; ++srcIndex;
-        } else if (basis == HdTokens->bezier) {
+        }
+        TF_VERIFY(srcIndex == authoredValues.size());
+        TF_VERIFY(dstIndex == numVerts);
+    } else if (basis == HdTokens->bezier) {
+        for (const int nVerts : vertexCounts) {
+            // Handling for the case of potentially incorrect vertex counts 
+            if (nVerts < 1) {
+                continue;
+            }
+
             // For bezier splines, we map the linear values to cubic values
             // the begin value gets mapped to the first two vertices and
             // the end value gets mapped to the last two vertices in a segment.
@@ -144,13 +156,18 @@ HdSt_ExpandVarying(size_t numVerts, VtIntArray const &vertexCounts,
             ++dstIndex; // don't increment the srcIndex
             outputValues[dstIndex] = authoredValues[srcIndex];
             ++dstIndex; ++ srcIndex;
-        } else {
-            TF_WARN("Unsupported basis: '%s'", basis.GetText());
         }
+        TF_VERIFY(srcIndex == authoredValues.size());
+        TF_VERIFY(dstIndex == numVerts);
+    } else {
+        for (size_t i = 0; i < numVerts; ++ i) {
+            outputValues[i] = fallbackValue;
+        }
+        TF_WARN("HdStBasisCurves(%s) - Varying interpolation of primvar %s has"
+                " unsupported basis %s, using fallback value for rendering",
+                id.GetText(), name.GetText(), basis.GetText());
     }
-    TF_VERIFY(srcIndex == authoredValues.size());
-    TF_VERIFY(dstIndex == numVerts);
-    
+
     return outputValues;
 }
 
@@ -164,18 +181,20 @@ public:
     HdSt_BasisCurvesPrimvarInterpolaterComputation(
         HdSt_BasisCurvesTopologySharedPtr topology,
         const VtArray<T> &authoredPrimvar,
+        const SdfPath &id,
         const TfToken &name,
         HdInterpolation interpolation,
         const T fallbackValue,
         HdType hdType) 
     : _topology(topology)
     , _authoredPrimvar(authoredPrimvar)
+    , _id(id)
     , _name(name)
     , _interpolation(interpolation)
     , _fallbackValue(fallbackValue)
     , _hdType(hdType)
 {}
-        
+
     virtual bool Resolve() override {
         if (!_TryLock()) return false;
 
@@ -184,7 +203,7 @@ public:
         // We need to verify the number of primvars depending on the primvar 
         // interpolation type
         const size_t numVerts = _topology->CalculateNeededNumberOfControlPoints();
-        
+
         VtArray<T> primvars(numVerts);
         const size_t size = _authoredPrimvar.size();
 
@@ -210,31 +229,46 @@ public:
                 for (size_t i = 0; i < numVerts; ++ i) {
                     primvars[i] = _fallbackValue;
                 }
-                TF_WARN("Incorrect number of primvar %s for vertex "
-                        "interpolation, using fallback value for rendering",
-                         _name.GetText());
+                TF_WARN("HdStBasisCurves(%s) - Primvar %s has incorrect size"
+                        " for vertex interpolation (need %zu, got %zu), using"
+                        " fallback value for rendering.",
+                         _id.GetText(), _name.GetText(), numVerts, size);
             }
         } else if (_interpolation == HdInterpolationVarying) {
             if (size == 1) {
                 for (size_t i = 0; i < numVerts; i++) {
                     primvars[i] = _authoredPrimvar[0];
                 }
-            } else if (_topology->GetCurveType() == HdTokens->linear && 
-                       size == numVerts) {
-                primvars = _authoredPrimvar;
-            } else if (size == 
-                _topology->CalculateNeededNumberOfVaryingControlPoints()) {
-                primvars = HdSt_ExpandVarying<T>
-                    (numVerts, _topology->GetCurveVertexCounts(), 
-                    _topology->GetCurveWrap(), _topology->GetCurveBasis(),
-                    _authoredPrimvar);
-            } else {
-                for (size_t i = 0; i < numVerts; ++ i) {
-                    primvars[i] = _fallbackValue;
+            } else if (_topology->GetCurveType() == HdTokens->linear) {
+                if (size == numVerts) {
+                    primvars = _authoredPrimvar;
+                } else {
+                    for (size_t i = 0; i < numVerts; ++ i) {
+                        primvars[i] = _fallbackValue;
+                    }
+                    TF_WARN("HdStBasisCurves(%s) - Primvar %s has incorrect"
+                            " size for varying interpolation (need %zu, got"
+                            " %zu), using fallback value for rendering.",
+                            _id.GetText(), _name.GetText(), numVerts, size);
                 }
-                TF_WARN("Incorrect number of primvar %s for varying "
-                        "interpolation, using fallback value for rendering",
-                         _name.GetText());
+            } else {
+                const size_t numVaryingVerts =
+                    _topology->CalculateNeededNumberOfVaryingControlPoints();
+                if (size == numVaryingVerts) {
+                    primvars = HdSt_ExpandVarying<T>(_id, _name, numVerts,
+                        _topology->GetCurveVertexCounts(),
+                        _topology->GetCurveWrap(), _topology->GetCurveBasis(),
+                        _authoredPrimvar, _fallbackValue);
+                } else {
+                    for (size_t i = 0; i < numVerts; ++ i) {
+                        primvars[i] = _fallbackValue;
+                    }
+                    TF_WARN("HdStBasisCurves(%s) - Primvar %s has incorrect"
+                            " size for varying interpolation (need %zu, got"
+                            " %zu), using fallback value for rendering.",
+                            _id.GetText(), _name.GetText(), numVaryingVerts,
+                            size);
+                }
             }
         }
 
@@ -252,7 +286,7 @@ public:
         _SetResolved();
         return true;
     }
-                                                    
+
     virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override {
         specs->emplace_back(_name, HdTupleType{_hdType, 1});
     }
@@ -265,6 +299,7 @@ protected:
 private:
     HdSt_BasisCurvesTopologySharedPtr _topology;
     VtArray<T> _authoredPrimvar;
+    SdfPath _id;
     TfToken _name;
     HdInterpolation _interpolation;
     T _fallbackValue;
