@@ -253,7 +253,7 @@ static list __getslice__(const {{ VEC }} &self, slice indices) {
         // name should be "get_indices".
         //
         bounds = indices.get_indicies<>(begin, end);
-    } catch (std::invalid_argument) {
+    } catch (std::invalid_argument const &) {
         return result;
     }
 
@@ -313,7 +313,7 @@ static void __setslice__({{ VEC }} &self, slice indices, object values) {
         // name should be "get_indices".
         //
         bounds = indices.get_indicies<>(begin, end);
-    } catch (std::invalid_argument) {
+    } catch (std::invalid_argument const &) {
         sliceLength = 0;
     }
 
