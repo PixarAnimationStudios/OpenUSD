@@ -354,33 +354,46 @@ def GetPropertyColor(prop, frame, hasValue=None, hasAuthoredValue=None,
 # Gathers information about a layer used as a subLayer, including its
 # position in the layerStack hierarchy.
 class LayerInfo(object):
-    def __init__(self, layerOrIdentifier, offset, stage, parentLayer, prefix):
-        self._layer = layerOrIdentifier
+    def __init__(self, identifier, realPath, offset, stage, 
+                 timeCodesPerSecond=None, isMuted=False, depth=0):
+        self._identifier = identifier
+        self._realPath = realPath
         self._offset = offset
         self._stage = stage
-        self._parentLayer = parentLayer
-        self._prefix = prefix
+        self._timeCodesPerSecond = timeCodesPerSecond
+        self._isMuted = isMuted
+        self._depth = depth
 
-    def GetIdentifier(self):
-        return self._layer if self.IsMuted() else self._layer.identifier
+    @classmethod
+    def FromLayer(cls, layer, stage, offset, depth=0):
+        return cls(layer.identifier, layer.realPath, offset, stage,
+                   timeCodesPerSecond=layer.timeCodesPerSecond,
+                   depth=depth)
 
-    def GetRealPath(self):
-        if not self.IsMuted():
-            return self._layer.realPath
-
+    @classmethod
+    def FromMutedLayerIdentifier(cls, identifier, parentLayer, stage, depth=0):
+        realPath = ''
         try:
             resolver = Ar.GetResolver()
-            with Ar.ResolverContextBinder(self._stage.GetPathResolverContext()):
-                return resolver.Resolve(resolver.CreateIdentifier(
-                         self._layer, self._parentLayer.resolvedPath))\
-                         .GetPathString()
+            with Ar.ResolverContextBinder(stage.GetPathResolverContext()):
+                realPath = resolver.Resolve(resolver.CreateIdentifier(
+                    identifier, parentLayer.resolvedPath)).GetPathString()
         except Exception as e:
             PrintWarning('Failed to resolve identifier {} '
-                         .format(self._layer), e)
-            return 'unknown'
+                         .format(identifier), e)
+            realPath = 'unknown'
+
+        return cls(identifier, realPath, Sdf.LayerOffset(), stage, 
+                   isMuted=True, depth=depth)
+
+    def GetIdentifier(self):
+        return self._identifier
+
+    def GetRealPath(self):
+        return self._realPath
             
     def IsMuted(self):
-        return bool(not isinstance(self._layer, Sdf.Layer))
+        return self._isMuted
 
     def GetOffset(self):
         return self._offset
@@ -388,59 +401,96 @@ class LayerInfo(object):
     def GetOffsetString(self):
         if self._offset == None:
             return '-'
-        o = self._offset.offset
-        s = self._offset.scale
-        if o == 0:
-            if s == 1:
-                return ""
-            else:
-                return str.format("(scale = {})", s)
-        elif s == 1:
-            return str.format("(offset = {})", o)
+        if self._offset.IsIdentity():
+            return ""
         else:
-            return str.format("(offset = {0}; scale = {1})", o, s)
+            return "{} , {}".format(self._offset.offset, self._offset.scale)
+
+    def GetOffsetTooltipString(self):
+        if self._offset == None:
+            return '-'
+        if self._offset.IsIdentity():
+            return ""
+        toolTips = ["<b>Layer Offset</b> (from stage root)",
+                    "<b>offset:</b> {}".format(self._offset.offset),
+                    "<b>scale:</b> {}".format(self._offset.scale)]
+        # Display info about automatic time scaling if the layer's tcps is known
+        # and doesn't match the stage's tcps.
+        if self._timeCodesPerSecond:
+            stageTcps = self._stage.GetTimeCodesPerSecond()
+            if self._timeCodesPerSecond != stageTcps:
+                toolTips.append("Includes timeCodesPerSecond auto-scaling: "
+                                "{} (stage) / {} (layer)".format(
+                    stageTcps, self._timeCodesPerSecond))
+        return "<br>".join(toolTips)
+
+    def GetToolTipString(self):
+        return "<b>identifier:</b> @%s@ <br> <b>resolved path:</b> %s" % \
+            (self.GetIdentifier(), self.GetRealPath())
 
     def GetHierarchicalDisplayString(self):
-        displayName = self._layer.GetDisplayName() \
-                        if not self.IsMuted() \
-                          else os.path.basename(self._layer)
-        return self._prefix + displayName
+        return ('    '*self._depth + 
+            Sdf.Layer.GetDisplayNameFromIdentifier(self._identifier))
 
-def _AddSubLayers(stage, layer, layerOffset, prefix, parentLayer, layers):
-    offsets = layer.subLayerOffsets
-    layers.append(LayerInfo(layer, layerOffset, stage, parentLayer, prefix))
-    prefixIncr = '    '
-    for i, l in enumerate(layer.subLayerPaths):
-        offset = offsets[i] if offsets is not None \
-                  and len(offsets) > i else Sdf.LayerOffset()
-        
-        if stage.IsLayerMuted(l):
-            # if the layer is muted it may not be Find-able so we supply
-            # the identifier instead and don't traverse any deeper.
-            layers.append(LayerInfo(l, offset, stage, layer,
-                                    prefix + prefixIncr))
-            continue
-        
-        subLayer = Sdf.Layer.FindRelativeToLayer(layer, l)
-        # Due to an unfortunate behavior of the Pixar studio resolver,
-        # FindRelativeToLayer() may fail to resolve certain paths.  We will
-        # remove this extra Find() call as soon as we can retire the behavior;
-        # in the meantime, the extra call does not hurt (but should not, in
-        # general, be necessary)
-        if not subLayer:
-            subLayer = Sdf.Layer.Find(l)
+def _AddLayerTree(stage, layerTree, depth=0):
+    layers = [LayerInfo.FromLayer(
+        layerTree.layer, stage, layerTree.offset, depth)]
+    for child in layerTree.childTrees:
+        layers.extend(_AddLayerTree(stage, child, depth=depth + 1))
+    return layers
 
-        if subLayer:
-            _AddSubLayers(stage, subLayer, offset, prefixIncr + prefix,
-                          layer, layers)
+def _AddLayerTreeWithMutedSubLayers(stage, layerTree, depth=0):
+
+    layers = [LayerInfo.FromLayer(
+        layerTree.layer, stage, layerTree.offset, depth)]
+
+    # The layer tree from the layer stack has all of the fully composed layer
+    # offsets, but will not have any of the muted layers. The sublayer paths of
+    # layer will still contain any muted layers but will not have the composed
+    # layer offsets that the layer tree provides. So in order to show the muted
+    # layers in the correct sublayer position, we go through the sublayer paths
+    # parsing either the muted layer or a layer stack tree subtree.
+    # 
+    # XXX: It would be nice if we could get this whole layer stack tree with
+    # muted layers and composed offsets without having to cross reference two
+    # different APIs. 
+    childTrees = layerTree.childTrees
+    subLayerPaths = layerTree.layer.subLayerPaths
+    childTreeIter = iter(layerTree.childTrees)
+    numMutedLayers = 0
+    for subLayerPath in subLayerPaths:
+        if stage.IsLayerMuted(subLayerPath):
+            # The sublayer path is muted so add muted layer by path. We don't 
+            # recurse on sublayers for muted layers.
+            layers.append(LayerInfo.FromMutedLayerIdentifier(
+                subLayerPath, layerTree.layer, stage, depth=depth+1))
+            numMutedLayers = numMutedLayers + 1
         else:
-            print("Could not find layer " + l)
+            # Otherwise we expect the unmuted sublayer to be the next child
+            # tree in the layer stack tree so we recursively add it.
+            layers.extend(_AddLayerTreeWithMutedSubLayers(
+                stage, next(childTreeIter), depth=depth + 1))
+
+    # Since we're relying on the correspondence between the unmuted sublayer 
+    # paths and the child layer stack trees, report an error if the total number
+    # of muted layers and child trees don't match up so we can track if it 
+    # becomes an issue.
+    if numMutedLayers + len(childTrees) != len(subLayerPaths):
+        print("CODING ERROR: Encountered an unexpected number of muted "
+              "sublayers of layer {}. The root layer stack may be "
+              "incorrect in the layer stack view".format(
+              layerTree.layer.identifier))
+
+    return layers
 
 def GetRootLayerStackInfo(stage):
-    layers = []
-    _AddSubLayers(stage, stage.GetRootLayer(), Sdf.LayerOffset(),
-                  "", None, layers)
-    return layers
+    primIndex = stage.GetPseudoRoot().GetPrimIndex()
+    layerStack = primIndex.rootNode.layerStack
+
+    if layerStack.mutedLayers:
+        return _AddLayerTreeWithMutedSubLayers(stage, layerStack.layerTree)
+    else:
+        return _AddLayerTree(stage, layerStack.layerTree)
 
 def PrettyFormatSize(sz):
     k = 1024

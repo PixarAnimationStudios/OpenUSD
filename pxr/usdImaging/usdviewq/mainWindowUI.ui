@@ -812,7 +812,7 @@
                       <enum>Qt::SolidLine</enum>
                      </property>
                      <property name="columnCount">
-                      <number>3</number>
+                      <number>4</number>
                      </property>
                      <attribute name="horizontalHeaderCascadingSectionResizes">
                       <bool>true</bool>
@@ -844,6 +844,11 @@
                      <column>
                       <property name="text">
                        <string>Layer</string>
+                      </property>
+                     </column>
+                     <column>
+                      <property name="text">
+                       <string>Offset , Scale</string>
                       </property>
                      </column>
                      <column>

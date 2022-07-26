@@ -67,7 +67,7 @@ from .common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
                      GetPropertyColor, GetPropertyTextFont,
                      Timer, Drange, BusyContext, DumpMallocTags,
                      GetValueAndDisplayString, ResetSessionVisibility,
-                     InvisRootPrims, GetAssetCreationTime,
+                     InvisRootPrims, GetAssetCreationTime, LayerInfo,
                      PropertyViewIndex, PropertyViewIcons, PropertyViewDataRoles,
                      RenderModes, ColorCorrectionModes, ShadedRenderModes,
                      PickModes, SelectionHighlightModes, CameraMaskModes,
@@ -111,6 +111,10 @@ class UIDefaults(ConstantsGroup):
     ATTRIBUTE_INSPECTOR_WIDTH = 443
     TOP_HEIGHT = 538
     BOTTOM_HEIGHT = 306
+
+class LayerStackViewColumnIndex(ConstantsGroup):
+    # Columns in the layer stack view
+    LAYER, OFFSET, PATH, VALUE = range(4)
 
 # Name of the Qt binding being used
 QT_BINDING = QtCore.__name__.split('.')[0]
@@ -737,6 +741,18 @@ class AppController(QtCore.QObject):
             # Set custom context menu for composition tree browser
             self._ui.compositionTreeWidget\
                     .setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+
+            # Set up the resize policy for the layer stack view columns.
+            lvh = self._ui.layerStackView.horizontalHeader()
+            lvh.setDefaultAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+            lvh.setSectionResizeMode(LayerStackViewColumnIndex.LAYER, 
+                                     QtWidgets.QHeaderView.ResizeToContents)
+            lvh.setSectionResizeMode(LayerStackViewColumnIndex.OFFSET, 
+                                     QtWidgets.QHeaderView.ResizeToContents)
+            lvh.setSectionResizeMode(LayerStackViewColumnIndex.PATH, 
+                                     QtWidgets.QHeaderView.Stretch)
+            lvh.setSectionResizeMode(LayerStackViewColumnIndex.VALUE, 
+                                     QtWidgets.QHeaderView.ResizeToContents)
 
             # Arc path is the most likely to need stretch.
             twh = self._ui.compositionTreeWidget.header()
@@ -4257,122 +4273,157 @@ class AppController(QtCore.QObject):
         if index.IsValid():
             WalkNodes(treeWidget, index.rootNode)
 
-
     def _updateLayerStackView(self, obj=None):
         """ Sets the contents of the layer stack viewer"""
 
         tableWidget = self._ui.layerStackView
 
-        # Setup table widget
+        def createLayerStackViewItem(displayString, layerInfo, 
+                                      spec=None, toolTip=""):
+            """Creates a table view item for the layer stack view widget"""
+            item = QtWidgets.QTableWidgetItem(displayString)
+            item.setToolTip(self._limitToolTipSize(toolTip))
+            if layerInfo.IsMuted():
+                mutedLayerColor = QtGui.QColor(151, 151, 151)
+                item.setForeground(QtGui.QBrush(mutedLayerColor))
+
+            # Set layer and stage info for the context menu. The non-pseudoroot 
+            # layer stack views also provide a spec path for the context
+            item.stage = self._dataModel.stage
+            item.layerPath = layerInfo.GetRealPath()
+            item.identifier = layerInfo.GetIdentifier()
+            if spec is not None:
+                item.path = spec.path.pathString
+
+            return item
+
+        def addLayerItem(rowNum, layerInfo):
+            layerItem = createLayerStackViewItem(
+                layerInfo.GetHierarchicalDisplayString(), layerInfo, 
+                toolTip = layerInfo.GetToolTipString())
+            tableWidget.setItem(
+                rowNum, LayerStackViewColumnIndex.LAYER, layerItem)
+
+        def addOffsetItem(rowNum, layerInfo):
+            offsetItem = createLayerStackViewItem(
+                layerInfo.GetOffsetString(), layerInfo, 
+                toolTip = layerInfo.GetOffsetTooltipString())
+            tableWidget.setItem(
+                rowNum, LayerStackViewColumnIndex.OFFSET, offsetItem)
+
+        def addSpecPathItem(rowNum, layerInfo, spec):
+            pathItem = createLayerStackViewItem(spec.path.pathString, layerInfo, 
+                spec = spec, toolTip = spec.path.pathString)
+            tableWidget.setItem(
+                rowNum, LayerStackViewColumnIndex.PATH, pathItem)
+
+        def addMetadataItem(rowNum, layerInfo, spec):
+            metadataKeys = spec.GetMetaDataInfoKeys()
+            metadataDict = {}
+            for mykey in metadataKeys:
+                if spec.HasInfo(mykey):
+                    metadataDict[mykey] = spec.GetInfo(mykey)
+            valStr, ttStr = self._formatMetadataValueView(metadataDict)
+
+            valueItem = createLayerStackViewItem(valStr, layerInfo, 
+                spec = spec, toolTip = ttStr)
+            tableWidget.setItem(
+                rowNum, LayerStackViewColumnIndex.VALUE, valueItem)
+
+        def addSpecValueItem(rowNum, layerInfo, spec):
+            _, valStr = GetValueAndDisplayString(spec, 
+                                            self._dataModel.currentFrame)
+            valueItem = createLayerStackViewItem(valStr, layerInfo, 
+                spec = spec, toolTip = valStr)
+            sampleBased = spec.layer.GetNumTimeSamplesForPath(spec.path) > 0
+            valueItemColor = (UIPropertyValueSourceColors.TIME_SAMPLE if
+                sampleBased else UIPropertyValueSourceColors.DEFAULT)
+            valueItem.setForeground(valueItemColor)
+            tableWidget.setItem(
+                rowNum, LayerStackViewColumnIndex.VALUE, valueItem)
+
+        # Clear table widget
         tableWidget.clearContents()
         tableWidget.setRowCount(0)
 
         if obj is None:
             obj = self._getSelectedObject()
-
         if not obj:
             return
 
         path = obj.GetPath()
+        isPseudoRoot = (path == Sdf.Path.absoluteRootPath)
+        isProperty = path.IsPropertyPath()
 
-        mutedLayerColor = QtGui.QColor(151, 151, 151)
-                
-        # The pseudoroot is different enough from prims and properties that
-        # it makes more sense to process it separately
-        if path == Sdf.Path.absoluteRootPath:
+        layers = None
+        specsAndLayerOffsets = None
+        # valueColumnHeader = "Value"
+        if isPseudoRoot:
+            # For the pseudoRoot, get the layers from the root layer stack
             layers = GetRootLayerStackInfo(self._dataModel.stage)
-            tableWidget.setColumnCount(2)
-            tableWidget.horizontalHeaderItem(1).setText('Layer Offset')
-
-            tableWidget.setRowCount(len(layers))
-
-            for i, layer in enumerate(layers):
-                layerItem = QtWidgets.QTableWidgetItem(
-                              layer.GetHierarchicalDisplayString())
-                layerItem.stage = self._dataModel.stage
-                layerItem.layerPath = layer.GetRealPath()
-                layerItem.identifier = layer.GetIdentifier()
-                toolTip = "<b>identifier:</b> @%s@ <br> <b>resolved path:</b> %s" % \
-                           (layerItem.identifier, layerItem.layerPath)
-                toolTip = self._limitToolTipSize(toolTip)
-                layerItem.setToolTip(toolTip)
-                if layer.IsMuted():
-                    layerItem.setForeground(QtGui.QBrush(mutedLayerColor))
-                tableWidget.setItem(i, 0, layerItem)
-
-                offsetItem = QtWidgets.QTableWidgetItem(layer.GetOffsetString())
-                offsetItem.stage = layerItem.stage
-                offsetItem.layerPath = layerItem.layerPath
-                offsetItem.identifier = layerItem.identifier
-                toolTip = self._limitToolTipSize(str(layer.GetOffset))
-                offsetItem.setToolTip(toolTip)
-                tableWidget.setItem(i, 1, offsetItem)
-
-            tableWidget.resizeColumnToContents(0)
         else:
-            specs = []
-            tableWidget.setColumnCount(3)
-            header = tableWidget.horizontalHeader()
-            header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
-            header.setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
-            header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
-            tableWidget.horizontalHeaderItem(1).setText('Path')
-
-            if path.IsPropertyPath():
-                prop = obj.GetPrim().GetProperty(path.name)
-                specs = prop.GetPropertyStack(self._dataModel.currentFrame)
-                c3 = "Value" if (len(specs) == 0 or
-                               isinstance(specs[0], Sdf.AttributeSpec)) \
-                                 else "Target Paths"
-                tableWidget.setHorizontalHeaderItem(2,
-                                                 QtWidgets.QTableWidgetItem(c3))
+            # Otherwise we get the specs (and layer offsets) from the prim or
+            # property stack. Note that the layer offsets are the cumulative 
+            # offsets of the spec's layer relative to the root of the stage.
+            if isProperty:
+                specsAndLayerOffsets = obj.GetPropertyStackWithLayerOffsets(
+                    self._dataModel.currentFrame)
             else:
-                specs = obj.GetPrim().GetPrimStack()
-                tableWidget.setHorizontalHeaderItem(2,
-                    QtWidgets.QTableWidgetItem('Metadata'))
+                specsAndLayerOffsets = obj.GetPrimStackWithLayerOffsets()
+            # We get the layer info from each prim or property spec and its 
+            # computed layer offset
+            layers = [
+                LayerInfo.FromLayer(spec.layer, self._dataModel.stage, offset) 
+                for spec, offset in specsAndLayerOffsets]
 
-            tableWidget.setRowCount(len(specs))
+        tableWidget.setRowCount(len(layers))
+        # While adding layers we'll determine if we should hide the offset 
+        # column. By default we always display it for the pseudoRoot. We'll
+        # only display it for prims and properties if at least one spec has a 
+        # non-identity layer offset.
+        hideOffsetColumn = not isPseudoRoot
+        hideSpecColumns = isPseudoRoot
+        for i, layer in enumerate(layers):
+            if not layer.GetOffset().IsIdentity():
+                hideOffsetColumn = False
 
-            for i, spec in enumerate(specs):
-                layerItem = QtWidgets.QTableWidgetItem(spec.layer.GetDisplayName())
-                layerItem.setToolTip(self._limitToolTipSize(spec.layer.realPath))
-                tableWidget.setItem(i, 0, layerItem)
+            # Always add the layer and offset items.
+            addLayerItem(i, layer)
+            addOffsetItem(i, layer)
 
-                pathItem = QtWidgets.QTableWidgetItem(spec.path.pathString)
-                pathItem.setToolTip(self._limitToolTipSize(spec.path.pathString))
-                tableWidget.setItem(i, 1, pathItem)
-
-                if path.IsPropertyPath():
-                    _, valStr = GetValueAndDisplayString(spec, 
-                                                    self._dataModel.currentFrame)
-                    ttStr = valStr
-                    valueItem = QtWidgets.QTableWidgetItem(valStr)
-                    sampleBased = spec.layer.GetNumTimeSamplesForPath(path) > 0
-                    valueItemColor = (UIPropertyValueSourceColors.TIME_SAMPLE if
-                        sampleBased else UIPropertyValueSourceColors.DEFAULT)
-                    valueItem.setForeground(valueItemColor)
-                    valueItem.setToolTip(ttStr)
-                    
+            # Add the items for the spec columns if needed.
+            if not hideSpecColumns:
+                spec = specsAndLayerOffsets[i][0]
+                addSpecPathItem(i, layer, spec)
+                # The value column for prims shows metadata instead of property
+                # values.
+                if isProperty:
+                    addSpecValueItem(i, layer, spec)
                 else:
-                    metadataKeys = spec.GetMetaDataInfoKeys()
-                    metadataDict = {}
-                    for mykey in metadataKeys:
-                        if spec.HasInfo(mykey):
-                            metadataDict[mykey] = spec.GetInfo(mykey)
-                    valStr, ttStr = self._formatMetadataValueView(metadataDict)
-                    valueItem = QtWidgets.QTableWidgetItem(valStr)
-                    valueItem.setToolTip(ttStr)
+                    addMetadataItem(i, layer, spec)
 
-                tableWidget.setItem(i, 2, valueItem)
-                # Add the data the context menu needs
-                for j in range(3):
-                    item = tableWidget.item(i, j)
-                    item.stage = self._dataModel.stage
-                    item.layerPath = spec.layer.realPath
-                    item.path = spec.path.pathString
-                    item.identifier = spec.layer.identifier
-                    if self._dataModel.stage.IsLayerMuted(item.identifier):
-                        item.setForeground(QtGui.QBrush(mutedLayerColor))
+        # Set the hidden state of the dynamically visible columns.
+        tableWidget.setColumnHidden(LayerStackViewColumnIndex.OFFSET, 
+                                    hideOffsetColumn)
+        tableWidget.setColumnHidden(LayerStackViewColumnIndex.PATH,
+                                    hideSpecColumns)
+        tableWidget.setColumnHidden(LayerStackViewColumnIndex.VALUE,
+                                    hideSpecColumns)
+
+        # Some final formatting for the spec columns if shown.
+        if not hideSpecColumns:
+            # The value column's header adjusts for whether we're showing prim,
+            # attribute, or relationship layer stack.
+            valueColumnHeader = "Value" if isinstance(obj, Usd.Attribute) \
+                else "Target Paths" if isinstance(obj, Usd.Relationship) \
+                else "Metadata"
+            tableWidget.horizontalHeaderItem(LayerStackViewColumnIndex.VALUE) \
+                .setText(valueColumnHeader)
+
+            # Resize the value column to its contents so that display updates
+            # appropriately when switching between selected properties and 
+            # prims.
+            tableWidget.resizeColumnToContents(LayerStackViewColumnIndex.VALUE)
 
     def _isHUDVisible(self):
         """Checks if the upper HUD is visible by looking at the global HUD
