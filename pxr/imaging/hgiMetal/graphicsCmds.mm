@@ -309,7 +309,7 @@ HgiMetalGraphicsCmds::_SetCachedEncoderState(id<MTLRenderCommandEncoder> encoder
             _CachedEncState.graphicsPipeline->BindTessControlPipeline(encoder);
             _CachedEncState.bindPTCS = false;
         } else {
-            _CachedEncState.graphicsPipeline->BindPipeline(encoder);
+        _CachedEncState.graphicsPipeline->BindPipeline(encoder);
             if (_CachedEncState.tessFactorBuffer.Get() != nullptr) {
                 _CachedEncState.graphicsPipeline->SetTessFactorBuffer(
                       encoder,
@@ -573,7 +573,7 @@ HgiMetalGraphicsCmds::BindVertexBuffers(
         _CachedEncState.vertexBindings.end(),
         bindings.begin(), bindings.end());
 
-    for (auto& encoder : _encoders) {
+        for (auto& encoder : _encoders) {
         _SetVertexBindings(encoder, bindings);
     }
 }
@@ -591,7 +591,7 @@ HgiMetalGraphicsCmds::Draw(
     id<MTLRenderCommandEncoder> encoder = _GetEncoder();
 
     _stepFunctions.SetVertexBufferOffsets(encoder, baseInstance);
-        if (_primitiveType == HgiPrimitiveTypePatchList) {
+    if (_primitiveType == HgiPrimitiveTypePatchList) {
         const NSUInteger controlPointCount = _primitiveIndexSize;
         [encoder drawPatches:controlPointCount
                   patchStart:0

@@ -168,6 +168,14 @@ HdSt_TestDriverBase<SceneDelegate>::HdSt_TestDriverBase()
 template<typename SceneDelegate>
 HdSt_TestDriverBase<SceneDelegate>::~HdSt_TestDriverBase()
 {
+    for (size_t i = 0; i < _renderPassStates.size(); i++) {
+        _renderPassStates[i].reset();
+    }
+
+    for (size_t i = 0; i < _renderPasses.size(); i++) {
+        _renderPasses[i].reset();
+    }
+
     delete _sceneDelegate;
     delete _renderIndex;
 }

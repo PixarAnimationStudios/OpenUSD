@@ -115,18 +115,27 @@ HgiGLCapabilities::_LoadCapabilities()
         _glslVersion = 0;
     }
 
-    glGetIntegerv(GL_MAX_CLIP_PLANES, &_maxClipDistances);
+    GLint maxClipDistances = 0;
+    glGetIntegerv(GL_MAX_CLIP_PLANES, &maxClipDistances);
+    _maxClipDistances = maxClipDistances;
 
     // initialize by Core versions
     if (_glVersion >= 310) {
+        GLint maxUniformBlockSize = 0;
         glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE,
-                      &_maxUniformBlockSize);
+                      &maxUniformBlockSize);
+        _maxUniformBlockSize = maxUniformBlockSize;
+
+        GLint uniformBufferOffsetAlignment = 0;
         glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT,
-                      &_uniformBufferOffsetAlignment);
+                      &uniformBufferOffsetAlignment);
+        _uniformBufferOffsetAlignment = uniformBufferOffsetAlignment;
     }
     if (_glVersion >= 430) {
+        GLint maxShaderStorageBlockSize = 0;
         glGetIntegerv(GL_MAX_SHADER_STORAGE_BLOCK_SIZE,
-                      &_maxShaderStorageBlockSize);
+                      &maxShaderStorageBlockSize);
+        _maxShaderStorageBlockSize = maxShaderStorageBlockSize;
     }
     if (_glVersion >= 450) {
         multiDrawIndirectEnabled = true;

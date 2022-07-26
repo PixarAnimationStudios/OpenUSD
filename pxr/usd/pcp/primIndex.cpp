@@ -29,6 +29,7 @@
 #include "pxr/usd/pcp/dynamicFileFormatContext.h"
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/debugCodes.h"
+#include "pxr/usd/pcp/dependencies.h"
 #include "pxr/usd/pcp/diagnostic.h"
 #include "pxr/usd/pcp/dynamicFileFormatInterface.h"
 #include "pxr/usd/pcp/instancing.h"
@@ -379,6 +380,11 @@ PcpPrimIndexOutputs::Append(PcpPrimIndexOutputs&& childOutputs,
     // ours.
     dynamicFileFormatDependency.AppendDependencyData(
         std::move(childOutputs.dynamicFileFormatDependency));
+
+    culledDependencies.insert(
+        culledDependencies.end(),
+        std::make_move_iterator(childOutputs.culledDependencies.begin()),
+        std::make_move_iterator(childOutputs.culledDependencies.end()));
 
     allErrors.insert(
         allErrors.end(), 
@@ -1342,6 +1348,20 @@ _CheckForCycle(
     return PcpErrorArcCyclePtr();
 }
 
+static void
+_AddCulledDependencies(
+    const PcpNodeRef& node,
+    std::vector<PcpCulledDependency>* culledDeps)
+{
+    if (node.IsCulled()) {
+        Pcp_AddCulledDependency(node, culledDeps);
+    }
+
+    TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
+        _AddCulledDependencies(*child, culledDeps);
+    }
+};
+
 // Add an arc of the given type from the parent node to the child site,
 // and track any new tasks that result.  Return the new node.
 //
@@ -1574,6 +1594,17 @@ _AddArc(
         newNode = indexer->outputs->Append(std::move(childOutputs), newArc,
                                            &newNodeError);
         if (newNode) {
+            // Record any culled nodes from this subtree that introduced
+            // ancestral dependencies. These nodes may be removed from the prim
+            // index when Finalize() is called, so they must be saved separately
+            // for later use. Only do this in the top-level call to _AddArc
+            // to avoid running over the same subtree multiple times if there
+            // were multiple levels of recursive prim indexing.
+            if (!indexer->previousFrame) {
+                _AddCulledDependencies(
+                    newNode, &indexer->outputs->culledDependencies);
+            }
+
             PCP_INDEXING_UPDATE(
                 indexer, newNode, 
                 "Added subtree for site %s to graph",

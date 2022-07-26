@@ -36,6 +36,7 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/imaging/hd/light.h"
+#include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hf/diagnostic.h"
 #include "RiTypesHelper.h"
@@ -644,6 +645,7 @@ HdPrman_DumpNetwork(HdMaterialNetwork2 const& network, SdfPath const& id)
 // otherwise it will be created as needed.
 static void
 _ConvertHdMaterialNetwork2ToRman(
+    HdSceneDelegate *sceneDelegate,
     HdPrman_RenderParam *renderParam,
     SdfPath const& id,
     const HdMaterialNetwork2 &network,
@@ -688,8 +690,24 @@ _ConvertHdMaterialNetwork2ToRman(
                 } else {
                     riley::ShadingNetwork const displacement = {
                         static_cast<uint32_t>(nodes.size()), &nodes[0]};
-                    riley->ModifyDisplacement(*displacementId, &displacement,
-                                              nullptr);
+                    riley::DisplacementResult const result =
+                            riley->ModifyDisplacement(*displacementId,
+                                                      &displacement,
+                                                      nullptr);
+                    if (result == riley::DisplacementResult::k_ResendPrimVars) {
+                        // Mark prims dirty so they pick up new displacement.
+                        HdRenderIndex& index =
+                                sceneDelegate->GetRenderIndex();
+                        HdChangeTracker& changeTracker =
+                                index.GetChangeTracker();
+                        for(auto rprimid : index.GetRprimIds()) {
+                            HdRprim const *rprim = index.GetRprim(rprimid);
+                            if(rprim->GetMaterialId() == id) {
+                                changeTracker.MarkRprimDirty(
+                                    rprimid, HdChangeTracker::DirtyPrimvar);
+                            }
+                        }
+                    }
                 }
                 if (*displacementId == riley::DisplacementId::InvalidId()) {
                     TF_RUNTIME_ERROR("Failed to create displacement %s\n",
@@ -754,7 +772,8 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
             if (TfDebug::IsEnabled(HDPRMAN_MATERIALS)) {
                 HdPrman_DumpNetwork(_materialNetwork, id);
             }
-            _ConvertHdMaterialNetwork2ToRman(param, id, _materialNetwork,
+            _ConvertHdMaterialNetwork2ToRman(sceneDelegate,
+                                             param, id, _materialNetwork,
                                              &_materialId, &_displacementId);
         } else {
             TF_CODING_ERROR("HdPrmanMaterial: Expected material resource "

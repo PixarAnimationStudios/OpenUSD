@@ -1557,6 +1557,38 @@ HdxTaskController::SetSelectionColor(GfVec4f const& color)
 }
 
 void
+HdxTaskController::SetSelectionLocateColor(GfVec4f const& color)
+{
+    if (!_selectionTaskId.IsEmpty()) {
+        HdxSelectionTaskParams params =
+            _delegate.GetParameter<HdxSelectionTaskParams>(
+                _selectionTaskId, HdTokens->params);
+
+        if (params.locateColor != color) {
+            params.locateColor = color;
+            _delegate.SetParameter(_selectionTaskId,
+                HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _selectionTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+
+    if (!_colorizeSelectionTaskId.IsEmpty()) {
+        HdxColorizeSelectionTaskParams params =
+            _delegate.GetParameter<HdxColorizeSelectionTaskParams>(
+                _colorizeSelectionTaskId, HdTokens->params);
+
+        if (params.locateColor != color) {
+            params.locateColor = color;
+            _delegate.SetParameter(_colorizeSelectionTaskId,
+                HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _colorizeSelectionTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+}
+
+void
 HdxTaskController::SetSelectionEnableOutline(bool enableOutline)
 {
     if (!_colorizeSelectionTaskId.IsEmpty()) {

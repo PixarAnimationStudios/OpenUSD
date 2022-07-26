@@ -2873,6 +2873,10 @@ UsdStage::_ReportErrors(const PcpErrorVector &errors,
 static Usd_PrimTypeInfoCache &
 _GetPrimTypeInfoCache()
 {
+    // As noted in prim.h, our current guarantee of the lifetime of the objects
+    // referenced by the return value of UsdPrim::GetPrimTypeInfo is (at least)
+    // as long as the owning stage is open. This is currently true as we never
+    // clear either this cache or its contents.
     static Usd_PrimTypeInfoCache cache;
     return cache;
 }
@@ -7909,34 +7913,6 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
     // This is the lowest-level site for guaranteeing that all GetTimeSample
     // queries clear out the return vector
     times->clear();
-    const auto copySamplesInInterval = [](const std::set<double>& samples, 
-                                          vector<double>* target, 
-                                          const GfInterval& interval) 
-    {
-        std::set<double>::iterator samplesBegin, samplesEnd; 
-
-        if (interval.IsMinOpen()) {
-            samplesBegin = std::upper_bound(samples.begin(), 
-                                            samples.end(), 
-                                            interval.GetMin()); 
-        } else {
-            samplesBegin = std::lower_bound(samples.begin(), 
-                                            samples.end(), 
-                                            interval.GetMin());
-        }
-
-        if (interval.IsMaxOpen()) {
-            samplesEnd = std::lower_bound(samplesBegin,
-                                          samples.end(), 
-                                          interval.GetMax());
-        } else {
-            samplesEnd = std::upper_bound(samplesBegin,
-                                          samples.end(),
-                                          interval.GetMax());
-        }
-
-        target->insert(target->end(), samplesBegin, samplesEnd);
-    };
 
     if (info._source == UsdResolveInfoSourceTimeSamples) {
         const SdfPath specPath =
@@ -7949,7 +7925,7 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
             if (info._layerToStageOffset.IsIdentity()) {
                 // The layer offset is identity, so we can use the interval
                 // directly, and do not need to remap the sample times.
-                copySamplesInInterval(samples, times, interval);
+                Usd_CopyTimeSamplesInInterval(samples, interval, times);
             } else {
                 // Map the interval (expressed in stage time) to layer time.
                 const SdfLayerOffset stageToLayer =
@@ -7957,7 +7933,7 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
                 const GfInterval layerInterval =
                     interval * stageToLayer.GetScale()
                     + stageToLayer.GetOffset();
-                copySamplesInInterval(samples, times, layerInterval);
+                Usd_CopyTimeSamplesInInterval(samples, layerInterval, times);
                 // Map the layer sample times to stage times.
                 for (auto &time : *times) {
                     time = info._layerToStageOffset * time;
@@ -7988,9 +7964,7 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
 
             // See comments in _GetValueImpl regarding layer
             // offsets and why they're not applied here.
-            const std::set<double> samples =
-                clipSet->ListTimeSamplesForPath(specPath);
-            copySamplesInInterval(samples, times, interval);;
+            *times = clipSet->GetTimeSamplesInInterval(specPath, interval);
             return true;
         }
     }

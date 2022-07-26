@@ -37,11 +37,15 @@
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/concurrent_unordered_map.h>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdImagingPrimAdapter;
 using UsdImagingPrimAdapterSharedPtr = std::shared_ptr<UsdImagingPrimAdapter>;
+
+class UsdImagingAPISchemaAdapter;
+using UsdImagingAPISchemaAdapterSharedPtr =
+    std::shared_ptr<UsdImagingAPISchemaAdapter>;
+
 
 class UsdImagingStageSceneIndex;
 TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndex);
@@ -100,23 +104,35 @@ private:
 
     Usd_PrimFlagsConjunction _GetTraversalPredicate() const;
 
+    using _APISchemaEntry =
+        std::pair<UsdImagingAPISchemaAdapterSharedPtr, TfToken>;
+    using _APISchemaAdapters = TfSmallVector<_APISchemaEntry, 8>;
+
     // Adapter delegation.
-    UsdImagingPrimAdapterSharedPtr _AdapterLookup(
-            UsdPrim prim) const;
-    UsdImagingPrimAdapterSharedPtr _AdapterLookup(
+
+    _APISchemaAdapters _AdapterSetLookup(UsdPrim prim) const;
+
+    UsdImagingAPISchemaAdapterSharedPtr _APIAdapterLookup(
+            const TfToken &adapterKey) const;
+
+    UsdImagingPrimAdapterSharedPtr _PrimAdapterLookup(
             const TfToken &adapterKey) const;
 
     TfTokenVector _GetImagingSubprims(
-            const UsdImagingPrimAdapterSharedPtr &adapter) const;
+            const _APISchemaAdapters &adapters) const;
+    
     TfToken _GetImagingSubprimType(
-            const UsdImagingPrimAdapterSharedPtr &adapter,
-            TfToken const& subprim) const;
+            const _APISchemaAdapters &adapters,
+            const TfToken &subprim) const;
+
     HdContainerDataSourceHandle _GetImagingSubprimData(
-            const UsdImagingPrimAdapterSharedPtr &adapter,
-            UsdPrim prim, TfToken const& subprim) const;
+            const _APISchemaAdapters &adapters,
+            UsdPrim prim, const TfToken& subprim) const;
+
     HdDataSourceLocatorSet _InvalidateImagingSubprim(
-            const UsdImagingPrimAdapterSharedPtr &adapter,
+            const _APISchemaAdapters &adapters,
             TfToken const& subprim, TfTokenVector const& properties) const;
+
 
     class _StageGlobals : public UsdImagingDataSourceStageGlobals
     {
@@ -168,10 +184,22 @@ private:
     // Usd Prim Type to Adapter lookup table, concurrent because it could
     // be potentially filled during concurrent GetPrim calls rather than
     // just during single-threaded population.
-    using _AdapterMap = tbb::concurrent_unordered_map<
+    using _PrimAdapterMap = tbb::concurrent_unordered_map<
         TfToken, UsdImagingPrimAdapterSharedPtr, TfHash>;
 
-    mutable _AdapterMap _adapterMap;
+    mutable _PrimAdapterMap _primAdapterMap;
+
+    using _ApiAdapterMap = tbb::concurrent_unordered_map<
+        TfToken, UsdImagingAPISchemaAdapterSharedPtr, TfHash>;
+
+    mutable _ApiAdapterMap _apiAdapterMap;
+
+    // Use UsdPrimTypeInfo pointer as key because they are guaranteed to be
+    // cached at least as long as the stage is open.
+    using _AdapterSetMap = tbb::concurrent_unordered_map<
+        const UsdPrimTypeInfo *, _APISchemaAdapters, TfHash>;
+
+    mutable _AdapterSetMap _adapterSetMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

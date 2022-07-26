@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdRender/renderPass.h"
+#include "pxr/usd/usdRender/pass.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -50,50 +50,50 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
-_CreatePassTypeAttr(UsdRenderRenderPass &self,
+_CreatePassTypeAttr(UsdRenderPass &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreatePassTypeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
-_CreateCommandAttr(UsdRenderRenderPass &self,
+_CreateCommandAttr(UsdRenderPass &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateCommandAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->StringArray), writeSparsely);
 }
         
 static UsdAttribute
-_CreateFileNameAttr(UsdRenderRenderPass &self,
+_CreateFileNameAttr(UsdRenderPass &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateFileNameAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
         
 static UsdAttribute
-_CreateDenoiseEnableAttr(UsdRenderRenderPass &self,
+_CreateDenoiseEnableAttr(UsdRenderPass &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateDenoiseEnableAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
 
 static std::string
-_Repr(const UsdRenderRenderPass &self)
+_Repr(const UsdRenderPass &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdRender.RenderPass(%s)",
+        "UsdRender.Pass(%s)",
         primRepr.c_str());
 }
 
 } // anonymous namespace
 
-void wrapUsdRenderRenderPass()
+void wrapUsdRenderPass()
 {
-    typedef UsdRenderRenderPass This;
+    typedef UsdRenderPass This;
 
     class_<This, bases<UsdTyped> >
-        cls("RenderPass");
+        cls("Pass");
 
     cls
         .def(init<UsdPrim>(arg("prim")))

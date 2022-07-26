@@ -53,22 +53,22 @@ public:
     virtual int GetShaderVersion() const = 0;
 
     HGI_API
-    int GetMaxUniformBlockSize() const {
+    size_t GetMaxUniformBlockSize() const {
         return _maxUniformBlockSize;
     }
 
     HGI_API
-    int GetMaxShaderStorageBlockSize() const {
+    size_t GetMaxShaderStorageBlockSize() const {
         return _maxShaderStorageBlockSize;
     }
 
     HGI_API
-    int GetUniformBufferOffsetAlignment() const {
+    size_t GetUniformBufferOffsetAlignment() const {
         return _uniformBufferOffsetAlignment;
     }
 
     HGI_API
-    int GetMaxClipDistances() const {
+    size_t GetMaxClipDistances() const {
         return _maxClipDistances;
     }
 
@@ -82,6 +82,7 @@ protected:
         : _maxUniformBlockSize(0)
         , _maxShaderStorageBlockSize(0)
         , _uniformBufferOffsetAlignment(0)
+        , _maxClipDistances(0)
         , _pageSizeAlignment(1)
         , _flags(0)
     {}
@@ -94,10 +95,10 @@ protected:
         }
     }
 
-    int _maxUniformBlockSize;
-    int _maxShaderStorageBlockSize;
-    int _uniformBufferOffsetAlignment;
-    int _maxClipDistances;
+    size_t _maxUniformBlockSize;
+    size_t _maxShaderStorageBlockSize;
+    size_t _uniformBufferOffsetAlignment;
+    size_t _maxClipDistances;
     size_t _pageSizeAlignment;
 
 private:

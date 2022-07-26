@@ -684,10 +684,7 @@ if MacOS():
     BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif Linux():
-    if Python3():
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
-    else:
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.66.0/source/boost_1_66_0.tar.gz"
+    BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif Windows():
     # The default installation of boost on Windows puts headers in a versioned 
@@ -854,13 +851,15 @@ BOOST = Dependency("boost", InstallBoost, BOOST_VERSION_FILE)
 # Intel TBB
 
 if Windows():
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/2018_U6/tbb2018_20180822oss_win.zip"
-elif MacOS():
-    # This version of TBB has no test teardown crashes and fixes compatibility
-    # issues with M1, Big Sur, and Monterey
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/2020_U2.tar.gz"
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/2019_U6/tbb2019_20190410oss_win.zip"
+    TBB_ROOT_DIR_NAME = "tbb2019_20190410oss"
+elif MacOS() and not Arm():
+    # On MacOS Intel systems we experience various crashes in tests during
+    # teardown starting with 2018 Update 2. Until we figure that out, we use
+    # 2018 Update 1 on this platform.
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2018_U1.tar.gz"
 else:
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/2018_U6.tar.gz"
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2019_U6.tar.gz"
 
 def InstallTBB(context, force, buildArgs):
     if Windows():
@@ -869,7 +868,6 @@ def InstallTBB(context, force, buildArgs):
         InstallTBB_LinuxOrMacOS(context, force, buildArgs)
 
 def InstallTBB_Windows(context, force, buildArgs):
-    TBB_ROOT_DIR_NAME = "tbb2018_20180822oss"
     with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force, 
         TBB_ROOT_DIR_NAME)):
         # On Windows, we simply copy headers and pre-built DLLs to
@@ -1000,21 +998,40 @@ PNG = Dependency("PNG", InstallPNG, "include/png.h")
 ############################################################
 # IlmBase/OpenEXR
 
-OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/v2.3.0.zip"
+# On Windows we use v2.5.2 as it contains a fix that removes symlink creation
+# on that platform, which is not typically allowed unless the user turns on
+# "Developer Mode". 
+#
+# See https://github.com/AcademySoftwareFoundation/openexr/pull/742.
+if Windows():
+    OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v2.5.2.zip"
+else:
+    OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v2.4.3.zip"
 
 def InstallOpenEXR(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OPENEXR_URL, context, force)):
         RunCMake(context, force, 
-                 ['-DOPENEXR_BUILD_PYTHON_LIBS=OFF',
-                  '-DOPENEXR_PACKAGE_PREFIX="{}"'.format(context.instDir),
-                  '-DOPENEXR_ENABLE_TESTS=OFF'] + buildArgs)
+                 ['-DPYILMBASE_ENABLE=OFF',
+                  '-DOPENEXR_VIEWERS_ENABLE=OFF',
+                  '-DBUILD_TESTING=OFF'] + buildArgs)
 
 OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
 
 ############################################################
 # Ptex
 
-PTEX_URL = "https://github.com/wdas/ptex/archive/v2.1.33.zip"
+# v2.3.2 requires PkgConfig, which does not typically exist on Windows and
+# MacOS. This requirement is removed by commit c797af4 which landed after
+# v2.4.1. However, since this fix is not in a versioned release we do not
+# want to use it in our build, and the changes in the fix are just enough
+# to be uncomfortable to patch ourselves. So on those platforms, we use
+# v2.1.33 from the CY2019 VFX Reference Platform.
+if Windows() or MacOS():
+    PTEX_URL = "https://github.com/wdas/ptex/archive/v2.1.33.zip"
+    PTEX_VERSION = "v2.1.33"
+else:
+    PTEX_URL = "https://github.com/wdas/ptex/archive/refs/tags/v2.3.2.zip"
+    PTEX_VERSION = "v2.3.2"
 
 def InstallPtex(context, force, buildArgs):
     if Windows():
@@ -1052,7 +1069,15 @@ def InstallPtex_Windows(context, force, buildArgs):
 
 def InstallPtex_LinuxOrMacOS(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(PTEX_URL, context, force)):
-        RunCMake(context, force, buildArgs)
+        cmakeOptions = [
+            '-DPTEX_BUILD_STATIC_LIBS=OFF',
+            # We must tell the Ptex build system what version we're building
+            # otherwise we get errors when running CMake.
+            '-DPTEX_VER={v}'.format(v=PTEX_VERSION)
+        ]
+        cmakeOptions += buildArgs
+
+        RunCMake(context, force, cmakeOptions)
 
 PTEX = Dependency("Ptex", InstallPtex, "include/PtexVersion.h")
 
@@ -1066,19 +1091,18 @@ BLOSC_URL = "https://github.com/Blosc/c-blosc/archive/v1.20.1.zip"
 
 def InstallBLOSC(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(BLOSC_URL, context, force)):
-        RunCMake(context, force, buildArgs)
+        macArgs = []
+        if MacOS() and Arm():
+            # Need to disable SSE for macOS ARM targets.
+            macArgs = ["-DDEACTIVATE_SSE2=ON"]
+        RunCMake(context, force, buildArgs + macArgs)
 
 BLOSC = Dependency("Blosc", InstallBLOSC, "include/blosc.h")
 
 ############################################################
 # OpenVDB
 
-# Using version 6.1.0 since it has reworked its CMake files so that
-# there are better options to not compile the OpenVDB binaries and to
-# not require additional dependencies such as GLFW. Note that version
-# 6.1.0 does require CMake 3.3 though.
-
-OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/v6.1.0.zip"
+OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v7.1.0.zip"
 
 def InstallOpenVDB(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OPENVDB_URL, context, force)):
@@ -1178,6 +1202,23 @@ def InstallOpenColorIO(context, force, buildArgs):
                       [("IMPORTED_LOCATION_RELEASE", 
                         "IMPORTED_LOCATION_RELWITHDEBINFO")])
 
+        # When building for Apple Silicon we need to make sure that
+        # the correct build architecture is specified for OCIO and
+        # and for TinyXML and YAML.
+        if MacOS() and Arm():
+            arch = 'arm64'
+            PatchFile("CMakeLists.txt",
+                    [('CMAKE_ARGS      ${TINYXML_CMAKE_ARGS}',
+                    'CMAKE_ARGS      ${TINYXML_CMAKE_ARGS}\n' +
+                    '            CMAKE_CACHE_ARGS -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH:BOOL=TRUE'
+                    ' -DCMAKE_OSX_ARCHITECTURES:STRING="{arch}"'.format(arch=arch)),
+                    ('CMAKE_ARGS      ${YAML_CPP_CMAKE_ARGS}',
+                    'CMAKE_ARGS      ${YAML_CPP_CMAKE_ARGS}\n' +
+                    '            CMAKE_CACHE_ARGS -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH:BOOL=TRUE'
+                    ' -DCMAKE_OSX_ARCHITECTURES:STRING="{arch}"'.format(arch=arch)),
+                    ('set(CMAKE_OSX_ARCHITECTURES x86_64 CACHE STRING',
+                     'set(CMAKE_OSX_ARCHITECTURES "{arch}" CACHE STRING'.format(arch=arch))])
+
         # The OCIO build treats all warnings as errors but several come up
         # on various platforms, including:
         # - On gcc6, v1.1.0 emits many -Wdeprecated-declaration warnings for
@@ -1195,6 +1236,9 @@ def InstallOpenColorIO(context, force, buildArgs):
             pass
         else:
             extraArgs.append('-DCMAKE_CXX_FLAGS=-w')
+
+        if MacOS() and Arm():
+            extraArgs.append('-DOCIO_USE_SSE=OFF')
 
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
@@ -1295,8 +1339,17 @@ def GetPySideInstructions():
                 'If PySide is already installed, you may need to '
                 'update your PYTHONPATH to indicate where it is '
                 'located.')
-    else:                       
-        return ('PySide2 is not installed. If you have pip '
+    elif MacOS():
+        # PySide6 is required for Apple Silicon support, so is the default
+        # across all macOS hardware platforms.
+        return ('PySide6 is not installed. If you have pip '
+                'installed, run "pip install PySide6" '
+                'to install it, then re-run this script.\n'
+                'If PySide6 is already installed, you may need to '
+                'update your PYTHONPATH to indicate where it is '
+                'located.')
+    else:
+        return ('PySide2 or PySide6 are not installed. If you have pip '
                 'installed, run "pip install PySide2" '
                 'to install it, then re-run this script.\n'
                 'If PySide2 is already installed, you may need to '
@@ -1304,7 +1357,7 @@ def GetPySideInstructions():
                 'located.')
 
 PYSIDE = PythonDependency("PySide", GetPySideInstructions,
-                          moduleNames=["PySide", "PySide2"])
+                          moduleNames=["PySide", "PySide2", "PySide6"])
 
 ############################################################
 # HDF5
@@ -1347,11 +1400,13 @@ ALEMBIC = Dependency("Alembic", InstallAlembic, "include/Alembic/Abc/Base.h")
 ############################################################
 # Draco
 
-DRACO_URL = "https://github.com/google/draco/archive/master.zip"
+DRACO_URL = "https://github.com/google/draco/archive/refs/tags/1.3.6.zip"
 
 def InstallDraco(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(DRACO_URL, context, force)):
-        cmakeOptions = ['-DBUILD_USD_PLUGIN=ON']
+        cmakeOptions = [
+            '-DBUILD_USD_PLUGIN=ON',
+        ]
         cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
 
@@ -1374,10 +1429,10 @@ MATERIALX = Dependency("MaterialX", InstallMaterialX, "include/MaterialXCore/Lib
 
 ############################################################
 # Embree
-# For MacOS we use version 3.7.0 to include a fix from Intel
-# to build on Catalina.
+# For MacOS we use version 3.13.3 to include a fix from Intel
+# to build on Apple Silicon.
 if MacOS():
-    EMBREE_URL = "https://github.com/embree/embree/archive/v3.7.0.tar.gz"
+    EMBREE_URL = "https://github.com/embree/embree/archive/v3.13.3.tar.gz"
 else:
     EMBREE_URL = "https://github.com/embree/embree/archive/v3.2.2.tar.gz"
 
@@ -2145,11 +2200,13 @@ if PYSIDE in requiredDependencies:
     # The USD build will skip building usdview if pyside2-uic or pyside-uic is
     # not found, so check for it here to avoid confusing users. This list of 
     # PySide executable names comes from cmake/modules/FindPySide.cmake
+    pyside6Uic = ["pyside6-uic", "uic"]
+    found_pyside6Uic = any([which(p) for p in pyside6Uic])
     pyside2Uic = ["pyside2-uic", "python2-pyside2-uic", "pyside2-uic-2.7", "uic"]
     found_pyside2Uic = any([which(p) for p in pyside2Uic])
     pysideUic = ["pyside-uic", "python2-pyside-uic", "pyside-uic-2.7"]
     found_pysideUic = any([which(p) for p in pysideUic])
-    if not given_pysideUic and not found_pyside2Uic and not found_pysideUic:
+    if not given_pysideUic and not found_pyside2Uic and not found_pysideUic and not found_pyside6Uic:
         if Windows():
             # Windows does not support PySide2 with Python2.7
             PrintError("pyside-uic not found -- please install PySide and"
@@ -2157,10 +2214,10 @@ if PYSIDE in requiredDependencies:
                        " {0} depending on your platform)"
                    .format(" or ".join(pysideUic)))
         else:
-            PrintError("pyside2-uic not found -- please install PySide2 and"
+            PrintError("uic not found -- please install PySide2 or PySide6 and"
                        " adjust your PATH. (Note that this program may be"
                        " named {0} depending on your platform)"
-                       .format(" or ".join(pyside2Uic)))
+                       .format(" or ".join(set(pyside2Uic+pyside6Uic))))
         sys.exit(1)
 
 if JPEG in requiredDependencies:

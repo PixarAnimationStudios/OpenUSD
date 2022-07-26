@@ -957,16 +957,17 @@ HdSt_PipelineDrawBatch::PrepareDraw(
     }
 
     if (_useGpuCulling) {
-        _ExecuteFrustumCull(gfxCmds, updateBufferData,
+        // Ignore passed in gfxCmds for now since GPU frustum culling
+        // may still require multiple command buffer submissions.
+        _ExecuteFrustumCull(updateBufferData,
                             renderPassState, resourceRegistry);
-    }
-    bool hasPatches = _drawItemInstances[0]->GetDrawItem()->
-        GetGeometricShader()->IsPrimTypePatches();
-    bool const useMetalTessellation =
+        bool hasPatches = _drawItemInstances[0]->GetDrawItem()->
+            GetGeometricShader()->IsPrimTypePatches();
+        bool const useMetalTessellation =
         _drawItemInstances[0]->GetDrawItem()->
-                GetGeometricShader()->GetUseMetalTessellation();
-    if (hasPatches && useMetalTessellation) {
-        _ExecutePostTesselation(gfxCmds, updateBufferData,
+            GetGeometricShader()->GetUseMetalTessellation();
+        if (hasPatches && useMetalTessellation) {
+            _ExecutePostTesselation(gfxCmds, updateBufferData,
                                 renderPassState, resourceRegistry);
     }
 }
@@ -1149,37 +1150,37 @@ _GetVertexBuffersForDrawing(_BindingState const & state)
 }
 
 uint32_t
-_VertexBufferBindingsForViewTransformation(
-    HgiVertexBufferBindingVector &bindings,
+_GetVertexBufferBindingsForViewTransformation(
+    HgiVertexBufferBindingVector *bindings,
     _BindingState const & state)
 {
     // Bind the dispatchBuffer drawing coordinate resource views
     HdStBufferResourceSharedPtr resource =
                 state.dispatchBuffer->GetEntireResource();
     
-    bindings.emplace_back(resource->GetHandle(),
+    bindings->emplace_back(resource->GetHandle(),
                           (uint32_t)resource->GetOffset(),
                           0);
 
-    return static_cast<uint32_t>(bindings.size());
+    return static_cast<uint32_t>(bindings->size());
 }
 
 uint32_t
-_VertexBufferBindingsForDrawing(
-    HgiVertexBufferBindingVector &bindings,
+_GetVertexBufferBindingsForDrawing(
+    HgiVertexBufferBindingVector *bindings,
     _BindingState const & state)
 {
     uint32_t nextBinding = // continue binding subsequent locations
-        _VertexBufferBindingsForViewTransformation(bindings, state);
+        _GetVertexBufferBindingsForViewTransformation(bindings, state);
 
     for (auto const & namedResource : state.vertexBar->GetResources()) {
         HdBinding const binding = state.binder.GetBinding(namedResource.first);
         HdStBufferResourceSharedPtr const & resource = namedResource.second;
 
         if (binding.GetType() == HdBinding::VERTEX_ATTR) {
-            bindings.emplace_back(resource->GetHandle(),
-                                  static_cast<uint32_t>(resource->GetOffset()),
-                                  nextBinding);
+            bindings->emplace_back(resource->GetHandle(),
+                                   static_cast<uint32_t>(resource->GetOffset()),
+                                   nextBinding);
             nextBinding++;
         }
     }
@@ -1301,6 +1302,9 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
              indexBuffer->GetOffset(), indexBuffer->GetStride());
     }
     gfxCmds->BindResources(resourceBindings);
+
+    _BindVertexBuffersForDrawing(gfxCmds, state);
+
     if (drawIndirect) {
         _ExecuteDrawIndirect(gfxCmds, state.indexBar);
     } else {
@@ -1550,9 +1554,7 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
             hgi->CreateResourceBindings(bindingsDesc);
     cullGfxCmds->BindResources(resourceBindings);
 
-    HgiVertexBufferBindingVector bindings;
-    _VertexBufferBindingsForDrawing(bindings, state);
-    cullGfxCmds->BindVertexBuffers(bindings);
+    _BindVertexBuffersForViewTransformation(cullGfxCmds.get(), state);
 
     GfMatrix4f const &cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
     GfVec2f const &drawRangeNdc = renderPassState->GetDrawingRangeNDC();

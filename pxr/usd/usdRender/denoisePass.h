@@ -46,20 +46,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// DENOISEPASS                                                                //
+// RENDERDENOISEPASS                                                          //
 // -------------------------------------------------------------------------- //
 
 /// \class UsdRenderDenoisePass
 ///
-/// A DenoisePass generates renders via a denoising process.  This may
-/// be the same renderer that a pipeline uses for UsdRender, or may be a separate
-/// one.  Notably, a DenoisePass requires another Pass to be present for it to
-/// operate.  The denoising process itself is not generative, and requires
-/// images inputs to operate.
+/// A RenderDenoisePass generates renders via a denoising process.
+/// This may be the same renderer that a pipeline uses for UsdRender, 
+/// or may be a separate one.  Notably, a RenderDenoisePass requires
+/// another Pass to be present for it to operate.  The denoising process 
+/// itself is not generative, and requires images inputs to operate.
 /// 
 /// As denoising integration varies so widely across pipelines, all
 /// implementation details are left to pipeline-specific prims
-/// that inherit from DenoisePass.
+/// that inherit from RenderDenoisePass.
 /// 
 ///
 class UsdRenderDenoisePass : public UsdTyped

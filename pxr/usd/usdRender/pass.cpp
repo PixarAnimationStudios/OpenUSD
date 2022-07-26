@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdRender/renderPass.h"
+#include "pxr/usd/usdRender/pass.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -33,64 +33,64 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdRenderRenderPass,
+    TfType::Define<UsdRenderPass,
         TfType::Bases< UsdTyped > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
     // TfType::Find<UsdSchemaBase>().FindDerivedByName("RenderPass")
-    // to find TfType<UsdRenderRenderPass>, which is how IsA queries are
+    // to find TfType<UsdRenderPass>, which is how IsA queries are
     // answered.
-    TfType::AddAlias<UsdSchemaBase, UsdRenderRenderPass>("RenderPass");
+    TfType::AddAlias<UsdSchemaBase, UsdRenderPass>("RenderPass");
 }
 
 /* virtual */
-UsdRenderRenderPass::~UsdRenderRenderPass()
+UsdRenderPass::~UsdRenderPass()
 {
 }
 
 /* static */
-UsdRenderRenderPass
-UsdRenderRenderPass::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdRenderPass
+UsdRenderPass::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdRenderRenderPass();
+        return UsdRenderPass();
     }
-    return UsdRenderRenderPass(stage->GetPrimAtPath(path));
+    return UsdRenderPass(stage->GetPrimAtPath(path));
 }
 
 /* static */
-UsdRenderRenderPass
-UsdRenderRenderPass::Define(
+UsdRenderPass
+UsdRenderPass::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
     static TfToken usdPrimTypeName("RenderPass");
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdRenderRenderPass();
+        return UsdRenderPass();
     }
-    return UsdRenderRenderPass(
+    return UsdRenderPass(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
 /* virtual */
-UsdSchemaKind UsdRenderRenderPass::_GetSchemaKind() const
+UsdSchemaKind UsdRenderPass::_GetSchemaKind() const
 {
-    return UsdRenderRenderPass::schemaKind;
+    return UsdRenderPass::schemaKind;
 }
 
 /* static */
 const TfType &
-UsdRenderRenderPass::_GetStaticTfType()
+UsdRenderPass::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdRenderRenderPass>();
+    static TfType tfType = TfType::Find<UsdRenderPass>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdRenderRenderPass::_IsTypedSchema()
+UsdRenderPass::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -98,19 +98,19 @@ UsdRenderRenderPass::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdRenderRenderPass::_GetTfType() const
+UsdRenderPass::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 UsdAttribute
-UsdRenderRenderPass::GetPassTypeAttr() const
+UsdRenderPass::GetPassTypeAttr() const
 {
     return GetPrim().GetAttribute(UsdRenderTokens->passType);
 }
 
 UsdAttribute
-UsdRenderRenderPass::CreatePassTypeAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRenderPass::CreatePassTypeAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdRenderTokens->passType,
                        SdfValueTypeNames->Token,
@@ -121,13 +121,13 @@ UsdRenderRenderPass::CreatePassTypeAttr(VtValue const &defaultValue, bool writeS
 }
 
 UsdAttribute
-UsdRenderRenderPass::GetCommandAttr() const
+UsdRenderPass::GetCommandAttr() const
 {
     return GetPrim().GetAttribute(UsdRenderTokens->command);
 }
 
 UsdAttribute
-UsdRenderRenderPass::CreateCommandAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRenderPass::CreateCommandAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdRenderTokens->command,
                        SdfValueTypeNames->StringArray,
@@ -138,13 +138,13 @@ UsdRenderRenderPass::CreateCommandAttr(VtValue const &defaultValue, bool writeSp
 }
 
 UsdAttribute
-UsdRenderRenderPass::GetFileNameAttr() const
+UsdRenderPass::GetFileNameAttr() const
 {
     return GetPrim().GetAttribute(UsdRenderTokens->fileName);
 }
 
 UsdAttribute
-UsdRenderRenderPass::CreateFileNameAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRenderPass::CreateFileNameAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdRenderTokens->fileName,
                        SdfValueTypeNames->Asset,
@@ -155,13 +155,13 @@ UsdRenderRenderPass::CreateFileNameAttr(VtValue const &defaultValue, bool writeS
 }
 
 UsdAttribute
-UsdRenderRenderPass::GetDenoiseEnableAttr() const
+UsdRenderPass::GetDenoiseEnableAttr() const
 {
     return GetPrim().GetAttribute(UsdRenderTokens->denoiseEnable);
 }
 
 UsdAttribute
-UsdRenderRenderPass::CreateDenoiseEnableAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRenderPass::CreateDenoiseEnableAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdRenderTokens->denoiseEnable,
                        SdfValueTypeNames->Bool,
@@ -172,39 +172,39 @@ UsdRenderRenderPass::CreateDenoiseEnableAttr(VtValue const &defaultValue, bool w
 }
 
 UsdRelationship
-UsdRenderRenderPass::GetRenderSourceRel() const
+UsdRenderPass::GetRenderSourceRel() const
 {
     return GetPrim().GetRelationship(UsdRenderTokens->renderSource);
 }
 
 UsdRelationship
-UsdRenderRenderPass::CreateRenderSourceRel() const
+UsdRenderPass::CreateRenderSourceRel() const
 {
     return GetPrim().CreateRelationship(UsdRenderTokens->renderSource,
                        /* custom = */ false);
 }
 
 UsdRelationship
-UsdRenderRenderPass::GetInputPassesRel() const
+UsdRenderPass::GetInputPassesRel() const
 {
     return GetPrim().GetRelationship(UsdRenderTokens->inputPasses);
 }
 
 UsdRelationship
-UsdRenderRenderPass::CreateInputPassesRel() const
+UsdRenderPass::CreateInputPassesRel() const
 {
     return GetPrim().CreateRelationship(UsdRenderTokens->inputPasses,
                        /* custom = */ false);
 }
 
 UsdRelationship
-UsdRenderRenderPass::GetDenoisePassRel() const
+UsdRenderPass::GetDenoisePassRel() const
 {
     return GetPrim().GetRelationship(UsdRenderTokens->denoisePass);
 }
 
 UsdRelationship
-UsdRenderRenderPass::CreateDenoisePassRel() const
+UsdRenderPass::CreateDenoisePassRel() const
 {
     return GetPrim().CreateRelationship(UsdRenderTokens->denoisePass,
                        /* custom = */ false);
@@ -224,7 +224,7 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 
 /*static*/
 const TfTokenVector&
-UsdRenderRenderPass::GetSchemaAttributeNames(bool includeInherited)
+UsdRenderPass::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdRenderTokens->passType,

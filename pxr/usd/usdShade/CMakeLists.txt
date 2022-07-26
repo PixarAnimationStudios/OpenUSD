@@ -5,6 +5,7 @@ pxr_library(usdShade
     LIBRARIES
         tf
         vt
+        js
         sdf
         ndr
         sdr

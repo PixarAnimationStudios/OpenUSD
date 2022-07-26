@@ -958,5 +958,30 @@ class TestPcpChanges(unittest.TestCase):
         self.assertEqual(err, [])
         self.assertEqual(pi.propertyStack, [subAttrSpec])
 
+    def test_ChangesToCulledAncestralNodes(self):
+        layer = Sdf.Layer.FindOrOpen('TestCulledAncestralNodes/root.sdf')
+        pcp = Pcp.Cache(Pcp.LayerStackIdentifier(layer))
+
+        (pi, err) = pcp.ComputePrimIndex(
+            '/FSToyCarA/Looks/PaintedWood_PaintedYellow')
+        self.assertEqual(err, [])
+ 
+        with Pcp._TestChangeProcessor(pcp) as cp:
+            Sdf.CreatePrimInLayer(
+                layer, '/FSToyCarA_defaultShadingVariant/Looks/PaintedWood')
+
+            # These significant changes are surprising but expected; Pcp
+            # detects that the addition of these specs would affect the prim
+            # indexes at these paths in the root layer stack, but since we
+            # haven't computed these prim indexes Pcp assumes these require
+            # a significant resync. We could probably improve this.
+            self.assertEqual(cp.GetSignificantChanges(),
+                             ['/FSToyCarA/Looks/PaintedWood',
+                              '/FSToyCarA_defaultShadingVariant/Looks/PaintedWood'])
+            
+            self.assertEqual(cp.GetSpecChanges(), [])
+            self.assertEqual(cp.GetPrimChanges(),
+                             ['/FSToyCarA/Looks/PaintedWood_PaintedYellow'])
+
 if __name__ == "__main__":
     unittest.main()

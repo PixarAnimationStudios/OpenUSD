@@ -92,7 +92,7 @@ public:
     /// Important! The adjacency table needs to be computed before smooth
     /// normals.
     HD_API
-    bool BuildAdjacencyTable(HdMeshTopology const *topology);
+    void BuildAdjacencyTable(HdMeshTopology const *topology);
 
     /// Returns a shared adjacency builder computation which will call
     /// BuildAdjacencyTable.  The shared computation is useful if multiple

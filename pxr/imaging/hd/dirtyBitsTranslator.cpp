@@ -110,6 +110,10 @@ HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(TfToken const& primType,
         }
     }
 
+    if (bits & HdChangeTracker::DirtyCategories) {
+        set->append(HdCategoriesSchema::GetDefaultLocator());
+    }
+
     if (primType == HdPrimTypeTokens->cone) {
         if (bits & HdChangeTracker::DirtyPrimvar) {
             set->append(HdConeSchema::GetDefaultLocator());
@@ -466,6 +470,12 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
         if (_FindLocator(HdCapsuleSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdChangeTracker::DirtyPrimvar;
         }
+    }
+
+    // Locator (*): categories
+
+    if (_FindLocator(HdCategoriesSchema::GetDefaultLocator(), end, &it)) {
+        bits |= HdChangeTracker::DirtyCategories;
     }
 
     if (primType == HdPrimTypeTokens->cone) {

@@ -242,5 +242,28 @@ UsdImagingDataSourceCameraPrim::Get(const TfToken & name)
     return UsdImagingDataSourcePrim::Get(name);
 }
 
+HdDataSourceLocatorSet
+UsdImagingDataSourceCameraPrim::Invalidate(
+    const TfToken &subprim, const TfTokenVector &properties)
+{
+    TRACE_FUNCTION();
+
+    HdDataSourceLocatorSet locators =
+        UsdImagingDataSourcePrim::Invalidate(subprim, properties);
+
+    static TfTokenVector usdNames = 
+        UsdGeomCamera::GetSchemaAttributeNames(/* includeInherited = */ false);
+
+    for (const TfToken &propertyName : properties) {
+        for (const TfToken &usdName : usdNames) {
+            if (propertyName == usdName) {
+                locators.insert(
+                    HdCameraSchema::GetDefaultLocator().Append(propertyName));
+            }
+        }
+    }
+
+    return locators;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

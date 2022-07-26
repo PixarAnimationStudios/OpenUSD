@@ -23,7 +23,6 @@ pxr_library(glf
         gf
         hf
         hio
-        js
         plug
         tf
         trace

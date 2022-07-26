@@ -30,7 +30,6 @@ pxr_library(hgiMetal
         graphicsCmds.h
         graphicsPipeline.h
         hgi.h
-
         resourceBindings.h
         sampler.h
         shaderFunction.h

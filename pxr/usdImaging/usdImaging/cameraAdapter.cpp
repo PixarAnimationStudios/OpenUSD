@@ -75,6 +75,18 @@ UsdImagingCameraAdapter::GetImagingSubprimData(
     return nullptr;
 }
 
+HdDataSourceLocatorSet
+UsdImagingCameraAdapter::InvalidateImagingSubprim(
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceCameraPrim::Invalidate(subprim, properties);
+    }
+
+    return HdDataSourceLocatorSet();
+}
+
 bool
 UsdImagingCameraAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
