@@ -35,28 +35,59 @@ PXR_NAMESPACE_OPEN_SCOPE
 int
 Tf_RefPtr_UniqueChangedCounter::_AddRef(TfRefBase const *refBase)
 {
+    // Read the current value, and try to CAS it one greater if it looks like we
+    // won't take it 1 -> 2.  If we're successful at this, we can skip the whole
+    // locking business.  If instead the current count is 1, we pay the price
+    // with the locking stuff.
+    auto &counter = refBase->GetRefCount()._counter;
+
+    int prevCount = counter.load();
+    while (prevCount != 1) {
+        if (counter.compare_exchange_weak(prevCount, prevCount+1)) {
+            return prevCount;
+        }
+    }
+
+    // prevCount is 1 or it changed in the meantime.
     TfRefBase::UniqueChangedListener const &listener =
         TfRefBase::_uniqueChangedListener;
     listener.lock();
-    int oldValue = refBase->GetRefCount()._FetchAndAdd(1);
-    if (oldValue == 1)
+    prevCount = refBase->GetRefCount()._FetchAndAdd(1);
+    if (prevCount == 1) {
         listener.func(refBase, false);
+    }
     listener.unlock();
-    return oldValue;
+    
+    return prevCount;
 }
 
 bool
 Tf_RefPtr_UniqueChangedCounter::_RemoveRef(TfRefBase const *refBase)
 {
+    // Read the current value, and try to CAS it one less if it looks like we
+    // won't take it 2 -> 1.  If we're successful at this, we can skip the whole
+    // locking business.  If instead the current count is 2, we pay the price
+    // with the locking stuff.
+    auto &counter = refBase->GetRefCount()._counter;
+
+    int prevCount = counter.load();
+    while (prevCount != 2) {
+        if (counter.compare_exchange_weak(prevCount, prevCount-1)) {
+            return prevCount == 1;
+        }
+    }
+
+    // prevCount is 2 or it changed in the meantime.
     TfRefBase::UniqueChangedListener const &listener =
         TfRefBase::_uniqueChangedListener;
     listener.lock();
-    int oldValue = refBase->GetRefCount()._FetchAndAdd(-1);
-    if (oldValue == 2)
+    prevCount = refBase->GetRefCount()._FetchAndAdd(-1);
+    if (prevCount == 2) {
         listener.func(refBase, true);
-
+    }
     listener.unlock();
-    return oldValue == 1;
+    
+    return prevCount == 1;
 }
 
 bool Tf_RefPtr_UniqueChangedCounter::_AddRefIfNonzero(
