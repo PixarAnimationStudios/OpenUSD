@@ -349,7 +349,7 @@ PcpCache::RequestLayerMuting(const std::vector<std::string>& layersToMute,
                     typedError->resolvedAssetPath) != finalLayersToUnmute.end();
                 if (assetWasUnmuted) {
                     cacheChanges->DidMaybeFixAsset(
-                        this, typedError->site, typedError->layer, 
+                        this, typedError->site, typedError->sourceLayer, 
                         typedError->resolvedAssetPath);
                 }
             }
@@ -1129,7 +1129,7 @@ PcpCache::Reload(PcpChanges* changes)
                     std::dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e)) {
                     changes->DidMaybeFixAsset(this,
                                               typedErr->site,
-                                              typedErr->layer,
+                                              typedErr->sourceLayer,
                                               typedErr->resolvedAssetPath);
                 }
             }
@@ -1168,7 +1168,7 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
                     std::dynamic_pointer_cast<PcpErrorInvalidAssetPath>(e))
                 {
                     changes->DidMaybeFixAsset(this, typedErr->site,
-                                              typedErr->layer,
+                                              typedErr->sourceLayer,
                                               typedErr->resolvedAssetPath);
                 }
             }

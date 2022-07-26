@@ -351,33 +351,6 @@ PcpErrorInconsistentAttributeVariability::ToString() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PcpErrorInternalAssetPathPtr
-PcpErrorInternalAssetPath::New()
-{
-    return PcpErrorInternalAssetPathPtr(new PcpErrorInternalAssetPath);
-}
-
-PcpErrorInternalAssetPath::PcpErrorInternalAssetPath() :
-    PcpErrorBase(PcpErrorType_InternalAssetPath)
-{
-}
-
-PcpErrorInternalAssetPath::~PcpErrorInternalAssetPath()
-{
-}
-
-// virtual
-std::string
-PcpErrorInternalAssetPath::ToString() const
-{
-    return TfStringPrintf("Ignoring %s path on prim <%s> because asset @%s@ "
-                          "is internal.",
-                          TfEnum::GetDisplayName(arcType).c_str(), 
-                          site.path.GetText(), resolvedAssetPath.c_str()); 
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 PcpErrorInvalidPrimPathPtr
 PcpErrorInvalidPrimPath::New()
 {
@@ -397,11 +370,11 @@ PcpErrorInvalidPrimPath::~PcpErrorInvalidPrimPath()
 std::string
 PcpErrorInvalidPrimPath::ToString() const
 {
-    return TfStringPrintf("Invalid %s path <%s> on prim %s "
+    return TfStringPrintf("Invalid %s path <%s> introduced by %s"
                           "-- must be an absolute prim path.", 
                           TfEnum::GetDisplayName(arcType).c_str(), 
                           primPath.GetText(),
-                          TfStringify(site).c_str());
+                          TfStringify(PcpSite(sourceLayer, site.path)).c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -438,10 +411,11 @@ PcpErrorInvalidAssetPath::~PcpErrorInvalidAssetPath()
 std::string
 PcpErrorInvalidAssetPath::ToString() const
 {
-    return TfStringPrintf("Could not open asset @%s@ for %s on prim %s%s%s.",
+    return TfStringPrintf("Could not open asset @%s@ for "
+                          "%s introduced by %s%s%s.",
                           resolvedAssetPath.c_str(), 
                           TfEnum::GetDisplayName(arcType).c_str(), 
-                          TfStringify(site).c_str(),
+                          TfStringify(PcpSite(sourceLayer, site.path)).c_str(),
                           messages.empty() ? "" : " -- ",
                           messages.c_str());
 }
@@ -467,10 +441,10 @@ PcpErrorMutedAssetPath::~PcpErrorMutedAssetPath()
 std::string
 PcpErrorMutedAssetPath::ToString() const
 {
-    return TfStringPrintf("Asset @%s@ was muted for %s on prim %s.",
+    return TfStringPrintf("Asset @%s@ was muted for %s introduced by %s.",
                           resolvedAssetPath.c_str(), 
                           TfEnum::GetDisplayName(arcType).c_str(), 
-                          TfStringify(site).c_str());
+                          TfStringify(PcpSite(sourceLayer, site.path)).c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -641,11 +615,13 @@ PcpErrorInvalidReferenceOffset::~PcpErrorInvalidReferenceOffset()
 std::string
 PcpErrorInvalidReferenceOffset::ToString() const
 {
-    return TfStringPrintf("Invalid reference offset %s at %s on "
-                          "asset path '%s'. Using no offset instead.", 
+    return TfStringPrintf("Invalid %s offset %s for @%s@<%s> introduced by %s. "
+                          "Using no offset instead.",
+                          TfEnum::GetDisplayName(arcType).c_str(), 
                           TfStringify(offset).c_str(),
-                          TfStringify(PcpSite(layer, sourcePath)).c_str(),
-                          assetPath.c_str());
+                          assetPath.c_str(),
+                          targetPath.GetText(),
+                          TfStringify(PcpSite(sourceLayer, sourcePath)).c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -709,36 +685,6 @@ PcpErrorInvalidSublayerPath::ToString() const
                                 : "<NULL>",
                           messages.empty() ? "" : " -- ",
                           messages.c_str());
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-PcpErrorInvalidVariantSelectionPtr
-PcpErrorInvalidVariantSelection::New()
-{
-    return PcpErrorInvalidVariantSelectionPtr(
-        new PcpErrorInvalidVariantSelection);
-}
-
-PcpErrorInvalidVariantSelection::PcpErrorInvalidVariantSelection() :
-    PcpErrorBase(PcpErrorType_InvalidVariantSelection)
-{
-}
-
-PcpErrorInvalidVariantSelection::~PcpErrorInvalidVariantSelection()
-{
-}
-
-// virtual
-std::string
-PcpErrorInvalidVariantSelection::ToString() const
-{
-    return TfStringPrintf("Invalid variant selection {%s = %s} at <%s> "
-                          "in @%s@.",
-                          vset.c_str(),
-                          vsel.c_str(),
-                          sitePath.GetText(),
-                          siteAssetPath.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -916,10 +862,10 @@ PcpErrorUnresolvedPrimPath::~PcpErrorUnresolvedPrimPath()
 std::string
 PcpErrorUnresolvedPrimPath::ToString() const
 {
-    return TfStringPrintf("Unresolved %s path <%s> on prim %s.",
+    return TfStringPrintf("Unresolved %s prim path %s introduced by %s",
                           TfEnum::GetDisplayName(arcType).c_str(), 
-                          unresolvedPath.GetText(),
-                          TfStringify(site).c_str());
+                          TfStringify(PcpSite(targetLayer, unresolvedPath)).c_str(),
+                          TfStringify(PcpSite(sourceLayer, site.path)).c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

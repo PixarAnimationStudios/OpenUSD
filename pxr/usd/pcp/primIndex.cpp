@@ -1824,6 +1824,7 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
             err->rootSite = PcpSite(node.GetRootNode().GetSite());
             err->site = PcpSite(node.GetSite());
             err->primPath = refOrPayload.GetPrimPath();
+            err->sourceLayer = srcLayer;
             err->arcType = ARC_TYPE;
             indexer->RecordError(err);
             fail = true;
@@ -1835,11 +1836,12 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
             PcpErrorInvalidReferenceOffsetPtr err =
                 PcpErrorInvalidReferenceOffset::New();
             err->rootSite = PcpSite(node.GetRootNode().GetSite());
-            err->layer      = srcLayer;
+            err->sourceLayer = srcLayer;
             err->sourcePath = node.GetPath();
-            err->assetPath  = info.authoredAssetPath;
+            err->assetPath = info.authoredAssetPath;
             err->targetPath = refOrPayload.GetPrimPath();
-            err->offset     = layerOffset;
+            err->offset = layerOffset;
+            err->arcType = ARC_TYPE;
             indexer->RecordError(err);
 
             // Don't set fail, just reset the offset.
@@ -1876,7 +1878,7 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
                 err->assetPath = info.authoredAssetPath;
                 err->resolvedAssetPath = canonicalMutedLayerId;
                 err->arcType = ARC_TYPE;
-                err->layer = srcLayer;
+                err->sourceLayer = srcLayer;
                 indexer->RecordError(err);
                 continue;
             }
@@ -1906,7 +1908,7 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
                 err->assetPath = info.authoredAssetPath;
                 err->resolvedAssetPath = refOrPayload.GetAssetPath();
                 err->arcType = ARC_TYPE;
-                err->layer = srcLayer;
+                err->sourceLayer = srcLayer;
                 if (!m.IsClean()) {
                     vector<string> commentary;
                     for (auto const &err: m) {
@@ -1961,8 +1963,10 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
                 err->rootSite = PcpSite(node.GetRootNode().GetSite());
                 err->site = PcpSite(node.GetSite());
                 // Use a relative path with the field key for a hint.
+                err->targetLayer = layer;
                 err->unresolvedPath = SdfPath::ReflexiveRelativePath().
                     AppendChild(SdfFieldKeys->DefaultPrim);
+                err->sourceLayer = srcLayer;
                 err->arcType = ARC_TYPE;
                 indexer->RecordError(err);
 
@@ -2010,7 +2014,9 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
             PcpErrorUnresolvedPrimPathPtr err = PcpErrorUnresolvedPrimPath::New();
             err->rootSite = PcpSite(node.GetRootNode().GetSite());
             err->site = PcpSite(node.GetSite());
+            err->targetLayer = layer;
             err->unresolvedPath = newNode.GetSite().path;
+            err->sourceLayer = srcLayer;
             err->arcType = ARC_TYPE;
             indexer->RecordError(err);
         }

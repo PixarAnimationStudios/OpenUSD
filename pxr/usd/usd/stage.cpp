@@ -2849,9 +2849,17 @@ UsdStage::_ReportErrors(const PcpErrorVector &errors,
         allErrors.reserve(errors.size() + otherErrors.size());
 
         for (const auto& err : errors) {
-            allErrors.push_back(TfStringPrintf("%s %s", 
-                                               err->ToString().c_str(), 
-                                               fullContext.c_str()));
+            if (err->rootSite.path.IsAbsoluteRootPath()) {
+                allErrors.push_back(TfStringPrintf("%s %s", 
+                    err->ToString().c_str(), 
+                    fullContext.c_str()));
+
+            } else {
+                allErrors.push_back(TfStringPrintf("In <%s>: %s %s", 
+                    err->rootSite.path.GetString().c_str(),
+                    err->ToString().c_str(), 
+                    fullContext.c_str()));
+            }
         }
         for (const auto& err : otherErrors) {
             allErrors.push_back(TfStringPrintf("%s %s", 
