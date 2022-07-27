@@ -82,6 +82,17 @@ _ParseMembers(InputValueVector const & input, int fromElement)
     return result;
 }
 
+TfTokenVector split(const std::string &text, char sep) {
+  TfTokenVector tokens;
+  std::size_t start = 0, end = 0;
+  while ((end = text.find(sep, start)) != std::string::npos) {
+    tokens.push_back(TfToken(text.substr(start, end - start)));
+    start = end + 1;
+  }
+  tokens.push_back(TfToken(text.substr(start)));
+  return tokens;
+}
+
 // e.g. ["in", "vec3", "color"]
 // e.g. ["in", "int", "pointId", "flat"]
 bool
@@ -93,7 +104,9 @@ _ParseValue(InputValueVector const & input, Element *element)
                            /*dataType=*/_Token(input[1]),
                            /*name=*/_Token(input[2]));
         if (input.size() == 4) {
-            element->qualifiers = _Token(input[3]);
+            std::string qualString = input[3].GetWithDefault(
+                 HdStResourceLayoutTokens->unknown.GetString());
+            element->qualifiers = split(qualString, ' ');
         }
         return true;
     } else if (_Token(input[0]) == HdStResourceLayoutTokens->outValue) {
@@ -101,7 +114,9 @@ _ParseValue(InputValueVector const & input, Element *element)
                            /*dataType=*/_Token(input[1]),
                            /*name=*/_Token(input[2]));
         if (input.size() == 4) {
-            element->qualifiers = _Token(input[3]);
+            std::string qualString = input[3].GetWithDefault(
+                 HdStResourceLayoutTokens->unknown.GetString());
+            element->qualifiers = split(qualString, ' ');
         }
         return true;
     }
@@ -190,11 +205,15 @@ _ParseQualifier(InputValueVector const & input, Element *element)
     if (input.size() != 2) return false;
     if (_Token(input[0]) == HdStResourceLayoutTokens->inValue) {
         *element = Element(InOut::STAGE_IN, Kind::QUALIFIER);
-        element->qualifiers = _Token(input[1]);
+        std::string qualString = input[1].GetWithDefault(
+             HdStResourceLayoutTokens->unknown.GetString());
+        element->qualifiers = split(qualString, ' ');
         return true;
     } else if (_Token(input[0]) == HdStResourceLayoutTokens->outValue) {
         *element = Element(InOut::STAGE_OUT, Kind::QUALIFIER);
-        element->qualifiers = _Token(input[1]);
+        std::string qualString = input[1].GetWithDefault(
+             HdStResourceLayoutTokens->unknown.GetString());
+        element->qualifiers = split(qualString, ' ');
         return true;
     }
 
