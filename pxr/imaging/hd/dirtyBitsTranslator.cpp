@@ -259,16 +259,8 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdLight::DirtyResource) {
             set->append(HdMaterialSchema::GetDefaultLocator());
         }
-        // XXX: Right now, primvars don't seem to have a dirty bit, so
-        //      group them with params...
         if (bits & HdLight::DirtyParams) {
             set->append(HdPrimvarsSchema::GetDefaultLocator());
-        }
-        // XXX: Some delegates seems to be sending light visibility
-        //      changes on the child guide mesh instead of here. So,
-        //      for now, let's consider dirty light params to include
-        //      light visibility
-        if (bits & (HdChangeTracker::DirtyVisibility | HdLight::DirtyParams)) {
             set->append(HdVisibilitySchema::GetDefaultLocator());
         }
         if (bits & HdLight::DirtyTransform) {
@@ -719,7 +711,7 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
             bits |= HdLight::DirtyParams;
         }
         if (_FindLocator(HdVisibilitySchema::GetDefaultLocator(), end, &it)) {
-            bits |= HdChangeTracker::DirtyVisibility | HdLight::DirtyParams;
+            bits |= HdLight::DirtyParams;
         }
         if (_FindLocator(HdXformSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdLight::DirtyTransform;

@@ -2,6 +2,11 @@
 
 ## [22.11] - ??
 
+### Imaging
+- Fixed a speculative issue with light invalidation sometimes using dirty bits
+  from the wrong enum.
+  (Issue: [#1719](https://github.com/PixarAnimationStudios/USD/issues/1719))
+
 ### UsdImaging
 - Deleted UsdImagingGLLegacyEngine, i.e. usdview's "HydraDisabled" renderer.
   This class was a simple GL3-based USD renderer that was kept as a fallback for
