@@ -74,6 +74,19 @@ def _SetupOpenGLContext(width=100, height=100):
     # ready for gl operations.
     glWidget.makeCurrent()
 
+    # check if the frame buffer was initialized by makeCurrent() above
+    # if not, force a show/hide of the glWidget to force initializtion
+    if PySideModule == 'PySide6':
+        if glWidget.defaultFramebufferObject() == 0:
+            glWidget.show()
+            glWidget.hide()
+            counter = 0
+            while glWidget.defaultFramebufferObject() == 0:
+                application.processEvents()
+                counter += 1
+                if counter > 100:
+                    break
+
     return glWidget
 
 def main():
