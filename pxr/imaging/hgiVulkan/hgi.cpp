@@ -66,6 +66,12 @@ HgiVulkan::HgiVulkan()
 
 HgiVulkan::~HgiVulkan()
 {
+    HgiVulkanCommandQueue* queue = _device->GetCommandQueue();
+
+    // Wait for command buffers to complete, then reset command buffers for 
+    // each device's queue.
+    queue->ResetConsumedCommandBuffers(HgiSubmitWaitTypeWaitUntilCompleted);
+
     // Wait for all devices and perform final garbage collection.
     _device->WaitForIdle();
     _garbageCollector->PerformGarbageCollection(_device);
