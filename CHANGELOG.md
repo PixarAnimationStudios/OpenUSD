@@ -1,5 +1,15 @@
 # Change Log
 
+## [22.11] - ??
+
+### UsdImaging
+- Added an API for UsdImagingDelegate adapters to request a callback to
+  UpdateForTime. Adapters now invoke this API on relevant invalidation, but
+  UsdImagingDelegate doesn't automatically call UpdateForTime on every
+  invalidation. This can be a major performance benefit in some scenes. Custom
+  adapters need to be updated to work correctly; however, you can revert to the
+  old behavior by setting the env var USDIMAGING_LEGACY_UPDATE_FOR_TIME=1.
+
 ## [22.08] - 2022-07-21
 
 Support for Python 2 is sunsetted as of this release. We anticipate dropping

@@ -525,6 +525,13 @@ UsdImagingGprimAdapter::MarkDirty(UsdPrim const& prim,
                                   UsdImagingIndexProxy* index)
 {
     index->MarkRprimDirty(cachePath, dirty);
+    // Note that if any primvars have changed, we need to re-run UpdateForTime.
+    // Value clips mean that frame changes can change the primvar set.
+    // Material updates can also trigger a new primvar set.
+    if (HdChangeTracker::IsAnyPrimvarDirty(dirty, cachePath) ||
+        (dirty & HdChangeTracker::DirtyMaterialId)) {
+        index->RequestUpdateForTime(cachePath);
+    }
 }
 
 void
@@ -580,10 +587,10 @@ UsdImagingGprimAdapter::MarkMaterialDirty(UsdPrim const& prim,
                                           SdfPath const& cachePath,
                                           UsdImagingIndexProxy* index)
 {
-    // If the Usd material changed, it could mean the primvar set also changed
-    // Hydra doesn't currently manage detection and propagation of these
-    // changes, so we must mark the rprim dirty.
     index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyMaterialId);
+    // If the Usd material changed, it could mean the primvars used for
+    // material filtering also changed.
+    index->RequestUpdateForTime(cachePath);
 }
 
 void

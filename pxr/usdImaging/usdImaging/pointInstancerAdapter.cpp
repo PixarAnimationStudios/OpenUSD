@@ -874,6 +874,12 @@ UsdImagingPointInstancerAdapter::MarkDirty(UsdPrim const& prim,
         proto.adapter->MarkDirty(prim, cachePath, dirty, index);
     } else {
         index->MarkInstancerDirty(cachePath, dirty);
+        // Note that if any primvars have changed, we need to re-run
+        // UpdateForTime. Value clips mean that frame changes can change the
+        // primvar set.
+        if (dirty & HdChangeTracker::DirtyPrimvar) {
+            index->RequestUpdateForTime(cachePath);
+        }
     }
 }
 

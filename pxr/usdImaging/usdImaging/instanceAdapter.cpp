@@ -361,9 +361,9 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         // edits to the proto root).
         index->AddDependency(instancerPath, instancerPrim.GetPrototype());
 
-        // Mark this instancer as having a TrackVariability queued, since
-        // we automatically queue it in InsertInstancer.
-        instancerData.refreshVariability = true;
+        // Mark this instancer as having TrackVariability/UpdateForTime queued,
+        // since we automatically queue them in InsertInstancer.
+        instancerData.refresh = true;
     }
 
     // Add an entry to the instancer data for the given instance. Keep
@@ -454,15 +454,15 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                 index->AddDependency(depInstancerPath, prim);
             }
 
-            // Ask hydra to do a full refresh on this instancer.
             index->MarkInstancerDirty(depInstancerPath,
                     HdChangeTracker::DirtyPrimvar |
                     HdChangeTracker::DirtyInstanceIndex);
 
-            // Tell UsdImaging to re-run TrackVariability.
-            if (!depInstancerData.refreshVariability) {
-                depInstancerData.refreshVariability = true;
-                index->Refresh(depInstancerPath);
+            // Ask hydra to do a full refresh on this instancer.
+            if (!depInstancerData.refresh) {
+                depInstancerData.refresh = true;
+                index->RequestTrackVariability(depInstancerPath);
+                index->RequestUpdateForTime(depInstancerPath);
             }
         }
 
@@ -570,7 +570,9 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
             *timeVaryingBits |= HdChangeTracker::DirtyInstanceIndex;
         }
 
-        instrData->refreshVariability = false;
+        // We can clear the "refresh" bit here since by the time
+        // TrackVariability is run, we're done populating new instances.
+        instrData->refresh = false;
     }
 }
 
@@ -1404,6 +1406,12 @@ UsdImagingInstanceAdapter::MarkDirty(UsdPrim const& prim,
         }
     } else if (TfMapLookupPtr(_instancerData, prim.GetPath()) != nullptr) {
         index->MarkInstancerDirty(cachePath, dirty);
+        // Note that if any primvars have changed, we need to re-run
+        // UpdateForTime. Value clips mean that frame changes can change the
+        // primvar set.
+        if (dirty & HdChangeTracker::DirtyPrimvar) {
+            index->RequestUpdateForTime(cachePath);
+        }
     }
 }
 
