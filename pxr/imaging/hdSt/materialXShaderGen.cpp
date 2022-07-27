@@ -137,8 +137,7 @@ HdStMaterialXShaderGen::HdStMaterialXShaderGen(
                             "st" : mxHdInfo.defaultTexcoordName;
 
     // Register the customized version of the Surface node generator
-    registerImplementation("IM_surface_" + GlslShaderGenerator::TARGET, 
-        HdStMaterialXSurfaceNodeGen::create);
+    registerImplementation("IM_surface_genglsl", HdStMaterialXSurfaceNodeGen::create);
 }
 
 // Based on GlslShaderGenerator::generate()
@@ -275,8 +274,7 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     mx::ShaderStage& mxStage) const
 {
     // Add global constants and type definitions
-    emitLibraryInclude("stdlib/" + mx::GlslShaderGenerator::TARGET
-                       + "/lib/mx_math.glsl", mxContext, mxStage);
+    emitLibraryInclude("stdlib/genglsl/lib/mx_math.glsl", mxContext, mxStage);
     emitLine("#if NUM_LIGHTS > 0", mxStage, false);
     emitLine("#define MAX_LIGHT_SOURCES NUM_LIGHTS", mxStage, false);
     emitLine("#else", mxStage, false);
@@ -396,16 +394,24 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
         emitSpecularEnvironment(mxContext, mxStage);
     }
     if (shadowing) {
-        emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
-                           + "/lib/mx_shadow.glsl", mxContext, mxStage);
+        emitLibraryInclude("pbrlib/genglsl/lib/mx_shadow.glsl", mxContext, mxStage);
     }
+
+#if MATERIALX_MAJOR_VERSION > 1 || \
+    (MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION > 38) || \
+    (MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && MATERIALX_BUILD_VERSION > 4)
+    // MaterialX 1.38.5 changes the default transmission method to "refraction".
+    mxContext.getOptions().hwTransmissionRenderMethod = mx::TRANSMISSION_OPACITY;
+
+    // Emit transmission code
+    emitTransmissionRender(mxContext, mxStage);
+#endif
 
     // Emit directional albedo table code.
     if (mxContext.getOptions().hwDirectionalAlbedoMethod == 
             mx::HwDirectionalAlbedoMethod::DIRECTIONAL_ALBEDO_TABLE ||
         mxContext.getOptions().hwWriteAlbedoTable) {
-        emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
-                           + "/lib/mx_table.glsl", mxContext, mxStage);
+        emitLibraryInclude("pbrlib/genglsl/lib/mx_table.glsl", mxContext, mxStage);
         emitLineBreak(mxStage);
     }
 
@@ -423,7 +429,7 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     // Emit uv transform code globally if needed.
     if (mxContext.getOptions().hwAmbientOcclusion) {
         emitLibraryInclude(
-            "stdlib/" + mx::GlslShaderGenerator::TARGET + "/lib/" +
+            "stdlib/genglsl/lib/" +
             _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV],
             mxContext, mxStage);
     }
@@ -492,10 +498,30 @@ HdStMaterialXShaderGen::_EmitMxSurfaceShader(
             // closure/shader nodes and need to be emitted first.
             emitFunctionCalls(mxGraph, mxContext, mxStage, mx::ShaderNode::Classification::TEXTURE);
 
+#if MATERIALX_MAJOR_VERSION == 1 &&  \
+    MATERIALX_MINOR_VERSION == 38 && \
+    MATERIALX_BUILD_VERSION <= 4
             // Emit function calls for all surface shader nodes.
             // These will internally emit their closure function calls.
             emitFunctionCalls(mxGraph, mxContext, mxStage, mx::ShaderNode::Classification::SHADER | 
                                                            mx::ShaderNode::Classification::SURFACE);
+#else
+            // Emit function calls for "root" closure/shader nodes.
+            // These will internally emit function calls for any dependent closure nodes upstream.
+            for (mx::ShaderGraphOutputSocket* socket : mxGraph.getOutputSockets())
+            {
+                if (socket->getConnection())
+                {
+                    const mx::ShaderNode* upstream = socket->getConnection()->getNode();
+                    if (upstream->getParent() == &mxGraph &&
+                        (upstream->hasClassification(mx::ShaderNode::Classification::CLOSURE) ||
+                            upstream->hasClassification(mx::ShaderNode::Classification::SHADER)))
+                    {
+                        emitFunctionCall(*upstream, mxContext, mxStage);
+                    }
+                }
+            }
+#endif
         }
         else
         {
