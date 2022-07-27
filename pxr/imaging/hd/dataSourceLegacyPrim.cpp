@@ -2638,7 +2638,8 @@ _ConvertHdMaterialNetworkToHdDataSources(
                         cNames.data(),
                         cValues.data()),
                     HdRetainedTypedSampledDataSource<TfToken>::New(
-                        node.identifier)));
+                        node.identifier),
+                    nullptr /*renderContextNodeIdentifiers*/));
         }
 
         terminalsValues.push_back(
@@ -2699,7 +2700,8 @@ _ConvertSampleFilterNodeToHdDataSources(
             paramsValues.data()),
         HdRetainedContainerDataSource::New(),// SampleFilter has no connections
         HdRetainedTypedSampledDataSource<TfToken>::New(
-            hdNode.nodeTypeId));
+            hdNode.nodeTypeId),
+            nullptr /*renderContextNodeIdentifiers*/);
 
     *result = HdSampleFilterSchema::BuildRetained(nodeDS);
 

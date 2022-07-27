@@ -68,6 +68,7 @@ pxr_library(usdImaging
         implicitSurfaceMeshUtils
         instanceAdapter
         lightAdapter
+        lightAPIAdapter
         lightFilterAdapter
         materialAdapter
         materialBindingAPIAdapter

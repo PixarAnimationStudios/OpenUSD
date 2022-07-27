@@ -895,6 +895,7 @@ void
 _Walk(
     const SdfPath & nodePath, 
     const HdContainerDataSourceHandle & nodesDS,
+    const TfTokenVector &renderContexts,
     std::unordered_set<SdfPath, SdfPath::Hash> * visitedSet,
     HdMaterialNetwork * netHd)
 {
@@ -914,8 +915,34 @@ _Walk(
     if (!nodeSchema.IsDefined()) {
         return;
     }
-    
-    const TfToken nodeId = nodeSchema.GetNodeIdentifier()->GetTypedValue(0);
+
+    TfToken nodeId;
+    if (HdTokenDataSourceHandle idDs = nodeSchema.GetNodeIdentifier()) {
+        nodeId = idDs->GetTypedValue(0);
+    }
+
+    // check for render-specific contexts
+    if (!renderContexts.empty()) {
+        if (HdContainerDataSourceHandle idsDs =
+                nodeSchema.GetRenderContextNodeIdentifiers()) {
+            for (const TfToken &name : renderContexts) {
+                
+                if (name.IsEmpty() && !nodeId.IsEmpty()) {
+                    break;
+                }
+                if (HdTokenDataSourceHandle ds = HdTokenDataSource::Cast(
+                        idsDs->Get(name))) {
+
+                    const TfToken v = ds->GetTypedValue(0);
+                    if (!v.IsEmpty()) {
+                        nodeId = v;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     HdContainerDataSourceHandle connsDS = nodeSchema.GetInputConnections();
     HdContainerDataSourceHandle paramsDS = nodeSchema.GetParameters();
 
@@ -941,7 +968,8 @@ _Walk(
                 TfToken p = connSchema.GetUpstreamNodePath()->GetTypedValue(0);
                 TfToken n = 
                     connSchema.GetUpstreamNodeOutputName()->GetTypedValue(0);
-                _Walk(SdfPath(p.GetString()), nodesDS, visitedSet, netHd);
+                _Walk(SdfPath(p.GetString()), nodesDS, renderContexts,
+                        visitedSet, netHd);
 
                 HdMaterialRelationship r;
                 r.inputId = SdfPath(p.GetString()); 
@@ -1041,15 +1069,20 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
         SdfPath path(pathTk.GetString());
         matHd.terminals.push_back(path);
 
+
+        TfTokenVector renderContexts =
+            GetRenderIndex().GetRenderDelegate()->GetMaterialRenderContexts();
+
+
         // Continue walking the network
         HdMaterialNetwork & netHd = matHd.map[name];
-        _Walk(path, nodesDS, &visitedNodes, &netHd);
+        _Walk(path, nodesDS, renderContexts, &visitedNodes, &netHd);
 
         // see "includeDisconnectedNodes" above
         if (includeDisconnectedNodes && nodesDS) {
             for (const TfToken &nodeName : nodesDS->GetNames()) {
                 _Walk(SdfPath(nodeName.GetString()),
-                    nodesDS, &visitedNodes, &netHd);
+                    nodesDS, renderContexts, &visitedNodes, &netHd);
             }
         }
     }
@@ -1120,6 +1153,61 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
     }
 }
 
+// Render delegates which retrieve light params (such as "intensity") via 
+// GetLightParamValue rather than from a light's material resource need to be
+// mapped back to the "material" data source for cases when the data is not
+// provided by a legacy scene delegate. Because filtering scene indices may
+// be modifying the "material" data source value, this mapping can happen only
+// when adapting to legacy render delegates.
+static
+VtValue
+_GetLightParamValueFromMaterial(
+    const HdContainerDataSourceHandle &primDataSource,
+    TfToken const &paramName)
+{
+
+    // these appear with "light" data source but are not expected to be within
+    // a light's shader within a material data source
+    if (paramName == HdTokens->filters
+            || paramName == HdTokens->lightLink
+            || paramName == HdTokens->shadowLink
+            || paramName == HdTokens->lightFilterLink) {
+        return VtValue();
+    }
+
+    if (auto mat = HdMaterialSchema::GetFromParent(primDataSource)) {
+        HdMaterialNetworkSchema network(mat.GetMaterialNetwork());
+        if (HdContainerDataSourceHandle terminals = network.GetTerminals()) {
+            if (HdMaterialConnectionSchema connection =
+                    HdMaterialConnectionSchema(
+                        HdContainerDataSource::Cast(
+                            terminals->Get(HdLightSchemaTokens->light)))) {
+                if (HdTokenDataSourceHandle nodeNameDs =
+                        connection.GetUpstreamNodePath()) {
+                     if (HdContainerDataSourceHandle nodes =
+                            network.GetNodes()) {
+                        if (HdContainerDataSourceHandle params =
+                                HdMaterialNodeSchema(
+                                    HdContainerDataSource::Cast(
+                                        nodes->Get(
+                                            nodeNameDs->GetTypedValue(0.0f)))
+                                                ).GetParameters()) {
+
+                            if (auto param = HdSampledDataSource::Cast(
+                                    params->Get(paramName))) {
+
+                                return param->GetValue(0.0f);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return VtValue();
+}
+
 VtValue
 HdSceneIndexAdapterSceneDelegate::GetLightParamValue(
         SdfPath const &id, TfToken const &paramName)
@@ -1131,23 +1219,27 @@ HdSceneIndexAdapterSceneDelegate::GetLightParamValue(
         return VtValue();
     }
 
+    // Prioritize retrieving light parameters from the material and fallback
+    // on "light" data source.
+    VtValue result = _GetLightParamValueFromMaterial(prim.dataSource, paramName);
+
+    if (!result.IsEmpty()) {
+        return result;
+    }
+
     HdContainerDataSourceHandle light =
         HdContainerDataSource::Cast(
             prim.dataSource->Get(HdLightSchemaTokens->light));
-    if (!light) {
-        return VtValue();
+    if (light) {
+        HdSampledDataSourceHandle valueDs = HdSampledDataSource::Cast(
+                light->Get(paramName));
+        if (valueDs) {
+            result = valueDs->GetValue(0);
+        }
     }
 
-    HdSampledDataSourceHandle valueDs =
-        HdSampledDataSource::Cast(
-            light->Get(paramName));
-    if (!valueDs) {
-        return VtValue();
-    }
-
-    return valueDs->GetValue(0);
+    return result;
 }
-
 
 static VtValue
 _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
