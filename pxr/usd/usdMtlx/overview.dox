@@ -109,7 +109,6 @@ no corresponding concept.
 + _attributedef_ elements.  These elements are ignored.  This is
 technically not unsupported since support is optional and only meaningful
 for applications that need it, which USD does not.
-+ interfacename attributes are not supported
 + Shared library custom nodes are not fully supported. Library defined custom
 nodes that use textures or texture coordinates must use the primary texture
 coordinate name, which defaults to 'st' but can be altered by setting the 

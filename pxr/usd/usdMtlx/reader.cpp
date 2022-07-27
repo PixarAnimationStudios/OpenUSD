@@ -644,7 +644,7 @@ public:
     _NodeGraphBuilder& operator=(_NodeGraphBuilder&&) = delete;
     ~_NodeGraphBuilder() = default;
 
-    void SetInterface(const mx::ConstNodeDefPtr&);
+    void SetNodeDefInterface(const mx::ConstNodeDefPtr&);
     void SetContainer(const mx::ConstElementPtr&);
     void SetTarget(const UsdStagePtr&, const SdfPath& targetPath);
     void SetTarget(const UsdStagePtr&, const SdfPath& parentPath,
@@ -652,10 +652,10 @@ public:
     UsdPrim Build(ShaderNamesByOutputName* outputs);
 
 private:
-    void _CreateInterface(const mx::ConstInterfaceElementPtr& iface,
-                          const UsdShadeConnectableAPI& connectable);
-    void _AddNode(const mx::ConstNodePtr& mtlxNode, const UsdPrim& usdParent);
+    void _CreateInterfaceInputs(const mx::ConstInterfaceElementPtr &iface,
+                                const UsdShadeConnectableAPI &connectable);
     bool _IsLocalCustomNode(const mx::ConstNodeDefPtr &mtlxNodeDef);
+    void _AddNode(const mx::ConstNodePtr &mtlxNode, const UsdPrim &usdParent);
     UsdShadeInput _AddInput(const mx::ConstInputPtr& mtlxInput,
                             const UsdShadeConnectableAPI& connectable,
                             bool isInterface = false);
@@ -687,7 +687,7 @@ private:
 };
 
 void
-_NodeGraphBuilder::SetInterface(const mx::ConstNodeDefPtr& mtlxNodeDef)
+_NodeGraphBuilder::SetNodeDefInterface(const mx::ConstNodeDefPtr& mtlxNodeDef)
 {
     _mtlxNodeDef = mtlxNodeDef;
 }
@@ -724,7 +724,7 @@ _NodeGraphBuilder::Build(ShaderNamesByOutputName* outputs)
         return UsdPrim();
     }
 
-    const auto isInsideNodeGraph = _mtlxContainer->isA<mx::NodeGraph>();
+    const bool isInsideNodeGraph = _mtlxContainer->isA<mx::NodeGraph>();
 
     // Create the USD nodegraph.
     UsdPrim usdPrim;
@@ -738,11 +738,18 @@ _NodeGraphBuilder::Build(ShaderNamesByOutputName* outputs)
 
         _SetCoreUIAttributes(usdPrim, _mtlxContainer);
 
-        // Create the interface.
+        // Create the interface inputs for the NodeDef.
         if (_mtlxNodeDef) {
-            for (auto& i: _GetInheritanceStack(_mtlxNodeDef)) {
-                _CreateInterface(i, usdNodeGraph.ConnectableAPI());
+            for (mx::ConstNodeDefPtr& nd : _GetInheritanceStack(_mtlxNodeDef)) {
+                _CreateInterfaceInputs(nd, usdNodeGraph.ConnectableAPI());
             }
+        }
+
+        // Add Nodegraph Inputs.
+        for (mx::InputPtr in : _mtlxContainer->getChildrenOfType<mx::Input>()) {
+            // Note nodegraph inputs are referenced inside the nodegraph with
+            // the 'interfacename' attribute name within the Mtlx Document
+            _AddInput(in, usdNodeGraph.ConnectableAPI(), /* isInterface */ true);
         }
     }
     else {
@@ -750,7 +757,7 @@ _NodeGraphBuilder::Build(ShaderNamesByOutputName* outputs)
     }
 
     // Build the graph of nodes.
-    for (auto& mtlxNode: _mtlxContainer->getChildrenOfType<mx::Node>()) {
+    for (mx::NodePtr& mtlxNode : _mtlxContainer->getChildrenOfType<mx::Node>()) {
         // If the _mtlxContainer is the document (there is no nodegraph) the 
         // nodes gathered here will include the material and surfaceshader 
         // nodes which are not part of the implicit nodegraph. Ignore them.
@@ -766,7 +773,7 @@ _NodeGraphBuilder::Build(ShaderNamesByOutputName* outputs)
     }
     else if (outputs) {
         // Collect the outputs on the existing shader nodes.
-        for (auto& mtlxOutput:
+        for (mx::OutputPtr& mtlxOutput :
                 _mtlxContainer->getChildrenOfType<mx::Output>()) {
             if (auto nodeName = _Attr(mtlxOutput, names.nodename)) {
                 (*outputs)[_Name(mtlxOutput)] = TfToken(nodeName);
@@ -778,13 +785,13 @@ _NodeGraphBuilder::Build(ShaderNamesByOutputName* outputs)
 }
 
 void
-_NodeGraphBuilder::_CreateInterface(
-    const mx::ConstInterfaceElementPtr& iface,
-    const UsdShadeConnectableAPI& connectable)
+_NodeGraphBuilder::_CreateInterfaceInputs(
+    const mx::ConstInterfaceElementPtr &iface,
+    const UsdShadeConnectableAPI &connectable)
 {
     static constexpr bool isInterface = true;
 
-    for (auto mtlxInput: iface->getInputs()) {
+    for (mx::InputPtr mtlxInput: iface->getInputs()) {
         _AddInput(mtlxInput, connectable, isInterface);
     }
     // We deliberately ignore tokens here.
@@ -841,8 +848,8 @@ _NodeGraphBuilder::_IsLocalCustomNode(const mx::ConstNodeDefPtr &mtlxNodeDef)
 
 void
 _NodeGraphBuilder::_AddNode(
-    const mx::ConstNodePtr& mtlxNode,
-    const UsdPrim& usdParent)
+    const mx::ConstNodePtr &mtlxNode,
+    const UsdPrim &usdParent)
 {
     // Create the shader.
     NdrIdentifier shaderId = _GetShaderId(mtlxNode);
@@ -1423,7 +1430,7 @@ _Context::AddNodeGraphWithDef(const mx::ConstNodeGraphPtr& mtlxNodeGraph)
             TF_DEBUG(USDMTLX_READER).Msg("Add mtlxNodeDef %s\n", 
                                          mtlxNodeDef->getName().c_str());
             _NodeGraphBuilder builder;
-            builder.SetInterface(mtlxNodeDef);
+            builder.SetNodeDefInterface(mtlxNodeDef);
             builder.SetContainer(mtlxNodeGraph);
             builder.SetTarget(_stage, _nodeGraphsPath, mtlxNodeDef);
             nodeGraph.SetImplementation(builder);

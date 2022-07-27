@@ -172,6 +172,21 @@ class TestFileFormat(unittest.TestCase):
         stage = UsdMtlx._TestFile('GraphlessNodes.mtlx')
         stage.GetRootLayer().Export('GraphlessNodes.usda')
 
+    def test_NodegraphsWithInputs(self):
+        """
+        Test that inputs on nodegraphs are found and connected when used 
+        inside that nodegraph
+        """
+    
+        stage = UsdMtlx._TestFile('NodeGraphInputs.mtlx')
+
+        path = '/MaterialX/Materials/test_material/test_nodegraph/mult1'
+        node = UsdShade.Shader.Get(stage, path)
+        conn = node.GetInput('in2').GetConnectedSources()[0][0]
+        self.assertEqual(conn.source.GetPath().name, 'test_nodegraph')
+        self.assertEqual(conn.sourceName, 'scale')
+        
+
     def test_Looks(self):
         """
         Test general MaterialX look conversions.
