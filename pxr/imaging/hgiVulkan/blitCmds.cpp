@@ -381,7 +381,11 @@ HgiVulkanBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
     HgiVulkanDevice* device = vkTex->GetDevice();
 
     HgiTextureDesc const& desc = texture->GetDescriptor();
-    VkFormat format = HgiVulkanConversions::GetFormat(desc.format);
+
+    bool const isDepthBuffer = desc.usage & HgiTextureUsageBitsDepthTarget;
+    VkFormat format = HgiVulkanConversions::GetFormat(
+        desc.format, isDepthBuffer);
+    
     int32_t width = desc.dimensions[0];
     int32_t height = desc.dimensions[1];
 

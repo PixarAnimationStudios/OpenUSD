@@ -377,12 +377,21 @@ _imageLayoutFormatTable[HgiFormatCount][2] =
 };
 
 VkFormat
-HgiVulkanConversions::GetFormat(HgiFormat inFormat)
+HgiVulkanConversions::GetFormat(HgiFormat inFormat, bool depthFormat)
 {
     if (!TF_VERIFY(inFormat!=HgiFormatInvalid)) {
         return VK_FORMAT_UNDEFINED;
     }
-    return VkFormat(_FormatTable[inFormat][1]);
+
+    VkFormat vkFormat = VkFormat(_FormatTable[inFormat][1]);
+
+    // Special case for float32 depth format not properly handled by
+    // _FormatTable
+    if (depthFormat && inFormat == HgiFormatFloat32) {
+        vkFormat = VK_FORMAT_D32_SFLOAT;
+    }
+
+    return vkFormat;
 }
 
 HgiFormat

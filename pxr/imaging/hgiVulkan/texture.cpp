@@ -63,7 +63,7 @@ HgiVulkanTexture::HgiVulkanTexture(
     , _cpuStagingAddress(nullptr)
 {
     GfVec3i const& dimensions = desc.dimensions;
-    bool isDepthBuffer = desc.usage & HgiTextureUsageBitsDepthTarget;
+    bool const isDepthBuffer = desc.usage & HgiTextureUsageBitsDepthTarget;
 
     //
     // Gather image create info
@@ -72,7 +72,8 @@ HgiVulkanTexture::HgiVulkanTexture(
     VkImageCreateInfo imageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
 
     imageCreateInfo.imageType = HgiVulkanConversions::GetTextureType(desc.type);
-    imageCreateInfo.format = HgiVulkanConversions::GetFormat(desc.format);
+    imageCreateInfo.format = HgiVulkanConversions::GetFormat(
+        desc.format, isDepthBuffer);
     imageCreateInfo.mipLevels = desc.mipLevels;
     imageCreateInfo.arrayLayers = desc.layerCount;
     imageCreateInfo.samples = 
@@ -277,14 +278,15 @@ HgiVulkanTexture::HgiVulkanTexture(
     HgiVulkanTexture* srcTexture =
         static_cast<HgiVulkanTexture*>(desc.sourceTexture.Get());
     HgiTextureDesc const& srcTexDesc = desc.sourceTexture->GetDescriptor();
-    bool isDepthBuffer = srcTexDesc.usage & HgiTextureUsageBitsDepthTarget;
+    bool const isDepthBuffer = 
+        srcTexDesc.usage & HgiTextureUsageBitsDepthTarget;
 
     _vkImage = srcTexture->GetImage();
     _vkImageLayout = srcTexture->GetImageLayout();
 
     VkImageViewCreateInfo view = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
     view.viewType = HgiVulkanConversions::GetTextureViewType(srcTexDesc.type);
-    view.format = HgiVulkanConversions::GetFormat(desc.format);
+    view.format = HgiVulkanConversions::GetFormat(desc.format, isDepthBuffer);
     view.components.r = HgiVulkanConversions::GetComponentSwizzle(
         srcTexDesc.componentMapping.r);
     view.components.g = HgiVulkanConversions::GetComponentSwizzle(
