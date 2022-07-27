@@ -959,7 +959,7 @@ HdSt_PipelineDrawBatch::PrepareDraw(
     if (_useGpuCulling) {
         // Ignore passed in gfxCmds for now since GPU frustum culling
         // may still require multiple command buffer submissions.
-        _ExecuteFrustumCull(updateBufferData,
+        _ExecuteFrustumCull(gfxCmds, updateBufferData,
                             renderPassState, resourceRegistry);
         bool hasPatches = _drawItemInstances[0]->GetDrawItem()->
             GetGeometricShader()->IsPrimTypePatches();
@@ -968,7 +968,8 @@ HdSt_PipelineDrawBatch::PrepareDraw(
             GetGeometricShader()->GetUseMetalTessellation();
         if (hasPatches && useMetalTessellation) {
             _ExecutePostTesselation(gfxCmds, updateBufferData,
-                                renderPassState, resourceRegistry);
+                                    renderPassState, resourceRegistry);
+        }
     }
 }
 
@@ -1287,7 +1288,7 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
     HgiGraphicsPipelineHandle psoHandle = *pso.get();
  
     HgiVertexBufferBindingVector bindings;
-    _VertexBufferBindingsForDrawing(bindings, state);
+    _GetVertexBufferBindingsForDrawing(&bindings, state);
     gfxCmds->BindVertexBuffers(bindings);
     gfxCmds->BindPipeline(psoHandle);
     bool hasPatches = _drawItemInstances[0]->GetDrawItem()->
@@ -1303,7 +1304,7 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
     }
     gfxCmds->BindResources(resourceBindings);
 
-    _BindVertexBuffersForDrawing(gfxCmds, state);
+    //_BindVertexBuffersForDrawing(gfxCmds, state);
 
     if (drawIndirect) {
         _ExecuteDrawIndirect(gfxCmds, state.indexBar);
@@ -1554,7 +1555,7 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
             hgi->CreateResourceBindings(bindingsDesc);
     cullGfxCmds->BindResources(resourceBindings);
 
-    _BindVertexBuffersForViewTransformation(cullGfxCmds.get(), state);
+    //_BindVertexBuffersForViewTransformation(cullGfxCmds, state);
 
     GfMatrix4f const &cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
     GfVec2f const &drawRangeNdc = renderPassState->GetDrawingRangeNDC();
@@ -1682,7 +1683,7 @@ HdSt_PipelineDrawBatch::_ExecutePostTesselation(
     if (ptcsGfxCmds->BindTessControlPipeline(psoHandle)) {
         ptcsGfxCmds->BindResources(resourceBindings);
         HgiVertexBufferBindingVector bindings;
-        _VertexBufferBindingsForDrawing(bindings, state);
+        _GetVertexBufferBindingsForDrawing(&bindings, state);
         ptcsGfxCmds->BindVertexBuffers(bindings);
         if (drawIndirect) {
             _ExecuteDrawIndirect(ptcsGfxCmds, state.indexBar);

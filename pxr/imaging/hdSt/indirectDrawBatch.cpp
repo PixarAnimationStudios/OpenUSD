@@ -919,8 +919,8 @@ HdSt_IndirectDrawBatch::PrepareDraw(
     if (_useGpuCulling) {
         // Ignore passed in gfxCmds for now since GPU frustum culling
         // may still require multiple command buffer submissions.
-        _ExecuteFrustumCull(updateBufferData,
-                            renderPassState, resourceRegistry);
+        //_ExecuteFrustumCull(updateBufferData,
+        //                    renderPassState, resourceRegistry);
     }
 }
 
@@ -1311,6 +1311,7 @@ _GetCullPipeline(
 
 void
 HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
+    HgiGraphicsCmds * cullGfxCmds,
     bool const updateBufferData,
     HdStRenderPassStateSharedPtr const & renderPassState,
     HdStResourceRegistrySharedPtr const & resourceRegistry)
@@ -1374,7 +1375,6 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
 
     // GfxCmds has no attachment since it is a vertex only shader.
     HgiGraphicsCmdsDesc gfxDesc;
-    HgiGraphicsCmdsUniquePtr cullGfxCmds = hgi->CreateGraphicsCmds(gfxDesc);
     if (_useInstanceCulling) {
         cullGfxCmds->PushDebugGroup("GPU frustum culling (instanced)");
     } else {
@@ -1459,7 +1459,7 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
     }
 
     cullGfxCmds->PopDebugGroup();
-    hgi->SubmitCmds(cullGfxCmds.get());
+    hgi->SubmitCmds(cullGfxCmds);
 
     state.UnbindResourcesForViewTransformation();
 
