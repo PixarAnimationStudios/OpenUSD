@@ -142,7 +142,8 @@ class TestFileFormat(unittest.TestCase):
         for inputName, source in inputToSource.items():
             input = nodeGraph.GetInput(inputName)
             self.assertEqual(input.HasConnectedSource(), True)
-            self.assertEqual(input.GetConnectedSource()[0].GetPath(), source)
+            self.assertEqual(
+                input.GetConnectedSources()[0][0].source.GetPath(), source)
 
     def test_MultiOutputNodes(self):
         """
@@ -159,9 +160,9 @@ class TestFileFormat(unittest.TestCase):
 
         for path, connNodeName, connectionName in testInfo:
             node = UsdShade.Shader.Get(stage, path)
-            conn = node.GetInput('in').GetConnectedSource()
-            self.assertEqual(conn[0].GetPrim().GetPath().name, connNodeName)
-            self.assertEqual(conn[1], connectionName)
+            conn = node.GetInput('in').GetConnectedSources()[0][0]
+            self.assertEqual(conn.source.GetPath().name, connNodeName)
+            self.assertEqual(conn.sourceName, connectionName)
         
     def test_nodesWithoutNodegraphs(self):
         """

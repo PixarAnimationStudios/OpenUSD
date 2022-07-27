@@ -1495,21 +1495,6 @@ _Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
         return UsdShadeShader();
     }
 
-    // XXX -- If the node def is implemented by a nodegraph we may need
-    //        to reference that node graph instead of creating a
-    //        UsdShadeShader.  That will require other USD support for
-    //        inline shaders.
-
-    // XXX -- At the moment it's not clear how we'll handle a nodedef
-    //        backed by a nodegraph.  Will it be opaque with the
-    //        implementation known only to the shader registry?  Or will
-    //        using that shader cause the nodegraph to be added to the
-    //        stage?  In that case do we make a separate copy of the
-    //        nodegraph for each use or reference a single instantation?
-    //
-    //        Note that we don't have a efficient way to get the nodegraph
-    //        that implements the nodedef here.
-
     // Choose the name of the shader.  In MaterialX this is just
     // mtlxShaderNode->getName() and has no meaning other than to uniquely
     // identify the shader.  In USD to support materialinherit we must
