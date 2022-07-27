@@ -123,11 +123,7 @@ class Launcher(object):
 
         UsdAppUtils.rendererArgs.AddCmdlineArgs(parser,
                 altHelpText=("Which render backend to use (named as it "
-                            "appears in the menu).  Use '%s' to "
-                            "turn off Hydra renderers." %
-                        UsdAppUtils.rendererArgs.HYDRA_DISABLED_OPTION_STRING
-                            ),
-                allowHydraDisabled=True)
+                            "appears in the menu)."))
         
         parser.add_argument('--select', action='store', default='/',
                             dest='primPath', type=str,

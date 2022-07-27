@@ -21,11 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
-#include "pxr/usdImaging/usdImagingGL/legacyEngine.h"
 #include "pxr/usdImaging/usdImagingGL/drawModeSceneIndex.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
@@ -63,16 +61,6 @@ TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX, false,
 
 namespace {
 
-bool
-_GetHydraEnabledEnvVar()
-{
-    // XXX: Note that we don't cache the result here.  This is primarily because
-    // of the way usdview currently interacts with this setting.  This should
-    // be cleaned up, and the new class hierarchy around UsdImagingGLEngine
-    // makes it much easier to do so.
-    return TfGetenv("HD_ENABLED", "1") == "1";
-}
-
 SdfPath const&
 _GetUsdImagingDelegateId()
 {
@@ -100,10 +88,6 @@ _GetUseSceneIndices()
 bool
 _IsHydraEnabled()
 {
-    if (!_GetHydraEnabledEnvVar()) {
-        return false;
-    }
-    
     // Check to see if we have a default plugin for the renderer
     TfToken defaultPlugin = 
         HdRendererPluginRegistry::GetInstance().GetDefaultPluginId();
@@ -175,23 +159,14 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     , _sceneDelegate(nullptr)
 {
 
-    if (IsHydraEnabled()) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+        return;
+    }
 
-        // _renderIndex, _taskController, and _sceneDelegate/_sceneIndex
-        // are initialized by the plugin system.
-        if (!SetRendererPlugin(_GetDefaultRendererPluginId())) {
-            TF_CODING_ERROR("No renderer plugins found! "
-                            "Check before creation.");
-        }
-
-    } else {
-
-        // In the legacy implementation, both excluded paths and invised paths 
-        // are treated the same way.
-        SdfPathVector pathsToExclude = excludedPaths;
-        pathsToExclude.insert(pathsToExclude.end(), 
-            invisedPaths.begin(), invisedPaths.end());
-        _legacyImpl =std::make_unique<UsdImagingGLLegacyEngine>(pathsToExclude);
+    // _renderIndex, _taskController, and _sceneDelegate/_sceneIndex
+    // are initialized by the plugin system.
+    if (!SetRendererPlugin(_GetDefaultRendererPluginId())) {
+        TF_CODING_ERROR("No renderer plugins found!");
     }
 }
 
@@ -202,7 +177,7 @@ UsdImagingGLEngine::_DestroyHydraObjects()
     _engine = nullptr;
     _taskController = nullptr;
     if (_GetUseSceneIndices()) {
-        if (_sceneIndex) {
+        if (_renderIndex && _sceneIndex) {
             _renderIndex->RemoveSceneIndex(_sceneIndex);
             _sceneIndex = nullptr;
         }
@@ -229,7 +204,7 @@ UsdImagingGLEngine::PrepareBatch(
     const UsdPrim& root, 
     const UsdImagingGLRenderParams& params)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
@@ -302,11 +277,9 @@ UsdImagingGLEngine::RenderBatch(
     const SdfPathVector& paths, 
     const UsdImagingGLRenderParams& params)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
-
-    TF_VERIFY(_taskController);
 
     _UpdateHydraCollection(&_renderCollection, paths, params);
     _taskController->SetCollection(_renderCollection);
@@ -338,12 +311,11 @@ UsdImagingGLEngine::Render(
     const UsdPrim& root, 
     const UsdImagingGLRenderParams &params)
 {
-    TF_PY_ALLOW_THREADS_IN_SCOPE();
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        return _legacyImpl->Render(root, params);
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+        return;
     }
 
-    TF_VERIFY(_taskController);
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
 
     PrepareBatch(root, params);
 
@@ -362,11 +334,10 @@ UsdImagingGLEngine::Render(
 bool
 UsdImagingGLEngine::IsConverged() const
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return true;
     }
 
-    TF_VERIFY(_taskController);
     return _taskController->IsConverged();
 }
 
@@ -377,14 +348,13 @@ UsdImagingGLEngine::IsConverged() const
 void
 UsdImagingGLEngine::SetRootTransform(GfMatrix4d const& xf)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
     if (_GetUseSceneIndices()) {
         // XXX(USD-7115): root transform
     } else {
-        TF_VERIFY(_sceneDelegate);
         _sceneDelegate->SetRootTransform(xf);
     }
 }
@@ -392,14 +362,13 @@ UsdImagingGLEngine::SetRootTransform(GfMatrix4d const& xf)
 void
 UsdImagingGLEngine::SetRootVisibility(bool isVisible)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
     if (_GetUseSceneIndices()) {
         // XXX(USD-7115): root visibility
     } else {
-        TF_VERIFY(_sceneDelegate);
         _sceneDelegate->SetRootVisibility(isVisible);
     }
 }
@@ -411,64 +380,51 @@ UsdImagingGLEngine::SetRootVisibility(bool isVisible)
 void
 UsdImagingGLEngine::SetRenderViewport(GfVec4d const& viewport)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        _legacyImpl->SetRenderViewport(viewport);
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
-    TF_VERIFY(_taskController);
     _taskController->SetRenderViewport(viewport);
 }
 
 void
 UsdImagingGLEngine::SetFraming(CameraUtilFraming const& framing)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        // legacy implementation does not support camera framing.
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
-    if (TF_VERIFY(_taskController)) {
-        _taskController->SetFraming(framing);
-    }
+    _taskController->SetFraming(framing);
 }
 
 void
 UsdImagingGLEngine::SetOverrideWindowPolicy(
     const std::pair<bool, CameraUtilConformWindowPolicy> &policy)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        // legacy implementation does not support camera framing.
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
-    if (TF_VERIFY(_taskController)) {
-        _taskController->SetOverrideWindowPolicy(policy);
-    }
+    _taskController->SetOverrideWindowPolicy(policy);
 }
 
 void
 UsdImagingGLEngine::SetRenderBufferSize(GfVec2i const& size)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        // legacy implementation does not support camera framing.
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
-    if (TF_VERIFY(_taskController)) {
-        _taskController->SetRenderBufferSize(size);
-    }
+    _taskController->SetRenderBufferSize(size);
 }
 
 void
 UsdImagingGLEngine::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        _legacyImpl->SetWindowPolicy(policy);
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
-    TF_VERIFY(_taskController);
     // Note: Free cam uses SetCameraState, which expects the frustum to be
     // pre-adjusted for the viewport size.
 
@@ -483,12 +439,10 @@ UsdImagingGLEngine::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
 void
 UsdImagingGLEngine::SetCameraPath(SdfPath const& id)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        _legacyImpl->SetCameraPath(id);
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
-    TF_VERIFY(_taskController);
     _taskController->SetCameraPath(id);
 
     // The camera that is set for viewing will also be used for
@@ -503,23 +457,20 @@ void
 UsdImagingGLEngine::SetCameraState(const GfMatrix4d& viewMatrix,
                                    const GfMatrix4d& projectionMatrix)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        _legacyImpl->SetFreeCameraMatrices(viewMatrix, projectionMatrix);
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
-    TF_VERIFY(_taskController);
     _taskController->SetFreeCameraMatrices(viewMatrix, projectionMatrix);
 }
 
 void
 UsdImagingGLEngine::SetLightingState(GlfSimpleLightingContextPtr const &src)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
-    TF_VERIFY(_taskController);
     _taskController->SetLightingState(src);
 }
 
@@ -529,12 +480,9 @@ UsdImagingGLEngine::SetLightingState(
     GlfSimpleMaterial const &material,
     GfVec4f const &sceneAmbient)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        _legacyImpl->SetLightingState(lights, material, sceneAmbient);
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
-
-    TF_VERIFY(_taskController);
 
     // we still use _lightingContextForOpenGLState for convenience, but
     // set the values directly.
@@ -556,7 +504,7 @@ UsdImagingGLEngine::SetLightingState(
 void
 UsdImagingGLEngine::SetSelected(SdfPathVector const& paths)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
@@ -587,7 +535,7 @@ UsdImagingGLEngine::SetSelected(SdfPathVector const& paths)
 void
 UsdImagingGLEngine::ClearSelected()
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
@@ -609,7 +557,7 @@ UsdImagingGLEngine::_GetSelection() const
 void
 UsdImagingGLEngine::AddSelected(SdfPath const &path, int instanceIndex)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
@@ -635,11 +583,9 @@ UsdImagingGLEngine::AddSelected(SdfPath const &path, int instanceIndex)
 void
 UsdImagingGLEngine::SetSelectionColor(GfVec4f const& color)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
-
-    TF_VERIFY(_taskController);
 
     _selectionColor = color;
     _taskController->SetSelectionColor(_selectionColor);
@@ -662,16 +608,8 @@ UsdImagingGLEngine::TestIntersection(
     int *outHitInstanceIndex,
     HdInstancerContext *outInstancerContext)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        return _legacyImpl->TestIntersection(
-            viewMatrix,
-            projectionMatrix,
-            root,
-            params,
-            outHitPoint,
-            outHitPrimPath,
-            outHitInstancerPath,
-            outHitInstanceIndex);
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+        return false;
     }
 
     if (_GetUseSceneIndices()) {
@@ -680,7 +618,6 @@ UsdImagingGLEngine::TestIntersection(
     }
 
     TF_VERIFY(_sceneDelegate);
-    TF_VERIFY(_taskController);
 
     PrepareBatch(root, params);
 
@@ -751,7 +688,7 @@ UsdImagingGLEngine::DecodeIntersection(
     int *outHitInstanceIndex,
     HdInstancerContext *outInstancerContext)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return false;
     }
 
@@ -801,9 +738,8 @@ UsdImagingGLEngine::DecodeIntersection(
 TfTokenVector
 UsdImagingGLEngine::GetRendererPlugins()
 {
-    if (ARCH_UNLIKELY(!_GetHydraEnabledEnvVar())) {
-        // No plugins if the legacy implementation is active.
-        return std::vector<TfToken>();
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+        return {};
     }
 
     HfPluginDescVector pluginDescriptors;
@@ -820,11 +756,8 @@ UsdImagingGLEngine::GetRendererPlugins()
 std::string
 UsdImagingGLEngine::GetRendererDisplayName(TfToken const &id)
 {
-    if (ARCH_UNLIKELY(!_GetHydraEnabledEnvVar() || id.IsEmpty())) {
-        // No renderer name is returned if the user requested to disable Hydra, 
-        // or if the machine does not support any of the available renderers 
-        // and it automatically switches to our legacy engine.
-        return std::string();
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+        return "";
     }
 
     HfPluginDesc pluginDescriptor;
@@ -839,8 +772,7 @@ UsdImagingGLEngine::GetRendererDisplayName(TfToken const &id)
 TfToken
 UsdImagingGLEngine::GetCurrentRendererId() const
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        // No renderer support if the legacy implementation is active.
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return TfToken();
     }
 
@@ -865,7 +797,7 @@ UsdImagingGLEngine::_InitializeHgiIfNecessary()
 bool
 UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return false;
     }
 
@@ -994,11 +926,9 @@ UsdImagingGLEngine::_SetRenderDelegate(
 TfTokenVector
 UsdImagingGLEngine::GetRendererAovs() const
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        return std::vector<TfToken>();
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+        return {};
     }
-
-    TF_VERIFY(_renderIndex);
 
     if (_renderIndex->IsBprimTypeSupported(HdPrimTypeTokens->renderBuffer)) {
 
@@ -1023,11 +953,10 @@ UsdImagingGLEngine::GetRendererAovs() const
 bool
 UsdImagingGLEngine::SetRendererAov(TfToken const &id)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return false;
     }
 
-    TF_VERIFY(_renderIndex);
     if (_renderIndex->IsBprimTypeSupported(HdPrimTypeTokens->renderBuffer)) {
         _taskController->SetRenderOutputs({id});
         return true;
@@ -1039,6 +968,10 @@ HgiTextureHandle
 UsdImagingGLEngine::GetAovTexture(
     TfToken const& name) const
 {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+        return HgiTextureHandle();
+    }
+
     VtValue aov;
     HgiTextureHandle aovTexture;
 
@@ -1054,14 +987,18 @@ UsdImagingGLEngine::GetAovTexture(
 HdRenderBuffer*
 UsdImagingGLEngine::GetAovRenderBuffer(TfToken const& name) const
 {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+        return nullptr;
+    }
+
     return _taskController->GetRenderOutput(name);
 }
 
 UsdImagingGLRendererSettingsList
 UsdImagingGLEngine::GetRendererSettingsList() const
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        return UsdImagingGLRendererSettingsList();
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+        return {};
     }
 
     TF_VERIFY(_renderDelegate);
@@ -1103,7 +1040,7 @@ UsdImagingGLEngine::GetRendererSettingsList() const
 VtValue
 UsdImagingGLEngine::GetRendererSetting(TfToken const& id) const
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return VtValue();
     }
 
@@ -1114,7 +1051,7 @@ UsdImagingGLEngine::GetRendererSetting(TfToken const& id) const
 void
 UsdImagingGLEngine::SetRendererSetting(TfToken const& id, VtValue const& value)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
@@ -1125,13 +1062,11 @@ UsdImagingGLEngine::SetRendererSetting(TfToken const& id, VtValue const& value)
 void
 UsdImagingGLEngine::SetEnablePresentation(bool enabled)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
-    if (TF_VERIFY(_taskController)) {
-        _taskController->SetEnablePresentation(enabled);
-    }
+    _taskController->SetEnablePresentation(enabled);
 }
 
 void
@@ -1139,14 +1074,12 @@ UsdImagingGLEngine::SetPresentationOutput(
     TfToken const &api,
     VtValue const &framebuffer)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return;
     }
 
-    if (TF_VERIFY(_taskController)) {
-        _userFramebuffer = framebuffer;
-        _taskController->SetPresentationOutput(api, framebuffer);
-    }
+    _userFramebuffer = framebuffer;
+    _taskController->SetPresentationOutput(api, framebuffer);
 }
 
 // ---------------------------------------------------------------------
@@ -1156,11 +1089,7 @@ UsdImagingGLEngine::SetPresentationOutput(
 HdCommandDescriptors 
 UsdImagingGLEngine::GetRendererCommandDescriptors() const
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        return HdCommandDescriptors();
-    }
-
-    if (ARCH_UNLIKELY(!_renderDelegate)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return HdCommandDescriptors();
     }
 
@@ -1171,11 +1100,7 @@ bool
 UsdImagingGLEngine::InvokeRendererCommand(
     const TfToken &command, const HdCommandArgs &args) const
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        return false;
-    }
-
-    if (ARCH_UNLIKELY(!_renderDelegate)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return false;
     }
 
@@ -1188,44 +1113,41 @@ UsdImagingGLEngine::InvokeRendererCommand(
 bool
 UsdImagingGLEngine::IsPauseRendererSupported() const
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return false;
     }
 
-    TF_VERIFY(_renderDelegate);
     return _renderDelegate->IsPauseSupported();
 }
 
 bool
 UsdImagingGLEngine::PauseRenderer()
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return false;
     }
 
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
-    TF_VERIFY(_renderDelegate);
     return _renderDelegate->Pause();
 }
 
 bool
 UsdImagingGLEngine::ResumeRenderer()
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return false;
     }
 
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
-    TF_VERIFY(_renderDelegate);
     return _renderDelegate->Resume();
 }
 
 bool
 UsdImagingGLEngine::IsStopRendererSupported() const
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return false;
     }
 
@@ -1236,7 +1158,7 @@ UsdImagingGLEngine::IsStopRendererSupported() const
 bool
 UsdImagingGLEngine::StopRenderer()
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return false;
     }
 
@@ -1249,7 +1171,7 @@ UsdImagingGLEngine::StopRenderer()
 bool
 UsdImagingGLEngine::RestartRenderer()
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return false;
     }
 
@@ -1270,15 +1192,10 @@ UsdImagingGLEngine::SetColorCorrectionSettings(
     TfToken const& ocioColorSpace,
     TfToken const& ocioLook)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled()) ||
+        !IsColorCorrectionCapable()) {
         return;
     }
-
-    if (!IsColorCorrectionCapable()) {
-        return;
-    }
-
-    TF_VERIFY(_taskController);
 
     HdxColorCorrectionTaskParams hdParams;
     hdParams.colorCorrectionMode = colorCorrectionMode;
@@ -1302,7 +1219,7 @@ UsdImagingGLEngine::IsColorCorrectionCapable()
 VtDictionary
 UsdImagingGLEngine::GetRenderStats() const
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
         return VtDictionary();
     }
 
@@ -1313,6 +1230,10 @@ UsdImagingGLEngine::GetRenderStats() const
 Hgi*
 UsdImagingGLEngine::GetHgi()
 {
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+        return nullptr;
+    }
+
     return _hgi.get();
 }
 
@@ -1323,10 +1244,6 @@ UsdImagingGLEngine::GetHgi()
 HdRenderIndex *
 UsdImagingGLEngine::_GetRenderIndex() const
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        return nullptr;
-    }
-
     return _renderIndex.get();
 }
 
@@ -1334,10 +1251,6 @@ void
 UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
                              HdTaskSharedPtrVector tasks)
 {
-    if (ARCH_UNLIKELY(_legacyImpl)) {
-        return;
-    }
-
     {
         // Release the GIL before calling into hydra, in case any hydra plugins
         // call into python.
@@ -1632,12 +1545,6 @@ HdxTaskController *
 UsdImagingGLEngine::_GetTaskController() const
 {
     return _taskController.get();
-}
-
-bool
-UsdImagingGLEngine::_IsUsingLegacyImpl() const
-{
-    return bool(_legacyImpl);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

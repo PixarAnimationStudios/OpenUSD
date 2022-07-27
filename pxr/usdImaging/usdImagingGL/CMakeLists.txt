@@ -53,7 +53,6 @@ pxr_library(usdImagingGL
 
     PRIVATE_CLASSES
         drawModeStandin
-        legacyEngine
 
     PRIVATE_HEADERS
         unitTestGLDrawing.h
@@ -283,28 +282,13 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdImagingGLPrimitiveDrawingRef
-    DEST testUsdImagingGLPrimitiveDrawingRef
-)
-
-pxr_install_test_dir(
     SRC testenv/testUsdImagingGLFlatShading
     DEST testUsdImagingGLFlatShading
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdImagingGLFlatShadingRef
-    DEST testUsdImagingGLFlatShadingRef
-)
-
-pxr_install_test_dir(
     SRC testenv/testUsdImagingGLShadeMaterial
     DEST testUsdImagingGLShadeMaterial
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdImagingGLShadeMaterialRef
-    DEST testUsdImagingGLShadeMaterialRef
 )
 
 pxr_install_test_dir(
@@ -1215,19 +1199,6 @@ pxr_register_test(testUsdImagingGLPrimitiveDrawing
     TESTENV testUsdImagingGLPrimitiveDrawing
 )
 
-pxr_register_test(testUsdImagingGLPrimitiveDrawingRef
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage primitives.usda -write testUsdImagingGLPrimitiveDrawingRef.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLPrimitiveDrawingRef.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLPrimitiveDrawingRef
-    ENV
-        HD_ENABLED=0
-)
-
 pxr_register_test(testUsdImagingGLFlatShading
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -shading flat -stage primitives.usda -write testUsdImagingGLFlatShading.png"
     IMAGE_DIFF_COMPARE
@@ -1239,19 +1210,6 @@ pxr_register_test(testUsdImagingGLFlatShading
     TESTENV testUsdImagingGLFlatShading
 )
 
-pxr_register_test(testUsdImagingGLFlatShadingRef
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -shading flat -stage primitives.usda -write testUsdImagingGLFlatShadingRef.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLFlatShadingRef.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLFlatShadingRef
-    ENV
-        HD_ENABLED=0
-)
-
 pxr_register_test(testUsdImagingGLShadeMaterial
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage coloredCubes.usda -write testUsdImagingGLShadeMaterial.png"
     IMAGE_DIFF_COMPARE
@@ -1261,17 +1219,6 @@ pxr_register_test(testUsdImagingGLShadeMaterial
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLShadeMaterial
-)
-
-pxr_register_test(testUsdImagingGLShadeMaterialRef
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage coloredCubes.usda -write testUsdImagingGLShadeMaterialRef.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLShadeMaterialRef.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLShadeMaterialRef
 )
 
 pxr_register_test(testUsdImagingGLSphere
@@ -1323,21 +1270,6 @@ pxr_register_test(testUsdImagingGLNurbsPatch
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLNurbsPatch
-)
-
-pxr_register_test(testUsdImagingGLNurbsPatchRef
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -frameAll -offscreen -lighting -stage bendyNurbs.usda -camera /main_cam -times 1 5 10 -write testUsdImagingGLNurbsPatchRef.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLNurbsPatchRef_001.png
-        testUsdImagingGLNurbsPatchRef_005.png
-        testUsdImagingGLNurbsPatchRef_010.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLNurbsPatch
-    ENV
-        HD_ENABLED=0
 )
 
 pxr_register_test(testUsdImagingGLFramingBBox_proxy

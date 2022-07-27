@@ -314,11 +314,6 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdviewLegacyImpl
-    DEST testUsdviewLegacyImpl
-)
-
-pxr_install_test_dir(
     SRC testenv/testUsdviewOIT
     DEST testUsdviewOIT
 )
@@ -941,20 +936,6 @@ pxr_register_test(testUsdviewAdditive
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
 )
-
-# This test is disabled because of failures on some platforms.
-#
-# pxr_register_test(testUsdviewLegacyImpl
-#     PYTHON
-#     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewLegacyImpl.py test.usda"
-#     IMAGE_DIFF_COMPARE
-#         perspective.png
-#         ortho.png
-#     FAIL 1
-#     FAIL_PERCENT 0.000031
-#     PERCEPTUAL
-#     EXPECTED_RETURN_CODE 0
-# )
 
 pxr_register_test(testUsdviewVariantSelection
     PYTHON

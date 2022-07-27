@@ -94,10 +94,9 @@ My_TestGLDrawing::InitTest()
     _stage = UsdStage::Open(GetStageFilePath());
     SdfPathVector excludedPaths;
 
-    if (UsdImagingGLEngine::IsHydraEnabled()) {
-        std::cout << "Using HD Renderer.\n";
-    } else {
-        std::cout << "Using Reference Renderer.\n";
+    if (!UsdImagingGLEngine::IsHydraEnabled()) {
+        std::cerr << "Couldn't initialize hydra" << std::endl;
+        exit(-1);
     }
     _engine.reset(
         new UsdImagingGLEngine(_stage->GetPseudoRoot().GetPath(), 

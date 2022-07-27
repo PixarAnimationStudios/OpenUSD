@@ -32,7 +32,8 @@
 // 5 -> 6: Use UsdImagingGLEngine::_GetHdEngine() instead of _engine.
 // 6 -> 7: Added UsdImagingGLEngine::_GetTaskController() and _IsUsingLegacyImpl()
 // 7 -> 8: Added outHitNormal parameter to UsdImagingGLEngine::TestIntersection()
-#define USDIMAGINGGL_API_VERSION 8
+// 8 -> 9: Removed the "HydraDisabled" renderer (i.e. LegacyEngine).
+#define USDIMAGINGGL_API_VERSION 9
 
 #endif // PXR_USD_IMAGING_USD_IMAGING_GL_VERSION_H
 

@@ -1720,11 +1720,6 @@ class StageView(QGLWidget):
             if self._cropImageToCameraViewport:
                 viewport = cameraViewport
 
-            # For legacy implementation (--renderer HydraDisabled)
-            if not renderer.IsHydraEnabled():
-                renderer.SetRenderViewport(viewport)
-                renderer.SetWindowPolicy(self.computeWindowPolicy(cameraAspect))
-
             renderBufferSize = Gf.Vec2i(self.computeWindowSize())
 
             renderer.SetRenderBufferSize(

@@ -170,7 +170,7 @@ diagnostic and debugging facilities, and an interactive python interpreter.
 
    > usdview -h
    usage: usdview
-          [-h] [--renderer {GL,Embree,Prman,HydraDisabled}]
+          [-h] [--renderer {GL,Embree,Prman}]
           [--select PRIMPATH] [--camera CAMERA] [--mask PRIMPATH[,PRIMPATH...]]
           [--clearsettings] [--defaultsettings] [--norender] [--noplugins]
           [--unloaded] [--timing] [--memstats {none,stage,stageAndImaging}]
@@ -187,10 +187,9 @@ diagnostic and debugging facilities, and an interactive python interpreter.
    
    optional arguments:
      -h, --help            show this help message and exit
-     --renderer {GL,Embree,Prman,HydraDisabled}
+     --renderer {GL,Embree,Prman}
                            Which render backend to use (named as it appears in
-                           the menu). Use 'HydraDisabled' to turn off Hydra
-                           renderers.
+                           the menu).
      --select PRIMPATH     A prim path to initially select and frame
      --camera CAMERA, -cam CAMERA
                            Which camera to set the view to on open - may be given
@@ -242,20 +241,8 @@ diagnostic and debugging facilities, and an interactive python interpreter.
 **Further Notes on Command Line Options**
 
     * :option:`--renderer` : Can be used to select any of the render
-      delegates whose plugins have been installed.  The default, "GL"
-      renderer is the HD (hydra) high-performance "Storm" renderer developed
-      for the USD project.  The "HydraDisabled" gl renderer is
-      single-threaded, uses simple VBO's to draw unrefined (only) geometry,
-      and is largely provided for clients whose underlying graphics hardware
-      does not support the features required by the "opt"
-      renderer. "HydraDisabled" also:
-
-      * currently does not support intrinsics like Spheres, Capsules,
-        Cylinders, and Cubes or many of the more recent, advanced schemas
-
-      * uses only the main thread
-
-      * does not support renderer plugins
+      delegates whose plugins have been installed.  The default Hydra
+      renderer is Storm.
 
     * :option:`--select primPath` : loads and images the entire stage,
       but selects *primPath* in the prim browser, and positions the free

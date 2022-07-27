@@ -3,6 +3,14 @@
 ## [22.11] - ??
 
 ### UsdImaging
+- Deleted UsdImagingGLLegacyEngine, i.e. usdview's "HydraDisabled" renderer.
+  This class was a simple GL3-based USD renderer that was kept as a fallback for
+  hydra, as Hydra Storm GL requires GL 4.5.  However, it was missing many
+  foundational USD features (like instancing) and it's main use (on OSX) has been
+  deprecated by the Storm Metal port.
+  This change doesn't affect any of the existing usdview Hydra backends.  If Hydra
+  can't find any supported backends (e.g. a variant of Storm, Embree, Prman), usdview
+  will now display an empty viewport.
 - Added an API for UsdImagingDelegate adapters to request a callback to
   UpdateForTime. Adapters now invoke this API on relevant invalidation, but
   UsdImagingDelegate doesn't automatically call UpdateForTime on every

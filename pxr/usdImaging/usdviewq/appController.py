@@ -405,10 +405,7 @@ class AppController(QtCore.QObject):
             # be restored later.
             self._viewerModeEscapeSizes = None
 
-            if parserData.rendererPlugin == \
-                  UsdAppUtils.rendererArgs.HYDRA_DISABLED_OPTION_STRING:
-                os.environ['HD_ENABLED'] = '0'
-            elif parserData.rendererPlugin:
+            if parserData.rendererPlugin:
                 os.environ['HD_DEFAULT_RENDERER'] = parserData.rendererPlugin
 
             self._openSettings2(parserData.defaultSettings)
