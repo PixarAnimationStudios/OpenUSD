@@ -111,7 +111,7 @@ HgiVulkanComputeCmds::SetConstantValues(
 {
     _CreateCommandBuffer();
     // Delay pushing until we know for sure what the pipeline will be.
-    if (!_pushConstants || _pushConstantsByteSize < byteSize) {
+    if (!_pushConstants || _pushConstantsByteSize != byteSize) {
         delete[] _pushConstants;
         _pushConstants = new uint8_t[byteSize];
         _pushConstantsByteSize = byteSize;
