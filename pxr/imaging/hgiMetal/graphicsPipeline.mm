@@ -366,7 +366,7 @@ HgiMetalGraphicsPipeline::_CreateTessControlRenderPipelineState(id<MTLDevice> de
 
      // Create a new render pipeline state object
      HGIMETAL_DEBUG_LABEL(stateDesc, _descriptor.debugName.c_str());
-     stateDesc.rasterSampleCount = _descriptor.multiSampleState.sampleCount;
+     //stateDesc.rasterSampleCount = _descriptor.multiSampleState.sampleCount;
 
      HgiMetalShaderProgram const *metalProgram =
          static_cast<HgiMetalShaderProgram*>(_descriptor.shaderProgram.Get());

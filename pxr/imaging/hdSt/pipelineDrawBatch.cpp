@@ -961,15 +961,15 @@ HdSt_PipelineDrawBatch::PrepareDraw(
         // may still require multiple command buffer submissions.
         _ExecuteFrustumCull(gfxCmds, updateBufferData,
                             renderPassState, resourceRegistry);
-        bool hasPatches = _drawItemInstances[0]->GetDrawItem()->
-            GetGeometricShader()->IsPrimTypePatches();
-        bool const useMetalTessellation =
-        _drawItemInstances[0]->GetDrawItem()->
-            GetGeometricShader()->GetUseMetalTessellation();
-        if (hasPatches && useMetalTessellation) {
-            _ExecutePostTesselation(gfxCmds, updateBufferData,
-                                    renderPassState, resourceRegistry);
-        }
+    }
+    bool hasPatches = _drawItemInstances[0]->GetDrawItem()->
+        GetGeometricShader()->IsPrimTypePatches();
+    bool const useMetalTessellation =
+    _drawItemInstances[0]->GetDrawItem()->
+        GetGeometricShader()->GetUseMetalTessellation();
+    if (hasPatches && useMetalTessellation) {
+        _ExecutePostTesselation(gfxCmds, updateBufferData,
+                                renderPassState, resourceRegistry);
     }
 }
 
