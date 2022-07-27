@@ -424,16 +424,16 @@ HgiVulkanBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
         imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         imageBlit.srcSubresource.layerCount = 1;
         imageBlit.srcSubresource.mipLevel = i - 1;
-        imageBlit.srcOffsets[1].x = width >> (i - 1);
-        imageBlit.srcOffsets[1].y = height >> (i - 1);
+        imageBlit.srcOffsets[1].x = std::max(width >> (i - 1), 1);
+        imageBlit.srcOffsets[1].y = std::max(height >> (i - 1), 1);
         imageBlit.srcOffsets[1].z = 1;
 
         // Destination
         imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         imageBlit.dstSubresource.layerCount = 1;
         imageBlit.dstSubresource.mipLevel = i;
-        imageBlit.dstOffsets[1].x = width >> i;
-        imageBlit.dstOffsets[1].y = height >> i;
+        imageBlit.dstOffsets[1].x = std::max(width >> i, 1);
+        imageBlit.dstOffsets[1].y = std::max(height >> i, 1);
         imageBlit.dstOffsets[1].z = 1;
 
         // Transition current mip level to image blit destination
