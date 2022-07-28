@@ -185,6 +185,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_SHADER_TOKENS                        \
     (alphaThreshold)                            \
+    (centroid)                                  \
     (clipPlanes)                                \
     (commonShaderSource)                        \
     (computeShader)                             \
@@ -214,6 +215,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (wireframeColor)                            \
     (worldToViewMatrix)                         \
     (worldToViewInverseMatrix)                  \
+    (sample)                                    \
     (stepSize)                                  \
     (stepSizeLighting)
 

@@ -617,9 +617,10 @@ private:
                 aggregateName.GetString() + "_" + memberName.GetString());
     }
 
-    HgiInterpolationType _GetInterpolation(TfToken const & qualifiers) const
+    HgiInterpolationType _GetInterpolation(TfTokenVector const & qualifiers) const
     {
-        if (qualifiers == _tokens->flat) {
+        if (std::any_of(qualifiers.cbegin(), qualifiers.cend(),
+            [](const TfToken &qualifier) { return qualifier == _tokens->flat; })) {
             return HgiInterpolationFlat;
         } else {
             return HgiInterpolationDefault;
@@ -644,6 +645,27 @@ _IsVertexAttribInputStage(TfToken const & shaderStage)
     return (shaderStage == HdShaderTokens->vertexShader) ||
            (shaderStage == HdShaderTokens->postTessControlShader) ||
            (shaderStage == HdShaderTokens->postTessVertexShader);
+}
+
+bool _HasQualifier(const TfTokenVector &qualifiersList, const TfToken &qualifierParam) {
+    if (std::any_of(qualifiersList.cbegin(), qualifiersList.cend(),
+            [&qualifierParam] (const TfToken &qualifier) {
+                return qualifier == qualifierParam; })) {
+        return true;
+    }
+    return false;
+}
+
+HgiShaderFunctionParamDesc::SamplingFlag
+_GetSamplingFlags(const TfTokenVector &qualifiersList) {
+    uint32_t flags = 0;
+    if (_HasQualifier(qualifiersList, HdShaderTokens->centroid)) {
+        flags |= HgiShaderFunctionParamDesc::Centroid;
+    }
+    if (_HasQualifier(qualifiersList, HdShaderTokens->sample)) {
+        flags |= HgiShaderFunctionParamDesc::Sample;
+    }
+    return static_cast<HgiShaderFunctionParamDesc::SamplingFlag>(flags);
 }
 
 void
@@ -675,6 +697,7 @@ _ResourceGenerator::_GenerateHgiResources(
                         param.interstageSlot = _GetSlot(element.name);
                         param.interpolation =
                             _GetInterpolation(element.qualifiers);
+                        param.samplingFlag = _GetSamplingFlags(element.qualifiers);
                         param.arraySize = element.arraySize;
                     HgiShaderFunctionAddStageInput(funcDesc, param);
                 }
@@ -719,10 +742,25 @@ _ResourceGenerator::_GenerateHgiResources(
                 funcDesc->stageOutputBlocks.push_back(paramBlock);
             }
         } else if (element.kind == Kind::QUALIFIER) {
-            if (element.qualifiers == TfToken("early_fragment_tests")) {
-                //   GLSL: "layout (early_fragment_tests) in;"
-                //   MSL: "[[early_fragment_tests]]"
+            const TfTokenVector &qualifiers = element.qualifiers;
+            static const TfToken fragmentTest = TfToken("early_fragment_tests");
+            if (_HasQualifier(qualifiers, fragmentTest)) {
                 funcDesc->fragmentDescriptor.earlyFragmentTests = true;
+            }
+            if (shaderStage == HdShaderTokens->postTessVertexShader) {
+                const static std::map<TfToken, HgiTessellationSpacing> spacings = {
+                        {TfToken("equal_spacing"),
+                                HgiTessellationSpacing::HgiTessellationSpacingEven},
+                        {TfToken("fractional_even"),
+                                HgiTessellationSpacing::HgiTessellationSpacingFractionalEven},
+                        {TfToken("fractional_odd"),
+                                HgiTessellationSpacing::HgiTessellationSpacingFractionalOdd}};
+                for (auto const &spacing : spacings)
+                {
+                    if (_HasQualifier(qualifiers, spacing.first)) {
+                        funcDesc->tessellationDescriptor.spacing = spacing.second;
+                    }
+                }
             }
         } else if (element.kind == Kind::UNIFORM_BLOCK) {
             if (TF_VERIFY(element.members.size() == 1)) {
@@ -844,15 +882,20 @@ _ResourceGenerator::_GenerateGLSLResources(
                     default:
                         break;
                 }
-                if (element.qualifiers == _tokens->flat) {
-                    str << "flat ";
-                }
-                str << element.dataType << " "
-                    << element.name;
-                if (element.arraySize.IsEmpty()) {
-                    str << ";\n";
-                } else {
-                    str << element.arraySize << ";\n";
+                {
+                    const TfTokenVector &qualifiers = element.qualifiers;
+                    if (std::any_of(qualifiers.cbegin(), qualifiers.cend(),
+                          [](const TfToken &qualifier)
+                          { return qualifier == _tokens->flat; })) {
+                        str << "flat ";
+                    }
+                    str << element.dataType << " "
+                        << element.name;
+                    if (element.arraySize.IsEmpty()) {
+                        str << ";\n";
+                    } else {
+                        str << element.arraySize << ";\n";
+                    }
                 }
                 break;
             case HdSt_ResourceLayout::Kind::BLOCK:
@@ -879,8 +922,15 @@ _ResourceGenerator::_GenerateGLSLResources(
                 }
                 break;
             case HdSt_ResourceLayout::Kind::QUALIFIER:
-                if (element.qualifiers == TfToken("early_fragment_tests")) {
-                    str << "layout(early_fragment_tests) in;\n";
+                {
+                    const TfTokenVector &elQualifiers = element.qualifiers;
+                    static const TfToken earlyFragmentTest =
+                        TfToken("early_fragment_tests");
+                    if (std::any_of(elQualifiers.cbegin(), elQualifiers.cend(),
+                            [](const TfToken &qualifier) {
+                            return qualifier == earlyFragmentTest; })) {
+                        str << "layout(early_fragment_tests) in;\n";
+                    }
                 }
                 break;
             case HdSt_ResourceLayout::Kind::UNIFORM_VALUE:
@@ -1066,12 +1116,12 @@ _AddInterstageElement(
     TfToken const &name,
     TfToken const &dataType,
     TfToken const &arraySize = TfToken(),
-    TfToken const &qualifier = TfToken())
+    TfTokenVector const &qualifiers = TfTokenVector())
 {
     elements->emplace_back(
         HdSt_ResourceLayout::InOut::NONE,
         HdSt_ResourceLayout::Kind::VALUE,
-        dataType, name, arraySize, qualifier);
+        dataType, name, arraySize, qualifiers);
 }
 
 static void
@@ -1276,50 +1326,51 @@ HdSt_CodeGen::_PlumbInterstageElements(
     TfToken const noArraySize;
 
     // Interstage variables of type "int" require "flat" interpolation
-    TfToken const &qualifier =
-        (dataType == _tokens->_int) ? _tokens->flat : _tokens->_default;
+    TfToken const &qualifierEl =
+            (dataType == _tokens->_int) ? _tokens->flat : _tokens->_default;
+    TfTokenVector qualifiers = {qualifierEl};
 
     // Vertex attrib input for VS, PTCS, PTVS
     _resAttrib.emplace_back(InOut::STAGE_OUT, Kind::VALUE, dataType,
-        vs_outName, noArraySize, qualifier);
+        vs_outName, noArraySize, qualifiers);
 
     if (_hasTCS) {
         _resTCS.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                vs_outName, TfToken("[gl_MaxPatchVertices]"), qualifier);
+             vs_outName, TfToken("[gl_MaxPatchVertices]"), qualifiers);
         _resTCS.emplace_back(InOut::STAGE_OUT, Kind::VALUE, dataType,
-                tcs_outName, TfToken("[HD_NUM_PATCH_EVAL_VERTS]"), qualifier);
+             tcs_outName, TfToken("[HD_NUM_PATCH_EVAL_VERTS]"), qualifiers);
     }
 
     if (_hasTES) {
         _resTES.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                tcs_outName, TfToken("[gl_MaxPatchVertices]"), qualifier);
+             tcs_outName, TfToken("[gl_MaxPatchVertices]"), qualifiers);
         _resTES.emplace_back(InOut::STAGE_OUT, Kind::VALUE, dataType,
-                tes_outName, noArraySize, qualifier);
+             tes_outName, noArraySize, qualifiers);
     }
 
     // Geometry shader inputs come from previous active stage
     if (_hasGS && _hasTES) {
         _resGS.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                tes_outName, TfToken("[HD_NUM_PRIMITIVE_VERTS]"), qualifier);
+            tes_outName, TfToken("[HD_NUM_PRIMITIVE_VERTS]"), qualifiers);
         _resGS.emplace_back(InOut::STAGE_OUT, Kind::VALUE, dataType,
-                gs_outName, noArraySize, qualifier);
+            gs_outName, noArraySize, qualifiers);
     } else if (_hasGS) {
         _resGS.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                vs_outName, TfToken("[HD_NUM_PRIMITIVE_VERTS]"), qualifier);
+            vs_outName, TfToken("[HD_NUM_PRIMITIVE_VERTS]"), qualifiers);
         _resGS.emplace_back(InOut::STAGE_OUT, Kind::VALUE, dataType,
-                gs_outName, noArraySize, qualifier);
+            gs_outName, noArraySize, qualifiers);
     }
 
     // Fragment shader inputs come from previous active stage
     if (_hasGS) {
         _resFS.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                gs_outName, noArraySize, qualifier);
+            gs_outName, noArraySize, qualifiers);
     } else if (_hasTES) {
         _resFS.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                tes_outName, noArraySize, qualifier);
+            tes_outName, noArraySize, qualifiers);
     } else {
         _resFS.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                vs_outName, noArraySize, qualifier);
+            vs_outName, noArraySize, qualifiers);
     }
 }
 
