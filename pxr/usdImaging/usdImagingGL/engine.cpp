@@ -738,10 +738,6 @@ UsdImagingGLEngine::DecodeIntersection(
 TfTokenVector
 UsdImagingGLEngine::GetRendererPlugins()
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
-        return {};
-    }
-
     HfPluginDescVector pluginDescriptors;
     HdRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescriptors);
 
@@ -756,13 +752,11 @@ UsdImagingGLEngine::GetRendererPlugins()
 std::string
 UsdImagingGLEngine::GetRendererDisplayName(TfToken const &id)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
-        return "";
-    }
-
     HfPluginDesc pluginDescriptor;
-    if (!TF_VERIFY(HdRendererPluginRegistry::GetInstance().
-                   GetPluginDesc(id, &pluginDescriptor))) {
+    bool foundPlugin = HdRendererPluginRegistry::GetInstance().
+        GetPluginDesc(id, &pluginDescriptor);
+
+    if (!foundPlugin) {
         return std::string();
     }
 
