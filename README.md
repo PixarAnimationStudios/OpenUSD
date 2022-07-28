@@ -143,6 +143,7 @@ then build and install USD into ```/opt/local/USD```.
 ```
 > python USD/build_scripts/build_usd.py /opt/local/USD
 ```
+See [Advanced building on Mac](BUILDING_MAC.md) for building with Xcode and debugging
 
 ##### Windows:
 
