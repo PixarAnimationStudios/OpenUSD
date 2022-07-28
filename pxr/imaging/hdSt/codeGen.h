@@ -176,6 +176,7 @@ private:
 
     // resource buckets
     using ElementVector = HdSt_ResourceLayout::ElementVector;
+    using TfTokenVector = HdSt_ResourceLayout::TfTokenVector;
     ElementVector _resVS;
     ElementVector _resTCS;
     ElementVector _resTES;

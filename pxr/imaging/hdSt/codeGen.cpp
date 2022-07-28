@@ -647,6 +647,25 @@ _IsVertexAttribInputStage(TfToken const & shaderStage)
            (shaderStage == HdShaderTokens->postTessVertexShader);
 }
 
+bool _HasQualifier(const TfTokenVector &qualifiersList, const TfToken &qualifierParam) {
+    if (std::any_of(qualifiersList.cbegin(), qualifiersList.cend(),
+            [&qualifierParam] (const TfToken &qualifier) { return qualifier == qualifierParam; })) {
+        return true;
+    }
+    return false;
+}
+
+HgiShaderFunctionParamDesc::SamplingFlag _GetSamplingFlags(const TfTokenVector &qualifiersList) {
+    uint32_t flags = 0;
+    if (_HasQualifier(qualifiersList, HdShaderTokens->centroid)) {
+        flags |= HgiShaderFunctionParamDesc::Centroid;
+    }
+    if (_HasQualifier(qualifiersList, HdShaderTokens->sample)) {
+        flags |= HgiShaderFunctionParamDesc::Sample;
+    }
+    return static_cast<HgiShaderFunctionParamDesc::SamplingFlag>(flags);
+}
+
 void
 _ResourceGenerator::_GenerateHgiResources(
     HgiShaderFunctionDesc *funcDesc,
@@ -677,6 +696,7 @@ _ResourceGenerator::_GenerateHgiResources(
                         param.interstageSlot = _GetSlot(element.name);
                         param.interpolation =
                             _GetInterpolation(element.qualifiers);
+                        param.samplingFlag = _GetSamplingFlags(element.qualifiers);
                         param.arraySize = element.arraySize;
                     HgiShaderFunctionAddStageInput(funcDesc, param);
                 }
@@ -723,9 +743,23 @@ _ResourceGenerator::_GenerateHgiResources(
         } else if (element.kind == Kind::QUALIFIER) {
             const TfTokenVector &qualifiers = element.qualifiers;
             static const TfToken fragmentTest = TfToken("early_fragment_tests");
-            if (std::any_of(qualifiers.cbegin(), qualifiers.cend(),
-                    [](const TfToken &qualifier) { return qualifier == fragmentTest; })) {
+            if (_HasQualifier(qualifiers, fragmentTest)) {
                 funcDesc->fragmentDescriptor.earlyFragmentTests = true;
+            }
+            if (shaderStage == HdShaderTokens->postTessVertexShader) {
+                const static std::map<TfToken, HgiTessellationSpacing> spacings = {
+                    {TfToken("equal_spacing"),
+                        HgiTessellationSpacing::HgiTessellationSpacingEven},
+                    {TfToken("fractional_even_spacing"),
+                        HgiTessellationSpacing::HgiTessellationSpacingFractionalEven},
+                    {TfToken("fractional_odd_spacing"),
+                        HgiTessellationSpacing::HgiTessellationSpacingFractionalOdd}};
+                for (auto const &spacing : spacings)
+                {
+                    if (_HasQualifier(qualifiers, spacing.first)) {
+                        funcDesc->tessellationDescriptor.spacing = spacing.second;
+                    }
+                }
             }
         } else if (element.kind == Kind::UNIFORM_BLOCK) {
             if (TF_VERIFY(element.members.size() == 1)) {
