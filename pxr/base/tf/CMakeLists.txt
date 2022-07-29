@@ -12,12 +12,12 @@ pxr_library(tf
     LIBRARIES
         arch
         ${WINLIBS}
-        ${PYTHON_LIBRARIES}
-        ${Boost_PYTHON_LIBRARY}
+        $<$<BOOL:${PXR_ENABLE_PYTHON_SUPPORT}>:${PYTHON_LIBRARIES}>
+        $<$<BOOL:${PXR_ENABLE_PYTHON_SUPPORT}>:${Boost_PYTHON_LIBRARY}>
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
-        ${PYTHON_INCLUDE_DIRS}
+        $<$<BOOL:${PXR_ENABLE_PYTHON_SUPPORT}>:${PYTHON_INCLUDE_DIRS}>
         ${Boost_INCLUDE_DIRS}
         ${TBB_INCLUDE_DIRS}
 
@@ -225,7 +225,7 @@ pxr_library(tf
         wrapWarning.cpp
 
 
-    PYMODULE_FILES 
+    PYMODULE_FILES
         __init__.py
         testenv/__init__.py
         testenv/testTfScriptModuleLoader_AAA_RaisesError.py
@@ -253,7 +253,7 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
             ${Boost_PYTHON_LIBRARY}
         CPPFILES
             testenv/testTfPyFunction.cpp
-    ) 
+    )
 
     pxr_build_test(testTfPyInterpreter
         LIBRARIES
@@ -471,8 +471,8 @@ pxr_register_test(TfDenseHashMap
 )
 pxr_register_test(TfDelegate
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDelegateAddRemove"
-    STDOUT_REDIRECT output.txt 
-    DIFF_COMPARE output.txt 
+    STDOUT_REDIRECT output.txt
+    DIFF_COMPARE output.txt
 )
 pxr_register_test(TfError
     ENV TF_FATAL_VERIFY=0
