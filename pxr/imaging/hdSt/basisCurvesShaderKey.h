@@ -104,10 +104,10 @@ struct HdSt_BasisCurvesShaderKey : public HdSt_ShaderKey
     bool useMetalTessellation;
     TfToken glslfx;
     TfToken VS[7];
-    TfToken TCS[5];
-    TfToken PTCS[7];
+    TfToken TCS[7];
+    TfToken PTCS[10];
     TfToken TES[10];
-    TfToken PTVS[16];
+    TfToken PTVS[17];
     TfToken FS[8];
 };
 

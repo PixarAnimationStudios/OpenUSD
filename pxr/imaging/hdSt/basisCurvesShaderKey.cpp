@@ -49,6 +49,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,                      "basisCurves.glslfx"))
 
+    //Set tess factors
+    ((setTessFactorsGLSL,    "Curves.JointTessControl.SetTessFactorGLSL"))
+    ((setTessFactorsMSL,      "Curves.JointTessControl.SetTessFactorMSL"))
+    ((postTessellationShared,  "Curves.PostTessellation.Shared"))
+
     // normal related mixins
     ((curvesVertexNormalOriented,      "Curves.Vertex.Normal.Oriented"))
     ((curvesVertexNormalImplicit,      "Curves.Vertex.Normal.Implicit"))
@@ -87,16 +92,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((curvesCubicVaryingInterp,        "Curves.Cubic.VaryingInterpolation"))
 
     ((curvesTessControlShared,         "Curves.Shared"))
-    ((curvesTessControlLinearRibbon,   "Curves.TessControl.Linear.Ribbon"))
-    ((curvesPostTessControlLinearRibbon,"Curves.PostTessControl.Linear.Ribbon"))
-    ((curvesTessControlLinearHalfTube, "Curves.TessControl.Linear.HalfTube"))
-    ((curvesPostTessControlLinearHalfTube,
-    "Curves.PostTessControl.Linear.HalfTube"))
-    ((curvesTessControlCubicRibbon,    "Curves.TessControl.Cubic.Ribbon"))
-    ((curvesPostTessControlCubicRibbon,"Curves.PostTessControl.Cubic.Ribbon"))
-    ((curvesTessControlCubicHalfTube,  "Curves.TessControl.Cubic.HalfTube"))
-    ((curvesPostTessControlCubicHalfTube,
-    "Curves.PostTessControl.Cubic.HalfTube"))
+    ((curvesJointTessControlLinearRibbon, "Curves.JointTessControl.Linear.Ribbon"))
+    ((curvesJointTessControlLinearHalfTube, "Curves.JointTessControl.Linear.HalfTube"))
+    ((curvesJointTessControlCubicRibbon,    "Curves.JointTessControl.Cubic.Ribbon"))
+    ((curvesJointTessControlCubicHalfTube,  "Curves.JointTessControl.Cubic.HalfTube"))
     ((curvesTessEvalLinearPatch,       "Curves.TessEval.Linear.Patch"))
     ((curvesPostTessVertexLinearPatch, "Curves.PostTessVertex.Linear.Patch"))
     ((curvesTessEvalCubicPatch,        "Curves.TessEval.Cubic.Patch"))
@@ -255,9 +254,10 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
                }
                case HdSt_BasisCurvesShaderKey::RIBBON:
                {
+                   TCS[tcsIndex++] = _tokens->setTessFactorsGLSL;
                    TCS[tcsIndex++] = _tokens->curvesTessControlShared;
                    TCS[tcsIndex++] = _tokens->curvesTessControlLinearPatch;
-                   TCS[tcsIndex++] = _tokens->curvesTessControlLinearRibbon;
+                   TCS[tcsIndex++] = _tokens->curvesJointTessControlLinearRibbon;
                    TCS[tcsIndex++] = TfToken();
 
                    TES[tesIndex++] = _tokens->instancing;
@@ -271,9 +271,10 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
                }
                case HdSt_BasisCurvesShaderKey::HALFTUBE:
                {
+                   TCS[tcsIndex++] = _tokens->setTessFactorsGLSL;
                    TCS[tcsIndex++] = _tokens->curvesTessControlShared;
                    TCS[tcsIndex++] = _tokens->curvesTessControlLinearPatch;
-                   TCS[tcsIndex++] = _tokens->curvesTessControlLinearHalfTube;
+                   TCS[tcsIndex++] = _tokens->curvesJointTessControlLinearHalfTube;
                    TCS[tcsIndex++] = TfToken();
 
                    TES[tesIndex++] = _tokens->instancing;
@@ -300,6 +301,7 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
                case HdSt_BasisCurvesShaderKey::WIRE:
                {
                    tessellationSpacing = HgiTessellationSpacingFractionalOdd;
+                   TCS[tcsIndex++] = _tokens->setTessFactorsGLSL;
                    TCS[tcsIndex++] = _tokens->curvesTessControlShared;
                    TCS[tcsIndex++] = _tokens->curvesTessControlCubicWire;
                    TCS[tcsIndex++] = TfToken();
@@ -313,9 +315,10 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
                }
                case HdSt_BasisCurvesShaderKey::RIBBON:
                {
+                   TCS[tcsIndex++] = _tokens->setTessFactorsGLSL;
                    TCS[tcsIndex++] = _tokens->curvesTessControlShared;
                    TCS[tcsIndex++] = _tokens->curvesTessControlCubicPatch;
-                   TCS[tcsIndex++] = _tokens->curvesTessControlCubicRibbon;
+                   TCS[tcsIndex++] = _tokens->curvesJointTessControlCubicRibbon;
                    TCS[tcsIndex++] = TfToken();
 
 
@@ -332,9 +335,10 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
                }
                case HdSt_BasisCurvesShaderKey::HALFTUBE:
                {
+                   TCS[tcsIndex++] = _tokens->setTessFactorsGLSL;
                    TCS[tcsIndex++] = _tokens->curvesTessControlShared;
                    TCS[tcsIndex++] = _tokens->curvesTessControlCubicPatch;
-                   TCS[tcsIndex++] = _tokens->curvesTessControlCubicHalfTube;
+                   TCS[tcsIndex++] = _tokens->curvesJointTessControlCubicHalfTube;
                    TCS[tcsIndex++] = TfToken();
 
                    TES[tesIndex++] = _tokens->instancing;
@@ -353,6 +357,8 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
            }
        }
    } else { //Is post tess vertex shader
+       TCS[0] = TfToken();
+       TES[0] = TfToken();
        TfToken basisNormalInterpolationToken =
            basisNormalInterpolation ?
            _tokens->curveCubicNormalsBasisPostTess :
@@ -360,10 +366,13 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
        TfToken postTessNormal =
            oriented ? _tokens->curvesPostTessVertexNormalOriented :
                _tokens->curvesPostTessVertexNormalImplicit;
+       PTVS[ptvsIndex++] = _tokens->postTessellationShared;
        PTVS[ptvsIndex++] = _tokens->curvesCoeffs;
        PTVS[ptvsIndex++] = postTessNormal;
        PTVS[ptvsIndex++] = _tokens->pointIdNoneVS;
 
+       PTCS[ptcsIndex++] = _tokens->postTessellationShared;
+       PTCS[ptcsIndex++] = _tokens->setTessFactorsMSL;
        PTCS[ptcsIndex++] = _tokens->curvesCoeffs;
        PTCS[ptcsIndex++] = _tokens->instancing;
        PTCS[ptcsIndex++] = postTessNormal;
@@ -383,7 +392,7 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
                    PTCS[ptcsIndex++] = _tokens->curvesTessControlShared;
 
                    PTCS[ptcsIndex++] = _tokens->curvesPostTessControlLinearPatch;
-                   PTCS[ptcsIndex++] = _tokens->curvesPostTessControlLinearRibbon;
+                   PTCS[ptcsIndex++] = _tokens->curvesJointTessControlLinearRibbon;
                    PTCS[ptcsIndex++] = TfToken();
 
                    PTVS[ptvsIndex++] = _tokens->instancing;
@@ -399,7 +408,7 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
                {
                    PTCS[ptcsIndex++] = _tokens->curvesTessControlShared;
                    PTCS[ptcsIndex++] = _tokens->curvesPostTessControlLinearPatch;
-                   PTCS[ptcsIndex++] = _tokens->curvesPostTessControlLinearHalfTube;
+                   PTCS[ptcsIndex++] = _tokens->curvesJointTessControlLinearHalfTube;
                    PTCS[ptcsIndex++] = TfToken();
 
                    PTVS[ptvsIndex++] = _tokens->instancing;
@@ -440,7 +449,7 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
                {
                    PTCS[ptcsIndex++] = _tokens->curvesTessControlShared;
                    PTCS[ptcsIndex++] = _tokens->curvesPostTessControlCubicPatch;
-                   PTCS[ptcsIndex++] = _tokens->curvesPostTessControlCubicRibbon;
+                   PTCS[ptcsIndex++] = _tokens->curvesJointTessControlCubicRibbon;
                    PTCS[ptcsIndex++] = TfToken();
 
                    PTVS[ptvsIndex++] = _tokens->instancing;
@@ -458,7 +467,7 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
                {
                    PTCS[ptcsIndex++] = _tokens->curvesTessControlShared;
                    PTCS[ptcsIndex++] = _tokens->curvesPostTessControlCubicPatch;
-                   PTCS[ptcsIndex++] = _tokens->curvesPostTessControlCubicHalfTube;
+                   PTCS[ptcsIndex++] = _tokens->curvesJointTessControlCubicHalfTube;
                    PTCS[ptcsIndex++] = TfToken();
 
                    PTVS[ptvsIndex++] = _tokens->instancing;
