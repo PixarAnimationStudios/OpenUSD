@@ -209,6 +209,11 @@ protected:
         return _instanceName;
     }
 
+    /// Returns a vector of names of API schema objects belonging to a
+    /// multiple-apply API schema applied to a given prim.
+    static TfTokenVector _GetMultipleApplyInstanceNames(const UsdPrim &prim,
+                                                        const TfType &schemaType);
+
 protected:        
     /// Check whether this APISchema object is valid for the currently held  
     /// prim. 

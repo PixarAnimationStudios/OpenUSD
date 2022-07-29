@@ -78,19 +78,9 @@ UsdPhysicsDriveAPI::GetAll(const UsdPrim &prim)
 {
     std::vector<UsdPhysicsDriveAPI> schemas;
     
-    auto appliedSchemas = prim.GetAppliedSchemas();
-    if (appliedSchemas.empty()) {
-        return schemas;
-    }
-
-    for (const auto &appliedSchema : appliedSchemas) {
-        const std::string schemaPrefix = std::string("PhysicsDriveAPI") +
-                                         UsdObject::GetNamespaceDelimiter();
-        if (TfStringStartsWith(appliedSchema, schemaPrefix)) {
-            const std::string schemaName =
-                    appliedSchema.GetString().substr(schemaPrefix.size());
-            schemas.emplace_back(prim, TfToken(schemaName));
-        }
+    for (const auto &schemaName :
+         UsdAPISchemaBase::_GetMultipleApplyInstanceNames(prim, _GetStaticTfType())) {
+        schemas.emplace_back(prim, schemaName);
     }
 
     return schemas;
