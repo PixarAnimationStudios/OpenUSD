@@ -1389,9 +1389,7 @@ Coeffs evaluateBasis(float u, float u2, float u3)
   tangent_basis[1] = -9.0*u2 + 6.0*u;
   tangent_basis[2] = 9.0*u2 - 12.0*u + 3.0;
   tangent_basis[3] = -3.0*u2 + 6.0*u - 3.0;
-  Coeffs coeffs;
-  coeffs.basis = basis;
-  coeffs.tangent_basis = tangent_basis;
+  Coeffs coeffs = {basis, tangent_basis};
   return coeffs;
 }
 
@@ -1410,9 +1408,7 @@ Coeffs evaluateBasis(float u, float u2, float u3)
   tangent_basis[1] = -1;
   tangent_basis[2] = 0;
   tangent_basis[3] = 0;
-  Coeffs coeffs;
-  coeffs.basis = basis;
-  coeffs.tangent_basis = tangent_basis;
+  Coeffs coeffs = {basis, tangent_basis};
   return coeffs;
 }
 
@@ -1431,9 +1427,7 @@ Coeffs evaluateBasis(float u, float u2, float u3)
   tangent_basis[1] = -4.5*u2 + 4.0*u + 0.5;
   tangent_basis[2] = 4.5*u2 - 5.0*u;
   tangent_basis[3] = -1.5*u2 + 2.0*u - 0.5;
-  Coeffs coeffs;
-  coeffs.basis = basis;
-  coeffs.tangent_basis = tangent_basis;
+  Coeffs coeffs = {basis, tangent_basis};
   return coeffs;
 }
 
@@ -1452,9 +1446,7 @@ Coeffs evaluateBasis(float u, float u2, float u3)
   tangent_basis[1] = -1.5*u2 + u + 0.5;
   tangent_basis[2] = 1.5*u2 - 2.0*u;
   tangent_basis[3] = -0.5*u2 + u - 0.5;
-  Coeffs coeffs;
-  coeffs.basis = basis;
-  coeffs.tangent_basis = tangent_basis;
+  Coeffs coeffs = {basis, tangent_basis};
   return coeffs;
 }
 
