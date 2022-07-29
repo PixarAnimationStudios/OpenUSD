@@ -37,6 +37,21 @@ HdOverlayContainerDataSource::HdOverlayContainerDataSource(
     }
 }
 
+HdOverlayContainerDataSource::HdOverlayContainerDataSource(
+    const HdContainerDataSourceHandle &src1,
+    const HdContainerDataSourceHandle &src2)
+{
+    _containers = { src1, src2 };
+}
+
+HdOverlayContainerDataSource::HdOverlayContainerDataSource(
+    const HdContainerDataSourceHandle &src1,
+    const HdContainerDataSourceHandle &src2,
+    const HdContainerDataSourceHandle &src3)
+{
+    _containers = { src1, src2, src3 };
+}
+
 bool
 HdOverlayContainerDataSource::Has(const TfToken &name)
 {

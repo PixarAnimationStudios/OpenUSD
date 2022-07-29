@@ -1,0 +1,77 @@
+Loading @ReferenceListOpsWithOffsets/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+     sub.sdf
+     sub_48tcps.sdf
+     base.sdf
+
+------------------------------------------------------------------------
+Results for composing </AddRefs1>
+
+Prim Stack:
+    sub.sdf              /AddRefs1
+    base.sdf             /AddRefs1
+    ref.sdf              /Ref
+    ref.sdf              /Ref
+    ref.sdf              /Ref
+    ref.sdf              /Ref
+
+Time Offsets:
+    root.sdf             /AddRefs1       root       (offset=0.00, scale=1.00)
+        sub.sdf                          sublayer   (offset=10.00, scale=2.00)
+        sub_48tcps.sdf                   sublayer   (offset=0.00, scale=0.50)
+    ref.sdf              /Ref            reference  (offset=100.00, scale=1.00)
+    ref.sdf              /Ref            reference  (offset=30.00, scale=4.00)
+    ref.sdf              /Ref            reference  (offset=100.00, scale=1.00)
+    ref.sdf              /Ref            reference  (offset=10.00, scale=2.00)
+
+------------------------------------------------------------------------
+Results for composing </DeleteRefs1>
+
+Prim Stack:
+    sub.sdf              /DeleteRefs1
+    base.sdf             /DeleteRefs1
+    ref.sdf              /Ref
+
+Time Offsets:
+    root.sdf             /DeleteRefs1    root       (offset=0.00, scale=1.00)
+        sub.sdf                          sublayer   (offset=10.00, scale=2.00)
+        sub_48tcps.sdf                   sublayer   (offset=0.00, scale=0.50)
+    ref.sdf              /Ref            reference  (offset=100.00, scale=1.00)
+
+------------------------------------------------------------------------
+Results for composing </AddRefs2>
+
+Prim Stack:
+    sub_48tcps.sdf       /AddRefs2
+    base.sdf             /AddRefs2
+    ref.sdf              /Ref
+    ref.sdf              /Ref
+    ref.sdf              /Ref
+    ref.sdf              /Ref
+
+Time Offsets:
+    root.sdf             /AddRefs2       root       (offset=0.00, scale=1.00)
+        sub.sdf                          sublayer   (offset=10.00, scale=2.00)
+        sub_48tcps.sdf                   sublayer   (offset=0.00, scale=0.50)
+    ref.sdf              /Ref            reference  (offset=100.00, scale=1.00)
+    ref.sdf              /Ref            reference  (offset=5.00, scale=2.00)
+    ref.sdf              /Ref            reference  (offset=100.00, scale=1.00)
+    ref.sdf              /Ref            reference  (offset=0.00, scale=1.00)
+
+------------------------------------------------------------------------
+Results for composing </DeleteRefs2>
+
+Prim Stack:
+    sub_48tcps.sdf       /DeleteRefs2
+    base.sdf             /DeleteRefs2
+    ref.sdf              /Ref
+
+Time Offsets:
+    root.sdf             /DeleteRefs2    root       (offset=0.00, scale=1.00)
+        sub.sdf                          sublayer   (offset=10.00, scale=2.00)
+        sub_48tcps.sdf                   sublayer   (offset=0.00, scale=0.50)
+    ref.sdf              /Ref            reference  (offset=100.00, scale=1.00)
+

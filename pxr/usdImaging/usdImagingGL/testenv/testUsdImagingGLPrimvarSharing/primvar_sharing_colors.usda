@@ -2,6 +2,7 @@
 (
     endTimeCode = 2
     startTimeCode = 0
+    upAxis = "Z"
 )
 
 def Xform "Geom"

@@ -2,6 +2,7 @@
 (
     endFrame = 1
     startFrame = 1
+    upAxis = "Z"
 )
 
 def Xform "Cube"

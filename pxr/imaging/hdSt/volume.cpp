@@ -103,11 +103,15 @@ HdStVolume::_InitRepr(TfToken const &reprToken, HdDirtyBits* dirtyBits)
     // All representations point to _volumeRepr.
     if (!_volumeRepr) {
         _volumeRepr = std::make_shared<HdRepr>();
-        _volumeRepr->AddDrawItem(
-            std::make_unique<HdStDrawItem>(&_sharedData));
+        auto drawItem = std::make_unique<HdStDrawItem>(&_sharedData);
+        // Make sure we never replace this material by the default material
+        // network (_GetFallbackMaterialNetworkShader in drawBatch.cpp) which
+        // simply does not work with the volume render pass shader.
+        drawItem->SetMaterialIsFinal(true);
+        _volumeRepr->AddDrawItem(std::move(drawItem));
         *dirtyBits |= HdChangeTracker::NewRepr;
     }
-    
+
     _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
                                             _ReprComparator(reprToken));
     bool isNew = it == _reprs.end();
@@ -410,14 +414,19 @@ _ComputeMaterialNetworkShader(
     // Get now allocated texture handles
     namedTextureHandles = result->GetNamedTextureHandles();
 
+    const bool doublesSupported = resourceRegistry->GetHgi()->
+        GetCapabilities()->IsSet(
+            HgiDeviceCapabilitiesBitsShaderDoublePrecision);
+
     // Get buffer specs for textures (i.e., for
     // field sampling transforms and bindless texture handles).
-    HdSt_TextureBinder::GetBufferSpecs(namedTextureHandles, &bufferSpecs);
+    HdSt_TextureBinder::GetBufferSpecs(namedTextureHandles, &bufferSpecs,
+        doublesSupported);
 
     // Create params (so that HdGet_... are created) and buffer specs,
     // to communicate volume bounding box and sample distance to shader.
     HdSt_VolumeShader::GetParamsAndBufferSpecsForBBoxAndSampleDistance(
-        &params, &bufferSpecs);
+        &params, &bufferSpecs, doublesSupported);
 
     const bool hasField = !namedTextureHandles.empty();
 
@@ -427,7 +436,8 @@ _ComputeMaterialNetworkShader(
     if (!hasField) {
         HdSt_VolumeShader::GetBufferSourcesForBBoxAndSampleDistance(
             { GfBBox3d(authoredExtents), 1.0f },
-            &bufferSources);
+            &bufferSources,
+            doublesSupported);
     }
 
     // Make volume shader responsible if we have fields with bounding

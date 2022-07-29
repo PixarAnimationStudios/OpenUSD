@@ -24,7 +24,7 @@
 
 from __future__ import print_function
 
-from pxr import Tf, Usd, UsdGeom, Gf
+from pxr import Tf, Usd, UsdGeom, Gf, Vt
 import sys
 
 # Direct TF_DEBUG output to stderr.
@@ -470,10 +470,14 @@ def TestPurposeWithInstancing():
     # Our test stages should all produce the exact same default and render 
     # purpose bounding boxes even though they have different permutations of 
     # instancing prims.
+
+    # Note that since extent value is not authored the bbox extents will be
+    # computed. Using the computed values for tests instead of what fallback
+    # extent would have provided.
     defaultBBox = Gf.BBox3d(Gf.Range3d(
-        Gf.Vec3d(-1.0, -1.0, -1.0), Gf.Vec3d(1.0, 1.0, 11.0)))
+        Gf.Vec3d(-1.5, -1.5, -1.5), Gf.Vec3d(1.5, 1.5, 10.5)))
     renderBBox = Gf.BBox3d(Gf.Range3d(
-        Gf.Vec3d(-11.0, -1.0, -16.0), Gf.Vec3d(1.0, 1.0, 11.0)))
+        Gf.Vec3d(-11.0, -1.5, -16.5), Gf.Vec3d(1.5, 1.5, 10.5)))
     defaultCache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), ['default'])
     renderCache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), ['default', 'render'])
 
@@ -509,6 +513,38 @@ def TestPurposeWithInstancing():
     assert defaultCache.ComputeWorldBound(root) == defaultBBox
     assert renderCache.ComputeWorldBound(root) == renderBBox
 
+def TestMeshBounds():
+    """
+    Test to see different scenarios for Mesh bounds computation. These scenarios
+    include edge cases like a Mesh missing points, extent not authored and 
+    combinations of the above.
+    """
+    stage = Usd.Stage.Open("meshBounds.usda")
+    noExtentButPoints = \
+        UsdGeom.Boundable(stage.GetPrimAtPath('/NoExtentButPoints'))
+    assert noExtentButPoints
+    expectedExtent = Vt.Vec3fArray(2, \
+            (Gf.Vec3f(-2.0, -2.0, -2.0), Gf.Vec3f(2.0, -2.0, 2.0)))
+    assert noExtentButPoints.ComputeExtent(Usd.TimeCode.Default()) == \
+        expectedExtent
+    noExtentNoPoints = \
+        UsdGeom.Boundable(stage.GetPrimAtPath('/NoExtentNoPoints'))
+    assert noExtentNoPoints
+    assert not noExtentNoPoints.ComputeExtent(Usd.TimeCode.Default())
+    noExtentEmptyPoints = \
+        UsdGeom.Boundable(stage.GetPrimAtPath('/NoExtentEmptyPoints'))
+    assert noExtentEmptyPoints
+    # Note that the following returns an empty extent as Max_Float, Min_Float
+    # signifying an empty range as max < min!
+    floatMax = Gf.Range1d().min
+    floatMin = Gf.Range1d().max
+    expectedExtent = Vt.Vec3fArray(2, \
+            (Gf.Vec3f(floatMax, floatMax, floatMax), \
+                Gf.Vec3f(floatMin, floatMin, floatMin)))
+    assert noExtentEmptyPoints.ComputeExtent(Usd.TimeCode.Default()) == \
+            expectedExtent
+    
+
 if __name__ == "__main__":
     Main()
     TestWithInstancing()
@@ -524,4 +560,5 @@ if __name__ == "__main__":
     TestBug125048()
     TestBug127801()
     TestUsd4957()
+    TestMeshBounds()
 

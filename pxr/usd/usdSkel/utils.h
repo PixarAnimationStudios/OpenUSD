@@ -388,9 +388,12 @@ UsdSkelMakeTransforms(const GfVec3f* translations,
 
 /// Helper method to normalize weight values across each consecutive run of
 /// \p numInfluencesPerComponent elements.
+/// If the total weight for a run of elements is smaller than \p eps, the
+/// elements' weights are set to zero.
 USDSKEL_API
 bool
-UsdSkelNormalizeWeights(TfSpan<float> weights, int numInfluencesPerComponent);
+UsdSkelNormalizeWeights(TfSpan<float> weights, int numInfluencesPerComponent,
+                        float eps = std::numeric_limits<float>::epsilon());
 
 
 /// \overload

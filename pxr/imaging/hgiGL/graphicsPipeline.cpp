@@ -23,6 +23,7 @@
 //
 #include "pxr/base/tf/diagnostic.h"
 
+#include "pxr/imaging/hgiGL/hgi.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/graphicsPipeline.h"
@@ -33,8 +34,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HgiGLGraphicsPipeline::HgiGLGraphicsPipeline(
+    HgiGL const* hgi,
     HgiGraphicsPipelineDesc const& desc)
     : HgiGraphicsPipeline(desc)
+    , _hgi(hgi)
     , _vao(0)
 {
 }
@@ -162,6 +165,15 @@ HgiGLGraphicsPipeline::BindPipeline()
     //
     // Multi sample state
     //
+    if (_descriptor.multiSampleState.multiSampleEnable) {
+        glEnable(GL_MULTISAMPLE);
+    } else {
+        glDisable(GL_MULTISAMPLE);
+        // If not using GL_MULTISAMPLE, use GL_POINT_SMOOTH to render points as 
+        // circles instead of square.
+        // XXX Switch points rendering to emit quad with FS that draws circle.
+        glEnable(GL_POINT_SMOOTH);
+    }
     if (_descriptor.multiSampleState.alphaToCoverageEnable) {
         glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     } else {
@@ -205,7 +217,29 @@ HgiGLGraphicsPipeline::BindPipeline()
         glEnable(GL_RASTERIZER_DISCARD);
     }
 
+    if (_descriptor.rasterizationState.depthClampEnabled) {
+        glEnable(GL_DEPTH_CLAMP);
+    } else {
+        glDisable(GL_DEPTH_CLAMP);
+    }
+    glDepthRange(_descriptor.rasterizationState.depthRange[0], 
+                 _descriptor.rasterizationState.depthRange[1]);
+
     glEnable(GL_PROGRAM_POINT_SIZE);
+
+    if (_hgi->GetCapabilities()->IsSet(
+        HgiDeviceCapabilitiesBitsConservativeRaster)) {
+        if (_descriptor.rasterizationState.conservativeRaster) {
+            glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
+        } else {
+            glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+        }
+    }
+
+    for (size_t i = 0; i < _descriptor.rasterizationState.numClipDistances; i++)
+    {
+        glEnable(GL_CLIP_DISTANCE0 + i);
+    }
 
     //
     // Shader program

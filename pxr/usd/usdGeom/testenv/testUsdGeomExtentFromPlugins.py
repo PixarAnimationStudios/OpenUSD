@@ -72,5 +72,31 @@ class TestUsdGeomExtentFromPlugins(unittest.TestCase):
             e = UsdGeom.Boundable.ComputeExtentFromPlugins(b, tc)
             self.assertEqual(extents[primpath], e)
 
+    def test_ComputeExtentAndExtentFromPlugin(self):
+        authoredExtentOnSphere = Vt.Vec3fArray(2, (Gf.Vec3f(-10.0, -10.0, -10.0),
+                                            Gf.Vec3f(10.0, 10.0, 10.0)))
+        explicitlyComputedExtent = Vt.Vec3fArray(2, (Gf.Vec3f(-2.0, -2.0, -2.0),
+                                            Gf.Vec3f(2.0, 2.0, 2.0)))
+        testFile = "test.usda"
+        primPath = "/AuthoredExtentSphere"
+        stage = Usd.Stage.Open(testFile)
+        prim = stage.GetPrimAtPath(primPath)
+        boundable = UsdGeom.Boundable(prim)
+        tc = Usd.TimeCode.Default()
+        extent1 = boundable.ComputeExtent(tc)
+        self.assertEqual(extent1, authoredExtentOnSphere)
+        extent2 = UsdGeom.Boundable.ComputeExtentFromPlugins(boundable, tc)
+        self.assertEqual(extent2, explicitlyComputedExtent)
+
+        # ComputeExtent uses geomtric properties instead of fallback extent when
+        # no extent is authored
+        primPath = "/sphere"
+        prim = stage.GetPrimAtPath(primPath)
+        boundable = UsdGeom.Boundable(prim)
+        tc = Usd.TimeCode.Default()
+        extent = boundable.ComputeExtent(tc)
+        self.assertEqual(extent, explicitlyComputedExtent)
+
+
 if __name__ == "__main__":
     unittest.main()

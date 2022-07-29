@@ -112,6 +112,16 @@ static PtDspyError HydraDspyImageActiveRegion(
     return PkDspyErrorNone;
 }
 
+// Transform NDC space (-1, 1) depth to window space (0, 1).
+static float _ConvertAovDepth(const GfMatrix4d &m, const float depth) {
+    if (std::isfinite(depth)) {
+        return GfClamp(
+            (m.Transform(GfVec3f(0, 0, -depth))[2] * 0.5) + 0.5, 0, 1); 
+    } else {
+        return 0.f;
+    }
+}
+
 static PtDspyError HydraDspyImageData(
     PtDspyImageHandle handle,
     int xmin,
@@ -189,16 +199,8 @@ static PtDspyError HydraDspyImageData(
                         &aovBuffer.pixels[offset*cc + pixelOffset * cc]);
                     if(aovDesc.name == HdAovTokens->depth)
                     {
-                        if(std::isfinite(data_f32[dataIdx]))
-                        {
-                            aovData[0] =
-                                buf->proj.Transform(
-                                    GfVec3f(0,0,-data_f32[dataIdx++]))[2];
-                        }
-                        else
-                        {
-                            aovData[0] = -1.0f;
-                        }
+                        aovData[0] = _ConvertAovDepth(
+                            buf->proj, data_f32[dataIdx++]);
                     }
                     else if(cc == 4)
                     {
@@ -461,6 +463,38 @@ HdPrmanFramebuffer::Register(RixContext* ctx)
     }
 }
 
+HdPrmanFramebuffer::HdPrmanAccumulationRule HdPrmanFramebuffer::ToAccumulationRule(RtUString name)
+{
+    if (name == RtUString("average"))
+    {
+        return k_accumulationRuleAverage;
+    }
+    else if (name == RtUString("min"))
+    {
+        return k_accumulationRuleMin;
+    }
+    else if (name == RtUString("max"))
+    {
+        return k_accumulationRuleMax;
+    }
+    else if (name == RtUString("zmin"))
+    {
+        return k_accumulationRuleZmin;
+    }
+    else if (name == RtUString("zmax"))
+    {
+        return k_accumulationRuleZmax;
+    }
+    else if (name == RtUString("sum"))
+    {
+        return k_accumulationRuleSum;
+    }
+    else
+    {
+        return k_accumulationRuleFilter;
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // XPU Display Driver API entrypoints
 ///////////////////////////////////////////////////////////////////////////////
@@ -554,6 +588,7 @@ public:
 
             const float* const srcWeights =
                 reinterpret_cast<const float*>(m_surface+m_weightsOffset);
+            const bool shouldNormalize = aovDesc.ShouldNormalizeBySampleCount();
 
             const int cc = HdGetComponentCount(aovDesc.format);
             const size_t srcOffset = m_offsets[offsetIdx];
@@ -677,16 +712,7 @@ public:
                             for (uint32_t x = 0; x < m_width; x++)
                             {
                                 float value = *srcScalar;
-                                if(std::isfinite(value))
-                                {
-                                    value =
-                                        m_buf->proj.Transform(
-                                            GfVec3f(0,0,-value))[2];
-                                }
-                                else
-                                {
-                                    value = -1.0f;
-                                }
+                                value = _ConvertAovDepth(m_buf->proj, value);
                                 *aovData = value;
                             
                                 aovData++;
@@ -697,7 +723,7 @@ public:
                 }
                 else if( cc == 4 ) {
                     WorkParallelForN(m_height,
-                                     [this, &aovBuffer, &srcWeights, &srcOffset]
+                                     [this, &aovBuffer, &srcWeights, &srcOffset, shouldNormalize]
                                      (size_t begin, size_t end) {
 
                         const float* weights =
@@ -724,7 +750,7 @@ public:
 
                             for (uint32_t x = 0; x < m_width; x++) {
                                 float isc = 1.f;
-                                if(*weights > 0.f)
+                                if(shouldNormalize && *weights > 0.f)
                                     isc = 1.f / *weights;
 
                                 const float* const srcColorG =
@@ -758,7 +784,7 @@ public:
                 }
                 else if (cc == 1) {
                     WorkParallelForN(m_height,
-                                     [this, &aovBuffer, &srcWeights, &srcOffset]
+                                     [this, &aovBuffer, &srcWeights, &srcOffset, shouldNormalize]
                                      (size_t begin, size_t end) {
 
 
@@ -779,7 +805,7 @@ public:
                             for (uint32_t x = 0; x < m_width; x++)
                             {
                                 float isc = 1.f;
-                                if(*weights > 0.f)
+                                if(shouldNormalize && *weights > 0.f)
                                     isc = 1.f / *weights;
 
                                 *aovData = *srcColorR * isc;
@@ -794,7 +820,7 @@ public:
                 else {
                     assert(cc == 3);
                     WorkParallelForN(m_height,
-                                     [this, &aovBuffer, &srcWeights, &srcOffset]
+                                     [this, &aovBuffer, &srcWeights, &srcOffset, shouldNormalize]
                                      (size_t begin, size_t end) {
 
                         const float* weights =
@@ -812,7 +838,7 @@ public:
 
                             for (uint32_t x = 0; x < m_width; x++) {
                                 float isc = 1.f;
-                                if(*weights > 0.f)
+                                if(shouldNormalize && *weights > 0.f)
                                     isc = 1.f / *weights;
 
                                 const float* const srcColorG =

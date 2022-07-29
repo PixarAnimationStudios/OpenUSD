@@ -472,6 +472,7 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
     , _rootLayer(rootLayer)
     , _sessionLayer(sessionLayer)
     , _editTarget(_rootLayer)
+    , _editTargetIsLocalLayer(true)
     , _cache(new PcpCache(PcpLayerStackIdentifier(
                               _rootLayer, _sessionLayer, pathResolverContext),
                           UsdUsdFileFormatTokens->Target,
@@ -1284,18 +1285,37 @@ UsdStage::_GetSchemaRelationshipSpec(const UsdRelationship &rel) const
 bool
 UsdStage::_ValidateEditPrim(const UsdPrim &prim, const char* operation) const
 {
-    if (ARCH_UNLIKELY(prim.IsInPrototype())) {
-        TF_CODING_ERROR("Cannot %s at path <%s>; "
-                        "authoring to an instancing prototype is not allowed.",
-                        operation, prim.GetPath().GetText());
-        return false;
-    }
+    // This function would ideally issue an error if editing the given prim
+    // at the stage's edit target would not have any visible effect on the
+    // prim. For example, this could happen if the edit target maps the prim's
+    // path to a site that is not part of the prim's composition structure.
+    //
+    // However, doing this requires that we query the prim's dependencies,
+    // which is too expensive to do here. So we just allow edits to
+    // non-local layers or that are mapped to a different path under the
+    // assumption that the user has set up the stage's edit target to author
+    // to the site they desire. In the most common case where the edit target
+    // just targets a local layer with the identity path mapping, we can use
+    // cached bits in the UsdPrim to check for instancing-related errors.
+    if (_editTargetIsLocalLayer &&
+        (_editTarget.GetMapFunction().IsIdentityPathMapping() ||
+         _editTarget.MapToSpecPath(prim.GetPath()) == prim.GetPath())) {
+        
+        if (ARCH_UNLIKELY(prim.IsInPrototype())) {
+            TF_CODING_ERROR(
+                "Cannot %s at path <%s>; "
+                "authoring to an instancing prototype is not allowed.",
+                operation, prim.GetPath().GetText());
+            return false;
+        }
 
-    if (ARCH_UNLIKELY(prim.IsInstanceProxy())) {
-        TF_CODING_ERROR("Cannot %s at path <%s>; "
-                        "authoring to an instance proxy is not allowed.",
-                        operation, prim.GetPath().GetText());
-        return false;
+        if (ARCH_UNLIKELY(prim.IsInstanceProxy())) {
+            TF_CODING_ERROR(
+                "Cannot %s at path <%s>; "
+                "authoring to an instance proxy is not allowed.",
+                operation, prim.GetPath().GetText());
+            return false;
+        }
     }
 
     return true;
@@ -1305,18 +1325,26 @@ bool
 UsdStage::_ValidateEditPrimAtPath(const SdfPath &primPath, 
                                   const char* operation) const
 {
-    if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathInPrototype(primPath))) {
-        TF_CODING_ERROR("Cannot %s at path <%s>; "
-                        "authoring to an instancing prototype is not allowed.",
-                        operation, primPath.GetText());
-        return false;
-    }
+    // See comments in _ValidateEditPrim
+    if (_editTargetIsLocalLayer &&
+        (_editTarget.GetMapFunction().IsIdentityPathMapping() ||
+         _editTarget.MapToSpecPath(primPath) == primPath)) {
 
-    if (ARCH_UNLIKELY(_IsObjectDescendantOfInstance(primPath))) {
-        TF_CODING_ERROR("Cannot %s at path <%s>; "
-                        "authoring to an instance proxy is not allowed.",
-                        operation, primPath.GetText());
-        return false;
+        if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathInPrototype(primPath))) {
+            TF_CODING_ERROR(
+                "Cannot %s at path <%s>; "
+                "authoring to an instancing prototype is not allowed.",
+                operation, primPath.GetText());
+            return false;
+        }
+
+        if (ARCH_UNLIKELY(_IsObjectDescendantOfInstance(primPath))) {
+            TF_CODING_ERROR(
+                "Cannot %s at path <%s>; "
+                "authoring to an instance proxy is not allowed.",
+                operation, primPath.GetText());
+            return false;
+        }
     }
 
     return true;
@@ -1905,21 +1933,21 @@ UsdStage::GetRelationshipAtPath(const SdfPath &path) const
 Usd_PrimDataConstPtr
 UsdStage::_GetPrimDataAtPath(const SdfPath &path) const
 {
-    tbb::spin_rw_mutex::scoped_lock lock;
-    if (_primMapMutex)
-        lock.acquire(*_primMapMutex, /*write=*/false);
-    PathToNodeMap::const_iterator entry = _primMap.find(path);
-    return entry != _primMap.end() ? entry->second.get() : nullptr;
+    PathToNodeMap::const_accessor acc;
+    if (_primMap.find(acc, path)) {
+        return acc->second.get();
+    }
+    return nullptr;
 }
 
 Usd_PrimDataPtr
 UsdStage::_GetPrimDataAtPath(const SdfPath &path)
 {
-    tbb::spin_rw_mutex::scoped_lock lock;
-    if (_primMapMutex)
-        lock.acquire(*_primMapMutex, /*write=*/false);
-    PathToNodeMap::const_iterator entry = _primMap.find(path);
-    return entry != _primMap.end() ? entry->second.get() : nullptr;
+    PathToNodeMap::const_accessor acc;
+    if (_primMap.find(acc, path)) {
+        return acc->second.get();
+    }
+    return nullptr;
 }
 
 Usd_PrimDataConstPtr 
@@ -2460,18 +2488,11 @@ UsdStage::_InstantiatePrim(const SdfPath &primPath)
 
     // Instantiate new prim data instance.
     Usd_PrimDataPtr p = new Usd_PrimData(this, primPath);
-    pair<PathToNodeMap::iterator, bool> result;
-    std::pair<SdfPath, Usd_PrimDataPtr> payload(primPath, p);
-    {
-        tbb::spin_rw_mutex::scoped_lock lock;
-        if (_primMapMutex)
-            lock.acquire(*_primMapMutex);
-        result = _primMap.insert(payload);
-    }
 
     // Insert entry into the map -- should always succeed.
-    TF_VERIFY(result.second, "Newly instantiated prim <%s> already present in "
-              "_primMap", primPath.GetText());
+    TF_VERIFY(_primMap.emplace(primPath, p),
+              "Newly instantiated prim <%s> already present in _primMap",
+              primPath.GetText());
     return p;
 }
 
@@ -2852,6 +2873,10 @@ UsdStage::_ReportErrors(const PcpErrorVector &errors,
 static Usd_PrimTypeInfoCache &
 _GetPrimTypeInfoCache()
 {
+    // As noted in prim.h, our current guarantee of the lifetime of the objects
+    // referenced by the return value of UsdPrim::GetPrimTypeInfo is (at least)
+    // as long as the owning stage is open. This is currently true as we never
+    // clear either this cache or its contents.
     static Usd_PrimTypeInfoCache cache;
     return cache;
 }
@@ -2918,7 +2943,6 @@ UsdStage::_ComposeSubtreesInParallel(
 
     // Begin a subtree composition in parallel.
     WorkWithScopedParallelism([this, &prims, &primIndexPaths]() {
-            _primMapMutex = boost::in_place();
             _dispatcher = boost::in_place();
             // We populate the clip cache concurrently during composition, so we
             // need to enable concurrent population here.
@@ -2937,12 +2961,10 @@ UsdStage::_ComposeSubtreesInParallel(
             }
             catch (...) {
                 _dispatcher = boost::none;
-                _primMapMutex = boost::none;
                 throw;
             }
             
             _dispatcher = boost::none;
-            _primMapMutex = boost::none;
         });
 }
 
@@ -3053,8 +3075,10 @@ UsdStage::_DestroyDescendents(Usd_PrimDataPtr prim)
     prim->_firstChild = nullptr;
     while (childIt != childEnd) {
         if (_dispatcher) {
-            _dispatcher->Run([this, childIt]() { _DestroyPrim(*childIt); });
-            ++childIt;
+            // Make sure we advance to the next sibling before we destroy
+            // the current child so we don't read from a deleted prim.
+            Usd_PrimDataPtr child = *childIt++;
+            _dispatcher->Run([this, child]() { _DestroyPrim(child); });
         } else {
             _DestroyPrim(*childIt++);
         }
@@ -3068,26 +3092,24 @@ UsdStage::_DestroyPrimsInParallel(const vector<SdfPath>& paths)
 
     TRACE_FUNCTION();
 
-    TF_AXIOM(!_dispatcher && !_primMapMutex);
+    TF_AXIOM(!_dispatcher);
 
     WorkWithScopedParallelism([&]() {
-            _primMapMutex = boost::in_place();
-            _dispatcher = boost::in_place();
-            for (const auto& path : paths) {
-                Usd_PrimDataPtr prim = _GetPrimDataAtPath(path);
-                // We *expect* every prim in paths to be valid as we iterate,
-                // but at one time had issues with deactivated prototype prims,
-                // so we preserve a guard for resiliency.  See
-                // testUsdBug141491.py
-                if (TF_VERIFY(prim)) {
-                    _dispatcher->Run([this, prim]() {
-                            _DestroyPrim(prim);
-                        });
-                }
+        _dispatcher = boost::in_place();
+        for (const auto& path : paths) {
+            Usd_PrimDataPtr prim = _GetPrimDataAtPath(path);
+            // We *expect* every prim in paths to be valid as we iterate,
+            // but at one time had issues with deactivated prototype prims,
+            // so we preserve a guard for resiliency.  See
+            // testUsdBug141491.py
+            if (TF_VERIFY(prim)) {
+                _dispatcher->Run([this, prim]() {
+                    _DestroyPrim(prim);
+                });
             }
-            _dispatcher = boost::none;
-            _primMapMutex = boost::none;
-        });
+        }
+        _dispatcher = boost::none;
+    });
 }
 
 void
@@ -3123,17 +3145,10 @@ UsdStage::_DestroyPrim(Usd_PrimDataPtr prim)
     // NOTE: The above was true in gcc 4.4 but not in gcc 4.8, nor is it
     //       true in boost::unordered_map or std::unordered_map.
     if (!_isClosingStage) {
-        SdfPath primPath = prim->GetPath(); 
-        tbb::spin_rw_mutex::scoped_lock lock;
-        const bool hasMutex = static_cast<bool>(_primMapMutex);
-        if (hasMutex)
-            lock.acquire(*_primMapMutex);
-        bool erased = _primMap.erase(primPath);
-        if (hasMutex)
-            lock.release();
-        TF_VERIFY(erased, 
+        SdfPath primPath = prim->GetPath();
+        TF_VERIFY(_primMap.erase(primPath),
                   "Destroyed prim <%s> not present in stage's data structures",
-                  prim->GetPath().GetString().c_str());
+                  primPath.GetString().c_str());
     }
 }
 
@@ -3160,11 +3175,9 @@ UsdStage::Reload()
 
     ArResolverScopedCache resolverCache;
 
-#if AR_VERSION > 1
     // Refresh the resolver to pick up changes that might have
     // affected asset resolution.
     ArGetResolver().RefreshContext(GetPathResolverContext());
-#endif
 
     // Reload layers in a change block to batch together change notices.
     { 
@@ -3507,18 +3520,27 @@ UsdStage::SetEditTarget(const UsdEditTarget &editTarget)
         return;
     }
     // Do some extra error checking if the EditTarget specifies a local layer.
-    if (editTarget.GetMapFunction().IsIdentity() &&
-        !HasLocalLayer(editTarget.GetLayer())) {
-        TF_CODING_ERROR("Layer @%s@ is not in the local LayerStack rooted "
-                        "at @%s@",
-                        editTarget.GetLayer()->GetIdentifier().c_str(),
-                        GetRootLayer()->GetIdentifier().c_str());
-        return;
+    bool isLocalLayer = true;
+    bool* computedIsLocalLayer = nullptr; 
+
+    if (editTarget.GetMapFunction().IsIdentity()) {
+        isLocalLayer = HasLocalLayer(editTarget.GetLayer());
+        computedIsLocalLayer = &isLocalLayer;
+
+        if (!isLocalLayer) {
+            TF_CODING_ERROR(
+                "Layer @%s@ is not in the local LayerStack rooted at @%s@",
+                editTarget.GetLayer()->GetIdentifier().c_str(),
+                GetRootLayer()->GetIdentifier().c_str());
+            return;
+        }
     }
 
     // If different from current, set EditTarget and notify.
     if (editTarget != _editTarget) {
         _editTarget = editTarget;
+        _editTargetIsLocalLayer = computedIsLocalLayer ? 
+            *computedIsLocalLayer : HasLocalLayer(editTarget.GetLayer());
         UsdStageWeakPtr self(this);
         UsdNotice::StageEditTargetChanged(self).Send(self);
     }
@@ -4145,6 +4167,15 @@ UsdStage::_ProcessPendingChanges()
         _MergeAndRemoveDescendentEntries(&recomposeChanges, &otherInfoChanges);
     }
 
+    // If the local layer stack has changed, recompute whether the edit target
+    // layer is a local layer. We need to do this after the Pcp changes
+    // have been applied so that the local layer stack has been updated.
+    if (TfMapLookupPtr(
+            _pendingChanges->pcpChanges.GetLayerStackChanges(), 
+            _cache->GetLayerStack())) {
+        _editTargetIsLocalLayer = HasLocalLayer(_editTarget.GetLayer());
+    }
+
     // Reset _pendingChanges before sending notices so that any changes to
     // this stage that happen in response to the notices are handled
     // properly. The object that _pendingChanges referred to should remain
@@ -4167,10 +4198,6 @@ void
 UsdStage::_HandleResolverDidChange(
     const ArNotice::ResolverChanged& n)
 {
-#if AR_VERSION == 1
-    return;
-#endif
-
     // A ResolverChanged notice that affects our resolver context means that
     // any asset paths that have been resolved on this stage may now resolve
     // to a different resolved path. This includes asset paths that were
@@ -4470,12 +4497,13 @@ UsdStage::_ComputeSubtreesToRecompose(
 
         // Add prototypes to list of subtrees to recompose and instantiate any 
         // new prototype not present in the primMap from before
+        PathToNodeMap::const_accessor acc;
         if (_instanceCache->IsPrototypePath(*i)) {
-            PathToNodeMap::const_iterator itr = _primMap.find(*i);
             Usd_PrimDataPtr prototypePrim;
-            if (itr != _primMap.end()) {
+            if (_primMap.find(acc, *i)) {
                 // should be a changed prototype if already in the primMap
-                prototypePrim = itr->second.get();
+                prototypePrim = acc->second.get();
+                acc.release();
             } else {
                 // newPrototype should be absent from the primMap, instantiate
                 // these now to be added to subtreesToRecompose
@@ -4489,8 +4517,7 @@ UsdStage::_ComputeSubtreesToRecompose(
         // Collect all non-prototype prims (including descendants of prototypes)
         // to be added to subtreesToRecompute
         SdfPath const &parentPath = i->GetParentPath();
-        PathToNodeMap::const_iterator parentIt = _primMap.find(parentPath);
-        if (parentIt != _primMap.end()) {
+        if (_primMap.find(acc, parentPath)) {
 
             // Since our input range contains no descendant paths, siblings
             // must appear consecutively.  We want to process all siblings that
@@ -4499,16 +4526,17 @@ UsdStage::_ComputeSubtreesToRecompose(
             // parent to find the range of siblings.
 
             // Recompose parent's list of children.
-            auto parent = parentIt->second.get();
+            auto parent = acc->second.get();
+            acc.release();
             _ComposeChildren(
                 parent, parent->IsInPrototype() ? nullptr : &_populationMask,
                 /*recurse=*/false);
 
             // Recompose the subtree for each affected sibling.
             do {
-                PathToNodeMap::const_iterator primIt = _primMap.find(*i);
-                if (primIt != _primMap.end()) {
-                    subtreesToRecompose->push_back(primIt->second.get());
+                if (_primMap.find(acc, *i)) {
+                    subtreesToRecompose->push_back(acc->second.get());
+                    acc.release();
                 } else if (_instanceCache->IsPrototypePath(*i)) {
                     // If this path is a prototype path and is not present in
                     // the primMap, then this must be a new prototype added
@@ -7885,34 +7913,6 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
     // This is the lowest-level site for guaranteeing that all GetTimeSample
     // queries clear out the return vector
     times->clear();
-    const auto copySamplesInInterval = [](const std::set<double>& samples, 
-                                          vector<double>* target, 
-                                          const GfInterval& interval) 
-    {
-        std::set<double>::iterator samplesBegin, samplesEnd; 
-
-        if (interval.IsMinOpen()) {
-            samplesBegin = std::upper_bound(samples.begin(), 
-                                            samples.end(), 
-                                            interval.GetMin()); 
-        } else {
-            samplesBegin = std::lower_bound(samples.begin(), 
-                                            samples.end(), 
-                                            interval.GetMin());
-        }
-
-        if (interval.IsMaxOpen()) {
-            samplesEnd = std::lower_bound(samplesBegin,
-                                          samples.end(), 
-                                          interval.GetMax());
-        } else {
-            samplesEnd = std::upper_bound(samplesBegin,
-                                          samples.end(),
-                                          interval.GetMax());
-        }
-
-        target->insert(target->end(), samplesBegin, samplesEnd);
-    };
 
     if (info._source == UsdResolveInfoSourceTimeSamples) {
         const SdfPath specPath =
@@ -7925,7 +7925,7 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
             if (info._layerToStageOffset.IsIdentity()) {
                 // The layer offset is identity, so we can use the interval
                 // directly, and do not need to remap the sample times.
-                copySamplesInInterval(samples, times, interval);
+                Usd_CopyTimeSamplesInInterval(samples, interval, times);
             } else {
                 // Map the interval (expressed in stage time) to layer time.
                 const SdfLayerOffset stageToLayer =
@@ -7933,7 +7933,7 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
                 const GfInterval layerInterval =
                     interval * stageToLayer.GetScale()
                     + stageToLayer.GetOffset();
-                copySamplesInInterval(samples, times, layerInterval);
+                Usd_CopyTimeSamplesInInterval(samples, layerInterval, times);
                 // Map the layer sample times to stage times.
                 for (auto &time : *times) {
                     time = info._layerToStageOffset * time;
@@ -7964,9 +7964,7 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
 
             // See comments in _GetValueImpl regarding layer
             // offsets and why they're not applied here.
-            const std::set<double> samples =
-                clipSet->ListTimeSamplesForPath(specPath);
-            copySamplesInInterval(samples, times, interval);;
+            *times = clipSet->GetTimeSamplesInInterval(specPath, interval);
             return true;
         }
     }

@@ -770,7 +770,6 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTimes(
     UsdTimeCode angularVelocitiesSampleTime;
     SdfPathVector protoPaths;
     std::vector<bool> mask;
-    float velocityScale;
 
     if (!_ComputePointInstancerAttributesPreamble(
             baseTime,
@@ -794,7 +793,6 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTimes(
             &velocities,
             &velocitiesSampleTime,
             &accelerations,
-            &velocityScale,
             GetPrim())) {
         return false;
     }
@@ -874,8 +872,7 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTimes(
                 angularVelocities,
                 angularVelocitiesSampleTime,
                 protoPaths,
-                mask,
-                velocityScale)) {
+                mask)) {
             return false;
         }
     }
@@ -900,23 +897,21 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
     UsdTimeCode angularVelocitiesSampleTime,
     const SdfPathVector& protoPaths,
     const std::vector<bool>& mask,
-    float velocityScale)
+    float /* velocityScale */)
 {
     TRACE_FUNCTION();
 
     size_t numInstances = protoIndices.size();
 
     const double timeCodesPerSecond = stage->GetTimeCodesPerSecond();
-    const float velocityTimeDelta = UsdGeom_CalculateTimeDelta(
-                                      velocityScale,
+    const double velocityTimeDelta = UsdGeom_CalculateTimeDelta(
                                       time,
                                       velocitiesSampleTime,
                                       timeCodesPerSecond);
-    const float angularVelocityTimeDelta = UsdGeom_CalculateTimeDelta(
-                                      velocityScale,
+    const double angularVelocityTimeDelta = UsdGeom_CalculateTimeDelta(
                                       time,
                                       angularVelocitiesSampleTime,
-                                      timeCodesPerSecond);\
+                                      timeCodesPerSecond);
 
     xforms->resize(numInstances);
 

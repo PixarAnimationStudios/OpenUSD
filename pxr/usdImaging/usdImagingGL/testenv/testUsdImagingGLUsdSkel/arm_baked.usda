@@ -3,6 +3,7 @@
     "Created by UsdView"
     endTimeCode = 10
     startTimeCode = 1
+    upAxis = "Z"
     subLayers = [
         @arm.usda@
     ]

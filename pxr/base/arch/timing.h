@@ -51,13 +51,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Macro that defines the clocks per second
-///
-/// Unfortunately, Red Hat 7.1 does not define CLK_TCK correctly, so
-/// ARCH_CLK_TCK is the only guaranteed way to get the value of CLK_TCK. The
-/// value is currently the same on all of our platforms.
-#define ARCH_CLK_TCK 100
-
 /// Return the current time in system-dependent units.
 ///
 /// The current time is returned as a number of "ticks", where each tick
@@ -137,7 +130,7 @@ ArchGetStopTickTime()
     return ArchGetTickTime();
 #elif defined (ARCH_CPU_ARM)
     std::atomic_signal_fence(std::memory_order_seq_cst);
-    asm volatile("mrs %0, cntvct_e l0" : "=r"(t));
+    asm volatile("mrs %0, cntvct_el0" : "=r"(t));
     std::atomic_signal_fence(std::memory_order_seq_cst);
 #elif defined (ARCH_COMPILER_MSVC)
     std::atomic_signal_fence(std::memory_order_seq_cst);

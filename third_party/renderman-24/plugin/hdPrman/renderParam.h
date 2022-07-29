@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
+#include "hdPrman/prmanArchDefs.h"
 #include "hdPrman/xcpt.h"
 #include "hdPrman/cameraContext.h"
 #include "hdPrman/renderViewContext.h"
@@ -38,6 +39,10 @@
 #include <mutex>
 
 class RixRiCtl;
+
+namespace stats {
+class Session;
+};
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -58,7 +63,8 @@ class HdPrman_RenderParam : public HdRenderParam
 {
 public:
     HDPRMAN_API
-    HdPrman_RenderParam(const std::string &rileyVariant);
+    HdPrman_RenderParam(const std::string &rileyVariant, 
+        const std::string &xpuDevices);
 
     HDPRMAN_API
     ~HdPrman_RenderParam() override;
@@ -204,17 +210,22 @@ public:
     void CreateRenderViewFromSpec(
         const VtDictionary &renderSpec);
 
-    // Starts riley and the thread if needed, and tells the thread render
+    // Starts the render thread (if needed), and tells the render thread to
+    // call into riley and start a render.
     void StartRender();
 
-    // Request Riley (and the HdRenderThread) to stop.
+    // Requests riley stop rendering; if blocking is true, waits until riley
+    // has exited and the render thread is idle before returning.  Note that
+    // after the render stops, the render thread will be running but idle;
+    // to stop the thread itself, call DeleteRenderThread. If the render thread
+    // is not running, this call does nothing.
     void StopRender(bool blocking = true);
 
-    // Query whether or not the HdRenderThread is running.
-    bool IsRenderStopped();
-
+    // Returns whether the render thread is active and rendering currently.
+    // Returns false if the render thread is active but idle (not in riley).
     bool IsRendering();
 
+    // Returns whether the user has requested pausing the render.
     bool IsPauseRequested();
 
     // Deletes the render thread if there is one.
@@ -265,13 +276,31 @@ public:
     // immediately set it as riley option.
     void UpdateRileyShutterInterval(const HdRenderIndex * renderIndex);
 
+    // Path to the connected Sample Filter from the Render Settings Prim
+    void SetConnectedSampleFilterPaths(HdSceneDelegate *sceneDelegate,
+        SdfPathVector const& connectedSampleFilterPaths);
+    SdfPathVector GetConnectedSampleFilterPaths() {
+        return _connectedSampleFilterPaths;
+    }
+
+    // Riley Data from the Sample Filter Prim
+    void AddSampleFilter(
+        HdSceneDelegate *sceneDelegate, 
+        SdfPath const& path, 
+        riley::ShadingNode const& node);
+    void CreateSampleFilterNetwork(HdSceneDelegate *sceneDelegate);
+    riley::SampleFilterList GetSampleFilterList();
+
 private:
-    void _CreateRiley(const std::string &rileyVariant);
+    void _CreateStatsSession();
+    void _CreateRiley(const std::string &rileyVariant, 
+        const std::string &xpuVariant);
     void _CreateFallbackMaterials();
     void _CreateFallbackLight();
     void _CreateIntegrator(HdRenderDelegate * renderDelegate);
-
+    
     void _DestroyRiley();
+    void _DestroyStatsSession();
 
     // Updates clear colors of AOV descriptors of framebuffer.
     // If this is not possible because the set of AOVs changed,
@@ -291,6 +320,9 @@ private:
 
     // Xcpt Handler
     HdPrman_Xcpt _xcpt;
+
+    // Roz stats session
+    stats::Session *_statsSession;
 
     // Riley instance.
     riley::Riley *_riley;
@@ -359,8 +391,14 @@ private:
     HdPrman_CameraContext _cameraContext;
     HdPrman_RenderViewContext _renderViewContext;
 
+    // SampleFilter
+    SdfPathVector _connectedSampleFilterPaths;
+    std::map<SdfPath, riley::ShadingNode> _sampleFilterNodes;
+    riley::SampleFilterId _sampleFiltersId;
+
     // RIX or XPU
     bool _xpu;
+    std::vector<int> _xpuGpuConfig;
 
     int _lastSettingsVersion;
 };
@@ -387,6 +425,17 @@ HdPrman_RtMatrixToGfMatrix(const RtMatrix4x4 &m)
         m.m[2][0], m.m[2][1], m.m[2][2], m.m[2][3],
         m.m[3][0], m.m[3][1], m.m[3][2], m.m[3][3]);
 }
+
+// Convert Hydra points to Riley point primvar.
+void
+HdPrman_ConvertPointsPrimvar(HdSceneDelegate *sceneDelegate, SdfPath const &id,
+                             RtPrimVarList& primvars, size_t npoints);
+
+// Count hydra points to set element count on primvars and then
+// convert them to Riley point primvar.
+size_t
+HdPrman_ConvertPointsPrimvarForPoints(HdSceneDelegate *sceneDelegate, SdfPath const &id,
+                                      RtPrimVarList& primvars);
 
 // Convert any Hydra primvars that should be Riley primvars.
 void

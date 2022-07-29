@@ -32,6 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HDPRMAN_RENDER_SETTINGS_TOKENS                                 \
     ((rileyVariant,                   "ri:variant"))                   \
+    ((xpuDevices,                     "ri:xpudevices"))                \
     ((integrator,                     "integrator"))                   \
     ((integratorName,                 "ri:integrator:name"))           \
     ((interactiveIntegrator,          "interactiveIntegrator"))        \
@@ -39,7 +40,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((dataWindowNDC,                  "dataWindowNDC"))                \
     ((pixelAspectRatio,               "pixelAspectRatio"))             \
     ((resolution,                     "resolution"))                   \
+                                                                       \
+    /* \deprecated Use disableMotionBlur instead */                    \
     ((instantaneousShutter,           "instantaneousShutter"))         \
+    ((disableMotionBlur,              "disableMotionBlur"))            \
     ((shutterOpen,                    "shutter:open"))                 \
     ((shutterClose,                   "shutter:close"))                \
     ((experimentalRenderSpec,         "experimental:renderSpec"))

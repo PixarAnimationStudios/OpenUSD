@@ -44,14 +44,17 @@
 if(WIN32)
     set (LOADPRMAN_LIB_NAME libloadprman.lib)
     set (PRMAN_LIB_NAME libprman.lib)
+    set (PRMAN_STATS_LIB_NAME libstats.lib)
     set (PXRCORE_LIB_NAME libpxrcore.lib)
 elseif(APPLE)
     set (LOADPRMAN_LIB_NAME libloadprman.a)
     set (PRMAN_LIB_NAME libprman.dylib)
+    set (PRMAN_STATS_LIB_NAME libstats.dylib)
     set (PXRCORE_LIB_NAME libpxrcore.dylib)
 elseif(UNIX)
     set (LOADPRMAN_LIB_NAME libloadprman.a)
     set (PRMAN_LIB_NAME libprman.so)
+    set (PRMAN_STATS_LIB_NAME libstats.so)
     set (PXRCORE_LIB_NAME libpxrcore.so)
 endif()
 
@@ -79,6 +82,19 @@ find_library(PRMAN_LIBRARY
         "$ENV{RMANTREE}/lib64"
     DOC
         "Renderman library path"
+)
+
+find_library(PRMAN_STATS_LIBRARY
+    "${PRMAN_STATS_LIB_NAME}"
+    HINTS
+        "${RENDERMAN_LOCATION}/lib64"
+        "${RENDERMAN_LOCATION}/lib"
+        "$ENV{RENDERMAN_LOCATION}/lib64"
+        "$ENV{RENDERMAN_LOCATION}/lib"
+        "$ENV{RMANTREE}/lib"
+        "$ENV{RMANTREE}/lib64"
+    DOC
+        "Renderman statistics library path"
 )
 
 find_library(PXRCORE_LIBRARY
@@ -135,6 +151,7 @@ list(APPEND required_vars "RENDERMAN_EXECUTABLE")
 list(APPEND required_vars "RENDERMAN_BINARY_DIR")
 list(APPEND required_vars "RENDERMAN_VERSION_MAJOR")
 list(APPEND required_vars "PRMAN_LIBRARY")
+list(APPEND required_vars "PRMAN_STATS_LIBRARY")
 list(APPEND required_vars "PXRCORE_LIBRARY")
 
 find_package_handle_standard_args(Renderman

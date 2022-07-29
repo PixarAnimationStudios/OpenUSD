@@ -389,11 +389,12 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
         return col != PrimViewColumnIndex.VIS and col != PrimViewColumnIndex.DRAWMODE
 
     def ExpandItemRecursively(self, item):
-        item = item.parent()
-        while item.parent():
-            if not item.isExpanded():
-                self.expandItem(item)
+        if (item.parent() != None):        
             item = item.parent()
+            while item.parent():
+                if not item.isExpanded():
+                    self.expandItem(item)
+                item = item.parent()
 
     def FrameSelection(self):
         if (self._appController):
@@ -461,17 +462,25 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
 
             super(PrimTreeWidget, self).keyPressEvent(ev)
 
-            # Handling the F hotkey comes after the super class's event handling,
-            # since the default behavior in the super class's keyPressEvent function
-            # is to set the current item to the first item found that alphabetically
-            # matches the key entered. Since we want to override this behavior for
-            # the F hotkey, we must handle it after the super class's keyPressEvent. 
+            # Note that the default behavior in the super class's keyPressEvent
+            # function is to set the current item to the first item found that 
+            # alphabetically matches the key entered via the keyboardSearch 
+            # method. Since we want to override this behavior for the F hotkey
+            # to frame the selection, we also need to override keyboardSearch
+            # method to disable it. 
             if ev.key() == KeyboardShortcuts.FramingKey:
                 self.FrameSelection()
 
     def keyReleaseEvent(self, ev):
         with SelectionEnabler(self._selectionModel):
             super(PrimTreeWidget, self).keyReleaseEvent(ev)
+
+    def keyboardSearch(self, s):
+        """Disable keyboardSearch in the prim view widget. This would interfere
+        with F key used for framing the current selection by trying to change
+        the selection to the first item starting with F. Since we're disabling
+        this for F, it makes sense to disable it for all letters"""
+        pass
 
     def updateSelection(self, added, removed):
         """Mutate the widget's selected items, selecting items in `added`

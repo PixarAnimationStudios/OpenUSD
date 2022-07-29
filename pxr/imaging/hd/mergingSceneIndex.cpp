@@ -170,6 +170,14 @@ HdMergingSceneIndex::GetChildPrimPaths(const SdfPath &primPath) const
                     entry.sceneIndex->GetChildPrimPaths(primPath)) {
                 childPaths.insert(childPath);
             }
+        } else {
+            // need to make sure we include intermediate scopes
+            if (entry.sceneRoot.HasPrefix(primPath)) {
+                SdfPathVector v;
+                entry.sceneRoot.GetPrefixes(&v);
+                const SdfPath &childPath = v[primPath.GetPathElementCount()];
+                childPaths.insert(childPath);
+            }
         }
     }
 

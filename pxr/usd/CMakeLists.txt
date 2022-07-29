@@ -11,6 +11,7 @@ set(DIRS
     usdMedia
     usdShade
     usdLux
+    usdProc
     usdRender
     usdHydra
     usdRi
@@ -29,4 +30,8 @@ if (PXR_BUILD_USD_TOOLS)
     add_subdirectory(bin)
 else()
     message(STATUS "Skipping commandline tools because PXR_BUILD_USD_TOOLS=OFF")
+endif()
+
+if (${PXR_ENABLE_MATERIALX_SUPPORT})
+    add_subdirectory(usdMtlx)
 endif()

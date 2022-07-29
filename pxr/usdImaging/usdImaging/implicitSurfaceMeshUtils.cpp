@@ -436,6 +436,59 @@ UsdImagingGenerateCapsuleMeshPoints(
     return pointsArray;
 }
 
+// Plane -----------------------------------------------------------------------
+
+const PxOsdMeshTopology&
+UsdImagingGetPlaneTopology()
+{
+    static const VtIntArray numVerts{ 4 };
+    static const VtIntArray verts{ 0, 1, 2, 3 };
+    static const PxOsdMeshTopology planeTopo(
+        PxOsdOpenSubdivTokens->bilinear,
+        PxOsdOpenSubdivTokens->rightHanded,
+        numVerts, verts);
+
+    return planeTopo;
+}
+
+VtVec3fArray
+UsdImagingGeneratePlaneMeshPoints(
+    const double width,
+    const double length,
+    const TfToken& axis)
+{
+    int numPoints = 4;
+    std::vector<GfVec3f> points(numPoints);
+
+    if (axis == UsdGeomTokens->x) {
+        points = { GfVec3f( 0.0f,  0.5f * length, 0.5f * width ),
+                   GfVec3f( 0.0f, -0.5f * length, 0.5f * width ),
+                   GfVec3f( 0.0f, -0.5f * length,-0.5f * width ),
+                   GfVec3f( 0.0f,  0.5f * length,-0.5f * width ) };
+    } else if (axis == UsdGeomTokens->y) {
+        points = { GfVec3f(-0.5f * width, 0.0f, 0.5f * length ),
+                   GfVec3f( 0.5f * width, 0.0f, 0.5f * length ),
+                   GfVec3f( 0.5f * width, 0.0f,-0.5f * length ),
+                   GfVec3f(-0.5f * width, 0.0f,-0.5f * length ) };
+    } else {
+        points = { GfVec3f( 0.5f * width, 0.5f * length, 0.0f ),
+                   GfVec3f(-0.5f * width, 0.5f * length, 0.0f ),
+                   GfVec3f(-0.5f * width,-0.5f * length, 0.0f ),
+                   GfVec3f( 0.5f * width,-0.5f * length, 0.0f ) };
+    }
+
+    VtVec3fArray pointsArray(numPoints);
+    GfVec3f * p = pointsArray.data();
+
+    for (int i=0; i<numPoints; ++i) {
+        *p++ = points[i];
+    }
+
+    TF_VERIFY(p - pointsArray.data() == numPoints);
+
+    return pointsArray;
+}
+
 // Transforms ------------------------------------------------------------------
 
 GfMatrix4d

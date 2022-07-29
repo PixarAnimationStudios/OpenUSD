@@ -96,7 +96,7 @@ public:
     /// 
     /// Insertion phase is a broad ordering value with lower values indicating
     /// earlier instantiation (possibly given render plugin-specific meaning
-    /// via enum valeus). Insertion order indicates whether this entry
+    /// via enum values). Insertion order indicates whether this entry
     /// should go at the start or end of the specified phase.
     HD_API
     void RegisterSceneIndexForRenderer(

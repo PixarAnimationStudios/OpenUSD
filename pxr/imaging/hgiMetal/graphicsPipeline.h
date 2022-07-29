@@ -30,9 +30,6 @@
 
 #include "pxr/imaging/hgiMetal/api.h"
 
-#include <vector>
-
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HgiMetal;
@@ -60,12 +57,13 @@ private:
     HgiMetalGraphicsPipeline(const HgiMetalGraphicsPipeline&) = delete;
     
     void _CreateVertexDescriptor();
-    void _CreateDepthStencilState(id<MTLDevice> device);
-    void _CreateRenderPipelineState(id<MTLDevice> device);
+    void _CreateDepthStencilState(HgiMetal *hgi);
+    void _CreateRenderPipelineState(HgiMetal *hgi);
 
     MTLVertexDescriptor *_vertexDescriptor;
     id<MTLDepthStencilState> _depthStencilState;
     id<MTLRenderPipelineState> _renderPipelineState;
+    id<MTLBuffer> _constantTessFactors;
 };
 
 

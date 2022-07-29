@@ -101,6 +101,10 @@ public:
     /// Generate mip maps for a texture
     HGI_API
     virtual void GenerateMipMaps(HgiTextureHandle const& texture) = 0;
+    
+    /// Fill a buffer with a constant value.
+    HGI_API
+    virtual void FillBuffer(HgiBufferHandle const& buffer, uint8_t value) = 0;
 
     /// Inserts a barrier so that data written to memory by commands before
     /// the barrier is available to commands after the barrier.

@@ -24,6 +24,7 @@
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/materialXFilter.h"
 #include "pxr/imaging/hdSt/materialXShaderGen.h"
+#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdMtlx/hdMtlx.h"
 
 #include "pxr/usd/sdr/registry.h"
@@ -52,11 +53,17 @@ TF_DEFINE_PRIVATE_TOKENS(
     (st)
     (texcoord)
     (geomprop)
+    (index)
 
     // Opacity Parameters
     (opacity)
     (opacityThreshold)
     (transmission)
+
+    // Fallback Dome Light Tokens
+    (domeLightFallback)
+    (ND_image_color3)
+    (file)
 );
 
 
@@ -68,8 +75,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 static mx::ShaderPtr
 _GenMaterialXShader(mx::GenContext & mxContext, mx::ElementPtr const& mxElem)
 {
-    bool hasTransparency = mx::isTransparentSurface(mxElem, 
-                                mxContext.getShaderGenerator());
+    bool hasTransparency = mx::isTransparentSurface(mxElem,
+                               mxContext.getShaderGenerator().getTarget());
 
     mx::GenContext materialContext = mxContext;
     materialContext.getOptions().hwTransparency = hasTransparency;
@@ -103,8 +110,23 @@ HdSt_GenMaterialXShader(
 {
     // Initialize the Context for shaderGen. 
     mx::GenContext mxContext = HdStMaterialXShaderGen::create(mxHdInfo);
+
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && MATERIALX_BUILD_VERSION == 3
     mxContext.registerSourceCodeSearchPath(searchPath);
-    
+#else
+    // Starting from MaterialX 1.38.4 at PR 877, we must remove the "libraries" part:
+    mx::FileSearchPath libSearchPaths;
+    for (const mx::FilePath &path : searchPath) {
+        if (path.getBaseName() == "libraries") {
+            libSearchPaths.append(path.getParentPath());
+        }
+        else {
+            libSearchPaths.append(path);
+        }
+    }
+    mxContext.registerSourceCodeSearchPath(libSearchPaths);
+#endif
+
     // Add the Direct Light mtlx file to the mxDoc 
     mx::DocumentPtr lightDoc = mx::createDocument();
     mx::readFromXmlString(lightDoc, mxDirectLightString);
@@ -145,6 +167,7 @@ HdSt_GenMaterialXShader(
     if (typedElem) {
         return _GenMaterialXShader(mxContext, typedElem);
     }
+    TF_CODING_ERROR("Unable to generate a shader from the MaterialX Document");
     return nullptr;
 }
 
@@ -156,9 +179,10 @@ HdSt_GenMaterialXShader(
 static VtValue
 _GetHdFilterValue(std::string const& mxInputValue)
 {
-    if(mxInputValue == "closest") {
+    if (mxInputValue == "closest") {
         return VtValue(HdStTextureTokens->nearestMipmapNearest);
     }
+    // linear/cubic
     return VtValue(HdStTextureTokens->linearMipmapLinear);
 }
 
@@ -175,6 +199,7 @@ _GetHdSamplerValue(std::string const& mxInputValue)
     if (mxInputValue == "mirror") {
         return VtValue(HdStTextureTokens->mirror);
     }
+    // periodic
     return VtValue(HdStTextureTokens->repeat);
 }
 
@@ -204,16 +229,19 @@ _GetHdTextureParameters(
         (*hdTextureParams)[HdStTextureTokens->wrapT] = 
             _GetHdSamplerValue(mxInputValue);
     }
+}
 
-    // Properties specific to <tiledimage> nodes:
-    else if (mxInputName == "uvtiling" || mxInputName == "uvoffset" ||
-        mxInputName == "realworldimagesize" || 
-        mxInputName == "realworldtilesize") {
-        (*hdTextureParams)[HdStTextureTokens->wrapS] = 
-            VtValue(HdStTextureTokens->repeat);
-        (*hdTextureParams)[HdStTextureTokens->wrapT] = 
-            VtValue(HdStTextureTokens->repeat);
-    }
+static void
+_AddDefaultMtlxTextureValues(
+    std::map<TfToken, VtValue>* hdTextureParams)
+{
+    // MaterialX uses repeat/periodic for the default wrap values, without
+    // this the texture will use the Hydra default useMetadata. 
+    // Note that these will get overwritten by any authored values
+    (*hdTextureParams)[HdStTextureTokens->wrapS] = 
+        VtValue(HdStTextureTokens->repeat);
+    (*hdTextureParams)[HdStTextureTokens->wrapT] = 
+        VtValue(HdStTextureTokens->repeat);
 }
 
 // Find the HdNode and its corresponding NodePath in the given HdNetwork 
@@ -279,7 +307,6 @@ _GetTextureCoordinateName(
                     HdMtlxConvertToString(coordNameIt->second);
                 
                 // Set the 'st' parameter as a TfToken
-                // hdTextureNode->parameters[_tokens->st] = 
                 hdNetwork->nodes[hdTextureNodePath].parameters[_tokens->st] = 
                                 TfToken(texcoordName.c_str());
 
@@ -324,6 +351,34 @@ _GetTextureCoordinateName(
     }
 }
 
+static void
+_AddFallbackDomeLightTextureNode(
+    HdMaterialNetwork2* hdNetwork,
+    SdfPath const& hdTerminalNodePath,
+    mx::StringMap* mxHdTextureMap)
+{
+    // Create and add a Fallback Dome Light Texture Node to the hdNetwork
+    HdMaterialNode2 hdDomeTextureNode;
+    hdDomeTextureNode.nodeTypeId = _tokens->ND_image_color3;
+    hdDomeTextureNode.parameters[_tokens->file] =
+        VtValue(SdfAssetPath(
+            HdStPackageFallbackDomeLightTexture(), 
+            HdStPackageFallbackDomeLightTexture()));
+    const SdfPath domeTexturePath = 
+        hdTerminalNodePath.ReplaceName(_tokens->domeLightFallback);
+    hdNetwork->nodes.insert({domeTexturePath, hdDomeTextureNode});
+
+    // Connect the new Texture Node to the Terminal Node
+    HdMaterialConnection2 domeTextureConn;
+    domeTextureConn.upstreamNode = domeTexturePath;
+    domeTextureConn.upstreamOutputName = domeTexturePath.GetNameToken();
+    hdNetwork->nodes[hdTerminalNodePath].
+        inputConnections[domeTextureConn.upstreamOutputName] = {domeTextureConn};
+
+    // Add the Dome Texture name to the TextureMap for MaterialXShaderGen
+    (*mxHdTextureMap)[domeTexturePath.GetName()] = domeTexturePath.GetName();
+}
+
 // Add the Hydra texture node parameters to the texture nodes and connect the 
 // texture nodes to the terminal node
 static void 
@@ -344,8 +399,9 @@ _UpdateTextureNodes(
 
         // Gather the Hydra Texture Parameters
         std::map<TfToken, VtValue> hdParameters;
+        _AddDefaultMtlxTextureValues(&hdParameters);
         for (auto const& currParam : hdTextureNode.parameters) {
-        
+
             // Get the MaterialX Input Value string
             std::string mxInputValue = HdMtlxConvertToString(currParam.second);
 
@@ -364,7 +420,7 @@ _UpdateTextureNodes(
         // mxHdTextureMap with this connection name so Hydra's codegen and 
         // HdStMaterialXShaderGen match up correctly
         std::string newConnName = texturePath.GetName() + "_" + 
-                                (*mxHdTextureMap)[texturePath.GetName()];;
+                                (*mxHdTextureMap)[texturePath.GetName()];
         (*mxHdTextureMap)[texturePath.GetName()] = newConnName;
 
         // Make and add a new connection to the terminal node
@@ -399,6 +455,30 @@ _UpdatePrimvarNodes(
                     hdPrimvarNode.nodeTypeId.GetString());
             if (mxNodeDef) {
                 (*mxHdPrimvarMap)[primvarName] = mxNodeDef->getType();
+            }
+        }
+
+        // Texcoord nodes will have an index parameter set
+        primvarNameIt = hdPrimvarNode.parameters.find(_tokens->index);
+        if (primvarNameIt != hdPrimvarNode.parameters.end()) {
+            // Get the sdr node for the texcoord node
+            SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
+            const SdrShaderNodeConstPtr sdrTexCoordNode = 
+                sdrRegistry.GetShaderNodeByIdentifierAndType(
+                    hdPrimvarNode.nodeTypeId, _tokens->mtlx);
+
+            // Get the default texture coordinate name from the sdr metadata
+            std::string texCoordName;
+            if (sdrTexCoordNode) {
+                auto metadata = sdrTexCoordNode->GetMetadata();
+                texCoordName = metadata[SdrNodeMetadata->Primvars];
+            }
+
+            // Figure out the mx typename
+            mx::NodeDefPtr mxNodeDef = mxDoc->getNodeDef(
+                    hdPrimvarNode.nodeTypeId.GetString());
+            if (mxNodeDef) {
+                (*mxHdPrimvarMap)[texCoordName] = mxNodeDef->getType();
             }
         }
 
@@ -598,6 +678,11 @@ HdSt_ApplyMaterialXFilter(
                                         &mxHdInfo.textureMap,
                                         &hdPrimvarNodes);
 
+        // Add a Fallback DomeLight texture node to make sure the indirect
+        // light computations always has a texture to sample from
+        _AddFallbackDomeLightTextureNode(
+            hdNetwork, terminalNodePath, &mxHdInfo.textureMap);
+
         // Add Hydra parameters for each of the Texture nodes
         _UpdateTextureNodes(mtlxDoc, hdNetwork, terminalNodePath, hdTextureNodes, 
                             &mxHdInfo.textureMap, &mxHdInfo.primvarMap, 
@@ -612,14 +697,15 @@ HdSt_ApplyMaterialXFilter(
         // Load MaterialX Document and generate the glslfxShader
         mx::ShaderPtr glslfxShader = HdSt_GenMaterialXShader(mtlxDoc,
                                     searchPath, mxHdInfo);
-
+        if (!glslfxShader) {
+            return;
+        }
         // Add material parameters from the glslfxShader to the materialParams
         _AddMaterialXParams(glslfxShader, materialParams);
 
         // Create a new terminal node with the new glslfxSource
-        const std::string glslfxSource = glslfxShader
-            ? glslfxShader->getSourceCode(mx::Stage::PIXEL)
-            : mx::EMPTY_STRING;
+        const std::string glslfxSource =
+            glslfxShader->getSourceCode(mx::Stage::PIXEL);
         SdrShaderNodeConstPtr sdrNode = 
             sdrRegistry.GetShaderNodeFromSourceCode(glslfxSource, 
                                                     HioGlslfxTokens->glslfx,

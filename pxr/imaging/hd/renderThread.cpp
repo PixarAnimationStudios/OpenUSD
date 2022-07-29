@@ -78,6 +78,7 @@ HdRenderThread::StopThread()
         _enableRender.clear();
         std::unique_lock<std::mutex> lock(_requestedStateMutex);
         _requestedState = StateTerminated;
+        _rendering.store(false);
         _requestedStateCV.notify_one();
     }
     _renderThread.join();

@@ -34,7 +34,7 @@ from math import tan, floor, ceil, radians as rad, isinf
 import os, sys
 from time import time
 
-from .qt import QtCore, QtGui, QtWidgets, QtOpenGL
+from .qt import QtCore, QtGui, QtWidgets, QtOpenGL, QGLWidget, QGLFormat
 
 from pxr import Tf
 from pxr import Gf
@@ -95,10 +95,17 @@ class GLSLProgram():
         self._glMajorVersion = int(versionNumberString.split('.')[0])
         self._glMinorVersion = int(versionNumberString.split('.')[1])
 
+        # Apple's OpenGL renderer for Apple Silicon is emulated on top of
+        # Metal and issues performance warnings if line stipple is enabled.
+        self._glRenderer = GL.glGetString(GL.GL_RENDERER).decode()
+        isAppleMetalRenderer = self._glRenderer.startswith('Apple')
+        supportsLineStipple = not isAppleMetalRenderer
+
         # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
         self.useVAO = (self._glMajorVersion >= 3 and
                         hasattr(GL, 'glGenVertexArrays'))
         self.useSampleAlphaToCoverage = (self._glMajorVersion >= 4)
+        self.useLineStipple = supportsLineStipple
 
         self.program   = GL.glCreateProgram()
         vertexShader   = GL.glCreateShader(GL.GL_VERTEX_SHADER)
@@ -621,9 +628,7 @@ class HUD():
 
         for name in self._groups:
             group = self._groups[name]
-
-            tex = qglwidget.bindTexture(group.qimage, GL.GL_TEXTURE_2D, GL.GL_RGBA,
-                                        QtOpenGL.QGLContext.NoBindOption)
+            tex = qglwidget.BindTexture(group.qimage)
             GL.glUniform4f(self._glslProgram.uniformLocations["rect"],
                            2*group.x/width - 1,
                            1 - 2*group.y/height - 2*group.h/height,
@@ -631,10 +636,8 @@ class HUD():
                            2*group.h/height)
             GL.glUniform1i(self._glslProgram.uniformLocations["tex"], 0)
             GL.glActiveTexture(GL.GL_TEXTURE0)
-            GL.glBindTexture(GL.GL_TEXTURE_2D, tex)
             GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4)
-
-            GL.glDeleteTextures(tex)
+            qglwidget.ReleaseTexture(tex)
 
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
@@ -668,7 +671,7 @@ def _ComputeCameraFraming(viewport, renderBufferSize):
 
     return CameraUtil.Framing(displayWindow, dataWindow)
 
-class StageView(QtOpenGL.QGLWidget):
+class StageView(QGLWidget):
     '''
     QGLWidget that displays a USD Stage.  A StageView requires a dataModel
     object from which it will query state it needs to properly image its
@@ -831,14 +834,13 @@ class StageView(QtOpenGL.QGLWidget):
     def __init__(self, parent=None, dataModel=None, printTiming=False):
         # Note: The default format *disables* the alpha component and so the
         # default backbuffer uses GL_RGB.
-        glFormat = QtOpenGL.QGLFormat()
+        glFormat = QGLFormat()
         msaa = os.getenv("USDVIEW_ENABLE_MSAA", "1")
         if msaa == "1":
             glFormat.setSampleBuffers(True)
             glFormat.setSamples(4)
-        # XXX: for OSX (QT5 required)
-        # glFormat.setProfile(QtOpenGL.QGLFormat.CoreProfile)
-        super(StageView, self).__init__(glFormat, parent)
+
+        super(StageView, self).InitQGLWidget(glFormat, parent)
 
         self._dataModel = dataModel or StageView.DefaultDataModel()
         self._printTiming = printTiming
@@ -946,9 +948,9 @@ class StageView(QtOpenGL.QGLWidget):
         # create the renderer lazily, when we try to do real work with it.
         if not self._renderer:
             if self.context().isValid():
-                if self.context().initialized():
-                    self._renderer = UsdImagingGL.Engine()
-                    self._handleRendererChanged(self.GetCurrentRendererId())
+                if self.isContextInitialised():
+                  self._renderer = UsdImagingGL.Engine()
+                  self._handleRendererChanged(self.GetCurrentRendererId())
             elif not self._reportedContextError:
                 self._reportedContextError = True
                 raise RuntimeError("StageView could not initialize renderer without a valid GL context")
@@ -1651,8 +1653,9 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glEnableVertexAttribArray(0)
         GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, 0, ctypes.c_void_p(0))
 
-        GL.glEnable(GL.GL_LINE_STIPPLE)
-        GL.glLineStipple(2,0xAAAA)
+        if glslProgram.useLineStipple:
+            GL.glEnable(GL.GL_LINE_STIPPLE)
+            GL.glLineStipple(2,0xAAAA)
 
         GL.glUseProgram(glslProgram.program)
         matrix = (ctypes.c_float*16).from_buffer_copy(mvpMatrix)
@@ -1667,7 +1670,8 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         GL.glUseProgram(0)
 
-        GL.glDisable(GL.GL_LINE_STIPPLE)
+        if glslProgram.useLineStipple:
+            GL.glDisable(GL.GL_LINE_STIPPLE)
         if glslProgram.useVAO:
             GL.glBindVertexArray(0)
 
@@ -2092,7 +2096,7 @@ class StageView(QtOpenGL.QGLWidget):
                 self.switchToFreeCamera()
                 ctrlModifier = event.modifiers() & QtCore.Qt.ControlModifier
                 self._cameraMode = "truck" if ctrlModifier else "tumble"
-            if event.button() == QtCore.Qt.MidButton:
+            if event.button() == QtCore.Qt.MiddleButton:
                 self.switchToFreeCamera()
                 self._cameraMode = "truck"
             if event.button() == QtCore.Qt.RightButton:
@@ -2338,7 +2342,7 @@ class StageView(QtOpenGL.QGLWidget):
     def glDraw(self):
         # override glDraw so we can time it.
         with Timer() as t:
-            QtOpenGL.QGLWidget.glDraw(self)
+            QGLWidget.glDraw(self)
 
         # Render creation is a deferred operation, so the render may not
         # be initialized on entry to the function.

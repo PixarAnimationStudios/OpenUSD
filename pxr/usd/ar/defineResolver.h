@@ -60,6 +60,9 @@ class Ar_ResolverFactoryBase
 {
 public:
     AR_API
+    virtual ~Ar_ResolverFactoryBase();
+
+    AR_API
     virtual ArResolver* New() const = 0;
 };
 

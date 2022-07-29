@@ -2,6 +2,7 @@
 (
     endTimeCode = 1
     startTimeCode = 0
+    upAxis = "Z"
 )
 # Test the robust handling of color and opacity primvars in 
 # UsdImagingGprimAdapter.

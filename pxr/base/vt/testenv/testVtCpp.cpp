@@ -47,6 +47,15 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4d.h"
 
+#include "pxr/base/gf/dualQuath.h"
+#include "pxr/base/gf/dualQuatf.h"
+#include "pxr/base/gf/dualQuatd.h"
+
+#include "pxr/base/gf/quaternion.h"
+#include "pxr/base/gf/quath.h"
+#include "pxr/base/gf/quatf.h"
+#include "pxr/base/gf/quatd.h"
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/iterator.h"
@@ -1464,6 +1473,24 @@ static void testValue() {
         TF_AXIOM(!m.IsClean());
         m.Clear();
     }
+
+#define _VT_TEST_ZERO_VALUE(r, unused, elem)                            \
+    {                                                                   \
+        VtValue empty;                                                  \
+        TfErrorMark m;                                                  \
+        TF_AXIOM(empty.Get<VT_TYPE(elem)>() == VtZero<VT_TYPE(elem)>());\
+        TF_AXIOM(!m.IsClean());                                         \
+        m.Clear();                                                      \
+    }
+    
+    BOOST_PP_SEQ_FOR_EACH(_VT_TEST_ZERO_VALUE,
+        unused, 
+        VT_VEC_VALUE_TYPES
+        VT_MATRIX_VALUE_TYPES
+        VT_QUATERNION_VALUE_TYPES
+        VT_DUALQUATERNION_VALUE_TYPES);
+
+#undef _VT_TEST_ZERO_VALUE
 
     {
         VtValue d(1.234);

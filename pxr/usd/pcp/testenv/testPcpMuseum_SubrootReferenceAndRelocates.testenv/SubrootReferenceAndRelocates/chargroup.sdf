@@ -1,0 +1,14 @@
+#sdf 1.4.32
+
+def "CharGroup"
+{
+    def "_class_Char"
+    {
+    }
+
+    def "Char" (
+        inherits = </CharGroup/_class_Char>
+    )
+    {
+    }
+}

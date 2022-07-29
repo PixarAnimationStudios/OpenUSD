@@ -121,7 +121,9 @@ public:
     HgiMetalMemberShaderSection(
         const std::string &identifier,
         const std::string &type,
-        const HgiShaderSectionAttributeVector &attributes = {});
+        const HgiShaderSectionAttributeVector &attributes = {},
+        const std::string arraySize = std::string(),
+        const std::string &blockInstanceIdentifier = std::string());
 
     HGIMETAL_API
     ~HgiMetalMemberShaderSection() override;
@@ -147,11 +149,21 @@ public:
     HGIMETAL_API
     HgiMetalSamplerShaderSection(
         const std::string &textureSharedIdentifier,
+        const std::string &parentScopeIdentifier,
+        const uint32_t arrayOfSamplersSize,
         const HgiShaderSectionAttributeVector &attributes = {});
 
     HGIMETAL_API
     void WriteType(std::ostream& ss) const override;
+    HGIMETAL_API
+    void WriteParameter(std::ostream& ss) const override;
 
+    HGIMETAL_API
+    bool VisitScopeConstructorDeclarations(std::ostream &ss) override;
+    HGIMETAL_API
+    bool VisitScopeConstructorInitialization(std::ostream &ss) override;
+    HGIMETAL_API
+    bool VisitScopeConstructorInstantiation(std::ostream &ss) override;
     HGIMETAL_API
     bool VisitScopeMemberDeclarations(std::ostream &ss) override;
 
@@ -160,6 +172,10 @@ private:
     HgiMetalSamplerShaderSection & operator=(
         const HgiMetalSamplerShaderSection&) = delete;
     HgiMetalSamplerShaderSection(const HgiMetalSamplerShaderSection&) = delete;
+
+    const std::string _textureSharedIdentifier;
+    const uint32_t _arrayOfSamplersSize;
+    const std::string _parentScopeIdentifier;
 };
 
 /// \class HgiMetalTextureShaderSection
@@ -174,16 +190,28 @@ public:
     HGIMETAL_API
     HgiMetalTextureShaderSection(
         const std::string &samplerSharedIdentifier,
+        const std::string &parentScopeIdentifier,
         const HgiShaderSectionAttributeVector &attributes,
         const HgiMetalSamplerShaderSection *samplerShaderSectionDependency,
         uint32_t dimensions,
         HgiFormat format,
+        bool textureArray,
+        uint32_t arrayOfTexturesSize,
+        bool shadow,
         bool writable,
         const std::string &defaultValue = std::string());
 
     HGIMETAL_API
     void WriteType(std::ostream& ss) const override;
+    HGIMETAL_API
+    void WriteParameter(std::ostream& ss) const override;
 
+    HGIMETAL_API
+    bool VisitScopeConstructorDeclarations(std::ostream &ss) override;
+    HGIMETAL_API
+    bool VisitScopeConstructorInitialization(std::ostream &ss) override;
+    HGIMETAL_API
+    bool VisitScopeConstructorInstantiation(std::ostream &ss) override;
     HGIMETAL_API
     bool VisitScopeMemberDeclarations(std::ostream &ss) override;
     HGIMETAL_API
@@ -199,9 +227,13 @@ private:
     const HgiMetalSamplerShaderSection* const _samplerShaderSectionDependency;
     const uint32_t _dimensionsVar;
     const HgiFormat _format;
+    const bool _textureArray;
+    const uint32_t _arrayOfTexturesSize;
+    const bool _shadow;
     const bool _writable;
     std::string _baseType;
     std::string _returnType;
+    const std::string _parentScopeIdentifier;
 };
 
 /// \class HgiMetalBufferShaderSection
@@ -215,13 +247,22 @@ public:
     HGIMETAL_API
     HgiMetalBufferShaderSection(
         const std::string &samplerSharedIdentifier,
+        const std::string &parentScopeIdentifier,
         const std::string &type,
         const HgiBindingType binding,
         const bool writable,
         const HgiShaderSectionAttributeVector &attributes);
 
+    // For a dummy padded binding point
+    HGIMETAL_API
+    HgiMetalBufferShaderSection(
+        const std::string &samplerSharedIdentifier,
+        const HgiShaderSectionAttributeVector &attributes);
+
     HGIMETAL_API
     void WriteType(std::ostream& ss) const override;
+    HGIMETAL_API
+    void WriteParameter(std::ostream& ss) const override;
 
     HGIMETAL_API
     bool VisitScopeMemberDeclarations(std::ostream &ss) override;
@@ -231,12 +272,6 @@ public:
     bool VisitScopeConstructorInitialization(std::ostream &ss) override;
     HGIMETAL_API
     bool VisitScopeConstructorInstantiation(std::ostream &ss) override;
-    HGIMETAL_API
-    bool VisitEntryPointParameterDeclarations(std::ostream &ss)  override;
-    HGIMETAL_API
-    bool VisitEntryPointFunctionExecutions(
-        std::ostream& ss,
-        const std::string &scopeInstanceName) override;
 
 private:
     HgiMetalBufferShaderSection() = delete;
@@ -247,7 +282,9 @@ private:
     const std::string _type;
     const HgiBindingType _binding;
     const bool _writable;
+    const bool _unused;
     const std::string _samplerSharedIdentifier;
+    const std::string _parentScopeIdentifier;
 };
 
 /// \class HgiMetalStructTypeDeclarationShaderSection
@@ -261,7 +298,10 @@ public:
     HGIMETAL_API
     explicit HgiMetalStructTypeDeclarationShaderSection(
         const std::string &identifier,
-        const HgiMetalShaderSectionPtrVector &members);
+        const HgiMetalShaderSectionPtrVector &members,
+        const std::string &templateWrapper = std::string(),
+        const std::string &templateWrapperParameters
+                            = std::string());
 
     HGIMETAL_API
     void WriteType(std::ostream &ss) const override;
@@ -269,6 +309,8 @@ public:
     void WriteDeclaration(std::ostream &ss) const override;
     HGIMETAL_API
     void WriteParameter(std::ostream &ss) const override;
+    
+    void WriteTemplateWrapper(std::ostream &ss) const;
 
     //TODO make pointer
     const HgiMetalShaderSectionPtrVector& GetMembers() const;
@@ -280,7 +322,9 @@ private:
     HgiMetalStructTypeDeclarationShaderSection(
         const HgiMetalStructTypeDeclarationShaderSection&) = delete;
 
-    const HgiMetalShaderSectionPtrVector _members;    
+    const HgiMetalShaderSectionPtrVector _members;
+    const std::string _templateWrapper;
+    const std::string _templateWrapperParameters;
 };
 
 /// \class HgiMetalStructInstanceShaderSection
@@ -308,10 +352,44 @@ private:
     const HgiMetalStructTypeDeclarationShaderSection * const _structTypeDeclaration;
 };
 
+/// \class HgiMetalParameterInputShaderSection
+///
+/// An input struct to a shader stage
+///
+class HgiMetalParameterInputShaderSection final
+        : public HgiMetalStructInstanceShaderSection
+{
+public:
+    HGIMETAL_API
+    explicit HgiMetalParameterInputShaderSection(
+        const std::string &identifier,
+        const HgiShaderSectionAttributeVector &attributes,
+        const std::string &addressSpace,
+        const bool isPointer,
+        HgiMetalStructTypeDeclarationShaderSection *structTypeDeclaration);
+
+    HGIMETAL_API
+    bool VisitEntryPointParameterDeclarations(std::ostream &ss) override;
+
+    HGIMETAL_API
+    bool VisitEntryPointFunctionExecutions(
+        std::ostream& ss,
+        const std::string &scopeInstanceName) override;
+
+    HGIMETAL_API
+    bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
+
+    HGIMETAL_API
+    void WriteParameter(std::ostream& ss) const override;
+
+private:
+    const std::string _addressSpace;
+    const bool _isPointer;
+};
 
 /// \class HgiMetalArgumentBufferInputShaderSection
 ///
-/// An input struct to a shader stage
+/// An argument buffer for all bindless buffer bindings to a shader stage
 ///
 class HgiMetalArgumentBufferInputShaderSection final
         : public HgiMetalStructInstanceShaderSection
@@ -327,11 +405,6 @@ public:
 
     HGIMETAL_API
     bool VisitEntryPointParameterDeclarations(std::ostream &ss) override;
-
-    HGIMETAL_API
-    bool VisitEntryPointFunctionExecutions(
-        std::ostream& ss,
-        const std::string &scopeInstanceName) override;
 
     HGIMETAL_API
     bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
@@ -361,6 +434,8 @@ public:
     HGIMETAL_API
     void WriteType(std::ostream& ss) const override;
 
+    HGIMETAL_API
+    bool VisitScopeMemberDeclarations(std::ostream &ss) override;
     HGIMETAL_API
     bool VisitEntryPointParameterDeclarations(std::ostream &ss)  override;
     HGIMETAL_API
@@ -406,6 +481,43 @@ public:
     HGIMETAL_API
     bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
 };
+
+/// \class HgiMetalInterstageBlockShaderSection
+///
+/// Defines and writes out an interstage interface block
+///
+class HgiMetalInterstageBlockShaderSection final
+    : public HgiMetalShaderSection
+{
+public:
+    HGIMETAL_API
+    explicit HgiMetalInterstageBlockShaderSection(
+        const std::string &blockIdentifier,
+        const std::string &blockInstanceIdentifier,
+        const HgiMetalStructTypeDeclarationShaderSection *structTypeDeclaration);
+
+    HGIMETAL_API
+    const HgiMetalStructTypeDeclarationShaderSection*
+    GetStructTypeDeclaration() const;
+
+    HGIMETAL_API
+    bool VisitScopeStructs(std::ostream &ss) override;
+
+    HGIMETAL_API
+    bool VisitScopeMemberDeclarations(std::ostream &ss) override;
+
+private:
+    HgiMetalInterstageBlockShaderSection() = delete;
+    HgiMetalInterstageBlockShaderSection & operator=(
+        const HgiMetalInterstageBlockShaderSection&) = delete;
+    HgiMetalInterstageBlockShaderSection(const HgiMetalInterstageBlockShaderSection&) = delete;
+
+private:
+    const HgiMetalStructTypeDeclarationShaderSection * const _structTypeDeclaration;
+};
+
+using HgiMetalInterstageBlockShaderSectionPtrVector =
+    std::vector<HgiMetalInterstageBlockShaderSection*>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

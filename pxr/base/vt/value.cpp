@@ -492,14 +492,12 @@ operator<<(std::ostream &out, const VtValue &self) {
     return self.IsEmpty() ? out : self._info->StreamOut(self._storage, out);
 }
 
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
 TfPyObjWrapper
 VtValue::_GetPythonObject() const
 {
     return _info.GetLiteral() ?
         _info.Get()->GetPyObj(_storage) : TfPyObjWrapper();
 }
-#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 static void const *
 _FindOrCreateDefaultValue(std::type_info const &type,
@@ -600,6 +598,7 @@ BOOST_PP_SEQ_FOR_EACH(_VT_IMPLEMENT_ZERO_VALUE_FACTORY,
                       unused,
                       VT_VEC_VALUE_TYPES
                       VT_MATRIX_VALUE_TYPES
-                      VT_QUATERNION_VALUE_TYPES)
+                      VT_QUATERNION_VALUE_TYPES
+                      VT_DUALQUATERNION_VALUE_TYPES)
 
 PXR_NAMESPACE_CLOSE_SCOPE

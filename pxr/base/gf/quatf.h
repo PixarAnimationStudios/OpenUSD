@@ -94,6 +94,10 @@ class GfQuatf
     GF_API
     GfQuatf(class GfQuath const &other);
 
+    /// Return the zero quaternion, with real coefficient 0 and an
+    /// imaginary coefficients all zero.
+    static GfQuatf GetZero() { return GfQuatf(0.0); }
+
     /// Return the identity quaternion, with real coefficient 1 and an
     /// imaginary coefficients all zero.
     static GfQuatf GetIdentity() { return GfQuatf(1.0); }

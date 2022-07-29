@@ -64,6 +64,13 @@ _IsFloatOrDouble(const VtValue &v)
     return v.IsHolding<float>() || v.IsHolding<double>();
 }
 
+static
+bool
+_IsInt(const VtValue &v)
+{
+    return v.IsHolding<int>();
+}
+
 // Is VtValue holding a vector of floats or doubles of length n.
 template<size_t n>
 static
@@ -161,6 +168,9 @@ _GetDefaultValue(
         { "double",
           VtValue(0.0),
           _IsFloatOrDouble },
+        { "int",
+          VtValue(0),
+          _IsInt },
         { "vec2",
           VtValue(std::vector<VtValue>(2, VtValue(0.0f))),
           _IsVec<2> },

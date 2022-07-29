@@ -35,32 +35,47 @@
     }
 }
 
+--- --------------------------------------------------------------------------
+-- layout OitResolve.Image
+
+[
+    ["buffer readWrite", "CounterBuffer", "hdxOitCounterBuffer",
+        ["atomic_int", "hdxOitCounterBuffer"]
+    ]
+]
+
 -- glsl OitResolve.Image
 
 vec4 imageShader(vec2 uv)
 {
 #if defined(HD_HAS_hdxOitDataBuffer)
-    int screenWidth = int(HdGet_oitScreenSize().x);
+    const int screenWidth = int(HdGet_oitScreenSize().x);
+    const int screenHeight = int(HdGet_oitScreenSize().y);
+
+    // Must match the per-pixel sample count used when creating the OIT buffers.
+    // (See HdxOitResolveTask::_PrepareOitBuffers)
+    const int maxSamples = 8;
+
+    const int dataBufferSize = screenWidth * screenHeight * maxSamples;
 
     // +1 because index 0 of counter buffer is reserved as atomic counter in
     // WriteOitLayersToBuffer
     int screenIndex = int(gl_FragCoord.x) + int(gl_FragCoord.y) * screenWidth;
     screenIndex += 1;
 
-    int nodeIndex = hdxOitCounterBuffer[screenIndex];
+    int nodeIndex = ATOMIC_LOAD(hdxOitCounterBuffer[screenIndex]);
     int numDepths = 0;
 
     // XXX renderPass.WriteOitLayersToBuffer does not clamp the number of
     //     depth samples we store for a pixel. Here we process no more than
     //     'maxSamples' for a pixel. (If there are greater than 'maxSamples'
     //     samples stored for this pixel some will currently not contribute)
-    const int maxSamples = 8;
     vec4 sortedColor[maxSamples];
     float sortedDepth[maxSamples];
 
     while (nodeIndex != -1 && 
            numDepths < maxSamples && 
-           nodeIndex < hdxOitDataBuffer.length()) 
+           nodeIndex < dataBufferSize) 
     {
         float currentDepth = hdxOitDepthBuffer[nodeIndex]; 
         int insertIndex = numDepths; 

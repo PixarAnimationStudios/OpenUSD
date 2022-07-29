@@ -1,0 +1,45 @@
+#usda 1.0
+(
+    "This file describes the Pixar-specific USD Geometric schemata for code generation."
+    subLayers = [
+        @usdGeom/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName           = "usdProc"
+        string libraryPath           = "pxr/usd/usdProc"
+        dictionary libraryTokens = {
+
+        }
+    }
+){
+}
+
+class GenerativeProcedural "GenerativeProcedural" (
+    inherits = </Boundable>
+    doc = """
+    Represents an abstract generative procedural prim which delivers its input
+    parameters via properties (including relationships) within the "primvars:"
+    namespace.
+ 
+    It does not itself have any awareness or participation in the execution of
+    the procedural but rather serves as a means of delivering a procedural's
+    definition and input parameters.
+ 
+    The value of its "proceduralSystem" property (either authored or provided
+    by API schema fallback) indicates to which system the procedural definition
+    is meaningful.
+    """
+    customData = {
+
+    }
+){
+
+    token proceduralSystem  (
+        doc = """The name or convention of the system responsible for evaluating
+        the procedural.
+        NOTE: A fallback value for this is typically set via an API schema."""
+    )
+}

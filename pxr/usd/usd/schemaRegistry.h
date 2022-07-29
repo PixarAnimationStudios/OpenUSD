@@ -147,6 +147,16 @@ public:
     USD_API
     static bool IsConcrete(const TfToken& primType);
 
+    /// Returns true if the prim type \p primType is an abstract schema type 
+    /// and, unlike a concrete type, is not instantiable in scene description.
+    USD_API
+    static bool IsAbstract(const TfType& primType);
+
+    /// Returns true if the prim type \p primType is an abstract schema type 
+    /// and, unlike a concrete type, is not instantiable in scene description.
+    USD_API
+    static bool IsAbstract(const TfToken& primType);
+
     /// Returns true if \p apiSchemaType is an applied API schema type.
     USD_API
     static bool IsAppliedAPISchema(const TfType& apiSchemaType);

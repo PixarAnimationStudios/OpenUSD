@@ -39,12 +39,27 @@ class HdOverlayContainerDataSource : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(HdOverlayContainerDataSource);
 
+    HD_API
     HdOverlayContainerDataSource(
         size_t count,
         HdContainerDataSourceHandle *containers);
 
+    HD_API
+    HdOverlayContainerDataSource(
+        const HdContainerDataSourceHandle &src1,
+        const HdContainerDataSourceHandle &src2);
+
+    HD_API
+    HdOverlayContainerDataSource(
+        const HdContainerDataSourceHandle &src1,
+        const HdContainerDataSourceHandle &src2,
+        const HdContainerDataSourceHandle &src3);
+
+    HD_API
     bool Has(const TfToken &name) override;
+    HD_API
     TfTokenVector GetNames() override;
+    HD_API
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
 private:

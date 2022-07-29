@@ -34,6 +34,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HgiCapabilities;
 using HdBindingRequestVector = std::vector<HdBindingRequest>;
 
 /// \class HdSt_PipelineDrawBatch
@@ -48,7 +49,8 @@ class HdSt_PipelineDrawBatch : public HdSt_DrawBatch
 {
 public:
     HDST_API
-    HdSt_PipelineDrawBatch(HdStDrawItemInstance * drawItemInstance);
+    HdSt_PipelineDrawBatch(HdStDrawItemInstance * drawItemInstance,
+                           bool const allowGpuFrustumCulling = true);
     HDST_API
     ~HdSt_PipelineDrawBatch() override;
 
@@ -60,6 +62,7 @@ public:
     /// Prepare draw commands and apply view frustum culling for this batch.
     HDST_API
     void PrepareDraw(
+        HgiGraphicsCmds *gfxCmds,
         HdStRenderPassStateSharedPtr const & renderPassState,
         HdStResourceRegistrySharedPtr const & resourceRegistry) override;
 
@@ -79,7 +82,7 @@ public:
 
     /// Returns whether pipeline draw batching is enabled.
     HDST_API
-    static bool IsEnabled();
+    static bool IsEnabled(HgiCapabilities const *hgiCapabilities);
 
     /// Returns whether to do frustum culling on the GPU
     HDST_API
@@ -93,11 +96,6 @@ public:
     /// Returns whether to do per-instance culling on the GPU
     HDST_API
     static bool IsEnabledGPUInstanceFrustumCulling();
-
-    /// Sets whether to allow GPU frustum culling for this instance,
-    /// unlike the methods above which are global switches.
-    HDST_API
-    void SetAllowGpuFrustumCulling(bool allowGpuFrustumCulling);
 
 protected:
     HDST_API
@@ -135,12 +133,10 @@ private:
 
     void _ExecuteDrawIndirect(
                 HgiGraphicsCmds * gfxCmds,
-                HdStDispatchBufferSharedPtr const & dispatchBuffer,
                 HdStBufferArrayRangeSharedPtr const & indexBar);
 
     void _ExecuteDrawImmediate(
                 HgiGraphicsCmds * gfxCmds,
-                HdStDispatchBufferSharedPtr const & dispatchBuffer,
                 HdStBufferArrayRangeSharedPtr const & indexBar);
 
     void _ExecuteFrustumCull(
@@ -178,10 +174,11 @@ private:
     bool _useInstancing;
     bool _useGpuCulling;
     bool _useInstanceCulling;
-    bool _allowGpuFrustumCulling;
+    bool const _allowGpuFrustumCulling;
 
-    int _instanceCountOffset;
-    int _cullInstanceCountOffset;
+    size_t _instanceCountOffset;
+    size_t _cullInstanceCountOffset;
+    size_t _patchBaseVertexByteOffset;
 };
 
 

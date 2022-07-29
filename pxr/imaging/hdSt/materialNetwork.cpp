@@ -1211,19 +1211,17 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
 
     _fragmentSource.clear();
     _geometrySource.clear();
+    _displacementSource.clear();
     _materialMetadata.clear();
     _materialParams.clear();
     _textureDescriptors.clear();
     _materialTag = HdStMaterialTagTokens->defaultMaterialTag;
 
-    HdMaterialNetwork2 surfaceNetwork;
-
     // The fragment source comes from the 'surface' network or the
     // 'volume' network.
     bool isVolume = false;
-    HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(hdNetworkMap,
-                                                      &surfaceNetwork,
-                                                      &isVolume);
+    HdMaterialNetwork2 surfaceNetwork =
+        HdConvertToHdMaterialNetwork2(hdNetworkMap, &isVolume);
     const TfToken &terminalName = (isVolume) ? HdMaterialTerminalTokens->volume 
                                             : HdMaterialTerminalTokens->surface;
 
@@ -1264,7 +1262,7 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
                 // under terminal: HdMaterialTerminalTokens->displacement.
                 // For Storm however we expect the displacement shader to be
                 // provided via the surface glslfx / terminal.
-                _geometrySource = _surfaceGfx->GetDisplacementSource();
+                _displacementSource = _surfaceGfx->GetDisplacementSource();
             }
         }
     }
@@ -1292,6 +1290,12 @@ std::string const&
 HdStMaterialNetwork::GetGeometryCode() const
 {
     return _geometrySource;
+}
+
+std::string const&
+HdStMaterialNetwork::GetDisplacementCode() const
+{
+    return _displacementSource;
 }
 
 VtDictionary const&

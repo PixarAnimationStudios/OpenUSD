@@ -36,6 +36,7 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 
 #include "pxr/usd/usdGeom/gprim.h"
+#include "pxr/usd/usdGeom/motionAPI.h"
 #include "pxr/usd/usdGeom/pointBased.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
 
@@ -243,7 +244,20 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
                    HdChangeTracker::DirtyPoints,
                    UsdImagingTokens->usdVaryingPrimvar,
                    timeVaryingBits,
-                   false);
+                   false) ||
+            _IsVarying(prim,
+                       UsdGeomTokens->motionNonlinearSampleCount,
+                       HdChangeTracker::DirtyPoints,
+                       UsdImagingTokens->usdVaryingPrimvar,
+                       timeVaryingBits,
+                       true) ||
+                _IsVarying(prim,
+                           UsdGeomTokens->motionBlurScale,
+                           HdChangeTracker::DirtyPoints,
+                           UsdImagingTokens->usdVaryingPrimvar,
+                           timeVaryingBits,
+                           true);
+
     // XXX: "points" is handled by derived classes.
 
     // Discover time-varying double-sidedness.
@@ -317,6 +331,35 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                 HdTokens->accelerations,
                 HdInterpolationVertex,
                 HdPrimvarRoleTokens->vector);
+        }
+
+        // Since nonlinearSampleCount is tied to the calculation
+        // of the motion-blurred points, we also use the points dirty
+        // bit here to know when to publish its value. Since it is
+        // inherited, we go through the corresponding resolved attribute
+        // cache.
+        UsdImaging_NonlinearSampleCountCache *nonlinearSampleCountCache =
+            _GetNonlinearSampleCountCache();
+        // Check that it has any opinions.
+        if (nonlinearSampleCountCache->GetValue(prim) !=
+                UsdImaging_NonlinearSampleCountStrategy::invalidValue) {
+            _MergePrimvar(
+                &vPrimvars,
+                HdTokens->nonlinearSampleCount,
+                HdInterpolationConstant,
+                HdPrimvarRoleTokens->none);
+        }
+
+        // Comment similar to above nonlinear sample count cache applies to
+        // blur scale.
+        UsdImaging_BlurScaleCache *blurScaleCache = _GetBlurScaleCache();
+        // Check that it has any opinions.
+        if (blurScaleCache->GetValue(prim).has_value) {
+            _MergePrimvar(
+                &vPrimvars,
+                HdTokens->blurScale,
+                HdInterpolationConstant,
+                HdPrimvarRoleTokens->none);
         }
     }
 
@@ -453,7 +496,9 @@ UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
         return HdChangeTracker::DirtyDoubleSided;
 
     if (propertyName == UsdGeomTokens->velocities ||
-             propertyName == UsdGeomTokens->accelerations)
+             propertyName == UsdGeomTokens->accelerations ||
+             propertyName == UsdGeomTokens->motionNonlinearSampleCount ||
+             propertyName == UsdGeomTokens->motionBlurScale)
         // XXX: "points" is handled by derived classes.
         return HdChangeTracker::DirtyPoints;
 
@@ -539,6 +584,14 @@ UsdImagingGprimAdapter::MarkMaterialDirty(UsdPrim const& prim,
     // Hydra doesn't currently manage detection and propagation of these
     // changes, so we must mark the rprim dirty.
     index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyMaterialId);
+}
+
+void
+UsdImagingGprimAdapter::MarkCollectionsDirty(UsdPrim const& prim,
+                                             SdfPath const& cachePath,
+                                             UsdImagingIndexProxy* index)
+{
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyCategories);
 }
 
 /*virtual*/
@@ -711,8 +764,38 @@ UsdImagingGprimAdapter::Get(UsdPrim const& prim,
             pointBased.GetAccelerationsAttr().Get(&accelerations, time)) {
             return VtValue(accelerations);
         }
-
-    } else if (UsdGeomPrimvar pv = gprim.GetPrimvar(key)) {
+    } else if (key == HdTokens->nonlinearSampleCount) {
+        UsdImaging_NonlinearSampleCountCache *cache =
+            _GetNonlinearSampleCountCache();
+        const int value =
+            cache->GetTime() == time
+                ? cache->GetValue(prim)
+                : UsdImaging_NonlinearSampleCountStrategy::
+                      ComputeNonlinearSampleCount(prim,time);
+        if (value !=
+                UsdImaging_NonlinearSampleCountStrategy::invalidValue) {
+            return VtValue(value);
+        } else {
+            // Default value from UsdGeom's
+            // MotionAPI.motion:nonlinearSampleCount
+            constexpr int defaultValue = 3;
+            return VtValue(defaultValue);
+        }
+    } else if (key == HdTokens->blurScale) {
+        UsdImaging_BlurScaleCache *cache = _GetBlurScaleCache();
+        const UsdImaging_BlurScaleStrategy::value_type value =
+            cache->GetTime() == time
+                ? cache->GetValue(prim)
+                : UsdImaging_BlurScaleStrategy::ComputeBlurScale(prim,time);
+        if (value.has_value) {
+            return VtValue(value.value);
+        } else {
+            // Default value from UsdGeom's
+            // MotionAPI.motion:blurScale
+            constexpr float defaultValue = 1.0f;
+            return VtValue(defaultValue);
+        }
+    } else if (UsdGeomPrimvar pv = UsdGeomPrimvarsAPI(gprim).GetPrimvar(key)) {
         if (outIndices) {
             if (pv && pv.Get(&value, time)) {
                 pv.GetIndices(outIndices, time);
@@ -960,22 +1043,6 @@ UsdImagingGprimAdapter::GetOpacity(UsdPrim const& prim,
         *opacity = VtValue(result);
     }
     return true;
-}
-
-UsdGeomPrimvar
-UsdImagingGprimAdapter::_GetInheritedPrimvar(UsdPrim const& prim,
-                                             TfToken const& primvarName) const
-{
-    UsdImaging_InheritedPrimvarStrategy::value_type inheritedPrimvarRecord =
-        _GetInheritedPrimvars(prim.GetParent());
-    if (inheritedPrimvarRecord) {
-        for (UsdGeomPrimvar const& pv : inheritedPrimvarRecord->primvars) {
-            if (pv.GetPrimvarName() == primvarName) {
-                return pv;
-            }
-        }
-    }
-    return UsdGeomPrimvar();
 }
 
 TfTokenVector

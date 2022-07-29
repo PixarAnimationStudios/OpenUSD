@@ -29,6 +29,7 @@
 #include "pxr/usd/pcp/dynamicFileFormatContext.h"
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/debugCodes.h"
+#include "pxr/usd/pcp/dependencies.h"
 #include "pxr/usd/pcp/diagnostic.h"
 #include "pxr/usd/pcp/dynamicFileFormatInterface.h"
 #include "pxr/usd/pcp/instancing.h"
@@ -379,6 +380,11 @@ PcpPrimIndexOutputs::Append(PcpPrimIndexOutputs&& childOutputs,
     // ours.
     dynamicFileFormatDependency.AppendDependencyData(
         std::move(childOutputs.dynamicFileFormatDependency));
+
+    culledDependencies.insert(
+        culledDependencies.end(),
+        std::make_move_iterator(childOutputs.culledDependencies.begin()),
+        std::make_move_iterator(childOutputs.culledDependencies.end()));
 
     allErrors.insert(
         allErrors.end(), 
@@ -1342,6 +1348,20 @@ _CheckForCycle(
     return PcpErrorArcCyclePtr();
 }
 
+static void
+_AddCulledDependencies(
+    const PcpNodeRef& node,
+    std::vector<PcpCulledDependency>* culledDeps)
+{
+    if (node.IsCulled()) {
+        Pcp_AddCulledDependency(node, culledDeps);
+    }
+
+    TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
+        _AddCulledDependencies(*child, culledDeps);
+    }
+};
+
 // Add an arc of the given type from the parent node to the child site,
 // and track any new tasks that result.  Return the new node.
 //
@@ -1574,6 +1594,17 @@ _AddArc(
         newNode = indexer->outputs->Append(std::move(childOutputs), newArc,
                                            &newNodeError);
         if (newNode) {
+            // Record any culled nodes from this subtree that introduced
+            // ancestral dependencies. These nodes may be removed from the prim
+            // index when Finalize() is called, so they must be saved separately
+            // for later use. Only do this in the top-level call to _AddArc
+            // to avoid running over the same subtree multiple times if there
+            // were multiple levels of recursive prim indexing.
+            if (!indexer->previousFrame) {
+                _AddCulledDependencies(
+                    newNode, &indexer->outputs->culledDependencies);
+            }
+
             PCP_INDEXING_UPDATE(
                 indexer, newNode, 
                 "Added subtree for site %s to graph",
@@ -1793,7 +1824,6 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
         const RefOrPayloadType & refOrPayload = arcs[arcNum];
         const PcpSourceArcInfo& info = infoVec[arcNum];
         const SdfLayerHandle & srcLayer = info.layer;
-        const SdfLayerOffset & srcLayerOffset = info.layerOffset;
         SdfLayerOffset layerOffset = refOrPayload.GetLayerOffset();
 
         PCP_INDEXING_MSG(
@@ -1818,10 +1848,9 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
             fail = true;
         }
 
-        // Validate layer offset in original reference or payload (not the 
-        // composed layer offset stored in refOrPayload).
-        if (!srcLayerOffset.IsValid() ||
-            !srcLayerOffset.GetInverse().IsValid()) {
+        // Validate layer offset in original reference or payload.
+        if (!layerOffset.IsValid() ||
+            !layerOffset.GetInverse().IsValid()) {
             PcpErrorInvalidReferenceOffsetPtr err =
                 PcpErrorInvalidReferenceOffset::New();
             err->rootSite = PcpSite(node.GetRootNode().GetSite());
@@ -1829,11 +1858,15 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
             err->sourcePath = node.GetPath();
             err->assetPath  = info.authoredAssetPath;
             err->targetPath = refOrPayload.GetPrimPath();
-            err->offset     = srcLayerOffset;
+            err->offset     = layerOffset;
             indexer->RecordError(err);
 
             // Don't set fail, just reset the offset.
             layerOffset = SdfLayerOffset();
+        } else {
+            // Apply the layer stack offset for the introducing layer to the 
+            // reference or payload's layer offset.
+            layerOffset = info.layerStackOffset * layerOffset;
         }
 
         // Go no further if we've found any problems.
@@ -2383,11 +2416,21 @@ _EvalImpliedRelocations(
         "Evaluating relocations implied by %s", 
         Pcp_FormatSite(node.GetSite()).c_str());
 
-    if (PcpNodeRef parent = node.GetParentNode()) {
-        if (PcpNodeRef gp = parent.GetParentNode()) {
-            SdfPath gpRelocSource =
+    if (const PcpNodeRef parent = node.GetParentNode()) {
+        if (const PcpNodeRef gp = parent.GetParentNode()) {
+
+            // Determine the path of the relocation source prim in the parent's
+            // layer stack. Note that this mapping may fail in some cases. For
+            // example, if prim /A/B was relocated to /A/C, and then in another
+            // layer stack prim /D sub-root referenced /A/C, there would be no
+            // corresponding prim for the source /A/B in that layer stack.
+            // See SubrootReferenceAndRelocates for a concrete example.
+            const SdfPath gpRelocSource =
                 parent.GetMapToParent().MapSourceToTarget(node.GetPath());
-            if (!TF_VERIFY(!gpRelocSource.IsEmpty())) {
+            if (gpRelocSource.IsEmpty()) {
+                PCP_INDEXING_PHASE(
+                    indexer, node,
+                    "No implied site for relocation source -- skipping");
                 return;
             }
 

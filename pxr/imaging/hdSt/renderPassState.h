@@ -37,6 +37,7 @@ struct HgiGraphicsPipelineDesc;
 struct HgiDepthStencilState;
 struct HgiMultiSampleState;
 struct HgiRasterizationState;
+class HgiCapabilities;
 
 using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
 using HdStRenderPassStateSharedPtr = std::shared_ptr<class HdStRenderPassState>;
@@ -96,9 +97,9 @@ public:
     ///   glStencilFunc()
     ///   glStencilOp()
     HDST_API
-    void Bind();
+    void Bind(HgiCapabilities const &hgiCapabilities);
     HDST_API
-    void Unbind();
+    void Unbind(HgiCapabilities const &hgiCapabilities);
 
     /// If set to true (default) and the render pass is rendering into a
     /// multi-sampled aovs, the aovs will be resolved at the end of the render
@@ -174,6 +175,13 @@ public:
     /// clip planes specified by SetCameraFramingState.
     HDST_API ClipPlanesVector const & GetClipPlanes() const override;
 
+    /// Helper to compute and get the Viewport
+    /// This is either using the modern camera framing, which is always y-down,
+    /// or the legacy viewport.
+    /// Note that flipping is always necessary for OpenGL.
+    HDST_API
+    GfVec4i ComputeViewport(const HgiGraphicsCmdsDesc &desc, const bool flip);
+
     // Helper to get graphics cmds descriptor describing textures
     // we render into and the blend state, constructed from
     // AOV bindings.
@@ -196,9 +204,16 @@ public:
 private:
     bool _UseAlphaMask() const;
 
+    // Helper to set up the aov attachment desc so that it matches the blend
+    // setting of the render pipeline state.
+    // If an aovIndex is specified then the color mask will be correlated.
+    void _InitAttachmentDesc(HgiAttachmentDesc &attachmentDesc,
+                             int aovIndex = -1) const;
+
     void _InitPrimitiveState(
                 HgiGraphicsPipelineDesc * pipeDesc,
                 HdSt_GeometricShaderSharedPtr const & geometricShader) const;
+    void _InitAttachmentState(HgiGraphicsPipelineDesc * pipeDesc) const;
     void _InitDepthStencilState(HgiDepthStencilState * depthState) const;
     void _InitMultiSampleState(HgiMultiSampleState * multisampleState) const;
     void _InitRasterizationState(

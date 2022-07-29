@@ -49,25 +49,32 @@ class HdStTextureIdentifier final
 public:
     using ID = size_t;
 
+    HDST_API
     HdStTextureIdentifier();
 
     /// C'tor for files that can contain only one texture.
     ///
+    HDST_API
     explicit HdStTextureIdentifier(const TfToken &filePath);
 
     /// C'tor for files that can contain more than one texture (e.g.,
     /// frames in a movie, grids in a VDB file).
     ///
+    HDST_API
     HdStTextureIdentifier(
         const TfToken &filePath,
         std::unique_ptr<const HdStSubtextureIdentifier> &&subtextureId);
 
+    HDST_API
     HdStTextureIdentifier(const HdStTextureIdentifier &textureId);
 
+    HDST_API
     HdStTextureIdentifier &operator=(HdStTextureIdentifier &&textureId);
 
+    HDST_API
     HdStTextureIdentifier &operator=(const HdStTextureIdentifier &textureId);
 
+    HDST_API
     ~HdStTextureIdentifier();
 
     /// Get file path of texture file.
@@ -86,7 +93,9 @@ public:
         return _subtextureId.get();
     }
 
+    HDST_API
     bool operator==(const HdStTextureIdentifier &other) const;
+    HDST_API
     bool operator!=(const HdStTextureIdentifier &other) const;
 
 private:
@@ -94,6 +103,7 @@ private:
     std::unique_ptr<const HdStSubtextureIdentifier> _subtextureId;
 };
 
+HDST_API
 size_t hash_value(const HdStTextureIdentifier &);
 
 PXR_NAMESPACE_CLOSE_SCOPE

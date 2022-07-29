@@ -74,7 +74,8 @@ bool operator!=(
 }
 
 HgiMultiSampleState::HgiMultiSampleState()
-    : alphaToCoverageEnable(false)
+    : multiSampleEnable(true)
+    , alphaToCoverageEnable(false)
     , alphaToOneEnable(false)
     , sampleCount(HgiSampleCount1)
 {
@@ -84,7 +85,8 @@ bool operator==(
     const HgiMultiSampleState& lhs,
     const HgiMultiSampleState& rhs)
 {
-    return lhs.alphaToCoverageEnable == rhs.alphaToCoverageEnable &&
+    return lhs.multiSampleEnable == rhs.multiSampleEnable &&
+           lhs.alphaToCoverageEnable == rhs.alphaToCoverageEnable &&
            lhs.alphaToOneEnable == rhs.alphaToOneEnable &&
            lhs.sampleCount == rhs.sampleCount;
 }
@@ -102,6 +104,10 @@ HgiRasterizationState::HgiRasterizationState()
     , cullMode(HgiCullModeBack)
     , winding(HgiWindingCounterClockwise)
     , rasterizerEnabled(true)
+    , depthClampEnabled(false)
+    , depthRange(0.f, 1.f)
+    , conservativeRaster(false)
+    , numClipDistances(0)
 {
 }
 
@@ -113,7 +119,11 @@ bool operator==(
            lhs.lineWidth == rhs.lineWidth &&
            lhs.cullMode == rhs.cullMode &&
            lhs.winding == rhs.winding &&
-           lhs.rasterizerEnabled == rhs.rasterizerEnabled;
+           lhs.rasterizerEnabled == rhs.rasterizerEnabled &&
+           lhs.depthClampEnabled == rhs.depthClampEnabled &&
+           lhs.depthRange == rhs.depthRange &&
+           lhs.conservativeRaster == rhs.conservativeRaster &&
+           lhs.numClipDistances == rhs.numClipDistances;
 }
 
 bool operator!=(
@@ -217,9 +227,9 @@ HgiTessellationLevel::HgiTessellationLevel()
 }
 
 HgiTessellationState::HgiTessellationState()
-    : tessellationLevel()
+    : patchType(Triangle)
     , primitiveIndexSize(0)
-    , tessEnabled(false)
+    , tessellationLevel()
 {
 }
 

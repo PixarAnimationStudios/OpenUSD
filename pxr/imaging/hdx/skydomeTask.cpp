@@ -35,7 +35,7 @@
 
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hgi/hgi.h"
-
+#include "pxr/imaging/hgi/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -157,8 +157,8 @@ HdxSkydomeTask::Execute(HdTaskContext* ctx)
     _compositor->BindTextures( {_tokens->skydomeTexture}, {_skydomeTexture} );
 
     // Get the viewport size
-    GfVec2f size = renderPassState->GetFraming().dataWindow.GetSize();
-    const GfVec4i viewport(0, 0, size[0], size[1]);
+    GfVec4i viewport = hdStRenderPassState->ComputeViewport(
+        gfxCmdsDesc, /* flip = */ _GetHgi()->GetAPIName() == HgiTokens->OpenGL);
 
     // Get the Color/Depth and Color/Depth Resolve Textures from the gfxCmdsDesc
     // so that the fullscreenShader can use them to create the appropriate
@@ -238,6 +238,8 @@ HdxSkydomeTask::_SetFragmentShader()
     HgiShaderFunctionAddStageInput(&fragDesc, "uvOut", "vec2");
     HgiShaderFunctionAddTexture(&fragDesc, "skydomeTexture");
     HgiShaderFunctionAddStageOutput(&fragDesc, "hd_FragColor", "vec4", "color");
+    HgiShaderFunctionAddStageOutput(
+        &fragDesc, "gl_FragDepth", "float", "depth(any)");
 
     // The order of the constant parameters has to match the order in the 
     // _ParameterBuffer struct

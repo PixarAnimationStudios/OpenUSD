@@ -45,8 +45,8 @@ void wrapUsdEditTarget()
         .def(self != self)
         .def("IsNull", &UsdEditTarget::IsNull)
         .def("IsValid", &UsdEditTarget::IsValid)
-        .def("GetLayer", &UsdEditTarget::GetLayer,
-             return_value_policy<return_by_value>())
+        .def("GetLayer", static_cast<SdfLayerHandle (*)(UsdEditTarget const &)>(
+                 [](UsdEditTarget const &et) { return et.GetLayer(); }))
         .def("GetMapFunction", &UsdEditTarget::GetMapFunction,
              return_value_policy<return_by_value>())
         .def("MapToSpecPath", &UsdEditTarget::MapToSpecPath, arg("scenePath"))

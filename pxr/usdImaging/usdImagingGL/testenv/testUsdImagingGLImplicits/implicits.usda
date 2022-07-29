@@ -3,6 +3,7 @@
     doc = "Implicit Geometry"
     endFrame = 20
     startFrame = 1
+    upAxis = "Z"
 )
 
 def Xform "Fallback"

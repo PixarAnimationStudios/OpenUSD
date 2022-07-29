@@ -34,12 +34,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Sdf_IdRegistryImpl
 //
 
+static const size_t _MinDeadThreshold = 64;
+
 class Sdf_IdRegistryImpl
 {
 public:
     explicit Sdf_IdRegistryImpl(SdfLayerHandle const &layer)
         : _layer(layer)
-        , _deadCount(0) {}
+        , _deadCount(0)
+        , _deadThreshold(_MinDeadThreshold) {}
     
     ~Sdf_IdRegistryImpl() {
         tbb::spin_mutex::scoped_lock lock(_idsMutex);
@@ -58,25 +61,24 @@ public:
         
         tbb::spin_mutex::scoped_lock lock(_idsMutex);
 
-        _IdMap::iterator iter;
-        bool inserted;
-        std::tie(iter, inserted) = _ids.emplace(path, nullptr);
-
-        if (!inserted) {
-            Sdf_Identity *rawId = iter->second;
+        Sdf_Identity *rawId;
+        _IdMap::iterator iter = _ids.find(path);
+        if (iter != _ids.end()) {
+            rawId = iter->second;
             ++rawId->_refCount;
             Sdf_IdentityRefPtr ret(rawId, /* add_ref = */ false);
             return ret;
         }
 
         TfAutoMallocTag2 tag("Sdf", "Sdf_IdentityRegistry::Identify");
-        Sdf_Identity *id = new Sdf_Identity(this, path);
-        iter.value() = id;
-        return id;
+        rawId = new Sdf_Identity(this, path);
+        _ids[path] = rawId;
+        _deadThreshold = std::max(_MinDeadThreshold, _ids.size() / 8);
+        return rawId;
     }
 
     void UnregisterOrDelete() {
-        if (++_deadCount == 64) {
+        if (++_deadCount >= _deadThreshold) {
             // Clean house!
             _deadCount = 0;
             tbb::spin_mutex::scoped_lock lock(_idsMutex);
@@ -90,6 +92,7 @@ public:
                     ++iter;
                 }
             }
+            _deadThreshold = std::max(_MinDeadThreshold, _ids.size() / 8);
         }
     }
 
@@ -136,6 +139,7 @@ private:
     /// A count of the number of dead identity objects in _ids, so we can clean
     /// it when it gets large.
     std::atomic<size_t> _deadCount;
+    size_t _deadThreshold;
 
     // This mutex synchronizes access to _ids.
     tbb::spin_mutex _idsMutex;

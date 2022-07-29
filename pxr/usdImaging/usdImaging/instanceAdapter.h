@@ -314,6 +314,11 @@ public:
         int instanceIndex,
         HdInstancerContext *instancerContext) const override;
 
+    virtual SdfPathVector GetScenePrimPaths(
+        SdfPath const& cachePath,
+        std::vector<int> const& instanceIndices,
+        std::vector<HdInstancerContext> *instancerCtxs) const override;
+
     virtual bool PopulateSelection( 
         HdSelection::HighlightMode const& highlightMode,
         SdfPath const &cachePath,
@@ -454,7 +459,7 @@ private:
     bool _IsInstanceInheritedPrimvarVarying(UsdPrim const& instancer) const;
 
     struct _PopulateInstanceSelectionFn;
-    struct _GetScenePrimPathFn;
+    struct _GetScenePrimPathsFn;
 
     // Helper functions for dealing with "actual" instances to be drawn.
     //
@@ -621,6 +626,12 @@ private:
     typedef TfHashMultiMap<SdfPath, SdfPath, SdfPath::Hash>
         _PrototypeToInstancerMap;
     _PrototypeToInstancerMap _prototypeToInstancerMap;
+
+    // Map from instance cache path to their instancer path.
+    // Note: this is for reducing proto prim lookup in _GetProtoPrim method.
+    typedef std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>
+        _ProtoPrimToInstancerMap;
+    _ProtoPrimToInstancerMap _protoPrimToInstancerMap;
 };
 
 

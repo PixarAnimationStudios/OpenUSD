@@ -72,8 +72,10 @@ class HdRenderIndex;
 class HdxTaskController;
 class UsdImagingDelegate;
 class UsdImagingGLLegacyEngine;
+class UsdImagingStageSceneIndex;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
+TF_DECLARE_WEAK_AND_REF_PTRS(UsdImagingStageSceneIndex);
 
 /// \class UsdImagingGLEngine
 ///
@@ -219,22 +221,12 @@ public:
     void SetCameraState(const GfMatrix4d& viewMatrix,
                         const GfMatrix4d& projectionMatrix);
 
-    /// Helper function to extract camera and viewport state from opengl and
-    /// then call SetCameraState and SetRenderViewport
-    USDIMAGINGGL_API
-    void SetCameraStateFromOpenGL();
-
     /// @}
 
     // ---------------------------------------------------------------------
     /// \name Light State
     /// @{
     // ---------------------------------------------------------------------
-    
-    /// Helper function to extract lighting state from opengl and then
-    /// call SetLights.
-    USDIMAGINGGL_API
-    void SetLightingStateFromOpenGL();
 
     /// Copy lighting state from another lighting context.
     USDIMAGINGGL_API
@@ -368,6 +360,10 @@ public:
     USDIMAGINGGL_API
     HgiTextureHandle GetAovTexture(TfToken const& name) const;
 
+    /// Returns the AOV render buffer for the given token.
+    USDIMAGINGGL_API
+    HdRenderBuffer* GetAovRenderBuffer(TfToken const& name) const;
+        
     /// Returns the list of renderer settings.
     USDIMAGINGGL_API
     UsdImagingGLRendererSettingsList GetRendererSettingsList() const;
@@ -570,6 +566,11 @@ protected:
     USDIMAGINGGL_API
     static TfToken _GetDefaultRendererPluginId();
 
+    /// Get a direct pointer to the scene delegate.
+    /// \deprecated Existing instances of this call will be replaced with new
+    ///             APIs on this class, to support multiplexing between the
+    ///             scene delegate and scene index. This API is scheduled for
+    ///             deletion.
     USDIMAGINGGL_API
     UsdImagingDelegate *_GetSceneDelegate() const;
 
@@ -587,7 +588,6 @@ protected:
 
 protected:
 
-// private:
     // Note that any of the fields below might become private
     // in the future and subclasses should use the above getters
     // to access them instead.
@@ -622,15 +622,19 @@ protected:
 
     // An implementation of much of the engine functionality that doesn't
     // invoke any of the advanced Hydra features.  It is kept around for 
-    // backwards compatibility and may one day be deprecated.  Most of the 
-    // time we expect this to be null.  When it is not null, none of the other
-    // member variables of this class are used.
+    // backwards compatibility, but it's deprecated and scheduled for deletion.
+    // When we use the legacy code, this pointer is non-null and most of the
+    // rest of this class isn't used; when we use hydra, this pointer is null.
     std::unique_ptr<UsdImagingGLLegacyEngine> _legacyImpl;
 
 private:
     void _DestroyHydraObjects();
 
+    // Note that we'll only ever use one of _sceneIndex/_sceneDelegate
+    // at a time...
+    UsdImagingStageSceneIndexRefPtr _sceneIndex;
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
+
     std::unique_ptr<HdEngine> _engine;
 };
 

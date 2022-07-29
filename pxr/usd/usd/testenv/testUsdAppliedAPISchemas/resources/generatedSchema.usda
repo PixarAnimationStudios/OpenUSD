@@ -510,3 +510,229 @@ class "TestPropTypeConflictNestedAuthoredAPI" (
     )
 }
 
+class "TestPropertyOversOneAPI" (
+    apiSchemas = ["TestPropertyOversTwoAPI", "TestPropertyOversThreeAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["defined_in_auto", "defined_in_four_1", "defined_in_four_2", "defined_in_two", "int_defined_in_two", "multi:two:defined_in_m1", "overrides_nothing", "uniform_token_defined_in_four"]
+    }
+)
+{
+    token defined_in_auto = "1"
+    token defined_in_four_1 = "1"
+    token defined_in_four_2 = "1"
+    token defined_in_two = "1"
+    token int_defined_in_two = "1"
+    token multi:two:defined_in_m1 = "1"
+    bool overrides_nothing = 1
+    uniform token uniform_token_defined_in_four = "uni_1"
+}
+
+class "TestPropertyOversTwoAPI" (
+    apiSchemas = ["TestPropertyOversMultiOneAPI:two"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["defined_in_four_1", "defined_in_three", "overrides_nothing"]
+    }
+)
+{
+    token defined_in_four_1 = "2" (
+        allowedTokens = ["two", "2"]
+    )
+    token defined_in_three (
+        doc = "Doc override in Two"
+    )
+    token defined_in_two = "two" (
+        allowedTokens = ["two", "2"]
+        doc = "Defined in Two"
+    )
+    int int_defined_in_two = 2 (
+        doc = "Int defined in Two"
+    )
+    bool overrides_nothing = 1
+}
+
+class "TestPropertyOversThreeAPI" (
+    apiSchemas = ["TestPropertyOversFourAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["defined_in_auto", "defined_in_four_2", "defined_in_two", "overrides_nothing", "uniform_token_defined_in_four"]
+    }
+)
+{
+    token defined_in_auto = "3" (
+        allowedTokens = ["three", "3"]
+    )
+    token defined_in_four_2 = "3" (
+        allowedTokens = ["three", "3"]
+    )
+    token defined_in_three = "three" (
+        allowedTokens = ["three", "3"]
+        doc = "Defined in Three"
+    )
+    token defined_in_two (
+        doc = "Doc override in Three"
+    )
+    bool overrides_nothing = 1
+    token uniform_token_defined_in_four = "uni_3" (
+        allowedTokens = ["uni_three", "uni_3"]
+    )
+}
+
+class "TestPropertyOversFourAPI" (
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["defined_in_auto", "defined_in_two", "overrides_nothing"]
+    }
+)
+{
+    token defined_in_auto = "4" (
+        doc = "Override doc in Four"
+    )
+    token defined_in_four_1 = "four" (
+        allowedTokens = ["four", "4"]
+        doc = "Defined in Four"
+    )
+    token defined_in_four_2 = "four" (
+        allowedTokens = ["four", "4"]
+        doc = "Defined in Four also"
+    )
+    token defined_in_two = "4"
+    bool overrides_nothing = 1
+    uniform token uniform_token_defined_in_four = "uni_four" (
+        allowedTokens = ["uni_four", "uni_4"]
+        doc = "Uniform token defined in Four"
+    )
+}
+
+class "TestPropertyOversMultiOneAPI" (
+    apiSchemas = ["TestPropertyOversMultiTwoAPI:__INSTANCE_NAME__", "TestPropertyOversMultiTwoAPI:__INSTANCE_NAME__:multiOne", "TestPropertyOversMultiThreeAPI:__INSTANCE_NAME__:multiOne"]
+    customData = {
+        # XXX: Note that "otherMulti:__INSTANCE_NAME__:multiOne:defined_in_m3" 
+        # has been added manually as there is not a current way to generate 
+        # API schema property overrides in multiple apply schemas for properties
+        # with a different namespace prefix. However, the schema registry and
+        # our generatedSchema.usda files are capable of supporting it so it is
+        # worthwhile to test it. "otherMulti:__INSTANCE_NAME__:multiOne:defined_in_m3"
+        # must be manually added back in after any regeneration of this file for
+        # changes to the schema.usda used to generate this test. We do plan to
+        # add support for this in usdGenSchema in the future.
+        token[] apiSchemaOverridePropertyNames = ["multi:__INSTANCE_NAME__:defined_in_m2", "multi:__INSTANCE_NAME__:multiOne:defined_in_m2", "otherMulti:__INSTANCE_NAME__:multiOne:defined_in_m3", "multi:__INSTANCE_NAME__:overrides_nothing"]
+    }
+)
+{
+    token multi:__INSTANCE_NAME__:defined_in_m1 = "multi_one" (
+        allowedTokens = ["multi_one", "m1"]
+        doc = "Defined in MultiOne"
+    )
+    token multi:__INSTANCE_NAME__:defined_in_m2 = "m1"
+    token multi:__INSTANCE_NAME__:multiOne:defined_in_m2 = "multiOne:m1"
+    bool multi:__INSTANCE_NAME__:overrides_nothing = 1
+    # XXX: Note that "otherMulti:__INSTANCE_NAME__:multiOne:defined_in_m3" 
+    # has been added manually as there is not a current way to generate 
+    # API schema property overrides in multiple apply schemas for properties
+    # with a different namespace prefix. However, the schema registry and
+    # our generatedSchema.usda files are capable of supporting it so it is
+    # worthwhile to test it. "otherMulti:__INSTANCE_NAME__:multiOne:defined_in_m3"
+    # must be manually added back in after any regeneration of this file for
+    # changes to the schema.usda used to generate this test. We do plan to
+    # add support for this in usdGenSchema in the future.
+    token otherMulti:__INSTANCE_NAME__:multiOne:defined_in_m3 = "m1"
+}
+
+class "TestPropertyOversMultiTwoAPI" (
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["multi:__INSTANCE_NAME__:overrides_nothing"]
+    }
+)
+{
+    token multi:__INSTANCE_NAME__:defined_in_m2 = "multi_two" (
+        allowedTokens = ["multi_two", "m2"]
+        doc = "Defined in MultiTwo"
+    )
+    bool multi:__INSTANCE_NAME__:overrides_nothing = 1
+}
+
+class "TestPropertyOversMultiThreeAPI" (
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["otherMulti:__INSTANCE_NAME__:overrides_nothing"]
+    }
+)
+{
+    token otherMulti:__INSTANCE_NAME__:defined_in_m3 = "multi_three" (
+        allowedTokens = ["multi_three", "m3"]
+        doc = "Defined in MultiThree"
+    )
+    bool otherMulti:__INSTANCE_NAME__:overrides_nothing = 1
+}
+
+class TestPropertyOversTypedPrimBase "TestPropertyOversTypedPrimBase" (
+    apiSchemas = ["TestPropertyOversTwoAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["defined_in_four_2", "defined_in_three", "defined_in_two", "int_defined_in_two", "multi:two:defined_in_m2", "over_in_base", "overrides_nothing"]
+    }
+)
+{
+    token defined_in_base = "base_def" (
+        allowedTokens = ["base_def", "def_base"]
+        doc = "Defined in Base"
+    )
+    token defined_in_four_2 = "base_over" (
+        allowedTokens = ["base_over", "over_base"]
+    )
+    token defined_in_three = "base_over"
+    token defined_in_two = "base_over"
+    int int_defined_in_two = 10 (
+        doc = "Int override in Base"
+    )
+    token multi:two:defined_in_m2 = "base_over" (
+        allowedTokens = ["base_over", "over_base"]
+    )
+    token over_in_base = "base_over" (
+        allowedTokens = ["base_over", "over_base"]
+        doc = "Override in Base"
+    )
+    bool overrides_nothing = 1
+}
+
+class TestPropertyOversTypedPrimDerived "TestPropertyOversTypedPrimDerived" (
+    apiSchemas = ["TestPropertyOversThreeAPI", "TestPropertyOversTwoAPI"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["defined_in_four_1", "defined_in_four_2", "defined_in_three", "defined_in_two", "int_defined_in_two", "multi:two:defined_in_m1", "multi:two:defined_in_m2", "overrides_nothing", "uniform_token_defined_in_four"]
+    }
+)
+{
+    token defined_in_base = "derived_over" (
+        allowedTokens = ["base_def", "def_base"]
+        doc = "Defined in Base"
+    )
+    token defined_in_four_1 = "derived_over"
+    token defined_in_four_2 = "derived_over" (
+        allowedTokens = ["base_over", "over_base"]
+    )
+    token defined_in_three = "base_over"
+    token defined_in_two = "base_over"
+    token int_defined_in_two = "derived_over" (
+        doc = "Int override in Base"
+    )
+    token multi:two:defined_in_m1 = "derived_over"
+    token multi:two:defined_in_m2 = "derived_over" (
+        allowedTokens = ["base_over", "over_base"]
+    )
+    token over_in_base = "derived_def" (
+        allowedTokens = ["base_over", "over_base"]
+        doc = "Override in Base"
+    )
+    bool overrides_nothing = 1
+    token uniform_token_defined_in_four = "uni_derived"
+}
+
+class "TestPropertyOversAutoApplyAPI" (
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["overrides_nothing"]
+    }
+)
+{
+    token defined_in_auto = "auto" (
+        allowedTokens = ["auto"]
+        doc = "Defined in Auto"
+    )
+    bool overrides_nothing = 1
+}
+

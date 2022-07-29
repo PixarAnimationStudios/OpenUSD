@@ -183,10 +183,13 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    /// Constructor that takes a ConnectableAPI object.
-    /// Allow implicit (auto) conversion of UsdShadeNodeGraph to 
-    /// UsdShadeConnectableAPI, so that a NodeGraph can be passed into any 
-    /// function that accepts a ConnectableAPI.
+    /// Constructor that takes a ConnectableAPI object.  Allow implicit
+    /// (auto) conversion of UsdShadeConnectableAPI to UsdShadeNodeGraph, so
+    /// that a ConnectableAPI can be passed into any function that accepts a
+    /// NodeGraph.
+    ///
+    /// \note that the conversion may produce an invalid NodeGraph object,
+    /// because not all UsdShadeConnectableAPI%s are UsdShadeNodeGraph%s
     USDSHADE_API
     UsdShadeNodeGraph(const UsdShadeConnectableAPI &connectable);
 

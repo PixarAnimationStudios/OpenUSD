@@ -28,6 +28,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/array.h"
@@ -58,6 +59,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     ((arraySize, "arraySize"))
+    ((pageStr, "page"))
+    ((oslPageDelimiter, "."))
     ((vstructMember, "vstructmember"))
     (sdrDefinitionName)
 
@@ -112,21 +115,6 @@ SdrOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
     bool parseSuccessful = true;
 
     if (!discoveryResult.uri.empty()) {
-#if AR_VERSION == 1
-        // Get the resolved URI to a location that it can be read by the OSL parser
-        bool localFetchSuccessful = ArGetResolver().FetchToLocalResolvedPath(
-            discoveryResult.uri,
-            discoveryResult.resolvedUri
-        );
-
-        if (!localFetchSuccessful) {
-            TF_WARN("Could not localize the OSL at URI [%s] into a local path. "
-                    "An invalid Sdr node definition will be created.", 
-                    discoveryResult.uri.c_str());
-
-            return NdrParserPlugin::GetInvalidNode(discoveryResult);
-        }
-#endif
         // Attempt to parse the node
         // Since parsing from buffers is only available with OSL > 1.7.1,
         // we explicitly check if we're reading from a file on disk and
@@ -320,6 +308,12 @@ SdrOslParserPlugin::_getPropertyMetadata(const OslParameter* param,
                     vstruct.c_str());
                 }
             }
+        } else if (entryName == _tokens->pageStr) {
+            // Replace OslPageDelimiter with SdrShaderProperty's Page Delimiter
+            metadata[entryName] = TfStringReplace(
+                    _getParamAsString(metaParam),
+                    _tokens->oslPageDelimiter, 
+                    SdrPropertyTokens->PageDelimiter.GetString());
         } else {
             metadata[entryName] = _getParamAsString(metaParam);
         }

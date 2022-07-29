@@ -29,9 +29,13 @@
 
 --- --------------------------------------------------------------------------
 
--- glsl HdxRenderPass.RenderOitOpaquePixels
+-- layout HdxRenderPass.RenderOitOpaquePixels
 
-layout (location = 0) out vec4 colorOut;
+[
+    ["out", "vec4", "colorOut"]
+]
+
+-- glsl HdxRenderPass.RenderOitOpaquePixels
 
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
@@ -42,27 +46,41 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     }
 }
 
--- glsl HdxRenderPass.WriteOitLayersToBufferCommon
+-- layout HdxRenderPass.WriteOitLayersToBufferCommon
 
-layout (early_fragment_tests) in;
+[
+    ["in", "early_fragment_tests"],
+    ["buffer readWrite", "CounterBuffer", "hdxOitCounterBuffer",
+        ["atomic_int", "hdxOitCounterBuffer"]
+    ]
+]
+
+-- glsl HdxRenderPass.WriteOitLayersToBufferCommon
 
 void RenderOutputImpl(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     #if defined(HD_HAS_hdxOitDataBuffer)
 
-    int screenWidth = int(HdGet_oitScreenSize().x);
+    const int screenWidth = int(HdGet_oitScreenSize().x);
+    const int screenHeight = int(HdGet_oitScreenSize().y);
+    // Must match the per-pixel sample count used when creating the OIT buffers.
+    // (See HdxOitResolveTask::_PrepareOitBuffers)
+    const int numSamples = 8;
+        
+    const int dataBufferSize = screenWidth * screenHeight * numSamples;
+    const int counterBufferSize = screenWidth * screenHeight + 1;
 
     // +1 because the counter buffer is cleared with -1, but we want the
     // first index to start at 0.
-    int writeIndex = atomicAdd(hdxOitCounterBuffer[0], 1) + 1;
+    int writeIndex = ATOMIC_ADD(hdxOitCounterBuffer[0], 1) + 1;
     
-    if (writeIndex < hdxOitDataBuffer.length()) {
+    if (writeIndex < dataBufferSize) {
         int screenIndex =
             int(gl_FragCoord.x) + int(gl_FragCoord.y) * screenWidth;
-        
-        if (screenIndex < hdxOitCounterBuffer.length()) {
+
+        if (screenIndex < counterBufferSize) {
             int prevIndex =
-                atomicExchange(hdxOitCounterBuffer[screenIndex+1], writeIndex);
+                ATOMIC_EXCHANGE(hdxOitCounterBuffer[screenIndex+1], writeIndex);
             hdxOitDataBuffer[writeIndex] = color;
 
             // Note that we have a choice here to either pick gl_FragCoord.z or
@@ -91,7 +109,7 @@ void RenderOutputImpl(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     } else {
         // We may overrun the counter buffer integer and wrap back to 0 if
         // we have a lot of OIT samples.
-        atomicAdd(hdxOitCounterBuffer[0], -1);
+        ATOMIC_ADD(hdxOitCounterBuffer[0], -1);
     }
 
     #endif
@@ -120,14 +138,18 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     }
 }
 
--- glsl HdxRenderPass.RenderPick
+-- layout HdxRenderPass.RenderPick
 
-layout (location = 0) out vec4 primIdOut;
-layout (location = 1) out vec4 instanceIdOut;
-layout (location = 2) out vec4 elementIdOut;
-layout (location = 3) out vec4 edgeIdOut;
-layout (location = 4) out vec4 pointIdOut;
-layout (location = 5) out vec4 neyeOut;
+[
+    ["out", "vec4", "primIdOut"],
+    ["out", "vec4", "instanceIdOut"],
+    ["out", "vec4", "elementIdOut"],
+    ["out", "vec4", "edgeIdOut"],
+    ["out", "vec4", "pointIdOut"],
+    ["out", "vec4", "neyeOut"]
+]
+
+-- glsl HdxRenderPass.RenderPick
 
 vec4 IntToVec4(int id)
 {
@@ -138,9 +160,9 @@ vec4 IntToVec4(int id)
 }
 
 // Fwd declare necessary methods to determine the subprim id of a fragment.
-int GetElementID(); // generated via codeGen
-int GetPrimitiveEdgeId(); // defined in edgeId.glslfx, or generated via codeGen
-int GetPointId(); // defined in pointId.glslfx
+FORWARD_DECL(int GetElementID()); // generated via codeGen
+FORWARD_DECL(int GetPrimitiveEdgeId()); // defined in edgeId.glslfx, or generated via codeGen
+FORWARD_DECL(int GetPointId()); // defined in pointId.glslfx
 
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
@@ -160,15 +182,20 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
 }
 
+-- layout HdxRenderPass.RenderColorAndSelection
+
+[
+    ["out", "vec4", "colorOut"],
+    ["out", "float", "selectedOut"]
+]
+
 -- glsl HdxRenderPass.RenderColorAndSelection
+
 // Note: This mixin expects color and selected color attachments in the bound
 // FBO. It writes out the computed fragment color and whether it is selected
 // (as a float, so, 1.0 or 0.0).
 
 bool IsSelected(); // defined in selection.glslfx
-
-layout (location = 0) out vec4 colorOut;
-layout (location = 1) out float selectedOut;
 
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
@@ -176,7 +203,14 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     selectedOut = float(IsSelected());
 }
 
+-- layout HdxRenderPass.RenderColorWithOccludedSelection
+
+[
+    ["out", "vec4", "colorOut"]
+]
+
 -- glsl HdxRenderPass.RenderColorWithOccludedSelection
+
 // Note: This mixin expects color and selected color attachments in the bound
 // FBO. The alpha component of the computed fragment color is adjusted to blend
 // the existing (destination) fragment color if it is selected.
@@ -206,8 +240,6 @@ GetShowThroughOpacity()
     return 0.5;
 #endif
 }
-
-layout (location = 0) out vec4 colorOut;
 
 // Input AOV textures are provided by the task.
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)

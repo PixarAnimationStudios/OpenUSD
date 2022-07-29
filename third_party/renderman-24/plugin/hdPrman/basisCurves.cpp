@@ -73,11 +73,6 @@ HdPrman_BasisCurves::_ConvertGeometry(HdPrman_RenderParam *renderParam,
 {
     HdBasisCurvesTopology topology =
         GetBasisCurvesTopology(sceneDelegate);
-    VtValue pointsVal = sceneDelegate->Get(id, HdTokens->points);
-    VtVec3fArray points;
-    if (pointsVal.IsHolding<VtVec3fArray>()) {
-       points = pointsVal.Get<VtVec3fArray>();
-    }
     VtIntArray curveVertexCounts = topology.GetCurveVertexCounts();
     VtIntArray curveIndices = topology.GetCurveIndices();
     TfToken curveType = topology.GetCurveType();
@@ -146,15 +141,10 @@ HdPrman_BasisCurves::_ConvertGeometry(HdPrman_RenderParam *renderParam,
     int const *nverticesData = (int const *)(&curveVertexCounts[0]);
     primvars.SetIntegerDetail(RixStr.k_Ri_nvertices, nverticesData,
                                RtDetailType::k_uniform);
+
     // Points
-    if (points.size() == vertexPrimvarCount) {
-        RtPoint3 const *pointsData = (RtPoint3 const*)(&points[0]);
-        primvars.SetPointDetail(RixStr.k_P, pointsData,
-                                 RtDetailType::k_vertex);
-    } else {
-        TF_WARN("<%s> primvar 'points' size (%zu) did not match expected (%zu)",
-                id.GetText(), points.size(), vertexPrimvarCount);
-    }
+    HdPrman_ConvertPointsPrimvar(
+        sceneDelegate, id, primvars, vertexPrimvarCount);
 
     // Set element ID.  Overloaded use of "__faceIndex" to support picking...
     std::vector<int32_t> elementId(numCurves);

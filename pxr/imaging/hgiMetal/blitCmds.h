@@ -74,6 +74,9 @@ public:
     void GenerateMipMaps(HgiTextureHandle const& texture) override;
 
     HGIMETAL_API
+    void FillBuffer(HgiBufferHandle const& buffer, uint8_t value) override;
+
+    HGIMETAL_API
     void MemoryBarrier(HgiMemoryBarrier barrier) override;
 
 protected:

@@ -2,6 +2,7 @@
 (
     endFrame = 10
     startFrame = 1
+    upAxis = "Z"
 )
 
 class Mesh "MeshProto"

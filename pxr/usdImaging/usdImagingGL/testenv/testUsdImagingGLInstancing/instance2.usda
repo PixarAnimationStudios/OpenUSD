@@ -11,6 +11,7 @@
     """
     endFrame = 10
     startFrame = 1
+    upAxis = "Z"
 )
 
 def Xform "Mesh" (

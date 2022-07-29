@@ -84,6 +84,9 @@ HdRenderPassState::HdRenderPassState()
     , _colorMaskUseDefault(true)
     , _useMultiSampleAov(true)
     , _conservativeRasterizationEnabled(false)
+    , _stepSize(0.f)
+    , _stepSizeLighting(0.f)
+    , _multiSampleEnabled(true)
 {
 }
 
@@ -168,6 +171,46 @@ HdRenderPassState::GetProjectionMatrix() const
     // Adjust the camera frustum based on the window policy.
     return CameraUtilConformedWindow(
         _camera->ComputeProjectionMatrix(), policy, aspect);
+}
+
+GfMatrix4d
+HdRenderPassState::GetImageToWorldMatrix() const
+{
+    // Resolve the user-specified framing over the fallback viewport.
+    GfRect2i vpRect;
+    if (_framing.IsValid()) {
+        vpRect = GfRect2i(
+            GfVec2i(_framing.dataWindow.GetMinX(),
+                    _framing.dataWindow.GetMinY()),
+            _framing.dataWindow.GetWidth(),
+            _framing.dataWindow.GetHeight());
+    } else {
+        vpRect = GfRect2i(GfVec2i(_viewport[0],_viewport[1]),
+            _viewport[2], _viewport[3]);
+    }
+
+    // Tranform that maps NDC [-1,+1]x[-1,+1] to viewport
+    // Note that z-coordinate is also transformed to map from [-1,+1]
+    // and [0,+1]
+
+    const GfVec3d viewportScale(
+        vpRect.GetWidth()  / 2.0,
+        vpRect.GetHeight() / 2.0,
+        0.5);
+    
+    const GfVec3d viewportTranslate(
+        vpRect.GetMinX() + vpRect.GetWidth()  / 2.0,
+        vpRect.GetMinY()  + vpRect.GetHeight() / 2.0,
+        0.5);
+        
+    const GfMatrix4d viewportTransform = 
+        GfMatrix4d().SetScale(viewportScale) *
+        GfMatrix4d().SetTranslate(viewportTranslate);
+
+    GfMatrix4d worldToImage = GetWorldToViewMatrix() * GetProjectionMatrix() *
+        viewportTransform;
+
+    return worldToImage.GetInverse();
 }
 
 HdRenderPassState::ClipPlanesVector const &
@@ -448,10 +491,24 @@ HdRenderPassState::SetConservativeRasterizationEnabled(bool enabled)
 }
 
 void
+HdRenderPassState::SetVolumeRenderingConstants(
+    float stepSize, float stepSizeLighting)
+{
+    _stepSize = stepSize;
+    _stepSizeLighting = stepSizeLighting;
+}
+
+void
 HdRenderPassState::SetColorMasks(
     std::vector<HdRenderPassState::ColorMask> const& masks)
 {
     _colorMasks = masks;
+}
+
+void
+HdRenderPassState::SetMultiSampleEnabled(bool enabled)
+{
+    _multiSampleEnabled = enabled;
 }
 
 GfVec2f

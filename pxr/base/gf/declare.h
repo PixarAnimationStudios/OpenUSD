@@ -34,6 +34,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class GfBBox3d;
+class GfDualQuatd;
+class GfDualQuatf;
+class GfDualQuath;
 class GfFrustum;
 class GfInterval;
 class GfMultiInterval;

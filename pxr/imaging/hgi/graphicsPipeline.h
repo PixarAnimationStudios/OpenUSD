@@ -33,6 +33,8 @@
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/types.h"
 
+#include "pxr/base/gf/vec2f.h"
+
 #include <string>
 #include <vector>
 
@@ -117,6 +119,9 @@ inline bool operator!=(
 /// Properties to configure multi sampling.
 ///
 /// <ul>
+/// <li>multiSampleEnable:
+///   When enabled and sampleCount and attachments match and allow for it, use 
+///   multi-sampling.</li>
 /// <li>alphaToCoverageEnable:
 ///   Fragment's color.a determines coverage (screen door transparency).</li>
 /// <li>alphaToOneEnable:
@@ -132,6 +137,7 @@ struct HgiMultiSampleState
     HGI_API
     HgiMultiSampleState();
 
+    bool multiSampleEnable;
     bool alphaToCoverageEnable;
     bool alphaToOneEnable;
     HgiSampleCount sampleCount;
@@ -150,7 +156,7 @@ bool operator!=(
 
 /// \struct HgiRasterizationState
 ///
-/// Properties to configure multi sampling.
+/// Properties to configure the rasterization state.
 ///
 /// <ul>
 /// <li>polygonMode:
@@ -163,6 +169,16 @@ bool operator!=(
 ///   The rule that determines what makes a front-facing primitive.</li>
 /// <li>rasterizationEnabled:
 ///   When false all primitives are discarded before rasterization stage.</li>
+/// <li>depthClampEnabled:
+///   When enabled clamps the clip space depth to the view volume, rather than
+///   clipping the depth to the near and far planes.</li>
+/// <li>depthRange:
+///   The mapping of NDC depth values to window depth values.</li>
+/// <li>conservativeRaster:
+///   When enabled, any pixel at least partially covered by a rendered primitive
+///   will be rasterized.</li>
+/// <li>numClipDistances:
+///   The number of user-defined clip distances.</li>
 /// </ul>
 ///
 struct HgiRasterizationState
@@ -175,6 +191,10 @@ struct HgiRasterizationState
     HgiCullMode cullMode;
     HgiWinding winding;
     bool rasterizerEnabled;
+    bool depthClampEnabled;
+    GfVec2f depthRange;
+    bool conservativeRaster;
+    size_t numClipDistances;
 };
 
 HGI_API
@@ -206,7 +226,7 @@ bool operator!=(
 ///   The operation executed when both stencil and depth tests pass.</li>
 /// <li>readMask:
 ///   The mask applied to values before the stencil test function.</li>
-/// <li>writeMak:
+/// <li>writeMask:
 ///   The mask applied when writing to the stencil buffer.</li>
 /// </ul>
 ///
@@ -334,22 +354,27 @@ struct HgiTessellationLevel
 /// Properties to configure tessellation.
 ///
 /// <ul>
-/// <li>tessEnabled:
-///   When enabled, set up the pipeline for tessellation.
+/// <li>patchType:
+///   The type of tessellation patch.</li>
 /// <li>primitiveIndexSize:
-///   The number of control indices per patch.
+///   The number of control indices per patch.</li>
 /// <li>tessellationLevel:
-///   The fallback tessellation levels.
+///   The fallback tessellation levels.</li>
 /// </ul>
 ///
 struct HgiTessellationState
 {
+    enum PatchType {
+        Triangle,
+        Quad
+    };
+
     HGI_API
     HgiTessellationState();
 
-    HgiTessellationLevel tessellationLevel;
+    PatchType patchType;
     int primitiveIndexSize;
-    bool tessEnabled;
+    HgiTessellationLevel tessellationLevel;
 };
 
 /// \struct HgiGraphicsPipelineDesc

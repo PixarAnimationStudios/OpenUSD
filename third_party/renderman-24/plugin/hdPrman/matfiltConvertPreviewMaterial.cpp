@@ -301,6 +301,11 @@ _ProcessPreviewSurfaceNode(
     // displacement input changes.
     netInterface->SetNodeParameterValue(
         primvarPassNodeName, _tokens->displacementBoundSphere, VtValue(1.f));
+
+    // XXX Wire the primvarPass node so it isn't pruned during network traversal.
+    netInterface->SetNodeInputConnection(
+        pxrSurfaceNodeName, _tokens->displacementBoundSphere,
+        {{primvarPassNodeName, _tokens->displacementBoundSphere}});
     
     // Update network terminals to point to the PxrSurface and PxrDisplacement
     // nodes that were added.

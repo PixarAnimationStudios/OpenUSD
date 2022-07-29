@@ -55,11 +55,15 @@
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/fastCompression.h"
 #include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
+#include "pxr/base/tf/pxrTslRobinMap/robin_set.h"
+#include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/safeOutputFile.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/tf/type.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
@@ -79,8 +83,6 @@
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/types.h"
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/type.h"
 
 #include <tbb/concurrent_queue.h>
 
@@ -157,19 +159,6 @@ static int _GetMMapPrefetchKB()
     return kb;
 }
 
-#if AR_VERSION == 1
-// Write nbytes bytes to fd at pos.
-static inline int64_t
-WriteToAsset(FILE *file, void const *bytes, int64_t nbytes, int64_t pos) {
-    int64_t nwritten = ArchPWrite(file, bytes, nbytes, pos);
-    if (ARCH_UNLIKELY(nwritten < 0)) {
-        TF_RUNTIME_ERROR("Failed writing usdc data: %s",
-                         ArchStrerror().c_str());
-        nwritten = 0;
-    }
-    return nwritten;
-}
-#else
 // Write nbytes bytes to asset at pos.
 static inline int64_t
 WriteToAsset(ArWritableAsset* asset,
@@ -195,7 +184,6 @@ WriteToAsset(ArWritableAsset* asset,
     }
     return nwritten;
 }
-#endif
 
 namespace Usd_CrateFile
 {
@@ -295,6 +283,32 @@ template <class T>
 uint64_t GetPageNumber(T *addr) {
     return reinterpret_cast<uintptr_t>(addr) >> CRATE_PAGESHIFT;
 }
+
+// A helper struct for thread_local that uses nullptr initialization as a
+// sentinel to prevent guard variable use from being invoked after first
+// initialization.
+template <class T>
+struct _FastThreadLocalBase
+{
+    static T &Get() {
+        static thread_local T *theTPtr = nullptr;
+        if (ARCH_LIKELY(theTPtr)) {
+            return *theTPtr;
+        }
+        static thread_local T theT;
+        theTPtr = &theT;
+        return *theTPtr;
+    }
+};
+
+// This is a set that's used as a thread-local to guard against assets that
+// contain VtValues that recursively claim to contain themselves.  We insert
+// ValueReps as we unpack VtValues and if we ever encounter the same rep again,
+// we know we've hit a loop and we can error out instead of infinitely
+// recursing.
+using UnpackRecursionGuard = pxr_tsl::robin_set<ValueRep, TfHash>;
+struct _LocalUnpackRecursionGuard
+    : _FastThreadLocalBase<UnpackRecursionGuard> {};
 
 } // anon
 
@@ -727,11 +741,7 @@ CrateFile::_TableOfContents::GetMinimumSectionStart() const
 class CrateFile::_BufferedOutput
 {
 public:
-#if AR_VERSION == 1
-    using OutputType = FILE*;
-#else
     using OutputType = ArWritableAsset*;
-#endif
 
     // Current buffer size is 512k.
     static const size_t BufferCap = 512*1024;
@@ -883,13 +893,8 @@ private:
 // _PackingContext
 struct CrateFile::_PackingContext
 {
-#if AR_VERSION == 1
-    using OutputType = TfSafeOutputFile;
-    static FILE* _Get(OutputType& out) { return out.Get(); }
-#else
     using OutputType = ArWritableAssetSharedPtr;
     static ArWritableAsset* _Get(OutputType& out) { return out.get(); }
-#endif
 
     _PackingContext() = delete;
     _PackingContext(_PackingContext const &) = delete;
@@ -969,17 +974,10 @@ struct CrateFile::_PackingContext
         bufferedOutput.Seek(crate->_toc.GetMinimumSectionStart());
     }
 
-#if AR_VERSION == 1
-    // Destructively move the output file out of this context.
-    TfSafeOutputFile ExtractOutputFile() {
-        return std::move(outputAsset);
-    }
-#else
     // Close output asset.  No further writes may be done.
     bool CloseOutputAsset() {
         return outputAsset->Close();
     }
-#endif     
    
     // Inform the writer that the output stream requires the given version
     // (or newer) to be read back.  This allows the writer to start with
@@ -1224,7 +1222,21 @@ public:
     VtValue Read(VtValue *) {
         _RecursiveReadAndPrefetch();
         auto rep = Read<ValueRep>();
-        return crate->UnpackValue(rep);
+        // Guard against recursion here -- a bad file can cause infinite
+        // recursion via VtValues that claim to contain themselves.
+        auto &recursionGuard = _LocalUnpackRecursionGuard::Get();
+        VtValue result;
+        if (!recursionGuard.insert(rep).second) {
+            TF_RUNTIME_ERROR("Corrupt asset <%s>: a VtValue claims to "
+                             "recursively contain itself -- returning "
+                             "an empty VtValue instead",
+                             crate->GetAssetPath().c_str());
+        }
+        else {
+            result = crate->UnpackValue(rep);
+        }
+        recursionGuard.erase(rep);
+        return result;
     }
 
     TimeSamples Read(TimeSamples *) {
@@ -2442,19 +2454,6 @@ CrateFile::CanPackTo(string const &fileName) const
 CrateFile::Packer
 CrateFile::StartPacking(string const &fileName)
 {
-#if AR_VERSION == 1
-    // We open the file using the TfSafeOutputFile helper so that we can avoid
-    // stomping on the file for other processes currently observing it, in the
-    // case that we're replacing it.  In the case where we're actually updating
-    // an existing file, we have no choice but to modify it in place.
-    TfErrorMark m;
-    auto out = _assetPath.empty() ?
-        TfSafeOutputFile::Replace(fileName) :
-        TfSafeOutputFile::Update(fileName);
-    if (!m.IsClean()) {
-        // Error will be emitted when TfErrorMark goes out of scope
-    }
-#else
     auto out = ArGetResolver().OpenAssetForWrite(
         ArResolvedPath(fileName), 
         _assetPath.empty() ? 
@@ -2463,7 +2462,6 @@ CrateFile::StartPacking(string const &fileName)
     if (!out) {
         TF_RUNTIME_ERROR("Unable to open %s for write", fileName.c_str());
     }
-#endif
     else {
         // Create a packing context so we can start writing.
         _packCtx.reset(new _PackingContext(this, std::move(out), fileName));
@@ -2487,66 +2485,6 @@ CrateFile::Packer::operator bool() const {
     return _crate && _crate->_packCtx;
 }
 
-#if AR_VERSION == 1
-bool
-CrateFile::Packer::Close()
-{
-    if (!TF_VERIFY(_crate && _crate->_packCtx))
-        return false;
-
-    // Write contents.
-    bool writeResult = _crate->_Write();
-    
-    // If we wrote successfully, store the fileName and size.
-    if (writeResult) {
-        _crate->_assetPath = _crate->_packCtx->fileName;
-    }
-
-    // Pull out the file handle and kill the packing context.
-    TfSafeOutputFile outFile = _crate->_packCtx->ExtractOutputFile();
-    _crate->_packCtx.reset();
-
-    if (!writeResult)
-        return false;
-
-    // Note that once Save()d, we never go back to reading from an _assetSrc.
-    _crate->_assetSrc.reset();
-
-    // Try to reuse the open FILE * if we can, otherwise open for read.
-    _FileRange fileRange;
-    if (outFile.IsOpenForUpdate()) {
-        fileRange = _FileRange(outFile.ReleaseUpdatedFile(),
-                               /*startOffset=*/0, /*length=*/-1,
-                               /*hasOwnership=*/true);
-    }
-    else {
-        outFile.Close();
-        fileRange = _FileRange(ArchOpenFile(_crate->_assetPath.c_str(), "rb"),
-                               /*startOffset=*/0, /*length=*/-1,
-                               /*hasOwnership=*/true);
-    }
-
-    // Reset the filename we've read content from.
-    _crate->_fileReadFrom = ArchGetFileName(fileRange.file);
-
-    // Reset the mapping or file so we can read values from the newly
-    // written file.
-    if (_crate->_useMmap) {
-        // Must remap the file.
-        _crate->_mmapSrc =
-            _MmapFile(_crate->_assetPath.c_str(), fileRange.file);
-        if (!_crate->_mmapSrc)
-            return false;
-        _crate->_InitMMap();
-    } else {
-        // Must adopt the file handle if we don't already have one.
-        _crate->_preadSrc = std::move(fileRange);
-        _crate->_InitPread();
-    }
-        
-    return true;
-}
-#else
 bool
 CrateFile::Packer::Close()
 {
@@ -2608,7 +2546,6 @@ CrateFile::Packer::Close()
         
     return true;
 }
-#endif
 
 CrateFile::Packer::Packer(Packer &&other) : _crate(other._crate)
 {

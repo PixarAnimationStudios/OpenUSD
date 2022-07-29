@@ -82,11 +82,9 @@ _PcpComposeSiteReferencesOrPayloads(TfToken const &field,
                 layerStack->GetLayerOffsetForLayer(i);
 
             // List-op composition callback computes absolute asset paths
-            // relative to the layer where they were expressed and combines
-            // layer offsets.
+            // relative to the layer where they were expressed.
             curListOp.ApplyOperations(result,
-                [&layer, layerOffset, &infoMap](
-                    SdfListOpType opType, const RefOrPayloadType& refOrPayload)
+                [&](SdfListOpType opType, const RefOrPayloadType& refOrPayload)
                 {
                     // Fill in the result reference of payload with the anchored
                     // asset path instead of the authored asset path. This 
@@ -99,18 +97,15 @@ _PcpComposeSiteReferencesOrPayloads(TfToken const &field,
                         authoredAssetPath : 
                         SdfComputeAssetPathRelativeToLayer(
                             layer, authoredAssetPath);
-                    SdfLayerOffset resolvedLayerOffset = layerOffset ?
-                        *layerOffset * refOrPayload.GetLayerOffset() : 
-                        refOrPayload.GetLayerOffset();
                     RefOrPayloadType result( assetPath, 
                                              refOrPayload.GetPrimPath(),
-                                             resolvedLayerOffset);
+                                             refOrPayload.GetLayerOffset());
 
                     _CopyCustomData(&result, refOrPayload);
-                    PcpSourceArcInfo& info = infoMap[result];
-                    info.layer = layer;
-                    info.layerOffset = refOrPayload.GetLayerOffset();
-                    info.authoredAssetPath = refOrPayload.GetAssetPath();
+                    infoMap[result] = {
+                        layer,
+                        layerOffset ? *layerOffset : SdfLayerOffset(),
+                        refOrPayload.GetAssetPath()};
                     return result;
                 });
         }

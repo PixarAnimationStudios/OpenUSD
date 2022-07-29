@@ -52,6 +52,7 @@ TF_DEFINE_ENV_SETTING(HGIGL_GLSL_VERSION, 0,
 static const int _DefaultMaxUniformBlockSize          = 16*1024;
 static const int _DefaultMaxShaderStorageBlockSize    = 16*1024*1024;
 static const int _DefaultGLSLVersion                  = 400;
+static const int _DefaultMaxClipDistances             = 8;
 
 HgiGLCapabilities::HgiGLCapabilities()
     : _glVersion(0)
@@ -71,11 +72,13 @@ HgiGLCapabilities::_LoadCapabilities()
     _maxUniformBlockSize              = _DefaultMaxUniformBlockSize;
     _maxShaderStorageBlockSize        = _DefaultMaxShaderStorageBlockSize;
     _uniformBufferOffsetAlignment     = 0;
+    _maxClipDistances                 = _DefaultMaxClipDistances;
     bool multiDrawIndirectEnabled     = false;
     bool bindlessTextureEnabled       = false;
     bool bindlessBufferEnabled        = false;
     bool builtinBarycentricsEnabled   = false;
     bool shaderDrawParametersEnabled  = false;
+    bool conservativeRasterEnabled    = false;
 
     const char *glVendorStr = (const char*)glGetString(GL_VENDOR);
     const char *glRendererStr = (const char*)glGetString(GL_RENDERER);
@@ -112,16 +115,27 @@ HgiGLCapabilities::_LoadCapabilities()
         _glslVersion = 0;
     }
 
+    GLint maxClipDistances = 0;
+    glGetIntegerv(GL_MAX_CLIP_PLANES, &maxClipDistances);
+    _maxClipDistances = maxClipDistances;
+
     // initialize by Core versions
     if (_glVersion >= 310) {
+        GLint maxUniformBlockSize = 0;
         glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE,
-                      &_maxUniformBlockSize);
+                      &maxUniformBlockSize);
+        _maxUniformBlockSize = maxUniformBlockSize;
+
+        GLint uniformBufferOffsetAlignment = 0;
         glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT,
-                      &_uniformBufferOffsetAlignment);
+                      &uniformBufferOffsetAlignment);
+        _uniformBufferOffsetAlignment = uniformBufferOffsetAlignment;
     }
     if (_glVersion >= 430) {
+        GLint maxShaderStorageBlockSize = 0;
         glGetIntegerv(GL_MAX_SHADER_STORAGE_BLOCK_SIZE,
-                      &_maxShaderStorageBlockSize);
+                      &maxShaderStorageBlockSize);
+        _maxShaderStorageBlockSize = maxShaderStorageBlockSize;
     }
     if (_glVersion >= 450) {
         multiDrawIndirectEnabled = true;
@@ -145,6 +159,9 @@ HgiGLCapabilities::_LoadCapabilities()
     }
     if (GARCH_GLAPI_HAS(ARB_shader_draw_parameters)) {
         shaderDrawParametersEnabled = true;
+    }
+    if (GARCH_GLAPI_HAS(NV_conservative_raster)) {
+        conservativeRasterEnabled = true;
     }
 
     // Environment variable overrides (only downgrading is possible)
@@ -183,6 +200,14 @@ HgiGLCapabilities::_LoadCapabilities()
         shaderDrawParametersEnabled);
     _SetFlag(HgiDeviceCapabilitiesBitsShaderDoublePrecision, 
         true);
+    _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne,
+        true);
+    _SetFlag(HgiDeviceCapabilitiesBitsConservativeRaster, 
+        conservativeRasterEnabled);
+    _SetFlag(HgiDeviceCapabilitiesBitsStencilReadback,
+        true);
+    _SetFlag(HgiDeviceCapabilitiesBitsCustomDepthRange,
+        true);
 
     if (TfDebug::IsEnabled(HGI_DEBUG_DEVICE_CAPABILITIES)) {
         std::cout
@@ -216,6 +241,8 @@ HgiGLCapabilities::_LoadCapabilities()
             <<    builtinBarycentricsEnabled << "\n"
             << "  NV_shader_buffer_load              = "
             <<    bindlessBufferEnabled << "\n"
+            << "  NV_conservative_raster             = "
+            <<    conservativeRasterEnabled << "\n"
             ;
     }
 }

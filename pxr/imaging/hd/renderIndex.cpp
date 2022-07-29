@@ -113,9 +113,11 @@ HdRenderIndex::HdRenderIndex(
     // data structures now.
     if (_IsEnabledSceneIndexEmulation()) {
         _emulationSceneIndex = HdLegacyPrimSceneIndex::New();
+        _emulationNoticeBatchingSceneIndex =
+            HdNoticeBatchingSceneIndex::New(_emulationSceneIndex);
         _mergingSceneIndex = HdMergingSceneIndex::New();
         _mergingSceneIndex->AddInputScene(
-            _emulationSceneIndex, SdfPath::AbsoluteRootPath());
+            _emulationNoticeBatchingSceneIndex, SdfPath::AbsoluteRootPath());
 
         HdSceneIndexBaseRefPtr terminalSceneIndex = _mergingSceneIndex;
 
@@ -174,8 +176,8 @@ HdRenderIndex::New(
 
 void
 HdRenderIndex::InsertSceneIndex(
-        HdSceneIndexBaseRefPtr inputSceneIndex,
-        SdfPath const& scenePathPrefix)
+    const HdSceneIndexBaseRefPtr &inputScene,
+    SdfPath const& scenePathPrefix)
 {
     if (!_IsEnabledSceneIndexEmulation()) {
         TF_WARN("Unable to add scene index at prefix %s because emulation is off.",
@@ -183,23 +185,63 @@ HdRenderIndex::InsertSceneIndex(
         return;
     }
 
+    HdSceneIndexBaseRefPtr resolvedScene = inputScene;
     if (scenePathPrefix != SdfPath::AbsoluteRootPath()) {
-        inputSceneIndex = HdPrefixingSceneIndex::New(
-                inputSceneIndex, scenePathPrefix);
+        resolvedScene = HdPrefixingSceneIndex::New(
+            inputScene, scenePathPrefix);
     }
     _mergingSceneIndex->AddInputScene(
-            inputSceneIndex, scenePathPrefix);
+        resolvedScene, scenePathPrefix);
+}
+
+static
+HdSceneIndexBaseRefPtr
+_GetInputScene(const HdPrefixingSceneIndexRefPtr &prefixingScene)
+{
+    const std::vector<HdSceneIndexBaseRefPtr> inputScenes =
+        prefixingScene->GetInputScenes();
+    if (inputScenes.size() == 1) {
+        return inputScenes[0];
+    }
+    TF_CODING_ERROR("Expected exactly one scene index from "
+                    "HdPrefixingSceneIndex::GetInputScenes");
+    return TfNullPtr;
 }
 
 void
 HdRenderIndex::RemoveSceneIndex(
-        HdSceneIndexBaseRefPtr inputSceneIndex)
+    const HdSceneIndexBaseRefPtr &inputScene)
 {
     if (!_IsEnabledSceneIndexEmulation()) {
         return;
     }
 
-    _mergingSceneIndex->RemoveInputScene(inputSceneIndex);
+    const std::vector<HdSceneIndexBaseRefPtr> resolvedScenes =
+        _mergingSceneIndex->GetInputScenes();
+
+    // Case that given scene index was added by InsertSceneIndex with
+    // scenePathPrefix = "/". We find it just by going over the
+    // input scenes of _mergingSceneIndex.
+    for (HdSceneIndexBaseRefPtr const &resolvedScene : resolvedScenes) {
+        if (inputScene == resolvedScene) {
+            _mergingSceneIndex->RemoveInputScene(resolvedScene);
+            return;
+        }
+    }
+    
+    // Case that given scene index was added by InsertSceneIndex with
+    // non-trivial scenePathPrefix. We need to find the HdPrefixingSceneIndex
+    // among the input scenes of _mergingSceneIndex that was constructed
+    // from the given scene index.
+    for (HdSceneIndexBaseRefPtr const &resolvedScene : resolvedScenes) {
+        if (HdPrefixingSceneIndexRefPtr const prefixingScene =
+                TfDynamic_cast<HdPrefixingSceneIndexRefPtr>(resolvedScene)) {
+            if (inputScene == _GetInputScene(prefixingScene)) {
+                _mergingSceneIndex->RemoveInputScene(resolvedScene);
+                    return;
+            }
+        }
+    }
 }
 
 void
@@ -590,7 +632,18 @@ void
 HdRenderIndex::RemoveSprim(TfToken const& typeId, SdfPath const& id)
 {
     if (_IsEnabledSceneIndexEmulation()) {
+
+        // Removing an sprim doesn't remove any descendant prims from the
+        // renderIndex. Removing a prim from the scene index does remove
+        // all descendant prims. Special case removal of an sprim which has
+        // children to instead be replaced with an empty type.
+        if (!_emulationSceneIndex->GetChildPrimPaths(id).empty()) {
+             _emulationSceneIndex->AddPrims({{id, TfToken(), nullptr}});
+             return;
+        }
+        
         _emulationSceneIndex->RemovePrims({id});
+
         return;
     }
 
@@ -641,6 +694,7 @@ HdRenderIndex::InsertBprim(TfToken const& typeId,
     // the prim information
     if (_IsEnabledSceneIndexEmulation()) {
         _emulationSceneIndex->AddLegacyPrim(bprimId, typeId, sceneDelegate);
+        return;
     }
 
     _InsertBprim(typeId, sceneDelegate, bprimId);
@@ -709,6 +763,22 @@ HdResourceRegistrySharedPtr
 HdRenderIndex::GetResourceRegistry() const
 {
     return _renderDelegate->GetResourceRegistry();
+}
+
+void
+HdRenderIndex::SceneIndexEmulationNoticeBatchBegin()
+{
+    if (_emulationNoticeBatchingSceneIndex) {
+        _emulationNoticeBatchingSceneIndex->SetBatchingEnabled(true);
+    }
+}
+
+void
+HdRenderIndex::SceneIndexEmulationNoticeBatchEnd()
+{
+    if (_emulationNoticeBatchingSceneIndex) {
+        _emulationNoticeBatchingSceneIndex->SetBatchingEnabled(false);
+    }
 }
 
 bool

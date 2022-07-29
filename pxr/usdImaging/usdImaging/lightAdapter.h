@@ -115,6 +115,11 @@ public:
                               SdfPath const& cachePath,
                               UsdImagingIndexProxy* index) override;
 
+    USDIMAGING_API
+    virtual void MarkCollectionsDirty(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingIndexProxy* index) override;
+
     // ---------------------------------------------------------------------- //
     /// \name Utilities 
     // ---------------------------------------------------------------------- //
@@ -127,6 +132,18 @@ public:
 protected:
     void _RemovePrim(SdfPath const& cachePath,
                      UsdImagingIndexProxy* index) override;
+
+    // To be called from the Light Populate method
+    void _UnregisterLightCollections(SdfPath const& cachePath);
+
+    // To be called from the Light _RemovePrim method
+    void _RegisterLightCollections(UsdPrim const& prim);
+
+private:
+    /// Updates the collection cache content
+    /// Checks for collection hash change and returns true if they are different
+    bool _UpdateCollectionsChanged(UsdPrim const& prim) const;
+
 
 };
 

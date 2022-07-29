@@ -76,15 +76,36 @@ public:
     HGI_API
     virtual void WriteParameter(std::ostream& ss) const;
 
+    /// Writes the arraySize to a function
+    HGI_API
+    virtual void WriteArraySize(std::ostream& ss) const;
+
+    /// Writes the block instance name of an instance of the section
+    HGI_API
+    virtual void WriteBlockInstanceIdentifier(std::ostream& ss) const;
+
+    /// Returns the attributes of the section
     HGI_API
     const HgiShaderSectionAttributeVector& GetAttributes() const;
+    
+    /// Returns the arraySize of the section
+    const std::string& GetArraySize() const {
+        return _arraySize;
+    }
+
+    /// Returns whether the section has a block instance identifier
+    bool HasBlockInstanceIdentifier() const {
+        return !_blockInstanceIdentifier.empty();
+    }
 
 protected:
     HGI_API
     explicit HgiShaderSection(
             const std::string &identifier,
             const HgiShaderSectionAttributeVector& attributes = {},
-            const std::string &defaultValue = std::string());
+            const std::string &defaultValue = std::string(),
+            const std::string &arraySize = std::string(),
+            const std::string &blockInstanceIdentifier = std::string());
 
     HGI_API
     const std::string& _GetDefaultValue() const;
@@ -93,6 +114,8 @@ private:
     const std::string _identifierVar;
     const HgiShaderSectionAttributeVector _attributes;
     const std::string _defaultValue;
+    const std::string _arraySize;
+    const std::string _blockInstanceIdentifier;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

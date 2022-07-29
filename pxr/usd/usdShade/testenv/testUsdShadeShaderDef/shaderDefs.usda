@@ -80,4 +80,14 @@ def Shader "TestShaderPropertiesNodeUSD" (
             token options = "token3|token4"
         }
     )
+
+    int inputs:intButBool (
+        sdrMetadata = {
+            string sdrUsdDefinitionType = "bool"
+        }
+    )
+
+    bool inputs:actualBool (
+    )
+
 }

@@ -63,6 +63,7 @@ HdStBasisCurves::HdStBasisCurves(SdfPath const& id)
     , _refineLevel(0)
     , _displayOpacity(false)
     , _occludedSelectionShowsThrough(false)
+    , _pointsShadingEnabled(false)
 {
     /*NOTHING*/
 }
@@ -283,10 +284,21 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
     if (!TF_VERIFY(_topology)) return;
 
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-
+    
+    HdStResourceRegistrySharedPtr resourceRegistry =
+        std::static_pointer_cast<HdStResourceRegistry>(
+            renderIndex.GetResourceRegistry());
+    
+    // For the time being, don't use complex curves on Metal. Support for this
+    // is planned for the future.
+    const bool hasMetalTessellation =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
+    
     TfToken curveType = _topology->GetCurveType();
     TfToken curveBasis = _topology->GetCurveBasis();
-    bool supportsRefinement = _SupportsRefinement(_refineLevel);
+    bool supportsRefinement = _SupportsRefinement(_refineLevel) &&
+        !hasMetalTessellation;
     if (!supportsRefinement) {
         // XXX: Rendering non-linear (i.e., cubic) curves as linear segments
         // when unrefined can be confusing. Should we continue to do this?
@@ -317,7 +329,8 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
     case HdBasisCurvesGeomStylePatch:
     {
         if (_SupportsRefinement(_refineLevel) &&
-            _SupportsUserWidths(drawItem)) {
+            _SupportsUserWidths(drawItem) &&
+            !hasMetalTessellation) {
             if (_SupportsUserNormals(drawItem)){
                 drawStyle = HdSt_BasisCurvesShaderKey::RIBBON;
                 normalStyle = HdSt_BasisCurvesShaderKey::ORIENTED;
@@ -375,15 +388,12 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
                                         _basisWidthInterpolation,
                                         _basisNormalInterpolation,
                                         shadingTerminal,
-                                        hasAuthoredTopologicalVisiblity);
+                                        hasAuthoredTopologicalVisiblity,
+                                        _pointsShadingEnabled);
 
     TF_DEBUG(HD_RPRIM_UPDATED).
             Msg("HdStBasisCurves(%s) - Shader Key PrimType: %s\n ",
                 GetId().GetText(), HdSt_PrimTypeToString(shaderKey.primType));
-
-    HdStResourceRegistrySharedPtr resourceRegistry =
-        std::static_pointer_cast<HdStResourceRegistry>(
-            renderIndex.GetResourceRegistry());
 
     HdSt_GeometricShaderSharedPtr geomShader =
         HdSt_GeometricShader::Create(shaderKey, resourceRegistry);
@@ -536,6 +546,8 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                 HdStGetMaterialNetworkShader(this, sceneDelegate);
     }
 
+    const bool materialIsFinal = GetDisplayStyle(sceneDelegate).materialIsFinal;
+    bool materialIsFinalChanged = false;
     for (auto const& reprPair : _reprs) {
         const TfToken &reprToken = reprPair.first;
         _BasisCurvesReprConfig::DescArray const &descs =
@@ -546,8 +558,13 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
             if (descs[descIdx].geomStyle == HdBasisCurvesGeomStyleInvalid) {
                 continue;
             }
+
             HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
                 repr->GetDrawItem(drawItemIndex++));
+            if (materialIsFinal != drawItem->GetMaterialIsFinal()) {
+                materialIsFinalChanged = true;
+            }
+            drawItem->SetMaterialIsFinal(materialIsFinal);
 
             if (updateMaterialNetworkShader) {
                 drawItem->SetMaterialNetworkShader(materialNetworkShader);
@@ -557,6 +574,13 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                     sceneDelegate, renderParam, drawItem, descs[descIdx]);
             }
         }
+    }
+
+    if (materialIsFinalChanged) {
+        HdStMarkDrawBatchesDirty(renderParam);
+        TF_DEBUG(HD_RPRIM_UPDATED).Msg(
+            "%s: Marking all batches dirty to trigger deep validation because "
+            "the materialIsFinal was updated.\n", GetId().GetText());
     }
 }
 
@@ -609,6 +633,7 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         HdDisplayStyle ds = GetDisplayStyle(sceneDelegate);
         _refineLevel = ds.refineLevel;
         _occludedSelectionShowsThrough = ds.occludedSelectionShowsThrough;
+        _pointsShadingEnabled = ds.pointsShadingEnabled;
     }
 
     // XXX: is it safe to get topology even if it's not dirty?
@@ -735,7 +760,7 @@ namespace {
 
 template <typename T> 
 void 
-AddVertexOrVaryingPrimvarSource(const TfToken &name, 
+AddVertexOrVaryingPrimvarSource(const SdfPath &id, const TfToken &name, 
     HdInterpolation interpolation, const VtValue &value, 
     HdSt_BasisCurvesTopologySharedPtr topology, 
     HdBufferSourceSharedPtrVector *sources, T fallbackValue) {
@@ -744,75 +769,75 @@ AddVertexOrVaryingPrimvarSource(const TfToken &name,
     if (!array.empty() || name == HdTokens->points) {
         sources->push_back(
             std::make_shared<HdSt_BasisCurvesPrimvarInterpolaterComputation<T>>(
-                topology, array, name, interpolation, fallbackValue, 
+                topology, array, id, name, interpolation, fallbackValue, 
                 HdGetValueTupleType(VtValue(array)).type));
     }
 }
 
 void ProcessVertexOrVaryingPrimvar(
-    const TfToken &name, HdInterpolation interpolation, 
+    const SdfPath &id, const TfToken &name, HdInterpolation interpolation, 
     const VtValue &value, HdSt_BasisCurvesTopologySharedPtr topology,
     HdBufferSourceSharedPtrVector *sources) {
     if (value.IsHolding<VtHalfArray>()) {
         AddVertexOrVaryingPrimvarSource<GfHalf>(
-            name, interpolation, value, topology, sources, 1);
+            id, name, interpolation, value, topology, sources, 1);
     } else if (value.IsHolding<VtFloatArray>()) {
         AddVertexOrVaryingPrimvarSource<float>(
-            name, interpolation, value, topology, sources, 1);
+            id, name, interpolation, value, topology, sources, 1);
     } else if (value.IsHolding<VtVec2fArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec2f>(
-            name, interpolation, value, topology, sources, GfVec2f(1, 0));             
+            id, name, interpolation, value, topology, sources, GfVec2f(1, 0));             
     } else if (value.IsHolding<VtVec3fArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec3f>(
-            name, interpolation, value, topology, sources, GfVec3f(1, 0, 0));   
+            id, name, interpolation, value, topology, sources, GfVec3f(1, 0, 0));   
     } else if (value.IsHolding<VtVec4fArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec4f>(
-            name, interpolation, value, topology, sources, GfVec4f(1, 0, 0, 1)); 
+            id, name, interpolation, value, topology, sources, GfVec4f(1, 0, 0, 1)); 
      } else if (value.IsHolding<VtDoubleArray>()) {
         AddVertexOrVaryingPrimvarSource<double>(
-            name, interpolation, value, topology, sources, 1);
+            id, name, interpolation, value, topology, sources, 1);
     } else if (value.IsHolding<VtVec2dArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec2d>(
-            name, interpolation, value, topology, sources, GfVec2d(1, 0));            
+            id, name, interpolation, value, topology, sources, GfVec2d(1, 0));            
     } else if (value.IsHolding<VtVec3dArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec3d>(
-            name, interpolation, value, topology, sources, GfVec3d(1, 0, 0));
+            id, name, interpolation, value, topology, sources, GfVec3d(1, 0, 0));
     } else if (value.IsHolding<VtVec4dArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec4d>(
-            name, interpolation, value, topology, sources, GfVec4d(1, 0, 0, 1));                
+            id, name, interpolation, value, topology, sources, GfVec4d(1, 0, 0, 1));                
     } else if (value.IsHolding<VtIntArray>()) {
         AddVertexOrVaryingPrimvarSource<int>(
-            name, interpolation, value, topology, sources, 1); 
+            id, name, interpolation, value, topology, sources, 1); 
     } else if (value.IsHolding<VtVec2iArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec2i>(
-            name, interpolation, value, topology, sources, GfVec2i(1, 0)); 
+            id, name, interpolation, value, topology, sources, GfVec2i(1, 0)); 
     } else if (value.IsHolding<VtVec3iArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec3i>(
-            name, interpolation, value, topology, sources, GfVec3i(1, 0, 0)); 
+            id, name, interpolation, value, topology, sources, GfVec3i(1, 0, 0)); 
     } else if (value.IsHolding<VtVec4iArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec4i>(
-            name, interpolation, value, topology, sources, GfVec4i(1, 0, 0, 1)); 
+            id, name, interpolation, value, topology, sources, GfVec4i(1, 0, 0, 1)); 
     } else if (value.IsHolding<VtVec4iArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec4i>(
-            name, interpolation, value, topology, sources, GfVec4i(1, 0, 0, 1)); 
+            id, name, interpolation, value, topology, sources, GfVec4i(1, 0, 0, 1)); 
     } else if (value.IsHolding<VtVec4iArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec4i>(
-            name, interpolation, value, topology, sources, GfVec4i(1, 0, 0, 1)); 
+            id, name, interpolation, value, topology, sources, GfVec4i(1, 0, 0, 1)); 
     } else if (value.IsHolding<VtArray<int16_t>>()) {
         AddVertexOrVaryingPrimvarSource<int16_t>(
-            name, interpolation, value, topology, sources, 1);
+            id, name, interpolation, value, topology, sources, 1);
     } else if (value.IsHolding<VtArray<int32_t>>()) {
         AddVertexOrVaryingPrimvarSource<int32_t>(
-            name, interpolation, value, topology, sources, 1);
+            id, name, interpolation, value, topology, sources, 1);
     } else if (value.IsHolding<VtArray<uint16_t>>()) {
         AddVertexOrVaryingPrimvarSource<uint16_t>(
-            name, interpolation, value, topology, sources, 1); 
+            id, name, interpolation, value, topology, sources, 1); 
     } else if (value.IsHolding<VtArray<uint32_t>>()) {
         AddVertexOrVaryingPrimvarSource<uint32_t>(
-            name, interpolation, value, topology, sources, 1); 
+            id, name, interpolation, value, topology, sources, 1); 
     } else {
-        TF_WARN("Type of vertex or varying primvar %s not yet fully supported", 
-                name.GetText());
+        TF_WARN("HdStBasisCurves(%s) - Type of vertex or varying primvar %s"
+                " not yet fully supported", id.GetText(), name.GetText());
         sources->push_back(std::make_shared<HdVtBufferSource>(name, value));
     }
 }
@@ -878,8 +903,8 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         //assert name not in range.bufferArray.GetResources()
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
         if (!value.IsEmpty()) {
-            ProcessVertexOrVaryingPrimvar(primvar.name, HdInterpolationVertex, 
-                value, _topology, &sources);
+            ProcessVertexOrVaryingPrimvar(id, primvar.name,
+                HdInterpolationVertex, value, _topology, &sources);
 
             if (primvar.name == HdTokens->displayOpacity) {
                 _displayOpacity = true;
@@ -998,7 +1023,7 @@ HdStBasisCurves::_PopulateVaryingPrimvars(HdSceneDelegate *sceneDelegate,
         //assert name not in range.bufferArray.GetResources()
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
         if (!value.IsEmpty()) {
-            ProcessVertexOrVaryingPrimvar(primvar.name, 
+            ProcessVertexOrVaryingPrimvar(id, primvar.name, 
                 HdInterpolationVarying, value, _topology, &sources);
 
             if (primvar.name == HdTokens->displayOpacity) {

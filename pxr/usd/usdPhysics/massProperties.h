@@ -40,7 +40,7 @@ GfQuatf UsdPhysicsIndexedRotation(uint32_t axis, float s, float c)
 {
     float v[3] = { 0, 0, 0 };
     v[axis] = s;
-    return GfQuatf(v[0], v[1], v[2], c);
+    return GfQuatf(c, v[0], v[1], v[2]);
 }
 
 uint32_t UsdPhysicsGetNextIndex3(uint32_t i)
@@ -59,7 +59,7 @@ GfVec3f UsdPhysicsDiagonalize(const GfMatrix3f& m, GfQuatf& massFrame)
     for (uint32_t i = 0; i < MAX_ITERS; i++)
     {
         GfMatrix3f axes(q);
-        d = axes.GetTranspose() * m * axes;
+        d = axes * m * axes.GetTranspose();
 
         float d0 = fabs(d[1][2]), d1 = fabs(d[0][2]), d2 = fabs(d[0][1]);
         uint32_t a = uint32_t(d0 > d1 && d0 > d2 ? 0 : d1 > d2 ? 1 : 2); // rotation axis index, from largest
@@ -157,7 +157,7 @@ public:
         s.SetColumn(1, GfVec3f(-t[2], 0, t[0]));
         s.SetColumn(2, GfVec3f(t[1], -t[0], 0));
 
-        GfMatrix3f translatedIT = s.GetTranspose() * s * mass + inertia;
+        GfMatrix3f translatedIT = s * s.GetTranspose() * mass + inertia;
         return translatedIT;
     }
 
@@ -169,7 +169,7 @@ public:
     USDPHYSICS_API static GfMatrix3f RotateInertia(const GfMatrix3f& inertia, const GfQuatf& q)
     {
         GfMatrix3f m(q);
-        GfMatrix3f rotatedIT = m * inertia * m.GetTranspose();
+        GfMatrix3f rotatedIT = m.GetTranspose() * inertia * m;
         return rotatedIT;
     }
 

@@ -43,5 +43,6 @@ class TestSchemaConcrete "TestSchemaConcrete" (
     uniform token myRenderContext:usda:shaderId = "TestSchemaConcrete" (
         displayGroup = "Internal"
     )
+    float propNS:testShaderPropWithNS = 0
 }
 

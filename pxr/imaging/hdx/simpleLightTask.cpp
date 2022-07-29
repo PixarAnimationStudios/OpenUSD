@@ -28,12 +28,14 @@
 
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/simpleLightingShader.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -173,6 +175,15 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
                         _lightExcludePaths,
                         &_lightIds);
 
+    const size_t maxLights = size_t(
+        renderIndex.GetRenderDelegate()->GetRenderSetting<int>(
+            HdStRenderSettingsTokens->maxLights, 16));
+
+    if (_numLights > (size_t)maxLights) {
+        TF_WARN("Hydra supports up to %zu lights, truncating the %zu found "
+                "lights to this max.", maxLights, _numLights);
+    }
+
     // We rebuild the lights array every time, but avoid reallocating
     // the array every frame as this was showing up as a significant portion
     // of the time in this function.
@@ -191,11 +202,23 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     std::vector<GfVec2i> shadowMapResolutions;
     shadowMapResolutions.reserve(_numLights);
 
-    TF_FOR_ALL (lightPerTypeIt, _lightIds) {
-        TF_FOR_ALL (lightPathIt, lightPerTypeIt->second) {
+    // Loop over the lightTypes vector so we always add the built-in light  
+    // types (dome and simple lights) first. This way if the scene has more  
+    // lights than is supported, the built-in lights should still be included.
+    for (TfToken const &lightType : lightTypes) {
+        const auto lightPathsIt = _lightIds.find(lightType);
+        if (lightPathsIt == _lightIds.end()) {
+            continue;
+        }
+        for (SdfPath const &lightPath : lightPathsIt->second) {
+
+            // Stop adding lights if we're at the light limit.
+            if (_glfSimpleLights.size() >= maxLights) {
+                break;
+            }
 
             HdStLight const *light = static_cast<const HdStLight *>(
-                    renderIndex.GetSprim(lightPerTypeIt->first, *lightPathIt));
+                    renderIndex.GetSprim(lightType, lightPath));
             if (!TF_VERIFY(light)) {
                 continue;
             }
@@ -271,10 +294,16 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
             }
             _glfSimpleLights.push_back(std::move(glfl));
         }
+        // Stop adding lights if we're at the light limit.
+        if (_glfSimpleLights.size() >= maxLights) {
+            break;
+        }
     }
 
     // In case there is a mismatch, conform _numLights to this array size.
     _numLights = _glfSimpleLights.size();
+
+    TF_VERIFY(_numLights <= maxLights);
 
     lightingContext->SetUseLighting(_numLights > 0);
     lightingContext->SetLights(_glfSimpleLights);
@@ -288,32 +317,39 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     // the shadow array needed in the lighting context in 
     // order to receive shadows
     // This will re-allocate internal buffers if they change.
-    shadows->SetShadowMapResolutions(shadowMapResolutions);
+    if (lightingContext->GetUseShadows()) {
+        shadows->SetShadowMapResolutions(shadowMapResolutions);
 
-    if (shadowIndex > -1) {
-        for (size_t lightId = 0; lightId < _numLights; ++lightId) {
-            if (lightId >= _glfSimpleLights.size()) {
-                TF_CODING_ERROR(
-                    "lightId %zu >= _glfSimpleLights.size() %zu", 
-                    lightId, _glfSimpleLights.size());
-                continue;
-            }
-            if (!_glfSimpleLights[lightId].HasShadow()) {
-                continue;
-            }
-            // Complete the shadow setup for this light
-            int shadowStart = _glfSimpleLights[lightId].GetShadowIndexStart();
-            int shadowEnd = _glfSimpleLights[lightId].GetShadowIndexEnd();
-            std::vector<GfMatrix4d> shadowMatrices =
-                _glfSimpleLights[lightId].GetShadowMatrices();
+        if (shadowIndex > -1) {
+            for (size_t lightId = 0; lightId < _numLights; ++lightId) {
+                if (lightId >= _glfSimpleLights.size()) {
+                    TF_CODING_ERROR(
+                        "lightId %zu >= _glfSimpleLights.size() %zu", 
+                        lightId, _glfSimpleLights.size());
+                    continue;
+                }
+                if (!_glfSimpleLights[lightId].HasShadow()) {
+                    continue;
+                }
+                // Complete the shadow setup for this light
+                const int shadowStart = 
+                    _glfSimpleLights[lightId].GetShadowIndexStart();
+                const int shadowEnd = 
+                    _glfSimpleLights[lightId].GetShadowIndexEnd();
+                const std::vector<GfMatrix4d> shadowMatrices =
+                    _glfSimpleLights[lightId].GetShadowMatrices();
 
-            for (int shadowId = shadowStart; shadowId <= shadowEnd; ++shadowId) {
-                shadows->SetViewMatrix(shadowId,
-                    _glfSimpleLights[lightId].GetTransform());
-                shadows->SetProjectionMatrix(shadowId,
-                    shadowMatrices[shadowId - shadowStart]);
+                for (int shadowId = shadowStart; shadowId <= shadowEnd; 
+                     ++shadowId) {
+                    shadows->SetViewMatrix(shadowId,
+                        _glfSimpleLights[lightId].GetTransform());
+                    shadows->SetProjectionMatrix(shadowId,
+                        shadowMatrices[shadowId - shadowStart]);
+                }
             }
         }
+    } else {
+        shadows->SetShadowMapResolutions( std::vector<GfVec2i>() );
     }
 
     _lightingShader->AllocateTextureHandles(renderIndex);
@@ -674,7 +710,7 @@ HdxSimpleLightTask::Execute(HdTaskContext* ctx)
 
 size_t
 HdxSimpleLightTask::_AppendLightsOfType(HdRenderIndex &renderIndex,
-                   std::vector<TfToken> const &lightTypes,
+                   TfTokenVector const &lightTypes,
                    SdfPathVector const &lightIncludePaths,
                    SdfPathVector const &lightExcludePaths,
                    std::map<TfToken, SdfPathVector> *lights)
@@ -690,8 +726,11 @@ HdxSimpleLightTask::_AppendLightsOfType(HdRenderIndex &renderIndex,
             HdPrimGather gather;
             gather.Filter(sprimPaths, lightIncludePaths, lightExcludePaths,
                           &lightsLocal);
-            (*lights)[*it] = lightsLocal;
-            count += lightsLocal.size();
+            const size_t numLocalLights = lightsLocal.size();
+            if (numLocalLights > 0) {
+                (*lights)[*it] = lightsLocal;
+                count += numLocalLights;
+            }
         }
     }
     return count;

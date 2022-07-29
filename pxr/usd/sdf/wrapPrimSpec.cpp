@@ -41,6 +41,7 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/python.hpp>
+#include <boost/python/stl_iterator.hpp>
 #include <boost/function.hpp>
 
 using namespace boost::python;
@@ -139,12 +140,12 @@ _SetRelocates(SdfPrimSpec& self, const dict &d)
 {
     SdfRelocatesMap reloMap;
 
-    list keys = d.keys();
-    int numKeys = len(d);
-
-    for (int i = 0; i < numKeys; i++) {
-        SdfPath key = extract<SdfPath>(keys[i]);
-        SdfPath val = extract<SdfPath>(d[keys[i]]);
+    auto items = d.attr("items")();
+    auto end =  stl_input_iterator<tuple>();
+    for (auto it = stl_input_iterator<tuple>(items); it != end; ++it) {
+        tuple kv = *it;
+        SdfPath key = extract<SdfPath>(kv[0]);
+        SdfPath val = extract<SdfPath>(kv[1]);
 
         reloMap[key] = val;
     }

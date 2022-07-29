@@ -1,112 +1,88 @@
 #usda 1.0
+(
+    defaultPrim = "ModelShading"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
 
 def "ModelShading" (
     prepend references = [
-        @./char_shading.usda@</MaterialBindingVariants>,
-        @./char_shading.usda@</ShadingDefs>
+        </MaterialBindingVariants>,
+        </ShadingDefs>
     ]
 )
 {
 }
 
-def "ShadingDefs"
+over "ShadingDefs"
 {
     def Scope "Shaders"
     {
         def Shader "HairWetSurface"
         {
-            color3f outputs:out
+            token outputs:surface
         }
 
-        def Shader "HairWetDisp"
+        def Shader "HairWetDisplacement"
         {
-            vector3f outputs:out
-        }
-
-        def Shader "HairWetPattern"
-        {
-            float[] outputs:out
+            token outputs:displacement
         }
 
         def Shader "HairDrySurface"
         {
-            color3f outputs:out
+            token outputs:surface
         }
 
-        def Shader "HairDryDisp"
+        def Shader "HairDryDisplacement"
         {
-            vector3f outputs:out
-        }
-
-        def Shader "HairDryPattern"
-        {
-            float[] outputs:out
+            token outputs:displacement
         }
 
         def Shader "SkinWetSurface"
         {
-            color3f outputs:out
+            token outputs:surface
         }
 
-        def Shader "SkinWetDisp"
+        def Shader "SkinWetDisplacement"
         {
-            vector3f outputs:out
-        }
-
-        def Shader "SkinWetPattern"
-        {
-            float[] outputs:out
+            token outputs:displacement
         }
 
         def Shader "SkinDrySurface"
         {
-            color3f outputs:out
+            token outputs:surface
         }
 
-        def Shader "SkinDryDisp"
+        def Shader "SkinDryDisplacement"
         {
-            vector3f outputs:out
-        }
-
-        def Shader "SkinDryPattern"
-        {
-            float[] outputs:out
+            token outputs:displacement
         }
 
         def Shader "NailsWetSurface"
         {
-            color3f outputs:out
+            token outputs:surface
         }
 
-        def Shader "NailsWetDisp"
+        def Shader "NailsWetDisplacement"
         {
-            vector3f outputs:out
-        }
-
-        def Shader "NailsWetPattern"
-        {
-            float[] outputs:out
+            token outputs:displacement
         }
 
         def Shader "NailsDrySurface"
         {
-            color3f outputs:out
+            token outputs:surface
         }
 
-        def Shader "NailsDryDisp"
+        def Shader "NailsDryDisplacement"
         {
-            vector3f outputs:out
-        }
-
-        def Shader "NailsDryPattern"
-        {
-            float[] outputs:out
+            token outputs:displacement
         }
     }
 
     def Scope "Materials"
     {
         def Material "HairMaterial" (
+            prepend references = </ShadingDefs/Shaders>
             variants = {
                 string materialVariant = "Dry"
             }
@@ -115,21 +91,20 @@ def "ShadingDefs"
         {
             variantSet "materialVariant" = {
                 "Dry" {
-                    vector3f outputs:disp.connect = </ShadingDefs/Shaders/HairDryDisp.outputs:out>
-                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/HairDryPattern.outputs:out>
-                    color3f outputs:surf.connect = </ShadingDefs/Shaders/HairDrySurface.outputs:out>
+                    token outputs:displacement.connect = </ShadingDefs/Materials/HairMaterial/HairDryDisplacement.outputs:displacement>
+                    token outputs:surface.connect = </ShadingDefs/Materials/HairMaterial/HairDrySurface.outputs:surface>
 
                 }
                 "Wet" {
-                    vector3f outputs:disp.connect = </ShadingDefs/Shaders/HairWetDisp.outputs:out>
-                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/HairWetPattern.outputs:out>
-                    color3f outputs:surf.connect = </ShadingDefs/Shaders/HairWetSurface.outputs:out>
+                    token outputs:displacement.connect = </ShadingDefs/Materials/HairMaterial/HairWetDisplacement.outputs:displacement>
+                    token outputs:surface.connect = </ShadingDefs/Materials/HairMaterial/HairWetSurface.outputs:surface>
 
                 }
             }
         }
 
         def Material "SkinMaterial" (
+            prepend references = </ShadingDefs/Shaders>
             variants = {
                 string materialVariant = "Dry"
             }
@@ -138,21 +113,20 @@ def "ShadingDefs"
         {
             variantSet "materialVariant" = {
                 "Dry" {
-                    vector3f outputs:disp.connect = </ShadingDefs/Shaders/SkinDryDisp.outputs:out>
-                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/SkinDryPattern.outputs:out>
-                    color3f outputs:surf.connect = </ShadingDefs/Shaders/SkinDrySurface.outputs:out>
+                    token outputs:displacement.connect = </ShadingDefs/Materials/SkinMaterial/SkinDryDisplacement.outputs:displacement>
+                    token outputs:surface.connect = </ShadingDefs/Materials/SkinMaterial/SkinDrySurface.outputs:surface>
 
                 }
                 "Wet" {
-                    vector3f outputs:disp.connect = </ShadingDefs/Shaders/SkinWetDisp.outputs:out>
-                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/SkinWetPattern.outputs:out>
-                    color3f outputs:surf.connect = </ShadingDefs/Shaders/SkinWetSurface.outputs:out>
+                    token outputs:displacement.connect = </ShadingDefs/Materials/SkinMaterial/SkinWetDisplacement.outputs:displacement>
+                    token outputs:surface.connect = </ShadingDefs/Materials/SkinMaterial/SkinWetSurface.outputs:surface>
 
                 }
             }
         }
 
         def Material "NailsMaterial" (
+            prepend references = </ShadingDefs/Shaders>
             variants = {
                 string materialVariant = "Dry"
             }
@@ -161,15 +135,13 @@ def "ShadingDefs"
         {
             variantSet "materialVariant" = {
                 "Dry" {
-                    vector3f outputs:disp.connect = </ShadingDefs/Shaders/NailsDryDisp.outputs:out>
-                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/NailsDryPattern.outputs:out>
-                    color3f outputs:surf.connect = </ShadingDefs/Shaders/NailsDrySurface.outputs:out>
+                    token outputs:displacement.connect = </ShadingDefs/Materials/NailsMaterial/NailsDryDisplacement.outputs:displacement>
+                    token outputs:surface.connect = </ShadingDefs/Materials/NailsMaterial/NailsDrySurface.outputs:surface>
 
                 }
                 "Wet" {
-                    vector3f outputs:disp.connect = </ShadingDefs/Shaders/NailsWetDisp.outputs:out>
-                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/NailsWetPattern.outputs:out>
-                    color3f outputs:surf.connect = </ShadingDefs/Shaders/NailsWetSurface.outputs:out>
+                    token outputs:displacement.connect = </ShadingDefs/Materials/NailsMaterial/NailsWetDisplacement.outputs:displacement>
+                    token outputs:surface.connect = </ShadingDefs/Materials/NailsMaterial/NailsWetSurface.outputs:surface>
 
                 }
             }

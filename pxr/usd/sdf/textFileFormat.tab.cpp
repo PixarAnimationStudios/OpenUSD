@@ -733,7 +733,7 @@ _AttributeAppendConnectionPath(Sdf_TextParserContext *context)
                 "using <%s> instead.  Resaving the file will fix this issue.",
                 absPath.GetText(),
                 context->fileContext.c_str(),
-                context->menvaLineNo,
+                context->sdfLineNo,
                 absPath.StripAllVariantSelections().GetText());
         absPath = absPath.StripAllVariantSelections();
     }
@@ -1938,7 +1938,7 @@ static const char *const yytname[] =
   "TOK_SUBLAYERS", "TOK_SYMMETRYARGUMENTS", "TOK_SYMMETRYFUNCTION",
   "TOK_TIME_SAMPLES", "TOK_UNIFORM", "TOK_VARIANTS", "TOK_VARIANTSET",
   "TOK_VARIANTSETS", "TOK_VARYING", "'('", "')'", "'='", "'['", "']'",
-  "'.'", "'{'", "'}'", "':'", "';'", "','", "$accept", "menva_file",
+  "'.'", "'{'", "'}'", "':'", "';'", "','", "$accept", "sdf_file",
   "keyword", "layer_metadata_form", "layer", "$@1", "layer_metadata_opt",
   "layer_metadata_list_opt", "layer_metadata_list", "layer_metadata_key",
   "layer_metadata", "$@2", "$@3", "$@4", "$@5", "$@6", "$@7",
@@ -6356,9 +6356,9 @@ void textFileFormatYyerror(Sdf_TextParserContext *context, const char *msg)
     const bool isNewlineToken = 
         (nextToken.length() == 1 && nextToken[0] == '\n');
 
-    int errLineNumber = context->menvaLineNo;
+    int errLineNumber = context->sdfLineNo;
 
-    // By this time, menvaLineNo has already been updated to account for
+    // By this time, sdfLineNo has already been updated to account for
     // nextToken. So, if nextToken is a newline, the error really occurred on
     // the previous line.
     if (isNewlineToken) { 

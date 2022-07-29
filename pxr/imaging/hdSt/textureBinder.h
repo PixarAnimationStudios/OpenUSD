@@ -55,7 +55,8 @@ public:
     static void
     GetBufferSpecs(
         const NamedTextureHandleVector &textures,
-        HdBufferSpecVector * specs);
+        HdBufferSpecVector * specs,
+        bool doublesSupported);
 
     /// Compute buffer sources for shader bar.
     ///
@@ -68,7 +69,8 @@ public:
     static void
     ComputeBufferSources(
         const NamedTextureHandleVector &textures,
-        HdBufferSourceSharedPtrVector * sources);
+        HdBufferSourceSharedPtrVector * sources,
+        bool doublesSupported);
 
     /// Bind textures.
     ///

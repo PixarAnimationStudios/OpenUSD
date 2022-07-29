@@ -66,6 +66,20 @@ HdLegacyDisplayStyleSchema::GetOccludedSelectionShowsThrough()
         HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough);
 }
 
+HdBoolDataSourceHandle
+HdLegacyDisplayStyleSchema::GetPointsShadingEnabled()
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        HdLegacyDisplayStyleSchemaTokens->pointsShadingEnabled);
+}
+
+HdBoolDataSourceHandle
+HdLegacyDisplayStyleSchema::GetMaterialIsFinal()
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        HdLegacyDisplayStyleSchemaTokens->materialIsFinal);
+}
+
 HdTokenDataSourceHandle
 HdLegacyDisplayStyleSchema::GetShadingStyle()
 {
@@ -94,6 +108,8 @@ HdLegacyDisplayStyleSchema::BuildRetained(
         const HdBoolDataSourceHandle &flatShadingEnabled,
         const HdBoolDataSourceHandle &displacementEnabled,
         const HdBoolDataSourceHandle &occludedSelectionShowsThrough,
+        const HdBoolDataSourceHandle &pointsShadingEnabled,
+        const HdBoolDataSourceHandle &materialIsFinal,
         const HdTokenDataSourceHandle &shadingStyle,
         const HdTokenArrayDataSourceHandle &reprSelector,
         const HdTokenDataSourceHandle &cullStyle
@@ -121,6 +137,16 @@ HdLegacyDisplayStyleSchema::BuildRetained(
     if (occludedSelectionShowsThrough) {
         names[count] = HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough;
         values[count++] = occludedSelectionShowsThrough;
+    }
+
+    if (pointsShadingEnabled) {
+        names[count] = HdLegacyDisplayStyleSchemaTokens->pointsShadingEnabled;
+        values[count++] = pointsShadingEnabled;
+    }
+
+    if (materialIsFinal) {
+        names[count] = HdLegacyDisplayStyleSchemaTokens->materialIsFinal;
+        values[count++] = materialIsFinal;
     }
 
     if (shadingStyle) {
@@ -218,6 +244,22 @@ HdLegacyDisplayStyleSchema::Builder::SetOccludedSelectionShowsThrough(
 }
 
 HdLegacyDisplayStyleSchema::Builder &
+HdLegacyDisplayStyleSchema::Builder::SetPointsShadingEnabled(
+    const HdBoolDataSourceHandle &pointsShadingEnabled)
+{
+    _pointsShadingEnabled = pointsShadingEnabled;
+    return *this;
+}
+
+HdLegacyDisplayStyleSchema::Builder &
+HdLegacyDisplayStyleSchema::Builder::SetMaterialIsFinal(
+    const HdBoolDataSourceHandle &materialIsFinal)
+{
+    _materialIsFinal = materialIsFinal;
+    return *this;
+}
+
+HdLegacyDisplayStyleSchema::Builder &
 HdLegacyDisplayStyleSchema::Builder::SetShadingStyle(
     const HdTokenDataSourceHandle &shadingStyle)
 {
@@ -249,6 +291,8 @@ HdLegacyDisplayStyleSchema::Builder::Build()
         _flatShadingEnabled,
         _displacementEnabled,
         _occludedSelectionShowsThrough,
+        _pointsShadingEnabled,
+        _materialIsFinal,
         _shadingStyle,
         _reprSelector,
         _cullStyle

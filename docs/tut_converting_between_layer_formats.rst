@@ -6,18 +6,8 @@
 Converting Between Layer Formats
 ================================
 
-This tutorial walks through converting layer files between the different native
-USD file formats. USD includes three native file formats:
-
-  +--------------------------------+--------------------------------+
-  | Extension                      | Content                        |
-  +================================+================================+
-  | :filename:`.usda`              | Human-readable text            |
-  +--------------------------------+--------------------------------+
-  | :filename:`.usdc`              | Random-access binary           |
-  +--------------------------------+--------------------------------+
-  | :filename:`.usd`               | Either of the above            |
-  +--------------------------------+--------------------------------+
+This tutorial walks through converting layer files between the
+:ref:`different native USD file formats <usdfaq:So what file formats does USD support?>`.
 
 The :ref:`toolset:usdcat` tool is useful for inspecting these files, but it can
 also convert files between the different formats by using the :option:`-o`

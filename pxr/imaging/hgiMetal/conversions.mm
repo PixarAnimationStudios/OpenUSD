@@ -261,8 +261,11 @@ struct {
     MTLWinding metalWinding;
 } static const _windingTable[] =
 {
-    {HgiWindingClockwise,           MTLWindingClockwise},
-    {HgiWindingCounterClockwise,    MTLWindingCounterClockwise},
+    // Winding order is inverted because our viewport is inverted.
+    // This combination allows us to emulate the OpenGL coordinate space on
+    // Metal
+    {HgiWindingClockwise,           MTLWindingCounterClockwise},
+    {HgiWindingCounterClockwise,    MTLWindingClockwise},
 };
 
 static_assert(TfArraySize(_windingTable) == HgiWindingCount,
@@ -442,7 +445,7 @@ struct {
 };
 
 MTLPixelFormat
-HgiMetalConversions::GetPixelFormat(HgiFormat inFormat)
+HgiMetalConversions::GetPixelFormat(HgiFormat inFormat, HgiTextureUsage inUsage)
 {
     if (inFormat == HgiFormatInvalid) {
         return MTLPixelFormatInvalid;
@@ -454,6 +457,14 @@ HgiMetalConversions::GetPixelFormat(HgiFormat inFormat)
         return MTLPixelFormatRGBA8Unorm;
     }
 
+    if (inUsage & HgiTextureUsageBitsDepthTarget) {
+        if (inFormat == HgiFormatFloat32UInt8) {
+            return MTLPixelFormatDepth32Float_Stencil8;
+        } else {
+            return MTLPixelFormatDepth32Float;
+        }
+    }
+    
     MTLPixelFormat outFormat = _PIXEL_FORMAT_DESC[inFormat];
     if (outFormat == MTLPixelFormatInvalid)
     {
@@ -584,6 +595,19 @@ MTLPrimitiveType
 HgiMetalConversions::GetPrimitiveType(HgiPrimitiveType pt)
 {
     return _primitiveTypeTable[pt].metalPT;
+}
+
+MTLColorWriteMask
+HgiMetalConversions::GetColorWriteMask(HgiColorMask mask)
+{
+    MTLColorWriteMask mtlMask;
+    
+    mtlMask = ((mask & HgiColorMaskRed) ? MTLColorWriteMaskRed : 0)
+            | ((mask & HgiColorMaskGreen) ? MTLColorWriteMaskGreen : 0)
+            | ((mask & HgiColorMaskBlue) ? MTLColorWriteMaskBlue : 0)
+            | ((mask & HgiColorMaskAlpha) ? MTLColorWriteMaskAlpha : 0);
+    
+    return mtlMask;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -170,8 +170,8 @@ private:
 private:
     SdfPath _propPath;
     const SdfAbstractData* _data;
-    boost::shared_ptr<VtValue> _value;
-    boost::shared_ptr<SdfTimeSampleMap> _local;
+    std::shared_ptr<VtValue> _value;
+    std::shared_ptr<SdfTimeSampleMap> _local;
     const SdfTimeSampleMap* _samples;
     bool _timeSampled;
     SdfValueTypeName _typeName;

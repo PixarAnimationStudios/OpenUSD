@@ -45,11 +45,29 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdPrmanFramebuffer 
 {
 public:
+    enum HdPrmanAccumulationRule {
+        k_accumulationRuleFilter,
+        k_accumulationRuleAverage,
+        k_accumulationRuleMin,
+        k_accumulationRuleMax,
+        k_accumulationRuleZmin,
+        k_accumulationRuleZmax,
+        k_accumulationRuleSum
+    };
+
     struct AovDesc
     {
         TfToken name;
         HdFormat format;
         VtValue clearValue;
+        HdPrmanAccumulationRule rule;
+
+        bool ShouldNormalizeBySampleCount() const
+        {
+            return format != HdFormatInt32 && rule != k_accumulationRuleMin &&
+                   rule != k_accumulationRuleMax && rule != k_accumulationRuleZmin &&
+                   rule != k_accumulationRuleZmax;
+        }
     };
 
     struct AovBuffer
@@ -69,6 +87,9 @@ public:
     /// this raises a runtime error if the ID is not found.
     static HdPrmanFramebuffer* GetByID(int32_t id);
     static void Register(RixContext*);
+
+    /// Convert the accumulation rule string to the HdPrmanAccumulationRule enum
+    static HdPrmanAccumulationRule ToAccumulationRule(RtUString name);
 
     /// (Re-)Creates Aov buffers without allocating pixel storage
     /// (allocated through Resize).

@@ -48,6 +48,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// <li>format
 ///   Format of the texture. This is required in APIs where sampler types depend
 ///   on the texture (e.g., GL) </li>
+/// <li>textureType:
+///   Type of the texture (e.g. array texture, shadow, etc.).</li>
+/// <li>arraySize:
+///   If arraySize > 0, indicates the size of the array. Note that textureType 
+///   = HgiTextureTypeTexture and arraySize = 2 would create an array with two 
+///   textures whereas textureType  = HgiTextureTypeArrayTexture and arraySize 
+///   = 0 would create a single array texture (arrays of array textures are 
+///   supported as well).</li>
 /// <li>writable
 ///   Whether the texture is writable.</li>
 /// </ul>
@@ -60,6 +68,8 @@ struct HgiShaderFunctionTextureDesc
     std::string nameInShader;
     uint32_t dimensions;
     HgiFormat format;
+    HgiShaderTextureType textureType;
+    size_t arraySize;
     bool writable;
 };
 
@@ -123,19 +133,24 @@ bool operator!=(
 
 /// \struct HgiShaderFunctionParamDesc
 ///
-/// Describes a constant param passed into a shader
+/// Describes a param passed into a shader or between shader stages.
 ///
 /// <ul>
 /// <li>nameInShader:
 ///   The name written from the codegen into the shader file for the param.</li>
 /// <li>type:
 ///   Type of the param within the shader file.</li>
+/// <li>location:
+///   For OpenGL, optionally specify the layout location.
+///   For Metal, if no role is specified, this generates the role</li>
+/// <li>interstageSlot:
+///   Optionally specify an index for interstage parameters.</li>
+/// <li>interpolation:
+///   Optionally specify the interpolation: Default, Flat or NoPerspective.</li>
 /// <li>role:
 ///   Optionally a role can be specified, like position, uv, color.</li>
-/// <li>attribute:
-///   Optionally an attribute can be specified, like versions or addresses.</li>
-/// <li>attributeIndex:
-///   Used in metal, to specify indicies of attributes.</li>
+/// <li>arraySize:
+///   If specified, generates an array type parameter with given size.</li>
 /// </ul>
 ///
 struct HgiShaderFunctionParamDesc
@@ -145,9 +160,11 @@ struct HgiShaderFunctionParamDesc
 
     std::string nameInShader;
     std::string type;
+    int32_t location;
+    int32_t interstageSlot;
+    HgiInterpolationType interpolation;
     std::string role;
-    std::string attribute;
-    std::string attributeIndex;
+    std::string arraySize;
 };
 
 using HgiShaderFunctionParamDescVector =
@@ -162,6 +179,65 @@ HGI_API
 bool operator!=(
     const HgiShaderFunctionParamDesc& lhs,
     const HgiShaderFunctionParamDesc& rhs);
+
+/// \struct HgiShaderFunctionParamBlockDesc
+///
+/// Describes an interstage param block between shader stages
+///
+/// <ul>
+/// <li>blockName:
+///   The name used to match blocks between shader stages.</li>
+/// <li>instanceName:
+///   The name used to scope access to block members.</li>
+/// <li>members:
+///   The members of the block.</li>
+/// <li>arraySize:
+///   If specified, generates a block with given size.</li>
+/// <li>interstageSlot:
+///   The interstage slot index of the first member of the block,
+///   subsequent members are assigned sequential interstage slot indices.</li>
+/// </ul>
+///
+struct HgiShaderFunctionParamBlockDesc
+{
+    HGI_API
+    HgiShaderFunctionParamBlockDesc();
+
+    struct Member {
+        std::string name;
+        std::string type;
+    };
+    using MemberVector = std::vector<Member>;
+
+    std::string blockName;
+    std::string instanceName;
+    MemberVector members;
+    std::string arraySize;
+    int32_t interstageSlot;
+};
+
+using HgiShaderFunctionParamBlockDescVector =
+    std::vector<HgiShaderFunctionParamBlockDesc>;
+
+HGI_API
+bool operator==(
+    const HgiShaderFunctionParamBlockDesc& lhs,
+    const HgiShaderFunctionParamBlockDesc& rhs);
+
+HGI_API
+bool operator!=(
+    const HgiShaderFunctionParamBlockDesc& lhs,
+    const HgiShaderFunctionParamBlockDesc& rhs);
+
+HGI_API
+bool operator==(
+    const HgiShaderFunctionParamBlockDesc::Member& lhs,
+    const HgiShaderFunctionParamBlockDesc::Member& rhs);
+
+HGI_API
+bool operator!=(
+    const HgiShaderFunctionParamBlockDesc::Member& lhs,
+    const HgiShaderFunctionParamBlockDesc::Member& rhs);
 
 /// \struct HgiShaderFunctionComputeDesc
 ///
@@ -231,6 +307,34 @@ bool operator!=(
         const HgiShaderFunctionTessellationDesc& lhs,
         const HgiShaderFunctionTessellationDesc& rhs);
 
+///
+/// Describes a fragment function's description
+///
+/// <ul>
+/// <li>earlyFragmentTests:
+///   Fragment shader tests will be performed before fragment
+///   shader execution when enabled.</li>
+/// </ul>
+///
+struct HgiShaderFunctionFragmentDesc
+{
+    HGI_API
+    HgiShaderFunctionFragmentDesc();
+
+    bool earlyFragmentTests;
+
+};
+
+HGI_API
+bool operator==(
+        const HgiShaderFunctionFragmentDesc& lhs,
+        const HgiShaderFunctionFragmentDesc& rhs);
+
+HGI_API
+bool operator!=(
+        const HgiShaderFunctionFragmentDesc& lhs,
+        const HgiShaderFunctionFragmentDesc& rhs);
+
 /// \struct HgiShaderFunctionDesc
 ///
 /// Describes the properties needed to create a GPU shader function.
@@ -240,18 +344,30 @@ bool operator!=(
 ///   This label can be applied as debug label for gpu debugging.</li>
 /// <li>shaderStage:
 ///   The shader stage this function represents.</li>
+/// <li>shaderCodeDeclarations:
+///   Optional ascii shader code containing defines and type declarations
+///   which need to be emitted before generated resource bindings.</li>
 /// <li>shaderCode:
 ///   The ascii shader code used to compile the shader.</li>
+/// <li>generatedShaderCodeOut:
+///   Optional pointer to a string that will be filled in with the
+///   ascii shader code after shader generation is complete.</li>
 /// <li>textures:
 ///   List of texture descriptions to be passed into a shader.</li>
 /// <li>buffers:
 ///   List of buffer descriptions to be passed into a shader.</li>
 /// <li>constantParams:
 ///   List of descriptions of constant params passed into a shader.</li>
+/// <li>stageGlobalMembers:
+///   List of descriptions of params declared at global scope.</li>
 /// <li>stageInputs:
 ///   List of descriptions of the inputs of the shader.</li>
 /// <li>stageOutputs:
 ///   List of descriptions of the outputs of the shader.</li>
+/// <li>stageInputBlocks:
+///   List of descriptions of the input blocks of the shader.</li>
+/// <li>stageOutputsBlocks:
+///   List of descriptions of the output blocks of the shader.</li>
 /// <li>tessellationDesc:
 ///   Description of tessellation shader function.</li>
 /// <li>computeDescriptor:
@@ -264,14 +380,20 @@ struct HgiShaderFunctionDesc
     HgiShaderFunctionDesc();
     std::string debugName;
     HgiShaderStage shaderStage;
-    const char*  shaderCode;
+    const char *shaderCodeDeclarations;
+    const char *shaderCode;
+    std::string *generatedShaderCodeOut;
     std::vector<HgiShaderFunctionTextureDesc> textures;
     std::vector<HgiShaderFunctionBufferDesc> buffers;
     std::vector<HgiShaderFunctionParamDesc> constantParams;
+    std::vector<HgiShaderFunctionParamDesc> stageGlobalMembers;
     std::vector<HgiShaderFunctionParamDesc> stageInputs;
     std::vector<HgiShaderFunctionParamDesc> stageOutputs;
+    std::vector<HgiShaderFunctionParamBlockDesc> stageInputBlocks;
+    std::vector<HgiShaderFunctionParamBlockDesc> stageOutputBlocks;
     HgiShaderFunctionTessellationDesc tessellationDescriptor;
     HgiShaderFunctionComputeDesc computeDescriptor;
+    HgiShaderFunctionFragmentDesc fragmentDescriptor;
 };
 
 using HgiShaderFunctionDescVector =
@@ -294,7 +416,19 @@ HgiShaderFunctionAddTexture(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     uint32_t dimensions = 2,
-    const HgiFormat &format = HgiFormatFloat32Vec4);
+    const HgiFormat &format = HgiFormatFloat32Vec4,
+    const HgiShaderTextureType textureType = HgiShaderTextureTypeTexture);
+
+/// Adds array of textures descriptor to given shader function descriptor.
+HGI_API
+void
+HgiShaderFunctionAddArrayOfTextures(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    const uint32_t arraySize,
+    const uint32_t dimensions = 2,
+    const HgiFormat &format = HgiFormatFloat32Vec4,
+    const HgiShaderTextureType textureType = HgiShaderTextureTypeTexture);
 
 /// Adds writable texture descriptor to given shader function descriptor.
 HGI_API
@@ -302,8 +436,9 @@ void
 HgiShaderFunctionAddWritableTexture(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
-    uint32_t dimensions = 2,
-    const HgiFormat &format = HgiFormatFloat32Vec4);
+    const uint32_t dimensions = 2,
+    const HgiFormat &format = HgiFormatFloat32Vec4,
+    const HgiShaderTextureType textureType = HgiShaderTextureTypeTexture);
 
 /// Adds buffer descriptor to given shader function descriptor.
 HGI_API
@@ -314,8 +449,7 @@ HgiShaderFunctionAddBuffer(
     const std::string &type,
     const uint32_t bindIndex,
     HgiBindingType binding,
-    const uint32_t arraySize = 0
-    );
+    const uint32_t arraySize = 0);
 
 /// Adds buffer descriptor to given shader function descriptor.
 HGI_API
@@ -324,8 +458,7 @@ HgiShaderFunctionAddWritableBuffer(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const std::string &type,
-    const uint32_t bindIndex
-    );
+    const uint32_t bindIndex);
 
 /// Adds constant function param descriptor to given shader function
 /// descriptor.
@@ -335,21 +468,35 @@ HgiShaderFunctionAddConstantParam(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const std::string &type,
-    const std::string &role = std::string(),
-    const std::string &attribute = std::string(),
-    const std::string &attributeIndex = std::string());
+    const std::string &role = std::string());
 
 /// Adds stage input function param descriptor to given shader function
 /// descriptor.
+/// The location is will be set to the next available.
 HGI_API
 void
 HgiShaderFunctionAddStageInput(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const std::string &type,
-    const std::string &role = std::string(),
-    const std::string &attribute = std::string(),
-    const std::string &attributeIndex = std::string());
+    const std::string &role = std::string());
+
+/// Adds stage input function param descriptor to given shader function
+/// descriptor given param descriptor.
+HGI_API
+void
+HgiShaderFunctionAddStageInput(
+        HgiShaderFunctionDesc *functionDesc,
+        HgiShaderFunctionParamDesc const &paramDesc);
+
+/// Interstage input.
+HGI_API
+void
+HgiShaderFunctionAddGlobalVariable(
+   HgiShaderFunctionDesc *desc,
+   const std::string &nameInShader,
+   const std::string &type,
+   const std::string &arraySize);
 
 /// Adds stage output function param descriptor to given shader function
 /// descriptor.
@@ -359,9 +506,25 @@ HgiShaderFunctionAddStageOutput(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const std::string &type,
-    const std::string &role = std::string(),
-    const std::string &attribute = std::string(),
-    const std::string &attributeIndex = std::string());
+    const std::string &role = std::string());
+
+/// Adds stage output function param descriptor to given shader function
+/// descriptor.
+HGI_API
+void
+HgiShaderFunctionAddStageOutput(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    const std::string &type,
+    const uint32_t location);
+
+/// Adds stage output function param descriptor to given shader function
+/// descriptor given param descriptor.
+HGI_API
+void
+HgiShaderFunctionAddStageOutput(
+        HgiShaderFunctionDesc *functionDesc,
+        HgiShaderFunctionParamDesc const &paramDesc);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

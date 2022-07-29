@@ -120,11 +120,7 @@ Hd_TestDriver::Hd_TestDriver()
  , _renderPassState(_renderDelegate.CreateRenderPassState())
  , _collection(_tokens->testCollection, HdReprSelector())
 {
-    HdReprSelector reprSelector = HdReprSelector(HdReprTokens->hull);
-    if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
-        TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "GPU") {
-        reprSelector = HdReprSelector(HdReprTokens->smoothHull);
-    }
+    HdReprSelector reprSelector = HdReprSelector(HdReprTokens->smoothHull);
     _Init(reprSelector);
 }
 

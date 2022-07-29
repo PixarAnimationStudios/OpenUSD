@@ -86,6 +86,23 @@ public:
     NDR_API
     void SetExtraDiscoveryPlugins(const std::vector<TfType>& pluginTypes);
 
+    /// Allows the client to explicitly set additional discovery results that
+    /// would otherwise NOT be found through the plugin system. For example
+    /// to support lazily-loaded plugins which cannot be easily discovered
+    /// in advance.
+    ///
+    /// This method will not immediately spawn a parse call which will be
+    /// deferred until a GetNode*() method is called.
+    NDR_API
+    void AddDiscoveryResult(NdrNodeDiscoveryResult&& discoveryResult);
+
+    /// Copy version of the method above.
+    /// For performance reasons, one should prefer to use the rvalue reference
+    /// form.
+    /// \overload
+    NDR_API
+    void AddDiscoveryResult(const NdrNodeDiscoveryResult& discoveryResult);
+
     /// Allows the client to set any additional parser plugins that would
     /// otherwise NOT be found through the plugin system.
     ///

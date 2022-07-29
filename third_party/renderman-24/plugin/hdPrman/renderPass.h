@@ -56,6 +56,8 @@ private:
     std::shared_ptr<HdPrman_RenderParam> _renderParam;
     bool _converged;
     int _lastRenderedVersion;
+    int _lastTaskRenderTagsVersion;
+    int _lastRprimRenderTagVersion;
 
     std::chrono::steady_clock::time_point _frameStart;
     float _quickIntegrateTime;

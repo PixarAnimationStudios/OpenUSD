@@ -31,6 +31,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class Hgi;
 class HgiVulkan;
 class HgiVulkanDevice;
 
@@ -90,6 +91,7 @@ protected:
     HGIVULKAN_API
     HgiVulkanShaderFunction(
         HgiVulkanDevice* device,
+        Hgi const* hgi,
         HgiShaderFunctionDesc const& desc,
         int shaderVersion);
 

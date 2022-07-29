@@ -74,6 +74,7 @@ HdStAssetUvTextureCpuData::HdStAssetUvTextureCpuData(
     _SetWrapInfo(mips.front());
     const HioFormat hioFormat = mips.front()->GetFormat();
 
+    _textureDesc.usage = HgiTextureUsageBitsShaderRead;
     _textureDesc.type = HgiTextureType2D;
 
     // Determine the corresponding GPU format (e.g., float/byte,

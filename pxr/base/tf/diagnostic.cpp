@@ -240,7 +240,7 @@ _fatalSignalHandler(int signo)
 
     {
         Tf_ScopeDescriptionStackReportLock descStackReport;
-        ArchLogPostMortem(
+        ArchLogFatalProcessState(
             msg, /*message=*/nullptr, descStackReport.GetMessage());
     }
 

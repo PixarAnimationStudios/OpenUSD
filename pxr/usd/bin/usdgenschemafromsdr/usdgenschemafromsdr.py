@@ -62,6 +62,7 @@ class SchemaLayerConstants(ConstantsGroup):
     GLOBAL_PRIM_PATH = "/GLOBAL"
     LIBRARY_NAME_STRING = "libraryName"
     SKIP_CODE_GENERATION = "skipCodeGeneration"
+    USE_LITERAL_IDENTIFIER = "useLiteralIdentifier"
     SCHEMA_PATH_STRING = "schema.usda"
 
 class MiscConstants(ConstantsGroup):
@@ -102,7 +103,8 @@ def _GetUsdGenSchemaCmd():
                     return cmd
     return None
 
-def _ConfigureSchemaLayer(schemaLayer, schemaSubLayers, skipCodeGeneration):
+def _ConfigureSchemaLayer(schemaLayer, schemaSubLayers, skipCodeGeneration,
+        useLiteralIdentifier):
     # - add sublayers
     subLayers = schemaLayer.subLayerPaths
     subLayersList = list(subLayers)
@@ -126,6 +128,9 @@ def _ConfigureSchemaLayer(schemaLayer, schemaSubLayers, skipCodeGeneration):
                 SchemaLayerConstants.LIBRARY_NAME_STRING))
     customDataDict[SchemaLayerConstants.SKIP_CODE_GENERATION] = \
             skipCodeGeneration
+    customDataDict[SchemaLayerConstants.USE_LITERAL_IDENTIFIER] = \
+            useLiteralIdentifier
+            
     globalPrim.customData = customDataDict
 
     schemaLayer.Save()
@@ -147,7 +152,9 @@ if __name__ == '__main__':
     The script takes 3 arguments:
         - a json config, providing sdrNodes via sourceType, sdrNodeIdentifiers
           or explicit list of absolute asset file paths (sourceAssetNodes) and 
-          a list of sublayers.
+          a list of sublayers. The asset file paths might also contain
+          environment variables, so users must set these prior to running the
+          script.
         - a destination directory. Note that a schema.usda with appropriate 
           GLOBAL prim providing a libraryName in its customData, must be 
           present at this location. This is also the location where 
@@ -159,7 +166,13 @@ if __name__ == '__main__':
           explaination of the contents of the directory.
 
     This script will run usdGenSchema on the auto populated schema.usda.
-    
+
+    If regenerating schemas, it's recommended to set the
+    USD_DISABLE_AUTO_APPLY_API_SCHEMAS environment variable to true in 
+    order to prevent any previously generated auto-apply API schemas 
+    from being applied to the specified schema bases which can result 
+    in extra properties being pruned.
+
     The schema.usda populated specifications from the provided sdrNodes using
     UsdUtils.UpdateSchemaWithSdrNode and skipCodeGeneration metadata will be 
     set to true, unless explicitly marked False in the config for this 
@@ -178,7 +191,9 @@ if __name__ == '__main__':
             or explicit list of absolute asset file paths (sourceAssetNodes).
             Note that for nodes specified under sourceAssetNodes we will use 
             the basename stripped of extension as the shaderId for nodes we 
-            create.
+            create. If node paths specified in sourceAssetNodes contain any
+            environment variables, user is required to set these prior to 
+            running the script.
             And also optionally providing a list of sublayers which the 
             schema.usda will sublayer. Code generation can also be optionally 
             enabled via the json config, note that code generation is disabled 
@@ -254,26 +269,24 @@ if __name__ == '__main__':
     # Note that for nodes with explicit asset paths, this list stores a tuple,
     # with first entry being the sdrNode and second the true identifier
     # (identified from the file basename, which should match the node identifier
-    # when queries using GetShaderNodeByNameAndType at runtime).
+    # when queries using GetShaderNodeByIdentifierAndType at runtime).
     sdrNodesToParse = []
     renderContext = ""
 
     sdrNodesDict = config.get(SchemaConfigConstants.SDR_NODES)
     if sdrNodesDict:
-        # Extract any renderContext from the config if specified.
-        if SchemaConfigConstants.RENDER_CONTEXT in sdrNodesDict.keys():
-            renderContext = \
-                    sdrNodesDict.get(SchemaConfigConstants.RENDER_CONTEXT)
-
         # Extract sdrNodes from the config
         sdrRegistry = Sdr.Registry()
         for sourceType in sdrNodesDict.keys():
             if sourceType == SchemaConfigConstants.RENDER_CONTEXT:
-                continue
-            if sourceType == SchemaConfigConstants.SOURCE_ASSET_NODES:
+                # Extract any renderContext from the config if specified.
+                renderContext = \
+                    sdrNodesDict.get(SchemaConfigConstants.RENDER_CONTEXT)
+            elif sourceType == SchemaConfigConstants.SOURCE_ASSET_NODES:
                 # process sdrNodes provided by explicit sourceAssetNodes
                 for assetPath in \
-                    sdrNodesDict.get(SchemaConfigConstants.SOURCE_ASSET_NODES):
+                sdrNodesDict.get(SchemaConfigConstants.SOURCE_ASSET_NODES):
+                    assetPath = os.path.expandvars(assetPath)
                     node = Sdr.Registry().GetShaderNodeFromAsset(assetPath)
                     nodeIdentifier = \
                         os.path.splitext(os.path.basename(assetPath))[0]
@@ -281,20 +294,21 @@ if __name__ == '__main__':
                         sdrNodesToParse.append((node, nodeIdentifier))
                     else:
                         Tf.Warn("Node not found at path: %s." %(assetPath))
-                continue
-            for nodeId in sdrNodesDict.get(sourceType):
-                node = sdrRegistry.GetShaderNodeByNameAndType(nodeId,
-                        sourceType)
-                if node is not None:
-                    # This is a workaround to iterate through invalid sdrNodes 
-                    # (nodes not having any input or output properties). 
-                    # Currently these nodes return false when queried for 
-                    # IsValid().
-                    # Refer: pxr/usd/ndr/node.h#140-149
-                    sdrNodesToParse.append(node)
-                else:
-                    Tf.Warn("Invalid Node (%s:%s) provided." %(sourceType,
-                        nodeId))
+            else: 
+                # we have an actual sdr node source type
+                for nodeId in sdrNodesDict.get(sourceType):
+                    node = sdrRegistry.GetShaderNodeByIdentifierAndType(nodeId,
+                            sourceType)
+                    if node is not None:
+                        # This is a workaround to iterate through invalid 
+                        # sdrNodes (nodes not having any input or output 
+                        # properties). Currently these nodes return false when 
+                        # queried for IsValid().
+                        # Refer: pxr/usd/ndr/node.h#140-149
+                        sdrNodesToParse.append(node)
+                    else:
+                        Tf.Warn("Invalid Node (%s:%s) provided." %(sourceType,
+                            nodeId))
     else:
         Tf.Warn("No sdr nodes provided to generate a schema.usda")
         sys.exit(1)
@@ -316,10 +330,15 @@ if __name__ == '__main__':
     # False in the config file
     skipCodeGeneration = config.get(
             SchemaLayerConstants.SKIP_CODE_GENERATION, True)
+    # set useLiteralIdentifier customData to true, unless explicitly marked
+    # False in the config file
+    useLiteralIdentifier = config.get(
+            SchemaLayerConstants.USE_LITERAL_IDENTIFIER, True)
 
     # configure schema.usda
     # fill in sublayers
-    _ConfigureSchemaLayer(schemaLayer, schemaSubLayers, skipCodeGeneration)
+    _ConfigureSchemaLayer(schemaLayer, schemaSubLayers, skipCodeGeneration,
+            useLiteralIdentifier)
 
     # for each sdrNode call updateSchemaFromSdrNode with schema.usda
     for node in sdrNodesToParse:
@@ -339,6 +358,28 @@ if __name__ == '__main__':
     if writeReadme:
         readMeFile = os.path.join(schemaGenerationPath,
                 MiscConstants.README_FILE_NAME)
+
+        commonDescription = dedent("""
+            The json config can provide sdrNodes either using sourceType and
+            identifiers or using explicit paths via sourceAssetNodes. Note that
+            if explicit paths contain any environment variables, then the user 
+            is required to set these prior to running the script. Example:
+            "$RMANTREE/lib/defaults/PRManAttribute.args", will require setting
+            the RMANTREE environment variable before running the script.
+
+            If regenerating schemas, it's recommended to set the
+            USD_DISABLE_AUTO_APPLY_API_SCHEMAS environment variable to true in 
+            order to prevent any previously generated auto-apply API schemas 
+            from being applied to the specified schema bases which can result 
+            in extra properties being pruned.
+
+            Note that since users of this script have less control on direct
+            authoring of schema.usda, "useLiteralIdentifier" is unconditionally
+            set to true in schema.usda, which means the default camelCase token 
+            names will be overriden and usdGenSchema will try keep the token 
+            names as-is unless these are invalid.
+            """)
+
         description = dedent("""
             The files ("schema.usda", "generatedSchema.usda" and
             "plugInfo.json") in this directory are auto generated using 
@@ -348,7 +389,9 @@ if __name__ == '__main__':
             json config. usdGenSchema is then run on this auto populated schema 
             (with skipCodeGeneration set to True) to output a 
             generatedSchema.usda and plugInfo.json.
-            """) if skipCodeGeneration else \
+            %s
+            """)%(commonDescription) \
+            if skipCodeGeneration else \
             dedent("""
             The files ("schema.usda", "generatedSchema.usda", "plugInfo.json",
             cpp source and header files) in this directory are auto generated
@@ -358,7 +401,9 @@ if __name__ == '__main__':
             json config. usdGenSchema is then run on this auto populated schema 
             to output a generatedSchema.usda and plugInfo.json and all the
             generated code.
-            """)
+            %s
+            """)%(commonDescription)
+
         with open(readMeFile, "w") as file:
             file.write(description)
     

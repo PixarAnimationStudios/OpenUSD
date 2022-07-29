@@ -62,13 +62,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((shadowCompareTextures, "shadowCompareTextures"))
 );
 
-// XXX:
-// currently max number of lights are limited to 16 by
-// GL_MAX_VARYING_VECTORS for having the varying attribute
-//    out vec2 FshadowFilterWidth[NUM_LIGHTS];
-// which is defined in simpleLighting.glslfx.
-static const int _maxLightsUsed = 16;
-
 /* static */
 GlfSimpleLightingContextRefPtr
 GlfSimpleLightingContext::New()
@@ -123,7 +116,7 @@ GlfSimpleLightingContext::GetLights() const
 int
 GlfSimpleLightingContext::GetNumLightsUsed() const
 {
-    return std::min((int)_lights.size(), _maxLightsUsed);
+    return (int)_lights.size();
 }
 
 int

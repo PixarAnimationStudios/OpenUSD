@@ -296,19 +296,26 @@ HdPrmanInstancer::GetInstancePrimvars(
             continue;
         }
 
-        // Instance primvars with the "ri:attributes:" prefix correspond to
-        // renderman-namespace attributes and have that prefix stripped.
+        // Instance primvars with the "ri:attributes:" and
+        // "primvars:ri:attributes:" prefixes correspond to renderman-namespace
+        // attributes and have that prefix stripped.
         // All other primvars are in the "user:" namespace, so if they don't
         // have that prefix we need to add it.
         RtUString name;
         static const char *userPrefix = "user:";
         static const char *riAttrPrefix = "ri:attributes:";
+        static const char *primVarsRiAttrPrefix = "primvars:ri:attributes:";
         if (!strncmp(entry.first.GetText(), userPrefix, strlen(userPrefix))) {
             name = RtUString(entry.first.GetText());
         } else if (!strncmp(entry.first.GetText(), riAttrPrefix,
                             strlen(riAttrPrefix))) {
             const char *strippedName = entry.first.GetText();
             strippedName += strlen(riAttrPrefix);
+            name = RtUString(strippedName);
+        } else if (!strncmp(entry.first.GetText(), primVarsRiAttrPrefix,
+                            strlen(primVarsRiAttrPrefix))) {
+            const char *strippedName = entry.first.GetText();
+            strippedName += strlen(primVarsRiAttrPrefix);
             name = RtUString(strippedName);
         } else {
             std::string mangled =

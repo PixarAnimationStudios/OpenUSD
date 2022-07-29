@@ -51,10 +51,24 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
+_CreateMotionBlurScaleAttr(UsdGeomMotionAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateMotionBlurScaleAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateVelocityScaleAttr(UsdGeomMotionAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateVelocityScaleAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateNonlinearSampleCountAttr(UsdGeomMotionAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateNonlinearSampleCountAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
 }
 
 static std::string
@@ -120,10 +134,24 @@ void wrapUsdGeomMotionAPI()
         .def(!self)
 
         
+        .def("GetMotionBlurScaleAttr",
+             &This::GetMotionBlurScaleAttr)
+        .def("CreateMotionBlurScaleAttr",
+             &_CreateMotionBlurScaleAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
         .def("GetVelocityScaleAttr",
              &This::GetVelocityScaleAttr)
         .def("CreateVelocityScaleAttr",
              &_CreateVelocityScaleAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetNonlinearSampleCountAttr",
+             &This::GetNonlinearSampleCountAttr)
+        .def("CreateNonlinearSampleCountAttr",
+             &_CreateNonlinearSampleCountAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
@@ -158,6 +186,12 @@ WRAP_CUSTOM {
     _class
         .def("ComputeVelocityScale", &UsdGeomMotionAPI::ComputeVelocityScale,
                 (arg("time")=UsdTimeCode::Default()))
+        .def("ComputeNonlinearSampleCount",
+             &UsdGeomMotionAPI::ComputeNonlinearSampleCount,
+                (arg("time")=UsdTimeCode::Default()))
+        .def("ComputeMotionBlurScale", 
+             &UsdGeomMotionAPI::ComputeMotionBlurScale,
+             (arg("time")=UsdTimeCode::Default()))
      ;
 }
 

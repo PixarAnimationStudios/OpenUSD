@@ -1,5 +1,7 @@
 #usda 1.0
-
+(
+    upAxis = "Z"
+)
 def Scope "MaterialX_Gold" {
     def Sphere "MxUsdGold" {
         rel material:binding = </Materials/MaterialX/Materials/USD_Gold>
@@ -86,7 +88,7 @@ def Xform "lights"
 {
     def DomeLight "DomeLight"
     {
-        asset inputs:texture:file = "./Env_StinsonBeach.tex"
+        asset inputs:texture:file = @./StinsonBeach.hdr@
         float xformOp:rotateX:Zup = 90
         uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
     }

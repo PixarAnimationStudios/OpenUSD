@@ -130,6 +130,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "knots", UsdGeomTokens->knots);
     _AddToken(cls, "left", UsdGeomTokens->left);
     _AddToken(cls, "leftHanded", UsdGeomTokens->leftHanded);
+    _AddToken(cls, "length", UsdGeomTokens->length);
     _AddToken(cls, "linear", UsdGeomTokens->linear);
     _AddToken(cls, "loop", UsdGeomTokens->loop);
     _AddToken(cls, "metersPerUnit", UsdGeomTokens->metersPerUnit);
@@ -144,6 +145,8 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "modelDrawMode", UsdGeomTokens->modelDrawMode);
     _AddToken(cls, "modelDrawModeColor", UsdGeomTokens->modelDrawModeColor);
     _AddToken(cls, "mono", UsdGeomTokens->mono);
+    _AddToken(cls, "motionBlurScale", UsdGeomTokens->motionBlurScale);
+    _AddToken(cls, "motionNonlinearSampleCount", UsdGeomTokens->motionNonlinearSampleCount);
     _AddToken(cls, "motionVelocityScale", UsdGeomTokens->motionVelocityScale);
     _AddToken(cls, "none", UsdGeomTokens->none);
     _AddToken(cls, "nonOverlapping", UsdGeomTokens->nonOverlapping);
@@ -216,6 +219,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "vOrder", UsdGeomTokens->vOrder);
     _AddToken(cls, "vRange", UsdGeomTokens->vRange);
     _AddToken(cls, "vVertexCount", UsdGeomTokens->vVertexCount);
+    _AddToken(cls, "width", UsdGeomTokens->width);
     _AddToken(cls, "widths", UsdGeomTokens->widths);
     _AddToken(cls, "wrap", UsdGeomTokens->wrap);
     _AddToken(cls, "x", UsdGeomTokens->x);

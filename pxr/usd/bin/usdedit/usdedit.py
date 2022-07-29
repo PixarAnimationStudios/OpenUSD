@@ -142,7 +142,7 @@ def _writeOutChanges(temporaryFileName, permanentFileName):
 def main():
     import argparse
     parser = argparse.ArgumentParser(prog=os.path.basename(sys.argv[0]),
-        description= 'Convert a usd-readable file to the usd ascii format in \n'
+        description= 'Convert a usd-readable file to the .usda text format in\n'
                'a temporary location and invoke an editor on it.  After \n'
                'saving and quitting the editor, the edited file will be \n'
                'converted back to the original format and OVERWRITE the \n'

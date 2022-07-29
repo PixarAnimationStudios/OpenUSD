@@ -58,7 +58,8 @@
 // 42 -> 43: Removed HdCamera pulling on view and projection matrix.
 // 43 -> 44: Replaced HdCamera::GetProjectionMatrix with
 //           HdComputeProjectionMatrix.
-#define HD_API_VERSION 44
+// 44 -> 45: Added HdSceneDelegate::GetScenePrimPaths.
+#define HD_API_VERSION 45
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

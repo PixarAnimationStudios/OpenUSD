@@ -31,6 +31,8 @@
 #include "pxr/base/arch/math.h"
 
 #include <cstdio>
+#include <cstdint>
+#include <cstring>
 #include <limits>
 
 #if defined(ARCH_OS_LINUX)
@@ -152,6 +154,19 @@ Arch_ValidateAssumptions()
     if (ARCH_CACHE_LINE_SIZE != cacheLineSize) {
         ARCH_WARNING("ARCH_CACHE_LINE_SIZE != Arch_ObtainCacheLineSize()");
     }
+
+    /*
+     * Make sure that the machine is little-endian.  We do not support
+     * big-endian machines.
+     */
+    {
+        uint32_t check;
+        char buf[] = { 1, 2, 3, 4 };
+        memcpy(&check, buf, sizeof(check));
+        if (check != 0x04030201) {
+            ARCH_ERROR("Big-endian byte order not supported.");
+        }
+    }    
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

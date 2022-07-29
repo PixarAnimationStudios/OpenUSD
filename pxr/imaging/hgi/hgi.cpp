@@ -131,11 +131,11 @@ Hgi::CreatePlatformDefaultHgi()
 bool
 Hgi::IsSupported()
 {
-    Hgi* instance = _MakeNewPlatformDefaultHgi();
-    const bool supported = instance->IsBackendSupported();
-    delete instance;
+    if (HgiUniquePtr const instance = CreatePlatformDefaultHgi()) {
+        return instance->IsBackendSupported();
+    }
 
-    return supported;
+    return false;
 }
 
 uint64_t

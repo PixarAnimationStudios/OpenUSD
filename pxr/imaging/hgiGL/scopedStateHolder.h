@@ -28,6 +28,7 @@
 #include "pxr/imaging/hgiGL/api.h"
 
 #include <cstdint>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -95,7 +96,13 @@ private:
     int32_t _cullMode;
     int32_t _frontFace;
     bool _rasterizerDiscard;
+    bool _restoreDepthClamp;
+    float _depthRange[2];
     bool _restoreFramebufferSRGB;
+    bool _restoreConservativeRaster;
+    std::vector<bool> _restoreClipDistances;
+    bool _restoreMultiSample;
+    bool _restorePointSmooth;
 };
 
 

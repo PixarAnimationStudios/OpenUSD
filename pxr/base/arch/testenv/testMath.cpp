@@ -52,5 +52,20 @@ int main()
     AXIOM(ArchSign(123) == 1);
     AXIOM(ArchSign(0) == 0);
 
+    AXIOM(ArchCountTrailingZeros(1) == 0);
+    AXIOM(ArchCountTrailingZeros(2) == 1);
+    AXIOM(ArchCountTrailingZeros(3) == 0);
+    AXIOM(ArchCountTrailingZeros(4) == 2);
+    AXIOM(ArchCountTrailingZeros(5) == 0);
+    AXIOM(ArchCountTrailingZeros(6) == 1);
+    AXIOM(ArchCountTrailingZeros(7) == 0);
+    AXIOM(ArchCountTrailingZeros(8) == 3);
+
+    AXIOM(ArchCountTrailingZeros(65535) == 0);
+    AXIOM(ArchCountTrailingZeros(65536) == 16);
+
+    AXIOM(ArchCountTrailingZeros(~((1ull << 32ull)-1ull)) == 32);
+    AXIOM(ArchCountTrailingZeros(1ull << 63ull) == 63);
+    
     return 0;
 }

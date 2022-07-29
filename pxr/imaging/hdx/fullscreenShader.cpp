@@ -298,23 +298,17 @@ HdxFullscreenShader::_CreateBufferResources()
      */
     constexpr size_t elementsPerVertex = 6;
     constexpr size_t vertDataCount = elementsPerVertex * 3;
-    constexpr float vertDataGL[vertDataCount] = 
+    constexpr float vertData[vertDataCount] =
             { -1,  3, 0, 1,     0, 2,
               -1, -1, 0, 1,     0, 0,
                3, -1, 0, 1,     2, 0};
 
-    constexpr float vertDataOther[vertDataCount] =
-            { -1,  3, 0, 1,     0, -1,
-              -1, -1, 0, 1,     0, 1,
-               3, -1, 0, 1,     2, 1};
-
     HgiBufferDesc vboDesc;
     vboDesc.debugName = "HdxFullscreenShader VertexBuffer";
     vboDesc.usage = HgiBufferUsageVertex;
-    vboDesc.initialData = _hgi->GetAPIName() != HgiTokens->OpenGL 
-        ? vertDataOther : vertDataGL;
-    vboDesc.byteSize = sizeof(vertDataGL);
-    vboDesc.vertexStride = elementsPerVertex * sizeof(vertDataGL[0]);
+    vboDesc.initialData = vertData;
+    vboDesc.byteSize = sizeof(vertData);
+    vboDesc.vertexStride = elementsPerVertex * sizeof(vertData[0]);
     _vertexBuffer = _hgi->CreateBuffer(vboDesc);
 
     static const int32_t indices[3] = {0,1,2};
@@ -500,7 +494,16 @@ HdxFullscreenShader::_CreatePipeline(
     // pixels that were set with a clearColor alpha of 0.0.
     desc.multiSampleState.alphaToCoverageEnable = false;
 
-    // Setup raserization state
+    // The MSAA on renderPipelineState has to match the render target.
+    if (colorDst) {
+        desc.multiSampleState.sampleCount = 
+            colorDst->GetDescriptor().sampleCount;
+    } else if (depthDst) {
+        desc.multiSampleState.sampleCount = 
+            depthDst->GetDescriptor().sampleCount;
+    }
+
+    // Setup rasterization state
     desc.rasterizationState.cullMode = HgiCullModeBack;
     desc.rasterizationState.polygonMode = HgiPolygonModeFill;
     desc.rasterizationState.winding = HgiWindingCounterClockwise;
@@ -685,7 +688,7 @@ HdxFullscreenShader::_Draw(
     gfxCmds->PushDebugGroup(_debugName.c_str());
     gfxCmds->BindResources(_resourceBindings);
     gfxCmds->BindPipeline(_pipeline);
-    gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
+    gfxCmds->BindVertexBuffers({{_vertexBuffer, 0, 0}});
     gfxCmds->SetViewport(viewport);
 
     if (!_constantsData.empty()) {

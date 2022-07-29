@@ -91,6 +91,11 @@ public:
             UsdPrim const& prim,
             const UsdImagingDataSourceStageGlobals &stageGlobals);
 
+    USDIMAGING_API
+    virtual HdDataSourceLocatorSet InvalidateImagingSubprim(
+            TfToken const& subprim,
+            TfTokenVector const& properties);
+
     // ---------------------------------------------------------------------- //
     /// \name Initialization
     // ---------------------------------------------------------------------- //
@@ -271,6 +276,11 @@ public:
                                        SdfPath const& cachePath,
                                        UsdImagingIndexProxy* index);
 
+    USDIMAGING_API
+    virtual void MarkCollectionsDirty(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingIndexProxy* index);
+
     // ---------------------------------------------------------------------- //
     /// \name Computations 
     // ---------------------------------------------------------------------- //
@@ -360,10 +370,16 @@ public:
     /// \name Selection
     // ---------------------------------------------------------------------- //
 
+    /// \deprecated Call and implement GetScenePrimPaths instead.
     USDIMAGING_API
     virtual SdfPath GetScenePrimPath(SdfPath const& cachePath,
-                                     int instanceIndex,
-                                     HdInstancerContext *instancerCtx) const;
+        int instanceIndex,
+        HdInstancerContext *instancerCtx) const;
+
+    USDIMAGING_API
+    virtual SdfPathVector GetScenePrimPaths(SdfPath const& cachePath,
+        std::vector<int> const& instanceIndices,
+        std::vector<HdInstancerContext> *instancerCtxs) const;
 
     // Add the given usdPrim to the HdSelection object, to mark it for
     // selection highlighting. cachePath is the path of the object referencing
@@ -628,6 +644,12 @@ protected:
     USDIMAGING_API
     UsdImagingPrimvarDescCache* _GetPrimvarDescCache() const;
 
+    UsdImaging_NonlinearSampleCountCache*
+        _GetNonlinearSampleCountCache() const;
+
+    UsdImaging_BlurScaleCache*
+        _GetBlurScaleCache() const;
+
     USDIMAGING_API
     UsdPrim _GetPrim(SdfPath const& usdPath) const;
 
@@ -795,12 +817,20 @@ protected:
     UsdImaging_CollectionCache& _GetCollectionCache() const;
 
     USDIMAGING_API
+    UsdStageRefPtr _GetStage() const;
+
+    USDIMAGING_API
     UsdImaging_CoordSysBindingStrategy::value_type
     _GetCoordSysBindings(UsdPrim const& prim) const;
 
     USDIMAGING_API
     UsdImaging_InheritedPrimvarStrategy::value_type
     _GetInheritedPrimvars(UsdPrim const& prim) const;
+
+    // Utility for derived classes to try to find an inherited primvar.
+    USDIMAGING_API
+    UsdGeomPrimvar _GetInheritedPrimvar(UsdPrim const& prim,
+                                        TfToken const& primvarName) const;
 
     USDIMAGING_API
     GfInterval _GetCurrentTimeSamplingInterval();

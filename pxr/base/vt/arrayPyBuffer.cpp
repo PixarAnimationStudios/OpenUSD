@@ -67,6 +67,7 @@ struct Vt_GetSubElementType<
     T, typename std::enable_if<GfIsGfVec<T>::value ||
                                GfIsGfMatrix<T>::value ||
                                GfIsGfQuat<T>::value ||
+                               GfIsGfDualQuat<T>::value ||
                                GfIsGfRange<T>::value>::type> {
     typedef typename T::ScalarType Type;
 };
@@ -152,6 +153,10 @@ Vt_GetElementShapeImpl(T *) { return { T::numRows, T::numColumns }; }
 template <class T>
 constexpr typename std::enable_if<GfIsGfQuat<T>::value, Vt_PyShape<1> >::type
 Vt_GetElementShapeImpl(T *) { return { 4 }; }
+
+template <class T>
+constexpr typename std::enable_if<GfIsGfDualQuat<T>::value, Vt_PyShape<2> >::type
+Vt_GetElementShapeImpl(T *) { return { 2, 4 }; }
 
 template <class T>
 constexpr typename std::enable_if<
@@ -521,7 +526,7 @@ static VtValue Vt_CastPyObjToArray(VtValue const &v)
         ret.Swap(array);
     }
     else {
-        ret = Vt_ConvertFromPySequence<VtArray<T>>(obj);
+        ret = Vt_ConvertFromPySequenceOrIter<VtArray<T>>(obj);
     }
 
     return ret;

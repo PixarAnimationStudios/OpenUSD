@@ -112,7 +112,7 @@ private:
     HdBufferArrayRangeSharedPtr _materialBar;
 
     size_t _AppendLightsOfType(HdRenderIndex &renderIndex,
-                               std::vector<TfToken> const &lightTypes,
+                               TfTokenVector const &lightTypes,
                                SdfPathVector const &lightIncludePaths,
                                SdfPathVector const &lightExcludePaths,
                                std::map<TfToken, SdfPathVector> *lights);

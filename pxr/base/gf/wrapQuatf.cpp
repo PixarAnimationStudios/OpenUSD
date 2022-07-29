@@ -59,17 +59,15 @@ static string __repr__(GfQuatf const &self) {
         TfPyRepr(self.GetImaginary()) + ")";
 }
 
-#if PY_MAJOR_VERSION == 2
 static GfQuatf __truediv__(const GfQuatf &self, float value)
 {
     return self / value;
 }
 
-static GfQuatf __itruediv__(GfQuatf &self, float value)
+static GfQuatf& __itruediv__(GfQuatf &self, float value)
 {
     return self /= value;
 }
-#endif
 
 // Zero-initialized default ctor for python.
 static GfQuatf *__init__() { return new GfQuatf(0); }
@@ -100,7 +98,8 @@ void wrapQuatf()
         (float (*)(const GfQuatf&, const GfQuatf&))
         GfDot);
     
-    class_<GfQuatf>("Quatf", no_init)
+    class_<GfQuatf> cls("Quatf", no_init);
+    cls
         .def("__init__", make_constructor(__init__))
                           
         .def(TfTypePythonClass())
@@ -112,6 +111,9 @@ void wrapQuatf()
         .def(init<float, float, float, float>(
                  (arg("real"), arg("i"), arg("j"), arg("k"))))
         .def(init<const GfQuatd & >())
+
+        .def("GetZero", &GfQuatf::GetZero)
+        .staticmethod("GetZero")
 
         .def("GetIdentity", &GfQuatf::GetIdentity)
         .staticmethod("GetIdentity")
@@ -152,14 +154,6 @@ void wrapQuatf()
         .def(self * float())
         .def(float() * self)
         .def(self / float())
-
-#if PY_MAJOR_VERSION == 2
-        // Needed only to support "from __future__ import division" in
-        // python 2. In python 3 builds boost::python adds this for us.
-        .def("__truediv__", __truediv__ )
-        .def("__itruediv__", __itruediv__ )
-#endif
-
         .def("__repr__", __repr__)
 
         ;
@@ -168,5 +162,19 @@ void wrapQuatf()
 
     to_python_converter<std::vector<GfQuatf>,
         TfPySequenceToPython<std::vector<GfQuatf> > >();
-    
+
+    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
+        // __truediv__ not added by .def( self / float() ) above, which
+        // happens when building with python 2, but we need it to support
+        // "from __future__ import division"
+        cls.def("__truediv__", __truediv__);
+    }
+    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
+        // __itruediv__ not added by .def( self /= float() ) above, which
+        // happens when building with python 2, but we need it to support
+        // "from __future__ import division". This is also a workaround for a 
+        // bug in the current version of boost::python that incorrectly wraps
+        // in-place division with __idiv__ when building with python 3.
+        cls.def("__itruediv__", __itruediv__, return_self<>());
+    }
 }

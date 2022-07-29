@@ -91,6 +91,7 @@ public:
 
     /// Prepare draw commands and apply view frustum culling for this batch.
     virtual void PrepareDraw(
+        HgiGraphicsCmds *gfxCmds,
         HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const &resourceRegistry) = 0;
 
@@ -129,7 +130,6 @@ protected:
         HDST_API
         bool CompileShader(
                 HdStDrawItem const *drawItem,
-                bool indirect,
                 HdStResourceRegistrySharedPtr const &resourceRegistry);
 
         HdStGLSLProgramSharedPtr GetGLSLProgram() const {
@@ -214,7 +214,6 @@ protected:
     HDST_API
     _DrawingProgram & _GetDrawingProgram(
         HdStRenderPassStateSharedPtr const &state, 
-        bool indirect,
         HdStResourceRegistrySharedPtr const &resourceRegistry);
 
 protected:
