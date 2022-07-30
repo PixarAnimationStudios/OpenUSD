@@ -67,6 +67,17 @@ HgiMetalShaderProgram::GetShaderFunctions() const
     return _descriptor.shaderFunctions;
 }
 
+HgiShaderFunctionHandle const
+HgiMetalShaderProgram::GetShaderFunction(HgiShaderStage shaderStage) const
+{
+    for (const HgiShaderFunctionHandle &handle : _descriptor.shaderFunctions) {
+        if (handle->GetDescriptor().shaderStage == shaderStage) {
+            return handle;
+        }
+    }
+    return HgiShaderFunctionHandle();
+}
+
 bool
 HgiMetalShaderProgram::IsValid() const
 {

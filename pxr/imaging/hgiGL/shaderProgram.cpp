@@ -90,6 +90,17 @@ HgiGLShaderProgram::GetShaderFunctions() const
     return _descriptor.shaderFunctions;
 }
 
+HgiShaderFunctionHandle const
+HgiGLShaderProgram::GetShaderFunction(HgiShaderStage shaderStage) const
+{
+    for (const HgiShaderFunctionHandle &handle : _descriptor.shaderFunctions) {
+        if (handle->GetDescriptor().shaderStage == shaderStage) {
+            return handle;
+        }
+    }
+    return HgiShaderFunctionHandle();
+}
+
 bool
 HgiGLShaderProgram::IsValid() const
 {
