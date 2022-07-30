@@ -56,6 +56,10 @@ public:
     HgiShaderFunctionHandleVector const& GetShaderFunctions() const override;
 
     HGIMETAL_API
+    HgiShaderFunctionHandle const
+        GetShaderFunction(HgiShaderStage shaderStage) const override;
+
+    HGIMETAL_API
     size_t GetByteSizeOfResource() const override;
 
     HGIMETAL_API
