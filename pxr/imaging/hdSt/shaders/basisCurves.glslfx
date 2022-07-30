@@ -631,7 +631,7 @@ void main()
 -- layout Curves.PostTessVertex.Cubic.Wire
 
  [
-     ["in fractional_odd"],
+     ["in", "fractional_odd"],
      ["out block", "CurveVertexData", "outData",
          ["vec4", "Peye"],
          ["vec3", "Neye"]
@@ -806,7 +806,7 @@ void main()
 -- layout Curves.PostTessVertex.Patch
 
  [
-     ["in fractional_odd"],
+     ["in", "fractional_odd"],
      ["out block", "CurveVertexData", "outData",
          ["vec4", "Peye"],
          ["vec3", "Neye"]

@@ -1221,8 +1221,6 @@ _GetDrawPipeline(
                                                   state.geometricShader);
 
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
-        pipeDesc.tessellationState.spacing =
-                         state.geometricShader->GetTessellationSpacing();
         pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
 
         Hgi* hgi = resourceRegistry->GetHgi();

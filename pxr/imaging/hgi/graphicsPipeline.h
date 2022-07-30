@@ -373,7 +373,6 @@ struct HgiTessellationState
     HGI_API
     HgiTessellationState();
 
-    HgiTessellationSpacing spacing;
     PatchType patchType;
     int primitiveIndexSize;
     bool useConstantTessFactors;

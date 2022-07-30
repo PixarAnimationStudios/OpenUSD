@@ -54,7 +54,6 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
                                        float lineWidth)
     : HdStShaderCode()
     , _primType(primType)
-    , _tessellationSpacing(spacing)
     , _cullStyle(cullStyle)
     , _useHardwareFaceCulling(useHardwareFaceCulling)
     , _hasMirroredTransform(hasMirroredTransform)
@@ -308,8 +307,7 @@ HdSt_GeometricShader::GetHgiPrimitiveType() const
                 shaderKey.IsFrustumCullingPass(),
                 shaderKey.GetFvarPatchType(),
                 /*debugId=*/SdfPath(),
-                shaderKey.GetLineWidth(),
-                shaderKey.GetTessellationSpacing()));
+                shaderKey.GetLineWidth()));
     }
     return geometricShaderInstance.GetValue();
 }

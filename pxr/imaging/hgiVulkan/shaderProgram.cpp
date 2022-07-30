@@ -79,7 +79,8 @@ HgiVulkanShaderProgram::GetShaderFunction(HgiShaderStage shaderStage) const
             return handle;
         }
     }
-    return HgiShaderFunctionHandle();
+    const HgiShaderFunctionHandle handle = HgiShaderFunctionHandle();
+    return handle;
 }
 
 HgiVulkanDevice*

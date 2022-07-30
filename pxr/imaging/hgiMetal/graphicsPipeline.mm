@@ -238,7 +238,10 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
             MTLTessellationFactorStepFunctionConstant :
             MTLTessellationFactorStepFunctionPerPatch;
         stateDesc.tessellationFactorScaleEnabled = NO;
-        switch (tessVertexFunc. .spacing) {
+        HgiShaderFunctionHandle tessFunc =
+            metalProgram->GetShaderFunction(
+                HgiShaderStagePostTessellationVertex);
+        switch (tessFunc->GetDescriptor().tessellationDescriptor.spacing) {
              //default to integer
            case HgiTessellationSpacingNone:
            case HgiTessellationSpacingEven:

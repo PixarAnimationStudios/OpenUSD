@@ -750,9 +750,9 @@ _ResourceGenerator::_GenerateHgiResources(
                 const static std::map<TfToken, HgiTessellationSpacing> spacings = {
                     {TfToken("equal_spacing"),
                         HgiTessellationSpacing::HgiTessellationSpacingEven},
-                    {TfToken("fractional_even_spacing"),
+                    {TfToken("fractional_even"),
                         HgiTessellationSpacing::HgiTessellationSpacingFractionalEven},
-                    {TfToken("fractional_odd_spacing"),
+                    {TfToken("fractional_odd"),
                         HgiTessellationSpacing::HgiTessellationSpacingFractionalOdd}};
                 for (auto const &spacing : spacings)
                 {

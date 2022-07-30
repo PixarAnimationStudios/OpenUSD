@@ -98,11 +98,7 @@ public:
     /// Returns the shader functions that are part of this program.
     HGI_API
     virtual HgiShaderFunctionHandleVector const& GetShaderFunctions() const = 0;
-
-    /// Returns the shader functions that are part of this program.
-    HGI_API
-    virtual HgiShaderFunctionHandleVector const& GetShaderFunction() const = 0;
-
+    
     /// Returns the shader based on shaderStage if it exists
     HGI_API
     virtual HgiShaderFunctionHandle const
