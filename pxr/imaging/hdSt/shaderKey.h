@@ -107,8 +107,6 @@ struct HdSt_ShaderKey {
     virtual HdPolygonMode GetPolygonMode() const;
     HDST_API
     virtual float GetLineWidth() const;
-    HDST_API
-    virtual HgiTessellationSpacing GetTessellationSpacing() const;
 
     // Returns the face-varying patch type used in code gen during creation
     // of the face-varying primvar accessors. Only relevant for mesh prims with 

@@ -244,13 +244,6 @@ HdSt_ShaderKey::UseMetalTessellation() const
 }
 
 /*virtual*/
-HgiTessellationSpacing
-HdSt_ShaderKey::GetTessellationSpacing() const
-{
-     return HgiTessellationSpacingNone;
-}
-
-/*virtual*/
 HdPolygonMode 
 HdSt_ShaderKey::GetPolygonMode() const
 {

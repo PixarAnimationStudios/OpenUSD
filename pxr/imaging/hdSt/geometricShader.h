@@ -158,9 +158,7 @@ public:
                        bool cullingPass,
                        FvarPatchType fvarPatchType,
                        SdfPath const &debugId = SdfPath(),
-                       float lineWidth = 0,
-                       HgiTessellationSpacing spacing =
-                             HgiTessellationSpacingNone);
+                       float lineWidth = 0);
 
     HDST_API
     ~HdSt_GeometricShader() override;
@@ -187,10 +185,6 @@ public:
 
     PrimitiveType GetPrimitiveType() const {
         return _primType;
-    }
-
-    HgiTessellationSpacing GetTessellationSpacing() const {
-             return _tessellationSpacing;
     }
 
     HdCullStyle GetCullStyle() const {

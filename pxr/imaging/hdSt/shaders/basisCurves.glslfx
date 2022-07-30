@@ -631,6 +631,7 @@ void main()
 -- layout Curves.PostTessVertex.Cubic.Wire
 
  [
+     ["in fractional_odd"],
      ["out block", "CurveVertexData", "outData",
          ["vec4", "Peye"],
          ["vec3", "Neye"]
@@ -713,7 +714,7 @@ out float v;
 FORWARD_DECL(
     void evaluate(float u, float v, REF(thread, vec4) position,
                   REF(thread, vec4) tangent, REF(thread, float) width,
-                  REF(thread, vec3) normal));
+                  REF(thread, vec3) normal), FlatCurveVertexData vertexData);
 FORWARD_DECL(Coeffs evaluateBasis(float u, float u2, float u3));
 
 // it's the responsibility of orient to store Neye, usually with either
@@ -733,7 +734,12 @@ void main()
     float rawWidth;
     vec3 normal;
 
-    evaluate(u, v, position, tangent, rawWidth, normal);
+    FlatCurveVertexData vertexData;
+    for (int i = 0; i < gl_MaxPatchVertices; i++) {
+        vertexData.Peye[i] = inData[i].Peye;
+        vertexData.Neye[i] = inData[i].Neye;
+    }
+    evaluate(u, v, position, tangent, rawWidth, normal, vertexData);
     vec3 direction = orient(v, position, tangent, normal);
     MAT4 transform = ApplyInstanceTransform(HdGet_transform());
 
@@ -800,6 +806,7 @@ void main()
 -- layout Curves.PostTessVertex.Patch
 
  [
+     ["in fractional_odd"],
      ["out block", "CurveVertexData", "outData",
          ["vec4", "Peye"],
          ["vec3", "Neye"]
@@ -838,8 +845,8 @@ void main()
      vec4 tangent;
      float width;
      vec3 normal;
-
-     evaluate(u, v, position, tangent, width, normal);
+     FlatCurveVertexData vertexData = PopulatePeyeAndNeye();
+     evaluate(u, v, position, tangent, width, normal, vertexData);
      vec3 direction = orient(v, position, tangent, normal);
      vec4 scaledDirection = GetWorldToViewMatrix() * transform
                             * vec4(direction, 0);
@@ -849,7 +856,6 @@ void main()
 
      outData.Peye = position;
      //TODO verify if this normal population is needed
-     FlatCurveVertexData vertexData = PopulatePeyeAndNeye();
      outData.Neye = basis[0] * vertexData.Neye[0] +
                  basis[1] * vertexData.Neye[1] +
                  basis[2] * vertexData.Neye[2] +
@@ -867,139 +873,56 @@ void main()
  }
 
 --- --------------------------------------------------------------------------
--- glsl Curves.TessEval.Linear.Patch
+-- glsl Curves.JointTessEval.Linear.Patch
 
-vec3 evaluateNormal(float u)
+vec3 evaluateNormal(float u, FlatCurveVertexData vertexData)
 {
     // XXX: This clamp is a hack to mask some odd orientation flipping issues
     u = clamp(u, 1e-3, 1.0f - 1e-3);
-    return mix(inData[1].Neye, inData[0].Neye, u);
+    return mix(vertexData.Neye[1], vertexData.Neye[0], u);
 }
 
 void evaluate(float u, float v, REF(thread, vec4) position,
               REF(thread, vec4) tangent, REF(thread, float) width,
-              REF(thread, vec3) normal) {
-    vec4 p0 = inData[0].Peye;
-    vec4 p1 = inData[1].Peye;
+              REF(thread, vec3) normal, FlatCurveVertexData vertexData) {
 
     float w0 = HdGet_widths(0);
     float w1 = HdGet_widths(1);
 
-    position = mix(p1, p0, u);
-    tangent = normalize(p1 - p0);
+    position = mix(vertexData.Peye[1], vertexData.Peye[0], u);
+    tangent = normalize(vertexData.Peye[1] - vertexData.Peye[0]);
     width = mix(w1, w0, u);
-    normal = normalize(evaluateNormal(u));
+    normal = normalize(evaluateNormal(u, vertexData));
 }
 
 --- --------------------------------------------------------------------------
--- glsl Curves.PostTessVertex.Linear.Patch
-
- vec3 evaluateNormal(float u)
- {
-     // XXX: This clamp is a hack to mask some odd orientation flipping issues
-     u = clamp(u, 1e-3, 1.0f - 1e-3);
-     MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
-     vec3 Neye0 = getNormal(transpose(transformInv *
-                                                 GetWorldToViewInverseMatrix()), 0);
-     vec3 Neye1 = getNormal(transpose(transformInv *
-                                                 GetWorldToViewInverseMatrix()), 1);
-     return mix(Neye0, Neye1, u);
- }
-
- void evaluate(float u, float v, REF(thread, vec4) position,
-               REF(thread, vec4) tangent,
-               REF(thread, float) width, REF(thread, vec3) normal){
-     MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
-     vec4 p0 = vec4(GetWorldToViewMatrix() * transform *
-                         vec4(points[0], 1));
-     vec4 p1 = vec4(GetWorldToViewMatrix() * transform *
-                         vec4(points[1], 1));
-
-     float w0 = HdGet_widths(0);
-     float w1 = HdGet_widths(1);
-
-     position = mix(p1, p0, u);
-     tangent = normalize(p1 - p0);
-     width = mix(w1, w0, u);
-     normal = normalize(evaluateNormal(u));
- }
-
---- --------------------------------------------------------------------------
--- glsl Curves.TessEval.Cubic.Patch
-struct Coeffs
-{
-  vec4 basis;
-  vec4 tangent_basis;
-};
+-- glsl Curves.JointTessEval.Cubic.Patch
 
 FORWARD_DECL(Coeffs evaluateBasis(float u, float u2, float u3));
 FORWARD_DECL(float evaluateWidths(vec4 basis, float u));
-FORWARD_DECL(vec3 evaluateNormal(vec4 basis, float u));
+FORWARD_DECL(vec3 evaluateNormal(vec4 basis, float u, FlatCurveVertexData vertexData));
 
 void evaluate(float u, float v, REF(thread, vec4) position,
               REF(thread, vec4) tangent, REF(thread, float) width,
-              REF(thread, vec3) normal) {
-    vec4 p0 = inData[0].Peye;
-    vec4 p1 = inData[1].Peye;
-    vec4 p2 = inData[2].Peye;
-    vec4 p3 = inData[3].Peye;
+              REF(thread, vec3) normal, FlatCurveVertexData vertexData) {
 
     Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
 
-    position = coeffs.basis[0] * p0 +
-               coeffs.basis[1] * p1 +
-               coeffs.basis[2] * p2 +
-               coeffs.basis[3] * p3;
+    position = coeffs.basis[0] * vertexData.Peye[0] +
+               coeffs.basis[1] * vertexData.Peye[1] +
+               coeffs.basis[2] * vertexData.Peye[2] +
+               coeffs.basis[3] * vertexData.Peye[3];
 
-    tangent = coeffs.tangent_basis[0] * p0 +
-              coeffs.tangent_basis[1] * p1 +
-              coeffs.tangent_basis[2] * p2 +
-              coeffs.tangent_basis[3] * p3;
+    tangent = coeffs.tangent_basis[0] * vertexData.Peye[0] +
+              coeffs.tangent_basis[1] * vertexData.Peye[1] +
+              coeffs.tangent_basis[2] * vertexData.Peye[2] +
+              coeffs.tangent_basis[3] * vertexData.Peye[3];
 
     width = evaluateWidths(coeffs.basis, u);
-    normal = normalize(evaluateNormal(coeffs.basis, u));
+    normal = normalize(evaluateNormal(coeffs.basis, u, vertexData));
     tangent = normalize(tangent);
 }
 
---- --------------------------------------------------------------------------
--- glsl Curves.PostTessVertex.Cubic.Patch
-
- FORWARD_DECL(Coeffs evaluateBasis(float u, float u2, float u3));
- FORWARD_DECL(float evaluateWidths(vec4 basis, float u));
- FORWARD_DECL(vec3 evaluateNormal(vec4 basis, float u));
-
- void evaluate(float u, float v, REF(thread, vec4) position,
-               REF(thread, vec4) tangent, REF(thread, float) width,
-               REF(thread, vec3) normal){
-
-     MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
-
-     vec4 p0 = vec4(GetWorldToViewMatrix() * transform *
-                         vec4(points[0], 1));
-     vec4 p1 = vec4(GetWorldToViewMatrix() * transform *
-                         vec4(points[1], 1));
-     vec4 p2 = vec4(GetWorldToViewMatrix() * transform *
-                         vec4(points[2], 1));
-     vec4 p3 = vec4(GetWorldToViewMatrix() * transform *
-                         vec4(points[3], 1));
-
-
-     Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
-
-     position = coeffs.basis[0] * p0 +
-                coeffs.basis[1] * p1 +
-                coeffs.basis[2] * p2 +
-                coeffs.basis[3] * p3;
-
-     tangent = coeffs.tangent_basis[0] * p0 +
-               coeffs.tangent_basis[1] * p1 +
-               coeffs.tangent_basis[2] * p2 +
-               coeffs.tangent_basis[3] * p3;
-
-     width = evaluateWidths(coeffs.basis, u);
-     normal = normalize(evaluateNormal(coeffs.basis, u));
-     tangent = normalize(tangent);
- }
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.TessEval.HalfTube
@@ -1036,57 +959,14 @@ vec3 orient(float v, vec4 position, vec4 tangent, vec3 normal){
 }
 
 --- --------------------------------------------------------------------------
--- glsl Curves.Cubic.Normals.Basis.PostTess
-
- vec3 evaluateNormal(vec4 basis, float u)
- {
-     MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
-
-     vec3 n0 = getNormal(transpose(transformInv *
-                                   GetWorldToViewInverseMatrix()),0);
-     vec3 n1 = getNormal(transpose(transformInv *
-                                   GetWorldToViewInverseMatrix()),1);
-     vec3 n2 = getNormal(transpose(transformInv *
-                                   GetWorldToViewInverseMatrix()),2);
-     vec3 n3 = getNormal(transpose(transformInv *
-                                   GetWorldToViewInverseMatrix()),3);
-     return n0 * basis.x
-          + n1 * basis.y
-          + n2 * basis.z
-          + n3 * basis.w;
- }
-
---- --------------------------------------------------------------------------
--- glsl Curves.Cubic.Normals.Linear.PostTess
-
- // HdSt only supports vertex (cubic) primvar indexes and expands varying
- // (linear) primvars so we pull the data out of only the two interior indices.
- // This may not be valid for all potential basis, but works well for curves with
- // vstep = 1 and bezier, the only supported cubic curves in HdSt.
-
- vec3 evaluateNormal(vec4 basis, float u)
- {
-     // XXX: This clamp is a hack to mask some odd orientation flipping issues
-     // for oriented bezier curves.
-     u = clamp(u, 1e-3, 1.0f - 1e-3);
-     MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
-     vec3 n1 = getNormal(transpose(transformInv *
-                                   GetWorldToViewInverseMatrix()),1);
-     vec3 n2 = getNormal(transpose(transformInv *
-                                   GetWorldToViewInverseMatrix()),2);
-     return mix(n2, n1, u);
- }
-
-
---- --------------------------------------------------------------------------
 -- glsl Curves.Cubic.Normals.Basis
 
-vec3 evaluateNormal(vec4 basis, float u)
+vec3 evaluateNormal(vec4 basis, float u, FlatCurveVertexData vertexData)
 {
-    vec3 n0 = inData[0].Neye;
-    vec3 n1 = inData[1].Neye;
-    vec3 n2 = inData[2].Neye;
-    vec3 n3 = inData[3].Neye;
+    vec3 n0 = vertexData.Neye[0];
+    vec3 n1 = vertexData.Neye[1];
+    vec3 n2 = vertexData.Neye[2];
+    vec3 n3 = vertexData.Neye[3];
     return n0 * basis.x
          + n1 * basis.y
          + n2 * basis.z
@@ -1101,12 +981,12 @@ vec3 evaluateNormal(vec4 basis, float u)
 // This may not be valid for all potential basis, but works well for curves with
 // vstep = 1 and bezier, the only supported cubic curves in HdSt.
 
-vec3 evaluateNormal(vec4 basis, float u)
+vec3 evaluateNormal(vec4 basis, float u, FlatCurveVertexData vertexData)
 {
     // XXX: This clamp is a hack to mask some odd orientation flipping issues
     // for oriented bezier curves.
     u = clamp(u, 1e-3, 1.0f - 1e-3);
-    return mix(inData[2].Neye, inData[1].Neye, u);
+    return mix(vertexData.Neye[2], vertexData.Neye[1], u);
 }
 
 --- --------------------------------------------------------------------------

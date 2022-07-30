@@ -51,8 +51,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
                                        bool cullingPass,
                                        FvarPatchType fvarPatchType,
                                        SdfPath const &debugId,
-                                       float lineWidth,
-                                       HgiTessellationSpacing spacing)
+                                       float lineWidth)
     : HdStShaderCode()
     , _primType(primType)
     , _tessellationSpacing(spacing)

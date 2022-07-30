@@ -91,16 +91,11 @@ struct HdSt_BasisCurvesShaderKey : public HdSt_ShaderKey
         return primType; 
     }
 
-    HgiTessellationSpacing GetTessellationSpacing() const override {
-        return tessellationSpacing;
-    }
-
     bool UseMetalTessellation() const override {
         return useMetalTessellation;
     }
 
     HdSt_GeometricShader::PrimitiveType primType;
-    HgiTessellationSpacing tessellationSpacing;
     bool useMetalTessellation;
     TfToken glslfx;
     TfToken VS[7];
