@@ -183,10 +183,10 @@ vec3 getNormal(MAT4 transform)
 --- --------------------------------------------------------------------------
 -- glsl Curves.PostTess.Normal.Oriented
 
- vec3 getNormal(MAT4 transform, int index)
- {
-     return (transform * vec4(HdGet_normals(), index)).xyz;
- }
+vec3 getNormal(MAT4 transform, int index)
+{
+    return (transform * vec4(HdGet_normals(), index)).xyz;
+}
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.Vertex.Normal.Oriented
@@ -630,13 +630,13 @@ void main()
 --- --------------------------------------------------------------------------
 -- layout Curves.PostTessVertex.Cubic.Wire
 
- [
-     ["in", "fractional_odd"],
-     ["out block", "CurveVertexData", "outData",
-         ["vec4", "Peye"],
-         ["vec3", "Neye"]
-     ]
- ]
+[
+    ["in", "fractional_odd"],
+    ["out block", "CurveVertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ]
+]
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.PostTessVertex.Cubic.Wire
@@ -805,72 +805,72 @@ void main()
 --- --------------------------------------------------------------------------
 -- layout Curves.PostTessVertex.Patch
 
- [
+[
      ["in", "fractional_odd"],
      ["out block", "CurveVertexData", "outData",
-         ["vec4", "Peye"],
-         ["vec3", "Neye"]
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
      ],
      ["out", "float", "u"],
      ["out", "float", "v"]
- ]
+]
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.PostTessVertex.Patch
- //fractional_odd_spacing
+//fractional_odd_spacing
 
- // Predefine so that we can later swap in the correct one depending
- // on what type of curve we have
+// Predefine so that we can later swap in the correct one depending
+// on what type of curve we have
 
- template <typename T>
- T bilerp(T c00, T c01, T c10, T c11, float2 uv) {
-     T c0 = mix(c00, c01, T(uv[0]));
-     T c1 = mix(c10, c11, T(uv[0]));
-     return mix(c0, c1, T(uv[1]));
- }
+template <typename T>
+T bilerp(T c00, T c01, T c10, T c11, float2 uv) {
+ T c0 = mix(c00, c01, T(uv[0]));
+ T c1 = mix(c10, c11, T(uv[0]));
+ return mix(c0, c1, T(uv[1]));
+}
 
- void main(void)
- {
-     //TODO this could be wrong
-     ProcessPrimvarsIn();
-     MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
+void main(void)
+{
+    //TODO this could be wrong
+    ProcessPrimvarsIn();
+    MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
 
-     float u = gl_TessCoord.y;
-     float v = gl_TessCoord.x;
+    float u = gl_TessCoord.y;
+    float v = gl_TessCoord.x;
 
-     Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
-     vec4 basis = coeffs.basis;
+    Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
+    vec4 basis = coeffs.basis;
 
-     vec4 position;
-     vec4 tangent;
-     float width;
-     vec3 normal;
-     FlatCurveVertexData vertexData = PopulatePeyeAndNeye();
-     evaluate(u, v, position, tangent, width, normal, vertexData);
-     vec3 direction = orient(v, position, tangent, normal);
-     vec4 scaledDirection = GetWorldToViewMatrix() * transform
-                            * vec4(direction, 0);
-     vec3 offset = direction * length(scaledDirection.xyz) * width * 0.5;
-     position.xyz = position.xyz + offset;
-     position.w = 1;
+    vec4 position;
+    vec4 tangent;
+    float width;
+    vec3 normal;
+    FlatCurveVertexData vertexData = PopulatePeyeAndNeye();
+    evaluate(u, v, position, tangent, width, normal, vertexData);
+    vec3 direction = orient(v, position, tangent, normal);
+    vec4 scaledDirection = GetWorldToViewMatrix() * transform
+        * vec4(direction, 0);
+    vec3 offset = direction * length(scaledDirection.xyz) * width * 0.5;
+    position.xyz = position.xyz + offset;
+    position.w = 1;
 
-     outData.Peye = position;
-     //TODO verify if this normal population is needed
-     outData.Neye = basis[0] * vertexData.Neye[0] +
-                 basis[1] * vertexData.Neye[1] +
-                 basis[2] * vertexData.Neye[2] +
-                 basis[3] * vertexData.Neye[3];
+    outData.Peye = position;
+    //TODO verify if this normal population is needed
+    outData.Neye = basis[0] * vertexData.Neye[0] +
+        basis[1] * vertexData.Neye[1] +
+        basis[2] * vertexData.Neye[2] +
+        basis[3] * vertexData.Neye[3];
 
 
-     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
-     ApplyClipPlanes(outData.Peye);
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    ApplyClipPlanes(outData.Peye);
 
-     int pointId = GetPointId();
-     gl_PointSize = GetPointRasterSize(pointId);
-     ProcessPointId(pointId);
+    int pointId = GetPointId();
+    gl_PointSize = GetPointRasterSize(pointId);
+    ProcessPointId(pointId);
 
-     ProcessPrimvarsOut(basis, 0, 1, 2, 3); // interpolate varying primvars
- }
+    ProcessPrimvarsOut(basis, 0, 1, 2, 3); // interpolate varying primvars
+}
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.JointTessEval.Linear.Patch
