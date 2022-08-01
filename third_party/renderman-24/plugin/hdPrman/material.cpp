@@ -551,20 +551,27 @@ _ConvertNodes(
                         connEntry.first.data());
                 continue;
             }
-            if (!upstreamProp) {
+            TfToken propType = downstreamProp->GetType();
+            // In the case of terminals there is no upstream output name
+            // since the whole node is referenced as a whole
+            if (!upstreamProp && propType != SdrPropertyTypes->Terminal) {
                 TF_WARN("Unknown upstream property %s",
                         e.upstreamOutputName.data());
                 continue;
             }
             // Prman syntax for parameter references is "handle:param".
             RtUString name(downstreamProp->GetImplementationName().c_str());
-            RtUString inputRef(
-                               (e.upstreamNode.GetString()+":"
-                                + upstreamProp->GetImplementationName().c_str())
-                               .c_str());
+            RtUString inputRef;
+            if (!upstreamProp) {
+                inputRef = RtUString(e.upstreamNode.GetString().c_str());
+            } else {
+                inputRef = RtUString(
+                    (e.upstreamNode.GetString()+":"
+                    + upstreamProp->GetImplementationName().c_str())
+                    .c_str());
+            }
 
             // Establish the Riley connection.
-            TfToken propType = downstreamProp->GetType();
             if (propType == SdrPropertyTypes->Color) {
                 sn.params.SetColorReference(name, inputRef);
             } else if (propType == SdrPropertyTypes->Vector) {
@@ -581,6 +588,8 @@ _ConvertNodes(
                 sn.params.SetStringReference(name, inputRef);
             } else if (propType == SdrPropertyTypes->Struct) {
                 sn.params.SetStructReference(name, inputRef);
+            } else if (propType == SdrPropertyTypes->Terminal) {
+                sn.params.SetBxdfReference(name, inputRef);
             } else {
                 TF_WARN("Unknown type '%s' for property '%s' "
                         "on shader '%s' at %s; ignoring.",
