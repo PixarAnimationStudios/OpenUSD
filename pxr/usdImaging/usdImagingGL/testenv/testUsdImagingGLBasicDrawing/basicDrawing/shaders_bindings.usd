@@ -213,8 +213,7 @@ def Xform "Parent"
         }
 
         def Scope "PTex" (
-            apiSchemas = ["CollectionAPI:ptexGeom"]
-            prepend apiSchemas = ["MaterialBindingAPI"]
+            apiSchemas = ["CollectionAPI:ptexGeom", "MaterialBindingAPI"]
         )
         {
             uniform token collection:ptexGeom:expansionRule = "expandPrims"
@@ -274,8 +273,7 @@ def Xform "Parent"
     }
 
     def Scope "Curves" (
-        apiSchemas = ["CollectionAPI:curveGeom"]
-        prepend apiSchemas = ["MaterialBindingAPI"]
+        apiSchemas = ["CollectionAPI:curveGeom", "MaterialBindingAPI"]
     )
     {
         uniform token collection:curveGeom:expansionRule = "expandPrims"
