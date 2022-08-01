@@ -458,6 +458,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdStage
+    DEST testUsdStage
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdAppliedAPISchemas
     DEST testUsdAppliedAPISchemas_AutoApplyDisabled
 )
