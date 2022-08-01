@@ -199,6 +199,11 @@ class RenderSettings "RenderSettings" (
         an rgb image according to the RenderSettings configuration,
         to a default display or image name."""
     )
+    uniform token renderingColorSpace (
+        doc = """Describes a renderer's working (linear) colorSpace where all
+        the renderer/shader math is expected to happen. When no
+        renderingColorSpace is provided, renderer should use its own default."""
+    )
     uniform int2 resolution = (2048, 1080) (
         doc = """The image pixel resolution, corresponding to the
         camera's screen window."""
