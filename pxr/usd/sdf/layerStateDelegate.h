@@ -267,72 +267,100 @@ class SdfSimpleLayerStateDelegate
     : public SdfLayerStateDelegateBase
 {
 public:
+    SDF_API
     static SdfSimpleLayerStateDelegateRefPtr New();
 
 protected:
+    SDF_API
     SdfSimpleLayerStateDelegate();
 
     // SdfLayerStateDelegateBase overrides
+    SDF_API
     virtual bool _IsDirty() override;
+
+    SDF_API
     virtual void _MarkCurrentStateAsClean() override;
+
+    SDF_API
     virtual void _MarkCurrentStateAsDirty() override;
 
+    SDF_API
     virtual void _OnSetLayer(
         const SdfLayerHandle& layer) override;
 
+    SDF_API
     virtual void _OnSetField(
         const SdfPath& path,
         const TfToken& fieldName,
         const VtValue& value) override;
+
+    SDF_API
     virtual void _OnSetField(
         const SdfPath& path,
         const TfToken& fieldName,
         const SdfAbstractDataConstValue& value) override;
+
+    SDF_API
     virtual void _OnSetFieldDictValueByKey(
         const SdfPath& path,
         const TfToken& fieldName,
         const TfToken& keyPath,
         const VtValue& value) override;
+
+    SDF_API
     virtual void _OnSetFieldDictValueByKey(
         const SdfPath& path,
         const TfToken& fieldName,
         const TfToken& keyPath,
         const SdfAbstractDataConstValue& value) override;
 
+    SDF_API
     virtual void _OnSetTimeSample(
         const SdfPath& path,
         double time,
         const VtValue& value) override;
+
+    SDF_API
     virtual void _OnSetTimeSample(
         const SdfPath& path,
         double time,
         const SdfAbstractDataConstValue& value) override;
 
+    SDF_API
     virtual void _OnCreateSpec(
         const SdfPath& path,
         SdfSpecType specType,
         bool inert) override;
 
+    SDF_API
     virtual void _OnDeleteSpec(
         const SdfPath& path,
         bool inert) override;
 
+    SDF_API
     virtual void _OnMoveSpec(
         const SdfPath& oldPath,
         const SdfPath& newPath) override;
 
+    SDF_API
     virtual void _OnPushChild(
         const SdfPath& path,
         const TfToken& fieldName,
         const TfToken& value) override;
+
+    SDF_API
     virtual void _OnPushChild(
         const SdfPath& path,
         const TfToken& fieldName,
         const SdfPath& value) override;
+
+    SDF_API
     virtual void _OnPopChild(
         const SdfPath& path,
         const TfToken& fieldName,
         const TfToken& oldValue) override;
+
+    SDF_API
     virtual void _OnPopChild(
         const SdfPath& path,
         const TfToken& fieldName,
