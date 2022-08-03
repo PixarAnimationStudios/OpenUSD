@@ -35,29 +35,9 @@
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/volume.h"
 
-#include "pxr/imaging/hgi/capabilities.h"
-
 #include "pxr/imaging/glf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-static Hgi* TryGetHgi(HdSceneDelegate* delegate) {
-    if (delegate == nullptr) {
-        return nullptr;
-    }
-    HdResourceRegistrySharedPtr resourceRegistry =
-        delegate->GetRenderIndex().GetResourceRegistry();
-    if (resourceRegistry == nullptr) {
-        return nullptr;
-    }
-    std::shared_ptr<HdStResourceRegistry> hdStResourceRegistry =
-        std::static_pointer_cast<HdStResourceRegistry>(
-        resourceRegistry);
-    if (hdStResourceRegistry == nullptr) {
-        return nullptr;
-    }
-    return hdStResourceRegistry->GetHgi();
-}
 
 HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(
                 HdSceneDelegate* delegate, SdfPath const& id)
@@ -65,8 +45,7 @@ HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(
     , _oitVolumeRenderPassShader(
         std::make_shared<HdStRenderPassShader>(
             HdxPackageRenderPassOitVolumeShader()))
-, _isOitEnabled(TryGetHgi(delegate)->GetCapabilities()
-      ->IsSet(HgiDeviceCapabilitiesBitsOIT))
+    , _isOitEnabled(HdxOitBufferAccessor::IsOitEnabled())
 {
 }
 

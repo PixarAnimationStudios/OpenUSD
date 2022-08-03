@@ -31,29 +31,10 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 
 #include "pxr/imaging/hdSt/renderPassShader.h"
-#include "pxr/imaging/hgi/capabilities.h"
 
 #include "pxr/imaging/glf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-static Hgi* TryGetHgi(HdSceneDelegate* delegate) {
-    if (delegate == nullptr) {
-        return nullptr;
-    }
-    HdResourceRegistrySharedPtr resourceRegistry =
-        delegate->GetRenderIndex().GetResourceRegistry();
-    if (resourceRegistry == nullptr) {
-        return nullptr;
-    }
-    std::shared_ptr<HdStResourceRegistry> hdStResourceRegistry =
-        std::static_pointer_cast<HdStResourceRegistry>(
-        resourceRegistry);
-    if (hdStResourceRegistry == nullptr) {
-        return nullptr;
-    }
-    return hdStResourceRegistry->GetHgi();
-}
 
 HdxOitRenderTask::HdxOitRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdxRenderTask(delegate, id)
@@ -63,8 +44,7 @@ HdxOitRenderTask::HdxOitRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
     , _oitOpaqueRenderPassShader(
         std::make_shared<HdStRenderPassShader>(
             HdxPackageRenderPassOitOpaqueShader()))
-    , _isOitEnabled(TryGetHgi(delegate)->GetCapabilities()->IsSet(
-          HgiDeviceCapabilitiesBitsOIT))
+    , _isOitEnabled(HdxOitBufferAccessor::IsOitEnabled())
 {
 }
 

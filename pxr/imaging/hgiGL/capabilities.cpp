@@ -208,8 +208,6 @@ HgiGLCapabilities::_LoadCapabilities()
         true);
     _SetFlag(HgiDeviceCapabilitiesBitsCustomDepthRange,
         true);
-    _SetFlag(HgiDeviceCapabilitiesBitsOIT, 
-        true);
 
     if (TfDebug::IsEnabled(HGI_DEBUG_DEVICE_CAPABILITIES)) {
         std::cout

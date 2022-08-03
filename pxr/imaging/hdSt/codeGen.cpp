@@ -2316,16 +2316,6 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             HgiShaderKeywordTokens->hdPosition);
         
         if (_hasPTVS) {
-            std::string vecSize = std::string();
-            if (_geometricShader->IsPrimTypeQuads() || _geometricShader->IsPrimTypeTriQuads()) {
-                vecSize = "vec2";
-            } else {
-                vecSize = "vec3";
-            }
-            HgiShaderFunctionAddStageInput(
-                &fsDesc, "ptvsBarycentricCoord", vecSize,
-                "");
-            
             HgiShaderFunctionAddStageInput(
                 &fsDesc, "patch_idOut", "uint",
                 "");
@@ -2484,10 +2474,6 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionAddStageOutput(
                 &ptvsDesc, "gl_Position", "vec4",
                 "position");
-        
-        HgiShaderFunctionAddStageOutput(
-                &ptvsDesc, "ptvsBarycentricCoord", tessCoordType,
-                "");
 
         char const* pointRole =
             (_geometricShader->GetPrimitiveType() ==

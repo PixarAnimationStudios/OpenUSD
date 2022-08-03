@@ -45,7 +45,7 @@ using HdStRenderPassShaderSharedPtr =
 /// Class for OIT render tasks to access the OIT buffers.
 class HdxOitBufferAccessor {
 public:
-    static bool IsOitEnabled(Hgi *hgi);
+    static bool IsOitEnabled();
 
     HDX_API
     HdxOitBufferAccessor(HdTaskContext *ctx);

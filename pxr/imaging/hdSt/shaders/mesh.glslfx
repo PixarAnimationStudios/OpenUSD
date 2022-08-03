@@ -79,7 +79,8 @@ void main(void)
     ["out block", "VertexData", "outData",
         ["vec4", "Peye"],
         ["vec3", "Neye"]
-    ]
+    ],
+    ["out", "vec3", "ptvsBarycentricCoord"]
 ]
 
 --- --------------------------------------------------------------------------
@@ -148,7 +149,8 @@ void main(void)
     ["out block", "VertexData", "outData",
         ["vec4", "Peye"],
         ["vec3", "Neye"]
-    ]
+    ],
+    ["out", "vec2", "ptvsBarycentricCoord"]
 ]
 
 --- --------------------------------------------------------------------------
@@ -228,7 +230,8 @@ void main(void)
     ["out block", "VertexData", "outData",
         ["vec4", "Peye"],
         ["vec3", "Neye"]
-    ]
+    ],
+    ["out", "vec2", "ptvsBarycentricCoord"]
 ]
 
 --- --------------------------------------------------------------------------
@@ -933,12 +936,26 @@ vec3 GetPatchControlPoint()
 }
 
 --- --------------------------------------------------------------------------
+-- layout Mesh.Fragment.PatchCoord.ControlPointTessCoord.Triangle
+
+[
+["in", "vec3", "ptvsBarycentricCoord"]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.Fragment.PatchCoord.ControlPointTessCoord.Triangle
 
 vec3 GetPatchControlPoint()
 {
     return ptvsBarycentricCoord;
 }
+
+--- --------------------------------------------------------------------------
+-- layout Mesh.Fragment.PatchCoord.ControlPointTessCoord.Quad
+
+[
+["in", "vec2", "ptvsBarycentricCoord"]
+]
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Fragment.PatchCoord.ControlPointTessCoord.Quad
@@ -1031,6 +1048,12 @@ vec4 GetInterpolatedPatchCoord()
     return OsdInterpolatePatchCoord(GetPatchCoordLocalST(), GetPatchParam());
 }
 
+--- --------------------------------------------------------------------------
+-- layout Mesh.Fragment.PatchCoord.TriQuadPTVS
+
+[
+["in", "vec2", "ptvsBarycentricCoord"]
+]
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Fragment.PatchCoord.TriQuadPTVS

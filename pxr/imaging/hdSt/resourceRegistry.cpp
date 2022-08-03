@@ -38,8 +38,6 @@
 
 #include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/hgi/hgi.h"
-#include "pxr/imaging/hgi/enums.h"
-#include "pxr/imaging/hgi/capabilities.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/hash.h"
@@ -126,15 +124,9 @@ HdStResourceRegistry::HdStResourceRegistry(Hgi * const hgi)
     , _numBufferSourcesToResolve(0)
     // default aggregation strategies for varying (vertex, varying) primvars
     , _nonUniformAggregationStrategy(
-       hgi->GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsPatchVertexOffsetting) ?
-       std::unique_ptr<HdAggregationStrategy>(std::make_unique<
-           HdStVBOSimpleMemoryManager>(this)) :
-           std::make_unique<HdStVBOMemoryManager>(this))
+        std::make_unique<HdStVBOMemoryManager>(this))
     , _nonUniformImmutableAggregationStrategy(
-        hgi->GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsPatchVertexOffsetting) ?
-        std::unique_ptr<HdAggregationStrategy>(std::make_unique<
-            HdStVBOSimpleMemoryManager>(this)) :
-            std::make_unique<HdStVBOMemoryManager>(this))
+        std::make_unique<HdStVBOMemoryManager>(this))
     // default aggregation strategy for uniform on UBO (for globals)
     , _uniformUboAggregationStrategy(
         std::make_unique<HdStInterleavedUBOMemoryManager>(this))

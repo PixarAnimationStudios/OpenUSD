@@ -35,23 +35,10 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
         _SetFlag(HgiDeviceCapabilitiesBitsConcurrentDispatch, true);
     }
 
-    bool hasIntel = false;
-    //Gate intel on Mac by macOS 13.0
-    if (@available(macOS 13.0, *)) {
-        hasIntel = [device isLowPower];
-    }
-
-    _SetFlag(HgiDeviceCapabilitiesBitsOIT, true);
-
+    bool hasIntel = [device isLowPower];
     if (hasIntel) {
-        bool vertexOffsettingFixes = true;
-        // Once IG driver issue is fixed, change to false.
-        if (@available(macOS 13.0, *)) {
-            vertexOffsettingFixes = false;
-        }
         _SetFlag(HgiDeviceCapabilitiesBitsTessellationBarycentric, true);
         _SetFlag(HgiDeviceCapabilitiesBitsPrimitiveIdEmulation, true);
-        _SetFlag(HgiDeviceCapabilitiesBitsPatchVertexOffsetting, vertexOffsettingFixes);
     }
 
     defaultStorageMode = MTLResourceStorageModeShared;
@@ -97,7 +84,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     // if we are on MacOS 14 or less
     //bool isMacOs13OrLess = NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 13
     //bool requireBasePrimitiveOffset = hasAppleSilicon && isMacOs13OrLess;
-    bool requiresBasePrimitiveOffset = hasAppleSilicon;
+    bool requiresBasePrimitiveOffset = hasAppleSilicon || hasIntel;
     _SetFlag(HgiDeviceCapabilitiesBitsBasePrimitiveOffset,
              requiresBasePrimitiveOffset);
 

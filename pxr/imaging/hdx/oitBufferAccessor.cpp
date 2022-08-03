@@ -31,9 +31,6 @@
 #include "pxr/imaging/hgiGL/buffer.h"
 
 #include "pxr/imaging/hdx/tokens.h"
-#include "pxr/imaging/hgi/hgi.h"
-#include "pxr/imaging/hgi/capabilities.h"
-#include "pxr/imaging/hgi/enums.h"
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -44,14 +41,9 @@ TF_DEFINE_ENV_SETTING(HDX_ENABLE_OIT, true,
 
 /* static */
 bool
-HdxOitBufferAccessor::IsOitEnabled(Hgi *hgi)
+HdxOitBufferAccessor::IsOitEnabled()
 {
-    bool hasHgiOIT = true;
-    if (hgi != nullptr) {
-        hasHgiOIT = hgi->GetCapabilities()->IsSet(
-            HgiDeviceCapabilitiesBitsOIT);
-    }
-    return TfGetEnvSetting(HDX_ENABLE_OIT) && hasHgiOIT;
+    return TfGetEnvSetting(HDX_ENABLE_OIT);
 }
 
 HdxOitBufferAccessor::HdxOitBufferAccessor(HdTaskContext *ctx)
