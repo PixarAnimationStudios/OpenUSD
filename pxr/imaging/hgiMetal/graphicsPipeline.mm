@@ -52,10 +52,10 @@ HgiMetalGraphicsPipeline::HgiMetalGraphicsPipeline(
     _CreateRenderPipelineState(hgi);
     HgiMetalShaderProgram const *metalProgram =
             static_cast<HgiMetalShaderProgram *>(_descriptor.shaderProgram.Get());
-    if (metalProgram->GetPostTessControlFunction()) {
-        _CreateTessControlVertexDescriptor();
-        _CreateTessControlRenderPipelineState(hgi->GetPrimaryDevice());
-    }
+    //if (metalProgram->GetPostTessControlFunction()) {
+        //_CreateTessControlVertexDescriptor();
+        //_CreateTessControlRenderPipelineState(hgi->GetPrimaryDevice());
+    //}
 }
 
 HgiMetalGraphicsPipeline::~HgiMetalGraphicsPipeline()
@@ -83,6 +83,7 @@ HgiMetalGraphicsPipeline::~HgiMetalGraphicsPipeline()
 void
 HgiMetalGraphicsPipeline::_CreateTessControlVertexDescriptor()
 {
+    return;
     _tessControlVertexDescriptor = [[MTLVertexDescriptor alloc] init];
 
     int index = 0;
@@ -203,7 +204,6 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
 
     // Create a new render pipeline state object
     HGIMETAL_DEBUG_LABEL(stateDesc, _descriptor.debugName.c_str());
-    stateDesc.rasterSampleCount = _descriptor.multiSampleState.sampleCount;
 
     stateDesc.inputPrimitiveTopology =
         HgiMetalConversions::GetPrimitiveClass(_descriptor.primitiveType);
@@ -214,8 +214,11 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
         static_cast<HgiMetalShaderProgram*>(_descriptor.shaderProgram.Get());
     auto tessVertexFunc = metalProgram->GetPostTessVertexFunction();
     if (_descriptor.primitiveType == HgiPrimitiveTypePatchList
-        || tessVertexFunc != nullptr) {
-        stateDesc.vertexFunction = metalProgram->GetPostTessVertexFunction();
+        || tessVertexFunc != nullptr
+        || _descriptor.tessellationState.isPostTessControl) {
+        stateDesc.vertexFunction = _descriptor.tessellationState.isPostTessControl ?
+            metalProgram->GetPostTessControlFunction() :
+            metalProgram->GetPostTessVertexFunction();
         if (stateDesc.inputPrimitiveTopology
                 == MTLPrimitiveTopologyClassLine) {
             stateDesc.inputPrimitiveTopology = MTLPrimitiveTopologyClassTriangle;
@@ -230,9 +233,10 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
         stateDesc.tessellationControlPointIndexType =
             MTLTessellationControlPointIndexTypeUInt32;
         bool useConstantStepFunction =
-            static_cast<HgiMetalShaderProgram*>(
+            (static_cast<HgiMetalShaderProgram*>(
             _descriptor.shaderProgram.Get())
-            ->GetPostTessControlFunction() == nullptr;
+            ->GetPostTessControlFunction() == nullptr) ||
+        _descriptor.tessellationState.isPostTessControl;
         stateDesc.tessellationFactorStepFunction =
             useConstantStepFunction ?
             MTLTessellationFactorStepFunctionConstant :
@@ -241,25 +245,30 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
         HgiShaderFunctionHandle tessFunc =
             metalProgram->GetShaderFunction(
                 HgiShaderStagePostTessellationVertex);
-        switch (tessFunc->GetDescriptor().tessellationDescriptor.spacing) {
-             //default to integer
-           case HgiTessellationSpacingNone:
-           case HgiTessellationSpacingEven:
-               stateDesc.tessellationPartitionMode =
-                   MTLTessellationPartitionModeInteger;
-               break;
-           case HgiTessellationSpacingFractionalOdd:
-               stateDesc.tessellationPartitionMode =
-                   MTLTessellationPartitionModeFractionalOdd;
-             break;
-           case HgiTessellationSpacingFractionalEven:
-               stateDesc.tessellationPartitionMode =
-                   MTLTessellationPartitionModeFractionalEven;
-             break;
-           default:
-               stateDesc.tessellationPartitionMode =
-                   MTLTessellationPartitionModeInteger;
-             break;
+        if (tessFunc) {
+            switch (tessFunc->GetDescriptor().tessellationDescriptor.spacing) {
+                 //default to integer
+               case HgiTessellationSpacingNone:
+               case HgiTessellationSpacingEven:
+                   stateDesc.tessellationPartitionMode =
+                       MTLTessellationPartitionModeInteger;
+                   break;
+               case HgiTessellationSpacingFractionalOdd:
+                   stateDesc.tessellationPartitionMode =
+                       MTLTessellationPartitionModeFractionalOdd;
+                 break;
+               case HgiTessellationSpacingFractionalEven:
+                   stateDesc.tessellationPartitionMode =
+                       MTLTessellationPartitionModeFractionalEven;
+                 break;
+               default:
+                   stateDesc.tessellationPartitionMode =
+                       MTLTessellationPartitionModeInteger;
+                 break;
+            }
+        }
+        if (_descriptor.tessellationState.isPostTessControl) {
+            stateDesc.tessellationPartitionMode = MTLTessellationPartitionModePow2;
         }
         if (_descriptor.tessellationState.patchType == HgiTessellationState::Isoline) {
              _descriptor.rasterizationState.polygonMode = HgiPolygonModeLine;
@@ -268,6 +277,8 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
         stateDesc.vertexFunction = metalProgram->GetVertexFunction();
     }
     
+    stateDesc.rasterSampleCount = _descriptor.multiSampleState.sampleCount;
+    stateDesc.sampleCount = _descriptor.multiSampleState.sampleCount;
     id<MTLFunction> fragFunction = metalProgram->GetFragmentFunction();
     if (fragFunction && _descriptor.rasterizationState.rasterizerEnabled) {
         stateDesc.fragmentFunction = fragFunction;
@@ -332,7 +343,6 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
         stateDesc.stencilAttachmentPixelFormat = depthPixelFormat;
     }
 
-    stateDesc.sampleCount = _descriptor.multiSampleState.sampleCount;
     if (_descriptor.multiSampleState.alphaToCoverageEnable) {
         stateDesc.alphaToCoverageEnabled = YES;
     } else {
@@ -363,6 +373,7 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
 void
 HgiMetalGraphicsPipeline::_CreateTessControlRenderPipelineState(id<MTLDevice> device)
 {
+    return;
     MTLRenderPipelineDescriptor *stateDesc =
              [[MTLRenderPipelineDescriptor alloc] init];
 
@@ -547,6 +558,7 @@ HgiMetalGraphicsPipeline::BindPipeline(id<MTLRenderCommandEncoder> renderEncoder
 void
 HgiMetalGraphicsPipeline::BindTessControlPipeline(id<MTLRenderCommandEncoder> renderEncoder)
 {
+    return;
     [renderEncoder setRenderPipelineState:_tessControlRenderPipelineState];
     if (_constantTessFactors == nullptr) {
 
@@ -601,6 +613,7 @@ HgiMetalGraphicsPipeline::SetTessFactorBuffer(id<MTLRenderCommandEncoder> render
 bool
 HgiMetalGraphicsPipeline::HasPostTessControlPipeLineState()
 {
+    return false;
     HgiMetalShaderProgram const *metalProgram =
         static_cast<HgiMetalShaderProgram*>(_descriptor.shaderProgram.Get());
     return metalProgram->GetPostTessControlFunction() != nil;

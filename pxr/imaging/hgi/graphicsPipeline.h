@@ -376,6 +376,7 @@ struct HgiTessellationState
     PatchType patchType;
     int primitiveIndexSize;
     bool useConstantTessFactors;
+    bool isPostTessControl = false;
     HgiTessellationLevel tessellationLevel;
 };
 

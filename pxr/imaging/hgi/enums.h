@@ -757,19 +757,19 @@ enum HgiShaderTextureType
     HgiShaderTextureTypeArrayTexture
 };
 
-/// \enum HgiTessellationSpacing
+ /// \enum HgiTessellationSpacing
  ///
  /// Describes the type of shader tessellation spacing to use
  ///
  /// <ul>
  /// <li>None:
- ///   No tessellation spacing
+ ///   No tessellation spacing</li>
  /// <li>Even:
- ///   Even spacing. Only whole integers are considered for spacing
+ ///   Even spacing. Only whole integers are considered for spacing</li>
  /// <li>FractionalOdd:
- ///   Fractional odd tessellation spacing
+ ///   Fractional odd tessellation spacing</li>
  /// <li>FractionalEven:
- ///   Fractional even tessellation spacing
+ ///   Fractional even tessellation spacing</li>
  /// </ul>
  ///
  enum HgiTessellationSpacing
@@ -779,6 +779,28 @@ enum HgiShaderTextureType
      HgiTessellationSpacingFractionalOdd,
      HgiTessellationSpacingFractionalEven
  };
+
+ /// \enum HgiState
+ ///
+ /// Trinarian value that lets you distinguish between false and uninitialized
+ ///
+ /// <ul>
+ /// <li>Unset:
+ ///   It has not been explicitly set
+ /// <li>Diasbled:
+ ///   It has been explicitly disabled
+ /// <li>Enabled:
+ ///   It has been explicitly enabled
+ /// </ul>
+ ///
+/*
+enum HgiState {
+    Unset,
+    Disabled,
+    Enabled
+};
+ */
+typedef bool HgiState;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

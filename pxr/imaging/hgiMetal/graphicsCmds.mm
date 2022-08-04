@@ -510,7 +510,7 @@ HgiMetalGraphicsCmds::BindTessControlPipeline(HgiGraphicsPipelineHandle pipeline
         for (auto& encoder : _encoders) {
             _CachedEncState.graphicsPipeline->BindTessControlPipeline(encoder);
         }
-        _CachedEncState.bindPTCS = true;
+        _CachedEncState.bindPTCS = false;
     }
     return true;
 }

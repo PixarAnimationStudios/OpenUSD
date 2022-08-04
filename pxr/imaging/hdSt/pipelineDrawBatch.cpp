@@ -39,6 +39,7 @@
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/shaderKey.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/debugCodes.h"
@@ -967,7 +968,9 @@ HdSt_PipelineDrawBatch::PrepareDraw(
     bool const useMetalTessellation =
     _drawItemInstances[0]->GetDrawItem()->
         GetGeometricShader()->GetUseMetalTessellation();
-    if (hasPatches && useMetalTessellation) {
+    //TODO check if is using constant tessellation
+    auto tessControlMethod = _drawItemInstances[0]->GetDrawItem()->GetGeometricShader()->GetSource(HdShaderTokens->postTessControlShader);
+    if (hasPatches && useMetalTessellation && !tessControlMethod.empty()) {
         _ExecutePostTesselation(gfxCmds, updateBufferData,
                                 renderPassState, resourceRegistry);
     }
@@ -1237,6 +1240,57 @@ _GetDrawPipeline(
 // GPU Drawing
 ////////////////////////////////////////////////////////////
 
+static
+HgiGraphicsPipelineSharedPtr
+_GetTessControlPipeline(
+    HdStRenderPassStateSharedPtr const & renderPassState,
+    HdStResourceRegistrySharedPtr const & resourceRegistry,
+    _BindingState const & state)
+{
+    // Drawing pipeline is compatible as long as the shader and
+    // pipeline state are the same.
+    HgiShaderProgramHandle const & programHandle =
+                                        state.glslProgram->GetProgram();
+
+    uint64_t hash = TfHash::Combine(
+        programHandle.Get(),
+        renderPassState->GetGraphicsPipelineHash());
+    uint64_t tessControl = 5000000;
+    hash = TfHash::Combine(hash, tessControl);
+
+    HdInstance<HgiGraphicsPipelineSharedPtr> pipelineInstance =
+        resourceRegistry->RegisterGraphicsPipeline(hash);
+    if (pipelineInstance.IsFirstInstance()) {
+        HgiGraphicsPipelineDesc pipeDesc;
+        pipeDesc.rasterizationState.rasterizerEnabled = false;
+        pipeDesc.multiSampleState.sampleCount = HgiSampleCount1;
+        pipeDesc.multiSampleState.alphaToCoverageEnable = false;
+        pipeDesc.depthState.depthWriteEnabled = false;
+        pipeDesc.depthState.depthTestEnabled = false;
+        pipeDesc.depthState.stencilTestEnabled = false;
+        pipeDesc.tessellationState.useConstantTessFactors = true;
+        pipeDesc.primitiveType = HgiPrimitiveTypePatchList;
+        pipeDesc.multiSampleState.multiSampleEnable = false;
+        renderPassState->InitPrimitiveState(&pipeDesc, state.geometricShader);
+
+        pipeDesc.shaderProgram = state.glslProgram->GetProgram();
+        pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
+        pipeDesc.tessellationState.isPostTessControl = true;
+
+        Hgi* hgi = resourceRegistry->GetHgi();
+        HgiGraphicsPipelineHandle pso = hgi->CreateGraphicsPipeline(pipeDesc);
+
+        pipelineInstance.SetValue(
+            std::make_shared<HgiGraphicsPipelineHandle>(pso));
+    }
+
+    return pipelineInstance.GetValue();
+}
+
+////////////////////////////////////////////////////////////
+// GPU Drawing
+////////////////////////////////////////////////////////////
+
 void
 HdSt_PipelineDrawBatch::ExecuteDraw(
     HgiGraphicsCmds * gfxCmds,
@@ -1301,8 +1355,6 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
              indexBuffer->GetOffset(), indexBuffer->GetStride());
     }
     gfxCmds->BindResources(resourceBindings);
-
-    //_BindVertexBuffersForDrawing(gfxCmds, state);
 
     if (drawIndirect) {
         _ExecuteDrawIndirect(gfxCmds, state.indexBar);
@@ -1666,9 +1718,10 @@ HdSt_PipelineDrawBatch::_ExecutePostTesselation(
             program.GetGeometricShader());
 
     Hgi * hgi = resourceRegistry->GetHgi();
-
-    HgiGraphicsPipelineSharedPtr pso =
-        _GetDrawPipeline(
+    
+    //TODO check better if use pso tess
+    HgiGraphicsPipelineSharedPtr psoTess =
+        _GetTessControlPipeline(
             renderPassState,
             resourceRegistry,
             state);
@@ -1677,8 +1730,10 @@ HdSt_PipelineDrawBatch::_ExecutePostTesselation(
     state.GetBindingsForDrawing(&bindingsDesc);
     HgiResourceBindingsHandle resourceBindings =
             hgi->CreateResourceBindings(bindingsDesc);
-    HgiGraphicsPipelineHandle psoHandle = *pso.get();
-    if (ptcsGfxCmds->BindTessControlPipeline(psoHandle)) {
+    
+    HgiGraphicsPipelineHandle psoTessHandle = *psoTess.get();
+    //if (ptcsGfxCmds->BindTessControlPipeline(psoTessHandle)) {
+        ptcsGfxCmds->BindPipeline(psoTessHandle);
         ptcsGfxCmds->BindResources(resourceBindings);
         HgiVertexBufferBindingVector bindings;
         _GetVertexBufferBindingsForDrawing(&bindings, state);
@@ -1688,7 +1743,7 @@ HdSt_PipelineDrawBatch::_ExecutePostTesselation(
         } else {
             _ExecuteDrawImmediate(ptcsGfxCmds, state.indexBar);
         }
-    }
+    //}
     hgi->DestroyResourceBindings(&resourceBindings);
 }
 

@@ -1063,7 +1063,7 @@ HdStRenderPassState::GetClipPlanes() const
 }
 
 void
-HdStRenderPassState::_InitPrimitiveState(
+HdStRenderPassState::InitPrimitiveState(
     HgiGraphicsPipelineDesc * pipeDesc,
     HdSt_GeometricShaderSharedPtr const & geometricShader) const
 {
@@ -1221,7 +1221,7 @@ HdStRenderPassState::InitGraphicsPipelineDesc(
     HgiGraphicsPipelineDesc * pipeDesc,
     HdSt_GeometricShaderSharedPtr const & geometricShader) const
 {
-    _InitPrimitiveState(pipeDesc, geometricShader);
+    InitPrimitiveState(pipeDesc, geometricShader);
     _InitDepthStencilState(&pipeDesc->depthState);
     _InitMultiSampleState(&pipeDesc->multiSampleState);
     _InitRasterizationState(&pipeDesc->rasterizationState, geometricShader);
