@@ -43,6 +43,7 @@ import sys
 import sysconfig
 import tarfile
 import zipfile
+import apple_utils
 
 if sys.version_info.major >= 3:
     from urllib.request import urlopen
@@ -985,12 +986,21 @@ PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.29.tar.gz"
 
 def InstallPNG(context, force, buildArgs):
     macArgs = []
-    if MacOS() and Arm():
-        # ensure libpng's build doesn't erroneously activate inappropriate
-        # Neon extensions
-        macArgs = ["-DPNG_HARDWARE_OPTIMIZATIONS=OFF", 
-                   "-DPNG_ARM_NEON=off"] # case is significant
     with CurrentWorkingDirectory(DownloadURL(PNG_URL, context, force)):
+        if MacOS():
+             if Arm():
+                 # ensure libpng's build doesn't erroneously activate inappropriate
+                 # Neon extensions
+                 macArgs = ["-DPNG_HARDWARE_OPTIMIZATIONS=OFF",
+                           "-DPNG_ARM_NEON=off"] # case is significant
+             # This patch is needed to work around a build issue on MacOS in libpng 
+             # described at https://github.com/glennrp/libpng/issues/344
+             # This was observed on Cmake 3.24.0-rc3, Xcode 14.0 Beta 3
+             PatchFile("CMakeLists.txt",
+                 [('add_custom_target(gensym DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/libpng.sym")',
+                   'add_custom_target(gensym DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/libpng.sym" genvers)'),
+                  ("add_custom_target(genfiles DEPENDS",
+                   "add_custom_target(genfiles DEPENDS gensym symbol-check")])
         RunCMake(context, force, buildArgs + macArgs)
 
 PNG = Dependency("PNG", InstallPNG, "include/png.h")
@@ -1743,6 +1753,10 @@ group.add_argument("--generator", type=str,
 group.add_argument("--toolset", type=str,
                    help=("CMake toolset to use when building libraries with "
                          "cmake"))
+if MacOS():
+    codesignDefault = False if apple_utils.GetMacArch() == "x64_64" else True
+    group.add_argument("--codesign", dest="macos_codesign", default=codesignDefault,
+                       help=("Use codesigning for macOS builds (defaults to enabled on Apple Silicon)"))
 
 if Linux():
     group.add_argument("--use-cxx11-abi", type=int, choices=[0, 1],
@@ -1993,6 +2007,8 @@ class InstallContext:
         self.useCXX11ABI = \
             (args.use_cxx11_abi if hasattr(args, "use_cxx11_abi") else None)
         self.safetyFirst = args.safety_first
+        self.macOSCodesign = \
+            (args.macos_codesign if hasattr(args, "macos_codesign") else False)
 
         # Dependencies that are forced to be built
         self.forceBuildAll = args.force_all
@@ -2308,6 +2324,7 @@ summaryMsg = summaryMsg.format(
                   else "Release w/ Debug Info" if context.buildRelWithDebug
                   else ""),
     buildImaging=("On" if context.buildImaging else "Off"),
+    macOSCodesign=("On" if context.macOSCodesign else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     enableOpenVDB=("On" if context.enableOpenVDB else "Off"),
     buildOIIO=("On" if context.buildOIIO else "Off"),
@@ -2386,6 +2403,10 @@ if Windows():
         os.path.join(context.instDir, "bin"),
         os.path.join(context.instDir, "lib")
     ])
+
+if MacOS():
+    if context.macOSCodesign:
+        apple_utils.Codesign(context.usdInstDir, verbosity > 1)
 
 Print("""
 Success! To use USD, please ensure that you have:""")

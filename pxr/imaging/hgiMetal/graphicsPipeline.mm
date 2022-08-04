@@ -42,27 +42,16 @@ HgiMetalGraphicsPipeline::HgiMetalGraphicsPipeline(
     HgiGraphicsPipelineDesc const& desc)
     : HgiGraphicsPipeline(desc)
     , _vertexDescriptor(nil)
-    , _tessControlVertexDescriptor(nil)
     , _depthStencilState(nil)
     , _renderPipelineState(nil)
-    , _constantTessFactors(nil)
-    , _tessControlRenderPipelineState(nil) {
+    , _constantTessFactors(nil) {
     _CreateVertexDescriptor();
     _CreateDepthStencilState(hgi);
     _CreateRenderPipelineState(hgi);
-    HgiMetalShaderProgram const *metalProgram =
-            static_cast<HgiMetalShaderProgram *>(_descriptor.shaderProgram.Get());
-    //if (metalProgram->GetPostTessControlFunction()) {
-        //_CreateTessControlVertexDescriptor();
-        //_CreateTessControlRenderPipelineState(hgi->GetPrimaryDevice());
-    //}
 }
 
 HgiMetalGraphicsPipeline::~HgiMetalGraphicsPipeline()
 {
-    if (_tessControlRenderPipelineState) {
-        [_tessControlRenderPipelineState release];
-    }
     if (_renderPipelineState) {
         [_renderPipelineState release];
     }
@@ -75,77 +64,7 @@ HgiMetalGraphicsPipeline::~HgiMetalGraphicsPipeline()
     if (_constantTessFactors) {
         [_constantTessFactors release];
     }
-    if (_tessControlVertexDescriptor) {
-        [_tessControlVertexDescriptor release];
-    }
 }
-
-void
-HgiMetalGraphicsPipeline::_CreateTessControlVertexDescriptor()
-{
-    return;
-    _tessControlVertexDescriptor = [[MTLVertexDescriptor alloc] init];
-
-    int index = 0;
-    for (HgiVertexBufferDesc const& vbo : _descriptor.vertexBuffers) {
-
-        HgiVertexAttributeDescVector const& vas = vbo.vertexAttributes;
-        _tessControlVertexDescriptor.layouts[index].stride = vbo.vertexStride;
-
-        // Set the vertex step rate such that the attribute index
-        // will advance only according to the base instance at the
-        // start of each draw command of a multi-draw. To do this
-        // we set the vertex attribute to be constant and advance
-        // the vertex buffer offset appropriately when encoding
-        // draw commands.
-        if (vbo.vertexStepFunction ==
-                HgiVertexBufferStepFunctionConstant ||
-            vbo.vertexStepFunction ==
-                HgiVertexBufferStepFunctionPerDrawCommand) {
-            _tessControlVertexDescriptor.layouts[index].stepFunction =
-                MTLVertexStepFunctionConstant;
-            _tessControlVertexDescriptor.layouts[index].stepRate = 0;
-        } else {
-            _tessControlVertexDescriptor.layouts[index].stepFunction =
-                MTLVertexStepFunctionPerPatchControlPoint;
-            _tessControlVertexDescriptor.layouts[index].stepRate = 1;
-        }
-
-        if (vbo.vertexStepFunction ==
-                         HgiVertexBufferStepFunctionConstant ||
-                     vbo.vertexStepFunction ==
-                         HgiVertexBufferStepFunctionPerDrawCommand) {
-                     _tessControlVertexDescriptor.layouts[index].stepFunction =
-                         MTLVertexStepFunctionConstant;
-                     _tessControlVertexDescriptor.layouts[index].stepRate = 0;
-         } else if (vbo.vertexStepFunction
-                    == HgiVertexBufferStepFunctionPerPatchControlPoint) {
-             _tessControlVertexDescriptor.layouts[index].stepFunction =
-                 MTLVertexStepFunctionPerPatchControlPoint;
-             _tessControlVertexDescriptor.layouts[index].stepRate = 1;
-         }
-         else {
-             _tessControlVertexDescriptor.layouts[index].stepFunction =
-                 MTLVertexStepFunctionPerVertex;
-             _tessControlVertexDescriptor.layouts[index].stepRate = 1;
-         }
-
-        // Describe each vertex attribute in the vertex buffer
-        for (size_t loc = 0; loc<vas.size(); loc++) {
-            HgiVertexAttributeDesc const& va = vas[loc];
-
-            uint32_t idx = va.shaderBindLocation;
-            _tessControlVertexDescriptor.attributes[idx].format =
-                HgiMetalConversions::GetVertexFormat(va.format);
-            _tessControlVertexDescriptor.attributes[idx].bufferIndex
-                = vbo.bindingIndex;
-            _tessControlVertexDescriptor.attributes[idx].offset = va.offset;
-        }
-
-        index++;
-    }
-}
-
 
 void
 HgiMetalGraphicsPipeline::_CreateVertexDescriptor()
@@ -370,42 +289,6 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
     }
 }
 
-void
-HgiMetalGraphicsPipeline::_CreateTessControlRenderPipelineState(id<MTLDevice> device)
-{
-    return;
-    MTLRenderPipelineDescriptor *stateDesc =
-             [[MTLRenderPipelineDescriptor alloc] init];
-
-     // Create a new render pipeline state object
-     HGIMETAL_DEBUG_LABEL(stateDesc, _descriptor.debugName.c_str());
-     //stateDesc.rasterSampleCount = _descriptor.multiSampleState.sampleCount;
-
-     HgiMetalShaderProgram const *metalProgram =
-         static_cast<HgiMetalShaderProgram*>(_descriptor.shaderProgram.Get());
-     stateDesc.vertexFunction = metalProgram->GetPostTessControlFunction();
-
-     stateDesc.tessellationControlPointIndexType =
-    MTLTessellationControlPointIndexTypeUInt32;
-     stateDesc.tessellationFactorStepFunction = MTLTessellationFactorStepFunctionConstant;
-
-     stateDesc.rasterizationEnabled = NO;
-
-     stateDesc.vertexDescriptor = _tessControlVertexDescriptor;
-
-     NSError *error = NULL;
-     _tessControlRenderPipelineState = [device
-         newRenderPipelineStateWithDescriptor:stateDesc
-         error:&error];
-     [stateDesc release];
-
-     if (!_tessControlRenderPipelineState) {
-         NSString *err = [error localizedDescription];
-         TF_WARN("Failed to created pipeline state, error %s",
-             [err UTF8String]);
-     }
-}
-
 
 static MTLStencilDescriptor *
 _CreateStencilDescriptor(HgiStencilState const & stencilState)
@@ -556,51 +439,6 @@ HgiMetalGraphicsPipeline::BindPipeline(id<MTLRenderCommandEncoder> renderEncoder
 }
 
 void
-HgiMetalGraphicsPipeline::BindTessControlPipeline(id<MTLRenderCommandEncoder> renderEncoder)
-{
-    return;
-    [renderEncoder setRenderPipelineState:_tessControlRenderPipelineState];
-    if (_constantTessFactors == nullptr) {
-
-        // tess factors are half floats encoded as uint16_t
-        uint16_t const factorZero =
-                reinterpret_cast<uint16_t>(GfHalf(0.0f).bits());
-        uint16_t const factorOne =
-                reinterpret_cast<uint16_t>(GfHalf(1.0f).bits());
-
-        if (_descriptor.tessellationState.patchType ==
-                    HgiTessellationState::PatchType::Triangle) {
-            MTLTriangleTessellationFactorsHalf triangleFactors;
-            triangleFactors.insideTessellationFactor = factorZero;
-            triangleFactors.edgeTessellationFactor[0] = factorOne;
-            triangleFactors.edgeTessellationFactor[1] = factorOne;
-            triangleFactors.edgeTessellationFactor[2] = factorOne;
-            _constantTessFactors =
-                [renderEncoder.device
-                    newBufferWithBytes:&triangleFactors
-                                length:sizeof(triangleFactors)
-                                options:MTLResourceStorageModeShared];
-        } else { // is Quad tess factor
-            MTLQuadTessellationFactorsHalf quadFactors;
-            quadFactors.insideTessellationFactor[0] = factorZero;
-            quadFactors.insideTessellationFactor[1] = factorZero;
-            quadFactors.edgeTessellationFactor[0] = factorOne;
-            quadFactors.edgeTessellationFactor[1] = factorOne;
-            quadFactors.edgeTessellationFactor[2] = factorOne;
-            quadFactors.edgeTessellationFactor[3] = factorOne;
-            _constantTessFactors =
-                [renderEncoder.device
-                    newBufferWithBytes:&quadFactors
-                                length:sizeof(quadFactors)
-                               options:MTLResourceStorageModeShared];
-        }
-    }
-    [renderEncoder setTessellationFactorBuffer:_constantTessFactors
-                                        offset: 0
-                                instanceStride: 0];
-}
-
-void
 HgiMetalGraphicsPipeline::SetTessFactorBuffer(id<MTLRenderCommandEncoder> renderEncoder,
      HgiBufferHandle buffer, uint32_t offset, uint32_t stride)
 {
@@ -609,15 +447,5 @@ HgiMetalGraphicsPipeline::SetTessFactorBuffer(id<MTLRenderCommandEncoder> render
                                         offset: offset
                                 instanceStride: 0];
 }
-
-bool
-HgiMetalGraphicsPipeline::HasPostTessControlPipeLineState()
-{
-    return false;
-    HgiMetalShaderProgram const *metalProgram =
-        static_cast<HgiMetalShaderProgram*>(_descriptor.shaderProgram.Get());
-    return metalProgram->GetPostTessControlFunction() != nil;
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

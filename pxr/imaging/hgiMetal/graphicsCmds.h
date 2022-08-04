@@ -71,9 +71,6 @@ public:
         const void* data) override;
 
     HGIMETAL_API
-    bool BindTessControlPipeline(HgiGraphicsPipelineHandle pipeline) override;
-
-    HGIMETAL_API
     void SetTessFactorBuffer(HgiGraphicsPipelineHandle pipeline,
          HgiBufferHandle buffer, uint32_t offset, uint32_t stride) override;
 

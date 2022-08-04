@@ -53,16 +53,9 @@ public:
 
     /// Apply Post Tess Control pipeline state
     HGIMETAL_API
-    void BindTessControlPipeline(id<MTLRenderCommandEncoder> renderEncoder);
-
-    /// Apply Post Tess Control pipeline state
-    HGIMETAL_API
     void SetTessFactorBuffer(id<MTLRenderCommandEncoder> renderEncoder,
                              HgiBufferHandle buffer, uint32_t offset, uint32_t stride);
 
-    /// Returns if the graphics pipeline has a post tess control pipeline state
-    HGIMETAL_API
-    bool HasPostTessControlPipeLineState();
 
 private:
     HgiMetalGraphicsPipeline() = delete;
@@ -70,16 +63,12 @@ private:
     HgiMetalGraphicsPipeline(const HgiMetalGraphicsPipeline&) = delete;
     
     void _CreateVertexDescriptor();
-    void _CreateTessControlVertexDescriptor();
     void _CreateDepthStencilState(HgiMetal *hgi);
     void _CreateRenderPipelineState(HgiMetal *hgi);
-    void _CreateTessControlRenderPipelineState(id<MTLDevice> device);
 
     MTLVertexDescriptor *_vertexDescriptor;
-    MTLVertexDescriptor *_tessControlVertexDescriptor;
     id<MTLDepthStencilState> _depthStencilState;
     id<MTLRenderPipelineState> _renderPipelineState;
-    id<MTLRenderPipelineState> _tessControlRenderPipelineState;
     id<MTLBuffer> _constantTessFactors;
 };
 

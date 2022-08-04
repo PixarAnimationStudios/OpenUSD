@@ -305,27 +305,21 @@ HgiMetalGraphicsCmds::_SetCachedEncoderState(id<MTLRenderCommandEncoder> encoder
         [encoder setScissorRect:_CachedEncState.scissorRect];
     }
     if (_CachedEncState.graphicsPipeline) {
-        if (_CachedEncState.bindPTCS) {
-            _CachedEncState.graphicsPipeline->BindTessControlPipeline(encoder);
-            _CachedEncState.bindPTCS = false;
-        } else {
         _CachedEncState.graphicsPipeline->BindPipeline(encoder);
-            if (_CachedEncState.tessFactorBuffer.Get() != nullptr) {
-                _CachedEncState.graphicsPipeline->SetTessFactorBuffer(
-                      encoder,
-                      _CachedEncState.tessFactorBuffer,
-                      _CachedEncState.tessFactorOffset,
-                      _CachedEncState.tessFactorStride);
-            }
+        //TODO Thor remove this and read elsewhere
+        if (_CachedEncState.tessFactorBuffer.Get() != nullptr) {
+            _CachedEncState.graphicsPipeline->SetTessFactorBuffer(
+                  encoder,
+                  _CachedEncState.tessFactorBuffer,
+                  _CachedEncState.tessFactorOffset,
+                  _CachedEncState.tessFactorStride);
         }
-
     }
     if (_CachedEncState.resourceBindings) {
         _CachedEncState.resourceBindings->BindResources(_hgi,
                                                         encoder,
                                                         _CachedEncState.argumentBuffer);
     }
-
     _SetVertexBindings(encoder, _CachedEncState.vertexBindings);
 }
 
@@ -491,28 +485,6 @@ HgiMetalGraphicsCmds::BindPipeline(HgiGraphicsPipelineHandle pipeline)
             _CachedEncState.graphicsPipeline->BindPipeline(encoder);
         }
     }
-}
-
-bool
-HgiMetalGraphicsCmds::BindTessControlPipeline(HgiGraphicsPipelineHandle pipeline)
-{
-    _primitiveType = pipeline->GetDescriptor().primitiveType;
-    _primitiveIndexSize =
-        pipeline->GetDescriptor().tessellationState.primitiveIndexSize;
-
-    _CachedEncState.graphicsPipeline =
-        static_cast<HgiMetalGraphicsPipeline*>(pipeline.Get());
-    if (_CachedEncState.graphicsPipeline) {
-        if (!_CachedEncState.graphicsPipeline->
-            HasPostTessControlPipeLineState()) {
-            return false;
-        }
-        for (auto& encoder : _encoders) {
-            _CachedEncState.graphicsPipeline->BindTessControlPipeline(encoder);
-        }
-        _CachedEncState.bindPTCS = false;
-    }
-    return true;
 }
 
 void

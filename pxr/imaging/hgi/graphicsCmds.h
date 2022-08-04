@@ -203,14 +203,6 @@ public:
     HGI_API
     virtual void MemoryBarrier(HgiMemoryBarrier barrier) = 0;
 
-    /// Bind a tess pipeline state object. Usually you call this right after calling
-    /// CreateGraphicsCmds to set the graphics pipeline state.
-    /// Should be called before BindPipeline commands for main render pass
-    /// The resource bindings used when creating the pipeline must be compatible
-    /// with the resources bound via BindResources().
-    HGI_API
-    virtual bool BindTessControlPipeline(HgiGraphicsPipelineHandle pipeline) = 0;
-
     /// Sets a tess factor buffer in compatible APIs ( so far Metal )
     /// The tess factor buffer decides how much to tessellate a primitive
     HGI_API

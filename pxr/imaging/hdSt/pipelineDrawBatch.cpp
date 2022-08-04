@@ -1732,18 +1732,16 @@ HdSt_PipelineDrawBatch::_ExecutePostTesselation(
             hgi->CreateResourceBindings(bindingsDesc);
     
     HgiGraphicsPipelineHandle psoTessHandle = *psoTess.get();
-    //if (ptcsGfxCmds->BindTessControlPipeline(psoTessHandle)) {
-        ptcsGfxCmds->BindPipeline(psoTessHandle);
-        ptcsGfxCmds->BindResources(resourceBindings);
-        HgiVertexBufferBindingVector bindings;
-        _GetVertexBufferBindingsForDrawing(&bindings, state);
-        ptcsGfxCmds->BindVertexBuffers(bindings);
-        if (drawIndirect) {
-            _ExecuteDrawIndirect(ptcsGfxCmds, state.indexBar);
-        } else {
-            _ExecuteDrawImmediate(ptcsGfxCmds, state.indexBar);
-        }
-    //}
+    ptcsGfxCmds->BindPipeline(psoTessHandle);
+    ptcsGfxCmds->BindResources(resourceBindings);
+    HgiVertexBufferBindingVector bindings;
+    _GetVertexBufferBindingsForDrawing(&bindings, state);
+    ptcsGfxCmds->BindVertexBuffers(bindings);
+    if (drawIndirect) {
+        _ExecuteDrawIndirect(ptcsGfxCmds, state.indexBar);
+    } else {
+        _ExecuteDrawImmediate(ptcsGfxCmds, state.indexBar);
+    }
     hgi->DestroyResourceBindings(&resourceBindings);
 }
 
