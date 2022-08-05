@@ -58,8 +58,7 @@ from .primTreeWidget import PrimTreeWidget, PrimViewColumnIndex
 from .primViewItem import PrimViewItem
 from .variantComboBox import VariantComboBox
 from .legendUtil import ToggleLegendWithBrowser
-from . import (prettyPrint, adjustFreeCamera, adjustDefaultMaterial,
-               preferences, settings)
+from . import prettyPrint, adjustFreeCamera, adjustDefaultMaterial, preferences
 from .selectionDataModel import ALL_INSTANCES, SelectionDataModel
 
 # Common Utilities
@@ -501,46 +500,6 @@ class AppController(QtCore.QObject):
             else:
                 self._startingPrimCameraName = parserData.camera.pathString
                 self._startingPrimCameraPath = None
-
-            settingsPathDir = self._outputBaseDirectory()
-            if settingsPathDir is None or parserData.defaultSettings:
-                # Create an ephemeral settings object with a non existent filepath
-                self._settings = settings.Settings('', seq=None, ephemeral=True)
-            else:
-                settingsPath = os.path.join(settingsPathDir, self._statusFileName)
-                for deprecatedName in self._deprecatedStatusFileNames:
-                    deprecatedSettingsPath = \
-                        os.path.join(settingsPathDir, deprecatedName)
-                    if (os.path.isfile(deprecatedSettingsPath) and
-                        not os.path.isfile(settingsPath)):
-                        warning = ('\nWARNING: The settings file at: '
-                                + str(deprecatedSettingsPath) + ' is deprecated.\n'
-                                + 'These settings are not being used, the new '
-                                + 'settings file will be located at: '
-                                + str(settingsPath) + '.\n')
-                        print(warning)
-                        break
-
-                self._settings = settings.Settings(settingsPath)
-
-                try:
-                    self._settings.load()
-                except IOError:
-                    # try to force out a new settings file
-                    try:
-                        self._settings.save()
-                    except:
-                        settings.EmitWarning(settingsPath)
-
-                except EOFError:
-                    # try to force out a new settings file
-                    try:
-                        self._settings.save()
-                    except:
-                        settings.EmitWarning(settingsPath)
-                except:
-                    settings.EmitWarning(settingsPath)
-
 
             self._dataModel.viewSettings.signalStyleSettingsChanged.connect(
                 self._setStyleSheetUsingState)

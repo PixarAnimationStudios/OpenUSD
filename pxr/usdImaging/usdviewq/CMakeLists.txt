@@ -47,7 +47,6 @@ pxr_library(usdviewq
         layerStackContextMenu.py
         prettyPrint.py
         pythonInterpreter.py
-        settings.py
         settings2.py
         adjustDefaultMaterial.py
         adjustFreeCamera.py

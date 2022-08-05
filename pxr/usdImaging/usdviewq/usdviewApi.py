@@ -197,10 +197,10 @@ class UsdviewApi(object):
 
         self.__appController.statusMessage(msg)
 
-    def GetSettings(self):
-        """DEPRECATED Returns the old settings object."""
+    def GetSettings2(self):
+        """Returns the settings2 object."""
 
-        return self.__appController._settings
+        return self.__appController._settings2
 
     def ClearPrimSelection(self):
         self.__appController._dataModel.selection.clearPrims()

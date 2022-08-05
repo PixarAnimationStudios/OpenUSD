@@ -90,6 +90,10 @@ class StateSource(object):
         """Registers a child StateSource with this source object."""
         self._childStateSources[child._stateSourceName] = child
 
+    def GetChildStateSource(self, childName):
+        """Returns the child StateSource corresponding to childName, or None"""
+        return self._childStateSources.get(childName)
+
     def _getState(self):
         """Get this source's state dict from its parent source."""
         if self._parentStateSource is None:
