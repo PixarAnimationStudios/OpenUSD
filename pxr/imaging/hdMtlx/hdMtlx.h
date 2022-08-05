@@ -60,9 +60,20 @@ HDMTLX_API
 std::string
 HdMtlxConvertToString(VtValue const& hdParameterValue);
 
+// Storing MaterialX-Hydra texture and primvar information
+struct HdMtlxTexturePrimvarData {
+    HdMtlxTexturePrimvarData() 
+        : mxHdTextureMap(MaterialX::StringMap()), // Mx-Hd texture name mapping
+          hdTextureNodes(std::set<SdfPath>()),    // Paths to HdTexture Nodes
+          hdPrimvarNodes(std::set<SdfPath>()) {}  // Paths to HdPrimvar nodes
+    MaterialX::StringMap mxHdTextureMap;
+    std::set<SdfPath> hdTextureNodes;
+    std::set<SdfPath> hdPrimvarNodes;
+};
+
 /// Creates and returns a MaterialX Document from the given HdMaterialNetwork2 
-/// Collecting the hdTextureNodes as the HdMaterialNetwork2 is traversed as
-/// well as the Texture name mapping between MaterialX and Hydra
+/// Collecting the hdTextureNodes and hdPrimvarNodes as the network is 
+/// traversed as well as the Texture name mapping between MaterialX and Hydra.
 HDMTLX_API
 MaterialX::DocumentPtr
 HdMtlxCreateMtlxDocumentFromHdNetwork(
@@ -71,9 +82,7 @@ HdMtlxCreateMtlxDocumentFromHdNetwork(
     SdfPath const& hdMaterialXNodePath,
     SdfPath const& materialPath,
     MaterialX::DocumentPtr const& libraries,
-    std::set<SdfPath> * hdTextureNodes = nullptr,
-    MaterialX::StringMap * mxHdTextureMap = nullptr,
-    std::set<SdfPath> * hdPrimvarNodes = nullptr);
+    HdMtlxTexturePrimvarData *mxHdData = nullptr);
 
 /// Implementation that uses the material network interface.
 HDMTLX_API
@@ -83,9 +92,7 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
     TfToken const& terminalNodeName,
     TfTokenVector const& terminalNodeConnectionNames,
     MaterialX::DocumentPtr const& libraries,
-    std::set<SdfPath> * hdTextureNodes = nullptr,
-    MaterialX::StringMap * mxHdTextureMap = nullptr,
-    std::set<SdfPath> * hdPrimvarNodes = nullptr);
+    HdMtlxTexturePrimvarData *mxHdData = nullptr);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
