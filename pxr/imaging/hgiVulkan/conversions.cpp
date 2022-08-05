@@ -418,14 +418,18 @@ HgiVulkanConversions::GetFormat(VkFormat inFormat)
 VkImageAspectFlags
 HgiVulkanConversions::GetImageAspectFlag(HgiTextureUsage usage)
 {
-    if (usage & HgiTextureUsageBitsDepthTarget) {
-        if (usage & HgiTextureUsageBitsStencilTarget) {
-            return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-        }
-        return VK_IMAGE_ASPECT_DEPTH_BIT;
+    VkImageAspectFlags result = VK_IMAGE_ASPECT_COLOR_BIT;
+
+    if (usage & HgiTextureUsageBitsDepthTarget && 
+        usage & HgiTextureUsageBitsStencilTarget) {
+        result = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    } else if (usage & HgiTextureUsageBitsDepthTarget) {
+        result = VK_IMAGE_ASPECT_DEPTH_BIT;
+    } else if (usage & HgiTextureUsageBitsStencilTarget) {
+        result = VK_IMAGE_ASPECT_STENCIL_BIT;
     }
 
-    return VK_IMAGE_ASPECT_COLOR_BIT;
+    return result;
 }
 
 VkImageUsageFlags

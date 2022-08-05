@@ -522,7 +522,6 @@ HgiVulkanTexture::TransitionImageBarrier(
     int32_t mipLevel)
 {
     HgiTextureDesc const& desc = tex->GetDescriptor();
-    bool isDepthBuffer = desc.usage & HgiTextureUsageBitsDepthTarget;
 
     uint32_t firstMip = mipLevel < 0 ? 0 : (uint32_t)mipLevel;
     uint32_t mipCnt = mipLevel < 0 ? desc.mipLevels : 1;
@@ -536,9 +535,8 @@ HgiVulkanTexture::TransitionImageBarrier(
     barrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier[0].image = tex->GetImage();
-    barrier[0].subresourceRange.aspectMask = isDepthBuffer ?
-        VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT :
-        VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier[0].subresourceRange.aspectMask = 
+        HgiVulkanConversions::GetImageAspectFlag(desc.usage);
     barrier[0].subresourceRange.baseMipLevel = firstMip;
     barrier[0].subresourceRange.levelCount = mipCnt;
     barrier[0].subresourceRange.layerCount = desc.layerCount;

@@ -97,7 +97,8 @@ HgiVulkanBlitCmds::CopyTextureGpuToCpu(
     size.depth = texDesc.dimensions[2] - depthOffset;
 
     VkImageSubresourceLayers imageSub;
-    imageSub.aspectMask = HgiVulkanConversions::GetImageAspectFlag(texDesc.usage);
+    imageSub.aspectMask =
+        HgiVulkanConversions::GetImageAspectFlag(texDesc.usage);
     imageSub.baseArrayLayer = isTexArray ? copyOp.sourceTexelOffset[2] : 0;
     imageSub.layerCount = 1;
     imageSub.mipLevel = copyOp.mipLevel;
