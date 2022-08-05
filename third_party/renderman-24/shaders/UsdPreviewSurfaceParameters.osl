@@ -93,7 +93,7 @@ shader UsdPreviewSurfaceParameters
     // Diffuse
     if (diffuseColor[0] > 0.0 ||
         diffuseColor[1] > 0.0 ||
-        diffuseColor[2] > 0.0) 
+        diffuseColor[2] > 0.0)
     {
         diffuseGainOut = 1.0;
         diffuseColorOut = diffuseColor;
@@ -103,7 +103,7 @@ shader UsdPreviewSurfaceParameters
     float opacityAdjusted = opacity;
     if (opacityThreshold > 0.0) {
         if (opacity < opacityThreshold) {
-            presenceOut = 0.0;
+            opacityAdjusted = 0.0;
         } else {
             opacityAdjusted = 1.0;
         }
@@ -114,24 +114,25 @@ shader UsdPreviewSurfaceParameters
         glassIorOut = ior;
         refractionGainOut = 1.0 - opacityAdjusted;
         diffuseGainOut *= opacityAdjusted;
+        presenceOut = opacityAdjusted;
     }
 
     // Specular
     // Assumes "Physical" for both Specular and Rough Specular
-    float r = (1.0 - ior) / (1.0 + ior);
-    if (useSpecularWorkflow) {
-        specularFaceColorOut = specularColor;
-        specularEdgeColorOut = color(1.0,1.0,1.0);
-    } else {
-        float metal = clamp(metallic, 0.0, 1.0); 
-        color spec = mix(color(1.0,1.0,1.0), diffuseColor, metal);
-        specularFaceColorOut = mix(r * r * spec, spec, metal);
-        specularEdgeColorOut = spec;
+        float r = (1.0 - ior) / (1.0 + ior);
+        if (useSpecularWorkflow) {
+            specularFaceColorOut = specularColor;
+            specularEdgeColorOut = color(1.0,1.0,1.0);
+        } else {
+            float metal = clamp(metallic, 0.0, 1.0); 
+            color spec = mix(color(1.0,1.0,1.0), diffuseColor, metal);
+            specularFaceColorOut = mix(r * r * spec, spec, metal);
+            specularEdgeColorOut = spec;
 
-        diffuseGainOut *= 1.0 - metal;
-    }
-    specularIorOut = color(ior);
-    specularRoughnessOut = roughness;
+            diffuseGainOut *= 1.0 - metal;
+        }
+        specularIorOut = color(ior);
+        specularRoughnessOut = roughness;
 
     // Clearcoat
     if (clearcoat > 0.0) {
@@ -160,7 +161,7 @@ shader UsdPreviewSurfaceParameters
         // Convert from tangent-space normal to current space
         bumpNormalOut = Tn * normalIn[0] +
                         Bn * normalIn[1] + 
-                         N * normalIn[2];
+                        N * normalIn[2];
         bumpNormalOut = normalize(bumpNormalOut);
 
         normal Ngn = N;
