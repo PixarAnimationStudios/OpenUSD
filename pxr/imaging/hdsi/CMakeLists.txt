@@ -10,6 +10,7 @@ pxr_library(hdsi
         work
         sdf
         cameraUtil
+        geomUtil
         hf
         hd
         pxOsd
