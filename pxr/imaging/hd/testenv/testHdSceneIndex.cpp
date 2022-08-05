@@ -512,7 +512,10 @@ TestPrefixingSceneIndex()
                         SdfPath("/A/B/C/D")),
                 TfToken("relativePath"),
                 HdRetainedTypedSampledDataSource<SdfPath>::New(
-                        SdfPath("F/G"))
+                        SdfPath("F/G")),
+                TfToken("pathArray"),
+                HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
+                        {SdfPath("/A/B/C/D"), SdfPath("/A/B")})
             )
         )}}
     );
@@ -552,6 +555,19 @@ TestPrefixingSceneIndex()
                             TfToken("someContainer"),
                             TfToken("relativePath"))),
             SdfPath("F/G"))) {
+        return false;
+    }
+
+    if (!_CompareValue("COMPARING PATH ARRAY",
+            GetTypedValueFromScene<VtArray<SdfPath>>(
+                    prefixingSceneIndex,
+                    SdfPath("/E/F/G/A/C"),
+                    HdDataSourceLocator(
+                            TfToken("someContainer"),
+                            TfToken("pathArray"))),
+            VtArray<SdfPath>{
+                SdfPath("/E/F/G/A/B/C/D"),
+                SdfPath("/E/F/G/A/B")})) {
         return false;
     }
 
