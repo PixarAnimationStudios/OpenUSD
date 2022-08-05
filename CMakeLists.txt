@@ -29,6 +29,14 @@ endif()
 include(ProjectDefaults)
 include(Packages)
 
+if(APPLE)
+    if (OSX_GENERATE_DSYM)
+        add_custom_target(dsym ALL)
+    else()
+        add_custom_target(dsym)
+    endif()
+endif()
+
 # This has to be defined after Packages is included, because it relies on the
 # discovered path to the python executable.
 if (DEFINED PYTHON_EXE_BASENAME)

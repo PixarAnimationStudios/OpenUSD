@@ -1409,6 +1409,51 @@ function(_pxr_library NAME)
     _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     _pxr_install_rpath(rpath ${NAME})
 
+    # Debugging Symbols
+    if(CMAKE_BUILD_TYPE MATCHES "(Debug|DEBUG|debug|RelWithDebInfo|RELWITHDEBINFO|relwithdebinfo)")
+        if(APPLE AND USD_OSX_DSYMUTIL)
+            if(args_TYPE STREQUAL "SHARED")
+                set(dsymfile   "${libraryFilename}.dSYM")
+                set(dsymtarget "${CMAKE_CURRENT_BINARY_DIR}/${dsymfile}")
+
+                # List the full content so that everything can be cleaned
+                # properly. The listing is in reverse directory order so that
+                # the directory is empty when erased (else an error is
+                # emitted).
+                set(dsymfiles-list
+                    "Contents/Resources/DWARF/${libraryFilename}"
+                    "Contents/Info.plist"
+                )
+                set(dsymdirs-list
+                    "Contents/Resources/DWARF"
+                    "Contents/Resources"
+                    "Contents"
+                )
+                foreach(f ${dsymfiles-list} ${dsymdirs-list})
+                    list(APPEND dsymcontent "${dsymtarget}/${f}")
+                endforeach()
+                
+                add_custom_command(
+                    OUTPUT ${dsymcontent} ${dsymtarget}
+                    DEPENDS ${NAME}
+                    COMMAND ${USD_OSX_DSYMUTIL} $<TARGET_FILE:${NAME}> -o ${dsymtarget}
+                    COMMENT "Generating debugging symbols ${dsymfile} for ${NAME}"
+                    VERBATIM)
+                add_custom_target(${NAME}_dsym DEPENDS ${dsymtarget})
+                
+                add_dependencies(dsym ${NAME}_dsym)
+                
+                # Installation of the debugging symbols
+                foreach(f ${dsymfiles-list})
+                    set(src "${dsymtarget}/${f}")
+                    set(dst "${libInstallPrefix}/${dsymfile}/${f}")
+                    get_filename_component(dstdir ${dst} DIRECTORY)
+                    install(FILES ${src} DESTINATION ${dstdir})
+                endforeach()
+            endif()
+        endif()
+    endif()
+
     #
     # Set up the install.
     #

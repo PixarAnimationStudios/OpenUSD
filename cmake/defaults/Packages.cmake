@@ -146,6 +146,12 @@ if (NOT PXR_MALLOC_LIBRARY)
     endif()
 endif()
 
+# -- OSX dSYM
+if (APPLE)
+    get_filename_component(bindir ${CMAKE_CXX_COMPILER} DIRECTORY)
+    find_program(USD_OSX_DSYMUTIL dsymutil "${bindir}" NO_DEFAULT_PATH)
+endif()
+
 # Developer Options Package Requirements
 # ----------------------------------------------
 if (PXR_BUILD_DOCUMENTATION)
