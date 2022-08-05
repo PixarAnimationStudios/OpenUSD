@@ -131,10 +131,15 @@ HdMergingSceneIndex::GetPrim(const SdfPath &primPath) const
     for (const _InputEntry &entry : _inputs) {
         if (primPath.HasPrefix(entry.sceneRoot)) {
             HdSceneIndexPrim prim = entry.sceneIndex->GetPrim(primPath);
+
+            // Use first non-empty prim type so that sparsely overlaid
+            // inputs can contribute data sources without defining type or type
+            // without providing a data source.
+            if (result.primType.IsEmpty() && !prim.primType.IsEmpty()) {
+                result.primType = prim.primType;
+            }
+
             if (prim.dataSource) {
-                if (contributingDataSources.empty()) {
-                    result.primType = prim.primType;
-                }
                 contributingDataSources.push_back(prim.dataSource);
             }
         }
@@ -193,7 +198,86 @@ HdMergingSceneIndex::_PrimsAdded(
         return;
     }
 
-    _SendPrimsAdded(entries);
+    // if there's only one input, no additional interpretation is required.
+    if (_inputs.size() < 2) {
+        _SendPrimsAdded(entries);
+        return;
+    }
+
+    // Confirm that the type here is not masked by a stronger contributing
+    // input. We still send it along as an add because a weaker input providing
+    // potential data sources (at any container depth) does not directly
+    // indicate which data sources might be relevant. The trade-off is
+    // potential over-invalidation for correctness. This ensures that the
+    // primType is equivalent to what would be returned from GetPrim.
+
+    HdSceneIndexObserver::AddedPrimEntries filteredEntries;
+
+    for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
+        TfToken resolvedPrimType;
+
+        for (const _InputEntry &inputEntry : _inputs) {
+            if (!entry.primPath.HasPrefix(inputEntry.sceneRoot)) {
+                continue;
+            }
+
+            // If the primType is not empty and the first contributing data
+            // source is the sender, we don't need to query the type from
+            // any input.
+            if (get_pointer(inputEntry.sceneIndex) == &sender
+                    && !entry.primType.IsEmpty()) {
+                break;
+            }
+
+            // Get the type from the contributing input to see if it should be
+            // altered or omitted.
+
+            const TfToken primType =
+                inputEntry.sceneIndex->GetPrim(entry.primPath).primType;
+            if (!primType.IsEmpty()) {
+                resolvedPrimType = primType;
+                break;
+            }
+        }
+
+        bool replaceEntry = false;
+        if (!resolvedPrimType.IsEmpty()) {
+            if (resolvedPrimType != entry.primType) {
+                replaceEntry = true;
+            }
+        }
+
+        if (replaceEntry) {
+            if (filteredEntries.empty()) {
+                // copy up to this entry
+                filteredEntries.reserve(entries.size());
+                for (const HdSceneIndexObserver::AddedPrimEntry &origEntry :
+                        entries) {
+                    if (&origEntry == &entry) {
+                        break;
+                    }
+                    filteredEntries.push_back(origEntry);
+                }
+            }
+
+            // add altered entry
+            filteredEntries.emplace_back(entry.primPath, resolvedPrimType);
+
+        } else {
+            // add unaltered entry if we've started to fill filteredEntries
+            // otherwise, do nothing as we are meaningful in the original
+            // entries until we need to copy some.
+            if (!filteredEntries.empty()) {
+                filteredEntries.push_back(entry);
+            }
+        }
+    }
+
+    if (!filteredEntries.empty()) {
+        _SendPrimsAdded(filteredEntries);
+    } else {
+        _SendPrimsAdded(entries);
+    }
 }
 
 void
