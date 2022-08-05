@@ -916,7 +916,7 @@ private:
 private:
     template <class ProxyT> friend class SdfPyWrapMapEditProxy;
 
-    boost::shared_ptr<Sdf_MapEditor<T> > _editor;
+    std::shared_ptr<Sdf_MapEditor<T> > _editor;
 };
 
 // Cannot get from a VtValue except as the correct type.
