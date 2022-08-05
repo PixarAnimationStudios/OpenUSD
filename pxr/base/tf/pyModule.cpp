@@ -160,7 +160,7 @@ public:
             , _fileName(fileName)
         {}
 
-        handle<> operator()(tuple const &args, dict const &kw) const {
+        PyObject *operator()(PyObject *args, PyObject *kw) const {
 
             // Fabricate a python tracing event to record the python -> c++ ->
             // python transition.
@@ -178,8 +178,7 @@ public:
             TfErrorMark m;
 
             // Call the function.
-            handle<> ret(allow_null(
-                             PyObject_Call(_fn.ptr(), args.ptr(), kw.ptr())));
+            PyObject *ret = PyObject_Call(_fn.ptr(), args, kw);
 
             // Fabricate the return tracing event.
             info.what = PyTrace_RETURN;
@@ -196,6 +195,7 @@ public:
             // errors occurred, and if so, convert them to python exceptions.
             if (ARCH_UNLIKELY(!m.IsClean() &&
                               TfPyConvertTfErrorsToPythonException(m))) {
+                Py_DECREF(ret);
                 throw_error_already_set();
             }
 
@@ -229,10 +229,16 @@ public:
                 fullNamePrefix = &localPrefix;
             }
 
-            ret = raw_function(
-                _InvokeWithErrorHandling(
-                    fn, *fullNamePrefix + "." + name, *fullNamePrefix));
-
+            ret = boost::python::detail::make_raw_function(
+                boost::python::objects::py_function(
+                    _InvokeWithErrorHandling(
+                        fn, *fullNamePrefix + "." + name, *fullNamePrefix),
+                    boost::mpl::vector1<PyObject *>(),
+                    /*min_args =*/ 0,
+                    /*max_args =*/ ~0
+                    )
+                );
+            
             ret.attr("__doc__") = fn.attr("__doc__");
         }
 
