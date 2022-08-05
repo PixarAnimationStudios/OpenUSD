@@ -261,53 +261,70 @@ _ComputeProjectionShader(const HdCamera::Projection projection)
     return us_PxrPerspective;
 }
 
-// Compute parameters for the camera riley::ShadingNode.
+// Compute parameters for the camera riley::ShadingNode for perspective camera
+RtParamList
+_ComputePerspectiveNodeParams(const HdCamera * const camera)
+{
+    RtParamList result;
+
+    // FOV settings.
+    const float focalLength = camera->GetFocalLength();
+    if (focalLength > 0) {
+        result.SetFloat(RixStr.k_focalLength, focalLength);
+        const float r = camera->GetHorizontalAperture() / focalLength;
+        const float fov = 2.0f * GfRadiansToDegrees(std::atan(0.5f * r));
+        result.SetFloat(RixStr.k_fov, fov);
+    } else {
+        // If focal length is bogus, don't set it.
+        // Fallback to sane FOV.
+        result.SetFloat(RixStr.k_fov, 90.0f);
+    }
+
+    // Depth of field settings.
+    const float focusDistance = camera->GetFocusDistance();
+    if (focusDistance > 0.0f) {
+        result.SetFloat(RixStr.k_focalDistance, focusDistance);
+    } else {
+        // If value is bogus, set to sane value.
+        result.SetFloat(RixStr.k_focalDistance, 1000.0f);
+    }
+
+    const float fStop = camera->GetFStop();
+    if (fStop > 0.0f && focusDistance > 0.0f) {
+        result.SetFloat(RixStr.k_fStop, fStop);
+    } else {
+        // If values are bogus, disable depth of field by setting
+        // ininie f-Stop and a sane value for focalDistance.
+        result.SetFloat(RixStr.k_fStop, RI_INFINITY);
+    }
+
+    // Not setting fov frame begin/end - thus we do not support motion blur
+    // due to changing FOV.
+
+    return result;
+}
+
+// Compute parameters for the camera riley::ShadingNode for orthographic camera
+RtParamList
+_ComputeOrthographicNodeParams(const HdCamera * const camera)
+{
+    return {};
+}
+
+// Compute parameters for the camera riley::ShadingNode
 static
 RtParamList
 _ComputeNodeParams(const HdCamera * const camera)
 {
-    RtParamList result;
-
-    // Following parameters can be set on the projection shader:
-    // fov (currently unhandled)
-    // fovEnd (currently unhandled)
-    // fStop
-    // focalLength
-    // focalDistance
-    // RenderMan defines disabled DOF as fStop=inf not zero
-
-    float fStop = RI_INFINITY;
-    const float cameraFStop = camera->GetFStop();
-    if (cameraFStop > 0.0) {
-        fStop = cameraFStop;
+    switch(camera->GetProjection()) {
+    case HdCamera::Perspective:
+        return _ComputePerspectiveNodeParams(camera);
+    case HdCamera::Orthographic:
+        return _ComputeOrthographicNodeParams(camera);
     }
-    result.SetFloat(RixStr.k_fStop, fStop);
-
-    // Do not use the initial value 0 which we get if the scene delegate
-    // did not provide a focal length.
-    const float focalLength = camera->GetFocalLength();
-    if (focalLength > 0) {
-        result.SetFloat(RixStr.k_focalLength, focalLength);
-    }
-
-    // Similar for focus distance.
-    const float focusDistance = camera->GetFocusDistance();
-    if (focusDistance > 0) {
-        result.SetFloat(RixStr.k_focalDistance, focusDistance);
-    }
-
-    if (camera->GetProjection() == HdCamera::Perspective) {
-        float fov = 90.0f;
-
-        if (focalLength > 0) {
-            const float h = camera->GetHorizontalAperture();
-            fov = 2.0f * GfRadiansToDegrees(std::atan(0.5f * h / focalLength));
-        }
-
-        result.SetFloat(RixStr.k_fov, fov);
-    }
-
-    return result;
+    
+    // Make compiler happy
+    return _ComputePerspectiveNodeParams(camera);
 }
 
 // Compute params given to Riley::ModifyCamera
