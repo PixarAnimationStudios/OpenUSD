@@ -980,6 +980,29 @@ HdStResourceRegistry::_Commit()
     }
 }
 
+// Callback functions for garbage collecting Hgi resources
+namespace {
+
+void 
+_DestroyResourceBindings(Hgi *hgi, HgiResourceBindingsHandle *resourceBindings)
+{
+    hgi->DestroyResourceBindings(resourceBindings);
+}
+
+void 
+_DestroyGraphicsPipeline(Hgi *hgi, HgiGraphicsPipelineHandle *graphicsPipeline)
+{
+    hgi->DestroyGraphicsPipeline(graphicsPipeline);
+}
+
+void 
+_DestroyComputePipeline(Hgi *hgi, HgiComputePipelineHandle *computePipeline)
+{
+    hgi->DestroyComputePipeline(computePipeline);
+}
+
+}
+
 void
 HdStResourceRegistry::_GarbageCollect()
 {
@@ -1036,10 +1059,13 @@ HdStResourceRegistry::_GarbageCollect()
     _glslProgramRegistry.GarbageCollect();
     _glslfxFileRegistry.GarbageCollect();
 
-    // Cleanup Hgi resources bindings and pipelines
-    _resourceBindingsRegistry.GarbageCollect();
-    _graphicsPipelineRegistry.GarbageCollect();
-    _computePipelineRegistry.GarbageCollect();
+    // Cleanup Hgi resources
+    _resourceBindingsRegistry.GarbageCollect(
+        std::bind(&_DestroyResourceBindings, _hgi, std::placeholders::_1));
+    _graphicsPipelineRegistry.GarbageCollect(
+        std::bind(&_DestroyGraphicsPipeline, _hgi, std::placeholders::_1));
+    _computePipelineRegistry.GarbageCollect(
+        std::bind(&_DestroyComputePipeline, _hgi, std::placeholders::_1));
 
     // cleanup buffer array
     // buffer array retains weak_ptrs of range. All unused ranges should be
