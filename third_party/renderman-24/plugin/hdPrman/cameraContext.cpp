@@ -29,6 +29,10 @@
 #include "Riley.h"
 #include "RixShadingUtils.h"
 
+#include "pxr/base/gf/math.h"
+
+#include <cmath>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 static const RtUString _us_main_cam_projection("main_cam_projection");
@@ -117,13 +121,10 @@ HdPrman_CameraContext::IsInvalid() const
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// Screen window space: imagine a plane at unit distance (*) in front
-// of the camera (and parallel to the camera). Coordinates with
-// respect to screen window space are measured in this plane with the
-// y-Axis pointing up. Such coordinates parameterize rays from the
-// camera.
-// (*) This is a simplification achieved by fixing RenderMan's FOV to be
-// 90 degrees.
+// Screen window space: imagine a plane at in front of the camera (and parallel
+// to the camera) with coordinates such that the square [-1,1]^2 spans a pyramid
+// with angle being the (horizontal) FOV. This is the screen window space and is
+// used to parametrize the rays from the camera.
 //
 // Image space: coordinates of the pixels in the rendered image with the top
 // left pixel having coordinate (0,0), i.e., y-down.
@@ -133,7 +134,6 @@ HdPrman_CameraContext::IsInvalid() const
 // We want to map the screen window space to the image space such that the
 // conformed camera frustum from the scene delegate maps to the display window
 // of the CameraUtilFraming. This is achieved by the following code.
-//
 //
 // Compute screen window for given camera.
 //
@@ -152,11 +152,14 @@ _GetScreenWindow(const HdCamera * const cam)
         return filmbackPlane;
     }
 
-    if (cam->GetFocalLength() == 0.0f) {
+    if (cam->GetFocalLength() == 0.0f || cam->GetHorizontalAperture() == 0.0f) {
         return filmbackPlane;
     }
 
-    return filmbackPlane / double(cam->GetFocalLength());
+    // Note that for perspective projection and with no horizontal aperture,
+    // our screen widndow's x-coordinate are in [-1, 1].
+    // Divide by appropriate factor to get to this.
+    return filmbackPlane / double(0.5 * cam->GetHorizontalAperture());
 }
 
 // Compute the screen window we need to give to RenderMan. This screen
@@ -294,13 +297,14 @@ _ComputeNodeParams(const HdCamera * const camera)
     }
 
     if (camera->GetProjection() == HdCamera::Perspective) {
-        // TODO: For lens distortion to be correct, we might
-        // need to set a different FOV and adjust the screenwindow
-        // accordingly.
-        // For now, lens distortion parameters are not passed through
-        // hdPrman anyway.
-        //
-        result.SetFloat(RixStr.k_fov, 90.0f);
+        float fov = 90.0f;
+
+        if (focalLength > 0) {
+            const float h = camera->GetHorizontalAperture();
+            fov = 2.0f * GfRadiansToDegrees(std::atan(0.5f * h / focalLength));
+        }
+
+        result.SetFloat(RixStr.k_fov, fov);
     }
 
     return result;
