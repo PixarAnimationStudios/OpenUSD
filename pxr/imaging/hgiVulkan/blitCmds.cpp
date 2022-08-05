@@ -117,6 +117,7 @@ HgiVulkanBlitCmds::CopyTextureGpuToCpu(
     srcTexture->TransitionImageBarrier(
         _commandBuffer,
         srcTexture,
+        oldLayout,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // transition tex to this layout
         HgiVulkanTexture::NO_PENDING_WRITES,  // no pending writes
         VK_ACCESS_TRANSFER_READ_BIT,          // type of access
@@ -146,6 +147,7 @@ HgiVulkanBlitCmds::CopyTextureGpuToCpu(
     srcTexture->TransitionImageBarrier(
         _commandBuffer,
         srcTexture,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         oldLayout,                           // transition tex to this layout
         HgiVulkanTexture::NO_PENDING_WRITES, // no pending writes
         access,                              // type of access
@@ -406,10 +408,13 @@ HgiVulkanBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
         return;                    
     }
 
+    VkImageLayout const oldLayout = vkTex->GetImageLayout();
+
     // Transition first mip to TRANSFER_SRC so we can read it
     HgiVulkanTexture::TransitionImageBarrier(
         _commandBuffer,
         vkTex,
+        oldLayout,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         HgiVulkanTexture::NO_PENDING_WRITES,
         VK_ACCESS_TRANSFER_READ_BIT,
@@ -441,6 +446,7 @@ HgiVulkanBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
         HgiVulkanTexture::TransitionImageBarrier(
             _commandBuffer,
             vkTex,
+            oldLayout,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             HgiVulkanTexture::NO_PENDING_WRITES,
             VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -464,6 +470,7 @@ HgiVulkanBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
             _commandBuffer,
             vkTex,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             VK_ACCESS_TRANSFER_WRITE_BIT,
             VK_ACCESS_TRANSFER_READ_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -475,6 +482,7 @@ HgiVulkanBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
     HgiVulkanTexture::TransitionImageBarrier(
         _commandBuffer,
         vkTex,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         HgiVulkanTexture::GetDefaultImageLayout(desc.usage),
         VK_ACCESS_TRANSFER_READ_BIT,
         HgiVulkanTexture::GetDefaultAccessFlags(desc.usage),

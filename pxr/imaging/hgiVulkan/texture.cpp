@@ -244,6 +244,7 @@ HgiVulkanTexture::HgiVulkanTexture(
         TransitionImageBarrier(
             cb,
             this,
+            VK_IMAGE_LAYOUT_UNDEFINED,
             layout,
             NO_PENDING_WRITES,
             GetDefaultAccessFlags(desc.usage),
@@ -481,6 +482,7 @@ HgiVulkanTexture::CopyBufferToTexture(
     TransitionImageBarrier(
         cb,
         this,
+        GetImageLayout(),
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // Transition tex to this layout
         NO_PENDING_WRITES,                    // No pending writes
         VK_ACCESS_TRANSFER_WRITE_BIT,         // Write access to image
@@ -503,6 +505,7 @@ HgiVulkanTexture::CopyBufferToTexture(
     TransitionImageBarrier(
         cb,
         this,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         layout,                              // Transition tex to this
         VK_ACCESS_TRANSFER_WRITE_BIT,        // Pending vkCmdCopyBufferToImage
         access,                              // Shader read access
@@ -514,6 +517,7 @@ void
 HgiVulkanTexture::TransitionImageBarrier(
     HgiVulkanCommandBuffer* cb,
     HgiVulkanTexture* tex,
+    VkImageLayout oldLayout,
     VkImageLayout newLayout,
     VkAccessFlags producerAccess,
     VkAccessFlags consumerAccess,
@@ -530,7 +534,7 @@ HgiVulkanTexture::TransitionImageBarrier(
     barrier[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier[0].srcAccessMask = producerAccess; // what producer does / changes.
     barrier[0].dstAccessMask = consumerAccess; // what consumer does / changes.
-    barrier[0].oldLayout = tex->GetImageLayout();
+    barrier[0].oldLayout = oldLayout;
     barrier[0].newLayout = newLayout;
     barrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
