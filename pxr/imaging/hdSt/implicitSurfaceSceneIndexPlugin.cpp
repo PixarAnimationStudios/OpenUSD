@@ -46,6 +46,8 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 0;
 
+    // Configure the scene index to generate the mesh for each of the implicit
+    // primitives since Storm doesn't natively support any.
     HdDataSourceBaseHandle const toMeshSrc =
         HdRetainedTypedSampledDataSource<TfToken>::New(
             HdsiImplicitSurfaceSceneIndexTokens->toMesh);
@@ -56,7 +58,7 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
             HdPrimTypeTokens->cube, toMeshSrc,
             HdPrimTypeTokens->cone, toMeshSrc,
             HdPrimTypeTokens->cylinder, toMeshSrc,
-            HdPrimTypeTokens->capsule, toMeshSrc);            
+            HdPrimTypeTokens->capsule, toMeshSrc);
 
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
         _pluginDisplayName,
