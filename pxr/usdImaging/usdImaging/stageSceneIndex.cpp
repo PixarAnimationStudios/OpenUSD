@@ -25,8 +25,6 @@
 
 #include "pxr/usd/usd/primRange.h"
 
-#include "pxr/usd/usdLux/lightAPI.h"
-
 #include "pxr/usdImaging/usdImaging/adapterRegistry.h"
 #include "pxr/usdImaging/usdImaging/apiSchemaAdapter.h"
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
