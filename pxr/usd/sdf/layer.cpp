@@ -763,9 +763,6 @@ SdfLayer::FindOrOpen(const string &identifier,
     // instance), we'll deadlock.
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
-    // Isolate.
-    return WorkWithScopedParallelism([&]() -> SdfLayerRefPtr {
-    
     _FindOrOpenLayerInfo layerInfo;
     if (!_ComputeInfoToFindOrOpenLayer(identifier, args, &layerInfo,
                                        /* computeAssetInfo = */ true)) {
@@ -804,9 +801,12 @@ SdfLayer::FindOrOpen(const string &identifier,
         return TfNullPtr;
     }
 
-    // Otherwise we create the layer and insert it into the registry.
-    return _OpenLayerAndUnlockRegistry(lock, layerInfo,
-                                       /* metadataOnly */ false);
+    // Isolate.
+    return WorkWithScopedParallelism([&]() -> SdfLayerRefPtr {
+        
+        // Otherwise we create the layer and insert it into the registry.
+        return _OpenLayerAndUnlockRegistry(lock, layerInfo,
+                                           /* metadataOnly */ false);
     });
 }
 
