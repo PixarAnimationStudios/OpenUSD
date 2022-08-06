@@ -34,9 +34,9 @@ function(pxr_build_documentation)
         # since it's generated outside of the libraries.
         COMMAND
             ${CMAKE_COMMAND} -E copy
-            "${CMAKE_BINARY_DIR}/include/pxr/pxr.h"
-            "${CMAKE_BINARY_DIR}/docs/include/pxr/pxr.h"
-        COMMAND 
+            "${PROJECT_BINARY_DIR}/include/pxr/pxr.h"
+            "${PROJECT_BINARY_DIR}/docs/include/pxr/pxr.h"
+        COMMAND
             ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_SOURCE_DIR}/docs"
             "${CMAKE_BINARY_DIR}/docs"
@@ -159,14 +159,14 @@ endfunction() # pxr_python_bin
 
 function(pxr_cpp_bin BIN_NAME)
     _get_install_dir(bin installDir)
-    
+
     set(multiValueArgs
         LIBRARIES
         INCLUDE_DIRS
     )
 
     cmake_parse_arguments(cb
-        ""  
+        ""
         ""
         "${multiValueArgs}"
         ${ARGN}
@@ -191,7 +191,7 @@ function(pxr_cpp_bin BIN_NAME)
     )
 
     target_include_directories(${BIN_NAME}
-        PRIVATE 
+        PRIVATE
         ${PRIVATE_INC_DIR}
         ${cb_INCLUDE_DIRS}
     )
@@ -398,7 +398,7 @@ function (pxr_create_test_module MODULE_NAME)
         return()
     endif()
 
-    if (NOT PXR_BUILD_TESTS) 
+    if (NOT PXR_BUILD_TESTS)
         return()
     endif()
 
@@ -422,21 +422,21 @@ function (pxr_create_test_module MODULE_NAME)
     # XXX -- We shouldn't have to install to run tests.
     if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${initPyFile}")
         install(
-            FILES 
+            FILES
                 ${initPyFile}
-            RENAME 
+            RENAME
                 __init__.py
-            DESTINATION 
+            DESTINATION
                 tests/${tm_INSTALL_PREFIX}/lib/python/${MODULE_NAME}
         )
     endif()
     if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${plugInfoFile}")
         install(
-            FILES 
+            FILES
                 ${plugInfoFile}
-            RENAME 
+            RENAME
                 plugInfo.json
-            DESTINATION 
+            DESTINATION
                 tests/${tm_INSTALL_PREFIX}/lib/python/${MODULE_NAME}
         )
     endif()
@@ -459,7 +459,7 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
         "LIBRARIES;CPPFILES"
         ${ARGN}
     )
-        
+
     add_library(${LIBRARY_NAME}
         SHARED
         ${bt_CPPFILES}
@@ -469,7 +469,7 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
     )
     _get_folder("tests/lib" folder)
     set_target_properties(${LIBRARY_NAME}
-        PROPERTIES 
+        PROPERTIES
             FOLDER "${folder}"
     )
 
@@ -493,7 +493,7 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
         set(testPlugInfoResourceDir "${testPlugInfoLibDir}/${TEST_PLUG_INFO_RESOURCE_PATH}")
         set(testPlugInfoPath "${CMAKE_BINARY_DIR}/${testPlugInfoResourceDir}/plugInfo.json")
 
-        file(RELATIVE_PATH 
+        file(RELATIVE_PATH
             TEST_PLUG_INFO_LIBRARY_PATH
             "${CMAKE_INSTALL_PREFIX}/${testPlugInfoLibDir}"
             "${CMAKE_INSTALL_PREFIX}/tests/lib/${LIBRARY_FILE}")
@@ -550,7 +550,7 @@ function(pxr_build_test TEST_NAME)
     # unexpected results.
     _get_folder("tests/bin" folder)
     set_target_properties(${TEST_NAME}
-        PROPERTIES 
+        PROPERTIES
             FOLDER "${folder}"
         	POSITION_INDEPENDENT_CODE ON
     )
@@ -612,7 +612,7 @@ function(pxr_install_test_dir)
     endif()
 
     cmake_parse_arguments(bt
-        "" 
+        ""
         "SRC;DEST"
         ""
         ${ARGN}
@@ -679,7 +679,7 @@ function(pxr_register_test TEST_NAME)
         endif()
     endif()
 
-    # This harness is a filter which allows us to manipulate the test run, 
+    # This harness is a filter which allows us to manipulate the test run,
     # e.g. by changing the environment, changing the expected return code, etc.
     set(testWrapperCmd ${PROJECT_SOURCE_DIR}/cmake/macros/testWrapper.py --verbose)
 
@@ -822,11 +822,11 @@ function(pxr_register_test TEST_NAME)
             set(testWrapperCmd ${testWrapperCmd} --post-path=${path})
         endforeach()
     endif()
-        
+
     # If we're building static libraries, the C++ tests that link against
     # these libraries will look for resource files in the "usd" subdirectory
     # relative to where the tests are installed. However, the build installs
-    # these files in the "lib" directory where the libraries are installed. 
+    # these files in the "lib" directory where the libraries are installed.
     #
     # We don't want to copy these resource files for each test, so instead
     # we set the PXR_PLUGINPATH_NAME env var to point to the "lib/usd"
@@ -869,7 +869,7 @@ function(pxr_register_test TEST_NAME)
 endfunction() # pxr_register_test
 
 function(pxr_setup_plugins)
-    # Install a top-level plugInfo.json in the shared area and into the 
+    # Install a top-level plugInfo.json in the shared area and into the
     # top-level plugin area
     _get_resources_dir_name(resourcesDir)
 
@@ -894,6 +894,10 @@ function(pxr_setup_plugins)
         DESTINATION lib/usd
         RENAME "plugInfo.json"
     )
+    configure_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/plugins_plugInfo.json"
+        "${PROJECT_BINARY_DIR}/install/lib/usd/plugInfo.json"
+    )
 
     set(plugInfoContents "{\n    \"Includes\": [ \"*/${resourcesDir}/\" ]\n}\n")
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/usd_plugInfo.json"
@@ -902,6 +906,10 @@ function(pxr_setup_plugins)
         FILES "${CMAKE_CURRENT_BINARY_DIR}/usd_plugInfo.json"
         DESTINATION plugin/usd
         RENAME "plugInfo.json"
+    )
+    configure_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/usd_plugInfo.json"
+        "${PROJECT_BINARY_DIR}/install/plugin/usd/plugInfo.json"
     )
 endfunction() # pxr_setup_plugins
 
@@ -929,9 +937,9 @@ endfunction() # pxr_setup_third_plugins
 function(pxr_toplevel_prologue)
     # Generate a namespace declaration header, pxr.h, at the top level of
     # pxr at configuration time.
-    configure_file(${CMAKE_SOURCE_DIR}/pxr/pxr.h.in
-        ${CMAKE_BINARY_DIR}/include/pxr/pxr.h     
-    )  
+    configure_file(${PROJECT_SOURCE_DIR}/pxr/pxr.h.in
+        ${PROJECT_BINARY_DIR}/include/pxr/pxr.h
+    )
     install(
         FILES ${CMAKE_BINARY_DIR}/include/pxr/pxr.h
         DESTINATION include/pxr
