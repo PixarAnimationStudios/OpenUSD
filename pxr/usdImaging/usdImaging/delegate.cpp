@@ -907,24 +907,32 @@ UsdImagingDelegate::GetTimeWithOffset(float offset) const
 
 void
 UsdImagingDelegate::_GatherDependencies(SdfPath const& subtree,
-                                        SdfPathVector& affectedCachePaths)
+                                        SdfPathVector *affectedCachePaths)
 {
     HD_TRACE_FUNCTION();
 
-    const auto it = _dependenciesCacheMap.find(subtree);
-    if (it != _dependenciesCacheMap.end()) {
-        affectedCachePaths = it->second;
+    if (affectedCachePaths == nullptr) {
         return;
     }
 
-    _GatherDependenciesCache(subtree, affectedCachePaths);
+    const auto it = _flattenedDependenciesCache.find(subtree);
+    if (it != _flattenedDependenciesCache.end()) {
+        (*affectedCachePaths) = it->second;
+        return;
+    }
+
+    _CacheDependencies(subtree, affectedCachePaths);
 }
 
 void
-UsdImagingDelegate::_GatherDependenciesCache(SdfPath const& subtree,
-                                             SdfPathVector& affectedCachePaths)
+UsdImagingDelegate::_CacheDependencies(SdfPath const& subtree,
+                                       SdfPathVector *affectedCachePaths)
 {
     HD_TRACE_FUNCTION();
+
+    if (affectedCachePaths == nullptr) {
+        return;
+    }
 
     // Binary search for the first path in the subtree.
     _DependencyMap::const_iterator start =
@@ -959,7 +967,7 @@ UsdImagingDelegate::_GatherDependenciesCache(SdfPath const& subtree,
     // usd dependencies within subtree.
     std::sort(affectedPaths.begin(), affectedPaths.end());
     std::unique_copy(affectedPaths.begin(), affectedPaths.end(),
-            std::back_inserter(affectedCachePaths));
+            std::back_inserter(*affectedCachePaths));
 }
 
 void
@@ -986,7 +994,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
     _coordSysBindingCache.Clear();
     _inheritedPrimvarCache.Clear();
     _pointInstancerIndicesCache.Clear();
-    _dependenciesCacheMap.clear();
+    _flattenedDependenciesCache.clear();
 
     UsdImagingDelegate::_Worker worker(this);
     UsdImagingIndexProxy indexProxy(this, &worker);
@@ -1006,25 +1014,18 @@ UsdImagingDelegate::ApplyPendingUpdates()
                          });
         _usdPathsToResync.clear();
 
-        // Sort and find out all the key usd paths for `_GatherDependencies()`
-        SdfPathSet sortedUsdPathsToResync;
-        for (SdfPath const& usdPath: usdPathsToResync) {
-            if (usdPath.IsPropertyPath()) {
-                sortedUsdPathsToResync.emplace(usdPath.GetPrimPath());
-            } else if (usdPath.IsTargetPath()) {
-                sortedUsdPathsToResync.emplace(usdPath.GetParentPath());
-            } else if (usdPath.IsAbsoluteRootOrPrimPath()) {
-                sortedUsdPathsToResync.emplace(usdPath);
-            }
-        }
-
         // Pre-cache dependencies in parallel
         WorkDispatcher resyncPathsCacheDispatcher;
-        for (const auto& usdPath: sortedUsdPathsToResync) {
-            auto& affectedCachePaths = _dependenciesCacheMap[usdPath];
+        for (const auto& usdPath: usdPathsToResync) {
+            auto pair = _flattenedDependenciesCache.insert(std::make_pair(usdPath, SdfPathVector()));
+            if (!pair.second) {
+                // No insertion happened, path has been inserted
+                continue;
+            }
+            auto& affectedCachePaths = pair.first->second;
             resyncPathsCacheDispatcher.Run(
                 [this, &usdPath, &affectedCachePaths]() {
-                    _GatherDependenciesCache(usdPath, affectedCachePaths);
+                    _CacheDependencies(usdPath, &affectedCachePaths);
             });
         }
         resyncPathsCacheDispatcher.Wait();
@@ -1055,6 +1056,24 @@ UsdImagingDelegate::ApplyPendingUpdates()
     if (!_usdPathsToUpdate.empty()) {
         _PathsToUpdateMap usdPathsToUpdate;
         std::swap(usdPathsToUpdate, _usdPathsToUpdate);
+
+        // Pre-cache dependencies in parallel
+        WorkDispatcher updatePathsCacheDispatcher;
+        for (auto pathIt: usdPathsToUpdate) {
+            const auto& usdPath = pathIt.first;
+            auto pair = _flattenedDependenciesCache.insert(std::make_pair(usdPath, SdfPathVector()));
+            if (!pair.second) {
+                // No insertion happened, path has been inserted
+                continue;
+            }
+            auto& affectedCachePaths = pair.first->second;
+            updatePathsCacheDispatcher.Run(
+                [this, &usdPath, &affectedCachePaths]() {
+                    _CacheDependencies(usdPath, &affectedCachePaths);
+            });
+        }
+        updatePathsCacheDispatcher.Wait();
+
         TF_FOR_ALL(pathIt, usdPathsToUpdate) {
             const SdfPath& usdPath = pathIt->first;
             const TfTokenVector& changedPrimInfoFields = pathIt->second;
@@ -1273,7 +1292,7 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
     // resync affected prims individually. If we do this, we also need to walk 
     // the subtree and check for new prims.
     SdfPathVector affectedCachePaths;
-    _GatherDependencies(usdPath, affectedCachePaths);
+    _GatherDependencies(usdPath, &affectedCachePaths);
     if (affectedCachePaths.size() > 0) {
         for (SdfPath const& affectedCachePath : affectedCachePaths) {
 
@@ -1408,7 +1427,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
             UsdGeomXformable::IsTransformationAffectedByAttrNamed(attrName)) {
             // Because these are inherited attributes, we must update all
             // children.
-            _GatherDependencies(usdPrimPath, affectedCachePaths);
+            _GatherDependencies(usdPrimPath, &affectedCachePaths);
         } else if (UsdGeomPrimvarsAPI::CanContainPropertyName(attrName)) {
             // Primvars can be inherited, so we need to invalidate everything
             // downstream.  Technically, only constant primvars on non-leaf
@@ -1416,7 +1435,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
             // if (e.g.) the primvar has been blocked, and calling
             // _GatherDependencies on a leaf prim won't invoke any extra work
             // vs the equal_range below...
-            _GatherDependencies(usdPrimPath, affectedCachePaths);
+            _GatherDependencies(usdPrimPath, &affectedCachePaths);
         } else if (UsdCollectionAPI::CanContainPropertyName(attrName)) {
             // XXX Performance: Collections used for material bindings
             // can refer to prims at arbitrary locations in the scene.
@@ -2333,7 +2352,7 @@ UsdImagingDelegate::PopulateSelection(
     SdfPath rootPath = usdPrim.GetPath();
 
     SdfPathVector affectedCachePaths;
-    _GatherDependencies(rootPath, affectedCachePaths);
+    _GatherDependencies(rootPath, &affectedCachePaths);
 
     std::sort(affectedCachePaths.begin(), affectedCachePaths.end());
     auto last = std::unique(affectedCachePaths.begin(),
