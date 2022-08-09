@@ -94,6 +94,11 @@ TestResolveWithContext()
         TF_AXIOM(resolver.Resolve("test://foo") == "test://foo");
     }
     TF_AXIOM(resolver.Resolve("test://foo") == "test://foo?context");
+
+    // Verify that another primary resolver with uriSchemes can still resolve
+    ArResolverContext ctx4(_TestURIResolverContext("context4"));
+    ArResolverContextBinder binder4(ctx4);
+    TF_AXIOM(resolver.Resolve("test_primary://foo") == "test_primary://foo?context4");
 }
 
 static void

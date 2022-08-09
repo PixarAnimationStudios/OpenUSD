@@ -155,6 +155,18 @@ public:
     }
 };
 
+// Test resolver that can be used as a primary resolver but handles asset paths of the form "test_primary://..."
+class _TestOtherPrimaryResolver
+        : public _TestURIResolverBase
+{
+public:
+    _TestOtherPrimaryResolver()
+        : _TestURIResolverBase("test_primary")
+    {
+
+    }
+};
+
 // XXX: Should have a AR_DEFINE_ABSTRACT_RESOLVER macro like
 // AR_DEFINE_ABSTRACT_RESOLVER(_TestURIResolverBase, ArResolver)
 // to take care of this registration.
@@ -165,3 +177,4 @@ TF_REGISTRY_FUNCTION(TfType)
 
 AR_DEFINE_RESOLVER(_TestURIResolver, _TestURIResolverBase);
 AR_DEFINE_RESOLVER(_TestOtherURIResolver, _TestURIResolverBase);
+AR_DEFINE_RESOLVER(_TestOtherPrimaryResolver, _TestURIResolverBase);
