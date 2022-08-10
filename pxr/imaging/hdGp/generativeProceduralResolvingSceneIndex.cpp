@@ -831,7 +831,7 @@ HdGpGenerativeProceduralResolvingSceneIndex::_RemoveProcedural(
     // 1) remove existing dependencies
     if (!procEntry.dependencies.empty()) {
 
-        _MapLock depsLock(_proceduralsMutex);
+        _MapLock depsLock(_dependenciesMutex);
 
         for (const auto pathLocatorsPair : procEntry.dependencies) {
             _DependencyMap::iterator dIt =
