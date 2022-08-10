@@ -247,25 +247,33 @@ static
 const RtUString&
 _ComputeProjectionShader(const HdCamera::Projection projection)
 {
-    static const RtUString us_PxrPerspective("PxrPerspective");
+    static const RtUString us_PxrProjection("PxrProjection");
     static const RtUString us_PxrOrthographic("PxrOrthographic");
 
     switch (projection) {
     case HdCamera::Perspective:
-        return us_PxrPerspective;
+        return us_PxrProjection;
     case HdCamera::Orthographic:
         return us_PxrOrthographic;
     }
 
     // Make compiler happy.
-    return us_PxrPerspective;
+    return us_PxrProjection;
 }
 
 // Compute parameters for the camera riley::ShadingNode for perspective camera
 RtParamList
-_ComputePerspectiveNodeParams(const HdCamera * const camera)
+_ComputePerspectiveNodeParams(const HdPrmanCamera * const camera)
 {
     RtParamList result;
+
+    static const RtUString us_lensType("lensType");
+    // lensType values in PxrProjection.
+    constexpr int lensTypeLensWarp = 2;
+
+    // Pick a PxrProjection lens type that supports depth of field
+    // and lens distortion.
+    result.SetInteger(us_lensType, lensTypeLensWarp);
 
     // FOV settings.
     const float focalLength = camera->GetFocalLength();
@@ -301,12 +309,40 @@ _ComputePerspectiveNodeParams(const HdCamera * const camera)
     // Not setting fov frame begin/end - thus we do not support motion blur
     // due to changing FOV.
 
+    static const RtUString us_lensK1("lensK1");
+    static const RtUString us_lensK2("lensK2");
+    static const RtUString us_distortionCtr("distortionCtr");
+    static const RtUString us_lensSqueeze("lensSqueeze");
+    static const RtUString us_lensAsymmetry("lensAsymmetry");
+    static const RtUString us_lensScale("lensScale");
+
+    result.SetFloat(
+        us_lensK1,
+        camera->GetLensDistortionK1());
+    result.SetFloat(
+        us_lensK2,
+        camera->GetLensDistortionK2());
+    result.SetFloatArray(
+        us_distortionCtr,
+        camera->GetLensDistortionCenter().data(),
+        2);
+    result.SetFloat(
+        us_lensSqueeze,
+        camera->GetLensDistortionAnaSq());
+    result.SetFloatArray(
+        us_lensAsymmetry,
+        camera->GetLensDistortionAsym().data(),
+        2);
+    result.SetFloat(
+        us_lensScale,
+        camera->GetLensDistortionScale());
+
     return result;
 }
 
 // Compute parameters for the camera riley::ShadingNode for orthographic camera
 RtParamList
-_ComputeOrthographicNodeParams(const HdCamera * const camera)
+_ComputeOrthographicNodeParams(const HdPrmanCamera * const camera)
 {
     return {};
 }
@@ -314,7 +350,7 @@ _ComputeOrthographicNodeParams(const HdCamera * const camera)
 // Compute parameters for the camera riley::ShadingNode
 static
 RtParamList
-_ComputeNodeParams(const HdCamera * const camera)
+_ComputeNodeParams(const HdPrmanCamera * const camera)
 {
     switch(camera->GetProjection()) {
     case HdCamera::Perspective:
@@ -322,7 +358,7 @@ _ComputeNodeParams(const HdCamera * const camera)
     case HdCamera::Orthographic:
         return _ComputeOrthographicNodeParams(camera);
     }
-    
+
     // Make compiler happy
     return _ComputePerspectiveNodeParams(camera);
 }
