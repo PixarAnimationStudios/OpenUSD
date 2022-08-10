@@ -25,6 +25,7 @@
 
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/engine.h"
+#include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/renderPass.h"
@@ -41,7 +42,9 @@
 #include "pxr/usd/usdRender/spec.h"
 #include "pxr/usd/usdRender/var.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/trace/reporter.h"
@@ -62,6 +65,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Collection Names
     (testCollection)
 );
+
+TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_ENABLE_SCENE_INDEX, false,
+                      "Use Scene Index API for testHdPrman.");
 
 static TfStopwatch timer_prmanRender;
 
@@ -522,13 +528,28 @@ int main(int argc, char *argv[])
         {
             std::unique_ptr<HdRenderIndex> const hdRenderIndex(
                 HdRenderIndex::New(renderDelegate.Get(), HdDriverVector()));
-            UsdImagingDelegate hdUsdFrontend(hdRenderIndex.get(),
-                                             SdfPath::AbsoluteRootPath());
-            hdUsdFrontend.Populate(stage->GetPseudoRoot());
-            hdUsdFrontend.SetTime(frameNum);
-            hdUsdFrontend.SetRefineLevelFallback(8); // max refinement
-            if (!product.cameraPath.IsEmpty()) {
-                hdUsdFrontend.SetCameraForSampling(product.cameraPath);
+            
+            UsdImagingStageSceneIndexRefPtr usdStageSceneIndex;
+            std::unique_ptr<UsdImagingDelegate> hdUsdFrontend;
+
+            if (TfGetEnvSetting(TEST_HD_PRMAN_ENABLE_SCENE_INDEX)) {
+                usdStageSceneIndex = UsdImagingStageSceneIndex::New();
+                hdRenderIndex->InsertSceneIndex(
+                    HdFlatteningSceneIndex::New(usdStageSceneIndex),
+                    SdfPath::AbsoluteRootPath());
+                usdStageSceneIndex->SetStage(stage);
+                usdStageSceneIndex->Populate();
+                usdStageSceneIndex->SetTime(frameNum);
+            } else {
+                hdUsdFrontend = std::make_unique<UsdImagingDelegate>(
+                    hdRenderIndex.get(),
+                    SdfPath::AbsoluteRootPath());
+                hdUsdFrontend->Populate(stage->GetPseudoRoot());
+                hdUsdFrontend->SetTime(frameNum);
+                hdUsdFrontend->SetRefineLevelFallback(8); // max refinement
+                if (!product.cameraPath.IsEmpty()) {
+                    hdUsdFrontend->SetCameraForSampling(product.cameraPath);
+                }
             }
 
             const TfTokenVector renderTags{HdRenderTagTokens->geometry};
