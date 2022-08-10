@@ -26,7 +26,7 @@
 import unittest
 import os, json
 
-from pxr.Usdviewq.settings2 import StateSource, Settings
+from pxr.Usdviewq.settings import StateSource, Settings
 
 
 TEST_SETTINGS_VERSION = "1"
@@ -91,7 +91,7 @@ class ParentModel(StateSource):
         state["parentTestStr"] = self.parentTestStr
 
 
-class TestSettings2(unittest.TestCase):
+class TestSettings(unittest.TestCase):
 
     def _writeStateFile(self, state):
         """Write a state to the state file."""

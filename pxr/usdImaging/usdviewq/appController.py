@@ -75,8 +75,8 @@ from .common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
                      GetPrimsLoadability, ClearColors,
                      HighlightColors, KeyboardShortcuts, PrintWarning)
 
-from . import settings2
-from .settings2 import StateSource
+from . import settings
+from .settings import StateSource
 from .usdviewApi import UsdviewApi
 from .rootDataModel import RootDataModel, ChangeNotice
 from .viewSettingsDataModel import ViewSettingsDataModel
@@ -121,11 +121,11 @@ QT_BINDING = QtCore.__name__.split('.')[0]
 
 class UsdviewDataModel(RootDataModel):
 
-    def __init__(self, makeTimer, settings2):
+    def __init__(self, makeTimer, settings):
         super(UsdviewDataModel, self).__init__(makeTimer)
 
         self._selectionDataModel = SelectionDataModel(self)
-        self._viewSettingsDataModel = ViewSettingsDataModel(self, settings2)
+        self._viewSettingsDataModel = ViewSettingsDataModel(self, settings)
 
     @property
     def selection(self):
@@ -317,15 +317,15 @@ class AppController(QtCore.QObject):
             self._plugRegistry = plugin.loadPlugins(
                 self._usdviewApi, self._mainWindow)
 
-    def _openSettings2(self, defaultSettings):
+    def _openSettings(self, defaultSettings):
         settingsPathDir = self._outputBaseDirectory()
 
         if (settingsPathDir is None) or defaultSettings:
             # Create an ephemeral settings object by withholding the file path.
-            self._settings2 = settings2.Settings(SETTINGS_VERSION)
+            self._settings = settings.Settings(SETTINGS_VERSION)
         else:
-            settings2Path = os.path.join(settingsPathDir, "state.json")
-            self._settings2 = settings2.Settings(SETTINGS_VERSION, settings2Path)
+            settingsPath = os.path.join(settingsPathDir, "state.json")
+            self._settings = settings.Settings(SETTINGS_VERSION, settingsPath)
 
     def _setupCustomFont(self):
         fontResourceDir = os.path.join(os.path.dirname(
@@ -407,9 +407,9 @@ class AppController(QtCore.QObject):
             if parserData.rendererPlugin:
                 os.environ['HD_DEFAULT_RENDERER'] = parserData.rendererPlugin
 
-            self._openSettings2(parserData.defaultSettings)
+            self._openSettings(parserData.defaultSettings)
 
-            self._dataModel = UsdviewDataModel(self._makeTimer, self._settings2)
+            self._dataModel = UsdviewDataModel(self._makeTimer, self._settings)
 
             # Setup Default bundled fonts (Roboto)
             self._setupCustomFont()
@@ -458,7 +458,7 @@ class AppController(QtCore.QObject):
                 sys.exit(0)
 
             # We instantiate a UIStateProxySource only for its side-effects
-            uiProxy = UIStateProxySource(self, self._settings2, "ui")
+            uiProxy = UIStateProxySource(self, self._settings, "ui")
 
 
             self._dataModel.stage = stage
@@ -2642,7 +2642,7 @@ class AppController(QtCore.QObject):
     def _cleanAndClose(self):
         # This function is called by the main window's closeEvent handler.
         
-        self._settings2.save()
+        self._settings.save()
 
         # If the current path widget is focused when closing usdview, it can
         # trigger an "editingFinished()" signal, which will look for a prim in

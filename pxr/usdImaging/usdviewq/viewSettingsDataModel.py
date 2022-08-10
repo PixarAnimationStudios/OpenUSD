@@ -30,8 +30,8 @@ from .common import (RenderModes, ColorCorrectionModes, PickModes,
                      SelectionHighlightModes, CameraMaskModes, 
                      PrintWarning)
 
-from . import settings2
-from .settings2 import StateSource
+from . import settings
+from .settings import StateSource
 from pxr.UsdUtils.constantsGroup import ConstantsGroup
 from .freeCamera import FreeCamera
 from .common import ClearColors, HighlightColors

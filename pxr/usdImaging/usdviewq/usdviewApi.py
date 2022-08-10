@@ -197,10 +197,10 @@ class UsdviewApi(object):
 
         self.__appController.statusMessage(msg)
 
-    def GetSettings2(self):
-        """Returns the settings2 object."""
+    def GetSettings(self):
+        """Returns the settings object."""
 
-        return self.__appController._settings2
+        return self.__appController._settings
 
     def ClearPrimSelection(self):
         self.__appController._dataModel.selection.clearPrims()
