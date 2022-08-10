@@ -220,7 +220,10 @@ public:
     PCP_API
     bool IsRootNode() const;
 
-    /// Returns true if this node is due to an ancestral opinion.
+    /// Get/set whether this node was introduced by being copied from its
+    /// namespace ancestor, or directly by an arc at this level of namespace.
+    PCP_API
+    void SetIsDueToAncestor(bool isDueToAncestor);
     PCP_API
     bool IsDueToAncestor() const;
 
@@ -297,8 +300,8 @@ private:
 
     size_t _GetNodeIndex() const { return _nodeIdx; }
 
-    size_t _GetParentIndex() const;
-    size_t _GetOriginIndex() const;
+    inline size_t _GetParentIndex() const;
+    inline size_t _GetOriginIndex() const;
 
 private: // Data
     PcpPrimIndex_Graph* _graph;

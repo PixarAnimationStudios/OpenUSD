@@ -4238,7 +4238,8 @@ Pcp_NeedToRecomputeDueToAssetPathChange(const PcpPrimIndex& index)
 static void 
 _ConvertNodeForChild(
     PcpNodeRef node,
-    const PcpPrimIndexInputs& inputs)
+    const PcpPrimIndexInputs& inputs,
+    bool isRoot=true)
 {
     // Because the child site is at a deeper level of namespace than
     // the parent, there may no longer be any specs.
@@ -4249,26 +4250,30 @@ _ConvertNodeForChild(
     // Inert nodes are just placeholders, so we can skip computing these
     // bits of information since these nodes shouldn't have any opinions to
     // contribute.
-    if (!node.IsInert() && node.HasSpecs()) {
-        if (!inputs.usd) {
-            // If the parent's permission is private, it will be inherited by
-            // the child. Otherwise, we recompute it here.
-            if (node.GetPermission() == SdfPermissionPublic) {
-                node.SetPermission(PcpComposeSitePermission(node));
-            }
-
-            // If the parent had symmetry, it will be inherited by the child.
-            // Otherwise, we recompute it here.
-            if (!node.HasSymmetry()) {
-                node.SetHasSymmetry(PcpComposeSiteHasSymmetry(node));
-            }
+    if (!inputs.usd && !node.IsInert() && node.HasSpecs()) {
+        // If the parent's permission is private, it will be inherited by the
+        // child. Otherwise, we recompute it here.
+        if (node.GetPermission() == SdfPermissionPublic) {
+            node.SetPermission(PcpComposeSitePermission(node));
+        }
+        
+        // If the parent had symmetry, it will be inherited by the child.
+        // Otherwise, we recompute it here.
+        if (!node.HasSymmetry()) {
+            node.SetHasSymmetry(PcpComposeSiteHasSymmetry(node));
         }
     }
 
     // Arbitrary-order traversal.
     TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
-        _ConvertNodeForChild(*child, inputs);
+        _ConvertNodeForChild(*child, inputs, /*isRoot=*/false);
     }
+
+    // Initial child nodes are always due to their parent, except the root node.
+    if (!isRoot) {
+        node.SetIsDueToAncestor(true);
+    }
+
 }
 
 // Returns true if the given node can be culled, false otherwise.

@@ -84,11 +84,17 @@ public:
     PCP_API
     PcpPrimIndex(const PcpPrimIndex& rhs);
 
+    /// Move-construction
+    PcpPrimIndex(PcpPrimIndex &&rhs) noexcept = default;
+
     /// Assignment.
     PcpPrimIndex &operator=(const PcpPrimIndex &rhs) {
         PcpPrimIndex(rhs).Swap(*this);
         return *this;
     }
+
+    // Move-assignment.
+    PcpPrimIndex &operator=(PcpPrimIndex &&rhs) noexcept = default;
 
     /// Swap the contents of this prim index with \p index.
     PCP_API
