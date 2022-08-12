@@ -16,6 +16,17 @@ set(PXR_MINOR_VERSION "@PXR_MINOR_VERSION@")
 set(PXR_PATCH_VERSION "@PXR_PATCH_VERSION@")
 set(PXR_VERSION "@PXR_VERSION@")
 
+# If MaterialX support was enabled for this USD build, try to find the
+# associated import targets by invoking the same FindMaterialX.cmake
+# module that was used for that build. This can be overridden by
+# specifying a different MaterialX_DIR when running cmake.
+if(@PXR_ENABLE_MATERIALX_SUPPORT@)
+    if (NOT DEFINED MaterialX_DIR)
+        set(MaterialX_DIR "@MaterialX_DIR@")
+    endif()
+    find_package(MaterialX REQUIRED)
+endif()
+
 include("${PXR_CMAKE_DIR}/cmake/pxrTargets.cmake")
 set(libs "@PXR_ALL_LIBS@")
 set(PXR_LIBRARIES "")
