@@ -28,6 +28,7 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
+#include "pxr/usdImaging/usdImaging/primvarUtils.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/perfLog.h"
@@ -399,7 +400,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
             _MergePrimvar(
                 &vPrimvars,
                 HdTokens->displayColor,
-                _UsdToHdInterpolation(colorInterp),
+                UsdImagingUsdToHdInterpolation(colorInterp),
                 HdPrimvarRoleTokens->color,
                 !colorIndices.empty());
         } else {
@@ -417,7 +418,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
             _MergePrimvar(
                 &vPrimvars,
                 HdTokens->displayOpacity,
-                _UsdToHdInterpolation(opacityInterp),
+                UsdImagingUsdToHdInterpolation(opacityInterp),
                 TfToken(),
                 !opacityIndices.empty());
         } else {

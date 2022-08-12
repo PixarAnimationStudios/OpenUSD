@@ -24,6 +24,8 @@
 
 #include "pxr/usdImaging/usdImaging/dataSourcePrimvars.h"
 
+#include "pxr/usdImaging/usdImaging/primvarUtils.h"
+
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/primvarSchema.h"
@@ -101,9 +103,10 @@ UsdImagingDataSourcePrimvars::Get(const TfToken & name)
                 UsdAttributeQuery(nsIt->second.GetAttr()) /* value */,
                 UsdAttributeQuery(nsIt->second.GetIndicesAttr()) /* indices */,
                 HdPrimvarSchema::BuildInterpolationDataSource(
-                    nsIt->second.GetInterpolation()),
+                    UsdImagingUsdToHdInterpolationToken(
+                        nsIt->second.GetInterpolation())),
                 HdPrimvarSchema::BuildRoleDataSource(
-                    nsIt->second.GetAttr().GetRoleName()));
+                    UsdImagingUsdToHdRole(nsIt->second.GetAttr().GetRoleName())));
     }
 
     _CustomPrimvarsMap::const_iterator cIt = _customPrimvars.find(name);
@@ -112,9 +115,10 @@ UsdImagingDataSourcePrimvars::Get(const TfToken & name)
             _sceneIndexPath, name, _stageGlobals,
             cIt->second /* value */, UsdAttributeQuery() /* indices */,
             HdPrimvarSchema::BuildInterpolationDataSource(
-                _GetCustomPrimvarInterpolation(cIt->second)),
+                UsdImagingUsdToHdInterpolationToken(
+                    _GetCustomPrimvarInterpolation(cIt->second))),
             HdPrimvarSchema::BuildRoleDataSource(
-                cIt->second.GetAttribute().GetRoleName()));
+                UsdImagingUsdToHdRole(cIt->second.GetAttribute().GetRoleName())));
     }
 
     return nullptr;
