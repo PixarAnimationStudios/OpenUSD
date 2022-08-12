@@ -4227,38 +4227,20 @@ SdfLayer::_DeleteSpec(const SdfPath &path)
         return false;
     }
 
-    std::vector<SdfPath> inertSpecs;
-    if (_IsInertSubtree(path, &inertSpecs)) {
-        // If the subtree is inert, delete each inert spec from the 
-        // bottom up to send a notification for each inert spec in the
-        // subtree. This is necessary since inert specs notices don't 
-        //imply anything about descendant specs. See also _SetData.
+    if (_IsInertSubtree(path)) {
+        // If the subtree is inert, enqueue notifications for each spec that's
+        // about to be removed. _PrimDeleteSpec adds a notice for the spec
+        // path it's given, but notices about inert specs don't imply anything
+        // about descendants. So if we just sent out a notice for the subtree
+        // root, clients would not be made aware of the removal of the other
+        // specs in the subtree.
         SdfChangeBlock block;
+        Traverse(path, 
+            [this, &cm = Sdf_ChangeManager::Get()](const SdfPath& specPath) {
+                cm.DidRemoveSpec(_self, specPath, /* inert = */ true);
+            });
 
-        for (const SdfPath& inertSpecPath : inertSpecs) {
-            if (inertSpecPath.IsPrimPath()) {
-                // Clear out prim and property children fields before calling
-                // _PrimDeleteSpec so that function doesn't try to recursively
-                // delete specs we've already deleted (since we're deleting
-                // from the bottom up).
-                VtValue val;
-                if (HasField(inertSpecPath,
-                             SdfChildrenKeys->PrimChildren, &val)) {
-                    _PrimSetField(
-                        inertSpecPath, SdfChildrenKeys->PrimChildren,
-                        VtValue(), &val);
-                }
-
-                if (HasField(inertSpecPath,
-                             SdfChildrenKeys->PropertyChildren, &val)) {
-                    _PrimSetField(
-                        inertSpecPath, SdfChildrenKeys->PropertyChildren,
-                        VtValue(), &val);
-                }
-            }
-
-            _PrimDeleteSpec(inertSpecPath, /* inert = */ true);
-        }
+        _PrimDeleteSpec(path, /* inert = */ true);
     }
     else {
         _PrimDeleteSpec(path, /* inert = */ false);
@@ -4436,8 +4418,7 @@ SdfLayer::_IsInert(const SdfPath &path, bool ignoreChildren,
 
 bool
 SdfLayer::_IsInertSubtree(
-    const SdfPath &path,
-    std::vector<SdfPath>* inertSpecs)
+    const SdfPath &path) const
 {
     if (!_IsInert(path, true /*ignoreChildren*/, 
                   true /* requiredFieldOnlyPropertiesAreInert */)) {
@@ -4457,8 +4438,7 @@ SdfLayer::_IsInertSubtree(
             for (const TfToken &variant: variants) {
                 if (!_IsInertSubtree(
                         parentPath.AppendVariantSelection(
-                            vsetName, variant.GetString()),
-                        inertSpecs)) {
+                            vsetName, variant.GetString()))) {
                     return false;
                 }
             }
@@ -4473,7 +4453,7 @@ SdfLayer::_IsInertSubtree(
             std::vector<TfToken> childNames;
             if (HasField(path, childrenField, &childNames)) {
                 for (const TfToken& name : childNames) {
-                    if (!_IsInertSubtree(path.AppendChild(name), inertSpecs)) {
+                    if (!_IsInertSubtree(path.AppendChild(name))) {
                         return false;
                     }
                 }
@@ -4489,16 +4469,10 @@ SdfLayer::_IsInertSubtree(
                         /* requiredFieldOnlyPropertiesAreInert = */ true)) {
                     return false;
                 }
-                else if (inertSpecs) {
-                    inertSpecs->push_back(propPath);
-                }
             }
         }
     }
 
-    if (inertSpecs) {
-        inertSpecs->push_back(path);
-    }
     return true;
 }
 
