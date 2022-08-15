@@ -538,6 +538,11 @@ TfType::_FindByTypeid(const std::type_info &typeInfo)
     if (ARCH_LIKELY(info)) {
         return info->canonicalTfType;
     }
+
+    // Must release the registry lock, since FindByName calls FindDerivedByName,
+    // and it will attempt to take the lock itself.
+    readLock.release();
+    
     // It's possible that this type is only declared and not yet defined.  In
     // that case we will fail to find it by type_info, so attempt to find the
     // type by name instead.
@@ -937,8 +942,8 @@ TfType::DefinePythonClass(const TfPyObjWrapper & classObj) const
         return;
     }
     auto &r = Tf_TypeRegistry::GetInstance();
-    ScopedLock infoLock(_info->mutex, /*write=*/true);
     ScopedLock regLock(r.GetMutex(), /*write=*/true);
+    ScopedLock infoLock(_info->mutex, /*write=*/true);
     if (!TfPyIsNone(_info->pyClass)) {
         infoLock.release();
         regLock.release();
@@ -955,8 +960,8 @@ TfType::_DefineCppType(const std::type_info & typeInfo,
                        size_t sizeofType, bool isPodType, bool isEnumType) const
 {
     auto &r = Tf_TypeRegistry::GetInstance();
-    ScopedLock infoLock(_info->mutex, /*write=*/true);
     ScopedLock regLock(r.GetMutex(), /*write=*/true);
+    ScopedLock infoLock(_info->mutex, /*write=*/true);
     if (_info->typeInfo.load() != nullptr) {
         infoLock.release();
         regLock.release();
@@ -1200,8 +1205,8 @@ TfType::AddAlias(TfType base, const string & name) const
     std::string errMsg;
     {
         auto &r = Tf_TypeRegistry::GetInstance();
-        ScopedLock infoLock(base._info->mutex, /*write=*/true);
         ScopedLock regLock(r.GetMutex(), /*write=*/true);
+        ScopedLock infoLock(base._info->mutex, /*write=*/true);
         // We do not need to hold our own lock here.
         r.AddTypeAlias(base._info, this->_info, name, &errMsg);
     }
