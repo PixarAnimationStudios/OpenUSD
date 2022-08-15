@@ -29,6 +29,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/base/vt/array.h"
 
 #include "pxr/base/gf/range3f.h"
@@ -58,9 +59,14 @@ UsdObjTranslateObjToUsd(const UsdObjStream &objStream)
     if (objVerts.empty())
         return layer;
 
-    // Copy objVerts into VtVec3fArray for Usd.
+    const std::vector<GfVec2f> &objUVs = objStream.GetUVs();
+
+    // Copy objVerts (resp. objUVs) into VtVec3fArrays (resp. VtVec2fArrays) for
+    // Usd.
     VtVec3fArray usdPoints;
+    VtVec2fArray usdUVs;
     usdPoints.assign(objVerts.begin(), objVerts.end());
+    usdUVs.assign(objUVs.begin(), objUVs.end());
 
     // Get the obj Points.
     const std::vector<UsdObjStream::Point> &objPoints = objStream.GetPoints();
@@ -97,17 +103,24 @@ UsdObjTranslateObjToUsd(const UsdObjStream &objStream)
         // this was for real, you would want to reindex verts per-group.
         mesh.GetPointsAttr().Set(usdPoints);
 
-        VtArray<int> faceVertexCounts, faceVertexIndices;
+        VtArray<int> faceVertexCounts, faceVertexIndices, faceUVIndices;
         for (const auto& face : group.faces) {
             faceVertexCounts.push_back(face.size());
             for (int p = face.pointsBegin; p != face.pointsEnd; ++p) {
                 faceVertexIndices.push_back(objPoints[p].vertIndex);
+                faceUVIndices.push_back(objPoints[p].uvIndex);
             }
         }
 
         // Now set the attributes.
         mesh.GetFaceVertexCountsAttr().Set(faceVertexCounts);
         mesh.GetFaceVertexIndicesAttr().Set(faceVertexIndices);
+
+        UsdGeomPrimvar uvPrimVar = UsdGeomPrimvarsAPI(mesh).CreatePrimvar(
+            TfToken("uv"), SdfValueTypeNames->TexCoord2fArray,
+            UsdGeomTokens->faceVarying);
+        uvPrimVar.GetAttr().Set(usdUVs);
+        uvPrimVar.CreateIndicesAttr().Set(faceUVIndices);
 
         // Set extent.
         mesh.GetExtentAttr().Set(extentArray);
