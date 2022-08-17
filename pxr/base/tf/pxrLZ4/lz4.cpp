@@ -956,7 +956,7 @@ LZ4_FORCE_INLINE int LZ4_compress_generic(
                     break;   /* match found */
                 }
 
-            } while(1);
+            } while(true);
         }
 
         /* Catch up */
@@ -1717,7 +1717,7 @@ LZ4_decompress_generic(
         }
 
         /* Fast loop : decode sequences as long as output < iend-FASTLOOP_SAFE_DISTANCE */
-        while (1) {
+        while (true) {
             /* Main fastloop assertion: We can always wildcopy FASTLOOP_SAFE_DISTANCE */
             assert(oend - op >= FASTLOOP_SAFE_DISTANCE);
             if (endOnInput) { assert(ip < iend); }
@@ -1848,7 +1848,7 @@ LZ4_decompress_generic(
 #endif
 
         /* Main Loop : decode remaining sequences where output < FASTLOOP_SAFE_DISTANCE */
-        while (1) {
+        while (true) {
             token = *ip++;
             length = token >> ML_BITS;  /* literal length */
 
