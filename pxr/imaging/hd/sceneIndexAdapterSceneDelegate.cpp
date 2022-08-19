@@ -1089,6 +1089,34 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
     return VtValue(matHd);
 }
 
+static
+TfTokenVector
+_ToTokenVector(const std::vector<std::string> &strings)
+{
+    TfTokenVector tokens;
+    tokens.reserve(strings.size());
+    for (const std::string &s : strings) {
+        tokens.emplace_back(s);
+    }
+    return tokens;
+}
+
+// If paramName has no ":", return empty locator.
+// Otherwise, split about ":" to create locator.
+static
+HdDataSourceLocator
+_ParamNameToLocator(TfToken const &paramName)
+{
+    if (paramName.GetString().find(':') == std::string::npos) {
+        return HdDataSourceLocator::EmptyLocator();
+    }
+
+    const TfTokenVector parts = _ToTokenVector(
+        TfStringTokenize(paramName.GetString(), ":"));
+    
+    return HdDataSourceLocator(parts.size(), parts.data());
+}
+
 VtValue
 HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
         SdfPath const &cameraId, TfToken const &paramName)
@@ -1108,6 +1136,29 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
         return VtValue();
     }
 
+    // If paramName has a ":", say, "foo:bar", we translate to
+    // a data source locator here and check whether there is a data source
+    // at HdDataSourceLocator{"camera", "foo", "bar"} for the prim in the
+    // scene index.
+    const HdDataSourceLocator locator = _ParamNameToLocator(paramName);
+    if (!locator.IsEmpty()) {
+        if (HdSampledDataSourceHandle const ds =
+                HdSampledDataSource::Cast(
+                    HdContainerDataSource::Get(camera, locator))) {
+            return ds->GetValue(0.0f);
+        }
+        // If there was no nested data source for the data source locator
+        // we constructed, fall through to query for "foo:bar".
+        //
+        // This covers the case where emulation is active and we have
+        // another HdSceneDelegate that was added to the HdRenderIndex.
+        // We want to call GetCameraParamValue on that other scene
+        // delegate with the same paramName that we were given (through
+        // a HdLegacyPrimSceneIndex (feeding directly or indirectly
+        // into the _inputSceneIndex) and the
+        // Hd_DataSourceLegacyCameraParamValue data source).
+    }
+
     TfToken cameraSchemaToken = paramName;
     if (paramName == HdCameraTokens->clipPlanes) {
         cameraSchemaToken = HdCameraSchemaTokens->clippingPlanes;
@@ -1120,7 +1171,7 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
         return VtValue();
     }
 
-    VtValue value = valueDs->GetValue(0);
+    const VtValue value = valueDs->GetValue(0);
     // Smooth out some incompatibilities between scene delegate and
     // datasource schemas...
     if (paramName == HdCameraSchemaTokens->projection) {
