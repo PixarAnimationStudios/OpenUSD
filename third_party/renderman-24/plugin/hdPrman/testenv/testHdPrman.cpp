@@ -199,6 +199,32 @@ public:
     }
 };
 
+CameraUtilConformWindowPolicy
+_RenderSettingsTokenToConformWindowPolicy(const TfToken &usdToken)
+{
+    if (usdToken == UsdRenderTokens->adjustApertureWidth) {
+        return CameraUtilMatchVertically;
+    }
+    if (usdToken == UsdRenderTokens->adjustApertureHeight) {
+        return CameraUtilMatchHorizontally;
+    }
+    if (usdToken == UsdRenderTokens->expandAperture) {
+        return CameraUtilFit;
+    }
+    if (usdToken == UsdRenderTokens->cropAperture) {
+        return CameraUtilCrop;
+    }
+    if (usdToken == UsdRenderTokens->adjustPixelAspectRatio) {
+        return CameraUtilDontConform;
+    }
+
+    TF_WARN(
+        "Invalid aspectRatioConformPolicy value '%s', "
+        "falling back to expandAperture.", usdToken.GetText());
+    
+    return CameraUtilFit;
+}
+
 void
 PrintUsage(const char* cmd, const char *err=nullptr)
 {
@@ -313,7 +339,11 @@ int main(int argc, char *argv[])
                     GfVec2i(512,512),
                     1.0f,
                     // aspectRatioConformPolicy
-                    UsdRenderTokens->expandAperture,
+                    //
+                    // Match default value of
+                    // UsdImagingDelegate::_appWindowPolicy -
+                    // which was used to generate the baselines.
+                    UsdRenderTokens->adjustApertureWidth,
                     // aperture size
                     GfVec2f(2.0, 2.0),
                     // data window
@@ -581,7 +611,8 @@ int main(int argc, char *argv[])
             hdRenderPassState->SetCameraAndFraming(
                 camera,
                 ComputeFraming(product),
-                { false, CameraUtilFit });
+                { true, _RenderSettingsTokenToConformWindowPolicy(
+                                        product.aspectRatioConformPolicy) });
 
             // The task execution graph and engine configuration is also simple.
             HdTaskSharedPtrVector tasks = {
