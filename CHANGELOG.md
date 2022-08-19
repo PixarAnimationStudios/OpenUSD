@@ -6,6 +6,9 @@
 - Fixed a speculative issue with light invalidation sometimes using dirty bits
   from the wrong enum.
   (Issue: [#1719](https://github.com/PixarAnimationStudios/USD/issues/1719))
+- Fixes an issue where material binding paths on geometry subsets were not
+  correctly prefixed, leading to missing materials in certain circumstances.
+  (Issue: [#1687](https://github.com/PixarAnimationStudios/USD/issues/1687))
 
 ### UsdImaging
 - Deleted UsdImagingGLLegacyEngine, i.e. usdview's "HydraDisabled" renderer.
