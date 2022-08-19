@@ -42,6 +42,9 @@ Specifically:
      about this potential infraction for all 8 bit image formats.
 
 ------------------------------
+[MaterialBindingAPIAppliedChecker]:
+ A prim providing a material binding, must have MaterialBindingAPI applied on the prim.
+------------------------------
 [ARKitLayerChecker]:
  All included layers that participate in composition should have one of the core supported file formats.
 ------------------------------
