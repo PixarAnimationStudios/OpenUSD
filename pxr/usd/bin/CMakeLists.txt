@@ -1,3 +1,9 @@
+if (APPLEIOS)
+    message(STATUS
+            "Skipping ${PXR_PACKAGE} because iOS doesn't support utility binaries")
+    return()
+endif()
+
 set(DIRS
     usdcat
     usdchecker

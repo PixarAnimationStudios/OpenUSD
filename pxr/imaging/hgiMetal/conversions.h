@@ -107,6 +107,9 @@ public:
 
     HGIMETAL_API
     static MTLColorWriteMask GetColorWriteMask(HgiColorMask mask);
+    
+    HGIMETAL_API
+    static bool IsFilterable(MTLPixelFormat format);
 };
 
 

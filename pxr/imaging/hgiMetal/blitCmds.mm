@@ -336,11 +336,12 @@ HgiMetalBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
         copyOp.gpuSourceBuffer.Get());
 
     _CreateEncoder();
-
+#if defined(ARCH_OS_OSX)
     if ([metalBuffer->GetBufferId() storageMode] == MTLStorageModeManaged) {
         [_blitEncoder performSelector:@selector(synchronizeResource:)
                            withObject:metalBuffer->GetBufferId()];
     }
+#endif
 
     // Offset into the dst buffer
     char* dst = ((char*) copyOp.cpuDestinationBuffer) +
@@ -390,8 +391,11 @@ HgiMetalBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 {
     HgiMetalTexture* metalTex = static_cast<HgiMetalTexture*>(texture.Get());
     if (metalTex) {
+        if (!HgiMetalConversions::IsFilterable(
+               metalTex->GetTextureId().pixelFormat)) {
+            return;
+        }
         _CreateEncoder();
-        
         [_blitEncoder generateMipmapsForTexture:metalTex->GetTextureId()];
     }
 }

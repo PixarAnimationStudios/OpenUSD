@@ -62,6 +62,13 @@ endif()
 
 if (PXR_BUILD_DOCUMENTATION)
     pxr_build_documentation()
-endif()   
+endif()
+
+if (APPLEIOS)
+    configure_file(
+        "${PROJECT_SOURCE_DIR}/cmake/toolchains/ios.toolchain.cmake"
+        "${CMAKE_INSTALL_PREFIX}/cmake/ios.toolchain.cmake"
+        COPYONLY)
+endif()
 
 pxr_toplevel_epilogue()
