@@ -546,7 +546,7 @@ private:
 
         // Paths to Usd instance prims. Note that this is not necessarily
         // equivalent to all the instances that will be drawn. See below.
-        std::vector<SdfPath> instancePaths;
+        SdfPathSet instancePaths;
 
         // Number of actual instances of this instancer that will be 
         // drawn. See comment on _RunForAllInstancesToDraw.
