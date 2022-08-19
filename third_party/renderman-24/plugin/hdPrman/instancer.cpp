@@ -342,8 +342,11 @@ HdPrmanInstancer::GetInstancePrimvars(
                 attrs.SetPoint(name, RtPoint3(v[0], v[1], v[2]));
             } else if (primvar.role == HdPrimvarRoleTokens->normal) {
                 attrs.SetPoint(name, RtNormal3(v[0], v[1], v[2]));
-            } else {
+            } else if (primvar.role == HdPrimvarRoleTokens->vector) {
                 attrs.SetVector(name, RtVector3(v[0], v[1], v[2]));
+            } else {
+                attrs.SetFloatArray(
+                    name, reinterpret_cast<const float*>(v.data()), 3);
             }
         } else if (val.IsHolding<VtArray<GfVec4f>>()) {
             const VtArray<GfVec4f>& v = val.UncheckedGet<VtArray<GfVec4f>>();
