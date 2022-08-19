@@ -30,12 +30,25 @@
 #include "RixShadingUtils.h"
 
 #include "pxr/base/gf/math.h"
+#include "pxr/base/tf/envSetting.h"
 
 #include <cmath>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 static const RtUString _us_main_cam_projection("main_cam_projection");
+
+// PxrPerspective does not support lens distortion (k1, k2, ...).
+//
+// However, neither PxrProjection and PxrCamera are quite ready yet for
+// hdPrman. We eventually want to use PxrCamera but some features still
+// need to be ported to PxrProjection and then back-ported to the PxrCamera
+// in RenderMan 24.
+//
+TF_DEFINE_ENV_SETTING(HD_PRMAN_SUPPORT_LENS_DISTORTION, false,
+                      "Switches camera shader from PxrPerspective to "
+                      "PxrProjection/PxrCamera so that lens distortion "
+                      "parametrers are supported.");
 
 HdPrman_CameraContext::HdPrman_CameraContext()
   : _policy(CameraUtilFit)
@@ -247,18 +260,22 @@ static
 const RtUString&
 _ComputeProjectionShader(const HdCamera::Projection projection)
 {
-    static const RtUString us_PxrProjection("PxrProjection");
+    // Switch this to PxrCamera once it is ready in RenderMan.
+    static const RtUString us_PxrCamera(
+        TfGetEnvSetting(HD_PRMAN_SUPPORT_LENS_DISTORTION)
+            ? "PxrProjection"
+            : "PxrPerspective");
     static const RtUString us_PxrOrthographic("PxrOrthographic");
 
     switch (projection) {
     case HdCamera::Perspective:
-        return us_PxrProjection;
+        return us_PxrCamera;
     case HdCamera::Orthographic:
         return us_PxrOrthographic;
     }
 
     // Make compiler happy.
-    return us_PxrProjection;
+    return us_PxrCamera;
 }
 
 // Compute parameters for the camera riley::ShadingNode for perspective camera
@@ -271,9 +288,11 @@ _ComputePerspectiveNodeParams(const HdPrmanCamera * const camera)
     // lensType values in PxrProjection.
     constexpr int lensTypeLensWarp = 2;
 
-    // Pick a PxrProjection lens type that supports depth of field
-    // and lens distortion.
-    result.SetInteger(us_lensType, lensTypeLensWarp);
+    if (TfGetEnvSetting(HD_PRMAN_SUPPORT_LENS_DISTORTION)) {
+        // Pick a PxrProjection lens type that supports depth of field
+        // and lens distortion.
+        result.SetInteger(us_lensType, lensTypeLensWarp);
+    }
 
     // FOV settings.
     const float focalLength = camera->GetFocalLength();
@@ -309,6 +328,7 @@ _ComputePerspectiveNodeParams(const HdPrmanCamera * const camera)
     // Not setting fov frame begin/end - thus we do not support motion blur
     // due to changing FOV.
 
+    // Some of these names might need to change when switching to PxrCamera.
     static const RtUString us_lensK1("lensK1");
     static const RtUString us_lensK2("lensK2");
     static const RtUString us_distortionCtr("distortionCtr");
@@ -316,26 +336,28 @@ _ComputePerspectiveNodeParams(const HdPrmanCamera * const camera)
     static const RtUString us_lensAsymmetry("lensAsymmetry");
     static const RtUString us_lensScale("lensScale");
 
-    result.SetFloat(
-        us_lensK1,
-        camera->GetLensDistortionK1());
-    result.SetFloat(
-        us_lensK2,
-        camera->GetLensDistortionK2());
-    result.SetFloatArray(
-        us_distortionCtr,
-        camera->GetLensDistortionCenter().data(),
-        2);
-    result.SetFloat(
-        us_lensSqueeze,
-        camera->GetLensDistortionAnaSq());
-    result.SetFloatArray(
-        us_lensAsymmetry,
-        camera->GetLensDistortionAsym().data(),
-        2);
-    result.SetFloat(
-        us_lensScale,
-        camera->GetLensDistortionScale());
+    if (TfGetEnvSetting(HD_PRMAN_SUPPORT_LENS_DISTORTION)) {
+        result.SetFloat(
+            us_lensK1,
+            camera->GetLensDistortionK1());
+        result.SetFloat(
+            us_lensK2,
+            camera->GetLensDistortionK2());
+        result.SetFloatArray(
+            us_distortionCtr,
+            camera->GetLensDistortionCenter().data(),
+            2);
+        result.SetFloat(
+            us_lensSqueeze,
+            camera->GetLensDistortionAnaSq());
+        result.SetFloatArray(
+            us_lensAsymmetry,
+            camera->GetLensDistortionAsym().data(),
+            2);
+        result.SetFloat(
+            us_lensScale,
+            camera->GetLensDistortionScale());
+    }
 
     return result;
 }
