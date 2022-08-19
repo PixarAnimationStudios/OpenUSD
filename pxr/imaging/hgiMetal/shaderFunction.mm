@@ -55,6 +55,9 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
         } else {
             options.languageVersion = MTLLanguageVersion2_1;
         }
+        if (@available(ios 14.0, *)) {
+            options.languageVersion = MTLLanguageVersion2_3;
+        }
 
         options.preprocessorMacros = @{
                 @"ARCH_GFX_METAL": @1,
