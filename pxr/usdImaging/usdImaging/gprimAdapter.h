@@ -209,6 +209,13 @@ public:
                 UsdTimeCode time,
                 VtIntArray *outIndices) const override;
 
+    // For implicit prims such as capsules, cones, cylinders and planes, the
+    // "spine" axis along or about which the surface is aligned may be
+    // specified. This utility method returns a basis matrix that transforms
+    // points generated using "Z" as the spine axis to the desired axis.
+    USDIMAGING_API
+    static GfMatrix4d GetImplicitBasis(TfToken const &spineAxis);
+
 protected:
 
     USDIMAGING_API

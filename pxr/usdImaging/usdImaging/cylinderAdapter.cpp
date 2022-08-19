@@ -25,10 +25,10 @@
 
 #include "pxr/usdImaging/usdImaging/dataSourceImplicits-Impl.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
-#include "pxr/usdImaging/usdImaging/implicitSurfaceMeshUtils.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
+#include "pxr/imaging/geomUtil/cylinderMeshGenerator.h"
 #include "pxr/imaging/hd/cylinderSchema.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
@@ -173,13 +173,6 @@ VtValue
 UsdImagingCylinderAdapter::GetPoints(UsdPrim const& prim,
                                      UsdTimeCode time) const
 {
-    return GetMeshPoints(prim, time);
-}
-
-/*static*/
-static GfMatrix4d
-_GetImplicitGeomScaleTransform(UsdPrim const& prim, UsdTimeCode time)
-{
     UsdGeomCylinder cylinder(prim);
 
     double height = 2.0;
@@ -199,30 +192,22 @@ _GetImplicitGeomScaleTransform(UsdPrim const& prim, UsdTimeCode time)
             prim.GetPath().GetText());
     }
 
-    return UsdImagingGenerateConeOrCylinderTransform(height, radius, axis);
-}
+    const GfMatrix4d basis = UsdImagingGprimAdapter::GetImplicitBasis(axis);
 
-/*static*/
-VtValue
-UsdImagingCylinderAdapter::GetMeshPoints(UsdPrim const& prim,
-                                         UsdTimeCode time)
-{
-    // Return scaled points (and not that of a unit geometry)
-    VtVec3fArray points = UsdImagingGetUnitCylinderMeshPoints();
-    GfMatrix4d scale = _GetImplicitGeomScaleTransform(prim, time);
-    for (GfVec3f& pt : points) {
-        pt = scale.Transform(pt);
-    }
+    const size_t numPoints =
+        GeomUtilCylinderMeshGenerator::ComputeNumPoints(numRadial);
+
+    VtVec3fArray points(numPoints);
+        
+    GeomUtilCylinderMeshGenerator::GeneratePoints(
+        points.begin(),
+        numRadial,
+        radius,
+        height,
+        &basis
+    );
 
     return VtValue(points);
-}
-
-/*static*/
-VtValue
-UsdImagingCylinderAdapter::GetMeshTopology()
-{
-    // Topology is constant and identical for all cylinders.
-    return VtValue(HdMeshTopology(UsdImagingGetUnitCylinderMeshTopology()));
 }
 
 /*virtual*/ 
@@ -233,7 +218,13 @@ UsdImagingCylinderAdapter::GetTopology(UsdPrim const& prim,
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    return GetMeshTopology();
+    
+    // All cylinders share the same topology.
+    static const HdMeshTopology topology =
+        HdMeshTopology(GeomUtilCylinderMeshGenerator::GenerateTopology(
+                            numRadial));
+
+    return VtValue(topology);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

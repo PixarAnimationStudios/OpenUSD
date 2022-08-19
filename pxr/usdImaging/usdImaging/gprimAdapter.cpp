@@ -1053,6 +1053,36 @@ UsdImagingGprimAdapter::GetOpacity(UsdPrim const& prim,
     return true;
 }
 
+/* static */
+GfMatrix4d
+UsdImagingGprimAdapter::GetImplicitBasis(TfToken const &axis)
+{
+    GfVec4d u, v, spine;
+    if (axis == UsdGeomTokens->x) {
+        u = GfVec4d::YAxis();
+        v = GfVec4d::ZAxis();
+        spine = GfVec4d::XAxis();
+    } else if (axis == UsdGeomTokens->y) {
+        u = GfVec4d::ZAxis();
+        v = GfVec4d::XAxis();
+        spine = GfVec4d::YAxis();
+    } else { // (axis == UsdGeomTokens->z)
+        u = GfVec4d::XAxis();
+        v = GfVec4d::YAxis();
+        spine = GfVec4d::ZAxis();
+    }
+
+    GfMatrix4d basis;
+    basis.SetRow(0, u);
+    basis.SetRow(1, v);
+    basis.SetRow(2, spine);
+    basis.SetRow(3, GfVec4d::WAxis());
+
+    return basis;
+}
+
+// -------------------------------------------------------------------------- //
+
 TfTokenVector
 UsdImagingGprimAdapter::_CollectMaterialPrimvars(
     SdfPathVector const& materialUsdPaths, 

@@ -9,6 +9,7 @@ pxr_library(usdImaging
         trace
         vt
         work
+        geomUtil
         hd
         pxOsd
         sdf
