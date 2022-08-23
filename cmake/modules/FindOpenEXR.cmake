@@ -33,18 +33,6 @@ DOC
     "OpenEXR headers path"
 )
 
-find_path(IMATH_INCLUDE_DIR
-    Imath/half.h
-HINTS
-    "${IMATH_LOCATION}"
-    "$ENV{IMATH_LOCATION}"
-    "${Imath_ROOT}"
-PATH_SUFFIXES
-    include/
-DOC
-    "Imath headers path"
-)
-
 if(OPENEXR_INCLUDE_DIR)
   set(openexr_config_file "${OPENEXR_INCLUDE_DIR}/OpenEXR/OpenEXRConfig.h")
   if(EXISTS ${openexr_config_file})
@@ -98,26 +86,9 @@ foreach(OPENEXR_LIB
     endif()
 endforeach(OPENEXR_LIB)
 
-find_library(IMATH_LIBRARY
-        NAMES
-            Imath-${IMATH_MAJOR_VERSION}_${IMATH_MINOR_VERSION}
-            Imath
-        HINTS
-            "${IMATH_LOCATION}"
-            "$ENV{IMATH_LOCATION}"
-            "${Imath_ROOT}"
-        PATH_SUFFIXES
-            lib/
-        DOC
-        "Imath library path"
-)
-list(APPEND IMATH_LIBRARIES ${IMATH_LIBRARY})
-
 # So #include <half.h> works
 list(APPEND OPENEXR_INCLUDE_DIRS ${OPENEXR_INCLUDE_DIR})
 list(APPEND OPENEXR_INCLUDE_DIRS ${OPENEXR_INCLUDE_DIR}/OpenEXR)
-list(APPEND IMATH_INCLUDE_DIRS ${IMATH_INCLUDE_DIR})
-list(APPEND IMATH_INCLUDE_DIRS ${IMATH_INCLUDE_DIR}/Imath)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(OpenEXR
