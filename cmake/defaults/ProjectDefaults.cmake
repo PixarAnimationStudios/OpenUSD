@@ -28,7 +28,6 @@ if(APPLE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
     set(CMAKE_DYLIB_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE STRING "install_name path for dylib.")
     list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
-    message(WARNING "Building USD on Mac OSX is currently experimental.")
 elseif(WIN32)
     # Windows specific set up
     message(WARNING "Building USD on Windows is currently experimental.")
