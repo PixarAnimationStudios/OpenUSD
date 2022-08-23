@@ -22,6 +22,30 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+
+# FindImath
+# -------
+#
+# Find Imath include directories and libraries.
+#
+# Input Variables:
+#
+# * Imath_ROOT : The Root location of the built Imath project, where we should look for the headers and dylibs
+# * Imath_USE_DEBUG_BUILD : Use the Debug libraries instead of the release library
+#
+# Output Variables:
+# * FOUND_Imath : Set if the project is found
+# * Imath_LIBRARY | Imath_LIBRARIES : The (list of) Imath libraries
+# * Imath_INCLUDE_DIR | Imath_INCLUDE_DIRS : The location(s) that include the Imath headers
+
+if(NOT DEFINED Imath_USE_DEBUG_BUILD)
+    if(CMAKE_BUILD_TYPE MATCHES "(Debug|DEBUG|debug|RelWithDebInfo|RELWITHDEBINFO|relwithdebinfo)")
+        set(Imath_USE_DEBUG_BUILD TRUE)
+    else()
+        set(Imath_USE_DEBUG_BUILD FALSE)
+    endif()
+endif()
+
 find_path(Imath_INCLUDE_DIR
         Imath/half.h
         HINTS
@@ -36,21 +60,48 @@ find_path(Imath_INCLUDE_DIR
 list(APPEND Imath_INCLUDE_DIRS ${Imath_INCLUDE_DIR})
 list(APPEND Imath_INCLUDE_DIRS ${Imath_INCLUDE_DIR}/Imath)
 
-find_library(Imath_LIBRARY
-        NAMES
-        Imath-${Imath_MAJOR_VERSION}_${Imath_MINOR_VERSION}
-        Imath
-        HINTS
-        "${Imath_LOCATION}"
-        "$ENV{Imath_LOCATION}"
-        "${Imath_ROOT}"
-        PATH_SUFFIXES
-        lib/
-        DOC
-        "Imath library path"
-        )
-if(Imath_LIBRARY)
-    SET(Imath_FOUND TRUE)
-    list(APPEND Imath_LIBRARIES ${Imath_LIBRARY})
+if(Imath_USE_DEBUG_BUILD)
+    find_library(Imath_LIBRARY
+            NAMES
+            Imath-${Imath_MAJOR_VERSION}_${Imath_MINOR_VERSION}_d
+            Imath_d
+            HINTS
+            "${Imath_LOCATION}"
+            "$ENV{Imath_LOCATION}"
+            "${Imath_ROOT}"
+            PATH_SUFFIXES
+            lib/
+            DOC
+            "Imath library path"
+            )
+    if(Imath_LIBRARY)
+        SET(Imath_FOUND TRUE)
+        list(APPEND Imath_LIBRARIES ${Imath_LIBRARY})
+    else()
+        SET(Imath_FOUND FALSE)
+        MESSAGE(WARNING "Could not find Debug Imath library")
+    endif()
+endif()
+
+if (NOT Imath_FOUND)
+    find_library(Imath_LIBRARY
+            NAMES
+            Imath-${Imath_MAJOR_VERSION}_${Imath_MINOR_VERSION}
+            Imath
+            HINTS
+            "${Imath_LOCATION}"
+            "$ENV{Imath_LOCATION}"
+            "${Imath_ROOT}"
+            PATH_SUFFIXES
+            lib/
+            DOC
+            "Imath library path"
+            )
+    if(Imath_LIBRARY)
+        SET(Imath_FOUND TRUE)
+        list(APPEND Imath_LIBRARIES ${Imath_LIBRARY})
+    else()
+        SET(Imath_FOUND FALSE)
+    endif()
 endif()
 
