@@ -955,6 +955,25 @@ UsdImagingDelegate::_GatherDependencies(SdfPath const& subtree,
         return;
     }
 
+    const auto it = _flattenedDependenciesCacheMap.find(subtree);
+    if (it != _flattenedDependenciesCacheMap.end()) {
+        (*affectedCachePaths) = it->second;
+        return;
+    }
+
+    _CacheDependencies(subtree, affectedCachePaths);
+}
+
+void
+UsdImagingDelegate::_CacheDependencies(SdfPath const& subtree,
+                                       SdfPathVector *affectedCachePaths)
+{
+    HD_TRACE_FUNCTION();
+
+    if (affectedCachePaths == nullptr) {
+        return;
+    }
+
     // Binary search for the first path in the subtree.
     _DependencyMap::const_iterator start =
         _dependencyInfo.lower_bound(subtree);
@@ -1017,6 +1036,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
     _pointInstancerIndicesCache.Clear();
     _nonlinearSampleCountCache.Clear();
     _blurScaleCache.Clear();
+    _flattenedDependenciesCacheMap.clear();
 
     UsdImagingDelegate::_Worker worker(this);
     UsdImagingIndexProxy indexProxy(this, &worker);
@@ -1035,6 +1055,22 @@ UsdImagingDelegate::ApplyPendingUpdates()
                              return r.HasPrefix(l);
                          });
         _usdPathsToResync.clear();
+
+        // Pre-cache dependencies in parallel
+        WorkDispatcher resyncPathsCacheDispatcher;
+        for (const auto& usdPath: usdPathsToResync) {
+            auto pair = _flattenedDependenciesCacheMap.insert(std::make_pair(usdPath, SdfPathVector()));
+            if (!pair.second) {
+                // No insertion happened, path has been inserted
+                continue;
+            }
+            auto& affectedCachePaths = pair.first->second;
+            resyncPathsCacheDispatcher.Run(
+                [this, &usdPath, &affectedCachePaths]() {
+                    _CacheDependencies(usdPath, &affectedCachePaths);
+            });
+        }
+        resyncPathsCacheDispatcher.Wait();
 
         for (SdfPath const& usdPath: usdPathsToResync) {
             if (usdPath.IsPropertyPath()) {
@@ -1062,6 +1098,24 @@ UsdImagingDelegate::ApplyPendingUpdates()
     if (!_usdPathsToUpdate.empty()) {
         _PathsToUpdateMap usdPathsToUpdate;
         std::swap(usdPathsToUpdate, _usdPathsToUpdate);
+
+        // Pre-cache dependencies in parallel
+        WorkDispatcher updatePathsCacheDispatcher;
+        for (auto pathIt: usdPathsToUpdate) {
+            const auto& usdPath = pathIt.first;
+            auto pair = _flattenedDependenciesCacheMap.insert(std::make_pair(usdPath, SdfPathVector()));
+            if (!pair.second) {
+                // No insertion happened, path has been inserted
+                continue;
+            }
+            auto& affectedCachePaths = pair.first->second;
+            updatePathsCacheDispatcher.Run(
+                [this, &usdPath, &affectedCachePaths]() {
+                    _CacheDependencies(usdPath, &affectedCachePaths);
+            });
+        }
+        updatePathsCacheDispatcher.Wait();
+
         TF_FOR_ALL(pathIt, usdPathsToUpdate) {
             const SdfPath& usdPath = pathIt->first;
             const TfTokenVector& changedPrimInfoFields = pathIt->second;
