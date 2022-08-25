@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/xformSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
+#include "pxr/imaging/hd/materialBindingSchema.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/utils.h"
 
@@ -289,6 +290,7 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::PrimDirtied(
     bool anyDirtied = false;
     static const HdContainerDataSourceHandle containerNull(nullptr);
     static const HdTokenDataSourceHandle tokenNull(nullptr);
+    static const HdDataSourceBaseHandle baseNull(nullptr);
 
     if (set.Intersects(HdXformSchema::GetDefaultLocator())) {
         if (HdContainerDataSource::AtomicLoad(_computedXformDataSource)) {
@@ -316,6 +318,11 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::PrimDirtied(
         HdTokenDataSource::AtomicStore(
             _computedDrawModeDataSource, tokenNull);
     }
+    if (set.Intersects(HdMaterialBindingSchema::GetDefaultLocator())) {
+        anyDirtied = true;
+        HdDataSourceBase::AtomicStore(
+            _computedMaterialBindingDataSource, baseNull);
+    }
 
     return anyDirtied;
 }
@@ -334,6 +341,10 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::Has(
         return true;
     }
     if (name == _tokens->model) {
+        return true;
+    }
+
+    if (name == HdMaterialBindingSchemaTokens->materialBinding) {
         return true;
     }
 
@@ -356,6 +367,7 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::GetNames()
         bool hasVis = false;
         bool hasPurpose = false;
         bool hasModel = false;
+        bool hasMaterialBinding = false;
         for (const TfToken &name : result) {
             if (name == HdXformSchemaTokens->xform) {
                 hasXform = true;
@@ -369,7 +381,11 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::GetNames()
             if (name == _tokens->model) {
                 hasModel = true;
             }
-            if (hasXform && hasVis && hasPurpose && hasModel) {
+            if (name == HdMaterialBindingSchemaTokens->materialBinding) {
+                hasMaterialBinding = true;
+            }
+            if (hasXform && hasVis && hasPurpose && hasModel
+                    && hasMaterialBinding) {
                 break;
             }
         }
@@ -386,11 +402,15 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::GetNames()
         if (!hasModel) {
             result.push_back(_tokens->model);
         }
+        if (!hasMaterialBinding) {
+            result.push_back(HdMaterialBindingSchemaTokens->materialBinding);
+        }
     } else {
         result.push_back(HdXformSchemaTokens->xform);
         result.push_back(HdVisibilitySchemaTokens->visibility);
         result.push_back(HdPurposeSchemaTokens->purpose);
         result.push_back(_tokens->model);
+        result.push_back(HdMaterialBindingSchemaTokens->materialBinding);
     }
 
     return result;
@@ -408,6 +428,8 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::Get(
         return _GetPurpose();
     } else if (name == _tokens->model) {
         return _GetModel();
+    } else if (name == HdMaterialBindingSchemaTokens->materialBinding) {
+        return _GetMaterialBinding();
     } else if (_inputDataSource) {
         return _inputDataSource->Get(name);
     } else {
@@ -646,6 +668,63 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetDrawModeUncached(
     }
 
     return _sceneIndex._identityDrawMode;
+}
+
+HdDataSourceBaseHandle
+HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetMaterialBinding()
+{
+    HdDataSourceBaseHandle result =
+        HdDataSourceBase::AtomicLoad(_computedMaterialBindingDataSource);
+
+    if (!result) {
+        result = _GetMaterialBindingUncached();
+        HdDataSourceBase::AtomicStore(_computedMaterialBindingDataSource,
+            result);
+    }
+
+    // The cached value of the absence of a materialBinding is a non-container
+    // data source.
+    return HdContainerDataSource::Cast(result);
+}
+
+HdDataSourceBaseHandle
+HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::
+_GetMaterialBindingUncached()
+{
+    HdContainerDataSourceHandle inputBindings =
+        HdMaterialBindingSchema::GetFromParent(_inputDataSource).GetContainer();
+
+    HdContainerDataSourceHandle parentBindings;
+    if (_primPath.GetPathElementCount()) {
+        SdfPath parentPath = _primPath.GetParentPath();
+        const auto it = _sceneIndex._prims.find(parentPath);
+        if (it != _sceneIndex._prims.end()) {
+            parentBindings = HdMaterialBindingSchema::GetFromParent(
+                    it->second.prim.dataSource).GetContainer();
+        }
+    }
+
+    if (inputBindings) {
+        if (parentBindings) {
+            // Parent and local bindings might have unique fields so we must
+            // overlay them. If we are concerned about overlay depth, we could
+            // compare GetNames() results to decide whether the child bindings
+            // completely mask the parent.
+            return HdOverlayContainerDataSource::New(
+                inputBindings, parentBindings);
+        }
+
+        return inputBindings;
+    } else {
+        if (parentBindings) {
+            return parentBindings;
+        } else {
+            // Cache the absence of value by storing a non-container which will
+            // fail the cast on return. Using retained "false" because its New
+            // returns a shared instance rather than a new allocation.
+            return HdRetainedTypedSampledDataSource<bool>::New(false);
+        }
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
