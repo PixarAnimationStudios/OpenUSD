@@ -415,6 +415,9 @@ def RunCMake(context, force, extraArgs = None):
 
         extraArgs.append('-DCMAKE_OSX_ARCHITECTURES={0}'.format(targetArch))
 
+        if context.macOSDeploymentTarget is not None:
+            extraArgs.append('-DCMAKE_OSX_DEPLOYMENT_TARGET={0}'.format(context.macOSDeploymentTarget))
+
     # We use -DCMAKE_BUILD_TYPE for single-configuration generators 
     # (Ninja, make), and --config for multi-configuration generators 
     # (Visual Studio); technically we don't need BOTH at the same
@@ -743,6 +746,7 @@ def InstallBoost_Helper(context, force, buildArgs):
 
         macOSArchitecture = ""
         macOSArch = ""
+        macOSTarget = ""
 
         if MacOS():
             if apple_utils.GetTargetArch(context) == \
@@ -761,10 +765,26 @@ def InstallBoost_Helper(context, force, buildArgs):
                 macOSArch="-arch {0} -arch {1}".format(
                         primaryArch, secondaryArch)
 
-            if macOSArch:
+            if context.macOSDeploymentTarget is not None:
+                macOSTarget = "-mmacosx-version-min={0}".format(context.macOSDeploymentTarget)
+
+            if macOSArch and macOSTarget:
+                bootstrapCmd += " cxxflags=\"{0} {1}\" " \
+                                " cflags=\"{0} {1}\" " \
+                                " linkflags=\"{0} {1}\" " \
+                                " mflags=\"{1}\" " \
+                                " mmflags=\"{1}\"".format(macOSArch, macOSTarget)
+            elif macOSArch:
                 bootstrapCmd += " cxxflags=\"{0}\" " \
                                 " cflags=\"{0}\" " \
                                 " linkflags=\"{0}\"".format(macOSArch)
+            elif macOSTarget:
+                bootstrapCmd += " cxxflags=\"{0}\" " \
+                                " cflags=\"{0}\" " \
+                                " linkflags=\"{0}\" " \
+                                " mflags=\"{0}\" " \
+                                " mmflags=\"{0}\"".format(macOSTarget)
+
             bootstrapCmd += " --with-toolset=clang"
 
         Run(bootstrapCmd)
@@ -877,10 +897,22 @@ def InstallBoost_Helper(context, force, buildArgs):
             if macOSArchitecture:
                 b2_settings.append(macOSArchitecture)
 
-            if macOSArch:
+            if macOSArch and macOSTarget:
+                b2_settings.append("cxxflags=\"{0} {1}\"".format(macOSArch, macOSTarget))
+                b2_settings.append("cflags=\"{0} {1}\"".format(macOSArch, macOSTarget))
+                b2_settings.append("linkflags=\"{0} {1}\"".format(macOSArch, macOSTarget))
+                b2_settings.append("mflags=\"{0}\"".format(macOSTarget))
+                b2_settings.append("mmflags=\"{0}\"".format(macOSTarget))
+            elif macOSArch:
                 b2_settings.append("cxxflags=\"{0}\"".format(macOSArch))
                 b2_settings.append("cflags=\"{0}\"".format(macOSArch))
                 b2_settings.append("linkflags=\"{0}\"".format(macOSArch))
+            elif macOSTarget:
+                b2_settings.append("cxxflags=\"{0}\"".format(macOSTarget))
+                b2_settings.append("cflags=\"{0}\"".format(macOSTarget))
+                b2_settings.append("linkflags=\"{0}\"".format(macOSTarget))
+                b2_settings.append("mflags=\"{0}\"".format(macOSTarget))
+                b2_settings.append("mmflags=\"{0}\"".format(macOSTarget))
 
         if context.buildDebug:
             b2_settings.append("--debug-configuration")
@@ -1986,6 +2018,15 @@ all builds.
 
 If this parameter is not specified, the compiler's default ABI will be used.
 
+- OSX deployment target:
+On OSX, the --osx-deployment-target parameter can be used to specify the
+minimum version of the target platform on which the target binaries are to
+be deployed. The value given to this parameter will be used to define
+CMAKE_OSX_DEPLOYMENT_TARGET for all builds.
+
+If this parameter is not specified, the value is computed based on the
+host platform.
+
 For more details see:
 https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_dual_abi.html
 """.format(
@@ -2057,6 +2098,9 @@ if MacOS():
                        default=codesignDefault, action="store_true",
                        help=("Enable code signing for macOS builds "
                              "(defaults to enabled on Apple Silicon)"))
+
+    group.add_argument("--osx-deployment-target", type=str,
+                       help=("OSX minimum version of the target platform. (see docs above)"))
 
 if Linux():
     group.add_argument("--use-cxx11-abi", type=int, choices=[0, 1],
@@ -2317,6 +2361,8 @@ class InstallContext:
         self.useCXX11ABI = \
             (args.use_cxx11_abi if hasattr(args, "use_cxx11_abi") else None)
         self.safetyFirst = args.safety_first
+        self.macOSDeploymentTarget = \
+            (args.osx_deployment_target if hasattr(args, "osx_deployment_target") else None)
 
         # Dependencies that are forced to be built
         self.forceBuildAll = args.force_all
@@ -2572,6 +2618,11 @@ if context.useCXX11ABI is not None:
     Use C++11 ABI               {useCXX11ABI}
 """
 
+if context.macOSDeploymentTarget is not None:
+    summaryMsg += """\
+    OSX Deployment Target       {macOSDeploymentTarget}
+"""
+
 summaryMsg += """\
     Variant                     {buildVariant}
     Target                      {buildTarget}
@@ -2627,6 +2678,7 @@ summaryMsg = summaryMsg.format(
                   ", ".join([d.name for d in dependenciesToBuild])),
     buildArgs=FormatBuildArguments(context.buildArgs),
     useCXX11ABI=("On" if context.useCXX11ABI else "Off"),
+    macOSDeploymentTarget=context.macOSDeploymentTarget,
     buildType=("Shared libraries" if context.buildShared
                else "Monolithic shared library" if context.buildMonolithic
                else ""),
