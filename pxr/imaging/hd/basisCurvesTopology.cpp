@@ -27,6 +27,8 @@
 
 #include "pxr/base/arch/hash.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -36,14 +38,15 @@ _ComputeNumPoints(
     VtIntArray const &curveVertexCounts,
     VtIntArray const &indices)
 {
+    // Make absolutely sure the iterator is constant
+    // (so we don't detach the array while multi-threaded)
     if (indices.empty()) {
         size_t sum = 0;
-        for (int i : curveVertexCounts) {
-            sum += i;
-        }
+        return std::accumulate(
+            curveVertexCounts.cbegin(), curveVertexCounts.cend(), size_t {0} );
         return sum;
     } else {
-        return 1 + *std::max_element(indices.begin(), indices.end());
+        return 1 + *std::max_element(indices.cbegin(), indices.cend());
     }
 }
 
@@ -166,16 +169,8 @@ operator << (std::ostream &out, HdBasisCurvesTopology const &topo)
 size_t
 HdBasisCurvesTopology::CalculateNeededNumberOfControlPoints() const
 {
-    size_t numVerts= 0;
-
-    // Make absolutely sure the iterator is constant 
-    // (so we don't detach the array while multi-threaded)
-    for (VtIntArray::const_iterator itCounts = _curveVertexCounts.cbegin();
-            itCounts != _curveVertexCounts.cend(); ++itCounts) {
-        numVerts += *itCounts;
-    }
-
-    return numVerts;
+    // This in computed on construction and accounts for authored indices.
+    return _numPoints;
 }
 
 size_t
@@ -185,7 +180,8 @@ HdBasisCurvesTopology::CalculateNeededNumberOfVaryingControlPoints() const
         // For linear curves, varying and vertex interpolation is identical.
         return CalculateNeededNumberOfControlPoints();
     }
-    size_t numVerts= 0;
+
+    size_t numVarying = 0;
     int numSegs = 0, vStep = 0;
     bool wrap = GetCurveWrap() == HdTokens->periodic;
     
@@ -201,22 +197,27 @@ HdBasisCurvesTopology::CalculateNeededNumberOfVaryingControlPoints() const
     for (VtIntArray::const_iterator itCounts = _curveVertexCounts.cbegin();
             itCounts != _curveVertexCounts.cend(); ++itCounts) {
         
-        // Handling for the case of potentially incorrect vertex counts 
+        // Partial handling for the case of potentially incorrect vertex counts.
+        // We don't validate the vertex count for each curve (which differs
+        // based on the basis and wrap mode) since a renderer
+        // may choose to handle underspecified vertices via e.g., repetition.
         if (*itCounts < 1) {
             continue;
         }
 
-        // The number of verts is different if we have periodic vs non-periodic
-        // curves, check basisCurvesComputations.cpp line 207 for a diagram.
+        // The number of segments is different if we have periodic vs 
+        // non-periodic curves, check basisCurvesComputations.cpp for a diagram.
         if (wrap) {
-            numSegs = *itCounts / vStep;
+            // For bezier curves, if the authored vertex count is less than the
+            // minimum, treat it as 1 segment.
+            numSegs = std::max<int>(*itCounts / vStep, 1);
         } else {
-            numSegs = ((*itCounts - 4) / vStep) + 1;
+            numSegs = (std::max<int>(*itCounts - 4, 0) / vStep) + 1;
         }
-        numVerts += numSegs + 1;
+        numVarying += numSegs + 1;
     }
 
-    return numVerts;
+    return numVarying;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
