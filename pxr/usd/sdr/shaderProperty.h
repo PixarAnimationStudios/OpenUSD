@@ -45,6 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((String,   "string"))       \
     ((Float,    "float"))        \
     ((Color,    "color"))        \
+    ((Color4,   "color4"))       \
     ((Point,    "point"))        \
     ((Normal,   "normal"))       \
     ((Vector,   "vector"))       \
