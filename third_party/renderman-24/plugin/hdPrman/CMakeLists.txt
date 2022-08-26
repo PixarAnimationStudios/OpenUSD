@@ -53,6 +53,7 @@ pxr_plugin(${PXR_PACKAGE}
     LIBRARIES
         ar
         arch
+        js
         plug
         tf
         vt
