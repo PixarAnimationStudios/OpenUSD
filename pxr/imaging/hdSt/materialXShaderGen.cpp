@@ -255,7 +255,8 @@ _IsHardcodedPublicUniform(const mx::TypeDesc& varType)
     // _AddMaterialXParams function, the rest are hardcoded 
     // in the shader
     if (varType.getBaseType() != mx::TypeDesc::BASETYPE_FLOAT &&
-        varType.getBaseType() != mx::TypeDesc::BASETYPE_INTEGER) {
+        varType.getBaseType() != mx::TypeDesc::BASETYPE_INTEGER &&
+        varType.getBaseType() != mx::TypeDesc::BASETYPE_BOOLEAN) {
         return true;
     }
     if (varType.getSize() < 1 || varType.getSize() > 4) {

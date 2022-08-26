@@ -617,7 +617,11 @@ void _AddMaterialXParams(
 
         std::string separator;
         const auto varType = variable->getType();
-        if (varType->getBaseType() == mx::TypeDesc::BASETYPE_FLOAT) {
+        if (varType->getBaseType() == mx::TypeDesc::BASETYPE_BOOLEAN) {
+            const bool val = valueStream.str() == "true";
+            param.fallbackValue = VtValue(val);
+        }
+        else if (varType->getBaseType() == mx::TypeDesc::BASETYPE_FLOAT) {
             if (varType->getSize() == 1) {
                 float val;
                 valueStream >> val;
@@ -698,7 +702,8 @@ _AddMaterialXParams(
 
         const auto varType = variable->getType()->getBaseType();
         if (varType == mx::TypeDesc::BASETYPE_FLOAT ||
-            varType == mx::TypeDesc::BASETYPE_INTEGER) {
+            varType == mx::TypeDesc::BASETYPE_INTEGER ||
+            varType == mx::TypeDesc::BASETYPE_BOOLEAN) {
             
             // Get the paramter value from the terminal node
             const auto paramIt = terminalNode.parameters.find(param.name);
