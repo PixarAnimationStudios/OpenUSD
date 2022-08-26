@@ -46,6 +46,24 @@ TF_REGISTRY_FUNCTION(TfType)
 namespace
 {
 
+// XXX: Borrowed from collectionCache.cpp. Need to be able to prevent creation
+//      of meaningless categories for light and shadow linking as both an
+//      optimization and to allow lights without linking to work correctly now.
+//      TODO: Remove copy of this code once collection-to-category mechanisms
+//            are defined -- which may mean use of a refactored 
+//            UsdImaging_CollectionCache in which the code is already shared.
+// A query is trivial if it includes everything.
+bool
+_IsQueryTrivial(UsdCollectionAPI::MembershipQuery const& query)
+{
+    // XXX Should be a faster way to do this!
+    UsdCollectionAPI::MembershipQuery::PathExpansionRuleMap ruleMap =
+        query.GetAsPathExpansionRuleMap();
+    return ruleMap.size() == 1 &&
+        ruleMap.begin()->first == SdfPath::AbsoluteRootPath() &&
+        ruleMap.begin()->second == UsdTokens->expandPrims;
+}
+
 class _LightDataSource : public HdContainerDataSource
 {
 public:
@@ -84,8 +102,10 @@ public:
             _lightApi.GetFiltersRel().GetForwardedTargets(&filterPaths);
             return HdCreateTypedRetainedDataSource(VtValue(filterPaths));
         } else if (name == HdTokens->lightLink) {
+            // exclude lightLink values for unauthored or collections which
+            // would otherwise match everything
             UsdCollectionAPI c = _lightApi.GetLightLinkCollectionAPI();
-            if (c.HasNoIncludedPaths()) {
+            if (_IsQueryTrivial(c.ComputeMembershipQuery())) {
                 return nullptr;
             }
 
@@ -96,8 +116,10 @@ public:
             return HdRetainedTypedSampledDataSource<TfToken>::New(
                 c.GetCollectionPath().GetToken());
         } else if (name == HdTokens->shadowLink) {
+            // exclude shadowLink values for unauthored or collections which
+            // would otherwise match everything
             UsdCollectionAPI c = _lightApi.GetShadowLinkCollectionAPI();
-            if (c.HasNoIncludedPaths()) {
+            if (_IsQueryTrivial(c.ComputeMembershipQuery())) {
                 return nullptr;
             }
 
