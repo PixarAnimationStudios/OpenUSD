@@ -86,6 +86,7 @@ pxr_plugin(${PXR_PACKAGE}
         material
         matfiltConvertPreviewMaterial
         matfiltFilterChain
+        matfiltResolveTerminals
         matfiltResolveVstructs
         mesh
         paramsSetter
@@ -111,6 +112,7 @@ pxr_plugin(${PXR_PACKAGE}
         renderViewContext
         resourceRegistry
         velocityMotionBlurSceneIndexPlugin
+        terminalsResolvingSceneIndex
         virtualStructResolvingSceneIndex
 
     PUBLIC_HEADERS

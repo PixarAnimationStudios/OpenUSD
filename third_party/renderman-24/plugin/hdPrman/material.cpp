@@ -26,6 +26,7 @@
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
 #include "hdPrman/matfiltFilterChain.h"
+#include "hdPrman/matfiltResolveTerminals.h"
 #include "hdPrman/matfiltResolveVstructs.h"
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include "hdPrman/matfiltMaterialX.h"
@@ -80,6 +81,7 @@ HdPrmanMaterial::GetShaderSourceTypes()
 
 TF_MAKE_STATIC_DATA(MatfiltFilterChain, _filterChain) {
     *_filterChain = {
+        MatfiltResolveTerminals,
         MatfiltConvertPreviewMaterial,
         MatfiltResolveVstructs,
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED

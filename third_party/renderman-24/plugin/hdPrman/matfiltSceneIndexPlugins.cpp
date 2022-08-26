@@ -30,6 +30,7 @@
 #include "hdPrman/matfiltMaterialX.h"
 #endif
 
+#include "hdPrman/terminalsResolvingSceneIndex.h"
 #include "hdPrman/virtualStructResolvingSceneIndex.h"
 
 #include "pxr/base/tf/stringUtils.h"
@@ -50,6 +51,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (applyConditionals)
     ((previewMatPluginName, "HdPrman_PreviewMaterialFilteringSceneIndexPlugin"))
     ((materialXPluginName,  "HdPrman_MaterialXFilteringSceneIndexPlugin"))
+    ((terminalPluginName,   "HdPrman_TerminalsResolvingSceneIndexPlugin"))
     ((vstructPluginName,    "HdPrman_VirtualStructResolvingSceneIndexPlugin"))
 );
 
@@ -68,6 +70,9 @@ TF_REGISTRY_FUNCTION(TfType)
     
     HdSceneIndexPluginRegistry::Define<
         HdPrman_MaterialXFilteringSceneIndexPlugin>();
+
+    HdSceneIndexPluginRegistry::Define<
+        HdPrman_TerminalsResolvingSceneIndexPlugin>();
     
     HdSceneIndexPluginRegistry::Define<
         HdPrman_VirtualStructResolvingSceneIndexPlugin>();
@@ -96,6 +101,13 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
                 _tokens->applyConditionals,
                 HdRetainedTypedSampledDataSource<bool>::New(
                     _resolveVstructsWithConditionals));
+
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            _rendererDisplayName,
+            _tokens->terminalPluginName,
+            inputArgs,                        
+            MatfiltOrder::ConnectionResolve,
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
 
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
             _rendererDisplayName,
@@ -201,6 +213,9 @@ protected:
 
 #endif
 
+// Note: HdPrman_TerminalsResolvingSceneIndex is defined in its own
+// translation unit
+
 /// ----------------------------------------------------------------------------
 
 // Note: HdPrman_VirtualStructResolvingSceneIndex is defined in its own
@@ -241,6 +256,19 @@ HdPrman_MaterialXFilteringSceneIndexPlugin::_AppendSceneIndex(
 #else
     return inputScene;
 #endif
+}
+
+/// ----------------------------------------------------------------------------
+
+HdPrman_TerminalsResolvingSceneIndexPlugin::
+HdPrman_TerminalsResolvingSceneIndexPlugin() = default;
+
+HdSceneIndexBaseRefPtr
+HdPrman_TerminalsResolvingSceneIndexPlugin::_AppendSceneIndex(
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const HdContainerDataSourceHandle &inputArgs)
+{
+    return HdPrman_TerminalsResolvingSceneIndex::New(inputScene);
 }
 
 /// ----------------------------------------------------------------------------
