@@ -17,6 +17,7 @@ pxr_library(hdsi
 
     PUBLIC_CLASSES
         implicitSurfaceSceneIndex
+        terminalsResolvingSceneIndex
 
     PUBLIC_HEADERS
         api.h
