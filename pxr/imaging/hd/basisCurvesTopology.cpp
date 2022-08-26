@@ -41,10 +41,8 @@ _ComputeNumPoints(
     // Make absolutely sure the iterator is constant
     // (so we don't detach the array while multi-threaded)
     if (indices.empty()) {
-        size_t sum = 0;
         return std::accumulate(
             curveVertexCounts.cbegin(), curveVertexCounts.cend(), size_t {0} );
-        return sum;
     } else {
         return 1 + *std::max_element(indices.cbegin(), indices.cend());
     }
@@ -169,7 +167,7 @@ operator << (std::ostream &out, HdBasisCurvesTopology const &topo)
 size_t
 HdBasisCurvesTopology::CalculateNeededNumberOfControlPoints() const
 {
-    // This in computed on construction and accounts for authored indices.
+    // This is computed on construction and accounts for authored indices.
     return _numPoints;
 }
 
