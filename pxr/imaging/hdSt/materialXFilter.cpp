@@ -25,10 +25,12 @@
 #include "pxr/imaging/hdSt/materialXFilter.h"
 #include "pxr/imaging/hdSt/materialXShaderGen.h"
 #include "pxr/imaging/hdSt/package.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdMtlx/hdMtlx.h"
 
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/imaging/hio/glslfx.h"
+#include "pxr/imaging/hgi/capabilities.h"
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/matrix3d.h"
@@ -355,7 +357,7 @@ static void
 _AddFallbackDomeLightTextureNode(
     HdMaterialNetwork2* hdNetwork,
     SdfPath const& hdTerminalNodePath,
-    mx::StringMap* mxHdTextureMap)
+    mx::StringMap* mxHdTextureMap=nullptr)
 {
     // Create and add a Fallback Dome Light Texture Node to the hdNetwork
     HdMaterialNode2 hdDomeTextureNode;
@@ -376,7 +378,9 @@ _AddFallbackDomeLightTextureNode(
         inputConnections[domeTextureConn.upstreamOutputName] = {domeTextureConn};
 
     // Add the Dome Texture name to the TextureMap for MaterialXShaderGen
-    (*mxHdTextureMap)[domeTexturePath.GetName()] = domeTexturePath.GetName();
+    if (mxHdTextureMap) {
+        (*mxHdTextureMap)[domeTexturePath.GetName()] = domeTexturePath.GetName();
+    }
 }
 
 // Add the Hydra texture node parameters to the texture nodes and connect the 
@@ -587,6 +591,7 @@ _GetMaterialTag(HdMaterialNode2 const& terminal)
     return HdStMaterialTagTokens->defaultMaterialTag.GetString();
 }
 
+// Gather the Material Params from the glslfx ShaderPtr
 void _AddMaterialXParams(
     mx::ShaderPtr const& glslfxShader,
     HdSt_MaterialParamVector* materialParams)
@@ -667,6 +672,100 @@ void _AddMaterialXParams(
     }
 }
 
+// Gather the Material Params from the terminal HdMaterialNode/SdrShaderNode
+void 
+_AddMaterialXParams(
+    mx::ShaderPtr const& glslfxShader,
+    HdMaterialNode2 const& terminalNode,
+    SdrShaderNodeConstPtr const& mtlxSdrNode,
+    HdSt_MaterialParamVector* materialParams)
+{
+    if (!glslfxShader) {
+        return;
+    }
+
+    const mx::ShaderStage& pxlStage = glslfxShader->getStage(mx::Stage::PIXEL);
+    const auto& paramsBlock = pxlStage.getUniformBlock(mx::HW::PUBLIC_UNIFORMS);
+    for (size_t i = 0; i < paramsBlock.size(); ++i) {
+
+        // MaterialX parameter Information
+        const mx::ShaderPort* variable = paramsBlock[i];
+
+        // Create a corresponding HdSt_MaterialParam
+        HdSt_MaterialParam param;
+        param.paramType = HdSt_MaterialParam::ParamTypeFallback;
+        param.name = TfToken(variable->getVariable());
+
+        const auto varType = variable->getType()->getBaseType();
+        if (varType == mx::TypeDesc::BASETYPE_FLOAT ||
+            varType == mx::TypeDesc::BASETYPE_INTEGER) {
+            
+            // Get the paramter value from the terminal node
+            const auto paramIt = terminalNode.parameters.find(param.name);
+            if (paramIt != terminalNode.parameters.end()) {
+                param.fallbackValue = paramIt->second;
+            }
+            // Only the authored values are in the terminalNode.parameters
+            // get the default value from the mtlxSdrNode.
+            else if (const auto input = mtlxSdrNode->GetInput(param.name)) {
+                param.fallbackValue = input->GetDefaultValue();
+            }
+        }
+
+        if (!param.fallbackValue.IsEmpty()) {
+            materialParams->push_back(std::move(param));
+        }
+    }
+}
+
+static mx::ShaderPtr
+_GenerateMaterialXShader(
+    HdMaterialNetwork2* hdNetwork,
+    SdfPath const& materialPath,
+    HdMaterialNode2 const& terminalNode,
+    SdfPath const& terminalNodePath,
+    TfToken const& materialTagToken,
+    bool const bindlessTexturesEnabled)
+{
+    // Load Standard Libraries/setup SearchPaths (for mxDoc and mxShaderGen)
+    mx::FilePathVec libraryFolders;
+    mx::FileSearchPath searchPath = HdMtlxSearchPaths();
+    mx::DocumentPtr stdLibraries = mx::createDocument();
+    mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
+
+    // Create the MaterialX Document from the HdMaterialNetwork
+    HdSt_MxShaderGenInfo mxHdInfo;
+    HdMtlxTexturePrimvarData hdMtlxData;
+    mx::DocumentPtr mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
+                                    *hdNetwork,
+                                    terminalNode,   // MaterialX HdNode
+                                    terminalNodePath,
+                                    materialPath,
+                                    stdLibraries,
+                                    &hdMtlxData);
+
+    // Add a Fallback DomeLight texture node to make sure the indirect
+    // light computations always has a texture to sample from
+    _AddFallbackDomeLightTextureNode(
+        hdNetwork, terminalNodePath, &mxHdInfo.textureMap);
+
+    // Add Hydra parameters for each of the Texture nodes
+    _UpdateTextureNodes(mtlxDoc, hdNetwork, terminalNodePath, 
+                        hdMtlxData.hdTextureNodes, hdMtlxData.mxHdTextureMap,
+                        &mxHdInfo.textureMap, &mxHdInfo.primvarMap, 
+                        &mxHdInfo.defaultTexcoordName);
+
+    _UpdatePrimvarNodes(mtlxDoc, hdNetwork, terminalNodePath,
+                        hdMtlxData.hdPrimvarNodes, &mxHdInfo.primvarMap,
+                        &mxHdInfo.primvarDefaultValueMap);
+
+    mxHdInfo.materialTag = materialTagToken.GetString();
+    mxHdInfo.bindlessTexturesEnabled = bindlessTexturesEnabled;
+    
+    // Generate the glslfx source code from the mtlxDoc
+    return HdSt_GenMaterialXShader(mtlxDoc, searchPath, mxHdInfo);
+}
+
 void
 HdSt_ApplyMaterialXFilter(
     HdMaterialNetwork2* hdNetwork,
@@ -674,7 +773,7 @@ HdSt_ApplyMaterialXFilter(
     HdMaterialNode2 const& terminalNode,
     SdfPath const& terminalNodePath,
     HdSt_MaterialParamVector* materialParams,
-    bool const bindlessTexturesEnabled)
+    HdStResourceRegistry *resourceRegistry)
 {
     // Check if the Terminal is a MaterialX Node
     SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
@@ -684,55 +783,62 @@ HdSt_ApplyMaterialXFilter(
 
     if (mtlxSdrNode) {
 
-        // Load Standard Libraries/setup SearchPaths (for mxDoc and mxShaderGen)
-        mx::FilePathVec libraryFolders;
-        mx::FileSearchPath searchPath = HdMtlxSearchPaths();
-        mx::DocumentPtr stdLibraries = mx::createDocument();
-        mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
+        mx::ShaderPtr glslfxShader;
+        const TfToken materialTagToken(_GetMaterialTag(terminalNode));
+        const bool bindlessTexturesEnabled = 
+            resourceRegistry->GetHgi()->GetCapabilities()->IsSet(
+                HgiDeviceCapabilitiesBitsBindlessTextures);
 
-        // Create the MaterialX Document from the HdMaterialNetwork
-        HdSt_MxShaderGenInfo mxHdInfo;
-        HdMtlxTexturePrimvarData hdMtlxData;
-        mx::DocumentPtr mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
-                                        *hdNetwork,
-                                        terminalNode,   // MaterialX HdNode
-                                        terminalNodePath,
-                                        materialPath,
-                                        stdLibraries,
-                                        &hdMtlxData);
+        // If the MaterialNetwork has just a terminal node, utilize the
+        // Resource Registry to cache the generated MaterialX glslfx Shader
+        if (hdNetwork->nodes.size() == 1) {
+            // Get the glslfx ShaderPtr for the terminal node
+            Tf_HashState terminalNodeHash;
+            TfHashAppend(terminalNodeHash, terminalNode.nodeTypeId);
+            TfHashAppend(terminalNodeHash, materialTagToken);
+            HdInstance<mx::ShaderPtr> glslfxInstance = 
+                resourceRegistry->RegisterMaterialXShader(
+                    terminalNodeHash.GetCode());
 
-        // Add a Fallback DomeLight texture node to make sure the indirect
-        // light computations always has a texture to sample from
-        _AddFallbackDomeLightTextureNode(
-            hdNetwork, terminalNodePath, &mxHdInfo.textureMap);
+            if (glslfxInstance.IsFirstInstance()) {
+                // Generate the MaterialX glslfx ShaderPtr
+                glslfxShader = _GenerateMaterialXShader(
+                    hdNetwork, materialPath, terminalNode, terminalNodePath, 
+                    materialTagToken, bindlessTexturesEnabled);
 
-        // Add Hydra parameters for each of the Texture nodes
-        _UpdateTextureNodes(mtlxDoc, hdNetwork, terminalNodePath, 
-                            hdMtlxData.hdTextureNodes, hdMtlxData.mxHdTextureMap,
-                            &mxHdInfo.textureMap, &mxHdInfo.primvarMap, 
-                            &mxHdInfo.defaultTexcoordName);
+                // Store the mx::ShaderPtr 
+                glslfxInstance.SetValue(glslfxShader);
 
-        _UpdatePrimvarNodes(mtlxDoc, hdNetwork, terminalNodePath,
-                            hdMtlxData.hdPrimvarNodes, &mxHdInfo.primvarMap,
-                            &mxHdInfo.primvarDefaultValueMap);
+                // Add material parameters from the glslfxShader
+                _AddMaterialXParams(glslfxShader, materialParams);
 
-        mxHdInfo.materialTag = _GetMaterialTag(terminalNode);
-        mxHdInfo.bindlessTexturesEnabled = bindlessTexturesEnabled;
+            } else {
+                // Get the mx::ShaderPtr from the resource registry
+                glslfxShader = glslfxInstance.GetValue();
 
-        // Load MaterialX Document and generate the glslfxShader
-        mx::ShaderPtr glslfxShader = HdSt_GenMaterialXShader(mtlxDoc,
-                                    searchPath, mxHdInfo);
-        if (!glslfxShader) {
-            return;
+                // Add a Fallback DomeLight texture node to the network
+                _AddFallbackDomeLightTextureNode(hdNetwork, terminalNodePath);
+
+                // Add material parameters from the terminal node
+                _AddMaterialXParams(glslfxShader, terminalNode, mtlxSdrNode, 
+                                    materialParams);
+            }
         }
-        // Add material parameters from the glslfxShader to the materialParams
-        _AddMaterialXParams(glslfxShader, materialParams);
+        else {
+            // Process the network and generate the MaterialX glslfx ShaderPtr
+            glslfxShader = _GenerateMaterialXShader(
+                hdNetwork, materialPath, terminalNode, terminalNodePath, 
+                materialTagToken, bindlessTexturesEnabled);
+
+            // Add material parameters from the glslfxShader
+            _AddMaterialXParams(glslfxShader, materialParams);
+        }
 
         // Create a new terminal node with the new glslfxSource
-        const std::string glslfxSource =
+        const std::string glslfxSourceCode =
             glslfxShader->getSourceCode(mx::Stage::PIXEL);
         SdrShaderNodeConstPtr sdrNode = 
-            sdrRegistry.GetShaderNodeFromSourceCode(glslfxSource, 
+            sdrRegistry.GetShaderNodeFromSourceCode(glslfxSourceCode, 
                                                     HioGlslfxTokens->glslfx,
                                                     NdrTokenMap()); // metadata
         HdMaterialNode2 newTerminalNode;

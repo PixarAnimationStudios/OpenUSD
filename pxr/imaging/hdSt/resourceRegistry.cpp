@@ -42,6 +42,10 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/hash.h"
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+#include <MaterialXGenShader/Shader.h>
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_RESOURCE_INSTANCING, true,
@@ -149,6 +153,9 @@ void HdStResourceRegistry::InvalidateShaderRegistry()
 {
     _geometricShaderRegistry.Invalidate();
     _glslfxFileRegistry.Invalidate();
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+    _materialXShaderRegistry.Invalidate();
+#endif
 }
 
 
@@ -652,6 +659,15 @@ HdStResourceRegistry::RegisterGLSLFXFile(
     return _glslfxFileRegistry.GetInstance(id);
 }
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+HdInstance<MaterialX::ShaderPtr>
+HdStResourceRegistry::RegisterMaterialXShader(
+        HdInstance<MaterialX::ShaderPtr>::ID id)
+{
+    return _materialXShaderRegistry.GetInstance(id);
+}
+#endif
+
 HdInstance<HgiResourceBindingsSharedPtr>
 HdStResourceRegistry::RegisterResourceBindings(
     HdInstance<HgiResourceBindingsSharedPtr>::ID id)
@@ -1058,6 +1074,9 @@ HdStResourceRegistry::_GarbageCollect()
     _geometricShaderRegistry.GarbageCollect();
     _glslProgramRegistry.GarbageCollect();
     _glslfxFileRegistry.GarbageCollect();
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+    _materialXShaderRegistry.GarbageCollect();
+#endif
 
     // Cleanup Hgi resources
     _resourceBindingsRegistry.GarbageCollect(

@@ -60,7 +60,7 @@ void HdSt_ApplyMaterialXFilter(
     HdMaterialNode2 const& terminalNode,
     SdfPath const& terminalNodePath,
     HdSt_MaterialParamVector* materialParams,
-    bool const bindlessTexturesEnabled);
+    HdStResourceRegistry *resourceRegistry);
 
 // Generates the glsfx shader for the given MaterialX Document
 MaterialX::ShaderPtr HdSt_GenMaterialXShader(

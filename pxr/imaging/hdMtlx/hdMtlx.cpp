@@ -118,8 +118,7 @@ HdMtlxConvertToString(VtValue const& hdParameterValue)
 {
     std::ostringstream valStream;
     if (hdParameterValue.IsHolding<bool>()) {
-        return (hdParameterValue.UncheckedGet<bool>()) ? "true"
-                                                               : "false";
+        return hdParameterValue.UncheckedGet<bool>() ? "true" : "false";
     }
     else if (hdParameterValue.IsHolding<int>() || 
              hdParameterValue.IsHolding<float>()) {
@@ -521,7 +520,7 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
     TfToken mxType =
         _GetMxNodeType(mxDoc, netInterface->GetNodeType(terminalNodeName));
     mx::NodePtr mxShaderNode = mxDoc->addNode(mxType.GetString(),
-                                              "SR_" + materialName,
+                                              "Surface",
                                               "surfaceshader");
     mx::NodePtr mxMaterial = mxDoc->addMaterialNode(materialName, mxShaderNode);
 
