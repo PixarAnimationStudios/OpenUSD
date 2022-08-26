@@ -76,6 +76,7 @@ pxr_test_scripts(
     testenv/testUsdAbcUvReadWrite.py
     testenv/testUsdAbcUvReadWrite_OldEncoding.py
     testenv/testUsdAbcSDFArguments.py
+    testenv/testUsdAbcXformPrimCollapsing.py
 )
 
 pxr_install_test_dir(
@@ -161,6 +162,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdAbcSDFArguments
     DEST testUsdAbcSDFArguments
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcXformPrimCollapsing
+    DEST testUsdAbcXformPrimCollapsing
 )
 
 pxr_register_test(testUsdAbcAlembicData
@@ -289,5 +295,11 @@ pxr_register_test(testUsdAbcUvReadWrite_OldEncoding
 pxr_register_test(testUsdAbcSDFArguments
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcSDFArguments"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAbcXformPrimCollapsing
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcXformPrimCollapsing"
     EXPECTED_RETURN_CODE 0
 )
