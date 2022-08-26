@@ -836,6 +836,12 @@ class AppController(QtCore.QObject):
             self._ui.actionSave_Flattened_As.triggered.connect(
                 self._saveFlattenedAs)
 
+            self._ui.actionSave_Viewer_Image.triggered.connect(
+                self._saveViewerImage)
+
+            self._ui.actionCopy_Viewer_Image.triggered.connect(
+                self._copyViewerImage)
+
             self._ui.actionPause.triggered.connect(
                 self._togglePause)
             self._ui.actionStop.triggered.connect(
@@ -2776,6 +2782,34 @@ class AppController(QtCore.QObject):
 
         with BusyContext():
             self._dataModel.stage.Export(saveName)
+
+    def _copyViewerImage(self):
+        QtWidgets.QApplication.clipboard().setImage(self.GrabViewportShot())
+
+    def _saveViewerImage(self):
+        recommendedFilename = "{}_{}{:04d}.png".format(
+            self._parserData.usdFile.rsplit('.', 1)[0],
+            "" if not self.getActiveCamera()
+                else self.getActiveCamera().GetName() + "_",
+            int(self._dataModel.currentFrame.GetValue()))
+
+        (saveName, _) = QtWidgets.QFileDialog.getSaveFileName(
+            self._mainWindow,
+            'Save Viewer Image',
+            './' + recommendedFilename,
+            'JPG (*.jpg)'
+            ';;PNG (*.png)',
+            'PNG (*.png)')
+
+        if len(saveName) == 0:
+            return
+
+        _, ext = os.path.splitext(saveName)
+        if ext not in ('.jpg', '.png'):
+            saveName += '.png'
+
+        with BusyContext():
+            self.GrabViewportShot().save(saveName)
 
     def _togglePause(self):
         if self._stageView.IsPauseRendererSupported():

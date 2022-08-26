@@ -1617,6 +1617,9 @@
      <addaction name="actionHigh"/>
      <addaction name="actionVery_High"/>
     </widget>
+    <addaction name="actionCopy_Viewer_Image"/>
+    <addaction name="actionSave_Viewer_Image"/>
+    <addaction name="separator"/>
     <addaction name="actionToggle_Viewer_Mode"/>
     <addaction name="separator"/>
     <addaction name="menuRendererPlugin"/>
@@ -2209,6 +2212,34 @@
    </property>
    <property name="toolTip">
     <string>Save a flattened version of the current stage</string>
+   </property>
+  </action>
+  <action name="actionSave_Viewer_Image">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Save Viewer Image...</string>
+   </property>
+   <property name="iconText">
+    <string>Save Viewer Image...</string>
+   </property>
+   <property name="toolTip">
+    <string>Saves the viewer render of the current frame</string>
+   </property>
+  </action>
+  <action name="actionCopy_Viewer_Image">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Copy Viewer Image</string>
+   </property>
+   <property name="iconText">
+    <string>Copy Viewer Image</string>
+   </property>
+   <property name="toolTip">
+    <string>Copies the viewer render of the current frame to the clipboard</string>
    </property>
   </action>
   <action name="showInterpreter">
