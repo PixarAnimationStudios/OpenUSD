@@ -53,6 +53,25 @@ public:
     USDIMAGING_API
     ~UsdImagingLightAdapter() override;
 
+    // ---------------------------------------------------------------------- //
+    /// \name Scene Index Support
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    HdContainerDataSourceHandle GetImagingSubprimData(
+            TfToken const& subprim,
+            UsdPrim const& prim,
+            const UsdImagingDataSourceStageGlobals &stageGlobals) override;
+
+    USDIMAGING_API
+    HdDataSourceLocatorSet InvalidateImagingSubprim(
+        TfToken const& subprim,
+        TfTokenVector const& properties) override;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Initialization
+    // ---------------------------------------------------------------------- //
+
     USDIMAGING_API
     SdfPath Populate(UsdPrim const& prim,
                      UsdImagingIndexProxy* index,
