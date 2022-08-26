@@ -89,6 +89,7 @@
 
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <tuple>
 #include <type_traits>
 
@@ -3376,6 +3377,68 @@ CrateFile::_ReadSpecs(Reader reader)
             }
         }
     }
+
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED 
+    // Spec sanity checks, in "prefer-safety-over-speed" mode.
+
+    pxr_tsl::robin_set<SdfPath, SdfPath::Hash> seenPaths;
+
+    std::vector<std::string> messages;
+    
+    for (Spec &spec: _specs) {
+        // Check for valid-looking specs (no empty paths, no repeated paths,
+        // valid SdfSpecType enum values...)
+        SdfPath const &specPath = GetPath(spec.pathIndex);
+        if (specPath.IsEmpty()) {
+            messages.push_back(
+                TfStringPrintf("spec at index %zu has empty path",
+                               std::distance(&_specs.front(), &spec))); 
+            // Mark for removal. 
+            spec.specType = SdfSpecTypeUnknown;
+            continue;
+        }
+        if (spec.specType == SdfSpecTypeUnknown ||
+            spec.specType >= SdfNumSpecTypes) {
+            messages.push_back(
+                TfStringPrintf("spec <%s> has %s",
+                               specPath.GetAsString().c_str(),
+                               spec.specType == SdfSpecTypeUnknown ?
+                               "unknown spec type" :
+                               TfStringPrintf("invalid spec type value %d",
+                                              spec.specType).c_str()));
+            // Mark for removal.
+            spec.specType = SdfSpecTypeUnknown;
+            continue;
+        }
+        if (!seenPaths.insert(specPath).second) {
+            messages.push_back(
+                TfStringPrintf("spec <%s> repeated",
+                               specPath.GetAsString().c_str()));
+            // Mark for removal.
+            spec.specType = SdfSpecTypeUnknown;
+            continue;
+        }
+    }
+
+    if (!messages.empty()) {
+        // Remove everything with specType == Unknown -- any failed tests above
+        // set specs that failed to have this spec type.
+        _specs.erase(
+            std::remove_if(_specs.begin(), _specs.end(),
+                           [](Spec const &s) {
+                               return s.specType == SdfSpecTypeUnknown;
+                           }),
+            _specs.end());
+
+        // Sort and unique the messages, then emit a warning.
+        std::sort(messages.begin(), messages.end(), TfDictionaryLessThan());
+        messages.erase(std::unique(messages.begin(), messages.end()),
+                       messages.end());
+        TF_RUNTIME_ERROR(
+            "Corrupt asset @%s@ - ignoring invalid specs: %s.",
+            _assetPath.c_str(), TfStringJoin(messages, ", ").c_str());
+    }
+#endif // PXR_PREFER_SAFETY_OVER_SPEED
 }
 
 template <class Reader>
