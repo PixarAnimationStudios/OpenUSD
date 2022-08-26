@@ -23,6 +23,8 @@
 //
 #include "hdPrman/matfiltResolveTerminals.h"
 
+#include "pxr/imaging/hdsi/terminalsResolvingSceneIndex.h"
+
 #include "pxr/imaging/hd/materialNetwork2Interface.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -46,42 +48,20 @@ MatfiltResolveTerminals(
     std::vector<std::string>* outputErrorMessages)
 {
     HdMaterialNetwork2Interface interface(networkId, &network);
-    MatfiltResolveTerminals(&interface);
+    HdsiTerminalsResolvingSceneIndex::ResolveTerminals(
+        &interface, MatfiltResolveTerminalsGetTerminalMappings());
 }
 
-static void
-_RenameTerminal(
-    HdMaterialNetworkInterface* interface,
-    const TfToken& oldName,
-    const TfToken& newName)
+const std::map<TfToken, TfToken>&
+MatfiltResolveTerminalsGetTerminalMappings()
 {
-    interface->SetTerminalConnection(
-        newName, interface->GetTerminalConnection(oldName).second);
-    interface->DeleteTerminal(oldName);
-}
 
-void
-MatfiltResolveTerminals(HdMaterialNetworkInterface* interface)
-{
-    if (!interface) {
-        return;
-    }
-
-    for (const TfToken& terminalName : interface->GetTerminalNames()) {
-        if (terminalName == _tokens->riSurface) {
-            _RenameTerminal(
-                interface, terminalName, HdMaterialTerminalTokens->surface);
-        }
-        else if (terminalName == _tokens->riDisplacement) {
-            _RenameTerminal(
-                interface, terminalName,
-                HdMaterialTerminalTokens->displacement);
-        }
-        else if (terminalName == _tokens->riVolume) {
-            _RenameTerminal(
-                interface, terminalName, HdMaterialTerminalTokens->volume);
-        }
-    }
+    static const std::map<TfToken, TfToken> _mappings = {
+        { _tokens->riSurface, HdMaterialTerminalTokens->surface },
+        { _tokens->riDisplacement, HdMaterialTerminalTokens->displacement },
+        { _tokens->riVolume, HdMaterialTerminalTokens->volume },
+    };
+    return _mappings;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

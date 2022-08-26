@@ -25,15 +25,17 @@
 #include "hdPrman/material.h"
 #include "hdPrman/matfiltFilterChain.h"
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
+#include "hdPrman/matfiltResolveTerminals.h"
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include "hdPrman/matfiltMaterialX.h"
 #endif
 
-#include "hdPrman/terminalsResolvingSceneIndex.h"
 #include "hdPrman/virtualStructResolvingSceneIndex.h"
 
 #include "pxr/base/tf/stringUtils.h"
+
+#include "pxr/imaging/hdsi/terminalsResolvingSceneIndex.h"
 
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/materialFilteringSceneIndexBase.h"
@@ -105,7 +107,7 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
             _rendererDisplayName,
             _tokens->terminalPluginName,
-            inputArgs,                        
+            nullptr,
             MatfiltOrder::ConnectionResolve,
             HdSceneIndexPluginRegistry::InsertionOrderAtStart);
 
@@ -268,7 +270,9 @@ HdPrman_TerminalsResolvingSceneIndexPlugin::_AppendSceneIndex(
         const HdSceneIndexBaseRefPtr &inputScene,
         const HdContainerDataSourceHandle &inputArgs)
 {
-    return HdPrman_TerminalsResolvingSceneIndex::New(inputScene);
+    return HdsiTerminalsResolvingSceneIndex::New(
+        inputScene,
+        MatfiltResolveTerminalsGetTerminalMappings());
 }
 
 /// ----------------------------------------------------------------------------

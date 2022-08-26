@@ -41,8 +41,12 @@ void MatfiltResolveTerminals(
     const NdrTokenVec& shaderTypePriority,
     std::vector<std::string>* outputErrorMessages);
 
-/// Renames "ri:*" terminals to be the standard HdMaterialTerminalTokens.
-void MatfiltResolveTerminals(HdMaterialNetworkInterface* networkInterface);
+/// Returns the terminal mappings that this material filter should apply.
+///
+/// Note, the scene index implementation of this material filter just uses
+/// HdSiTerminalsResolvingSceneIndex with this dictionary.
+const std::map<TfToken, TfToken>&
+MatfiltResolveTerminalsGetTerminalMappings();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

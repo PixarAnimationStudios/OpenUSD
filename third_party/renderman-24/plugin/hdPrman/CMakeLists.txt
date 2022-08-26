@@ -112,7 +112,6 @@ pxr_plugin(${PXR_PACKAGE}
         renderViewContext
         resourceRegistry
         velocityMotionBlurSceneIndexPlugin
-        terminalsResolvingSceneIndex
         virtualStructResolvingSceneIndex
 
     PUBLIC_HEADERS
