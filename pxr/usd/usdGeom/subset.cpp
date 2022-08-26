@@ -284,13 +284,23 @@ UsdGeomSubset::CreateUniqueGeomSubset(
     return subset;
 }
 
+// This is the same as UsdPrimDefaultPredicate except IsDefined is replaced 
+// with HasDefiningSpecifier.
+static Usd_PrimFlagsConjunction 
+_GetGeomSubsetPredicate()
+{
+    return UsdPrimIsActive && UsdPrimHasDefiningSpecifier && UsdPrimIsLoaded && 
+        !UsdPrimIsAbstract;
+}
+
 /* static */
 std::vector<UsdGeomSubset> 
 UsdGeomSubset::GetAllGeomSubsets(const UsdGeomImageable &geom)
 {
     std::vector<UsdGeomSubset> result;
 
-    for (const auto &childPrim : geom.GetPrim().GetChildren()) {
+    for (const auto &childPrim : 
+         geom.GetPrim().GetFilteredChildren(_GetGeomSubsetPredicate())) {
         if (childPrim.IsA<UsdGeomSubset>()) {
             result.emplace_back(childPrim);
         }
@@ -308,7 +318,8 @@ UsdGeomSubset::GetGeomSubsets(
 {
     std::vector<UsdGeomSubset> result;
 
-    for (const auto &childPrim : geom.GetPrim().GetChildren()) {
+    for (const auto &childPrim : 
+         geom.GetPrim().GetFilteredChildren(_GetGeomSubsetPredicate())) {
         if (childPrim.IsA<UsdGeomSubset>()) {
             UsdGeomSubset subset(childPrim);
 
@@ -334,7 +345,8 @@ UsdGeomSubset::GetAllGeomSubsetFamilyNames(const UsdGeomImageable &geom)
 {
     TfToken::Set familyNames;
     
-    for (const auto &childPrim : geom.GetPrim().GetChildren()) {
+    for (const auto &childPrim : 
+         geom.GetPrim().GetFilteredChildren(_GetGeomSubsetPredicate())) {
         if (childPrim.IsA<UsdGeomSubset>()) {
             UsdGeomSubset subset(childPrim);
             TfToken subsetFamilyName;
