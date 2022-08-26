@@ -582,7 +582,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # ends up equivalent.
 
         # Get all collections on the root test prim
-        collections = Usd.CollectionAPI.GetAllCollections(testPrim)
+        collections = Usd.CollectionAPI.GetAll(testPrim)
         self.assertTrue(len(collections) > 1)
 
         # Each of their membership queries should be equal to itself,
