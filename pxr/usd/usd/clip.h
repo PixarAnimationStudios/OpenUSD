@@ -35,6 +35,7 @@
 #include <iosfwd>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -201,6 +202,7 @@ public:
     /// Asset path for the clip and the path to the prim in the clip
     /// that provides data.
     SdfAssetPath assetPath;
+    std::string anchoredAssetPath;
     SdfPath primPath;
 
     /// The authored start time for this clip. This generally is equivalent

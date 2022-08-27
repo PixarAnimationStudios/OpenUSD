@@ -122,9 +122,14 @@ Usd_Clip::Usd_Clip(
     if (TF_VERIFY(sourceLayerIndex < sourceLayerStack->GetLayers().size())) {
         const ArResolverContextBinder binder(
             sourceLayerStack->GetIdentifier().pathResolverContext);
-        _layer = SdfLayer::FindRelativeToLayer(
-            sourceLayerStack->GetLayers()[sourceLayerIndex],
-            assetPath.GetAssetPath());
+        if (sourceLayerStack->GetLayers()[sourceLayerIndex] &&
+            !assetPath.GetAssetPath().empty())
+        {
+            anchoredAssetPath = SdfComputeAssetPathRelativeToLayer(
+                sourceLayerStack->GetLayers()[sourceLayerIndex],
+                assetPath.GetAssetPath());
+            _layer = SdfLayer::Find(anchoredAssetPath);
+        }
     }
 
     _hasLayer = (bool)_layer;
@@ -737,12 +742,10 @@ Usd_Clip::_GetLayerForClip() const
 
     SdfLayerRefPtr layer;
 
-    if (TF_VERIFY(sourceLayerIndex < sourceLayerStack->GetLayers().size())) {
+    if (TF_VERIFY(!anchoredAssetPath.empty())) {
         const ArResolverContextBinder binder(
             sourceLayerStack->GetIdentifier().pathResolverContext);
-        layer = SdfLayer::FindOrOpenRelativeToLayer(
-            sourceLayerStack->GetLayers()[sourceLayerIndex],
-            assetPath.GetAssetPath());
+        layer = SdfLayer::FindOrOpen(anchoredAssetPath);
     }
 
     if (!layer) {
