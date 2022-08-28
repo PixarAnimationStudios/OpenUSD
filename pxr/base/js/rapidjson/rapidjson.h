@@ -529,8 +529,21 @@ RAPIDJSON_NAMESPACE_END
 
 #ifndef RAPIDJSON_HAS_CXX11_RVALUE_REFS
 #if defined(__clang__)
+// USD change
+// The __clang__ branch is modified so the -Wexpansion-to-defined is not triggered.
+// Newer versions of RapidJSON have this fix.
+// Original was:
+/*
 #define RAPIDJSON_HAS_CXX11_RVALUE_REFS __has_feature(cxx_rvalue_references) && \
     (defined(_LIBCPP_VERSION) || defined(__GLIBCXX__) && __GLIBCXX__ >= 20080306)
+*/
+#if __has_feature(cxx_rvalue_references) && \
+    (defined(_LIBCPP_VERSION) || defined(__GLIBCXX__) && __GLIBCXX__ >= 20080306)
+#define RAPIDJSON_HAS_CXX11_RVALUE_REFS 1
+#else
+#define RAPIDJSON_HAS_CXX11_RVALUE_REFS 0
+#endif
+// End of USD change
 #elif (defined(RAPIDJSON_GNUC) && (RAPIDJSON_GNUC >= RAPIDJSON_VERSION_CODE(4,3,0)) && defined(__GXX_EXPERIMENTAL_CXX0X__)) || \
       (defined(_MSC_VER) && _MSC_VER >= 1600)
 

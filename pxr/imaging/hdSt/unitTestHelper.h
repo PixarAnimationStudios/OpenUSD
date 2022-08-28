@@ -301,7 +301,7 @@ HdSt_TestDriverBase<SceneDelegate>::SetCamera(
                 _cameraId));
     TF_VERIFY(camera);
 
-    for (const HdRenderPassStateSharedPtr &renderPassState: _renderPassStates) {
+    for (const auto &renderPassState: _renderPassStates) {
         renderPassState->SetCameraAndFraming(
             camera, framing, { false, CameraUtilFit });
     }
@@ -320,7 +320,7 @@ template<typename SceneDelegate>
 void
 HdSt_TestDriverBase<SceneDelegate>::SetCullStyle(HdCullStyle cullStyle)
 {
-    for (const HdRenderPassStateSharedPtr &renderPassState: _renderPassStates) {
+    for (const auto &renderPassState: _renderPassStates) {
         renderPassState->SetCullStyle(cullStyle);
     }
 }
@@ -398,7 +398,7 @@ HdSt_TestDriverBase<SceneDelegate>::SetupAovs(int width, int height)
         }
     }
 
-    for (const HdRenderPassStateSharedPtr &renderPassState: _renderPassStates) {
+    for (const auto &renderPassState: _renderPassStates) {
         renderPassState->SetAovBindings(_aovBindings);
     }
 }

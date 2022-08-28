@@ -99,6 +99,13 @@
     #define ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND \
         _Pragma("clang diagnostic ignored \"-Wobjc-method-access\"")
 
+    #define ARCH_PRAGMA_REINTERPRET_BASE_CLASS \
+        _Pragma("clang diagnostic ignored \"-Wreinterpret-base-class\"")
+
+    #define ARCH_PRAGMA_UNUSED_PRIVATE_FIELD \
+       _Pragma("clang diagnostic ignored \"-Wunused-private-field\"")
+
+
 #elif defined(ARCH_COMPILER_MSVC)
 
     #define ARCH_PRAGMA_PUSH \
@@ -253,6 +260,14 @@
 
 #if !defined ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND
     #define ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND
+#endif
+
+#if !defined ARCH_PRAGMA_REINTERPRET_BASE_CLASS
+    #define ARCH_PRAGMA_REINTERPRET_BASE_CLASS
+#endif
+
+#if !defined ARCH_PRAGMA_UNUSED_PRIVATE_FIELD
+    #define ARCH_PRAGMA_UNUSED_PRIVATE_FIELD
 #endif
 
 #endif // PXR_BASE_ARCH_PRAGMAS_H

@@ -81,7 +81,10 @@ private:
     template<class T>
     T* _GetThreadLocalStorageList(std::vector<T*>* collector);
 
-    HgiGL* _hgi;
+    ARCH_PRAGMA_PUSH                                                        \
+    ARCH_PRAGMA_UNUSED_PRIVATE_FIELD                                        \
+    HgiGL* _hgi;                                                            \
+    ARCH_PRAGMA_POP
 
     // List of all the per-thread-vectors of objects that need to be destroyed.
     // The vectors are static (shared across HGIs), because we use thread_local

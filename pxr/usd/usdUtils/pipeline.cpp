@@ -319,7 +319,7 @@ _GetPipelineIdentifierTokens(const TfTokenVector& identifierKeys)
 
     const PlugPluginPtrVector plugs =
         PlugRegistry::GetInstance().GetAllPlugins();
-    for (const PlugPluginPtr plug : plugs) {
+    for (const auto& plug : plugs) {
         JsObject metadata = plug->GetMetadata();
         JsValue metadataDictValue;
         if (!TfMapLookup(metadata, metadataDictKey, &metadataDictValue)) {

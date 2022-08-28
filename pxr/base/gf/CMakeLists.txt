@@ -4,6 +4,46 @@ set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE gf)
 
+# In python wrappers: .def( self -= self ) a warning is raised because of a clang bug:
+# https://bugs.llvm.org/show_bug.cgi?id=43124
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    foreach(_src
+        wrapInterval.cpp
+        wrapMatrix2d.cpp
+        wrapMatrix2f.cpp
+        wrapMatrix3d.cpp
+        wrapMatrix3f.cpp
+        wrapMatrix4d.cpp
+        wrapMatrix4f.cpp
+        wrapQuatd.cpp
+        wrapQuaternion.cpp
+        wrapQuatf.cpp
+        wrapQuath.cpp
+        wrapRange1d.cpp
+        wrapRange1f.cpp
+        wrapRange2d.cpp
+        wrapRange2f.cpp
+        wrapRange3d.cpp
+        wrapRange3f.cpp
+        wrapSize2.cpp
+        wrapSize3.cpp
+        wrapVec2d.cpp
+        wrapVec2f.cpp
+        wrapVec2h.cpp
+        wrapVec2i.cpp
+        wrapVec3d.cpp
+        wrapVec3f.cpp
+        wrapVec3h.cpp
+        wrapVec3i.cpp
+        wrapVec4d.cpp
+        wrapVec4f.cpp
+        wrapVec4h.cpp
+        wrapVec4i.cpp
+    )
+        set_source_files_properties(${_src} PROPERTIES COMPILE_FLAGS -Wno-self-assign-overloaded)
+    endforeach()
+endif()
+
 pxr_library(gf
     LIBRARIES
         arch

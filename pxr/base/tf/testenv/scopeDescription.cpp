@@ -92,6 +92,7 @@ TestOverhead()
 {
     size_t count = 0;
     unsigned int val = 0;
+    TF_UNUSED(val);
     TfStopwatch sw;
     do {
         sw.Start();

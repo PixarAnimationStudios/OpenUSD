@@ -39,6 +39,7 @@
 
 #include "pxr/base/tf/pyTracing.h"
 
+#include "pxr/base/arch/pragmas.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/refPtr.h"
@@ -619,7 +620,10 @@ private:
 
     TimeStamp _measuredScopeOverhead;
 
+    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_UNUSED_PRIVATE_FIELD
     std::atomic<int> _isPythonTracingEnabled;
+    ARCH_PRAGMA_POP
     TfPyTraceFnId _pyTraceFnId;
 };
  

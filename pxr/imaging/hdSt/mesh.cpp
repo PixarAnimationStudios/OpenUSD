@@ -80,7 +80,6 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_PACKED_NORMALS, 1,
 
 // Use more recognizable names for each compute queue the mesh computations use.
 namespace {
-    constexpr HdStComputeQueue _CopyExtCompQueue = HdStComputeQueueZero;
     constexpr HdStComputeQueue _RefinePrimvarCompQueue = HdStComputeQueueOne;
     constexpr HdStComputeQueue _NormalsCompQueue = HdStComputeQueueTwo;
     constexpr HdStComputeQueue _RefineNormalsCompQueue = HdStComputeQueueThree;

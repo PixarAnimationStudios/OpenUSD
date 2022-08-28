@@ -87,6 +87,7 @@
 
 #include <tbb/concurrent_queue.h>
 
+#include <cmath>
 #include <iostream>
 #include <memory>
 #include <tuple>
@@ -229,7 +230,7 @@ constexpr _SectionName _KnownSections[] = {
 
 constexpr bool _IsInlinedImpl(string *) { return true; }
 constexpr bool _IsInlinedImpl(TfToken *) { return true; }
-constexpr bool _IsInlinedImpl(SdfPath *) { return true; }
+ARCH_USED_FUNCTION constexpr bool _IsInlinedImpl(SdfPath *) { return true; }
 constexpr bool _IsInlinedImpl(SdfAssetPath *) { return true; }
 template <class T>
 constexpr bool _IsInlinedImpl(T *) {

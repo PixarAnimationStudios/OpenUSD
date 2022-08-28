@@ -434,6 +434,7 @@
 #include "pxr/base/tf/api.h"
 
 #include "pxr/base/arch/hints.h"
+#include "pxr/base/arch/pragmas.h"
 
 #include <boost/functional/hash_fwd.hpp>
 #include <boost/mpl/if.hpp>
@@ -1129,7 +1130,10 @@ private:
     // not point to a T.  Nevertheless, it should be consistent to
     // all calls to the tracking functions.
     T* _GetObjectForTracking() const {
+        ARCH_PRAGMA_PUSH
+        ARCH_PRAGMA_REINTERPRET_BASE_CLASS
         return reinterpret_cast<T*>(const_cast<TfRefBase*>(_refBase));
+        ARCH_PRAGMA_POP
     }
 
     /// Call \c typeid on the object pointed to by a \c TfRefPtr.
@@ -1148,8 +1152,11 @@ private:
 
     void _RemoveRef(const TfRefBase* ptr) const {
         if (_Counter::RemoveRef(ptr)) {
+            ARCH_PRAGMA_PUSH
+            ARCH_PRAGMA_REINTERPRET_BASE_CLASS
             Tf_RefPtrTracker_LastRef(this,
                 reinterpret_cast<T*>(const_cast<TfRefBase*>(ptr)));
+            ARCH_PRAGMA_POP
             delete ptr;
         }
     }
