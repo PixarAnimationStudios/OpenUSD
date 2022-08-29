@@ -244,7 +244,11 @@ class TestUsdFileFormats(unittest.TestCase):
             'usda')
 
         shutil.copyfile('crate.usd', 'test_replace.usd')
-        self.assertTrue(layer.Reload())
+
+        # Force a reload, otherwise the reload is skipped sometimes due
+        # to file mtimes not changing after copyfile.
+        self.assertTrue(layer.Reload(force=True))
+
         self.assertEqual(
             Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer), 
             'usdc')
