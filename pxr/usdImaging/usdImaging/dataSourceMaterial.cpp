@@ -550,7 +550,7 @@ using _TokenDataSourceMap =
 static void
 _WalkGraph(
     UsdShadeConnectableAPI const &shadeNode,
-    _TokenDataSourceMap *outputNodes,
+    _TokenDataSourceMap * const outputNodes,
     const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (!shadeNode) {
@@ -567,6 +567,11 @@ _WalkGraph(
     if (outputNodes->find(nodeName) != outputNodes->end()) {
         return;
     }
+
+    HdDataSourceBaseHandle nodeValue =
+        _UsdImagingDataSourceShadingNode::New(shadeNode, stageGlobals);
+
+    outputNodes->insert({nodeName, nodeValue});
 
     // Visit inputs of this node to ensure they are emitted first.
     const std::vector<UsdShadeInput> shadeNodeInputs = shadeNode.GetInputs();
@@ -589,10 +594,6 @@ _WalkGraph(
         }
     }
 
-    HdDataSourceBaseHandle nodeValue =
-        _UsdImagingDataSourceShadingNode::New(shadeNode, stageGlobals);
-
-    outputNodes->insert({nodeName, nodeValue});
 }
 
 static
