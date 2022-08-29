@@ -144,6 +144,7 @@ pxr_library(hdSt
         imageShaderShaderKey
         indirectDrawBatch
         materialNetworkShader
+        materialBindingResolvingSceneIndexPlugin
         materialParam
         meshShaderKey
         meshTopology 
