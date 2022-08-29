@@ -147,6 +147,8 @@ pxr_library(hdSt
         materialParam
         meshShaderKey
         meshTopology 
+        nodeIdentifierResolvingSceneIndex
+        nodeIdentifierResolvingSceneIndexPlugin
         pipelineDrawBatch
         pointsShaderKey
         quadrangulate
