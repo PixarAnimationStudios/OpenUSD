@@ -124,6 +124,14 @@ TF_DEFINE_ENV_SETTING(
     "against their schema. If the field or spec is not defined in the schema "
     "a coding error will be issued and the authoring operation will fail.");
 
+static SdfAbstractDataRefPtr
+_CreateDataForFileFormat(
+    const SdfFileFormatConstPtr& fileFormat,
+    const SdfLayer::FileFormatArguments& args)
+{
+    return fileFormat->InitData(args);
+}
+
 SdfLayer::SdfLayer(
     const SdfFileFormatConstPtr &fileFormat,
     const string &identifier,
@@ -136,7 +144,7 @@ SdfLayer::SdfLayer(
     , _fileFormatArgs(args)
     , _schema(fileFormat->GetSchema())
     , _idRegistry(SdfLayerHandle(this))
-    , _data(fileFormat->InitData(args))
+    , _data(_CreateDataForFileFormat(fileFormat, args))
     , _stateDelegate(SdfSimpleLayerStateDelegate::New())
     , _lastDirtyState(false)
     , _assetInfo(new Sdf_AssetInfo)
@@ -914,8 +922,7 @@ SdfLayer::_Reload(bool force)
     else if (IsMuted() || 
              (isAnonymous && !GetFileFormat()->ShouldReadAnonymousLayers())) {
         // Reloading a muted layer leaves it with the initialized contents.
-        SdfAbstractDataRefPtr initialData = 
-            GetFileFormat()->InitData(GetFileFormatArguments());
+        SdfAbstractDataRefPtr initialData = _CreateData();
         if (_data->Equals(initialData)) {
             return _ReloadSkipped;
         }
@@ -2671,9 +2678,7 @@ SdfLayer::AddToMutedLayers(const string &path)
     if (didChange) {
         if (SdfLayerHandle layer = Find(path)) {
             if (layer->IsDirty()) {
-                SdfFileFormatConstPtr format = layer->GetFileFormat();
-                SdfAbstractDataRefPtr initializedData = 
-                    format->InitData(layer->GetFileFormatArguments());
+                SdfAbstractDataRefPtr initializedData = layer->_CreateData();
                 if (layer->_data->StreamsData()) {
                     // See the discussion in TransferContent()
                     // about streaming layers; the same concerns
@@ -2692,8 +2697,7 @@ SdfLayer::AddToMutedLayers(const string &path)
                 } else {
                     // Copy the dirty layer data to an in-memory store
                     // that will be owned by _mutedLayerData.
-                    SdfAbstractDataRefPtr mutedData = 
-                        format->InitData(layer->GetFileFormatArguments());
+                    SdfAbstractDataRefPtr mutedData = layer->_CreateData();
                     mutedData->CopyFrom(layer->_data);
                     {
                         std::lock_guard<std::mutex> lock(*_mutedLayersMutex);
@@ -2774,7 +2778,7 @@ SdfLayer::Clear()
 
     const bool isStreamingLayer = _data->StreamsData();
 
-    _SetData(GetFileFormat()->InitData(GetFileFormatArguments()));
+    _SetData(_CreateData());
 
     if (isStreamingLayer) {
         _stateDelegate->_MarkCurrentStateAsDirty();
@@ -2877,7 +2881,7 @@ SdfLayer::TransferContent(const SdfLayerHandle& layer)
     SdfAbstractDataRefPtr newData;
 
     if (!notify || isStreamingLayer) {
-        newData = GetFileFormat()->InitData(GetFileFormatArguments());
+        newData = _CreateData();
         newData->CopyFrom(layer->_data);
     }
     else {
@@ -3646,6 +3650,12 @@ SdfAbstractDataConstPtr
 SdfLayer::_GetData() const
 {
     return _data;
+}
+
+SdfAbstractDataRefPtr
+SdfLayer::_CreateData() const
+{
+    return _CreateDataForFileFormat(GetFileFormat(), GetFileFormatArguments());
 }
 
 void

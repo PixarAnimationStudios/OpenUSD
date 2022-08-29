@@ -1687,6 +1687,9 @@ private:
     // Returns const handle to _data.
     SdfAbstractDataConstPtr _GetData() const;
 
+    // Returns a new SdfAbstractData object for this layer.
+    SdfAbstractDataRefPtr _CreateData() const;
+
     // Inverse primitive for setting a single field. The previous value for the
     // field may be given via \p oldValue. If \p oldValue is non-nullptr, the
     // VtValue it points to will be moved-from after the function completes. If
