@@ -847,14 +847,8 @@ class AppController(QtCore.QObject):
             self._ui.actionStop.triggered.connect(
                 self._toggleStop)
 
-            # Typically, a handler is registered to the 'aboutToQuit' signal
-            # to handle cleanup. However, with PySide2, stageView's GL context
-            # is destroyed by then, making it too late in the shutdown process
-            # to release any GL resources used by the renderer (relevant for 
-            # Storm's GL renderer).
-            # To work around this, orchestrate shutdown via the main window's
-            # closeEvent() handler.
-            self._ui.actionQuit.triggered.connect(QtWidgets.QApplication.instance().closeAllWindows)
+            # Close main window on quit and clean up there
+            self._ui.actionQuit.triggered.connect(self._mainWindow.close)
 
             # To measure Qt shutdown time, register a handler to stop the timer.
             QtWidgets.QApplication.instance().aboutToQuit.connect(self._stopQtShutdownTimer)
@@ -2675,6 +2669,9 @@ class AppController(QtCore.QObject):
 
         # Close stage and release renderer resources (if applicable).
         self._closeStage()
+
+        # Close all other windows. Guarantees popups will close as well
+        QtWidgets.QApplication.instance().closeAllWindows()
 
         # Start timer to measure Qt shutdown time
         self._startQtShutdownTimer()
