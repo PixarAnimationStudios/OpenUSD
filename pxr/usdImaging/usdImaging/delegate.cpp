@@ -1120,13 +1120,31 @@ UsdImagingDelegate::_OnUsdObjectsChanged(
 
     using PathRange = UsdNotice::ObjectsChanged::PathRange;
 
+    // If there was a connection changed inside a shade graph, this also
+    // requires dumping all cached data since we need to rebuild the shader.
+    auto isConnectionChanged = [](auto const& i){
+        for (const auto& entry : i.base()->second) {
+            if (entry->flags.didChangeAttributeConnection) {
+                return true;
+            }
+        }
+        return false;
+    };
+
     // These paths are subtree-roots representing entire subtrees that may have
     // changed. In this case, we must dump all cached data below these points
     // and repopulate those trees.
     const PathRange pathsToResync = notice.GetResyncedPaths();
-    _usdPathsToResync.insert(_usdPathsToResync.end(), 
-                          pathsToResync.begin(), pathsToResync.end());
-    
+    for (PathRange::const_iterator itResync = pathsToResync.begin();
+         itResync != pathsToResync.end(); ++itResync) {
+        if (itResync->IsPrimPropertyPath() && isConnectionChanged(itResync)) {
+            // Resync the prim path instead of the property path:
+            _usdPathsToResync.emplace_back(itResync->GetPrimPath());
+        } else {
+            _usdPathsToResync.emplace_back(*itResync);
+        }
+    }
+
     // These paths represent objects which have been modified in a 
     // non-structural way, for example setting a value. These paths may be paths
     // to prims or properties, in which case we should sparsely invalidate
@@ -1147,6 +1165,10 @@ UsdImagingDelegate::_OnUsdObjectsChanged(
             }
         } else if (it->IsPropertyPath()) {
             _usdPathsToUpdate.emplace(*it, TfTokenVector());
+            if (isConnectionChanged(it)) {
+                // Resync the prim path as well:
+                _usdPathsToResync.emplace_back(it->GetPrimPath());
+            }
         }
     }
 
