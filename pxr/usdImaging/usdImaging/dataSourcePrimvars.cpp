@@ -141,6 +141,12 @@ UsdImagingDataSourcePrimvars::_GetCustomPrimvarInterpolation(
 
 // ----------------------------------------------------------------------------
 
+static inline bool
+_IsIndexed(const UsdAttributeQuery& indicesQuery)
+{
+    return indicesQuery.IsValid() && indicesQuery.HasValue();
+}
+
 UsdImagingDataSourcePrimvar::UsdImagingDataSourcePrimvar(
         const SdfPath &sceneIndexPath,
         const TfToken &name,
@@ -155,7 +161,7 @@ UsdImagingDataSourcePrimvar::UsdImagingDataSourcePrimvar(
 , _interpolation(interpolation)
 , _role(role)
 {
-    const bool indexed = _indicesQuery.IsValid();
+    const bool indexed = _IsIndexed(_indicesQuery);
     if (indexed) {
         if (_valueQuery.ValueMightBeTimeVarying()) {
             _stageGlobals.FlagAsTimeVarying(sceneIndexPath,
@@ -185,7 +191,7 @@ UsdImagingDataSourcePrimvar::UsdImagingDataSourcePrimvar(
 bool
 UsdImagingDataSourcePrimvar::Has(const TfToken & name)
 {
-    const bool indexed = _indicesQuery.IsValid();
+    const bool indexed = _IsIndexed(_indicesQuery);
 
     if (indexed) {
         return
@@ -204,7 +210,7 @@ UsdImagingDataSourcePrimvar::Has(const TfToken & name)
 TfTokenVector
 UsdImagingDataSourcePrimvar::GetNames()
 {
-    const bool indexed = _indicesQuery.IsValid();
+    const bool indexed = _IsIndexed(_indicesQuery);
 
     TfTokenVector result = {
         HdPrimvarSchemaTokens->interpolation,
@@ -226,7 +232,7 @@ UsdImagingDataSourcePrimvar::Get(const TfToken & name)
 {
     TRACE_FUNCTION();
 
-    const bool indexed = _indicesQuery.IsValid();
+    const bool indexed = _IsIndexed(_indicesQuery);
 
     if (indexed) {
         if (name == HdPrimvarSchemaTokens->indexedPrimvarValue) {
