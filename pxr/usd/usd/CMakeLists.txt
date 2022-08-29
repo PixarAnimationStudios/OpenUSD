@@ -143,6 +143,7 @@ pxr_library(usd
         wrapTokens.cpp
         wrapTimeCode.cpp
         wrapTyped.cpp
+        wrapUsdFileFormat.cpp
         wrapUtils.cpp
         wrapVariantSets.cpp
         wrapVersion.cpp 

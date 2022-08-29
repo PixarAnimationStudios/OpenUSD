@@ -3655,6 +3655,14 @@ SdfLayer::_SwapData(SdfAbstractDataRefPtr &data)
 }
 
 void
+SdfLayer::_AdoptData(const SdfAbstractDataRefPtr &newData)
+{
+    SdfChangeBlock block;
+    _data = newData;
+    Sdf_ChangeManager::Get().DidReplaceLayerContent(_self);
+}
+
+void
 SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
                    const SdfSchemaBase *newDataSchema)
 {
@@ -3667,7 +3675,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
     // This code below performs a series of specific edits to mutate _data
     // to match newData.  This approach provides fine-grained change
     // notification, which allows more efficient invalidation in clients
-    // of Sd.  Do all this in a single changeblock.
+    // of Sdf.  Do all this in a single changeblock.
     SdfChangeBlock block;
 
     // If we're transferring from one schema to a different schema, we will go
@@ -3681,8 +3689,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
     // move the new data into place and notify the world that this layer may
     // have changed arbitrarily.
     if (!differentSchema && _data->StreamsData()) {
-        _data = newData;
-        Sdf_ChangeManager::Get().DidReplaceLayerContent(_self);
+        _AdoptData(newData);
         return;
     }
 

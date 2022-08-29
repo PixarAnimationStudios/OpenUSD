@@ -370,7 +370,32 @@ SdfFileFormat::_SetLayerData(
         layer->_SwapData(data);
     }
     else {
-        layer->_SetData(data);
+        // If we're reading into an existing layer (e.g. due to a Reload), we
+        // want the layer to use whatever data implementation the file format
+        // wants to set because that object may have special behaviors specific
+        // to the format. If we detect the layer is currently using a different
+        // implementation, call _AdoptData to have the layer take ownership of
+        // the new data object and emit coarse invalidation. However, if we
+        // detect the layer is already using the same implementation, we call
+        // _SetData, which may perform finer-grained copies and change
+        // notification.
+        //
+        // We consider data implementations to differ if the object types don't
+        // match or if one streams data and the other doesn't. In the latter
+        // case we want the layer to have the streaming quality the file format
+        // dictates, even if the underlying data object type is the same.
+        const SdfAbstractDataConstPtr oldData = _GetLayerData(*layer);
+        const bool differentDataImpl = 
+            data->StreamsData() != oldData->StreamsData() ||
+            !TfSafeTypeCompare(
+                typeid(*get_pointer(data)), typeid(*get_pointer(oldData)));
+
+        if (differentDataImpl) {
+            layer->_AdoptData(data);
+        }
+        else {
+            layer->_SetData(data);
+        }
     }
 
     layer->_hints = hints;

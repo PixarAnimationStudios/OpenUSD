@@ -1670,6 +1670,10 @@ private:
     // inverses or emit change notification.
     void _SwapData(SdfAbstractDataRefPtr &data);
 
+    // Set _data to \p newData and send coarse DidReplaceLayerContent
+    // invalidation notice.
+    void _AdoptData(const SdfAbstractDataRefPtr &newData);
+
     // Set _data to match data, calling other primitive setter methods to
     // provide fine-grained inverses and notification.  If \p data might adhere
     // to a different schema than this layer's, pass a pointer to it as \p
