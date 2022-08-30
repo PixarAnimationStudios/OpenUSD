@@ -40,7 +40,6 @@
 #include "pxr/imaging/hgi/computePipeline.h"
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/tokens.h"
-#include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/base/tf/hash.h"
 
 #include <limits>
