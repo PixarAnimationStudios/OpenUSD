@@ -31,7 +31,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace
 {
 
-class _MaterialDataSource : public HdContainerDataSource
+class _MaterialDataSource final : public HdContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(_MaterialDataSource);
@@ -89,7 +89,7 @@ private:
 };
 
 
-class _PrimDataSource : public HdContainerDataSource
+class _PrimDataSource final : public HdContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(_PrimDataSource);
@@ -158,28 +158,20 @@ HdMaterialFilteringSceneIndexBase::HdMaterialFilteringSceneIndexBase(
 HdSceneIndexPrim
 HdMaterialFilteringSceneIndexBase::GetPrim(const SdfPath &primPath) const
 {
-    if (auto input = _GetInputSceneIndex()) {
-        HdSceneIndexPrim prim = input->GetPrim(primPath);
-        if (prim.dataSource) {
-            prim.dataSource = _PrimDataSource::New(prim.dataSource,
-                primPath, _GetFilteringFunction());
-        }
-
-        return prim;
+    HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
+    if (prim.dataSource) {
+        prim.dataSource = _PrimDataSource::New(prim.dataSource,
+            primPath, _GetFilteringFunction());
     }
 
-    return {TfToken(), nullptr};
+    return prim;
 }
 
 SdfPathVector
 HdMaterialFilteringSceneIndexBase::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
-    if (auto input = _GetInputSceneIndex()) {
-        return input->GetChildPrimPaths(primPath);
-    }
-
-    return {};
+    return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
 }
 
 void
