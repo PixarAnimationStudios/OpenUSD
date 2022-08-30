@@ -374,9 +374,9 @@ HdSt_FlatNormalsComputationGPU::Execute(
         resourceBindingsInstance.SetValue(rb);
     }
 
-    HgiResourceBindingsSharedPtr const& resourceBindindsPtr =
+    HgiResourceBindingsSharedPtr const& resourceBindingsPtr =
         resourceBindingsInstance.GetValue();
-    HgiResourceBindingsHandle resourceBindings = *resourceBindindsPtr.get();
+    HgiResourceBindingsHandle resourceBindings = *resourceBindingsPtr.get();
 
     // Get or add pipeline in registry.
     HdInstance<HgiComputePipelineSharedPtr> computePipelineInstance =
