@@ -600,7 +600,7 @@ UsdImagingDataSourcePrim::Has(
         return _GetUsdPrim().IsA<UsdGeomXformable>();
     } else if (name == HdExtentSchemaTokens->extent) {
         return _GetUsdPrim().IsA<UsdGeomBoundable>();
-    } else if (name == TfToken("model")) {
+    } else if (name == UsdImagingModelSchemaTokens->model) {
         return _GetUsdPrim().IsA<UsdGeomModelAPI>();
     }
 
@@ -630,7 +630,7 @@ UsdImagingDataSourcePrim::GetNames()
     }
 
     if (_GetUsdPrim().HasAPI<UsdGeomModelAPI>()) {
-        vec.push_back(TfToken("model"));
+        vec.push_back(UsdImagingModelSchemaTokens->model);
     }
 
     return vec;
