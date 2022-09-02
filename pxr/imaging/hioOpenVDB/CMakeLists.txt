@@ -13,6 +13,13 @@ if (WIN32)
     add_definitions(-D_USE_MATH_DEFINES)
 endif()
 
+# Use the import targets set by Imath's package config
+if (Imath_FOUND)
+    LIST(APPEND __VDB_IMATH_LIBS "Imath::Imath")
+else()
+    LIST(APPEND __VDB_IMATH_LIBS ${OPENEXR_Half_LIBRARY})
+endif()
+
 pxr_library(hioOpenVDB
     LIBRARIES
         ar
@@ -20,7 +27,7 @@ pxr_library(hioOpenVDB
         hio
         tf
         usd
-        ${OPENEXR_Half_LIBRARY}
+        ${__VDB_IMATH_LIBS}
         ${OPENVDB_LIBRARY}
 
     INCLUDE_DIRS

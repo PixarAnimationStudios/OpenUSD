@@ -187,7 +187,7 @@ endif()
 if (PXR_BUILD_IMAGING)
     # --OpenImageIO
     if (PXR_BUILD_OPENIMAGEIO_PLUGIN)
-        find_package(OpenEXR REQUIRED)
+        set(REQUIRES_Imath TRUE)
         find_package(OpenImageIO REQUIRED)
         add_definitions(-DPXR_OIIO_PLUGIN_ENABLED)
         if (OIIO_idiff_BINARY)
@@ -215,7 +215,7 @@ if (PXR_BUILD_IMAGING)
     if (PXR_ENABLE_VULKAN_SUPPORT)
         if (EXISTS $ENV{VULKAN_SDK})
             # Prioritize the VULKAN_SDK includes and packages before any system
-            # installed headers. This is to prevent linking against older SDKs 
+            # installed headers. This is to prevent linking against older SDKs
             # that may be installed by the OS.
             # XXX This is fixed in cmake 3.18+
             include_directories(BEFORE SYSTEM $ENV{VULKAN_SDK} $ENV{VULKAN_SDK}/include $ENV{VULKAN_SDK}/lib)
@@ -256,7 +256,7 @@ if (PXR_BUILD_IMAGING)
     endif()
     # --OpenVDB
     if (PXR_ENABLE_OPENVDB_SUPPORT)
-        find_package(OpenEXR REQUIRED)
+        set(REQUIRES_Imath TRUE)
         find_package(OpenVDB REQUIRED)
         add_definitions(-DPXR_OPENVDB_SUPPORT_ENABLED)
     endif()
@@ -285,7 +285,7 @@ endif()
 
 if (PXR_BUILD_ALEMBIC_PLUGIN)
     find_package(Alembic REQUIRED)
-    find_package(OpenEXR REQUIRED)
+    set(REQUIRES_Imath TRUE)
     if (PXR_ENABLE_HDF5_SUPPORT)
         find_package(HDF5 REQUIRED
             COMPONENTS
@@ -306,10 +306,21 @@ endif()
 
 if(PXR_ENABLE_OSL_SUPPORT)
     find_package(OSL REQUIRED)
-    find_package(OpenEXR REQUIRED)
+    set(REQUIRES_Imath TRUE)
     add_definitions(-DPXR_OSL_SUPPORT_ENABLED)
 endif()
 
 # ----------------------------------------------
+
+# Try and find Imath or fallback to OpenEXR
+# Use ImathConfig.cmake, 
+# Refer: https://github.com/AcademySoftwareFoundation/Imath/blob/main/docs/PortingGuide2-3.md#openexrimath-3x-only
+if(REQUIRES_Imath)
+    find_package(Imath CONFIG)
+    if (NOT Imath_FOUND)
+        MESSAGE(STATUS "Imath not found. Looking for OpenEXR instead.")
+        find_package(OpenEXR REQUIRED)
+    endif()
+endif()
 
 set(BUILD_SHARED_LIBS "${build_shared_libs}")
