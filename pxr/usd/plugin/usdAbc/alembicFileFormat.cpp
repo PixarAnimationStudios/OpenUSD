@@ -105,6 +105,15 @@ UsdAbcAlembicFileFormat::Read(
 }
 
 bool
+UsdAbcAlembicFileFormat::_ReadDetached(
+    SdfLayer* layer,
+    const std::string& resolvedPath,
+    bool metadataOnly) const
+{
+    return _ReadAndCopyLayerDataToMemory(layer, resolvedPath, metadataOnly);
+}
+
+bool
 UsdAbcAlembicFileFormat::WriteToFile(
     const SdfLayer& layer,
     const std::string& filePath,
