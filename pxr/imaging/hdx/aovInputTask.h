@@ -73,7 +73,8 @@ private:
     void _UpdateTexture(
         HdTaskContext* ctx,
         HgiTextureHandle& texture,
-        HdRenderBuffer* buffer);
+        HdRenderBuffer* buffer,
+        HgiTextureUsageBits usage);
     
     void _UpdateIntermediateTexture(
         HgiTextureHandle& texture,
