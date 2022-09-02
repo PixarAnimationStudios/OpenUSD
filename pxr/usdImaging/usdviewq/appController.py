@@ -786,10 +786,6 @@ class AppController(QtCore.QObject):
 
             self._ui.rangeEnd.editingFinished.connect(self._rangeEndChanged)
 
-            self._ui.actionFrame_Forward.triggered.connect(self._advanceFrame)
-
-            self._ui.actionFrame_Backwards.triggered.connect(self._retreatFrame)
-
             self._ui.actionReset_View.triggered.connect(lambda: self._resetView())
 
             self._ui.topBottomSplitter.splitterMoved.connect(self._cacheViewerModeEscapeSizes)
@@ -855,6 +851,8 @@ class AppController(QtCore.QObject):
             self._ui.actionReopen_Stage.triggered.connect(self._reopenStage)
 
             self._ui.actionReload_All_Layers.triggered.connect(self._reloadStage)
+
+            self._ui.actionFrame_Selected.triggered.connect(self._frameSelection)
 
             self._ui.actionToggle_Framed_View.triggered.connect(self._toggleFramedView)
 
@@ -1412,16 +1410,16 @@ class AppController(QtCore.QObject):
             self._ui.rendererPluginActionGroup = QtActionWidgets.QActionGroup(self)
             self._ui.rendererPluginActionGroup.setExclusive(True)
 
+            pluginSeparator = self._ui.menuRender.actions()[0]
             pluginTypes = self._stageView.GetRendererPlugins()
             for pluginType in pluginTypes:
                 name = self._stageView.GetRendererDisplayName(pluginType)
-                action = self._ui.menuRendererPlugin.addAction(name)
+                action = self._ui.rendererPluginActionGroup.addAction(name)
                 action.setCheckable(True)
                 action.pluginType = pluginType
-                self._ui.rendererPluginActionGroup.addAction(action)
-
                 action.triggered[bool].connect(lambda _, pluginType=pluginType:
                         self._rendererPluginChanged(pluginType))
+                self._ui.menuRender.insertAction(pluginSeparator, action)
 
 
             # Now set the checked box on the current renderer (it should
@@ -1435,8 +1433,8 @@ class AppController(QtCore.QObject):
                     foundPlugin = True
                     break
 
-            # Disable the menu if no plugins were found
-            self._ui.menuRendererPlugin.setEnabled(foundPlugin)
+            # Invis separator between settings and plugins if none were found
+            pluginSeparator.setVisible(foundPlugin)
 
             # Refresh the AOV menu, settings menu, and pause menu item
             self._configureRendererAovs()
@@ -2022,8 +2020,6 @@ class AppController(QtCore.QObject):
 
         self._ui.playButton.setEnabled(isEnabled)
         self._ui.frameSlider.setEnabled(isEnabled)
-        self._ui.actionFrame_Forward.setEnabled(isEnabled)
-        self._ui.actionFrame_Backwards.setEnabled(isEnabled)
         self._ui.frameField.setEnabled(isEnabled
                                        if self._hasTimeSamples else False)
         self._ui.frameLabel.setEnabled(isEnabled
@@ -2931,16 +2927,16 @@ class AppController(QtCore.QObject):
                         break
 
         # Now that we have the current camera and all cameras, build the menu
-        self._ui.menuCamera.clear()
+        self._ui.menuCameraSelect.clear()
         if len(self._allSceneCameras) == 0:
-            self._ui.menuCamera.setEnabled(False)
+            self._ui.menuCameraSelect.setEnabled(False)
         else:
-            self._ui.menuCamera.setEnabled(True)
+            self._ui.menuCameraSelect.setEnabled(True)
             currCameraPath = None
             if currCamera:
                 currCameraPath = currCamera.GetPath()
             for camera in self._allSceneCameras:
-                action = self._ui.menuCamera.addAction(camera.GetName())
+                action = self._ui.menuCameraSelect.addAction(camera.GetName())
                 action.setData(camera.GetPath())
                 action.setToolTip(str(camera.GetPath()))
                 action.setCheckable(True)
@@ -5152,7 +5148,7 @@ class AppController(QtCore.QObject):
 
     def _refreshCameraMenu(self):
         cameraPath = self._dataModel.viewSettings.cameraPath
-        for action in self._ui.menuCamera.actions():
+        for action in self._ui.menuCameraSelect.actions():
             action.setChecked(action.data() == cameraPath)
 
     def _refreshCameraGuidesMenu(self):

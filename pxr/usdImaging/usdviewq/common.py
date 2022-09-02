@@ -175,10 +175,10 @@ class ColorCorrectionModes(ConstantsGroup):
 
 class PickModes(ConstantsGroup):
     # Pick modes
-    PRIMS = "Prims"
-    MODELS = "Models"
-    INSTANCES = "Instances"
-    PROTOTYPES = "Prototypes"
+    PRIMS = "Select Prims"
+    MODELS = "Select Models"
+    INSTANCES = "Select Instances"
+    PROTOTYPES = "Select Prototypes"
 
 class SelectionHighlightModes(ConstantsGroup):
     # Selection highlight modes
