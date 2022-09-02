@@ -49,6 +49,8 @@
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/pxrTslRobinMap/robin_set.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/mallocTag.h"
@@ -751,6 +753,12 @@ struct Task {
         , vsetName(vsetName)
     { }
 
+    // TfHash support.
+    template <class HashState>
+    friend void TfHashAppend(HashState &h, Task const &task) {
+        h.Append(task.type, task.node, task.vsetNum, task.vsetName);
+    }
+
     inline bool operator==(Task const &rhs) const {
         return type == rhs.type && node == rhs.node &&
             vsetName == rhs.vsetName && vsetNum == rhs.vsetNum;
@@ -767,9 +775,16 @@ struct Task {
 
     // Stream insertion operator for debugging.
     friend std::ostream &operator<<(std::ostream &os, Task const &task) {
+        unsigned char buf[sizeof(PcpNodeRef)] = { 0 };
+        memcpy(buf, &task.node, sizeof(task.node));
+        std::string bytes;
+        for (char b: buf) {
+            bytes += TfStringPrintf("%x", int(b));
+        }
         os << TfStringPrintf(
-            "Task(type=%s, nodePath=<%s>, nodeSite=<%s>",
+            "Task(type=%s, node=%s, nodePath=<%s>, nodeSite=<%s>",
             TfEnum::GetName(task.type).c_str(),
+            bytes.c_str(),
             task.node.GetPath().GetText(),
             TfStringify(task.node.GetSite()).c_str());
         if (!task.vsetName.empty()) {
@@ -855,10 +870,14 @@ struct Pcp_PrimIndexer
     // composing the variant selection.
     PcpPrimIndex_StackFrame* const previousFrame;
 
-    // Open tasks, in priority order
+    // Open tasks, maintained as a max-heap (via push_heap, pop_heap, etc) using
+    // Task::PriorityOrder().
     using _TaskQueue = std::vector<Task>;
     _TaskQueue tasks;
-    bool tasksSorted;
+
+    // A set for uniquing implied inherits & specializes tasks.
+    using _TaskUniq = pxr_tsl::robin_set<Task, TfHash>;
+    _TaskUniq taskUniq;
 
     const bool evaluateImpliedSpecializes;
     const bool evaluateVariants;
@@ -880,7 +899,6 @@ struct Pcp_PrimIndexer
         , inputs(inputs_)
         , outputs(outputs_)
         , previousFrame(previousFrame_)
-        , tasksSorted(true)
         , evaluateImpliedSpecializes(evaluateImpliedSpecializes_)
         , evaluateVariants(evaluateVariants_)
     {
@@ -890,28 +908,23 @@ struct Pcp_PrimIndexer
         return _GetOriginatingIndex(previousFrame, outputs);
     }
 
+    static inline bool _IsImpliedTaskType(Task::Type taskType) {
+        // Bitwise-or to avoid branches. 
+        return (taskType == Task::Type::EvalImpliedClasses) |
+            (taskType == Task::Type::EvalImpliedSpecializes);
+    }
+
     void AddTask(Task &&task) {
         if (tasks.empty()) {
             tasks.reserve(8); // Typically we have about this many tasks, and
                               // this results in a single 256 byte allocation.
-            tasks.push_back(std::move(task));
         }
-        else {
-            if (tasksSorted) {
-                // If same task, skip.
-                if (tasks.back() != task) {
-                    tasks.push_back(std::move(task));
-                    // Check if we've violated the order.  We've violated it if
-                    // the comparator says the new task is less than the
-                    // previously last task.
-                    Task::PriorityOrder comp;
-                    tasksSorted =
-                        !comp(tasks[tasks.size()-1], tasks[tasks.size()-2]);
-                }
-            }
-            else {
-                tasks.push_back(std::move(task));
-            }
+        // For the EvalImplied{Classes,Specializes} tasks, we must check and
+        // skip dupes.  We can get dupes for these due to the way that implied
+        // inherits and specializes are propagated back.
+        if (!_IsImpliedTaskType(task.type) || taskUniq.insert(task).second) {
+            tasks.push_back(std::move(task));
+            push_heap(tasks.begin(), tasks.end(), Task::PriorityOrder());
         }
     }
 
@@ -919,21 +932,19 @@ struct Pcp_PrimIndexer
     Task PopTask() {
         Task task(Task::Type::None);
         if (!tasks.empty()) {
-            if (!tasksSorted) {
-                Task::PriorityOrder comp;
-                std::sort(tasks.begin(), tasks.end(), comp);
-                tasks.erase(
-                    std::unique(tasks.begin(), tasks.end()), tasks.end());
-                tasksSorted = true;
-            }
+            pop_heap(tasks.begin(), tasks.end(), Task::PriorityOrder());
             task = std::move(tasks.back());
             tasks.pop_back();
+            if (_IsImpliedTaskType(task.type)) {
+                taskUniq.erase(task);
+            }
         }
         return task;
     }
 
     // Add this node and its children to the task queues.  
-    void _AddTasksForNodeRecursively(
+    inline void
+    _AddTasksForNodeRecursively(
         const PcpNodeRef& n, 
         bool skipCompletedNodesForAncestralOpinions,
         bool skipCompletedNodesForImpliedSpecializes,
@@ -1005,10 +1016,18 @@ struct Pcp_PrimIndexer
         }
     }
 
+    void AddTasksForRootNode(const PcpNodeRef& rootNode) {
+        return _AddTasksForNodeRecursively(
+            rootNode, 
+            /*skipCompletedNodesForAncestralOpinions=*/false,
+            /*skipCompletedNodesForImpliedSpecializes=*/false,
+            /*isUsd=*/inputs.usd);
+    }
+
     void AddTasksForNode(
         const PcpNodeRef& n, 
-        bool skipCompletedNodesForAncestralOpinions = false,
-        bool skipCompletedNodesForImpliedSpecializes = false) {
+        bool skipCompletedNodesForAncestralOpinions,
+        bool skipCompletedNodesForImpliedSpecializes) {
 
         // Any time we add an edge to the graph, we may need to update
         // implied class edges.
@@ -1061,7 +1080,9 @@ struct Pcp_PrimIndexer
     inline void _DebugPrintTasks(char const *label) const {
 #if 0
         printf("-- %s ----------------\n", label);
-        for (auto iter = tasks.rbegin(); iter != tasks.rend(); ++iter) {
+        _TaskQueue tq(tasks);
+        sort_heap(tq.begin(), tq.end(), Task::PriorityOrder());
+        for (auto iter = tq.rbegin(); iter != tq.rend(); ++iter) {
             printf("%s\n", TfStringify(*iter).c_str());
         }
         printf("----------------\n");
@@ -1074,56 +1095,18 @@ struct Pcp_PrimIndexer
     // that were previously visited and yielded no variant; it exists
     // solely for this function to be able to find and retry them.
     void RetryVariantTasks() {
-        // Optimization: We know variant tasks are the lowest priority, and
-        // therefore sorted to the front of this container.  We promote the
-        // leading non-authored variant tasks to authored tasks, then merge them
-        // with any existing authored tasks.
-        auto nonAuthVariantsEnd = std::find_if_not(
-            tasks.begin(), tasks.end(),
-            [](Task const &t) {
-                return t.type == Task::Type::EvalNodeVariantFallback ||
-                       t.type == Task::Type::EvalNodeVariantNoneFound;
-            });
 
-        if (nonAuthVariantsEnd == tasks.begin()) {
-            // No variant tasks present.
-            return;
+        // Scan for fallback / none-found variant tasks and promote to authored.
+        // This increases priority, so heap sift-up any modified tasks.
+        for (auto i = tasks.begin(), e = tasks.end(); i != e; ++i) {
+            Task &t = *i;
+            if (t.type == Task::Type::EvalNodeVariantFallback ||
+                t.type == Task::Type::EvalNodeVariantNoneFound) {
+                // Promote the type and re-heap this task.
+                t.type = Task::Type::EvalNodeVariantAuthored;
+                push_heap(tasks.begin(), i + 1, Task::PriorityOrder());
+            }
         }
-
-        auto authVariantsEnd = std::find_if_not(
-            nonAuthVariantsEnd, tasks.end(),
-            [](Task const &t) {
-                return t.type == Task::Type::EvalNodeVariantAuthored;
-            });
-
-        // Now we've split tasks into three ranges:
-        // non-authored variant tasks : [begin, nonAuthVariantsEnd)
-        // authored variant tasks     : [nonAuthVariantsEnd, authVariantsEnd)
-        // other tasks                : [authVariantsEnd, end)
-        //
-        // We want to change the non-authored variant tasks' types to be
-        // authored instead, and then sort them in with the othered authored
-        // tasks.
-
-        // Change types.
-        std::for_each(tasks.begin(), nonAuthVariantsEnd,
-                      [](Task &t) {
-                          t.type = Task::Type::EvalNodeVariantAuthored;
-                      });
-
-        // Sort and merge.
-        Task::PriorityOrder comp;
-        std::sort(tasks.begin(), nonAuthVariantsEnd, comp);
-        std::inplace_merge(
-            tasks.begin(), nonAuthVariantsEnd, authVariantsEnd, comp);
-
-        // XXX Is it possible to have dupes here?  blevin?
-        tasks.erase(
-            std::unique(tasks.begin(), authVariantsEnd), authVariantsEnd);
-
-#ifdef PCP_DIAGNOSTIC_VALIDATION
-        TF_VERIFY(std::is_sorted(tasks.begin(), tasks.end(), comp));
-#endif // PCP_DIAGNOSTIC_VALIDATION
 
         _DebugPrintTasks("After RetryVariantTasks");
     }
@@ -4595,7 +4578,7 @@ Pcp_BuildPrimIndex(
     Pcp_PrimIndexer indexer(inputs, outputs, rootSite, ancestorRecursionDepth,
                             previousFrame, evaluateImpliedSpecializes,
                             evaluateVariants);
-    indexer.AddTasksForNode( outputs->primIndex.GetRootNode() );
+    indexer.AddTasksForRootNode(outputs->primIndex.GetRootNode());
 
     // Process task list.
     bool tasksAreLeft = true;
