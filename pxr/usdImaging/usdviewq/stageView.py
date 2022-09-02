@@ -95,17 +95,10 @@ class GLSLProgram():
         self._glMajorVersion = int(versionNumberString.split('.')[0])
         self._glMinorVersion = int(versionNumberString.split('.')[1])
 
-        # Apple's OpenGL renderer for Apple Silicon is emulated on top of
-        # Metal and issues performance warnings if line stipple is enabled.
-        self._glRenderer = GL.glGetString(GL.GL_RENDERER).decode()
-        isAppleMetalRenderer = self._glRenderer.startswith('Apple')
-        supportsLineStipple = not isAppleMetalRenderer
-
         # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
         self.useVAO = (self._glMajorVersion >= 3 and
                         hasattr(GL, 'glGenVertexArrays'))
         self.useSampleAlphaToCoverage = (self._glMajorVersion >= 4)
-        self.useLineStipple = supportsLineStipple
 
         self.program   = GL.glCreateProgram()
         vertexShader   = GL.glCreateShader(GL.GL_VERTEX_SHADER)
@@ -916,8 +909,6 @@ class StageView(QGLWidget):
         self._bbox = Gf.BBox3d()
         self._selectionBBox = Gf.BBox3d()
         self._selectionBrange = Gf.Range3d()
-        self._selectionOrientedRange = Gf.Range3d()
-        self._bbcenterForBoxDraw = (0, 0, 0)
 
         self._forceRefresh = False
         self._renderTime = 0
@@ -1104,7 +1095,7 @@ class StageView(QGLWidget):
             viewSettings.freeCameraOverrideNear,
             viewSettings.freeCameraOverrideFar)
 
-    # simple GLSL program for axis/bbox drawings
+    # simple GLSL program for drawing lines
     def GetSimpleGLSLProgram(self):
         if self._simpleGLSLProgram == None:
             self._simpleGLSLProgram = GLSLProgram(
@@ -1177,38 +1168,42 @@ class StageView(QGLWidget):
         if glslProgram.useVAO:
             GL.glBindVertexArray(0)
 
-    def DrawBBox(self, viewProjectionMatrix):
-        col = self._dataModel.viewSettings.clearColor
-        color = Gf.Vec3f(col[0]-.6 if col[0]>0.5 else col[0]+.6,
-                         col[1]-.6 if col[1]>0.5 else col[1]+.6,
-                         col[2]-.6 if col[2]>0.5 else col[2]+.6)
-        color[0] = Gf.Clamp(color[0], 0, 1); 
-        color[1] = Gf.Clamp(color[1], 0, 1); 
-        color[2] = Gf.Clamp(color[2], 0, 1);                 
+    def _processBBoxes(self):
+        renderer = self._getRenderer()
+        if not renderer:
+            # error has already been issued
+            return
 
-        # Draw axis-aligned bounding box
-        if self._dataModel.viewSettings.showAABBox:
-            bsize = self._selectionBrange.max - self._selectionBrange.min
+        # Determine if any bbox should be enabled
+        enableBBoxes = self._dataModel.viewSettings.showBBoxes and\
+            (self._dataModel.viewSettings.showBBoxPlayback or\
+                not self._dataModel.playing)
 
-            trans = Gf.Transform()
-            trans.SetScale(0.5*bsize)
-            trans.SetTranslation(self._bbcenterForBoxDraw)
+        if enableBBoxes:
+            # Build the list of bboxes to draw
+            bboxes = []
+            if self._dataModel.viewSettings.showAABBox:
+                bboxes.append(Gf.BBox3d(self._selectionBrange))
+            if self._dataModel.viewSettings.showOBBox:
+                bboxes.append(self._selectionBBox)
 
-            self.drawWireframeCube(color,
-                                   Gf.Matrix4f(trans.GetMatrix()) * viewProjectionMatrix)
+            # Compute the color to use for the bbox lines
+            col = self._dataModel.viewSettings.clearColor
+            color = Gf.Vec4f(col[0]-.6 if col[0]>0.5 else col[0]+.6,
+                             col[1]-.6 if col[1]>0.5 else col[1]+.6,
+                             col[2]-.6 if col[2]>0.5 else col[2]+.6,
+                             1)
+            color[0] = Gf.Clamp(color[0], 0, 1);
+            color[1] = Gf.Clamp(color[1], 0, 1);
+            color[2] = Gf.Clamp(color[2], 0, 1);
 
-        # Draw oriented bounding box
-        if self._dataModel.viewSettings.showOBBox:
-            bsize = self._selectionOrientedRange.max - self._selectionOrientedRange.min
-            center = bsize / 2. + self._selectionOrientedRange.min
-            trans = Gf.Transform()
-            trans.SetScale(0.5*bsize)
-            trans.SetTranslation(center)
-
-            self.drawWireframeCube(color,
-                                   Gf.Matrix4f(trans.GetMatrix()) *
-                                   Gf.Matrix4f(self._selectionBBox.matrix) *
-                                   viewProjectionMatrix)
+            # Pass data to renderer via renderParams
+            self._renderParams.bboxes = bboxes
+            self._renderParams.bboxLineColor = color
+            self._renderParams.bboxLineDashSize = 3
+        else:
+            # No bboxes should be drawn
+            self._renderParams.bboxes = []
 
     # XXX:
     # First pass at visualizing cameras in usdview-- just oracles for
@@ -1327,8 +1322,6 @@ class StageView(QGLWidget):
             self._selectionBBox = self._getDefaultBBox()
 
         self._selectionBrange = self._selectionBBox.ComputeAlignedRange()
-        self._selectionOrientedRange = self._selectionBBox.box
-        self._bbcenterForBoxDraw = self._selectionBBox.ComputeCentroid()
 
     def resetCam(self, frameFit=1.1):
         validFrameRange = (not self._selectionBrange.IsEmpty() and
@@ -1456,6 +1449,8 @@ class StageView(QGLWidget):
         pseudoRoot = self._dataModel.stage.GetPseudoRoot()
 
         renderer.SetSelectionColor(self._dataModel.viewSettings.highlightColor)
+
+        self._processBBoxes()
 
         try:
             renderer.Render(pseudoRoot, self._renderParams)
@@ -1615,63 +1610,6 @@ class StageView(QGLWidget):
         self._dataModel.viewSettings.freeCamera = restoredCamera.clone() if restoredCamera else None
 
         self.update()
-
-    def drawWireframeCube(self, col, mvpMatrix):
-        from OpenGL import GL
-        import ctypes, itertools
-
-        # grab the simple shader
-        glslProgram = self.GetSimpleGLSLProgram()
-        if (glslProgram.program == 0):
-            return
-        # vao
-        if glslProgram.useVAO:
-            if (self._vao == 0):
-                self._vao = GL.glGenVertexArrays(1)
-            GL.glBindVertexArray(self._vao)
-
-        # prep a vbo for bbox
-        if (self._bboxVBO is None):
-            self._bboxVBO = GL.glGenBuffers(1)
-            GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._bboxVBO)
-            # create 12 edges
-            data = []
-            p = list(itertools.product([-1,1],[-1,1],[-1,1]))
-            for i in p:
-                data.extend([i[0], i[1], i[2]])
-            for i in p:
-                data.extend([i[1], i[2], i[0]])
-            for i in p:
-                data.extend([i[2], i[0], i[1]])
-
-            GL.glBufferData(GL.GL_ARRAY_BUFFER, len(data)*4,
-                            (ctypes.c_float*len(data))(*data), GL.GL_STATIC_DRAW)
-
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._bboxVBO)
-        GL.glEnableVertexAttribArray(0)
-        GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, 0, ctypes.c_void_p(0))
-
-        if glslProgram.useLineStipple:
-            GL.glEnable(GL.GL_LINE_STIPPLE)
-            GL.glLineStipple(2,0xAAAA)
-
-        GL.glUseProgram(glslProgram.program)
-        matrix = (ctypes.c_float*16).from_buffer_copy(mvpMatrix)
-        GL.glUniformMatrix4fv(glslProgram.uniformLocations["mvpMatrix"],
-                              1, GL.GL_TRUE, matrix)
-        GL.glUniform4f(glslProgram.uniformLocations["color"],
-                       col[0], col[1], col[2], 1)
-
-        GL.glDrawArrays(GL.GL_LINES, 0, 24)
-
-        GL.glDisableVertexAttribArray(0)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-        GL.glUseProgram(0)
-
-        if glslProgram.useLineStipple:
-            GL.glDisable(GL.GL_LINE_STIPPLE)
-        if glslProgram.useVAO:
-            GL.glBindVertexArray(0)
 
     def paintGL(self):
         if not self._dataModel.stage:
@@ -1836,10 +1774,6 @@ class StageView(QGLWidget):
                 # usdImaging.
                 if self._dataModel.viewSettings.displayCameraOracles:
                     self.DrawCameraGuides(viewProjectionMatrix)
-
-                if self._dataModel.viewSettings.showBBoxes and\
-                        (self._dataModel.viewSettings.showBBoxPlayback or not self._dataModel.playing):
-                    self.DrawBBox(viewProjectionMatrix)
             else:
                 GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 

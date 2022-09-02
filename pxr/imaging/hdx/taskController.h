@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
 #include "pxr/imaging/hdx/colorCorrectionTask.h"
+#include "pxr/imaging/hdx/boundingBoxTask.h"
 
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -40,6 +41,8 @@
 #include "pxr/imaging/cameraUtil/framing.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/matrix4d.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -250,6 +253,13 @@ public:
     void SetColorCorrectionParams(HdxColorCorrectionTaskParams const& params);
 
     /// -------------------------------------------------------
+    /// Bounding Box API
+
+    /// Set the bounding box params.
+    HDX_API
+    void SetBBoxParams(const HdxBoundingBoxTaskParams& params);
+
+    /// -------------------------------------------------------
     /// Present API
 
     /// Enable / disable presenting the render to bound framebuffer.
@@ -283,6 +293,7 @@ private:
     void _CreateVisualizeAovTask();
     void _CreatePickTask();
     void _CreatePickFromRenderBufferTask();
+    void _CreateBoundingBoxTask();
     void _CreateAovInputTask();
     void _CreatePresentTask();
 
@@ -395,6 +406,7 @@ private:
     SdfPath _visualizeAovTaskId;
     SdfPath _pickTaskId;
     SdfPath _pickFromRenderBufferTaskId;
+    SdfPath _boundingBoxTaskId;
     SdfPath _presentTaskId;
 
     // Current active camera

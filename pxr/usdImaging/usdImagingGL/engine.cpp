@@ -273,6 +273,24 @@ UsdImagingGLEngine::_PrepareRender(const UsdImagingGLRenderParams& params)
 }
 
 void
+UsdImagingGLEngine::_SetBBoxParams(
+    const BBoxVector& bboxes,
+    const GfVec4f& bboxLineColor,
+    float bboxLineDashSize)
+{
+    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+        return;
+    }
+
+    HdxBoundingBoxTaskParams params;
+    params.bboxes = bboxes;
+    params.color = bboxLineColor;
+    params.dashSize = bboxLineDashSize;
+
+    _taskController->SetBBoxParams(params);
+}
+
+void
 UsdImagingGLEngine::RenderBatch(
     const SdfPathVector& paths, 
     const UsdImagingGLRenderParams& params)
@@ -288,6 +306,8 @@ UsdImagingGLEngine::RenderBatch(
 
     SetColorCorrectionSettings(params.colorCorrectionMode, params.ocioDisplay,
         params.ocioView, params.ocioColorSpace, params.ocioLook);
+
+    _SetBBoxParams(params.bboxes, params.bboxLineColor, params.bboxLineDashSize);
 
     // XXX App sets the clear color via 'params' instead of setting up Aovs 
     // that has clearColor in their descriptor. So for now we must pass this

@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hdx/aovInputTask.h"
+#include "pxr/imaging/hdx/boundingBoxTask.h"
 #include "pxr/imaging/hdx/colorizeSelectionTask.h"
 #include "pxr/imaging/hdx/colorCorrectionTask.h"
 #include "pxr/imaging/hdx/freeCameraSceneDelegate.h"
@@ -68,6 +69,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (colorCorrectionTask)
     (pickTask)
     (pickFromRenderBufferTask)
+    (boundingBoxTask)
     (presentTask)
     (skydomeTask)
     (visualizeAovTask)
@@ -222,6 +224,7 @@ HdxTaskController::~HdxTaskController()
         _colorCorrectionTaskId,
         _pickTaskId,
         _pickFromRenderBufferTaskId,
+        _boundingBoxTaskId,
         _presentTaskId
     };
 
@@ -277,6 +280,7 @@ HdxTaskController::_CreateRenderGraph()
             _CreateVisualizeAovTask();
             _CreatePresentTask();
             _CreatePickTask();
+            _CreateBoundingBoxTask();
         }
 
         // XXX AOVs are OFF by default for Storm TaskController because hybrid
@@ -296,6 +300,7 @@ HdxTaskController::_CreateRenderGraph()
             _CreateVisualizeAovTask();
             _CreatePresentTask();
             _CreatePickFromRenderBufferTask();
+            _CreateBoundingBoxTask();
             // Initialize the AOV system to render color. Note:
             // SetRenderOutputs special-cases color to include support for
             // depth-compositing and selection highlighting/picking.
@@ -574,6 +579,22 @@ HdxTaskController::_CreatePickFromRenderBufferTask()
         taskParams);
 }
 
+void
+HdxTaskController::_CreateBoundingBoxTask()
+{
+    _boundingBoxTaskId = GetControllerId().AppendChild(
+        _tokens->boundingBoxTask);
+
+    HdxBoundingBoxTaskParams taskParams;
+    taskParams.cameraId = _freeCameraSceneDelegate->GetCameraId();
+
+    GetRenderIndex()->InsertTask<HdxBoundingBoxTask>(&_delegate,
+        _boundingBoxTaskId);
+
+    _delegate.SetParameter(_boundingBoxTaskId, HdTokens->params,
+        taskParams);
+}
+
 void 
 HdxTaskController::_CreateAovInputTask()
 {
@@ -690,6 +711,7 @@ HdxTaskController::GetRenderingTasks() const
      * - shadowTaskId
      * - renderTaskIds (There may be more than one)
      * - aovInputTaskId
+     * - boundingBoxTaskId
      * - selectionTaskId
      * - colorizeSelectionTaskId
      * - colorCorrectionTaskId
@@ -728,6 +750,10 @@ HdxTaskController::GetRenderingTasks() const
         // images and put the results into gpu textures onto shared context.
         if (!_aovInputTaskId.IsEmpty()) {
             tasks.push_back(GetRenderIndex()->GetTask(_aovInputTaskId));
+        }
+
+        if (!_boundingBoxTaskId.IsEmpty()) {
+            tasks.push_back(GetRenderIndex()->GetTask(_boundingBoxTaskId));
         }
 
         // Render volume prims
@@ -1203,6 +1229,18 @@ HdxTaskController::SetViewportRenderOutput(TfToken const& name)
             params);
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
             _visualizeAovTaskId, HdChangeTracker::DirtyParams);
+    }
+
+    if (!_boundingBoxTaskId.IsEmpty()) {
+        HdxBoundingBoxTaskParams params =
+            _delegate.GetParameter<HdxBoundingBoxTaskParams>(
+                _boundingBoxTaskId, HdTokens->params);
+
+        params.aovName = name;
+
+        _delegate.SetParameter(_boundingBoxTaskId, HdTokens->params, params);
+        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+            _boundingBoxTaskId, HdChangeTracker::DirtyParams);
     }
 }
 
@@ -1889,6 +1927,33 @@ HdxTaskController::SetColorCorrectionParams(
     }
 }
 
+void
+HdxTaskController::SetBBoxParams(
+    const HdxBoundingBoxTaskParams& params)
+{
+    if (_boundingBoxTaskId.IsEmpty()) {
+        return;
+    }
+
+    HdxBoundingBoxTaskParams oldParams =
+        _delegate.GetParameter<HdxBoundingBoxTaskParams>(
+            _boundingBoxTaskId, HdTokens->params);
+
+    // We only take the params that will be coming from outside this
+    // HdxTaskController instance.
+    HdxBoundingBoxTaskParams mergedParams = oldParams;
+    mergedParams.bboxes = params.bboxes;
+    mergedParams.color = params.color;
+    mergedParams.dashSize = params.dashSize;
+
+    if (mergedParams != oldParams) {
+        _delegate.SetParameter(
+            _boundingBoxTaskId, HdTokens->params, mergedParams);
+        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+            _boundingBoxTaskId, HdChangeTracker::DirtyParams);
+    }
+}
+
 void 
 HdxTaskController::SetEnablePresentation(bool enabled)
 {
@@ -1970,6 +2035,17 @@ HdxTaskController::_SetCameraParamForTasks(SdfPath const& id)
             GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
                 _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
         }
+
+        if (!_boundingBoxTaskId.IsEmpty()) {
+            HdxBoundingBoxTaskParams params =
+                _delegate.GetParameter<HdxBoundingBoxTaskParams>(
+                    _boundingBoxTaskId, HdTokens->params);
+            params.cameraId = _activeCameraId;
+            _delegate.SetParameter(
+                _boundingBoxTaskId, HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _boundingBoxTaskId, HdChangeTracker::DirtyParams);
+        }
     }
 }
 
@@ -2027,6 +2103,24 @@ HdxTaskController::_SetCameraFramingForTasks()
                 _pickFromRenderBufferTaskId, HdTokens->params, params);
             changeTracker.MarkTaskDirty(
                 _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+
+    if (!_boundingBoxTaskId.IsEmpty()) {
+        HdxBoundingBoxTaskParams params =
+            _delegate.GetParameter<HdxBoundingBoxTaskParams>(
+                _boundingBoxTaskId, HdTokens->params);
+        if (params.viewport != adjustedViewport ||
+            params.framing != _framing ||
+            params.overrideWindowPolicy != _overrideWindowPolicy) {
+
+            params.framing = _framing;
+            params.overrideWindowPolicy = _overrideWindowPolicy;
+            params.viewport = adjustedViewport;
+            _delegate.SetParameter(
+                _boundingBoxTaskId, HdTokens->params, params);
+            changeTracker.MarkTaskDirty(
+                _boundingBoxTaskId, HdChangeTracker::DirtyParams);
         }
     }
 

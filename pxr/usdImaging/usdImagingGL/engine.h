@@ -536,6 +536,14 @@ protected:
     USDIMAGINGGL_API
     void _PrepareRender(const UsdImagingGLRenderParams& params);
 
+    using BBoxVector = std::vector<GfBBox3d>;
+
+    USDIMAGINGGL_API
+    void _SetBBoxParams(
+        const BBoxVector& bboxes,
+        const GfVec4f& bboxLineColor,
+        float bboxLineDashSize);
+
     // Create a hydra collection given root paths and render params.
     // Returns true if the collection was updated.
     USDIMAGINGGL_API
