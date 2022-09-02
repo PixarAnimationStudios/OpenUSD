@@ -60,6 +60,7 @@ from .variantComboBox import VariantComboBox
 from .legendUtil import ToggleLegendWithBrowser
 from . import prettyPrint, adjustFreeCamera, adjustDefaultMaterial, preferences
 from .selectionDataModel import ALL_INSTANCES, SelectionDataModel
+from .configController import ConfigController
 
 # Common Utilities
 from .common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
@@ -75,8 +76,7 @@ from .common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
                      GetPrimsLoadability, ClearColors,
                      HighlightColors, KeyboardShortcuts, PrintWarning)
 
-from . import settings
-from .settings import StateSource
+from .settings import StateSource, ConfigManager
 from .usdviewApi import UsdviewApi
 from .rootDataModel import RootDataModel, ChangeNotice
 from .viewSettingsDataModel import ViewSettingsDataModel
@@ -317,15 +317,11 @@ class AppController(QtCore.QObject):
             self._plugRegistry = plugin.loadPlugins(
                 self._usdviewApi, self._mainWindow)
 
-    def _openSettings(self, defaultSettings):
-        settingsPathDir = self._outputBaseDirectory()
-
-        if (settingsPathDir is None) or defaultSettings:
-            # Create an ephemeral settings object by withholding the file path.
-            self._settings = settings.Settings(SETTINGS_VERSION)
-        else:
-            settingsPath = os.path.join(settingsPathDir, "state.json")
-            self._settings = settings.Settings(SETTINGS_VERSION, settingsPath)
+    def _openSettings(self, defaultSettings, config):
+        settingsPathDir = None if defaultSettings else self._outputBaseDirectory()
+        self._configManager = ConfigManager(settingsPathDir)
+        self._configManager.loadSettings(
+            config, SETTINGS_VERSION, isEphemeral=defaultSettings)
 
     def _setupCustomFont(self):
         fontResourceDir = os.path.join(os.path.dirname(
@@ -407,9 +403,9 @@ class AppController(QtCore.QObject):
             if parserData.rendererPlugin:
                 os.environ['HD_DEFAULT_RENDERER'] = parserData.rendererPlugin
 
-            self._openSettings(parserData.defaultSettings)
+            self._openSettings(parserData.defaultSettings, parserData.config)
 
-            self._dataModel = UsdviewDataModel(self._makeTimer, self._settings)
+            self._dataModel = UsdviewDataModel(self._makeTimer, self._configManager.settings)
 
             # Setup Default bundled fonts (Roboto)
             self._setupCustomFont()
@@ -426,6 +422,9 @@ class AppController(QtCore.QObject):
             self._mainWindow.setWindowTitle(parserData.usdFile)
             self._statusBar = QtWidgets.QStatusBar(self._mainWindow)
             self._mainWindow.setStatusBar(self._statusBar)
+
+            # Create GUI elements for managing configs
+            self._configController = ConfigController(parserData.config, self)
 
             # Waiting to show the mainWindow till after setting the
             # statusBar saves considerable GUI configuration time.
@@ -458,7 +457,7 @@ class AppController(QtCore.QObject):
                 sys.exit(0)
 
             # We instantiate a UIStateProxySource only for its side-effects
-            uiProxy = UIStateProxySource(self, self._settings, "ui")
+            uiProxy = UIStateProxySource(self, self._configManager.settings, "ui")
 
 
             self._dataModel.stage = stage
@@ -2642,7 +2641,7 @@ class AppController(QtCore.QObject):
     def _cleanAndClose(self):
         # This function is called by the main window's closeEvent handler.
         
-        self._settings.save()
+        self._configManager.close()
 
         # If the current path widget is focused when closing usdview, it can
         # trigger an "editingFinished()" signal, which will look for a prim in
@@ -3405,7 +3404,6 @@ class AppController(QtCore.QObject):
         ### To prevent /Canopies/TwigA and /Canopies/TwigB
         ### from registering /Canopies/Twig as prefix
         return commonPrefix.rsplit('/', 1)[0]
-
 
     def _primSelectionChanged(self, added, removed):
         """Called when the prim selection is updated in the data model. Updates

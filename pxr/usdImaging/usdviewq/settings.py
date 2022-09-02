@@ -26,6 +26,7 @@
 
 from __future__ import print_function
 import os, sys, time, json
+from glob import glob
 if os.name == "posix":
     import fcntl
 
@@ -300,3 +301,94 @@ class Settings(StateSource):
     def onSaveState(self, state):
         """Settings object has no state properties."""
         pass
+
+
+class ConfigManager:
+    """
+    Class used to manage, read, and write the different saved settings that
+    represent the usdview application's current state.
+    """
+
+    EXTENSION = "state.json"
+    defaultConfig = ""
+
+    def __init__(self, configDirPath):
+        """Creates the manager instance.
+
+        Parameters
+        ----------
+        configDirPath : str
+            The directory that contains the state files
+        """
+        self.settings = None
+        self._saveOnClose = False
+        self._configDirPath = configDirPath
+        self._configPaths = self._loadConfigPaths()
+
+    def loadSettings(self, config, version, isEphemeral=False):
+        """
+        Loads the specified config. We wait to do this instead of loading in
+        init to allow the manager to be created and read the list of available
+        configs without actually doing the more expensive settings loading.
+
+        Paramters
+        ---------
+        config : str
+            The name of the config
+        version : int
+            Version number (used by the State class)
+        isEphemeral : bool
+            Usually when we use the default config we save all settings on app
+            close (expected behavior of usdview before the advent of
+            ConfigManager). If isEphemeral, we won't save no matter what
+        """
+        self._saveOnClose = (
+            not isEphemeral and config == self.defaultConfig)
+        self.settings = Settings(version, self._configPaths[config])
+
+    def _loadConfigPaths(self):
+        """Private method to load the config names and associated paths"""
+        if not self._configDirPath:
+            return {self.defaultConfig: None}
+        # empty string used to include the trailing separator
+        self._configDirPath = os.path.join(self._configDirPath, "")
+        configPaths = {
+            # len(EXTENSION) + 1 to get the '.' too
+            p[len(self._configDirPath):-(len(self.EXTENSION) + 1)]: p
+            for p in glob(os.path.join(
+                self._configDirPath, "[a-z_]*." + self.EXTENSION))}
+        configPaths[self.defaultConfig] = os.path.join(
+            self._configDirPath, self.EXTENSION)
+        return configPaths
+
+    def getConfigs(self):
+        """Gets the list of config names
+
+        Returns
+        -------
+        list[str]
+            List of all the avaiable config names in the _configDirPath
+        """
+
+        return sorted(self._configPaths.keys())
+
+    def save(self, newName=None):
+        """Saves the current state to the specified config
+
+        Parameters
+        ----------
+        newName : str
+            The name of the config we will be saving to (it may or may not
+            exist in the _configDirPath). Iff same as defaultConfig, we save on
+            application close.
+        """
+        if newName:
+            self.settings._stateFilePath = os.path.join(
+                self._configDirPath, newName + "." + self.EXTENSION)
+            self._saveOnClose = (newName == self.defaultConfig)
+        self.settings.save()
+
+    def close(self):
+        """Signal that application is closing"""
+        if self._saveOnClose:
+            self.settings.save()

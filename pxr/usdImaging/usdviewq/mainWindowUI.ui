@@ -1411,6 +1411,16 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <widget class="QMenu" name="menuSave_State_As">
+     <property name="title">
+      <string>Save State As</string>
+     </property>
+    </widget>
+    <widget class="QMenu" name="menuLoad_New_State">
+     <property name="title">
+      <string>Reopen With State</string>
+     </property>
+    </widget>
     <addaction name="actionOpen"/>
     <addaction name="actionReopen_Stage"/>
     <addaction name="actionReload_All_Layers"/>
@@ -1418,6 +1428,10 @@
     <addaction name="actionSave_Overrides_As"/>
     <addaction name="actionSave_Flattened_As"/>
     <addaction name="separator"/>
+    <addaction name="menuLoad_New_State"/>
+    <addaction name="actionSave_State_To"/>
+    <addaction name="menuSave_State_As"/>
+    <addaction name="actionSave_State_As_New_Config"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
@@ -2910,6 +2924,26 @@
    </property>
    <property name="text">
     <string>Preferences</string>
+   </property>
+  </action>
+  <action name="actionSave_State_To">
+   <property name="text">
+    <string>Save State To </string>
+   </property>
+  </action>
+  <action name="actiond">
+   <property name="text">
+    <string>d </string>
+   </property>
+  </action>
+  <action name="actiond_2">
+   <property name="text">
+    <string>d</string>
+   </property>
+  </action>
+  <action name="actionSave_State_As_New_Config">
+   <property name="text">
+    <string>Save State As New Config...</string>
    </property>
   </action>
   <actiongroup name="actionGroupCameraMask">

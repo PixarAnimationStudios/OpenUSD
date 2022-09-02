@@ -66,6 +66,7 @@ pxr_library(usdviewq
         viewSettingsDataModel.py
         freeCamera.py
         debugFlagsWidget.py
+        configController.py
         usdviewstyle.qss
 
     PYSIDE_UI_FILES

@@ -32,6 +32,7 @@ import sys, argparse, os
 from .qt import QtWidgets, QtCore
 from .common import Timer
 from .appController import AppController
+from .settings import ConfigManager
 
 from pxr import UsdAppUtils
 
@@ -150,6 +151,18 @@ class Launcher(object):
         parser.add_argument('--clearsettings', action='store_true',
                             dest='clearSettings',
                             help='Restores usdview settings to default')
+
+        parser.add_argument('--config', action='store',
+                            type=str,
+                            dest='config',
+                            default=ConfigManager.defaultConfig,
+                            choices=ConfigManager(
+                                AppController._outputBaseDirectory()
+                            ).getConfigs()[1:],
+                            help='Load usdview with the state settings found '
+                            'in the specified config. If not provided will '
+                            'use the previously saved application state and '
+                            'automatically persist state on close')
 
         parser.add_argument('--defaultsettings', action='store_true',
                             dest='defaultSettings',

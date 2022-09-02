@@ -200,7 +200,7 @@ class UsdviewApi(object):
     def GetSettings(self):
         """Returns the settings object."""
 
-        return self.__appController._settings
+        return self.__appController._configManager.settings
 
     def ClearPrimSelection(self):
         self.__appController._dataModel.selection.clearPrims()
