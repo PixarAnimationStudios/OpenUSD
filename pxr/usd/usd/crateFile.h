@@ -637,12 +637,16 @@ public:
     Version GetFileVersion() const;
     TfToken GetFileVersionToken() const;
 
-    static std::unique_ptr<CrateFile> CreateNew();
+    static std::unique_ptr<CrateFile> CreateNew(bool detached);
 
     // Return nullptr on failure.
-    static std::unique_ptr<CrateFile> Open(string const &assetPath);
     static std::unique_ptr<CrateFile> Open(string const &assetPath,
-                                           ArAssetSharedPtr const &asset);
+                                           bool detached = false);
+    static std::unique_ptr<CrateFile> Open(string const &assetPath,
+                                           ArAssetSharedPtr const &asset,
+                                           bool detached = false);
+
+    bool IsDetached() const { return _detached; }
 
     // Helper for saving to a file.
     struct Packer {
@@ -794,12 +798,19 @@ public:
     std::type_info const &GetTypeid(ValueRep rep) const;
 
 private:
-    explicit CrateFile(bool useMmap);
+    enum class Options {
+        Default,
+        UseMmap,
+        Detached
+    };
+
+    explicit CrateFile(Options opt);
     CrateFile(string const &assetPath, string const &fileName,
               _FileMappingIPtr mapStart, ArAssetSharedPtr const &asset);
     CrateFile(string const &assetPath, string const &fileName,
               _FileRange &&inputFile, ArAssetSharedPtr const &asset);
-    CrateFile(string const &assetPath, ArAssetSharedPtr const &asset);
+    CrateFile(string const &assetPath, ArAssetSharedPtr const &asset,
+              bool detached);
 
     CrateFile(CrateFile const &) = delete;
     CrateFile &operator=(CrateFile const &) = delete;
@@ -1032,7 +1043,9 @@ private:
     // populated from an asset.
     _FileMappingIPtr _mmapSrc;
     _FileRange _preadSrc;
+
     ArAssetSharedPtr _assetSrc;
+    const bool _detached;
 
     std::string _assetPath; // Empty if this file data is in-memory only.
     std::string _fileReadFrom; // The file this object was populate from, if it

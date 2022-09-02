@@ -2121,12 +2121,18 @@ CrateFile::CanRead(string const &assetPath, ArAssetSharedPtr const &asset)
 
 /* static */
 std::unique_ptr<CrateFile>
-CrateFile::CreateNew()
+CrateFile::CreateNew(bool detached)
 {
     const bool useMmap = 
         !TfGetEnvSetting(USDC_USE_ASSET) &&
         !TfGetenvBool("USDC_USE_PREAD", false);
-    return std::unique_ptr<CrateFile>(new CrateFile(useMmap));
+
+    const Options opt = 
+        detached ? Options::Detached :
+        useMmap ? Options::UseMmap :
+        Options::Default;
+    
+    return std::unique_ptr<CrateFile>(new CrateFile(opt));
 }
 
 /* static */
@@ -2166,19 +2172,29 @@ CrateFile::_MmapFile(char const *fileName, FILE *file)
 
 /* static */
 std::unique_ptr<CrateFile>
-CrateFile::Open(string const &assetPath)
+CrateFile::Open(string const &assetPath,
+                bool detached)
 {
     TfAutoMallocTag tag2("Usd_CrateFile::CrateFile::Open");
     return Open(
-        assetPath, ArGetResolver().OpenAsset(ArResolvedPath(assetPath)));
+        assetPath, ArGetResolver().OpenAsset(ArResolvedPath(assetPath)),
+        detached);
 }
 
 std::unique_ptr<CrateFile>
-CrateFile::Open(string const &assetPath, ArAssetSharedPtr const &asset)
+CrateFile::Open(string const &assetPath, ArAssetSharedPtr const &srcAsset,
+                bool detached)
 {
     TfAutoMallocTag tag2("Usd_CrateFile::CrateFile::Open");
 
     std::unique_ptr<CrateFile> result;
+
+    ArAssetSharedPtr detachedAsset;
+    if (detached && srcAsset) {
+        detachedAsset = srcAsset->GetDetachedAsset();
+    }
+
+    const ArAssetSharedPtr& asset = detached ? detachedAsset : srcAsset;
 
     if (!asset) {
         TF_RUNTIME_ERROR("Failed to open asset '%s'", assetPath.c_str());
@@ -2210,7 +2226,7 @@ CrateFile::Open(string const &assetPath, ArAssetSharedPtr const &asset)
 
     if (!result) {
         // With no underlying FILE *, we'll go through ArAsset::Read() directly.
-        result.reset(new CrateFile(assetPath, asset));
+        result.reset(new CrateFile(assetPath, asset, detached));
     }
     
     // If the resulting CrateFile has no asset path, reading failed.
@@ -2247,8 +2263,9 @@ CrateFile::GetFileVersionToken() const
     return TfToken(Version(_boot).AsString());
 }
 
-CrateFile::CrateFile(bool useMmap)
-    : _useMmap(useMmap)
+CrateFile::CrateFile(Options opt)
+    : _detached(opt == Options::Detached)
+    , _useMmap(opt == Options::UseMmap)
 {
     _DoAllTypeRegistrations();
 }
@@ -2256,6 +2273,7 @@ CrateFile::CrateFile(bool useMmap)
 CrateFile::CrateFile(string const &assetPath, string const &fileName,
                      _FileMappingIPtr mapping, ArAssetSharedPtr const &asset)
     : _mmapSrc(std::move(mapping))
+    , _detached(false)
     , _assetPath(assetPath)
     , _fileReadFrom(fileName)
     , _useMmap(true)
@@ -2319,6 +2337,7 @@ CrateFile::CrateFile(string const &assetPath, string const &fileName,
                      _FileRange &&inputFile, ArAssetSharedPtr const &asset)
     : _preadSrc(std::move(inputFile))
     , _assetSrc(asset)
+    , _detached(false)
     , _assetPath(assetPath)
     , _fileReadFrom(fileName)
     , _useMmap(false)
@@ -2349,8 +2368,10 @@ CrateFile::_InitPread()
                    rangeLength, ArchFileAdviceNormal);
 }
 
-CrateFile::CrateFile(string const &assetPath, ArAssetSharedPtr const &asset)
+CrateFile::CrateFile(string const &assetPath, ArAssetSharedPtr const &asset,
+                     bool detached)
     : _assetSrc(asset)
+    , _detached(detached)
     , _assetPath(assetPath)
     , _useMmap(false)
 {
@@ -2523,6 +2544,10 @@ CrateFile::Packer::Close()
     // Reset so we can read values from the newly written asset.
     // See CrateFile::Open.
     auto asset = ArGetResolver().OpenAsset(ArResolvedPath(_crate->_assetPath));
+    if (asset && _crate->IsDetached()) {
+        asset = asset->GetDetachedAsset();
+    }
+
     if (!asset) {
         return false;
     }

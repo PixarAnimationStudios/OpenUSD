@@ -190,6 +190,17 @@ UsdUsdFileFormat::InitData(const FileFormatArguments& args) const
     return fileFormat->InitData(args);
 }
 
+SdfAbstractDataRefPtr
+UsdUsdFileFormat::_InitDetachedData(const FileFormatArguments& args) const
+{
+    SdfFileFormatConstPtr fileFormat = _GetFileFormatForArguments(args);
+    if (!fileFormat) {
+        fileFormat = _GetDefaultFileFormat();
+    }
+    
+    return fileFormat->InitDetachedData(args);
+}
+
 bool
 UsdUsdFileFormat::CanRead(const string& filePath) const
 {
@@ -207,6 +218,29 @@ UsdUsdFileFormat::Read(
 {
     TRACE_FUNCTION();
 
+    return _ReadHelper</* Detached = */ false>(
+        layer, resolvedPath, metadataOnly);
+}
+
+bool
+UsdUsdFileFormat::_ReadDetached(
+    SdfLayer* layer,
+    const std::string& resolvedPath,
+    bool metadataOnly) const
+{
+    TRACE_FUNCTION();
+
+    return _ReadHelper</* Detached = */ true>(
+        layer, resolvedPath, metadataOnly);
+}
+
+template <bool Detached>
+bool 
+UsdUsdFileFormat::_ReadHelper(
+    SdfLayer* layer,
+    const string& resolvedPath,
+    bool metadataOnly) const
+{
     // Fetch the asset from Ar.
     auto asset = ArGetResolver().OpenAsset(ArResolvedPath(resolvedPath));
     if (!asset) {
@@ -223,7 +257,7 @@ UsdUsdFileFormat::Read(
     {
         TfErrorMark m;
         if (usdcFileFormat->_ReadFromAsset(
-                layer, resolvedPath, asset, metadataOnly)) {
+                layer, resolvedPath, asset, metadataOnly, Detached)) {
             return true;
         }
         m.Clear();
@@ -240,7 +274,7 @@ UsdUsdFileFormat::Read(
     // gives us better diagnostic messages.
     if (usdcFileFormat->_CanReadFromAsset(resolvedPath, asset)) {
         return usdcFileFormat->_ReadFromAsset(
-            layer, resolvedPath, asset, metadataOnly);
+            layer, resolvedPath, asset, metadataOnly, Detached);
     }
 
     if (usdaFileFormat->_CanReadFromAsset(resolvedPath, asset)) {
