@@ -1084,14 +1084,17 @@ def _AddToken(tokenDict, tokenId, val, desc, useLiteralIdentifier=False):
         'interface',
         'None',
     ])
-    if tokenId in reserved:
-        tokenId = tokenId + '_'
+    
     if not Tf.IsValidIdentifier(tokenId):
         tokenId = _MakeValidToken(tokenId, useLiteralIdentifier)
     elif not useLiteralIdentifier:
         # if not using literal identifier we always camelCase our valid
         # identifiers as per convention.
         tokenId = _CamelCase(tokenId)
+    
+    # We should check if token is reserved after it converted into camelCased
+    if tokenId in reserved:
+        tokenId = tokenId + '_'
 
     if tokenId in tokenDict:
         token = tokenDict[tokenId]
