@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/inMemoryAsset.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -32,6 +33,12 @@ ArAsset::ArAsset()
 
 ArAsset::~ArAsset()
 {
+}
+
+std::shared_ptr<ArAsset>
+ArAsset::GetDetachedAsset() const
+{
+    return ArInMemoryAsset::FromAsset(*this);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
