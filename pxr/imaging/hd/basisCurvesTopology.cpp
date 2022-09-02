@@ -209,10 +209,11 @@ HdBasisCurvesTopology::CalculateNeededNumberOfVaryingControlPoints() const
             // For bezier curves, if the authored vertex count is less than the
             // minimum, treat it as 1 segment.
             numSegs = std::max<int>(*itCounts / vStep, 1);
+            numVarying += numSegs;
         } else {
             numSegs = (std::max<int>(*itCounts - 4, 0) / vStep) + 1;
+            numVarying += numSegs + 1;
         }
-        numVarying += numSegs + 1;
     }
 
     return numVarying;
