@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/functionRef.h"
+#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/regTest.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE

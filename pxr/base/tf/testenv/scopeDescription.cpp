@@ -23,6 +23,7 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/stopwatch.h"

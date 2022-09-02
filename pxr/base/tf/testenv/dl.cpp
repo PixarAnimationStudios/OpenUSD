@@ -26,6 +26,7 @@
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/debugCodes.h"
 #include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/dl.h"
 #include "pxr/base/arch/fileSystem.h"

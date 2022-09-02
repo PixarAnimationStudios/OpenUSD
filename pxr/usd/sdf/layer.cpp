@@ -71,9 +71,10 @@
 #include <tbb/queuing_rw_mutex.h>
 
 #include <atomic>
-#include <functional>
 #include <fstream>
+#include <functional>
 #include <iostream>
+#include <mutex>
 #include <set>
 #include <thread>
 #include <vector>

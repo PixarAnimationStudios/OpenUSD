@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/denseHashMap.h"
+#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/stringUtils.h"

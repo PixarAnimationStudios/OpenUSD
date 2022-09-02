@@ -29,6 +29,7 @@
 #include "pxr/base/tf/denseHashSet.h"
 
 #include <tbb/concurrent_unordered_map.h>
+#include <mutex>
 #include <unordered_map>
 #include <unordered_set>
 

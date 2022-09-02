@@ -30,6 +30,7 @@
 #include <iterator>
 #include <iostream>
 #include <fstream>
+#include <mutex>
 
 PXR_NAMESPACE_USING_DIRECTIVE;
 
