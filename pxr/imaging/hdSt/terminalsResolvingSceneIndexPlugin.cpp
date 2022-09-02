@@ -30,10 +30,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    //
-    ((sceneIndexPluginName, "HdSt_TerminalsResolvingSceneIndexPlugin"))
-    //
-);
+    ((sceneIndexPluginName, "HdSt_TerminalsResolvingSceneIndexPlugin")));
 
 static const char* const _pluginDisplayName = "GL";
 
@@ -45,7 +42,6 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    // not really clear to me where this needs to go.
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 0;
 
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
@@ -66,6 +62,7 @@ HdSt_TerminalsResolvingSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr& inputSceneIndex,
     const HdContainerDataSourceHandle& inputArgs)
 {
+    TF_UNUSED(inputArgs);
     return HdsiTerminalsResolvingSceneIndex::New(
         inputSceneIndex,
         {

@@ -40,7 +40,7 @@ TF_DECLARE_REF_PTRS(HdsiTerminalsResolvingSceneIndex);
 /// specific names (i.e. "ri:surface") to the HdMaterialTerminalToken
 /// ("surface").  The mapping is provided by a `terminalRemappings` parameter
 /// that is passed to the constructor.
-class HdsiTerminalsResolvingSceneIndex
+class HdsiTerminalsResolvingSceneIndex final
     : public HdMaterialFilteringSceneIndexBase
 {
 public:
@@ -52,10 +52,9 @@ public:
     // This static function is provided to allow some
     // backwards-compatibility....
     HDSI_API
-    static void
-    ResolveTerminals(
-    HdMaterialNetworkInterface* interface,
-    const std::map<TfToken, TfToken>& terminalRemappings);
+    static void ResolveTerminals(
+        HdMaterialNetworkInterface* interface,
+        const std::map<TfToken, TfToken>& terminalRemappings);
 
 protected: // HdMaterialFilteringSceneIndexBase overrides
     FilteringFnc _GetFilteringFunction() const override;
@@ -64,7 +63,7 @@ protected:
     HdsiTerminalsResolvingSceneIndex(
         const HdSceneIndexBaseRefPtr& inputSceneIndex,
         const std::map<TfToken, TfToken>& terminalRemappings);
-    ~HdsiTerminalsResolvingSceneIndex();
+    ~HdsiTerminalsResolvingSceneIndex() override;
 
 private:
     const std::map<TfToken, TfToken> _terminalRemappings;

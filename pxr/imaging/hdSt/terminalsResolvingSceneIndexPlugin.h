@@ -23,7 +23,6 @@
 #ifndef PXR_IMAGING_HD_ST_TERMINALS_RESOLVING_SCENE_INDEX_H
 #define PXR_IMAGING_HD_ST_TERMINALS_RESOLVING_SCENE_INDEX_H
 
-#include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hd/sceneIndexPlugin.h"
 #include "pxr/pxr.h"
 
