@@ -250,6 +250,24 @@ public:
     SDF_API
     bool IsEmpty() const;
 
+    /// Returns true if this layer streams data from its serialized data
+    /// store on demand, false otherwise.
+    ///
+    /// Layers with streaming data are treated differently to avoid pulling
+    /// in data unnecessarily. For example, reloading a streaming layer 
+    /// will not perform fine-grained change notification, since doing 
+    /// so would require the full contents of the layer to be loaded.
+    SDF_API
+    bool StreamsData() const;
+
+    /// Returns true if this layer is detached from its serialized data
+    /// store, false otherwise.
+    ///
+    /// Detached layers are isolated from external changes to their serialized
+    /// data.
+    SDF_API
+    bool IsDetached() const;
+
     /// Copies the content of the given layer into this layer.
     /// Source layer is unmodified.
     SDF_API
@@ -1181,6 +1199,127 @@ public:
     void SetSubLayerOffset(const SdfLayerOffset& offset, int index);
 
     /// @}
+
+    /// \name Detached Layers
+    ///
+    /// Detached layers are layers that are detached from the serialized
+    /// data store and isolated from any external changes to that serialized
+    /// data.
+    ///
+    /// File format plugins may produce layers that maintain a persistent
+    /// connection to their serialized representation to read data on-demand.
+    /// For example, a file format might set up layers to hold an open file
+    /// handle and read attribute time samples from it only when requested, to
+    /// avoid pulling in unnecessary data. However, there may be times when
+    /// keeping this connection is undesirable. In the previous example, a
+    /// crash might occur if some other process were to change the file on
+    /// disk, or users might be prevented from overwriting the file at all
+    /// which could interfere with workflow.
+    ///
+    /// To avoid these problems, the functions below may be used to specify
+    /// layers that are to be detached from the original serialized data.
+    ///
+    /// @{
+
+    /// \class DetachedLayerRules
+    ///
+    /// Object used to specify detached layers. Layers may be included or
+    /// excluded from the detached layer set by specifying simple substring
+    /// patterns for layer identifiers. For example, the following will
+    /// include all layers in the detached layer set, except for those whose
+    /// identifiers contain the substring "sim" or "geom":
+    ///
+    /// \code
+    /// SdfLayer::SetDetachedLayerRules(
+    ///     SdfLayer::DetachedLayerRules()
+    ///         .IncludeAll();
+    ///         .Exclude({"sim", "geom"})
+    /// );
+    /// \endcode
+    class DetachedLayerRules
+    {
+    public:
+        /// A default constructed rules object Excludes all layers from
+        /// the detached layer set.
+        DetachedLayerRules() = default;
+
+        /// Include all layers in the detached layer set.
+        DetachedLayerRules& IncludeAll() 
+        { 
+            _includeAll = true; 
+            _include.clear();
+            return *this; 
+        }
+
+        /// Include layers whose identifiers contain any of the strings in
+        /// \p patterns in the detached layer set.
+        SDF_API
+        DetachedLayerRules& Include(const std::vector<std::string>& patterns);
+
+        /// Exclude layers whose identifiers contain any of the strings in
+        /// \p patterns from the detached layer set.
+        SDF_API
+        DetachedLayerRules& Exclude(const std::vector<std::string>& patterns);
+
+        bool IncludedAll() const { return _includeAll; }
+        const std::vector<std::string>& GetIncluded() const { return _include; }
+        const std::vector<std::string>& GetExcluded() const { return _exclude; }
+
+        /// Returns true if \p identifier is included in the detached layer set,
+        /// false otherwise.
+        ///
+        /// \p identifier is included if it matches an include pattern (or the
+        /// mask includes all identifiers) and it does not match any of the
+        /// exclude patterns. Anonymous layer identifiers are always excluded
+        /// from the mask.
+        SDF_API
+        bool IsIncluded(const std::string& identifier) const;
+
+    private:
+        friend class SdfLayer;
+
+        std::vector<std::string> _include;
+        std::vector<std::string> _exclude;
+        bool _includeAll = false;
+    };
+
+    /// Sets the rules specifying detached layers.
+    ///
+    /// Newly-created or opened layers whose identifiers are included in
+    /// \p rules will be opened as detached layers. Existing layers that are now
+    /// included or no longer included will be reloaded. Any unsaved
+    /// modifications to those layers will be lost.
+    ///
+    /// This function is not thread-safe. It may not be run concurrently with
+    /// any other functions that open, close, or read from any layers.
+    ///
+    /// The detached layer rules are initially set to exclude all layers.
+    /// This may be overridden by setting the environment variables
+    /// SDF_LAYER_INCLUDE_DETACHED and SDF_LAYER_EXCLUDE_DETACHED to specify
+    /// the initial set of include and exclude patterns in the rules. These
+    /// variables can be set to a comma-delimited list of patterns.
+    /// SDF_LAYER_INCLUDE_DETACHED may also be set to "*" to include
+    /// all layers. Note that these environment variables only set the initial
+    /// state of the detached layer rules; these values may be overwritten by
+    /// subsequent calls to this function.
+    ///
+    /// See SdfLayer::DetachedLayerRules::IsIncluded for details on how the
+    /// rules are applied to layer identifiers.
+    SDF_API
+    static void SetDetachedLayerRules(const DetachedLayerRules& mask);
+
+    /// Returns the current rules for the detached layer set.
+    SDF_API
+    static const DetachedLayerRules& GetDetachedLayerRules();
+
+    /// Returns whether the given layer identifier is included in the
+    /// current rules for the detached layer set. This is equivalent to
+    /// GetDetachedLayerRules().IsIncluded(identifier).
+    SDF_API
+    static bool IsIncludedByDetachedLayerRules(const std::string& identifier);
+
+    /// @}
+
     /// \name Muting
     /// @{
 

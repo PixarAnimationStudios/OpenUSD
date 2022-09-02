@@ -596,6 +596,10 @@ void wrapLayer()
 
         .def("TransferContent", &SdfLayer::TransferContent)
 
+        .def("StreamsData", &This::StreamsData)
+
+        .def("IsDetached", &This::IsDetached)
+
         .add_property("empty", &This::IsEmpty)
 
         .add_property("dirty", &This::IsDirty)
@@ -665,6 +669,17 @@ void wrapLayer()
 
         .def("UpdateCompositionAssetDependency", 
              &This::UpdateCompositionAssetDependency)
+
+        .def("SetDetachedLayerRules", &This::SetDetachedLayerRules)
+        .staticmethod("SetDetachedLayerRules")
+
+        .def("GetDetachedLayerRules", &This::GetDetachedLayerRules,
+             return_value_policy<return_by_value>())
+        .staticmethod("GetDetachedLayerRules")
+
+        .def("IsIncludedByDetachedLayerRules", 
+             &This::IsIncludedByDetachedLayerRules)
+        .staticmethod("IsIncludedByDetachedLayerRules")
 
         .def("SetMuted", &This::SetMuted)
 
@@ -931,6 +946,28 @@ void wrapLayer()
         .def("SetTimeSample", &_SetTimeSample)
         .def("EraseTimeSample", &_EraseTimeSample)
         ;
+
+    {
+        using This = SdfLayer::DetachedLayerRules;
+        class_<This>("DetachedLayerRules")
+            .def(init<>())
+
+            .def("IncludeAll", &This::IncludeAll,
+                 return_value_policy<return_by_value>())
+            .def("Include", &This::Include,
+                 return_value_policy<return_by_value>())
+            .def("Exclude", &This::Exclude,
+                 return_value_policy<return_by_value>())
+
+            .def("IncludedAll", &This::IncludedAll)
+            .def("GetIncluded", &This::GetIncluded,
+                 return_value_policy<TfPySequenceToList>())
+            .def("GetExcluded", &This::GetExcluded,
+                 return_value_policy<TfPySequenceToList>())
+
+            .def("IsIncluded", &This::IsIncluded)
+            ;
+    }
 
     TfPyContainerConversions::from_python_sequence<
         SdfLayerHandleSet, TfPyContainerConversions::set_policy>();

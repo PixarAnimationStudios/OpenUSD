@@ -52,6 +52,7 @@
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
+#include "pxr/usd/ar/resolverScopedCache.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/errno.h"
 #include "pxr/base/trace/trace.h"
@@ -88,6 +89,23 @@ namespace ph = std::placeholders;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_ENV_SETTING(
+    SDF_LAYER_VALIDATE_AUTHORING, false,
+    "If enabled, layers will validate new fields and specs being authored "
+    "against their schema. If the field or spec is not defined in the schema "
+    "a coding error will be issued and the authoring operation will fail.");
+
+TF_DEFINE_ENV_SETTING(
+    SDF_LAYER_INCLUDE_DETACHED, "",
+    R"("Set the default include patterns for specifying detached layers. "
+       "This can be set to a comma-delimited list of strings or "*" to "
+       "include all layers.")");
+
+TF_DEFINE_ENV_SETTING(
+    SDF_LAYER_EXCLUDE_DETACHED, "",
+    R"("Set the default exclude patterns for specifying detached layers. "
+       "This can be set to a comma-delimited list of strings.")");
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<SdfLayer>();
@@ -108,6 +126,25 @@ static TfStaticData<std::mutex> _mutedLayersMutex;
 // _mutedLayers.
 static std::atomic_size_t _mutedLayersRevision { 1 };
 
+// Specifies detached layers
+TF_MAKE_STATIC_DATA(SdfLayer::DetachedLayerRules, _detachedLayerRules)
+{
+    const std::vector<std::string> includePatterns = TfStringSplit(
+        TfGetEnvSetting(SDF_LAYER_INCLUDE_DETACHED), ",");
+    if (std::find(includePatterns.begin(), includePatterns.end(), "*") !=
+        includePatterns.end()) {
+        _detachedLayerRules->IncludeAll();
+    }
+    else if (!includePatterns.empty()) {
+        _detachedLayerRules->Include(includePatterns);
+    }
+
+    const std::vector<std::string> excludePatterns = TfStringSplit(
+        TfGetEnvSetting(SDF_LAYER_EXCLUDE_DETACHED), ",");
+    if (!excludePatterns.empty()) {
+        _detachedLayerRules->Exclude(excludePatterns);
+    }
+}
 
 // A registry for loaded layers.
 static TfStaticData<Sdf_LayerRegistry> _layerRegistry;
@@ -119,18 +156,14 @@ _GetLayerRegistryMutex() {
     return mutex;
 }
 
-TF_DEFINE_ENV_SETTING(
-    SDF_LAYER_VALIDATE_AUTHORING, false,
-    "If enabled, layers will validate new fields and specs being authored "
-    "against their schema. If the field or spec is not defined in the schema "
-    "a coding error will be issued and the authoring operation will fail.");
-
 static SdfAbstractDataRefPtr
 _CreateDataForFileFormat(
     const SdfFileFormatConstPtr& fileFormat,
+    const std::string& identifier,
     const SdfLayer::FileFormatArguments& args)
 {
-    return fileFormat->InitData(args);
+    return SdfLayer::IsIncludedByDetachedLayerRules(identifier) ?
+        fileFormat->InitDetachedData(args) : fileFormat->InitData(args);
 }
 
 SdfLayer::SdfLayer(
@@ -145,7 +178,7 @@ SdfLayer::SdfLayer(
     , _fileFormatArgs(args)
     , _schema(fileFormat->GetSchema())
     , _idRegistry(SdfLayerHandle(this))
-    , _data(_CreateDataForFileFormat(fileFormat, args))
+    , _data(_CreateDataForFileFormat(fileFormat, identifier, args))
     , _stateDelegate(SdfSimpleLayerStateDelegate::New())
     , _lastDirtyState(false)
     , _assetInfo(new Sdf_AssetInfo)
@@ -1074,7 +1107,9 @@ SdfLayer::_Read(
         TfStringify(metadataOnly).c_str());
 
     SdfFileFormatConstPtr format = GetFileFormat();
-    return format->Read(this, resolvedPath, metadataOnly);
+    return IsIncludedByDetachedLayerRules(identifier) ?
+        format->ReadDetached(this, resolvedPath, metadataOnly) :
+        format->Read(this, resolvedPath, metadataOnly);
 }
 
 /*static*/
@@ -2602,6 +2637,110 @@ SdfLayer::ComputeAbsolutePath(const string& assetPath) const
         SdfCreateNonConstHandle(this), assetPath);
 }
 
+SdfLayer::DetachedLayerRules&
+SdfLayer::DetachedLayerRules::Include(
+    const std::vector<std::string>& patterns)
+{
+    _include.insert(_include.end(), patterns.begin(), patterns.end());
+
+    std::sort(_include.begin(), _include.end());
+    _include.erase(
+        std::unique(_include.begin(), _include.end()), _include.end());
+
+    return *this;
+}
+
+SdfLayer::DetachedLayerRules&
+SdfLayer::DetachedLayerRules::Exclude(
+    const std::vector<std::string>& patterns)
+{
+    _exclude.insert(_exclude.end(), patterns.begin(), patterns.end());
+
+    std::sort(_exclude.begin(), _exclude.end());
+    _exclude.erase(
+        std::unique(_exclude.begin(), _exclude.end()), _exclude.end());
+
+    return *this;
+}
+
+bool
+SdfLayer::DetachedLayerRules::IsIncluded(const std::string& identifier) const
+{
+    // Early out if nothing is included in the mask.
+    if (!_includeAll && _include.empty()) {
+        return false;
+    }
+
+    // Always exclude anonymous layer identifiers.
+    if (Sdf_IsAnonLayerIdentifier(identifier)) {
+        return false;
+    }
+
+    // Only match against the layer path portion of the identifier and
+    // not the file format arguments.
+    std::string layerPath, args;
+    if (!Sdf_SplitIdentifier(identifier, &layerPath, &args)) {
+        return false;
+    }
+
+    const bool included = 
+        _includeAll || 
+        std::find_if(_include.begin(), _include.end(),
+            [&layerPath](const std::string& s) { 
+                return TfStringContains(layerPath, s);
+            }) != _include.end();
+
+    if (!included) {
+        return false;
+    }
+
+    const bool excluded =
+        std::find_if(_exclude.begin(), _exclude.end(),
+            [&layerPath](const std::string& s) {
+                return TfStringContains(layerPath, s);
+            }) != _exclude.end();
+
+    return !excluded;
+}
+
+void
+SdfLayer::SetDetachedLayerRules(const DetachedLayerRules& rules)
+{
+    const DetachedLayerRules oldRules = *_detachedLayerRules;
+    *_detachedLayerRules = rules;
+
+    ArResolverScopedCache resolverCache;
+    SdfChangeBlock changes;
+
+    for (const SdfLayerHandle& layer : GetLoadedLayers()) {
+        const bool wasIncludedBefore = 
+            oldRules.IsIncluded(layer->GetIdentifier());
+        const bool isIncludedNow =
+            rules.IsIncluded(layer->GetIdentifier());
+
+        const bool layerIsDetached = layer->IsDetached();
+
+        if (!wasIncludedBefore && isIncludedNow && !layerIsDetached) {
+            layer->Reload(/* force = */ true);
+        }
+        if (wasIncludedBefore && !isIncludedNow && layerIsDetached) {
+            layer->Reload(/* force = */ true);
+        }
+    }
+}
+
+const SdfLayer::DetachedLayerRules&
+SdfLayer::GetDetachedLayerRules()
+{
+    return *_detachedLayerRules;
+}
+
+bool
+SdfLayer::IsIncludedByDetachedLayerRules(const std::string& identifier)
+{
+    return _detachedLayerRules->IsIncluded(identifier);
+}
+
 string
 SdfLayer::_GetMutedPath() const
 {
@@ -2854,6 +2993,18 @@ SdfLayer::IsEmpty() const
     return GetRootPrims().empty()  && 
         GetRootPrimOrder().empty() && 
         GetSubLayerPaths().empty();
+}
+
+bool
+SdfLayer::StreamsData() const
+{
+    return _GetData()->StreamsData();
+}
+
+bool
+SdfLayer::IsDetached() const
+{
+    return _GetData()->IsDetached();
 }
 
 void
@@ -3656,7 +3807,8 @@ SdfLayer::_GetData() const
 SdfAbstractDataRefPtr
 SdfLayer::_CreateData() const
 {
-    return _CreateDataForFileFormat(GetFileFormat(), GetFileFormatArguments());
+    return _CreateDataForFileFormat(
+        GetFileFormat(), GetIdentifier(), GetFileFormatArguments());
 }
 
 void

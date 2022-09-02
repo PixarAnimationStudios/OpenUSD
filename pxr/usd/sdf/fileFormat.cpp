@@ -117,8 +117,11 @@ SdfFileFormat::GetDefaultFileFormatArguments() const
     return FileFormatArguments();
 }
 
+namespace
+{
+
 SdfAbstractDataRefPtr
-SdfFileFormat::InitData(const FileFormatArguments& args) const
+_CreateData(const SdfFileFormat::FileFormatArguments& args)
 {
     SdfData* metadata = new SdfData;
 
@@ -127,6 +130,25 @@ SdfFileFormat::InitData(const FileFormatArguments& args) const
     metadata->CreateSpec(SdfPath::AbsoluteRootPath(), SdfSpecTypePseudoRoot);
 
     return TfCreateRefPtr(metadata);
+}
+
+} // end anonymous namespace
+
+SdfAbstractDataRefPtr
+SdfFileFormat::InitData(const FileFormatArguments& args) const
+{
+    return _CreateData(args);
+}
+
+SdfAbstractDataRefPtr
+SdfFileFormat::InitDetachedData(const FileFormatArguments& args) const
+{
+    SdfAbstractDataRefPtr detachedData = _InitDetachedData(args);
+    if (detachedData && !detachedData->IsDetached()) {
+        TF_CODING_ERROR("File format did not return detached data object.");
+        return _CreateData(args);
+    }
+    return detachedData;
 }
 
 SdfLayerRefPtr
@@ -232,6 +254,112 @@ SdfFileFormat::WriteToFile(
     const FileFormatArguments&) const
 {
     return false;
+}
+
+bool
+SdfFileFormat::ReadDetached(
+    SdfLayer* layer,
+    const std::string& resolvedPath,
+    bool metadataOnly) const
+{
+    const bool readSuccess = _ReadDetached(layer, resolvedPath, metadataOnly);
+    if (readSuccess && !_GetLayerData(*layer)->IsDetached()) {
+        TF_CODING_ERROR(
+            "File format did not return detached layer when reading layer %s.", 
+            layer->GetIdentifier() == resolvedPath || resolvedPath.empty() ? 
+            TfStringPrintf("@%s@", layer->GetIdentifier().c_str()).c_str() :
+            TfStringPrintf("@%s@ (%s)",
+                layer->GetIdentifier().c_str(), resolvedPath.c_str()).c_str());
+        return false;
+    }
+    return readSuccess;
+}
+
+SdfAbstractDataRefPtr
+SdfFileFormat::_InitDetachedData(
+    const FileFormatArguments& args) const
+{
+    return _CreateData(args);
+}
+
+namespace
+{
+
+class _WarnedFormatTracker
+{
+public:
+    bool NeedToWarn(const SdfFileFormat& format) const
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _formatIds.insert(format.GetFormatId()).second;
+    };
+
+private:
+    mutable std::set<TfToken> _formatIds;
+    mutable std::mutex _mutex;
+};
+
+} // end anonymous namespace
+
+static TfStaticData<_WarnedFormatTracker> _WarnedFormats;
+
+bool
+SdfFileFormat::_ReadDetached(
+    SdfLayer* layer,
+    const std::string& resolvedPath,
+    bool metadataOnly) const
+{
+    bool didCopyData = false;
+    if (!_ReadAndCopyLayerDataToMemory(
+            layer, resolvedPath, metadataOnly, &didCopyData)) {
+        return false;
+    }
+
+    if (didCopyData && _WarnedFormats->NeedToWarn(*this)) {
+        TF_WARN(
+            "File format plugin '%s' did not produce a detached layer when "
+            "requested. Layer data has been copied to produce a detached "
+            "layer, which may impact performance. The file format should be "
+            "updated to avoid this issue. This was first encountered when"
+            "reading %s",
+            GetFormatId().GetText(),
+            layer->GetIdentifier() == resolvedPath || resolvedPath.empty() ? 
+            TfStringPrintf("@%s@", layer->GetIdentifier().c_str()).c_str() :
+            TfStringPrintf("@%s@ (%s)",
+                layer->GetIdentifier().c_str(), resolvedPath.c_str()).c_str());
+    }
+
+    return true;
+}
+
+bool
+SdfFileFormat::_ReadAndCopyLayerDataToMemory(
+    SdfLayer* layer,
+    const std::string& resolvedPath,
+    bool metadataOnly,
+    bool* didCopyData) const
+{
+    if (!Read(layer, resolvedPath, metadataOnly)) {
+        return false;
+    }
+
+    SdfAbstractDataConstPtr layerData = _GetLayerData(*layer);
+    if (layerData && !layerData->IsDetached()) {
+        SdfAbstractDataRefPtr detachedData = TfCreateRefPtr(new SdfData);
+        detachedData->CopyFrom(layerData);
+        _SetLayerData(layer, detachedData);
+
+        if (didCopyData) {
+            *didCopyData = true;
+        }
+    }
+    else {
+        if (didCopyData) {
+            *didCopyData = false;
+        }
+    }
+
+    return true;
 }
 
 bool 
@@ -381,12 +509,14 @@ SdfFileFormat::_SetLayerData(
         // notification.
         //
         // We consider data implementations to differ if the object types don't
-        // match or if one streams data and the other doesn't. In the latter
-        // case we want the layer to have the streaming quality the file format
-        // dictates, even if the underlying data object type is the same.
+        // match or if one streams data and the other doesn't, or if one is
+        // detached and the other isn't. In the latter cases, we want the layer
+        // to have the qualities the file format dictates, even if the
+        // underlying data object type is the same.
         const SdfAbstractDataConstPtr oldData = _GetLayerData(*layer);
         const bool differentDataImpl = 
             data->StreamsData() != oldData->StreamsData() ||
+            data->IsDetached() != oldData->IsDetached() ||
             !TfSafeTypeCompare(
                 typeid(*get_pointer(data)), typeid(*get_pointer(oldData)));
 

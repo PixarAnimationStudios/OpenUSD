@@ -59,6 +59,9 @@ public:
     virtual bool StreamsData() const;
 
     SDF_API
+    virtual bool IsDetached() const;
+
+    SDF_API
     virtual void CreateSpec(const SdfPath& path, 
                             SdfSpecType specType);
     SDF_API
