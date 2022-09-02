@@ -96,12 +96,12 @@ public:
     HD_DECLARE_DATASOURCE(_PrimDataSource);
 
     _PrimDataSource(
+        const HdMaterialFilteringSceneIndexBase* base,
         const HdContainerDataSourceHandle &input,
-        const SdfPath &primPath,
-        const HdMaterialFilteringSceneIndexBase::FilteringFnc &fnc)
-    : _input(input)
+        const SdfPath &primPath)
+    : _base(base)
+    , _input(input)
     , _primPath(primPath)
-    , _fnc(fnc)
     {}
 
     bool
@@ -131,7 +131,7 @@ public:
                 if (HdContainerDataSourceHandle materialContainer =
                         HdContainerDataSource::Cast(result)) {
                     return _MaterialDataSource::New(
-                        materialContainer, _primPath, _fnc);
+                        materialContainer, _primPath, _base->GetFilteringFunction());
                 }
             }
             return result;
@@ -141,9 +141,11 @@ public:
     }
 
 private:
+    // pointer to HdMaterialFilteringSceneIndexBase so that we can query for the
+    // filtering function.
+    const HdMaterialFilteringSceneIndexBase* _base;
     HdContainerDataSourceHandle _input;
     SdfPath _primPath;
-    HdMaterialFilteringSceneIndexBase::FilteringFnc _fnc;
 };
 
 
@@ -161,8 +163,7 @@ HdMaterialFilteringSceneIndexBase::GetPrim(const SdfPath &primPath) const
 {
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
     if (prim.primType == HdPrimTypeTokens->material && prim.dataSource) {
-        prim.dataSource = _PrimDataSource::New(prim.dataSource,
-            primPath, _GetFilteringFunction());
+        prim.dataSource = _PrimDataSource::New(this, prim.dataSource, primPath);
     }
 
     return prim;
@@ -173,6 +174,12 @@ HdMaterialFilteringSceneIndexBase::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
     return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+}
+
+HdMaterialFilteringSceneIndexBase::FilteringFnc
+HdMaterialFilteringSceneIndexBase::GetFilteringFunction() const
+{
+    return _GetFilteringFunction();
 }
 
 void
