@@ -25,6 +25,7 @@
 #include "pxr/imaging/hd/dataSourceMaterialNetworkInterface.h"
 
 #include "pxr/imaging/hd/materialSchema.h"
+#include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -159,7 +160,7 @@ HdSceneIndexPrim
 HdMaterialFilteringSceneIndexBase::GetPrim(const SdfPath &primPath) const
 {
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
-    if (prim.dataSource) {
+    if (prim.primType == HdPrimTypeTokens->material && prim.dataSource) {
         prim.dataSource = _PrimDataSource::New(prim.dataSource,
             primPath, _GetFilteringFunction());
     }
