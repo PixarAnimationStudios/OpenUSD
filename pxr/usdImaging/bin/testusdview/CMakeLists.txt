@@ -29,6 +29,26 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdviewDetachedLayers
+    DEST testUsdviewDetachedLayers1
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdviewDetachedLayers
+    DEST testUsdviewDetachedLayers2
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdviewDetachedLayers
+    DEST testUsdviewDetachedLayers3
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdviewDetachedLayers
+    DEST testUsdviewDetachedLayers4
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdviewFileArguments
     DEST testUsdviewFileArguments1
 )
@@ -338,6 +358,30 @@ pxr_register_test(testUsdviewAlive
     PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testAlive.py test.usda"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewDetachedLayers1
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testDetachedLayers_1.py --norender --detachLayers root.usd"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewDetachedLayers2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testDetachedLayers_2.py --norender --detachLayersInclude 'foo,with spaces' root.usd"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewDetachedLayers3
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testDetachedLayers_3.py --norender --detachLayers --detachLayersExclude 'foo,with spaces' root.usd"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewDetachedLayers4
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testDetachedLayers_4.py --norender root.usd"
     EXPECTED_RETURN_CODE 0
 )
 

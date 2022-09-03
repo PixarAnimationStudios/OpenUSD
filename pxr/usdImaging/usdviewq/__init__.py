@@ -255,6 +255,29 @@ class Launcher(object):
                                  "regex separator operator. Alternatively the "
                                  "argument may be used multiple times.")
 
+        group = parser.add_argument_group(
+            'Detached Layers',
+            'Specify layers to be detached from their serialized data source '
+            'when loaded. This may increase time to load and memory usage but '
+            'will avoid issues like open file handles preventing other '
+            'processes from safely overwriting a loaded layer.')
+
+        group.add_argument(
+            '--detachLayers', action='store_true', help=("Detach all layers"))
+
+        group.add_argument(
+            '--detachLayersInclude', action='store', 
+            metavar='PATTERN[,PATTERN...]',
+            help=("Detach layers with identifiers containing any of the "
+                  "given patterns."))
+
+        group.add_argument(
+            '--detachLayersExclude', action='store',
+            metavar='PATTERN[,PATTERN,...]',
+            help=("Exclude layers with identifiers containing any of the "
+                  "given patterns from the set of detached layers specified "
+                  "by the --detachLayers or --detachLayerIncludes arguments."))
+
     def ParseOptions(self, parser):
         '''
         runs the parser on the arguments
@@ -271,10 +294,21 @@ class Launcher(object):
         overridden, derived classes should likely first call the base method.
         '''
 
-        # split arg_parse_result.populationMask into paths.
+        # Split arg_parse_result.populationMask into paths.
         if arg_parse_result.populationMask:
             arg_parse_result.populationMask = (
                 arg_parse_result.populationMask.replace(',', ' ').split())
+
+        # Process detached layer arguments.
+        if arg_parse_result.detachLayersInclude:
+            arg_parse_result.detachLayersInclude = [
+                s for s in arg_parse_result.detachLayersInclude.split(',') if s
+            ]
+
+        if arg_parse_result.detachLayersExclude:
+            arg_parse_result.detachLayersExclude = [
+                s for s in arg_parse_result.detachLayersExclude.split(',') if s
+            ]
 
         # Verify that the camera path is either an absolute path, or is just
         # the name of a camera.

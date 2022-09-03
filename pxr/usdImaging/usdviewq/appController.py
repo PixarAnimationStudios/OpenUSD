@@ -445,6 +445,27 @@ class AppController(QtCore.QObject):
             self._usdviewApi = UsdviewApi(self)
             if not self._noPlugins:
                 self._configurePlugins()
+
+            # Set up detached layers if any have been specified before opening
+            # the stage.
+            detachedLayerRules = None
+            if self._parserData.detachLayers:
+                detachedLayerRules = Sdf.Layer.DetachedLayerRules().IncludeAll()
+            elif self._parserData.detachLayersInclude:
+                detachedLayerRules = Sdf.Layer.DetachedLayerRules()
+                if '*' in self._parserData.detachLayersInclude:
+                    detachedLayerRules.IncludeAll()
+                else:
+                    detachedLayerRules.Include(
+                        self._parserData.detachLayersInclude)
+
+            if detachedLayerRules is not None:
+                if self._parserData.detachLayersExclude:
+                    detachedLayerRules.Exclude(
+                        self._parserData.detachLayersExclude)
+                    
+                Sdf.Layer.SetDetachedLayerRules(detachedLayerRules)
+
             # read the stage here
             stage = self._openStage(
                 self._parserData.usdFile, self._parserData.sessionLayer,
