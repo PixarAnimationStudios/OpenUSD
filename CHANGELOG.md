@@ -2,6 +2,11 @@
 
 ## [22.11] - ??
 
+### Build
+- Updated Azure Pipelines configurations used for CI and PyPI
+    - Ubuntu 20.04
+    - macOS 11
+
 ### Imaging
 - Fixed a speculative issue with light invalidation sometimes using dirty bits
   from the wrong enum.

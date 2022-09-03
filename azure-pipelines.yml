@@ -6,7 +6,7 @@ jobs:
 - job: Linux
   timeoutInMinutes: 90
   pool:
-    vmImage: 'Ubuntu-18.04'
+    vmImage: 'Ubuntu-20.04'
   steps:
   - script: |
       sudo apt-get -qq update;
@@ -25,14 +25,12 @@ jobs:
 - job: macOS
   timeoutInMinutes: 90
   pool:
-    vmImage: 'macOS-10.15'
+    vmImage: 'macOS-11'
   steps:
   - script: |
-      # The SYSTEM env var is used by the Makefile of glew and having it set trips it up
-      unset SYSTEM
       # Update PATH to ensure that pyside2-uic can be found
       export PATH=/Library/Frameworks/Python.framework/Versions/2.7/bin:$PATH
-      sudo xcode-select -s /Applications/Xcode_11.7.app/Contents/Developer
+      sudo xcode-select -s /Applications/Xcode_13.2.app/Contents/Developer
       sudo pip install pyside2 ;
       sudo pip install PyOpenGL ;
       python build_scripts/build_usd.py --generator Xcode --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst -v
