@@ -64,7 +64,6 @@ public:
         PRIM_POINTS,
         PRIM_BASIS_CURVES_LINES,     // when linear (or) non-refined cubic
         PRIM_BASIS_CURVES_LINEAR_PATCHES,  // refined linear curves
-        PRIM_BASIS_CURVES_TESS_LINES,
         PRIM_BASIS_CURVES_CUBIC_PATCHES,   // refined cubic curves
         PRIM_BASIS_CURVES_CUBIC_WIRE_PATCHES,
         PRIM_MESH_COARSE_TRIANGLES,

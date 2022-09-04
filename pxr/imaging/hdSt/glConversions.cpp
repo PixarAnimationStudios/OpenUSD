@@ -198,7 +198,6 @@ HdStGLConversions::GetPrimitiveMode(
             primMode = GL_POINTS;
             break;
         case PrimitiveType::PRIM_BASIS_CURVES_LINES:
-        case PrimitiveType::PRIM_BASIS_CURVES_TESS_LINES:
             primMode = GL_LINES;
             break;
         case PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:

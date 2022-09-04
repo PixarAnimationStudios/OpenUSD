@@ -189,11 +189,10 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
 
     bool oriented = normalStyle == HdSt_BasisCurvesShaderKey::ORIENTED;
 
-    bool skipTessLinear =
-        (linear && (drawStyle == HdSt_BasisCurvesShaderKey::POINTS ||
+    bool skipTessLinear = (linear && (drawStyle == HdSt_BasisCurvesShaderKey::POINTS ||
                     drawStyle == HdSt_BasisCurvesShaderKey::WIRE));
-    bool skipTessCubic =
-        (cubic && (drawStyle == HdSt_BasisCurvesShaderKey::POINTS));
+    bool skipTessCubic = false;
+        //(cubic && (drawStyle == HdSt_BasisCurvesShaderKey::POINTS));
 
     //Cubic wire on metal needs improvements, not enabled
     bool demandPostTessVertexShader = hasPostTessVertexSupport &&
