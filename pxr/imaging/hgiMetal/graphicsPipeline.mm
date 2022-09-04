@@ -438,14 +438,4 @@ HgiMetalGraphicsPipeline::BindPipeline(id<MTLRenderCommandEncoder> renderEncoder
         "Missing implementation buffers");
 }
 
-void
-HgiMetalGraphicsPipeline::SetTessFactorBuffer(id<MTLRenderCommandEncoder> renderEncoder,
-     HgiBufferHandle buffer, uint32_t offset, uint32_t stride)
-{
-    [renderEncoder setTessellationFactorBuffer:
-            static_cast<HgiMetalBuffer*>(buffer.Get())->GetBufferId()
-                                        offset: offset
-                                instanceStride: 0];
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE

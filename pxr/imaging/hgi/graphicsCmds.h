@@ -203,13 +203,6 @@ public:
     HGI_API
     virtual void MemoryBarrier(HgiMemoryBarrier barrier) = 0;
 
-    /// Sets a tess factor buffer in compatible APIs ( so far Metal )
-    /// The tess factor buffer decides how much to tessellate a primitive
-    HGI_API
-    virtual void SetTessFactorBuffer(HgiGraphicsPipelineHandle pipeline,
-         HgiBufferHandle buffer, uint32_t offset, uint32_t stride) = 0;
-
-
 protected:
     HGI_API
     HgiGraphicsCmds();

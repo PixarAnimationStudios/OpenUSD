@@ -1007,7 +1007,8 @@ struct _BindingState : public _DrawItemState
 
     // Core resources plus additional resources needed for drawing.
     void GetBindingsForDrawing(
-                HgiResourceBindingsDesc * bindingsDesc) const;
+                HgiResourceBindingsDesc * bindingsDesc,
+                bool includeTessFactors = false) const;
 
     HdStDispatchBufferSharedPtr dispatchBuffer;
     HdSt_ResourceBinder const & binder;
@@ -1038,7 +1039,8 @@ _BindingState::GetBindingsForViewTransformation(
 
 void
 _BindingState::GetBindingsForDrawing(
-    HgiResourceBindingsDesc * bindingsDesc) const
+    HgiResourceBindingsDesc * bindingsDesc,
+    bool includeTessFactors) const
 {
     GetBindingsForViewTransformation(bindingsDesc);
 
@@ -1051,7 +1053,19 @@ _BindingState::GetBindingsForDrawing(
     binder.GetBufferArrayBindingDesc(bindingsDesc, elementBar);
     binder.GetBufferArrayBindingDesc(bindingsDesc, fvarBar);
     binder.GetBufferArrayBindingDesc(bindingsDesc, varyingBar);
-
+    
+    if (includeTessFactors) {
+        binder.GetInterleavedBufferArrayBindingDesc(bindingsDesc,
+                                                    indexBar,
+                                                    HdTokens->tessFactors);
+        HgiBufferBindDesc &tessFactorBuffDesc = bindingsDesc->buffers.back();
+        HdStBufferResourceSharedPtr indexBuffer =
+             indexBar->GetResource(HdTokens->tessFactors);
+        tessFactorBuffDesc.buffers[0] = indexBuffer->GetHandle();
+        tessFactorBuffDesc.offsets[0] = indexBuffer->GetOffset();
+        tessFactorBuffDesc.resourceType = HgiBindResourceTypeTessFactors;
+    }
+    
     for (HdStShaderCodeSharedPtr const & shader : shaders) {
         HdStBufferArrayRangeSharedPtr shaderBar =
                 std::static_pointer_cast<HdStBufferArrayRange>(
@@ -1059,6 +1073,7 @@ _BindingState::GetBindingsForDrawing(
 
         binder.GetInterleavedBufferArrayBindingDesc(
             bindingsDesc, shaderBar, HdTokens->materialParams);
+        
 
         HdBindingRequestVector bindingRequests;
         shader->AddBindings(&bindingRequests);
@@ -1334,7 +1349,13 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
             state);
 
     HgiResourceBindingsDesc bindingsDesc;
-    state.GetBindingsForDrawing(&bindingsDesc);
+    bool hasPatches = _drawItemInstances[0]->GetDrawItem()->
+        GetGeometricShader()->IsPrimTypePatches();
+    bool const useMetalTessellation =
+        _drawItemInstances[0]->GetDrawItem()->
+                GetGeometricShader()->GetUseMetalTessellation();
+    bool usesTessFactors = hasPatches && useMetalTessellation;
+    state.GetBindingsForDrawing(&bindingsDesc, usesTessFactors);
     HgiResourceBindingsHandle resourceBindings =
             hgi->CreateResourceBindings(bindingsDesc);
     HgiGraphicsPipelineHandle psoHandle = *pso.get();
@@ -1343,17 +1364,7 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
     _GetVertexBufferBindingsForDrawing(&bindings, state);
     gfxCmds->BindVertexBuffers(bindings);
     gfxCmds->BindPipeline(psoHandle);
-    bool hasPatches = _drawItemInstances[0]->GetDrawItem()->
-        GetGeometricShader()->IsPrimTypePatches();
-    bool const useMetalTessellation =
-        _drawItemInstances[0]->GetDrawItem()->
-                GetGeometricShader()->GetUseMetalTessellation();
-    if (hasPatches && useMetalTessellation) {
-        HdStBufferResourceSharedPtr indexBuffer =
-             state.indexBar->GetResource(HdTokens->tessFactors);
-        gfxCmds->SetTessFactorBuffer(psoHandle, indexBuffer->GetHandle(),
-             indexBuffer->GetOffset(), indexBuffer->GetStride());
-    }
+    
     gfxCmds->BindResources(resourceBindings);
 
     if (drawIndirect) {

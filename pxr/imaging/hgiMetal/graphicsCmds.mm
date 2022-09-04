@@ -306,14 +306,6 @@ HgiMetalGraphicsCmds::_SetCachedEncoderState(id<MTLRenderCommandEncoder> encoder
     }
     if (_CachedEncState.graphicsPipeline) {
         _CachedEncState.graphicsPipeline->BindPipeline(encoder);
-        //TODO Thor remove this and read elsewhere
-        if (_CachedEncState.tessFactorBuffer.Get() != nullptr) {
-            _CachedEncState.graphicsPipeline->SetTessFactorBuffer(
-                  encoder,
-                  _CachedEncState.tessFactorBuffer,
-                  _CachedEncState.tessFactorOffset,
-                  _CachedEncState.tessFactorStride);
-        }
     }
     if (_CachedEncState.resourceBindings) {
         _CachedEncState.resourceBindings->BindResources(_hgi,
@@ -486,22 +478,6 @@ HgiMetalGraphicsCmds::BindPipeline(HgiGraphicsPipelineHandle pipeline)
         }
     }
 }
-
-void
-HgiMetalGraphicsCmds::SetTessFactorBuffer(HgiGraphicsPipelineHandle pipeline,
-     HgiBufferHandle buffer, uint32_t offset, uint32_t stride)
-{
-    if (HgiMetalGraphicsPipeline* p =
-        static_cast<HgiMetalGraphicsPipeline*>(pipeline.Get())) {
-            _CachedEncState.tessFactorBuffer = buffer;
-            _CachedEncState.tessFactorOffset = offset;
-            _CachedEncState.tessFactorStride = stride;
-            for (auto& encoder : _encoders) {
-                _CachedEncState.graphicsPipeline->SetTessFactorBuffer(encoder, buffer, offset, stride);
-            }
-    }
-}
-
 
 void
 HgiMetalGraphicsCmds::BindResources(HgiResourceBindingsHandle r)

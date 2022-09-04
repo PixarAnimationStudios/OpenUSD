@@ -51,12 +51,6 @@ public:
     HGIMETAL_API
     void BindPipeline(id<MTLRenderCommandEncoder> renderEncoder);
 
-    /// Apply Post Tess Control pipeline state
-    HGIMETAL_API
-    void SetTessFactorBuffer(id<MTLRenderCommandEncoder> renderEncoder,
-                             HgiBufferHandle buffer, uint32_t offset, uint32_t stride);
-
-
 private:
     HgiMetalGraphicsPipeline() = delete;
     HgiMetalGraphicsPipeline& operator=(const HgiMetalGraphicsPipeline&)=delete;

@@ -395,6 +395,7 @@ enum HgiBindResourceType
     HgiBindResourceTypeStorageImage,
     HgiBindResourceTypeUniformBuffer,
     HgiBindResourceTypeStorageBuffer,
+    HgiBindResourceTypeTessFactors,
 
     HgiBindResourceTypeCount
 };

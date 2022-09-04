@@ -151,27 +151,31 @@ HgiMetalResourceBindings::BindResources(
         
         id<MTLBuffer> bufferId = metalbuffer->GetBufferId();
         NSUInteger offset = bufDesc.offsets.front();
-
-        if ((bufDesc.stageUsage & HgiShaderStageVertex) ||
-            (bufDesc.stageUsage & HgiShaderStagePostTessellationVertex) ||
-            (bufDesc.stageUsage & HgiShaderStagePostTessellationControl)) {
-            NSUInteger argBufferOffset = HgiMetalArgumentOffsetBufferVS
-                                       + bufDesc.bindingIndex * sizeof(void*);
-            [argEncoderBuffer setArgumentBuffer:argBuffer
-                                         offset:argBufferOffset];
-            [argEncoderBuffer setBuffer:bufferId offset:offset atIndex:0];
-        }
         
-        if (bufDesc.stageUsage & HgiShaderStageFragment) {
-            NSUInteger argBufferOffset = HgiMetalArgumentOffsetBufferFS
-                                       + bufDesc.bindingIndex * sizeof(void*);
-            [argEncoderBuffer setArgumentBuffer:argBuffer
-                                         offset:argBufferOffset];
-            [argEncoderBuffer setBuffer:bufferId offset:offset atIndex:0];
-        }
+        if (bufDesc.resourceType == HgiBindResourceTypeTessFactors) {
+            [renderEncoder setTessellationFactorBuffer:bufferId offset:offset instanceStride:0];
+        } else {
+            if ((bufDesc.stageUsage & HgiShaderStageVertex) ||
+                (bufDesc.stageUsage & HgiShaderStagePostTessellationVertex) ||
+                (bufDesc.stageUsage & HgiShaderStagePostTessellationControl)) {
+                NSUInteger argBufferOffset = HgiMetalArgumentOffsetBufferVS
+                                           + bufDesc.bindingIndex * sizeof(void*);
+                [argEncoderBuffer setArgumentBuffer:argBuffer
+                                             offset:argBufferOffset];
+                [argEncoderBuffer setBuffer:bufferId offset:offset atIndex:0];
+            }
+            
+            if (bufDesc.stageUsage & HgiShaderStageFragment) {
+                NSUInteger argBufferOffset = HgiMetalArgumentOffsetBufferFS
+                                           + bufDesc.bindingIndex * sizeof(void*);
+                [argEncoderBuffer setArgumentBuffer:argBuffer
+                                             offset:argBufferOffset];
+                [argEncoderBuffer setBuffer:bufferId offset:offset atIndex:0];
+            }
 
-        [renderEncoder useResource:bufferId
-                             usage:(MTLResourceUsageRead | MTLResourceUsageWrite)];
+            [renderEncoder useResource:bufferId
+                                 usage:(MTLResourceUsageRead | MTLResourceUsageWrite)];
+        }
     }
     
 
