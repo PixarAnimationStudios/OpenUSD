@@ -72,6 +72,9 @@ using HgiBits = uint32_t;
 /// <li>HgiDeviceCapabilitiesBitsBasePrimitiveOffset:
 ///   The device requires workaround for base primitive offset</li>
 /// </ul>
+/// <li>HgiDeviceCapabilitiesBitsIndirectCommandBuffers:
+///   Indirect command buffers are supported</li>
+/// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
 {
@@ -91,6 +94,7 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsCustomDepthRange        = 1 << 13,
     HgiDeviceCapabilitiesBitsMetalTessellation       = 1 << 14,
     HgiDeviceCapabilitiesBitsBasePrimitiveOffset     = 1 << 15,
+    HgiDeviceCapabilitiesBitsIndirectCommandBuffers  = 1 << 16,
 };
 
 using HgiDeviceCapabilities = HgiBits;

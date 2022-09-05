@@ -83,6 +83,7 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
     [_commandBuffer retain];
 
     _capabilities.reset(new HgiMetalCapabilities(_device));
+    _indirectCommandEncoder.reset(new HgiMetalIndirectCommandEncoder(this));
 
     MTLArgumentDescriptor *argumentDescBuffer =
         [[MTLArgumentDescriptor alloc] init];
@@ -331,6 +332,12 @@ HgiMetal::GetCapabilities() const
     return _capabilities.get();
 }
 
+HgiMetalIndirectCommandEncoder*
+HgiMetal::GetIndirectCommandEncoder()
+{
+    return _indirectCommandEncoder.get();
+}
+
 void
 HgiMetal::StartFrame()
 {
@@ -400,8 +407,9 @@ HgiMetal::GetAPIVersion() const
 }
 
 void
-HgiMetal::CommitPrimaryCommandBuffer(CommitCommandBufferWaitType waitType,
-                              bool forceNewBuffer)
+HgiMetal::CommitPrimaryCommandBuffer(
+    CommitCommandBufferWaitType waitType,
+    bool forceNewBuffer)
 {
     if (!_workToFlush && !forceNewBuffer) {
         return;
@@ -462,7 +470,8 @@ HgiMetal::GetArgBuffer()
     {
         std::lock_guard<std::mutex> lock(_freeArgMutex);
         if (_freeArgBuffers.empty()) {
-            buffer = [_device newBufferWithLength:4096 options:options];
+            buffer = [_device newBufferWithLength:HgiMetalArgumentOffsetSize
+                                          options:options];
         }
         else {
             buffer = _freeArgBuffers.top();

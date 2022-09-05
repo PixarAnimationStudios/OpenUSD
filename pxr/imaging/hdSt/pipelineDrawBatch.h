@@ -35,6 +35,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HgiCapabilities;
+struct HgiIndirectCommands;
 using HdBindingRequestVector = std::vector<HdBindingRequest>;
 
 /// \class HdSt_PipelineDrawBatch
@@ -128,6 +129,10 @@ private:
         HdStResourceRegistrySharedPtr const & resourceRegistry);
 
     void _CompileBatch(HdStResourceRegistrySharedPtr const & resourceRegistry);
+    
+    void _PrepareIndirectCommandBuffer(
+        HdStRenderPassStateSharedPtr const & renderPassState,
+        HdStResourceRegistrySharedPtr const & resourceRegistry);
 
     bool _HasNothingToDraw() const;
 
@@ -179,6 +184,8 @@ private:
     size_t _instanceCountOffset;
     size_t _cullInstanceCountOffset;
     size_t _patchBaseVertexByteOffset;
+    
+    std::unique_ptr<struct HgiIndirectCommands> _indirectCommands;
 };
 
 

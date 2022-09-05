@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgiMetal/api.h"
-#include "pxr/imaging/hgiMetal/hgi.h"
 #include "pxr/imaging/hgiMetal/stepFunctions.h"
 #include "pxr/imaging/hgi/graphicsCmds.h"
 #include <cstdint>
@@ -37,8 +36,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HgiGraphicsCmdsDesc;
-class HgiMetalGraphicsPipeline;
 class HgiMetalResourceBindings;
+class HgiMetalGraphicsPipeline;
 
 /// \class HgiMetalGraphicsCmds
 ///
@@ -119,6 +118,9 @@ public:
     HGIMETAL_API
     void EnableParallelEncoder(bool enable);
 
+    // Needs to be accessible from the Metal IndirectCommandEncoder
+    id<MTLRenderCommandEncoder> GetEncoder(uint32_t encoderIndex = 0);
+
 protected:
     friend class HgiMetal;
 
@@ -136,7 +138,6 @@ private:
     HgiMetalGraphicsCmds(const HgiMetalGraphicsCmds&) = delete;
 
     uint32_t _GetNumEncoders();
-    id<MTLRenderCommandEncoder> _GetEncoder(uint32_t encoderIndex = 0);
     void _SetNumberParallelEncoders(uint32_t numEncoders);
     void _SetCachedEncoderState(id<MTLRenderCommandEncoder> encoder);
     mutable std::mutex _encoderLock;
@@ -167,6 +168,7 @@ private:
     HgiGraphicsCmdsDesc _descriptor;
     HgiPrimitiveType _primitiveType;
     uint32_t _primitiveIndexSize;
+    uint32_t _drawBufferBindingIndex;
     NSString* _debugLabel;
     bool _hasWork;
     bool _viewportSet;

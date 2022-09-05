@@ -23,6 +23,7 @@
 //
 
 #include "pxr/imaging/hgiMetal/hgi.h"
+#include "pxr/imaging/hgiMetal/capabilities.h"
 #include "pxr/imaging/hgiMetal/conversions.h"
 #include "pxr/imaging/hgiMetal/diagnostic.h"
 #include "pxr/imaging/hgiMetal/graphicsPipeline.h"
@@ -124,6 +125,10 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
     // Create a new render pipeline state object
     HGIMETAL_DEBUG_LABEL(stateDesc, _descriptor.debugName.c_str());
     stateDesc.rasterSampleCount = _descriptor.multiSampleState.sampleCount;
+    
+    bool const icbSupport = hgi->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsIndirectCommandBuffers);
+    stateDesc.supportIndirectCommandBuffers = icbSupport;
 
     stateDesc.inputPrimitiveTopology =
         HgiMetalConversions::GetPrimitiveClass(_descriptor.primitiveType);

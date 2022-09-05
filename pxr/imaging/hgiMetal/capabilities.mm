@@ -39,6 +39,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     bool unifiedMemory = false;
     bool barycentrics = false;
     bool hasAppleSilicon = false;
+    bool icbSupported = true;
     if (@available(macOS 100.100, ios 12.0, *)) {
         unifiedMemory = true;
     } else if (@available(macOS 10.15, ios 13.0, *)) {
@@ -53,6 +54,15 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
                     || [device areBarycentricCoordsSupported];
         
         hasAppleSilicon = [device hasUnifiedMemory] && ![device isLowPower];
+        
+    }
+    
+    // Indirect command buffers only on Apple Silicon GPUs with macOS 12.3 or later.
+    if (hasAppleSilicon) {
+        icbSupported = false;
+        if (@available(macOS 12.3, *)) {
+            icbSupported = true;
+        }
     }
 
     _SetFlag(HgiDeviceCapabilitiesBitsUnifiedMemory, unifiedMemory);
@@ -68,6 +78,8 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     _SetFlag(HgiDeviceCapabilitiesBitsMetalTessellation, true);
 
     _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect, true);
+    
+    _SetFlag(HgiDeviceCapabilitiesBitsIndirectCommandBuffers, icbSupported);
 
     // This is done to decide whether to use a workaround for post tess
     // patch primitive ID lookup. The bug causes the firstPatch offset

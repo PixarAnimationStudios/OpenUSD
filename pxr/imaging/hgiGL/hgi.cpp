@@ -80,6 +80,7 @@ HgiGL::HgiGL()
     _device = new HgiGLDevice();
 
     _capabilities.reset(new HgiGLCapabilities());
+    _indirectCommandEncoder.reset(new HgiGLIndirectCommandEncoder());
 }
 
 HgiGL::~HgiGL()
@@ -258,6 +259,12 @@ HgiGLCapabilities const*
 HgiGL::GetCapabilities() const
 {
     return _capabilities.get();
+}
+
+HgiGLIndirectCommandEncoder*
+HgiGL::GetIndirectCommandEncoder()
+{
+    return _indirectCommandEncoder.get();
 }
 
 void

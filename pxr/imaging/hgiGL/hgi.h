@@ -28,6 +28,7 @@
 #include "pxr/imaging/hgiGL/api.h"
 #include "pxr/imaging/hgiGL/capabilities.h"
 #include "pxr/imaging/hgiGL/garbageCollector.h"
+#include "pxr/imaging/hgiGL/indirectCommandEncoder.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
@@ -164,6 +165,9 @@ public:
     HgiGLCapabilities const* GetCapabilities() const override;
 
     HGIGL_API
+    HgiGLIndirectCommandEncoder* GetIndirectCommandEncoder() override;
+
+    HGIGL_API
     void StartFrame() override;
 
     HGIGL_API
@@ -217,6 +221,7 @@ private:
 
     HgiGLDevice* _device;
     std::unique_ptr<HgiGLCapabilities> _capabilities;
+    std::unique_ptr<HgiGLIndirectCommandEncoder> _indirectCommandEncoder;
     HgiGLGarbageCollector _garbageCollector;
     int _frameDepth;
 };

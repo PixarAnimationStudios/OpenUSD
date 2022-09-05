@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgiMetal/api.h"
 #include "pxr/imaging/hgiMetal/capabilities.h"
+#include "pxr/imaging/hgiMetal/indirectCommandEncoder.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
@@ -144,6 +145,9 @@ public:
     HgiMetalCapabilities const* GetCapabilities() const override;
 
     HGIMETAL_API
+    HgiMetalIndirectCommandEncoder* GetIndirectCommandEncoder() override;
+
+    HGIMETAL_API
     void StartFrame() override;
 
     HGIMETAL_API
@@ -228,6 +232,7 @@ private:
     HgiCmds* _currentCmds;
 
     std::unique_ptr<HgiMetalCapabilities> _capabilities;
+    std::unique_ptr<HgiMetalIndirectCommandEncoder> _indirectCommandEncoder;
 
     int _frameDepth;
     bool _workToFlush;

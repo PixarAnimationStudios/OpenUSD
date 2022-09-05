@@ -85,6 +85,8 @@ HdStCommandBuffer::PrepareDraw(
     for (auto const& batch : _drawBatches) {
         batch->PrepareDraw(gfxCmds, renderPassState, resourceRegistry);
     }
+    
+    resourceRegistry->SubmitComputeWork();
 }
 
 void

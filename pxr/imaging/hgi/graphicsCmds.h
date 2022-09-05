@@ -203,6 +203,7 @@ public:
     HGI_API
     virtual void MemoryBarrier(HgiMemoryBarrier barrier) = 0;
 
+
 protected:
     HGI_API
     HgiGraphicsCmds();

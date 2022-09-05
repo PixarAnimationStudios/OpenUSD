@@ -28,6 +28,7 @@
 #include "pxr/imaging/hgiMetal/graphicsCmds.h"
 #include "pxr/imaging/hgiMetal/graphicsPipeline.h"
 #include "pxr/imaging/hgiMetal/hgi.h"
+#include "pxr/imaging/hgiMetal/indirectCommandEncoder.h"
 #include "pxr/imaging/hgiMetal/resourceBindings.h"
 #include "pxr/imaging/hgiMetal/texture.h"
 
@@ -82,6 +83,7 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
     , _descriptor(desc)
     , _primitiveType(HgiPrimitiveTypeTriangleList)
     , _primitiveIndexSize(0)
+    , _drawBufferBindingIndex(0)
     , _debugLabel(nil)
     , _hasWork(false)
     , _viewportSet(false)
@@ -246,7 +248,7 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
     }
     
     if (hasClear) {
-        _GetEncoder();
+        GetEncoder();
         _CreateArgumentBuffer();
     }
 }
@@ -280,7 +282,7 @@ HgiMetalGraphicsCmds::_VegaIndirectFix()
     // Fix for Vega in macOS before 12.0.  There is state leakage between
     // indirect draw of different prim types which results in a GPU crash.
     // Flush with a null draw through the direct path.
-    id<MTLRenderCommandEncoder> encoder = _GetEncoder();
+    id<MTLRenderCommandEncoder> encoder = GetEncoder();
     MTLPrimitiveType mtlType =
         HgiMetalConversions::GetPrimitiveType(_primitiveType);
     [encoder drawPrimitives:mtlType
@@ -376,7 +378,7 @@ HgiMetalGraphicsCmds::_SetNumberParallelEncoders(uint32_t numEncoders)
 }
 
 id<MTLRenderCommandEncoder>
-HgiMetalGraphicsCmds::_GetEncoder(uint32_t encoderIndex)
+HgiMetalGraphicsCmds::GetEncoder(uint32_t encoderIndex)
 {
     uint32_t numActiveEncoders = _GetNumEncoders();
     
@@ -536,7 +538,7 @@ HgiMetalGraphicsCmds::Draw(
     _SyncArgumentBuffer();
 
     MTLPrimitiveType type=HgiMetalConversions::GetPrimitiveType(_primitiveType);
-    id<MTLRenderCommandEncoder> encoder = _GetEncoder();
+    id<MTLRenderCommandEncoder> encoder = GetEncoder();
 
     _stepFunctions.SetVertexBufferOffsets(encoder, baseInstance);
 
@@ -599,7 +601,7 @@ HgiMetalGraphicsCmds::DrawIndirect(
             const uint32_t encoderCount = (i == numEncoders - 1)
                                         ? finalCount : normalCount;
             wd.Run([&, i, encoderOffset, encoderCount]() {
-                id<MTLRenderCommandEncoder> encoder = _GetEncoder(i);
+                id<MTLRenderCommandEncoder> encoder = GetEncoder(i);
                 
                 if (_primitiveType == HgiPrimitiveTypePatchList) {
                     const NSUInteger controlPointCount = _primitiveIndexSize;
@@ -652,7 +654,7 @@ HgiMetalGraphicsCmds::DrawIndexed(
     MTLPrimitiveType mtlType =
         HgiMetalConversions::GetPrimitiveType(_primitiveType);
 
-    id<MTLRenderCommandEncoder> encoder = _GetEncoder();
+    id<MTLRenderCommandEncoder> encoder = GetEncoder();
         
     _stepFunctions.SetVertexBufferOffsets(encoder, baseInstance);
 
@@ -723,7 +725,7 @@ HgiMetalGraphicsCmds::DrawIndexedIndirect(
             const uint32_t encoderCount = (i == numEncoders - 1)
                                         ? finalCount : normalCount;
             wd.Run([&, i, encoderOffset, encoderCount]() {
-                id<MTLRenderCommandEncoder> encoder = _GetEncoder(i);
+                id<MTLRenderCommandEncoder> encoder = GetEncoder(i);
                 
                 if (_primitiveType == HgiPrimitiveTypePatchList) {
                     const NSUInteger controlPointCount = _primitiveIndexSize;
@@ -788,7 +790,7 @@ HgiMetalGraphicsCmds::PushDebugGroup(const char* label)
         HGIMETAL_DEBUG_PUSH_GROUP(_parallelEncoder, label)
     }
     else if (!_encoders.empty()) {
-        HGIMETAL_DEBUG_PUSH_GROUP(_GetEncoder(), label)
+        HGIMETAL_DEBUG_PUSH_GROUP(GetEncoder(), label)
     }
     else {
         _debugLabel = [@(label) copy];
@@ -802,7 +804,7 @@ HgiMetalGraphicsCmds::PopDebugGroup()
         HGIMETAL_DEBUG_POP_GROUP(_parallelEncoder)
     }
     else if (!_encoders.empty()) {
-        HGIMETAL_DEBUG_POP_GROUP(_GetEncoder());
+        HGIMETAL_DEBUG_POP_GROUP(GetEncoder());
     }
     if (_debugLabel) {
         [_debugLabel release];
