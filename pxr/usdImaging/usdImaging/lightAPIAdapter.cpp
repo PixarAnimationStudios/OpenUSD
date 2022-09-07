@@ -36,6 +36,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// XXX currently private while experimenting with this convention.
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (isLight)
+    (materialSyncMode)
+);
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingLightAPIAdapter Adapter;
@@ -64,16 +72,15 @@ _IsQueryTrivial(UsdCollectionAPI::MembershipQuery const& query)
         ruleMap.begin()->second == UsdTokens->expandPrims;
 }
 
-class _LightDataSource : public HdContainerDataSource
+class _LightDataSource final : public HdContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(_LightDataSource);
 
-
     bool
     Has(const TfToken & name) override
     {
-        for (const TfToken &n : GetNames()) {
+        for (const TfToken &n : _GetNames()) {
             if (name == n) {
                 return true;
             }
@@ -84,14 +91,7 @@ public:
     TfTokenVector
     GetNames() override
     {
-        static const TfTokenVector names = {
-            HdTokens->filters,
-            HdTokens->lightLink,
-            HdTokens->shadowLink,
-            //HdTokens->lightFilterLink,
-        };
-
-        return names;
+        return _GetNames();
     }
 
     HdDataSourceBaseHandle
@@ -129,11 +129,34 @@ public:
             //       collection.
             return HdRetainedTypedSampledDataSource<TfToken>::New(
                 c.GetCollectionPath().GetToken());
+        } else if (name == _tokens->isLight) {
+            return HdRetainedTypedSampledDataSource<bool>::New(true);
+        } else if (name == _tokens->materialSyncMode) {
+            if (UsdAttribute attr = _lightApi.GetMaterialSyncModeAttr()) {
+                TfToken v;
+                if (attr.Get(&v)) {
+                    return HdRetainedTypedSampledDataSource<TfToken>::New(v);
+                }
+            }
         }
+
         return nullptr;
     }
 
 private:
+
+    static const TfTokenVector & _GetNames()
+    {
+        static const TfTokenVector names = {
+            HdTokens->filters,
+            HdTokens->lightLink,
+            HdTokens->shadowLink,
+            _tokens->isLight,
+            _tokens->materialSyncMode,
+        };
+
+        return names;
+    }
 
     _LightDataSource(const UsdLuxLightAPI &lightApi)
     : _lightApi(lightApi)
