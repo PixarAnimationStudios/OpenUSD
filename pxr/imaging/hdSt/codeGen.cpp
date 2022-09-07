@@ -1751,17 +1751,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                 "vec4 basis, int i0, int i1, int i2, int i3, vec2 uv) {\n";
 
     _procPTVSIn  << "void ProcessPrimvarsIn() {\n";
-    _procPTVSOut << "template <typename T>\n"
-                    "T InterpolatePrimvar("
-                    "T inPv0, T inPv1, T inPv2, T inPv3, vec4 basis) {\n"
-                    "  return"
-                    " inPv0 * basis[0] +"
-                    " inPv1 * basis[1] +"
-                    " inPv2 * basis[2] +"
-                    " inPv3 * basis[3];\n"
-                    "}\n"
-                    "void ProcessPrimvarsOut("
-                    "vec4 basis, int i0, int i1, int i2, int i3) {\n";
+    _procPTVSOut << "void ProcessPrimvarsOut("
+                    "vec4 basis, int i0, int i1, int i2, int i3, vec2 uv = vec2()) {\n";
 
     _procPTCSIn  << "void ProcessPrimvarsIn() {\n";
 
@@ -4957,7 +4948,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
                      << name << "[i0], ptvs_pv_"
                      << name << "[i1], ptvs_pv_"
                      << name << "[i2], ptvs_pv_"
-                     << name << "[i3], basis);\n";
+                     << name << "[i3], basis,uv);\n";
     }
 
     /*

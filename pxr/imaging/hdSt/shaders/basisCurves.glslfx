@@ -109,6 +109,22 @@ FlatCurveVertexData PopulatePeyeAndNeye()
 }
 
 --- --------------------------------------------------------------------------
+-- glsl Curves.InvertNormal
+
+vec3 InvertNormalIfNeeded(vec3 normal)
+{
+    return -normal;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.NoInvertNormal
+
+vec3 InvertNormalIfNeeded(vec3 normal)
+{
+    return normal;
+}
+
+--- --------------------------------------------------------------------------
 -- glsl Curves.Coeffs
 
 //TODO move this somewhere else
@@ -233,48 +249,6 @@ void main(void)
 #endif
     gl_PointSize = GetPointRasterSize(pointId) * scale;
     ProcessPointId(pointId);}
-
---- --------------------------------------------------------------------------
--- layout Curves.PostTessVertex.Wire
-
- [
-     ["out block", "CurveVertexData", "outData",
-         ["vec4", "Peye"]
-     ]
- ]
-
---- --------------------------------------------------------------------------
--- glsl Curves.PostTessVertex.Wire
-
- // Fwd declare methods defined in pointId.glslfx, that are used below.
- FORWARD_DECL(int GetPointId());
- FORWARD_DECL(float GetPointRasterSize(int));
- FORWARD_DECL(void ProcessPointId(int));
-
- void main(void)
- {
-     MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
-
-     outData.Peye = vec4(GetWorldToViewMatrix() * transform *
-                         vec4(points[0], 1));
-
-     ProcessPrimvarsIn();
-
-     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
-     ApplyClipPlanes(outData.Peye);
-
-     int pointId = GetPointId();
- #if defined(HD_HAS_pointSizeScale)
-     float scale = HdGet_pointSizeScale();
- #else
-     float scale = 1;
- #endif
-     gl_PointSize = GetPointRasterSize(pointId) * scale;
-     ProcessPointId(pointId);
-     vec2 coord = gl_TessCoord.xy;
-     vec4 basis = vec4(coord.x, coord.y, 1.0f-coord.x-coord.y, 0.0f);
-     ProcessPrimvarsOut(basis, 0, 1, 2, 0);
-}
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.Shared
@@ -640,46 +614,43 @@ void main()
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.PostTessVertex.Cubic.Wire
- //fractional_odd_spacing
+template <typename T>
+T InterpolatePrimvar(
+        T inPv0, T inPv1, T inPv2, T inPv3, vec4 basis) {
+    return
+            inPv0 * basis[0] +
+            inPv1 * basis[1] +
+            inPv2 * basis[2] +
+            inPv3 * basis[3];
+}
 
  void main(void)
  {
      ProcessPrimvarsIn();
-     MAT4 projMat = HdGet_projectionMatrix();
-     vec4 viewport = HdGet_viewport();
-     vec2 screen_size = vec2(viewport.z, viewport.w);
      MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
-
-     FlatCurveVertexData vertexData = PopulatePeyeAndPNeye();
-     //Verify if we need special process primvars for posttessvertex
 
      float u = gl_TessCoord.x;
      float v = .5;
 
+     FlatCurveVertexData vertexData = PopulatePeyeAndNeye();
+     vec4 cv0 = vertexData.Peye[0];
+     vec4 cv1 = vertexData.Peye[1];
+     vec4 cv2 = vertexData.Peye[2];
+     vec4 cv3 = vertexData.Peye[3];
+
      Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
      vec4 basis = coeffs.basis;
-     vec4 pos = basis[0] * vertexData.Peye[0] +
-                basis[1] * vertexData.Peye[1] +
-                basis[2] * vertexData.Peye[2] +
-                basis[3] * vertexData.Peye[3];
-
-     vec3 neye = basis[0] * vertexData.Neye[0] +
-                basis[1] * vertexData.Neye[1] +
-                basis[2] * vertexData.Neye[2] +
-                basis[3] * vertexData.Neye[3];
+     vec4 pos = basis[0] * cv0 +
+                basis[1] * cv1 +
+                basis[2] * cv2 +
+                basis[3] * cv3;
 
      outData.Peye = pos;
-     outData.Neye = neye;
      gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
 
      ApplyClipPlanes(outData.Peye);
 
-     //Verify if we need special point id processing for posttessvertex
-     //int pointId = GetPointId();
-     //gl_PointSize = GetPointRasterSize(pointId);
-     //ProcessPointId(pointId);
-
-     ProcessPrimvarsOut(basis, 0, 1, 2, 3); // interpolate varying primvars
+     ProcessPrimvarsOut(basis, 0, 1, 2, 3, vec2(u, v)); // interpolate varying primvars
  }
 
 --- --------------------------------------------------------------------------
@@ -817,8 +788,16 @@ void main()
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.PostTessVertex.Patch
-//fractional_odd_spacing
 
+template <typename T>
+T InterpolatePrimvar(
+        T inPv0, T inPv1, T inPv2, T inPv3, vec4 basis) {
+    return
+            inPv0 * basis[0] +
+            inPv1 * basis[1] +
+            inPv2 * basis[2] +
+            inPv3 * basis[3];
+}
 // Predefine so that we can later swap in the correct one depending
 // on what type of curve we have
 
@@ -831,12 +810,10 @@ T bilerp(T c00, T c01, T c10, T c11, float2 uv) {
 
 void main(void)
 {
-    //TODO this could be wrong
+    u = gl_TessCoord.y;
+    v = gl_TessCoord.x;
     ProcessPrimvarsIn();
     MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
-
-    float u = gl_TessCoord.y;
-    float v = gl_TessCoord.x;
 
     Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
     vec4 basis = coeffs.basis;
@@ -869,7 +846,7 @@ void main(void)
     gl_PointSize = GetPointRasterSize(pointId);
     ProcessPointId(pointId);
 
-    ProcessPrimvarsOut(basis, 0, 1, 2, 3); // interpolate varying primvars
+    ProcessPrimvarsOut(basis, 0, 1, 2, 3, vec2(u, v)); // interpolate varying primvars
 }
 
 --- --------------------------------------------------------------------------
@@ -943,7 +920,7 @@ vec3 orient(float v, vec4 position, vec4 tangent, vec3 normal){
 
 vec3 orient(float v, vec4 position, vec4 tangent, vec3 normal){
     outData.Neye = normal;
-    return normalize(cross(tangent.xyz, normal)  * (v - 0.5));
+    return InvertNormalIfNeeded(normalize(cross(tangent.xyz, normal)  * (v - 0.5)));
 }
 
 --- --------------------------------------------------------------------------
@@ -1250,7 +1227,6 @@ void main(void)
         discard;
     }
 #endif
-
     RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
 }
 

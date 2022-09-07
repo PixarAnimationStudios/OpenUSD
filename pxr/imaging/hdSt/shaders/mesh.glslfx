@@ -603,6 +603,19 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- glsl Mesh.PostTessVertex.VaryingInterpolation
+
+template <typename T>
+T InterpolatePrimvar(
+T inPv0, T inPv1, T inPv2, T inPv3, vec4 basis, vec2 uv = vec2()) {
+    return
+    inPv0 * basis[0] +
+    inPv1 * basis[1] +
+    inPv2 * basis[2] +
+    inPv3 * basis[3];
+}
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.TessEval.VaryingInterpolation
 
 float InterpolatePrimvar(float inPv0, float inPv1, float inPv2, float inPv3, 

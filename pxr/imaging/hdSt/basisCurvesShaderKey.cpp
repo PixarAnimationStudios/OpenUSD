@@ -52,6 +52,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     //Set tess factors
     ((setTessFactorsGLSL,    "Curves.JointTessControl.SetTessFactorGLSL"))
     ((setTessFactorsMSL,      "Curves.JointTessControl.SetTessFactorMSL"))
+    ((invertNormal,           "Curves.InvertNormal"))
+    ((noInvertNormal,         "Curves.NoInvertNormal"))
     ((postTessellationShared,  "Curves.PostTessellation.Shared"))
 
     // normal related mixins
@@ -235,6 +237,7 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
               _tokens->curveCubicNormalsBasis :
               _tokens->curveCubicNormalsLinear;
               TES[tesIndex++] = _tokens->curvesCoeffs;
+              TES[tesIndex++] = _tokens->invertNormal;
        if (linear) {
            switch(drawStyle) {
                case HdSt_BasisCurvesShaderKey::POINTS:
@@ -360,6 +363,9 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
        PTVS[ptvsIndex++] = _tokens->curvesCoeffs;
        PTVS[ptvsIndex++] = postTessNormal;
        PTVS[ptvsIndex++] = _tokens->pointIdNoneVS;
+       //ON PTVS, the orientation of linear ribbons is inverted, correct that
+       PTVS[ptvsIndex++] = (drawStyle == HdSt_BasisCurvesShaderKey::RIBBON && linear)
+               ? _tokens->invertNormal : _tokens->noInvertNormal;
 
        PTCS[ptcsIndex++] = _tokens->postTessellationShared;
        PTCS[ptcsIndex++] = _tokens->setTessFactorsMSL;

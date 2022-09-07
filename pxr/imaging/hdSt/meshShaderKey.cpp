@@ -291,6 +291,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     uint8_t ptcsIndex = 0;
     if (useMetalTessellation) {
         PTVS[ptvsIndex++] = _tokens->instancing;
+        PTVS[ptvsIndex++] = _tokens->mainVaryingInterpPTVS;
 
         // PTVS handles both usual "vs" normals and then later it may also 
         // handle a separate fallback calculation.
