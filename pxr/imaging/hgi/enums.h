@@ -395,6 +395,7 @@ enum HgiBindResourceType
     HgiBindResourceTypeStorageImage,
     HgiBindResourceTypeUniformBuffer,
     HgiBindResourceTypeStorageBuffer,
+    HgiBindResourceTypeTessFactors,
 
     HgiBindResourceTypeCount
 };
@@ -756,6 +757,31 @@ enum HgiShaderTextureType
     HgiShaderTextureTypeShadowTexture,
     HgiShaderTextureTypeArrayTexture
 };
+
+ /// \enum HgiTessellationSpacing
+ ///
+ /// Describes the type of shader tessellation spacing to use
+ ///
+ /// <ul>
+ /// <li>None:
+ ///   No tessellation spacing</li>
+ /// <li>Even:
+ ///   Even spacing. Only whole integers are considered for spacing</li>
+ /// <li>FractionalOdd:
+ ///   Fractional odd tessellation spacing</li>
+ /// <li>FractionalEven:
+ ///   Fractional even tessellation spacing</li>
+ /// </ul>
+ ///
+ enum HgiTessellationSpacing
+ {
+     HgiTessellationSpacingNone = 0,
+     HgiTessellationSpacingEven,
+     HgiTessellationSpacingFractionalOdd,
+     HgiTessellationSpacingFractionalEven
+ };
+
+typedef bool HgiState;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

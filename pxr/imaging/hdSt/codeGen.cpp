@@ -615,9 +615,11 @@ private:
                 aggregateName.GetString() + "_" + memberName.GetString());
     }
 
-    HgiInterpolationType _GetInterpolation(TfToken const & qualifiers) const
+    HgiInterpolationType _GetInterpolation(TfTokenVector const & qualifiers) const
     {
-        if (qualifiers == _tokens->flat) {
+        if (std::any_of(qualifiers.cbegin(), qualifiers.cend(),
+                [] (const TfToken &qualifier) {
+                    return qualifier == _tokens->flat; })) {
             return HgiInterpolationFlat;
         } else {
             return HgiInterpolationDefault;
@@ -644,6 +646,25 @@ _IsVertexAttribInputStage(TfToken const & shaderStage)
            (shaderStage == HdShaderTokens->postTessVertexShader);
 }
 
+bool _HasQualifier(const TfTokenVector &qualifiersList, const TfToken &qualifierParam) {
+    if (std::any_of(qualifiersList.cbegin(), qualifiersList.cend(),
+            [&qualifierParam] (const TfToken &qualifier) { return qualifier == qualifierParam; })) {
+        return true;
+    }
+    return false;
+}
+
+HgiShaderFunctionParamDesc::SamplingFlag _GetSamplingFlags(const TfTokenVector &qualifiersList) {
+    uint32_t flags = 0;
+    if (_HasQualifier(qualifiersList, HdShaderTokens->centroid)) {
+        flags |= HgiShaderFunctionParamDesc::Centroid;
+    }
+    if (_HasQualifier(qualifiersList, HdShaderTokens->sample)) {
+        flags |= HgiShaderFunctionParamDesc::Sample;
+    }
+    return static_cast<HgiShaderFunctionParamDesc::SamplingFlag>(flags);
+}
+
 void
 _ResourceGenerator::_GenerateHgiResources(
     HgiShaderFunctionDesc *funcDesc,
@@ -662,7 +683,8 @@ _ResourceGenerator::_GenerateHgiResources(
                         param.nameInShader = element.name;
                         param.type = element.dataType;
                         param.location = _GetLocation(element, metaData);
-                    if (shaderStage == HdShaderTokens->postTessVertexShader) {
+                    if (shaderStage == HdShaderTokens->postTessVertexShader ||
+                        shaderStage == HdShaderTokens->postTessControlShader) {
                         param.arraySize = "VERTEX_CONTROL_POINTS_PER_PATCH";
                     }
                     HgiShaderFunctionAddStageInput(funcDesc, param);
@@ -673,6 +695,7 @@ _ResourceGenerator::_GenerateHgiResources(
                         param.interstageSlot = _GetSlot(element.name);
                         param.interpolation =
                             _GetInterpolation(element.qualifiers);
+                        param.samplingFlag = _GetSamplingFlags(element.qualifiers);
                         param.arraySize = element.arraySize;
                     HgiShaderFunctionAddStageInput(funcDesc, param);
                 }
@@ -717,10 +740,25 @@ _ResourceGenerator::_GenerateHgiResources(
                 funcDesc->stageOutputBlocks.push_back(paramBlock);
             }
         } else if (element.kind == Kind::QUALIFIER) {
-            if (element.qualifiers == TfToken("early_fragment_tests")) {
-                //   GLSL: "layout (early_fragment_tests) in;"
-                //   MSL: "[[early_fragment_tests]]"
+            const TfTokenVector &qualifiers = element.qualifiers;
+            static const TfToken fragmentTest = TfToken("early_fragment_tests");
+            if (_HasQualifier(qualifiers, fragmentTest)) {
                 funcDesc->fragmentDescriptor.earlyFragmentTests = true;
+            }
+            if (shaderStage == HdShaderTokens->postTessVertexShader) {
+                const static std::map<TfToken, HgiTessellationSpacing> spacings = {
+                    {TfToken("equal_spacing"),
+                        HgiTessellationSpacing::HgiTessellationSpacingEven},
+                    {TfToken("fractional_even"),
+                        HgiTessellationSpacing::HgiTessellationSpacingFractionalEven},
+                    {TfToken("fractional_odd"),
+                        HgiTessellationSpacing::HgiTessellationSpacingFractionalOdd}};
+                for (auto const &spacing : spacings)
+                {
+                    if (_HasQualifier(qualifiers, spacing.first)) {
+                        funcDesc->tessellationDescriptor.spacing = spacing.second;
+                    }
+                }
             }
         } else if (element.kind == Kind::UNIFORM_BLOCK) {
             if (TF_VERIFY(element.members.size() == 1)) {
@@ -842,15 +880,19 @@ _ResourceGenerator::_GenerateGLSLResources(
                     default:
                         break;
                 }
-                if (element.qualifiers == _tokens->flat) {
-                    str << "flat ";
-                }
-                str << element.dataType << " "
-                    << element.name;
-                if (element.arraySize.IsEmpty()) {
-                    str << ";\n";
-                } else {
-                    str << element.arraySize << ";\n";
+                {
+                    const TfTokenVector &qualifiers = element.qualifiers;
+                    if (std::any_of(qualifiers.cbegin(), qualifiers.cend(),
+                            [](const TfToken &qualifier) { return qualifier == _tokens->flat; })) {
+                        str << "flat ";
+                    }
+                    str << element.dataType << " "
+                        << element.name;
+                    if (element.arraySize.IsEmpty()) {
+                        str << ";\n";
+                    } else {
+                        str << element.arraySize << ";\n";
+                    }
                 }
                 break;
             case HdSt_ResourceLayout::Kind::BLOCK:
@@ -877,8 +919,13 @@ _ResourceGenerator::_GenerateGLSLResources(
                 }
                 break;
             case HdSt_ResourceLayout::Kind::QUALIFIER:
-                if (element.qualifiers == TfToken("early_fragment_tests")) {
-                    str << "layout(early_fragment_tests) in;\n";
+                {
+                    const TfTokenVector &elQualifiers = element.qualifiers;
+                    static const TfToken earlyFragmentTest = TfToken("early_fragment_tests");
+                    if (std::any_of(elQualifiers.cbegin(), elQualifiers.cend(),
+                            [](const TfToken &qualifier) { return qualifier == earlyFragmentTest; })) {
+                        str << "layout(early_fragment_tests) in;\n";
+                    }
                 }
                 break;
             case HdSt_ResourceLayout::Kind::UNIFORM_VALUE:
@@ -1064,12 +1111,12 @@ _AddInterstageElement(
     TfToken const &name,
     TfToken const &dataType,
     TfToken const &arraySize = TfToken(),
-    TfToken const &qualifier = TfToken())
+    TfTokenVector const &qualifiers = TfTokenVector())
 {
     elements->emplace_back(
         HdSt_ResourceLayout::InOut::NONE,
         HdSt_ResourceLayout::Kind::VALUE,
-        dataType, name, arraySize, qualifier);
+        dataType, name, arraySize, qualifiers);
 }
 
 static void
@@ -1231,6 +1278,7 @@ HdSt_CodeGen::_GetShaderResourceLayouts(
         HdShaderTokens->geometryShader,
         HdShaderTokens->fragmentShader,
         HdShaderTokens->postTessVertexShader,
+        HdShaderTokens->postTessControlShader
     };
 
     for (auto const &shader : shaders) {
@@ -1253,6 +1301,9 @@ HdSt_CodeGen::_GetShaderResourceLayouts(
 
         HdSt_ResourceLayout::ParseLayout(
                 &_resPTVS, HdShaderTokens->postTessVertexShader, layoutDict);
+
+        HdSt_ResourceLayout::ParseLayout(
+                &_resPTCS, HdShaderTokens->postTessControlShader, layoutDict);
     }
 }
 
@@ -1274,50 +1325,51 @@ HdSt_CodeGen::_PlumbInterstageElements(
     TfToken const noArraySize;
 
     // Interstage variables of type "int" require "flat" interpolation
-    TfToken const &qualifier =
+    TfToken const &qualifierEl =
         (dataType == _tokens->_int) ? _tokens->flat : _tokens->_default;
+    TfTokenVector qualifiers = {qualifierEl};
 
     // Vertex attrib input for VS, PTCS, PTVS
     _resAttrib.emplace_back(InOut::STAGE_OUT, Kind::VALUE, dataType,
-        vs_outName, noArraySize, qualifier);
+        vs_outName, noArraySize, qualifiers);
 
     if (_hasTCS) {
         _resTCS.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                vs_outName, TfToken("[gl_MaxPatchVertices]"), qualifier);
+                vs_outName, TfToken("[gl_MaxPatchVertices]"), qualifiers);
         _resTCS.emplace_back(InOut::STAGE_OUT, Kind::VALUE, dataType,
-                tcs_outName, TfToken("[HD_NUM_PATCH_EVAL_VERTS]"), qualifier);
+                tcs_outName, TfToken("[HD_NUM_PATCH_EVAL_VERTS]"), qualifiers);
     }
 
     if (_hasTES) {
         _resTES.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                tcs_outName, TfToken("[gl_MaxPatchVertices]"), qualifier);
+                tcs_outName, TfToken("[gl_MaxPatchVertices]"), qualifiers);
         _resTES.emplace_back(InOut::STAGE_OUT, Kind::VALUE, dataType,
-                tes_outName, noArraySize, qualifier);
+                tes_outName, noArraySize, qualifiers);
     }
 
     // Geometry shader inputs come from previous active stage
     if (_hasGS && _hasTES) {
         _resGS.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                tes_outName, TfToken("[HD_NUM_PRIMITIVE_VERTS]"), qualifier);
+                tes_outName, TfToken("[HD_NUM_PRIMITIVE_VERTS]"), qualifiers);
         _resGS.emplace_back(InOut::STAGE_OUT, Kind::VALUE, dataType,
-                gs_outName, noArraySize, qualifier);
+                gs_outName, noArraySize, qualifiers);
     } else if (_hasGS) {
         _resGS.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                vs_outName, TfToken("[HD_NUM_PRIMITIVE_VERTS]"), qualifier);
+                vs_outName, TfToken("[HD_NUM_PRIMITIVE_VERTS]"), qualifiers);
         _resGS.emplace_back(InOut::STAGE_OUT, Kind::VALUE, dataType,
-                gs_outName, noArraySize, qualifier);
+                gs_outName, noArraySize, qualifiers);
     }
 
     // Fragment shader inputs come from previous active stage
     if (_hasGS) {
         _resFS.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                gs_outName, noArraySize, qualifier);
+                gs_outName, noArraySize, qualifiers);
     } else if (_hasTES) {
         _resFS.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                tes_outName, noArraySize, qualifier);
+                tes_outName, noArraySize, qualifiers);
     } else {
         _resFS.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                vs_outName, noArraySize, qualifier);
+                vs_outName, noArraySize, qualifiers);
     }
 }
 
@@ -1425,7 +1477,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _genPTCS.str(""); _genPTVS.str("");
     _genGS.str(""); _genFS.str(""); _genCS.str("");
     _procVS.str(""); _procTCS.str(""); _procTES.str(""); _procGS.str("");
-    _procPTCS.str("");
+    _procPTCSDecl.str(""), _procPTCSIn.str("");
     _procPTVSDecl.str(""), _procPTVSIn.str(""), _procPTVSOut.str("");
 
     _genDefines << "\n// //////// Codegen Defines //////// \n";
@@ -1698,17 +1750,10 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                 "vec4 basis, int i0, int i1, int i2, int i3, vec2 uv) {\n";
 
     _procPTVSIn  << "void ProcessPrimvarsIn() {\n";
-    _procPTVSOut << "template <typename T>\n"
-                    "T InterpolatePrimvar("
-                    "T inPv0, T inPv1, T inPv2, T inPv3, vec4 basis) {\n"
-                    "  return"
-                    " inPv0 * basis[0] +"
-                    " inPv1 * basis[1] +"
-                    " inPv2 * basis[2] +"
-                    " inPv3 * basis[3];\n"
-                    "}\n"
-                    "void ProcessPrimvarsOut("
-                    "vec4 basis, int i0, int i1, int i2, int i3) {\n";
+    _procPTVSOut << "void ProcessPrimvarsOut("
+                    "vec4 basis, int i0, int i1, int i2, int i3, vec2 uv = vec2()) {\n";
+
+    _procPTCSIn  << "void ProcessPrimvarsIn() {\n";
 
     // geometry shader plumbing
     switch(_geometricShader->GetPrimitiveType())
@@ -1793,7 +1838,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _procGS  << "}\n";
     _procTCS << "}\n";
     _procTES << "}\n";
-    _procPTCS << "}\n";
+    _procPTCSIn << "}\n";
     _procPTVSIn << "}\n";
     _procPTVSOut << "}\n";
 
@@ -1801,7 +1846,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _genVS  << _procVS.str();
     _genTCS << _procTCS.str();
     _genTES << _procTES.str();
-    _genPTCS << _procPTCS.str();
+    _genPTCS << _procPTCSDecl.str() <<  _procPTCSIn.str();
     _genPTVS << _procPTVSDecl.str() << _procPTVSIn.str() << _procPTVSOut.str();
     _genGS  << _procGS.str();
 
@@ -1865,6 +1910,11 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     if (tessEvalShader.find("OsdPerPatchVertexBezier") != std::string::npos) {
         _genTES << _GetOSDCommonShaderSource();
         _genTES << "mat4 OsdModelViewMatrix() { return mat4(1); }\n";
+    }
+    if (postTessControlShader.find("OsdPerPatchVertexBezier") != std::string::npos
+        || postTessControlShader.find("OsdInterpolatePatchCoord") != std::string::npos) {
+        _osdPTCS << _GetOSDCommonShaderSource();
+        _osdPTCS << "mat4 OsdModelViewMatrix() { return mat4(1); }\n";
     }
     if (postTessVertexShader.find("OsdPerPatchVertexBezier") != std::string::npos
         || postTessVertexShader.find("OsdInterpolatePatchCoord") != std::string::npos) {
@@ -2353,10 +2403,30 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
 
     if (_hasPTCS) {
         HgiShaderFunctionDesc ptcsDesc;
+        if (_metaData.tessFactorsBinding.binding.IsValid()) {
+
+         HdBinding binding = _metaData.tessFactorsBinding.binding;
+         _EmitDeclaration(&_resPTCS,
+                             _metaData.tessFactorsBinding.name,
+                             _metaData.tessFactorsBinding.dataType,
+                             binding,
+                             true);
+        }
+
         ptcsDesc.shaderStage = HgiShaderStagePostTessellationControl;
 
         ptcsDesc.tessellationDescriptor.numVertsPerPatchIn =
               _geometricShader->GetPrimitiveIndexSize();
+
+        ptcsDesc.tessellationDescriptor.patchType =
+            _geometricShader->IsPrimTypeTriangles() ?
+            HgiShaderFunctionTessellationDesc::PatchType::Triangle :
+            HgiShaderFunctionTessellationDesc::PatchType::Quad;
+        if (_geometricShader->GetHgiPrimitiveType() ==
+            HgiPrimitiveTypePointList) {
+            ptcsDesc.tessellationDescriptor.patchType =
+            HgiShaderFunctionTessellationDesc::PatchType::Isoline;
+        }
 
         resourceGen._GenerateHgiResources(&ptcsDesc,
             HdShaderTokens->postTessControlShader, _resAttrib, _metaData);
@@ -2364,6 +2434,13 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             HdShaderTokens->postTessControlShader, _resCommon, _metaData);
         resourceGen._GenerateHgiResources(&ptcsDesc,
             HdShaderTokens->postTessControlShader, _resPTCS, _metaData);
+
+        // material in PTCS
+        //TODO in review, we most likely don't need this?
+        resourceGen._GenerateHgiResources(&ptcsDesc,
+            HdShaderTokens->postTessControlShader, _resMaterial, _metaData);
+        resourceGen._GenerateHgiTextureResources(&ptcsDesc,
+            HdShaderTokens->postTessControlShader, _resTextures, _metaData);
 
         std::string const declarations =
             _genDefines.str() + _genDecl.str() + _osdPTCS.str();
@@ -2376,14 +2453,36 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         // builtins
 
         HgiShaderFunctionAddStageInput(
-                &ptcsDesc, "thread_position_in_grid", "unsigned",
-                "thread_position_in_grid");
+            &ptcsDesc, "gl_BaseInstance", "uint",
+            HgiShaderKeywordTokens->hdBaseInstance);
         HgiShaderFunctionAddStageInput(
-                &ptcsDesc, "thread_position_in_threadgroup", "unsigned",
-                "thread_position_in_threadgroup");
+            &ptcsDesc, "patch_id", "uint",
+            HgiShaderKeywordTokens->hdPatchID);
+
+        std::string tessCoordType =
+            _geometricShader->IsPrimTypeTriangles() ?
+            "vec3" : "vec2";
+
         HgiShaderFunctionAddStageInput(
-                &ptcsDesc, "threadgroup_position_in_grid", "unsigned",
-                "threadgroup_position_in_grid");
+            &ptcsDesc, "gl_TessCoord", tessCoordType,
+            HgiShaderKeywordTokens->hdPositionInPatch);
+
+        HgiShaderFunctionAddStageInput(
+            &ptcsDesc, "gl_InstanceID", "uint",
+            HgiShaderKeywordTokens->hdInstanceID);
+
+        HgiShaderFunctionAddStageOutput(
+                &ptcsDesc, "gl_Position", "vec4",
+                "position");
+
+        char const* pointRole =
+            (_geometricShader->GetPrimitiveType() ==
+            HdSt_GeometricShader::PrimitiveType::PRIM_POINTS)
+            ? "point_size" : "";
+
+        HgiShaderFunctionAddStageOutput(
+            &ptcsDesc, "gl_PointSize", "float",
+                pointRole);
 
         if (!glslProgram->CompileShader(ptcsDesc)) {
             return nullptr;
@@ -2404,6 +2503,10 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             _geometricShader->IsPrimTypeTriangles() ?
             HgiShaderFunctionTessellationDesc::PatchType::Triangle :
             HgiShaderFunctionTessellationDesc::PatchType::Quad;
+        if (_geometricShader->GetHgiPrimitiveType() ==
+            HgiPrimitiveTypePointList) {
+            ptvsDesc.tessellationDescriptor.patchType = HgiShaderFunctionTessellationDesc::PatchType::Isoline;
+        }
 
         resourceGen._GenerateHgiResources(&ptvsDesc,
             HdShaderTokens->postTessVertexShader, _resAttrib, _metaData);
@@ -3714,9 +3817,11 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         if (requiresBasePrimitiveOffset) {
             primitiveID << "int GetBasePrimitiveOffset() { return vs_dc_primitiveCoord; }\n";
             _genPTVS    << "int GetBasePrimitiveOffset() { return drawingCoord0[0].w; }\n";
+            _genPTCS    << "int GetBasePrimitiveOffset() { return drawingCoord0[0].w; }\n";
         } else {
             primitiveID << "int GetBasePrimitiveOffset() { return 0; }\n";
             _genPTVS    << "int GetBasePrimitiveOffset() { return 0; }\n";
+            _genPTCS    << "int GetBasePrimitiveOffset() { return 0; }\n";
         }
         if (_geometricShader->GetPrimitiveType() ==
                HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIQUADS) {
@@ -3732,11 +3837,20 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                         << "int GetTriQuadID() {\n"
                         << "  return (patch_id - GetBasePrimitiveOffset()) & 1;\n"
                         << "}\n";
+            _genPTCS    << "int GetPrimitiveID() {\n"
+                        << "  return (patch_id - GetBasePrimitiveOffset()) / 2;\n"
+                        << "}\n"
+                        << "int GetTriQuadID() {\n"
+                        << "  return (patch_id - GetBasePrimitiveOffset()) & 1;\n"
+                        << "}\n";
         } else {
             primitiveID << "int GetPrimitiveID() {\n"
                         << "  return (gl_PrimitiveID - GetBasePrimitiveOffset());\n"
                         << "}\n";
             _genPTVS    << "int GetPrimitiveID() {\n"
+                        << "  return (patch_id - GetBasePrimitiveOffset());\n"
+                        << "}\n";
+            _genPTCS    << "int GetPrimitiveID() {\n"
                         << "  return (patch_id - GetBasePrimitiveOffset());\n"
                         << "}\n";
         }
@@ -3797,6 +3911,10 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                << "  return drawingCoord1.y + (gl_InstanceID - gl_BaseInstance) * HD_INSTANCE_INDEX_WIDTH; \n"
                << "}\n";
         
+        _genPTCS << "int GetInstanceIndexCoord() {\n"
+                 << "  return drawingCoord1[0].y + (gl_InstanceID - gl_BaseInstance) * HD_INSTANCE_INDEX_WIDTH; \n"
+                 << "}\n";
+
         _genPTVS << "int GetInstanceIndexCoord() {\n"
                << "  return drawingCoord1[0].y + (gl_InstanceID - gl_BaseInstance) * HD_INSTANCE_INDEX_WIDTH; \n"
                << "}\n";
@@ -3864,6 +3982,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
 
     _genVS   << genAttr.str();
     _genPTVS << genAttr.str();
+    _genPTCS << genAttr.str();
 
     _genVS   << "hd_drawingCoord GetDrawingCoord() { hd_drawingCoord dc;\n"
              << "  dc.modelCoord              = drawingCoord0.x;\n"
@@ -3889,11 +4008,25 @@ HdSt_CodeGen::_GenerateDrawingCoord(
              << "  dc.varyingCoord            = drawingCoord2[0].y;\n"
              << "  hd_instanceIndex r = GetInstanceIndex();\n";
 
+    _genPTCS << "hd_drawingCoord GetDrawingCoord() { hd_drawingCoord dc;\n"
+             << "  dc.modelCoord              = drawingCoord0[0].x;\n"
+             << "  dc.constantCoord           = drawingCoord0[0].y;\n"
+             << "  dc.elementCoord            = drawingCoord0[0].z;\n"
+             << "  dc.primitiveCoord          = drawingCoord0[0].w + patch_id;\n"
+             << "  dc.fvarCoord               = drawingCoord1[0].x;\n"
+             << "  dc.shaderCoord             = drawingCoord1[0].z;\n"
+             << "  dc.vertexCoord             = drawingCoord1[0].w;\n"
+             << "  dc.topologyVisibilityCoord = drawingCoord2[0].x;\n"
+             << "  dc.varyingCoord            = drawingCoord2[0].y;\n"
+             << "  hd_instanceIndex r = GetInstanceIndex();\n";
+
     for(int i = 0; i < instanceIndexWidth; ++i) {
         std::string const index = std::to_string(i);
         _genVS   << "  dc.instanceIndex[" << index << "]"
                  << " = r.indices[" << index << "];\n";
         _genPTVS << "  dc.instanceIndex[" << index << "]"
+                 << " = r.indices[" << index << "];\n";
+        _genPTCS << "  dc.instanceIndex[" << index << "]"
                  << " = r.indices[" << index << "];\n";
     }
     for(int i = 0; i < instanceIndexWidth-1; ++i) {
@@ -3904,12 +4037,18 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         _genPTVS << "  dc.instanceCoords[" << index << "]"
                  << " = drawingCoordI" << index << "[0]"
                  << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
+        _genPTCS << "  dc.instanceCoords[" << index << "]"
+                 << " = drawingCoordI" << index << "[0]"
+                 << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
     }
 
-    _genVS   << "  return dc;\n"
-             << "}\n";
+    _genVS << "  return dc;\n"
+           << "}\n";
+
     _genPTVS << "  return dc;\n"
-             << "}\n";
+           << "}\n";
+    _genPTCS << "  return dc;\n"
+           << "}\n";
 
     // note: GL spec says tessellation input array size must be equal to
     //       gl_MaxPatchVertices, which is used for intrinsic declaration
@@ -4586,6 +4725,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
     _genTCS << accessors.str();
     _genTES << accessors.str();
     _genGS << accessors.str();
+    _genPTCS << accessors.str();
     _genPTVS << accessors.str();
     _genFS << accessors.str();
 }
@@ -4644,7 +4784,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
     */
 
     std::stringstream accessorsVS, accessorsTCS, accessorsTES,
-        accessorsPTVS, accessorsGS, accessorsFS;
+        accessorsPTCS, accessorsPTVS, accessorsGS, accessorsFS;
 
     HdSt_ResourceLayout::MemberVector interstagePrimvar;
 
@@ -4682,6 +4822,14 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
         _EmitStageAccessor(accessorsPTVS, name,
             "ptvs_pv_" + name.GetString() + "[localIndex]", dataType);
 
+        // PTVS vertex primvar is staged in local arrays.
+        _procPTCSDecl << dataType << " " << "ptvs_pv_" << name
+                      << "[VERTEX_CONTROL_POINTS_PER_PATCH];\n";
+
+        // Access PTVS vertex primvar from the staging arrays.
+        _EmitStageAccessor(accessorsPTCS, name,
+            "ptvs_pv_" + name.GetString() + "[localIndex]", dataType);
+
         // interstage plumbing
         _procVS << "  outPrimvars." << name
                 << " = " << name << ";\n";
@@ -4697,13 +4845,16 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
 
         _procPTVSIn  << "  for (int i = 0; i < VERTEX_CONTROL_POINTS_PER_PATCH; ++i) {\n"
                      << "    ptvs_pv_" << name << "[i] = " << name << "[i];\n"
-                     << "  }\n";
+                  << "  }\n";
         _procPTVSOut << "  outPrimvars." << name
                      << " = InterpolatePrimvar(ptvs_pv_"
                      << name << "[i0], ptvs_pv_"
                      << name << "[i1], ptvs_pv_"
                      << name << "[i2], ptvs_pv_"
                      << name << "[i3], basis);\n";
+        _procPTCSIn << "  for (int ind = 0; ind < VERTEX_CONTROL_POINTS_PER_PATCH; ind++) {\n"
+                  << "      ptvs_pv_" << name << "[ind] = " << name << "[ind];\n"
+                  << "  }\n";
 
     }
 
@@ -4742,13 +4893,14 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
         _EmitDeclaration(&_resAttrib, name, dataType, binding);
 
         interstagePrimvar.emplace_back(_GetPackedType(dataType, false), name);
-
+        //_EmitStageAccessor(accessorsPTVS, name,
+        //    "ptvs_pv_" + name.GetString() + "[localIndex]", dataType);
         // primvar accessors
         _EmitBufferAccessor(accessorsVS, name, dataType,
             "GetDrawingCoord().varyingCoord + gl_VertexID - GetBaseVertexOffset()");
         
         _EmitStructAccessor(accessorsTCS, _tokens->inPrimvars,
-                            name, dataType, /*arraySize=*/1, "gl_InvocationID");
+                                    name, dataType, /*arraySize=*/1, "gl_InvocationID");
         _EmitStructAccessor(accessorsTES, _tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1, "localIndex");
         _EmitStructAccessor(accessorsGS,  _tokens->inPrimvars,
@@ -4760,10 +4912,18 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
         _procPTVSDecl << dataType << " " << "ptvs_pv_" << name
                       << "[VERTEX_CONTROL_POINTS_PER_PATCH];\n";
 
+        // PTVS varying primvar is staged in local arrays.
+        _procPTCSDecl << dataType << " " << "ptvs_pv_" << name
+                      << "[VERTEX_CONTROL_POINTS_PER_PATCH];\n";
+
         // Access PTVS varying primvar from the data buffer.
         _EmitBufferAccessor(accessorsPTVS, name, dataType,
             "GetDrawingCoord().varyingCoord + patch_id + localIndex");
         
+        // Access PTVS varying primvar from the data buffer.
+        _EmitBufferAccessor(accessorsPTCS, name, dataType,
+            "GetDrawingCoord().varyingCoord + patch_id + localIndex");
+
         // interstage plumbing
         _procVS << "  outPrimvars." << name
                 << " = " << "HdGet_" << name << "();\n";
@@ -4787,7 +4947,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
                      << name << "[i0], ptvs_pv_"
                      << name << "[i1], ptvs_pv_"
                      << name << "[i2], ptvs_pv_"
-                     << name << "[i3], basis);\n";
+                     << name << "[i3], basis,uv);\n";
     }
 
     /*
@@ -4933,70 +5093,80 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
                               _geometricShader->GetPrimitiveType(),
                               _geometricShader->GetFvarPatchType(),
                               channel);
+            _EmitFVarAccessor(false,
+                              accessorsPTCS, name, dataType, binding,
+                              _geometricShader->GetPrimitiveType(),
+                              _geometricShader->GetFvarPatchType(),
+                              channel);
         }
-    }
+        }
 
     if (!interstagePrimvar.empty()) {
-        // VS out
-        _AddInterstageBlockElement(
-            &_resVS, HdSt_ResourceLayout::InOut::STAGE_OUT,
-            _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar);
+         // VS out
+         _AddInterstageBlockElement(
+             &_resVS, HdSt_ResourceLayout::InOut::STAGE_OUT,
+             _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar);
 
-        // TCS in/out
-        _AddInterstageBlockElement(
-            &_resTCS, HdSt_ResourceLayout::InOut::STAGE_IN,
-            _tokens->PrimvarData, _tokens->inPrimvars, interstagePrimvar,
-            TfToken("gl_MaxPatchVertices"));
-        _AddInterstageBlockElement(
-            &_resTCS, HdSt_ResourceLayout::InOut::STAGE_OUT,
-            _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar,
-            TfToken("HD_NUM_PATCH_EVAL_VERTS"));
+         // TCS in/out
+         _AddInterstageBlockElement(
+             &_resTCS, HdSt_ResourceLayout::InOut::STAGE_IN,
+             _tokens->PrimvarData, _tokens->inPrimvars, interstagePrimvar,
+             TfToken("gl_MaxPatchVertices"));
+         _AddInterstageBlockElement(
+             &_resTCS, HdSt_ResourceLayout::InOut::STAGE_OUT,
+             _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar,
+             TfToken("HD_NUM_PATCH_EVAL_VERTS"));
 
-        // TES in/out
-        _AddInterstageBlockElement(
-            &_resTES, HdSt_ResourceLayout::InOut::STAGE_IN,
-            _tokens->PrimvarData, _tokens->inPrimvars, interstagePrimvar,
-            TfToken("gl_MaxPatchVertices"));
-        _AddInterstageBlockElement(
-            &_resTES, HdSt_ResourceLayout::InOut::STAGE_OUT,
-            _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar);
+         // TES in/out
+         _AddInterstageBlockElement(
+             &_resTES, HdSt_ResourceLayout::InOut::STAGE_IN,
+             _tokens->PrimvarData, _tokens->inPrimvars, interstagePrimvar,
+             TfToken("gl_MaxPatchVertices"));
+         _AddInterstageBlockElement(
+             &_resTES, HdSt_ResourceLayout::InOut::STAGE_OUT,
+             _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar);
 
-        // GS in
-        _AddInterstageBlockElement(
-            &_resGS, HdSt_ResourceLayout::InOut::STAGE_IN,
-            _tokens->PrimvarData, _tokens->inPrimvars, interstagePrimvar,
-            TfToken("HD_NUM_PRIMITIVE_VERTS"));
+         // GS in
+         _AddInterstageBlockElement(
+             &_resGS, HdSt_ResourceLayout::InOut::STAGE_IN,
+             _tokens->PrimvarData, _tokens->inPrimvars, interstagePrimvar,
+             TfToken("HD_NUM_PRIMITIVE_VERTS"));
+     }
+
+     if (!interstagePrimvar.empty() || !interstagePrimvarFVar.empty()) {
+
+         // Include FVar primvar for these shader stages.
+         interstagePrimvar.insert(interstagePrimvar.end(),
+                                  interstagePrimvarFVar.begin(),
+                                  interstagePrimvarFVar.end());
+
+         // PTVS out
+         _AddInterstageBlockElement(
+             &_resPTVS, HdSt_ResourceLayout::InOut::STAGE_OUT,
+             _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar);
+
+         _AddInterstageBlockElement(
+             &_resPTCS, HdSt_ResourceLayout::InOut::STAGE_OUT,
+             _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar);
+
+         // GS out
+         _AddInterstageBlockElement(
+             &_resGS, HdSt_ResourceLayout::InOut::STAGE_OUT,
+             _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar);
+
+         // FS in
+         _AddInterstageBlockElement(
+             &_resFS, HdSt_ResourceLayout::InOut::STAGE_IN,
+             _tokens->PrimvarData, _tokens->inPrimvars, interstagePrimvar);
     }
 
-    if (!interstagePrimvar.empty() || !interstagePrimvarFVar.empty()) {
-
-        // Include FVar primvar for these shader stages.
-        interstagePrimvar.insert(interstagePrimvar.end(),
-                                 interstagePrimvarFVar.begin(),
-                                 interstagePrimvarFVar.end());
-
-        // PTVS out
-        _AddInterstageBlockElement(
-            &_resPTVS, HdSt_ResourceLayout::InOut::STAGE_OUT,
-            _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar);
-
-        // GS out
-        _AddInterstageBlockElement(
-            &_resGS, HdSt_ResourceLayout::InOut::STAGE_OUT,
-            _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar);
-
-        // FS in
-        _AddInterstageBlockElement(
-            &_resFS, HdSt_ResourceLayout::InOut::STAGE_IN,
-            _tokens->PrimvarData, _tokens->inPrimvars, interstagePrimvar);
-    }
-
-    _genVS    << accessorsVS.str();
-    _genGS    << accessorsGS.str();
-    _genFS    << accessorsFS.str();
-    _genTCS   << accessorsTCS.str();
-    _genTES   << accessorsTES.str();
+    _genVS  << accessorsVS.str();
+    _genGS  << accessorsGS.str();
+    _genFS  << accessorsFS.str();
+    _genTCS << accessorsTCS.str();
+    _genTES << accessorsTES.str();
     _genPTVS  << accessorsPTVS.str();
+    _genPTCS  << accessorsPTCS.str();
 
     // ---------
     _genFS << "FORWARD_DECL(vec4 GetPatchCoord(int index));\n";
@@ -5715,6 +5885,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
     _genGS << accessors.str();
     _genFS << accessors.str();
     _genPTVS << accessors.str();
+    _genPTCS << accessors.str();
 }
 
 void

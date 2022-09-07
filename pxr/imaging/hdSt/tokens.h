@@ -69,6 +69,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (fvarIndices)                               \
     (fvarPatchParam)                            \
     (coarseFaceIndex)                           \
+    (tessFactors)                               \
     (processedFaceCounts)                       \
     (processedFaceIndices)                      \
     (geomSubsetFaceIndices)                     \

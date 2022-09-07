@@ -156,6 +156,7 @@ HdSt_GeometricShader::GetPrimitiveIndexSize() const
             primIndexSize = 3;
             break;
         case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
+        case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_WIRE_PATCHES:
         case PrimitiveType::PRIM_MESH_COARSE_QUADS:
         case PrimitiveType::PRIM_MESH_REFINED_QUADS:
             primIndexSize = 4;
@@ -186,6 +187,7 @@ HdSt_GeometricShader::GetNumPatchEvalVerts() const
             numPatchEvalVerts = 2;
             break;
         case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
+        case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_WIRE_PATCHES:
             numPatchEvalVerts = 4;
             break;
         case PrimitiveType::PRIM_MESH_BSPLINE:
@@ -213,6 +215,7 @@ HdSt_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
             numPrimVerts = 1;
             break;
         case PrimitiveType::PRIM_BASIS_CURVES_LINES:
+        case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_WIRE_PATCHES:
             numPrimVerts = 2;
             break;
         case PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
@@ -249,6 +252,7 @@ HdSt_GeometricShader::GetHgiPrimitiveType() const
         case PrimitiveType::PRIM_BASIS_CURVES_LINES:
             primitiveType = HgiPrimitiveTypeLineList;
             break;
+        case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_WIRE_PATCHES:
         case PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
         case PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
         case PrimitiveType::PRIM_MESH_COARSE_TRIQUADS:

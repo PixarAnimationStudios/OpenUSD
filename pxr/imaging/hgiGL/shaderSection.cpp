@@ -170,6 +170,15 @@ HgiGLMemberShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
         ss << "noperspective ";
         break;
     }
+    
+    if ((_samplingFlags & HgiShaderFunctionParamDesc::Centroid) != 0) {
+        ss << "centroid ";
+    }
+    
+    if ((_samplingFlags & HgiShaderFunctionParamDesc::Sample) != 0) {
+        ss << "sample ";
+    }
+    
     WriteDeclaration(ss);
     return true;
 }
@@ -178,6 +187,11 @@ void
 HgiGLMemberShaderSection::WriteType(std::ostream& ss) const
 {
     ss << _typeName;
+}
+
+void HgiGLMemberShaderSection::SetSamplingFlags(
+    HgiShaderFunctionParamDesc::SamplingFlag samplingFlags) {
+    _samplingFlags = samplingFlags;
 }
 
 HgiGLBlockShaderSection::HgiGLBlockShaderSection(

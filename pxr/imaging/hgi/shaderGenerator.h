@@ -74,6 +74,9 @@ protected:
     HGI_API
     HgiShaderStage _GetShaderStage() const;
 
+protected:
+    const HgiShaderStage _stage;
+
 private:
     const HgiShaderFunctionDesc &_descriptor;
 

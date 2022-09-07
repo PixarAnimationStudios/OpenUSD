@@ -358,6 +358,10 @@ struct HgiTessellationLevel
 ///   The type of tessellation patch.</li>
 /// <li>primitiveIndexSize:
 ///   The number of control indices per patch.</li>
+/// <li>useConstantTessFactors:
+///   Indicates if we are using constant tess factors</li>
+/// <li>isPostTessControl:
+///   Indicates that we are going to execute a post tess control tessellation phase in this pipeline</li>
 /// <li>tessellationLevel:
 ///   The fallback tessellation levels.</li>
 /// </ul>
@@ -366,7 +370,8 @@ struct HgiTessellationState
 {
     enum PatchType {
         Triangle,
-        Quad
+        Quad,
+        Isoline
     };
 
     HGI_API
@@ -374,6 +379,8 @@ struct HgiTessellationState
 
     PatchType patchType;
     int primitiveIndexSize;
+    bool useConstantTessFactors;
+    bool isPostTessControl = false;
     HgiTessellationLevel tessellationLevel;
 };
 

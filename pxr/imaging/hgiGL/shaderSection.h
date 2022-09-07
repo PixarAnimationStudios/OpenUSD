@@ -136,6 +136,9 @@ public:
 
     HGIGL_API
     void WriteType(std::ostream& ss) const override;
+    
+    HGIGL_API
+    void SetSamplingFlags(HgiShaderFunctionParamDesc::SamplingFlag samplingFlags);
 
 private:
     HgiGLMemberShaderSection() = delete;
@@ -145,6 +148,7 @@ private:
 
     std::string _typeName;
     HgiInterpolationType _interpolation;
+    HgiShaderFunctionParamDesc::SamplingFlag _samplingFlags;
 };
 
 /// \class HgiGLBlockShaderSection

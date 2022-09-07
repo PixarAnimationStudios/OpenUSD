@@ -1071,7 +1071,7 @@ HdStRenderPassState::GetClipPlanes() const
 }
 
 void
-HdStRenderPassState::_InitPrimitiveState(
+HdStRenderPassState::InitPrimitiveState(
     HgiGraphicsPipelineDesc * pipeDesc,
     HdSt_GeometricShaderSharedPtr const & geometricShader) const
 {
@@ -1086,6 +1086,16 @@ HdStRenderPassState::_InitPrimitiveState(
                 geometricShader->IsPrimTypeTriangles()
                     ? HgiTessellationState::PatchType::Triangle
                     : HgiTessellationState::PatchType::Quad;
+            if (geometricShader->GetHgiPrimitiveType() ==
+                HgiPrimitiveTypePointList) {
+                pipeDesc->tessellationState.patchType = HgiTessellationState::Isoline;
+            }
+        }
+    }
+    if (geometricShader->GetUseMetalTessellation()) {
+        if (geometricShader->GetHgiPrimitiveType() ==
+            HgiPrimitiveTypePointList) {
+            pipeDesc->tessellationState.patchType = HgiTessellationState::Isoline;
         }
     }
 }
@@ -1219,7 +1229,7 @@ HdStRenderPassState::InitGraphicsPipelineDesc(
     HgiGraphicsPipelineDesc * pipeDesc,
     HdSt_GeometricShaderSharedPtr const & geometricShader) const
 {
-    _InitPrimitiveState(pipeDesc, geometricShader);
+    InitPrimitiveState(pipeDesc, geometricShader);
     _InitDepthStencilState(&pipeDesc->depthState);
     _InitMultiSampleState(&pipeDesc->multiSampleState);
     _InitRasterizationState(&pipeDesc->rasterizationState, geometricShader);

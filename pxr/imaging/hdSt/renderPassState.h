@@ -200,6 +200,12 @@ public:
     /// Generates the hash for the settings used to init the graphics pipeline.
     HDST_API
     uint64_t GetGraphicsPipelineHash() const;
+    
+    /// Initializes the primitive state
+    HDST_API
+    void InitPrimitiveState(
+                HgiGraphicsPipelineDesc * pipeDesc,
+                HdSt_GeometricShaderSharedPtr const & geometricShader) const;
 
 private:
     bool _UseAlphaMask() const;
@@ -210,9 +216,6 @@ private:
     void _InitAttachmentDesc(HgiAttachmentDesc &attachmentDesc,
                              int aovIndex = -1) const;
 
-    void _InitPrimitiveState(
-                HgiGraphicsPipelineDesc * pipeDesc,
-                HdSt_GeometricShaderSharedPtr const & geometricShader) const;
     void _InitAttachmentState(HgiGraphicsPipelineDesc * pipeDesc) const;
     void _InitDepthStencilState(HgiDepthStencilState * depthState) const;
     void _InitMultiSampleState(HgiMultiSampleState * multisampleState) const;

@@ -88,6 +88,7 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
     , _scissorRectSet(false)
     , _enableParallelEncoder(false)
     , _primitiveTypeChanged(false)
+    , _bindPTCS(false)
     , _maxNumEncoders(1)
 {
     TF_VERIFY(desc.colorTextures.size() == desc.colorAttachmentDescs.size());
@@ -311,7 +312,6 @@ HgiMetalGraphicsCmds::_SetCachedEncoderState(id<MTLRenderCommandEncoder> encoder
                                                         encoder,
                                                         _CachedEncState.argumentBuffer);
     }
-
     _SetVertexBindings(encoder, _CachedEncState.vertexBindings);
 }
 
@@ -539,7 +539,6 @@ HgiMetalGraphicsCmds::Draw(
     id<MTLRenderCommandEncoder> encoder = _GetEncoder();
 
     _stepFunctions.SetVertexBufferOffsets(encoder, baseInstance);
-
     if (_primitiveType == HgiPrimitiveTypePatchList) {
         const NSUInteger controlPointCount = _primitiveIndexSize;
         [encoder drawPatches:controlPointCount
@@ -577,7 +576,6 @@ HgiMetalGraphicsCmds::DrawIndirect(
         HgiMetalConversions::GetPrimitiveType(_primitiveType);
     id<MTLBuffer> drawBufferId =
         static_cast<HgiMetalBuffer*>(drawParameterBuffer.Get())->GetBufferId();
-    const HgiCapabilities *capabilities = _hgi->GetCapabilities();
 
     _SyncArgumentBuffer();
     static const uint32_t _drawCallsPerThread = 256;
@@ -724,10 +722,10 @@ HgiMetalGraphicsCmds::DrawIndexedIndirect(
                                         ? finalCount : normalCount;
             wd.Run([&, i, encoderOffset, encoderCount]() {
                 id<MTLRenderCommandEncoder> encoder = _GetEncoder(i);
-                
+
                 if (_primitiveType == HgiPrimitiveTypePatchList) {
                     const NSUInteger controlPointCount = _primitiveIndexSize;
-                    
+
                     for (uint32_t offset = encoderOffset;
                          offset < encoderOffset + encoderCount;
                          ++offset) {

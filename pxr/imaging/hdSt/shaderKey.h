@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdSt/geometricShader.h" // XXX: for PrimitiveType
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hgi/enums.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

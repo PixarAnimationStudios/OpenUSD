@@ -63,6 +63,10 @@ public:
     HGIVULKAN_API
     HgiShaderFunctionHandleVector const& GetShaderFunctions() const;
 
+    HGIVULKAN_API
+    HgiShaderFunctionHandle const
+    GetShaderFunction(HgiShaderStage shaderStage) const override;
+
     /// Returns the device used to create this object.
     HGIVULKAN_API
     HgiVulkanDevice* GetDevice() const;

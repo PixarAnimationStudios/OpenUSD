@@ -117,6 +117,7 @@ public:
         TfToken arraySize;
     };
     using MemberVector = std::vector<Member>;
+    using TfTokenVector = std::vector<TfToken>;
 
     /// Specifies a resource element.
     struct Element {
@@ -125,7 +126,7 @@ public:
                 TfToken dataType = HdStResourceLayoutTokens->unknown,
                 TfToken name = HdStResourceLayoutTokens->unknown,
                 TfToken arraySize = TfToken(),
-                TfToken qualifiers = TfToken())
+                TfTokenVector qualifiers = TfTokenVector())
             : inOut(inOut)
             , kind(kind)
             , location(-1)
@@ -141,7 +142,7 @@ public:
         int location;
         TfToken dataType;
         TfToken name;
-        TfToken qualifiers;
+        TfTokenVector qualifiers;
         TfToken arraySize;
         TfToken aggregateName;
         MemberVector members;

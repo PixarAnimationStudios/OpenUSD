@@ -212,6 +212,7 @@ HdStGLConversions::GetPrimitiveMode(
             primMode = GL_LINES_ADJACENCY;
             break;
         case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
+        case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_WIRE_PATCHES:
         case PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES:
         case PrimitiveType::PRIM_MESH_BSPLINE:
         case PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:

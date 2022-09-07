@@ -70,6 +70,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (ivec4)
     (constantPrimvars)
     (primitiveParam)
+    (tessFactors)
     (topologyVisibility)
 );
 
@@ -413,6 +414,9 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 } else if (_TokenContainsString(name, 
                            HdStTokens->fvarPatchParam.GetString())) {
                     metaDataOut->fvarPatchParamBindings.push_back(bindingDecl);
+                } else if (_TokenContainsString(name,
+                           HdStTokens->tessFactors.GetString())) {
+                    metaDataOut->tessFactorsBinding = bindingDecl;
                 } else {
                     TF_WARN("Unexpected topological resource '%s'\n",
                     name.GetText());
@@ -600,7 +604,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     /*name=*/HdInstancerTokens->culledInstanceIndices,
                     /*type=*/glType,
                     /*binding=*/culledInstanceIndexArrayBinding,
-                    /*isWritable=*/true);
+                    /*writable=*/true);
         }
     }
 
@@ -992,7 +996,8 @@ HdSt_ResourceBinder::GetBufferBindingDesc(
 
     HgiShaderStage stageUsage =
         HgiShaderStageVertex | HgiShaderStageFragment |
-        HgiShaderStagePostTessellationVertex;
+        HgiShaderStagePostTessellationVertex |
+        HgiShaderStagePostTessellationControl;
     HgiBufferBindDesc desc;
 
     switch (binding.GetType()) {
@@ -1615,6 +1620,7 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     boost::hash_combine(hash, instanceIndexBaseBinding.dataType);
     boost::hash_combine(hash, primitiveParamBinding.binding.GetValue());
     boost::hash_combine(hash, primitiveParamBinding.dataType);
+    boost::hash_combine(hash, tessFactorsBinding.binding.GetValue());
     boost::hash_combine(hash, edgeIndexBinding.binding.GetValue());
     boost::hash_combine(hash, edgeIndexBinding.dataType);
     boost::hash_combine(hash, coarseFaceIndexBinding.binding.GetValue());

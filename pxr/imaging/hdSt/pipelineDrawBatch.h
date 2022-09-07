@@ -140,9 +140,16 @@ private:
                 HdStBufferArrayRangeSharedPtr const & indexBar);
 
     void _ExecuteFrustumCull(
+                HgiGraphicsCmds * cullGfxCmds,
                 bool updateDispatchBuffer,
                 HdStRenderPassStateSharedPtr const & renderPassState,
                 HdStResourceRegistrySharedPtr const & resourceRegistry);
+
+    void _ExecutePostTesselation(
+            HgiGraphicsCmds *ptcsGfxCmds,
+            bool const updateBufferData,
+            HdStRenderPassStateSharedPtr const & renderPassState,
+            HdStResourceRegistrySharedPtr const & resourceRegistry);
 
     void _BeginGPUCountVisibleInstances(
         HdStResourceRegistrySharedPtr const & resourceRegistry);

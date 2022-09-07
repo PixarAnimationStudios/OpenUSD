@@ -61,16 +61,21 @@ protected:
     virtual bool _CheckValid() const override;
 
 public:
-    // For building index and primitive index arrays
+    // For building index, primitive index and tessFactor arrays
     struct IndexAndPrimIndex {
         // default constructor results in empty VtValue's
         IndexAndPrimIndex() {}
 
-        IndexAndPrimIndex(VtValue indices, VtValue primIndices) :
-            _indices(indices), _primIndices(primIndices) {}
+        IndexAndPrimIndex(VtValue indices,
+                          VtValue primIndices,
+                          VtValue tessFactors) :
+                     _indices(indices),
+                     _primIndices(primIndices),
+                     _tessFactors(tessFactors) {}
 
         VtValue _indices;
         VtValue _primIndices;
+        VtValue _tessFactors;
     };
 private:
     IndexAndPrimIndex _BuildLinesIndexArray();
@@ -80,7 +85,8 @@ private:
     HdBasisCurvesTopology *_topology;
     bool _forceLines;
 
-    HdBufferSourceSharedPtr _primitiveParam;    
+    HdBufferSourceSharedPtr _primitiveParam;
+    HdBufferSourceSharedPtr _tessFactorsParam;
 };
 
 
