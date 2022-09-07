@@ -158,11 +158,6 @@ UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
                 index->GetMaterialAdapter(materialPrim);
             if (materialAdapter) {
                 materialAdapter->Populate(materialPrim, index, nullptr);
-                // We need to register a dependency on the material prim so
-                // that geometry is updated when the material is
-                // (specifically, DirtyMaterialId).
-                // XXX: Eventually, it would be great to push this into hydra.
-                index->AddDependency(cachePath, materialPrim);
             }
         } else {
             TF_WARN("Gprim <%s> has illegal material reference to "
@@ -170,6 +165,17 @@ UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
                     materialPrim.GetPath().GetText(),
                     materialPrim.GetTypeName().GetText());
         }
+    }
+
+    // Add Dependency on valid target path bound on the material:binding
+    // relationship on this gprim
+    // Note that this path could represent a prim which is not available on the
+    // usd stage, either because of unloaded state or over prim, etc.
+    // But since AddDependency only care about the SdfPath, _GetPrim not
+    // returning a valid prim is okay, as all we want is to add the prim path on
+    // the dependency map!
+    if (!resolvedUsdMaterialPath.IsEmpty()) {
+        index->AddDependency(cachePath, _GetPrim(resolvedUsdMaterialPath));
     }
 
     // Populate coordinate system sprims bound to rprims.

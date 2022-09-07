@@ -701,8 +701,11 @@ typedef UsdImaging_ResolvedAttributeCache<UsdImaging_MaterialStrategy,
         UsdImaging_MaterialBindingCache;
 
 struct UsdImaging_MaterialStrategy {
-    typedef SdfPath value_type;         // inherited path to bound shader
-    typedef UsdShadeMaterial query_type;
+    // inherited path to bound target
+    // depending on the load state, override, etc bound target path might not be
+    // queried as a UsdShadeMaterial on the stage.
+    typedef SdfPath value_type;         // inherited path to bound target
+    typedef UsdRelationship query_type; // Hold the winning relationship binding
 
     using ImplData = UsdImaging_MaterialBindingImplData;
 
@@ -716,10 +719,13 @@ struct UsdImaging_MaterialStrategy {
         UsdPrim const& prim, 
         ImplData *implData) 
     {
-        return UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial(
-                &implData->GetBindingsCache(), 
-                &implData->GetCollectionQueryCache(),
-                implData->GetMaterialPurpose());
+        UsdRelationship bindingRel;
+        UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial(
+            &implData->GetBindingsCache(), 
+            &implData->GetCollectionQueryCache(),
+            implData->GetMaterialPurpose(),
+            &bindingRel);
+        return bindingRel;
     }
  
     static 
@@ -731,9 +737,11 @@ struct UsdImaging_MaterialStrategy {
         TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for \"preview\" material "
                 "binding for %s\n", prim.GetPath().GetText());
         if (*query) {
-            SdfPath binding = query->GetPath();
-            if (!binding.IsEmpty()) {
-                return binding;
+            const SdfPath targetPath = 
+                UsdShadeMaterialBindingAPI::GetResolvedTargetPathFromBindingRel(
+                    *query);
+            if (!targetPath.IsEmpty()) {
+                return targetPath;
             }
         }
         // query already contains the resolved material binding for the prim. 
@@ -748,11 +756,18 @@ struct UsdImaging_MaterialStrategy {
     ComputeMaterialPath(UsdPrim const& prim, ImplData *implData) {
         // We don't need to walk up the namespace here since 
         // ComputeBoundMaterial does it for us.
-        if (UsdShadeMaterial mat = UsdShadeMaterialBindingAPI(prim).
-                    ComputeBoundMaterial(&implData->GetBindingsCache(), 
-                                         &implData->GetCollectionQueryCache(),
-                                         implData->GetMaterialPurpose())) {
-            return mat.GetPath();
+        UsdRelationship bindingRel;
+        UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial(
+                &implData->GetBindingsCache(), 
+                &implData->GetCollectionQueryCache(),
+                implData->GetMaterialPurpose(),
+                &bindingRel);
+
+        const SdfPath targetPath =
+            UsdShadeMaterialBindingAPI::GetResolvedTargetPathFromBindingRel(
+                    bindingRel);
+        if (!targetPath.IsEmpty()) {
+            return targetPath;
         }
         return value_type();
     }

@@ -378,11 +378,16 @@ public:
         /// that is bound by this collection-binding.
         USDSHADE_API
         UsdCollectionAPI GetCollection() const;
+
+        /// Checks if the \p bindingRel identifies a collection
+        USDSHADE_API
+        static bool IsCollectionBindingRel(const UsdRelationship &bindingRel);
         
-        /// Returns true if the CollectionBinding points to a valid material
-        /// and collection.
+        /// Returns true if the CollectionBinding points to a non-empty material
+        /// path and collection.
         bool IsValid() const {
-            return GetCollection() && GetMaterial();
+            return CollectionBinding::IsCollectionBindingRel(_bindingRel) 
+                && !GetMaterialPath().IsEmpty();
         }
         /// Returns the path to the collection that is bound by this binding.
         const SdfPath &GetCollectionPath() const { 
@@ -711,7 +716,11 @@ public:
     USDSHADE_API
     static TfTokenVector GetMaterialPurposes();
 
-    /// \overload
+    /// returns the path of the resolved target identified by \p bindingRel.
+    USDSHADE_API
+    static const SdfPath GetResolvedTargetPathFromBindingRel(
+            const UsdRelationship &bindingRel);
+
     /// Computes the resolved bound material for this prim, for the given 
     /// material purpose. 
     /// 
@@ -745,6 +754,16 @@ public:
     /// 
     /// If \p bindingRel is not null, then it is set to the "winning" binding
     /// relationship.
+    ///
+    /// Note the resolved bound material is considered valid if the target path 
+    /// of the binding relationship is a valid non-empty prim path. This makes 
+    /// sure winning binding relationship and the bound material remain consistent
+    /// consistent irrespective of the presence/absence of prim at material 
+    /// path. For ascenario where ComputeBoundMaterial returns a invalid 
+    /// UsdShadeMaterial with a valid winning bindingRel, clients can use the  
+    /// static method 
+    /// UsdShadeMaterialBindingAPI::GetResolvedTargetPathFromBindingRel to get 
+    /// the path of the resolved target identified by the winning bindingRel.
     ///
     /// See \ref UsdShadeMaterialBindingAPI_MaterialResolution "Bound Material Resolution"
     /// for details on the material resolution process.

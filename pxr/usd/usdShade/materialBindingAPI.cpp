@@ -328,6 +328,16 @@ UsdShadeMaterialBindingAPI::CollectionBinding::GetCollection() const
     return UsdCollectionAPI(); 
 }
 
+/* static */
+bool
+UsdShadeMaterialBindingAPI::CollectionBinding::IsCollectionBindingRel(
+        const UsdRelationship &bindingRel)
+{
+    return TfStringStartsWith(bindingRel.GetName(),
+            SdfPath::JoinIdentifier(UsdShadeTokens->materialBinding,
+                UsdTokens->collection));
+}
+
 
 UsdShadeMaterialBindingAPI::CollectionBindingVector
 UsdShadeMaterialBindingAPI::GetCollectionBindings(
@@ -642,10 +652,10 @@ UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
         directBinding.reset(new DirectBinding(directBindingRel));
     }
 
-    // If there is no restricted purpose direct binding, look for an
-    // all-purpose direct-binding.
+    // If there is no restricted purpose direct binding or an empty material
+    // path on the direct binding, look for an all-purpose direct-binding.
     if (materialPurpose != UsdShadeTokens->allPurpose && 
-        (!directBinding || !directBinding->GetMaterial())) {
+        (!directBinding || directBinding->GetMaterialPath().IsEmpty())) {
 
         // This may not be necessary if a specific purpose collection-binding 
         // already includes the prim for which the resolved binding is being 
@@ -660,8 +670,8 @@ UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
         }
     }
 
-    // If the direct-binding points to an invalid material then clear it.
-    if (directBinding && !directBinding->GetMaterial()) {
+    // If the direct-binding points to an empty material path then clear it.
+    if (directBinding && directBinding->GetMaterialPath().IsEmpty()) {
         directBinding.release();
     }
 
@@ -708,6 +718,23 @@ UsdShadeMaterialBindingAPI::GetMaterialPurposes()
              UsdShadeTokens->full };
 }
 
+/* static */
+const SdfPath
+UsdShadeMaterialBindingAPI::GetResolvedTargetPathFromBindingRel(
+        const UsdRelationship &bindingRel)
+{
+    if (!bindingRel) {
+        return SdfPath();
+    }
+
+    SdfPathVector targetPaths;
+    bindingRel.GetForwardedTargets(&targetPaths);
+
+    return 
+        UsdShadeMaterialBindingAPI::CollectionBinding::IsCollectionBindingRel(
+                bindingRel) ? targetPaths[1] : targetPaths[0];
+}
+
 UsdShadeMaterial 
 UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
     BindingsCache *bindingsCache,
@@ -730,6 +757,7 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
 
     for (auto const & purpose : materialPurposes) {
         UsdShadeMaterial boundMaterial;
+        bool hasValidTargetPath = false;
         UsdRelationship winningBindingRel;
 
         for (UsdPrim p = GetPrim(); !p.IsPseudoRoot(); p = p.GetParent()) {
@@ -754,15 +782,18 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
 
             const DirectBindingPtr &directBindingPtr = 
                     bindingsAtP.directBinding;
+
             if (directBindingPtr && 
                 directBindingPtr->GetMaterialPurpose() == purpose) 
             {
                 const UsdRelationship &directBindingRel = 
                         directBindingPtr->GetBindingRel();
-                if (!boundMaterial || 
+                if (!hasValidTargetPath || 
                     (GetMaterialBindingStrength(directBindingRel) == 
                      UsdShadeTokens->strongerThanDescendants))
                 {
+                    hasValidTargetPath = 
+                        !directBindingPtr->GetMaterialPath().IsEmpty();
                     boundMaterial = directBindingPtr->GetMaterial();
                     winningBindingRel = directBindingRel;
                 }
@@ -805,10 +836,13 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
                     // If the collection binding is on the prim itself and if 
                     // the prim is included in the collection, the collection-based
                     // binding is considered to be stronger than the direct binding.
-                    if (!boundMaterial || 
-                        (boundMaterial && winningBindingRel.GetPrim() == p) ||
+                    if (!hasValidTargetPath || 
+                        (hasValidTargetPath && 
+                             winningBindingRel.GetPrim() == p) ||
                         (GetMaterialBindingStrength(collBindingRel) == 
                             UsdShadeTokens->strongerThanDescendants)) {
+                        hasValidTargetPath = 
+                            !collBinding.GetMaterialPath().IsEmpty();
                         boundMaterial = collBinding.GetMaterial();
                         winningBindingRel = collBindingRel;
 
@@ -821,11 +855,19 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
         }
 
         // The first "purpose" with a valid binding wins.
-        if (boundMaterial) {
+        if (hasValidTargetPath) {
             if (bindingRel) {
                 *bindingRel = winningBindingRel;
             }
 
+            // Make sure the bound material is a UsdShadeMaterial, ie:
+            // - it exists on the stage as a UsdShadeMaterial
+            // This is to make sure any non-material type target on the 
+            // bindingRel is not returned as the boundMaterial!
+            if (boundMaterial.GetPrim()) {
+                return (boundMaterial.GetPrim().IsA<UsdShadeMaterial>()) ?
+                    boundMaterial : UsdShadeMaterial();
+            }
             return boundMaterial;
         }
     }
