@@ -717,7 +717,7 @@ this happen!
 - Deprecated UsdImagingGLEngine::_GetDelegate. This API will be removed in the 
   next release.
 
-## [22.03] - 2021-02-18
+## [22.03] - 2022-02-18
 
 ### Build
 - boost::program_options is now required only if PXR_BUILD_USD_TOOLS or
