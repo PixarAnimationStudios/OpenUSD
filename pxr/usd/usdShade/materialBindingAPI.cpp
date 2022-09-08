@@ -252,7 +252,7 @@ UsdShadeMaterialBindingAPI::DirectBinding::DirectBinding(
 UsdShadeMaterial
 UsdShadeMaterialBindingAPI::DirectBinding::GetMaterial() const
 {
-    if (!_materialPath.IsEmpty()) {
+    if (_bindingRel.GetPrim() && !_materialPath.IsEmpty()) {
         return UsdShadeMaterial(_bindingRel.GetStage()->GetPrimAtPath(
                 _materialPath));
     }
@@ -311,7 +311,7 @@ UsdShadeMaterialBindingAPI::CollectionBinding::CollectionBinding(
 UsdShadeMaterial
 UsdShadeMaterialBindingAPI::CollectionBinding::GetMaterial() const
 {
-    if (!_materialPath.IsEmpty()) {
+    if (_bindingRel.GetPrim() && !_materialPath.IsEmpty()) {
         return UsdShadeMaterial(_bindingRel.GetStage()->GetPrimAtPath(
                 _materialPath));
     }
@@ -321,7 +321,7 @@ UsdShadeMaterialBindingAPI::CollectionBinding::GetMaterial() const
 UsdCollectionAPI
 UsdShadeMaterialBindingAPI::CollectionBinding::GetCollection() const
 {
-    if (!_collectionPath.IsEmpty()) {
+    if (_bindingRel.GetPrim() && !_collectionPath.IsEmpty()) {
         return UsdCollectionAPI::GetCollection(_bindingRel.GetStage(),
                                                _collectionPath);
     }
