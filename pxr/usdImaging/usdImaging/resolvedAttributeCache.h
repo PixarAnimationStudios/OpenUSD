@@ -704,8 +704,12 @@ struct UsdImaging_MaterialStrategy {
     // inherited path to bound target
     // depending on the load state, override, etc bound target path might not be
     // queried as a UsdShadeMaterial on the stage.
-    typedef SdfPath value_type;         // inherited path to bound target
-    typedef UsdRelationship query_type; // Hold the winning relationship binding
+    
+    // inherited path to bound target
+    typedef SdfPath value_type;         
+    // Hold the computed path of the bound material or target path of the
+    // winning material binding relationship
+    typedef SdfPath query_type; 
 
     using ImplData = UsdImaging_MaterialBindingImplData;
 
@@ -720,12 +724,21 @@ struct UsdImaging_MaterialStrategy {
         ImplData *implData) 
     {
         UsdRelationship bindingRel;
-        UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial(
-            &implData->GetBindingsCache(), 
-            &implData->GetCollectionQueryCache(),
-            implData->GetMaterialPurpose(),
-            &bindingRel);
-        return bindingRel;
+        UsdShadeMaterial materialPrim = 
+            UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial(
+                &implData->GetBindingsCache(), 
+                &implData->GetCollectionQueryCache(),
+                implData->GetMaterialPurpose(),
+                &bindingRel);
+
+        if (materialPrim) {
+            return materialPrim.GetPath();
+        }
+        
+        const SdfPath targetPath =
+            UsdShadeMaterialBindingAPI::GetResolvedTargetPathFromBindingRel(
+                    bindingRel);
+        return targetPath;
     }
  
     static 
@@ -736,19 +749,15 @@ struct UsdImaging_MaterialStrategy {
     { 
         TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for \"preview\" material "
                 "binding for %s\n", prim.GetPath().GetText());
-        if (*query) {
-            const SdfPath targetPath = 
-                UsdShadeMaterialBindingAPI::GetResolvedTargetPathFromBindingRel(
-                    *query);
-            if (!targetPath.IsEmpty()) {
-                return targetPath;
-            }
-        }
+
         // query already contains the resolved material binding for the prim. 
         // Hence, we don't need to inherit the binding from the parent here. 
         // Futhermore, it may be wrong to inherit the binding from the parent,
         // because in the new scheme, a child of a bound prim can be unbound.
-        return value_type();
+        //
+        // Note that query could be an empty SdfPath, which is the default
+        // value.
+        return *query;
     }
 
     static
