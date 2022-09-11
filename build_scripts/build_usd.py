@@ -43,6 +43,7 @@ import sys
 import sysconfig
 import tarfile
 import zipfile
+import apple_utils
 
 if sys.version_info.major >= 3:
     from urllib.request import urlopen
@@ -90,8 +91,6 @@ def Linux():
     return platform.system() == "Linux"
 def MacOS():
     return platform.system() == "Darwin"
-def Arm():
-    return platform.processor() == "arm"
 
 def Python3():
     return sys.version_info.major == 3
@@ -888,9 +887,10 @@ def InstallTBB_LinuxOrMacOS(context, force, buildArgs):
         AppendCXX11ABIArg("CXXFLAGS", context, buildArgs)
 
         # Ensure that the tbb build system picks the proper architecture.
-        if MacOS() and Arm():
-            buildArgs.append("arch=arm64")
-
+        if MacOS():
+            if apple_utils.GetMacArch() != "x86_64":
+                buildArgs.append("arch=arm64")
+              
         # TBB does not support out-of-source builds in a custom location.
         Run('make -j{procs} {buildArgs}'
             .format(procs=context.numJobs, 
@@ -921,18 +921,26 @@ TBB = Dependency("TBB", InstallTBB, "include/tbb/tbb.h")
 
 if Windows():
     JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/1.5.1.zip"
+elif MacOS():
+    JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/2.0.1.zip"
 else:
     JPEG_URL = "https://www.ijg.org/files/jpegsrc.v9b.tar.gz"
 
 def InstallJPEG(context, force, buildArgs):
-    if Windows():
+    if Windows() or MacOS():
         InstallJPEG_Turbo(context, force, buildArgs)
     else:
         InstallJPEG_Lib(context, force, buildArgs)
 
 def InstallJPEG_Turbo(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(JPEG_URL, context, force)):
-        RunCMake(context, force, buildArgs)
+        extraJPEGArgs = buildArgs
+        if MacOS():
+            extraJPEGArgs.append("-DWITH_SIMD=FALSE")
+
+        RunCMake(context, force, extraJPEGArgs)
+        return os.getcwd()
+
 
 def InstallJPEG_Lib(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(JPEG_URL, context, force)):
@@ -981,17 +989,11 @@ TIFF = Dependency("TIFF", InstallTIFF, "include/tiff.h")
 ############################################################
 # PNG
 
-PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.29.tar.gz"
+PNG_URL = "https://github.com/glennrp/libpng/archive/refs/heads/libpng16.zip"
 
 def InstallPNG(context, force, buildArgs):
-    macArgs = []
-    if MacOS() and Arm():
-        # ensure libpng's build doesn't erroneously activate inappropriate
-        # Neon extensions
-        macArgs = ["-DPNG_HARDWARE_OPTIMIZATIONS=OFF", 
-                   "-DPNG_ARM_NEON=off"] # case is significant
     with CurrentWorkingDirectory(DownloadURL(PNG_URL, context, force)):
-        RunCMake(context, force, buildArgs + macArgs)
+        RunCMake(context, force, buildArgs)
 
 PNG = Dependency("PNG", InstallPNG, "include/png.h")
 
@@ -1092,7 +1094,7 @@ BLOSC_URL = "https://github.com/Blosc/c-blosc/archive/v1.20.1.zip"
 def InstallBLOSC(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(BLOSC_URL, context, force)):
         macArgs = []
-        if MacOS() and Arm():
+        if MacOS() and apple_utils.GetMacArch() != "x86_64":
             # Need to disable SSE for macOS ARM targets.
             macArgs = ["-DDEACTIVATE_SSE2=ON"]
         RunCMake(context, force, buildArgs + macArgs)
@@ -1135,7 +1137,8 @@ OPENVDB = Dependency("OpenVDB", InstallOpenVDB, "include/openvdb/openvdb.h")
 ############################################################
 # OpenImageIO
 
-OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/Release-2.1.16.0.zip"
+# OIIO 2.3.15 adds fixes for Apple Silicon cross compilation.
+OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/refs/tags/v2.3.15.0.zip"
 
 def InstallOpenImageIO(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OIIO_URL, context, force)):
@@ -1205,8 +1208,9 @@ def InstallOpenColorIO(context, force, buildArgs):
         # When building for Apple Silicon we need to make sure that
         # the correct build architecture is specified for OCIO and
         # and for TinyXML and YAML.
-        if MacOS() and Arm():
-            arch = 'arm64'
+        if MacOS():
+            arch = apple_utils.GetMacArch()
+
             PatchFile("CMakeLists.txt",
                     [('CMAKE_ARGS      ${TINYXML_CMAKE_ARGS}',
                     'CMAKE_ARGS      ${TINYXML_CMAKE_ARGS}\n' +
@@ -1236,6 +1240,16 @@ def InstallOpenColorIO(context, force, buildArgs):
             pass
         else:
             extraArgs.append('-DCMAKE_CXX_FLAGS=-w')
+		
+        if MacOS():
+            #if using version 2 of OCIO we patch a different config path as it resides elsewere
+            PatchFile("src/core/Config.cpp",
+                       [("cacheidnocontext_ = cacheidnocontext_;", 
+                         "cacheidnocontext_ = rhs.cacheidnocontext_;")])
+
+            extraArgs.append('-DCMAKE_CXX_FLAGS="-Wno-unused-function -Wno-unused-const-variable -Wno-unused-private-field"')
+            if (apple_utils.GetMacArch() != "x86_64"):
+                extraArgs.append('-DOCIO_USE_SSE=OFF')
 
         if MacOS() and Arm():
             extraArgs.append('-DOCIO_USE_SSE=OFF')
@@ -1356,6 +1370,7 @@ def GetPySideInstructions():
                 'update your PYTHONPATH to indicate where it is '
                 'located.')
 
+
 PYSIDE = PythonDependency("PySide", GetPySideInstructions,
                           moduleNames=["PySide", "PySide2", "PySide6"])
 
@@ -1376,10 +1391,14 @@ HDF5 = Dependency("HDF5", InstallHDF5, "include/hdf5.h")
 ############################################################
 # Alembic
 
-ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.7.10.zip"
+ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.8.3.zip"
 
 def InstallAlembic(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ALEMBIC_URL, context, force)):
+        if MacOS():
+            PatchFile("CMakeLists.txt", 
+                      [("ADD_DEFINITIONS(-Wall -Werror -Wextra -Wno-unused-parameter)",
+                        "ADD_DEFINITIONS(-Wall -Wextra -Wno-unused-parameter)")])
         cmakeOptions = ['-DUSE_BINARIES=OFF', '-DUSE_TESTS=OFF']
         if context.enableHDF5:
             # HDF5 requires the H5_BUILT_AS_DYNAMIC_LIB macro be defined if
@@ -1743,6 +1762,10 @@ group.add_argument("--generator", type=str,
 group.add_argument("--toolset", type=str,
                    help=("CMake toolset to use when building libraries with "
                          "cmake"))
+if MacOS():
+    codesignDefault = False if apple_utils.GetMacArch() == "x64_64" else True
+    group.add_argument("--codesign", dest="macos_codesign", default=codesignDefault,
+                       help=("Use codesigning for macOS builds (defaults to enabled on Apple Silicon)"))
 
 if Linux():
     group.add_argument("--use-cxx11-abi", type=int, choices=[0, 1],
@@ -1993,6 +2016,8 @@ class InstallContext:
         self.useCXX11ABI = \
             (args.use_cxx11_abi if hasattr(args, "use_cxx11_abi") else None)
         self.safetyFirst = args.safety_first
+        self.macOSCodesign = \
+            (args.macos_codesign if hasattr(args, "macos_codesign") else False)
 
         # Dependencies that are forced to be built
         self.forceBuildAll = args.force_all
@@ -2308,6 +2333,7 @@ summaryMsg = summaryMsg.format(
                   else "Release w/ Debug Info" if context.buildRelWithDebug
                   else ""),
     buildImaging=("On" if context.buildImaging else "Off"),
+    macOSCodesign=("On" if context.macOSCodesign else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     enableOpenVDB=("On" if context.enableOpenVDB else "Off"),
     buildOIIO=("On" if context.buildOIIO else "Off"),
@@ -2386,6 +2412,10 @@ if Windows():
         os.path.join(context.instDir, "bin"),
         os.path.join(context.instDir, "lib")
     ])
+
+if MacOS():
+    if context.macOSCodesign:
+        apple_utils.Codesign(context.usdInstDir, verbosity > 1)
 
 Print("""
 Success! To use USD, please ensure that you have:""")
