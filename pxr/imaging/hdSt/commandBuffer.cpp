@@ -85,7 +85,11 @@ HdStCommandBuffer::PrepareDraw(
     for (auto const& batch : _drawBatches) {
         batch->PrepareDraw(gfxCmds, renderPassState, resourceRegistry);
     }
-    
+
+    //
+    // Compute work that was set up for indirect command buffers and frustum
+    // culling in the batch preparation is submitted to device.
+    //
     resourceRegistry->SubmitComputeWork();
 }
 
@@ -104,13 +108,14 @@ HdStCommandBuffer::ExecuteDraw(
     // Reset per-commandBuffer performance counters, updated by batch execution
     HD_PERF_COUNTER_SET(HdPerfTokens->drawCalls, 0);
     HD_PERF_COUNTER_SET(HdTokens->itemsDrawn, 0);
-
+    
     //
     // draw batches
     //
     for (auto const& batch : _drawBatches) {
         batch->ExecuteDraw(gfxCmds, renderPassState, resourceRegistry);
     }
+    
     HD_PERF_COUNTER_SET(HdPerfTokens->drawBatches, _drawBatches.size());
 }
 

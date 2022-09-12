@@ -61,7 +61,14 @@ using HgiIndirectCommandsUniquePtr = std::unique_ptr<HgiIndirectCommands>;
 
 /// \class HgiIndirectCommandEncoder
 ///
-/// XXX: Explain what this is....
+/// The indirect command encoder is used to record the drawing primitives for a
+/// batch and capture the resource bindings so that it can be executed
+/// efficently in a later stage of rendering.
+/// The EncodeDraw and EncodeDrawIndexed functions store all the necessary state
+/// in the HgiIndirectCommands structure.  This is sub-classed based on the
+/// platform implementation to maintain all the custom state.
+/// Execute draw takes the HgiIndirectCommands structure and replays it on the device.
+/// Currently this is only implemented on the Metal HGI device.
 ///
 class HgiIndirectCommandEncoder : public HgiCmds
 {
@@ -69,6 +76,9 @@ public:
     HGI_API
     virtual ~HgiIndirectCommandEncoder();
     
+    /// Encode a batch of draw commands from the drawParameterBuffer.
+    /// Returns a HgiIndirectCommands which holds the necessary buffers and
+    /// state for replaying the batch.
     HGI_API
     virtual HgiIndirectCommandsUniquePtr EncodeDraw(
         HgiComputeCmds * computeCmds,
@@ -80,6 +90,9 @@ public:
         uint32_t drawCount,
         uint32_t stride) = 0;
     
+    /// Encode a batch of indexed draw commands from the drawParameterBuffer.
+    /// Returns a HgiIndirectCommands which holds the necessary buffers and
+    /// state for replaying the batch.
     HGI_API
     virtual HgiIndirectCommandsUniquePtr EncodeDrawIndexed(
         HgiComputeCmds * computeCmds,
@@ -92,7 +105,8 @@ public:
         uint32_t drawCount,
         uint32_t stride,
         uint32_t patchBaseVertexByteOffset) = 0;
-
+    
+    /// Excutes an indirect command batch from the HgiIndirectCommands structure.
     HGI_API
     virtual void ExecuteDraw(
         HgiGraphicsCmds * gfxCmds,

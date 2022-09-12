@@ -67,4 +67,5 @@ HgiGLIndirectCommandEncoder::ExecuteDraw(
 {
     // No implementation
 }
+
 PXR_NAMESPACE_CLOSE_SCOPE

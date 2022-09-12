@@ -962,7 +962,7 @@ HdSt_PipelineDrawBatch::PrepareDraw(
     // surfaces, such as OIT as Volumetrics.  Disable in these cases.
     bool const drawICB =
         capabilities->IsSet(HgiDeviceCapabilitiesBitsIndirectCommandBuffers) &&
-        gfxCmds &&
+        gfxCmds &&    // Prevent the imageShaderRenderPass from using ICBs
         renderPassState->GetMultiSampleEnabled();
 
     _indirectCommands.reset();
@@ -1255,11 +1255,12 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
 
     Hgi *hgi = resourceRegistry->GetHgi();
     HgiCapabilities const *capabilities = hgi->GetCapabilities();
-    
-    bool const drawICB =
-        capabilities->IsSet(HgiDeviceCapabilitiesBitsIndirectCommandBuffers);
 
-    if (drawICB && _indirectCommands) {
+    //
+    // If an indirect command buffer was created in the Prepare phase then
+    // execute it here.  Otherwise render with the normal graphicsCmd path.
+    //
+    if (_indirectCommands) {
         HgiIndirectCommandEncoder *encoder = hgi->GetIndirectCommandEncoder();
         encoder->ExecuteDraw(gfxCmds, _indirectCommands.get());
 

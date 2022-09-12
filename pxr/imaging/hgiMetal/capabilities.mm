@@ -35,6 +35,8 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
         _SetFlag(HgiDeviceCapabilitiesBitsConcurrentDispatch, true);
     }
 
+    bool hasIntel = [device isLowPower];
+
     defaultStorageMode = MTLResourceStorageModeShared;
     bool unifiedMemory = false;
     bool barycentrics = false;
@@ -57,12 +59,15 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
         
     }
     
-    // Indirect command buffers only on Apple Silicon GPUs with macOS 12.3 or later.
     if (hasAppleSilicon) {
+        // Indirect command buffers only on Apple Silicon GPUs with macOS 12.3 or later.
         icbSupported = false;
         if (@available(macOS 12.3, *)) {
             icbSupported = true;
         }
+    } else if (hasIntel) {
+        // Indirect command buffers not currently supported on Intel GPUs.
+        icbSupported = false;
     }
 
     _SetFlag(HgiDeviceCapabilitiesBitsUnifiedMemory, unifiedMemory);

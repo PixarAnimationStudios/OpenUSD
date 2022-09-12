@@ -34,8 +34,6 @@
 #include "pxr/imaging/hgiMetal/resourceBindings.h"
 #include "pxr/imaging/hgiMetal/stepFunctions.h"
 
-#include <iterator>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 static const uint32_t MaxVertexBufferBindings = 64;
@@ -476,13 +474,13 @@ static const uint32_t _RoundUpPow2(uint32_t x)
 id<MTLIndirectCommandBuffer>
 HgiMetalIndirectCommandEncoder::_AllocateCommandBuffer(uint32_t drawCount)
 {
-    uint32_t bufferSize = _RoundUpPow2(drawCount);
+    uint32_t roundedSize = _RoundUpPow2(drawCount);
     id<MTLIndirectCommandBuffer> commandBuffer = nil;
     
     {
         // Search for a buffer of the required size in the free pool.
         std::lock_guard<std::mutex> lock(_poolMutex);
-        FreeCommandBuffers::iterator it = _commandBufferPool.find(bufferSize);
+        FreeCommandBuffers::iterator it = _commandBufferPool.find(roundedSize);
 
         if (it != _commandBufferPool.end()) {
             commandBuffer = it->second;
@@ -505,7 +503,7 @@ HgiMetalIndirectCommandEncoder::_AllocateCommandBuffer(uint32_t drawCount)
 
         commandBuffer =
             [_device newIndirectCommandBufferWithDescriptor:descriptor
-                                            maxCommandCount:bufferSize
+                                            maxCommandCount:roundedSize
                                                     options:MTLResourceStorageModePrivate];
     }
 
@@ -516,19 +514,22 @@ id<MTLBuffer>
 HgiMetalIndirectCommandEncoder::_AllocateArgumentBuffer(uint32_t encodedLength)
 {
     id<MTLBuffer> buffer = nil;
+    uint32_t roundedSize = _RoundUpPow2(encodedLength);
     
     {
+        // Search for a buffer of the required size in the free pool.
         std::lock_guard<std::mutex> lock(_poolMutex);
-        if (!_argumentBufferPool.empty()) {
-            buffer = _argumentBufferPool.top();
-            _argumentBufferPool.pop();
-            memset(buffer.contents, 0x00, buffer.length);
+        FreeArgumentBuffers::iterator it = _argumentBufferPool.find(roundedSize);
+
+        if (it != _argumentBufferPool.end()) {
+            buffer = it->second;
+            _argumentBufferPool.erase(it);
         }
     }
 
     if (!buffer) {
         buffer =
-            [_device newBufferWithLength:encodedLength
+            [_device newBufferWithLength:roundedSize
                                  options:_bufferStorageMode];
     }
     
@@ -568,7 +569,7 @@ HgiMetalIndirectCommandEncoder::_EncodeDraw(
             resourceBindings,
             _AllocateCommandBuffer(drawCount),
             _AllocateArgumentBuffer(function.argumentEncoder.encodedLength),
-            _hgi->GetArgBuffer());
+            _AllocateArgumentBuffer(HgiMetalArgumentOffsetSize));
 
     [function.argumentEncoder setArgumentBuffer:commands->indirectArgumentBuffer
                                          offset:0];
@@ -726,10 +727,10 @@ HgiMetalIndirectCommandEncoder::ExecuteDraw(
     [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> cmdBuffer)
     {
         std::lock_guard<std::mutex> lock(_poolMutex);
-
-        _argumentBufferPool.push(argumentBuffer);
-        _commandBufferPool.insert({ indirectCommandBuffer.size,
-                                    indirectCommandBuffer });
+        
+        _argumentBufferPool.insert({mainArgumentBuffer.length, mainArgumentBuffer});
+        _argumentBufferPool.insert({argumentBuffer.length, argumentBuffer});
+        _commandBufferPool.insert({indirectCommandBuffer.size, indirectCommandBuffer});
     }];
 }
 

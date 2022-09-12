@@ -33,7 +33,6 @@
 
 #include <map>
 #include <mutex>
-#include <stack>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -83,6 +82,7 @@ public:
     void ExecuteDraw(
         HgiGraphicsCmds * gfxCmds,
         HgiIndirectCommands const* commands) override;
+
 private:
     HgiMetalIndirectCommandEncoder & operator=(const HgiMetalIndirectCommandEncoder&) = delete;
     HgiMetalIndirectCommandEncoder(const HgiMetalIndirectCommandEncoder&) = delete;
@@ -125,7 +125,8 @@ private:
     
     using FreeCommandBuffers =
         std::multimap<uint32_t, id<MTLIndirectCommandBuffer>>;
-    using FreeArgumentBuffers = std::stack<id<MTLBuffer>>;
+    using FreeArgumentBuffers =
+        std::multimap<uint32_t, id<MTLBuffer>>;
     
     std::mutex _poolMutex;
     FreeCommandBuffers _commandBufferPool;
