@@ -1009,7 +1009,15 @@ else:
     OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v2.4.3.zip"
 
 def InstallOpenEXR(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(OPENEXR_URL, context, force)):
+    srcDir = DownloadURL(OPENEXR_URL, context, force)
+    #This patch lets us debug in Xcode on Mac
+    with CurrentWorkingDirectory(srcDir):
+        if MacOS():
+            PatchFile(srcDir + "/OpenEXR/CMakeLists.txt",
+                [("SET (OPENEXR_LIBSUFFIX \"\")",
+                  "SET (OPENEXR_LIBSUFFIX \"\")\n"
+                  "FILE ( APPEND ${CMAKE_CURRENT_BINARY_DIR}/config/OpenEXRConfig.h \"\n")])
+
         RunCMake(context, force, 
                  ['-DPYILMBASE_ENABLE=OFF',
                   '-DOPENEXR_VIEWERS_ENABLE=OFF',
