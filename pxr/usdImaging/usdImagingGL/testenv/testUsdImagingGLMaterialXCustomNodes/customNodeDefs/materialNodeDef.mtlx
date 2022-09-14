@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+
+    <nodedef name="ND_ssMultiImage" node="ssMultiImage" version="1.0.0" isdefaultversion="true">
+        <input name="color_file" type="filename" value=""/>
+        <input name="roughness_file" type="filename" value=""/>
+        <output name="out" type="surfaceshader" />
+    </nodedef>
+
+    <nodegraph name="IMPL_ssMultiImage" nodedef="ND_ssMultiImage">
+        <geompropvalue name="stcoords" type="vector2">
+            <input name="geomprop" type="string" value="st" />
+            <input name="default" type="vector2" value="0.5,0.5" />
+        </geompropvalue>
+        <tiledimage name="color_image" type="color3" >
+            <input name="file" type="filename" interfacename="color_file" />
+            <input name="uvtiling" type="vector2" value="1.0, 1.0"/>
+            <input name="filtertype" type="string" value="linear"/>
+            <input name="texcoord" type="vector2" nodename="stcoords" />
+        </tiledimage>
+        <tiledimage name="roughness_image" type="float" >
+            <input name="file" type="filename" interfacename="roughness_file" />
+            <input name="uvtiling" type="vector2" value="1.0, 1.0"/>
+            <input name="filtertype" type="string" value="closest"/>
+            <input name="texcoord" type="vector2" nodename="stcoords" />
+        </tiledimage>
+
+        <standard_surface name="ssShader" type="surfaceshader" >
+            <input name="base" type="float" value="1" />
+            <input name="base_color" type="color3" nodename="color_image" />
+            <input name="specular_roughness" type="float" nodename="roughness_image" />
+            <input name="metalness" type="float" value="1" />
+        </standard_surface>
+
+        <output name="out" type="surfaceshader" nodename="ssShader" />
+    </nodegraph>
+
+</materialx>

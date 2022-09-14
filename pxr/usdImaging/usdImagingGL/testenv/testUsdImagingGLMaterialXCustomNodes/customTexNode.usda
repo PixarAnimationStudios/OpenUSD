@@ -31,7 +31,7 @@ def "ImageCustomNodeDef" (
 }
 
 def Scope "MaterialX"(
-    references = @./material.mtlx@</MaterialX>
+    references = @./texturedNodes.mtlx@</MaterialX>
     )
 {
 }
@@ -40,7 +40,7 @@ def Xform "lights"
 {
     def DomeLight "DomeLight"
     {
-        asset inputs:texture:file = @./StinsonBeach.hdr@
+        asset inputs:texture:file = @./images/StinsonBeach.hdr@
         float xformOp:rotateX:Zup = 90
         uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
     }

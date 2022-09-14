@@ -523,6 +523,7 @@ UsdMtlxGetUsdType(const std::string& mtlxTypeName)
            { "matrix44",      TUPLE3(Matrix4d,      true,  Matrix)  },
            { "stringarray",   TUPLE3(StringArray,   true,  String)  },
            { "string",        TUPLE3(String,        true,  String)  },
+           { "surfaceshader", TUPLE3(Token,         true,  Terminal)},
            { "vector2array",  TUPLEX(Float2Array,   true,  noMatch) },
            { "vector2",       TUPLEN(Float2,        true,  Float, 2)},
            { "vector3array",  TUPLEX(Float3Array,   true,  noMatch) },

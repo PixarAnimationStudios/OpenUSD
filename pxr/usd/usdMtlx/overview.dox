@@ -65,6 +65,12 @@ get mapped is still undecided.
     + Library defined custom nodes that use textures need to set the nodegroup
     on the nodedef to 'texture2d', and make sure the 'filename' typed input is 
     exposed so renderers can recognize the texture references. 
+    + Custom nodes with an output of type 'surfaceshader' that use textures 
+    also need to expose the 'filename' typed inputs, but can follow the 
+    MaterialX convention of using 'shader' as the nodegroup name. 
+    + Nodegraphs with a 'surfaceshader' output can be defined locally, however
+    custom nodes which are implemented using such a nodegraph need to have both
+    the node and nodegraph defined in a shared library.
 
 \section usdMtlx_unsupported Unsupported MaterialX Features
 

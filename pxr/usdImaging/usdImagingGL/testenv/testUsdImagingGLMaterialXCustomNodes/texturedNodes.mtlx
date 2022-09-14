@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+
+  <!-- test_material uses the checker3 custom node which uses texture coordinates -->
+  <nodegraph name="test_nodegraph">
+    <checker3 name="myChecker" type="color3">
+      <input name="scale" type="vector2" value="24 12" />
+    </checker3>
+    <output name="diffuse_output" type="color3" nodename="myChecker" />
+  </nodegraph>
+  <UsdPreviewSurface name="test_surface" type="surfaceshader">
+    <input name="diffuseColor" type="color3" output="diffuse_output" nodegraph="test_nodegraph" />
+    <input name="useSpecularWorkflow" type="integer" value="0" />
+    <input name="specularColor" type="color3" value=".9, .9, .9" />
+    <input name="roughness" type="float" value="0.25" />
+    <input name="ior" type="float" value=".9" />
+  </UsdPreviewSurface>
+  <surfacematerial name="test_material" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="test_surface" />
+  </surfacematerial>
+
+
+  <!-- test_image_material uses the custom_image_node which uses a texture -->
+  <nodegraph name="test_image_nodegraph">
+    <custom_image_node name="diffColor" type="color3">
+      <input name="file_input" type="filename" value="images/grid.png" />
+    </custom_image_node>
+    <output name="diffuse_output" type="color3" nodename="diffColor" />
+  </nodegraph>
+  <UsdPreviewSurface name="test_image_surface" type="surfaceshader">
+    <input name="diffuseColor" type="color3" output="diffuse_output" nodegraph="test_image_nodegraph" />
+    <input name="useSpecularWorkflow" type="integer" value="0" />
+    <input name="specularColor" type="color3" value=".9, .9, .9" />
+    <input name="roughness" type="float" value="0.25" />
+    <input name="ior" type="float" value=".9" />
+  </UsdPreviewSurface>
+  <surfacematerial name="test_image_material" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="test_image_surface" />
+  </surfacematerial>
+</materialx>
