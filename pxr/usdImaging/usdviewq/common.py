@@ -283,18 +283,18 @@ def GetShortStringForValue(prop, val):
     if val is None:
         return ''
     
-    from .scalarTypes import GetScalarTypeFromAttr
-    scalarType, isArray = GetScalarTypeFromAttr(prop)
+    valType = Sdf.GetValueTypeNameForValue(val)
     result = ''
-    if isArray and not isinstance(val, Sdf.ValueBlock):
+    if valType.isArray and not isinstance(val, Sdf.ValueBlock):
         def arrayToStr(a):
             from itertools import chain
             elems = a if len(a) <= 6 else chain(a[:3], ['...'], a[-3:])
             return '[' + ', '.join(map(str, elems)) + ']'
         if val is not None and len(val):
-            result = "%s[%d]: %s" % (scalarType, len(val), arrayToStr(val))
+            result = "%s[%d]: %s" % (
+                valType.scalarType, len(val), arrayToStr(val))
         else:
-            result = "%s[]" % scalarType
+            result = "%s[]" % valType.scalarType
     else:
         result = str(val)
 
