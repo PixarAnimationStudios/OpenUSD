@@ -3,6 +3,7 @@ Advanced Build Configuration
 
 ## Table of Contents
 - [Building With Build Script](#building-with-build-script)
+- [Building With VCPKG](#building-with-vcpkg)
 - [Building With CMake](#building-with-cmake)
 - [Optional Components](#optional-components)
 - [Imaging Plugins](#imaging-plugins)
@@ -21,6 +22,18 @@ script. This script will download required dependencies and build
 and install them along with USD in a given directory. 
 
 See instructions and examples in [README.md](README.md#getting-and-building-the-code).
+
+## Building With VCPKG
+
+You can download and install USD using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
+```sh
+  git clone https://github.com/Microsoft/vcpkg.git
+  cd vcpkg
+  ./bootstrap-vcpkg.sh #.\bootstrap-vcpkg.bat(for windows)
+  ./vcpkg integrate install
+  ./vcpkg install usd
+```
+The USD port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull   request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
 
 ## Building With CMake
 
