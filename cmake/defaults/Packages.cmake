@@ -37,12 +37,9 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
 set(PXR_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 
-# Set up a version string for comparisons. This is available
-# as Boost_VERSION_STRING in CMake 3.14+
 # Find Boost package before getting any boost specific components as we need to
 # disable boost-provided cmake config, based on the boost version found.
 find_package(Boost REQUIRED)
-set(boost_version_string "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
 
 # Boost provided cmake files (introduced in boost version 1.70) result in 
 # inconsistent build failures on different platforms, when trying to find boost 
@@ -54,7 +51,7 @@ set(boost_version_string "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_
 # Hence to avoid issues with Boost provided cmake config, Boost_NO_BOOST_CMAKE
 # is enabled by default for boost version 1.70 and above. If a user explicitly 
 # set Boost_NO_BOOST_CMAKE to Off, following will be a no-op.
-if (${boost_version_string} VERSION_GREATER_EQUAL "1.70")
+if (${Boost_VERSION_STRING} VERSION_GREATER_EQUAL "1.70")
     option(Boost_NO_BOOST_CMAKE "Disable boost-provided cmake config" ON)
     if (Boost_NO_BOOST_CMAKE)
         message(STATUS "Disabling boost-provided cmake config")
@@ -81,7 +78,7 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         set(PYTHON_LIBRARIES "")
     endif()
 
-    if (${boost_version_string} VERSION_GREATER_EQUAL "1.67")
+    if (${Boost_VERSION_STRING} VERSION_GREATER_EQUAL "1.67")
         # As of boost 1.67 the boost_python component name includes the
         # associated Python version (e.g. python27, python36). 
         # XXX: After boost 1.73, boost provided config files should be able to 
