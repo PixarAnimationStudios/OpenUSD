@@ -240,13 +240,17 @@ HdGetMergedContributingSampleTimesForInterval(
     std::vector<HdSampledDataSource::Time> * outSampleTimes);
 
 /// Print a datasource to a stream, for debugging/testing.
-void HdDebugPrintDataSource(
+HD_API
+void
+HdDebugPrintDataSource(
     std::ostream &,
     HdDataSourceBaseHandle,
     int indentLevel = 0);
 
 /// Print a datasource to stdout, for debugging/testing
-void HdDebugPrintDataSource(HdDataSourceBaseHandle, int indentLevel = 0);
+HD_API
+void
+HdDebugPrintDataSource(HdDataSourceBaseHandle, int indentLevel = 0);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
