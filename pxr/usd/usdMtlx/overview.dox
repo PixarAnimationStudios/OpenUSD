@@ -63,10 +63,9 @@ get mapped is still undecided.
     containing folder is indicated with the PXR_MTLX_PLUGIN_SEARCH_PATHS 
     environment variable. 
     + Library defined custom nodes that use textures need to set the nodegroup
-    on the nodedef to 'textureuser', and custom nodes that just use texture 
-    coordinates without textures need to set the nodedef nodegroup to 
-    'texcoorduser'. This is so the texture coordinates are available, and 
-    textures are properly initialized for rendering. 
+    on the nodedef to 'texture2d', and make sure the 'filename' input is 
+    exposed so the texture coordinates are available, and textures are properly 
+    initialized for rendering. 
 
 \section usdMtlx_unsupported Unsupported MaterialX Features
 

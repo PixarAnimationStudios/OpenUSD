@@ -177,6 +177,19 @@ HdMtlxConvertToString(VtValue const& hdParameterValue)
     }
 }
 
+static bool
+_ContainsTexcoordNode(mx::NodeDefPtr const& mxNodeDef)
+{
+    mx::InterfaceElementPtr impl = mxNodeDef->getImplementation();
+    if (impl && impl->isA<mx::NodeGraph>()) {
+        mx::NodeGraphPtr nodegraph = impl->asA<mx::NodeGraph>();
+        if (nodegraph->getNodes("texcoord").size() != 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Add a MaterialX version of the hdNode to the mxDoc/mxNodeGraph
 static mx::NodePtr 
 _AddMaterialXNode(
@@ -198,7 +211,6 @@ _AddMaterialXNode(
     const SdfPath hdNodePath(hdNodeName.GetString());
     const std::string &mxNodeCategory = mxNodeDef->getNodeString();
     const std::string &mxNodeType = mxNodeDef->getType();
-    const std::string &mxNodeGroup = mxNodeDef->getNodeGroup();
     const std::string &mxNodeName = hdNodePath.GetName();
 
     // Add the mxNode to the mxNodeGraph
@@ -218,6 +230,7 @@ _AddMaterialXNode(
 
     // For each of the HdNode parameters add the corresponding parameter/input 
     // to the mxNode
+    bool hasFilenameInput = false;
     TfTokenVector hdNodeParamNames =
         netInterface->GetAuthoredNodeParameterNames(hdNodeName);
     for (TfToken const &paramName : hdNodeParamNames) {
@@ -227,6 +240,7 @@ _AddMaterialXNode(
         mx::InputPtr mxInput = mxNodeDef->getActiveInput(mxInputName);
         if (mxInput) {
             mxInputType = mxInput->getType();
+            hasFilenameInput |= mxInputType == "filename";
         }
         std::string mxInputValue = HdMtlxConvertToString(
             netInterface->GetNodeParameterValue(hdNodeName, paramName));
@@ -234,9 +248,8 @@ _AddMaterialXNode(
         mxNode->setInputValue(mxInputName, mxInputValue, mxInputType);
     }
 
-    // Stdlib MaterialX Texture node or a custom node that uses a texture
-    if (mxNodeCategory == "image" || mxNodeCategory == "tiledimage" ||
-        mxNodeGroup == "textureuser") {
+    // MaterialX nodes that use textures are assumed to have a filename input
+    if (hasFilenameInput) {
         if (mxHdData) {
             // Save the corresponding MaterialX and Hydra names for ShaderGen
             mxHdData->mxHdTextureMap[mxNodeName] = connectionName;
@@ -252,9 +265,10 @@ _AddMaterialXNode(
             mxHdData->hdPrimvarNodes.insert(hdNodePath);
         }
     }
+
     // Stdlib MaterialX texture coordinate node or a custom node that 
-    // uses texture coordinates
-    if (mxNodeCategory == "texcoord" || mxNodeGroup == "texcoorduser") {
+    // uses a texture coordinate node
+    if (mxNodeCategory == "texcoord" || _ContainsTexcoordNode(mxNodeDef)) {
         if (mxHdData) {
             // Make sure it has the index parameter set.
             if (std::find(hdNodeParamNames.begin(), hdNodeParamNames.end(), 

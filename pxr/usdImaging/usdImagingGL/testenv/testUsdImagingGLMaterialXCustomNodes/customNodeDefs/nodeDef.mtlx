@@ -2,7 +2,7 @@
 <materialx version="1.38">
 
   <!-- custom node using texture coordinates -->
-  <nodedef name="ND_checker_float" node="checker3" nodegroup="texcoorduser">
+  <nodedef name="ND_checker_float" node="checker3">
     <input name="scale" type="vector2" value="8.0, 8.0" />
     <output name="out" type="color3" />
   </nodedef>
@@ -44,7 +44,7 @@
   </nodegraph>
 
   <!-- custom node using textures -->
-  <nodedef name="custom_image_nodedef" node="custom_image_node" nodegroup="textureuser">
+  <nodedef name="custom_image_nodedef" node="custom_image_node" nodegroup="texture2d">
     <input name="file_input" type="filename" />
     <output name="out_color" type="color3" />
   </nodedef>
