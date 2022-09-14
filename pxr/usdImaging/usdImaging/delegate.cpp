@@ -1384,6 +1384,11 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
             TF_DEBUG(USDIMAGING_CHANGES).Msg("  (repopulating from root)\n");
             proxy->Repopulate(usdPath);
         } else {
+            // Build a TfHashSet of excluded prims for fast rejection.
+            TfHashSet<SdfPath, SdfPath::Hash> excludedSet;
+            TF_FOR_ALL(pathIt, _excludedPrimPaths) {
+                excludedSet.insert(*pathIt);
+            }
             // If we resynced prims individually, walk the subtree for new prims
             UsdPrimRange range(_stage->GetPrimAtPath(usdPath),
                 _GetDisplayPredicate());
@@ -1394,6 +1399,13 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
                 // If we've populated this subtree already, skip it.
                 if (depRange.first != depRange.second) {
                     iter.PruneChildren();
+                    continue;
+                }
+                if (excludedSet.find(iter->GetPath()) != excludedSet.end()) {
+                    iter.PruneChildren();
+                    TF_DEBUG(USDIMAGING_CHANGES).Msg("[Resync Prim] Pruned at <%s> "
+                                "due to exclusion list\n",
+                                iter->GetPath().GetText());
                     continue;
                 }
                 // Check if this prim (& subtree) should be pruned based on
