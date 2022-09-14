@@ -832,16 +832,15 @@ _NodeGraphBuilder::_IsLocalCustomNode(const mx::ConstNodeDefPtr &mtlxNodeDef)
             return true;
         }
         // Verify we have an associated nodegraph, since only locally defined 
-        // custom nodes with nodegraphs (not implementations) are supported. 
-        for (const auto& graph : mtlxNodeDef->getDocument()->getNodeGraphs()) {
-            const mx::NodeDefPtr nodeDef = graph->getNodeDef();
-            if (nodeDef && nodeDef->getName() == mtlxNodeDef->getName()) {
-                customNodeDefNames.insert(nodeDef->getName());
+        // custom nodes with nodegraphs (not implementations) are supported.  
+        if (mx::InterfaceElementPtr impl = mtlxNodeDef->getImplementation()) {
+            if (impl && impl->isA<mx::NodeGraph>()) {
+                customNodeDefNames.insert(mtlxNodeDef->getName());
                 return true;
             }
         }
-        TF_WARN("Locally defined custom nodes with implementations are not "
-                "currently supported.");
+        TF_WARN("Locally defined custom nodes without nodegraph implementations"
+                " are not currently supported.");
     }
     return false;
 }
