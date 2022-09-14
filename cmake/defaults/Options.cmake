@@ -44,7 +44,7 @@ option(PXR_USE_PYTHON_3 "Build Python bindings for Python 3" OFF)
 option(PXR_USE_DEBUG_PYTHON "Build with debug python" OFF)
 option(PXR_ENABLE_HDF5_SUPPORT "Enable HDF5 backend in the Alembic plugin for USD" ON)
 option(PXR_ENABLE_OSL_SUPPORT "Enable OSL (OpenShadingLanguage) based components" OFF)
-option(PXR_ENABLE_PTEX_SUPPORT "Enable Ptex support" ON)
+option(PXR_ENABLE_PTEX_SUPPORT "Enable Ptex support" OFF)
 option(PXR_ENABLE_OPENVDB_SUPPORT "Enable OpenVDB support" OFF)
 option(PXR_ENABLE_NAMESPACES "Enable C++ namespaces." ON)
 option(PXR_PREFER_SAFETY_OVER_SPEED
