@@ -67,6 +67,9 @@ TfPyInitialize()
 
     if (!Py_IsInitialized()) {
 
+        // Starting with Python 3.7, the GIL is initialized as part of
+        // Py_Initialize(). Python 3.9 deprecated explicit GIL initialization.
+#if PY_VERSION_HEX < 0x03070000
         if (!ArchIsMainThread() && !PyEval_ThreadsInitialized()) {
             // Python claims that PyEval_InitThreads "should be called in the
             // main thread before creating a second thread or engaging in any
@@ -74,6 +77,7 @@ TfPyInitialize()
             TF_WARN("Calling PyEval_InitThreads() for the first time outside "
                     "the 'main thread'.  Python doc says not to do this.");
         }
+#endif
 
         const std::string s = ArchGetExecutablePath();
 
@@ -113,9 +117,10 @@ TfPyInitialize()
         sigaction(SIGINT, &origSigintHandler, NULL);
 #endif
 
-#if PY_MAJOR_VERSION > 2
-        // In python 3 PyEval_InitThreads must be called after Py_Initialize()
-        // see https://docs.python.org/3/c-api/init.html
+#if PY_MAJOR_VERSION == 3 && PY_VERSION_HEX < 0x03070000
+        // In Python 3 (before 3.7), PyEval_InitThreads must be called
+        // after Py_Initialize().
+        // see https://docs.python.org/3/c-api/init.html#c.PyEval_InitThreads
         //
         // Initialize Python threading.  This grabs the GIL.  We'll release it
         // at the end of this function.

@@ -405,8 +405,12 @@ void Tf_PyInitWrapModule(
     const char* packageTag,
     const char* packageTag2)
 {
+    // Starting with Python 3.7, the GIL is initialized as part of
+    // Py_Initialize(). Python 3.9 deprecated explicit GIL initialization.
+#if PY_VERSION_HEX < 0x03070000
     // Ensure the python GIL is created.
     PyEval_InitThreads();
+#endif
 
     // Tell the tracing mechanism that python is alive.
     Tf_PyTracingPythonInitialized();
