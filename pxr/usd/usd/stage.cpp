@@ -7892,8 +7892,7 @@ UsdStage::_GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
             layer->GetIdentifier().c_str(),
             time.GetValue());
 
-        return TF_VERIFY(
-            layer->HasField(specPath, SdfFieldKeys->Default, result));
+        return layer->HasField(specPath, SdfFieldKeys->Default, result);
     }
     else if (info._source == UsdResolveInfoSourceValueClips) {
         const SdfPath specPath =
