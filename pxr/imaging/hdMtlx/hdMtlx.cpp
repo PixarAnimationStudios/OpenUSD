@@ -230,7 +230,6 @@ _AddMaterialXNode(
 
     // For each of the HdNode parameters add the corresponding parameter/input 
     // to the mxNode
-    bool hasFilenameInput = false;
     TfTokenVector hdNodeParamNames =
         netInterface->GetAuthoredNodeParameterNames(hdNodeName);
     for (TfToken const &paramName : hdNodeParamNames) {
@@ -240,7 +239,6 @@ _AddMaterialXNode(
         mx::InputPtr mxInput = mxNodeDef->getActiveInput(mxInputName);
         if (mxInput) {
             mxInputType = mxInput->getType();
-            hasFilenameInput |= mxInputType == "filename";
         }
         std::string mxInputValue = HdMtlxConvertToString(
             netInterface->GetNodeParameterValue(hdNodeName, paramName));
@@ -249,7 +247,7 @@ _AddMaterialXNode(
     }
 
     // MaterialX nodes that use textures are assumed to have a filename input
-    if (hasFilenameInput) {
+    if (mxNodeDef->getNodeGroup() == "texture2d") {
         if (mxHdData) {
             // Save the corresponding MaterialX and Hydra names for ShaderGen
             mxHdData->mxHdTextureMap[mxNodeName] = connectionName;
