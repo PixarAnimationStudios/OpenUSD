@@ -230,6 +230,20 @@ UsdAttribute::GetResolveInfo(UsdTimeCode time) const
     return resolveInfo;
 }
 
+UsdResolveInfo
+UsdAttribute::GetResolveInfo() const
+{
+    // XXX: This matches the exact behavior of GetResolveInfo
+    // called with no parameters before it was made a separate
+    // overload. However, this behavior is currently incorrect
+    // and will be fixed in an imminent change that will also
+    // fix GetResolveInfo at default time.
+    UsdResolveInfo resolveInfo;
+    const UsdTimeCode time = UsdTimeCode::Default();
+    _GetStage()->_GetResolveInfo(*this, &resolveInfo, &time);
+    return resolveInfo;
+}
+
 template <typename T>
 bool 
 UsdAttribute::_Set(const T& value, UsdTimeCode time) const
