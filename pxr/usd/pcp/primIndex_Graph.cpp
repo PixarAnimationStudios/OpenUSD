@@ -285,6 +285,13 @@ PcpPrimIndex_Graph::GetNodeIndexesForRange(PcpRangeType rangeType) const
     return nodeRange;
 }
 
+size_t 
+PcpPrimIndex_Graph::GetNodeIndexForNode(const PcpNodeRef &node) const
+{
+    return get_pointer(node.GetOwningGraph()) == this ? 
+        node._GetNodeIndex() : _GetNumNodes();
+}
+
 void
 PcpPrimIndex_Graph::Finalize()
 {

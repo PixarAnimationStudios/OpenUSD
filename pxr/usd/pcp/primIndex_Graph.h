@@ -93,6 +93,13 @@ public:
     std::pair<size_t, size_t> 
     GetNodeIndexesForRange(PcpRangeType rangeType = PcpRangeTypeAll) const;
 
+    /// Returns the node index of the given \p node in this graph.
+    ///
+    /// If the node is not in this graph, this returns the end index of the 
+    /// graph.
+    size_t 
+    GetNodeIndexForNode(const PcpNodeRef &node) const;
+
     /// Returns a node from the graph that uses the given site and can
     /// contribute specs, if one exists. If multiple nodes in the graph 
     /// use the same site, the one that will be returned by this function 

@@ -157,6 +157,13 @@ public:
     PCP_API
     PcpNodeRange GetNodeRange(PcpRangeType rangeType = PcpRangeTypeAll) const;
 
+    /// Returns the node iterator that points to the given \p node if the
+    /// node is in the prim index graph.
+    /// Returns the end of the node range if the node is not contained in this
+    /// prim index.
+    PCP_API
+    PcpNodeIterator GetNodeIteratorAtNode(const PcpNodeRef &node) const;
+
     /// Returns range of iterators that encompasses all prims, in
     /// strong-to-weak order.
     PCP_API

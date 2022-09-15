@@ -326,6 +326,26 @@ main(int argc, char** argv)
             PcpPropertyReverseIterator(propRange.first));
     }
 
+    std::cout << "Testing GetNodeIteratorAtNode" << std::endl;
+    {
+        PcpErrorVector errors;
+        const PcpPrimIndex& primIndex = 
+            cache->ComputePrimIndex(SdfPath("/Model"), &errors);
+        PcpRaiseErrors(errors);
+
+        const PcpNodeRange nodeRange = primIndex.GetNodeRange();
+        for (PcpNodeIterator it = nodeRange.first; 
+                it != nodeRange.second; ++it) {
+            PcpNodeRef node = *it;
+            PcpNodeIterator iteratorAtNode = 
+                primIndex.GetNodeIteratorAtNode(node);
+            TF_AXIOM(it == iteratorAtNode);
+        }
+
+        TF_AXIOM(
+            primIndex.GetNodeIteratorAtNode(PcpNodeRef()) == nodeRange.second);
+    }
+
     std::cout << "Testing iteration (output to file)..." << std::endl;
     {
         std::ofstream outfile("iteration_results.txt");

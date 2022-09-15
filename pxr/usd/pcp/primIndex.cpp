@@ -205,6 +205,16 @@ PcpPrimIndex::GetNodeRange(PcpRangeType rangeType) const
         PcpNodeIterator(get_pointer(_graph), range.second));
 }
 
+PcpNodeIterator 
+PcpPrimIndex::GetNodeIteratorAtNode(const PcpNodeRef &node) const
+{
+    if (!_graph) {
+        return PcpNodeIterator();
+    }
+    return PcpNodeIterator(
+        get_pointer(_graph), _graph->GetNodeIndexForNode(node));
+}
+
 PcpPrimRange 
 PcpPrimIndex::GetPrimRange(PcpRangeType rangeType) const
 {
