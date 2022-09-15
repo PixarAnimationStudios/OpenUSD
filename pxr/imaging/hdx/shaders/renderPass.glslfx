@@ -147,7 +147,8 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     ["out", "vec4", "elementIdOut"],
     ["out", "vec4", "edgeIdOut"],
     ["out", "vec4", "pointIdOut"],
-    ["out", "vec4", "neyeOut"]
+    ["out", "vec4", "neyeOut"],
+    ["buffer readWrite", "CounterBuffer", "PickBuffer", ["atomic_int", "PickBuffer"]]
 ]
 
 -- glsl HdxRenderPass.RenderPick
@@ -160,29 +161,13 @@ vec4 IntToVec4(int id)
                 ((id >> 24) & 0xff) / 255.0);
 }
 
-// calculate an integer hash value based on integer key and offset
-// this is used for the pick buffer hash map
-int fnv1Hash(int key, int offset)
-{
-    const int prime = 16777619;
+int cantor(int a, int b) {
+   return (a + b + 1) * (a + b) / 2 + b;
+}
 
-    int ret = offset;
-	
-    int b0 = (key & 255);
-    int b1 = (key & 65280) >> 8;
-    int b2 = (key & 16711680) >> 16;
-    int b3 = (key & -2130706432) >> 24;
-
-    ret *= prime;
-    ret ^= b0;
-    ret *= prime;
-    ret ^= b1;
-    ret *= prime;
-    ret ^= b2;
-    ret *= prime;
-    ret ^= b3;
-
-    return ret;
+// Uses cantor pairing to compute a hash value for a-b-c.
+int hash3(int a, int b, int c) {
+   return cantor(a, cantor(b, c));
 }
 
 #if defined(HD_HAS_PickBuffer)
@@ -197,10 +182,11 @@ compareOrSet(
     int instanceIdOffset = valueOffset + 1;
     int partIdOffset = valueOffset + 2;
 
-    int primIdValue = PickBuffer[primIdOffset];
-    int instanceIdValue = PickBuffer[instanceIdOffset];
-    int partIdValue = PickBuffer[partIdOffset];
+    int primIdValue = ATOMIC_LOAD(PickBuffer[primIdOffset]);
+    int instanceIdValue = ATOMIC_LOAD(PickBuffer[instanceIdOffset]);
+    int partIdValue = ATOMIC_LOAD(PickBuffer[partIdOffset]);
 
+    // Check if the slot is in use.
     // if all the values are initialized, just compare 
     if ((primIdValue != -9) && 
         (instanceIdValue != -9) && 
@@ -208,25 +194,31 @@ compareOrSet(
         return  (primId == primIdValue) && 
                 (instanceId == instanceIdValue) && 
                 (partId == partIdValue);
+    } else {
+
+        // Potentially available slot, store the values and return true if successful.
+        int expected = -9;
+        primIdValue = ATOMIC_COMPARE_SWAP(PickBuffer[primIdOffset], expected, primId);
+
+        // Exit if the slot was unavailable.
+        if (primIdValue != -9 && primIdValue != primId)
+            return false;
+
+        expected = -9;
+        instanceIdValue = ATOMIC_COMPARE_SWAP(PickBuffer[instanceIdOffset], expected, instanceId);
+
+        // Exit if the slot was unavailable.
+        if (instanceIdValue != -9 && instanceIdValue != instanceId)
+            return false;
+
+        expected = -9;
+        partIdValue = ATOMIC_COMPARE_SWAP(PickBuffer[partIdOffset], expected, partId);
+
+        // Exit if the slot was unavailable.
+        if (partIdValue != -9 && partIdValue != partId)
+            return false;
     }
-
-    // try to initialize the values and check if succeeded
-
-    primIdValue = atomicCompSwap(PickBuffer[primIdOffset], -9, primId);
-    if ((primIdValue != primId) && (primIdValue != -9)) {
-        return false;
-    }
-
-    instanceIdValue = atomicCompSwap(PickBuffer[instanceIdOffset], -9, instanceId);
-    if ((instanceIdValue != instanceId) && (instanceIdValue != -9)) {
-        return false;
-    }
-
-    partIdValue = atomicCompSwap(PickBuffer[partIdOffset], -9, partId);
-    if ((partIdValue != partId) && (partIdValue != -9)) {
-        return false;
-    }
-
+    
     return true;
 }
 #endif // HD_HAS_PickBuffer
@@ -261,51 +253,56 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 #if defined(HD_HAS_PickBuffer)
 
     // if the pick buffer is not initialized, we are done 
-    if (PickBuffer[0] == 0)
+    if (ATOMIC_LOAD(PickBuffer[0]) == 0)
         return;
 	
     // prepare some constants
     const int entrySize = 3;
-    const int numSubBuffers = PickBuffer[0];
-    const int subBufferCapacity = PickBuffer[1];
-    const int tableOffset = PickBuffer[2];
-    const int storageOffset = PickBuffer[3];
-    const int partId =  PickBuffer[4] * elementId + 
-                        PickBuffer[5] * edgeId +
-                        PickBuffer[6] * pointId;
-
-    // calculate the item's hash
-    const int fnv1Seed = -2128831035;
-    int fnv1Value = fnv1Hash(primId, fnv1Seed);
-    fnv1Value = fnv1Hash(instanceId, fnv1Value);
-    fnv1Value = fnv1Hash(partId, fnv1Value);
+    const int numSubBuffers = ATOMIC_LOAD(PickBuffer[0]);
+    const int subBufferCapacity = ATOMIC_LOAD(PickBuffer[1]);
+    const int tableOffset = ATOMIC_LOAD(PickBuffer[2]);
+    const int storageOffset = ATOMIC_LOAD(PickBuffer[3]);
+    const int partId =  ATOMIC_LOAD(PickBuffer[4]) * elementId + 
+                        ATOMIC_LOAD(PickBuffer[5]) * edgeId +
+                        ATOMIC_LOAD(PickBuffer[6]) * pointId;
 
     // more constants
-    const int subBufferNumber = fnv1Value % numSubBuffers;
-    const int sizeOffset = tableOffset + subBufferNumber;
-    const int subBufferOffset = storageOffset + 
-                subBufferNumber * subBufferCapacity * entrySize;
+    const int hashValue = hash3(primId, instanceId, partId);
+    const int subBufferNumber = hashValue % numSubBuffers;
+    int bufferNumber = subBufferNumber;
 
-    // loop through the item's sub-buffer to see if the item is already there
-    // if not, add it in atomic fashion
-    int entryNumber = 0;
+    // Loop through all sub buffers to find space if we fail to find any in the designated one.
     do
     {
-        // see if we need to add a new entry
-        if (entryNumber == PickBuffer[sizeOffset]) {
-            atomicCompSwap(PickBuffer[sizeOffset], entryNumber, entryNumber + 1);
-        }
+        const int sizeOffset = tableOffset + bufferNumber;
+        const int subBufferOffset = storageOffset + bufferNumber * subBufferCapacity * entrySize;
 
-        // if either the item equals to the current entry or we managed to 
-        // initialize the entry with the item's data, we are done
-        if (compareOrSet(
-                subBufferOffset + entryNumber * entrySize, 
-                primId, instanceId, partId)) {
-            break;
-        }
-    } // we exit out if we reach the capacity of the sub-buffer
-    while(++entryNumber != subBufferCapacity);
-    
+        // loop through the item's sub-buffer to see if the item is already there
+        // if not, add it in atomic fashion
+        int entryNumber = 0;
+        do
+        {
+            // see if we need to add a new entry
+            if (entryNumber == ATOMIC_LOAD(PickBuffer[sizeOffset])) {
+                ATOMIC_COMPARE_SWAP(PickBuffer[sizeOffset], entryNumber, entryNumber + 1);
+            }
+
+            // if either the item equals to the current entry or we managed to 
+            // initialize the entry with the item's data, we are done
+            if (compareOrSet(
+                    subBufferOffset + entryNumber * entrySize, 
+                    primId, instanceId, partId)) {
+
+                // We are done.
+                return;
+            }
+        } // we exit out if we reach the capacity of the sub-buffer
+        while(++entryNumber != subBufferCapacity);
+
+        // Get the next buffer.
+        bufferNumber = (bufferNumber + 1) % numSubBuffers;
+    }
+    while (bufferNumber != subBufferNumber);
 
 #endif // HD_HAS_PickBuffer
 }

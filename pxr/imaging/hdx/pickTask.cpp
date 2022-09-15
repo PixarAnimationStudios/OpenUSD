@@ -138,8 +138,8 @@ HdxPickTask::_InitIfNeeded()
             std::dynamic_pointer_cast<HdStResourceRegistry>(
                 _index->GetResourceRegistry());
 
-        HdBufferSpecVector bufferSpecs { 
-            { _HdxPickTokens->PickBuffer, HdTupleType{ HdTypeInt32, 1 } }
+        HdBufferSpecVector bufferSpecs {
+            { _HdxPickTokens->PickBuffer, HdTupleType{ HdTypeInt32, 1 } }       
         };
 
         _pickBuffer = hdStResourceRegistry->AllocateSingleBufferArrayRange(
@@ -641,7 +641,8 @@ HdxPickTask::Prepare(HdTaskContext* ctx,
                     HdBinding::SSBO,
                     _HdxPickTokens->PickBufferBinding, 
                     _pickBuffer, 
-                    false));
+                    /*interleaved*/ false,
+                    /*writable*/ true));
         }
         else {
             renderPassShader->RemoveBufferBinding(
@@ -771,6 +772,7 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     // For 'resolveDeep' mode, read hits from the pick buffer.
     if (_contextParams.resolveMode == HdxPickTokens->resolveDeep) {
         _ResolveDeep();
+        _hgi->EndFrame();
         return;
     }
 

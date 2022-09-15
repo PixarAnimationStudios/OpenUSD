@@ -251,7 +251,7 @@ struct HdxPickTaskContextParams
         , clipPlanes()
         , depthMaskCallback(nullptr)
         , collection()
-        , alphaThreshold(0.f)
+        , alphaThreshold(0.0001f)
         , outHits(nullptr)
     {}
 
