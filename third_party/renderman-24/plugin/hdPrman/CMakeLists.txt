@@ -108,6 +108,7 @@ pxr_plugin(${PXR_PACKAGE}
         framebuffer
         implicitSurfaceSceneIndexPlugin
         matfiltSceneIndexPlugins
+        pinnedCurveExpandingSceneIndexPlugin
         renderBuffer
         renderParam
         renderViewContext
