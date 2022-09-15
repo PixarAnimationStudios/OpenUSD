@@ -141,6 +141,12 @@ public:
     USDSKEL_API
     bool JointTransformsMightBeTimeVarying() const;
 
+    /// Return true if it's possible, but not certain, that joint scales
+    /// computed through this animation query is not identity, false otherwise.
+    ///
+    USDSKEL_API
+    bool JointScalesMightBeNonIdentity() const;
+
     /// Get the time samples at which values contributing to blend shape weights
     /// have been set.
     ///

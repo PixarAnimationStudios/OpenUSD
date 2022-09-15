@@ -149,6 +149,8 @@ void wrapUsdSkelAnimQuery()
         
         .def("JointTransformsMightBeTimeVarying",
              &This::JointTransformsMightBeTimeVarying)
+        .def("JointScalesMightBeNonIdentity",
+             &This::JointScalesMightBeNonIdentity)
 
         .def("GetBlendShapeWeightTimeSamples", &_GetBlendShapeWeightTimeSamples)
 

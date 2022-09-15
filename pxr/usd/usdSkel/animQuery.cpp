@@ -131,6 +131,16 @@ UsdSkelAnimQuery::JointTransformsMightBeTimeVarying() const
 }
 
 
+bool
+UsdSkelAnimQuery::JointScalesMightBeNonIdentity() const
+{
+    if(TF_VERIFY(IsValid(), "invalid anim query.")) {
+        return _impl->JointScalesMightBeNonIdentity();
+    }
+    return false;
+}
+
+
 VtTokenArray
 UsdSkelAnimQuery::GetJointOrder() const
 {

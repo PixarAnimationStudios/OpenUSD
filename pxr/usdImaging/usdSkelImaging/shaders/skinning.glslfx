@@ -7,6 +7,9 @@
             "skinPointsLBSKernel": {
                 "source": [ "Compute.SkinPointsLBS" ]
              },
+            "skinPointsDQSKernel": {
+                "source": [ "Compute.SkinPointsDQS" ]
+             },
             "skinPointsSimpleKernel": {
                 "source": [ "Compute.SkinPointsSimple" ]
              }
@@ -66,6 +69,166 @@ void compute(int index)
     // down use doubles and not floats.
     mat4 skelToPrimLocal = mat4( HdGet_primWorldToLocal() ) *
                            mat4( HdGet_skelLocalToWorld() );
+    p = (skelToPrimLocal * vec4(p,1)).xyz;
+
+    HdSet_skinnedPoints(index, p);
+}
+
+
+-- glsl Compute.SkinPointsDQS
+
+const float EPS = 1e-5;
+const float NORM_EPS = 1e-10;
+
+vec4 GetPivotQuaternion(int numInfluencesPerComponent, int offset)
+{
+    vec4 pivotQuat = vec4(0);
+    int pivotIdx = -1;
+    float maxw = -1;
+    for (int i = 0; i < numInfluencesPerComponent; i++) {
+        vec2 influence = HdGet_influences(offset + i);
+        float jointWeight = influence.y;
+        if (pivotIdx < 0 || maxw < jointWeight) {
+            int jointIdx = int( influence.x );
+            maxw = jointWeight;
+            pivotIdx = jointIdx;
+        }
+    }
+    if (pivotIdx >= 0)
+        pivotQuat = HdGet_skinningDualQuats(pivotIdx*2);
+
+    return pivotQuat;
+}
+
+vec3 TransformByQuaternion(vec4 quat, vec3 vec)
+{
+    // See GfQuat::Transform() for algorithm
+
+    float r1 = quat.w;
+    vec3  i1 = quat.xyz;
+
+    vec3  i2 = vec3(r1 * vec[0] + (i1[1] * vec[2] - i1[2] * vec[1]),
+                    r1 * vec[1] + (i1[2] * vec[0] - i1[0] * vec[2]),
+                    r1 * vec[2] + (i1[0] * vec[1] - i1[1] * vec[0]));
+
+    return vec3(vec[0] + 2.0 * (i1[1] * i2[2] - i1[2] * i2[1]),
+                vec[1] + 2.0 * (i1[2] * i2[0] - i1[0] * i2[2]),
+                vec[2] + 2.0 * (i1[0] * i2[1] - i1[1] * i2[0]));
+}
+
+vec3 GetDualQuaternionTranslation(vec4 real, vec4 dual)
+{
+    // See GfDualQuat::GetTranslation() for algorithm
+
+    float scale = -2.0;
+
+    float rw = real.w;
+    vec3  ri = real.xyz;
+
+    float dw = dual.w;
+    vec3  di = dual.xyz;
+
+    return vec3( (dw*ri[0] - rw*di[0] + di[1]*ri[2] - di[2]*ri[1])*scale,
+                 (dw*ri[1] - rw*di[1] + di[2]*ri[0] - di[0]*ri[2])*scale,
+                 (dw*ri[2] - rw*di[2] + di[0]*ri[1] - di[1]*ri[0])*scale );
+}
+
+void compute(int index)
+{
+    // model space -> bind space
+    mat4 geomBindXform = HdGet_geomBindXform();
+
+    vec3 restP = HdGet_restPoints(index);
+
+    // apply blend shapes
+    int numBlendShapeOffsetRanges = HdGet_numBlendShapeOffsetRanges();
+    if (index < numBlendShapeOffsetRanges) {
+        ivec2 blendShapeOffsetRange = HdGet_blendShapeOffsetRanges(index);
+        for (int i = blendShapeOffsetRange.x; i < blendShapeOffsetRange.y; ++i) {
+            vec4 offset = HdGet_blendShapeOffsets(i);
+            int shapeIndex = int(offset.w);
+            float weight = HdGet_blendShapeWeights(shapeIndex);
+            restP += offset.xyz * weight;
+        }
+    }
+    vec3 initP = (geomBindXform * vec4(restP, 1)).xyz;
+
+    int numInfluencesPerComponent = HdGet_numInfluencesPerComponent();
+    vec3 p;
+    if (numInfluencesPerComponent > 0) {
+
+#ifdef HD_HAS_skinningScaleXforms
+        vec3 scaledP = vec3(0, 0, 0);
+#endif
+
+        bool constantPointInfluence = HdGet_hasConstantInfluences();
+        int offset = constantPointInfluence ? 0 : numInfluencesPerComponent*index;
+
+        // find the pivot quaternion
+        vec4 pivotQuat = GetPivotQuaternion(numInfluencesPerComponent, offset);
+
+        // find the weighted sum dual quaternion
+        vec4 weightedSumDQReal = vec4(0);
+        vec4 weightedSumDQDual = vec4(0);
+
+        for (int i = 0; i < numInfluencesPerComponent; i++) {
+            vec2 influence = HdGet_influences(offset + i);
+            float jointWeight = influence.y;
+
+            if (jointWeight > EPS) {
+                int jointIdx = int(influence.x);
+
+#ifdef HD_HAS_skinningScaleXforms
+                // Apply scale using LBS, if any of the skinning xforms has scales
+                mat3 scaleXform = HdGet_skinningScaleXforms(jointIdx);
+                scaledP += ((scaleXform * initP) * jointWeight);
+#endif
+
+                // Apply rotation & translation using DQS
+                vec4 skinningDQReal = HdGet_skinningDualQuats(jointIdx*2);
+                vec4 skinningDQDual = HdGet_skinningDualQuats(jointIdx*2+1);
+                // Flip the dual quaternion, if necessary, to make it
+                // on the same hemisphere as the pivotQuat.
+                if (dot(skinningDQReal, pivotQuat) < 0.0)
+                   jointWeight = -jointWeight;
+
+                weightedSumDQReal += (skinningDQReal * jointWeight);
+                weightedSumDQDual += (skinningDQDual * jointWeight);
+            }
+        }
+
+        // normalize weightedSumDQ
+        float realLength = length(weightedSumDQReal);
+        if (realLength < NORM_EPS) {
+            weightedSumDQReal = vec4(0, 0, 0, 1);  // identity quaternion
+            weightedSumDQDual = vec4(0);           // zero quaternion
+        } else {
+            float inverseRealLength = 1.0 / realLength;
+            // rotation normalization
+            weightedSumDQReal *= inverseRealLength;
+            weightedSumDQDual *= inverseRealLength;
+            // plucker normalization
+            weightedSumDQDual -= (dot(weightedSumDQReal, weightedSumDQDual) * weightedSumDQReal);
+        }
+
+#ifdef HD_HAS_skinningScaleXforms
+        // transform scaledP by weightedSumDQ
+        p = TransformByQuaternion(weightedSumDQReal, scaledP)
+            + GetDualQuaternionTranslation(weightedSumDQReal, weightedSumDQDual);
+#else
+        // transform initP by weightedSumDQ
+        p = TransformByQuaternion(weightedSumDQReal, initP)
+            + GetDualQuaternionTranslation(weightedSumDQReal, weightedSumDQDual);
+#endif
+    } else {
+        p = initP;
+    }
+
+    // skel space -> world space -> model space
+    // XXX: Casts to mat4 below are necessary because the matrices passed
+    // down use doubles and not floats.
+    mat4 skelToPrimLocal = mat4(HdGet_primWorldToLocal()) *
+                           mat4(HdGet_skelLocalToWorld());
     p = (skelToPrimLocal * vec4(p,1)).xyz;
 
     HdSet_skinnedPoints(index, p);

@@ -1967,6 +1967,8 @@ HdSt_CodeGen::_GenerateComputeParameters(HgiShaderFunctionDesc * const csDesc)
         HgiShaderFunctionAddConstantParam(
             csDesc, name.GetString() + "Stride", _tokens->_int);
         
+        _genDefines << "#define HD_HAS_" << name << " 1\n";
+
         _EmitDeclaration(&_resCommon,
                 name,
                 declDataType,
@@ -2001,6 +2003,8 @@ HdSt_CodeGen::_GenerateComputeParameters(HgiShaderFunctionDesc * const csDesc)
             csDesc, name.GetString() + "Offset", _tokens->_int);
         HgiShaderFunctionAddConstantParam(
             csDesc, name.GetString() + "Stride", _tokens->_int);
+
+        _genDefines << "#define HD_HAS_" << name << " 1\n";
 
         _EmitDeclaration(&_resCommon,
                 name,

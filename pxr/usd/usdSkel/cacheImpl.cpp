@@ -176,7 +176,7 @@ UsdSkel_CacheImpl::ReadScope::_FindOrCreateSkinningQuery(
         skelQuery ? skelQuery.GetJointOrder() : VtTokenArray(),
         animQuery ? animQuery.GetBlendShapeOrder() : VtTokenArray(),
         key.jointIndicesAttr, key.jointWeightsAttr,
-        key.geomBindTransformAttr, key.jointsAttr,
+        key.skinningMethodAttr, key.geomBindTransformAttr, key.jointsAttr,
         key.blendShapesAttr, key.blendShapeTargetsRel);
 }
 
@@ -300,7 +300,14 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root,
                 key.jointWeightsAttr = std::move(attr);
             }
         }
-        
+
+        if (UsdAttribute attr = binding.GetSkinningMethodAttr()) {
+            if (attr.HasAuthoredValue()) {
+                _DeprecatedBindingCheck(hasBindingAPI, attr);
+                key.skinningMethodAttr = std::move(attr);
+            }
+        }
+
         if (UsdAttribute attr = _GetAttrInPrototype(
                 binding.GetGeomBindTransformAttr())) {
             if (attr.HasAuthoredValue()) {
