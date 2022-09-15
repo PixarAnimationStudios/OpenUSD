@@ -33,6 +33,7 @@
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/camera.h"
 
+#include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/rendererPlugin.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
 #include "pxr/imaging/hdx/pickTask.h"
@@ -151,6 +152,7 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     , _sceneDelegateId(sceneDelegateID)
     , _selTracker(std::make_shared<HdxSelectionTracker>())
     , _selectionColor(1.0f, 1.0f, 0.0f, 1.0f)
+    , _domeLightCameraVisibility(true)
     , _rootPath(rootPath)
     , _excludedPrimPaths(excludedPaths)
     , _invisedPrimPaths(invisedPaths)
@@ -273,6 +275,38 @@ UsdImagingGLEngine::_PrepareRender(const UsdImagingGLRenderParams& params)
 }
 
 void
+UsdImagingGLEngine::_UpdateDomeLightCameraVisibility()
+{
+    // Check to see if the dome light camera visibility has changed, and mark
+    // the dome light prim as dirty if it has.
+    //
+    // Note: The dome light camera visibility setting is handled via the
+    // HdRenderSettingsMap on the HdRenderDelegate because this ensures all
+    // backends can access this setting when they need to.
+
+    // The absence of a setting in the map is the same as camera visibility
+    // being on.
+    const bool domeLightCamVisSetting = _renderDelegate->
+        GetRenderSetting<bool>(
+            HdRenderSettingsTokens->domeLightCameraVisibility,
+            true);
+    if (_domeLightCameraVisibility != domeLightCamVisSetting) {
+        // Camera visibility state changed, so we need to mark any dome lights
+        // as dirty to ensure they have the proper state on all backends.
+        _domeLightCameraVisibility = domeLightCamVisSetting;
+
+        SdfPathVector domeLights = _renderIndex->GetSprimSubtree(
+            HdPrimTypeTokens->domeLight, SdfPath::AbsoluteRootPath());
+        for (SdfPathVector::iterator domeLightIt = domeLights.begin();
+                                     domeLightIt != domeLights.end();
+                                     ++domeLightIt) {
+            _renderIndex->GetChangeTracker().MarkSprimDirty(
+                *domeLightIt, HdLight::DirtyParams);
+        }
+    }
+}
+
+void
 UsdImagingGLEngine::_SetBBoxParams(
     const BBoxVector& bboxes,
     const GfVec4f& bboxLineColor,
@@ -323,6 +357,9 @@ UsdImagingGLEngine::RenderBatch(
     _taskController->SetEnableSelection(params.highlight);
     VtValue selectionValue(_selTracker);
     _engine->SetTaskContextData(HdxTokens->selectionState, selectionValue);
+
+    _UpdateDomeLightCameraVisibility();
+
     _Execute(params, _taskController->GetRenderingTasks());
 }
 

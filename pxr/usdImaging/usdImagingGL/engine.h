@@ -536,6 +536,9 @@ protected:
     USDIMAGINGGL_API
     void _PrepareRender(const UsdImagingGLRenderParams& params);
 
+    USDIMAGINGGL_API
+    void _UpdateDomeLightCameraVisibility();
+
     using BBoxVector = std::vector<GfBBox3d>;
 
     USDIMAGINGGL_API
@@ -618,6 +621,7 @@ protected:
 
     // Data we want to live across render plugin switches:
     GfVec4f _selectionColor;
+    bool _domeLightCameraVisibility;
 
     SdfPath _rootPath;
     SdfPathVector _excludedPrimPaths;

@@ -739,6 +739,17 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     // Attributes.
     RtParamList attrs = param->ConvertAttributes(sceneDelegate, id);
 
+    // Check if the dome light should be camera visible
+    if (lightNode.name == us_PxrDomeLight) {
+        const bool domeLightCamVis = sceneDelegate->GetRenderIndex().
+            GetRenderDelegate()->GetRenderSetting<bool>(
+                HdRenderSettingsTokens->domeLightCameraVisibility,
+                true);
+        if (!domeLightCamVis) {
+            attrs.SetInteger(RixStr.k_visibility_camera, 0);
+        }
+    }
+
     // Light linking
     {
         VtValue val =
