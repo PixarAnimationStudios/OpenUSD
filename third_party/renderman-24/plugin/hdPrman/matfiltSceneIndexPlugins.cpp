@@ -84,6 +84,18 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
     // Register the plugins conditionally.
     if (HdPrmanMaterial::GetUseSceneIndexForMatfilt()) {
+        
+        // This one needs to run as early on as possible. This will allow
+        // scene index filters that interact with materials to have access to
+        // terminal names in a renderer agnostic way early on in the scene
+        // index stack, if needed.
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            _rendererDisplayName,
+            _tokens->terminalPluginName,
+            nullptr,
+            MatfiltOrder::Start, // Run as early as possible.
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
             _rendererDisplayName,
             _tokens->previewMatPluginName,
@@ -103,13 +115,6 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
                 _tokens->applyConditionals,
                 HdRetainedTypedSampledDataSource<bool>::New(
                     _resolveVstructsWithConditionals));
-
-        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-            _rendererDisplayName,
-            _tokens->terminalPluginName,
-            nullptr,
-            MatfiltOrder::ConnectionResolve,
-            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
 
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
             _rendererDisplayName,
