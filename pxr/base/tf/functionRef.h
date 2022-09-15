@@ -98,9 +98,13 @@ class TfFunctionRef;
 template <class Ret, class... Args>
 class TfFunctionRef<Ret (Args...)>
 {
+    template <typename Fn>
+    using _IsFunctionRef = std::is_same<
+        std::remove_cv_t<std::remove_reference_t<Fn>>, TfFunctionRef>;
+
 public:
     /// Construct with an lvalue callable \p fn.
-    template <class Fn>
+    template <class Fn, class = std::enable_if_t<!_IsFunctionRef<Fn>::value>>
     constexpr TfFunctionRef(Fn &fn) noexcept
         : _fn(static_cast<void const *>(std::addressof(fn)))
         , _invoke(_InvokeFn<Fn>) {}
@@ -116,7 +120,8 @@ public:
 
     /// Assign from an lvalue callable \p fn.
     template <class Fn>
-    TfFunctionRef &
+    std::enable_if_t<!_IsFunctionRef<Fn>::value,
+                     TfFunctionRef &>
     operator=(Fn &fn) noexcept {
         *this = TfFunctionRef(fn);
         return *this;
