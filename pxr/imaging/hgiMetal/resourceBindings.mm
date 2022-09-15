@@ -108,17 +108,20 @@ HgiMetalResourceBindings::BindResources(
                                   atIndex:0];
         }
         if (metalTexture) {
-            if (metalSampler) {
-                [renderEncoder useResource:metalTexture
-                    usage:MTLResourceUsageSample|
-                          MTLResourceUsageRead|
-                          MTLResourceUsageWrite];
-            }
-            else {
-                [renderEncoder useResource:metalTexture
-                    usage:MTLResourceUsageRead|MTLResourceUsageWrite];
-            }
-        }
+                     MTLResourceUsage usageFlags;
+                     if (metalSampler) {
+                         usageFlags = MTLResourceUsageSample|
+                         MTLResourceUsageRead;
+                     }
+                     else {
+                         usageFlags = MTLResourceUsageRead;
+                     }
+                     if (texDesc.writable) {
+                         usageFlags = usageFlags | MTLResourceUsageWrite;
+                     }
+                     [renderEncoder useResource:metalTexture
+                         usage:usageFlags];
+                 }
     }
 
     [renderEncoder setVertexBuffer:argBuffer
@@ -151,7 +154,6 @@ HgiMetalResourceBindings::BindResources(
         
         id<MTLBuffer> bufferId = metalbuffer->GetBufferId();
         NSUInteger offset = bufDesc.offsets.front();
-
         if ((bufDesc.stageUsage & HgiShaderStageVertex) ||
             (bufDesc.stageUsage & HgiShaderStagePostTessellationVertex)) {
             NSUInteger argBufferOffset = HgiMetalArgumentOffsetBufferVS
@@ -168,9 +170,13 @@ HgiMetalResourceBindings::BindResources(
                                          offset:argBufferOffset];
             [argEncoderBuffer setBuffer:bufferId offset:offset atIndex:0];
         }
+        MTLResourceUsage usageFlags = MTLResourceUsageRead;
+        if (bufDesc.writable) {
+            usageFlags = usageFlags | MTLResourceUsageWrite;
+        }
 
         [renderEncoder useResource:bufferId
-                             usage:(MTLResourceUsageRead | MTLResourceUsageWrite)];
+                             usage:usageFlags];
     }
     
 
@@ -233,17 +239,19 @@ HgiMetalResourceBindings::BindResources(
                                  + (texDesc.bindingIndex * sizeof(void*));
             [argEncoderTexture setArgumentBuffer:argBuffer
                                           offset:offsetTexture];
+            MTLResourceUsage usage = MTLResourceUsageRead;
+            if (texDesc.writable) {
+                usage = usage | MTLResourceUsageWrite;
+            }
             [argEncoderTexture setTexture:metalTexture->GetTextureId() atIndex:0];
             if (metalSmp) {
+                usage = usage | MTLResourceUsageSample;
                 [computeEncoder useResource:metalTexture->GetTextureId()
-                    usage:MTLResourceUsageSample|
-                          MTLResourceUsageRead|
-                          MTLResourceUsageWrite];
+                    usage:usage];
             }
             else {
                 [computeEncoder useResource:metalTexture->GetTextureId()
-                                      usage:MTLResourceUsageRead|
-                                            MTLResourceUsageWrite];
+                                      usage:usage];
             }
         }
     }
@@ -277,8 +285,12 @@ HgiMetalResourceBindings::BindResources(
         [argEncoderBuffer setArgumentBuffer:argBuffer
                                      offset:argBufferOffset];
         [argEncoderBuffer setBuffer:bufferId offset:offset atIndex:0];
+        MTLResourceUsage usage = MTLResourceUsageRead;
+        if (bufDesc.writable) {
+            usage = usage | MTLResourceUsageWrite;
+        }
         [computeEncoder useResource:bufferId
-                              usage:(MTLResourceUsageRead | MTLResourceUsageWrite)];
+                              usage:usage];
     }
     
     [computeEncoder setBuffer:argBuffer

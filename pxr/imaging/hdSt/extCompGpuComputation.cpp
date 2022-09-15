@@ -56,6 +56,7 @@ _AppendResourceBindings(
     bufBind.bindingIndex = location;
     bufBind.resourceType = HgiBindResourceTypeStorageBuffer;
     bufBind.stageUsage = HgiShaderStageCompute;
+    bufBind.writable = true;
     bufBind.offsets.push_back(0);
     bufBind.buffers.push_back(buffer);
     resourceDesc->buffers.push_back(std::move(bufBind));

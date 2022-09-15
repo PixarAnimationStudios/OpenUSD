@@ -85,6 +85,7 @@ struct HgiBufferBindDesc
     HgiBindResourceType resourceType;
     uint32_t bindingIndex;
     HgiShaderStage stageUsage;
+    bool writable;
 };
 using HgiBufferBindDescVector = std::vector<HgiBufferBindDesc>;
 
@@ -130,6 +131,7 @@ struct HgiTextureBindDesc
     HgiBindResourceType resourceType;
     uint32_t bindingIndex;
     HgiShaderStage stageUsage;
+    bool writable;
 };
 using HgiTextureBindDescVector = std::vector<HgiTextureBindDesc>;
 

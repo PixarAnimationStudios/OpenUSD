@@ -348,6 +348,7 @@ HdxColorCorrectionTask::_CreateResourceBindings(
     HgiTextureBindDesc texBind0;
     texBind0.bindingIndex = 0;
     texBind0.stageUsage = HgiShaderStageFragment;
+    texBind0.writable = false;
     texBind0.textures.push_back(aovTexture);
     texBind0.samplers.push_back(_sampler);
     resourceDesc.textures.push_back(std::move(texBind0));
@@ -356,6 +357,7 @@ HdxColorCorrectionTask::_CreateResourceBindings(
         HgiTextureBindDesc texBind1;
         texBind1.bindingIndex = 1;
         texBind1.stageUsage = HgiShaderStageFragment;
+        texBind1.writable = false;
         texBind1.textures.push_back(_texture3dLUT);
         texBind1.samplers.push_back(_sampler);
         resourceDesc.textures.push_back(std::move(texBind1));

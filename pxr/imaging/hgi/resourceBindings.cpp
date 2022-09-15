@@ -53,7 +53,8 @@ bool operator==(
            lhs.offsets == rhs.offsets &&
            lhs.sizes == rhs.sizes &&
            lhs.bindingIndex == rhs.bindingIndex &&
-           lhs.stageUsage == rhs.stageUsage;
+           lhs.stageUsage == rhs.stageUsage &&
+           lhs.writable == rhs.writable;
 }
 
 bool operator!=(
@@ -78,7 +79,8 @@ bool operator==(
            lhs.resourceType == rhs.resourceType &&
            lhs.bindingIndex == rhs.bindingIndex &&
            lhs.stageUsage == rhs.stageUsage &&
-           lhs.samplers == rhs.samplers;
+           lhs.samplers == rhs.samplers &&
+           lhs.writable == rhs.writable;
 }
 
 bool operator!=(

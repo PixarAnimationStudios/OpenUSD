@@ -676,8 +676,10 @@ HgiMetalBufferShaderSection::WriteParameter(std::ostream& ss) const
 {
     if (!_writable) {
         ss << "const ";
+        ss << "constant ";
+    } else {
+        ss << "device ";
     }
-    ss << "device ";
     WriteType(ss);
     
     switch (_binding) {
@@ -702,8 +704,10 @@ HgiMetalBufferShaderSection::VisitScopeMemberDeclarations(std::ostream &ss)
 
     if (!_writable) {
         ss << "const ";
+        ss << "constant ";
+    } else {
+        ss << "device ";
     }
-    ss << "device ";
     WriteType(ss);
 
     switch (_binding) {
@@ -731,8 +735,10 @@ HgiMetalBufferShaderSection::VisitScopeConstructorDeclarations(
 
     if (!_writable) {
         ss << "const ";
+        ss << "constant ";
+    } else {
+        ss << "device ";
     }
-    ss << "device ";
     WriteType(ss);
     ss << "* _";
     WriteIdentifier(ss);
