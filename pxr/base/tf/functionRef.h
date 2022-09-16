@@ -98,6 +98,10 @@ class TfFunctionRef;
 template <class Ret, class... Args>
 class TfFunctionRef<Ret (Args...)>
 {
+    // Type trait to detect when an argument is a potentially cv-qualified
+    // TfFunctionRef.  This is used to disable the generic constructor and
+    // assignment operator so that TfFunctionRef arguments are copied rather
+    // than forming TfFunctionRefs pointing to TfFunctionRefs.
     template <typename Fn>
     using _IsFunctionRef = std::is_same<
         std::remove_cv_t<std::remove_reference_t<Fn>>, TfFunctionRef>;
