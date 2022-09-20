@@ -7508,10 +7508,19 @@ struct UsdStage::_PropertyStackResolver {
     bool ProcessFallback() { return false; }
 
     bool
-    ProcessLayer(const size_t layerStackPosition,
-                 const SdfPath& specPath,
-                 const PcpNodeRef& node,
-                 const double *time) 
+    ProcessLayerAtTime(const size_t layerStackPosition,
+                       const SdfPath& specPath,
+                       const PcpNodeRef& node,
+                       const double *) 
+    {
+        // Processing layers for the property stack does not depend on time.
+        return ProcessLayerAtDefault(layerStackPosition, specPath, node);
+    }
+
+    bool
+    ProcessLayerAtDefault(const size_t layerStackPosition,
+                          const SdfPath& specPath,
+                          const PcpNodeRef& node) 
     {
         const auto layer
             = node.GetLayerStack()->GetLayers()[layerStackPosition];
@@ -7583,7 +7592,12 @@ UsdStage::_GetPropertyStack(const UsdProperty &prop,
                             UsdTimeCode time) const
 {
     _PropertyStackResolver resolver(/* withLayerOffsets = */ false);
-    _GetResolvedValueImpl(prop, &resolver, &time);
+    if (time.IsDefault()) {
+        _GetResolvedValueAtDefaultImpl(prop, &resolver);
+    } else {
+        double localTime = time.GetValue();
+        _GetResolvedValueAtTimeImpl(prop, &resolver, &localTime);
+    }
     return resolver.propertyStack; 
 }
 
@@ -7592,7 +7606,12 @@ UsdStage::_GetPropertyStackWithLayerOffsets(
     const UsdProperty &prop, UsdTimeCode time) const
 {
     _PropertyStackResolver resolver(/* withLayerOffsets = */ true);
-    _GetResolvedValueImpl(prop, &resolver, &time);
+    if (time.IsDefault()) {
+        _GetResolvedValueAtDefaultImpl(prop, &resolver);
+    } else {
+        double localTime = time.GetValue();
+        _GetResolvedValueAtTimeImpl(prop, &resolver, &localTime);
+    }
     return resolver.propertyStackWithLayerOffsets; 
 }
 
@@ -7664,10 +7683,10 @@ struct UsdStage::_ResolveInfoResolver
     }
 
     bool
-    ProcessLayer(const size_t layerStackPosition,
-                 const SdfPath& specPath,
-                 const PcpNodeRef& node,
-                 const double *time) 
+    ProcessLayerAtTime(const size_t layerStackPosition,
+                       const SdfPath& specPath,
+                       const PcpNodeRef& node,
+                       const double *time) 
     {
         const PcpLayerStackRefPtr& nodeLayers = node.GetLayerStack();
         const SdfLayerRefPtrVector& layerStack = nodeLayers->GetLayers();
@@ -7703,6 +7722,35 @@ struct UsdStage::_ResolveInfoResolver
             _resolveInfo->_layerToStageOffset = layerToStageOffset;
             _resolveInfo->_node = node;
             return true;
+        }
+
+        return false;
+    }
+
+    bool
+    ProcessLayerAtDefault(const size_t layerStackPosition,
+                          const SdfPath& specPath,
+                          const PcpNodeRef& node) 
+    {
+        const PcpLayerStackRefPtr& layerStack = node.GetLayerStack();
+        const SdfLayerRefPtrVector& layers = layerStack->GetLayers();
+        const SdfLayerRefPtr& layer = layers[layerStackPosition];
+ 
+        Usd_DefaultValueResult defValue = Usd_HasDefault(
+            layer, specPath, _extraInfo->defaultOrFallbackValue);
+        if (defValue == Usd_DefaultValueResult::Found) {
+            _resolveInfo->_source = UsdResolveInfoSourceDefault;
+            _resolveInfo->_layerStack = layerStack;
+            _resolveInfo->_layer = layer;
+            _resolveInfo->_primPathInLayerStack = node.GetPath();
+            _resolveInfo->_layerToStageOffset = 
+                _GetLayerToStageOffset(node, layer);
+            _resolveInfo->_node = node;
+            return true;
+        }
+        else if (defValue == Usd_DefaultValueResult::Blocked) {
+            _resolveInfo->_valueIsBlocked = true;
+            return ProcessFallback();
         }
 
         return false;
@@ -7749,7 +7797,14 @@ UsdStage::_GetResolveInfo(const UsdAttribute &attr,
     }
 
     _ResolveInfoResolver<T> resolver(attr, resolveInfo, extraInfo);
-    _GetResolvedValueImpl(attr, &resolver, time);
+    if (!time) {
+        _GetResolvedValueAtTimeImpl(attr, &resolver, nullptr);
+    } else if (time->IsDefault()) {
+        _GetResolvedValueAtDefaultImpl(attr, &resolver);
+    } else {
+        double localTime = time->GetValue();
+        _GetResolvedValueAtTimeImpl(attr, &resolver, &localTime);
+    }
     
     if (TfDebug::IsEnabled(USD_VALIDATE_VARIABILITY) &&
         (resolveInfo->_source == UsdResolveInfoSourceTimeSamples ||
@@ -7763,10 +7818,11 @@ UsdStage::_GetResolveInfo(const UsdAttribute &attr,
     }
 }
 
-// This function takes a Resolver object, which is used to process opinions
-// in strength order. Resolvers must implement three functions: 
+// These functions take a Resolver object, which is used to process opinions
+// in strength order. Resolvers must implement four functions: 
 //       
-//       ProcessLayer()
+//       ProcessLayerAtTime()
+//       ProcessLayerAtDefault()
 //       ProcessClips()
 //       ProcessFallback()
 //
@@ -7774,22 +7830,43 @@ UsdStage::_GetResolveInfo(const UsdAttribute &attr,
 // iteration of opinions should stop, and false otherwise.
 template <class Resolver>
 void
-UsdStage::_GetResolvedValueImpl(const UsdProperty &prop,
-                                Resolver *resolver,
-                                const UsdTimeCode *time) const
+UsdStage::_GetResolvedValueAtDefaultImpl(
+    const UsdProperty &prop,
+    Resolver *resolver) const
 {
     auto primHandle = prop._Prim();
-    boost::optional<double> localTime;
-    if (time && !time->IsDefault()) {
-        localTime = time->GetValue();
+
+    for (Usd_Resolver res(
+            &primHandle->GetPrimIndex(), /*skipEmptyNodes = */ true); 
+         res.IsValid(); res.NextNode()) {
+
+        const PcpNodeRef& node = res.GetNode();
+        const SdfPath specPath = node.GetPath().AppendProperty(prop.GetName());
+        const SdfLayerRefPtrVector& layerStack 
+            = node.GetLayerStack()->GetLayers();
+        for (size_t i = 0, e = layerStack.size(); i < e; ++i) {
+            if (resolver->ProcessLayerAtDefault(i, specPath, node)) {
+                return;
+            }
+        }
     }
+
+    resolver->ProcessFallback();
+}
+
+template <class Resolver>
+void
+UsdStage::_GetResolvedValueAtTimeImpl(const UsdProperty &prop,
+                                      Resolver *resolver,
+                                      const double *localTime) const
+{
+    auto primHandle = prop._Prim();
 
     // Retrieve all clips that may contribute time samples for this
     // attribute at the given time. Clips never contribute default
     // values.
     const std::vector<Usd_ClipSetRefPtr>* clipsAffectingPrim = nullptr;
-    if (primHandle->MayHaveOpinionsInClips()
-        && (!time || !time->IsDefault())) {
+    if (primHandle->MayHaveOpinionsInClips()) {
         clipsAffectingPrim =
             &(_clipCache->GetClipsForPrim(primHandle->GetPath()));
     }
@@ -7814,8 +7891,7 @@ UsdStage::_GetResolvedValueImpl(const UsdProperty &prop,
         boost::optional<std::vector<Usd_ClipSetRefPtr>> clips;
         for (size_t i = 0, e = layerStack.size(); i < e; ++i) {
             if (nodeHasSpecs) { 
-                if (resolver->ProcessLayer(i, specPath, node, 
-                                           localTime.get_ptr())) {
+                if (resolver->ProcessLayerAtTime(i, specPath, node, localTime)) {
                     return;
                 }
             }
@@ -7847,7 +7923,7 @@ UsdStage::_GetResolvedValueImpl(const UsdProperty &prop,
                     // this attribute. If a time is given, examine just the clips
                     // that are active at that time.
                     if (resolver->ProcessClips(
-                            clipSet, specPath, node, localTime.get_ptr())) {
+                            clipSet, specPath, node, localTime)) {
                         return;
                     }
                 }

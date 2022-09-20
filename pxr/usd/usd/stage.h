@@ -2093,6 +2093,11 @@ private:
 
     template <class T> struct _ExtraResolveInfo;
 
+    // Gets the value resolve info for the given attribute. If time is provided,
+    // the resolve info is evaluated for that specific time (which may be 
+    // default). Otherwise, if time is null, the resolve info is evaluated for
+    // "any numeric time" and will not populate values in extraInfo that 
+    // require a specific time to be evaluated.
     template <class T>
     void _GetResolveInfo(const UsdAttribute &attr, 
                          UsdResolveInfo *resolveInfo,
@@ -2103,9 +2108,13 @@ private:
     struct _PropertyStackResolver;
 
     template <class Resolver>
-    void _GetResolvedValueImpl(const UsdProperty &prop,
-                               Resolver *resolver,
-                               const UsdTimeCode *time = nullptr) const;
+    void _GetResolvedValueAtDefaultImpl(const UsdProperty &prop,
+                                        Resolver *resolver) const;
+
+    template <class Resolver>
+    void _GetResolvedValueAtTimeImpl(const UsdProperty &prop,
+                                     Resolver *resolver,
+                                     const double *time) const;
 
     bool _GetValue(UsdTimeCode time, const UsdAttribute &attr, 
                    VtValue* result) const;
