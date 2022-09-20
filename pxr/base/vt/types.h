@@ -37,6 +37,7 @@
 
 #include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
+#include <boost/preprocessor/seq/for_each_i.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
 
 #include <cstddef>
@@ -185,7 +186,27 @@ BOOST_PP_SEQ_FOR_EACH(VT_ARRAY_TYPE_TUPLE, ~, VT_SCALAR_VALUE_TYPES)
 
 #define VT_CLASS_VALUE_TYPES \
 VT_ARRAY_VALUE_TYPES VT_SCALAR_CLASS_VALUE_TYPES VT_NONARRAY_VALUE_TYPES
-    
+
+#define VT_VALUE_TYPES \
+    VT_BUILTIN_VALUE_TYPES VT_CLASS_VALUE_TYPES
+
+// Provide compile-time value type indexes for types that are "known" to Vt --
+// specifically, those types that appear in VT_VALUE_TYPES.  Note that VtArray
+// and VtValue can work with other types that are not these "known" types.
+//
+// Base case -- unknown types get index -1.
+template <class T>
+constexpr int VtKnownValueTypeIndex = -1;
+
+// Set indexes for known types.
+#define VT_SET_VALUE_TYPE_INDEX(r, unused, i, elem)                     \
+    template <> constexpr int VtKnownValueTypeIndex< VT_TYPE(elem) > = i;
+BOOST_PP_SEQ_FOR_EACH_I(VT_SET_VALUE_TYPE_INDEX, ~, VT_VALUE_TYPES)
+#undef VT_SET_VALUE_TYPE_INDEX
+
+// Total number of 'known' value types.
+constexpr int VtNumKnownValueTypes = BOOST_PP_SEQ_SIZE(VT_VALUE_TYPES);
+
 // Free functions to represent "zero" for various base types.  See
 // specializations in Types.cpp
 template<typename T>
