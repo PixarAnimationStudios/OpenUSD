@@ -706,7 +706,7 @@ UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
         !allPurposeCollBindings.empty())) {
         TF_WARN("Found material bindings on prim at path (%s) but "
                 "MaterialBindingAPI is not applied on the prim", 
-                prim.GetPath().GetText());
+                prim.GetPath().GetAsString().c_str());
     }
 }
 
