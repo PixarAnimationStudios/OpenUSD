@@ -227,6 +227,10 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     const bool renderEdges = geomStyle == HdMeshGeomStyleEdgeOnSurf ||
                              geomStyle == HdMeshGeomStyleHullEdgeOnSurf;
 
+    // Selected edges can be highlighted even if not otherwise displayed
+    const bool renderSelectedEdges = geomStyle == HdMeshGeomStyleSurf ||
+                                     geomStyle == HdMeshGeomStyleHull;
+
     /* Normals configurations:
      * Smooth normals:
      *   [VS] .Smooth, [PTVS] .Smooth, ([GS] .NoFlat, .Pass), [FS] .Pass
@@ -422,7 +426,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             && (isPrimTypeTris ||
                 isPrimTypeTriQuads)
             // whether we can skip generating coords for edges
-            && ((!renderWireframe && !renderEdges) ||
+            && ((!renderWireframe && !renderEdges && !renderSelectedEdges) ||
                 hasBuiltinBarycentrics)
             // whether we can skip generating coords for per-face interpolation
             && (!hasPerFaceInterpolation ||
