@@ -6116,10 +6116,10 @@ _ComposeGeneralMetadataImpl(Usd_PrimDataConstPtr primData,
                             Composer *composer)
 {
     // Main resolution loop.
-    SdfPath specPath = res->GetLocalPath(propName);
+    SdfPath specPath;
     bool gotOpinion = false;
 
-    for (bool isNewNode = false; res->IsValid(); isNewNode = res->NextLayer()) {
+    for (bool isNewNode = true; res->IsValid(); isNewNode = res->NextLayer()) {
         if (isNewNode) {
             specPath = res->GetLocalPath(propName);
         }
@@ -6564,83 +6564,59 @@ _GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
     // 'class' specifiers due to direct inherits as weaker than all other
     // defining specifiers avoids this problem.
 
-    // These are ordered so stronger strengths are numerically larger.
-    enum _SpecifierStrength {
-        _SpecifierStrengthNonDefining,
-        _SpecifierStrengthDirectlyInheritedClass,
-        _SpecifierStrengthDefining
-    };
-
-    boost::optional<SdfSpecifier> specifier;
-    _SpecifierStrength strength = _SpecifierStrengthNonDefining;
-
     // Iterate over all prims, strongest to weakest.
-    SdfSpecifier curSpecifier = SdfSpecifierOver;
-
-    Usd_Resolver::Position specPos;
+    SdfSpecifier resolvedSpecifier = SdfSpecifierOver;
 
     const PcpPrimIndex &primIndex = primData->GetPrimIndex();
     for (Usd_Resolver res(&primIndex); res.IsValid(); res.NextLayer()) {
-        // Get specifier and its strength from this prim.
-        _SpecifierStrength curStrength = _SpecifierStrengthDefining;
-        if (res.GetLayer()->HasField(
+
+        // Try to get the specifier from the spec on this layer.
+        SdfSpecifier curSpecifier = SdfSpecifierOver;
+        if (!res.GetLayer()->HasField(
                 res.GetLocalPath(), SdfFieldKeys->Specifier, &curSpecifier)) {
-            specPos = res.GetPosition();
-
-            if (SdfIsDefiningSpecifier(curSpecifier)) {
-                // Compute strength.
-                if (curSpecifier == SdfSpecifierClass) {
-                    // See if this excerpt is due to direct inherits.  Walk up
-                    // the excerpt tree looking for a direct inherit.  If we
-                    // find one set the strength and stop.
-                    for (PcpNodeRef node = res.GetNode();
-                         node; node = node.GetParentNode()) {
-
-                        if (PcpIsInheritArc(node.GetArcType()) &&
-                            !node.IsDueToAncestor()) {
-                            curStrength =
-                                _SpecifierStrengthDirectlyInheritedClass;
-                            break;
-                        }
-                    }
-
-                }
-            }
-            else {
-                // Strength is _SpecifierStrengthNonDefining and can't be
-                // stronger than the current strength so there's no need to do
-                // the check below.
-                continue;
-            }
-        }
-        else {
-            // Variant PrimSpecs don't have a specifier field, continue looking
-            // for a specifier.
+            // Some prim specs (such as variants) don't have a specifier field.
             continue;
         }
 
-        // Use the specifier if it's stronger.
-        if (curStrength > strength) {
-            specifier = curSpecifier;
-            strength = curStrength;
-
-            // We can stop as soon as we find a specifier with the strongest
-            // strength.
-            if (strength == _SpecifierStrengthDefining)
-                break;
+        // Skip overs
+        if (curSpecifier == SdfSpecifierOver) {
+            continue;
         }
+
+        // If the specifier is a "def" we're done; the specifier is "def"
+        if (curSpecifier == SdfSpecifierDef) {
+            composer->ConsumeExplicitValue(SdfSpecifierDef);
+            return true;
+        }
+
+        // Otherwise, the specifier is class. But we still need to 
+        // see if this node is due to a direct inherit by walking up
+        // the prim index graph looking for a direct inherit node which,
+        // if found, means this node is due to a direct inherit.
+        const bool isDueToDirectInherit = [&res]() {
+            for (PcpNodeRef node = res.GetNode(); 
+                    node; node = node.GetParentNode()) {
+                if (PcpIsInheritArc(node.GetArcType()) &&
+                        !node.IsDueToAncestor()) {
+                    return true;
+                }
+            }
+            return false;
+        } ();
+
+        // If the node's not due to a direct inherit then "class" is
+        // the strongest specifier and we're done.
+        if (!isDueToDirectInherit) {
+            composer->ConsumeExplicitValue(SdfSpecifierClass);
+            return true;
+        }
+
+        // Otherwise set the resolved specifier to class and keep looking
+        // for a def specifier.
+        resolvedSpecifier = SdfSpecifierClass;
     }
 
-    // Verify we found *something*.  We should never have PrimData without at
-    // least one PrimSpec, and 'specifier' is required, so it must be present.
-    if (TF_VERIFY(specPos.GetLayer(), "No PrimSpecs for '%s'",
-                  primData->GetPath().GetText())) {
-        // Let the composer see the deciding opinion.
-        composer->ConsumeAuthored(
-            specPos.GetNode(), specPos.GetLayer(), 
-            specPos.GetLocalPath(),
-            SdfFieldKeys->Specifier, TfToken());
-    }
+    composer->ConsumeExplicitValue(resolvedSpecifier);
     return true;
 }
 
@@ -6656,9 +6632,9 @@ _GetListOpMetadataImpl(Usd_PrimDataConstPtr primData,
     // Collect all list op opinions for this field.
     std::vector<ListOpType> listOps;
 
-    SdfPath specPath = res->GetLocalPath(propName);
+    SdfPath specPath;
 
-    for (bool isNewNode = false; res->IsValid(); isNewNode = res->NextLayer()) {
+    for (bool isNewNode = true; res->IsValid(); isNewNode = res->NextLayer()) {
         if (isNewNode)
             specPath = res->GetLocalPath(propName);
 
@@ -6878,27 +6854,23 @@ _ListMetadataFieldsImpl(Usd_PrimDataConstPtr primData,
 {
     TRACE_FUNCTION();
 
-    Usd_Resolver res(&primData->GetPrimIndex());
-    SdfPath specPath = res.GetLocalPath(propName);
-    PcpNodeRef lastNode = res.GetNode();
-    SdfSpecType specType = SdfSpecTypeUnknown;
-
     const UsdPrimDefinition &primDef = primData->GetPrimDefinition();
 
     // If this is a builtin property, determine specType from the definition.
-    if (!propName.IsEmpty()) {
-        specType = primDef.GetSpecType(propName);
-    }
+    SdfSpecType specType = propName.IsEmpty() ? 
+        SdfSpecTypeUnknown : primDef.GetSpecType(propName);
 
     // Insert authored fields, discovering spec type along the way.
-    for (; res.IsValid(); res.NextLayer()) {
-        if (res.GetNode() != lastNode) {
-            lastNode = res.GetNode();
+    SdfPath specPath;
+    Usd_Resolver res(&primData->GetPrimIndex());
+    for (bool isNewNode = true; res.IsValid(); isNewNode = res.NextLayer()) {
+        if (isNewNode) {
             specPath = res.GetLocalPath(propName);
         }
         const SdfLayerRefPtr& layer = res.GetLayer();
-        if (specType == SdfSpecTypeUnknown)
+        if (specType == SdfSpecTypeUnknown) {
             specType = layer->GetSpecType(specPath);
+        }
 
         for (const auto& fieldName : layer->ListFields(specPath)) {
             if (!_IsPrivateFieldKey(fieldName))
@@ -7508,22 +7480,20 @@ struct UsdStage::_PropertyStackResolver {
     bool ProcessFallback() { return false; }
 
     bool
-    ProcessLayerAtTime(const size_t layerStackPosition,
+    ProcessLayerAtTime(const SdfLayerRefPtr &layer,
                        const SdfPath& specPath,
                        const PcpNodeRef& node,
                        const double *) 
     {
         // Processing layers for the property stack does not depend on time.
-        return ProcessLayerAtDefault(layerStackPosition, specPath, node);
+        return ProcessLayerAtDefault(layer, specPath, node);
     }
 
     bool
-    ProcessLayerAtDefault(const size_t layerStackPosition,
+    ProcessLayerAtDefault(const SdfLayerRefPtr &layer,
                           const SdfPath& specPath,
                           const PcpNodeRef& node) 
     {
-        const auto layer
-            = node.GetLayerStack()->GetLayers()[layerStackPosition];
         const auto propertySpec = layer->GetPropertyAtPath(specPath);
         if (propertySpec) {
             if (_withLayerOffsets) {
@@ -7683,16 +7653,13 @@ struct UsdStage::_ResolveInfoResolver
     }
 
     bool
-    ProcessLayerAtTime(const size_t layerStackPosition,
+    ProcessLayerAtTime(const SdfLayerRefPtr& layer,
                        const SdfPath& specPath,
                        const PcpNodeRef& node,
                        const double *time) 
     {
-        const PcpLayerStackRefPtr& nodeLayers = node.GetLayerStack();
-        const SdfLayerRefPtrVector& layerStack = nodeLayers->GetLayers();
         const SdfLayerOffset layerToStageOffset =
-            _GetLayerToStageOffset(node, layerStack[layerStackPosition]);
-        const SdfLayerRefPtr& layer = layerStack[layerStackPosition];
+            _GetLayerToStageOffset(node, layer);
         boost::optional<double> localTime;
         if (time) {
             localTime = layerToStageOffset.GetInverse() * (*time);
@@ -7716,7 +7683,7 @@ struct UsdStage::_ResolveInfoResolver
         }
 
         if (_resolveInfo->_source != UsdResolveInfoSourceNone) {
-            _resolveInfo->_layerStack = nodeLayers;
+            _resolveInfo->_layerStack = node.GetLayerStack();
             _resolveInfo->_layer = layer;
             _resolveInfo->_primPathInLayerStack = node.GetPath();
             _resolveInfo->_layerToStageOffset = layerToStageOffset;
@@ -7728,19 +7695,15 @@ struct UsdStage::_ResolveInfoResolver
     }
 
     bool
-    ProcessLayerAtDefault(const size_t layerStackPosition,
+    ProcessLayerAtDefault(const SdfLayerRefPtr& layer,
                           const SdfPath& specPath,
                           const PcpNodeRef& node) 
     {
-        const PcpLayerStackRefPtr& layerStack = node.GetLayerStack();
-        const SdfLayerRefPtrVector& layers = layerStack->GetLayers();
-        const SdfLayerRefPtr& layer = layers[layerStackPosition];
- 
         Usd_DefaultValueResult defValue = Usd_HasDefault(
             layer, specPath, _extraInfo->defaultOrFallbackValue);
         if (defValue == Usd_DefaultValueResult::Found) {
             _resolveInfo->_source = UsdResolveInfoSourceDefault;
-            _resolveInfo->_layerStack = layerStack;
+            _resolveInfo->_layerStack = node.GetLayerStack();
             _resolveInfo->_layer = layer;
             _resolveInfo->_primPathInLayerStack = node.GetPath();
             _resolveInfo->_layerToStageOffset = 
@@ -7836,18 +7799,15 @@ UsdStage::_GetResolvedValueAtDefaultImpl(
 {
     auto primHandle = prop._Prim();
 
-    for (Usd_Resolver res(
-            &primHandle->GetPrimIndex(), /*skipEmptyNodes = */ true); 
-         res.IsValid(); res.NextNode()) {
-
-        const PcpNodeRef& node = res.GetNode();
-        const SdfPath specPath = node.GetPath().AppendProperty(prop.GetName());
-        const SdfLayerRefPtrVector& layerStack 
-            = node.GetLayerStack()->GetLayers();
-        for (size_t i = 0, e = layerStack.size(); i < e; ++i) {
-            if (resolver->ProcessLayerAtDefault(i, specPath, node)) {
-                return;
-            }
+    SdfPath specPath;
+    Usd_Resolver res(&primHandle->GetPrimIndex(), /*skipEmptyNodes = */ true);
+    for (bool isNewNode = true; res.IsValid(); isNewNode = res.NextLayer()) {
+        if (isNewNode) {
+            specPath = res.GetLocalPath(prop.GetName());
+        }
+        if (resolver->ProcessLayerAtDefault(
+                res.GetLayer(), specPath, res.GetNode())) {
+            return;
         }
     }
 
@@ -7862,17 +7822,14 @@ _GetResolvedValueAtTimeNoClipsImpl(
     Resolver *resolver,
     const double *localTime)
 {
-    for ( ; res->IsValid(); res->NextNode()) {
-
-        const PcpNodeRef& node = res->GetNode();
-        const SdfPath specPath = node.GetPath().AppendProperty(propName);
-        const SdfLayerRefPtrVector& layerStack 
-            = node.GetLayerStack()->GetLayers();
-
-        for (size_t i = 0, e = layerStack.size(); i < e; ++i) {
-            if (resolver->ProcessLayerAtTime(i, specPath, node, localTime)) {
-                return;
-            }
+    SdfPath specPath;
+    for (bool isNewNode = true; res->IsValid(); isNewNode = res->NextLayer()) {
+        if (isNewNode) {
+            specPath = res->GetLocalPath(propName);
+        }
+        if (resolver->ProcessLayerAtTime(
+                res->GetLayer(), specPath, res->GetNode(), localTime)) {
+            return;
         }
     }
 
@@ -7888,48 +7845,55 @@ _GetResolvedValueAtTimeWithClipsImpl(
     const double *localTime,
     const std::vector<Usd_ClipSetRefPtr> &clipsAffectingPrim)
 {
-    for ( ; res->IsValid(); res->NextNode()) {
+    bool nodeHasSpecs;
+    SdfPath specPath;
+    std::vector<Usd_ClipSetRefPtr> clips;
 
-        const PcpNodeRef& node = res->GetNode();
-        const bool nodeHasSpecs = node.HasSpecs();
+    // Note that we iterate this loop manually in the body as we may skip to 
+    // the next node (instead of next layer) if the node has neither specs nor
+    // clips).
+    for (bool isNewNode = true; res->IsValid(); ) {
+        if (isNewNode) {
+            specPath = res->GetLocalPath(propName);
+            nodeHasSpecs = res->GetNode().HasSpecs();
+        }
 
-        const SdfPath specPath = node.GetPath().AppendProperty(propName);
-        const SdfLayerRefPtrVector& layerStack 
-            = node.GetLayerStack()->GetLayers();
-        boost::optional<std::vector<Usd_ClipSetRefPtr>> clips;
-        for (size_t i = 0, e = layerStack.size(); i < e; ++i) {
-            if (nodeHasSpecs) { 
-                if (resolver->ProcessLayerAtTime(i, specPath, node, localTime)) {
-                    return;
-                }
+        if (nodeHasSpecs) { 
+            if (resolver->ProcessLayerAtTime(
+                    res->GetLayer(), specPath, res->GetNode(), localTime)) {
+                return;
             }
+        }
 
-            if (!clips) {
-                clips = _GetClipsThatApplyToNode(clipsAffectingPrim,
-                                                    node, specPath);
-                // If we don't have specs on this node and clips don't
-                // apply we can mode onto the next node.
-                if (!nodeHasSpecs && clips->empty()) { 
-                    break; 
-                }
+        if (isNewNode) {
+            clips = _GetClipsThatApplyToNode(
+                clipsAffectingPrim, res->GetNode(), specPath);
+
+            // If we don't have specs on this node and clips don't
+            // apply we can move onto the next node.
+            if (!nodeHasSpecs && clips.empty()) { 
+                res->NextNode();
+                isNewNode = true;
+                continue;
             }
-            
-            for (const Usd_ClipSetRefPtr& clipSet : *clips) {
-                // We only care about clips that were introduced at this
-                // position within the LayerStack.
-                if (clipSet->sourceLayerIndex != i) {
-                    continue;
-                }
+        }
 
+        const size_t layerStackIndex = res->GetLayerStackIndex();
+        for (const Usd_ClipSetRefPtr& clipSet : clips) {
+            // We only care about clips that were introduced at this
+            // position within the LayerStack.
+            if (clipSet->sourceLayerIndex == layerStackIndex) {
                 // Look through clips to see if they have a time sample for
                 // this attribute. If a time is given, examine just the clips
                 // that are active at that time.
                 if (resolver->ProcessClips(
-                        clipSet, specPath, node, localTime)) {
+                        clipSet, specPath, res->GetNode(), localTime)) {
                     return;
                 }
             }
         }
+
+        isNewNode = res->NextLayer();
     }
 
     resolver->ProcessFallback();

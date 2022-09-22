@@ -35,9 +35,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 void
 Usd_Resolver::_Init() {
-    PcpNodeRange _range = _index->GetNodeRange();
-    _curNode = _range.first;
-    _lastNode = _range.second;
+    PcpNodeRange range = _index->GetNodeRange();
+    _curNode = range.first;
+    _endNode = range.second;
 
     _SkipEmptyNodes();
 
@@ -45,7 +45,7 @@ Usd_Resolver::_Init() {
     if (IsValid()) {
         const SdfLayerRefPtrVector& layers = _curNode->GetLayerStack()->GetLayers();
         _curLayer = layers.begin();
-        _lastLayer = layers.end();
+        _endLayer = layers.end();
     }
 }
 
@@ -71,74 +71,34 @@ Usd_Resolver::Usd_Resolver(const PcpPrimIndex* index, bool skipEmptyNodes)
     _Init();
 }
 
-PcpNodeRef
-Usd_Resolver::GetNode() const
+size_t 
+Usd_Resolver::GetLayerStackIndex() const 
 {
-    if (!IsValid())
-        return PcpNodeRef();
-    return *_curNode;
-}
-
-const SdfLayerRefPtr&
-Usd_Resolver::GetLayer() const
-{
-    if (!IsValid()) {
-        static const SdfLayerRefPtr _NULL_LAYER;
-        return _NULL_LAYER;
-    }
-    return *_curLayer;
-}
-
-const SdfPath&
-Usd_Resolver::GetLocalPath() const
-{
-    if (!IsValid())
-        return SdfPath::EmptyPath();
-    return _curNode->GetPath(); 
-}
-
-const PcpPrimIndex*
-Usd_Resolver::GetPrimIndex() const
-{
-    return _index; 
+    return std::distance(
+        _curNode->GetLayerStack()->GetLayers().begin(), _curLayer);
 }
 
 void 
 Usd_Resolver::NextNode()
 {
+    ++_curNode;
+    _SkipEmptyNodes();
     if (IsValid()) {
-        ++_curNode;
-        _SkipEmptyNodes();
-        if (IsValid()) {
-            const SdfLayerRefPtrVector& layers =
-                _curNode->GetLayerStack()->GetLayers();
-            _curLayer = layers.begin();
-            _lastLayer = layers.end();
-        }
+        const SdfLayerRefPtrVector& layers =
+            _curNode->GetLayerStack()->GetLayers();
+        _curLayer = layers.begin();
+        _endLayer = layers.end();
     }
 }
 
 bool 
 Usd_Resolver::NextLayer() {
-    if (!IsValid())
-        return true;
-
-    if (++_curLayer == _lastLayer) {
+    if (++_curLayer == _endLayer) {
         // We hit the last layer in this LayerStack, move on to the next node.
         NextNode();
         return true;
     }
     return false;
-}
-
-Usd_Resolver::Position 
-Usd_Resolver::GetPosition() const
-{
-    if (!IsValid()) {
-        return Position();
-    }
-
-    return Position(_curNode, _curLayer);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
