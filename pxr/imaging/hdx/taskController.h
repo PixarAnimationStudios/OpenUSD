@@ -329,6 +329,7 @@ private:
     
     // Helper functions to set the parameters of a light, get a particular light 
     // in the scene, replace and remove Sprims from the scene 
+    VtValue _GetDomeLightTexture(GlfSimpleLight const& light);
     void _SetParameters(SdfPath const& pathName, GlfSimpleLight const& light);
     void _SetMaterialNetwork(SdfPath const& pathName, 
                              GlfSimpleLight const& light);

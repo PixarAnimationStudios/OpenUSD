@@ -813,12 +813,27 @@ HdxTaskController::_GetAovPath(TfToken const& aov) const
     return GetControllerId().AppendChild(TfToken(identifier));
 }
 
+VtValue
+HdxTaskController::_GetDomeLightTexture(GlfSimpleLight const& light)
+{
+    SdfAssetPath const& domeLightAsset = light.GetDomeLightTextureFile();
+    if (domeLightAsset != SdfAssetPath()) {
+        return VtValue(domeLightAsset);
+    }
+    else {
+        static VtValue const defaultDomeLightAsset = 
+            VtValue(SdfAssetPath(HdxPackageDefaultDomeLightTexture(),
+                                 HdxPackageDefaultDomeLightTexture()));
+        return defaultDomeLightAsset;
+    }
+}
+
 void 
 HdxTaskController::_SetParameters(SdfPath const& pathName, 
                                   GlfSimpleLight const& light)
 {
     _delegate.SetParameter(pathName, HdLightTokens->intensity, VtValue(1.0f));
-    _delegate.SetParameter(pathName, HdLightTokens->exposure, VtValue(0.f));
+    _delegate.SetParameter(pathName, HdLightTokens->exposure, VtValue(0.0f));
     _delegate.SetParameter(pathName, HdLightTokens->normalize, false);
     _delegate.SetParameter(pathName, HdLightTokens->color, 
         VtValue(GfVec3f(1, 1, 1)));
@@ -830,13 +845,10 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
         VtValue());
     _delegate.SetParameter(pathName, HdLightTokens->params, light);
 
-    // If we are setting the parameters for the dome light we need to add the 
-    // default dome light texture resource.
+    // If this is a dome light add the domelight texture resource.
     if (light.IsDomeLight()) {
         _delegate.SetParameter(pathName, HdLightTokens->textureFile,
-                               SdfAssetPath(
-                                   HdxPackageDefaultDomeLightTexture(),
-                                   HdxPackageDefaultDomeLightTexture()));
+                               _GetDomeLightTexture(light));
     }
     // When not using storm, initialize the camera light transform based on
     // the SimpleLight position
@@ -878,10 +890,9 @@ HdxTaskController::_SetMaterialNetwork(SdfPath const& pathName,
     node.parameters[HdTokens->transform] = light.GetTransform();
 
     if (light.IsDomeLight()) {
-        // For the domelight, add the default domelight texture resource.
+        // For the domelight, add the domelight texture resource.
         node.parameters[HdLightTokens->textureFile] = 
-            SdfAssetPath(HdxPackageDefaultDomeLightTexture(),
-                         HdxPackageDefaultDomeLightTexture());
+            _GetDomeLightTexture(light);
     }
     else {
         // For the camera light, initialize the transform based on the
@@ -1699,7 +1710,7 @@ HdxTaskController::_SetBuiltInLightingState(
     // If we need to add lights to the _lightIds vector 
     if (_lightIds.size() < lights.size()) {
 
-        // cycle through the lights, add the new light and make sure the Sprims
+        // Cycle through the lights, add the new light and make sure the Sprims
         // at _lightIds[i] match with what is in lights[i]
         for (size_t i = 0; i < lights.size(); ++i) {
             
@@ -1750,21 +1761,21 @@ HdxTaskController::_SetBuiltInLightingState(
     // update the light parameters eg. if the free camera has moved 
     for (size_t i = 0; i < lights.size(); ++i) {
     
-        // Make sure the light parameters match
+        // Make sure the light parameters and transform match
         GlfSimpleLight light = _GetLightAtId(i);
         if (light != lights[i]) {
-            _delegate.SetParameter(_lightIds[i], 
-                                    HdLightTokens->params, lights[i]);
+            _delegate.SetParameter(
+                _lightIds[i], HdLightTokens->params, lights[i]);
+            _delegate.SetParameter(
+                _lightIds[i], HdTokens->transform, lights[i].GetTransform());
 
             if (light.IsDomeLight()) {
                 _delegate.SetParameter(
                     _lightIds[i], HdLightTokens->textureFile,
-                    SdfAssetPath(
-                        HdxPackageDefaultDomeLightTexture(),
-                        HdxPackageDefaultDomeLightTexture()));
+                    _GetDomeLightTexture(light));
             }
             GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
-                _lightIds[i], HdLight::DirtyParams);
+                _lightIds[i], HdLight::DirtyParams | HdLight::DirtyTransform);
         }
 
         // Update the camera light transform if needed
