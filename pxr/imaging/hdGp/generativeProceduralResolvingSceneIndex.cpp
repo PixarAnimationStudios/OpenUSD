@@ -95,19 +95,56 @@ HdGpGenerativeProceduralResolvingSceneIndex::GetPrim(
     return prim;
 }
 
+// Adds unique elements from the cached child prim paths to a vector
+/*static*/
+void
+HdGpGenerativeProceduralResolvingSceneIndex::_CombinePathArrays(
+    const _DensePathSet &s, SdfPathVector *v)
+{
+    if (v->empty()) {
+        v->insert(v->begin(), s.begin(), s.end());
+        return;
+    }
+    _DensePathSet uniqueValues(v->begin(), v->end());
+    for (const SdfPath &p : s) {
+        if (uniqueValues.find(p) == uniqueValues.end()) {
+            v->push_back(p);
+        }
+    }
+}
+
 /* virtual */
 SdfPathVector
 HdGpGenerativeProceduralResolvingSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
+
+    // Always incorporate the input's children even if we are beneath a
+    // resolved procedural. This allows a procedural to mask the type or data
+    // of an existing descendent (by returning it from Update) or to let it
+    // go through unmodified.
+    SdfPathVector inputResult =
+        _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+
+    // Check to see if the requested path already exists as a prim managed by
+    // a procedural. Look up what the procedural added and potentially combine
+    // with what might be present on the input scene.
+    //
+    // XXX: This doesn't cause a procedural to be run at an ancestor path --
+    //      so we'd expect a notice-less traversal case to have already called
+    //      GetChildPrimPaths with the parent procedural. The overhead of
+    //      ensuring that happens for every scope outweighs the unlikely
+    //      possibility of incorrect results for a speculative query without
+    //      hitting any of the existing triggers.
     const auto it = _generatedPrims.find(primPath);
     if (it != _generatedPrims.end()) {
         if (_ProcEntry *procEntry = it->second.responsibleProc.load()) {
             std::unique_lock<std::mutex> cookLock(procEntry->cookMutex);
             const auto chIt = procEntry->childHierarchy.find(primPath);
             if (chIt != procEntry->childHierarchy.end()) {
-                return SdfPathVector(
-                    chIt->second.begin(), chIt->second.end());
+
+                _CombinePathArrays(chIt->second, &inputResult);
+                return inputResult;
             }
         }
     }
@@ -124,15 +161,12 @@ HdGpGenerativeProceduralResolvingSceneIndex::GetChildPrimPaths(
             std::unique_lock<std::mutex> cookLock(procEntry->cookMutex);
             const auto hIt = procEntry->childHierarchy.find(primPath);
             if (hIt != procEntry->childHierarchy.end()) {
-                return SdfPathVector(hIt->second.begin(), hIt->second.end());
+                _CombinePathArrays(hIt->second, &inputResult);
             }
         }
-
-        return {};
     }
 
-    // Otherwise call through to the empty scene.
-    return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+    return inputResult;
 }
 
 /* virtual */

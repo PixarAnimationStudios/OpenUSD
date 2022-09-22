@@ -50,6 +50,18 @@ def Scope "World"
         token primvars:hdGp:proceduralType = "CubePerMeshPoint"
         rel primvars:sourceMeshPath = </World/myMesh2>
         float primvars:scale = 2
+
+        # here to test that the resolver allows this to pass through
+        def Mesh "childMeshToPassThrough"
+        {
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 3, 2]
+            point3f[] points = [
+                (-0.5, -0.5, 0.5),
+                (0.5, -0.5, 0.5),
+                (-0.5, 0.5, 0.5),
+                (0.5, 0.5, 0.5)]
+        }
     }
 }
 
