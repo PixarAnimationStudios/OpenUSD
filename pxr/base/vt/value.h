@@ -584,7 +584,7 @@ class VtValue
         constexpr _TypeInfoImpl()
             : _TypeInfo(typeid(T),
                         _ArrayHelper<T>::GetElementTypeid(),
-                        VtKnownValueTypeIndex<T>,
+                        VtGetKnownValueTypeIndex<T>(),
                         VtIsArray<T>::value,
                         VtIsHashable<T>(),
                         IsProxy,

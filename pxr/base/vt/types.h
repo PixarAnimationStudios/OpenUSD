@@ -196,16 +196,38 @@ VT_ARRAY_VALUE_TYPES VT_SCALAR_CLASS_VALUE_TYPES VT_NONARRAY_VALUE_TYPES
 //
 // Base case -- unknown types get index -1.
 template <class T>
-constexpr int VtKnownValueTypeIndex = -1;
+constexpr int
+VtGetKnownValueTypeIndex() {
+    return -1;
+}
 
 // Set indexes for known types.
-#define VT_SET_VALUE_TYPE_INDEX(r, unused, i, elem)                     \
-    template <> constexpr int VtKnownValueTypeIndex< VT_TYPE(elem) > = i;
+#define VT_SET_VALUE_TYPE_INDEX(r, unused, i, elem)                       \
+    template <> constexpr int                                             \
+    VtGetKnownValueTypeIndex< VT_TYPE(elem) >() {                         \
+        return i;                                                         \
+    }
 BOOST_PP_SEQ_FOR_EACH_I(VT_SET_VALUE_TYPE_INDEX, ~, VT_VALUE_TYPES)
 #undef VT_SET_VALUE_TYPE_INDEX
 
 // Total number of 'known' value types.
-constexpr int VtNumKnownValueTypes = BOOST_PP_SEQ_SIZE(VT_VALUE_TYPES);
+constexpr int
+VtGetNumKnownValueTypes() {
+    return BOOST_PP_SEQ_SIZE(VT_VALUE_TYPES);
+}
+
+// None of the VT_VALUE_TYPES are value proxies.  We want to specialize these
+// templates here, since otherwise the VtIsTypedValueProxy will require a
+// complete type to check if it derives VtTypedValueProxyBase.
+#define VT_SPECIALIZE_IS_VALUE_PROXY(r, unused, elem)                          \
+    template <> struct                                                         \
+    VtIsValueProxy< VT_TYPE(elem) > : std::false_type {};                      \
+    template <> struct                                                         \
+    VtIsTypedValueProxy< VT_TYPE(elem) > : std::false_type {};                 \
+    template <> struct                                                         \
+    VtIsErasedValueProxy< VT_TYPE(elem) > : std::false_type {};
+BOOST_PP_SEQ_FOR_EACH(VT_SPECIALIZE_IS_VALUE_PROXY, ~, VT_VALUE_TYPES)
+#undef VT_SPECIALIZE_IS_VALUE_PROXY
 
 // Free functions to represent "zero" for various base types.  See
 // specializations in Types.cpp
