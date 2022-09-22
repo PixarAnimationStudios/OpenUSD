@@ -1505,14 +1505,11 @@ UsdImagingGLEngine::_MakeHydraUsdImagingGLRenderParams(
     params.cullStyle           = USD_2_HD_CULL_STYLE[
         (size_t)renderParams.cullStyle];
 
-    // Decrease the alpha threshold if we are using sample alpha to
-    // coverage.
     if (renderParams.alphaThreshold < 0.0) {
-        params.alphaThreshold =
-            renderParams.enableSampleAlphaToCoverage ? 0.1f : 0.5f;
+        // If no alpha threshold is set, use default of 0.1.
+        params.alphaThreshold = 0.1f;
     } else {
-        params.alphaThreshold =
-            renderParams.alphaThreshold;
+        params.alphaThreshold = renderParams.alphaThreshold;
     }
 
     params.enableSceneMaterials = renderParams.enableSceneMaterials;
