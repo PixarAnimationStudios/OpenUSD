@@ -31,7 +31,6 @@ pxr_library(vt
     PUBLIC_HEADERS
         api.h
         traits.h
-        operators.h
         visitValue.h
     
     PYTHON_PUBLIC_HEADERS
