@@ -7855,37 +7855,45 @@ UsdStage::_GetResolvedValueAtDefaultImpl(
 }
 
 template <class Resolver>
-void
-UsdStage::_GetResolvedValueAtTimeImpl(const UsdProperty &prop,
-                                      Resolver *resolver,
-                                      const double *localTime) const
+static void
+_GetResolvedValueAtTimeNoClipsImpl(
+    Usd_Resolver *res,
+    const TfToken &propName,
+    Resolver *resolver,
+    const double *localTime)
 {
-    auto primHandle = prop._Prim();
+    for ( ; res->IsValid(); res->NextNode()) {
 
-    // Retrieve all clips that may contribute time samples for this
-    // attribute at the given time. Clips never contribute default
-    // values.
-    const std::vector<Usd_ClipSetRefPtr>* clipsAffectingPrim = nullptr;
-    if (primHandle->MayHaveOpinionsInClips()) {
-        clipsAffectingPrim =
-            &(_clipCache->GetClipsForPrim(primHandle->GetPath()));
+        const PcpNodeRef& node = res->GetNode();
+        const SdfPath specPath = node.GetPath().AppendProperty(propName);
+        const SdfLayerRefPtrVector& layerStack 
+            = node.GetLayerStack()->GetLayers();
+
+        for (size_t i = 0, e = layerStack.size(); i < e; ++i) {
+            if (resolver->ProcessLayerAtTime(i, specPath, node, localTime)) {
+                return;
+            }
+        }
     }
 
-    // Clips may contribute opinions at nodes where no specs for the attribute
-    // exist in the node's LayerStack. So, if we have any clips, tell
-    // Usd_Resolver that we want to iterate over 'empty' nodes as well.
-    const bool skipEmptyNodes = (bool)(!clipsAffectingPrim);
+    resolver->ProcessFallback();
+}
 
-    for (Usd_Resolver res(&primHandle->GetPrimIndex(), skipEmptyNodes); 
-         res.IsValid(); res.NextNode()) {
+template <class Resolver>
+static void
+_GetResolvedValueAtTimeWithClipsImpl(
+    Usd_Resolver *res,
+    const TfToken &propName,
+    Resolver *resolver,
+    const double *localTime,
+    const std::vector<Usd_ClipSetRefPtr> &clipsAffectingPrim)
+{
+    for ( ; res->IsValid(); res->NextNode()) {
 
-        const PcpNodeRef& node = res.GetNode();
+        const PcpNodeRef& node = res->GetNode();
         const bool nodeHasSpecs = node.HasSpecs();
-        if (!nodeHasSpecs && !clipsAffectingPrim) {
-            continue;
-        }
 
-        const SdfPath specPath = node.GetPath().AppendProperty(prop.GetName());
+        const SdfPath specPath = node.GetPath().AppendProperty(propName);
         const SdfLayerRefPtrVector& layerStack 
             = node.GetLayerStack()->GetLayers();
         boost::optional<std::vector<Usd_ClipSetRefPtr>> clips;
@@ -7896,44 +7904,64 @@ UsdStage::_GetResolvedValueAtTimeImpl(const UsdProperty &prop,
                 }
             }
 
-            if (clipsAffectingPrim){ 
-                if (!clips) {
-                    clips = _GetClipsThatApplyToNode(*clipsAffectingPrim,
-                                                     node, specPath);
-                    // If we don't have specs on this node and clips don't
-                    // apply we can mode onto the next node.
-                    if (!nodeHasSpecs && clips->empty()) { 
-                        break; 
-                    }
+            if (!clips) {
+                clips = _GetClipsThatApplyToNode(clipsAffectingPrim,
+                                                    node, specPath);
+                // If we don't have specs on this node and clips don't
+                // apply we can mode onto the next node.
+                if (!nodeHasSpecs && clips->empty()) { 
+                    break; 
                 }
-                
-                // gcc 4.8 incorrectly detects boost::optional as uninitialized. 
-                // See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=47679
-                ARCH_PRAGMA_PUSH
-                ARCH_PRAGMA_MAYBE_UNINITIALIZED
-
-                for (const Usd_ClipSetRefPtr& clipSet : *clips) {
-                    // We only care about clips that were introduced at this
-                    // position within the LayerStack.
-                    if (clipSet->sourceLayerIndex != i) {
-                        continue;
-                    }
-
-                    // Look through clips to see if they have a time sample for
-                    // this attribute. If a time is given, examine just the clips
-                    // that are active at that time.
-                    if (resolver->ProcessClips(
-                            clipSet, specPath, node, localTime)) {
-                        return;
-                    }
+            }
+            
+            for (const Usd_ClipSetRefPtr& clipSet : *clips) {
+                // We only care about clips that were introduced at this
+                // position within the LayerStack.
+                if (clipSet->sourceLayerIndex != i) {
+                    continue;
                 }
 
-                ARCH_PRAGMA_POP
-            }    
+                // Look through clips to see if they have a time sample for
+                // this attribute. If a time is given, examine just the clips
+                // that are active at that time.
+                if (resolver->ProcessClips(
+                        clipSet, specPath, node, localTime)) {
+                    return;
+                }
+            }
         }
     }
 
     resolver->ProcessFallback();
+}
+
+template <class Resolver>
+void
+UsdStage::_GetResolvedValueAtTimeImpl(const UsdProperty &prop,
+                                      Resolver *resolver,
+                                      const double *localTime) const
+{
+    auto primHandle = prop._Prim();
+    const PcpPrimIndex *primIndex = &primHandle->GetPrimIndex();
+
+    if (primHandle->MayHaveOpinionsInClips()) {
+        // Retrieve all clips that may contribute time samples for this
+        // attribute at the given time. Clips never contribute default
+        // values.
+        const std::vector<Usd_ClipSetRefPtr> &clipsAffectingPrim =
+            _clipCache->GetClipsForPrim(primHandle->GetPath());
+
+        // Clips may contribute opinions at nodes where no specs for the 
+        // attribute exist in the node's LayerStack. So, since we have clips, 
+        // tell Usd_Resolver that we want to iterate over 'empty' nodes as well.
+        Usd_Resolver res(primIndex, /* skipEmptyNodes = */ false); 
+        _GetResolvedValueAtTimeWithClipsImpl(
+            &res, prop.GetName(), resolver, localTime, clipsAffectingPrim);
+    } else {
+        Usd_Resolver res(primIndex, /* skipEmptyNodes = */ true); 
+        _GetResolvedValueAtTimeNoClipsImpl(
+            &res, prop.GetName(), resolver, localTime);
+    }
 }
 
 void
