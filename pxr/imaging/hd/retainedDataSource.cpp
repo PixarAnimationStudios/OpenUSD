@@ -27,6 +27,8 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/typeHeaders.h"
+#include "pxr/base/vt/visitValue.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/assetPath.h"
 
@@ -382,87 +384,42 @@ HdRetainedSmallVectorDataSource::GetElement(size_t element)
 
 // ----------------------------------------------------------------------------
 
+struct Hd_CreateTypedRetainedDataSourceVisitor
+{
+    template <class T>
+    HdSampledDataSource::Handle operator()(T const &obj) const {
+        return HdRetainedTypedSampledDataSource<T>::New(obj);
+    }
+
+    HdSampledDataSource::Handle operator()(VtValue const &v) const {
+        if (v.IsHolding<SdfPath>()) {
+            return HdRetainedTypedSampledDataSource<SdfPath>::New(
+                v.UncheckedGet<SdfPath>());
+        } else if (v.IsHolding<VtArray<SdfPath>>()) {
+            return HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
+                v.UncheckedGet<VtArray<SdfPath>>());
+        } else if (v.IsHolding<SdfAssetPath>()) {
+            return HdRetainedTypedSampledDataSource<SdfAssetPath>::New(
+                v.UncheckedGet<SdfAssetPath>());
+        } else if (v.IsHolding<VtArray<SdfAssetPath>>()) {
+            return HdRetainedTypedSampledDataSource<VtArray<SdfAssetPath>>::New(
+                v.UncheckedGet<VtArray<SdfAssetPath>>());
+        } else if (v.IsHolding<SdfPathVector>()) {
+            return HdRetainedTypedSampledDataSource<SdfPathVector>::New(
+                v.UncheckedGet<SdfPathVector>());
+        } else if (v.IsEmpty()) {
+            return HdSampledDataSourceHandle(nullptr);
+        } else {
+            TF_CODING_ERROR("Unsupported type %s", v.GetTypeName().c_str());
+            return HdSampledDataSourceHandle(nullptr);
+        }
+    }
+};
+
 HdSampledDataSource::Handle
 HdCreateTypedRetainedDataSource(VtValue const &v)
 {
-    if (v.IsHolding<int>()) {
-        return HdRetainedTypedSampledDataSource<int>::New(
-                v.UncheckedGet<int>());
-    } else if (v.IsHolding<VtArray<int>>()) {
-        return HdRetainedTypedSampledDataSource<VtArray<int>>::New(
-                v.UncheckedGet<VtArray<int>>());
-    } else if (v.IsHolding<float>()) {
-        return HdRetainedTypedSampledDataSource<float>::New(
-                v.UncheckedGet<float>());
-    } else if (v.IsHolding<VtArray<float>>()) {
-        return HdRetainedTypedSampledDataSource<VtArray<float>>::New(
-                v.UncheckedGet<VtArray<float>>());
-    } else if (v.IsHolding<double>()) {
-        return HdRetainedTypedSampledDataSource<double>::New(
-                v.UncheckedGet<double>());
-    } else if (v.IsHolding<VtArray<double>>()) {
-        return HdRetainedTypedSampledDataSource<VtArray<double>>::New(
-                v.UncheckedGet<VtArray<double>>());
-    } else if (v.IsHolding<bool>()) {
-        return HdRetainedTypedSampledDataSource<bool>::New(
-                v.UncheckedGet<bool>());
-    } else if (v.IsHolding<VtArray<bool>>()) {
-        return HdRetainedTypedSampledDataSource<VtArray<bool>>::New(
-                v.UncheckedGet<VtArray<bool>>());
-    } else if (v.IsHolding<TfToken>()) {
-        return HdRetainedTypedSampledDataSource<TfToken>::New(
-                v.UncheckedGet<TfToken>());
-    } else if (v.IsHolding<VtArray<TfToken>>()) {
-        return HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
-                v.UncheckedGet<VtArray<TfToken>>());
-    } else if (v.IsHolding<SdfPath>()) {
-        return HdRetainedTypedSampledDataSource<SdfPath>::New(
-                v.UncheckedGet<SdfPath>());
-    } else if (v.IsHolding<VtArray<SdfPath>>()) {
-        return HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
-                v.UncheckedGet<VtArray<SdfPath>>());
-    } else if (v.IsHolding<SdfAssetPath>()) {
-        return HdRetainedTypedSampledDataSource<SdfAssetPath>::New(
-                v.UncheckedGet<SdfAssetPath>());
-    } else if (v.IsHolding<VtArray<SdfAssetPath>>()) {
-        return HdRetainedTypedSampledDataSource<VtArray<SdfAssetPath>>::New(
-                v.UncheckedGet<VtArray<SdfAssetPath>>());
-    } else if (v.IsHolding<GfVec2f>()) {
-        return HdRetainedTypedSampledDataSource<GfVec2f>::New(
-                v.UncheckedGet<GfVec2f>());
-    } else if (v.IsHolding<VtArray<GfVec2f>>()) {
-        return HdRetainedTypedSampledDataSource<VtArray<GfVec2f>>::New(
-                v.UncheckedGet<VtArray<GfVec2f>>());
-    } else if (v.IsHolding<GfVec3f>()) {
-        return HdRetainedTypedSampledDataSource<GfVec3f>::New(
-                v.UncheckedGet<GfVec3f>());
-    } else if (v.IsHolding<VtArray<GfVec3f>>()) {
-        return HdRetainedTypedSampledDataSource<VtArray<GfVec3f>>::New(
-                v.UncheckedGet<VtArray<GfVec3f>>());
-    } else if (v.IsHolding<GfVec3d>()) {
-        return HdRetainedTypedSampledDataSource<GfVec3d>::New(
-                v.UncheckedGet<GfVec3d>());
-    } else if (v.IsHolding<VtArray<GfVec3d>>()) {
-        return HdRetainedTypedSampledDataSource<VtArray<GfVec3d>>::New(
-                v.UncheckedGet<VtArray<GfVec3d>>());
-    } else if (v.IsHolding<GfMatrix4d>()) {
-        return HdRetainedTypedSampledDataSource<GfMatrix4d>::New(
-                v.UncheckedGet<GfMatrix4d>());
-    } else if (v.IsHolding<VtArray<GfMatrix4d>>()) {
-        return HdRetainedTypedSampledDataSource<VtArray<GfMatrix4d>>::New(
-                v.UncheckedGet<VtArray<GfMatrix4d>>());
-    } else if (v.IsHolding<SdfPathVector>()) {
-        return HdRetainedTypedSampledDataSource<SdfPathVector>::New(
-                v.UncheckedGet<SdfPathVector>());
-    } else if (v.IsHolding<std::string>()) {
-        return HdRetainedTypedSampledDataSource<std::string>::New(
-                v.UncheckedGet<std::string>());
-    } else if (v.IsEmpty()) {
-        return HdSampledDataSourceHandle(nullptr);
-    } else {
-        TF_CODING_ERROR("Unsupported type %s", v.GetTypeName().c_str());
-        return HdSampledDataSourceHandle(nullptr);
-    }
+    return VtVisitValue(v, Hd_CreateTypedRetainedDataSourceVisitor());
 }
 
 //-----------------------------------------------------------------------------
