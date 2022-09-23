@@ -78,7 +78,8 @@ bool operator==(
            lhs.resourceType == rhs.resourceType &&
            lhs.bindingIndex == rhs.bindingIndex &&
            lhs.stageUsage == rhs.stageUsage &&
-           lhs.samplers == rhs.samplers;
+           lhs.samplers == rhs.samplers &&
+           lhs.writable == rhs.writable;
 }
 
 bool operator!=(

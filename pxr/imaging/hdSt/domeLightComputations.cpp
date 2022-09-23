@@ -240,13 +240,14 @@ HdSt_DomeLightComputationGPU::Execute(
     texBind0.stageUsage = HgiShaderStageCompute;
     texBind0.textures.push_back(srcTextureName);
     texBind0.samplers.push_back(srcSamplerName);
-    texBind0.readOnly = true;
+    texBind0.writable = false;
     texBind0.resourceType = HgiBindResourceTypeCombinedSamplerImage;
     resourceDesc.textures.push_back(std::move(texBind0));
 
     HgiTextureBindDesc texBind1;
     texBind1.bindingIndex = 1;
     texBind1.stageUsage = HgiShaderStageCompute;
+    texBind1.writable = true;
     texBind1.textures.push_back(dstTextureView->GetViewTexture());
     texBind1.samplers.push_back(srcSamplerName);
     texBind1.resourceType = HgiBindResourceTypeStorageImage;

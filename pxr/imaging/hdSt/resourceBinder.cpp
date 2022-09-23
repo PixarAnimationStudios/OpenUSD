@@ -1123,6 +1123,7 @@ HdSt_ResourceBinder::GetTextureBindingDesc(
     texelDesc.samplers = { texelSampler };
     texelDesc.resourceType = HgiBindResourceTypeSampledImage;
     texelDesc.bindingIndex = binding.GetTextureUnit();
+    texelDesc.writable = false;
     bindingsDesc->textures.push_back(std::move(texelDesc));
 }
 
@@ -1146,6 +1147,7 @@ HdSt_ResourceBinder::GetTextureWithLayoutBindingDesc(
     layoutDesc.samplers = { };
     layoutDesc.resourceType = HgiBindResourceTypeSampledImage;
     layoutDesc.bindingIndex = layoutBinding.GetTextureUnit();
+    layoutDesc.writable = false;
     bindingsDesc->textures.push_back(std::move(layoutDesc));
 }
 
