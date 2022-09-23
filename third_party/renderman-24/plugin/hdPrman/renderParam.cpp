@@ -1332,11 +1332,11 @@ HdPrman_RenderParam::ConvertAndRetainCoordSysBindings(
     SdfPath const& id)
 {
     // Query Hydra coordinate system bindings.
-    HdIdVectorSharedPtr hdIdVecPtr =
-        sceneDelegate->GetCoordSysBindings(id);
+    HdIdVectorSharedPtr hdIdVecPtr = sceneDelegate->GetCoordSysBindings(id);
     if (!hdIdVecPtr) {
         return nullptr;
     }
+
     // We have bindings to convert.
     std::lock_guard<std::mutex> lock(_coordSysMutex);
     // Check for an existing converted binding vector.
@@ -1344,7 +1344,7 @@ HdPrman_RenderParam::ConvertAndRetainCoordSysBindings(
         _hdToRileyCoordSysMap.find(hdIdVecPtr);
     if (it != _hdToRileyCoordSysMap.end()) {
         // Found an existing conversion.
-        // Record an additioanl use, on this geometry.
+        // Record an additional use on this geometry.
         _geomToHdCoordSysMap[id] = hdIdVecPtr;
         return it->second;
     }
@@ -1353,8 +1353,7 @@ HdPrman_RenderParam::ConvertAndRetainCoordSysBindings(
     rileyIdVec.reserve(hdIdVecPtr->size());
     for (SdfPath const& hdId: *hdIdVecPtr) {
         // Look up sprim for binding.
-        const HdSprim *sprim =
-            sceneDelegate->GetRenderIndex()
+        const HdSprim *sprim = sceneDelegate->GetRenderIndex()
             .GetSprim(HdPrimTypeTokens->coordSys, hdId);
         // Expect there to be an sprim with this id.
         if (TF_VERIFY(sprim)) {
@@ -1367,6 +1366,7 @@ HdPrman_RenderParam::ConvertAndRetainCoordSysBindings(
             }
         }
     }
+
     // Establish a cache entry.
     RileyCoordSysIdVecRefPtr rileyIdVecPtr =
         std::make_shared<RileyCoordSysIdVec>(rileyIdVec);
