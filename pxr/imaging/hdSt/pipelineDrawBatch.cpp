@@ -340,6 +340,7 @@ struct _DrawCommandTraits
     // Since the underlying buffer is an array of uint32_t, we capture
     // the size of the struct as the number of uint32_t elements.
     size_t numUInt32;
+    size_t paddingUInt32;
 
     size_t instancerNumLevels;
     size_t instanceIndexWidth;
@@ -365,6 +366,10 @@ void _SetDrawCommandTraits(_DrawCommandTraits * traits, int instancerNumLevels)
     // followed by instanceDC[instancerNumLevals]
     traits->numUInt32 = sizeof(CmdType) / sizeof(uint32_t)
                       + instancerNumLevels;
+    
+    // Intel GPU fix: round up to a multiple of 8 uint32_t, 32 bytes.
+    traits->paddingUInt32 = ((traits->numUInt32 + 7) & -8) - traits->numUInt32;
+    traits->numUInt32 += traits->paddingUInt32;
 
     traits->instancerNumLevels = instancerNumLevels;
     traits->instanceIndexWidth = instancerNumLevels + 1;
@@ -624,12 +629,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
     TF_DEBUG(HDST_DRAW).Msg(" - useInstanceCulling: %d\n", _useInstanceCulling);
     TF_DEBUG(HDST_DRAW).Msg(" - num draw items: %zu\n", numDrawItemInstances);
 
-    uint32_t drawCommandBufferPadding = 4 - (traits.numUInt32 % 4);
-    if (drawCommandBufferPadding == 4) {
-        drawCommandBufferPadding = 0;
-    }
-    uint32_t aligned = drawCommandBufferPadding + traits.numUInt32;
-    _drawCommandBuffer.resize(numDrawItemInstances * aligned);
+    _drawCommandBuffer.resize(numDrawItemInstances * traits.numUInt32);
     std::vector<uint32_t>::iterator cmdIt = _drawCommandBuffer.begin();
 
     // Count the number of visible items. We may actually draw fewer
@@ -792,7 +792,12 @@ HdSt_PipelineDrawBatch::_CompileBatch(
             uint32_t instanceDC = _GetElementOffset(dc.instancePrimvarBars[i]);
             *cmdIt++ = instanceDC;
         }
-
+        
+        // Add padding and clear to 0.
+        for (uint32_t i = 0; i < traits.paddingUInt32; i++) {
+            *cmdIt++ = 0;
+        }
+        
         if (TfDebug::IsEnabled(HDST_DRAW)) {
             std::vector<uint32_t>::iterator cmdIt2 = cmdIt - traits.numUInt32;
             std::cout << "   - ";
@@ -803,11 +808,6 @@ HdSt_PipelineDrawBatch::_CompileBatch(
             std::cout << std::endl;
         }
         
-        //add Padding
-        for (uint32_t i = 0; i < drawCommandBufferPadding; i++) {
-            *cmdIt++ = 0;
-        }
-
         _numVisibleItems += instanceCount;
         _numTotalElements += numElements;
         _numTotalVertices += vertexCount;
@@ -832,7 +832,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
     _dispatchBuffer =
         resourceRegistry->RegisterDispatchBuffer(_tokens->drawIndirect,
                                                  numDrawItemInstances,
-                                                 traits.numUInt32 + drawCommandBufferPadding);
+                                                 traits.numUInt32);
 
     // add drawing resource views
     _AddDrawResourceViews(_dispatchBuffer, traits);
@@ -849,7 +849,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
         _dispatchBufferCullInput =
             resourceRegistry->RegisterDispatchBuffer(_tokens->drawIndirectCull,
                                                      numDrawItemInstances,
-                                                     traits.numUInt32 + drawCommandBufferPadding);
+                                                     traits.numUInt32);
 
         // add culling resource views
         if (_useInstanceCulling) {
