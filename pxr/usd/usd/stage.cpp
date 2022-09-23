@@ -7099,16 +7099,16 @@ template <class T>
 struct Usd_AttrGetValueHelper {
 
 public:
-    // Get the value at time for the attribute. The getValueImpl function is
-    // templated for sharing of this functionality between _GetValue and 
-    // _GetValueForResolveInfo.
-    template <class Fn>
-    static bool GetValue(const UsdStage &stage, UsdTimeCode time, 
-                         const UsdAttribute &attr, T* result, 
-                         const Fn &getValueImpl)
+    // Get the value at time for the attribute.
+    static bool GetValue(
+        const UsdStage &stage, 
+        UsdTimeCode time, 
+        const UsdAttribute &attr, 
+        T* result)
     {
         // Special case if time is default: we can grab the value from the
-        // metadata. This value will be fully resolved already.
+        // metadata. This value will be fully resolved already and can be
+        // returned without further value resolution.
         if (time.IsDefault()) {
             SdfAbstractDataTypedValue<T> out(result);
             TypeSpecificValueComposer<T> composer(&out);
@@ -7120,7 +7120,57 @@ public:
                 (!Usd_ClearValueIfBlocked<SdfAbstractDataValue>(&out));
         }
 
-        return _GetResolvedValue(stage, time, attr, result, getValueImpl);
+        // Otherwise we have numeric time and need to get the value with
+        // the appropriate interpolation.
+        auto getValueImpl = [&](Usd_InterpolatorBase* interpolator,
+                                SdfAbstractDataValue* value) {
+            return stage._GetValueImpl(time, attr, interpolator, value);
+        };
+
+        if (_GetValueWithInterpolationImpl(stage, result, getValueImpl)) {
+            // Do the the type specific value resolution on the result. For 
+            // most types _ResolveValue does nothing. 
+            _ResolveValue(stage, time, attr, result);
+            return true;
+        }
+        return false;
+    }
+
+    // Get the value at time for the attribute using the given the already 
+    // computed resolve info.
+    static bool GetValueFromResolveInfo(
+        const UsdStage &stage, 
+        UsdTimeCode time, 
+        const UsdAttribute &attr, 
+        const UsdResolveInfo &info,
+        T* result)
+    {
+        if (time.IsDefault()) {
+            // For default time do default value resolution. The the resolved
+            // value will NOT have type specific value resolution applied yet.
+            SdfAbstractDataTypedValue<T> out(result);
+            if (!stage._GetDefaultValueFromResolveInfoImpl<SdfAbstractDataValue>(
+                    info, attr, &out)) {
+                return false;
+            }
+        } else {
+            // Otherwise we have numeric time and need to get the value with
+            // the appropriate interpolation.
+            auto getValueImpl = [&](Usd_InterpolatorBase* interpolator,
+                                    SdfAbstractDataValue* value) {
+                return stage._GetValueFromResolveInfoImpl(
+                    info, time, attr, interpolator, value);
+            };
+
+            if (!_GetValueWithInterpolationImpl(stage, result, getValueImpl)) {
+                return false;
+            }
+        }
+
+        // Do the the type specific value resolution on the result. For 
+        // most types _ResolveValue does nothing. 
+        _ResolveValue(stage, time, attr, result);
+        return true;
     }
 
 private:
@@ -7137,35 +7187,19 @@ private:
     // resolution (like SdfAssetPath and SdfTimeCode), the value returned from
     // from this is NOT fully resolved yet.
     template <class Fn>
-    static bool _GetValueFromImpl(const UsdStage &stage,
-                                  UsdTimeCode time, const UsdAttribute &attr,
-                                  T* result, const Fn &getValueImpl)
+    static bool _GetValueWithInterpolationImpl(
+        const UsdStage &stage, T* result, const Fn &getValueImpl)
     {
         SdfAbstractDataTypedValue<T> out(result);
 
         if (stage._interpolationType == UsdInterpolationTypeLinear) {
             typedef typename _SelectInterpolator::type _Interpolator;
             _Interpolator interpolator(result);
-            return getValueImpl(stage, time, attr, &interpolator, &out);
+            return getValueImpl(&interpolator, &out);
         };
 
         Usd_HeldInterpolator<T> interpolator(result);
-        return getValueImpl(stage, time, attr, &interpolator, &out);
-    }
-
-    // Gets the fully resolved value for the attribute.
-    template <class Fn>
-    static bool _GetResolvedValue(const UsdStage &stage,
-                                  UsdTimeCode time, const UsdAttribute &attr,
-                                  T* result, const Fn &getValueImpl)
-    {
-        if (_GetValueFromImpl(stage, time, attr, result, getValueImpl)) {
-            // Do the the type specific value resolution on the result. For 
-            // most types _ResolveValue does nothing. 
-            _ResolveValue(stage, time, attr, result);
-            return true;
-        }
-        return false;
+        return getValueImpl(&interpolator, &out);
     }
 
     // Performs type specific value resolution.
@@ -7216,10 +7250,13 @@ void Usd_AttrGetValueHelper<VtArray<SdfTimeCode>>::_ResolveValue(
 
 // Attribute value getter for type erased VtValue.
 struct Usd_AttrGetUntypedValueHelper {
-    template <class Fn>
-    static bool GetValue(const UsdStage &stage, UsdTimeCode time, 
-                         const UsdAttribute &attr, VtValue* result, 
-                         const Fn &getValueImpl)
+
+    // Get the value at time for the attribute.
+    static bool GetValue(
+        const UsdStage &stage, 
+        UsdTimeCode time, 
+        const UsdAttribute &attr, 
+        VtValue* result)
     {
         // Special case if time is default: we can grab the value from the
         // metadata. This value will be fully resolved already because 
@@ -7232,7 +7269,7 @@ struct Usd_AttrGetUntypedValueHelper {
         }
 
         Usd_UntypedInterpolator interpolator(attr, result);
-        if (getValueImpl(stage, time, attr, &interpolator, result)) {
+        if (stage._GetValueImpl(time, attr, &interpolator, result)) {
             if (result) {
                 // Always run the resolve functions for value types that need 
                 // it.
@@ -7242,22 +7279,44 @@ struct Usd_AttrGetUntypedValueHelper {
         }
         return false;
     }
+
+    // Get the value at time for the attribute using the given the already 
+    // computed resolve info.
+    static bool GetValueFromResolveInfo(
+        const UsdStage &stage, 
+        UsdTimeCode time,
+        const UsdAttribute &attr, 
+        const UsdResolveInfo &info,
+        VtValue* result)
+    {
+        if (time.IsDefault()) {
+            if (!stage._GetDefaultValueFromResolveInfoImpl(
+                    info, attr, result)) {
+                return false;
+            }
+        } else {
+            Usd_UntypedInterpolator interpolator(attr, result);
+            if (!stage._GetValueFromResolveInfoImpl(
+                info, time, attr, &interpolator, result)) {
+                return false;
+            }
+        }
+
+        if (result) {
+            // Always run the resolve functions for value types that need 
+            // it.
+            stage._MakeResolvedAttributeValue(time, attr, result);
+        }
+        return true;
+    }    
 };
 
 bool
 UsdStage::_GetValue(UsdTimeCode time, const UsdAttribute &attr,
                     VtValue* result) const
 {
-    auto getValueImpl = [](const UsdStage &stage,
-                           UsdTimeCode time, const UsdAttribute &attr,
-                           Usd_InterpolatorBase* interpolator,
-                           VtValue* value) 
-    {
-        return stage._GetValueImpl(time, attr, interpolator, value);
-    };
-
     return Usd_AttrGetUntypedValueHelper::GetValue(
-        *this, time, attr, result, getValueImpl);
+        *this, time, attr, result);
 }
 
 template <class T>
@@ -7265,16 +7324,8 @@ bool
 UsdStage::_GetValue(UsdTimeCode time, const UsdAttribute &attr,
                     T* result) const
 {
-    auto getValueImpl = [](const UsdStage &stage,
-                           UsdTimeCode time, const UsdAttribute &attr,
-                           Usd_InterpolatorBase* interpolator,
-                           SdfAbstractDataValue* value) 
-    {
-        return stage._GetValueImpl(time, attr, interpolator, value);
-    };
-
     return Usd_AttrGetValueHelper<T>::GetValue(
-        *this, time, attr, result, getValueImpl);
+        *this, time, attr, result);
 }
 
 class UsdStage_ResolveInfoAccess
@@ -7991,22 +8042,48 @@ UsdStage::_GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
     return false;
 }
 
+template <class T>
+bool 
+UsdStage::_GetDefaultValueFromResolveInfoImpl(const UsdResolveInfo &info,
+                                              const UsdAttribute &attr,
+                                              T* result) const
+{
+    if (info._source == UsdResolveInfoSourceDefault) {
+        const SdfPath specPath =
+            info._primPathInLayerStack.AppendProperty(attr.GetName());
+        const SdfLayerHandle& layer = info._layer;
+
+        TF_DEBUG(USD_VALUE_RESOLUTION).Msg(
+            "RESOLVE: reading field %s:%s from @%s@\n",
+            specPath.GetText(),
+            SdfFieldKeys->Default.GetText(),
+            layer->GetIdentifier().c_str());
+
+        return layer->HasField(specPath, SdfFieldKeys->Default, result);
+    } else if (info._source == UsdResolveInfoSourceFallback) {
+        // Get the fallback value.
+        return attr._Prim()->GetPrimDefinition().GetAttributeFallbackValue(
+                attr.GetName(), result);
+    } else if (info._source != UsdResolveInfoSourceNone) {
+        TF_CODING_ERROR("Invalid resolve info used for getting the value at "
+            "default time for attr '%s'. Resolve info source must be Default, "
+            "Fallback, or None. Got %s",
+            attr.GetPath().GetText(),
+            TfStringify(info._source).c_str());
+    }
+
+    return false;
+
+}
+
+
 bool
 UsdStage::_GetValueFromResolveInfo(const UsdResolveInfo &info,
                                    UsdTimeCode time, const UsdAttribute &attr,
                                    VtValue* result) const
 {
-    auto getValueImpl = [&info](const UsdStage &stage,
-                                UsdTimeCode time, const UsdAttribute &attr,
-                                Usd_InterpolatorBase* interpolator,
-                                VtValue* value) 
-    {
-        return stage._GetValueFromResolveInfoImpl(
-            info, time, attr, interpolator, value);
-    };
-
-    return Usd_AttrGetUntypedValueHelper::GetValue(
-        *this, time, attr, result, getValueImpl);
+    return Usd_AttrGetUntypedValueHelper::GetValueFromResolveInfo(
+        *this, time, attr, info, result);
 }
 
 template <class T>
@@ -8015,17 +8092,8 @@ UsdStage::_GetValueFromResolveInfo(const UsdResolveInfo &info,
                                    UsdTimeCode time, const UsdAttribute &attr,
                                    T* result) const
 {
-    auto getValueImpl = [&info](const UsdStage &stage,
-                                UsdTimeCode time, const UsdAttribute &attr, 
-                                Usd_InterpolatorBase* interpolator,
-                                SdfAbstractDataValue* value) 
-    {
-        return stage._GetValueFromResolveInfoImpl(
-            info, time, attr, interpolator, value);
-    };
-
-    return Usd_AttrGetValueHelper<T>::GetValue(
-        *this, time, attr, result, getValueImpl);
+    return Usd_AttrGetValueHelper<T>::GetValueFromResolveInfo(
+        *this, time, attr, info, result);
 }
 
 // --------------------------------------------------------------------- //

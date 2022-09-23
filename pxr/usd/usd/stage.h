@@ -2151,6 +2151,11 @@ private:
                                       Usd_InterpolatorBase* interpolator,
                                       T* value) const;
 
+    template <class T>
+    bool _GetDefaultValueFromResolveInfoImpl(const UsdResolveInfo &info,
+                                             const UsdAttribute &attr,
+                                             T* value) const;
+
     // --------------------------------------------------------------------- //
     // Specialized Time Sample I/O
     // --------------------------------------------------------------------- //

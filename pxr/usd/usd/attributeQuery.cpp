@@ -88,6 +88,22 @@ USD_API
 bool 
 UsdAttributeQuery::_Get(T* value, UsdTimeCode time) const
 {
+    // If the requested time is default but the resolved value source is time
+    // varying, then the stored resolve info won't give us the correct value 
+    // for default time. In this case we have to get the resolve info at default
+    // time and query the value from that.
+    if (time.IsDefault() &&
+            (_resolveInfo.GetSource() == UsdResolveInfoSourceTimeSamples ||
+             _resolveInfo.GetSource() == UsdResolveInfoSourceValueClips)) {
+
+        static const UsdTimeCode defaultTime = UsdTimeCode::Default();
+        UsdResolveInfo defaultResolveInfo;
+        _attr._GetStage()->_GetResolveInfo(
+            _attr, &defaultResolveInfo, &defaultTime);
+        return _attr._GetStage()->_GetValueFromResolveInfo(
+            defaultResolveInfo, defaultTime, _attr, value);
+    }
+
     return _attr._GetStage()->_GetValueFromResolveInfo(
         _resolveInfo, time, _attr, value);
 }
@@ -95,8 +111,7 @@ UsdAttributeQuery::_Get(T* value, UsdTimeCode time) const
 bool 
 UsdAttributeQuery::Get(VtValue* value, UsdTimeCode time) const
 {
-    return _attr._GetStage()->_GetValueFromResolveInfo(
-        _resolveInfo, time, _attr, value);
+    return _Get(value, time);
 }
 
 bool 

@@ -455,8 +455,6 @@ class TestUsdCreateProperties(unittest.TestCase):
                                                   Sdf.ValueTypeNames.Asset)
                 arrayAsset = foo.CreateAttribute('arrayAsset',
                                                  Sdf.ValueTypeNames.AssetArray)
-                singleAssetQuery = Usd.AttributeQuery(foo, 'singleAsset')
-                arrayAssetQuery = Usd.AttributeQuery(foo, 'arrayAsset')
 
                 relPath = './' + os.path.split(targetFile.name)[1]
                 relPathArray = Sdf.AssetPathArray(42, [relPath])
@@ -465,6 +463,9 @@ class TestUsdCreateProperties(unittest.TestCase):
 
                 singleAsset.Set(relPath)
                 arrayAsset.Set(relPathArray)
+
+                singleAssetQuery = Usd.AttributeQuery(foo, 'singleAsset')
+                arrayAssetQuery = Usd.AttributeQuery(foo, 'arrayAsset')
 
                 singleAssetValue = singleAsset.Get()
                 arrayAssetValue = arrayAsset.Get()
