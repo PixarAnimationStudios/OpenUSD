@@ -141,6 +141,8 @@ private:
             const HdContainerDataSourceHandle &model);
         HdDataSourceBaseHandle _GetMaterialBinding();
         HdDataSourceBaseHandle _GetMaterialBindingUncached();
+        HdDataSourceBaseHandle _GetInstancedBy();
+        HdDataSourceBaseHandle _GetInstancedByUncached();
 
         const HdFlatteningSceneIndex &_sceneIndex;
         SdfPath _primPath;
@@ -155,6 +157,7 @@ private:
         // Internally, this is set to a retained bool=false data source to 
         // indicate that no binding is present.
         HdDataSourceBaseAtomicHandle _computedMaterialBindingDataSource;
+        HdDataSourceBaseAtomicHandle _computedInstancedByDataSource;
     };
 
     HD_DECLARE_DATASOURCE_HANDLES(_PrimLevelWrappingDataSource);

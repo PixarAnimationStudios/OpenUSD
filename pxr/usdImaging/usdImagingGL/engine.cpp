@@ -33,6 +33,7 @@
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/camera.h"
 
+#include "pxr/imaging/hd/instancedBySceneIndex.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/rendererPlugin.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
@@ -951,7 +952,9 @@ UsdImagingGLEngine::_SetRenderDelegate(
         _sceneIndex = UsdImagingStageSceneIndex::New();
         _renderIndex->InsertSceneIndex(
             UsdImagingGLDrawModeSceneIndex::New(
-                HdFlatteningSceneIndex::New(_sceneIndex),
+                HdFlatteningSceneIndex::New(
+                    HdInstancedBySceneIndex::New(
+                        _sceneIndex)),
                 /* inputArgs = */ nullptr),
             _sceneDelegateId);
     } else {

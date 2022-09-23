@@ -34,6 +34,7 @@ pxr_library(usdImaging
         dataSourceGprim
         dataSourceMaterial
         dataSourceMesh
+        dataSourcePointInstancer
         dataSourcePoints
         dataSourcePrim
         dataSourcePrimvars

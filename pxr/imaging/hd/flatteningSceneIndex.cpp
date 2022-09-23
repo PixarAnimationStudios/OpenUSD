@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/utils.h"
 
@@ -144,7 +145,9 @@ HdFlatteningSceneIndex::_PrimsAdded(
                 HdXformSchema::GetDefaultLocator(),
                 HdVisibilitySchema::GetDefaultLocator(),
                 HdPurposeSchema::GetDefaultLocator(),
-                HdDataSourceLocator(_tokens->model)
+                _GetDrawModeLocator(),
+                HdMaterialBindingSchema::GetDefaultLocator(),
+                HdInstancedBySchema::GetDefaultLocator()
             };
 
             _DirtyHierarchy(entry.primPath, locators, &dirtyEntries);
@@ -206,12 +209,18 @@ HdFlatteningSceneIndex::_PrimsDirtied(
                     HdPurposeSchema::GetDefaultLocator())) {
             locators.insert(HdPurposeSchema::GetDefaultLocator());
         }
-        static const HdDataSourceLocator modelLocator(_tokens->model);
-        if (entry.dirtyLocators.Intersects(
-                    modelLocator)) {
-            locators.insert(modelLocator);
+        if (entry.dirtyLocators.Intersects(_GetDrawModeLocator())) {
+            locators.insert(_GetDrawModeLocator());
         }
-
+        if (entry.dirtyLocators.Intersects(
+                HdMaterialBindingSchema::GetDefaultLocator())) {
+            locators.insert(HdMaterialBindingSchema::GetDefaultLocator());
+        }
+        if (entry.dirtyLocators.Intersects(
+                HdInstancedBySchema::GetDefaultLocator())) {
+            locators.insert(HdInstancedBySchema::GetDefaultLocator());
+        }
+        
         if (!locators.IsEmpty()) {
             _DirtyHierarchy(entry.primPath, locators, &dirtyEntries);
         }
@@ -270,9 +279,6 @@ _PrimLevelWrappingDataSource::_PrimLevelWrappingDataSource(
     : _sceneIndex(scene)
     , _primPath(primPath)
     , _inputDataSource(inputDataSource)
-    , _computedXformDataSource(nullptr)
-    , _computedVisDataSource(nullptr)
-    , _computedPurposeDataSource(nullptr)
 {
 }
 
@@ -323,6 +329,11 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::PrimDirtied(
         HdDataSourceBase::AtomicStore(
             _computedMaterialBindingDataSource, baseNull);
     }
+    if (set.Intersects(HdInstancedBySchema::GetDefaultLocator())) {
+        anyDirtied = true;
+        HdDataSourceBase::AtomicStore(
+            _computedInstancedByDataSource, baseNull);
+    }
 
     return anyDirtied;
 }
@@ -348,6 +359,10 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::Has(
         return true;
     }
 
+    if (name == HdInstancedBySchemaTokens->instancedBy) {
+        return true;
+    }
+
     if (!_inputDataSource) {
         return false;
     }
@@ -368,6 +383,7 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::GetNames()
         bool hasPurpose = false;
         bool hasModel = false;
         bool hasMaterialBinding = false;
+        bool hasInstancedBy = false;
         for (const TfToken &name : result) {
             if (name == HdXformSchemaTokens->xform) {
                 hasXform = true;
@@ -384,8 +400,11 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::GetNames()
             if (name == HdMaterialBindingSchemaTokens->materialBinding) {
                 hasMaterialBinding = true;
             }
+            if (name == HdInstancedBySchemaTokens->instancedBy) {
+                hasInstancedBy = true;
+            }
             if (hasXform && hasVis && hasPurpose && hasModel
-                    && hasMaterialBinding) {
+                    && hasMaterialBinding && hasInstancedBy) {
                 break;
             }
         }
@@ -405,12 +424,16 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::GetNames()
         if (!hasMaterialBinding) {
             result.push_back(HdMaterialBindingSchemaTokens->materialBinding);
         }
+        if (!hasInstancedBy) {
+            result.push_back(HdInstancedBySchemaTokens->instancedBy);
+        }
     } else {
         result.push_back(HdXformSchemaTokens->xform);
         result.push_back(HdVisibilitySchemaTokens->visibility);
         result.push_back(HdPurposeSchemaTokens->purpose);
         result.push_back(_tokens->model);
         result.push_back(HdMaterialBindingSchemaTokens->materialBinding);
+        result.push_back(HdInstancedBySchemaTokens->instancedBy);
     }
 
     return result;
@@ -430,6 +453,8 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::Get(
         return _GetModel();
     } else if (name == HdMaterialBindingSchemaTokens->materialBinding) {
         return _GetMaterialBinding();
+    } else if (name == HdInstancedBySchemaTokens->instancedBy) {
+        return _GetInstancedBy();
     } else if (_inputDataSource) {
         return _inputDataSource->Get(name);
     } else {
@@ -725,6 +750,54 @@ _GetMaterialBindingUncached()
             return HdRetainedTypedSampledDataSource<bool>::New(false);
         }
     }
+}
+
+HdDataSourceBaseHandle
+HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetInstancedBy()
+{
+    HdDataSourceBaseHandle result =
+        HdDataSourceBase::AtomicLoad(_computedInstancedByDataSource);
+
+    if (!result) {
+        result = _GetInstancedByUncached();
+        HdDataSourceBase::AtomicStore(
+            _computedInstancedByDataSource, result);
+    }
+
+    // The cached value of the absence of a materialBinding is a non-container
+    // data source.
+    return HdContainerDataSource::Cast(result);
+}
+
+HdDataSourceBaseHandle
+HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetInstancedByUncached()
+{
+    if (HdInstancedBySchema schema =
+            HdInstancedBySchema::GetFromParent(_inputDataSource)) {
+        if (HdPathArrayDataSourceHandle const pathsSrc = schema.GetPaths()) {
+            if (!pathsSrc->GetTypedValue(0.0f).empty()) {
+                return schema.GetContainer();
+            }
+        }
+    }
+
+    if (_primPath.GetPathElementCount() == 0) {
+        return HdRetainedTypedSampledDataSource<bool>::New(false);
+    }
+
+    const SdfPath parentPath = _primPath.GetParentPath();
+    const auto it = _sceneIndex._prims.find(parentPath);
+    if (it == _sceneIndex._prims.end()) {
+        return HdRetainedTypedSampledDataSource<bool>::New(false);
+    }
+
+    HdContainerDataSourceHandle const parentDs =
+        HdInstancedBySchema::GetFromParent(
+            it->second.prim.dataSource).GetContainer();
+    if (!parentDs) {
+        return HdRetainedTypedSampledDataSource<bool>::New(false);
+    }
+    return parentDs;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
