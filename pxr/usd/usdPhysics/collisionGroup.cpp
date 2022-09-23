@@ -197,17 +197,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// Helper private function to get index into the collision table
-// Given indices of the 2 collision groups idxA < idxB and current group size
-static
-unsigned int
-_GetCollisionTableIndex(const unsigned int idxA, const unsigned int idxB,
-        const unsigned int groupSize)
-{
-    const unsigned int numSkippedEntries = (idxA * idxA + idxA) / 2;
-    return (idxA * groupSize - numSkippedEntries + idxB);
-}
-
 UsdCollectionAPI
 UsdPhysicsCollisionGroup::GetCollidersCollectionAPI() const
 {
@@ -217,23 +206,18 @@ UsdPhysicsCollisionGroup::GetCollidersCollectionAPI() const
 const SdfPathVector&
 UsdPhysicsCollisionGroup::CollisionGroupTable::GetCollisionGroups() const
 {
-    return _groups;
+    return groups;
 }
 
 bool
-UsdPhysicsCollisionGroup::CollisionGroupTable::IsCollisionEnabled(
-        const unsigned int idxA, const unsigned int idxB) const
+UsdPhysicsCollisionGroup::CollisionGroupTable::IsCollisionEnabled(int idxA, int idxB) const
 {
-    // check if indices are legal
-    // - both idxA and idxB are by definition >=0
-    // - are < the group size.
-    if (idxA < _groups.size() && idxB < _groups.size())
+    if (idxA >= 0 && idxB >= 0 && idxA < groups.size() && idxB < groups.size())
     {
-        const unsigned int minGroup = std::min(idxA, idxB);
-        const unsigned int maxGroup = std::max(idxA, idxB);
-        const unsigned int tableIndex =
-            _GetCollisionTableIndex(minGroup, maxGroup, _groups.size());
-        return _enabled[tableIndex];
+        int minGroup = std::min(idxA, idxB);
+        int maxGroup = std::max(idxA, idxB);
+        int numSkippedEntries = (minGroup * minGroup + minGroup) / 2;
+        return enabled[minGroup * groups.size() - numSkippedEntries + maxGroup];
     }
 
     // If the groups aren't in the table or we've been passed invalid groups,
@@ -242,21 +226,18 @@ UsdPhysicsCollisionGroup::CollisionGroupTable::IsCollisionEnabled(
 }
 
 bool
-UsdPhysicsCollisionGroup::CollisionGroupTable::IsCollisionEnabled(
-        const SdfPath& primA, const SdfPath& primB) const
+UsdPhysicsCollisionGroup::CollisionGroupTable::IsCollisionEnabled(const SdfPath& primA, const SdfPath& primB) const
 {
-    auto a = std::find(_groups.begin(), _groups.end(), primA);
-    auto b = std::find(_groups.begin(), _groups.end(), primB);
-    return IsCollisionEnabled(std::distance(_groups.begin(), a), 
-            std::distance(_groups.begin(), b));
+    auto a = std::find(groups.begin(), groups.end(), primA);
+    auto b = std::find(groups.begin(), groups.end(), primB);
+    return IsCollisionEnabled(std::distance(groups.begin(), a), std::distance(groups.begin(), b));
 }
 
 
 UsdPhysicsCollisionGroup::CollisionGroupTable
 UsdPhysicsCollisionGroup::ComputeCollisionGroupTable(const UsdStage& stage)
 {
-    // First, collect all the collision groups, as we want to iterate over them 
-    // several times
+    // First, collect all the collision groups, as we want to iterate over them several times
     std::vector<UsdPhysicsCollisionGroup> allSceneGroups;
     const UsdPrimRange range(stage.GetPseudoRoot());
     for (const UsdPrim& prim : range)
@@ -267,20 +248,16 @@ UsdPhysicsCollisionGroup::ComputeCollisionGroupTable(const UsdStage& stage)
         }
     }
 
-    // Assign a number to every collision group; in order to handle merge 
-    // groups, some prims will have non-unique indices
-    // Using SdfPath, rather than prim, as the filtered groups rel gives us a 
-    // path.
-    std::map<SdfPath, size_t> primPathToIndex; 
+    // Assign a number to every collision group; in order to handle merge groups, some prims will have non-unique indices
+    std::map<SdfPath, size_t> primPathToIndex; // Using SdfPath, rather than prim, as the filtered groups rel gives us a path.
     std::map<std::string, size_t> mergeGroupNameToIndex;
-    unsigned int nextPrimId = 0;
+    int nextPrimId = 0;
 
     for (const UsdPhysicsCollisionGroup& collisionGroup : allSceneGroups)
     {
         UsdAttribute mergeGroupAttr = collisionGroup.GetMergeGroupNameAttr();
 
-        // If the group doesn't have a merge group, we can just add it to the 
-        // table:
+        // If the group doesn't have a merge group, we can just add it to the table:
         if (!mergeGroupAttr.IsAuthored())
         {
             primPathToIndex[collisionGroup.GetPath()] = nextPrimId;
@@ -304,25 +281,24 @@ UsdPhysicsCollisionGroup::ComputeCollisionGroupTable(const UsdStage& stage)
         }
     }
 
-    // Now, we've seen "nextPrimId" different unique groups after accounting 
-    // for the merge groups. Calculate the collision table for those groups.
+    // Now, we've seen "nextPrimId" different unique groups after accounting for the merge groups.
+    // Calculate the collision table for those groups.
 
-    // First, resize the table and set to default-collide. We're only going to 
-    // use the upper diagonal, as the table is symmetric:
+    // First, resize the table and set to default-collide. We're only going to use the upper diagonal,
+    // as the table is symmetric:
     std::vector<bool> mergedTable;
     mergedTable.resize( ((nextPrimId + 1) * nextPrimId) / 2, true);
 
     for (const UsdPhysicsCollisionGroup& groupA : allSceneGroups)
     {
-        unsigned int groupAIdx = primPathToIndex[groupA.GetPath()];
+        int groupAIdx = primPathToIndex[groupA.GetPath()];
 
         // Extract the indices for each filtered group in "prim":
-        std::vector<unsigned int> filteredGroupIndices;
+        std::vector<int> filteredGroupIndices;
         {
             UsdRelationship filteredGroups = groupA.GetFilteredGroupsRel();
             SdfPathVector filteredTargets;
             filteredGroups.GetTargets(&filteredTargets);
-            filteredGroupIndices.reserve(filteredTargets.size());
             for(const SdfPath& path : filteredTargets)
             {
                 filteredGroupIndices.push_back(primPathToIndex[path]);
@@ -336,34 +312,29 @@ UsdPhysicsCollisionGroup::ComputeCollisionGroupTable(const UsdStage& stage)
         // Now, we are ready to apply the filter rules for "prim":
         if (!invertedAttr.IsAuthored() || !invertedFilter)
         {
-            // This is the usual case; collisions against all the 
-            // filteredTargets should be disabled
-            for (unsigned int groupBIdx : filteredGroupIndices)
+            // This is the usual case; collisions against all the filteredTargets should be disabled
+            for (int groupBIdx : filteredGroupIndices)
             {
                 // Disable aIdx -v- bIdx
-                const unsigned int minGroup = std::min(groupAIdx, groupBIdx);
-                const unsigned int maxGroup = std::max(groupAIdx, groupBIdx);
-                const unsigned int tableIndex =
-                    _GetCollisionTableIndex(minGroup, maxGroup, nextPrimId);
-                mergedTable[tableIndex] = false;
+                int minGroup = std::min(groupAIdx, groupBIdx);
+                int maxGroup = std::max(groupAIdx, groupBIdx);
+                int numSkippedEntries = (minGroup * minGroup + minGroup) / 2;
+                mergedTable[minGroup * nextPrimId - numSkippedEntries  + maxGroup] = false;
             }
         }
         else
         {
-            // This is the less common case; disable collisions against all 
-            // groups except the filtered targets
-            std::set<unsigned int> requestedGroups(
-                    filteredGroupIndices.begin(), filteredGroupIndices.end());
-            for(unsigned int groupBIdx = 0; groupBIdx < nextPrimId; groupBIdx++)
+            // This is the less common case; disable collisions against all groups except the filtered targets
+            std::set<int> requestedGroups(filteredGroupIndices.begin(), filteredGroupIndices.end());
+            for(int groupBIdx = 0; groupBIdx < nextPrimId; groupBIdx++)
             {
                 if (requestedGroups.find(groupBIdx) == requestedGroups.end())
                 {
                     // Disable aIdx -v- bIdx
-                    const unsigned int minGroup = std::min(groupAIdx, groupBIdx);
-                    const unsigned int maxGroup = std::max(groupAIdx, groupBIdx);
-                    const unsigned int tableIndex =
-                        _GetCollisionTableIndex(minGroup, maxGroup, nextPrimId);
-                    mergedTable[tableIndex] = false;
+                    int minGroup = std::min(groupAIdx, groupBIdx);
+                    int maxGroup = std::max(groupAIdx, groupBIdx);
+                    int numSkippedEntries = (minGroup * minGroup + minGroup) / 2;
+                    mergedTable[minGroup * nextPrimId - numSkippedEntries + maxGroup] = false;
                 }
             }
         }
@@ -371,36 +342,28 @@ UsdPhysicsCollisionGroup::ComputeCollisionGroupTable(const UsdStage& stage)
 
     // Finally, we can calculate the output table, based on the merged table
     CollisionGroupTable res;
-    res._groups.reserve(allSceneGroups.size());
     for (const UsdPhysicsCollisionGroup& collisionGroup : allSceneGroups)
     {
-        res._groups.push_back(collisionGroup.GetPrim().GetPrimPath());
+        res.groups.push_back(collisionGroup.GetPrim().GetPrimPath());
     }
-    res._enabled.resize(
-            ((res._groups.size() + 1) * res._groups.size()) / 2, true);
+    res.enabled.resize(((res.groups.size() + 1) * res.groups.size()) / 2, true);
 
-    // Iterate over every group A and B, and use the merged table to determine 
-    // if they collide.
-    for (unsigned int iA = 0; iA < allSceneGroups.size(); iA++)
+    // Iterate over every group A and B, and use the merged table to determine if they collide.
+    for (int iA = 0; iA < allSceneGroups.size(); iA++)
     {
-        for (unsigned int iB = iA; iB < allSceneGroups.size(); iB++)
+        for (int iB = iA; iB < allSceneGroups.size(); iB++)
         {
             // Determine if the groups at iA and iB collide:
-            const unsigned int groupAId = 
-                primPathToIndex[allSceneGroups[iA].GetPath()];
-            const unsigned int groupBId = 
-                primPathToIndex[allSceneGroups[iB].GetPath()];
-            const unsigned int mergedTableIndex =
-                _GetCollisionTableIndex(groupAId, groupBId, nextPrimId);
-            bool enabledInMergeTable = mergedTable[mergedTableIndex];
+            int groupAId = primPathToIndex[allSceneGroups[iA].GetPath()];
+            int groupBId = primPathToIndex[allSceneGroups[iB].GetPath()];
+            int numSkippedMergeEntries = (groupAId * groupAId + groupAId) / 2;
+            bool enabledInMergeTable = mergedTable[groupAId * nextPrimId - numSkippedMergeEntries + groupBId];
 
             // And use that to populate the output table:
-            const unsigned int minGroup = std::min(iA, iB);
-            const unsigned int maxGroup = std::max(iA, iB);
-            const unsigned int tableIndex =
-                _GetCollisionTableIndex(minGroup, maxGroup, 
-                        allSceneGroups.size());
-            res._enabled[tableIndex] = enabledInMergeTable;
+            int minGroup = std::min(iA, iB);
+            int maxGroup = std::max(iA, iB);
+            int numSkippedEntries = (minGroup * minGroup + minGroup) / 2;
+            res.enabled[minGroup * allSceneGroups.size() - numSkippedEntries + maxGroup] = enabledInMergeTable;
         }
     }
 

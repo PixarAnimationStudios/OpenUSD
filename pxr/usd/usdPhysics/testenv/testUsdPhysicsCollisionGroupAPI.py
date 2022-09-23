@@ -29,12 +29,9 @@ class TestUsdPhysicsCollisionGroupAPI(unittest.TestCase):
     def validate_table_symmetry(self, table):
         for iA, a in enumerate(table.GetGroups()):
             for iB, b in enumerate(table.GetGroups()):
-                self.assertEqual(table.IsCollisionEnabled(iA, iB), 
-                        table.IsCollisionEnabled(iB, iA))
-                self.assertEqual(table.IsCollisionEnabled(a, b), 
-                        table.IsCollisionEnabled(b, a))
-                self.assertEqual(table.IsCollisionEnabled(a, b), 
-                        table.IsCollisionEnabled(iA, iB))
+                self.assertEqual(table.IsCollisionEnabled(iA, iB), table.IsCollisionEnabled(iB, iA))
+                self.assertEqual(table.IsCollisionEnabled(a, b), table.IsCollisionEnabled(b, a))
+                self.assertEqual(table.IsCollisionEnabled(a, b), table.IsCollisionEnabled(iA, iB))
 
     def test_collision_group_table(self):
         stage = Usd.Stage.CreateInMemory()
@@ -90,41 +87,6 @@ class TestUsdPhysicsCollisionGroupAPI(unittest.TestCase):
         self.assertTrue(table.IsCollisionEnabled(b, c));
         self.assertTrue(table.IsCollisionEnabled(c, c));
         self.validate_table_symmetry(table)
-
-        # Explicitly test the inversion scenario which may "re-enable" a
-        # collision filter pair that has been disabled (refer docs on why care 
-        # should be taken to avoid such scenarios)
-        allOthers = UsdPhysics.CollisionGroup.Define(stage, '/allOthers')
-
-        # - grpX is set to ONLY collide with grpXCollider by setting an inversion
-        grpXCollider = UsdPhysics.CollisionGroup.Define(stage, '/grpXCollider')
-        grpX = UsdPhysics.CollisionGroup.Define(stage, '/grpX')
-        grpX.CreateFilteredGroupsRel().AddTarget(grpXCollider.GetPath())
-        grpX.CreateInvertFilteredGroupsAttr().Set(True)
-        table = UsdPhysics.CollisionGroup.ComputeCollisionGroupTable(stage)
-        self.assertTrue(table.IsCollisionEnabled(grpX, grpXCollider))
-        self.assertFalse(table.IsCollisionEnabled(grpX, allOthers))
-
-        # - grpX is added to a new merge group "mergetest"
-        grpX.CreateMergeGroupNameAttr().Set("mergeTest")
-
-        # - grpA now creates a filter to disable its collision with grpXCollider
-        grpA = UsdPhysics.CollisionGroup.Define(stage, '/grpA')
-        grpA.CreateFilteredGroupsRel().AddTarget(grpXCollider.GetPath())
-        table = UsdPhysics.CollisionGroup.ComputeCollisionGroupTable(stage)
-        self.assertFalse(table.IsCollisionEnabled(grpA, grpXCollider))
-        # - above doesn't affect any of grpX's collision pairs
-        self.assertTrue(table.IsCollisionEnabled(grpX, grpXCollider))
-        self.assertFalse(table.IsCollisionEnabled(grpX, allOthers))
-
-        # - grpA is now added to same "mergetest" merge group (care was not
-        # taken in doing so and this disables all collision pairs!!)
-        grpA.CreateMergeGroupNameAttr().Set("mergeTest")
-        table = UsdPhysics.CollisionGroup.ComputeCollisionGroupTable(stage)
-        self.assertFalse(table.IsCollisionEnabled(grpX, grpXCollider))
-        self.assertFalse(table.IsCollisionEnabled(grpX, allOthers))
-        self.assertFalse(table.IsCollisionEnabled(grpA, grpXCollider))
-        self.assertFalse(table.IsCollisionEnabled(grpA, allOthers))
 
     def test_collision_group_simple_merging(self):
         stage = Usd.Stage.CreateInMemory()

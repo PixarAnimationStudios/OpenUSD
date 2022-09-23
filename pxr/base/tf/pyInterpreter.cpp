@@ -69,7 +69,7 @@ TfPyInitialize()
 
         // Starting with Python 3.7, the GIL is initialized as part of
         // Py_Initialize(). Python 3.9 deprecated explicit GIL initialization.
-#if PY_VERSION_HEX < 0x03070000
+#if PY_MAJOR_VERSION < 3 || PY_MINOR_VERSION < 7
         if (!ArchIsMainThread() && !PyEval_ThreadsInitialized()) {
             // Python claims that PyEval_InitThreads "should be called in the
             // main thread before creating a second thread or engaging in any
@@ -117,7 +117,7 @@ TfPyInitialize()
         sigaction(SIGINT, &origSigintHandler, NULL);
 #endif
 
-#if PY_MAJOR_VERSION == 3 && PY_VERSION_HEX < 0x03070000
+#if PY_MAJOR_VERSION > 2 && PY_MINOR_VERSION < 7
         // In Python 3 (before 3.7), PyEval_InitThreads must be called
         // after Py_Initialize().
         // see https://docs.python.org/3/c-api/init.html#c.PyEval_InitThreads

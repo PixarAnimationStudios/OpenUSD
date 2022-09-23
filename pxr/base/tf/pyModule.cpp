@@ -407,7 +407,7 @@ void Tf_PyInitWrapModule(
 {
     // Starting with Python 3.7, the GIL is initialized as part of
     // Py_Initialize(). Python 3.9 deprecated explicit GIL initialization.
-#if PY_VERSION_HEX < 0x03070000
+#if PY_MAJOR_VERSION < 3 || PY_MINOR_VERSION < 7
     // Ensure the python GIL is created.
     PyEval_InitThreads();
 #endif
