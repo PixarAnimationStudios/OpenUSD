@@ -920,7 +920,6 @@ UsdSkelImagingSkeletonAdapter::InvokeComputation(
 
     // Ensure inputs are holding the right value types.
     if (!restPoints.IsHolding<VtVec3fArray>() ||
-        !skinningMethod.IsHolding<TfToken>() ||
         !geomBindXform.IsHolding<GfMatrix4f>() ||
         !influences.IsHolding<VtVec2fArray>() ||
         !numInfluencesPerComponent.IsHolding<int>() ||
@@ -928,7 +927,6 @@ UsdSkelImagingSkeletonAdapter::InvokeComputation(
         !primWorldToLocal.IsHolding<GfMatrix4d>() ||
         !blendShapeOffsets.IsHolding<VtVec4fArray>() ||
         !blendShapeOffsetRanges.IsHolding<VtVec2iArray>() ||
-
         !blendShapeWeights.IsHolding<VtFloatArray>() ||
         !skinningXforms.IsHolding<VtMatrix4fArray>() ||
         !skelLocalToWorld.IsHolding<GfMatrix4d>()) {
