@@ -508,16 +508,19 @@ HdSceneIndexAdapterSceneDelegate::GetDoubleSided(SdfPath const &id)
 
     HdMeshSchema meshSchema = 
         HdMeshSchema::GetFromParent(prim.dataSource);
-    if (!meshSchema.IsDefined()) {
-        return false;
+    if (meshSchema.IsDefined()) {
+        HdBoolDataSourceHandle doubleSidedDs = meshSchema.GetDoubleSided();
+        if (doubleSidedDs) {
+            return doubleSidedDs->GetTypedValue(0.0f);
+        }
+    } else if (prim.primType == HdPrimTypeTokens->basisCurves) {
+        // TODO: We assume all basis curves are double-sided in Hydra. This is
+        //       inconsistent with the USD schema, which allows sidedness to be
+        //       declared on the USD gprim. Note however that sidedness only 
+        //       affects basis curves with authored normals (i.e., ribbons).
+        return true;
     }
-
-    HdBoolDataSourceHandle doubleSidedDs = meshSchema.GetDoubleSided();
-    if (!doubleSidedDs) {
-        return false;
-    }
-
-    return doubleSidedDs->GetTypedValue(0.0f);
+    return false;
 }
 
 GfRange3d

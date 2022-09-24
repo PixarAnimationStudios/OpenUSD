@@ -234,16 +234,18 @@ PrintUsage(const char* cmd, const char *err=nullptr)
     fprintf(stderr, "Usage: %s INPUT.usd "
             "[--out OUTPUT] [--frame FRAME] "
             "[--sceneCamPath CAM_PATH] [--settings RENDERSETTINGS_PATH] "
-            "[--sceneCamAspect aspectRatio] "
+            "[--sceneCamAspect aspectRatio] [--cullStyle CULL_STYLE] "
             "[--visualize STYLE] [--perf PERF] [--trace TRACE]\n"
             "OUTPUT defaults to UsdRenderSettings if not specified.\n"
             "FRAME defaults to 0 if not specified.\n"
             "CAM_PATH defaults to empty path if not specified\n"
             "RENDERSETTINGS_PATH defaults to empty path is not specified\n"
             "STYLE indicates a PxrVisualizer style to use instead of "
-            "      the default integrator\n"
+            "the default integrator\n"
             "PERF indicates a json file to record performance measurements\n"
-            "TRACE indicates a text file to record trace measurements\n",
+            "TRACE indicates a text file to record trace measurements\n"
+            "CULL_STYLE selects the fallback cull style and may be one of: "
+            "none|back|front|backUnlessDoubleSided|frontUnlessDoubleSided\n",
             cmd);
 }
 
@@ -263,6 +265,7 @@ int main(int argc, char *argv[])
     std::string inputFilename(argv[1]);
     std::string outputFilename;
     std::string perfOutput, traceOutput;
+    std::string cullStyle;
 
     int frameNum = 0;
     SdfPath sceneCamPath, renderSettingsPath;
@@ -286,6 +289,8 @@ int main(int argc, char *argv[])
             perfOutput = argv[++i];
         } else if (std::string(argv[i]) == "--trace") {
             traceOutput = argv[++i];
+        } else if (std::string(argv[i]) == "--cullStyle") {
+            cullStyle = argv[++i];
         }
     }
 
@@ -579,6 +584,19 @@ int main(int argc, char *argv[])
                 hdUsdFrontend->SetRefineLevelFallback(8); // max refinement
                 if (!product.cameraPath.IsEmpty()) {
                     hdUsdFrontend->SetCameraForSampling(product.cameraPath);
+                }
+            }
+            if (!cullStyle.empty()) {
+                if (cullStyle == "none") {
+                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleNothing);
+                } else if (cullStyle == "back") {
+                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleBack);
+                } else if (cullStyle == "front") {
+                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleFront);
+                } else if (cullStyle == "backUnlessDoubleSided") {
+                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleBackUnlessDoubleSided);
+                } else if (cullStyle == "frontUnlessDoubleSided") {
+                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleFrontUnlessDoubleSided);
                 }
             }
 
