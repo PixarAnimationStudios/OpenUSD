@@ -4,8 +4,10 @@
 
 ### Build
 - Updated Azure Pipelines configurations used for CI and PyPI
-    - Ubuntu 20.04
-    - macOS 11
+  The active configurations are now:
+    - Ubuntu 20.04, Python 3.8.10, PySide2 5.15.2.1
+    - macOS 11.7, Python 3.10.6, PySide6 6.3.2
+    - Windows 10, Visual Studio 2019, Python 3.7.9, PySide2 5.15.2.1
 
 ### Imaging
 - Fixed a speculative issue with light invalidation sometimes using dirty bits
