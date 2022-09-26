@@ -2357,4 +2357,5 @@ DOT_CLEANUP            = YES
 # Setup for Doxygen Awesome CSS
 
 FULL_SIDEBAR = NO
-HTML_EXTRA_STYLESHEET  = doxygen-awesome-css/doxygen-awesome.css
+HTML_EXTRA_STYLESHEET  = docs/doxygen/doxygen-awesome-css/doxygen-awesome.css
+HTML_EXTRA_FILES  = docs/doxygen/doxygen-awesome-css/doxygen-awesome-darkmode-toggle.js
