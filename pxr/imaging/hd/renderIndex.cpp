@@ -1909,7 +1909,7 @@ HdRenderIndex::GetSceneDelegateAndInstancerIds(SdfPath const &id,
             // responsible for inserting the prim at the specified id.
             // Emulation must provide the same value -- even if it could
             // potentially expose the scene without downstream scene index
-            // motifications -- or some application assumptions will fail.
+            // notifications -- or some application assumptions will fail.
             // No known render delegates make use of this call.
             HdSceneIndexPrim prim = _emulationSceneIndex->GetPrim(id);
             if (prim.dataSource) {
