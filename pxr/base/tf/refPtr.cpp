@@ -93,17 +93,47 @@ Tf_RefPtr_UniqueChangedCounter::_RemoveRef(TfRefBase const *refBase)
 bool Tf_RefPtr_UniqueChangedCounter::_AddRefIfNonzero(
     TfRefBase const *refBase)
 {
+    // Read the current value, and try to CAS it one greater if it looks like we
+    // won't take it 1 -> 2.  If we're successful at this, we can skip the whole
+    // locking business.  If instead the current count is 1, we pay the price
+    // with the locking stuff.
+    auto &counter = refBase->GetRefCount()._counter;
+
+    int prevCount = counter.load();
+    while (prevCount != 0 && prevCount != 1) {
+        if (counter.compare_exchange_weak(prevCount, prevCount+1)) {
+            return true;
+        }
+    }
+
+    // If we saw a 0, return false.
+    if (prevCount == 0) {
+        return false;
+    }
+
+    // Otherwise we saw a 1, so we may have to lock & invoke the unique changed
+    // counter.
     TfRefBase::UniqueChangedListener const &listener =
         TfRefBase::_uniqueChangedListener;
     listener.lock();
-    auto &counter = refBase->GetRefCount()._counter;
-    int oldValue = counter.load(std::memory_order_relaxed);
-    if (oldValue == 0)
-        return false;
-    if (oldValue == 1) {
-        listener.func(refBase, false);
+    prevCount = counter.load();
+    while (true) {
+        if (prevCount == 0) {
+            listener.unlock();
+            return false;
+        }
+        if (prevCount == 1) {
+            listener.func(refBase, false);
+            counter.store(2, std::memory_order_relaxed);
+            listener.unlock();
+            return true;
+        }
+        if (counter.compare_exchange_weak(prevCount, prevCount+1)) {
+            listener.unlock();
+            return true;
+        }
     }
-    counter.store(oldValue + 1, std::memory_order_relaxed);
+    // Unreachable...
     listener.unlock();
     return true;
 }
