@@ -372,12 +372,6 @@ public:
                     adapter->TrackVariability(primInfo->usdPrim,
                                               cachePath,
                                               &primInfo->timeVaryingBits);
-                    if (primInfo->timeVaryingBits != HdChangeTracker::Clean) {
-                        adapter->MarkDirty(primInfo->usdPrim,
-                                           cachePath,
-                                           primInfo->timeVaryingBits,
-                                           &indexProxy);
-                    }
                 }
             }
         }
