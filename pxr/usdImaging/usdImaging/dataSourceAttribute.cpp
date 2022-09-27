@@ -88,6 +88,12 @@ static _FactoryMap _CreateFactoryMap()
     map[SdfValueTypeNames->TexCoord3hArray] = _FactoryImpl<VtArray<GfVec3h>>;
     map[SdfValueTypeNames->TexCoord3h] = _FactoryImpl<GfVec3h>;
     map[SdfValueTypeNames->Token] = _FactoryImpl<TfToken>;
+    map[SdfValueTypeNames->Quath] = _FactoryImpl<GfQuath>;
+    map[SdfValueTypeNames->QuathArray] = _FactoryImpl<VtArray<GfQuath>>;
+    map[SdfValueTypeNames->Quatf] = _FactoryImpl<GfQuatf>;
+    map[SdfValueTypeNames->QuatfArray] = _FactoryImpl<VtArray<GfQuatf>>;
+    map[SdfValueTypeNames->Quatd] = _FactoryImpl<GfQuatd>;
+    map[SdfValueTypeNames->QuatdArray] = _FactoryImpl<VtArray<GfQuatd>>;
 
     return map;
 }
@@ -107,7 +113,7 @@ UsdImagingDataSourceAttributeNew(
 
     static const _FactoryMap _factoryMap = _CreateFactoryMap();
 
-    _FactoryMap::const_iterator i = _factoryMap.find(
+    const _FactoryMap::const_iterator i = _factoryMap.find(
             usdAttrQuery.GetAttribute().GetTypeName());
     if (i != _factoryMap.end()) {
         _DataSourceFactory factory = i->second;
