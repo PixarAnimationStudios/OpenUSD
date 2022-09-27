@@ -737,7 +737,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     riley::ShadingNode &lightNode = lightNodes.back();
 
     // Attributes.
-    RtParamList attrs = param->ConvertAttributes(sceneDelegate, id);
+    RtParamList attrs = param->ConvertAttributes(sceneDelegate, id, false);
 
     // Check if the dome light should be camera visible
     if (lightNode.name == us_PxrDomeLight) {
