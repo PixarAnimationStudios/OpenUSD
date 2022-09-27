@@ -101,8 +101,9 @@ Python support in USD refers to:
 Support for Python can optionally be disabled by specifying the cmake flag
 ```PXR_ENABLE_PYTHON_SUPPORT=FALSE```.
 
-Support for Python 3 can be enabled by specifying the cmake flag
-```PXR_USE_PYTHON_3=ON```.
+Python 3 is enabled by default, Python 2 can be enabled by specifying the cmake
+flag
+```PXR_USE_PYTHON_3=OFF```.
 
 ##### OpenGL
 
