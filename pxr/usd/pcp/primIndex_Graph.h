@@ -184,6 +184,7 @@ private:
         size_t parentNodeIdx, size_t childNodeIdx);
 
     void _DetachSharedNodePool();
+    void _DetachSharedNodePoolForNewNodes(size_t numAddedNodes = -1);
 
     // Iterates through the immediate children of the root node looking
     // for the first node for which p(node) is true and the first subsequent

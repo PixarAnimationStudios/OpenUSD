@@ -501,7 +501,7 @@ PcpPrimIndex_Graph::InsertChildNode(
         return PcpNodeRef();
     }
 
-    _DetachSharedNodePool();
+    _DetachSharedNodePoolForNewNodes();
 
     const size_t parentNodeIdx = parent._GetNodeIndex();
     const size_t childNodeIdx = _CreateNode(site, arc);
@@ -532,11 +532,11 @@ PcpPrimIndex_Graph::InsertChildSubgraph(
         return PcpNodeRef();
     }
 
-    _DetachSharedNodePool();
+    PcpPrimIndex_Graph const &subgraphRef = *get_pointer(subgraph);
+    _DetachSharedNodePoolForNewNodes(subgraphRef._GetNumNodes());
 
     const size_t parentNodeIdx = parent._GetNodeIndex();
-    const size_t childNodeIdx = 
-        _CreateNodesForSubgraph(*get_pointer(subgraph), arc);
+    const size_t childNodeIdx = _CreateNodesForSubgraph(subgraphRef, arc);
 
     return _InsertChildInStrengthOrder(parentNodeIdx, childNodeIdx);
 }
@@ -605,6 +605,31 @@ PcpPrimIndex_Graph::_DetachSharedNodePool()
         TRACE_FUNCTION();
         TfAutoMallocTag tag("_DetachSharedNodePool");
         _nodes = std::make_shared<_NodePool>(*_nodes);
+    }
+}
+
+void 
+PcpPrimIndex_Graph::_DetachSharedNodePoolForNewNodes(size_t numAddedNodes)
+{
+    if (!_nodes.unique()) {
+        TRACE_FUNCTION();
+        TfAutoMallocTag tag("_DetachSharedNodePoolForNewNodes");
+        // Create a new copy, but with some extra capacity since we are adding
+        // new nodes.  If we just created a copy, its capacity will be the same
+        // as its size, so when we add a new node, the vector will have to
+        // reallocate and copy everything again anyway.  This way we can avoid
+        // that.
+        size_t nodesSize = _nodes->size();
+        auto newNodes = std::make_shared<_NodePool>();
+
+        // If numAddedNodes is -1, that means the caller doesn't know how many
+        // nodes will be added -- just increase the size by 25% in that case.
+        if (numAddedNodes == size_t(-1)) {
+            numAddedNodes = std::max(size_t(1), nodesSize / 4);
+        }        
+        newNodes->reserve(nodesSize + numAddedNodes);
+        newNodes->insert(newNodes->begin(), _nodes->begin(), _nodes->end());
+        _nodes = newNodes;
     }
 }
 
