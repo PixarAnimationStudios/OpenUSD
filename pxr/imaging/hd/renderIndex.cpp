@@ -84,7 +84,8 @@ HdRenderIndex::IsSceneIndexEmulationEnabled()
 HdRenderIndex::HdRenderIndex(
     HdRenderDelegate *renderDelegate,
     HdDriverVector const& drivers)
-    : _renderDelegate(renderDelegate)
+    : _noticeBatchingDepth(0)
+    , _renderDelegate(renderDelegate)
     , _drivers(drivers)
     , _rprimDirtyList(*this)
 {
@@ -159,6 +160,10 @@ HdRenderIndex::~HdRenderIndex()
     }
 
     _DestroyFallbackPrims();
+
+    if (_noticeBatchingDepth != 0) {
+        TF_CODING_ERROR("Imbalanced batch begin/end calls");
+    }
 }
 
 HdRenderIndex*
@@ -769,7 +774,10 @@ void
 HdRenderIndex::SceneIndexEmulationNoticeBatchBegin()
 {
     if (_emulationNoticeBatchingSceneIndex) {
-        _emulationNoticeBatchingSceneIndex->SetBatchingEnabled(true);
+        if (_noticeBatchingDepth == 0) {
+            _emulationNoticeBatchingSceneIndex->SetBatchingEnabled(true);
+        }
+        ++_noticeBatchingDepth;
     }
 }
 
@@ -777,7 +785,15 @@ void
 HdRenderIndex::SceneIndexEmulationNoticeBatchEnd()
 {
     if (_emulationNoticeBatchingSceneIndex) {
-        _emulationNoticeBatchingSceneIndex->SetBatchingEnabled(false);
+        if (_noticeBatchingDepth > 0) {
+            --_noticeBatchingDepth;
+
+            if (_noticeBatchingDepth == 0) {
+                _emulationNoticeBatchingSceneIndex->SetBatchingEnabled(false);
+            }
+        } else {
+            TF_CODING_ERROR("Imbalanced batch begin/end calls");
+        }
     }
 }
 
