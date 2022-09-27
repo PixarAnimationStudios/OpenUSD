@@ -77,6 +77,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (linear)                                    \
     (lightLink)                                 \
     (lightFilterLink)                           \
+    (meshLight)                                 \
     (materialParams)                            \
     (nonlinearSampleCount)                      \
     (nonperiodic)                               \
@@ -272,6 +273,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (domeLight)                                 \
     (light)                                     \
     (lightFilter)                               \
+    (meshLight)                                 \
     (pluginLight)                               \
     (rectLight)                                 \
     (sphereLight)                               \
