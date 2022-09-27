@@ -30,6 +30,8 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/typeHeaders.h"
+#include "pxr/base/vt/visitValue.h"
 #include "pxr/base/work/loops.h"
 
 #define USE_PARALLEL_EXPANSION 0
@@ -46,11 +48,10 @@ namespace
 template <typename T>
 VtValue
 _ComputeExpandedValue(
-    const VtValue &value,
+    const VtArray<T> &input,
     const VtIntArray &perCurveCounts,
     const size_t numRepeat,
-    const TfToken &name,
-    bool expandConditionally = false)
+    const TfToken &name)
 {
     // Build cumulative sum arrays to help index into the authored and expanded
     // values per curve.
@@ -63,13 +64,11 @@ _ComputeExpandedValue(
         authoredSum += size_t(vc);
     }
 
-    const VtArray<T> input = value.Get<VtArray<T>>();
-
     if (input.size() != authoredSum) {
         TF_WARN("Data for %s does not match expected size "
                 "(got %zu, expected %zu)", name.GetText(),
                 input.size(), authoredSum);
-        return value;
+        return VtValue(input);
     }
 
     const size_t outputSize = input.size() + 2 * numRepeat * numCurves;
@@ -113,80 +112,6 @@ _ComputeExpandedValue(
     return VtValue(output);
 }
 
-// Type-dispatch boiler plate for the function template above.
-VtValue
-_DispatchComputeExpandedValue(
-    const VtValue &val,
-    const VtIntArray &perCurveCounts,
-    const size_t numRepeat,
-    const TfToken &name)
-{
-    VtValue vExp;
-
-    if (val.IsHolding<VtVec2fArray>()) {
-        vExp = _ComputeExpandedValue<GfVec2f>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec2dArray>()) {
-        vExp = _ComputeExpandedValue<GfVec2d>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec2iArray>()) {
-        vExp = _ComputeExpandedValue<GfVec2i>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec2hArray>()) {
-        vExp = _ComputeExpandedValue<GfVec2h>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec3fArray>()) {
-        vExp = _ComputeExpandedValue<GfVec3f>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec3dArray>()) {
-        vExp = _ComputeExpandedValue<GfVec3d>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec3iArray>()) {
-        vExp = _ComputeExpandedValue<GfVec3i>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec3hArray>()) {
-        vExp = _ComputeExpandedValue<GfVec3h>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec4fArray>()) {
-        vExp = _ComputeExpandedValue<GfVec4f>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec4dArray>()) {
-        vExp = _ComputeExpandedValue<GfVec4d>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec4iArray>()) {
-        vExp = _ComputeExpandedValue<GfVec4i>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec4hArray>()) {
-        vExp = _ComputeExpandedValue<GfVec4h>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtMatrix4dArray>()) {
-        vExp = _ComputeExpandedValue<GfMatrix4d>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtStringArray>()) {
-        vExp = _ComputeExpandedValue<std::string>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtDoubleArray>()) {
-        vExp = _ComputeExpandedValue<double>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtIntArray>()) {
-        vExp = _ComputeExpandedValue<int>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtUIntArray>()) {
-        vExp = _ComputeExpandedValue<unsigned int>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtFloatArray>()) {
-        vExp = _ComputeExpandedValue<float>(
-            val, perCurveCounts, numRepeat, name);
-    } else if (val.IsHolding<VtHalfArray>()) {
-        vExp = _ComputeExpandedValue<GfHalf>(
-            val, perCurveCounts, numRepeat, name);
-    } else {
-        TF_WARN("Unsupported primvar type %s", val.GetTypeName().c_str());
-    }
-
-    return vExp;
-}
-
 // Returns the expanded value that is computed by replicating the first and last
 // values `numRepeat` times per curve when the vertex count is 4 or more, and
 // repeating the authored varying values if/as necessary otherwise.
@@ -194,14 +119,14 @@ _DispatchComputeExpandedValue(
 template <typename T>
 VtValue
 _ComputeExpandedVaryingValue(
-    const VtValue &value,
+    const VtArray<T> &input,
     const VtIntArray &curveVaryingCounts,
     const VtIntArray &curveVertexCounts,
     const size_t numRepeat,
     const TfToken &name)
 {
     if (!TF_VERIFY(curveVaryingCounts.size() == curveVertexCounts.size())) {
-        return value;
+        return VtValue(input);
     }
 
     // Build cumulative sum arrays to help index into the authored and expanded
@@ -233,13 +158,11 @@ _ComputeExpandedVaryingValue(
         }
     }
 
-    const VtArray<T> input = value.Get<VtArray<T>>();
-
     if (input.size() != authoredSum) {
         TF_WARN("Data for %s does not match expected size "
                 "(got %zu, expected %zu)", name.GetText(),
                 input.size(), authoredSum);
-        return value;
+        return VtValue(input);
     }
 
     VtArray<T> output(expandedSum);
@@ -318,81 +241,69 @@ _ComputeExpandedVaryingValue(
     return VtValue(output);
 }
 
-// Type-dispatch boiler plate.
-VtValue
-_DispatchComputeExpandedVaryingValue(
-    const VtValue &val,
-    const VtIntArray &curveVaryingCounts,
-    const VtIntArray &curveVertexCounts,
-    const size_t numRepeat,
-    const TfToken &name)
-{
-    VtValue vExp;
+// Visitor that expands a given value if it holds an array and returns 
+// the value otherwise.
+struct _ExpandedValue {
+    _ExpandedValue(
+        const VtIntArray &perCurveCounts,
+        const size_t numRepeat,
+        const TfToken &name)
+    : _perCurveCounts(perCurveCounts)
+    , _numRepeat(numRepeat)
+    , _name(name) {}
 
-    if (val.IsHolding<VtVec2fArray>()) {
-        vExp = _ComputeExpandedVaryingValue<GfVec2f>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec2dArray>()) {
-        vExp = _ComputeExpandedVaryingValue<GfVec2d>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec2iArray>()) {
-        vExp = _ComputeExpandedVaryingValue<GfVec2i>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec2hArray>()) {
-        vExp = _ComputeExpandedVaryingValue<GfVec2h>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec3fArray>()) {
-        vExp = _ComputeExpandedVaryingValue<GfVec3f>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec3dArray>()) {
-        vExp = _ComputeExpandedVaryingValue<GfVec3d>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec3iArray>()) {
-        vExp = _ComputeExpandedVaryingValue<GfVec3i>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec3hArray>()) {
-        vExp = _ComputeExpandedVaryingValue<GfVec3h>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec4fArray>()) {
-        vExp = _ComputeExpandedVaryingValue<GfVec4f>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec4dArray>()) {
-        vExp = _ComputeExpandedVaryingValue<GfVec4d>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec4iArray>()) {
-        vExp = _ComputeExpandedVaryingValue<GfVec4i>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtVec4hArray>()) {
-        vExp = _ComputeExpandedVaryingValue<GfVec4h>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtMatrix4dArray>()) {
-        vExp = _ComputeExpandedVaryingValue<GfMatrix4d>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtStringArray>()) {
-        vExp = _ComputeExpandedVaryingValue<std::string>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtDoubleArray>()) {
-        vExp = _ComputeExpandedVaryingValue<double>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtIntArray>()) {
-        vExp = _ComputeExpandedVaryingValue<int>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtUIntArray>()) {
-        vExp = _ComputeExpandedVaryingValue<unsigned int>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtFloatArray>()) {
-        vExp = _ComputeExpandedVaryingValue<float>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else if (val.IsHolding<VtHalfArray>()) {
-        vExp = _ComputeExpandedVaryingValue<GfHalf>(
-            val, curveVaryingCounts, curveVertexCounts, numRepeat, name);
-    } else {
-        TF_WARN("Unsupported primvar type %s", val.GetTypeName().c_str());
+    template <typename T>
+    VtValue operator()(const VtArray<T> &array)
+    {
+        return _ComputeExpandedValue<T>(
+            array, _perCurveCounts, _numRepeat, _name);
     }
 
-    return vExp;
-}
+    VtValue operator()(const VtValue &value)
+    {
+        TF_WARN("Unsupported type for expansion %s",
+                value.GetTypeName().c_str());
+        return value;
+    }
 
+private:
+    const VtIntArray &_perCurveCounts;
+    const size_t _numRepeat;
+    const TfToken &_name;
+};
+
+struct _ExpandedVaryingValue {
+    _ExpandedVaryingValue(
+        const VtIntArray &perCurveCounts,
+        const VtIntArray &curveVertexCounts,
+        const size_t numRepeat,
+        const TfToken &name)
+    : _perCurveCounts(perCurveCounts)
+    , _curveVertexCounts(curveVertexCounts)
+    , _numRepeat(numRepeat)
+    , _name(name) {}
+
+    template <typename T>
+    VtValue operator()(const VtArray<T> &array)
+    {
+        return _ComputeExpandedVaryingValue<T>(
+            array, _perCurveCounts, _curveVertexCounts,
+            _numRepeat, _name);
+    }
+
+    VtValue operator()(const VtValue &value)
+    {
+        TF_WARN("Unsupported type for expansion %s",
+                value.GetTypeName().c_str());
+        return value;
+    }
+
+private:
+    const VtIntArray &_perCurveCounts;
+    const VtIntArray &_curveVertexCounts;
+    const size_t _numRepeat;
+    const TfToken &_name;
+};
 
 template <typename T>
 T
@@ -592,13 +503,15 @@ private:
 
         const bool expandConditionally = varying && _expandVaryingConditionally;
 
+
         VtValue vExp;
         if (!expandConditionally) {
-            vExp = _DispatchComputeExpandedValue(
-                val, perCurveCounts, _numExtraEnds, name);
+            vExp = VtVisitValue(val,
+                _ExpandedValue(perCurveCounts, _numExtraEnds, name));
         } else {
-            vExp = _DispatchComputeExpandedVaryingValue(
-                val, perCurveCounts, _curveVertexCounts, _numExtraEnds, name);
+            vExp = VtVisitValue(val,
+                _ExpandedVaryingValue(perCurveCounts, _curveVertexCounts,
+                _numExtraEnds, name));
         }
         
         return vExp;
@@ -734,7 +647,7 @@ public:
                 // necessary.
                 VtValue vExpanded =
                     _ComputeExpandedValue<int>(
-                        VtValue(curveIndices),
+                        curveIndices,
                         _curveVertexCounts,
                         _numExtraEnds,
                         HdBasisCurvesTopologySchemaTokens->curveIndices);
