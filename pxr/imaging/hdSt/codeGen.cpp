@@ -1896,30 +1896,39 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         _genTCS << "int OsdPrimitiveIdBase() { return 0; }\n";
         _genTCS << "float OsdTessLevel() { return GetTessLevel(); }\n";
     }
-    if (postTessControlShader.find("OsdPerPatchVertexBezier") != std::string::npos) {
-        _osdPTCS << _GetOSDCommonShaderSource();
-        _osdPTCS << "FORWARD_DECL(mat4 GetWorldToViewMatrix());\n";
-        _osdPTCS << "FORWARD_DECL(mat4 GetProjectionMatrix());\n";
-        _osdPTCS << "FORWARD_DECL(float GetTessLevel());\n";
-        // we apply modelview in the vertex shader, so the osd shaders doesn't need
-        // to apply again.
-        _osdPTCS << "mat4 OsdModelViewMatrix() { return mat4(1); }\n";
-        _osdPTCS << "mat4 OsdProjectionMatrix() { return mat4(GetProjectionMatrix()); }\n";
-        _osdPTCS << "int OsdPrimitiveIdBase() { return 0; }\n";
-        _osdPTCS << "float OsdTessLevel() { return GetTessLevel(); }\n";
-    }
     if (tessEvalShader.find("OsdPerPatchVertexBezier") != std::string::npos) {
         _genTES << _GetOSDCommonShaderSource();
         _genTES << "mat4 OsdModelViewMatrix() { return mat4(1); }\n";
     }
     if (postTessControlShader.find("OsdPerPatchVertexBezier") != std::string::npos
         || postTessControlShader.find("OsdInterpolatePatchCoord") != std::string::npos) {
-        _osdPTCS << _GetOSDCommonShaderSource();
-        _osdPTCS << "mat4 OsdModelViewMatrix() { return mat4(1); }\n";
+
+        std::string source = _GetOSDCommonShaderSource();
+        const std::string s = "threadgroup";
+        const std::string t = "thread";
+
+        std::string::size_type n = 0;
+        while ( ( n = source.find( s, n ) ) != std::string::npos )
+        {
+            source.replace( n, s.size(), t );
+            n += t.size();
+        }
+        _osdPTCS << source;
     }
     if (postTessVertexShader.find("OsdPerPatchVertexBezier") != std::string::npos
         || postTessVertexShader.find("OsdInterpolatePatchCoord") != std::string::npos) {
-        _osdPTVS << _GetOSDCommonShaderSource();
+        
+        std::string source = _GetOSDCommonShaderSource();
+        const std::string s = "threadgroup";
+        const std::string t = "thread";
+
+        std::string::size_type n = 0;
+        while ( ( n = source.find( s, n ) ) != std::string::npos )
+        {
+            source.replace( n, s.size(), t );
+            n += t.size();
+        }
+        _osdPTVS << source;
         _osdPTVS << "mat4 OsdModelViewMatrix() { return mat4(1); }\n";
     }
     if (geometryShader.find("OsdInterpolatePatchCoord") != std::string::npos) {
@@ -2413,6 +2422,16 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                              binding,
                              true);
         }
+        
+        if (_metaData.tessPointsBinding.binding.IsValid()) {
+
+         HdBinding binding = _metaData.tessPointsBinding.binding;
+         _EmitDeclaration(&_resPTCS,
+                             _metaData.tessPointsBinding.name,
+                             TfToken("OsdPerPatchVertexBezier"),
+                             binding,
+                             true);
+        }
 
         ptcsDesc.shaderStage = HgiShaderStagePostTessellationControl;
 
@@ -2493,6 +2512,16 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
     }
 
     if (_hasPTVS) {
+        if (_metaData.tessPointsBinding.binding.IsValid()) {
+
+         HdBinding binding = _metaData.tessPointsBinding.binding;
+         _EmitDeclaration(&_resPTVS,
+                             _metaData.tessPointsBinding.name,
+                             TfToken("OsdPerPatchVertexBezier"),
+                             binding,
+                             true);
+        }
+
         HgiShaderFunctionDesc ptvsDesc;
         ptvsDesc.shaderStage = HgiShaderStagePostTessellationVertex;
 

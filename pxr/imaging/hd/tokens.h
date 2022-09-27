@@ -94,6 +94,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (primID)                                    \
     (primitiveParam)                            \
     (tessFactors)                               \
+    (tessPoints)                                \
     (quadInfo)                                  \
     (renderTags)                                \
     (rightHanded)                               \

@@ -123,6 +123,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainTrianglePTVS,            "Mesh.PostTessVertex.Triangle"))
     ((mainQuadPTVS,                "Mesh.PostTessVertex.Quad"))
     ((mainTriQuadPTVS,             "Mesh.PostTessVertex.TriQuad"))
+    ((mainBSplineQuadPTCS,         "Mesh.PostTessControl.BSplineQuad"))
+    ((mainBezierQuadPTVS,          "Mesh.PostTessVertex.BezierQuad"))
+    ((mainBoxSplineTrianglePTCS,   "Mesh.PostTessControl.BoxSplineTriangle"))
+    ((mainBezierTrianglePTVS,      "Mesh.PostTessVertex.BoxSplineTriangle"))
     ((mainVaryingInterpPTVS,       "Mesh.PostTessVertex.VaryingInterpolation"))
     ((mainTriangleTessGS,          "Mesh.Geometry.TriangleTess"))
     ((mainTriangleGS,              "Mesh.Geometry.Triangle"))
@@ -220,7 +224,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     const bool isPrimTypePatchesBoxSplineTriangle =
         primType ==
             HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE;
-
+    const bool isAdaptiveMesh = isPrimTypePatchesBSpline ||
+            isPrimTypePatchesBoxSplineTriangle;
     const bool renderWireframe = geomStyle == HdMeshGeomStyleEdgeOnly ||
                                  geomStyle == HdMeshGeomStyleHullEdgeOnly;    
 
@@ -284,7 +289,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     useMetalTessellation =
         hasMetalTessellation && !isPrimTypePoints &&
-        (hasCustomDisplacement || ptvsSceneNormals || ptvsGeometricNormals);
+        (hasCustomDisplacement || ptvsSceneNormals || ptvsGeometricNormals
+         || isAdaptiveMesh);
 
     // post tess vertex shader vertex steps
     uint8_t ptvsIndex = 0;
@@ -333,12 +339,20 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             PTVS[ptvsIndex++] = _tokens->noCustomDisplacementGS;
         }
 
-        if (isPrimTypePatches || isPrimTypeTris) {
+        if ((isPrimTypePatches || isPrimTypeTris) && !isAdaptiveMesh) {
             PTVS[ptvsIndex++] = _tokens->mainTrianglePTVS;
         } else if (isPrimTypeQuads) {
             PTVS[ptvsIndex++] = _tokens->mainQuadPTVS;
         } else if (isPrimTypeTriQuads) {
             PTVS[ptvsIndex++] = _tokens->mainTriQuadPTVS;
+        } else if (isPrimTypePatchesBSpline) {
+            PTCS[ptcsIndex++] = _tokens->instancing;
+            PTCS[ptcsIndex++] = _tokens->mainBSplineQuadPTCS;
+            PTVS[ptvsIndex++] = _tokens->mainBezierQuadPTVS;
+        } else if (isPrimTypePatchesBoxSplineTriangle) {
+            PTCS[ptcsIndex++] = _tokens->instancing;
+            PTCS[ptcsIndex++] = _tokens->mainBoxSplineTrianglePTCS;
+            PTVS[ptvsIndex++] = _tokens->mainBezierTrianglePTVS;
         }
         
         if (isPrimTypeTris) {

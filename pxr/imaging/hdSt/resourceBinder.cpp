@@ -71,6 +71,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (constantPrimvars)
     (primitiveParam)
     (tessFactors)
+    (tessPoints)
     (topologyVisibility)
 );
 
@@ -417,6 +418,9 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 } else if (_TokenContainsString(name,
                            HdStTokens->tessFactors.GetString())) {
                     metaDataOut->tessFactorsBinding = bindingDecl;
+                } else if (_TokenContainsString(name,
+                           HdStTokens->tessPoints.GetString())) {
+                    metaDataOut->tessPointsBinding = bindingDecl;
                 } else {
                     TF_WARN("Unexpected topological resource '%s'\n",
                     name.GetText());
@@ -1621,6 +1625,7 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     boost::hash_combine(hash, primitiveParamBinding.binding.GetValue());
     boost::hash_combine(hash, primitiveParamBinding.dataType);
     boost::hash_combine(hash, tessFactorsBinding.binding.GetValue());
+    boost::hash_combine(hash, tessPointsBinding.binding.GetValue());
     boost::hash_combine(hash, edgeIndexBinding.binding.GetValue());
     boost::hash_combine(hash, edgeIndexBinding.dataType);
     boost::hash_combine(hash, coarseFaceIndexBinding.binding.GetValue());

@@ -310,6 +310,7 @@ public:
         BindingDeclaration instanceIndexBaseBinding;
         BindingDeclaration primitiveParamBinding;
         BindingDeclaration tessFactorsBinding;
+        BindingDeclaration tessPointsBinding;
         BindingDeclaration edgeIndexBinding;
         BindingDeclaration coarseFaceIndexBinding;
         std::vector<BindingDeclaration> fvarPatchParamBindings;

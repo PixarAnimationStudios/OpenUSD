@@ -360,6 +360,184 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- glsl Mesh.PostTessControl.BSplineQuad
+ // OsdPerPatchVertexBezier - used to trigger codegen
+struct VertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+};
+
+// convert BSpline cv to Bezier cv
+template<typename VertexType>
+vec3
+HdStComputePerPatchVertexBSpline(
+        int3 patchParam, unsigned ID,
+        thread VertexType* cv)
+{
+    vec3 result;
+    int i = ID%4;
+    int j = ID/4;
+
+    //OsdComputeBSplineBoundaryPoints(cv, patchParam);
+
+    float3 H[4];
+    for (int l=0; l<4; ++l) {
+        H[l] = float3(0,0,0);
+        for(int k=0; k<4; ++k) {
+            H[l] += Q[i][k] * (cv + l*4 + k)->GetPosition();
+        }
+    }
+    {
+        result = float3(0,0,0);
+        for (int k=0; k<4; ++k){
+            result += Q[j][k]*H[k];
+        }
+    }
+    return result;
+}
+
+void
+HdStEvalPatchBezierTessLevels(
+        const float OsdTessLevel,
+        const float4x4 OsdProjectionMatrix,
+        const float4x4 OsdModelViewMatrix,
+        thread vec3* cpBezier,
+        int3 patchParam,
+        thread float4& tessOuterLo, thread float4& tessOuterHi)
+{
+
+    tessOuterLo = float4(0);
+    tessOuterHi = float4(0);
+
+    float3 corners[4];
+    float3 midpoints[4];
+
+    int transitionMask = OsdGetPatchTransitionMask(patchParam);
+    //These are compressed for PTCS as we only want to evaluate the mid and corners
+    /*
+    7 -> 5
+    8 -> 6
+    11 -> 7
+    12 -> 8
+    13 -> 9
+    14 -> 10
+    15 -> 11
+     */
+    /*
+    corners[0] = cpBezier[ 0];
+    corners[1] = cpBezier[ 3];
+    corners[2] = cpBezier[11];
+    corners[3] = cpBezier[12];
+*/
+    /*
+    midpoints[0] = ((transitionMask & 8) == 0) ? float3(0) :
+        Osd_EvalBezierCurveMidPoint(
+            cpBezier[0], cpBezier[4], cpBezier[5], cpBezier[8]);
+    midpoints[1] = ((transitionMask & 1) == 0) ? float3(0) :
+        Osd_EvalBezierCurveMidPoint(
+            cpBezier[0], cpBezier[1], cpBezier[2], cpBezier[3]);
+    midpoints[2] = ((transitionMask & 2) == 0) ? float3(0) :
+        Osd_EvalBezierCurveMidPoint(
+            cpBezier[3], cpBezier[5], cpBezier[7], cpBezier[11]);
+    midpoints[3] = ((transitionMask & 4) == 0) ? float3(0) :
+        Osd_EvalBezierCurveMidPoint(
+            cpBezier[8], cpBezier[9], cpBezier[10], cpBezier[11]);
+           */
+
+    corners[0] = cpBezier[ 0];
+corners[1] = cpBezier[ 3];
+corners[2] = cpBezier[15];
+corners[3] = cpBezier[12];
+
+midpoints[0] = ((transitionMask & 8) == 0) ? float3(0) :
+Osd_EvalBezierCurveMidPoint(
+        cpBezier[0], cpBezier[4], cpBezier[8], cpBezier[12]);
+midpoints[1] = ((transitionMask & 1) == 0) ? float3(0) :
+Osd_EvalBezierCurveMidPoint(
+        cpBezier[0], cpBezier[1], cpBezier[2], cpBezier[3]);
+midpoints[2] = ((transitionMask & 2) == 0) ? float3(0) :
+Osd_EvalBezierCurveMidPoint(
+        cpBezier[3], cpBezier[7], cpBezier[11], cpBezier[15]);
+midpoints[3] = ((transitionMask & 4) == 0) ? float3(0) :
+Osd_EvalBezierCurveMidPoint(
+        cpBezier[12], cpBezier[13], cpBezier[14], cpBezier[15]);
+
+    Osd_GetTessLevelsFromPatchBoundaries4(
+        OsdTessLevel, OsdProjectionMatrix, OsdModelViewMatrix,
+        corners, midpoints, patchParam, tessOuterLo, tessOuterHi);
+}
+
+struct PositionWrapper
+{
+    vec3 pos;
+    vec3 GetPosition() thread {
+        return pos;
+    }
+    vec3 SetPosition(vec3 newPos) thread {
+        pos = newPos;
+    }
+};
+
+void main(void)
+{
+    vec4 tessOuterLo, tessOuterHi;
+    ProcessPrimvarsIn();
+
+    MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+
+    PositionWrapper cv[16];
+    vec3 bSplineCP[16];
+
+    ivec3 patchParam = GetPatchParam();
+
+    //Consider if we are doing the work multiple times
+
+    for (int i = 0; i < HD_NUM_PATCH_VERTS; ++i) {
+        cv[i].pos = (GetWorldToViewMatrix() * transform * vec4(points[i],1.0)).xyz;
+    }
+    OsdComputeBSplineBoundaryPoints(&(cv[0]), patchParam);
+    for (int i = 0; i < HD_NUM_PATCH_VERTS; ++i) {
+        bSplineCP[i] = HdStComputePerPatchVertexBSpline(patchParam, i, &(cv[0]));
+    }
+    /*
+    bSplineCP[0] = HdStComputePerPatchVertexBSpline(patchParam, 0, &(cv[0]));
+    bSplineCP[1] = HdStComputePerPatchVertexBSpline(patchParam, 1, &(cv[0]));
+    bSplineCP[2] = HdStComputePerPatchVertexBSpline(patchParam, 2, &(cv[0]));
+    bSplineCP[3] = HdStComputePerPatchVertexBSpline(patchParam, 3, &(cv[0]));
+    bSplineCP[4] = HdStComputePerPatchVertexBSpline(patchParam, 4, &(cv[0]));
+    bSplineCP[5] = HdStComputePerPatchVertexBSpline(patchParam, 7, &(cv[0]));
+    bSplineCP[6] = HdStComputePerPatchVertexBSpline(patchParam, 8, &(cv[0]));
+    bSplineCP[7] = HdStComputePerPatchVertexBSpline(patchParam, 11, &(cv[0]));
+    bSplineCP[8] = HdStComputePerPatchVertexBSpline(patchParam, 12, &(cv[0]));
+    bSplineCP[9] = HdStComputePerPatchVertexBSpline(patchParam, 13, &(cv[0]));
+    bSplineCP[10] = HdStComputePerPatchVertexBSpline(patchParam, 14, &(cv[0]));
+    bSplineCP[11] = HdStComputePerPatchVertexBSpline(patchParam, 15, &(cv[0]));
+     */
+
+    if (true) {
+        vec4 tessLevelOuter = vec4(0);
+        vec2 tessLevelInner = vec2(0);
+
+        // Gather bezier control points to compute limit surface tess levels
+        HdStEvalPatchBezierTessLevels(renderPassState.tessLevel,
+            GetProjectionMatrix(), mat4(1), &(bSplineCP[0]),
+            patchParam, tessOuterLo, tessOuterHi);
+        OsdComputeTessLevels(tessOuterLo, tessOuterHi,
+                             tessLevelOuter, tessLevelInner);
+
+        device half* tessAsHalf = (device half*)tessFactors + patch_id * 6;
+        tessAsHalf[0] = half(tessLevelOuter[0]);
+        tessAsHalf[1] = half(tessLevelOuter[1]);
+        tessAsHalf[2] = half(tessLevelOuter[2]);
+        tessAsHalf[3] = half(tessLevelOuter[3]);
+
+        tessAsHalf[4] = half(tessLevelInner[0]);
+        tessAsHalf[5] = half(tessLevelInner[1]);
+    }
+}
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.TessEval.BezierQuad
 
 layout(quads) in;
@@ -409,6 +587,309 @@ void main(void)
         (1.0-UV.x) * UV.y, UV.x * UV.y );
 
     ProcessPrimvarsOut(basis, 5, 6, 9, 10, UV);
+}
+
+--- --------------------------------------------------------------------------
+-- layout Mesh.PostTessVertex.BezierQuad
+[
+    ["in", "equal_spacing"],
+    ["out block", "VertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out", "vec2", "ptvsBarycentricCoord"],
+    ["out", "vec4", "tesPatchCoord"],
+    ["out", "vec2", "tesTessCoord"]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.PostTessVertex.BezierQuad
+// OsdPerPatchVertexBezier - used to trigger codegen
+
+void
+HdStEvalPatchBezier(int3 patchParam, float2 UV,
+                   thread vec3 *cv,
+                   thread float3& P, thread float3& dPu, thread float3& dPv,
+                   thread float3& N, thread float3& dNu, thread float3& dNv,
+                   thread float2& vSegments)
+{
+    //
+    //  Use the recursive nature of the basis functions to compute a 2x2 set
+    //  of intermediate points (via repeated linear interpolation).  These
+    //  points define a bilinear surface tangent to the desired surface at P
+    //  and so containing dPu and dPv.  The cost of computing P, dPu and dPv
+    //  this way is comparable to that of typical tensor product evaluation
+    //  (if not faster).
+    //
+    //  If N = dPu X dPv degenerates, it often results from an edge of the
+    //  2x2 bilinear hull collapsing or two adjacent edges colinear. In both
+    //  cases, the expected non-planar quad degenerates into a triangle, and
+    //  the tangent plane of that triangle provides the desired normal N.
+    //
+
+    //  Reduce 4x4 points to 2x4 -- two levels of linear interpolation in U
+    //  and so 3 original rows contributing to each of the 2 resulting rows:
+    float u    = UV.x;
+    float uinv = 1.0f - u;
+
+    float u0 = uinv * uinv;
+    float u1 = u * uinv * 2.0f;
+    float u2 = u * u;
+
+    float3 LROW[4], RROW[4];
+
+    LROW[0] = u0 * cv[ 0] + u1 * cv[ 1] + u2 * cv[ 2];
+    LROW[1] = u0 * cv[ 4] + u1 * cv[ 5] + u2 * cv[ 6];
+    LROW[2] = u0 * cv[ 8] + u1 * cv[ 9] + u2 * cv[10];
+    LROW[3] = u0 * cv[12] + u1 * cv[13] + u2 * cv[14];
+
+    RROW[0] = u0 * cv[ 1] + u1 * cv[ 2] + u2 * cv[ 3];
+    RROW[1] = u0 * cv[ 5] + u1 * cv[ 6] + u2 * cv[ 7];
+    RROW[2] = u0 * cv[ 9] + u1 * cv[10] + u2 * cv[11];
+    RROW[3] = u0 * cv[13] + u1 * cv[14] + u2 * cv[15];
+
+    //  Reduce 2x4 points to 2x2 -- two levels of linear interpolation in V
+    //  and so 3 original pairs contributing to each of the 2 resulting:
+    float v    = UV.y;
+    float vinv = 1.0f - v;
+
+    float v0 = vinv * vinv;
+    float v1 = v * vinv * 2.0f;
+    float v2 = v * v;
+
+    float3 LPAIR[2], RPAIR[2];
+    LPAIR[0] = v0 * LROW[0] + v1 * LROW[1] + v2 * LROW[2];
+    RPAIR[0] = v0 * RROW[0] + v1 * RROW[1] + v2 * RROW[2];
+
+    LPAIR[1] = v0 * LROW[1] + v1 * LROW[2] + v2 * LROW[3];
+    RPAIR[1] = v0 * RROW[1] + v1 * RROW[2] + v2 * RROW[3];
+
+    //  Interpolate points on the edges of the 2x2 bilinear hull from which
+    //  both position and partials are trivially determined:
+    float3 DU0 = vinv * LPAIR[0] + v * LPAIR[1];
+    float3 DU1 = vinv * RPAIR[0] + v * RPAIR[1];
+    float3 DV0 = uinv * LPAIR[0] + u * RPAIR[0];
+    float3 DV1 = uinv * LPAIR[1] + u * RPAIR[1];
+
+    int level = OsdGetPatchFaceLevel(patchParam);
+    dPu = (DU1 - DU0) * 3 * level;
+    dPv = (DV1 - DV0) * 3 * level;
+
+    P = u * DU1 + uinv * DU0;
+
+    //  Compute the normal and test for degeneracy:
+    //
+    //  We need a geometric measure of the size of the patch for a suitable
+    //  tolerance.  Magnitudes of the partials are generally proportional to
+    //  that size -- the sum of the partials is readily available, cheap to
+    //  compute, and has proved effective in most cases (though not perfect).
+    //  The size of the bounding box of the patch, or some approximation to
+    //  it, would be better but more costly to compute.
+    //
+    float proportionalNormalTolerance = 0.00001f;
+
+    float nEpsilon = (length(dPu) + length(dPv)) * proportionalNormalTolerance;
+
+    N = cross(dPu, dPv);
+
+    float nLength = length(N);
+    if (nLength > nEpsilon) {
+        N = N / nLength;
+    } else {
+        float3 diagCross = cross(RPAIR[1] - LPAIR[0], LPAIR[1] - RPAIR[0]);
+        float diagCrossLength = length(diagCross);
+        if (diagCrossLength > nEpsilon) {
+            N = diagCross / diagCrossLength;
+        }
+    }
+    //
+    //  Compute 2nd order partials of P(u,v) in order to compute 1st order partials
+    //  for the un-normalized n(u,v) = dPu X dPv, then project into the tangent
+    //  plane of normalized N.  With resulting dNu and dNv we can make another
+    //  attempt to resolve a still-degenerate normal.
+    //
+    //  We don't use the Weingarten equations here as they require N != 0 and also
+    //  are a little less numerically stable/accurate in single precision.
+    //
+    float B0u[4], B1u[4], B2u[4];
+    float B0v[4], B1v[4], B2v[4];
+
+    OsdUnivar4x4(UV.x, B0u, B1u, B2u);
+    OsdUnivar4x4(UV.y, B0v, B1v, B2v);
+
+    float3 dUU = float3(0,0,0);
+    float3 dVV = float3(0,0,0);
+    float3 dUV = float3(0,0,0);
+
+    for (int i=0; i<4; ++i) {
+        for (int j=0; j<4; ++j) {
+
+            float3 CV = cv[4*i + j];
+            dUU += (B0v[i] * B2u[j]) * CV;
+            dVV += (B2v[i] * B0u[j]) * CV;
+            dUV += (B1v[i] * B1u[j]) * CV;
+        }
+    }
+
+    dUU *= 6 * level;
+    dVV *= 6 * level;
+    dUV *= 9 * level;
+
+    dNu = cross(dUU, dPv) + cross(dPu, dUV);
+    dNv = cross(dUV, dPv) + cross(dPu, dVV);
+
+    float nLengthInv = 1.0;
+    if (nLength > nEpsilon) {
+        nLengthInv = 1.0 / nLength;
+    } else {
+        //  N may have been resolved above if degenerate, but if N was resolved
+        //  we don't have an accurate length for its un-normalized value, and that
+        //  length is needed to project the un-normalized dNu and dNv into the
+        //  tangent plane of N.
+        //
+        //  So compute N more accurately with available second derivatives, i.e.
+        //  with a 1st order Taylor approximation to un-normalized N(u,v).
+
+        float DU = (UV.x == 1.0f) ? -1.0f : 1.0f;
+        float DV = (UV.y == 1.0f) ? -1.0f : 1.0f;
+
+        N = DU * dNu + DV * dNv;
+
+        nLength = length(N);
+        if (nLength > nEpsilon) {
+            nLengthInv = 1.0f / nLength;
+            N = N * nLengthInv;
+        }
+    }
+
+    //  Project derivatives of non-unit normals into tangent plane of N:
+    dNu = (dNu - dot(dNu,N) * N) * nLengthInv;
+    dNv = (dNv - dot(dNv,N) * N) * nLengthInv;
+}
+
+// convert BSpline cv to Bezier cv
+template<typename VertexType>
+vec3
+HdStComputePerPatchVertexBSpline(
+        int3 patchParam, unsigned ID,
+        thread VertexType* cv)
+{
+    vec3 result;
+    int i = ID%4;
+    int j = ID/4;
+
+    //OsdComputeBSplineBoundaryPoints(cv, patchParam);
+
+    float3 H[4];
+    for (int l=0; l<4; ++l) {
+        H[l] = float3(0,0,0);
+        for(int k=0; k<4; ++k) {
+            H[l] += Q[i][k] * (cv + l*4 + k)->GetPosition();
+        }
+    }
+    {
+        result = float3(0,0,0);
+        for (int k=0; k<4; ++k){
+            result += Q[j][k]*H[k];
+        }
+    }
+    return result;
+}
+
+struct PositionWrapper
+{
+    vec3 pos;
+    vec3 GetPosition() thread {
+        return pos;
+    }
+    vec3 SetPosition(vec3 newPos) thread {
+        pos = newPos;
+    }
+};
+
+//TODO Thor verify this
+vec4 GetPatchCoord(int index)
+{
+    vec2 uv[4];
+    uv[0] = vec2(0, 0);
+    uv[1] = vec2(1, 0);
+    uv[2] = vec2(1, 1);
+    uv[3] = vec2(0, 1);
+
+    ivec3 patchParam = GetPatchParam();
+    return OsdInterpolatePatchCoord(uv[index], patchParam);
+}
+
+// Fwd declare methods defined in pointId.glslfx, that are used below.
+FORWARD_DECL(int GetPointId());
+FORWARD_DECL(float GetPointRasterSize(int));
+FORWARD_DECL(void ProcessPointId(int));
+
+void main(void)
+{
+    ProcessPrimvarsIn();
+    MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+
+    int pointId = GetPointId();
+    gl_PointSize = GetPointRasterSize(pointId);
+    ProcessPointId(pointId);
+
+    PositionWrapper cv[16];
+    vec3 bSplineCP[16];
+
+    ivec3 patchParam = GetPatchParam();
+
+    //Consider if we are doing the work multiple times
+    for (int i = 0; i < HD_NUM_PATCH_VERTS; ++i) {
+        //todo simplify that
+        cv[i].pos = (GetWorldToViewMatrix() * transform * vec4(points[i],1.0)).xyz;
+    }
+    OsdComputeBSplineBoundaryPoints(&(cv[0]), patchParam);
+    for (int i = 0; i < HD_NUM_PATCH_VERTS; ++i) {
+        bSplineCP[i] = HdStComputePerPatchVertexBSpline(patchParam, i, &(cv[0]));
+    }
+
+    //TODO may want to know cv and patch param
+    float4 tessOuterLo(0), tessOuterHi(0);
+    //TODO HIGHLY LIKELY THAT we need
+    int refinementLevel = OsdGetPatchRefinementLevel(patchParam);
+    //float tessLevel = min(frameConsts.TessLevel, (float)OSD_MAX_TESS_LEVEL) /
+    //                  exp2((float)refinementLevel - 1);
+    float tessLevel = min(renderPassState.tessLevel, (float)OSD_MAX_TESS_LEVEL) /
+                      exp2((float)refinementLevel - 1);
+    OsdGetTessLevelsUniform(tessLevel, patchParam, tessOuterLo, tessOuterHi);
+    //TODO Thor move tess outer lo and hi from ptcs
+    vec2 UV = OsdGetTessParameterization(gl_TessCoord.xy,
+                                         tessOuterLo,
+                                         tessOuterHi);
+
+    vec3 P = vec3(0), dPu = vec3(0), dPv = vec3(0);
+    vec3 N = vec3(0), dNu = vec3(0), dNv = vec3(0);
+    vec2 segments;
+
+    //ivec3 patchParam = tessPoints.v.patchParam;
+    HdStEvalPatchBezier(patchParam, UV, &(bSplineCP[0]), P, dPu,
+                       dPv, N, dNu, dNv, segments);
+
+    outData.Peye = vec4(P, 1);
+    //TODO THOR Maybve we need to multiply by projection matrix
+    outData.Neye = N; // normalized
+
+    tesPatchCoord = OsdInterpolatePatchCoord(UV, patchParam);
+    tesTessCoord = UV;
+
+    // Bilinear basis
+    vec4 basis = vec4(
+            (1.0-UV.x) * (1.0-UV.y), UV.x * (1.0-UV.y),
+            (1.0-UV.x) * UV.y, UV.x * UV.y );
+
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    //ptvsBarycentricCoord = gl_TessCoord;
+    ptvsBarycentricCoord = UV;
+    ProcessPrimvarsOut(basis, 5, 6, 9, 10, UV);
+    ApplyClipPlanes(outData.Peye);
+
+    //ProcessPrimvarsOut(basis, 0, 1, 2, 3);
 }
 
 --- --------------------------------------------------------------------------
@@ -468,6 +949,150 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- glsl Mesh.PostTessControl.BoxSplineTriangle
+
+template<typename VertexType>
+vec3
+HdStComputePerPatchVertexBoxSplineTriangle(
+        int3 patchParam, int ID,
+        threadgroup VertexType* cv)
+{
+    //
+    //  Conversion matrix from 12-point Box spline to 15-point quartic Bezier
+    //  patch and its common scale factor:
+    //
+    const float boxToBezierMatrix[12*15] = {
+            // L0   L1   L2     L3   L4   L5   L6     L7   L8   L9     L10  L11
+            2,   2,   0,     2,  12,   2,   0,     2,   2,   0,     0,   0,  // B0
+            1,   3,   0,     0,  12,   4,   0,     1,   3,   0,     0,   0,  // B1
+            0,   4,   0,     0,   8,   8,   0,     0,   4,   0,     0,   0,  // B2
+            0,   3,   1,     0,   4,  12,   0,     0,   3,   1,     0,   0,  // B3
+            0,   2,   2,     0,   2,  12,   2,     0,   2,   2,     0,   0,  // B4
+            0,   1,   0,     1,  12,   3,   0,     3,   4,   0,     0,   0,  // B5
+            0,   1,   0,     0,  10,   6,   0,     1,   6,   0,     0,   0,  // B6
+            0,   1,   0,     0,   6,  10,   0,     0,   6,   1,     0,   0,  // B7
+            0,   1,   0,     0,   3,  12,   1,     0,   4,   3,     0,   0,  // B8
+            0,   0,   0,     0,   8,   4,   0,     4,   8,   0,     0,   0,  // B9
+            0,   0,   0,     0,   6,   6,   0,     1,  10,   1,     0,   0,  // B10
+            0,   0,   0,     0,   4,   8,   0,     0,   8,   4,     0,   0,  // B11
+            0,   0,   0,     0,   4,   3,   0,     3,  12,   1,     1,   0,  // B12
+            0,   0,   0,     0,   3,   4,   0,     1,  12,   3,     0,   1,  // B13
+            0,   0,   0,     0,   2,   2,   0,     2,  12,   2,     2,   2   // B14
+    };
+    const float boxToBezierMatrixScale = 1.0 / 24.0;
+
+    //result.patchParam = patchParam;
+    result = float3(0);
+
+    int cvCoeffBase = 12 * ID;
+
+    for (int i = 0; i < 12; ++i) {
+        result += boxToBezierMatrix[cvCoeffBase + i] * cv[i].GetPosition();
+    }
+        result *= boxToBezierMatrixScale;
+    return result;
+}
+
+void
+HdStEvalPatchBezierTriangleTessLevels(
+        const float OsdTessLevel,
+        const float4x4 OsdProjectionMatrix,
+        const float4x4 OsdModelViewMatrix,
+        thread vec3* cv[15],
+        int3 patchParam,
+        thread float4& tessOuterLo, thread float4& tessOuterHi)
+{
+    // Each edge of a transition patch is adjacent to one or two patches
+    // at the next refined level of subdivision. When the patch control
+    // points have been converted to the Bezier basis, the control points
+    // at the corners are on the limit surface (since a Bezier patch
+    // interpolates its corner control points). We can compute an adaptive
+    // tessellation level for transition edges on the limit surface by
+    // evaluating a limit position at the mid point of each transition edge.
+
+    tessOuterLo = float4(0);
+    tessOuterHi = float4(0);
+
+    int transitionMask = OsdGetPatchTransitionMask(patchParam);
+
+    float3 corners[3];
+    corners[0] = cv[0];
+    corners[1] = cv[4];
+    corners[2] = cv[14];
+
+    float3 midpoints[3];
+    midpoints[0] = ((transitionMask & 4) == 0) ? float3(0) :
+        Osd_EvalQuarticBezierCurveMidPoint(cv[0], cv[5], cv[9], cv[12], cv[14]);
+    midpoints[1] = ((transitionMask & 1) == 0) ? float3(0) :
+        Osd_EvalQuarticBezierCurveMidPoint(cv[0], cv[1], cv[2], cv[3], cv[4]);
+    midpoints[2] = ((transitionMask & 2) == 0) ? float3(0) :
+        Osd_EvalQuarticBezierCurveMidPoint(cv[4], cv[8], cv[11], cv[13], cv[14]);
+
+    Osd_GetTessLevelsFromPatchBoundaries3(
+        OsdTessLevel, OsdProjectionMatrix, OsdModelViewMatrix,
+        corners, midpoints, patchParam, tessOuterLo, tessOuterHi);
+}
+
+struct PositionWrapper
+{
+    vec3 pos;
+    vec3 GetPosition() thread {
+        return pos;
+    }
+    vec3 SetPosition(vec3 newPos) thread {
+        pos = newPos;
+    }
+};
+
+void main(void)
+{
+    ProcessPrimvarsIn();
+    MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+
+    //TODO Thor might be 15
+    PositionWrapper cv[16];
+    vec3 bSplineCP[16];
+
+    ivec3 patchParam = GetPatchParam();
+    for (int i = 0; i < HD_NUM_PATCH_VERTS; ++i) {
+        cv[i].pos = (GetWorldToViewMatrix() * transform * vec4(points[i],1.0)).xyz;
+    }
+    OsdComputeBoxSplineTriangleBoundaryPoints(&(cv[0]), patchParam);
+    //Consider if we are doing the work multiple times
+    for (int i = 0; i < HD_NUM_PATCH_VERTS; ++i) {
+        bSplineCP[i] = HdStComputePerPatchVertexBoxSplineTriangle(patchParam, i, &(cv[0]));
+    }
+
+    // Wait for all basis conversion to be finished
+
+    //barrier();
+
+    if (true) {
+        vec4 tessLevelOuter = vec4(0);
+        vec2 tessLevelInner = vec2(0);
+
+        HdStEvalPatchBezierTriangleTessLevels(renderPassState.tessLevel,
+                          GetProjectionMatrix(), mat4(1), &(bSplineCP[0]),
+                          patchParam, tessOuterLo, tessOuterHi);
+
+        OsdComputeTessLevels(tessOuterLo, tessOuterHi,
+                             tessLevelOuter, tessLevelInner);
+
+        device half* tessAsHalf = (device half*)tessFactors + patch_id * 6;
+
+        tessAsHalf[0] = half(tessLevelOuter[0]);
+        tessAsHalf[1] = half(tessLevelOuter[1]);
+        tessAsHalf[2] = half(tessLevelOuter[2]);
+        tessAsHalf[3] = half(tessLevelOuter[3]);
+
+        tessAsHalf[4] = half(tessLevelInner[0]);
+        tessAsHalf[5] = half(tessLevelInner[1]);
+    }
+
+    ProcessPrimvarsOut();
+}
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.TessEval.BezierTriangle
 
 layout(triangles) in;
@@ -516,6 +1141,87 @@ void main(void)
         (1.0f-UV.x-UV.y), UV.x, UV.y, 0.0f);
 
     ProcessPrimvarsOut(basis, 4, 5, 8, 0, UV);
+}
+
+--- --------------------------------------------------------------------------
+-- layout Mesh.PostTessVertex.BezierTriangle
+
+[
+    ["out block", "VertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out", "vec3", "ptvsBarycentricCoord"]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.PostTessVertex.BezierTriangle
+
+        vec4 GetPatchCoord(int index)
+{
+    vec2 uv[3];
+    uv[0] = vec2(0, 0); // (0, 0, 1);
+    uv[1] = vec2(1, 0); // (1, 0, 0);
+    uv[2] = vec2(0, 1); // (0, 1, 0);
+
+    ivec3 patchParam = GetPatchParam();
+    return OsdInterpolatePatchCoordTriangle(uv[index], patchParam);
+}
+
+struct PositionWrapper
+{
+    vec3 pos;
+    vec3 GetPosition() thread {
+        return pos;
+    }
+    vec3 SetPosition(vec3 newPos) thread {
+        pos = newPos;
+    }
+};
+
+// Fwd declare methods defined in pointId.glslfx, that are used below.
+FORWARD_DECL(int GetPointId());
+FORWARD_DECL(float GetPointRasterSize(int));
+FORWARD_DECL(void ProcessPointId(int));
+
+void main(void)
+{
+    ProcessPrimvarsIn();
+    MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+
+    int pointId = GetPointId();
+    gl_PointSize = GetPointRasterSize(pointId);
+    ProcessPointId(pointId);
+
+    vec4 point0 = GetWorldToViewMatrix() * transform * vec4(points[0],1.0);
+    vec4 point1 = GetWorldToViewMatrix() * transform * vec4(points[1],1.0);
+    vec4 point2 = GetWorldToViewMatrix() * transform * vec4(points[2],1.0);
+
+    // Get the indata Neye if provided.
+    bool isFlipped = IsFlipped();
+    vec3 Neye0 = isFlipped ? -GetNormal(vec3(0),0) : GetNormal(vec3(0),0);
+    vec3 Neye1 = isFlipped ? -GetNormal(vec3(0),1) : GetNormal(vec3(0),1);
+    vec3 Neye2 = isFlipped ? -GetNormal(vec3(0),2) : GetNormal(vec3(0),2);
+
+    Neye0 = GetTriGeometryNormal(Neye0, point0, point1, point2, isFlipped);
+    Neye1 = GetTriGeometryNormal(Neye1, point0, point1, point2, isFlipped);
+    Neye2 = GetTriGeometryNormal(Neye2, point0, point1, point2, isFlipped);
+
+    point0 = DisplacementTerminal(0, point0, Neye0, GetPatchCoord(0));
+    point1 = DisplacementTerminal(1, point1, Neye1, GetPatchCoord(1));
+    point2 = DisplacementTerminal(2, point2, Neye2, GetPatchCoord(2));
+
+    vec2 coord = gl_TessCoord.xy;
+    vec4 basis = vec4(coord.x, coord.y, 1.0f-coord.x-coord.y, 0.0f);
+
+    outData.Peye = InterpolatePrimvar(point0, point1, point2, point0, basis);
+    outData.Neye = InterpolatePrimvar(Neye0, Neye1, Neye2, Neye0, basis);
+
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    ptvsBarycentricCoord = gl_TessCoord;
+    ApplyClipPlanes(outData.Peye);
+
+    ProcessPrimvarsOut(basis, 0, 1, 2, 0);
 }
 
 --- --------------------------------------------------------------------------
