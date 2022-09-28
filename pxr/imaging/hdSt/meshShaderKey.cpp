@@ -286,9 +286,20 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     VS[vsIndex++] = _tokens->mainVS;
     VS[vsIndex] = TfToken();
 
+    // Determine if PTVS should be used for Metal.
+    bool const usePTVSTechniques =
+            hasCustomDisplacement ||
+            ptvsSceneNormals ||
+            ptvsGeometricNormals ||
+            !hasBuiltinBarycentrics;
+
+    // Determine if using actually using Metal PTVS.
     useMetalTessellation =
-        hasMetalTessellation && !isPrimTypePoints &&
-        (hasCustomDisplacement || ptvsSceneNormals || ptvsGeometricNormals);
+        hasMetalTessellation && !isPrimTypePoints && usePTVSTechniques;
+
+    // PTVS shaders can provide barycentric coords w/o GS.
+    bool const hasFragmentShaderBarycentrics =
+        hasBuiltinBarycentrics || useMetalTessellation;
 
     // post tess vertex shader vertex steps
     uint8_t ptvsIndex = 0;
@@ -427,10 +438,10 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                 isPrimTypeTriQuads)
             // whether we can skip generating coords for edges
             && ((!renderWireframe && !renderEdges && !renderSelectedEdges) ||
-                hasBuiltinBarycentrics)
+                hasFragmentShaderBarycentrics)
             // whether we can skip generating coords for per-face interpolation
             && (!hasPerFaceInterpolation ||
-                hasBuiltinBarycentrics))
+                hasFragmentShaderBarycentrics))
             ;
             
     if (canSkipGS) {

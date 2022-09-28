@@ -1386,6 +1386,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         capabilities->IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
     const bool requiresBasePrimitiveOffset =
         capabilities->IsSet(HgiDeviceCapabilitiesBitsBasePrimitiveOffset);
+    const bool requiresPrimitiveIdEmulation =
+         capabilities->IsSet(HgiDeviceCapabilitiesBitsPrimitiveIdEmulation);
     const bool doublePrecisionEnabled =
         capabilities->IsSet(HgiDeviceCapabilitiesBitsShaderDoublePrecision);
     const bool minusOneToOneDepth =
@@ -1775,7 +1777,9 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     }
 
     // generate drawing coord and accessors
-    _GenerateDrawingCoord(shaderDrawParametersEnabled, requiresBasePrimitiveOffset);
+    _GenerateDrawingCoord(shaderDrawParametersEnabled,
+                          requiresBasePrimitiveOffset,
+                          requiresPrimitiveIdEmulation);
 
     // generate primvars
     _GenerateConstantPrimvar();
@@ -3557,7 +3561,8 @@ _ProcessDrawingCoord(std::stringstream &ss,
 void
 HdSt_CodeGen::_GenerateDrawingCoord(
     bool const shaderDrawParametersEnabled,
-    bool const requiresBasePrimitiveOffset)
+    bool const requiresBasePrimitiveOffset,
+    bool const requiresPrimitiveIdEmulation)
 {
     TF_VERIFY(_metaData.drawingCoord0Binding.binding.IsValid());
     TF_VERIFY(_metaData.drawingCoord1Binding.binding.IsValid());
@@ -3722,13 +3727,17 @@ HdSt_CodeGen::_GenerateDrawingCoord(
             primitiveID << "int GetBasePrimitiveOffset() { return 0; }\n";
             _genPTVS    << "int GetBasePrimitiveOffset() { return 0; }\n";
         }
-        if (_geometricShader->GetPrimitiveType() ==
-               HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIQUADS) {
+        if (requiresPrimitiveIdEmulation) {
+            primitiveID << "int GetBasePrimitiveId() { return ptvsPatchId; }\n";
+        } else {
+            primitiveID << "int GetBasePrimitiveId() { return gl_PrimitiveID; }\n";
+        }
+        if (HdSt_GeometricShader::IsPrimTypeTriQuads(_geometricShader->GetPrimitiveType())) {
             primitiveID << "int GetPrimitiveID() {\n"
-                        << "  return (gl_PrimitiveID - GetBasePrimitiveOffset()) / 2;\n"
+                        << "  return (GetBasePrimitiveId() - GetBasePrimitiveOffset());\n"
                         << "}\n"
                         << "int GetTriQuadID() {\n"
-                        << "  return (gl_PrimitiveID - GetBasePrimitiveOffset()) & 1;\n"
+                        << "  return (GetBasePrimitiveId() - GetBasePrimitiveOffset()) & 1;\n"
                         << "}\n";
             _genPTVS    << "int GetPrimitiveID() {\n"
                         << "  return (patch_id - GetBasePrimitiveOffset()) / 2;\n"
@@ -3738,7 +3747,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                         << "}\n";
         } else {
             primitiveID << "int GetPrimitiveID() {\n"
-                        << "  return (gl_PrimitiveID - GetBasePrimitiveOffset());\n"
+                        << "  return (GetBasePrimitiveId() - GetBasePrimitiveOffset());\n"
                         << "}\n";
             _genPTVS    << "int GetPrimitiveID() {\n"
                         << "  return (patch_id - GetBasePrimitiveOffset());\n"
