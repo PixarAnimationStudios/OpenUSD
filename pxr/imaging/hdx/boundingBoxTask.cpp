@@ -260,6 +260,7 @@ HdxBoundingBoxTask::_CreateResourceBindings()
     bufBind1.offsets.push_back(0);
     bufBind1.sizes.push_back(0);
     bufBind1.buffers.push_back(_transformsBuffer);
+    bufBind1.writable = false;
     resourceDesc.buffers.push_back(std::move(bufBind1));
 
     _resourceBindings = _GetHgi()->CreateResourceBindings(resourceDesc);

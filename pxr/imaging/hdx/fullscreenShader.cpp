@@ -360,6 +360,7 @@ HdxFullscreenShader::_CreateResourceBindings(TextureMap const& textures)
         HgiTextureBindDesc texBind;
         texBind.bindingIndex = bindSlots++;
         texBind.stageUsage = HgiShaderStageFragment;
+        texBind.writable = false;
         texBind.textures.push_back(texHandle);
         texBind.samplers.push_back(_sampler);
         resourceDesc.textures.push_back(std::move(texBind));
@@ -372,6 +373,7 @@ HdxFullscreenShader::_CreateResourceBindings(TextureMap const& textures)
         bufBind.bindingIndex = buffer.first;
         bufBind.resourceType = HgiBindResourceTypeStorageBuffer;
         bufBind.stageUsage = HgiShaderStageFragment;
+        bufBind.writable = false;
         bufBind.offsets.push_back(0);
         bufBind.buffers.push_back(bufferHandle);
         resourceDesc.buffers.push_back(std::move(bufBind));
