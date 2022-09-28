@@ -95,7 +95,7 @@ struct HdBufferSpec final {
     HD_API
     size_t Hash() const;
 
-    /// Functor to use for unorderd sets, maps.
+    /// Functor to use for unordered sets, maps.
     struct HashFunctor {
         size_t operator()(HdBufferSpec const& spec) const {
             return spec.Hash();
