@@ -341,6 +341,9 @@ struct _DrawCommandTraits
     // the size of the struct as the number of uint32_t elements.
     size_t numUInt32;
 
+    // Additional uint32_t values needed to align command entries.
+    size_t numUInt32Padding;
+
     size_t instancerNumLevels;
     size_t instanceIndexWidth;
 
@@ -359,12 +362,24 @@ struct _DrawCommandTraits
 };
 
 template <typename CmdType>
-void _SetDrawCommandTraits(_DrawCommandTraits * traits, int instancerNumLevels)
+void _SetDrawCommandTraits(_DrawCommandTraits * traits,
+                           int const instancerNumLevels,
+                           size_t const uint32Alignment)
 {
     // Number of uint32_t in the command struct
     // followed by instanceDC[instancerNumLevals]
     traits->numUInt32 = sizeof(CmdType) / sizeof(uint32_t)
                       + instancerNumLevels;
+
+    if (uint32Alignment > 0) {
+        size_t const alignMask = uint32Alignment - 1;
+        size_t const alignedNumUInt32 =
+                        (traits->numUInt32 + alignMask) & ~alignMask;
+        traits->numUInt32Padding = alignedNumUInt32 - traits->numUInt32;
+        traits->numUInt32 = alignedNumUInt32;
+    } else {
+        traits->numUInt32Padding = 0;
+    }
 
     traits->instancerNumLevels = instancerNumLevels;
     traits->instanceIndexWidth = instancerNumLevels + 1;
@@ -407,29 +422,34 @@ void _SetDrawingCoordTraits(_DrawCommandTraits * traits)
 _DrawCommandTraits
 _GetDrawCommandTraits(int const instancerNumLevels,
                       bool const useDrawIndexed,
-                      bool const useInstanceCulling)
+                      bool const useInstanceCulling,
+                      size_t const uint32Alignment)
 {
     _DrawCommandTraits traits;
     if (!useDrawIndexed) {
         if (useInstanceCulling) {
             using CmdType = _DrawNonIndexedInstanceCullCommand;
-            _SetDrawCommandTraits<CmdType>(&traits, instancerNumLevels);
+            _SetDrawCommandTraits<CmdType>(&traits, instancerNumLevels,
+                                           uint32Alignment);
             _SetInstanceCullTraits<CmdType>(&traits);
             _SetDrawingCoordTraits<CmdType>(&traits);
         } else {
             using CmdType = _DrawNonIndexedCommand;
-            _SetDrawCommandTraits<CmdType>(&traits, instancerNumLevels);
+            _SetDrawCommandTraits<CmdType>(&traits, instancerNumLevels,
+                                           uint32Alignment);
             _SetDrawingCoordTraits<CmdType>(&traits);
         }
     } else {
         if (useInstanceCulling) {
             using CmdType = _DrawIndexedInstanceCullCommand;
-            _SetDrawCommandTraits<CmdType>(&traits, instancerNumLevels);
+            _SetDrawCommandTraits<CmdType>(&traits, instancerNumLevels,
+                                           uint32Alignment);
             _SetInstanceCullTraits<CmdType>(&traits);
             _SetDrawingCoordTraits<CmdType>(&traits);
         } else {
             using CmdType = _DrawIndexedCommand;
-            _SetDrawCommandTraits<CmdType>(&traits, instancerNumLevels);
+            _SetDrawCommandTraits<CmdType>(&traits, instancerNumLevels,
+                                           uint32Alignment);
             _SetDrawingCoordTraits<CmdType>(&traits);
         }
     }
@@ -613,10 +633,15 @@ HdSt_PipelineDrawBatch::_CompileBatch(
         _drawItemInstances[0]->GetDrawItem()->
                 GetGeometricShader()->GetUseMetalTessellation();
 
+    // Align drawing commands to 32 bytes for Metal.
+    size_t const uint32Alignment = useMetalTessellation ? 8 : 0;
+
     // Get the layout of the command buffer we are building.
     _DrawCommandTraits const traits =
         _GetDrawCommandTraits(instancerNumLevels,
-                              _useDrawIndexed, _useInstanceCulling);
+                              _useDrawIndexed,
+                              _useInstanceCulling,
+                              uint32Alignment);
 
     TF_DEBUG(HDST_DRAW).Msg("\nCompile Dispatch Buffer\n");
     TF_DEBUG(HDST_DRAW).Msg(" - numUInt32: %zd\n", traits.numUInt32);
@@ -786,6 +811,11 @@ HdSt_PipelineDrawBatch::_CompileBatch(
         for (size_t i = 0; i < dc.instancePrimvarBars.size(); ++i) {
             uint32_t instanceDC = _GetElementOffset(dc.instancePrimvarBars[i]);
             *cmdIt++ = instanceDC;
+        }
+
+        // add padding and clear to 0
+        for (size_t i = 0; i < traits.numUInt32Padding; ++i) {
+            *cmdIt++ = 0;
         }
 
         if (TfDebug::IsEnabled(HDST_DRAW)) {
