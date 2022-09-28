@@ -7612,12 +7612,17 @@ SdfPropertySpecHandleVector
 UsdStage::_GetPropertyStack(const UsdProperty &prop,
                             UsdTimeCode time) const
 {
+    auto makeUsdResolverFn = [&prop](bool skipEmptyNodes) {
+        return Usd_Resolver(&prop._Prim()->GetPrimIndex(), skipEmptyNodes);
+    };
+
     _PropertyStackResolver resolver(/* withLayerOffsets = */ false);
     if (time.IsDefault()) {
-        _GetResolvedValueAtDefaultImpl(prop, &resolver);
+        _GetResolvedValueAtDefaultImpl(prop, &resolver, makeUsdResolverFn);
     } else {
         double localTime = time.GetValue();
-        _GetResolvedValueAtTimeImpl(prop, &resolver, &localTime);
+        _GetResolvedValueAtTimeImpl(
+            prop, &resolver, &localTime, makeUsdResolverFn);
     }
     return resolver.propertyStack; 
 }
@@ -7626,12 +7631,17 @@ std::vector<std::pair<SdfPropertySpecHandle, SdfLayerOffset>>
 UsdStage::_GetPropertyStackWithLayerOffsets(
     const UsdProperty &prop, UsdTimeCode time) const
 {
+    auto makeUsdResolverFn = [&prop](bool skipEmptyNodes) {
+        return Usd_Resolver(&prop._Prim()->GetPrimIndex(), skipEmptyNodes);
+    };
+
     _PropertyStackResolver resolver(/* withLayerOffsets = */ true);
     if (time.IsDefault()) {
-        _GetResolvedValueAtDefaultImpl(prop, &resolver);
+        _GetResolvedValueAtDefaultImpl(prop, &resolver, makeUsdResolverFn);
     } else {
         double localTime = time.GetValue();
-        _GetResolvedValueAtTimeImpl(prop, &resolver, &localTime);
+        _GetResolvedValueAtTimeImpl(
+            prop, &resolver, &localTime, makeUsdResolverFn);
     }
     return resolver.propertyStackWithLayerOffsets; 
 }
@@ -7805,6 +7815,37 @@ UsdStage::_GetResolveInfo(const UsdAttribute &attr,
                           const UsdTimeCode *time, 
                           _ExtraResolveInfo<T> *extraInfo) const
 {
+    auto makeUsdResolverFn = [&attr](bool skipEmptyNodes) {
+        return Usd_Resolver(&attr._Prim()->GetPrimIndex(), skipEmptyNodes);
+    };
+    _GetResolveInfoImpl(attr, resolveInfo, time, extraInfo, makeUsdResolverFn);
+
+}
+
+template <class T>
+void
+UsdStage::_GetResolveInfoWithResolveTarget(
+    const UsdAttribute &attr, 
+    const UsdResolveTarget &resolveTarget,
+    UsdResolveInfo *resolveInfo,
+    const UsdTimeCode *time, 
+    _ExtraResolveInfo<T> *extraInfo) const
+{
+    auto makeUsdResolverFn = [&resolveTarget](bool skipEmptyNodes) {
+        return Usd_Resolver(resolveTarget, skipEmptyNodes);
+    };
+    _GetResolveInfoImpl(attr, resolveInfo, time, extraInfo, makeUsdResolverFn);
+}
+
+template <class T, class MakeUsdResolverFn>
+void 
+UsdStage::_GetResolveInfoImpl(
+    const UsdAttribute &attr, 
+    UsdResolveInfo *resolveInfo,
+    const UsdTimeCode *time,
+    _ExtraResolveInfo<T> *extraInfo,
+    const MakeUsdResolverFn &makeUsdResolverFn) const
+{
     _ExtraResolveInfo<T> localExtraInfo;
     if (!extraInfo) {
         extraInfo = &localExtraInfo;
@@ -7812,12 +7853,14 @@ UsdStage::_GetResolveInfo(const UsdAttribute &attr,
 
     _ResolveInfoResolver<T> resolver(attr, resolveInfo, extraInfo);
     if (!time) {
-        _GetResolvedValueAtTimeImpl(attr, &resolver, nullptr);
+        _GetResolvedValueAtTimeImpl(
+            attr, &resolver, nullptr, makeUsdResolverFn);
     } else if (time->IsDefault()) {
-        _GetResolvedValueAtDefaultImpl(attr, &resolver);
+        _GetResolvedValueAtDefaultImpl(attr, &resolver, makeUsdResolverFn);
     } else {
         double localTime = time->GetValue();
-        _GetResolvedValueAtTimeImpl(attr, &resolver, &localTime);
+        _GetResolvedValueAtTimeImpl(
+            attr, &resolver, &localTime, makeUsdResolverFn);
     }
     
     if (TfDebug::IsEnabled(USD_VALIDATE_VARIABILITY) &&
@@ -7842,16 +7885,15 @@ UsdStage::_GetResolveInfo(const UsdAttribute &attr,
 //
 // Each of these functions is required to return true, to indicate that 
 // iteration of opinions should stop, and false otherwise.
-template <class Resolver>
+template <class Resolver, class MakeUsdResolverFn>
 void
 UsdStage::_GetResolvedValueAtDefaultImpl(
     const UsdProperty &prop,
-    Resolver *resolver) const
+    Resolver *resolver,
+    const MakeUsdResolverFn &makeUsdResolverFn) const
 {
-    auto primHandle = prop._Prim();
-
     SdfPath specPath;
-    Usd_Resolver res(&primHandle->GetPrimIndex(), /*skipEmptyNodes = */ true);
+    Usd_Resolver res = makeUsdResolverFn(/*skipEmptyNodes = */ true);
     for (bool isNewNode = true; res.IsValid(); isNewNode = res.NextLayer()) {
         if (isNewNode) {
             specPath = res.GetLocalPath(prop.GetName());
@@ -7950,14 +7992,15 @@ _GetResolvedValueAtTimeWithClipsImpl(
     resolver->ProcessFallback();
 }
 
-template <class Resolver>
+template <class Resolver, class MakeUsdResolverFn>
 void
-UsdStage::_GetResolvedValueAtTimeImpl(const UsdProperty &prop,
-                                      Resolver *resolver,
-                                      const double *localTime) const
+UsdStage::_GetResolvedValueAtTimeImpl(
+    const UsdProperty &prop,
+    Resolver *resolver,
+    const double *localTime,
+    const MakeUsdResolverFn &makeUsdResolverFn) const
 {
     auto primHandle = prop._Prim();
-    const PcpPrimIndex *primIndex = &primHandle->GetPrimIndex();
 
     if (primHandle->MayHaveOpinionsInClips()) {
         // Retrieve all clips that may contribute time samples for this
@@ -7969,11 +8012,11 @@ UsdStage::_GetResolvedValueAtTimeImpl(const UsdProperty &prop,
         // Clips may contribute opinions at nodes where no specs for the 
         // attribute exist in the node's LayerStack. So, since we have clips, 
         // tell Usd_Resolver that we want to iterate over 'empty' nodes as well.
-        Usd_Resolver res(primIndex, /* skipEmptyNodes = */ false); 
+        Usd_Resolver res = makeUsdResolverFn(/* skipEmptyNodes = */ false);
         _GetResolvedValueAtTimeWithClipsImpl(
             &res, prop.GetName(), resolver, localTime, clipsAffectingPrim);
     } else {
-        Usd_Resolver res(primIndex, /* skipEmptyNodes = */ true); 
+        Usd_Resolver res = makeUsdResolverFn(/* skipEmptyNodes = */ true);
         _GetResolvedValueAtTimeNoClipsImpl(
             &res, prop.GetName(), resolver, localTime);
     }
@@ -7985,6 +8028,17 @@ UsdStage::_GetResolveInfo(const UsdAttribute &attr,
                           const UsdTimeCode *time) const
 {
     _GetResolveInfo<SdfAbstractDataValue>(attr, resolveInfo, time);
+}
+
+void 
+UsdStage::_GetResolveInfoWithResolveTarget(
+    const UsdAttribute &attr, 
+    const UsdResolveTarget &resolveTarget,
+    UsdResolveInfo *resolveInfo,
+    const UsdTimeCode *time) const
+{
+    _GetResolveInfoWithResolveTarget<SdfAbstractDataValue>(
+        attr, resolveTarget, resolveInfo, time);
 }
 
 template <class T>

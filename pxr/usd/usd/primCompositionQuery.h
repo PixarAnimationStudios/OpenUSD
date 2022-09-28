@@ -100,6 +100,33 @@ public:
     USD_API
     SdfPath GetTargetPrimPath() const;
 
+    /// Creates and returns a resolve target that, when passed to a 
+    /// UsdAttributeQuery for one of this prim's attributes, causes value 
+    /// resolution to only consider node sites weaker than this arc, up to and
+    /// and including this arc's site itself.
+    ///
+    /// If \p subLayer is provided, it must be a layer in this arc's layer stack
+    /// and it will further limit value resolution to only the weaker layers up
+    /// to and including \p subLayer within this layer stack. (This is only with 
+    /// respect to this arc; all layers will still be considered in the arcs 
+    /// weaker than this arc).
+    USD_API
+    UsdResolveTarget MakeResolveTargetUpTo(
+        const SdfLayerHandle &subLayer = nullptr) const;
+
+    /// Creates and returns a resolve target that, when passed to a 
+    /// UsdAttributeQuery for one of this prim's attributes, causes value 
+    /// resolution to only consider node sites stronger than this arc, not 
+    /// including this arc itself (unless \p subLayer is provided).
+    ///
+    /// If \p subLayer is provided, it must be a layer in this arc's layer stack
+    /// and it will cause value resolution to additionally consider layers in 
+    /// this arc but only if they are stronger than subLayer within this arc's 
+    /// layer stack.
+    USD_API
+    UsdResolveTarget MakeResolveTargetStrongerThan(
+        const SdfLayerHandle &subLayer = nullptr) const;
+
     /// @}
 
     /// \name Arc Editing

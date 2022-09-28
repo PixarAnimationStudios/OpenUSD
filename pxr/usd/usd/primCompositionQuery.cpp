@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/primCompositionQuery.h"
+#include "pxr/usd/usd/resolveTarget.h"
 #include "pxr/usd/usd/stage.h"
 
 #include "pxr/usd/pcp/layerStack.h"
@@ -132,6 +133,42 @@ SdfPath
 UsdPrimCompositionQueryArc::GetTargetPrimPath() const
 {
     return _node.GetPath();
+}
+
+UsdResolveTarget 
+UsdPrimCompositionQueryArc::MakeResolveTargetUpTo(
+    const SdfLayerHandle &subLayer) const
+{
+    if (subLayer) {
+        if (_node.GetLayerStack()->HasLayer(subLayer)) {
+            return UsdResolveTarget(_primIndex, _node, subLayer);
+        } else {
+            TF_CODING_ERROR("Layer '%s' is not a layer in the layer stack of "
+                "the node site '%s'",
+                subLayer->GetIdentifier().c_str(),
+                TfStringify(_node.GetSite()).c_str());
+        }
+    }
+    return UsdResolveTarget(_primIndex, _node, nullptr);
+}
+
+UsdResolveTarget 
+UsdPrimCompositionQueryArc::MakeResolveTargetStrongerThan(
+    const SdfLayerHandle &subLayer) const
+{
+    const PcpNodeRef rootNode = _node.GetRootNode();
+    if (subLayer) {
+        if (_node.GetLayerStack()->HasLayer(subLayer)) {
+            return UsdResolveTarget(
+                _primIndex, rootNode, nullptr, _node, subLayer);
+        } else {
+            TF_CODING_ERROR("Layer '%s' is not a layer in the layer stack of "
+                "the node site '%s'",
+                subLayer->GetIdentifier().c_str(),
+                TfStringify(_node.GetSite()).c_str());
+        }
+    }
+    return UsdResolveTarget(_primIndex, rootNode, nullptr, _node, nullptr);
 }
 
 SdfLayerHandle 

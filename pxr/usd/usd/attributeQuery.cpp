@@ -36,15 +36,24 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 UsdAttributeQuery::UsdAttributeQuery(
-    const UsdAttribute& attr)
+    const UsdAttribute& attr) : 
+    _attr(attr)
 {
-    _Initialize(attr);
+    _Initialize();
 }
 
 UsdAttributeQuery::UsdAttributeQuery(
     const UsdPrim& prim, const TfToken& attrName)
     : UsdAttributeQuery(prim.GetAttribute(attrName))
 {
+}
+
+UsdAttributeQuery::UsdAttributeQuery(
+    const UsdAttribute &attr, 
+    const UsdResolveTarget &resolveTarget) : 
+    _attr(attr)
+{
+    _Initialize(resolveTarget);
 }
 
 std::vector<UsdAttributeQuery>
@@ -65,16 +74,45 @@ UsdAttributeQuery::UsdAttributeQuery()
 }
 
 void
-UsdAttributeQuery::_Initialize(const UsdAttribute& attr)
+UsdAttributeQuery::_Initialize()
 {
     TRACE_FUNCTION();
 
-    if (attr) {
-        const UsdStage* stage = attr._GetStage();
-        stage->_GetResolveInfo(attr, &_resolveInfo);
+    if (_attr) {
+        const UsdStage* stage = _attr._GetStage();
+        stage->_GetResolveInfo(_attr, &_resolveInfo);
+    }
+}
+
+void 
+UsdAttributeQuery::_Initialize(
+    const UsdResolveTarget &resolveTarget)
+{
+    TRACE_FUNCTION();
+
+    if (resolveTarget.IsNull()) {
+        _Initialize();
+        return;
     }
 
-    _attr = attr;
+    if (!_attr) {
+        return;
+    }
+
+    // Validate that the resolve target is for this attribute's prim path.
+    if (_attr.GetPrimPath() != resolveTarget.GetPrimIndex()->GetPath()) {
+        TF_CODING_ERROR("Invalid resolve target for attribute '%s'. The "
+            "given resolve target is only valid for attributes on the prim "
+            "'%s'.",
+            _attr.GetPrimPath().GetText(), 
+            resolveTarget.GetPrimIndex()->GetPath().GetText());
+        return;
+    }
+
+    const UsdStage* stage = _attr._GetStage();
+    stage->_GetResolveInfoWithResolveTarget(_attr, resolveTarget, &_resolveInfo);
+
+    _resolveTarget = resolveTarget;
 }
 
 const UsdAttribute& 
@@ -98,8 +136,13 @@ UsdAttributeQuery::_Get(T* value, UsdTimeCode time) const
 
         static const UsdTimeCode defaultTime = UsdTimeCode::Default();
         UsdResolveInfo defaultResolveInfo;
-        _attr._GetStage()->_GetResolveInfo(
-            _attr, &defaultResolveInfo, &defaultTime);
+        if (_resolveTarget.IsNull()) {
+            _attr._GetStage()->_GetResolveInfo(
+                _attr, &defaultResolveInfo, &defaultTime);
+        } else {
+            _attr._GetStage()->_GetResolveInfoWithResolveTarget(
+                _attr, _resolveTarget, &defaultResolveInfo, &defaultTime);
+        }
         return _attr._GetStage()->_GetValueFromResolveInfo(
             defaultResolveInfo, defaultTime, _attr, value);
     }

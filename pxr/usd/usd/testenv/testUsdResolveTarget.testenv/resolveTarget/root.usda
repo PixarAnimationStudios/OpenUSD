@@ -1,0 +1,30 @@
+#usda 1.0
+(
+    subLayers = [@./sub1.usda@, @./sub2.usda@]
+)
+
+over "Parent" (
+    prepend references = [</InternalRef>, @./ref.usda@</RefParent>]
+)
+{
+    over "RefChild"
+    {
+        float foo = 6
+        float radius = 6
+        int var.timeSamples = {
+            1: 6,
+            6: 1
+        } 
+
+        int bar.timeSamples = {
+            1: 6,
+            6: 1
+        } 
+
+    }
+}
+
+over "InternalRef" 
+{
+    
+}

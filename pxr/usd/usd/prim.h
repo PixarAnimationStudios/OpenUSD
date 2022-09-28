@@ -57,9 +57,11 @@ class UsdPrimRange;
 class Usd_PrimData;
 
 class UsdAttribute;
+class UsdEditTarget;
 class UsdRelationship;
 class UsdPayloads;
 class UsdReferences;
+class UsdResolveTarget;
 class UsdSchemaBase;
 class UsdAPISchemaBase;
 class UsdInherits;
@@ -1671,6 +1673,28 @@ public:
     USD_API
     PcpPrimIndex ComputeExpandedPrimIndex() const;
 
+    /// Creates and returns a resolve target that, when passed to a 
+    /// UsdAttributeQuery for one of this prim's attributes, causes value 
+    /// resolution to only consider weaker specs up to and including the spec 
+    /// that would be authored for this prim when using the given \p editTarget.
+    ///
+    /// If the edit target would not affect any specs that could contribute to
+    /// this prim, a null resolve target is returned.
+    USD_API
+    UsdResolveTarget MakeResolveTargetUpToEditTarget(
+        const UsdEditTarget &editTarget) const;
+
+    /// Creates and returns a resolve target that, when passed to a 
+    /// UsdAttributeQuery for one of this prim's attributes, causes value 
+    /// resolution to only consider specs that are stronger than the spec 
+    /// that would be authored for this prim when using the given \p editTarget.
+    ///
+    /// If the edit target would not affect any specs that could contribute to
+    /// this prim, a null resolve target is returned.
+    USD_API
+    UsdResolveTarget MakeResolveTargetStrongerThanEditTarget(
+        const UsdEditTarget &editTarget) const;
+
     /// @}
 
 private:
@@ -1742,6 +1766,13 @@ private:
     // for testing and debugging purposes.
     const PcpPrimIndex &_GetSourcePrimIndex() const
     { return _Prim()->GetSourcePrimIndex(); }
+
+    // Helper function for MakeResolveTargetUpToEditTarget and 
+    // MakeResolveTargetStrongerThanEditTarget.
+    UsdResolveTarget 
+    _MakeResolveTargetFromEditTarget(
+        const UsdEditTarget &editTarget,
+        bool makeAsStrongerThan) const;
 };
 
 #ifdef doxygen

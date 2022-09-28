@@ -25,6 +25,7 @@
 #include "pxr/usd/usd/resolver.h"
 
 #include "pxr/usd/usd/debugCodes.h"
+#include "pxr/usd/usd/resolveTarget.h"
 
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/pcp/errors.h"
@@ -32,9 +33,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-void
-Usd_Resolver::_Init() {
+Usd_Resolver::Usd_Resolver(const PcpPrimIndex* index, bool skipEmptyNodes) 
+     :_index(index)
+     , _skipEmptyNodes(skipEmptyNodes)
+{
     PcpNodeRange range = _index->GetNodeRange();
     _curNode = range.first;
     _endNode = range.second;
@@ -43,9 +45,63 @@ Usd_Resolver::_Init() {
 
     // The entire stage may be empty, so we need to check IsValid here.
     if (IsValid()) {
-        const SdfLayerRefPtrVector& layers = _curNode->GetLayerStack()->GetLayers();
+        const SdfLayerRefPtrVector& layers = 
+            _curNode->GetLayerStack()->GetLayers();
         _curLayer = layers.begin();
         _endLayer = layers.end();
+    }
+}
+
+Usd_Resolver::Usd_Resolver(
+    const UsdResolveTarget &resolveTarget, bool skipEmptyNodes) 
+    : _index(resolveTarget.GetPrimIndex())
+    , _skipEmptyNodes(skipEmptyNodes)
+{
+    _curNode = resolveTarget._startNodeIt;
+    _stopAtNode = resolveTarget._stopNodeIt;
+    _endNode = _index->GetNodeRange().second;
+
+    // If the resolve target provided a node to stop at before the end of the
+    // prim index graph, we have to figure out the end iterators.
+    if (_stopAtNode != _endNode) {
+        // First assume we end as soon as we reach the stop node.
+        _endNode = _stopAtNode;
+
+        // Check if the stop layer is past the beginning of the stop node layer
+        // stack. If so, we'll need to iterate into the stop node to catch those
+        // layers, so move the end node forward and store which layer to stop
+        // at when we reach the stop node layer stack.
+        const SdfLayerRefPtrVector& layers = 
+            _stopAtNode->GetLayerStack()->GetLayers();
+        if (resolveTarget._stopLayerIt != layers.begin()) {
+            ++_endNode;
+            _stopAtLayer = resolveTarget._stopLayerIt;
+        }
+    }
+
+    _SkipEmptyNodes();
+
+    // The prim index may be empty within the resolve target range, so we need
+    // to check IsValid here.
+    if (IsValid()) {
+        const SdfLayerRefPtrVector& layers = 
+            _curNode->GetLayerStack()->GetLayers();
+
+        // If we haven't skipped past the resolve target's start node, start
+        // with the resolve target's start layer.
+        if (_curNode == resolveTarget._startNodeIt) {
+            _curLayer = resolveTarget._startLayerIt;
+        } else {
+            _curLayer = layers.begin();
+        }
+
+        // If we reached the "stop at node" (and the resolver is still valid),
+        // the "stop at layer" determines what the end layer is.
+        if (_curNode == _stopAtNode) {
+            _endLayer = _stopAtLayer;
+        } else {
+            _endLayer = layers.end();
+        }
     }
 }
 
@@ -64,13 +120,6 @@ Usd_Resolver::_SkipEmptyNodes()
     }
 }
 
-Usd_Resolver::Usd_Resolver(const PcpPrimIndex* index, bool skipEmptyNodes) 
-    : _index(index)
-    , _skipEmptyNodes(skipEmptyNodes)
-{
-    _Init();
-}
-
 size_t 
 Usd_Resolver::GetLayerStackIndex() const 
 {
@@ -87,7 +136,14 @@ Usd_Resolver::NextNode()
         const SdfLayerRefPtrVector& layers =
             _curNode->GetLayerStack()->GetLayers();
         _curLayer = layers.begin();
-        _endLayer = layers.end();
+
+        // If we reached the "stop at node" (and the resolver is still valid),
+        // the "stop at layer" determines what the end layer is.
+        if (_curNode == _stopAtNode) {
+            _endLayer = _stopAtLayer;
+        } else {
+            _endLayer = layers.end();
+        }
     }
 }
 

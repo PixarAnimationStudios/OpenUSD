@@ -37,6 +37,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class PcpPrimIndex;
+class UsdResolveTarget;
 
 /// \class Usd_Resolver
 ///
@@ -52,7 +53,20 @@ public:
     /// about the prim represented by \p index. Otherwise, the resolver will
     /// visit all non-inert nodes in the index.
     USD_API
-    explicit Usd_Resolver(const PcpPrimIndex* index, bool skipEmptyNodes = true);
+    explicit Usd_Resolver(
+        const PcpPrimIndex* index, 
+        bool skipEmptyNodes = true);
+
+    /// Constructs a resolver with the given \p resolveTarget. The resolve 
+    /// target provides the prim index as well as the range of nodes and layers
+    /// this resolver will iterate over. If \p skipEmptyNodes is \c true, the
+    /// resolver will skip over nodes that provide no opinions about the prim
+    /// represented by \p index. Otherwise, the resolver will visit all
+    /// non-inert nodes in the index.
+    USD_API
+    explicit Usd_Resolver(
+        const UsdResolveTarget &resolveTarget, 
+        bool skipEmptyNodes = true);
 
     /// Returns true when there is a current Node and Layer.
     /// 
@@ -137,7 +151,6 @@ public:
     }
 
 private:
-    void _Init();
     void _SkipEmptyNodes();
 
     const PcpPrimIndex* _index;
@@ -145,8 +158,10 @@ private:
 
     PcpNodeIterator _curNode;
     PcpNodeIterator _endNode;
+    PcpNodeIterator _stopAtNode;
     SdfLayerRefPtrVector::const_iterator _curLayer;
     SdfLayerRefPtrVector::const_iterator _endLayer;
+    SdfLayerRefPtrVector::const_iterator _stopAtLayer;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
