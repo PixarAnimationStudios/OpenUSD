@@ -48,6 +48,7 @@
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/graphicsPipeline.h"
+#include "pxr/imaging/hgi/indirectCommandEncoder.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
 
 #include "pxr/base/tf/diagnostic.h"
@@ -82,7 +83,8 @@ TF_DEFINE_ENV_SETTING(HDST_ENABLE_PIPELINE_DRAW_BATCH_GPU_FRUSTUM_CULLING,false,
 
 HdSt_PipelineDrawBatch::HdSt_PipelineDrawBatch(
     HdStDrawItemInstance * drawItemInstance,
-    bool const allowGpuFrustumCulling)
+    bool const allowGpuFrustumCulling,
+    bool const allowIndirectCommandEncoding)
     : HdSt_DrawBatch(drawItemInstance)
     , _drawCommandBufferDirty(false)
     , _bufferArraysHash(0)
@@ -100,6 +102,7 @@ HdSt_PipelineDrawBatch::HdSt_PipelineDrawBatch(
     , _useGpuCulling(false)
     , _useInstanceCulling(false)
     , _allowGpuFrustumCulling(allowGpuFrustumCulling)
+    , _allowIndirectCommandEncoding(allowIndirectCommandEncoding)
     , _instanceCountOffset(0)
     , _cullInstanceCountOffset(0)
     , _patchBaseVertexByteOffset(0)
@@ -961,7 +964,7 @@ HdSt_PipelineDrawBatch::_HasNothingToDraw() const
 
 void
 HdSt_PipelineDrawBatch::PrepareDraw(
-    HgiGraphicsCmds *,
+    HgiGraphicsCmds *gfxCmds,
     HdStRenderPassStateSharedPtr const & renderPassState,
     HdStResourceRegistrySharedPtr const & resourceRegistry)
 {
@@ -982,6 +985,21 @@ HdSt_PipelineDrawBatch::PrepareDraw(
     if (updateBufferData) {
         _dispatchBuffer->CopyData(_drawCommandBuffer);
         _drawCommandBufferDirty = false;
+    }
+    
+    Hgi *hgi = resourceRegistry->GetHgi();
+    HgiCapabilities const *capabilities = hgi->GetCapabilities();
+
+    // For ICBs on Apple Silicon, we do not support rendering to non-MSAA
+    // surfaces, such as OIT as Volumetrics.  Disable in these cases.
+    bool const drawICB =
+        _allowIndirectCommandEncoding &&
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsIndirectCommandBuffers) &&
+        renderPassState->GetMultiSampleEnabled();
+
+    _indirectCommands.reset();
+    if (drawICB) {
+        _PrepareIndirectCommandBuffer(renderPassState, resourceRegistry);
     }
 
     if (_useGpuCulling) {
@@ -1266,55 +1284,67 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
 
     if (_HasNothingToDraw()) return;
 
-    HgiCapabilities const *capabilities =
-        resourceRegistry->GetHgi()->GetCapabilities();
+    Hgi *hgi = resourceRegistry->GetHgi();
+    HgiCapabilities const *capabilities = hgi->GetCapabilities();
 
-    // Drawing can be either direct or indirect. For either case,
-    // the drawing batch and drawing program are prepared to resolve
-    // drawing coordinate state indirectly, i.e. from buffer data.
-    bool const drawIndirect =
-        capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
-    _DrawingProgram & program = _GetDrawingProgram(renderPassState,
-                                                   resourceRegistry);
-    if (!TF_VERIFY(program.IsValid())) return;
+    //
+    // If an indirect command buffer was created in the Prepare phase then
+    // execute it here.  Otherwise render with the normal graphicsCmd path.
+    //
+    if (_indirectCommands) {
+        HgiIndirectCommandEncoder *encoder = hgi->GetIndirectCommandEncoder();
+        encoder->ExecuteDraw(gfxCmds, _indirectCommands.get());
 
-    _BindingState state(
-            _drawItemInstances.front()->GetDrawItem(),
-            _dispatchBuffer,
-            program.GetBinder(),
-            program.GetGLSLProgram(),
-            program.GetComposedShaders(),
-            program.GetGeometricShader());
-
-    Hgi * hgi = resourceRegistry->GetHgi();
-
-    HgiGraphicsPipelineSharedPtr pso =
-        _GetDrawPipeline(
-            renderPassState,
-            resourceRegistry,
-            state);
-    
-    HgiGraphicsPipelineHandle psoHandle = *pso.get();
-    gfxCmds->BindPipeline(psoHandle);
-
-    HgiResourceBindingsDesc bindingsDesc;
-    state.GetBindingsForDrawing(&bindingsDesc);
-
-    HgiResourceBindingsHandle resourceBindings =
-            hgi->CreateResourceBindings(bindingsDesc);
-    gfxCmds->BindResources(resourceBindings);
-
-    HgiVertexBufferBindingVector bindings;
-    _GetVertexBufferBindingsForDrawing(&bindings, state);
-    gfxCmds->BindVertexBuffers(bindings);
-
-    if (drawIndirect) {
-        _ExecuteDrawIndirect(gfxCmds, state.indexBar);
-    } else {
-        _ExecuteDrawImmediate(gfxCmds, state.indexBar);
+        hgi->DestroyResourceBindings(&(_indirectCommands->resourceBindings));
+        _indirectCommands.reset();
     }
+    else {
+        _DrawingProgram & program = _GetDrawingProgram(renderPassState,
+                                                       resourceRegistry);
+        if (!TF_VERIFY(program.IsValid())) return;
 
-    hgi->DestroyResourceBindings(&resourceBindings);
+        _BindingState state(
+                _drawItemInstances.front()->GetDrawItem(),
+                _dispatchBuffer,
+                program.GetBinder(),
+                program.GetGLSLProgram(),
+                program.GetComposedShaders(),
+                program.GetGeometricShader());
+
+        HgiGraphicsPipelineSharedPtr pso =
+            _GetDrawPipeline(
+                renderPassState,
+                resourceRegistry,
+                state);
+        
+        HgiGraphicsPipelineHandle psoHandle = *pso.get();
+        gfxCmds->BindPipeline(psoHandle);
+
+        HgiResourceBindingsDesc bindingsDesc;
+        state.GetBindingsForDrawing(&bindingsDesc);
+
+        HgiResourceBindingsHandle resourceBindings =
+                hgi->CreateResourceBindings(bindingsDesc);
+        gfxCmds->BindResources(resourceBindings);
+
+        HgiVertexBufferBindingVector bindings;
+        _GetVertexBufferBindingsForDrawing(&bindings, state);
+        gfxCmds->BindVertexBuffers(bindings);
+        
+        // Drawing can be either direct or indirect. For either case,
+        // the drawing batch and drawing program are prepared to resolve
+        // drawing coordinate state indirectly, i.e. from buffer data.
+        bool const drawIndirect =
+            capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
+
+        if (drawIndirect) {
+            _ExecuteDrawIndirect(gfxCmds, state.indexBar);
+        } else {
+            _ExecuteDrawImmediate(gfxCmds, state.indexBar);
+        }
+
+        hgi->DestroyResourceBindings(&resourceBindings);
+    }
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->drawCalls);
     HD_PERF_COUNTER_ADD(HdTokens->itemsDrawn, _numVisibleItems);
@@ -1458,6 +1488,75 @@ _GetCullPipeline(
     }
 
     return pipelineInstance.GetValue();
+}
+
+void
+HdSt_PipelineDrawBatch::_PrepareIndirectCommandBuffer(
+    HdStRenderPassStateSharedPtr const & renderPassState,
+    HdStResourceRegistrySharedPtr const & resourceRegistry)
+{
+    Hgi *hgi = resourceRegistry->GetHgi();
+    _DrawingProgram & program = _GetDrawingProgram(renderPassState,
+                                                   resourceRegistry);
+    if (!TF_VERIFY(program.IsValid())) return;
+
+    _BindingState state(
+            _drawItemInstances.front()->GetDrawItem(),
+            _dispatchBuffer,
+            program.GetBinder(),
+            program.GetGLSLProgram(),
+            program.GetComposedShaders(),
+            program.GetGeometricShader());
+
+    HgiGraphicsPipelineSharedPtr pso =
+        _GetDrawPipeline(
+            renderPassState,
+            resourceRegistry,
+            state);
+    
+    HgiGraphicsPipelineHandle psoHandle = *pso.get();
+
+    HgiResourceBindingsDesc bindingsDesc;
+    state.GetBindingsForDrawing(&bindingsDesc);
+
+    HgiResourceBindingsHandle resourceBindings =
+            hgi->CreateResourceBindings(bindingsDesc);
+    
+    HgiVertexBufferBindingVector vertexBindings;
+    _GetVertexBufferBindingsForDrawing(&vertexBindings, state);
+
+    HdStBufferResourceSharedPtr paramBuffer = _dispatchBuffer->
+        GetBufferArrayRange()->GetResource(HdTokens->drawDispatch);
+    
+    HgiIndirectCommandEncoder *encoder = hgi->GetIndirectCommandEncoder();
+    HgiComputeCmds *computeCmds = resourceRegistry->GetGlobalComputeCmds();
+
+    if (!_useDrawIndexed) {
+        _indirectCommands = encoder->EncodeDraw(
+            computeCmds,
+            psoHandle,
+            resourceBindings,
+            vertexBindings,
+            paramBuffer->GetHandle(),
+            paramBuffer->GetOffset(),
+            _dispatchBuffer->GetCount(),
+            paramBuffer->GetStride());
+    } else {
+        HdStBufferResourceSharedPtr indexBuffer =
+            state.indexBar->GetResource(HdTokens->indices);
+
+        _indirectCommands = encoder->EncodeDrawIndexed(
+            computeCmds,
+            psoHandle,
+            resourceBindings,
+            vertexBindings,
+            indexBuffer->GetHandle(),
+            paramBuffer->GetHandle(),
+            paramBuffer->GetOffset(),
+            _dispatchBuffer->GetCount(),
+            paramBuffer->GetStride(),
+            _patchBaseVertexByteOffset);
+    }
 }
 
 void

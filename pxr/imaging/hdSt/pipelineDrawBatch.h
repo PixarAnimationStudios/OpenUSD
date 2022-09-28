@@ -35,6 +35,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HgiCapabilities;
+struct HgiIndirectCommands;
 using HdBindingRequestVector = std::vector<HdBindingRequest>;
 
 /// \class HdSt_PipelineDrawBatch
@@ -50,7 +51,8 @@ class HdSt_PipelineDrawBatch : public HdSt_DrawBatch
 public:
     HDST_API
     HdSt_PipelineDrawBatch(HdStDrawItemInstance * drawItemInstance,
-                           bool const allowGpuFrustumCulling = true);
+                           bool const allowGpuFrustumCulling = true,
+                           bool const allowIndirectCommandEncoding = true);
     HDST_API
     ~HdSt_PipelineDrawBatch() override;
 
@@ -128,6 +130,10 @@ private:
         HdStResourceRegistrySharedPtr const & resourceRegistry);
 
     void _CompileBatch(HdStResourceRegistrySharedPtr const & resourceRegistry);
+    
+    void _PrepareIndirectCommandBuffer(
+        HdStRenderPassStateSharedPtr const & renderPassState,
+        HdStResourceRegistrySharedPtr const & resourceRegistry);
 
     bool _HasNothingToDraw() const;
 
@@ -175,10 +181,13 @@ private:
     bool _useGpuCulling;
     bool _useInstanceCulling;
     bool const _allowGpuFrustumCulling;
+    bool const _allowIndirectCommandEncoding;
 
     size_t _instanceCountOffset;
     size_t _cullInstanceCountOffset;
     size_t _patchBaseVertexByteOffset;
+    
+    std::unique_ptr<HgiIndirectCommands> _indirectCommands;
 };
 
 

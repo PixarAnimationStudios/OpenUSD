@@ -277,6 +277,13 @@ HgiVulkan::GetCapabilities() const
     return &_device->GetDeviceCapabilities();
 }
 
+
+HgiIndirectCommandEncoder*
+HgiVulkan::GetIndirectCommandEncoder() const
+{
+    return nullptr;
+}
+
 /* Single threaded */
 void
 HgiVulkan::StartFrame()

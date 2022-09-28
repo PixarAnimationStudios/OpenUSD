@@ -25,9 +25,14 @@
 #include "pxr/imaging/hgiMetal/hgi.h"
 
 #include "pxr/base/arch/defines.h"
+#include "pxr/base/tf/envSetting.h"
+
 #include <Metal/Metal.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(HGIMETAL_ENABLE_INDIRECT_COMMAND_BUFFER, true,
+                      "Enable indirect command buffers");
 
 HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
 {
@@ -41,6 +46,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     bool unifiedMemory = false;
     bool barycentrics = false;
     bool hasAppleSilicon = false;
+    bool icbSupported = false;
     if (@available(macOS 100.100, ios 12.0, *)) {
         unifiedMemory = true;
     } else if (@available(macOS 10.15, ios 13.0, *)) {
@@ -57,6 +63,23 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
                     && !hasIntelGPU;
         
         hasAppleSilicon = [device hasUnifiedMemory] && ![device isLowPower];
+        
+    }
+    
+    if (hasAppleSilicon) {
+        // Indirect command buffers supported only on
+        // Apple Silicon GPUs with macOS 12.3 or later.
+        icbSupported = false;
+        if (@available(macOS 12.3, *)) {
+            icbSupported = true;
+        }
+    } else if (hasIntelGPU) {
+        // Indirect command buffers not currently supported on Intel GPUs.
+        icbSupported = false;
+    }
+
+    if (!TfGetEnvSetting(HGIMETAL_ENABLE_INDIRECT_COMMAND_BUFFER)) {
+        icbSupported = false;
     }
 
     _SetFlag(HgiDeviceCapabilitiesBitsUnifiedMemory, unifiedMemory);
@@ -72,6 +95,8 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     _SetFlag(HgiDeviceCapabilitiesBitsMetalTessellation, true);
 
     _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect, true);
+    
+    _SetFlag(HgiDeviceCapabilitiesBitsIndirectCommandBuffers, icbSupported);
 
     // This is done to decide whether to use a workaround for post tess
     // patch primitive ID lookup. The bug causes the firstPatch offset

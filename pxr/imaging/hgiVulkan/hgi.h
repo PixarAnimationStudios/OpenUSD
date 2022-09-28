@@ -139,6 +139,9 @@ public:
     HgiVulkanCapabilities const* GetCapabilities() const override;
 
     HGIVULKAN_API
+    HgiIndirectCommandEncoder* GetIndirectCommandEncoder() const override;
+
+    HGIVULKAN_API
     void StartFrame() override;
 
     HGIVULKAN_API

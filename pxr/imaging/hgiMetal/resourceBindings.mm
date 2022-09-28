@@ -45,7 +45,6 @@ HgiMetalResourceBindings::BindResources(
     id<MTLRenderCommandEncoder> renderEncoder,
     id<MTLBuffer> argBuffer)
 {
-    id<MTLDevice> device = hgi->GetPrimaryDevice();
     id<MTLArgumentEncoder> argEncoderBuffer = hgi->GetBufferArgumentEncoder();
     id<MTLArgumentEncoder> argEncoderSampler = hgi->GetSamplerArgumentEncoder();
     id<MTLArgumentEncoder> argEncoderTexture = hgi->GetTextureArgumentEncoder();
@@ -205,7 +204,6 @@ HgiMetalResourceBindings::BindResources(
     id<MTLComputeCommandEncoder> computeEncoder,
     id<MTLBuffer> argBuffer)
 {
-    id<MTLDevice> device = hgi->GetPrimaryDevice();
     id<MTLArgumentEncoder> argEncoderBuffer = hgi->GetBufferArgumentEncoder();
     id<MTLArgumentEncoder> argEncoderSampler = hgi->GetSamplerArgumentEncoder();
     id<MTLArgumentEncoder> argEncoderTexture = hgi->GetTextureArgumentEncoder();
