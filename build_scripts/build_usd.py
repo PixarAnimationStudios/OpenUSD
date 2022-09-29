@@ -722,8 +722,39 @@ def InstallBoost_Helper(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(BOOST_URL, context, force, 
                                              dontExtract=dontExtract)):
         bootstrap = "bootstrap.bat" if Windows() else "./bootstrap.sh"
-        Run('{bootstrap} --prefix="{instDir}"'
-            .format(bootstrap=bootstrap, instDir=context.instDir))
+
+        # For cross-compilation on macOS we need to specify the architecture
+        # for both the bootstrap and the b2 phase of building boost.
+        bootstrapCmd = '{bootstrap} --prefix="{instDir}"'.format(
+            bootstrap=bootstrap, instDir=context.instDir)
+
+        macOSArchitecture = ""
+        macOSArch = ""
+
+        if MacOS():
+            if apple_utils.GetTargetArch(context) == \
+                        apple_utils.TARGET_X86:
+                macOSArchitecture = "architecture=x86"
+                macOSArch = "-arch {0}".format(apple_utils.TARGET_X86)
+            elif apple_utils.GetTargetArch(context) == \
+                        apple_utils.GetTargetArmArch():
+                macOSArchitecture = "architecture=arm"
+                macOSArch = "-arch {0}".format(
+                        apple_utils.GetTargetArmArch())
+            elif context.targetUniversal:
+                (primaryArch, secondaryArch) = \
+                        apple_utils.GetTargetArchPair(context)
+                macOSArchitecture = "architecture=combined"
+                macOSArch="-arch {0} -arch {1}".format(
+                        primaryArch, secondaryArch)
+
+            if macOSArch:
+                bootstrapCmd += " cxxflags=\"{0}\" " \
+                                " cflags=\"{0}\" " \
+                                " linkflags=\"{0}\"".format(macOSArch)
+            bootstrapCmd += " --with-toolset=clang"
+
+        Run(bootstrapCmd)
 
         # b2 supports at most -j64 and will error if given a higher value.
         num_procs = min(64, context.numJobs)
@@ -827,6 +858,15 @@ def InstallBoost_Helper(context, force, buildArgs):
             # libraries includes @rpath
             b2_settings.append("toolset=clang")
 
+            # Specify target for macOS cross-compilation.
+            if macOSArchitecture:
+                b2_settings.append(macOSArchitecture)
+
+            if macOSArch:
+                b2_settings.append("cxxflags=\"{0}\"".format(macOSArch))
+                b2_settings.append("cflags=\"{0}\"".format(macOSArch))
+                b2_settings.append("linkflags=\"{0}\"".format(macOSArch))
+
         if context.buildDebug:
             b2_settings.append("--debug-configuration")
 
@@ -862,19 +902,22 @@ BOOST = Dependency("boost", InstallBoost, BOOST_VERSION_FILE)
 if Windows():
     TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/2019_U6/tbb2019_20190410oss_win.zip"
     TBB_ROOT_DIR_NAME = "tbb2019_20190410oss"
-elif MacOS() and not apple_utils.IsHostArm():
+elif MacOS():
     # On MacOS Intel systems we experience various crashes in tests during
     # teardown starting with 2018 Update 2. Until we figure that out, we use
     # 2018 Update 1 on this platform.
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2018_U1.tar.gz"
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2019_U6.tar.gz"
+    TBB_INTEL_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2018_U1.tar.gz"
 else:
     TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2019_U6.tar.gz"
 
 def InstallTBB(context, force, buildArgs):
     if Windows():
         InstallTBB_Windows(context, force, buildArgs)
-    elif Linux() or MacOS():
-        InstallTBB_LinuxOrMacOS(context, force, buildArgs)
+    elif MacOS():
+        InstallTBB_MacOS(context, force, buildArgs)
+    else:
+        InstallTBB_Linux(context, force, buildArgs)
 
 def InstallTBB_Windows(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force, 
@@ -891,14 +934,103 @@ def InstallTBB_Windows(context, force, buildArgs):
         CopyDirectory(context, "include\\serial", "include\\serial")
         CopyDirectory(context, "include\\tbb", "include\\tbb")
 
-def InstallTBB_LinuxOrMacOS(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force)):
+def InstallTBB_MacOS(context, force, buildArgs):
+    tbb_url = TBB_URL if apple_utils.IsTargetArm(context) else TBB_INTEL_URL
+    with CurrentWorkingDirectory(DownloadURL(tbb_url, context, force)):
         # Append extra argument controlling libstdc++ ABI if specified.
         AppendCXX11ABIArg("CXXFLAGS", context, buildArgs)
 
         # Ensure that the tbb build system picks the proper architecture.
-        if MacOS() and apple_utils.IsTargetArm(context):
-            buildArgs.append("arch=arm64")
+        PatchFile("build/macos.clang.inc",
+                [("-m64",
+                  "-m64 -arch {0}".format(apple_utils.TARGET_X86)),
+                 ("ifeq ($(arch),$(filter $(arch),armv7 armv7s arm64))",
+                  "ifeq ($(arch),$(filter $(arch),armv7 armv7s {0}))"
+                        .format(apple_utils.GetTargetArmArch()))])
+
+        (primaryArch, secondaryArch) = apple_utils.GetTargetArchPair(context)
+
+        # tbb uses different arch names
+        if (primaryArch == apple_utils.TARGET_X86):
+            primaryArch = "intel64"
+        if (secondaryArch == apple_utils.TARGET_X86):
+            secondaryArch = "intel64"
+
+        makeTBBCmdPrimary = 'make -j{procs} arch={arch} {buildArgs}'.format(
+                                arch=primaryArch,
+                                procs=context.numJobs,
+                                buildArgs=" ".join(buildArgs))
+        Run(makeTBBCmdPrimary)
+
+        makeTBBCmdSecondary = None
+        if secondaryArch:
+            makeTBBCmdSecondary = \
+                'make -j{procs} arch={arch} {buildArgs}'.format(
+                        arch=secondaryArch,
+                        procs=context.numJobs,
+                        buildArgs=" ".join(buildArgs))
+            Run(makeTBBCmdSecondary)
+
+        # Install both release and debug builds. USD requires the debug
+        # libraries when building in debug mode, and installing both
+        # makes it easier for users to install dependencies in some
+        # location that can be shared by both release and debug USD
+        # builds. Plus, the TBB build system builds both versions anyway.
+        if context.targetUniversal:
+            x86Files = glob.glob(os.getcwd() +
+                "/build/*intel64*_release/libtbb*.*")
+            armFiles = glob.glob(os.getcwd() +
+                "/build/*{0}*_release/libtbb*.*".format(
+                        apple_utils.GetTargetArmArch()))
+            libNames = [os.path.basename(x) for x in x86Files]
+            x86Dir = os.path.dirname(x86Files[0])
+            armDir = os.path.dirname(armFiles[0])
+
+            lipoCommandsRelease = apple_utils.CreateUniversalBinaries(
+                                        context, libNames, x86Dir, armDir)
+
+            x86Files = glob.glob(
+                os.getcwd() + "/build/*intel64*_debug/libtbb*.*")
+            armFiles = glob.glob(
+                os.getcwd() + "/build/*{0}*_debug/libtbb*.*".format(
+                        apple_utils.GetTargetArmArch()))
+            lipoCommandsDebug = None
+            if x86Files and armFiles:
+                libNames = [os.path.basename(x) for x in x86Files]
+                x86Dir = os.path.dirname(x86Files[0])
+                armDir = os.path.dirname(armFiles[0])
+
+                lipoCommandsDebug = apple_utils.CreateUniversalBinaries(
+                                        context, libNames, x86Dir, armDir)
+        else:
+            CopyFiles(context, "build/*_release/libtbb*.*", "lib")
+            try:
+                CopyFiles(context, "build/*_debug/libtbb*.*", "lib")
+            except:
+                PrintWarning(
+                    "TBB debug libraries are not available on this platform.")
+
+        # Output paths that are of interest
+        with open(os.path.join(context.usdInstDir, 'tbbBuild.txt'), 'wt') as file:
+            file.write('ARCHIVE:' + TBB_URL.split("/")[-1] + '\n')
+            file.write('BUILDFOLDER:' + os.path.split(os.getcwd())[1] + '\n')
+            file.write('MAKEPRIMARY:' + makeTBBCmdPrimary + '\n')
+
+            if context.targetUniversal:
+                file.write('MAKESECONDARY:' + makeTBBCmdSecondary + '\n')
+                file.write('LIPO_RELEASE:' + ','.join(
+                        lipoCommandsRelease) + '\n')
+                if lipoCommandsDebug:
+                    file.write('LIPO_DEBUG:' + ','.join(
+                        lipoCommandsDebug) + '\n')
+
+        CopyDirectory(context, "include/serial", "include/serial")
+        CopyDirectory(context, "include/tbb", "include/tbb")
+
+def InstallTBB_Linux(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force)):
+        # Append extra argument controlling libstdc++ ABI if specified.
+        AppendCXX11ABIArg("CXXFLAGS", context, buildArgs)
 
         # TBB does not support out-of-source builds in a custom location.
         Run('make -j{procs} {buildArgs}'
