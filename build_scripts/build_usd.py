@@ -1538,7 +1538,7 @@ HDF5 = Dependency("HDF5", InstallHDF5, "include/hdf5.h")
 # Alembic
 
 if MacOS():
-    # ALEMIC 1.8.3 adds fixes for Apple Silicon cross compilation.
+    # ALEMBIC 1.8.3 adds fixes for Apple Silicon cross compilation.
     ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.8.3.zip"
 else:
     ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.7.10.zip"
