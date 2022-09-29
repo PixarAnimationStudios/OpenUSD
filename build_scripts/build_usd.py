@@ -1062,18 +1062,26 @@ TBB = Dependency("TBB", InstallTBB, "include/tbb/tbb.h")
 
 if Windows():
     JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/1.5.1.zip"
+elif MacOS():
+    JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/2.0.1.zip"
 else:
     JPEG_URL = "https://www.ijg.org/files/jpegsrc.v9b.tar.gz"
 
 def InstallJPEG(context, force, buildArgs):
-    if Windows():
+    if Windows() or MacOS():
         InstallJPEG_Turbo(context, force, buildArgs)
     else:
         InstallJPEG_Lib(context, force, buildArgs)
 
 def InstallJPEG_Turbo(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(JPEG_URL, context, force)):
-        RunCMake(context, force, buildArgs)
+        extraJPEGArgs = buildArgs
+        if MacOS():
+            extraJPEGArgs.append("-DWITH_SIMD=FALSE")
+
+        RunCMake(context, force, extraJPEGArgs)
+        return os.getcwd()
+
 
 def InstallJPEG_Lib(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(JPEG_URL, context, force)):
@@ -1125,13 +1133,18 @@ TIFF = Dependency("TIFF", InstallTIFF, "include/tiff.h")
 PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.29.tar.gz"
 
 def InstallPNG(context, force, buildArgs):
-    macArgs = []
-    if MacOS() and apple_utils.IsTargetArm(context):
-        # ensure libpng's build doesn't erroneously activate inappropriate
-        # Neon extensions
-        macArgs = ["-DPNG_HARDWARE_OPTIMIZATIONS=OFF", 
-                   "-DPNG_ARM_NEON=off"] # case is significant
     with CurrentWorkingDirectory(DownloadURL(PNG_URL, context, force)):
+        macArgs = []
+        if MacOS() and apple_utils.IsTargetArm(context):
+            # Ensure libpng's build doesn't erroneously activate inappropriate
+            # Neon extensions
+            macArgs = ["-DCMAKE_C_FLAGS=\"-DPNG_ARM_NEON_OPT=0\""]
+
+            if context.targetUniversal:
+                PatchFile("scripts/genout.cmake.in",
+                [("CMAKE_OSX_ARCHITECTURES",
+                  "CMAKE_OSX_INTERNAL_ARCHITECTURES")])
+
         RunCMake(context, force, buildArgs + macArgs)
 
 PNG = Dependency("PNG", InstallPNG, "include/png.h")
@@ -1276,7 +1289,11 @@ OPENVDB = Dependency("OpenVDB", InstallOpenVDB, "include/openvdb/openvdb.h")
 ############################################################
 # OpenImageIO
 
-OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/Release-2.1.16.0.zip"
+if MacOS():
+    # OIIO 2.3.15 adds fixes for Apple Silicon cross compilation.
+    OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/refs/tags/v2.3.15.0.zip"
+else:
+    OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/Release-2.1.16.0.zip"
 
 def InstallOpenImageIO(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OIIO_URL, context, force)):
@@ -1507,6 +1524,9 @@ HDF5_URL = "https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.0
 
 def InstallHDF5(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(HDF5_URL, context, force)):
+        if MacOS():
+            PatchFile("config/cmake_ext_mod/ConfigureChecks.cmake",
+                    [("if (ARCH_LENGTH GREATER 1)", "if (FALSE)")])
         RunCMake(context, force,
                  ['-DBUILD_TESTING=OFF',
                   '-DHDF5_BUILD_TOOLS=OFF',
@@ -1517,10 +1537,18 @@ HDF5 = Dependency("HDF5", InstallHDF5, "include/hdf5.h")
 ############################################################
 # Alembic
 
-ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.7.10.zip"
+if MacOS():
+    # ALEMIC 1.8.3 adds fixes for Apple Silicon cross compilation.
+    ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.8.3.zip"
+else:
+    ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.7.10.zip"
 
 def InstallAlembic(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ALEMBIC_URL, context, force)):
+        if MacOS():
+            PatchFile("CMakeLists.txt",
+              [("ADD_DEFINITIONS(-Wall -Werror -Wextra -Wno-unused-parameter)",
+                "ADD_DEFINITIONS(-Wall -Wextra -Wno-unused-parameter)")])
         cmakeOptions = ['-DUSE_BINARIES=OFF', '-DUSE_TESTS=OFF']
         if context.enableHDF5:
             # HDF5 requires the H5_BUILT_AS_DYNAMIC_LIB macro be defined if
@@ -1585,6 +1613,10 @@ def InstallEmbree(context, force, buildArgs):
             '-DEMBREE_ISPC_SUPPORT=OFF'
         ]
 
+        if MacOS() and context.targetUniversal:
+            extraArgs += [
+                '-DEMBREE_MAX_ISA=NEON',
+                '-DEMBREE_ISA_NEON=ON']
         # By default Embree fails to build on Visual Studio 2015 due
         # to an internal compiler issue that is worked around via the
         # following flag. For more details see:
