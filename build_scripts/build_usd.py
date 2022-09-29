@@ -43,6 +43,7 @@ import sys
 import sysconfig
 import tarfile
 import zipfile
+import apple_utils
 
 if sys.version_info.major >= 3:
     from urllib.request import urlopen
@@ -90,8 +91,6 @@ def Linux():
     return platform.system() == "Linux"
 def MacOS():
     return platform.system() == "Darwin"
-def Arm():
-    return platform.processor() == "arm"
 
 def Python3():
     return sys.version_info.major == 3
@@ -397,6 +396,16 @@ def RunCMake(context, force, extraArgs = None):
     osx_rpath = None
     if MacOS():
         osx_rpath = "-DCMAKE_MACOSX_RPATH=ON"
+
+        # For macOS cross compilation, set the Xcode architecture flags.
+        targetArch = apple_utils.GetTargetArch(context)
+
+        if context.targetNative or targetArch == apple_utils.GetHostArch():
+            extraArgs.append('-DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=YES')
+        else:
+            extraArgs.append('-DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO')
+
+        extraArgs.append('-DCMAKE_OSX_ARCHITECTURES={0}'.format(targetArch))
 
     # We use -DCMAKE_BUILD_TYPE for single-configuration generators 
     # (Ninja, make), and --config for multi-configuration generators 
@@ -853,7 +862,7 @@ BOOST = Dependency("boost", InstallBoost, BOOST_VERSION_FILE)
 if Windows():
     TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/2019_U6/tbb2019_20190410oss_win.zip"
     TBB_ROOT_DIR_NAME = "tbb2019_20190410oss"
-elif MacOS() and not Arm():
+elif MacOS() and not apple_utils.IsHostArm():
     # On MacOS Intel systems we experience various crashes in tests during
     # teardown starting with 2018 Update 2. Until we figure that out, we use
     # 2018 Update 1 on this platform.
@@ -888,7 +897,7 @@ def InstallTBB_LinuxOrMacOS(context, force, buildArgs):
         AppendCXX11ABIArg("CXXFLAGS", context, buildArgs)
 
         # Ensure that the tbb build system picks the proper architecture.
-        if MacOS() and Arm():
+        if MacOS() and apple_utils.IsTargetArm(context):
             buildArgs.append("arch=arm64")
 
         # TBB does not support out-of-source builds in a custom location.
@@ -985,7 +994,7 @@ PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.29.tar.gz"
 
 def InstallPNG(context, force, buildArgs):
     macArgs = []
-    if MacOS() and Arm():
+    if MacOS() and apple_utils.IsTargetArm(context):
         # ensure libpng's build doesn't erroneously activate inappropriate
         # Neon extensions
         macArgs = ["-DPNG_HARDWARE_OPTIMIZATIONS=OFF", 
@@ -1092,7 +1101,7 @@ BLOSC_URL = "https://github.com/Blosc/c-blosc/archive/v1.20.1.zip"
 def InstallBLOSC(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(BLOSC_URL, context, force)):
         macArgs = []
-        if MacOS() and Arm():
+        if MacOS() and apple_utils.IsTargetArm(context):
             # Need to disable SSE for macOS ARM targets.
             macArgs = ["-DDEACTIVATE_SSE2=ON"]
         RunCMake(context, force, buildArgs + macArgs)
@@ -1205,7 +1214,7 @@ def InstallOpenColorIO(context, force, buildArgs):
         # When building for Apple Silicon we need to make sure that
         # the correct build architecture is specified for OCIO and
         # and for TinyXML and YAML.
-        if MacOS() and Arm():
+        if MacOS() and apple_utils.IsTargetArm(context):
             arch = 'arm64'
             PatchFile("CMakeLists.txt",
                     [('CMAKE_ARGS      ${TINYXML_CMAKE_ARGS}',
@@ -1237,7 +1246,7 @@ def InstallOpenColorIO(context, force, buildArgs):
         else:
             extraArgs.append('-DCMAKE_CXX_FLAGS=-w')
 
-        if MacOS() and Arm():
+        if MacOS() and apple_utils.IsTargetArm(context):
             extraArgs.append('-DOCIO_USE_SSE=OFF')
 
         # Add on any user-specified extra arguments.
@@ -1725,6 +1734,14 @@ group.add_argument("--build-variant", default=BUILD_RELEASE,
                    help=("Build variant for USD and 3rd-party dependencies. "
                          "(default: {})".format(BUILD_RELEASE)))
 
+if MacOS():
+    group.add_argument("--build-target",
+                       default=apple_utils.GetBuildTargetDefault(),
+                       choices=apple_utils.GetBuildTargets(),
+                       help=("Build target for macOS cross compilation. "
+                             "(default: {})".format(
+                                apple_utils.GetBuildTargetDefault())))
+
 group.add_argument("--build-args", type=str, nargs="*", default=[],
                    help=("Custom arguments to pass to build system when "
                          "building libraries (see docs above)"))
@@ -1743,6 +1760,12 @@ group.add_argument("--generator", type=str,
 group.add_argument("--toolset", type=str,
                    help=("CMake toolset to use when building libraries with "
                          "cmake"))
+if MacOS():
+    codesignDefault = True if apple_utils.IsHostArm() else False
+    group.add_argument("--codesign", dest="macos_codesign",
+                       default=codesignDefault, action="store_true",
+                       help=("Enable code signing for macOS builds "
+                             "(defaults to enabled on Apple Silicon)"))
 
 if Linux():
     group.add_argument("--use-cxx11-abi", type=int, choices=[0, 1],
@@ -1989,7 +2012,17 @@ class InstallContext:
         self.buildShared = (args.build_type == SHARED_LIBS)
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
 
-        # Build options
+        # Build target and code signing
+        if MacOS():
+            self.buildTarget = args.build_target
+            apple_utils.SetTarget(self, self.buildTarget)
+
+            self.macOSCodesign = \
+                (args.macos_codesign if hasattr(args, "macos_codesign")
+                 else False)
+        else:
+            self.buildTarget = ""
+
         self.useCXX11ABI = \
             (args.use_cxx11_abi if hasattr(args, "use_cxx11_abi") else None)
         self.safetyFirst = args.safety_first
@@ -2248,6 +2281,7 @@ if context.useCXX11ABI is not None:
 
 summaryMsg += """\
     Variant                     {buildVariant}
+    Target                      {buildTarget}
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
       OpenVDB support:          {enableOpenVDB}
@@ -2307,6 +2341,8 @@ summaryMsg = summaryMsg.format(
                   else "Debug" if context.buildDebug
                   else "Release w/ Debug Info" if context.buildRelWithDebug
                   else ""),
+    buildTarget=(apple_utils.GetTargetName(context) if context.buildTarget
+                 else ""),
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     enableOpenVDB=("On" if context.enableOpenVDB else "Off"),
@@ -2386,6 +2422,10 @@ if Windows():
         os.path.join(context.instDir, "bin"),
         os.path.join(context.instDir, "lib")
     ])
+
+if MacOS():
+    if context.macOSCodesign:
+        apple_utils.Codesign(context.usdInstDir, verbosity > 1)
 
 Print("""
 Success! To use USD, please ensure that you have:""")
