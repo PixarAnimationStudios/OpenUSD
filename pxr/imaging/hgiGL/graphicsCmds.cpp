@@ -251,12 +251,18 @@ HgiGLGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
     // not set and restore all relevant gl state.
     HgiGL_ScopedStateHolder openglStateGuard;
 
+    uint64_t packetId = hgi->GetMetrics()->GetActivePacketId();
+    uint64_t eventID = hgi->GetMetrics()->StartGPUEvent(packetId, 0);
+
     // Resolve multisample textures
     HgiGL* hgiGL = static_cast<HgiGL*>(hgi);
     HgiGLDevice* device = hgiGL->GetPrimaryDevice();
     _AddResolveToOps(device);
 
     device->SubmitOps(_ops);
+
+    hgi->GetMetrics()->EndGPUEvent(packetId, eventID);
+
     return true;
 }
 

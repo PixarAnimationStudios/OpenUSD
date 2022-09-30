@@ -49,6 +49,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HgiCapabilities;
 class HgiIndirectCommandEncoder;
+class HgiMetrics;
 
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
 
@@ -301,6 +302,11 @@ public:
     /// Thread safety: This call is thread safe.
     HGI_API
     virtual HgiIndirectCommandEncoder* GetIndirectCommandEncoder() const = 0;
+
+    /// Metrics
+    /// Thread safety: This call is thread safe.
+    HGI_API
+    virtual HgiMetrics * GetMetrics() = 0;
 
     /// Optionally called by client app at the start of a new rendering frame.
     /// We can't rely on StartFrame for anything important, because it is up to

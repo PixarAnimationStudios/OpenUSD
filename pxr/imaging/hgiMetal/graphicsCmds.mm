@@ -29,6 +29,7 @@
 #include "pxr/imaging/hgiMetal/graphicsPipeline.h"
 #include "pxr/imaging/hgiMetal/hgi.h"
 #include "pxr/imaging/hgiMetal/indirectCommandEncoder.h"
+#include "pxr/imaging/hgiMetal/metrics.h"
 #include "pxr/imaging/hgiMetal/resourceBindings.h"
 #include "pxr/imaging/hgiMetal/texture.h"
 
@@ -375,6 +376,20 @@ HgiMetalGraphicsCmds::_SetNumberParallelEncoders(uint32_t numEncoders)
         [_debugLabel release];
         _debugLabel = nil;
     }
+    
+    uint32_t packetId = _hgi->GetMetrics()->GetActivePacketId();
+
+    [_hgi->GetPrimaryCommandBuffer(this, false)
+        addScheduledHandler:^(id<MTLCommandBuffer> buffer)
+    {
+        _hgi->GetMetrics()->StartGPUEvent(packetId, (uint64_t)buffer);
+    }];
+
+    [_hgi->GetPrimaryCommandBuffer(this, false)
+        addCompletedHandler:^(id<MTLCommandBuffer> buffer)
+    {
+        _hgi->GetMetrics()->EndGPUEvent(packetId, (uint64_t)buffer);
+    }];
 }
 
 id<MTLRenderCommandEncoder>

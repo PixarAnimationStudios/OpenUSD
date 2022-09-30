@@ -35,6 +35,7 @@ pxr_library(hgiGL
         graphicsCmds
         graphicsPipeline
         hgi
+        metrics
         ops
         resourceBindings
         sampler

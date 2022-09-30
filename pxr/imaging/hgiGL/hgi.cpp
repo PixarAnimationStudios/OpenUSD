@@ -35,6 +35,7 @@
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/graphicsCmds.h"
 #include "pxr/imaging/hgiGL/graphicsPipeline.h"
+#include "pxr/imaging/hgiGL/metrics.h"
 #include "pxr/imaging/hgiGL/resourceBindings.h"
 #include "pxr/imaging/hgiGL/sampler.h"
 #include "pxr/imaging/hgiGL/shaderFunction.h"
@@ -80,6 +81,7 @@ HgiGL::HgiGL()
     _device = new HgiGLDevice();
 
     _capabilities.reset(new HgiGLCapabilities());
+    _metrics.reset(new HgiGLMetrics());
 }
 
 HgiGL::~HgiGL()
@@ -266,6 +268,12 @@ HgiGL::GetIndirectCommandEncoder() const
     return nullptr;
 }
 
+HgiGLMetrics *
+HgiGL::GetMetrics()
+{
+    return _metrics.get();
+}
+
 void
 HgiGL::StartFrame()
 {
@@ -342,6 +350,7 @@ HgiGL::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
 
     // If the Hgi client does not call Hgi::EndFrame we garbage collect here.
     if (_frameDepth == 0) {
+        _metrics->EndPacket();
         _garbageCollector.PerformGarbageCollection();
         _device->GarbageCollect();
     }

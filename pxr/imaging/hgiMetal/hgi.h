@@ -28,6 +28,7 @@
 #include "pxr/imaging/hgiMetal/api.h"
 #include "pxr/imaging/hgiMetal/capabilities.h"
 #include "pxr/imaging/hgiMetal/indirectCommandEncoder.h"
+#include "pxr/imaging/hgiMetal/metrics.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
@@ -146,6 +147,9 @@ public:
 
     HGIMETAL_API
     HgiMetalIndirectCommandEncoder* GetIndirectCommandEncoder() const override;
+
+    HGIMETAL_API
+    HgiMetalMetrics * GetMetrics() override;
 
     HGIMETAL_API
     void StartFrame() override;

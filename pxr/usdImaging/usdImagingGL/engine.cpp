@@ -45,6 +45,7 @@
 
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
+#include "pxr/imaging/hgi/metrics.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
@@ -52,8 +53,6 @@
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3d.h"
-
-#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -152,6 +151,10 @@ UsdImagingGLEngine::UsdImagingGLEngine(
         _hgiDriver.driver.IsHolding<Hgi*>()) {
         TF_WARN("Trying to share GPU resources while disabling the GPU.");
         _gpuEnabled = true;
+    }
+
+    if (_hgiDriver.driver.IsHolding<Hgi*>()) {
+        _hgi = HgiUniquePtr(_hgiDriver.driver.UncheckedGet<Hgi*>());
     }
 
     // _renderIndex, _taskController, and _sceneDelegate/_sceneIndex
@@ -363,6 +366,9 @@ UsdImagingGLEngine::Render(
     }
 
     TF_PY_ALLOW_THREADS_IN_SCOPE();
+    if (_hgi != nullptr) {
+        _hgi->GetMetrics()->StartPacket();
+    }
 
     PrepareBatch(root, params);
 
@@ -376,6 +382,9 @@ UsdImagingGLEngine::Render(
     };
 
     RenderBatch(paths, params);
+    if (_hgi != nullptr) {
+        _hgi->GetMetrics()->EndPacket();
+    }
 }
 
 bool
@@ -878,7 +887,9 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
     }
 
     _SetRenderDelegateAndRestoreState(std::move(renderDelegate));
-
+    if (_hgi != nullptr) {
+        _hgi->GetMetrics()->Reset();
+    }
     return true;
 }
 

@@ -21,6 +21,7 @@ pxr_library(hgi
         graphicsPipeline
         hgi
         indirectCommandEncoder
+        metrics
         resourceBindings
         sampler
         shaderFunction

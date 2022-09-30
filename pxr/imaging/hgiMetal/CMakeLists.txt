@@ -31,6 +31,7 @@ pxr_library(hgiMetal
         graphicsPipeline.h
         hgi.h
         indirectCommandEncoder.h
+        metrics.h
         resourceBindings.h
         sampler.h
         shaderFunction.h
@@ -55,6 +56,7 @@ pxr_library(hgiMetal
         graphicsPipeline.mm
         hgi.mm
         indirectCommandEncoder.mm
+        metrics.mm
         resourceBindings.mm
         sampler.mm
         shaderFunction.mm

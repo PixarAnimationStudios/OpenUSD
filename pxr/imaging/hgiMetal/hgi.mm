@@ -33,6 +33,7 @@
 #include "pxr/imaging/hgiMetal/diagnostic.h"
 #include "pxr/imaging/hgiMetal/graphicsCmds.h"
 #include "pxr/imaging/hgiMetal/graphicsPipeline.h"
+#include "pxr/imaging/hgiMetal/metrics.h"
 #include "pxr/imaging/hgiMetal/resourceBindings.h"
 #include "pxr/imaging/hgiMetal/sampler.h"
 #include "pxr/imaging/hgiMetal/shaderFunction.h"
@@ -334,6 +335,20 @@ HgiMetalIndirectCommandEncoder*
 HgiMetal::GetIndirectCommandEncoder() const
 {
     return _indirectCommandEncoder.get();
+}
+
+static HgiMetalMetrics* _GetMetrics()
+{
+    // Because it is accessed in GPU callbacks, the metrics need to be a singleton.
+    static HgiMetalMetrics _metrics;
+    
+    return &_metrics;
+}
+
+HgiMetalMetrics *
+HgiMetal::GetMetrics()
+{
+    return _GetMetrics();
 }
 
 void
