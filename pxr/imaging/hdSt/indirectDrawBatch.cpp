@@ -924,6 +924,14 @@ HdSt_IndirectDrawBatch::PrepareDraw(
     }
 }
 
+void
+HdSt_IndirectDrawBatch::BeforeDraw(
+    HdStRenderPassStateSharedPtr const & renderPassState,
+    HdStResourceRegistrySharedPtr const & resourceRegistry)
+{
+    // No implementation.    
+}
+
 ////////////////////////////////////////////////////////////
 // GPU Resource Binding
 ////////////////////////////////////////////////////////////

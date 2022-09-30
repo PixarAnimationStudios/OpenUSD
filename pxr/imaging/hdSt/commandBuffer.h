@@ -38,7 +38,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+class HdRenderIndex;
 class HdStDrawItem;
 class HdStDrawItemInstance;
 class HgiCapabilities;
@@ -74,17 +74,13 @@ public:
     HDST_API
     void PrepareDraw(HgiGraphicsCmds *gfxCmds,
                      HdStRenderPassStateSharedPtr const &renderPassState,
-                     HdStResourceRegistrySharedPtr const &resourceRegistry);
+                     HdRenderIndex *renderIndex);
 
     /// Execute the command buffer
     HDST_API
     void ExecuteDraw(HgiGraphicsCmds *gfxCmds,
                      HdStRenderPassStateSharedPtr const &renderPassState,
                      HdStResourceRegistrySharedPtr const &resourceRegistry);
-
-    /// Cull drawItemInstances based on passed in combined view and projection matrix
-    HDST_API
-    void FrustumCull(GfMatrix4d const &cullMatrix);
 
     /// Sync visibility state from RprimSharedState to DrawItemInstances.
     HDST_API
@@ -125,6 +121,12 @@ public:
 
 private:
     void _RebuildDrawBatches(HgiCapabilities const *hgiCapabilities);
+    
+    /// Cull drawItemInstances based on renderPassState view and projection matrix
+    void _FrustumCull(HdStRenderPassStateSharedPtr const &renderPassState,
+                      HdRenderIndex const *renderIndex);
+
+    void _FrustumCullCPU(GfMatrix4d const &cullMatrix);
 
     HdDrawItemConstPtrVectorSharedPtr _drawItems;
     std::vector<HdStDrawItemInstance> _drawItemInstances;

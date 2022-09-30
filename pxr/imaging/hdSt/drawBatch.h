@@ -95,6 +95,11 @@ public:
         HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const &resourceRegistry) = 0;
 
+    /// Do the final preparation before the draw.
+    virtual void BeforeDraw(
+        HdStRenderPassStateSharedPtr const & renderPassState,
+        HdStResourceRegistrySharedPtr const & resourceRegistry) = 0;
+
     /// Executes the drawing commands for this batch.
     virtual void ExecuteDraw(
         HgiGraphicsCmds *gfxCmds,

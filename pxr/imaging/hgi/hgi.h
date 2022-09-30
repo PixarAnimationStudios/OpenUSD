@@ -177,7 +177,8 @@ public:
     /// created on the main thread, recorded into (exclusively) by one secondary
     /// thread and be submitted on the main thread. See notes above.
     HGI_API
-    virtual HgiComputeCmdsUniquePtr CreateComputeCmds() = 0;
+    virtual HgiComputeCmdsUniquePtr CreateComputeCmds(
+        HgiComputeDispatch dispatchMethod = HgiComputeDispatchSerial) = 0;
 
     /// Create a texture in rendering backend.
     /// Thread safety: Creation must happen on main thread. See notes above.

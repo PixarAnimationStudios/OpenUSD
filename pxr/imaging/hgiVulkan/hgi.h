@@ -67,7 +67,8 @@ public:
     HgiBlitCmdsUniquePtr CreateBlitCmds() override;
 
     HGIVULKAN_API
-    HgiComputeCmdsUniquePtr CreateComputeCmds() override;
+    HgiComputeCmdsUniquePtr CreateComputeCmds(
+        HgiComputeDispatch dispatchMethod = HgiComputeDispatchSerial) override;
 
     HGIVULKAN_API
     HgiTextureHandle CreateTexture(HgiTextureDesc const & desc) override;

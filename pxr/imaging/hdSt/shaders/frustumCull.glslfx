@@ -301,3 +301,159 @@ void main()
         FrustumCullCountVisibleInstances(1);
     }
 }
+
+
+--- --------------------------------------------------------------------------
+-- layout ViewFrustumCull.Compute
+
+[
+    ["uniform block", "Uniforms", "ulocCullParams",
+        ["mat4", "cullMatrix"],
+        ["vec2", "drawRangeNDC"],
+        ["uint", "drawCommandNumUints"],
+        ["uint", "drawCoord0Offset"],
+        ["uint", "drawCoord1Offset"],
+        ["uint", "drawCoord2Offset"],
+        ["uint", "drawCoordIOffset"]
+    ],
+    ["buffer readOnly", "DrawCullInput", "drawCullInput",
+        ["uint", "drawCullInput", "[]"]
+    ],
+    ["buffer readWrite", "DispatchBuffer", "dispatchBuffer",
+        ["uint", "drawCommands", "[]"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl ViewFrustumCull.Compute
+
+MAT4 GetCullMatrix()
+{
+    return MAT4(cullMatrix);
+}
+
+uint g_drawCommandIndex;
+
+int GetDrawingCoordField(uint coordIndex, uint fieldIndex)
+{   
+    uint offset = g_drawCommandIndex * drawCommandNumUints;
+
+    offset += (coordIndex == 0) ? drawCoord0Offset : 
+              (coordIndex == 1) ? drawCoord1Offset : drawCoord2Offset;
+
+    return int(drawCullInput[offset + fieldIndex]);
+}
+
+void compute(int drawCommandIndex)
+{
+    g_drawCommandIndex = drawCommandIndex;
+
+    // instanceCountOffset is a relative offset in drawcommand struct.
+    // it's a second entry in both DrawArraysCommand and DrawElementsCommand.
+    const uint instanceCountOffset = 1;
+
+    MAT4 transform = HdGet_transform();
+    MAT4 toClip = GetCullMatrix() * transform;
+
+    vec4 localMin = HdGet_bboxLocalMin();
+    vec4 localMax = HdGet_bboxLocalMax();
+
+    bool isVisible = FrustumCullIsVisible(
+        toClip, localMin, localMax, drawRangeNDC);
+
+    // Compute the index to the 'instanceCount' struct member in drawCommands.
+    uint instanceIndex = uint(drawCommandIndex) * 
+        drawCommandNumUints + instanceCountOffset;
+
+    // Set the resulting instance count to 0 if the primitive is culled
+    // otherwise pass through the original incoming instance count.
+    uint resultInstanceCount = drawCullInput[instanceIndex] * uint(isVisible);
+    drawCommands[instanceIndex] = resultInstanceCount;
+
+    FrustumCullCountVisibleInstances(int(resultInstanceCount));
+}
+
+--- --------------------------------------------------------------------------
+-- layout ViewFrustumCull.ComputeInstancing
+
+[
+    ["uniform block", "Uniforms", "ulocCullParams",
+        ["mat4", "cullMatrix"],
+        ["vec2", "drawRangeNDC"],
+        ["uint", "drawCommandNumUints"],
+        ["uint", "drawCoord0Offset"],
+        ["uint", "drawCoord1Offset"],
+        ["uint", "drawCoord2Offset"],
+        ["uint", "drawCoordIOffset"]
+    ],
+    ["buffer readOnly", "DrawCullInput", "drawCullInput",
+        ["uint", "drawCullInput", "[]"]
+    ],
+    ["buffer readWrite", "DispatchBuffer", "dispatchBuffer",
+        ["uint", "drawCommands", "[]"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl ViewFrustumCull.ComputeInstancing
+
+MAT4 GetCullMatrix()
+{
+    return MAT4(cullMatrix);
+}
+
+uint g_drawCommandIndex;
+
+// drawCoordI is coordIndex 3
+int GetDrawingCoordField(uint coordIndex, uint fieldIndex)
+{   
+    uint offset = g_drawCommandIndex * drawCommandNumUints;
+
+    offset += (coordIndex == 0) ? drawCoord0Offset : 
+              (coordIndex == 1) ? drawCoord1Offset :
+              (coordIndex == 2) ? drawCoord2Offset : drawCoordIOffset;
+
+    return int(drawCullInput[offset + fieldIndex]);
+}
+
+
+void compute(int drawCommandIndex)
+{
+    g_drawCommandIndex = uint(drawCommandIndex);
+
+    // instanceCountOffset is a relative offset in drawcommand struct.
+    // it's a second entry in both DrawArraysCommand and DrawElementsCommand.
+    const uint instanceCountOffset = 1;
+
+    uint offset = drawCommandIndex * drawCommandNumUints;
+
+    const uint instanceCount = drawCullInput[offset + instanceCountOffset];
+ 
+    vec4 localMin = HdGet_bboxLocalMin();
+    vec4 localMax = HdGet_bboxLocalMax();
+    MAT4 transform = HdGet_transform();
+
+    // Reset the instance count.
+    drawCommands[offset + instanceCountOffset] = 0;
+
+    for (int i = 0; i < instanceCount; ++i)
+    {
+        g_instanceID = i;
+
+        MAT4 toClip = GetCullMatrix() * ApplyInstanceTransform(transform);
+
+        bool isVisible = FrustumCullIsVisible(
+            toClip, localMin, localMax, drawRangeNDC);
+
+        if (isVisible) {
+            // Increment the instance count and store instanceIndex to
+            // culledInstanceIndices.
+            uint id = drawCommands[offset + instanceCountOffset];
+            
+            drawCommands[offset + instanceCountOffset] += 1;
+
+            SetCulledInstanceIndex(id);
+            FrustumCullCountVisibleInstances(1);
+        }
+    }
+}

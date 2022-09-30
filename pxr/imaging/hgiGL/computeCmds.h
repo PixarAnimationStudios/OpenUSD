@@ -68,6 +68,9 @@ public:
     HGIGL_API
     void MemoryBarrier(HgiMemoryBarrier barrier) override;
 
+    HGIGL_API
+    HgiComputeDispatch GetDispatchMethod() const override;
+
 protected:
     friend class HgiGL;
 

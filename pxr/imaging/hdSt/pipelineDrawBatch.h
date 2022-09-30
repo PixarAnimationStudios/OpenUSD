@@ -68,6 +68,12 @@ public:
         HdStRenderPassStateSharedPtr const & renderPassState,
         HdStResourceRegistrySharedPtr const & resourceRegistry) override;
 
+    /// Do the final preparation before the draw.
+    HDST_API
+    void BeforeDraw(
+        HdStRenderPassStateSharedPtr const & renderPassState,
+        HdStResourceRegistrySharedPtr const & resourceRegistry) override;
+
     /// Executes the drawing commands for this batch.
     HDST_API
     void ExecuteDraw(
@@ -126,7 +132,7 @@ private:
         size_t _bufferArrayHash;
     };
 
-    _CullingProgram &_GetCullingProgram(
+    void _CreateCullingProgram(
         HdStResourceRegistrySharedPtr const & resourceRegistry);
 
     void _CompileBatch(HdStResourceRegistrySharedPtr const & resourceRegistry);
@@ -186,6 +192,10 @@ private:
     size_t _instanceCountOffset;
     size_t _cullInstanceCountOffset;
     size_t _patchBaseVertexByteOffset;
+    size_t _drawCoord0Offset;
+    size_t _drawCoord1Offset;
+    size_t _drawCoord2Offset;
+    size_t _drawCoordIOffset;
     
     std::unique_ptr<HgiIndirectCommands> _indirectCommands;
 };
