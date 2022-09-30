@@ -43,7 +43,6 @@ import sys
 import sysconfig
 import tarfile
 import zipfile
-import apple_utils
 
 if sys.version_info.major >= 3:
     from urllib.request import urlopen
@@ -91,6 +90,9 @@ def Linux():
     return platform.system() == "Linux"
 def MacOS():
     return platform.system() == "Darwin"
+
+if MacOS():
+    import apple_utils
 
 def Python3():
     return sys.version_info.major == 3
