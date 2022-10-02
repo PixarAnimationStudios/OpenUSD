@@ -51,6 +51,7 @@
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec3i.h"
 #include "pxr/base/gf/vec4i.h"
+#include "pxr/base/gf/half.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 
@@ -76,6 +77,19 @@ TF_DEFINE_PRIVATE_TOKENS(
     (baseFaceToRefinedFacesMap)
     (refinedFaceCounts)
 );
+
+//TODO make static?
+int32_t GetOneOne() {
+    int32_t one = 0;
+    uint16_t const oneHalf =
+        reinterpret_cast<uint16_t>(GfHalf(1.0f).bits());
+    one |= oneHalf;
+    int32_t oneScaled = 0;
+    oneScaled |= (one << 16);
+    int32_t oneone = 0;
+    oneone |= (one | oneScaled);
+    return oneone;
+}
 
 // The stencil table data is managed using two buffer array ranges
 // the first containing the sizes and offsets which are perPoint for
@@ -138,6 +152,7 @@ private:
     HdBufferSourceSharedPtr _primitiveBuffer;
     HdBufferSourceSharedPtr _edgeIndicesBuffer;
     HdBufferSourceSharedPtr _tessPointsBuffer;
+    HdBufferSourceSharedPtr _tessFactorsBuffer;
 };
 
 // ---------------------------------------------------------------------------
@@ -485,11 +500,12 @@ HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
         specs->emplace_back(HdTokens->edgeIndices,
                             HdTupleType {HdTypeInt32Vec2, 1});
         //should we only add this if adaptive?
+        //should we only add this if adaptive?
         specs->emplace_back(HdTokens->tessFactors,
                             HdTupleType{HdTypeInt32Vec3, 1});
-        //should we only add this if adaptive?
         specs->emplace_back(HdTokens->tessPoints,
                             HdTupleType{HdTypeInt32Vec3, 16});
+        
     } else if (_topology->RefinesToBoxSplineTrianglePatches()) {
         // quartic box spline triangle patches
         specs->emplace_back(HdTokens->indices,
@@ -500,8 +516,13 @@ HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
         // int will suffice, but this unifies it for all the cases
         specs->emplace_back(HdTokens->edgeIndices,
                             HdTupleType {HdTypeInt32Vec2, 1});
+        //should we only add this if adaptive?
+        specs->emplace_back(HdTokens->tessFactors,
+                            HdTupleType{HdTypeInt32Vec3, 1});
         specs->emplace_back(HdTokens->tessPoints,
                             HdTupleType{HdTypeInt32Vec3, 16});
+        
+        
     } else if (HdSt_Subdivision::RefinesToTriangles(_topology->GetScheme())) {
         // triangles (loop)
         specs->emplace_back(HdTokens->indices,
@@ -511,9 +532,21 @@ HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
         // int will suffice, but this unifies it for all the cases
         specs->emplace_back(HdTokens->edgeIndices,
                             HdTupleType {HdTypeInt32Vec2, 1});
-        //should we only add this if adaptive?
         specs->emplace_back(HdTokens->tessFactors,
                             HdTupleType{HdTypeInt32Vec3, 1});
+        specs->emplace_back(HdTokens->tessPoints,
+                            HdTupleType{HdTypeInt32Vec3, 16});
+        /*
+        specs->emplace_back(HdTokens->tessFactors,
+                            HdTupleType{HdTypeInt32Vec3, 1});
+        specs->emplace_back(HdTokens->tessPoints,
+                            HdTupleType{HdTypeInt32Vec3, 16});
+         */
+        /*
+        
+        //should we only add this if adaptive?
+        
+         */
     } else {
         // quads (catmark, bilinear)
         if (_topology->TriangulateQuads()) {
@@ -527,6 +560,10 @@ HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
                             HdTupleType {HdTypeInt32Vec3, 1});
         specs->emplace_back(HdTokens->edgeIndices,
                             HdTupleType {HdTypeInt32Vec2, 1});
+        specs->emplace_back(HdTokens->tessFactors,
+                            HdTupleType{HdTypeInt32Vec3, 1});
+        //specs->emplace_back(HdTokens->tessPoints,
+        //                    HdTupleType{HdTypeInt32Vec3, 16});
     }
 }
 
@@ -541,7 +578,7 @@ HdSt_OsdIndexComputation::HasChainedBuffer() const
 HdBufferSourceSharedPtrVector
 HdSt_OsdIndexComputation::GetChainedBuffers() const
 {
-    return { _primitiveBuffer, _edgeIndicesBuffer, _tessPointsBuffer };
+    return { _primitiveBuffer, _edgeIndicesBuffer, _tessFactorsBuffer }; //_tessPointsBuffer };
 }
 
 /*virtual*/
@@ -1354,7 +1391,8 @@ HdSt_OsdIndexComputation::_PopulateUniformPrimitiveBuffer(
         : 0;
     VtVec3iArray primitiveParam(numPatches);
     VtVec2iArray edgeIndices(numPatches);
-    VtVec3iArray tessPoints(numPatches * 16);
+    VtVec3iArray tessFactors(numPatches);
+    //VtVec3iArray tessPoints(numPatches * 16);
     
     float oneFloat = 1.0f;
     uint32_t one = 0;
@@ -1377,9 +1415,16 @@ HdSt_OsdIndexComputation::_PopulateUniformPrimitiveBuffer(
         //TODO optimise this loop
         
         for (size_t j = i * 16; j < numPatches * 16; j++) {
-            tessPoints[j][0] = one;
-            tessPoints[j][1] = one;
-            tessPoints[j][2] = one;
+           // tessPoints[j][0] = one;
+           // tessPoints[j][1] = one;
+           // tessPoints[j][2] = one;
+        }
+        
+        int32_t oneone = GetOneOne();
+        for (size_t i = 0; i < numPatches; i++) {
+            tessFactors[i][0] = oneone;
+            tessFactors[i][1] = oneone;
+            tessFactors[i][2] = oneone;
         }
     }
 
@@ -1390,10 +1435,14 @@ HdSt_OsdIndexComputation::_PopulateUniformPrimitiveBuffer(
     _edgeIndicesBuffer.reset(new HdVtBufferSource(
                            HdTokens->edgeIndices,
                            VtValue(edgeIndices)));
-    
+    /*
     _tessPointsBuffer.reset(new HdVtBufferSource(
                            HdTokens->tessPoints,
                            VtValue(tessPoints), 16));
+    */
+    _tessFactorsBuffer.reset(new HdVtBufferSource(
+                           HdTokens->tessFactors,
+                           VtValue(tessFactors)));
 
 }
 
@@ -1413,6 +1462,7 @@ HdSt_OsdIndexComputation::_PopulatePatchPrimitiveBuffer(
     VtVec4iArray primitiveParam(numPatches);
     VtVec2iArray edgeIndices(numPatches);
     VtVec3iArray tessPoints(numPatches * 16);
+    VtVec3iArray tessFactors(numPatches);
     
     float oneFloat = 1.0f;
     uint32_t one = 0;
@@ -1449,6 +1499,13 @@ HdSt_OsdIndexComputation::_PopulatePatchPrimitiveBuffer(
             tessPoints[j][1] = one;
             tessPoints[j][2] = one;
         }
+        
+        int32_t oneone = GetOneOne();
+        for (size_t i = 0; i < numPatches; i++) {
+            tessFactors[i][0] = oneone;
+            tessFactors[i][1] = oneone;
+            tessFactors[i][2] = oneone;
+        }
     }
     _primitiveBuffer.reset(new HdVtBufferSource(
                                HdTokens->primitiveParam,
@@ -1457,10 +1514,14 @@ HdSt_OsdIndexComputation::_PopulatePatchPrimitiveBuffer(
     _edgeIndicesBuffer.reset(new HdVtBufferSource(
                            HdTokens->edgeIndices,
                            VtValue(edgeIndices)));
-    
+    /*
     _tessPointsBuffer.reset(new HdVtBufferSource(
                            HdTokens->tessPoints,
                            VtValue(tessPoints),16));
+    */
+    _tessFactorsBuffer.reset(new HdVtBufferSource(
+                           HdTokens->tessFactors,
+                           VtValue(tessFactors)));
 }
 
 // ---------------------------------------------------------------------------

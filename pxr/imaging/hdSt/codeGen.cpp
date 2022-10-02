@@ -1601,6 +1601,18 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         _genDefines << "#define HD_NUM_PATCH_EVAL_VERTS "
                     << _geometricShader->GetNumPatchEvalVerts() << "\n";
     }
+    //For box splines and bsplines, the implementation wants to invoke
+    //PTCS stage only once
+    if (_geometricShader->GetPrimitiveType() ==
+        HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE ||
+        _geometricShader->GetPrimitiveType() ==
+        HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BSPLINE) {
+        _genDefines << "#define HD_NUM_PTCS_VERTS "
+                    << "1\n" << "\n";
+    } else {
+        _genDefines << "#define HD_NUM_PTCS_VERTS "
+                    << _geometricShader->GetPrimitiveIndexSize() << "\n";
+    }
     _genDefines << "#define HD_NUM_PRIMITIVE_VERTS "
                 << _geometricShader->GetNumPrimitiveVertsForGeometryShader()
                 << "\n";
@@ -1705,6 +1717,12 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             _genGS << _GetOSDPatchBasisShaderSource();
         } else {
             _genFS << _GetOSDPatchBasisShaderSource();
+        }
+        if (_hasPTVS) {
+            _genPTVS << _GetOSDPatchBasisShaderSource();
+        }
+        if (_hasPTCS) {
+            _genPTCS << _GetOSDPatchBasisShaderSource();
         }
     }
 
@@ -1915,6 +1933,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         }
         _osdPTCS << source;
     }
+    //TODO Thor probably not needed
     if (postTessVertexShader.find("OsdPerPatchVertexBezier") != std::string::npos
         || postTessVertexShader.find("OsdInterpolatePatchCoord") != std::string::npos) {
         
@@ -2439,7 +2458,9 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
               _geometricShader->GetPrimitiveIndexSize();
 
         ptcsDesc.tessellationDescriptor.patchType =
-            _geometricShader->IsPrimTypeTriangles() ?
+            (_geometricShader->IsPrimTypeTriangles() ||
+        _geometricShader->GetPrimitiveType() ==
+            HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE) ?
             HgiShaderFunctionTessellationDesc::PatchType::Triangle :
             HgiShaderFunctionTessellationDesc::PatchType::Quad;
         if (_geometricShader->GetHgiPrimitiveType() ==
@@ -2480,7 +2501,9 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             HgiShaderKeywordTokens->hdPatchID);
 
         std::string tessCoordType =
-            _geometricShader->IsPrimTypeTriangles() ?
+            (_geometricShader->IsPrimTypeTriangles() ||
+             _geometricShader->GetPrimitiveType() == HdSt_GeometricShader::PrimitiveType::
+                    PRIM_MESH_BOXSPLINETRIANGLE) ?
             "vec3" : "vec2";
 
         HgiShaderFunctionAddStageInput(
@@ -2530,9 +2553,11 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
 
         //Set the patchtype to later decide tessfactor types
         ptvsDesc.tessellationDescriptor.patchType =
-            _geometricShader->IsPrimTypeTriangles() ?
-            HgiShaderFunctionTessellationDesc::PatchType::Triangle :
-            HgiShaderFunctionTessellationDesc::PatchType::Quad;
+            (_geometricShader->IsPrimTypeTriangles() ||
+              _geometricShader->GetPrimitiveType() ==
+                  HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE) ?
+                  HgiShaderFunctionTessellationDesc::PatchType::Triangle :
+                  HgiShaderFunctionTessellationDesc::PatchType::Quad;
         if (_geometricShader->GetHgiPrimitiveType() ==
             HgiPrimitiveTypePointList) {
             ptvsDesc.tessellationDescriptor.patchType = HgiShaderFunctionTessellationDesc::PatchType::Isoline;
@@ -2569,7 +2594,9 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             HgiShaderKeywordTokens->hdPatchID);
         
         std::string tessCoordType =
-            _geometricShader->IsPrimTypeTriangles() ?
+            (_geometricShader->IsPrimTypeTriangles() ||
+             _geometricShader->GetPrimitiveType() == HdSt_GeometricShader::PrimitiveType::
+                    PRIM_MESH_BOXSPLINETRIANGLE) ?
             "vec3" : "vec2";
         
         HgiShaderFunctionAddStageInput(
@@ -3510,7 +3537,7 @@ static void _EmitFVarAccessor(
             str << "  ivec2 fvarPatchParam = HdGet_fvarPatchParam" 
                 << fvarChannel << "();\n"
                 << "  OsdPatchParam param = OsdPatchParamInit(fvarPatchParam.x,"
-                << " fvarPatchParam.y, 0);\n"
+                << " fvarPatchParam.y, 0.0);\n"
                 << "  float wP[20], wDu[20], wDv[20], wDuu[20], wDuv[20], "
                 << "wDvv[20];\n"
                 << "  OsdEvaluatePatchBasisNormalized(patchType, param,"
@@ -3562,9 +3589,11 @@ static void _EmitFVarAccessor(
             str << "  ivec2 fvarPatchParam = HdGet_fvarPatchParam" 
                 << fvarChannel << "();\n"
                 << "  OsdPatchParam param = OsdPatchParamInit(fvarPatchParam.x,"
-                << " fvarPatchParam.y, 0);\n"
+                << "  fvarPatchParam.y, 0.0f);\n"
                 << "  vec2 unnormalized = GetPatchCoord(localIndex).xy;\n"
-                << "  float uv[2] = float[2](unnormalized.x, unnormalized.y);\n"
+                << "  float uv[2];\n"
+                << "  uv[0] = unnormalized.x;\n"
+                << "  uv[1] = unnormalized.y;\n"
                 << "  OsdPatchParamNormalize(param, uv);\n"
                 << "  vec2 localST = vec2(uv[0], uv[1]);\n";
             break;
@@ -3575,9 +3604,11 @@ static void _EmitFVarAccessor(
             str << "  ivec2 fvarPatchParam = HdGet_fvarPatchParam" 
                 << fvarChannel << "();\n"
                 << "  OsdPatchParam param = OsdPatchParamInit(fvarPatchParam.x,"
-                << " fvarPatchParam.y, 0);\n"
+                << "  fvarPatchParam.y, 0.0f);\n"
                 << "  vec2 unnormalized = GetPatchCoord(localIndex).xy;\n"
-                << "  float uv[2] = float[2](unnormalized.x, unnormalized.y);\n"
+                << "  float uv[2];\n"
+                << "  uv[0] = unnormalized.x;\n"
+                << "  uv[1] = unnormalized.y;\n"
                 << "  OsdPatchParamNormalizeTriangle(param, uv);\n"
                 << "  vec2 localST = vec2(uv[0], uv[1]);\n";
             break;

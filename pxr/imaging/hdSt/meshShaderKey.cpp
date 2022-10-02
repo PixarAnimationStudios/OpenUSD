@@ -126,7 +126,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainBSplineQuadPTCS,         "Mesh.PostTessControl.BSplineQuad"))
     ((mainBezierQuadPTVS,          "Mesh.PostTessVertex.BezierQuad"))
     ((mainBoxSplineTrianglePTCS,   "Mesh.PostTessControl.BoxSplineTriangle"))
-    ((mainBezierTrianglePTVS,      "Mesh.PostTessVertex.BoxSplineTriangle"))
+    ((mainBezierTrianglePTVS,      "Mesh.PostTessVertex.BezierTriangle"))
     ((mainVaryingInterpPTVS,       "Mesh.PostTessVertex.VaryingInterpolation"))
     ((mainTriangleTessGS,          "Mesh.Geometry.TriangleTess"))
     ((mainTriangleGS,              "Mesh.Geometry.Triangle"))
@@ -490,7 +490,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     // Wire (edge) related mixins
     if (renderWireframe || renderEdges) {
         if (ptvsStageEnabled) {
-            if (isPrimTypeTriQuads) {
+            if (isPrimTypeTriQuads || isPrimTypePatchesBSpline) {
                 FS[fsIndex++] = _tokens->edgeCoordPTVSBilinear;
             } else {
                 FS[fsIndex++] = _tokens->edgeCoordPTVSBary;
@@ -499,7 +499,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             FS[fsIndex++] = _tokens->edgeCoordBary;
         }
         if (isPrimTypeRefinedMesh) {
-            if (isPrimTypeTriQuads && ptvsStageEnabled) {
+            if ((isPrimTypeTriQuads || isPrimTypePatchesBSpline) && ptvsStageEnabled ) {
                 FS[fsIndex++] = _tokens->edgeMaskPTVSRefinedTriQuadFS;
             } else if (isPrimTypeTriQuads && hasMetalTessellation && 
                        !ptvsStageEnabled) {
@@ -513,12 +513,12 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             FS[fsIndex++] = _tokens->edgeMaskTriangleFS;
         } else if (isPrimTypeTriQuads && !ptvsStageEnabled) {
             FS[fsIndex++] = _tokens->edgeMaskTriQuadFS;
-        } else if (isPrimTypeTriQuads && ptvsStageEnabled) {
+        } else if ((isPrimTypeTriQuads || isPrimTypePatchesBSpline) && ptvsStageEnabled) {
             FS[fsIndex++] = _tokens->edgeMaskPTVSTriQuadFS;
         } else {
             FS[fsIndex++] = _tokens->edgeMaskQuadFS;
         }
-        if (isPrimTypeTriQuads && ptvsStageEnabled) {
+        if ((isPrimTypeTriQuads || isPrimTypePatchesBSpline) && ptvsStageEnabled) {
             FS[fsIndex++] = _tokens->edgeRefinedTriquadFS;
         } else {
             FS[fsIndex++] = _tokens->edgeCommonFS;
@@ -626,7 +626,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         FS[fsIndex++] = _tokens->mainPatchCoordQuadFS;
     } else if (isPrimTypeTriQuads && !ptvsStageEnabled) {
         FS[fsIndex++] = _tokens->mainPatchCoordTriQuadFS;
-    } else if (isPrimTypeTriQuads && ptvsStageEnabled) {
+    } else if ((isPrimTypeTriQuads || isPrimTypePatchesBSpline) && ptvsStageEnabled) {
         FS[fsIndex++] = _tokens->mainPatchCoordTriQuadPTVSFS;
     } else {
         FS[fsIndex++] = _tokens->mainPatchCoordFS;
