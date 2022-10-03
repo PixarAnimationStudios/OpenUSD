@@ -80,6 +80,14 @@ public:
     USD_API
     UsdAttributeQuery();
 
+    /// Copy constructor.
+    USD_API
+    UsdAttributeQuery(const UsdAttributeQuery &other);
+
+    /// Move constructor.
+    USD_API
+    UsdAttributeQuery(UsdAttributeQuery &&other) = default;
+
     /// Construct a new query for the attribute \p attr.
     USD_API
     explicit UsdAttributeQuery(const UsdAttribute& attr);
@@ -126,6 +134,14 @@ public:
     explicit operator bool() const {
         return IsValid();
     }
+
+    /// Copy assignment.
+    USD_API
+    UsdAttributeQuery &operator=(const UsdAttributeQuery &other);
+
+    /// Move assignment.
+    USD_API
+    UsdAttributeQuery &operator=(UsdAttributeQuery &&other) = default;
 
     /// @}
 
@@ -272,7 +288,7 @@ private:
 private:
     UsdAttribute _attr;
     UsdResolveInfo _resolveInfo;
-    UsdResolveTarget _resolveTarget;
+    std::unique_ptr<UsdResolveTarget> _resolveTarget;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

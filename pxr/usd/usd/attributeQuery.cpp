@@ -73,6 +73,28 @@ UsdAttributeQuery::UsdAttributeQuery()
 {
 }
 
+UsdAttributeQuery::UsdAttributeQuery(const UsdAttributeQuery &other) :
+    _attr(other._attr),
+    _resolveInfo(other._resolveInfo)
+{
+    if (other._resolveTarget) {
+        _resolveTarget = std::make_unique<UsdResolveTarget>(
+            *(other._resolveTarget));
+    }
+}
+
+UsdAttributeQuery &
+UsdAttributeQuery::operator=(const UsdAttributeQuery &other)
+{
+    _attr = other._attr;
+    _resolveInfo = other._resolveInfo;
+    if (other._resolveTarget) {
+        _resolveTarget = std::make_unique<UsdResolveTarget>(
+            *(other._resolveTarget));
+    }
+    return *this;
+}
+
 void
 UsdAttributeQuery::_Initialize()
 {
@@ -112,7 +134,7 @@ UsdAttributeQuery::_Initialize(
     const UsdStage* stage = _attr._GetStage();
     stage->_GetResolveInfoWithResolveTarget(_attr, resolveTarget, &_resolveInfo);
 
-    _resolveTarget = resolveTarget;
+    _resolveTarget = std::make_unique<UsdResolveTarget>(resolveTarget);
 }
 
 const UsdAttribute& 
@@ -136,12 +158,12 @@ UsdAttributeQuery::_Get(T* value, UsdTimeCode time) const
 
         static const UsdTimeCode defaultTime = UsdTimeCode::Default();
         UsdResolveInfo defaultResolveInfo;
-        if (_resolveTarget.IsNull()) {
+        if (_resolveTarget && TF_VERIFY(!_resolveTarget->IsNull())) {
+            _attr._GetStage()->_GetResolveInfoWithResolveTarget(
+                _attr, *_resolveTarget, &defaultResolveInfo, &defaultTime);
+        } else {
             _attr._GetStage()->_GetResolveInfo(
                 _attr, &defaultResolveInfo, &defaultTime);
-        } else {
-            _attr._GetStage()->_GetResolveInfoWithResolveTarget(
-                _attr, _resolveTarget, &defaultResolveInfo, &defaultTime);
         }
         return _attr._GetStage()->_GetValueFromResolveInfo(
             defaultResolveInfo, defaultTime, _attr, value);
