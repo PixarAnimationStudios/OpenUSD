@@ -208,8 +208,8 @@ private:
         _MatchString(const std::string&);
 
         std::string str;    // String to match.
-        bool allow:1;       // New result if str matches.
-        bool wildcard:1;    // str has a suffix wildcard.
+        bool allow;         // New result if str matches.
+        bool wildcard;      // str has a suffix wildcard.
     };
     std::vector<_MatchString> _matchStrings;
 };
@@ -309,10 +309,10 @@ struct Tf_MallocCallSite
 
     // If true then invoke the debugger trap when allocating or freeing
     // at this site.
-    bool _debug:1;
+    bool _debug;
 
     // If true then capture a stack trace when allocating at this site.
-    bool _trace:1;
+    bool _trace;
 };
 
 namespace {
@@ -322,8 +322,7 @@ typedef TfHashMap<const char*, struct Tf_MallocCallSite*,
                              TfEqualCString> Tf_MallocCallSiteTable;
 
 Tf_MallocCallSite* Tf_GetOrCreateCallSite(Tf_MallocCallSiteTable* table,
-                                          const char* name,
-                                          size_t* traceSiteCount) {
+                                          const char* name) {
     TF_AXIOM(table);
     Tf_MallocCallSiteTable::iterator it = table->find(name);
 
@@ -332,9 +331,6 @@ Tf_MallocCallSite* Tf_GetOrCreateCallSite(Tf_MallocCallSiteTable* table,
             new Tf_MallocCallSite(name, static_cast<uint32_t>(table->size()));
         // site->_name is const so it is ok to use c_str() as the key.
         (*table)[site->_name.c_str()] = site;
-        if (site->_trace) {
-            ++*traceSiteCount;
-        }
         return site;
     } else {
         return it->second;
@@ -355,13 +351,11 @@ struct Tf_MallocGlobalData
         _totalBytes = 0;
         _maxTotalBytes = 0;
         _warned = false;
-        _captureCallSiteCount = 0;
         _captureStack.reserve(_MaxMallocStackDepth);
     }
 
     Tf_MallocCallSite* _GetOrCreateCallSite(const char* name) {
-        return Tf_GetOrCreateCallSite(&_callSiteTable, name,
-                                      &_captureCallSiteCount);
+        return Tf_GetOrCreateCallSite(&_callSiteTable, name);
     }
 
     inline bool _RegisterPathNode(Tf_MallocPathNode*);
@@ -369,10 +363,6 @@ struct Tf_MallocGlobalData
         Tf_MallocPathNode* pathNode, void* block, size_t blockSize);
     inline bool _UnregisterPathNodeForBlock(
         void* block, Tf_MallocBlockInfo* blockInfo);
-
-    bool _IsMallocStackCapturingEnabled() const {
-        return _captureCallSiteCount != 0;
-    }
 
     void _RunDebugHookForNode(const Tf_MallocPathNode* node, void*, size_t);
 
@@ -407,7 +397,6 @@ struct Tf_MallocGlobalData
     _PathNodeTableType;
     _PathNodeTableType _pathNodeTable;
 
-    size_t _captureCallSiteCount;
     _CallStackTableType _callStackTable;
     Tf_MallocTagStringMatchTable _traceMatchTable;
 
@@ -539,12 +528,8 @@ Tf_MallocGlobalData::_SetTraceNames(const std::string& matchList)
     _traceMatchTable.SetMatchList(matchList);
 
     // Update trace flag on every existing call site.
-    _captureCallSiteCount = 0;
     TF_FOR_ALL(i, _callSiteTable) {
         i->second->_trace = _traceMatchTable.Match(i->second->_name.c_str());
-        if (i->second->_trace) {
-            ++_captureCallSiteCount;
-        }
     }
 }
 
@@ -756,9 +741,8 @@ void Tf_GetCallSites(TfMallocTag::CallTree::PathNode* node,
     TF_AXIOM(node);
     TF_AXIOM(table);
 
-    size_t dummy;
-    Tf_MallocCallSite* site = 
-        Tf_GetOrCreateCallSite(table, node->siteName.c_str(), &dummy);
+    Tf_MallocCallSite* site =
+        Tf_GetOrCreateCallSite(table, node->siteName.c_str());
     site->_totalBytes += node->nBytesDirect;
 
     TF_FOR_ALL(pi, node->children) {
