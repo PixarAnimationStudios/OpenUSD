@@ -742,6 +742,7 @@ UsdStage::CreateNew(const std::string& identifier,
                     InitialLoadSet load)
 {
     TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
+    TRACE_FUNCTION();
 
     if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
         return Open(layer, _CreateAnonymousSessionLayer(layer), load);
@@ -755,6 +756,7 @@ UsdStage::CreateNew(const std::string& identifier,
                     InitialLoadSet load)
 {
     TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
+    TRACE_FUNCTION();
 
     if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
         return Open(layer, sessionLayer, load);
@@ -768,7 +770,8 @@ UsdStage::CreateNew(const std::string& identifier,
                     InitialLoadSet load)
 {
     TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
-
+    TRACE_FUNCTION();
+        
     if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
         return Open(layer, pathResolverContext, load);
     return TfNullPtr;
@@ -782,6 +785,7 @@ UsdStage::CreateNew(const std::string& identifier,
                     InitialLoadSet load)
 {
     TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
+    TRACE_FUNCTION();
 
     if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
         return Open(layer, sessionLayer, pathResolverContext, load);
@@ -873,6 +877,7 @@ UsdStageRefPtr
 UsdStage::Open(const std::string& filePath, InitialLoadSet load)
 {
     TfAutoMallocTag2 tag("Usd", _StageTag(filePath));
+    TRACE_FUNCTION();
 
     SdfLayerRefPtr rootLayer = _OpenLayer(filePath);
     if (!rootLayer) {
@@ -889,6 +894,7 @@ UsdStage::Open(const std::string& filePath,
                InitialLoadSet load)
 {
     TfAutoMallocTag2 tag("Usd", _StageTag(filePath));
+    TRACE_FUNCTION();
 
     SdfLayerRefPtr rootLayer = _OpenLayer(filePath, pathResolverContext);
     if (!rootLayer) {
@@ -905,6 +911,7 @@ UsdStage::OpenMasked(const std::string& filePath,
                      InitialLoadSet load)
 {
     TfAutoMallocTag2 tag("Usd", _StageTag(filePath));
+    TRACE_FUNCTION();
 
     SdfLayerRefPtr rootLayer = _OpenLayer(filePath);
     if (!rootLayer) {
@@ -922,6 +929,7 @@ UsdStage::OpenMasked(const std::string& filePath,
                      InitialLoadSet load)
 {
     TfAutoMallocTag2 tag("Usd", _StageTag(filePath));
+    TRACE_FUNCTION();
 
     SdfLayerRefPtr rootLayer = _OpenLayer(filePath, pathResolverContext);
     if (!rootLayer) {
@@ -1069,7 +1077,7 @@ UsdStage::Open(const SdfLayerHandle& rootLayer,
              rootLayer->GetIdentifier().c_str(),
              sessionLayer ? sessionLayer->GetIdentifier().c_str() : "<null>",
              TfStringify(load).c_str());
-
+    TRACE_FUNCTION();
     return _OpenImpl(load, rootLayer, sessionLayer);
 }
 
@@ -1090,7 +1098,7 @@ UsdStage::Open(const SdfLayerHandle& rootLayer,
              rootLayer->GetIdentifier().c_str(),
              pathResolverContext.GetDebugString().c_str(), 
              TfStringify(load).c_str());
-
+    TRACE_FUNCTION();
     return _OpenImpl(load, rootLayer, pathResolverContext);
 }
 
@@ -1113,7 +1121,7 @@ UsdStage::Open(const SdfLayerHandle& rootLayer,
              sessionLayer ? sessionLayer->GetIdentifier().c_str() : "<null>",
              pathResolverContext.GetDebugString().c_str(),
              TfStringify(load).c_str());
-
+    TRACE_FUNCTION();
     return _OpenImpl(load, rootLayer, sessionLayer, pathResolverContext);
 }
 
@@ -1137,6 +1145,7 @@ UsdStage::OpenMasked(const SdfLayerHandle& rootLayer,
              TfStringify(mask).c_str(),
              TfStringify(load).c_str());
 
+    TRACE_FUNCTION();
     return _InstantiateStage(SdfLayerRefPtr(rootLayer),
                              _CreateAnonymousSessionLayer(rootLayer),
                              _CreatePathResolverContext(rootLayer),
@@ -1164,6 +1173,7 @@ UsdStage::OpenMasked(const SdfLayerHandle& rootLayer,
              TfStringify(mask).c_str(),
              TfStringify(load).c_str());
 
+    TRACE_FUNCTION();
     return _InstantiateStage(SdfLayerRefPtr(rootLayer),
                              SdfLayerRefPtr(sessionLayer),
                              _CreatePathResolverContext(rootLayer),
@@ -1191,6 +1201,7 @@ UsdStage::OpenMasked(const SdfLayerHandle& rootLayer,
              TfStringify(mask).c_str(),
              TfStringify(load).c_str());
 
+    TRACE_FUNCTION();
     return _InstantiateStage(SdfLayerRefPtr(rootLayer),
                              _CreateAnonymousSessionLayer(rootLayer),
                              pathResolverContext,
@@ -1220,6 +1231,7 @@ UsdStage::OpenMasked(const SdfLayerHandle& rootLayer,
              TfStringify(mask).c_str(),
              TfStringify(load).c_str());
 
+    TRACE_FUNCTION();
     return _InstantiateStage(SdfLayerRefPtr(rootLayer),
                              SdfLayerRefPtr(sessionLayer),
                              pathResolverContext,
