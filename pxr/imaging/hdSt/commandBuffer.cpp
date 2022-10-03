@@ -51,6 +51,10 @@
 #include <functional>
 #include <unordered_map>
 
+#if defined(ARCH_OS_WINDOWS)
+#include <intrin.h>
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
