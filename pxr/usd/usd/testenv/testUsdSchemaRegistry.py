@@ -41,8 +41,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertTrue(primDef)
 
         self.assertEqual(set(primDef.ListMetadataFields()), 
-            set(["typeName", "testCustomMetadata", "hidden", "documentation"]))
+            set(["typeName", "testCustomMetadata", "hidden", "documentation", "displayName"]))
         self.assertEqual(primDef.GetMetadata("typeName"), "MetadataTest")
+        self.assertEqual(primDef.GetMetadata("displayName"), "Display Name")
         self.assertEqual(primDef.GetMetadata("documentation"),
                          "Testing documentation metadata")
         self.assertEqual(primDef.GetMetadata("hidden"), True)
@@ -419,6 +420,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         # Expected fields and properties from the concrete schema.
         concretePrimDefPrimFields = {
             "apiSchemas" : Sdf.TokenListOp.CreateExplicit([]),
+            "displayName": "Display Name",
             "documentation" : concretePrimDef.GetDocumentation(),
             "hidden" : True,
             "testCustomMetadata" : "garply",
