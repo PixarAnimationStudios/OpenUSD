@@ -17,8 +17,8 @@ pxr_install_test_dir(
     DEST testVariantMaterialBindingAPI
 )
 # XXX:
-# Temporarily disable this test on Windows; Some extracted usdz files are not
-# getting removed because of access denied error and the test fails on windows.
+# Temporarily disable this test on Windows; Need to investigate more on
+# appropriate POST_COMMAND for result usdz diffing on windows.
 if (NOT WIN32)
 pxr_install_test_dir(
     SRC testenv/testUsdzMaterialBindingAPI

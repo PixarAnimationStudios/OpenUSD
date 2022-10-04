@@ -111,13 +111,12 @@ def main():
         with UsdUtils.UsdzAssetIterator(inputFile, args.verbose) as usdAssetItr:
             # Generators for usdAssets giving us recursive lazy access to 
             # usdAssets within the usdz package for applying fixes.
-            with usdAssetItr.UsdAssets() as assets:
-                if assets:
-                    for usdAsset in assets.gen:
-                        usdAssetLayer = Sdf.Layer.FindOrOpen(usdAsset)
-                        if (_FixLayer(usdAssetLayer)):
-                            usdAssetLayer.Save()
-                            success = True
+            for usdAsset in usdAssetItr.UsdAssets():
+                if usdAsset:
+                    usdAssetLayer = Sdf.Layer.FindOrOpen(usdAsset)
+                    if (_FixLayer(usdAssetLayer)):
+                        usdAssetLayer.Save()
+                        success = True
         if not success:
             _Err("Unable to fix or no fixes required for usdz package '%s'." \
                     %inputFile)
