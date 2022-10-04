@@ -7832,7 +7832,7 @@ UsdStage::_GetResolveInfoWithResolveTarget(
     _ExtraResolveInfo<T> *extraInfo) const
 {
     auto makeUsdResolverFn = [&resolveTarget](bool skipEmptyNodes) {
-        return Usd_Resolver(resolveTarget, skipEmptyNodes);
+        return Usd_Resolver(&resolveTarget, skipEmptyNodes);
     };
     _GetResolveInfoImpl(attr, resolveInfo, time, extraInfo, makeUsdResolverFn);
 }
