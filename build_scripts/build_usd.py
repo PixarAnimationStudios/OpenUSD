@@ -1538,6 +1538,11 @@ def InstallHDF5(context, force, buildArgs):
         if MacOS():
             PatchFile("config/cmake_ext_mod/ConfigureChecks.cmake",
                     [("if (ARCH_LENGTH GREATER 1)", "if (FALSE)")])
+            if context.targetUniversal:
+                PatchFile("config/cmake/H5pubconf.h.in",
+                        [(" #define H5_SIZEOF_LONG_LONG 8",
+                        " #define H5_SIZEOF_LONG_LONG 8\n" +
+                        " #define H5_SIZEOF_LONG_DOUBLE 16")])
         RunCMake(context, force,
                  ['-DBUILD_TESTING=OFF',
                   '-DHDF5_BUILD_TOOLS=OFF',
