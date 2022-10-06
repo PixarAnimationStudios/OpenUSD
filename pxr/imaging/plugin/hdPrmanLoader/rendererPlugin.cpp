@@ -188,8 +188,9 @@ HdPrmanLoaderRendererPlugin::DeleteRenderDelegate(
 }
 
 bool
-HdPrmanLoaderRendererPlugin::IsSupported() const
+HdPrmanLoaderRendererPlugin::IsSupported(bool /* gpuEnabled */) const
 {
+    // Eventually will need to make this deal with whether RIS or XPU is used.
     return _hdPrman.valid;
 }
 
