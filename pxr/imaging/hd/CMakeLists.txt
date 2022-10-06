@@ -66,6 +66,7 @@ pxr_library(hd
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
+        extComputationContextInternal
         extComputationInputComputationSchema
         extComputationOutputSchema
         extComputationPrimvarSchema
@@ -179,7 +180,6 @@ pxr_library(hd
         version.h
 
     PRIVATE_CLASSES
-        extComputationContextInternal
         ${optionalPrivateClasses}
 
     RESOURCE_FILES
