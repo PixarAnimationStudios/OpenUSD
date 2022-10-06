@@ -1,0 +1,93 @@
+Loading @SpecializesAndAncestralArcs3/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.sdf             /Root
+    ref.sdf              /RefRoot
+
+Child names:
+     ['Child', 'SpecializesChild', 'InheritsChild']
+
+------------------------------------------------------------------------
+Results for composing </Root/Child>
+
+Prim Stack:
+    ref.sdf              /RefRoot/Child
+
+Child names:
+     ['GrandChild']
+
+------------------------------------------------------------------------
+Results for composing </Root/Child/GrandChild>
+
+Prim Stack:
+    ref.sdf              /RefRoot/Child/GrandChild
+    ref2.sdf             /Ref2Root/Ref2Child
+
+Child names:
+     ['Ref2GrandChild']
+
+------------------------------------------------------------------------
+Results for composing </Root/Child/GrandChild/Ref2GrandChild>
+
+Prim Stack:
+    ref2.sdf             /Ref2Root/Ref2Child/Ref2GrandChild
+
+------------------------------------------------------------------------
+Results for composing </Root/SpecializesChild>
+
+Prim Stack:
+    ref.sdf              /RefRoot/SpecializesChild
+    ref.sdf              /RefRoot/Child
+
+Child names:
+     ['GrandChild']
+
+------------------------------------------------------------------------
+Results for composing </Root/SpecializesChild/GrandChild>
+
+Prim Stack:
+    ref.sdf              /RefRoot/Child/GrandChild
+    ref2.sdf             /Ref2Root/Ref2Child
+
+Child names:
+     ['Ref2GrandChild']
+
+------------------------------------------------------------------------
+Results for composing </Root/SpecializesChild/GrandChild/Ref2GrandChild>
+
+Prim Stack:
+    ref2.sdf             /Ref2Root/Ref2Child/Ref2GrandChild
+
+------------------------------------------------------------------------
+Results for composing </Root/InheritsChild>
+
+Prim Stack:
+    ref.sdf              /RefRoot/InheritsChild
+    ref.sdf              /RefRoot/Child
+
+Child names:
+     ['GrandChild']
+
+------------------------------------------------------------------------
+Results for composing </Root/InheritsChild/GrandChild>
+
+Prim Stack:
+    ref.sdf              /RefRoot/Child/GrandChild
+    ref2.sdf             /Ref2Root/Ref2Child
+
+Child names:
+     ['Ref2GrandChild']
+
+------------------------------------------------------------------------
+Results for composing </Root/InheritsChild/GrandChild/Ref2GrandChild>
+
+Prim Stack:
+    ref2.sdf             /Ref2Root/Ref2Child/Ref2GrandChild
+

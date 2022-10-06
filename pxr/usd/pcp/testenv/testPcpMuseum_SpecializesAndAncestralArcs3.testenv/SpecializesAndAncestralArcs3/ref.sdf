@@ -1,0 +1,33 @@
+#sdf 1.4.32
+
+def "RefRoot"
+{
+    def "Child"
+    {
+        def "GrandChild" (
+            # References the a child prim in ref2 that has an ancestral
+            # reference. The important thing about this reference is that
+            # single arc will be added as a two node subtree because of 
+            # the ancestral reference.
+            add references = @ref2.sdf@</Ref2RootRef/Ref2Child>
+        )
+        {
+        }
+    }
+
+    def "SpecializesChild" (
+        # Specializes a subroot prim that has a reference with an ancestral
+        # reference.
+        specializes = </RefRoot/Child>
+    )
+    {
+    }
+
+    def "InheritsChild" (
+        # Inherits a subroot prim that has a reference with an ancestral
+        # reference (for comparison with the specializes arc).
+        inherits = </RefRoot/Child>
+    )
+    {
+    }
+}
