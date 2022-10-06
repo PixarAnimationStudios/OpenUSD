@@ -94,13 +94,14 @@ public:
 
     static
     HdDataSourceLocatorSet
-    Invalidate(const TfToken &subprim, const TfTokenVector &properties) {
+    Invalidate(UsdPrim const& prim, const TfToken &subprim,
+            const TfTokenVector &properties) {
         HdDataSourceLocatorSet locators =
             _DataSource::Invalidate(
                 subprim, properties);
 
         locators.insert(
-            UsdImagingDataSourceGprim::Invalidate(subprim, properties));
+            UsdImagingDataSourceGprim::Invalidate(prim, subprim, properties));
 
         return locators;
     }

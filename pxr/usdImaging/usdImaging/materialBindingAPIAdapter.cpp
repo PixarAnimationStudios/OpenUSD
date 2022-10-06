@@ -83,8 +83,8 @@ HD_DECLARE_DATASOURCE_HANDLES(_MaterialBindingContainerDataSource);
 
 HdContainerDataSourceHandle
 UsdImagingMaterialBindingAPIAdapter::GetImagingSubprimData(
-    TfToken const& subprim,
     UsdPrim const& prim,
+    TfToken const& subprim,
     TfToken const& appliedInstanceName,
     const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
@@ -100,6 +100,7 @@ UsdImagingMaterialBindingAPIAdapter::GetImagingSubprimData(
 
 HdDataSourceLocatorSet
 UsdImagingMaterialBindingAPIAdapter::InvalidateImagingSubprim(
+    UsdPrim const& prim,
     TfToken const& subprim,
     TfToken const& appliedInstanceName,
     TfTokenVector const& properties)

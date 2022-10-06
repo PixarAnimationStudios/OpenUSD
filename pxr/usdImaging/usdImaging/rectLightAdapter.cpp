@@ -44,13 +44,15 @@ UsdImagingRectLightAdapter::~UsdImagingRectLightAdapter()
 }
 
 TfTokenVector
-UsdImagingRectLightAdapter::GetImagingSubprims()
+UsdImagingRectLightAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdImagingRectLightAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingRectLightAdapter::GetImagingSubprimType(
+    UsdPrim const& prim,
+    TfToken const& subprim)
 {
     if (subprim.IsEmpty()) {
         return HdPrimTypeTokens->rectLight;

@@ -43,13 +43,15 @@ UsdImagingPluginLightAdapter::~UsdImagingPluginLightAdapter()
 }
 
 TfTokenVector
-UsdImagingPluginLightAdapter::GetImagingSubprims()
+UsdImagingPluginLightAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdImagingPluginLightAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingPluginLightAdapter::GetImagingSubprimType(
+    UsdPrim const& prim,
+    TfToken const& subprim)
 {
     if (subprim.IsEmpty()) {
         return HdPrimTypeTokens->pluginLight;

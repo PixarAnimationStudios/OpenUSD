@@ -29,6 +29,7 @@ UsdImagingAPISchemaAdapter::~UsdImagingAPISchemaAdapter() = default;
 
 TfTokenVector
 UsdImagingAPISchemaAdapter::GetImagingSubprims(
+    UsdPrim const& prim,
     TfToken const& appliedInstanceName)
 {
     return TfTokenVector();
@@ -36,6 +37,7 @@ UsdImagingAPISchemaAdapter::GetImagingSubprims(
 
 TfToken
 UsdImagingAPISchemaAdapter::GetImagingSubprimType(
+    UsdPrim const& prim,
     TfToken const& subprim,
     TfToken const& appliedInstanceName)
 {
@@ -44,8 +46,8 @@ UsdImagingAPISchemaAdapter::GetImagingSubprimType(
 
 HdContainerDataSourceHandle
 UsdImagingAPISchemaAdapter::GetImagingSubprimData(
-    TfToken const& subprim,
     UsdPrim const& prim,
+    TfToken const& subprim,
     TfToken const& appliedInstanceName,
     const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
@@ -54,6 +56,7 @@ UsdImagingAPISchemaAdapter::GetImagingSubprimData(
 
 HdDataSourceLocatorSet
 UsdImagingAPISchemaAdapter::InvalidateImagingSubprim(
+    UsdPrim const& prim,
     TfToken const& subprim,
     TfToken const& appliedInstanceName,
     TfTokenVector const& properties)

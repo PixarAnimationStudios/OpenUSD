@@ -169,8 +169,8 @@ private:
 
 HdContainerDataSourceHandle
 UsdImagingLightAPIAdapter::GetImagingSubprimData(
-    TfToken const& subprim,
     UsdPrim const& prim,
+    TfToken const& subprim,
     TfToken const& appliedInstanceName,
     const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
@@ -195,6 +195,7 @@ UsdImagingLightAPIAdapter::GetImagingSubprimData(
 
 HdDataSourceLocatorSet
 UsdImagingLightAPIAdapter::InvalidateImagingSubprim(
+    UsdPrim const& prim,
     TfToken const& subprim,
     TfToken const& appliedInstanceName,
     TfTokenVector const& properties)

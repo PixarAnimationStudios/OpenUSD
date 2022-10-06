@@ -711,7 +711,8 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
 
 /*static*/ HdDataSourceLocatorSet
 UsdImagingDataSourcePrim::Invalidate(
-        const TfToken &subprim, const TfTokenVector &properties)
+        UsdPrim const& prim, const TfToken &subprim, 
+            const TfTokenVector &properties)
 {
     HdDataSourceLocatorSet locators;
 

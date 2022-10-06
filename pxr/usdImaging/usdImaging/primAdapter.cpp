@@ -91,7 +91,7 @@ UsdImagingPrimAdapter::~UsdImagingPrimAdapter()
 }
 
 TfTokenVector
-UsdImagingPrimAdapter::GetImagingSubprims()
+UsdImagingPrimAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     TF_WARN("Datasource support not yet added for adapter '%s'",
             TfType::GetCanonicalTypeName(typeid(*this)).c_str());
@@ -99,15 +99,16 @@ UsdImagingPrimAdapter::GetImagingSubprims()
 }
 
 TfToken
-UsdImagingPrimAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingPrimAdapter::GetImagingSubprimType(UsdPrim const& prim,
+    TfToken const& subprim)
 {
     return TfToken();
 }
 
 HdContainerDataSourceHandle
 UsdImagingPrimAdapter::GetImagingSubprimData(
-        TfToken const& subprim,
         UsdPrim const& prim,
+        TfToken const& subprim,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     return nullptr;
@@ -115,6 +116,7 @@ UsdImagingPrimAdapter::GetImagingSubprimData(
 
 HdDataSourceLocatorSet
 UsdImagingPrimAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
         TfToken const& subprim,
         TfTokenVector const& properties)
 {

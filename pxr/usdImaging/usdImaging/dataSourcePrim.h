@@ -469,7 +469,9 @@ public:
     /// the USD properties in \p properties change.
     USDIMAGING_API
     static HdDataSourceLocatorSet Invalidate(
-            const TfToken &subprim, const TfTokenVector &properties);
+            UsdPrim const& prim,
+            const TfToken &subprim,
+            const TfTokenVector &properties);
 
 protected:
     /// Use to construct a new UsdImagingDataSourcePrim.

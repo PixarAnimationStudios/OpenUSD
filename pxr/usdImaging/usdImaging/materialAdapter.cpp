@@ -52,13 +52,15 @@ UsdImagingMaterialAdapter::~UsdImagingMaterialAdapter()
 }
 
 TfTokenVector
-UsdImagingMaterialAdapter::GetImagingSubprims()
+UsdImagingMaterialAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdImagingMaterialAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingMaterialAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
 {
     if (subprim.IsEmpty()) {
         return HdPrimTypeTokens->material;
@@ -68,8 +70,8 @@ UsdImagingMaterialAdapter::GetImagingSubprimType(TfToken const& subprim)
 
 HdContainerDataSourceHandle
 UsdImagingMaterialAdapter::GetImagingSubprimData(
-        TfToken const& subprim,
         UsdPrim const& prim,
+        TfToken const& subprim,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {

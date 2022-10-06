@@ -54,31 +54,35 @@ public:
     {}
 
     TfTokenVector GetImagingSubprims(
+            UsdPrim const& prim,
             TfToken const& appliedInstanceName) override {
-        return _primAdapter->GetImagingSubprims();
+        return _primAdapter->GetImagingSubprims(prim);
     }
 
     TfToken GetImagingSubprimType(
+            UsdPrim const& prim,
             TfToken const& subprim,
             TfToken const& appliedInstanceName) override {
 
-        return _primAdapter->GetImagingSubprimType(subprim);
+        return _primAdapter->GetImagingSubprimType(prim, subprim);
     }
 
     HdContainerDataSourceHandle GetImagingSubprimData(
-            TfToken const& subprim,
             UsdPrim const& prim,
+            TfToken const& subprim,
             TfToken const& appliedInstanceName,
             const UsdImagingDataSourceStageGlobals &stageGlobals) override {
-        return _primAdapter->GetImagingSubprimData(subprim, prim, stageGlobals);
+        return _primAdapter->GetImagingSubprimData(prim, subprim, stageGlobals);
     }
 
     HdDataSourceLocatorSet InvalidateImagingSubprim(
+            UsdPrim const& prim,
             TfToken const& subprim,
             TfToken const& appliedInstanceName,
             TfTokenVector const& properties) override {
 
-        return _primAdapter->InvalidateImagingSubprim(subprim, properties);
+        return _primAdapter->InvalidateImagingSubprim(
+            prim, subprim, properties);
     }
 
 private:
@@ -96,8 +100,8 @@ public:
     {}
 
     HdContainerDataSourceHandle GetImagingSubprimData(
-            TfToken const& subprim,
             UsdPrim const& prim,
+            TfToken const& subprim,
             TfToken const& appliedInstanceName,
             const UsdImagingDataSourceStageGlobals &stageGlobals) override {
 
@@ -109,11 +113,12 @@ public:
     }
 
     HdDataSourceLocatorSet InvalidateImagingSubprim(
+            UsdPrim const& prim,
             TfToken const& subprim,
             TfToken const& appliedInstanceName,
             TfTokenVector const& properties) override {
 
-        return UsdImagingDataSourcePrim::Invalidate(subprim, properties);
+        return UsdImagingDataSourcePrim::Invalidate(prim, subprim,properties);
     }
 };
 
@@ -129,7 +134,7 @@ public:
 
 TfTokenVector
 UsdImagingStageSceneIndex::_GetImagingSubprims(
-        const _APISchemaAdapters &adapters) const
+        UsdPrim const& prim, const _APISchemaAdapters &adapters) const
 {
     TfTokenVector subprims;
 
@@ -138,7 +143,8 @@ UsdImagingStageSceneIndex::_GetImagingSubprims(
     case 0:
         break;
     case 1:
-        subprims = adapters[0].first->GetImagingSubprims(adapters[0].second);
+        subprims = adapters[0].first->GetImagingSubprims(
+            prim, adapters[0].second);
         break;
 
     default:
@@ -154,7 +160,7 @@ UsdImagingStageSceneIndex::_GetImagingSubprims(
                 }
                 const TfToken &instanceName = entry.second;
                 for (const TfToken &subPrimName :
-                        apiAdapter->GetImagingSubprims(instanceName)) {
+                        apiAdapter->GetImagingSubprims(prim, instanceName)) {
                     if (!subPrimName.IsEmpty()
                             && subPrimNames.find(subPrimName)
                                 == subPrimNames.end()) {
@@ -191,12 +197,13 @@ UsdImagingStageSceneIndex::_GetImagingSubprims(
 TfToken
 UsdImagingStageSceneIndex::_GetImagingSubprimType(
         const _APISchemaAdapters &adapters,
+        UsdPrim const& prim,
         const TfToken &subprim) const
 {
     // strongest non-empty opinion wins
     for (const _APISchemaEntry &entry : adapters) {
         TfToken result =
-            entry.first->GetImagingSubprimType(subprim, entry.second);
+            entry.first->GetImagingSubprimType(prim, subprim, entry.second);
 
         if (!result.IsEmpty()) {
             return result;
@@ -209,7 +216,7 @@ UsdImagingStageSceneIndex::_GetImagingSubprimType(
 HdContainerDataSourceHandle
 UsdImagingStageSceneIndex::_GetImagingSubprimData(
         const _APISchemaAdapters &adapters,
-        UsdPrim prim, const TfToken &subprim) const
+        UsdPrim const& prim, const TfToken &subprim) const
 {
     if (adapters.empty()) {
         return nullptr;
@@ -217,7 +224,7 @@ UsdImagingStageSceneIndex::_GetImagingSubprimData(
 
     if (adapters.size() == 1) {
         return adapters[0].first->GetImagingSubprimData(
-            subprim, prim, adapters[0].second, _stageGlobals);
+            prim, subprim, adapters[0].second, _stageGlobals);
     }
 
     TfSmallVector<HdContainerDataSourceHandle, 8> containers;
@@ -226,7 +233,7 @@ UsdImagingStageSceneIndex::_GetImagingSubprimData(
     for (const _APISchemaEntry &entry : adapters) {
         if (HdContainerDataSourceHandle ds =
                 entry.first->GetImagingSubprimData(
-                    subprim, prim, entry.second, _stageGlobals)) {
+                    prim, subprim, entry.second, _stageGlobals)) {
             containers.push_back(ds);
         }
     }
@@ -246,6 +253,7 @@ UsdImagingStageSceneIndex::_GetImagingSubprimData(
 HdDataSourceLocatorSet
 UsdImagingStageSceneIndex::_InvalidateImagingSubprim(
         const _APISchemaAdapters &adapters,
+        UsdPrim const& prim,
         TfToken const& subprim, TfTokenVector const& properties) const
 {
     if (adapters.empty()) {
@@ -254,14 +262,14 @@ UsdImagingStageSceneIndex::_InvalidateImagingSubprim(
 
     if (adapters.size() == 1) {
         return adapters[0].first->InvalidateImagingSubprim(
-            subprim, adapters[0].second, properties);
+            prim, subprim, adapters[0].second, properties);
     }
 
     HdDataSourceLocatorSet result;
 
     for (const _APISchemaEntry &entry : adapters) {
         result.insert(entry.first->InvalidateImagingSubprim(
-                    subprim, entry.second, properties));
+                    prim, subprim, entry.second, properties));
     }
 
     return result;
@@ -415,7 +423,7 @@ UsdImagingStageSceneIndex::GetPrim(const SdfPath &path) const
     _APISchemaAdapters adapters = _AdapterSetLookup(prim);
 
     const TfToken imagingType =
-        _GetImagingSubprimType(adapters, subprim);
+        _GetImagingSubprimType(adapters, prim, subprim);
 
     return {imagingType, _GetImagingSubprimData(adapters, prim, subprim)};
 }
@@ -461,7 +469,8 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
     }
 
     const SdfPath primPath = prim.GetPath();
-    for (const TfToken &subprim : _GetImagingSubprims(_AdapterSetLookup(prim))){
+    for (const TfToken &subprim :
+            _GetImagingSubprims(prim, _AdapterSetLookup(prim))){
         if (!subprim.IsEmpty()) {
             result.push_back(primPath.AppendChild(subprim));
         }
@@ -550,14 +559,14 @@ void UsdImagingStageSceneIndex::_Populate(UsdPrim subtreeRoot)
         // Enumerate the imaging sub-prims.
         const SdfPath primPath = prim.GetPath();
         const TfTokenVector subprims =
-            _GetImagingSubprims(adapters);
+            _GetImagingSubprims(prim, adapters);
 
         for (TfToken const& subprim : subprims) {
             const SdfPath subpath =
                 subprim.IsEmpty() ? primPath : primPath.AppendChild(subprim);
 
             addedPrims.emplace_back(subpath,
-                _GetImagingSubprimType(adapters, subprim));
+                _GetImagingSubprimType(adapters, prim, subprim));
         }
 
         if (TfDebug::IsEnabled(USDIMAGING_POPULATION)) {
@@ -718,14 +727,14 @@ UsdImagingStageSceneIndex::ApplyPendingUpdates()
         const UsdPrim prim = _stage->GetPrimAtPath(primPath);
 
         _APISchemaAdapters adapters = _AdapterSetLookup(prim);
-        const TfTokenVector subprims = _GetImagingSubprims(adapters);
+        const TfTokenVector subprims = _GetImagingSubprims(prim, adapters);
 
         for (TfToken const& subprim : subprims) {
             HdDataSourceLocatorSet dirtyLocators;
 
             for (const _APISchemaEntry &entry : adapters) {
                 dirtyLocators.insert(entry.first->InvalidateImagingSubprim(
-                    subprim, entry.second, properties));
+                    prim, subprim, entry.second, properties));
             }
 
             if (!dirtyLocators.IsEmpty()) {

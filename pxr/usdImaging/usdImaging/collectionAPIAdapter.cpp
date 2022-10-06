@@ -195,8 +195,8 @@ HD_DECLARE_DATASOURCE_HANDLES(_CollectionsContainerDataSource);
 
 HdContainerDataSourceHandle
 UsdImagingCollectionAPIAdapter::GetImagingSubprimData(
-    TfToken const& subprim,
     UsdPrim const& prim,
+    TfToken const& subprim,
     TfToken const& appliedInstanceName,
     const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
@@ -213,6 +213,7 @@ UsdImagingCollectionAPIAdapter::GetImagingSubprimData(
 
 HdDataSourceLocatorSet
 UsdImagingCollectionAPIAdapter::InvalidateImagingSubprim(
+    UsdPrim const& prim,
     TfToken const& subprim,
     TfToken const& appliedInstanceName,
     TfTokenVector const& properties)

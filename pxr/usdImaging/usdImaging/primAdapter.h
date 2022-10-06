@@ -80,19 +80,21 @@ public:
     // ---------------------------------------------------------------------- //
 
     USDIMAGING_API
-    virtual TfTokenVector GetImagingSubprims();
+    virtual TfTokenVector GetImagingSubprims(UsdPrim const& prim);
 
     USDIMAGING_API
-    virtual TfToken GetImagingSubprimType(TfToken const& subprim);
+    virtual TfToken GetImagingSubprimType(
+        UsdPrim const& prim, TfToken const& subprim);
 
     USDIMAGING_API
     virtual HdContainerDataSourceHandle GetImagingSubprimData(
-            TfToken const& subprim,
             UsdPrim const& prim,
+            TfToken const& subprim,
             const UsdImagingDataSourceStageGlobals &stageGlobals);
 
     USDIMAGING_API
     virtual HdDataSourceLocatorSet InvalidateImagingSubprim(
+            UsdPrim const& prim,
             TfToken const& subprim,
             TfTokenVector const& properties);
 

@@ -79,7 +79,10 @@ public:
 
     static
     HdDataSourceLocatorSet
-    Invalidate(const TfToken &subprim, const TfTokenVector &properties);
+    Invalidate(
+        UsdPrim const& prim,
+        const TfToken &subprim,
+        const TfTokenVector &properties);
 
 private:
 
