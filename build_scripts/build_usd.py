@@ -1653,13 +1653,13 @@ def InstallUSD(context, force, buildArgs):
     with CurrentWorkingDirectory(context.usdSrcDir):
         extraArgs = []
 
-        extraArgs.append('-DPXR_PREFER_SAFETY_OVER_SPEED=' + 
-                         'ON' if context.safetyFirst else 'OFF')
+        extraArgs.append('-DPXR_PREFER_SAFETY_OVER_SPEED={}'
+                         .format('ON' if context.safetyFirst else 'OFF'))
 
         if context.buildPython:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=ON')
-            if Python3():
-                extraArgs.append('-DPXR_USE_PYTHON_3=ON')
+            extraArgs.append('-DPXR_USE_PYTHON_3={}'
+                             .format('ON' if Python3() else 'OFF'))
 
             # Many people on Windows may not have python with the 
             # debugging symbol ( python27_d.lib ) installed, this is the common case 
