@@ -223,22 +223,23 @@ _ComputeVaryingDataSize(const UsdGeomBasisCurves &basisCurves,
     TfToken curvesType, wrap;
     basisCurves.GetTypeAttr().Get(&curvesType, frame);
     basisCurves.GetWrapAttr().Get(&wrap, frame);
-    bool isNonPeriodic = wrap != UsdGeomTokens->periodic;
 
     VtIntArray curveVertexCts;
     basisCurves.GetCurveVertexCountsAttr().Get(&curveVertexCts, frame);
 
-    // http://renderman.pixar.com/resources/current/rps/appnote.19.html
     size_t result = 0;
     // Code is deliberately verbose to clarify each case.
     if (curvesType == UsdGeomTokens->linear) {
-        if (isNonPeriodic) {
-            TF_FOR_ALL(itr, curveVertexCts) {
-                result += *itr;
+        if (wrap == UsdGeomTokens->nonperiodic ||
+            wrap == UsdGeomTokens->pinned) {
+
+            for (const int &count : curveVertexCts) {
+                result += count;
             }
-        } else {
-            TF_FOR_ALL(itr, curveVertexCts) {
-                result += *itr + 1;
+
+        } else { // periodic
+            for (const int &count : curveVertexCts) {
+                result += count + 1;
             }
         }
         return result;
@@ -249,13 +250,25 @@ _ComputeVaryingDataSize(const UsdGeomBasisCurves &basisCurves,
     size_t vstep = _GetVStepForBasis(basis);
 
     if (curvesType == UsdGeomTokens->cubic) {
-        if (isNonPeriodic) {
-            TF_FOR_ALL(itr, curveVertexCts) {
-                result += (*itr - 4)/vstep + 2;
+        // While the minimum vertex count is 2 for pinned cubic curves and 4
+        // otherwise, we treat pinned and non-periodic cubic curves identically
+        // below to reflect the authored intent in that there shouldn't be any
+        // difference in the primvar data authored (i.e., data for the
+        // additional segment(s) for pinned curves doesn't need to be authored).
+        // 
+        // Also note that we treat curves with fewer vertices than the
+        // minimum as a single segment, thus requiring 2 varying values.
+        //
+        if (wrap == UsdGeomTokens->nonperiodic ||
+            wrap == UsdGeomTokens->pinned) {
+
+            for (const int &count : curveVertexCts) {
+                result +=  std::max<size_t>((count - 4)/vstep, 0) + 2;
             }
-        } else {
-            TF_FOR_ALL(itr, curveVertexCts) {
-                result += *itr/vstep;
+
+        } else { // periodic
+            for (const int &count : curveVertexCts) {
+                result += count/vstep;
             }
         }
     }
@@ -268,10 +281,9 @@ size_t
 _ComputeVertexDataSize(
         const VtIntArray& curveVertexCounts)
 {
-    // http://renderman.pixar.com/resources/current/rps/appnote.19.html
     size_t result = 0;
-    TF_FOR_ALL(itr, curveVertexCounts) {
-        result += *itr;
+    for (const int &count : curveVertexCounts) {
+        result += count;
     }
        
     return result;
@@ -300,7 +312,8 @@ UsdGeomBasisCurves::ComputeInterpolationForSize(
     size_t numUniform = curveVertexCounts.size();
     RETURN_OR_APPEND_INFO(UsdGeomTokens->uniform, n, numUniform);
 
-    size_t numVarying = _ComputeVaryingDataSize(*this, curveVertexCounts, timeCode);
+    size_t numVarying = _ComputeVaryingDataSize(
+        *this, curveVertexCounts, timeCode);
     RETURN_OR_APPEND_INFO(UsdGeomTokens->varying, n, numVarying);
 
     size_t numVertex = _ComputeVertexDataSize(curveVertexCounts);
