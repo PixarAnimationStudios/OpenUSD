@@ -593,6 +593,9 @@ HdxPickTask::Execute(HdTaskContext* ctx)
 {
     GLF_GROUP_FUNCTION();
 
+    // This is important for Hgi garbage collection to run.
+    _hgi->StartFrame();
+
     GfVec2i dimensions = _contextParams.resolution;
     GfVec4i viewport(0, 0, dimensions[0], dimensions[1]);
 
@@ -689,6 +692,9 @@ HdxPickTask::Execute(HdTaskContext* ctx)
         TF_CODING_ERROR("Unrecognized interesection mode '%s'",
             _contextParams.resolveMode.GetText());
     }
+
+    // This is important for Hgi garbage collection to run.
+    _hgi->EndFrame();
 }
 
 const TfTokenVector &

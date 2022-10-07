@@ -38,6 +38,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((isVisible,        "ViewFrustumCull.IsVisible"))
     ((mainInstancingVS, "ViewFrustumCull.VertexInstancing"))
     ((mainVS,           "ViewFrustumCull.Vertex"))
+    ((mainInstancingCS, "ViewFrustumCull.ComputeInstancing"))
+    ((mainCS,           "ViewFrustumCull.Compute"))
 );
 
 HdSt_CullingShaderKey::HdSt_CullingShaderKey(
@@ -54,6 +56,23 @@ HdSt_CullingShaderKey::HdSt_CullingShaderKey(
 }
 
 HdSt_CullingShaderKey::~HdSt_CullingShaderKey()
+{
+}
+
+HdSt_CullingComputeShaderKey::HdSt_CullingComputeShaderKey(
+    bool instancing, bool tinyCull, bool counting)
+    : glslfx(_tokens->baseGLSLFX)
+{
+
+    CS[0] = _tokens->instancing;
+    CS[1] = counting ? _tokens->counting : _tokens->noCounting;
+    CS[2] = tinyCull ? _tokens->tinyCull : _tokens->noTinyCull;
+    CS[3] = _tokens->isVisible;
+    CS[4] = instancing ? _tokens->mainInstancingCS : _tokens->mainCS;
+    CS[5] = TfToken();
+}
+
+HdSt_CullingComputeShaderKey::~HdSt_CullingComputeShaderKey()
 {
 }
 

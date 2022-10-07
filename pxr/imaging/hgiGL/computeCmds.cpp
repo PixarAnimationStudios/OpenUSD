@@ -140,6 +140,12 @@ HgiGLComputeCmds::MemoryBarrier(HgiMemoryBarrier barrier)
     _ops.push_back( HgiGLOps::MemoryBarrier(barrier) );
 }
 
+HgiComputeDispatch
+HgiGLComputeCmds::GetDispatchMethod() const
+{
+    return HgiComputeDispatchSerial;
+}
+
 bool
 HgiGLComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {

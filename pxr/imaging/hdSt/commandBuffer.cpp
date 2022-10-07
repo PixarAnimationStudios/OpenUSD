@@ -26,6 +26,7 @@
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/pipelineDrawBatch.h"
+#include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/materialParam.h"
@@ -34,6 +35,7 @@
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/gf/matrix4f.h"
@@ -48,6 +50,10 @@
 
 #include <functional>
 #include <unordered_map>
+
+#if defined(ARCH_OS_WINDOWS)
+#include <intrin.h>
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -78,12 +84,31 @@ void
 HdStCommandBuffer::PrepareDraw(
     HgiGraphicsCmds *gfxCmds,
     HdStRenderPassStateSharedPtr const &renderPassState,
-    HdStResourceRegistrySharedPtr const &resourceRegistry)
+    HdRenderIndex *renderIndex)
 {
     HD_TRACE_FUNCTION();
 
+    // Downcast the resource registry
+    HdStResourceRegistrySharedPtr const& resourceRegistry = 
+        std::dynamic_pointer_cast<HdStResourceRegistry>(
+        renderIndex->GetResourceRegistry());
+    TF_VERIFY(resourceRegistry);
+
+    _FrustumCull(renderPassState, renderIndex);
+
     for (auto const& batch : _drawBatches) {
         batch->PrepareDraw(gfxCmds, renderPassState, resourceRegistry);
+    }
+
+    // Once all the prepare work is done, add a memory barrier before the next
+    // stage.
+    HgiComputeCmds *computeCmds = resourceRegistry->GetGlobalComputeCmds(
+        HgiComputeDispatchConcurrent);
+
+    computeCmds->MemoryBarrier(HgiMemoryBarrierAll);
+
+    for (auto const& batch : _drawBatches) {
+        batch->BeforeDraw(renderPassState, resourceRegistry);
     }
 
     //
@@ -108,7 +133,7 @@ HdStCommandBuffer::ExecuteDraw(
     // Reset per-commandBuffer performance counters, updated by batch execution
     HD_PERF_COUNTER_SET(HdPerfTokens->drawCalls, 0);
     HD_PERF_COUNTER_SET(HdTokens->itemsDrawn, 0);
-
+    
     //
     // draw batches
     //
@@ -362,7 +387,54 @@ HdStCommandBuffer::SyncDrawItemVisibility(unsigned visChangeCount)
 }
 
 void
-HdStCommandBuffer::FrustumCull(GfMatrix4d const &viewProjMatrix)
+HdStCommandBuffer::_FrustumCull(
+    HdStRenderPassStateSharedPtr const &renderPassState,
+    HdRenderIndex const *renderIndex)
+{
+    // Downcast the resource registry
+    HdStResourceRegistrySharedPtr const& resourceRegistry =
+        std::dynamic_pointer_cast<HdStResourceRegistry>(
+        renderIndex->GetResourceRegistry());
+    TF_VERIFY(resourceRegistry);
+
+    Hgi *hgi = resourceRegistry->GetHgi();
+    HgiCapabilities const *capabilities = hgi->GetCapabilities();
+
+    const bool multiDrawIndirectEnabled =
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
+
+    const bool gpuFrustumCullingEnabled =
+        HdSt_PipelineDrawBatch::IsEnabled(capabilities) ?
+            HdSt_PipelineDrawBatch::IsEnabledGPUFrustumCulling() :
+            HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling();
+
+    const bool skipCulling = TfDebug::IsEnabled(HDST_DISABLE_FRUSTUM_CULLING) ||
+           (multiDrawIndirectEnabled && gpuFrustumCullingEnabled);
+
+    const bool freezeCulling = TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM);
+
+    if (skipCulling) {    
+        HdChangeTracker const &tracker = renderIndex->GetChangeTracker();
+        // Since culling state is stored across renders,
+        // we need to update all items visible state
+        SyncDrawItemVisibility(tracker.GetVisibilityChangeCount());
+
+        TF_DEBUG(HD_DRAWITEMS_CULLED).Msg("CULLED: skipped\n");
+    }
+    else {
+        if (!freezeCulling) {
+            _FrustumCullCPU(renderPassState->GetCullMatrix());
+        }
+
+        if (TfDebug::IsEnabled(HD_DRAWITEMS_CULLED)) {
+            TF_DEBUG(HD_DRAWITEMS_CULLED).Msg("CULLED: %zu drawItems\n",
+                                              GetCulledSize());
+        }
+    }
+}
+
+void
+HdStCommandBuffer::_FrustumCullCPU(GfMatrix4d const &viewProjMatrix)
 {
     HD_TRACE_FUNCTION();
 

@@ -38,6 +38,7 @@
 
 #include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/capabilities.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/hash.h"
@@ -714,11 +715,25 @@ HdStResourceRegistry::GetGlobalBlitCmds()
 }
 
 HgiComputeCmds*
-HdStResourceRegistry::GetGlobalComputeCmds()
+HdStResourceRegistry::GetGlobalComputeCmds(HgiComputeDispatch dispatchMethod)
 {
+    // If the HGI device isn't capable of concurrent dispatch then only specify
+    // serial.
+    bool const computeConcurrentDispatch = _hgi->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsConcurrentDispatch);
+
+    dispatchMethod = (computeConcurrentDispatch)
+                   ? dispatchMethod : HgiComputeDispatchSerial;
+
     if (!_computeCmds) {
-        _computeCmds = _hgi->CreateComputeCmds();
+        _computeCmds = _hgi->CreateComputeCmds(dispatchMethod);
     }
+    else if (_computeCmds->GetDispatchMethod() != dispatchMethod)
+    {
+        SubmitComputeWork();
+        _computeCmds = _hgi->CreateComputeCmds(dispatchMethod);
+    }
+
     return _computeCmds.get();
 }
 
