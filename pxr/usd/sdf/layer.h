@@ -923,9 +923,8 @@ public:
     /// layers to lock framesPerSecond and timeCodesPerSecond to the same value
     /// by specifying only framesPerSecond.
     /// 
-    /// The default value of timeCodesPerSecond (which is used only if there is
-    /// no authored value for either timeCodesPerSecond or framesPerSecond) is
-    /// 24.
+    /// The default value of timeCodesPerSecond, used only if there is no 
+    /// authored value for either timeCodesPerSecond or framesPerSecond, is 24.
     SDF_API
     double GetTimeCodesPerSecond() const;
 
