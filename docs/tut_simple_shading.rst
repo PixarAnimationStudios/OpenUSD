@@ -90,7 +90,7 @@ multiple times). In another command shell, try:
 
 We should see something like:
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/580914176/580914267.png
+.. image:: http://graphics.pixar.com/usd/docs/attachments/580914176/simpleShading.png
 
 Make a Material
 ===============
@@ -185,5 +185,5 @@ And lastly, bind the Mesh to our Material and save the results!
 
 In usdview, we should now see something like:
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/580914176/585273640.png
+.. image:: http://graphics.pixar.com/usd/docs/attachments/580914176/simpleShading_2.png
 

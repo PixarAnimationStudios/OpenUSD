@@ -183,7 +183,7 @@ change to variants with different colors.
 
    usdview models/Ball/Ball.usd
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/367526391/565776869.png
+.. image:: http://graphics.pixar.com/usd/docs/attachments/367526391/model_ball.png
 
 Set dressing
 ************
@@ -208,7 +208,7 @@ other means.
 You may need to move the camera around to see the table and balls as pictured
 below.
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/367526391/565776871.png
+.. image:: http://graphics.pixar.com/usd/docs/attachments/367526391/model_room_set.png
 
 Shot Work
 #########
@@ -320,7 +320,7 @@ props, and positions the camera
    python tutorial_scripts/layout_shot_s00_01.py
    python tutorial_scripts/anim_shot_s00_01.py
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/367526391/565776872.png
+.. image:: http://graphics.pixar.com/usd/docs/attachments/367526391/s00_01.png
 
 Render
 ######
