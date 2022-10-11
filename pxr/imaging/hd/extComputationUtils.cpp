@@ -190,12 +190,21 @@ _ExecuteComputations(HdExtComputationConstPtrVector computations,
         // the value store.
         Hd_ExtComputationContextInternal context;
         for (auto const& sceneInput : comp->GetSceneInputNames()) {
-            context.SetInputValue(sceneInput, valueStore.at(sceneInput));
+            auto const it = valueStore.find(sceneInput);
+            if (it != valueStore.end()) {
+                context.SetInputValue(sceneInput, it->second);
+            }
+            // Avoid issuing a warning here since we do so in the computation
+            // context and typically in the CPU kernel.
         }
 
         for (auto const& computedInput : comp->GetComputationInputs()) {
-            context.SetInputValue(computedInput.name,
-                valueStore.at(computedInput.sourceComputationOutputName));
+            TfToken const &key = computedInput.sourceComputationOutputName;
+            auto const it = valueStore.find(key);
+            if (it != valueStore.end()) {
+                context.SetInputValue(computedInput.name, it->second);
+            }
+            // See comment above on suppressing the warning here.
         }
 
         sceneDelegate->InvokeExtComputation(compId, &context);
