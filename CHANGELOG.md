@@ -327,6 +327,10 @@
   could theoretically lead to over-invalidation.
   (Issue: [#1719](https://github.com/PixarAnimationStudios/USD/issues/1719))
 
+- Fixed rendering issue in colorize selection task in which original contents 
+  of render target (the rendered scene) were not properly loaded when 
+  rendering and blending the selection color on top.
+
 ### UsdImaging
 - Deleted UsdImagingGLLegacyEngine, i.e. usdview's "HydraDisabled" renderer.
   This class was a simple GL3-based USD renderer that was kept as a fallback for
