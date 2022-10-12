@@ -379,9 +379,11 @@ TfStringTrimLeft(const string &s, const char* trimChars)
 string
 TfStringTrim(const string &s, const char* trimChars)
 {
-    string::size_type i = s.find_first_not_of(trimChars);
-    string tmp = (i == string::npos) ? string() : s.substr(i);
-    return tmp.substr( 0, tmp.find_last_not_of(trimChars) + 1);
+    string::size_type b = s.find_first_not_of(trimChars);
+    if (b == string::npos) {
+        return string();
+    }
+    return s.substr(b, s.find_last_not_of(trimChars) - b + 1);
 }
 
 string
