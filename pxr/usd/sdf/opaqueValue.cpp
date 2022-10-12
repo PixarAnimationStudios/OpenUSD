@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2022 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,43 +21,30 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/usd/sdf/opaqueValue.h"
 
-#include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/type.h"
+#include "pxr/base/vt/array.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include <iostream>
 
-TF_WRAP_MODULE
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfType)
 {
-    TF_WRAP( ArrayAssetPath );
-    TF_WRAP( ArrayPath );
-    TF_WRAP( ArrayTimeCode );
-    TF_WRAP( AssetPath );
-    TF_WRAP( ChangeBlock );
-    TF_WRAP( CleanupEnabler );
-    TF_WRAP( CopyUtils );
-    TF_WRAP( FileFormat );
-    TF_WRAP( Layer );
-    TF_WRAP( LayerOffset );
-    TF_WRAP( LayerTree );
-    TF_WRAP( NamespaceEdit );
-    TF_WRAP( Notice );
-    TF_WRAP( OpaqueValue );
-    TF_WRAP( Path );
-    TF_WRAP( Payload );
-    TF_WRAP( Reference );
-    TF_WRAP( TimeCode );
-    TF_WRAP( Types );
-    TF_WRAP( ValueType );
-
-    TF_WRAP( Spec );
-    TF_WRAP( VariantSpec );
-    TF_WRAP( VariantSetSpec );
-
-    TF_WRAP( PropertySpec );
-    TF_WRAP( AttributeSpec );
-    TF_WRAP( RelationshipSpec );
-
-    TF_WRAP( PrimSpec );
-    TF_WRAP( PseudoRootSpec );
+    TfType::Define<SdfOpaqueValue>();
+    // Even though we don't support an opaque[] type in scene description, there
+    // is still code that assumes that any scene-description value type has a
+    // TfType-registered array type too, so we register it here as well.
+    TfType::Define<VtArray<SdfOpaqueValue>>();
 }
+
+std::ostream &
+operator<<(std::ostream &s, SdfOpaqueValue const &)
+{
+    return s << "OpaqueValue";
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2022 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -22,42 +22,37 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/usd/sdf/opaqueValue.h"
+
+#include "pxr/base/tf/pyStaticTokens.h"
+#include "pxr/base/vt/valueFromPython.h"
+
+#include <boost/python.hpp>
+#include <string>
+
+using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+
+static std::string
+_SdfOpaqueValueRepr(const SdfOpaqueValue &self)
 {
-    TF_WRAP( ArrayAssetPath );
-    TF_WRAP( ArrayPath );
-    TF_WRAP( ArrayTimeCode );
-    TF_WRAP( AssetPath );
-    TF_WRAP( ChangeBlock );
-    TF_WRAP( CleanupEnabler );
-    TF_WRAP( CopyUtils );
-    TF_WRAP( FileFormat );
-    TF_WRAP( Layer );
-    TF_WRAP( LayerOffset );
-    TF_WRAP( LayerTree );
-    TF_WRAP( NamespaceEdit );
-    TF_WRAP( Notice );
-    TF_WRAP( OpaqueValue );
-    TF_WRAP( Path );
-    TF_WRAP( Payload );
-    TF_WRAP( Reference );
-    TF_WRAP( TimeCode );
-    TF_WRAP( Types );
-    TF_WRAP( ValueType );
+    return TF_PY_REPR_PREFIX + "OpaqueValue()";
+}
 
-    TF_WRAP( Spec );
-    TF_WRAP( VariantSpec );
-    TF_WRAP( VariantSetSpec );
+static size_t
+_SdfOpaqueValueHash(const SdfOpaqueValue &self)
+{
+    return TfHash()(self);
+}
 
-    TF_WRAP( PropertySpec );
-    TF_WRAP( AttributeSpec );
-    TF_WRAP( RelationshipSpec );
-
-    TF_WRAP( PrimSpec );
-    TF_WRAP( PseudoRootSpec );
+void wrapOpaqueValue()
+{
+    class_<SdfOpaqueValue>("OpaqueValue")
+        .def(self == self)
+        .def(self != self)
+        .def("__repr__", _SdfOpaqueValueRepr)
+        .def("__hash__", _SdfOpaqueValueHash);
+    VtValueFromPython<SdfOpaqueValue>();
 }

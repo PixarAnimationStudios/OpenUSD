@@ -6038,6 +6038,13 @@ UsdStage::_SetValueImpl(
                              typeName.GetText(), attr.GetPath().GetText());
             return false;
         }
+        static const TfType opaqueType = TfType::Find<SdfOpaqueValue>();
+        if (valType == opaqueType) {
+            TF_CODING_ERROR("Can't set value on <%s>: %s-typed attributes "
+                            "cannot have an authored default value",
+                            attr.GetPath().GetText(), typeName.GetText());
+            return false;
+        }
         // Check that the passed value is the expected type.
         if (!TfSafeTypeCompare(_GetTypeInfo(newValue), valType.GetTypeid())) {
             TF_CODING_ERROR("Type mismatch for <%s>: expected '%s', got '%s'",
