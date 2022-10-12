@@ -47,22 +47,22 @@ struct UsdSkelBakeSkinningParms
 {
     /// Flags for identifying different deformation paths.
     enum DeformationFlags {
-        DeformPointsWithSkinning = 1 << 0,
-        DeformNormalsWithSkinning = 1 << 1,
-        DeformXformWithSkinning = 1 << 2,
+        DeformPointsWithLBS = 1 << 0,
+        DeformNormalsWithLBS = 1 << 1,
+        DeformXformWithLBS = 1 << 2,
         DeformPointsWithBlendShapes = 1 << 3,
         DeformNormalsWithBlendShapes = 1 << 4,
-        DeformWithSkinning = (DeformPointsWithSkinning|
-                              DeformNormalsWithSkinning|
-                              DeformXformWithSkinning),
+        DeformWithLBS = (DeformPointsWithLBS|
+                         DeformNormalsWithLBS|
+                         DeformXformWithLBS),
         DeformWithBlendShapes = (DeformPointsWithBlendShapes|
                                  DeformNormalsWithBlendShapes),
-        DeformAll = DeformWithSkinning|DeformWithBlendShapes,
+        DeformAll = DeformWithLBS|DeformWithBlendShapes,
         /// Flags indicating which components of skinned prims may be
         /// modified, based on the active deformations.
-        ModifiesPoints = DeformPointsWithSkinning|DeformPointsWithBlendShapes,
-        ModifiesNormals = DeformNormalsWithSkinning|DeformNormalsWithBlendShapes,
-        ModifiesXform = DeformXformWithSkinning
+        ModifiesPoints = DeformPointsWithLBS|DeformPointsWithBlendShapes,
+        ModifiesNormals = DeformNormalsWithLBS|DeformNormalsWithBlendShapes,
+        ModifiesXform = DeformXformWithLBS
     };
 
     /// Flags determining which deformation paths are enabled.

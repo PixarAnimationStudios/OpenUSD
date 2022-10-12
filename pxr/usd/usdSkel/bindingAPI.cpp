@@ -109,23 +109,6 @@ UsdSkelBindingAPI::_GetTfType() const
 }
 
 UsdAttribute
-UsdSkelBindingAPI::GetSkinningMethodAttr() const
-{
-    return GetPrim().GetAttribute(UsdSkelTokens->primvarsSkelSkinningMethod);
-}
-
-UsdAttribute
-UsdSkelBindingAPI::CreateSkinningMethodAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->primvarsSkelSkinningMethod,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
-}
-
-UsdAttribute
 UsdSkelBindingAPI::GetGeomBindTransformAttr() const
 {
     return GetPrim().GetAttribute(UsdSkelTokens->primvarsSkelGeomBindTransform);
@@ -266,7 +249,6 @@ const TfTokenVector&
 UsdSkelBindingAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdSkelTokens->primvarsSkelSkinningMethod,
         UsdSkelTokens->primvarsSkelGeomBindTransform,
         UsdSkelTokens->skelJoints,
         UsdSkelTokens->primvarsSkelJointIndices,

@@ -49,8 +49,6 @@
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/perfLog.h"
 
-#include "pxr/base/gf/quaternion.h"
-#include "pxr/base/gf/dualQuatf.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/work/loops.h"
@@ -65,7 +63,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (blendShapeOffsetRanges)
     (numBlendShapeOffsetRanges)
     (blendShapeWeights)
-    (skinningMethod)
     (geomBindXform)
     (hasConstantInfluences)
     (influences)
@@ -75,8 +72,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     
     (skelLocalToWorld)
     (skinningXforms)
-    (skinningScaleXforms)
-    (skinningDualQuats)
 
     // computation output
     (skinnedPoints)
@@ -87,13 +82,11 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // gpu compute kernels
     (skinPointsLBSKernel)
-    (skinPointsDQSKernel)
     (skinPointsSimpleKernel)
 
     // skel primvar names
     ((skelJointIndices,  "skel:jointIndices"))
     ((skelJointWeights,   "skel:jointWeights"))
-    ((skelSkinningMethod, "skel:skinningMethod"))
     ((skelGeomBindXform, "skel:geomBindTransform"))
 
 );
@@ -169,19 +162,6 @@ UsdSkelImagingSkeletonAdapter::Populate(
         // the skeleton prim on its behalf.
         index->InsertRprim(HdPrimTypeTokens->mesh, prim.GetPath(),
                            prim, shared_from_this());
-
-        // Cache the identity status of joint scales attribute for quick access
-        const UsdSkelAnimQuery& animQuery = skelData->skelQuery.GetAnimQuery();
-        skelData->jointScalesMightBeNonIdentity = animQuery.JointScalesMightBeNonIdentity();
-
-        // Changes in animationSource will affect the skeleton data cache.
-        // Specifically, the UsdSkelAnimQuery data under the UsdSkelSkeletonQuery
-        // data in _SkelData (i.e. _SkelData::skelQuery) should be updated.
-        UsdSkelBindingAPI skelBinding(prim);
-        UsdPrim animPrim;
-        if (skelBinding.GetAnimationSource(&animPrim)) {
-            index->AddDependency(skelPath, animPrim);
-        }
     }
 
     // Insert a computation for each skinned prim targeted by this
@@ -398,7 +378,6 @@ UsdSkelImagingSkeletonAdapter::ProcessPropertyChange(
         // they're ignored in GprimAdapter.
         if (propertyName == UsdSkelTokens->primvarsSkelJointIndices || 
             propertyName == UsdSkelTokens->primvarsSkelJointWeights ||
-            propertyName == UsdSkelTokens->primvarsSkelSkinningMethod ||
             propertyName == UsdSkelTokens->primvarsSkelGeomBindTransform ||
             propertyName == UsdSkelTokens->skelJoints ||
             propertyName == UsdSkelTokens->skelBlendShapes ||
@@ -894,8 +873,6 @@ UsdSkelImagingSkeletonAdapter::InvokeComputation(
 
     VtValue restPoints
         = context->GetInputValue(_tokens->restPoints);
-    VtValue skinningMethod
-        = context->GetInputValue(_tokens->skinningMethod);
     VtValue geomBindXform
         = context->GetInputValue(_tokens->geomBindXform);
     VtValue influences
@@ -927,6 +904,7 @@ UsdSkelImagingSkeletonAdapter::InvokeComputation(
         !primWorldToLocal.IsHolding<GfMatrix4d>() ||
         !blendShapeOffsets.IsHolding<VtVec4fArray>() ||
         !blendShapeOffsetRanges.IsHolding<VtVec2iArray>() ||
+
         !blendShapeWeights.IsHolding<VtFloatArray>() ||
         !skinningXforms.IsHolding<VtMatrix4fArray>() ||
         !skelLocalToWorld.IsHolding<GfMatrix4d>()) {
@@ -948,14 +926,9 @@ UsdSkelImagingSkeletonAdapter::InvokeComputation(
 
     if (numInfluencesPerComponent.UncheckedGet<int>() > 0) {
 
-        // If skinningMethod is unauthored, use classicLinear.
-        const TfToken skinningMethodToken =
-            skinningMethod.GetWithDefault(UsdSkelTokens->classicLinear);
-
         if (!hasConstantInfluences.UncheckedGet<bool>()) {
 
-            UsdSkelSkinPoints(
-                skinningMethodToken,
+            UsdSkelSkinPointsLBS(
                 geomBindXform.UncheckedGet<GfMatrix4f>(),
                 skinningXforms.UncheckedGet<VtMatrix4fArray>(),
                 influences.UncheckedGet<VtVec2fArray>(),
@@ -973,8 +946,7 @@ UsdSkelImagingSkeletonAdapter::InvokeComputation(
         } else {
             // Have constant influences. Compute a rigid deformation.
             GfMatrix4f skinnedTransform;
-            if (UsdSkelSkinTransform(
-                    skinningMethodToken,
+            if (UsdSkelSkinTransformLBS(
                     geomBindXform.UncheckedGet<GfMatrix4f>(),
                     skinningXforms.UncheckedGet<VtMatrix4fArray>(),
                     influences.UncheckedGet<VtVec2fArray>(),
@@ -1228,64 +1200,16 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationSceneInputNames(
 
         if (_IsEnabledAggregatorComputation()) {
 
-            TfToken skinningMethod = UsdSkelTokens->classicLinear;
-            const _SkinnedPrimData* skinnedPrimData =
-                _GetSkinnedPrimData(cachePath.GetParentPath());
-            if (skinnedPrimData) {
-                skinningMethod = skinnedPrimData->skinningQuery.GetSkinningMethod();
-            }
-
             // Scene inputs
-            if (skinningMethod == UsdSkelTokens->classicLinear) {
-
-                static TfTokenVector sceneInputNames({
+            static TfTokenVector sceneInputNames({
                     // From the skinned prim
                         _tokens->primWorldToLocal,
                     // From the skeleton
                         _tokens->blendShapeWeights,
                         _tokens->skinningXforms,
                         _tokens->skelLocalToWorld,
-                });
-                return sceneInputNames;
-
-            } else if (skinningMethod == UsdSkelTokens->dualQuaternion) {
-
-                bool skinningHasScale = false;
-                if (skinnedPrimData) {
-                    const _SkelData* skelData = _GetSkelData(skinnedPrimData->skelPath);
-                    if (skelData) {
-                        skinningHasScale = skelData->jointScalesMightBeNonIdentity;
-                    }
-                }
-
-                if (skinningHasScale) {
-                    static TfTokenVector sceneInputNames({
-                            // From the skinned prim
-                                _tokens->primWorldToLocal,
-                            // From the skeleton
-                                _tokens->blendShapeWeights,
-                                _tokens->skinningScaleXforms,
-                                _tokens->skinningDualQuats,
-                                _tokens->skelLocalToWorld,
-                                });
-                    return sceneInputNames;
-                } else {
-                    static TfTokenVector sceneInputNames({
-                            // From the skinned prim
-                                _tokens->primWorldToLocal,
-                            // From the skeleton
-                                _tokens->blendShapeWeights,
-                                _tokens->skinningDualQuats,
-                                _tokens->skelLocalToWorld,
-                                });
-                    return sceneInputNames;
-                }
-
-            } else {
-                static TfTokenVector sceneInputNames;
-                TF_WARN("Unknown skinning method: '%s' ", skinningMethod.GetText());
-                return sceneInputNames;
-            }
+            });
+            return sceneInputNames;
 
         } else {
 
@@ -1293,7 +1217,6 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationSceneInputNames(
             static TfTokenVector sceneInputNames({
                 // From the skinned prim
                     _tokens->restPoints,
-                    _tokens->skinningMethod,
                     _tokens->geomBindXform,
                     _tokens->influences,
                     _tokens->numInfluencesPerComponent,
@@ -1347,7 +1270,6 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationInputs(
             // Computation inputs
             static TfTokenVector compInputNames({
                     _tokens->restPoints,
-                    _tokens->skinningMethod,
                     _tokens->geomBindXform,
                     _tokens->influences,
                     _tokens->numInfluencesPerComponent,
@@ -1591,6 +1513,7 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
     }
 
     if (!_IsEnabledAggregatorComputation()) {
+
         // Rest Points
         if (name == _tokens->restPoints) {
             VtVec3fArray restPoints = _GetSkinnedPrimPoints(prim, 
@@ -1603,15 +1526,6 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
 
         if (!TF_VERIFY(skinnedPrimData)) {
             return VtValue();
-        }
-
-        // skinningMethod
-        if (name == _tokens->skinningMethod) {
-            // read (optional) skinningMethod property.
-            // If unauthored, it is "classicLinear".
-            const TfToken skinningMethod =
-                skinnedPrimData->skinningQuery.GetSkinningMethod();
-            return VtValue(skinningMethod);
         }
 
         // GeomBindXform
@@ -1683,10 +1597,8 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
         return VtValue(primWorldToLocal);
     }
     
-    // skinningXforms, skinningScaleXforms, skinningDualQuats, skelLocalToWorld, blendShapeWeights
+    // skinningXforms, skelLocalToWorld, blendShapeWeights
     if (name == _tokens->skinningXforms ||
-        name == _tokens->skinningScaleXforms ||
-        name == _tokens->skinningDualQuats ||
         name == _tokens->skelLocalToWorld ||
         name == _tokens->blendShapeWeights)
     {
@@ -1702,10 +1614,7 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
             return VtValue();
         }
 
-        if (name == _tokens->skinningXforms ||
-            name == _tokens->skinningScaleXforms ||
-            name == _tokens->skinningDualQuats) {
-            // Compute skinningXforms
+        if (name == _tokens->skinningXforms) {
             VtMatrix4fArray skinningXforms;
             if (!skinnedPrimData->hasJointInfluences ||
                 !_ComputeSkinningTransforms(skelData->skelQuery,
@@ -1718,68 +1627,7 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
                     GfMatrix4f(1));
             }
 
-            if (name == _tokens->skinningXforms)
-                return VtValue(skinningXforms);
-
-            if (name == _tokens->skinningScaleXforms) {
-                // Convert skinningXforms to skinningScaleXforms
-                VtMatrix3fArray skinningScaleXforms(skinningXforms.size());
-                GfMatrix4f scaleOrientMat, factoredRotMat, perspMat;
-                GfVec3f scale, translation;
-
-                for (size_t i = 0; i < skinningXforms.size(); ++i) {
-                    const GfMatrix4f &matrix = skinningXforms[i];
-                    if (!matrix.Factor(&scaleOrientMat, &scale, &factoredRotMat,
-                                       &translation, &perspMat)) {
-                        // unable to decompose, set to identity
-                        skinningScaleXforms[i] = GfMatrix3f(1);
-                    } else {
-                        // Remove shear & extract rotation
-                        factoredRotMat.Orthonormalize();
-                        // Calculate the scale + shear transform
-                        const GfMatrix4f tmpNonScaleXform =
-                            factoredRotMat * GfMatrix4f(1.0).SetTranslate(translation);
-                        skinningScaleXforms[i] = (matrix * tmpNonScaleXform.GetInverse()).
-                            ExtractRotationMatrix();   // Extract the upper-left 3x3 matrix
-                    }
-                }
-
-                return VtValue(skinningScaleXforms);
-            }
-
-            if (name == _tokens->skinningDualQuats) {
-                // Convert skinningXforms to skinningDualQuats
-                VtVec4fArray skinningDualQuats(skinningXforms.size()*2);
-                GfMatrix4f scaleOrientMat, factoredRotMat, perspMat;
-                GfVec3f scale, translation;
-                GfDualQuatf dq;
-
-                for (size_t i = 0; i < skinningXforms.size(); ++i) {
-                    const GfMatrix4f &matrix = skinningXforms[i];
-                    if (!matrix.Factor(&scaleOrientMat, &scale, &factoredRotMat,
-                                       &translation, &perspMat)) {
-                        // unable to decompose, set to zero
-                        dq = GfDualQuatf::GetZero();
-                    } else {
-                        // Remove shear & extract rotation
-                        factoredRotMat.Orthonormalize();
-                        const GfQuaternion rotationQ = factoredRotMat.ExtractRotationMatrix()
-                            .ExtractRotationQuaternion();
-                        dq = GfDualQuatf(GfQuatf(GfQuatd(rotationQ.GetReal(), rotationQ.GetImaginary())),
-                                         translation);
-                    }
-
-                    const float    real_r = dq.GetReal().GetReal();
-                    const GfVec3f &real_i = dq.GetReal().GetImaginary();
-                    skinningDualQuats[i*2]   = GfVec4f(real_i[0], real_i[1], real_i[2], real_r);
-
-                    const float    dual_r = dq.GetDual().GetReal();
-                    const GfVec3f &dual_i = dq.GetDual().GetImaginary();
-                    skinningDualQuats[i*2+1] = GfVec4f(dual_i[0], dual_i[1], dual_i[2], dual_r);
-                }
-
-                return VtValue(skinningDualQuats);
-            }
+            return VtValue(skinningXforms);
         }
 
         if (name == _tokens->blendShapeWeights) {
@@ -2210,18 +2058,6 @@ UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForInputAggregator(
         return 1;
     }
 
-    // skinningMethod
-    if (name == _tokens->skinningMethod) {
-        // read (optional) skinningMethod property.
-        // If unauthored, it is "classicLinear".
-        const TfToken skinningMethod =
-            skinnedPrimData->skinningQuery.GetSkinningMethod();
-
-        sampleValues[0] = VtValue(skinningMethod);
-        sampleTimes[0] = 0.f;
-        return 1;
-    }
-
     // geomBindXform
     if (name == _tokens->geomBindXform) {
         // read (optional) geomBindTransform property.
@@ -2362,22 +2198,7 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationKernel(
         if (_IsEnabledCPUComputations()) {
             return std::string();
         } else {
-            UsdSkelBindingAPI binding(prim);
-            // read (optional) skinningMethod property.
-            // If unauthored, it is classicLinear.
-            TfToken skinningMethod = UsdSkelTokens->classicLinear;
-            if (UsdAttribute attr = binding.GetSkinningMethodAttr()) {
-                attr.Get(&skinningMethod);
-            }
-
-            if (skinningMethod == UsdSkelTokens->classicLinear) {
-                return _GetLBSSkinningComputeKernel();
-            } else if (skinningMethod == UsdSkelTokens->dualQuaternion) {
-                return _GetDQSSkinningComputeKernel();
-            } else {
-                TF_WARN("Unknown skinning method: '%s' ", skinningMethod.GetText());
-                return std::string();
-            }
+            return _GetSkinningComputeKernel();
         }
     }
 
@@ -2565,7 +2386,7 @@ UsdSkelImagingSkeletonAdapter::_GetSkinnedPrimPoints(
 
 /* static */
 std::string
-UsdSkelImagingSkeletonAdapter::_LoadSkinningComputeKernel(const TfToken& kernelKey)
+UsdSkelImagingSkeletonAdapter::_LoadSkinningComputeKernel()
 {
     TRACE_FUNCTION();
     HioGlslfx gfx(UsdSkelImagingPackageSkinningShader());
@@ -2575,6 +2396,9 @@ UsdSkelImagingSkeletonAdapter::_LoadSkinningComputeKernel(const TfToken& kernelK
         return std::string();
     }
 
+    //const TfToken& kernelKey = _tokens->skinPointsSimpleKernel;
+    const TfToken& kernelKey = _tokens->skinPointsLBSKernel;
+    
     std::string shaderSource = gfx.GetSource(kernelKey);
     if (!TF_VERIFY(!shaderSource.empty())) {
         TF_WARN("Skinning compute shader is missing kernel '%s'",
@@ -2591,17 +2415,9 @@ UsdSkelImagingSkeletonAdapter::_LoadSkinningComputeKernel(const TfToken& kernelK
 
 /* static */
 const std::string&
-UsdSkelImagingSkeletonAdapter::_GetLBSSkinningComputeKernel()
+UsdSkelImagingSkeletonAdapter::_GetSkinningComputeKernel()
 {
-    static const std::string shaderSource(_LoadSkinningComputeKernel(_tokens->skinPointsLBSKernel));
-    return shaderSource;
-}
-
-/* static */
-const std::string&
-UsdSkelImagingSkeletonAdapter::_GetDQSSkinningComputeKernel()
-{
-    static const std::string shaderSource(_LoadSkinningComputeKernel(_tokens->skinPointsDQSKernel));
+    static const std::string shaderSource(_LoadSkinningComputeKernel());
     return shaderSource;
 }
 
@@ -2682,7 +2498,6 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinnedPrimForTime(
         for (auto it = primvars.begin(); it != primvars.end(); ) {
             if (it->name == _tokens->skelJointIndices ||
                 it->name == _tokens->skelJointWeights  ||
-                it->name == _tokens->skelSkinningMethod ||
                 it->name == _tokens->skelGeomBindXform) {
                 it = primvars.erase(it);
             } else {

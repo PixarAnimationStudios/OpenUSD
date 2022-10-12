@@ -39,9 +39,6 @@
   (Issue: [#1955](https://github.com/PixarAnimationStudios/USD/issues/1955))
 
 ### USD
-- Added Dual Quaternion skinning algorithm to UsdSkel. Provide mechanism to 
-  handle different skinning models (LBS or DQS).
-
 - Updated gathering of geom subset prims to not use UsdPrimDefaultPredicate and
   instead use a custom predicate that checks if the prim has a defining 
   specifier, rather than is defined, allowing for correct gathering of geom 
@@ -409,10 +406,6 @@
   (PR: [#1866](https://github.com/PixarAnimationStudios/USD/pull/1866))
 
 ### Storm
-
-- Updated Storm renderer's skinning shader to add dual quaternion functionality 
-  for newly added UsdSkel skinning algorithm.
-
 - Added new TF_DEBUG code HDX_DEBUG_DUMP_SHADOW_TEXTURES allowing
   users to save the shadow textures produced by HdxShadowTask to image files.
 

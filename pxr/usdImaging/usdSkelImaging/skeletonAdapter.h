@@ -331,14 +331,11 @@ private:
 
     // Static helper methods
     static
-    std::string _LoadSkinningComputeKernel(const TfToken& kernelKey);
+    std::string _LoadSkinningComputeKernel();
 
     static
-    const std::string& _GetLBSSkinningComputeKernel();
-
-    static
-    const std::string& _GetDQSSkinningComputeKernel();
-
+    const std::string& _GetSkinningComputeKernel();
+ 
     // ---------------------------------------------------------------------- //
     /// Handlers for the skinned prim
     // ---------------------------------------------------------------------- //
@@ -409,11 +406,6 @@ private:
 
         UsdSkelSkeletonQuery skelQuery;
         SdfPathSet skelRootPaths;
-
-        /// Cache of identity status of joint scales attribute.
-        /// It is used to avoid unnecessary resource allocation for DQS when
-        /// all joint scales are identity.
-        bool jointScalesMightBeNonIdentity=false;
 
         /// Compute bone mesh topology, and intiailize
         /// other rest-state data for imaging bones.

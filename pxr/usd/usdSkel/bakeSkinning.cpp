@@ -88,7 +88,7 @@ TF_DEFINE_PRIVATE_TOKENS(
          
          for prim in primsSkinningBySkel(skel):
              DeformPrimWithBlendShapes(prim, blendShapeWeights)
-             DeformPrimWithSkinning(prim, skinningXforms)
+             DeformPrimWithLBS(prim, skinningXforms)
              WriteResults(prim)
 
    However, doing this *efficiently* requires a few additional considerations:
@@ -125,14 +125,14 @@ std::string
 _DeformationFlagsToString(int flags, const char* indent)
 {
     return TfStringPrintf(
-        "%sdeformPointsWithSkinning: %d\n"
-        "%sdeformNormalsWithSkinning: %d\n"
-        "%sdeformXformWithSkinning: %d\n"
+        "%sdeformPointsWithLBS: %d\n"
+        "%sdeformNormalsWithLBS: %d\n"
+        "%sdeformXformWithLBS: %d\n"
         "%sdeformPointsWithBlendShapes: %d\n"
         "%sdeformNormalsWithBlendShapes: %d\n",
-        indent, bool(flags&UsdSkelBakeSkinningParms::DeformPointsWithSkinning),
-        indent, bool(flags&UsdSkelBakeSkinningParms::DeformNormalsWithSkinning),
-        indent, bool(flags&UsdSkelBakeSkinningParms::DeformXformWithSkinning),
+        indent, bool(flags&UsdSkelBakeSkinningParms::DeformPointsWithLBS),
+        indent, bool(flags&UsdSkelBakeSkinningParms::DeformNormalsWithLBS),
+        indent, bool(flags&UsdSkelBakeSkinningParms::DeformXformWithLBS),
         indent, bool(flags&UsdSkelBakeSkinningParms::
                      DeformPointsWithBlendShapes),
         indent, bool(flags&UsdSkelBakeSkinningParms::
@@ -517,12 +517,12 @@ private:
 private:
     UsdSkelSkeletonQuery _skelQuery;
 
-    /// Skinning transforms. Used for LBS/DQS xform and point skinning.
+    /// Skinning transforms. Used for LBS xform and point skinning.
     _Task _skinningXformsTask;
     VtMatrix4dArray _skinningXforms;
 
     /// Inverse tranpose of skinning transforms,
-    /// Used for LBS/DQS normal skinning.
+    /// Used for LBS normal skinning.
     _Task _skinningInvTransposeXformsTask;
     VtMatrix3dArray _skinningInvTransposeXforms;
 
@@ -530,7 +530,7 @@ private:
     _Task _blendShapeWeightsTask;
     VtFloatArray _blendShapeWeights;
 
-    /// Skel local to world xform. Used for LBS/DQS xform and point skinning.
+    /// Skel local to world xform. Used for LBS xform and point skinning.
     _Task _skelLocalToWorldXformTask;
     GfMatrix4d _skelLocalToWorldXform;
 
@@ -602,7 +602,7 @@ _SkelAdapter::_SkelAdapter(const UsdSkelBakeSkinningParms& parms,
 
     // Activate skinning transform computations if we have a mappable anim,
     // or if restTransforms are authored as a fallback.
-    if (parms.deformationFlags & UsdSkelBakeSkinningParms::DeformWithSkinning) {
+    if (parms.deformationFlags & UsdSkelBakeSkinningParms::DeformWithLBS) {
         if (const UsdSkelSkeleton& skel = skelQuery.GetSkeleton()) {
             const auto& animQuery = skelQuery.GetAnimQuery();
             if ((animQuery && !skelQuery.GetMapper().IsNull()) ||
@@ -806,26 +806,24 @@ struct _SkinningAdapter
     /// Flags indicating which deformation paths are active.
     enum ComputationFlags {
         RequiresSkinningXforms =
-            UsdSkelBakeSkinningParms::DeformWithSkinning,
+            UsdSkelBakeSkinningParms::DeformWithLBS,
         RequiresSkinningInvTransposeXforms =
-            UsdSkelBakeSkinningParms::DeformNormalsWithSkinning,
+            UsdSkelBakeSkinningParms::DeformNormalsWithLBS,
         RequiresBlendShapeWeights = 
             UsdSkelBakeSkinningParms::DeformWithBlendShapes,
-        RequiresSkinningMethod =
-            UsdSkelBakeSkinningParms::DeformWithSkinning,
         RequiresGeomBindXform =
-            UsdSkelBakeSkinningParms::DeformWithSkinning,
+            UsdSkelBakeSkinningParms::DeformWithLBS,
         RequiresGeomBindInvTransposeXform =
-            UsdSkelBakeSkinningParms::DeformNormalsWithSkinning,
+            UsdSkelBakeSkinningParms::DeformNormalsWithLBS,
         RequiresJointInfluences =
-            UsdSkelBakeSkinningParms::DeformWithSkinning,
+            UsdSkelBakeSkinningParms::DeformWithLBS,
         RequiresSkelLocalToWorldXform =
-            UsdSkelBakeSkinningParms::DeformWithSkinning,
+            UsdSkelBakeSkinningParms::DeformWithLBS,
         RequiresPrimLocalToWorldXform =
-            (UsdSkelBakeSkinningParms::DeformPointsWithSkinning|
-             UsdSkelBakeSkinningParms::DeformNormalsWithSkinning),
+            (UsdSkelBakeSkinningParms::DeformPointsWithLBS|
+             UsdSkelBakeSkinningParms::DeformNormalsWithLBS),
         RequiresPrimParentToWorldXform =
-            UsdSkelBakeSkinningParms::DeformXformWithSkinning
+            UsdSkelBakeSkinningParms::DeformXformWithLBS
     };
 
     _SkinningAdapter(const UsdSkelBakeSkinningParms& parms,
@@ -882,19 +880,18 @@ private:
     bool _ComputeRestPoints(const UsdTimeCode time);
     bool _ComputeRestNormals(const UsdTimeCode time);
     bool _ComputeFaceVertexIndices(const UsdTimeCode time);
-    bool _ComputeSkinningMethod(const UsdTimeCode time);
     bool _ComputeGeomBindXform(const UsdTimeCode time);
     bool _ComputeJointInfluences(const UsdTimeCode time);
 
     void _DeformWithBlendShapes();
 
-    void _DeformWithSkinning(const UsdTimeCode time, const size_t timeIndex);
+    void _DeformWithLBS(const UsdTimeCode time, const size_t timeIndex);
 
-    void _DeformPointsWithSkinning(const GfMatrix4d& skelToGprimXform);
+    void _DeformPointsWithLBS(const GfMatrix4d& skelToGprimXform);
 
-    void _DeformNormalsWithSkinning(const GfMatrix4d& skelToGprimXform);
+    void _DeformNormalsWithLBS(const GfMatrix4d& skelToGprimXform);
 
-    void _DeformXformWithSkinning(const GfMatrix4d& skelLocalToWorldXform);
+    void _DeformXformWithLBS(const GfMatrix4d& skelLocalToWorldXform);
 
 private:
     
@@ -926,11 +923,6 @@ private:
     VtIntArray _faceVertexIndices;
     UsdAttributeQuery _faceVertexIndicesQuery;
 
-    // Skinning method.
-    _Task _skinningMethodTask;
-    TfToken _skinningMethod;
-    UsdAttributeQuery _skinningMethodQuery;
-
     // Geom bind transform.
     _Task _geomBindXformTask;
     GfMatrix4d _geomBindXform;
@@ -946,12 +938,12 @@ private:
     VtFloatArray _jointWeights;
 
     // Local to world gprim xform.
-    // Used for LBS/DQS point/normal skinning only.
+    // Used for LBS point/normal skinning only.
     _Task _localToWorldXformTask;
     GfMatrix4d _localToWorldXform;
 
     // Parent to world gprim xform.
-    // Used for LBS/DQS xform skinning.
+    // Used for LBS xform skinning.
     _Task _parentToWorldXformTask;
     GfMatrix4d _parentToWorldXform;
 
@@ -1042,28 +1034,28 @@ _SkinningAdapter::_SkinningAdapter(
         }
     }
 
-    // LBS/DQS Skinning.
-    if ((parms.deformationFlags & UsdSkelBakeSkinningParms::DeformWithSkinning) &&
+    // LBS Skinning.
+    if ((parms.deformationFlags & UsdSkelBakeSkinningParms::DeformWithLBS) &&
         skinningQuery.HasJointInfluences()) {
 
         if (skinningQuery.IsRigidlyDeformed() && isXformable) {
             if ((parms.deformationFlags &
-                 UsdSkelBakeSkinningParms::DeformXformWithSkinning) &&
+                 UsdSkelBakeSkinningParms::DeformXformWithLBS) &&
                 skelAdapter->CanComputeSkinningXforms()) {
-                _flags |= UsdSkelBakeSkinningParms::DeformXformWithSkinning;
+                _flags |= UsdSkelBakeSkinningParms::DeformXformWithLBS;
             }
         } else if (isPointBased) {
             if ((parms.deformationFlags &
-                 UsdSkelBakeSkinningParms::DeformPointsWithSkinning) &&
+                 UsdSkelBakeSkinningParms::DeformPointsWithLBS) &&
                 _restPointsQuery.IsValid() &&
                 skelAdapter->CanComputeSkinningXforms()) {
-                _flags |= UsdSkelBakeSkinningParms::DeformPointsWithSkinning;
+                _flags |= UsdSkelBakeSkinningParms::DeformPointsWithLBS;
             }
             if ((parms.deformationFlags &
-                 UsdSkelBakeSkinningParms::DeformNormalsWithSkinning) &&
+                 UsdSkelBakeSkinningParms::DeformNormalsWithLBS) &&
                 _restNormalsQuery.IsValid() &&
                 skelAdapter->CanComputeSkinningInvTransposeXforms()) {
-                _flags |= UsdSkelBakeSkinningParms::DeformNormalsWithSkinning;
+                _flags |= UsdSkelBakeSkinningParms::DeformNormalsWithLBS;
             }
         }
     }
@@ -1206,15 +1198,6 @@ _SkinningAdapter::_SkinningAdapter(
         }
     }
 
-    if (_flags & RequiresSkinningMethod) {
-        _skinningMethodTask.SetActive(true);
-        if ((_skinningMethodQuery = UsdAttributeQuery(
-                 _skinningQuery.GetSkinningMethodAttr()))) {
-            _skinningMethodTask.SetMightBeTimeVarying(
-                _skinningMethodQuery.ValueMightBeTimeVarying());
-        }
-    }
-
     if (_flags & RequiresGeomBindXform) {
         _geomBindXformTask.SetActive(true);
         if ((_geomBindXformQuery = UsdAttributeQuery(
@@ -1277,7 +1260,6 @@ _SkinningAdapter::_SkinningAdapter(
         "    _restPointsTask: %s\n"
         "    _restNormalsTask: %s\n"
         "    _faceVertexIndicesTask: %s\n"
-        "    _skinningMethodTask: %s\n"
         "    _geomBindXformTask: %s\n"
         "    _geomBindInvTransposeXformTask: %s\n"
         "    _jointInfluencesTask: %s\n"
@@ -1288,7 +1270,6 @@ _SkinningAdapter::_SkinningAdapter(
         _restPointsTask.GetDescription().c_str(),
         _restNormalsTask.GetDescription().c_str(),
         _faceVertexIndicesTask.GetDescription().c_str(),
-        _skinningMethodTask.GetDescription().c_str(),
         _geomBindXformTask.GetDescription().c_str(),
         _geomBindInvTransposeXformTask.GetDescription().c_str(),
         _jointInfluencesTask.GetDescription().c_str(),
@@ -1444,18 +1425,6 @@ _SkinningAdapter::_ComputeFaceVertexIndices(const UsdTimeCode time)
         });
 }
 
-bool
-_SkinningAdapter::_ComputeSkinningMethod(const UsdTimeCode time)
-{
-    _skinningMethodTask.Run(
-        time, GetPrim(), "compute skinning method",
-        [&](UsdTimeCode time) {
-            _skinningMethod = _skinningQuery.GetSkinningMethod();
-            return true;
-        });
-    return true;
-}
-
 
 bool
 _SkinningAdapter::_ComputeGeomBindXform(const UsdTimeCode time)
@@ -1544,9 +1513,9 @@ _SkinningAdapter::_DeformWithBlendShapes()
 
 
 void
-_SkinningAdapter::_DeformWithSkinning(const UsdTimeCode time, const size_t timeIndex)
+_SkinningAdapter::_DeformWithLBS(const UsdTimeCode time, const size_t timeIndex)
 {
-    if (!_ComputeSkinningMethod(time) || !_ComputeGeomBindXform(time) || !_ComputeJointInfluences(time)) {
+    if (!_ComputeGeomBindXform(time) || !_ComputeJointInfluences(time)) {
         return;
     }
 
@@ -1555,8 +1524,8 @@ _SkinningAdapter::_DeformWithSkinning(const UsdTimeCode time, const size_t timeI
         return;
     }
     
-    if (_flags & (UsdSkelBakeSkinningParms::DeformPointsWithSkinning |
-                  UsdSkelBakeSkinningParms::DeformNormalsWithSkinning)) {
+    if (_flags & (UsdSkelBakeSkinningParms::DeformPointsWithLBS |
+                  UsdSkelBakeSkinningParms::DeformNormalsWithLBS)) {
         
         // Skinning deforms points/normals in *skel* space.
         // A world-space point is then computed as:
@@ -1578,20 +1547,20 @@ _SkinningAdapter::_DeformWithSkinning(const UsdTimeCode time, const size_t timeI
         const GfMatrix4d skelToGprimXform =
             skelLocalToWorldXform * _localToWorldXform.GetInverse();
 
-        if (_flags & UsdSkelBakeSkinningParms::DeformPointsWithSkinning) {
-            _DeformPointsWithSkinning(skelToGprimXform);
+        if (_flags & UsdSkelBakeSkinningParms::DeformPointsWithLBS) {
+            _DeformPointsWithLBS(skelToGprimXform);
         }
-        if (_flags & UsdSkelBakeSkinningParms::DeformNormalsWithSkinning) {
-            _DeformNormalsWithSkinning(skelToGprimXform);
+        if (_flags & UsdSkelBakeSkinningParms::DeformNormalsWithLBS) {
+            _DeformNormalsWithLBS(skelToGprimXform);
         }
-    } else if (_flags & UsdSkelBakeSkinningParms::DeformXformWithSkinning) {
-        _DeformXformWithSkinning(skelLocalToWorldXform);
+    } else if (_flags & UsdSkelBakeSkinningParms::DeformXformWithLBS) {
+        _DeformXformWithLBS(skelLocalToWorldXform);
     }
 }
 
 
 void
-_SkinningAdapter::_DeformPointsWithSkinning(const GfMatrix4d& skelToGprimXf)
+_SkinningAdapter::_DeformPointsWithLBS(const GfMatrix4d& skelToGprimXf)
 {
     TRACE_FUNCTION();
 
@@ -1625,10 +1594,10 @@ _SkinningAdapter::_DeformPointsWithSkinning(const GfMatrix4d& skelToGprimXf)
     }
 
     _points.hasSampleAtCurrentTime =
-        UsdSkelSkinPoints(_skinningMethod, _geomBindXform, xformsForPrim,
-                          _jointIndices, _jointWeights,
-                          _skinningQuery.GetNumInfluencesPerComponent(),
-                          _points.value);
+        UsdSkelSkinPointsLBS(_geomBindXform, xformsForPrim,
+                             _jointIndices, _jointWeights,
+                             _skinningQuery.GetNumInfluencesPerComponent(),
+                             _points.value);
     if (!_points.hasSampleAtCurrentTime) {
         return;
     }
@@ -1645,7 +1614,7 @@ _SkinningAdapter::_DeformPointsWithSkinning(const GfMatrix4d& skelToGprimXf)
 
 
 void
-_SkinningAdapter::_DeformNormalsWithSkinning(const GfMatrix4d& skelToGprimXf)
+_SkinningAdapter::_DeformNormalsWithLBS(const GfMatrix4d& skelToGprimXf)
 {
     TRACE_FUNCTION();
 
@@ -1681,16 +1650,16 @@ _SkinningAdapter::_DeformNormalsWithSkinning(const GfMatrix4d& skelToGprimXf)
 
     if (_faceVertexIndicesTask) {
         _normals.hasSampleAtCurrentTime =
-            UsdSkelSkinFaceVaryingNormals(_skinningMethod, _geomBindInvTransposeXform,
+            UsdSkelSkinFaceVaryingNormalsLBS(_geomBindInvTransposeXform,
                     xformsForPrim, _jointIndices, _jointWeights,
                     _skinningQuery.GetNumInfluencesPerComponent(),
                     _faceVertexIndices, _normals.value);
     } else {
         _normals.hasSampleAtCurrentTime =
-            UsdSkelSkinNormals(_skinningMethod, _geomBindInvTransposeXform, xformsForPrim,
-                               _jointIndices, _jointWeights,
-                               _skinningQuery.GetNumInfluencesPerComponent(),
-                               _normals.value);
+            UsdSkelSkinNormalsLBS(_geomBindInvTransposeXform, xformsForPrim,
+                                  _jointIndices, _jointWeights,
+                                  _skinningQuery.GetNumInfluencesPerComponent(),
+                                  _normals.value);
     }
 
     if (!_normals.hasSampleAtCurrentTime) {
@@ -1712,7 +1681,7 @@ _SkinningAdapter::_DeformNormalsWithSkinning(const GfMatrix4d& skelToGprimXf)
 
 
 void
-_SkinningAdapter::_DeformXformWithSkinning(const GfMatrix4d& skelLocalToWorldXform)
+_SkinningAdapter::_DeformXformWithLBS(const GfMatrix4d& skelLocalToWorldXform)
 {
     TRACE_FUNCTION();
 
@@ -1739,9 +1708,10 @@ _SkinningAdapter::_DeformXformWithSkinning(const GfMatrix4d& skelLocalToWorldXfo
     }
 
     _xform.hasSampleAtCurrentTime =
-        UsdSkelSkinTransform(_skinningMethod, _geomBindXform, xformsForPrim,
-                             _jointIndices, _jointWeights, &_xform.value);
-
+        UsdSkelSkinTransformLBS(_geomBindXform, xformsForPrim,
+                                _jointIndices, _jointWeights,
+                                &_xform.value);
+    
     if (!_xform.hasSampleAtCurrentTime) {
         return;
     }
@@ -1791,13 +1761,13 @@ _SkinningAdapter::Update(const UsdTimeCode time, const size_t timeIndex)
     _ComputeRestNormals(time);
     _ComputeFaceVertexIndices(time);
 
-    // Blend shapes precede LBS/DQS skinning.
+    // Blend shapes precede LBS skinning.
     if (_flags & UsdSkelBakeSkinningParms::DeformWithBlendShapes) {
         _DeformWithBlendShapes();
     }
 
-    if (_flags & UsdSkelBakeSkinningParms::DeformWithSkinning) {
-        _DeformWithSkinning(time, timeIndex);
+    if (_flags & UsdSkelBakeSkinningParms::DeformWithLBS) {
+        _DeformWithLBS(time, timeIndex);
     }
 
     // If a valid points sample was computed, also compute a new extent.

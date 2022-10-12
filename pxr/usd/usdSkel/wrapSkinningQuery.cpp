@@ -163,9 +163,6 @@ void wrapUsdSkelSkinningQuery()
 
         .def("IsRigidlyDeformed", &This::IsRigidlyDeformed)
 
-        .def("GetSkinningMethodAttr", &This::GetSkinningMethodAttr,
-             return_value_policy<return_by_value>())
-
         .def("GetGeomBindTransformAttr", &This::GetGeomBindTransformAttr,
              return_value_policy<return_by_value>())
 
@@ -238,8 +235,6 @@ void wrapUsdSkelSkinningQuery()
              (arg("skelRestXforms"),
               arg("boundable"),
               arg("time")=UsdTimeCode::Default()))
-
-        .def("GetSkinningMethod", &This::GetSkinningMethod)
 
         .def("GetGeomBindTransform", &This::GetGeomBindTransform,
              (arg("time")=UsdTimeCode::Default()))

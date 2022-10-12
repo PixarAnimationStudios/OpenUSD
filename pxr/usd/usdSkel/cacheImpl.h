@@ -77,7 +77,6 @@ public:
     struct _SkinningQueryKey {
         UsdAttribute jointIndicesAttr;
         UsdAttribute jointWeightsAttr;
-        UsdAttribute skinningMethodAttr;
         UsdAttribute geomBindTransformAttr;
         UsdAttribute jointsAttr;
         UsdAttribute blendShapesAttr;

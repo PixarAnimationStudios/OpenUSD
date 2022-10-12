@@ -63,7 +63,6 @@ public:
                          const VtTokenArray& blendShapeOrder,
                          const UsdAttribute& jointIndices,
                          const UsdAttribute& jointWeights,
-                         const UsdAttribute& skinningMethod,
                          const UsdAttribute& geomBindTransform,
                          const UsdAttribute& joints,
                          const UsdAttribute& blendShapes,
@@ -100,10 +99,6 @@ public:
     /// across all points, or false otherwise.
     USDSKEL_API
     bool IsRigidlyDeformed() const;
-
-    const UsdAttribute& GetSkinningMethodAttr() const {
-        return _skinningMethodAttr;
-    }
 
     const UsdAttribute& GetGeomBindTransformAttr() const {
         return _geomBindTransformAttr;
@@ -248,9 +243,6 @@ public:
                                 const UsdGeomBoundable& boundable) const;
 
     USDSKEL_API
-    TfToken GetSkinningMethod() const;
-
-    USDSKEL_API
     GfMatrix4d
     GetGeomBindTransform(UsdTimeCode time=UsdTimeCode::Default()) const;
 
@@ -274,7 +266,6 @@ private:
 
     UsdGeomPrimvar _jointIndicesPrimvar;
     UsdGeomPrimvar _jointWeightsPrimvar;
-    UsdAttribute _skinningMethodAttr;
     UsdAttribute _geomBindTransformAttr;
     UsdAttribute _blendShapes;
     UsdRelationship _blendShapeTargets;

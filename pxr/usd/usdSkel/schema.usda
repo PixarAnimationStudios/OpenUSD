@@ -184,14 +184,6 @@ class "SkelBindingAPI" (
         Skeleton."""
     )
 
-    uniform token primvars:skel:skinningMethod = "classicLinear" (
-        customData = {
-            string apiName = "skinningMethod"
-        }
-        allowedTokens = ["classicLinear", "dualQuaternion"]
-        doc = """The skinningMethod specifies the skinning method for the prim."""
-    )
-
     matrix4d primvars:skel:geomBindTransform (
         customData = {
             string apiName = "geomBindTransform"
