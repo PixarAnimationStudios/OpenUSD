@@ -41,6 +41,9 @@ Pull Request Guidelines
       repository. Please make sure the base branch of your pull request is set
       to the "**dev**" branch when filing your pull request.
 
+    * Please make sure all tests are passing with your change prior to
+      submitting a pull request.
+
     * We highly recommend posting issues on GitHub for features or bug fixes
       that you intend to work on before beginning any development. That way, if
       someone else is working on a similar project, you can collaborate, or you

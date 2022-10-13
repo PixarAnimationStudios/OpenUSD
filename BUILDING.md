@@ -294,8 +294,29 @@ when invoking cmake. This plugin is compatible with Draco 1.3.4. The additional 
 
 ## Tests
 
-Disable unit testing and prevent tests from being built by specifying the cmake flag ```PXR_BUILD_TESTS=FALSE```
-when invoking cmake.
+Tests are built by default but can be disabled by specifying the cmake flag 
+```PXR_BUILD_TESTS=FALSE``` when invoking cmake.
+
+##### Running Tests
+Run tests by invoking ctest from the build directory, which is typically the 
+directory in which cmake was originally invoked. For example, to run all tests 
+in a release build with verbose output:
+
+```bash
+ctest -C Release -V
+```
+
+The "-R" argument may be used to specify a regular expression matching the names 
+of tests to be run. For example, to run all tests in a release build matching 
+"testUsdShade" with verbose output:
+
+```bash
+ctest -C Release -R testUsdShade -V
+```
+
+See the [ctest documentation](https://cmake.org/cmake/help/latest/manual/ctest.1.html) for more options.
+
+##### Diagnosing Failed Tests
 
 In order to aid with diagnosing of failing tests, test generated files for failing test are explicitly put in the following directories, where
 <ctest_run_timestamp> (formatted as "%Y-%m-%dT%H.%M.%S") represents the timestamp when ctest was run for the failing test.
