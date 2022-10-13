@@ -120,14 +120,18 @@ def _getFileFormat(path):
         return None
 
     # Try to find the format by extension.
-    fileFormat = Sdf.FileFormat.FindByExtension(ext)
+    fileFormat = Sdf.FileFormat.FindByExtension(ext) if ext else None
 
     if not fileFormat:
         # Try to see if we can use the 'usd' format to read the file.  Sometimes
         # we encounter extensionless files that are actually usda or usdc
-        # (e.g. Perforce-generated temp files for 'p4 diff' commands).
+        # (e.g. Perforce-generated temp files for 'p4 diff' commands).  Also, if
+        # the file is empty just pretend it's a 'usd' file -- the _convertTo
+        # code below special-cases this and does the diff despite empty files
+        # not being valid usd files.
         usdFormat = Sdf.FileFormat.FindByExtension('usd')
-        if usdFormat and usdFormat.CanRead(path):
+        if usdFormat and (os.stat(str(path)).st_size == 0 or
+                          usdFormat.CanRead(path)):
             fileFormat = usdFormat
 
     # Don't check if file exists - this should be handled by resolver (and
