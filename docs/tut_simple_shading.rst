@@ -72,7 +72,7 @@ which provide analytically computed normals to a renderer.
    billboard.CreateFaceVertexCountsAttr([4])
    billboard.CreateFaceVertexIndicesAttr([0,1,2,3])
    billboard.CreateExtentAttr([(-430, -145, 0), (430, 145, 0)])
-   texCoords = billboard.CreatePrimvar("st", 
+   texCoords = UsdGeom.PrimvarsAPI(billboard).CreatePrimvar("st", 
                                        Sdf.ValueTypeNames.TexCoord2fArray, 
                                        UsdGeom.Tokens.varying)
    texCoords.Set([(0, 0), (1, 0), (1,1), (0, 1)])
@@ -175,10 +175,11 @@ shading prims.
    
    stReader.CreateInput('varname',Sdf.ValueTypeNames.Token).ConnectToSource(stInput)
 
-And lastly, bind the Mesh to our Material and save the results!
+And lastly, apply MaterialBindingAPI on the billboard prim, bind the Mesh to our Material and save the results!
 
 .. code-block:: python
 
+   billboard.GetPrim().ApplyAPI(UsdShade.MaterialBindingAPI)
    UsdShade.MaterialBindingAPI(billboard).Bind(material)
    
    stage.Save()

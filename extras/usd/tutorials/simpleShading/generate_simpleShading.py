@@ -84,6 +84,7 @@ diffuseTextureSampler.CreateOutput('rgb', Sdf.ValueTypeNames.Float3)
 pbrShader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).ConnectToSource(diffuseTextureSampler.ConnectableAPI(), 'rgb')
 
 # Now bind the Material to the card
+billboard.GetPrim().ApplyAPI(UsdShade.MaterialBindingAPI)
 binding = UsdShade.MaterialBindingAPI.Apply(billboard.GetPrim())
 if binding:
     binding.Bind(material)
