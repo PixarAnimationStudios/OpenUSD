@@ -85,8 +85,6 @@ pbrShader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).ConnectToSourc
 
 # Now bind the Material to the card
 billboard.GetPrim().ApplyAPI(UsdShade.MaterialBindingAPI)
-binding = UsdShade.MaterialBindingAPI.Apply(billboard.GetPrim())
-if binding:
-    binding.Bind(material)
+UsdShade.MaterialBindingAPI(billboard).Bind(material)
 
 stage.Save()
