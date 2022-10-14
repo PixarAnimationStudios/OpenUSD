@@ -1684,14 +1684,16 @@ def InstallUSD(context, force, buildArgs):
             # itself rather than rely on CMake's heuristics.
             pythonInfo = GetPythonInfo(context)
             if pythonInfo:
-                # According to FindPythonLibs.cmake these are the variables
-                # to set to specify which Python installation to use.
-                extraArgs.append('-DPYTHON_EXECUTABLE="{pyExecPath}"'
-                                 .format(pyExecPath=pythonInfo[0]))
-                extraArgs.append('-DPYTHON_LIBRARY="{pyLibPath}"'
-                                 .format(pyLibPath=pythonInfo[1]))
-                extraArgs.append('-DPYTHON_INCLUDE_DIR="{pyIncPath}"'
-                                 .format(pyIncPath=pythonInfo[2]))
+                prefix = "Python3" if Python3() else "Python2"
+                extraArgs.append('-D{prefix}_EXECUTABLE="{pyExecPath}"'
+                                 .format(prefix=prefix, 
+                                         pyExecPath=pythonInfo[0]))
+                extraArgs.append('-D{prefix}_LIBRARY="{pyLibPath}"'
+                                 .format(prefix=prefix,
+                                         pyLibPath=pythonInfo[1]))
+                extraArgs.append('-D{prefix}_INCLUDE_DIR="{pyIncPath}"'
+                                 .format(prefix=prefix,
+                                         pyIncPath=pythonInfo[2]))
         else:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
 
