@@ -56,6 +56,12 @@
                         "loadWithRenderer": "Prman",
                         "priority": 0,
                         "displayName": "Prman Pinned Curve Expanding Scene Index"
+                    },
+                    "HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman ExtComputation Primvar Pruning Scene Index"
                     }
                 }
             },

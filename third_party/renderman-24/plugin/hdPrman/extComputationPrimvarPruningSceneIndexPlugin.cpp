@@ -21,16 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdPrman/pinnedCurveExpandingSceneIndexPlugin.h"
+#include "hdPrman/extComputationPrimvarPruningSceneIndexPlugin.h"
 
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
-#include "pxr/imaging/hdsi/pinnedCurveExpandingSceneIndex.h"
+#include "pxr/imaging/hdsi/extComputationPrimvarPruningSceneIndex.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((sceneIndexPluginName, "HdPrman_PinnedCurveExpandingSceneIndexPlugin"))
+    ((sceneIndexPluginName, "HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin"))
 );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -42,13 +42,15 @@ static const char * const _rendererDisplayName = "Prman";
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdSceneIndexPluginRegistry::Define<
-        HdPrman_PinnedCurveExpandingSceneIndexPlugin>();
+        HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin>();
 }
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    // Should be chained _after_ the extComputationPrimvarPruningSceneIndex.
-    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 1;
+    // Needs to be inserted earlier to allow plugins that follow to transform
+    // primvar data without having to concern themselves about computed
+    // primvars.
+    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 0;
 
     // Register the plugins conditionally.
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
@@ -63,16 +65,16 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 // Scene Index Implementations
 ////////////////////////////////////////////////////////////////////////////////
 
-HdPrman_PinnedCurveExpandingSceneIndexPlugin::
-HdPrman_PinnedCurveExpandingSceneIndexPlugin() = default;
+HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin::
+HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin() = default;
 
 HdSceneIndexBaseRefPtr
-HdPrman_PinnedCurveExpandingSceneIndexPlugin::_AppendSceneIndex(
+HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {
     TF_UNUSED(inputArgs);
-    return HdsiPinnedCurveExpandingSceneIndex::New(inputScene);
+    return HdSiExtComputationPrimvarPruningSceneIndex::New(inputScene);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
