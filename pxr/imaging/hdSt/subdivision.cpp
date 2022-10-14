@@ -151,7 +151,7 @@ private:
     HdBufferSourceSharedPtr _osdTopology;
     HdBufferSourceSharedPtr _primitiveBuffer;
     HdBufferSourceSharedPtr _edgeIndicesBuffer;
-    HdBufferSourceSharedPtr _tessPointsBuffer;
+    //HdBufferSourceSharedPtr _tessPointsBuffer;
     HdBufferSourceSharedPtr _tessFactorsBuffer;
 };
 
@@ -534,8 +534,8 @@ HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
                             HdTupleType {HdTypeInt32Vec2, 1});
         specs->emplace_back(HdTokens->tessFactors,
                             HdTupleType{HdTypeInt32Vec3, 1});
-        specs->emplace_back(HdTokens->tessPoints,
-                            HdTupleType{HdTypeInt32Vec3, 16});
+        //specs->emplace_back(HdTokens->tessPoints,
+        //                    HdTupleType{HdTypeInt32Vec3, 16});
         /*
         specs->emplace_back(HdTokens->tessFactors,
                             HdTupleType{HdTypeInt32Vec3, 1});
@@ -1251,7 +1251,7 @@ HdSt_OsdIndexComputation::Resolve()
         _topology->RefinesToBoxSplineTrianglePatches()) {
 
         // Bundle groups of 12 or 16 patch control vertices.
-        int const arraySize = patchTable
+        int arraySize = patchTable
             ? patchTable->GetPatchArrayDescriptor(0).GetNumControlVertices()
             : 0;
 
@@ -1461,7 +1461,6 @@ HdSt_OsdIndexComputation::_PopulatePatchPrimitiveBuffer(
         : 0;
     VtVec4iArray primitiveParam(numPatches);
     VtVec2iArray edgeIndices(numPatches);
-    VtVec3iArray tessPoints(numPatches * 16);
     VtVec3iArray tessFactors(numPatches);
     
     float oneFloat = 1.0f;
@@ -1493,12 +1492,7 @@ HdSt_OsdIndexComputation::_PopulatePatchPrimitiveBuffer(
         primitiveParam[i][3] = sharpnessAsInt;
 
         edgeIndices[i] = info.baseFaceEdgeIndices;
-        
-        for (size_t j = i * 16; j < numPatches * 16; j++) {
-            tessPoints[j][0] = one;
-            tessPoints[j][1] = one;
-            tessPoints[j][2] = one;
-        }
+
         
         int32_t oneone = GetOneOne();
         for (size_t i = 0; i < numPatches; i++) {
@@ -1571,7 +1565,7 @@ HdSt_OsdFvarIndexComputation::Resolve()
         _topology->RefinesToBoxSplineTrianglePatches()) {
 
         // Bundle groups of 12 or 16 patch control vertices
-        int const arraySize = patchTable ?
+        int  arraySize = patchTable ?
             patchTable->GetFVarPatchDescriptor(_channel).GetNumControlVertices()
             : 0;
 

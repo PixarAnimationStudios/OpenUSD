@@ -171,6 +171,7 @@ private:
     HgiGraphicsCmdsDesc _descriptor;
     HgiPrimitiveType _primitiveType;
     uint32_t _primitiveIndexSize;
+    uint32_t _numTessVertsOut;
     NSString* _debugLabel;
     bool _hasWork;
     bool _viewportSet;

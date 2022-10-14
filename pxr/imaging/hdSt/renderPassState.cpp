@@ -1072,6 +1072,7 @@ HdStRenderPassState::InitPrimitiveState(
     if (pipeDesc->primitiveType == HgiPrimitiveTypePatchList) {
         pipeDesc->tessellationState.primitiveIndexSize =
                             geometricShader->GetPrimitiveIndexSize();
+        pipeDesc->tessellationState.numVertsOut = geometricShader->GetNumPatchEvalVerts();
 
         if (geometricShader->GetUseMetalTessellation()) {
             pipeDesc->tessellationState.patchType =

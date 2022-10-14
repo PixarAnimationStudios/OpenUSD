@@ -1707,7 +1707,12 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                 << "#define HD_HAS_COORD_" << it->second.name << " 1\n";
         }
     }
-
+    if (_hasPTVS) {
+        _genPTVS << _GetOSDPatchBasisShaderSource();
+    }
+    if (_hasPTCS) {
+        _genPTCS << _GetOSDPatchBasisShaderSource();
+    }
     // Needed for patch-based face-varying primvar refinement
     if (_geometricShader->GetFvarPatchType() == 
         HdSt_GeometricShader::FvarPatchType::PATCH_BSPLINE ||
@@ -1718,12 +1723,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         } else {
             _genFS << _GetOSDPatchBasisShaderSource();
         }
-        if (_hasPTVS) {
-            _genPTVS << _GetOSDPatchBasisShaderSource();
-        }
-        if (_hasPTCS) {
-            _genPTCS << _GetOSDPatchBasisShaderSource();
-        }
+        
     }
 
     // Barycentric coordinates
@@ -2432,6 +2432,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
 
     if (_hasPTCS) {
         HgiShaderFunctionDesc ptcsDesc;
+        ptcsDesc.tessellationDescriptor.numVertsPerPatchOut = _geometricShader->GetNumPatchEvalVerts();
         if (_metaData.tessFactorsBinding.binding.IsValid()) {
 
          HdBinding binding = _metaData.tessFactorsBinding.binding;
@@ -2550,7 +2551,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
 
         ptvsDesc.tessellationDescriptor.numVertsPerPatchIn =
               _geometricShader->GetPrimitiveIndexSize();
-
+        ptvsDesc.tessellationDescriptor.numVertsPerPatchOut = _geometricShader->GetNumPatchEvalVerts();
         //Set the patchtype to later decide tessfactor types
         ptvsDesc.tessellationDescriptor.patchType =
             (_geometricShader->IsPrimTypeTriangles() ||
@@ -4865,6 +4866,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
 
         // primvar accessors
         _EmitAccessor(accessorsVS, name, dataType, binding);
+        
 
         _EmitStructAccessor(accessorsTCS, _tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1, "gl_InvocationID");
