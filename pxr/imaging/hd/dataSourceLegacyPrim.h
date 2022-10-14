@@ -57,6 +57,7 @@ public:
         const SdfPath &id, HdSceneDelegate *sceneDelegate)
     : _id(id), _sceneDelegate(sceneDelegate) {}
 
+    HD_API
     void Invoke(HdExtComputationContext *context);
 
 private:
