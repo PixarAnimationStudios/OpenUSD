@@ -468,6 +468,58 @@ Osd_EvalBezierCurveMidPoint(
         corners, midpoints, patchParam, tessOuterLo, tessOuterHi);
 }
 
+void
+HdSt_GetTessLevelsFromPatchBoundaries4(
+        const float OsdTessLevel,
+        const float4x4 OsdProjectionMatrix,
+        const float4x4 OsdModelViewMatrix,
+        float3 corners[4],
+        float3 midpoints[4],
+        int3 patchParam,
+        thread float4& tessOuterLo, thread float4& tessOuterHi)
+{
+    tessOuterLo = float4(0);
+    tessOuterHi = float4(0);
+
+    int transitionMask = OsdGetPatchTransitionMask(patchParam);
+
+        tessOuterLo[0] = OsdComputeTessLevel(
+            OsdTessLevel, OsdProjectionMatrix, OsdModelViewMatrix,
+            corners[0], corners[3]);
+
+
+        tessOuterLo[1] = OsdComputeTessLevel(
+            OsdTessLevel, OsdProjectionMatrix, OsdModelViewMatrix,
+            corners[0], corners[1]);
+
+
+        tessOuterLo[2] = OsdComputeTessLevel(
+            OsdTessLevel, OsdProjectionMatrix, OsdModelViewMatrix,
+            corners[1], corners[2]);
+
+        tessOuterLo[3] = OsdComputeTessLevel(
+            OsdTessLevel, OsdProjectionMatrix, OsdModelViewMatrix,
+            corners[3], corners[2]);
+
+}
+
+vec3 GetPosAtUv(vec2 uv, OsdPatchParam param, thread vec3 *cv) {
+    //TODO THOR we really want an alternative to all the data being passed in here
+    float wP[HD_NUM_PATCH_VERTS];
+    float wDs[HD_NUM_PATCH_VERTS];
+    float wDt[HD_NUM_PATCH_VERTS];
+    float wDss[HD_NUM_PATCH_VERTS];
+    float wDst[HD_NUM_PATCH_VERTS];
+    float wDtt[HD_NUM_PATCH_VERTS];
+    OsdEvaluatePatchBasisNormalized(OSD_PATCH_DESCRIPTOR_REGULAR, param, uv.x, uv.y, &(wP[0]), &(wDs[0]), &(wDt[0]), &(wDss[0]), &(wDst[0]), &(wDtt[0]));
+
+    vec3 pos = vec3(0.0, 0.0, 0.0);
+    for (int i = 0; i < 16; i++) {
+        pos += cv[i] * wP[i];
+    }
+    return pos;
+}
+
 struct PositionWrapper
 {
     vec3 pos;
@@ -485,55 +537,54 @@ void main(void)
 
     MAT4 transform = ApplyInstanceTransform(HdGet_transform());
 
-    PositionWrapper cv[HD_NUM_PATCH_VERTS];
-    vec3 bSplineCP[HD_NUM_PATCH_VERTS];
 
     ivec3 patchParam = GetPatchParam();
 
     //Consider if we are doing the work multiple times
+    const vec2 corner0Uv = vec2(0.0, 0.0);
+    const vec2 corner1Uv = vec2(1.0, 0.0);
+    const vec2 corner2Uv = vec2(1.0, 1.0);
+    const vec2 corner3Uv = vec2(0.0, 1.0);
+    OsdPatchParam osdParam = OsdPatchParamInit(patchParam.x, patchParam.y, 0);
+    vec3 corners[4];
+    //TODO Thor reconsider this - maybe the arrays don't need to be recreated inside the function
+    corners[0] = GetPosAtUv(corner0Uv, osdParam, &(points[0]));
+    corners[1] = GetPosAtUv(corner1Uv, osdParam, &(points[0]));
+    corners[2] = GetPosAtUv(corner2Uv, osdParam, &(points[0]));
+    corners[3] = GetPosAtUv(corner3Uv, osdParam, &(points[0]));
+    vec3 midPoints[4];
+    midPoints[0] = (corners[0] + corners[1]) / 2.0;
+    midPoints[1] = (corners[1] + corners[2]) / 2.0;
+    midPoints[2] = (corners[2] + corners[0]) / 2.0;
+    midPoints[3] = (corners[2] + corners[0]) / 2.0;
 
-    for (int i = 0; i < HD_NUM_PATCH_VERTS; ++i) {
-        cv[i].pos = (GetWorldToViewMatrix() * transform * vec4(HdGet_points(i),1.0)).xyz;
-    }
-    OsdComputeBSplineBoundaryPoints(&(cv[0]), patchParam);
-    for (int i = 0; i < HD_NUM_PATCH_VERTS; ++i) {
-        bSplineCP[i] = HdStComputePerPatchVertexBSpline(patchParam, i, &(cv[0]));
-    }
-    /*
-    bSplineCP[0] = HdStComputePerPatchVertexBSpline(patchParam, 0, &(cv[0]));
-    bSplineCP[1] = HdStComputePerPatchVertexBSpline(patchParam, 1, &(cv[0]));
-    bSplineCP[2] = HdStComputePerPatchVertexBSpline(patchParam, 2, &(cv[0]));
-    bSplineCP[3] = HdStComputePerPatchVertexBSpline(patchParam, 3, &(cv[0]));
-    bSplineCP[4] = HdStComputePerPatchVertexBSpline(patchParam, 4, &(cv[0]));
-    bSplineCP[5] = HdStComputePerPatchVertexBSpline(patchParam, 7, &(cv[0]));
-    bSplineCP[6] = HdStComputePerPatchVertexBSpline(patchParam, 8, &(cv[0]));
-    bSplineCP[7] = HdStComputePerPatchVertexBSpline(patchParam, 11, &(cv[0]));
-    bSplineCP[8] = HdStComputePerPatchVertexBSpline(patchParam, 12, &(cv[0]));
-    bSplineCP[9] = HdStComputePerPatchVertexBSpline(patchParam, 13, &(cv[0]));
-    bSplineCP[10] = HdStComputePerPatchVertexBSpline(patchParam, 14, &(cv[0]));
-    bSplineCP[11] = HdStComputePerPatchVertexBSpline(patchParam, 15, &(cv[0]));
-     */
+    int transitionMask = OsdGetPatchTransitionMask(patchParam);
+    midPoints[0] = ((transitionMask & 8) == 0) ? float3(0) : GetPosAtUv(float2(0.0, 0.5), osdParam, &(points[0]));
+    midPoints[1] = ((transitionMask & 2) == 0) ? float3(0) : GetPosAtUv(float2(0.5, 0.0), osdParam, &(points[0]));
+    midPoints[2] = ((transitionMask & 2) == 0) ? float3(0) : GetPosAtUv(float2(1.0, 0.5), osdParam, &(points[0]));
+    midPoints[3] = ((transitionMask & 4) == 0) ? float3(0) : GetPosAtUv(float2(0.5, 1.0), osdParam, &(points[0]));
 
-    if (true) {
-        vec4 tessLevelOuter = vec4(0);
-        vec2 tessLevelInner = vec2(0);
-        vec4 tessOuterLo, tessOuterHi;
-        // Gather bezier control points to compute limit surface tess levels
-        HdStEvalPatchBezierTessLevels(renderPassState.tessLevel,
-            GetProjectionMatrix(), mat4(1), &(bSplineCP[0]),
-            patchParam, tessOuterLo, tessOuterHi);
-        OsdComputeTessLevels(tessOuterLo, tessOuterHi,
-                             tessLevelOuter, tessLevelInner);
+    vec4 tessLevelOuter = vec4(0);
+    vec2 tessLevelInner = vec2(0);
+    vec4 tessOuterLo = vec4(0);
+    vec4 tessOuterHi = vec4(0);
 
-        device half* tessAsHalf = (device half*)tessFactors + patch_id * 6;
-        tessAsHalf[0] = half(tessLevelOuter[0]);
-        tessAsHalf[1] = half(tessLevelOuter[1]);
-        tessAsHalf[2] = half(tessLevelOuter[2]);
-        tessAsHalf[3] = half(tessLevelOuter[3]);
+    // Gather bezier control points to compute limit surface tess levels
+    HdSt_GetTessLevelsFromPatchBoundaries4(
+       renderPassState.tessLevel, GetProjectionMatrix(), mat4(1),
+        corners, midPoints, patchParam, tessOuterLo, tessOuterHi);
 
-        tessAsHalf[4] = half(tessLevelInner[0]);
-        tessAsHalf[5] = half(tessLevelInner[1]);
-    }
+    OsdComputeTessLevels(tessOuterLo, tessOuterHi,
+                         tessLevelOuter, tessLevelInner);
+
+    device half* tessAsHalf = (device half*)tessFactors + patch_id * 6;
+    tessAsHalf[0] = half(tessLevelOuter[0]);
+    tessAsHalf[1] = half(tessLevelOuter[1]);
+    tessAsHalf[2] = half(tessLevelOuter[2]);
+    tessAsHalf[3] = half(tessLevelOuter[3]);
+
+    tessAsHalf[4] = half(tessLevelInner[0]);
+    tessAsHalf[5] = half(tessLevelInner[1]);
 }
 
 --- --------------------------------------------------------------------------
@@ -766,45 +817,6 @@ HdStEvalPatchBezier(int3 patchParam, float2 UV,
     dNv = (dNv - dot(dNv,N) * N) * nLengthInv;
 }
 
-// convert BSpline cv to Bezier cv
-template<typename VertexType>
-vec3
-HdStComputePerPatchVertexBSpline(
-        int3 patchParam, unsigned ID,
-        thread VertexType* cv)
-{
-    vec3 result;
-    int i = ID%4;
-    int j = ID/4;
-
-    //OsdComputeBSplineBoundaryPoints(cv, patchParam);
-
-    float3 H[4];
-    for (int l=0; l<4; ++l) {
-        H[l] = float3(0,0,0);
-        for(int k=0; k<4; ++k) {
-            H[l] += Q[i][k] * (cv + l*4 + k)->GetPosition();
-        }
-    }
-    {
-        result = float3(0,0,0);
-        for (int k=0; k<4; ++k){
-            result += Q[j][k]*H[k];
-        }
-    }
-    return result;
-}
-
-struct PositionWrapper
-{
-    vec3 pos;
-    vec3 GetPosition() thread {
-        return pos;
-    }
-    vec3 SetPosition(vec3 newPos) thread {
-        pos = newPos;
-    }
-};
 
 //TODO Thor verify this
 vec4 GetPatchCoord(int index)
@@ -828,21 +840,8 @@ void main(void)
     gl_PointSize = GetPointRasterSize(pointId);
     ProcessPointId(pointId);
 
-    PositionWrapper cv[HD_NUM_PATCH_VERTS];
-    vec3 bSplineCP[HD_NUM_PATCH_VERTS];
-
     ivec3 patchParam = GetPatchParam();
 
-    //Consider if we are doing the work multiple times
-    for (int i = 0; i < HD_NUM_PATCH_VERTS; ++i) {
-        //todo simplify that
-        cv[i].pos = (GetWorldToViewMatrix() * transform * vec4(HdGet_points(i),1.0)).xyz;
-    }
-
-    OsdComputeBSplineBoundaryPoints(&(cv[0]), patchParam);
-    for (int i = 0; i < HD_NUM_PATCH_VERTS; ++i) {
-        bSplineCP[i] = HdStComputePerPatchVertexBSpline(patchParam, i, &(cv[0]));
-    }
 
     //TODO may want to know cv and patch param
     float4 tessOuterLo(0), tessOuterHi(0);
@@ -860,11 +859,40 @@ void main(void)
 
     vec3 P = vec3(0), dPu = vec3(0), dPv = vec3(0);
     vec3 N = vec3(0), dNu = vec3(0), dNv = vec3(0);
-    vec2 segments;
 
-    //ivec3 patchParam = tessPoints.v.patchParam;
-    HdStEvalPatchBezier(patchParam, UV, &(bSplineCP[0]), P, dPu,
-                       dPv, N, dNu, dNv, segments);
+    float wP[HD_NUM_PATCH_VERTS];
+    float wDs[HD_NUM_PATCH_VERTS];
+    float wDt[HD_NUM_PATCH_VERTS];
+    float wDss[HD_NUM_PATCH_VERTS];
+    float wDst[HD_NUM_PATCH_VERTS];
+    float wDtt[HD_NUM_PATCH_VERTS];
+    //int boundaryMask = OsdPatchParamGetBoundary(patchParam);
+    OsdPatchParam osdParam = OsdPatchParamInit(patchParam.x, patchParam.y, 0);
+    OsdEvaluatePatchBasisNormalized(OSD_PATCH_DESCRIPTOR_REGULAR, osdParam, UV.x, UV.y, &(wP[0]), &(wDs[0]), &(wDt[0]), &(wDss[0]), &(wDst[0]), &(wDtt[0]));
+    //if (boundaryMask != 0) {
+    //        Osd_boundBasisBoxSplineTri(
+    //            boundaryMask, &(wP[0]), &(wDs[0]), &(wDt[0]), &(wDss[0]), &(wDst[0]) &(wDtt[0]);
+   //}
+
+    vec3 p2 = vec3(0.0);
+    vec3 p3 = vec3(0.0);
+    for (int i = 0; i < 16; i++) {
+        P +=  points[i] * wP[i];
+    }
+    OsdEvaluatePatchBasisNormalized(OSD_PATCH_DESCRIPTOR_REGULAR, osdParam, UV.x + 0.01, UV.y, &(wP[0]), &(wDs[0]), &(wDt[0]), &(wDss[0]), &(wDst[0]), &(wDtt[0]));
+    for (int i = 0; i < 16; i++) {
+        p2 +=  points[i] * wP[i];
+    }
+
+    OsdEvaluatePatchBasisNormalized(OSD_PATCH_DESCRIPTOR_REGULAR, osdParam, UV.x, UV.y + 0.01, &(wP[0]), &(wDs[0]), &(wDt[0]), &(wDss[0]), &(wDst[0]), &(wDtt[0]));
+    for (int i = 0; i < 16; i++) {
+        p3 +=  points[i] * wP[i];
+    }
+
+    P = (GetWorldToViewMatrix() * transform * vec4(P,1.0)).xyz;
+    p2 = (GetWorldToViewMatrix() * transform * vec4(p2,1.0)).xyz;
+    p3 = (GetWorldToViewMatrix() * transform * vec4(p3,1.0)).xyz;
+    N = normalize(cross(P - p2,P - p3));
 
     outData.Peye = vec4(P, 1);
     //TODO THOR Maybve we need to multiply by projection matrix
@@ -1374,25 +1402,9 @@ void main(void)
     gl_PointSize = GetPointRasterSize(pointId);
     ProcessPointId(pointId);
 
-    //START
-    vec3 cv[HD_NUM_PATCH_VERTS];
-    vec3 bSplineCP[15];
 
     ivec3 patchParam = GetPatchParam();
 
-    //Consider if we are doing the work multiple times
-    for (int i = 0; i < HD_NUM_PATCH_VERTS; ++i) {
-        //todo simplify that
-        cv[i] = (vec4(HdGet_points(i),1.0)).xyz;
-    }
-    /*
-    OsdComputeBoxSplineTriangleBoundaryPoints(&(cv[0]), patchParam);
-    for (int i = 0; i < 15; ++i) {
-        bSplineCP[i] =
-            HdStComputePerPatchVertexBoxSplineTriangle(patchParam, i, &(cv[0]));
-    }
-    */
-    //TODO may want to know cv and patch param
     float4 tessOuterLo(0), tessOuterHi(0);
     //TODO HIGHLY LIKELY THAT we need
     int refinementLevel = OsdGetPatchRefinementLevel(patchParam);
@@ -1409,10 +1421,7 @@ void main(void)
 
     vec3 P = vec3(0), dPu = vec3(0), dPv = vec3(0);
     vec3 N = vec3(0), dNu = vec3(0), dNv = vec3(0);
-
-
-    //HdStEvalPatchBezierTriangle(patchParam, UV, &(bSplineCP[0]),
-    //                            P, dPu, dPv, N, dNu, dNv);
+                         P, dPu, dPv, N, dNu, dNv);
 
     float wP[HD_NUM_PATCH_VERTS];
     float wDs[HD_NUM_PATCH_VERTS];
@@ -1431,16 +1440,16 @@ void main(void)
     vec3 p2 = vec3(0.0);
     vec3 p3 = vec3(0.0);
     for (int i = 0; i < 12; i++) {
-        P +=  cv[i] * wP[i];
+        P +=  points[i] * wP[i];
     }
     OsdEvaluatePatchBasisNormalized(OSD_PATCH_DESCRIPTOR_LOOP, osdParam, UV.x + 0.01, UV.y, &(wP[0]), &(wDs[0]), &(wDt[0]), &(wDss[0]), &(wDst[0]), &(wDtt[0]));
     for (int i = 0; i < 12; i++) {
-        p2 +=  cv[i] * wP[i];
+        p2 +=  points[i] * wP[i];
     }
 
     OsdEvaluatePatchBasisNormalized(OSD_PATCH_DESCRIPTOR_LOOP, osdParam, UV.x, UV.y + 0.01, &(wP[0]), &(wDs[0]), &(wDt[0]), &(wDss[0]), &(wDst[0]), &(wDtt[0]));
     for (int i = 0; i < 12; i++) {
-        p3 +=  cv[i] * wP[i];
+        p3 +=  points[i] * wP[i];
     }
     //maybe this has to be in eye space
     P = (GetWorldToViewMatrix() * transform * vec4(P,1.0)).xyz;
