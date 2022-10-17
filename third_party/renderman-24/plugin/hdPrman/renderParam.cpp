@@ -1247,10 +1247,8 @@ HdPrman_RenderParam::ConvertCategoriesToAttributes(
     RtParamList& attrs)
 {
     if (categories.empty()) {
-        attrs.SetString( RixStr.k_lightfilter_subset,
-                         RtUString("") );
-        attrs.SetString( RixStr.k_lighting_subset,
-                         RtUString("default") );
+        attrs.SetString( RixStr.k_lightfilter_subset, RtUString("") );
+        attrs.SetString( RixStr.k_lighting_subset, RtUString("default") );
         TF_DEBUG(HDPRMAN_LIGHT_LINKING)
             .Msg("HdPrman: <%s> no categories; lighting:subset = \"default\"\n",
                  id.GetText());
@@ -1258,7 +1256,7 @@ HdPrman_RenderParam::ConvertCategoriesToAttributes(
     }
 
     std::string membership;
-    for (TfToken const& category: categories) {
+    for (TfToken const& category : categories) {
         if (!membership.empty()) {
             membership += " ";
         }
@@ -1272,7 +1270,7 @@ HdPrman_RenderParam::ConvertCategoriesToAttributes(
         membership += " " + input;
     }
     attrs.SetString( RixStr.k_grouping_membership,
-                       RtUString(membership.c_str()) );
+                     RtUString(membership.c_str()) );
     TF_DEBUG(HDPRMAN_LIGHT_LINKING)
         .Msg("HdPrman: <%s> grouping:membership = \"%s\"\n",
              id.GetText(), membership.c_str());
@@ -1291,7 +1289,7 @@ HdPrman_RenderParam::ConvertCategoriesToAttributes(
         }
     }
     attrs.SetString( RixStr.k_lighting_subset,
-                      RtUString(lightingSubset.c_str()) );
+                     RtUString(lightingSubset.c_str()) );
     TF_DEBUG(HDPRMAN_LIGHT_LINKING)
         .Msg("HdPrman: <%s> lighting:subset = \"%s\"\n",
              id.GetText(), lightingSubset.c_str());
