@@ -73,9 +73,29 @@ HdFlatteningSceneIndex::HdFlatteningSceneIndex(
     , _identityDrawMode(
         HdRetainedTypedSampledDataSource<TfToken>::New(TfToken()))
 {
+    _FillPrimsRecursively(SdfPath::AbsoluteRootPath());
 }
 
 HdFlatteningSceneIndex::~HdFlatteningSceneIndex() = default;
+
+void
+HdFlatteningSceneIndex::_FillPrimsRecursively(const SdfPath &primPath)
+{
+    HdSceneIndexPrim const prim = _GetInputSceneIndex()->GetPrim(primPath);
+
+    HdContainerDataSourceHandle primSource =
+        _PrimLevelWrappingDataSource::New(*this, primPath, prim.dataSource);
+
+    _prims.insert(
+        { primPath,
+          _PrimEntry{
+                HdSceneIndexPrim{ prim.primType, std::move(primSource) }}});
+
+    for (const SdfPath &childPath :
+             _GetInputSceneIndex()->GetChildPrimPaths(primPath)) {
+        _FillPrimsRecursively(childPath);
+    }
+}
 
 HdSceneIndexPrim
 HdFlatteningSceneIndex::GetPrim(const SdfPath &primPath) const
@@ -85,22 +105,14 @@ HdFlatteningSceneIndex::GetPrim(const SdfPath &primPath) const
         return it->second.prim;
     }
 
-    if (_GetInputSceneIndex()) {
-        return _GetInputSceneIndex()->GetPrim(primPath);
-    }
-
-    return {TfToken(), nullptr};
+    return _GetInputSceneIndex()->GetPrim(primPath);
 }
 
 SdfPathVector
 HdFlatteningSceneIndex::GetChildPrimPaths(const SdfPath &primPath) const
 {
     // we don't change topology so we can dispatch to input
-    if (_GetInputSceneIndex()) {
-        return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
-    }
-
-    return {};
+    return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
 }
 
 void

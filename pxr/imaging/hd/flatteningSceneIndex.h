@@ -85,7 +85,6 @@ protected:
             const HdSceneIndexBase &sender,
             const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;
 private:
-
     // members
     struct _PrimEntry
     {
@@ -101,6 +100,8 @@ private:
     HdTokenDataSourceHandle _identityDrawMode;
 
     // methods
+    void _FillPrimsRecursively(const SdfPath &primPath);
+
     void _DirtyHierarchy(
         const SdfPath &primPath,
         const HdDataSourceLocatorSet &dirtyLocators,

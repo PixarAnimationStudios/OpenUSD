@@ -33,18 +33,46 @@ HdMergingSceneIndex::HdMergingSceneIndex()
 {
 }
 
+static
+void
+_FillAddedEntriesRecursively(
+    const HdSceneIndexBaseRefPtr &sceneIndex,
+    const SdfPath &primPath,
+    HdSceneIndexObserver::AddedPrimEntries * const addedEntries)
+{
+    addedEntries->push_back({primPath, sceneIndex->GetPrim(primPath).primType});
+    for (const SdfPath &childPath : sceneIndex->GetChildPrimPaths(primPath)) {
+        _FillAddedEntriesRecursively(sceneIndex, childPath, addedEntries);
+    }
+}
+
+static
+HdSceneIndexObserver::AddedPrimEntries
+_AddedEntriesForAllPrims(const HdSceneIndexBaseRefPtr &sceneIndex)
+{
+    HdSceneIndexObserver::AddedPrimEntries addedEntries;
+    _FillAddedEntriesRecursively(
+        sceneIndex, SdfPath::AbsoluteRootPath(), &addedEntries);
+    return addedEntries;
+}
+
 void
 HdMergingSceneIndex::AddInputScene(
     const HdSceneIndexBaseRefPtr &inputScene,
     const SdfPath &activeInputSceneRoot)
 {
-    // XXX: Note: when scenes are added, we don't generate PrimsAdded;
-    // the caller is responsible for notifying the downstream scene indices of
-    // any previously populated prims.
-    if (inputScene) {
-        _inputs.emplace_back(inputScene, activeInputSceneRoot);
-        inputScene->AddObserver(HdSceneIndexObserverPtr(&_observer));
+    if (!inputScene) {
+        return;
     }
+
+    _inputs.emplace_back(inputScene, activeInputSceneRoot);
+    inputScene->AddObserver(HdSceneIndexObserverPtr(&_observer));
+
+    if (!_IsObserved()) {
+        return;
+    }
+
+    _SendPrimsAdded(_AddedEntriesForAllPrims(inputScene));
 }
 
 void
