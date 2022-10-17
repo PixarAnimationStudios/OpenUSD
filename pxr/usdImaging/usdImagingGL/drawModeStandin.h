@@ -57,10 +57,11 @@ public:
     /// cached data and emit dirty entries for the stand-in geometry.
     virtual void ProcessDirtyLocators(
         const HdDataSourceLocatorSet &dirtyLocator,
-        HdSceneIndexObserver::DirtiedPrimEntries * entries) = 0;
+        HdSceneIndexObserver::DirtiedPrimEntries * entries,
+        bool * needsRefresh) = 0;
 
 protected:
-    virtual const TfTokenVector &_GetChildNames() const = 0;
+    virtual const TfTokenVector _GetChildNames() const = 0;
     virtual TfToken _GetChildPrimType(const TfToken &name) const = 0;
     virtual HdContainerDataSourceHandle _GetChildPrimSource(const TfToken &name) const = 0;
 

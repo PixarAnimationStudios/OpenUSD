@@ -191,8 +191,7 @@ private:
                               VtValue* topology, 
                               VtValue* points, 
                               GfRange3d* extent,
-                              VtValue* uv,
-                              VtValue* assign) const;
+                              VtValue* uv) const;
 
     // Check whether the given cachePath is a path to the draw mode material.
     bool _IsMaterialPath(SdfPath const& path) const;
@@ -221,17 +220,14 @@ private:
     void _GenerateBoundsGeometry(VtValue* topo, VtValue* points,
                                  GfRange3d const& extents) const;
 
-    // Generate geometry for "cards" draw mode, with cardGeometry "cross".
-    void _GenerateCardsCrossGeometry(VtValue* topo, VtValue* points,
-            GfRange3d const& extents, uint8_t axes_mask) const;
+    // Generate geometry for "cards" draw mode, cardGeometry "cross" or "box".
+    void _GenerateCardsGeometry(VtValue* topo, VtValue* points,
+            GfRange3d const& extents, uint8_t axes_mask, TfToken cardGeometry,
+            bool generateSubsets, UsdPrim const& prim) const;
 
-    // Generate geometry for "cards" draw mode, with cardGeometry "box".
-    void _GenerateCardsBoxGeometry(VtValue* topo, VtValue* points,
-            GfRange3d const& extents, uint8_t axes_mask) const;
-
-    // Generate geometry for "cards" draw mode, with cardGeometry "fromTexture".
+    // Generate geometry for "cards" draw mode, cardGeometry "fromTexture".
     void _GenerateCardsFromTextureGeometry(VtValue* topo, VtValue* points,
-            VtValue* uv, VtValue* assign, GfRange3d* extents,
+            VtValue* uv, GfRange3d* extents,
             UsdPrim const& prim) const;
 
     // Given an asset attribute pointing to a texture, pull the "worldtoscreen"
@@ -240,15 +236,15 @@ private:
         const;
 
     // Generate texture coordinates for cards "cross"/"box" mode.
-    void _GenerateTextureCoordinates(VtValue* uv, VtValue* assign,
-                                     uint8_t axes_mask) const;
+    void _GenerateTextureCoordinates(VtValue* uv, uint8_t axes_mask) const;
 
     // Map from cachePath to what drawMode it was populated as.
     using _DrawModeMap = TfHashMap<SdfPath, TfToken, SdfPath::Hash>;
     _DrawModeMap _drawModeMap;
 
     // Map from cachePath (of gprim) to what material it's bound to.
-    using _MaterialMap = TfHashMap<SdfPath, SdfPath, SdfPath::Hash>;
+    using _MaterialSet = TfHashSet<SdfPath, SdfPath::Hash>;
+    using _MaterialMap = TfHashMap<SdfPath, _MaterialSet, SdfPath::Hash>;
     _MaterialMap _materialMap;
 
     // The default value of model:drawModeColor, fetched from the schema

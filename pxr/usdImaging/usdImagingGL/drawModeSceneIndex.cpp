@@ -150,7 +150,8 @@ _RefreshDrawModeStandin(
     const HdSceneIndexBaseRefPtr &inputSceneIndex,
     const SdfPath &path,
     UsdImagingGL_DrawModeStandinSharedPtr *standin,
-    HdSceneIndexObserver::DirtiedPrimEntries *entries)
+    HdSceneIndexObserver::RemovedPrimEntries *removedEntries,
+    HdSceneIndexObserver::AddedPrimEntries *addedEntries)
 {
     UsdImagingGL_DrawModeStandinSharedPtr newStandin =
         UsdImagingGL_GetDrawModeStandin(
@@ -161,13 +162,12 @@ _RefreshDrawModeStandin(
         return;
     }
 
-    static const HdDataSourceLocatorSet full{
-        HdDataSourceLocator::EmptyLocator()};
+    (*removedEntries).push_back({ path });
+    newStandin->ComputePrimAddedEntries(addedEntries);
 
-    entries->push_back({path, full});
-    for (const SdfPath &childPath : newStandin->GetChildPrimPaths()) {
-        entries->push_back({childPath, full});
-    }
+    static const HdDataSourceLocatorSet full {
+        HdDataSourceLocator::EmptyLocator() };
+
     *standin = std::move(newStandin);
 }
 
@@ -285,7 +285,7 @@ UsdImagingGLDrawModeSceneIndex::_PrimsDirtied(
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
     TRACE_FUNCTION();
-
+    
     // Determine the paths of all prims whose draw mode might have changed.
     std::set<SdfPath> paths;
 
@@ -301,12 +301,13 @@ UsdImagingGLDrawModeSceneIndex::_PrimsDirtied(
         }
     }
 
+    HdSceneIndexObserver::RemovedPrimEntries removedEntries;
+    HdSceneIndexObserver::AddedPrimEntries addedEntries;
+
     if (!paths.empty()) {
         // Draw mode changed means we need to remove the stand-in geometry
         // or prims forwarded from the input scene delegate and then (re-)add
         // the stand-in geometry or prims from the input scene delegate.
-        HdSceneIndexObserver::RemovedPrimEntries removedEntries;
-        HdSceneIndexObserver::AddedPrimEntries addedEntries;
         
         // Set this to skip all descendants of a given path.
         SdfPath lastPath;
@@ -363,16 +364,15 @@ UsdImagingGLDrawModeSceneIndex::_PrimsDirtied(
                 }
             }
         }
-
-        _SendPrimsRemoved(removedEntries);
-        _SendPrimsAdded(addedEntries);
-    }
-
-    if (!_IsObserved()) {
-        return;
     }
 
     if (_prims.empty()) {
+        if (!removedEntries.empty()) {
+            _SendPrimsRemoved(removedEntries);
+        }
+        if (!addedEntries.empty()) {
+            _SendPrimsAdded(addedEntries);
+        }
         _SendPrimsDirtied(entries);
         return;
     }
@@ -398,23 +398,33 @@ UsdImagingGLDrawModeSceneIndex::_PrimsDirtied(
 
         // Prim replaced by stand-in geometry has changed. Determine how
         // stand-in geometry is affected by changed attributed on prim.
+        // ProcessDirtyLocators will do this; if the prim has changed in a
+        // way that requires us to regenerate it (e.g., an axis has been added
+        // or removed), it will set needsRefresh to true and we can then call
+        // _RefreshDrawModeStandin. Note that _RefreshDrawModeStandin calls
+        // _SendPrimsRemoved and _SendPrimsAdded as needed.
         
-        // Prim data source was dirtied - need a full re-fresh of stand-in
-        // geometry.
-        if (entry.dirtyLocators.Contains(HdDataSourceLocator::EmptyLocator())) {
+        bool needsRefresh = false;
+        it->second->ProcessDirtyLocators(
+            entry.dirtyLocators, &dirtiedEntries, &needsRefresh);
+        if (needsRefresh) {
             _RefreshDrawModeStandin(
                 _GetInputSceneIndex(),
                 path,
                 &it->second,
-                &dirtiedEntries);
-        } else {
-            // Do the translation.
-            it->second->ProcessDirtyLocators(
-                entry.dirtyLocators, &dirtiedEntries);
+                &removedEntries,
+                &addedEntries);
         }
     }
-
-    _SendPrimsDirtied(dirtiedEntries);
+    if (!removedEntries.empty()) {
+        _SendPrimsRemoved(removedEntries);
+    }
+    if (!addedEntries.empty()) {
+        _SendPrimsAdded(addedEntries);
+    }
+    if (!dirtiedEntries.empty()) {
+        _SendPrimsDirtied(dirtiedEntries);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -43,7 +43,6 @@ pxr_library(usdImagingGL
         drawModeAdapter
         drawModeSceneIndex
         engine
-        package
         renderParams
 
     PUBLIC_HEADERS
@@ -72,7 +71,6 @@ pxr_library(usdImagingGL
 
     RESOURCE_FILES
         plugInfo.json
-        shaders/drawMode.glslfx
 )
 
 #
