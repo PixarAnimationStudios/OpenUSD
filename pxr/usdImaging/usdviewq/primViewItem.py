@@ -129,6 +129,7 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         return False
 
     def _extractInfo(self, info):
+        # nv begin #prim-display-name
         ( self.hasArcs,
           self.active,
           self.imageable,
@@ -141,7 +142,10 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
           isVisibilityInherited,
           self.visVaries,
           self.name,
-          self.typeName ) = info
+          self.typeName,
+          self.displayName ) = info
+
+        # nv end
 
         parent = self.parent()
         parentIsPrimViewItem = isinstance(parent, PrimViewItem)
@@ -227,7 +231,12 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
 
     def _nameData(self, role):
         if role == QtCore.Qt.DisplayRole:
-            return self.name
+            # nv begin #prim-display-name
+            if self._appController._dataModel.viewSettings.showPrimDisplayNames:
+                return self.displayName if self.displayName != "" else self.name
+            else:
+                return self.name
+            # nv end
         elif role == QtCore.Qt.FontRole:
             # Abstract prims are also considered defined; since we want
             # to distinguish abstract defined prims from non-abstract
@@ -256,6 +265,12 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
                 toolTip = 'Inactive ' + toolTip
             elif self.isInstance:
                 toolTip = 'Instanced ' + toolTip
+        
+            # nv begin #prim-display-name
+            # tooltip should always show both name and display name
+            toolTip = toolTip + "<br>Name: " + self.name + "<br>Display Name: " + self.displayName
+            # nv end
+
             if self.hasArcs:
                 toolTip = toolTip + "<br>Has composition arcs"
             return toolTip

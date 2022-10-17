@@ -48,6 +48,7 @@ _GetPrimInfo(UsdPrim const &prim, UsdTimeCode time)
 {
     UsdviewqUtils::PrimInfo info = UsdviewqUtils::GetPrimInfo(prim, time);
     
+    // nv begin #prim-display-name
     return boost::python::make_tuple(info.hasCompositionArcs,
                                      info.isActive,
                                      info.isImageable,
@@ -60,7 +61,10 @@ _GetPrimInfo(UsdPrim const &prim, UsdTimeCode time)
                                      info.isVisibilityInherited,
                                      info.visVaries,
                                      info.name,
-                                     info.typeName);
+                                     info.typeName,
+                                     info.displayName);
+
+    // nv end
 }
 
 } // anonymous namespace 

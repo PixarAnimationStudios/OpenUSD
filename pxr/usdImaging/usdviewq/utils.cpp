@@ -104,6 +104,19 @@ UsdviewqUtils::PrimInfo::PrimInfo(const UsdPrim &prim, const UsdTimeCode time)
     else
         name = _tokens->root.GetString();
     typeName = prim.GetTypeName().GetString();
+
+    // nv begin #prim-display-name
+
+    if (prim.HasAuthoredMetadata(SdfFieldKeys->DisplayName))
+    {
+        prim.GetMetadata<std::string>(SdfFieldKeys->DisplayName, &displayName);
+    }
+    else
+    {
+        displayName = "";
+    }
+
+    // nv end
 }
 
 /*static*/

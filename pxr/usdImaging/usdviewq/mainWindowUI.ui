@@ -159,6 +159,7 @@
             <addaction name="actionShow_All_Prototype_Prims"/>
             <addaction name="actionShow_Undefined_Prims"/>
             <addaction name="actionShow_Abstract_Prims"/>
+            <addaction name="actionShow_Prim_DisplayName" />
            </widget>
            <addaction name="menuNavigation"/>
            <addaction name="menuShow"/>
@@ -2658,6 +2659,14 @@
    </property>
    <property name="text">
     <string>Abstract Prims (Classes)</string>
+   </property>
+  </action>
+  <action name="actionShow_Prim_DisplayName">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Use Display Name (Prims)</string>
    </property>
   </action>
   <action name="actionPick_Prims">
