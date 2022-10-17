@@ -31,7 +31,7 @@ You can download and install USD using the [vcpkg](https://github.com/Microsoft/
   cd vcpkg
   ./bootstrap-vcpkg.sh #.\bootstrap-vcpkg.bat(for windows)
   ./vcpkg integrate install
-  ./vcpkg install usd
+  ./vcpkg install usd:x64-windows
 ```
 The USD port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
 
