@@ -90,10 +90,8 @@ protected:
         const HdSceneIndexObserver::RemovedPrimEntries &entries) override;
 
 private:
-    // Given a prim path, extracts prototype paths from instancer topology
-    // schema from input scene index.
-    VtArray<SdfPath> _GetPrototypes(
-        const SdfPath &instancer) const;
+    // Initialized _instancerMap by recursing over prims in input scene.
+    void _FillInstancerMapRecursively(const SdfPath &primPath);
 
     // Sends prims dirtied messages with data source locator instancedBy
     // for all given prim paths to scene index observers.

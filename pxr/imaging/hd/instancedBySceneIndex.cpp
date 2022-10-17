@@ -34,6 +34,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
+// Given a prim, extracts prototype paths from instancer topology
+// schema.
+VtArray<SdfPath>
+_PrototypesForInstancer(const HdSceneIndexPrim &prim)
+{
+    HdInstancerTopologySchema instancerTopology =
+        HdInstancerTopologySchema::GetFromParent(prim.dataSource);
+    if (HdPathArrayDataSourceHandle const ds = 
+                    instancerTopology.GetPrototypes()) {
+        return ds->GetTypedValue(0.0f);
+    }
+    return { };
+}
+
 // VtArray has no insert
 void
 _Insert(VtArray<SdfPath> &paths,
@@ -205,9 +219,30 @@ HdInstancedBySceneIndex::HdInstancedBySceneIndex(
   : HdSingleInputFilteringSceneIndexBase(inputScene)
   , _instancerMapping(std::make_shared<InstancerMapping>())
 {
+    if (_GetInputSceneIndex()) {
+        _FillInstancerMapRecursively(SdfPath::AbsoluteRootPath());
+    }
 }
 
 HdInstancedBySceneIndex::~HdInstancedBySceneIndex() = default;
+
+void
+HdInstancedBySceneIndex::_FillInstancerMapRecursively(const SdfPath &primPath)
+{
+    HdSceneIndexPrim const prim = _GetInputSceneIndex()->GetPrim(primPath);
+
+    if (prim.primType == HdPrimTypeTokens->instancer) {
+        _instancerMapping->SetPrototypesForInstancer(
+            primPath,
+            _PrototypesForInstancer(prim),
+            nullptr);
+    }
+
+    for (const SdfPath &childPath :
+             _GetInputSceneIndex()->GetChildPrimPaths(primPath)) {
+        _FillInstancerMapRecursively(childPath);
+    }
+}
 
 HdSceneIndexPrim
 HdInstancedBySceneIndex::GetPrim(
@@ -215,37 +250,34 @@ HdInstancedBySceneIndex::GetPrim(
 {
     TRACE_FUNCTION();
 
-    const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
+    if (!_GetInputSceneIndex()) {
+        return { TfToken(), nullptr };
+    }
 
-    return {
-        prim.primType,
-        HdOverlayContainerDataSource::New(
-            prim.dataSource,
-            HdRetainedContainerDataSource::New(
-                HdInstancedBySchemaTokens->instancedBy,
-                HdLazyContainerDataSource::New(
-                    std::bind(_InstancedByPathsDataSource,
-                              primPath, _instancerMapping)))) };
+    HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
+
+    if (prim.dataSource) {
+        prim.dataSource = 
+            HdOverlayContainerDataSource::New(
+                prim.dataSource,
+                HdRetainedContainerDataSource::New(
+                    HdInstancedBySchemaTokens->instancedBy,
+                    HdLazyContainerDataSource::New(
+                        std::bind(_InstancedByPathsDataSource,
+                                  primPath, _instancerMapping))));
+    }
+
+    return prim;
 }
 
 SdfPathVector
 HdInstancedBySceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
-    return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
-}
-
-VtArray<SdfPath>
-HdInstancedBySceneIndex::_GetPrototypes(const SdfPath &instancer) const
-{
-    HdSceneIndexPrim const prim = _GetInputSceneIndex()->GetPrim(instancer);
-    HdInstancerTopologySchema instancerTopology =
-        HdInstancerTopologySchema::GetFromParent(prim.dataSource);
-    if (HdPathArrayDataSourceHandle const ds = 
-                    instancerTopology.GetPrototypes()) {
-        return ds->GetTypedValue(0.0f);
+    if (!_GetInputSceneIndex()) {
+        return {};
     }
-    return { };
+    return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
 }
 
 void
@@ -271,6 +303,10 @@ HdInstancedBySceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
+    if (!_GetInputSceneIndex()) {
+        return;
+    }
+
     const bool isObserved = _IsObserved();
 
     SdfPathSet dirtiedPrims;
@@ -278,13 +314,15 @@ HdInstancedBySceneIndex::_PrimsAdded(
     // Add new instancers to the instancer mapping table.
     for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
         if (entry.primType == HdPrimTypeTokens->instancer) {
+            HdSceneIndexPrim const prim = _GetInputSceneIndex()->GetPrim(
+                entry.primPath);
             _instancerMapping->SetPrototypesForInstancer(
                 entry.primPath,
-                _GetPrototypes(entry.primPath),
+                _PrototypesForInstancer(prim),
                 isObserved ? &dirtiedPrims : nullptr);
         }
     }
-
+        
     if (!isObserved) {
         return;
     }
@@ -298,6 +336,10 @@ HdInstancedBySceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
+    if (!_GetInputSceneIndex()) {
+        return;
+    }
+
     const bool isObserved = _IsObserved();
 
     static const HdDataSourceLocator prototypesLocator =
@@ -307,9 +349,11 @@ HdInstancedBySceneIndex::_PrimsDirtied(
     SdfPathSet dirtiedPrims;
     for (const HdSceneIndexObserver::DirtiedPrimEntry &entry : entries) {
         if (entry.dirtyLocators.Contains(prototypesLocator)) {
+            HdSceneIndexPrim const prim = _GetInputSceneIndex()->GetPrim(
+                entry.primPath);
             _instancerMapping->SetPrototypesForInstancer(
                 entry.primPath,
-                _GetPrototypes(entry.primPath),
+                _PrototypesForInstancer(prim),
                 isObserved ? &dirtiedPrims : nullptr);
         }
     }
