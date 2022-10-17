@@ -733,6 +733,78 @@ UsdImagingDataSourcePrim::Invalidate(
         if (propertyName == UsdGeomTokens->extent) {
             locators.insert(HdExtentSchema::GetDefaultLocator());
         }
+
+        // TODO: Should all this model stuff go somewhere else?
+
+        if (propertyName == UsdGeomTokens->modelDrawMode) {
+            static const HdDataSourceLocator locator(
+                UsdImagingModelSchemaTokens->model,
+                UsdImagingModelSchemaTokens->drawMode);
+            locators.insert(locator);  
+        }
+
+        if (propertyName == UsdGeomTokens->modelApplyDrawMode) {
+            static const HdDataSourceLocator locator(
+                UsdImagingModelSchemaTokens->model,
+                UsdImagingModelSchemaTokens->applyDrawMode);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelDrawModeColor) {
+            static const HdDataSourceLocator locator(
+                UsdImagingModelSchemaTokens->model,
+                UsdImagingModelSchemaTokens->drawModeColor);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelCardGeometry) {
+            static const HdDataSourceLocator locator(
+                UsdImagingModelSchemaTokens->model,
+                UsdImagingModelSchemaTokens->cardGeometry);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelCardTextureXPos) {
+            static const HdDataSourceLocator locator(
+                UsdImagingModelSchemaTokens->model,
+                UsdImagingModelSchemaTokens->cardTextureXPos);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelCardTextureXNeg) {
+            static const HdDataSourceLocator locator(
+                UsdImagingModelSchemaTokens->model,
+                UsdImagingModelSchemaTokens->cardTextureXNeg);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelCardTextureYPos) {
+            static const HdDataSourceLocator locator(
+                UsdImagingModelSchemaTokens->model,
+                UsdImagingModelSchemaTokens->cardTextureYPos);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelCardTextureYNeg) {
+            static const HdDataSourceLocator locator(
+                UsdImagingModelSchemaTokens->model,
+                UsdImagingModelSchemaTokens->cardTextureYNeg);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelCardTextureZPos) {
+            static const HdDataSourceLocator locator(
+                UsdImagingModelSchemaTokens->model,
+                UsdImagingModelSchemaTokens->cardTextureZPos);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelCardTextureZNeg) {
+            static const HdDataSourceLocator locator(
+                UsdImagingModelSchemaTokens->model,
+                UsdImagingModelSchemaTokens->cardTextureZNeg);
+            locators.insert(locator);
+        }
     }
 
     return locators;
