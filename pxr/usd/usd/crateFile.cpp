@@ -2175,7 +2175,7 @@ std::unique_ptr<CrateFile>
 CrateFile::Open(string const &assetPath,
                 bool detached)
 {
-    TfAutoMallocTag tag2("Usd_CrateFile::CrateFile::Open");
+    TfAutoMallocTag tag("Usd_CrateFile::CrateFile::Open");
     return Open(
         assetPath, ArGetResolver().OpenAsset(ArResolvedPath(assetPath)),
         detached);
@@ -2185,7 +2185,7 @@ std::unique_ptr<CrateFile>
 CrateFile::Open(string const &assetPath, ArAssetSharedPtr const &srcAsset,
                 bool detached)
 {
-    TfAutoMallocTag tag2("Usd_CrateFile::CrateFile::Open");
+    TfAutoMallocTag tag("Usd_CrateFile::CrateFile::Open");
 
     std::unique_ptr<CrateFile> result;
 
@@ -3614,9 +3614,9 @@ CrateFile::_ReadPathsImpl(Reader reader,
                     [this, reader,
                      siblingOffset, &dispatcher, parentPath]() mutable {
                         // XXX Remove these tags when bug #132031 is addressed
-                        TfAutoMallocTag2 tag("Usd", "Usd_CrateDataImpl::Open");
-                        TfAutoMallocTag2 tag2("Usd_CrateFile::CrateFile::Open",
-                                              "_ReadPaths");
+                        TfAutoMallocTag tag(
+                            "Usd", "Usd_CrateDataImpl::Open",
+                            "Usd_CrateFile::CrateFile::Open", "_ReadPaths");
                         reader.Seek(siblingOffset);
                         _ReadPathsImpl<Header>(reader, dispatcher, parentPath);
                     });
@@ -3740,9 +3740,9 @@ CrateFile::_BuildDecompressedPathsImpl(
                     [this, &pathIndexes, &elementTokenIndexes, &jumps,
                      siblingIndex, &dispatcher, parentPath]() mutable {
                         // XXX Remove these tags when bug #132031 is addressed
-                        TfAutoMallocTag2 tag("Usd", "Usd_CrateDataImpl::Open");
-                        TfAutoMallocTag2 tag2("Usd_CrateFile::CrateFile::Open",
-                                              "_ReadPaths");
+                        TfAutoMallocTag tag(
+                            "Usd", "Usd_CrateDataImpl::Open",
+                            "Usd_CrateFile::CrateFile::Open", "_ReadPaths");
                         _BuildDecompressedPathsImpl(
                             pathIndexes, elementTokenIndexes, jumps,
                             siblingIndex, parentPath, dispatcher);
