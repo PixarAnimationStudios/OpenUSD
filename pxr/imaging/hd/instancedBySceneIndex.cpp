@@ -219,9 +219,7 @@ HdInstancedBySceneIndex::HdInstancedBySceneIndex(
   : HdSingleInputFilteringSceneIndexBase(inputScene)
   , _instancerMapping(std::make_shared<InstancerMapping>())
 {
-    if (_GetInputSceneIndex()) {
-        _FillInstancerMapRecursively(SdfPath::AbsoluteRootPath());
-    }
+    _FillInstancerMapRecursively(SdfPath::AbsoluteRootPath());
 }
 
 HdInstancedBySceneIndex::~HdInstancedBySceneIndex() = default;
@@ -250,10 +248,6 @@ HdInstancedBySceneIndex::GetPrim(
 {
     TRACE_FUNCTION();
 
-    if (!_GetInputSceneIndex()) {
-        return { TfToken(), nullptr };
-    }
-
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
 
     if (prim.dataSource) {
@@ -274,9 +268,6 @@ SdfPathVector
 HdInstancedBySceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
-    if (!_GetInputSceneIndex()) {
-        return {};
-    }
     return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
 }
 
@@ -303,10 +294,6 @@ HdInstancedBySceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
-    if (!_GetInputSceneIndex()) {
-        return;
-    }
-
     const bool isObserved = _IsObserved();
 
     SdfPathSet dirtiedPrims;
@@ -336,10 +323,6 @@ HdInstancedBySceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
-    if (!_GetInputSceneIndex()) {
-        return;
-    }
-
     const bool isObserved = _IsObserved();
 
     static const HdDataSourceLocator prototypesLocator =
