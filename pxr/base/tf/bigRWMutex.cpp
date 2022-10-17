@@ -48,9 +48,7 @@ TfBigRWMutex::_AcquireReadContended(int stateIndex)
     // Now try to bump the reader count on our state index.  If we see a write
     // lock state, go back to waiting for any pending writer.  If we fail to
     // bump the count, move to the next slot (and wrap around).
-    for (int i = (stateIndex + 1) % NumStates;
-         ;
-         i = (stateIndex + 1) % NumStates) {
+    for (int i = (stateIndex + 1) % NumStates; ; i = (i + 1) % NumStates) {
         _LockState &lockState = _states[i];
         
         int stateVal = lockState.state;
