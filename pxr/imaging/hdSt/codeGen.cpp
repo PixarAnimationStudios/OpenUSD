@@ -1601,18 +1601,6 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         _genDefines << "#define HD_NUM_PATCH_EVAL_VERTS "
                     << _geometricShader->GetNumPatchEvalVerts() << "\n";
     }
-    //For box splines and bsplines, the implementation wants to invoke
-    //PTCS stage only once
-    if (_geometricShader->GetPrimitiveType() ==
-        HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE ||
-        _geometricShader->GetPrimitiveType() ==
-        HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BSPLINE) {
-        _genDefines << "#define HD_NUM_PTCS_VERTS "
-                    << "1\n" << "\n";
-    } else {
-        _genDefines << "#define HD_NUM_PTCS_VERTS "
-                    << _geometricShader->GetPrimitiveIndexSize() << "\n";
-    }
     _genDefines << "#define HD_NUM_PRIMITIVE_VERTS "
                 << _geometricShader->GetNumPrimitiveVertsForGeometryShader()
                 << "\n";
@@ -1723,7 +1711,6 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         } else {
             _genFS << _GetOSDPatchBasisShaderSource();
         }
-        
     }
 
     // Barycentric coordinates
@@ -1920,18 +1907,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     }
     if (postTessControlShader.find("OsdPerPatchVertexBezier") != std::string::npos
         || postTessControlShader.find("OsdInterpolatePatchCoord") != std::string::npos) {
-
-        std::string source = _GetOSDCommonShaderSource();
-        const std::string s = "threadgroup";
-        const std::string t = "thread";
-
-        std::string::size_type n = 0;
-        while ( ( n = source.find( s, n ) ) != std::string::npos )
-        {
-            source.replace( n, s.size(), t );
-            n += t.size();
-        }
-        _osdPTCS << source;
+        _osdPTCS << _GetOSDCommonShaderSource();
+        _osdPTCS << "mat4 OsdModelViewMatrix() { return mat4(1); }\n";
     }
     //TODO Thor probably not needed
     if (postTessVertexShader.find("OsdPerPatchVertexBezier") != std::string::npos
@@ -2442,16 +2419,6 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                              binding,
                              true);
         }
-        
-        if (_metaData.tessPointsBinding.binding.IsValid()) {
-
-         HdBinding binding = _metaData.tessPointsBinding.binding;
-         _EmitDeclaration(&_resPTCS,
-                             _metaData.tessPointsBinding.name,
-                             TfToken("OsdPerPatchVertexBezier"),
-                             binding,
-                             true);
-        }
 
         ptcsDesc.shaderStage = HgiShaderStagePostTessellationControl;
 
@@ -2536,22 +2503,12 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
     }
 
     if (_hasPTVS) {
-        if (_metaData.tessPointsBinding.binding.IsValid()) {
-
-         HdBinding binding = _metaData.tessPointsBinding.binding;
-         _EmitDeclaration(&_resPTVS,
-                             _metaData.tessPointsBinding.name,
-                             TfToken("OsdPerPatchVertexBezier"),
-                             binding,
-                             true);
-        }
 
         HgiShaderFunctionDesc ptvsDesc;
         ptvsDesc.shaderStage = HgiShaderStagePostTessellationVertex;
 
         ptvsDesc.tessellationDescriptor.numVertsPerPatchIn =
               _geometricShader->GetPrimitiveIndexSize();
-        ptvsDesc.tessellationDescriptor.numVertsPerPatchOut = _geometricShader->GetNumPatchEvalVerts();
         //Set the patchtype to later decide tessfactor types
         ptvsDesc.tessellationDescriptor.patchType =
             (_geometricShader->IsPrimTypeTriangles() ||
@@ -4866,7 +4823,6 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
 
         // primvar accessors
         _EmitAccessor(accessorsVS, name, dataType, binding);
-        
 
         _EmitStructAccessor(accessorsTCS, _tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1, "gl_InvocationID");

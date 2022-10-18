@@ -1326,8 +1326,8 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
     // Drawing can be either direct or indirect. For either case,
     // the drawing batch and drawing program are prepared to resolve
     // drawing coordinate state indirectly, i.e. from buffer data.
-    bool const drawIndirect = false;
-        //capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
+    bool const drawIndirect =
+            capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
     _DrawingProgram & program = _GetDrawingProgram(renderPassState,
                                                    resourceRegistry);
     if (!TF_VERIFY(program.IsValid())) return;
@@ -1714,8 +1714,8 @@ HdSt_PipelineDrawBatch::_ExecutePostTesselation(
     // Drawing can be either direct or indirect. For either case,
     // the drawing batch and drawing program are prepared to resolve
     // drawing coordinate state indirectly, i.e. from buffer data.
-    bool const drawIndirect = false;
-        //capabilities->IsSet//(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
+    bool const drawIndirect =
+            capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
     _DrawingProgram & program = _GetDrawingProgram(renderPassState,
                                                    resourceRegistry);
     if (!TF_VERIFY(program.IsValid())) return;

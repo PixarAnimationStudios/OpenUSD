@@ -78,7 +78,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (refinedFaceCounts)
 );
 
-//TODO make static?
 int32_t GetOneOne() {
     int32_t one = 0;
     uint16_t const oneHalf =
@@ -151,7 +150,6 @@ private:
     HdBufferSourceSharedPtr _osdTopology;
     HdBufferSourceSharedPtr _primitiveBuffer;
     HdBufferSourceSharedPtr _edgeIndicesBuffer;
-    //HdBufferSourceSharedPtr _tessPointsBuffer;
     HdBufferSourceSharedPtr _tessFactorsBuffer;
 };
 
@@ -503,8 +501,6 @@ HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
         //should we only add this if adaptive?
         specs->emplace_back(HdTokens->tessFactors,
                             HdTupleType{HdTypeInt32Vec3, 1});
-        specs->emplace_back(HdTokens->tessPoints,
-                            HdTupleType{HdTypeInt32Vec3, 16});
         
     } else if (_topology->RefinesToBoxSplineTrianglePatches()) {
         // quartic box spline triangle patches
@@ -519,10 +515,6 @@ HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
         //should we only add this if adaptive?
         specs->emplace_back(HdTokens->tessFactors,
                             HdTupleType{HdTypeInt32Vec3, 1});
-        specs->emplace_back(HdTokens->tessPoints,
-                            HdTupleType{HdTypeInt32Vec3, 16});
-        
-        
     } else if (HdSt_Subdivision::RefinesToTriangles(_topology->GetScheme())) {
         // triangles (loop)
         specs->emplace_back(HdTokens->indices,
@@ -534,19 +526,6 @@ HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
                             HdTupleType {HdTypeInt32Vec2, 1});
         specs->emplace_back(HdTokens->tessFactors,
                             HdTupleType{HdTypeInt32Vec3, 1});
-        //specs->emplace_back(HdTokens->tessPoints,
-        //                    HdTupleType{HdTypeInt32Vec3, 16});
-        /*
-        specs->emplace_back(HdTokens->tessFactors,
-                            HdTupleType{HdTypeInt32Vec3, 1});
-        specs->emplace_back(HdTokens->tessPoints,
-                            HdTupleType{HdTypeInt32Vec3, 16});
-         */
-        /*
-        
-        //should we only add this if adaptive?
-        
-         */
     } else {
         // quads (catmark, bilinear)
         if (_topology->TriangulateQuads()) {
@@ -578,7 +557,7 @@ HdSt_OsdIndexComputation::HasChainedBuffer() const
 HdBufferSourceSharedPtrVector
 HdSt_OsdIndexComputation::GetChainedBuffers() const
 {
-    return { _primitiveBuffer, _edgeIndicesBuffer, _tessFactorsBuffer }; //_tessPointsBuffer };
+    return { _primitiveBuffer, _edgeIndicesBuffer, _tessFactorsBuffer };
 }
 
 /*virtual*/
@@ -1251,12 +1230,12 @@ HdSt_OsdIndexComputation::Resolve()
         _topology->RefinesToBoxSplineTrianglePatches()) {
 
         // Bundle groups of 12 or 16 patch control vertices.
-        int arraySize = patchTable
+        int const arraySize = patchTable
             ? patchTable->GetPatchArrayDescriptor(0).GetNumControlVertices()
             : 0;
 
         VtArray<int> indices(ptableSize);
-        std::memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
+        memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
 
         HdBufferSourceSharedPtr patchIndices =
             std::make_shared<HdVtBufferSource>(
@@ -1392,7 +1371,6 @@ HdSt_OsdIndexComputation::_PopulateUniformPrimitiveBuffer(
     VtVec3iArray primitiveParam(numPatches);
     VtVec2iArray edgeIndices(numPatches);
     VtVec3iArray tessFactors(numPatches);
-    //VtVec3iArray tessPoints(numPatches * 16);
     
     float oneFloat = 1.0f;
     uint32_t one = 0;
@@ -1412,13 +1390,6 @@ HdSt_OsdIndexComputation::_PopulateUniformPrimitiveBuffer(
         primitiveParam[i][2] = *((int*)&field1);
 
         edgeIndices[i] = info.baseFaceEdgeIndices;
-        //TODO optimise this loop
-        
-        for (size_t j = i * 16; j < numPatches * 16; j++) {
-           // tessPoints[j][0] = one;
-           // tessPoints[j][1] = one;
-           // tessPoints[j][2] = one;
-        }
         
         int32_t oneone = GetOneOne();
         for (size_t i = 0; i < numPatches; i++) {
@@ -1435,11 +1406,7 @@ HdSt_OsdIndexComputation::_PopulateUniformPrimitiveBuffer(
     _edgeIndicesBuffer.reset(new HdVtBufferSource(
                            HdTokens->edgeIndices,
                            VtValue(edgeIndices)));
-    /*
-    _tessPointsBuffer.reset(new HdVtBufferSource(
-                           HdTokens->tessPoints,
-                           VtValue(tessPoints), 16));
-    */
+
     _tessFactorsBuffer.reset(new HdVtBufferSource(
                            HdTokens->tessFactors,
                            VtValue(tessFactors)));
@@ -1508,11 +1475,7 @@ HdSt_OsdIndexComputation::_PopulatePatchPrimitiveBuffer(
     _edgeIndicesBuffer.reset(new HdVtBufferSource(
                            HdTokens->edgeIndices,
                            VtValue(edgeIndices)));
-    /*
-    _tessPointsBuffer.reset(new HdVtBufferSource(
-                           HdTokens->tessPoints,
-                           VtValue(tessPoints),16));
-    */
+
     _tessFactorsBuffer.reset(new HdVtBufferSource(
                            HdTokens->tessFactors,
                            VtValue(tessFactors)));
@@ -1565,7 +1528,7 @@ HdSt_OsdFvarIndexComputation::Resolve()
         _topology->RefinesToBoxSplineTrianglePatches()) {
 
         // Bundle groups of 12 or 16 patch control vertices
-        int  arraySize = patchTable ?
+        int const arraySize = patchTable ?
             patchTable->GetFVarPatchDescriptor(_channel).GetNumControlVertices()
             : 0;
 
