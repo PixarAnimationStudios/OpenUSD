@@ -62,3 +62,8 @@ vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
 {
     return Peye;
 }
+
+vec4 displacementShader(vec4 Peye, vec3 Neye, vec2 samplePosition)
+{
+    return Peye;
+}

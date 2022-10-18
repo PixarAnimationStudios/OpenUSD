@@ -53,6 +53,14 @@ displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
     return Peye + vec4(Neye*texDisplacement, 0);
 }
 
+vec4
+displacementShader(vec4 Peye, vec3 Neye, vec2 samplePosition)
+{
+    // Calculate scalar displacement.
+    float texDisplacement = HdGet_displacement(samplePosition);
+    return Peye + vec4(Neye*texDisplacement, 0);
+}
+
 
 -- glsl Preview.Surface
 
