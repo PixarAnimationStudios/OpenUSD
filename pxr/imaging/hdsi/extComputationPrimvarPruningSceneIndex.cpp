@@ -798,7 +798,12 @@ HdSiExtComputationPrimvarPruningSceneIndex::GetPrim(const SdfPath &primPath) con
 {
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
 
-    if (prim.dataSource) {
+    const bool isRprim =
+        prim.primType == HdPrimTypeTokens->mesh ||
+        prim.primType == HdPrimTypeTokens->basisCurves||
+        prim.primType == HdPrimTypeTokens->points;
+
+    if (isRprim && prim.dataSource) {
         prim.dataSource =
             _PrimDataSource::New(prim.dataSource, _GetInputSceneIndex());
     }
