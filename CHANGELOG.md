@@ -422,6 +422,9 @@
   lights when changes are made to the light set, instead of every frame.
 
 ### Renderman Hydra Plugin
+- Updated minimum RenderMan version required by hdPrman to 24.1 to avoid an
+  issue where left-handed geometry may be shaded incorrectly.
+
 - Updated HdPrman plugin to respect "vector" role for instance primvars of type
   VtArray<GfVec3> and pass an array of floats to rman.
 
