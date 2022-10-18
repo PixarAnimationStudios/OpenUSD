@@ -110,7 +110,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (transformInverse)                          \
     (velocities)                                \
     (visibility)                                \
-    (widths)
+    (widths)                                    \
+    (isLight)
 
 #define HD_INSTANCER_TOKENS                     \
     (culledInstanceIndices)                     \

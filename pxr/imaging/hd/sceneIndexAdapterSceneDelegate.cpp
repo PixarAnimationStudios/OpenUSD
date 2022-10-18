@@ -1225,7 +1225,8 @@ _GetLightParamValueFromMaterial(
     if (paramName == HdTokens->filters
             || paramName == HdTokens->lightLink
             || paramName == HdTokens->shadowLink
-            || paramName == HdTokens->lightFilterLink) {
+            || paramName == HdTokens->lightFilterLink
+            || paramName == HdTokens->isLight) {
         return VtValue();
     }
 
@@ -1737,9 +1738,9 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
     }
 
     // "primvars" use of Get()
-    if (HdContainerDataSource::Cast(prim.dataSource)->Has(
-            HdPrimvarsSchemaTokens->primvars)) {
-        return _GetPrimvar(id, key, nullptr);
+    if (HdPrimvarsSchema primvars =
+            HdPrimvarsSchema::GetFromParent(prim.dataSource)) {
+        return _GetPrimvar(primvars.GetContainer(), key, nullptr);
     }
 
     // Fallback for unknown prim conventions provided by emulated scene
@@ -1777,8 +1778,21 @@ HdSceneIndexAdapterSceneDelegate::_GetPrimvar(SdfPath const &id,
         return VtValue();
     }
 
-    if (HdPrimvarsSchema primvars = HdPrimvarsSchema::GetFromParent(
-            prim.dataSource)) {
+    return _GetPrimvar(
+        HdPrimvarsSchema::GetFromParent(prim.dataSource).GetContainer(),
+            key, outIndices);
+
+    return VtValue();
+}
+
+VtValue
+HdSceneIndexAdapterSceneDelegate::_GetPrimvar(
+        const HdContainerDataSourceHandle &primvarsDataSource,
+        TfToken const &key,
+        VtIntArray *outIndices)
+{
+    HdPrimvarsSchema primvars(primvarsDataSource);
+    if (primvars) {
         if (HdPrimvarSchema primvar = primvars.GetPrimvar(key)) {
             
             if (outIndices) {

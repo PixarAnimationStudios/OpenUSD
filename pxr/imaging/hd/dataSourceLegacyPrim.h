@@ -113,6 +113,8 @@ private:
     HdDataSourceBaseHandle _GetInstanceCategoriesDataSource();
     HdDataSourceBaseHandle _GetPrmanParamsDataSource();
 
+    bool _IsLight();
+
 private:
     SdfPath _id;
     TfToken _type;

@@ -1359,6 +1359,7 @@ public:
             HdTokens->lightLink,
             HdTokens->shadowLink,
             HdTokens->lightFilterLink,
+            HdTokens->isLight,
         };
         return result;
     }
@@ -2322,6 +2323,10 @@ _IsTypeLightLike(const TfToken &type)
 bool 
 HdDataSourceLegacyPrim::Has(const TfToken &name)
 {
+    if (name == HdPrimvarsSchemaTokens->primvars) {
+        return true;
+    }
+
     if (_type == HdPrimTypeTokens->mesh) {
         if (name == HdMeshSchemaTokens->mesh) {
             return true;
@@ -2350,10 +2355,10 @@ HdDataSourceLegacyPrim::Has(const TfToken &name)
         }
     }
     
-    if (HdPrimTypeIsLight(_type)) {
+    if (_IsLight()) {
         if (name == HdMaterialSchemaTokens->material ||
             name == HdXformSchemaTokens->xform ||
-            name == HdPrimvarsSchemaTokens->primvars) {
+            name == HdLightSchemaTokens->light) {
             return true;
         }
     }
@@ -2449,6 +2454,29 @@ HdDataSourceLegacyPrim::Has(const TfToken &name)
     return false;
 }
 
+bool
+HdDataSourceLegacyPrim::_IsLight()
+{
+    if (HdPrimTypeIsLight(_type)) {
+        return true;
+    }
+
+    // NOTE: This convention allows for things like meshes to identify
+    //       themselves also as lights.
+    //       
+    //       While downstream consumers might query for this equivalent data
+    //       source directly (see Hd_DataSourceLight), its use here is only
+    //       part of GetNames and Has for the prim-level data source.
+    //       
+    //       This specific method will not be invoked by rendering directly.
+    //       Hydra Scene Browser is the only caller of GetNames for
+    //       a prim-level container data source -- and only for the selected
+    //       prim.
+    const VtValue v = _sceneDelegate->GetLightParamValue(
+        _id, HdTokens->isLight);
+    return v.GetWithDefault<bool>(false);
+}
+
 TfTokenVector 
 HdDataSourceLegacyPrim::GetNames()
 {
@@ -2482,12 +2510,11 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdExtentSchemaTokens->extent);
     }
 
-    if (HdPrimTypeIsLight(_type)) {
+    if (_IsLight()) {
         result.push_back(HdMaterialSchemaTokens->material);
         result.push_back(HdXformSchemaTokens->xform);
-    }
-
-    if (_IsTypeLightLike(_type)) {
+        result.push_back(HdLightSchemaTokens->light);
+    } else if (_IsTypeLightLike(_type)) {
         result.push_back(HdLightSchemaTokens->light);
         result.push_back(HdMaterialSchemaTokens->material);
     }
