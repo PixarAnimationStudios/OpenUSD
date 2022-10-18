@@ -55,6 +55,7 @@ public:
 private:
     UsdImagingDataSourcePrimvars(
             const SdfPath &sceneIndexPath,
+            UsdPrim const &usdPrim,
             UsdGeomPrimvarsAPI usdPrimvars,
             const CustomPrimvarMapping &customPrimvarMapping,
             const UsdImagingDataSourceStageGlobals &stageGlobals);
@@ -63,8 +64,12 @@ private:
 
     TfToken _GetCustomPrimvarInterpolation(const UsdAttributeQuery &attrQuery);
 
+    static TfToken _GetPrefixedName(const TfToken &name);
+
     // Path of the owning prim.
     SdfPath _sceneIndexPath;
+
+    UsdPrim _usdPrim;
 
     // Stage globals handle.
     const UsdImagingDataSourceStageGlobals &_stageGlobals;

@@ -135,6 +135,7 @@ private:
             UsdPrim const& prim,
             TfToken const& subprim, TfTokenVector const& properties) const;
 
+    void _ApplyPendingResyncs();
 
     class _StageGlobals : public UsdImagingDataSourceStageGlobals
     {

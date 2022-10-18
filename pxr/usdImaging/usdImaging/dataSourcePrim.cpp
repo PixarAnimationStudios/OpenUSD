@@ -30,9 +30,11 @@
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
+#include "pxr/imaging/hd/primvarsSchema.h"
 
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/kind/registry.h"
+#include "pxr/usd/usdGeom/primvarsAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -804,6 +806,13 @@ UsdImagingDataSourcePrim::Invalidate(
                 UsdImagingModelSchemaTokens->model,
                 UsdImagingModelSchemaTokens->cardTextureZNeg);
             locators.insert(locator);
+        }
+
+        if (UsdGeomPrimvarsAPI::CanContainPropertyName(propertyName)) {
+            static const int prefixLength = 9; // "primvars:"
+            locators.insert(
+                HdPrimvarsSchema::GetDefaultLocator().Append(TfToken(
+                    propertyName.data() + prefixLength)));
         }
     }
 

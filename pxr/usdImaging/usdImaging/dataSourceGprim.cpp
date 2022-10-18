@@ -94,6 +94,7 @@ UsdImagingDataSourceGprim::Get(const TfToken & name)
         if (!primvars) {
             primvars = UsdImagingDataSourcePrimvars::New(
                 _GetSceneIndexPath(),
+                _GetUsdPrim(),
                 UsdGeomPrimvarsAPI(_GetUsdPrim()),
                 _customPrimvarMapping,
                 _GetStageGlobals());

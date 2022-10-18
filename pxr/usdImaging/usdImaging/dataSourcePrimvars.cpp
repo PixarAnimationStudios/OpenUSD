@@ -23,6 +23,7 @@
 //
 
 #include "pxr/usdImaging/usdImaging/dataSourcePrimvars.h"
+#include "pxr/usdImaging/usdImaging/dataSourceRelationship.h"
 
 #include "pxr/usdImaging/usdImaging/primvarUtils.h"
 
@@ -34,10 +35,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 UsdImagingDataSourcePrimvars::UsdImagingDataSourcePrimvars(
     const SdfPath &sceneIndexPath,
+    UsdPrim const &usdPrim,
     UsdGeomPrimvarsAPI usdPrimvars,
     const CustomPrimvarMapping &customPrimvarMapping,
     const UsdImagingDataSourceStageGlobals & stageGlobals)
 : _sceneIndexPath(sceneIndexPath)
+, _usdPrim(usdPrim)
 , _stageGlobals(stageGlobals)
 {
     std::vector<UsdGeomPrimvar> primvars = usdPrimvars.GetPrimvars();
@@ -51,6 +54,14 @@ UsdImagingDataSourcePrimvars::UsdImagingDataSourcePrimvars(
             _customPrimvars[cp.first] = aQ;
         }
     }
+}
+
+
+/*static*/
+TfToken
+UsdImagingDataSourcePrimvars::_GetPrefixedName(const TfToken &name)
+{
+    return TfToken(("primvars:" + name.GetString()).c_str());
 }
 
 bool
@@ -67,6 +78,13 @@ UsdImagingDataSourcePrimvars::Has(const TfToken & name)
     if (cIt != _customPrimvars.end()) {
         return true;
     }
+
+
+    if (UsdRelationship rel =
+            _usdPrim.GetRelationship(_GetPrefixedName(name))) {
+        return true;
+    }
+
 
     return false;
 }
@@ -85,6 +103,15 @@ UsdImagingDataSourcePrimvars::GetNames()
 
     for (const auto & entry : _customPrimvars) {
         result.push_back(entry.first);
+    }
+
+    for (UsdProperty prop :
+            _usdPrim.GetAuthoredPropertiesInNamespace("primvars:")) {
+        if (UsdRelationship rel = prop.As<UsdRelationship>()) {
+            // strip only the "primvars:" namespace
+            static const size_t prefixLength = 9;
+            result.push_back(TfToken(rel.GetName().data() + prefixLength));
+        }
     }
 
     return result;
@@ -119,6 +146,18 @@ UsdImagingDataSourcePrimvars::Get(const TfToken & name)
                     _GetCustomPrimvarInterpolation(cIt->second))),
             HdPrimvarSchema::BuildRoleDataSource(
                 UsdImagingUsdToHdRole(cIt->second.GetAttribute().GetRoleName())));
+    }
+
+
+    if (UsdRelationship rel =
+            _usdPrim.GetRelationship(_GetPrefixedName(name))) {
+
+        return HdPrimvarSchema::Builder()
+            .SetPrimvarValue(UsdImagingDataSourceRelationship::New(
+                rel, _stageGlobals))
+            .SetInterpolation(HdPrimvarSchema::BuildInterpolationDataSource(
+                HdPrimvarSchemaTokens->constant))
+            .Build();
     }
 
     return nullptr;

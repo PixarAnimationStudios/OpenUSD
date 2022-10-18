@@ -47,15 +47,18 @@ public:
     /// Returns whether or not this data source can return a meaningful 
     /// data source for \p name.
     ///
+    USDIMAGING_API
     bool Has(const TfToken &name) override;
 
     /// Returns the names for which this data source can return meaningful
     /// results.
     ///
+    USDIMAGING_API
     TfTokenVector GetNames() override;
 
     /// Returns the data source representing \p name, if valid.
     ///
+    USDIMAGING_API
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
 protected:
@@ -70,6 +73,7 @@ protected:
     /// which to evaluate this attribute data source.
     ///
     /// Note: client code calls this via static New.
+    USDIMAGING_API
     UsdImagingDataSourceGprim(
             const SdfPath &sceneIndexPath,
             UsdPrim usdPrim,

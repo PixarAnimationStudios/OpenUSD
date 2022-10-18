@@ -29,6 +29,7 @@
 #include "pxr/usdImaging/usdImaging/apiSchemaAdapter.h"
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
+#include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 
@@ -675,16 +676,12 @@ UsdImagingStageSceneIndex::_OnUsdObjectsChanged(
 }
 
 void
-UsdImagingStageSceneIndex::ApplyPendingUpdates()
+UsdImagingStageSceneIndex::_ApplyPendingResyncs()
 {
-    if (!_stage ||
-        (_usdPrimsToResync.empty() && _usdPropertiesToUpdate.empty())) {
+    if (!_stage || _usdPrimsToResync.empty()) {
         return;
     }
 
-    TRACE_FUNCTION();
-
-    // Resync first...
     std::sort(_usdPrimsToResync.begin(), _usdPrimsToResync.end());
     size_t lastResynced = 0;
     for (size_t i = 0; i < _usdPrimsToResync.size(); ++i) {
@@ -717,6 +714,21 @@ UsdImagingStageSceneIndex::ApplyPendingUpdates()
         }
     }
 
+    _usdPrimsToResync.clear();
+}
+
+void
+UsdImagingStageSceneIndex::ApplyPendingUpdates()
+{
+    if (!_stage ||
+        (_usdPrimsToResync.empty() && _usdPropertiesToUpdate.empty())) {
+        return;
+    }
+
+    TRACE_FUNCTION();
+
+    _ApplyPendingResyncs();
+
     // Changed properties...
     HdSceneIndexObserver::DirtiedPrimEntries dirtiedPrims;
     for (auto const& pair : _usdPropertiesToUpdate) {
@@ -738,15 +750,29 @@ UsdImagingStageSceneIndex::ApplyPendingUpdates()
             }
 
             if (!dirtyLocators.IsEmpty()) {
-                SdfPath const subpath = subprim.IsEmpty()
-                    ? primPath : primPath.AppendChild(subprim);
-                dirtiedPrims.emplace_back(subpath, dirtyLocators);
+
+                const static HdDataSourceLocator repopulateLocator(
+                    UsdImagingTokens->stageSceneIndexRepopulate);
+
+                if (dirtyLocators.Contains(repopulateLocator)) {
+                    _usdPrimsToResync.push_back(primPath);
+                } else {
+                    SdfPath const subpath = subprim.IsEmpty()
+                        ? primPath : primPath.AppendChild(subprim);
+                    dirtiedPrims.emplace_back(subpath, dirtyLocators);
+                }
+
             }
         }
     }
 
-    _usdPrimsToResync.clear();
     _usdPropertiesToUpdate.clear();
+
+    // Resync any prims whose property invalidation indicated repopulation
+    // was necessary
+    if (!_usdPrimsToResync.empty()) {
+        _ApplyPendingResyncs();
+    }
 
     if (dirtiedPrims.size() > 0) {
         _SendPrimsDirtied(dirtiedPrims);
