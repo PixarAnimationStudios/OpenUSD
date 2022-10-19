@@ -982,12 +982,8 @@ class AppController(QtCore.QObject):
             self._ui.actionShow_Abstract_Prims.triggered.connect(
                 self._toggleShowAbstractPrims)
 
-            # nv begin #prim-display-name
-
             self._ui.actionShow_Prim_DisplayName.triggered.connect(
                 self._toggleShowPrimDisplayName)
-
-            # nv end
 
             # Since setting column visibility is probably not a common
             # operation, it's actually good to have Columns at the end.
@@ -2192,12 +2188,11 @@ class AppController(QtCore.QObject):
             pattern = pattern.lower()
             isMatch = lambda x: pattern in x.lower()
 
-        # nv begin #prim-display-name
         if self._dataModel.viewSettings.showPrimDisplayNames:
             matches = [prim.GetPath() for prim
                     in Usd.PrimRange.Stage(self._dataModel.stage,
                                                 self._displayPredicate)
-                    if (isMatch(prim.GetMetadata("displayName")) or isMatch(prim.GetName()))]
+                    if ((prim.HasAuthoredMetadata("displayName") and isMatch(prim.GetMetadata("displayName"))) or isMatch(prim.GetName()))]
         else:
             matches = [prim.GetPath() for prim
                     in Usd.PrimRange.Stage(self._dataModel.stage,
@@ -2209,14 +2204,12 @@ class AppController(QtCore.QObject):
                 for prototype in self._dataModel.stage.GetPrototypes():
                     matches += [prim.GetPath() for prim
                                 in Usd.PrimRange(prototype, self._displayPredicate)
-                                if (isMatch(prim.GetMetadata("displayName")) or isMatch(prim.GetName()))]
+                                if ((prim.HasAuthoredMetadata("displayName") and isMatch(prim.GetMetadata("displayName"))) or isMatch(prim.GetName()))]
             else:
                 for prototype in self._dataModel.stage.GetPrototypes():
                     matches += [prim.GetPath() for prim
                                 in Usd.PrimRange(prototype, self._displayPredicate)
                                 if isMatch(prim.GetName())]
-
-        #nv end
 
         return matches
 
@@ -3211,14 +3204,10 @@ class AppController(QtCore.QObject):
         self._dataModel.selection.removeAbstractPrims()
         self._resetPrimView()
 
-    # nv begin #prim-display-name
-
     def _toggleShowPrimDisplayName(self):
         self._dataModel.viewSettings.showPrimDisplayNames = (
             self._ui.actionShow_Prim_DisplayName.isChecked())
         self._resetPrimView()
-
-    # nv end
 
     def _toggleRolloverPrimInfo(self):
         self._dataModel.viewSettings.rolloverPrimInfo = (
@@ -5264,11 +5253,8 @@ class AppController(QtCore.QObject):
             self._dataModel.viewSettings.showUndefinedPrims)
         self._ui.actionShow_Abstract_Prims.setChecked(
             self._dataModel.viewSettings.showAbstractPrims)
-
-        # nv begin #prim-display-name
         self._ui.actionShow_Prim_DisplayName.setChecked(
             self._dataModel.viewSettings.showPrimDisplayNames)
-        # nv end
 
     def _refreshRedrawOnScrub(self):
         self._ui.redrawOnScrub.setChecked(

@@ -49,6 +49,37 @@ def _search(appController, searchTerm, expectedItems):
 
 def _testSearchBasic(appController):
     _search(appController, 'f', ['f', 'foo'])
+
+    # with the prim display name option on, the text
+    # will be the display name, not the prim name
+    _search(appController, 'g', ['testDisplayName'])
+
+    # On an invalid search, the old term will remain
+    _search(appController, 'xxx', ['testDisplayName'])
+
+    # Do a regex based search
+    _search(appController, 'f.*', ['f', 'foo'])
+
+    # search based on display name
+    _search(appController, "test", ['testDisplayName'])
+
+def _testSearchNoPrimDisplayName(appController):
+    """
+    Performs a test of the search capability of usdview
+    without the default "Show Prim Display Names" on.
+    Without this option on, search will only look at
+    prim identifers and will not consider the display
+    name metadata.
+    """
+    # this searches specifically for a known display name
+    # which should fail - the rest of the searches
+    # should only look at prim names until the option is turned back on
+    appController._dataModel.viewSettings.showPrimDisplayNames = False
+    _search(appController, 'test', [])
+
+    # the block of _search calls only look at prim names
+    # not display names
+    _search(appController, 'f', ['f', 'foo'])
     _search(appController, 'g', ['g'])
 
     # On an invalid search, the old term will remain
@@ -57,5 +88,11 @@ def _testSearchBasic(appController):
     # Do a regex based search
     _search(appController, 'f.*', ['f', 'foo'])
 
+    appController._dataModel.viewSettings.showPrimDisplayNames = True
+    _search(appController, 'g', ['testDisplayName'])
+
 def testUsdviewInputFunction(appController):
     _testSearchBasic(appController)
+
+    # test with prim display name off
+    _testSearchNoPrimDisplayName(appController)
