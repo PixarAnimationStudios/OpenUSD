@@ -126,7 +126,9 @@ public:
     /// Modifies the operations stored in all operation lists.
     /// \p callback is called for every key.  If the returned key is
     /// invalid then the key is removed, otherwise it's replaced with the
-    /// returned key.
+    /// returned key. If the returned key matches a key that was previously
+    /// returned for the list being processed, the returned key will be
+    /// removed.
     virtual void ModifyItemEdits(const ModifyCallback& cb) = 0;
 
     typedef std::function<
