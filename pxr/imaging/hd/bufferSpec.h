@@ -72,14 +72,17 @@ struct HdBufferSpec final {
     static bool IsSubset(HdBufferSpecVector const &subset,
                          HdBufferSpecVector const &superset);
 
-    /// Returns union set of \p spec1 and \p spec2.
-    /// Duplicated entries are uniquified.
+    /// Returns union set of \p spec1 and \p spec2. Duplicated entries are
+    /// uniquified. The order of items in spec1 and spec2 are preserved relative
+    /// to themselves respectively in the result, with items in spec1 appearing
+    /// first.
     HD_API
     static HdBufferSpecVector ComputeUnion(HdBufferSpecVector const &spec1,
                                            HdBufferSpecVector const &spec2);
     
     /// Returns difference set of \p spec1 and \p spec2, i.e., entries in spec1
-    /// that are not in spec2.
+    /// that are not in spec2.  Duplicated entries are uniquified. The order of
+    /// items in spec1 is preserved.  
     HD_API
     static HdBufferSpecVector ComputeDifference(HdBufferSpecVector const &spec1,
                                            HdBufferSpecVector const &spec2);
@@ -92,7 +95,7 @@ struct HdBufferSpec final {
     HD_API
     size_t Hash() const;
 
-    /// Functor to use for unorderd sets, maps.
+    /// Functor to use for unordered sets, maps.
     struct HashFunctor {
         size_t operator()(HdBufferSpec const& spec) const {
             return spec.Hash();

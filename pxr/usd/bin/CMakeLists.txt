@@ -5,6 +5,7 @@ set(DIRS
     usddumpcrate
     usdgenschemafromsdr
     usdedit
+    usdfixbrokenpixarschemas
     usdresolve
     usdstitch
     usdstitchclips

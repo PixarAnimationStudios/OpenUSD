@@ -11,6 +11,7 @@ def Shader "TestShaderPropertiesNodeUSD" (
     string inputs:inputString = "foo"
     float inputs:inputFloat = 1.0
     color3f inputs:inputColor = (1.0, 1.0, 1.0)
+    color4f inputs:inputColor4 = (1.0, 1.0, 1.0, 1.0)
     point3f inputs:inputPoint = (0.0, 0.0, 0.0)
     normal3f inputs:inputNormal = (1.0, 1.0, 1.0)
     vector3f inputs:inputVector = (0.0, 0.0, 0.0)
@@ -20,6 +21,7 @@ def Shader "TestShaderPropertiesNodeUSD" (
     string[] inputs:inputStringArray = [ "foo", "bar", "baz", "moo" ]
     float[] inputs:inputFloatArray = [ 1.0, 2.0, 3.0, 4.0, 5.0 ]
     color3f[] inputs:inputColorArray = [ (1.0, 1.0, 1.0), (1.0, 1.0, 1.0) ]
+    color4f[] inputs:inputColor4Array = [ (1.0, 1.0, 1.0, 1.0), (1.0, 1.0, 1.0, 1.0) ]
     point3f[] inputs:inputPointArray = [ (0.0, 0.0, 0.0), (0.0, 0.0, 0.0) ]
     normal3f[] inputs:inputNormalArray = [ (1.0, 1.0, 1.0), (1.0, 1.0, 1.0) ]
     vector3f[] inputs:inputVectorArray = [ (0.0, 0.0, 0.0), (0.0, 0.0, 0.0) ]
@@ -32,6 +34,11 @@ def Shader "TestShaderPropertiesNodeUSD" (
     asset inputs:inputAsset = @filename@
     asset[] inputs:inputAssetArray = [@test@, @files@ ]
     color3f inputs:inputColorRoleNone = (1.0, 2.0, 3.0) (
+        sdrMetadata = {
+            string role = "none"
+        }
+    )
+    color4f inputs:inputColor4RoleNone = (1.0, 2.0, 3.0, 4.0) (
         sdrMetadata = {
             string role = "none"
         }

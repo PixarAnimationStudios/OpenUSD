@@ -73,7 +73,6 @@
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/seq/seq.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
-#include <boost/shared_ptr.hpp>
 #include <iosfwd>
 #include <list>
 #include <map>

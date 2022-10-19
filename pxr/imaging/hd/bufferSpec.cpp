@@ -50,17 +50,26 @@ HdBufferSpecVector
 HdBufferSpec::ComputeUnion(HdBufferSpecVector const &specs1,
                            HdBufferSpecVector const &specs2)
 {
+    // This implementation assumes small inputs.
+
     HD_TRACE_FUNCTION();
 
-    std::set<HdBufferSpec> set;
-    for(HdBufferSpec const& spec : specs1) {
-        set.insert(spec);
+    HdBufferSpecVector r;
+
+    for (HdBufferSpec const& s : specs1) {
+        if (std::find(r.begin(), r.end(), s) != r.end()) {
+            continue;
+        }
+        r.push_back(s);
     }
-    for(HdBufferSpec const& spec : specs2) {
-        set.insert(spec);
+    for (HdBufferSpec const& s : specs2) {
+        if (std::find(r.begin(), r.end(), s) != r.end()) {
+            continue;
+        }
+        r.push_back(s);
     }
 
-    return HdBufferSpecVector(set.begin(), set.end());
+    return r;
 }
 
 /*static*/
@@ -68,17 +77,23 @@ HdBufferSpecVector
 HdBufferSpec::ComputeDifference(HdBufferSpecVector const &specs1,
                                 HdBufferSpecVector const &specs2)
 {
+    // This implementation assumes small inputs.
+
     HD_TRACE_FUNCTION();
 
-    std::set<HdBufferSpec> set;
-    for(HdBufferSpec const& spec : specs1) {
-        set.insert(spec);
-    }
-    for(HdBufferSpec const& spec : specs2) {
-        set.erase(spec);
+    HdBufferSpecVector r;
+
+    for(HdBufferSpec const& s : specs1) {
+        if (std::find(specs2.begin(), specs2.end(), s) != specs2.end()) {
+            continue;
+        }
+        if (std::find(r.begin(), r.end(), s) != r.end()) {
+            continue;
+        }
+        r.push_back(s);
     }
 
-    return HdBufferSpecVector(set.begin(), set.end());
+    return r;
 }
 
 size_t

@@ -65,6 +65,8 @@ HdxFullscreenShader::HdxFullscreenShader(
   , _srcAlphaBlendFactor(HgiBlendFactorZero)
   , _dstAlphaBlendFactor(HgiBlendFactorZero)
   , _alphaBlendOp(HgiBlendOpAdd)
+  , _attachmentLoadOp(HgiAttachmentLoadOpDontCare)
+  , _attachmentStoreOp(HgiAttachmentStoreOpStore)
 {
     if (_debugName.empty()) {
         _debugName = "HdxFullscreenShader";
@@ -249,6 +251,25 @@ HdxFullscreenShader::SetBlendState(
 }
 
 void
+HdxFullscreenShader::SetAttachmentLoadStoreOp(
+    HgiAttachmentLoadOp attachmentLoadOp,
+    HgiAttachmentStoreOp attachmentStoreOp)
+{
+    if (_attachmentLoadOp == attachmentLoadOp &&
+        _attachmentStoreOp == attachmentStoreOp) 
+    {
+        return;
+    }
+
+    if (_pipeline) {
+        _hgi->DestroyGraphicsPipeline(&_pipeline);
+    }
+
+    _attachmentLoadOp = attachmentLoadOp;
+    _attachmentStoreOp = attachmentStoreOp;
+}
+
+void
 HdxFullscreenShader::SetShaderConstants(
     uint32_t byteSize,
     const void* data)
@@ -360,6 +381,7 @@ HdxFullscreenShader::_CreateResourceBindings(TextureMap const& textures)
         HgiTextureBindDesc texBind;
         texBind.bindingIndex = bindSlots++;
         texBind.stageUsage = HgiShaderStageFragment;
+        texBind.writable = false;
         texBind.textures.push_back(texHandle);
         texBind.samplers.push_back(_sampler);
         resourceDesc.textures.push_back(std::move(texBind));
@@ -372,6 +394,7 @@ HdxFullscreenShader::_CreateResourceBindings(TextureMap const& textures)
         bufBind.bindingIndex = buffer.first;
         bufBind.resourceType = HgiBindResourceTypeStorageBuffer;
         bufBind.stageUsage = HgiShaderStageFragment;
+        bufBind.writable = false;
         bufBind.offsets.push_back(0);
         bufBind.buffers.push_back(bufferHandle);
         resourceDesc.buffers.push_back(std::move(bufBind));
@@ -448,8 +471,8 @@ HdxFullscreenShader::_CreatePipeline(
 
     // Setup attachments
     _attachment0.blendEnabled = _blendingEnabled;
-    _attachment0.loadOp = HgiAttachmentLoadOpDontCare;
-    _attachment0.storeOp = HgiAttachmentStoreOpStore;
+    _attachment0.loadOp = _attachmentLoadOp;
+    _attachment0.storeOp = _attachmentStoreOp;
     _attachment0.srcColorBlendFactor = _srcColorBlendFactor;
     _attachment0.dstColorBlendFactor = _dstColorBlendFactor;
     _attachment0.colorBlendOp = _colorBlendOp;

@@ -84,11 +84,17 @@ public:
     PCP_API
     PcpPrimIndex(const PcpPrimIndex& rhs);
 
+    /// Move-construction
+    PcpPrimIndex(PcpPrimIndex &&rhs) noexcept = default;
+
     /// Assignment.
     PcpPrimIndex &operator=(const PcpPrimIndex &rhs) {
         PcpPrimIndex(rhs).Swap(*this);
         return *this;
     }
+
+    // Move-assignment.
+    PcpPrimIndex &operator=(PcpPrimIndex &&rhs) noexcept = default;
 
     /// Swap the contents of this prim index with \p index.
     PCP_API
@@ -150,6 +156,13 @@ public:
     /// By default, this returns a range encompassing the entire index.
     PCP_API
     PcpNodeRange GetNodeRange(PcpRangeType rangeType = PcpRangeTypeAll) const;
+
+    /// Returns the node iterator that points to the given \p node if the
+    /// node is in the prim index graph.
+    /// Returns the end of the node range if the node is not contained in this
+    /// prim index.
+    PCP_API
+    PcpNodeIterator GetNodeIteratorAtNode(const PcpNodeRef &node) const;
 
     /// Returns range of iterators that encompasses all prims, in
     /// strong-to-weak order.

@@ -110,8 +110,7 @@ public:
     value_type GetValue(const UsdPrim& prim) const
     {
         TRACE_FUNCTION();
-        if (!prim.GetPath().HasPrefix(_rootPath) 
-            && !prim.IsInPrototype()) {
+        if (!prim.GetPath().HasPrefix(_rootPath) && !prim.IsInPrototype()) {
             TF_CODING_ERROR("Attempt to get value for: %s "
                             "which is not within the specified root: %s",
                             prim.GetPath().GetString().c_str(),
@@ -701,8 +700,15 @@ typedef UsdImaging_ResolvedAttributeCache<UsdImaging_MaterialStrategy,
         UsdImaging_MaterialBindingCache;
 
 struct UsdImaging_MaterialStrategy {
-    typedef SdfPath value_type;         // inherited path to bound shader
-    typedef UsdShadeMaterial query_type;
+    // inherited path to bound target
+    // depending on the load state, override, etc bound target path might not be
+    // queried as a UsdShadeMaterial on the stage.
+    
+    // inherited path to bound target
+    typedef SdfPath value_type;         
+    // Hold the computed path of the bound material or target path of the
+    // winning material binding relationship
+    typedef SdfPath query_type; 
 
     using ImplData = UsdImaging_MaterialBindingImplData;
 
@@ -716,10 +722,22 @@ struct UsdImaging_MaterialStrategy {
         UsdPrim const& prim, 
         ImplData *implData) 
     {
-        return UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial(
+        UsdRelationship bindingRel;
+        UsdShadeMaterial materialPrim = 
+            UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial(
                 &implData->GetBindingsCache(), 
                 &implData->GetCollectionQueryCache(),
-                implData->GetMaterialPurpose());
+                implData->GetMaterialPurpose(),
+                &bindingRel);
+
+        if (materialPrim) {
+            return materialPrim.GetPath();
+        }
+        
+        const SdfPath targetPath =
+            UsdShadeMaterialBindingAPI::GetResolvedTargetPathFromBindingRel(
+                    bindingRel);
+        return targetPath;
     }
  
     static 
@@ -730,17 +748,15 @@ struct UsdImaging_MaterialStrategy {
     { 
         TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for \"preview\" material "
                 "binding for %s\n", prim.GetPath().GetText());
-        if (*query) {
-            SdfPath binding = query->GetPath();
-            if (!binding.IsEmpty()) {
-                return binding;
-            }
-        }
+
         // query already contains the resolved material binding for the prim. 
         // Hence, we don't need to inherit the binding from the parent here. 
         // Futhermore, it may be wrong to inherit the binding from the parent,
         // because in the new scheme, a child of a bound prim can be unbound.
-        return value_type();
+        //
+        // Note that query could be an empty SdfPath, which is the default
+        // value.
+        return *query;
     }
 
     static
@@ -748,11 +764,18 @@ struct UsdImaging_MaterialStrategy {
     ComputeMaterialPath(UsdPrim const& prim, ImplData *implData) {
         // We don't need to walk up the namespace here since 
         // ComputeBoundMaterial does it for us.
-        if (UsdShadeMaterial mat = UsdShadeMaterialBindingAPI(prim).
-                    ComputeBoundMaterial(&implData->GetBindingsCache(), 
-                                         &implData->GetCollectionQueryCache(),
-                                         implData->GetMaterialPurpose())) {
-            return mat.GetPath();
+        UsdRelationship bindingRel;
+        UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial(
+                &implData->GetBindingsCache(), 
+                &implData->GetCollectionQueryCache(),
+                implData->GetMaterialPurpose(),
+                &bindingRel);
+
+        const SdfPath targetPath =
+            UsdShadeMaterialBindingAPI::GetResolvedTargetPathFromBindingRel(
+                    bindingRel);
+        if (!targetPath.IsEmpty()) {
+            return targetPath;
         }
         return value_type();
     }
@@ -914,23 +937,13 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct UsdImaging_CoordSysBindingImplData {
-    // Helper provided by the scene delegate to pre-convert
-    // the binding paths to the equivalent Hydra ID.
-    std::function<SdfPath(SdfPath)> usdToHydraPath;
-};
-
 struct UsdImaging_CoordSysBindingStrategy;
 
-typedef UsdImaging_ResolvedAttributeCache<
-    UsdImaging_CoordSysBindingStrategy,
-    UsdImaging_CoordSysBindingImplData>
+typedef UsdImaging_ResolvedAttributeCache<UsdImaging_CoordSysBindingStrategy>
     UsdImaging_CoordSysBindingCache;
 
 struct UsdImaging_CoordSysBindingStrategy
 {
-    using ImplData = UsdImaging_CoordSysBindingImplData;
-
     typedef std::vector<UsdShadeCoordSysAPI::Binding> UsdBindingVec;
     typedef std::shared_ptr<UsdBindingVec> UsdBindingVecPtr;
     typedef std::shared_ptr<SdfPathVector> IdVecPtr;
@@ -941,13 +954,6 @@ struct UsdImaging_CoordSysBindingStrategy
     };
     struct query_type {
         UsdShadeCoordSysAPI coordSysAPI;
-        ImplData *implData;
-
-        // Convert a USD binding relationship to a Hydra ID
-        SdfPath
-        _IdForBinding(UsdShadeCoordSysAPI::Binding const& binding) const {
-            return implData->usdToHydraPath(binding.bindingRelPath);
-        }
     };
 
     static
@@ -959,8 +965,8 @@ struct UsdImaging_CoordSysBindingStrategy
     }
 
     static
-    query_type MakeQuery(UsdPrim const& prim, ImplData *implData) {
-        return query_type({ UsdShadeCoordSysAPI(prim), implData });
+    query_type MakeQuery(UsdPrim const& prim, bool *) {
+        return query_type( {UsdShadeCoordSysAPI(prim)} );
     }
 
     static
@@ -985,7 +991,7 @@ struct UsdImaging_CoordSysBindingStrategy
                 if (v.usdBindingVecPtr) {
                     usdBindings = *v.usdBindingVecPtr;
                 }
-                for (auto const& binding:
+                for (auto const& binding :
                      query->coordSysAPI.GetLocalBindings()) {
                     if (!prim.GetStage()->GetPrimAtPath(
                         binding.coordSysPrimPath).IsValid()) {
@@ -997,11 +1003,11 @@ struct UsdImaging_CoordSysBindingStrategy
                         continue;
                     }
                     bool found = false;
-                    for (size_t i=0, n=hdIds.size(); i<n; ++i) {
-                        if (usdBindings[i].name == binding.name) {
+                    for (size_t id = 0, n = hdIds.size(); id < n; ++id) {
+                        if (usdBindings[id].name == binding.name) {
                             // Found an override -- replace this binding.
-                            usdBindings[i] = binding;
-                            hdIds[i] = query->_IdForBinding(binding);
+                            usdBindings[id] = binding;
+                            hdIds[id] = binding.bindingRelPath;
                             found = true;
                             break;
                         }
@@ -1009,7 +1015,7 @@ struct UsdImaging_CoordSysBindingStrategy
                     if (!found) {
                         // New binding, so append.
                         usdBindings.push_back(binding);
-                        hdIds.push_back(query->_IdForBinding(binding));
+                        hdIds.push_back(binding.bindingRelPath);
                     }
                 }
                 v.idVecPtr.reset(new SdfPathVector(hdIds));

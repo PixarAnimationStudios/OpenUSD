@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/atomicOfstreamWrapper.h"
 
+#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/pathUtils.h"

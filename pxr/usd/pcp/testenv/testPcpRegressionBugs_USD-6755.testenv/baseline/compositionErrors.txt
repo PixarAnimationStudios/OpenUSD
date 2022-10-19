@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------
 Errors while composing </C>
 
-Invalid reference offset SdfLayerOffset(0, 0) at @root.sdf@</C> on asset path ''. Using no offset instead.
+Invalid reference offset SdfLayerOffset(0, 0) for @@</B> introduced by @root.sdf@</C>. Using no offset instead.
 

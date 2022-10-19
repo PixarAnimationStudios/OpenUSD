@@ -1155,7 +1155,7 @@ HdPrman_TransferMaterialPrimvarOpinions(HdSceneDelegate *sceneDelegate,
 
 RtParamList
 HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
-                                   SdfPath const& id)
+                                   SdfPath const& id, bool isGeometry)
 {
     RtPrimVarList attrs;
 
@@ -1182,6 +1182,61 @@ HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
     VtArray<TfToken> categories = sceneDelegate->GetCategories(id);
     ConvertCategoriesToAttributes(id, categories, attrs);
 
+    if (isGeometry) { 
+        // Hydra cullStyle & doubleSided -> Riley k_Ri_Sides
+        // Ri:Sides is most analogous to GL culling style. When Ri:Sides = 1,
+        // prman will skip intersections on the back, with "back" determined by
+        // winding order (Ri:Orientation). Prman's default value for Ri:Sides
+        // is 2. By considering both cullStyle and doubleSided, we can accurately
+        // reproduce all the Hydra cull styles. While usd does not surface cullStyle,
+        // some Hydra constructs rely on cullStyle to achieve their intended looks,
+        // e.g., the cards drawmode adapter.
+
+        // TODO: (tgvarik) Check how Ri:ReverseOrientation interacts with
+        //       displacement. What is intended when front-face culling is applied 
+        //       to a surface with displacement? Should be vanishingly rare.
+
+        const HdCullStyle cullStyle = sceneDelegate->GetCullStyle(id);
+        switch (cullStyle) {
+            case HdCullStyleNothing:
+                attrs.SetInteger(RixStr.k_Ri_Sides, 2);
+                break;
+            case HdCullStyleFront:
+                attrs.SetInteger(RixStr.k_Ri_ReverseOrientation, 1);
+                // fallthrough
+            case HdCullStyleBack:
+                attrs.SetInteger(RixStr.k_Ri_Sides, 1);
+                break;
+            case HdCullStyleFrontUnlessDoubleSided:
+                attrs.SetInteger(RixStr.k_Ri_ReverseOrientation, 
+                    sceneDelegate->GetDoubleSided(id) ? 0 : 1);
+                // fallthrough
+            case HdCullStyleBackUnlessDoubleSided:
+                attrs.SetInteger(RixStr.k_Ri_Sides, 
+                    sceneDelegate->GetDoubleSided(id) ? 2 : 1);
+                break;
+            case HdCullStyleDontCare:
+                // Noop. If the prim has no opinion on the matter,
+                // defer to Prman default by not setting Ri:Sides.
+                break;
+        }
+    
+
+        // Double-sidedness in usd is a property of the gprim for legacy reasons.
+        // Double-sidedness in prman is a property of the material. To achieve
+        // consistency, we need to communicate the gprim's double-sidedness to
+        // the material via an attribute, which allows the material to determine
+        // whether it should shade both sides or just the front.
+
+        // Integer primvars do not exist in prman, which is why we do this on
+        // the attributes instead. Furthermore, all custom attributes like this
+        // must be in the "user:" namespace to be accessible from the shader.
+        attrs.SetInteger(
+            RtUString("user:hydra:doubleSided"),
+            sceneDelegate->GetDoubleSided(id) ? 1 : 0
+        );
+    }
+        
     return attrs;
 }
 
@@ -1332,11 +1387,11 @@ HdPrman_RenderParam::ConvertAndRetainCoordSysBindings(
     SdfPath const& id)
 {
     // Query Hydra coordinate system bindings.
-    HdIdVectorSharedPtr hdIdVecPtr =
-        sceneDelegate->GetCoordSysBindings(id);
+    HdIdVectorSharedPtr hdIdVecPtr = sceneDelegate->GetCoordSysBindings(id);
     if (!hdIdVecPtr) {
         return nullptr;
     }
+
     // We have bindings to convert.
     std::lock_guard<std::mutex> lock(_coordSysMutex);
     // Check for an existing converted binding vector.
@@ -1344,7 +1399,7 @@ HdPrman_RenderParam::ConvertAndRetainCoordSysBindings(
         _hdToRileyCoordSysMap.find(hdIdVecPtr);
     if (it != _hdToRileyCoordSysMap.end()) {
         // Found an existing conversion.
-        // Record an additioanl use, on this geometry.
+        // Record an additional use on this geometry.
         _geomToHdCoordSysMap[id] = hdIdVecPtr;
         return it->second;
     }
@@ -1353,8 +1408,7 @@ HdPrman_RenderParam::ConvertAndRetainCoordSysBindings(
     rileyIdVec.reserve(hdIdVecPtr->size());
     for (SdfPath const& hdId: *hdIdVecPtr) {
         // Look up sprim for binding.
-        const HdSprim *sprim =
-            sceneDelegate->GetRenderIndex()
+        const HdSprim *sprim = sceneDelegate->GetRenderIndex()
             .GetSprim(HdPrimTypeTokens->coordSys, hdId);
         // Expect there to be an sprim with this id.
         if (TF_VERIFY(sprim)) {
@@ -1367,6 +1421,7 @@ HdPrman_RenderParam::ConvertAndRetainCoordSysBindings(
             }
         }
     }
+
     // Establish a cache entry.
     RileyCoordSysIdVecRefPtr rileyIdVecPtr =
         std::make_shared<RileyCoordSysIdVec>(rileyIdVec);

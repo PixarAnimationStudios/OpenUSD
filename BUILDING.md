@@ -101,8 +101,9 @@ Python support in USD refers to:
 Support for Python can optionally be disabled by specifying the cmake flag
 ```PXR_ENABLE_PYTHON_SUPPORT=FALSE```.
 
-Support for Python 3 can be enabled by specifying the cmake flag
-```PXR_USE_PYTHON_3=ON```.
+Python 3 is enabled by default, Python 2 can be enabled by specifying the cmake
+flag
+```PXR_USE_PYTHON_3=OFF```.
 
 ##### OpenGL
 
@@ -247,10 +248,14 @@ by specifying the cmake flag ```PXR_BUILD_ALEMBIC_PLUGIN=TRUE``` when invoking c
 
 The additional dependencies that must be supplied when invoking cmake are:
 
-| Dependency Name    | Description                                       |
-| ------------------ |-------------------------------------------------- |
-| ALEMBIC_DIR        | The location of [Alembic](https://https://github.com/alembic/alembic)   | 
-| OPENEXR_LOCATION   | The location of [OpenEXR](http://www.openexr.com) |
+| Dependency Name                   | Description                                       |
+| ----------------------------------|-------------------------------------------------- |
+| ALEMBIC_DIR                       | The location of [Alembic](https://https://github.com/alembic/alembic)   | 
+| OPENEXR_LOCATION                  | The location of [OpenEXR](http://www.openexr.com) |
+| Imath_DIR (If not using OpenEXR)  | Path to the CMake package config of a Imath SDK install. (With OpenEXR 3+, Imath can be used explicitly instead of OpenEXR.)|
+
+Either OpenEXR or Imath is required depending on which library is used by the
+Alembic library specified in ALEMBIC_DIR.
 
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 
@@ -289,8 +294,29 @@ when invoking cmake. This plugin is compatible with Draco 1.3.4. The additional 
 
 ## Tests
 
-Disable unit testing and prevent tests from being built by specifying the cmake flag ```PXR_BUILD_TESTS=FALSE```
-when invoking cmake.
+Tests are built by default but can be disabled by specifying the cmake flag 
+```PXR_BUILD_TESTS=FALSE``` when invoking cmake.
+
+##### Running Tests
+Run tests by invoking ctest from the build directory, which is typically the 
+directory in which cmake was originally invoked. For example, to run all tests 
+in a release build with verbose output:
+
+```bash
+ctest -C Release -V
+```
+
+The "-R" argument may be used to specify a regular expression matching the names 
+of tests to be run. For example, to run all tests in a release build matching 
+"testUsdShade" with verbose output:
+
+```bash
+ctest -C Release -R testUsdShade -V
+```
+
+See the [ctest documentation](https://cmake.org/cmake/help/latest/manual/ctest.1.html) for more options.
+
+##### Diagnosing Failed Tests
 
 In order to aid with diagnosing of failing tests, test generated files for failing test are explicitly put in the following directories, where
 <ctest_run_timestamp> (formatted as "%Y-%m-%dT%H.%M.%S") represents the timestamp when ctest was run for the failing test.

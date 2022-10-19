@@ -845,14 +845,13 @@ MatfiltMaterialX(
             mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
 
             // Create the MaterialX Document from the material network
-            std::set<SdfPath> hdTextureNodePaths;
-            mx::StringMap mxHdTextureMap; // Store Mx-Hd texture counterparts 
+            HdMtlxTexturePrimvarData hdMtlxData;
             mx::DocumentPtr mxDoc =
                 HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
                     netInterface, terminalNodeName, cNames,
-                    stdLibraries, &hdTextureNodePaths, &mxHdTextureMap);
+                    stdLibraries, &hdMtlxData);
 
-            _UpdateTextureNodes(netInterface, hdTextureNodePaths, mxDoc);
+            _UpdateTextureNodes(netInterface, hdMtlxData.hdTextureNodes, mxDoc);
 
             // Remove the material and shader nodes from the MaterialX Document
             // (since we need to use PxrSurface as the closure instead of the 

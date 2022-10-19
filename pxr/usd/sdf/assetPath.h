@@ -108,8 +108,13 @@ public:
     /// @{
 
     /// Return the asset path.
-    const std::string &GetAssetPath() const {
+    const std::string &GetAssetPath() const & {
         return _assetPath;
+    }
+
+    /// Overload for rvalues, move out the asset path.
+    std::string GetAssetPath() const && {
+        return std::move(_assetPath);
     }
 
     /// Return the resolved asset path, if any.
@@ -117,8 +122,13 @@ public:
     /// Note that SdfAssetPath carries a resolved path only if its creator
     /// passed one to the constructor.  SdfAssetPath never performs resolution
     /// itself.
-    const std::string &GetResolvedPath() const {
+    const std::string &GetResolvedPath() const & {
         return _resolvedPath;
+    }
+
+    /// Overload for rvalues, move out the asset path.
+    std::string GetResolvedPath() const && {
+        return std::move(_resolvedPath);
     }
 
     /// @}

@@ -107,7 +107,8 @@ public:
     }
 
     void AddProperty(const mx::ConstTypedElementPtr& element,
-                     bool isOutput, NdrStringVec *primvars);
+                     bool isOutput, NdrStringVec *primvars, 
+                     bool addedTexcoordPrimvar=false);
 
 public:
     const NdrNodeDiscoveryResult& discoveryResult;
@@ -126,7 +127,7 @@ private:
 void
 ShaderBuilder::AddProperty(
     const mx::ConstTypedElementPtr& element,
-    bool isOutput, NdrStringVec *primvars)
+    bool isOutput, NdrStringVec *primvars, bool addedTexcoordPrimvar)
 {
     TfToken type;
     NdrTokenMap metadata;
@@ -219,7 +220,9 @@ ShaderBuilder::AddProperty(
             // Note: MaterialX uses a default texcoord of "UV0", which we
             // inline replace with the configured default.
             if (defaultgeomprop == "UV0") {
-                primvars->push_back(_GetPrimaryUvSetName());
+                if (!addedTexcoordPrimvar) {
+                    primvars->push_back(_GetPrimaryUvSetName());
+                }
             } else {
                 primvars->push_back(defaultgeomprop);
             }
@@ -262,7 +265,8 @@ ParseMetadata(
 {
     const auto& value = element->getAttribute(attribute);
     if (!value.empty()) {
-        // Change the MaterialX Texture node role from 'texture2d' to 'texture' 
+        // Change the 'texture2d' role for stdlib MaterialX Texture nodes
+        // to 'texture' for Sdr.
         if (key == SdrNodeMetadata->Role && value == "texture2d") {
             builder->metadata[key] = "texture";
         }
@@ -335,6 +339,42 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
     if (nodeDef->getName() == "ND_texcoord_vector2") {
         primvars.push_back(_GetPrimaryUvSetName());
     }
+    // For custom nodes that use textures or texcoords, look through the
+    // implementation nodegraph to find the texcoord, geompropvalue, 
+    // or stdlib image/tiledimage node and add the appropriate primvar to  
+    // the list of referenced primvars.
+    bool addedTexcoordPrimvar = false;
+    const mx::InterfaceElementPtr& impl = nodeDef->getImplementation();
+    if (impl && impl->isA<mx::NodeGraph>()) {
+        // Add primvar name for geompropvalue nodes.
+        // XXX Using '$geomprop' here does not get replaced with the 
+        // appropriate primvar name. 
+        const mx::NodeGraphPtr ng = impl->asA<mx::NodeGraph>();
+        for (const mx::NodePtr& geompropNode : ng->getNodes("geompropvalue")) {
+            if (const mx::InputPtr& input = geompropNode->getInput("geomprop")) {
+                primvars.push_back(input->getValueString());
+
+                // Assume a texture coordinate primvar if of vector2 type.
+                if (geompropNode->getType() == "vector2") {
+                    addedTexcoordPrimvar = true;
+                }
+            }
+        }
+        // Add the default texturecoordinate name for texcoord nodes.
+        if (ng->getNodes("texcoord").size() != 0) {
+            primvars.push_back(_GetPrimaryUvSetName());
+            addedTexcoordPrimvar = true;
+        }
+        // Add the default texture coordinate name with an image/tiledimage 
+        // node if we have not yet added a texcoordPrimvar name. 
+        if (!addedTexcoordPrimvar) {
+            if (ng->getNodes("tiledimage").size() != 0 ||
+                ng->getNodes("image").size() != 0) {
+                primvars.push_back(_GetPrimaryUvSetName());
+                addedTexcoordPrimvar = true;
+            }
+        }
+    }
 
     // Also check internalgeomprops.
     static const std::string internalgeompropsName("internalgeomprops");
@@ -354,7 +394,7 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
 
     // Properties
     for (const auto& mtlxInput: nodeDef->getActiveInputs()) {
-        builder->AddProperty(mtlxInput, false, &primvars);
+        builder->AddProperty(mtlxInput, false, &primvars, addedTexcoordPrimvar);
     }
 
     for (const auto& mtlxOutput: nodeDef->getActiveOutputs()) {
@@ -380,8 +420,7 @@ public:
 };
 
 NdrNodeUniquePtr
-UsdMtlxParserPlugin::Parse(
-    const NdrNodeDiscoveryResult& discoveryResult)
+UsdMtlxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
 {
     MaterialX::ConstDocumentPtr document = nullptr;
     // Get the MaterialX document.
@@ -393,8 +432,7 @@ UsdMtlxParserPlugin::Parse(
             return GetInvalidNode(discoveryResult);
         }
     } else if (!discoveryResult.sourceCode.empty()) {
-        document = UsdMtlxGetDocumentFromString(
-            discoveryResult.sourceCode);
+        document = UsdMtlxGetDocumentFromString(discoveryResult.sourceCode);
         if (!document) {
             TF_WARN("Invalid mtlx source code.");
             return GetInvalidNode(discoveryResult);

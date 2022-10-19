@@ -190,6 +190,10 @@ struct UsdRenderTokensType {
     /// 
     /// Possible value for UsdRenderVar::GetSourceTypeAttr(), Default value for UsdRenderVar::GetSourceTypeAttr()
     const TfToken raw;
+    /// \brief "renderingColorSpace"
+    /// 
+    /// UsdRenderSettings
+    const TfToken renderingColorSpace;
     /// \brief "renderSettingsPrimPath"
     /// 
     /// Stage-level metadata that encodes the path to UsdRenderSettingsPrim to use for rendering.

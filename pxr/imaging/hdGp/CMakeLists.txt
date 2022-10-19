@@ -20,4 +20,7 @@ pxr_library(hdGp
 
     PRIVATE_CLASSES
         sceneIndexPlugin
+
+    RESOURCE_FILES
+        plugInfo.json
 )

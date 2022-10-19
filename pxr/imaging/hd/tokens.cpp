@@ -78,7 +78,8 @@ bool HdPrimTypeIsLight(TfToken const& primType)
             primType == HdPrimTypeTokens->light ||
             primType == HdPrimTypeTokens->pluginLight ||
             primType == HdPrimTypeTokens->rectLight ||
-            primType == HdPrimTypeTokens->sphereLight);
+            primType == HdPrimTypeTokens->sphereLight ||
+            primType == HdPrimTypeTokens->meshLight);
 }
 
 TfToken HdAovTokensMakePrimvar(TfToken const& primvar)

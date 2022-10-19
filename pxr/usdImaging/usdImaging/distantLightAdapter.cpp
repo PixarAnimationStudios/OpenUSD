@@ -42,6 +42,22 @@ UsdImagingDistantLightAdapter::~UsdImagingDistantLightAdapter()
 {
 }
 
+TfTokenVector
+UsdImagingDistantLightAdapter::GetImagingSubprims()
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingDistantLightAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->distantLight;
+    }
+
+    return TfToken();
+}
+
 bool
 UsdImagingDistantLightAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {

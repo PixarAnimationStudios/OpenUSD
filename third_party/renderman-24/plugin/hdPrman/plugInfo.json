@@ -21,6 +21,12 @@
                         "priority": 0,
                         "displayName": "Prman MaterialX Filtering Scene Index"
                     },
+                    "HdPrman_TerminalsResolvingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman Terminals Resolving Scene Index"
+                    },
                     "HdPrman_VirtualStructResolvingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": "Prman",
@@ -44,6 +50,12 @@
                         "loadWithRenderer": "Prman",
                         "priority": 0,
                         "displayName": "Prman Sample Filter Invalidating Scene Index"
+                    },
+                    "HdPrman_PinnedCurveExpandingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman Pinned Curve Expanding Scene Index"
                     }
                 }
             },

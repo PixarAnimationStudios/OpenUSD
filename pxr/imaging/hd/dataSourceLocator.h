@@ -302,9 +302,11 @@ public:
     /// two sets contains a prefix of the other set.
     HD_API
     bool Intersects(const HdDataSourceLocatorSet &locatorSet) const;
+
     /// True if and only if this set contains no data source locator.
     HD_API
     bool IsEmpty() const;
+
     /// True if the set (closed under descendancy) contains the given
     /// locator.
     ///
@@ -312,6 +314,15 @@ public:
     /// the set in the sense of HdDataSourceLocator::HasPrefix.
     HD_API
     bool Contains(const HdDataSourceLocator &locator) const;
+
+    /// Returns a lexicographically sorted locator set wherein locators in this 
+    /// set that have \p oldPrefix as a prefix use \p newPrefix instead. The
+    /// returned set is closed under descendancy and may have equal or fewer
+    /// data source locators as a result.
+    HD_API
+    HdDataSourceLocatorSet ReplacePrefix(
+        const HdDataSourceLocator &oldPrefix,
+        const HdDataSourceLocator &newPrefix) const;
 
 private:
     void _InsertAndDeleteSuffixes(_Locators::iterator *position,

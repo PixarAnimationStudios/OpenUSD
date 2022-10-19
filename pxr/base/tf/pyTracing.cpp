@@ -35,8 +35,9 @@
 
 #include <tbb/spin_mutex.h>
 
-// This is from python, needed for PyFrameObject.
+// These are from python, needed for PyFrameObject.
 #include <frameobject.h>
+#include <patchlevel.h>
 
 #include <list>
 #include <mutex>
@@ -105,16 +106,29 @@ static void _SetTraceFnEnabled(bool enable) {
 }
 
 
+#if PY_VERSION_HEX < 0x030900B1
+// Define PyFrame_GetCode() on Python 3.8 and older:
+// https://docs.python.org/3.11/whatsnew/3.11.html#id6
+static inline PyCodeObject* PyFrame_GetCode(PyFrameObject *frame)
+{
+    Py_INCREF(frame->f_code);
+    return frame->f_code;
+}
+#endif
+
+
 static int _TracePythonFn(PyObject *, PyFrameObject *frame,
                           int what, PyObject *arg)
 {
     // Build up a trace info struct.
     TfPyTraceInfo info;
+    PyCodeObject * code = PyFrame_GetCode(frame);
     info.arg = arg;
-    info.funcName = TfPyString_AsString(frame->f_code->co_name);
-    info.fileName = TfPyString_AsString(frame->f_code->co_filename);
-    info.funcLine = frame->f_code->co_firstlineno;
+    info.funcName = TfPyString_AsString(code->co_name);
+    info.fileName = TfPyString_AsString(code->co_filename);
+    info.funcLine = code->co_firstlineno;
     info.what = what;
+    Py_DECREF(code);
 
     _InvokeTraceFns(info);
 

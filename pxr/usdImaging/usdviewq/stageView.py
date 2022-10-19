@@ -95,17 +95,10 @@ class GLSLProgram():
         self._glMajorVersion = int(versionNumberString.split('.')[0])
         self._glMinorVersion = int(versionNumberString.split('.')[1])
 
-        # Apple's OpenGL renderer for Apple Silicon is emulated on top of
-        # Metal and issues performance warnings if line stipple is enabled.
-        self._glRenderer = GL.glGetString(GL.GL_RENDERER).decode()
-        isAppleMetalRenderer = self._glRenderer.startswith('Apple')
-        supportsLineStipple = not isAppleMetalRenderer
-
         # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
         self.useVAO = (self._glMajorVersion >= 3 and
                         hasattr(GL, 'glGenVertexArrays'))
         self.useSampleAlphaToCoverage = (self._glMajorVersion >= 4)
-        self.useLineStipple = supportsLineStipple
 
         self.program   = GL.glCreateProgram()
         vertexShader   = GL.glCreateShader(GL.GL_VERTEX_SHADER)
@@ -803,12 +796,12 @@ class StageView(QGLWidget):
         self._HUDStatKeys = keys
 
     @property
-    def allSceneCameras(self):
-        return self._allSceneCameras
+    def camerasWithGuides(self):
+        return self._camerasWithGuides
 
-    @allSceneCameras.setter
-    def allSceneCameras(self, value):
-        self._allSceneCameras = value
+    @camerasWithGuides.setter
+    def camerasWithGuides(self, value):
+        self._camerasWithGuides = value
 
     @property
     def gfCamera(self):
@@ -831,7 +824,7 @@ class StageView(QGLWidget):
     def rendererAovName(self):
         return self._rendererAovName
 
-    def __init__(self, parent=None, dataModel=None, printTiming=False):
+    def __init__(self, parent=None, dataModel=None, makeTimer=Timer):
         # Note: The default format *disables* the alpha component and so the
         # default backbuffer uses GL_RGB.
         glFormat = QGLFormat()
@@ -843,7 +836,7 @@ class StageView(QGLWidget):
         super(StageView, self).InitQGLWidget(glFormat, parent)
 
         self._dataModel = dataModel or StageView.DefaultDataModel()
-        self._printTiming = printTiming
+        self._makeTimer = makeTimer
 
         self._isFirstImage = True
 
@@ -916,13 +909,11 @@ class StageView(QGLWidget):
         self._bbox = Gf.BBox3d()
         self._selectionBBox = Gf.BBox3d()
         self._selectionBrange = Gf.Range3d()
-        self._selectionOrientedRange = Gf.Range3d()
-        self._bbcenterForBoxDraw = (0, 0, 0)
 
         self._forceRefresh = False
         self._renderTime = 0
 
-        self._allSceneCameras = None
+        self._camerasWithGuides = None
 
         # HUD properties
         self._fpsHUDInfo = dict()
@@ -971,10 +962,8 @@ class StageView(QGLWidget):
 
     def closeRenderer(self):
         '''Close the current renderer.'''
-        with Timer() as t:
+        with self._makeTimer('shut down Hydra'):
             self._renderer = None
-        if self._printTiming:
-            t.PrintTime('shut down Hydra')
 
     def GetRendererPlugins(self):
         if self._renderer:
@@ -1086,7 +1075,7 @@ class StageView(QGLWidget):
         '''Set the USD Stage this widget will be displaying. To decommission
         (even temporarily) this widget, supply None as 'stage'.'''
 
-        self.allSceneCameras = None
+        self.camerasWithGuides = None
 
         if self._dataModel.stage:
             self._stageIsZup = (
@@ -1106,7 +1095,7 @@ class StageView(QGLWidget):
             viewSettings.freeCameraOverrideNear,
             viewSettings.freeCameraOverrideFar)
 
-    # simple GLSL program for axis/bbox drawings
+    # simple GLSL program for drawing lines
     def GetSimpleGLSLProgram(self):
         if self._simpleGLSLProgram == None:
             self._simpleGLSLProgram = GLSLProgram(
@@ -1179,38 +1168,42 @@ class StageView(QGLWidget):
         if glslProgram.useVAO:
             GL.glBindVertexArray(0)
 
-    def DrawBBox(self, viewProjectionMatrix):
-        col = self._dataModel.viewSettings.clearColor
-        color = Gf.Vec3f(col[0]-.6 if col[0]>0.5 else col[0]+.6,
-                         col[1]-.6 if col[1]>0.5 else col[1]+.6,
-                         col[2]-.6 if col[2]>0.5 else col[2]+.6)
-        color[0] = Gf.Clamp(color[0], 0, 1); 
-        color[1] = Gf.Clamp(color[1], 0, 1); 
-        color[2] = Gf.Clamp(color[2], 0, 1);                 
+    def _processBBoxes(self):
+        renderer = self._getRenderer()
+        if not renderer:
+            # error has already been issued
+            return
 
-        # Draw axis-aligned bounding box
-        if self._dataModel.viewSettings.showAABBox:
-            bsize = self._selectionBrange.max - self._selectionBrange.min
+        # Determine if any bbox should be enabled
+        enableBBoxes = self._dataModel.viewSettings.showBBoxes and\
+            (self._dataModel.viewSettings.showBBoxPlayback or\
+                not self._dataModel.playing)
 
-            trans = Gf.Transform()
-            trans.SetScale(0.5*bsize)
-            trans.SetTranslation(self._bbcenterForBoxDraw)
+        if enableBBoxes:
+            # Build the list of bboxes to draw
+            bboxes = []
+            if self._dataModel.viewSettings.showAABBox:
+                bboxes.append(Gf.BBox3d(self._selectionBrange))
+            if self._dataModel.viewSettings.showOBBox:
+                bboxes.append(self._selectionBBox)
 
-            self.drawWireframeCube(color,
-                                   Gf.Matrix4f(trans.GetMatrix()) * viewProjectionMatrix)
+            # Compute the color to use for the bbox lines
+            col = self._dataModel.viewSettings.clearColor
+            color = Gf.Vec4f(col[0]-.6 if col[0]>0.5 else col[0]+.6,
+                             col[1]-.6 if col[1]>0.5 else col[1]+.6,
+                             col[2]-.6 if col[2]>0.5 else col[2]+.6,
+                             1)
+            color[0] = Gf.Clamp(color[0], 0, 1);
+            color[1] = Gf.Clamp(color[1], 0, 1);
+            color[2] = Gf.Clamp(color[2], 0, 1);
 
-        # Draw oriented bounding box
-        if self._dataModel.viewSettings.showOBBox:
-            bsize = self._selectionOrientedRange.max - self._selectionOrientedRange.min
-            center = bsize / 2. + self._selectionOrientedRange.min
-            trans = Gf.Transform()
-            trans.SetScale(0.5*bsize)
-            trans.SetTranslation(center)
-
-            self.drawWireframeCube(color,
-                                   Gf.Matrix4f(trans.GetMatrix()) *
-                                   Gf.Matrix4f(self._selectionBBox.matrix) *
-                                   viewProjectionMatrix)
+            # Pass data to renderer via renderParams
+            self._renderParams.bboxes = bboxes
+            self._renderParams.bboxLineColor = color
+            self._renderParams.bboxLineDashSize = 3
+        else:
+            # No bboxes should be drawn
+            self._renderParams.bboxes = []
 
     # XXX:
     # First pass at visualizing cameras in usdview-- just oracles for
@@ -1227,7 +1220,7 @@ class StageView(QGLWidget):
 
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._cameraGuidesVBO)
         data = []
-        for camera in self._allSceneCameras:
+        for camera in self._camerasWithGuides:
             # Don't draw guides for the active camera.
             if camera == self._dataModel.viewSettings.cameraPrim or not (camera and camera.IsActive()):
                 continue
@@ -1329,8 +1322,6 @@ class StageView(QGLWidget):
             self._selectionBBox = self._getDefaultBBox()
 
         self._selectionBrange = self._selectionBBox.ComputeAlignedRange()
-        self._selectionOrientedRange = self._selectionBBox.box
-        self._bbcenterForBoxDraw = self._selectionBBox.ComputeCentroid()
 
     def resetCam(self, frameFit=1.1):
         validFrameRange = (not self._selectionBrange.IsEmpty() and
@@ -1458,6 +1449,8 @@ class StageView(QGLWidget):
         pseudoRoot = self._dataModel.stage.GetPseudoRoot()
 
         renderer.SetSelectionColor(self._dataModel.viewSettings.highlightColor)
+
+        self._processBBoxes()
 
         try:
             renderer.Render(pseudoRoot, self._renderParams)
@@ -1618,63 +1611,6 @@ class StageView(QGLWidget):
 
         self.update()
 
-    def drawWireframeCube(self, col, mvpMatrix):
-        from OpenGL import GL
-        import ctypes, itertools
-
-        # grab the simple shader
-        glslProgram = self.GetSimpleGLSLProgram()
-        if (glslProgram.program == 0):
-            return
-        # vao
-        if glslProgram.useVAO:
-            if (self._vao == 0):
-                self._vao = GL.glGenVertexArrays(1)
-            GL.glBindVertexArray(self._vao)
-
-        # prep a vbo for bbox
-        if (self._bboxVBO is None):
-            self._bboxVBO = GL.glGenBuffers(1)
-            GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._bboxVBO)
-            # create 12 edges
-            data = []
-            p = list(itertools.product([-1,1],[-1,1],[-1,1]))
-            for i in p:
-                data.extend([i[0], i[1], i[2]])
-            for i in p:
-                data.extend([i[1], i[2], i[0]])
-            for i in p:
-                data.extend([i[2], i[0], i[1]])
-
-            GL.glBufferData(GL.GL_ARRAY_BUFFER, len(data)*4,
-                            (ctypes.c_float*len(data))(*data), GL.GL_STATIC_DRAW)
-
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._bboxVBO)
-        GL.glEnableVertexAttribArray(0)
-        GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, 0, ctypes.c_void_p(0))
-
-        if glslProgram.useLineStipple:
-            GL.glEnable(GL.GL_LINE_STIPPLE)
-            GL.glLineStipple(2,0xAAAA)
-
-        GL.glUseProgram(glslProgram.program)
-        matrix = (ctypes.c_float*16).from_buffer_copy(mvpMatrix)
-        GL.glUniformMatrix4fv(glslProgram.uniformLocations["mvpMatrix"],
-                              1, GL.GL_TRUE, matrix)
-        GL.glUniform4f(glslProgram.uniformLocations["color"],
-                       col[0], col[1], col[2], 1)
-
-        GL.glDrawArrays(GL.GL_LINES, 0, 24)
-
-        GL.glDisableVertexAttribArray(0)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-        GL.glUseProgram(0)
-
-        if glslProgram.useLineStipple:
-            GL.glDisable(GL.GL_LINE_STIPPLE)
-        if glslProgram.useVAO:
-            GL.glBindVertexArray(0)
-
     def paintGL(self):
         if not self._dataModel.stage:
             return
@@ -1721,11 +1657,6 @@ class StageView(QGLWidget):
             windowViewport = viewport
             if self._cropImageToCameraViewport:
                 viewport = cameraViewport
-
-            # For legacy implementation (--renderer HydraDisabled)
-            if not renderer.IsHydraEnabled():
-                renderer.SetRenderViewport(viewport)
-                renderer.SetWindowPolicy(self.computeWindowPolicy(cameraAspect))
 
             renderBufferSize = Gf.Vec2i(self.computeWindowSize())
 
@@ -1843,10 +1774,6 @@ class StageView(QGLWidget):
                 # usdImaging.
                 if self._dataModel.viewSettings.displayCameraOracles:
                     self.DrawCameraGuides(viewProjectionMatrix)
-
-                if self._dataModel.viewSettings.showBBoxes and\
-                        (self._dataModel.viewSettings.showBBoxPlayback or not self._dataModel.playing):
-                    self.DrawBBox(viewProjectionMatrix)
             else:
                 GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 
@@ -2341,31 +2268,33 @@ class StageView(QGLWidget):
 
     def glDraw(self):
         # override glDraw so we can time it.
-        with Timer() as t:
+
+        # If this is the first time an image is being drawn, report how long it
+        # took to do so.
+        with self._makeTimer("create first image",
+                             printTiming=self._isFirstImage) as t:
+
+            # This needs to be done before invoking QGLWidget.glDraw, since it
+            # seems we get recursion??
+            self._isFirstImage = False
+
             QGLWidget.glDraw(self)
 
-        # Render creation is a deferred operation, so the render may not
-        # be initialized on entry to the function.
-        #
-        # This function itself can not create the render, as to create the
-        # renderer we need a valid GL context, which QT has not made current
-        # yet.
-        #
-        # So instead check that the render has been created after the fact.
-        # The point is to avoid reporting an invalid first image time.
-        
-        if not self._renderer:
-            # error has already been issued
-            return
-
+            # Render creation is a deferred operation, so the render may not
+            # be initialized on entry to the function.
+            #
+            # This function itself can not create the render, as to create the
+            # renderer we need a valid GL context, which QT has not made current
+            # yet.
+            #
+            # So instead check that the render has been created after the fact.
+            # The point is to avoid reporting an invalid first image time.
+            if not self._renderer:
+                # error has already been issued -- mark the timer invalid.
+                t.Invalidate()
+                return
 
         self._renderTime = t.interval
-
-        # If timings are being printed and this is the first time an image is
-        # being drawn, report how long it took to do so.
-        if self._printTiming and self._isFirstImage:
-            self._isFirstImage = False
-            t.PrintTime("create first image")
 
     def SetForceRefresh(self, val):
         self._forceRefresh = val or self._forceRefresh

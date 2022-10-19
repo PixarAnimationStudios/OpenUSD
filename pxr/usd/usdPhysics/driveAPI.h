@@ -147,6 +147,12 @@ public:
     static UsdPhysicsDriveAPI
     Get(const UsdPrim &prim, const TfToken &name);
 
+    /// Return a vector of all named instances of UsdPhysicsDriveAPI on the 
+    /// given \p prim.
+    USDPHYSICS_API
+    static std::vector<UsdPhysicsDriveAPI>
+    GetAll(const UsdPrim &prim);
+
     /// Checks if the given name \p baseName is the base name of a property
     /// of PhysicsDriveAPI.
     USDPHYSICS_API

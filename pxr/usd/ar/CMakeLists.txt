@@ -22,6 +22,7 @@ pxr_library(ar
         defineResolver
         filesystemAsset
         filesystemWritableAsset
+        inMemoryAsset
         notice
         packageResolver
         packageUtils

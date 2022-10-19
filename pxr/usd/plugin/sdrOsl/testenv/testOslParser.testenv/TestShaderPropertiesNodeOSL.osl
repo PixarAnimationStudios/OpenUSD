@@ -7,6 +7,12 @@
 // oslc -o TestShaderPropertiesNodeOSL.oso TestShaderPropertiesNodeOSL.osl
 //
 
+// Currently not parsing these standard OSL types.
+// #include "color4"
+// #include "vector2"
+// #include "vector4"
+// #include "matrix33"
+
 struct TestStruct {
     float foo;
 };

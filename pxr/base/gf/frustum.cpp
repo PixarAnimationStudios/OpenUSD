@@ -689,46 +689,58 @@ GfFrustum::ComputeCornersAtDistance(double d) const
     return corners;
 }
 
-GfFrustum
-GfFrustum::ComputeNarrowedFrustum(const GfVec2d &point,
-                                  const GfVec2d &halfSize) const
+// Utility function for mapping normalized window coordinates to a window point.
+static GfVec2d
+_WindowNormalizedToPoint(const GfVec2d &windowPos, const GfRange2d &windowRect)
 {
     // Map the point from normalized space (-1 to 1) onto the frustum's
     // window. First, convert the point into the range from 0 to 1,
     // then interpolate in the window rectangle.
-    GfVec2d scaledPoint = .5 * (GfVec2d(1.0, 1.0) + point);
-    GfVec2d windowPoint = _window.GetMin() + GfCompMult(scaledPoint,
-                                                        _window.GetSize());
+    const GfVec2d scaledPos = .5 * (GfVec2d(1.0, 1.0) + windowPos);
+    return windowRect.GetMin() + GfCompMult(scaledPos, windowRect.GetSize());
+}
 
-    return _ComputeNarrowedFrustumSub(windowPoint, halfSize);
+GfFrustum
+GfFrustum::ComputeNarrowedFrustum(const GfVec2d &windowPos,
+                                  const GfVec2d &size) const
+{
+    const GfVec2d windowPoint = _WindowNormalizedToPoint(windowPos, _window);
+
+    return _ComputeNarrowedFrustumSub(windowPoint, size);
 }
 
 GfFrustum
 GfFrustum::ComputeNarrowedFrustum(const GfVec3d &worldPoint,
-                                  const GfVec2d &halfSize) const
+                                  const GfVec2d &size) const
 {
     // Map the point from worldspace onto the frustum's window
-    GfVec3d lclPt = ComputeViewMatrix().Transform(worldPoint);
-    if (lclPt[2] >= 0) {
+    GfVec3d camSpacePoint = ComputeViewMatrix().Transform(worldPoint);
+    if (camSpacePoint[2] >= 0) {
         TF_WARN("Given worldPoint is behind or at the eye");
         // Start with this frustum
         return *this;
     }
-    double scaleFactor = _nearFar.GetMin() / -lclPt[2]; 
-    GfVec2d windowPoint(lclPt[0] * scaleFactor, lclPt[1] * scaleFactor);
 
-    return _ComputeNarrowedFrustumSub(windowPoint, halfSize);
+    GfVec2d windowPoint(camSpacePoint[0], camSpacePoint[1]);
+    if (_projectionType == Perspective) {
+        // project the camera space point to the reference plane (-1 to 1)
+        // XXX Note: If we ever allow reference plane depth to be other
+        // than 1.0, we'll need to revisit this.
+        windowPoint /= -camSpacePoint[2];
+    }
+
+    return _ComputeNarrowedFrustumSub(windowPoint, size);
 }
 
 GfFrustum
 GfFrustum::_ComputeNarrowedFrustumSub(const GfVec2d windowPoint, 
-                                  const GfVec2d &halfSize) const
+                                  const GfVec2d &size) const
 {
     // Start with this frustum
     GfFrustum narrowedFrustum = *this;
 
     // Also convert the sizes.
-    GfVec2d halfSizeOnRefPlane = .5 * GfCompMult(halfSize, _window.GetSize());
+    GfVec2d halfSizeOnRefPlane = .5 * GfCompMult(size, _window.GetSize());
 
     // Shrink the narrowed frustum's window to surround the point.
     GfVec2d min = windowPoint - halfSizeOnRefPlane;
@@ -750,28 +762,13 @@ GfFrustum::_ComputeNarrowedFrustumSub(const GfVec2d windowPoint,
     return narrowedFrustum;
 }
 
-// Utility function for mapping an input value from
-// one range to another.
-static double
-_Rescale(double in,
-        double inA, double inB,
-        double outA, double outB )
-{
-    double factor = (inA==inB) ? 0.0 : ((inA-in) / (inA-inB));
-    return outA + ((outB-outA)*factor);
-}
-
 static GfRay _ComputeUntransformedRay(GfFrustum::ProjectionType projectionType,
                                       const GfRange2d &window,
                                       const GfVec2d &windowPos,
                                       const double nearDist)
 {
-    // Compute position on window, from provided normalized
-    // (-1 to 1) coordinates.
-    double winX = _Rescale(windowPos[0], -1.0, 1.0,
-                           window.GetMin()[0], window.GetMax()[0]);
-    double winY = _Rescale(windowPos[1], -1.0, 1.0,
-                           window.GetMin()[1], window.GetMax()[1]);
+    const GfVec2d windowPoint = _WindowNormalizedToPoint(windowPos, window);
+
 
     // Compute the camera-space starting point (the viewpoint) and
     // direction (toward the point on the window).
@@ -781,10 +778,10 @@ static GfRay _ComputeUntransformedRay(GfFrustum::ProjectionType projectionType,
         // Note that the ray is starting at the origin and not
         // the near plane.
         pos = GfVec3d(0);
-        dir = GfVec3d(winX, winY, -1.0).GetNormalized();
+        dir = GfVec3d(windowPoint[0], windowPoint[1], -1.0).GetNormalized();
     }
     else {
-        pos.Set(winX, winY, -nearDist);
+        pos.Set(windowPoint[0], windowPoint[1], -nearDist);
         dir = -GfVec3d::ZAxis();
     }
 

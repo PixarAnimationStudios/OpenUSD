@@ -87,6 +87,14 @@ protected:
 private:
     friend class UsdUsdFileFormat;
 
+    SdfAbstractDataRefPtr _InitDetachedData(
+        const FileFormatArguments& args) const override;
+
+    bool _ReadDetached(
+        SdfLayer* layer,
+        const std::string& resolvedPath,
+        bool metadataOnly) const override;
+
     bool _CanReadFromAsset(
         const std::string& resolvedPath,
         const std::shared_ptr<ArAsset>& asset) const;
@@ -95,7 +103,8 @@ private:
         SdfLayer* layer, 
         const std::string& resolvedPath,
         const std::shared_ptr<ArAsset>& asset,
-        bool metadataOnly) const;
+        bool metadataOnly,
+        bool detached) const;
 
     template <class ...Args>
     bool _ReadHelper(

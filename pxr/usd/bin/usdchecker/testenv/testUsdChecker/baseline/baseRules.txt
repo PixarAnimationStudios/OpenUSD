@@ -42,4 +42,7 @@ Specifically:
      about this potential infraction for all 8 bit image formats.
 
 ------------------------------
+[MaterialBindingAPIAppliedChecker]:
+ A prim providing a material binding, must have MaterialBindingAPI applied on the prim.
+------------------------------
 Success!

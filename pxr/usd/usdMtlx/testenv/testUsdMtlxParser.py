@@ -37,6 +37,8 @@ class TestParser(unittest.TestCase):
         nodes = Sdr.Registry().GetShaderNodesByFamily('UsdMtlxTestNode')
         self.assertEqual(sorted([node.GetName() for node in nodes]), [
             'UsdMtlxTestNamespace:nd_boolean',
+            'UsdMtlxTestNamespace:nd_color3',
+            'UsdMtlxTestNamespace:nd_color4',
             'UsdMtlxTestNamespace:nd_customtype',
             'UsdMtlxTestNamespace:nd_float',
             'UsdMtlxTestNamespace:nd_integer',
@@ -58,6 +60,8 @@ class TestParser(unittest.TestCase):
         # Verify converted types.
         typeNameMap = {
             'boolean': 'bool',
+            'color3': 'color',
+            'color4': 'color4',
             'customtype': 'customtype',
             'float': 'float',
             'integer': 'int',

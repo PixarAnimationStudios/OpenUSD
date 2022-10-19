@@ -127,6 +127,12 @@ public:
     static UsdContrivedEmptyMultipleApplyAPI
     Get(const UsdPrim &prim, const TfToken &name);
 
+    /// Return a vector of all named instances of UsdContrivedEmptyMultipleApplyAPI on the 
+    /// given \p prim.
+    USDCONTRIVED_API
+    static std::vector<UsdContrivedEmptyMultipleApplyAPI>
+    GetAll(const UsdPrim &prim);
+
 
     /// Returns true if this <b>multiple-apply</b> API schema can be applied,
     /// with the given instance name, \p name, to the given \p prim. If this 

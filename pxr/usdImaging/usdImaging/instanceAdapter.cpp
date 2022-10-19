@@ -26,6 +26,7 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
+#include "pxr/usdImaging/usdImaging/primvarUtils.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/basisCurves.h"
@@ -361,23 +362,21 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         // edits to the proto root).
         index->AddDependency(instancerPath, instancerPrim.GetPrototype());
 
-        // Mark this instancer as having a TrackVariability queued, since
-        // we automatically queue it in InsertInstancer.
-        instancerData.refreshVariability = true;
+        // Mark this instancer as having TrackVariability/UpdateForTime queued,
+        // since we automatically queue them in InsertInstancer.
+        instancerData.refresh = true;
     }
 
-    // Add an entry to the instancer data for the given instance. Keep
-    // the vector sorted for faster lookups during change processing.
-    std::vector<SdfPath>& instancePaths = instancerData.instancePaths;
-    std::vector<SdfPath>::iterator it = std::lower_bound(
-        instancePaths.begin(), instancePaths.end(), instancePath);
+    // Add an entry to the instancer data for the given instance.
+    SdfPathSet& instancePaths = instancerData.instancePaths;
+    SdfPathSet::iterator it = instancePaths.find(instancePath);
 
     // We may repopulate instances we've already seen during change
     // processing when nested instances are involved. Rather than do
     // some complicated filtering in ProcessPrimResync to avoid this,
     // we just silently ignore duplicate instances here.
     if (it == instancePaths.end() || *it != instancePath) {
-        instancePaths.insert(it, instancePath);
+        instancePaths.insert(instancePath);
 
         TF_DEBUG(USDIMAGING_INSTANCER).Msg(
             "[Add Instance NI] <%s>  %s\n",
@@ -454,15 +453,15 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                 index->AddDependency(depInstancerPath, prim);
             }
 
-            // Ask hydra to do a full refresh on this instancer.
             index->MarkInstancerDirty(depInstancerPath,
                     HdChangeTracker::DirtyPrimvar |
                     HdChangeTracker::DirtyInstanceIndex);
 
-            // Tell UsdImaging to re-run TrackVariability.
-            if (!depInstancerData.refreshVariability) {
-                depInstancerData.refreshVariability = true;
-                index->Refresh(depInstancerPath);
+            // Ask hydra to do a full refresh on this instancer.
+            if (!depInstancerData.refresh) {
+                depInstancerData.refresh = true;
+                index->RequestTrackVariability(depInstancerPath);
+                index->RequestUpdateForTime(depInstancerPath);
             }
         }
 
@@ -570,7 +569,9 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
             *timeVaryingBits |= HdChangeTracker::DirtyInstanceIndex;
         }
 
-        instrData->refreshVariability = false;
+        // We can clear the "refresh" bit here since by the time
+        // TrackVariability is run, we're done populating new instances.
+        instrData->refresh = false;
     }
 }
 
@@ -1255,7 +1256,7 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
                                              &val, time)) {
                     _MergePrimvar(&primvarDescCache->GetPrimvars(cachePath),
                                   ipv.name, HdInterpolationInstance,
-                                  _UsdToHdRole(ipv.type.GetRole()));
+                                  UsdImagingUsdToHdRole(ipv.type.GetRole()));
                 }
             }
         }
@@ -1404,6 +1405,12 @@ UsdImagingInstanceAdapter::MarkDirty(UsdPrim const& prim,
         }
     } else if (TfMapLookupPtr(_instancerData, prim.GetPath()) != nullptr) {
         index->MarkInstancerDirty(cachePath, dirty);
+        // Note that if any primvars have changed, we need to re-run
+        // UpdateForTime. Value clips mean that frame changes can change the
+        // primvar set.
+        if (dirty & HdChangeTracker::DirtyPrimvar) {
+            index->RequestUpdateForTime(cachePath);
+        }
     }
 }
 
@@ -2111,8 +2118,10 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
         index->RemoveInstancer(instancerPath);
     }
 
-    // Keep a copy of the instancer's instances so we can repopulate them below.
-    const SdfPathVector instancePaths = instIt->second.instancePaths;
+    // Swap out the instancepPaths. They're going to be deleted anyways.
+    SdfPathSet instancePaths;
+    std::swap(instancePaths, instIt->second.instancePaths);
+    
 
     // Remove local instancer data.
     _instancerData.erase(instIt);

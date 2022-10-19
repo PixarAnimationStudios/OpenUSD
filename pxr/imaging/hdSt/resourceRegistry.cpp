@@ -42,6 +42,10 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/hash.h"
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+#include <MaterialXGenShader/Shader.h>
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_RESOURCE_INSTANCING, true,
@@ -149,6 +153,9 @@ void HdStResourceRegistry::InvalidateShaderRegistry()
 {
     _geometricShaderRegistry.Invalidate();
     _glslfxFileRegistry.Invalidate();
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+    _materialXShaderRegistry.Invalidate();
+#endif
 }
 
 
@@ -652,6 +659,15 @@ HdStResourceRegistry::RegisterGLSLFXFile(
     return _glslfxFileRegistry.GetInstance(id);
 }
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+HdInstance<MaterialX::ShaderPtr>
+HdStResourceRegistry::RegisterMaterialXShader(
+        HdInstance<MaterialX::ShaderPtr>::ID id)
+{
+    return _materialXShaderRegistry.GetInstance(id);
+}
+#endif
+
 HdInstance<HgiResourceBindingsSharedPtr>
 HdStResourceRegistry::RegisterResourceBindings(
     HdInstance<HgiResourceBindingsSharedPtr>::ID id)
@@ -980,6 +996,29 @@ HdStResourceRegistry::_Commit()
     }
 }
 
+// Callback functions for garbage collecting Hgi resources
+namespace {
+
+void 
+_DestroyResourceBindings(Hgi *hgi, HgiResourceBindingsHandle *resourceBindings)
+{
+    hgi->DestroyResourceBindings(resourceBindings);
+}
+
+void 
+_DestroyGraphicsPipeline(Hgi *hgi, HgiGraphicsPipelineHandle *graphicsPipeline)
+{
+    hgi->DestroyGraphicsPipeline(graphicsPipeline);
+}
+
+void 
+_DestroyComputePipeline(Hgi *hgi, HgiComputePipelineHandle *computePipeline)
+{
+    hgi->DestroyComputePipeline(computePipeline);
+}
+
+}
+
 void
 HdStResourceRegistry::_GarbageCollect()
 {
@@ -1035,11 +1074,17 @@ HdStResourceRegistry::_GarbageCollect()
     _geometricShaderRegistry.GarbageCollect();
     _glslProgramRegistry.GarbageCollect();
     _glslfxFileRegistry.GarbageCollect();
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+    _materialXShaderRegistry.GarbageCollect();
+#endif
 
-    // Cleanup Hgi resources bindings and pipelines
-    _resourceBindingsRegistry.GarbageCollect();
-    _graphicsPipelineRegistry.GarbageCollect();
-    _computePipelineRegistry.GarbageCollect();
+    // Cleanup Hgi resources
+    _resourceBindingsRegistry.GarbageCollect(
+        std::bind(&_DestroyResourceBindings, _hgi, std::placeholders::_1));
+    _graphicsPipelineRegistry.GarbageCollect(
+        std::bind(&_DestroyGraphicsPipeline, _hgi, std::placeholders::_1));
+    _computePipelineRegistry.GarbageCollect(
+        std::bind(&_DestroyComputePipeline, _hgi, std::placeholders::_1));
 
     // cleanup buffer array
     // buffer array retains weak_ptrs of range. All unused ranges should be
@@ -1115,11 +1160,24 @@ HdStResourceRegistry::_UpdateBufferArrayRange(
         }
     }
 
-    // Create new BAR ...
-    HdBufferSpecVector newBufferSpecs =
-        HdBufferSpec::ComputeUnion(updatedOrAddedSpecs,
-            HdBufferSpec::ComputeDifference(curBufferSpecs, removedSpecs));
-    
+    // Create new BAR, avoiding changing the order of existing specs, to 
+    // avoid unnecessary invalidation of the shader cache.
+    HdBufferSpecVector newBufferSpecs;
+    {
+        // Compute eXclusive members of the add and remove lists, because 
+        // we can't guarantee here that removedSpecs and updatedOrAddedSpecs
+        // have no elements in common, and ignoring overlaps is required for
+        // order preservation here.
+        const HdBufferSpecVector specsAddX =
+            HdBufferSpec::ComputeDifference(updatedOrAddedSpecs, removedSpecs);
+        const HdBufferSpecVector specsRemoveX =
+            HdBufferSpec::ComputeDifference(removedSpecs, updatedOrAddedSpecs);
+
+        newBufferSpecs = HdBufferSpec::ComputeUnion(
+            HdBufferSpec::ComputeDifference(curBufferSpecs, specsRemoveX),
+                specsAddX);
+    }
+
     HdBufferArrayRangeSharedPtr newRange = _AllocateBufferArrayRange(
         strategy, bufferArrayRegistry, role, newBufferSpecs, usageHint);
 

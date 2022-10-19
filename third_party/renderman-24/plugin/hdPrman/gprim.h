@@ -298,7 +298,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     // Create or modify Riley geometry instances.
     //
     // Resolve attributes.
-    RtParamList attrs = param->ConvertAttributes(sceneDelegate, id);
+    RtParamList attrs = param->ConvertAttributes(sceneDelegate, id, true);
     if (!isHdInstance) {
         // Simple case: Singleton instance.
         // Convert transform.

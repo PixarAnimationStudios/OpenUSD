@@ -2,7 +2,9 @@
 
 def Xform "Geom"
 {
-    def Mesh "Subdiv"
+    def Mesh "Subdiv" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1.21273, -1.21273, -1.21273), (1.21273, 1.21273, 1.21273)]
         int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]

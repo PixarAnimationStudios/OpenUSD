@@ -6513,7 +6513,7 @@ Sdf_ParseLayer(
                 TRACE_SCOPE("textFileFormatYyParse");
                 status = textFileFormatYyparse(&context);
                 *hints = context.layerHints;
-            } catch (boost::bad_get) {
+            } catch (boost::bad_get const &) {
                 TF_CODING_ERROR("Bad boost:get<T>() in layer parser.");
                 Err(&context, "Internal layer parser error.");
             }
@@ -6563,7 +6563,7 @@ Sdf_ParseLayerFromString(
         TRACE_SCOPE("textFileFormatYyParse");
         status = textFileFormatYyparse(&context);
         *hints = context.layerHints;
-    } catch (boost::bad_get) {
+    } catch (boost::bad_get const &) {
         TF_CODING_ERROR("Bad boost:get<T>() in layer parser.");
         Err(&context, "Internal layer parser error.");
     }

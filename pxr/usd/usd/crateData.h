@@ -45,7 +45,7 @@ class Usd_CrateData : public SdfAbstractData
 {
 public:
 
-    Usd_CrateData();
+    explicit Usd_CrateData(bool detached);
     virtual ~Usd_CrateData(); 
 
     static TfToken const &GetSoftwareVersionToken();
@@ -56,9 +56,11 @@ public:
 
     bool Save(const std::string &fileName);
 
-    bool Open(const std::string &assetPath);
+    bool Open(const std::string &assetPath,
+              bool detached);
     bool Open(const std::string &assetPath, 
-              const std::shared_ptr<ArAsset> &asset);
+              const std::shared_ptr<ArAsset> &asset,
+              bool detached);
 
     virtual bool StreamsData() const;
     virtual void CreateSpec(const SdfPath &path, 

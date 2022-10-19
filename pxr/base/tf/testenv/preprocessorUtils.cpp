@@ -24,6 +24,7 @@
 #define TF_MAX_ARITY 24
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"

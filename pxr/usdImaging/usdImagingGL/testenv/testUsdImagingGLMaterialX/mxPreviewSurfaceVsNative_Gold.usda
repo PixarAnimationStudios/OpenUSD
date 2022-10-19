@@ -3,13 +3,19 @@
     upAxis = "Z"
 )
 def Scope "MaterialX_Gold" {
-    def Sphere "MxUsdGold" {
+    def Sphere "MxUsdGold" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
         rel material:binding = </Materials/MaterialX/Materials/USD_Gold>
         color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
         matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1.5, 0, 1.5, 1) )
         uniform token[] xformOpOrder = ["xformOp:transform"]
     }
-    def Sphere "MxUsdGold_Rough" {
+    def Sphere "MxUsdGold_Rough" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
         rel material:binding = </Materials/MaterialX/Materials/USD_Gold_Rough>
         color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
         matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1.5, 0, -1.5, 1) )
@@ -17,13 +23,19 @@ def Scope "MaterialX_Gold" {
     }
 }
 def Scope "UsdNative_Gold" {
-    def Sphere "UsdGold" {
+    def Sphere "UsdGold" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
         rel material:binding = </Materials/USD_Gold>
         color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
         matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1.5, 0, 1.5, 1) )
         uniform token[] xformOpOrder = ["xformOp:transform"]
     }
-    def Sphere "UsdGold_Rough" {
+    def Sphere "UsdGold_Rough" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
         rel material:binding = </Materials/USD_Gold_Rough>
         color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
         matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1.5, 0, -1.5, 1) )

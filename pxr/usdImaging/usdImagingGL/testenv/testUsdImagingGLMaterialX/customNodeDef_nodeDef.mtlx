@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+  <nodedef name="ND_test_color3" node="color3val">
+    <output name="out" type="color3" />
+  </nodedef>
+  <nodegraph name="NG_testing" nodedef="ND_test_color3">
+    <constant name="redClorVal" type="color3">
+      <input name="value" type="color3" value="1,0,0" />
+    </constant>
+    <constant name="blueColorVal" type="color3">
+      <input name="value" type="color3" value="0,0,1" />
+    </constant>
+    <multiply name="multi1" type="color3">
+      <input name="in1" type="color3" nodename="redClorVal" />
+      <input name="in2" type="float" value="0.5" />
+    </multiply>
+    <add name="add1" type="color3">
+      <input name="in1" type="color3" nodename="multi1" />
+      <input name="in2" type="color3" nodename="blueColorVal" />
+    </add>
+    <output name="out" type="color3" nodename="add1" />
+  </nodegraph>
+</materialx>

@@ -75,6 +75,7 @@ _CreateResourceBindings(
         bufBind0.bindingIndex = BufferBinding_Points;
         bufBind0.resourceType = HgiBindResourceTypeStorageBuffer;
         bufBind0.stageUsage = HgiShaderStageCompute;
+        bufBind0.writable = false;
         bufBind0.offsets.push_back(0);
         bufBind0.buffers.push_back(points);
         resourceDesc.buffers.push_back(std::move(bufBind0));
@@ -85,6 +86,7 @@ _CreateResourceBindings(
         bufBind1.bindingIndex = BufferBinding_Normals;
         bufBind1.resourceType = HgiBindResourceTypeStorageBuffer;
         bufBind1.stageUsage = HgiShaderStageCompute;
+        bufBind1.writable = true;
         bufBind1.offsets.push_back(0);
         bufBind1.buffers.push_back(normals);
         resourceDesc.buffers.push_back(std::move(bufBind1));
@@ -95,6 +97,7 @@ _CreateResourceBindings(
         bufBind2.bindingIndex = BufferBinding_Indices;
         bufBind2.resourceType = HgiBindResourceTypeStorageBuffer;
         bufBind2.stageUsage = HgiShaderStageCompute;
+        bufBind2.writable = false;
         bufBind2.offsets.push_back(0);
         bufBind2.buffers.push_back(indices);
         resourceDesc.buffers.push_back(std::move(bufBind2));
@@ -105,6 +108,7 @@ _CreateResourceBindings(
         bufBind3.bindingIndex = BufferBinding_PrimitiveParam;
         bufBind3.resourceType = HgiBindResourceTypeStorageBuffer;
         bufBind3.stageUsage = HgiShaderStageCompute;
+        bufBind3.writable = false;
         bufBind3.offsets.push_back(0);
         bufBind3.buffers.push_back(primitiveParam);
         resourceDesc.buffers.push_back(std::move(bufBind3));
@@ -374,9 +378,9 @@ HdSt_FlatNormalsComputationGPU::Execute(
         resourceBindingsInstance.SetValue(rb);
     }
 
-    HgiResourceBindingsSharedPtr const& resourceBindindsPtr =
+    HgiResourceBindingsSharedPtr const& resourceBindingsPtr =
         resourceBindingsInstance.GetValue();
-    HgiResourceBindingsHandle resourceBindings = *resourceBindindsPtr.get();
+    HgiResourceBindingsHandle resourceBindings = *resourceBindingsPtr.get();
 
     // Get or add pipeline in registry.
     HdInstance<HgiComputePipelineSharedPtr> computePipelineInstance =

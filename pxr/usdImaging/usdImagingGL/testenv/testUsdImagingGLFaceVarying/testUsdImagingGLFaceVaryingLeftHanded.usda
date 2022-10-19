@@ -116,7 +116,9 @@ def Scope "Scene"
 
     def Scope "Geom"
     {
-        def Scope "BoundMaterialGeom"
+        def Scope "BoundMaterialGeom" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             rel material:binding = </Scene/Materials/Material>
 

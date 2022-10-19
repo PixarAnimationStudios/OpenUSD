@@ -1,0 +1,23 @@
+#usda 1.0
+(
+)
+
+over "Parent"
+{
+    over "RefChild"
+    {
+        float foo = 5
+        float radius = 5
+        int var.timeSamples = {
+            1: 5,
+            5: 1
+        } 
+
+        int bar = 5
+        token sub1 = "sub1_def"
+        token sub1.timeSamples = {
+            1: "sub1_1",
+            5: "sub1_5"
+        }
+    }
+}

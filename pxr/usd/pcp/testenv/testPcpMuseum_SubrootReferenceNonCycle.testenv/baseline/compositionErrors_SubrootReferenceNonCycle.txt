@@ -8,7 +8,7 @@ references:
 which CANNOT reference:
 @SubrootReferenceNonCycle/root.sdf@</ImplCycle>
 
-Unresolved reference path </PrimCycle/A> on prim @SubrootReferenceNonCycle/root.sdf@</ImplCycle/A/D>.
+Unresolved reference prim path @SubrootReferenceNonCycle/root.sdf@</PrimCycle/A> introduced by @SubrootReferenceNonCycle/root.sdf@</ImplCycle/A/D>
 
 ------------------------------------------------------------------------
 Errors while composing </PrimCycle/A/D>

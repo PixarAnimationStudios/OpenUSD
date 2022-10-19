@@ -193,6 +193,7 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
 {
     std::unique_ptr<HioGlslfx> glslfx;
 
+    const TfToken& nodeIdentifier = discoveryResult.identifier;
     if (!discoveryResult.uri.empty()) {
         glslfx = std::make_unique<HioGlslfx>(discoveryResult.resolvedUri);
 
@@ -202,7 +203,7 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
 
     } else {
         TF_WARN("Invalid NdrNodeDiscoveryResult with identifier %s: both uri "
-            "and sourceCode are empty.", discoveryResult.identifier.GetText());
+            "and sourceCode are empty.", nodeIdentifier.GetText());
 
         return NdrParserPlugin::GetInvalidNode(discoveryResult);
     }
@@ -291,7 +292,7 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
     //      to node metadata
 
     return std::make_unique<SdrShaderNode>(
-        discoveryResult.identifier,
+        nodeIdentifier,
         discoveryResult.version,
         discoveryResult.name,
         discoveryResult.family,

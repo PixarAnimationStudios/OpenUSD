@@ -71,6 +71,9 @@ public:
     HGIMETAL_API
     void MemoryBarrier(HgiMemoryBarrier barrier) override;
 
+    HGIMETAL_API
+    id<MTLComputeCommandEncoder> GetEncoder();
+
 protected:
     friend class HgiMetal;
 

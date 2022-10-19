@@ -77,6 +77,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (linear)                                    \
     (lightLink)                                 \
     (lightFilterLink)                           \
+    (meshLight)                                 \
     (materialParams)                            \
     (nonlinearSampleCount)                      \
     (nonperiodic)                               \
@@ -274,6 +275,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (domeLight)                                 \
     (light)                                     \
     (lightFilter)                               \
+    (meshLight)                                 \
     (pluginLight)                               \
     (rectLight)                                 \
     (sphereLight)                               \
@@ -383,6 +385,7 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (enableShadows)                                   \
     (enableSceneMaterials)                            \
     (enableSceneLights)                               \
+    (domeLightCameraVisibility)                       \
     /* Raytracer sampling settings */                 \
     (convergedVariance)                               \
     (convergedSamplesPerPixel)                        \

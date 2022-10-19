@@ -44,6 +44,7 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/instantiateSingleton.h"
+#include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
@@ -994,6 +995,11 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
         } 
     }
 
+    // Drop the GIL if we have it, so that any tasks we create that might
+    // require it (e.g. for python lifetime management on TfRefBase) won't
+    // deadlock waiting for the GIL.
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+    
     // For each plugin, if it has generated schema, add it to the schematics.
     std::vector<SdfLayerRefPtr> generatedSchemas(plugins.size());
     WorkWithScopedParallelism([&plugins, &generatedSchemas]() {

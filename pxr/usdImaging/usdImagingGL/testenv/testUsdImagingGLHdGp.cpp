@@ -210,13 +210,17 @@ int main(int argc, char *argv[])
 
     sceneIndex->AddObserver(HdSceneIndexObserverPtr(&observer));
 
+    // we are testing to confirm that an existing input prim is allowed to
+    // pass through
+    const size_t inputChildCount = 1;
 
     SdfPath cubePerMeshProcPrimPath("/World/cubePerMeshProc");
 
     std::cout << "Checking initial child count of: "
         << cubePerMeshProcPrimPath << std::endl;
     TF_AXIOM(
-        sceneIndex->GetChildPrimPaths(cubePerMeshProcPrimPath).size() == 4);
+        sceneIndex->GetChildPrimPaths(cubePerMeshProcPrimPath).size() ==
+            (4 + inputChildCount));
     std::cout << "...OK" << std::endl;
 
 
@@ -241,7 +245,8 @@ int main(int argc, char *argv[])
 
     std::cout << "Checking adjusted child count of: "
         << cubePerMeshProcPrimPath << "..." << std::endl;
-    TF_AXIOM(sceneIndex->GetChildPrimPaths(cubePerMeshProcPrimPath).size() == 8);
+    TF_AXIOM(sceneIndex->GetChildPrimPaths(cubePerMeshProcPrimPath).size() ==
+            (8 + inputChildCount));
     std::cout << "...OK" << std::endl;
 
     //-------------------------------------------------------------------------
@@ -292,7 +297,8 @@ int main(int argc, char *argv[])
         std::cout << "Checking restored child count of: "
             << cubePerMeshProcPrimPath << "..." << std::endl;
         TF_AXIOM(
-            sceneIndex->GetChildPrimPaths(cubePerMeshProcPrimPath).size() == 4);
+            sceneIndex->GetChildPrimPaths(cubePerMeshProcPrimPath).size() == 
+                (4 + inputChildCount));
         std::cout << "...OK" << std::endl;
     }
 

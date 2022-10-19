@@ -132,6 +132,12 @@ public:
     virtual SdfAbstractDataRefPtr
     InitData(const FileFormatArguments& args) const;
 
+    /// Returns a new SdfAbstractData providing access to the layer's data.
+    /// This data object is detached from any underlying storage.
+    SDF_API
+    SdfAbstractDataRefPtr InitDetachedData(
+        const FileFormatArguments& args) const;
+
     /// Instantiate a layer.
     SDF_API 
     SdfLayerRefPtr NewLayer(const SdfFileFormatConstPtr &fileFormat,
@@ -178,6 +184,24 @@ public:
         SdfLayer* layer,
         const std::string& resolvedPath,
         bool metadataOnly) const = 0;
+
+    /// Reads scene description from the asset specified by \p resolvedPath
+    /// into the detached layer \p layer. After reading is completed,
+    /// \p layer must be detached from any underlying storage.
+    ///
+    /// \p metadataOnly is a flag that asks for only the layer metadata
+    /// to be read in, which can be much faster if that is all that is
+    /// required.  Note that this is just a hint: some FileFormat readers
+    /// may disregard this flag and still fully populate the layer contents.
+    ///
+    /// Returns true if the asset is successfully read into \p layer,
+    /// false if the the asset could not be read or if the resulting
+    /// layer is not detached.
+    SDF_API
+    bool ReadDetached(
+        SdfLayer* layer,
+        const std::string& resolvedPath,
+        bool metadataOnly) const;
 
     /// Writes the content in \p layer into the file at \p filePath. If the
     /// content is successfully written, this method returns true. Otherwise,
@@ -349,6 +373,27 @@ protected:
     SDF_API
     static SdfAbstractDataConstPtr _GetLayerData(const SdfLayer& layer);
 
+    /// Helper function for _ReadDetached.
+    ///
+    /// Calls Read with the given parameters. If successful and \p layer is
+    /// not detached (i.e., SdfLayer::IsDetached returns false) copies the layer
+    /// data into an SdfData object and set that into \p layer. If this copy
+    /// occurs and \p didCopyData is given, it will be set to true.
+    ///
+    /// Note that the copying process is a simple spec-by-spec, field-by-field
+    /// value copy. This process may not produce detached layers if the data
+    /// object used by \p layer after the initial call to Read returns VtValues
+    /// that are not detached. One example is a VtValue holding a VtArray backed
+    /// by a foreign data source attached to a memory mapping.
+    ///
+    /// Returns true if Read was successful, false otherwise.
+    SDF_API
+    bool _ReadAndCopyLayerDataToMemory(
+        SdfLayer* layer,
+        const std::string& resolvedPath,
+        bool metadataOnly,
+        bool* didCopyData = nullptr) const;
+
 protected:
     SDF_API
     virtual SdfLayer *_InstantiateNewLayer(
@@ -369,6 +414,33 @@ protected:
     /// Default implementation returns false.
     SDF_API 
     virtual bool _ShouldReadAnonymousLayers() const;
+
+    /// \see InitDetachedData
+    ///
+    /// This function must return a new SdfAbstractData object that is
+    /// detached, i.e. SdfAbstractData::IsDetached returns false.
+    ///
+    /// The default implementation returns an SdfData object.
+    SDF_API
+    virtual SdfAbstractDataRefPtr _InitDetachedData(
+        const FileFormatArguments& args) const;
+
+    /// \see ReadDetached
+    ///
+    /// Upon completion, \p layer must have an SdfAbstractData object set that
+    /// is detached, i.e. SdfAbstractData::IsDetached returns false.
+    ///
+    /// The default implementation calls _ReadAndCopyLayerDataToMemory to read
+    /// the specified layer and copy its data into an SdfData object if it is
+    /// not detached. If data is copied, a warning will be issued since
+    /// this may be an expensive operation. If the above behavior is desired,
+    /// subclasses can just call _ReadAndCopyLayerDataToMemory to do the same
+    /// thing but without the warning.
+    SDF_API
+    virtual bool _ReadDetached(
+        SdfLayer* layer,
+        const std::string& resolvedPath,
+        bool metadataOnly) const;
 
 private:
     const SdfSchemaBase& _schema;

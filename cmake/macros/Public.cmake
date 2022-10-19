@@ -1006,6 +1006,7 @@ function(pxr_toplevel_prologue)
             _get_install_dir("lib" libInstallPrefix)
             install(
                 TARGETS usd_ms
+                EXPORT pxrTargets
                 LIBRARY DESTINATION ${libInstallPrefix}
                 ARCHIVE DESTINATION ${libInstallPrefix}
                 RUNTIME DESTINATION ${libInstallPrefix}
@@ -1041,20 +1042,21 @@ function(pxr_toplevel_epilogue)
         # that we carefully avoid adding the usd_m target itself by using
         # TARGET_FILE.  Linking the usd_m target would link usd_m and
         # everything it links to.
+        
         if(MSVC)
             target_link_libraries(usd_ms
                 PRIVATE
-                    -WHOLEARCHIVE:$<TARGET_FILE:usd_m>
+                    -WHOLEARCHIVE:$<BUILD_INTERFACE:$<TARGET_FILE:usd_m>>
             )
         elseif(CMAKE_COMPILER_IS_GNUCXX)
             target_link_libraries(usd_ms
                 PRIVATE
-                    -Wl,--whole-archive $<TARGET_FILE:usd_m> -Wl,--no-whole-archive
+                    -Wl,--whole-archive $<BUILD_INTERFACE:$<TARGET_FILE:usd_m>> -Wl,--no-whole-archive
             )
         elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
             target_link_libraries(usd_ms
                 PRIVATE
-                    -Wl,-force_load $<TARGET_FILE:usd_m>
+                    -Wl,-force_load $<BUILD_INTERFACE:$<TARGET_FILE:usd_m>>
             )
         endif()
 
@@ -1067,16 +1069,16 @@ function(pxr_toplevel_epilogue)
         # usd_m target.
         target_compile_definitions(usd_ms
             PUBLIC
-                $<TARGET_PROPERTY:usd_m,INTERFACE_COMPILE_DEFINITIONS>
+                $<BUILD_INTERFACE:$<TARGET_PROPERTY:usd_m,INTERFACE_COMPILE_DEFINITIONS>>
         )
         target_include_directories(usd_ms
             PUBLIC
-                $<TARGET_PROPERTY:usd_m,INTERFACE_INCLUDE_DIRECTORIES>
+                $<BUILD_INTERFACE:$<TARGET_PROPERTY:usd_m,INTERFACE_INCLUDE_DIRECTORIES>>
         )
         target_include_directories(usd_ms
             SYSTEM
             PUBLIC
-                $<TARGET_PROPERTY:usd_m,INTERFACE_SYSTEM_INCLUDE_DIRECTORIES>
+                $<BUILD_INTERFACE:$<TARGET_PROPERTY:usd_m,INTERFACE_SYSTEM_INCLUDE_DIRECTORIES>>
         )
         foreach(lib ${PXR_OBJECT_LIBS})
             get_property(libs TARGET ${lib} PROPERTY INTERFACE_LINK_LIBRARIES)

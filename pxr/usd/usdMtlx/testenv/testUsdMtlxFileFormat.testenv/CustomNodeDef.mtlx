@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+  <nodedef name="ND_test_color3" node="color3val">
+    <output name="out" type="color3" />
+  </nodedef>
+  <nodegraph name="NG_testing" nodedef="ND_test_color3">
+    <constant name="redClorVal" type="color3">
+      <input name="value" type="color3" value="1,0,0" />
+    </constant>
+    <constant name="blueColorVal" type="color3">
+      <input name="value" type="color3" value="0,0,1" />
+    </constant>
+    <multiply name="multi1" type="color3">
+      <input name="in1" type="color3" nodename="redClorVal" />
+      <input name="in2" type="float" value="0.5" />
+    </multiply>
+    <add name="add1" type="color3">
+      <input name="in1" type="color3" nodename="multi1" />
+      <input name="in2" type="color3" nodename="blueColorVal" />
+    </add>
+    <output name="out" type="color3" nodename="add1" />
+  </nodegraph>
+
+  <nodegraph name="wrapper_nodegraph">
+    <color3val name="myColor" type="color3" />
+    <constant name="green" type="color3">
+      <input name="value" type="color3" value="0,1,0" />
+    </constant>
+    <multiply name="multi" type="color3">
+      <input name="in1" type="color3" nodename="myColor" />
+      <input name="in2" type="float" value="0.75" />
+    </multiply>
+    <add name="add" type="color3">
+      <input name="in1" type="color3" nodename="multi" />
+      <input name="in2" type="color3" nodename="green" />
+    </add>
+    <constant name="mySpecColor" type="color3">
+      <input name="value" type="color3" value="0,1,0" />
+    </constant>
+    <output name="diffuse_output" type="color3" nodename="add" />
+    <output name="specular_output" type="color3" nodename="mySpecColor" />
+  </nodegraph>
+  <UsdPreviewSurface name="surface_shader_node" type="surfaceshader">
+    <input name="diffuseColor" type="color3" output="diffuse_output" nodegraph="wrapper_nodegraph" />
+    <input name="useSpecularWorkflow" type="integer" value="1" />
+    <input name="specularColor" type="color3" output="specular_output" nodegraph="wrapper_nodegraph" />
+    <input name="roughness" type="float" value="0.25" />
+    <input name="ior" type="float" value=".9" />
+  </UsdPreviewSurface>
+  <surfacematerial name="surface_material_node" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_shader_node" />
+  </surfacematerial>
+</materialx>

@@ -29,6 +29,7 @@
 #include "pxr/base/tf/denseHashSet.h"
 
 #include <tbb/concurrent_unordered_map.h>
+#include <mutex>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -115,6 +116,10 @@ private:
 
     // MEMBER TYPES ///////////////////////////////////////////////////////////
 
+    using _DensePathSet = TfDenseHashSet<SdfPath, TfHash>;
+
+    static void _CombinePathArrays(const _DensePathSet &s, SdfPathVector *v);
+
     struct _ProcEntry
     {
         enum State : unsigned char {
@@ -126,7 +131,7 @@ private:
         };
 
         using _PathSetMap =
-            TfDenseHashMap<SdfPath, TfDenseHashSet<SdfPath, TfHash>, TfHash>;
+            TfDenseHashMap<SdfPath, _DensePathSet, TfHash>;
 
         std::atomic<State> state;
         TfToken typeName;

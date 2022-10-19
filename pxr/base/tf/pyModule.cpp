@@ -160,7 +160,7 @@ public:
             , _fileName(fileName)
         {}
 
-        handle<> operator()(tuple const &args, dict const &kw) const {
+        PyObject *operator()(PyObject *args, PyObject *kw) const {
 
             // Fabricate a python tracing event to record the python -> c++ ->
             // python transition.
@@ -178,8 +178,7 @@ public:
             TfErrorMark m;
 
             // Call the function.
-            handle<> ret(allow_null(
-                             PyObject_Call(_fn.ptr(), args.ptr(), kw.ptr())));
+            PyObject *ret = PyObject_Call(_fn.ptr(), args, kw);
 
             // Fabricate the return tracing event.
             info.what = PyTrace_RETURN;
@@ -196,6 +195,7 @@ public:
             // errors occurred, and if so, convert them to python exceptions.
             if (ARCH_UNLIKELY(!m.IsClean() &&
                               TfPyConvertTfErrorsToPythonException(m))) {
+                Py_DECREF(ret);
                 throw_error_already_set();
             }
 
@@ -229,10 +229,16 @@ public:
                 fullNamePrefix = &localPrefix;
             }
 
-            ret = raw_function(
-                _InvokeWithErrorHandling(
-                    fn, *fullNamePrefix + "." + name, *fullNamePrefix));
-
+            ret = boost::python::detail::make_raw_function(
+                boost::python::objects::py_function(
+                    _InvokeWithErrorHandling(
+                        fn, *fullNamePrefix + "." + name, *fullNamePrefix),
+                    boost::mpl::vector1<PyObject *>(),
+                    /*min_args =*/ 0,
+                    /*max_args =*/ ~0
+                    )
+                );
+            
             ret.attr("__doc__") = fn.attr("__doc__");
         }
 
@@ -399,8 +405,12 @@ void Tf_PyInitWrapModule(
     const char* packageTag,
     const char* packageTag2)
 {
+    // Starting with Python 3.7, the GIL is initialized as part of
+    // Py_Initialize(). Python 3.9 deprecated explicit GIL initialization.
+#if PY_VERSION_HEX < 0x03070000
     // Ensure the python GIL is created.
     PyEval_InitThreads();
+#endif
 
     // Tell the tracing mechanism that python is alive.
     Tf_PyTracingPythonInitialized();

@@ -153,7 +153,8 @@ _GetBuiltinKeyword(HgiShaderFunctionParamDesc const &param,
        {HgiShaderKeywordTokens->hdPrimitiveID, "primitive_id"},
        {HgiShaderKeywordTokens->hdFrontFacing, "front_facing"},
        {HgiShaderKeywordTokens->hdPosition, "position"},
-       {HgiShaderKeywordTokens->hdBaryCoordNoPerspNV, "barycentric_coord"}
+       {HgiShaderKeywordTokens->hdBaryCoordNoPerspNV, "barycentric_coord"},
+       {HgiShaderKeywordTokens->hdFragCoord, "position"}
     };
 
     //check if has a role

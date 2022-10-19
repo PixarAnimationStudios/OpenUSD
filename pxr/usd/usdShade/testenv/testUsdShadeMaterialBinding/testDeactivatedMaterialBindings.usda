@@ -1,0 +1,106 @@
+#usda 1.0
+
+def Xform "Geometry" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </Looks/GlobalMat1>
+
+    def Xform "InnerScope"
+    {
+        def Sphere "gprim" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Looks/DeactivatedLooks1/GlobalMat1>
+        }
+    }
+}
+
+def Scope "Collections" (
+    prepend apiSchemas = ["CollectionAPI:Set1", "CollectionAPI:Set2", "MaterialBindingAPI"]
+)
+{
+    uniform token collection:Set1:expansionRule = "expandPrims"
+    rel collection:Set1:includes = [
+        </Collections/s1>,
+        </Collections/c1>,
+    ]
+
+    uniform token collection:Set2:expansionRule = "expandPrims"
+    rel collection:Set2:includes = [
+        </Collections/s2>,
+        </Collections/Cubes>,
+    ]
+    rel collection:Set2:excludes = </Collections/Cubes/c2e>
+
+    rel material:binding:collection:bindSet2 = [
+        </Collections.collection:Set2>, 
+        </OverPrims/GlobalMat1>
+    ]
+
+    rel material:binding:collection:bindSet1 = [
+        </Collections.collection:Set1>, 
+        </Looks/DeactivatedLooks2/GlobalMat1>
+    ]
+
+    rel material:binding = </Looks/GlobalMat1>
+
+    def Sphere "s1"
+    {
+    }
+
+    def Cube "c1"
+    {
+    }
+    
+    def Sphere "s2"
+    {
+    }
+
+    def Xform "Cubes"
+    {
+        def Cube "c2"
+        {
+        }
+
+        def Cube "c2e"
+        {
+        }
+    }
+}
+
+def Scope "OverPrims"
+{
+    over "GlobalMat1"
+    {
+
+    }
+}
+
+def Scope "Looks"
+{
+    def Material "GlobalMat1" (
+    )
+    {
+    }
+
+    def Scope "DeactivatedLooks1" (
+        active = false
+    )
+    {
+        def Material "GlobalMat1" (
+        )
+        {
+        }
+    }
+    def Scope "DeactivatedLooks2" (
+        active = false
+    )
+    {
+        def Material "GlobalMat1" (
+        )
+        {
+        }
+    }
+}

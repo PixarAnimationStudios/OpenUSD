@@ -38,7 +38,13 @@ TF_DECLARE_PUBLIC_TOKENS(HdsiImplicitSurfaceSceneIndexTokens, HDSI_API,
 
 TF_DECLARE_REF_PTRS(HdsiImplicitSurfaceSceneIndex);
 
-class HdsiImplicitSurfaceSceneIndex : public HdSingleInputFilteringSceneIndexBase
+/// The implicit surface scene index can be "configured" to either generate
+/// the mesh for a given implicit primitive (for renderers that don't
+/// natively support it) or overload the transform to account for a different
+/// "spine" axis (relevant for cones, capsules and cylinders) for those that
+/// do.
+class HdsiImplicitSurfaceSceneIndex :
+    public HdSingleInputFilteringSceneIndexBase
 {
 public:
     HDSI_API

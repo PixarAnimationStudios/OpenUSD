@@ -125,6 +125,12 @@ void wrapUsdGeomBBoxCache()
             (arg("time"), arg("includedPurposes"),
              arg("useExtentsHint"), arg("ignoreVisibility"))))
         .def("ComputeWorldBound", &BBoxCache::ComputeWorldBound, arg("prim"))
+        .def("ComputeWorldBoundWithOverrides",
+             &BBoxCache::ComputeWorldBoundWithOverrides,
+             (arg("prim"),
+              arg("pathsToSkip"),
+              arg("primOverride"),
+              arg("ctmOverrides")))              
         .def("ComputeLocalBound", &BBoxCache::ComputeLocalBound, arg("prim"))
         .def("ComputeRelativeBound", &BBoxCache::ComputeRelativeBound, 
             (arg("prim"), arg("relativeRootPrim")))

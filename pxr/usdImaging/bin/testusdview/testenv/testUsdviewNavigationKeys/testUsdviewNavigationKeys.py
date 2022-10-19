@@ -33,8 +33,8 @@ def _emitCollapseAllAction(appController):
     appController._ui.actionCollapse_All.triggered.emit() 
     appController._processEvents()
 
-def _popupViewMenu(appController):
-    appController._ui.menuView.exec_()
+def _popupFileMenu(appController):
+    appController._ui.menuFile.exec_()
     appController._processEvents()
 
 def _postAndProcessKeyEvent(key, widget, appController):
@@ -112,9 +112,9 @@ def _testBasic(appController):
     # menus and modals, since our filter changes it to be a focus-changer.
     # If the filter is still active (FAILURE), then the test will not
     # terminate, and eventually be killed.
-    escSender = EscapeSender(appController._ui.menuView)
+    escSender = EscapeSender(appController._ui.menuFile)
     QtCore.QTimer.singleShot(500, lambda: escSender.doIt(appController))
-    _popupViewMenu(appController)
+    _popupFileMenu(appController)
     
     # Modal dialogs won't receive events sent to the application object,
     # so we must send it to the widget itself. Which means we can't use any

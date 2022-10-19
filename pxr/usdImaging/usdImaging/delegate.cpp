@@ -113,7 +113,6 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _materialBindingImplData(parentIndex->GetRenderDelegate()->
                                GetMaterialBindingPurpose())
     , _materialBindingCache(GetTime(), &_materialBindingImplData)
-    , _coordSysBindingCache(GetTime(), &_coordSysBindingImplData)
     , _visCache(GetTime())
     , _purposeCache() // note that purpose is uniform, so no GetTime()
     , _drawModeCache(GetTime())
@@ -135,11 +134,6 @@ UsdImagingDelegate::UsdImagingDelegate(
                        ->IsSprimTypeSupported(HdPrimTypeTokens->coordSys))
     , _displayUnloadedPrimsWithBounds(false)
 {
-    // Provide a callback to the _coordSysBindingCache so it can
-    // convert USD paths to Hydra ID's.
-    _coordSysBindingImplData.usdToHydraPath =
-        std::bind( &UsdImagingDelegate::ConvertCachePathToIndexPath, this,
-                   std::placeholders::_1 );
 }
 
 UsdImagingDelegate::~UsdImagingDelegate()
@@ -378,12 +372,6 @@ public:
                     adapter->TrackVariability(primInfo->usdPrim,
                                               cachePath,
                                               &primInfo->timeVaryingBits);
-                    if (primInfo->timeVaryingBits != HdChangeTracker::Clean) {
-                        adapter->MarkDirty(primInfo->usdPrim,
-                                           cachePath,
-                                           primInfo->timeVaryingBits,
-                                           &indexProxy);
-                    }
                 }
             }
         }
@@ -955,6 +943,25 @@ UsdImagingDelegate::_GatherDependencies(SdfPath const& subtree,
         return;
     }
 
+    const auto it = _flattenedDependenciesCacheMap.find(subtree);
+    if (it != _flattenedDependenciesCacheMap.end()) {
+        (*affectedCachePaths) = it->second;
+        return;
+    }
+
+    _CacheDependencies(subtree, affectedCachePaths);
+}
+
+void
+UsdImagingDelegate::_CacheDependencies(SdfPath const& subtree,
+                                       SdfPathVector *affectedCachePaths)
+{
+    HD_TRACE_FUNCTION();
+
+    if (affectedCachePaths == nullptr) {
+        return;
+    }
+
     // Binary search for the first path in the subtree.
     _DependencyMap::const_iterator start =
         _dependencyInfo.lower_bound(subtree);
@@ -1017,6 +1024,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
     _pointInstancerIndicesCache.Clear();
     _nonlinearSampleCountCache.Clear();
     _blurScaleCache.Clear();
+    _flattenedDependenciesCacheMap.clear();
 
     UsdImagingDelegate::_Worker worker(this);
     UsdImagingIndexProxy indexProxy(this, &worker);
@@ -1035,6 +1043,22 @@ UsdImagingDelegate::ApplyPendingUpdates()
                              return r.HasPrefix(l);
                          });
         _usdPathsToResync.clear();
+
+        // Pre-cache dependencies in parallel
+        WorkDispatcher resyncPathsCacheDispatcher;
+        for (const auto& usdPath: usdPathsToResync) {
+            auto pair = _flattenedDependenciesCacheMap.insert(std::make_pair(usdPath, SdfPathVector()));
+            if (!pair.second) {
+                // No insertion happened, path has been inserted
+                continue;
+            }
+            auto& affectedCachePaths = pair.first->second;
+            resyncPathsCacheDispatcher.Run(
+                [this, &usdPath, &affectedCachePaths]() {
+                    _CacheDependencies(usdPath, &affectedCachePaths);
+            });
+        }
+        resyncPathsCacheDispatcher.Wait();
 
         for (SdfPath const& usdPath: usdPathsToResync) {
             if (usdPath.IsPropertyPath()) {
@@ -1062,6 +1086,24 @@ UsdImagingDelegate::ApplyPendingUpdates()
     if (!_usdPathsToUpdate.empty()) {
         _PathsToUpdateMap usdPathsToUpdate;
         std::swap(usdPathsToUpdate, _usdPathsToUpdate);
+
+        // Pre-cache dependencies in parallel
+        WorkDispatcher updatePathsCacheDispatcher;
+        for (auto pathIt: usdPathsToUpdate) {
+            const auto& usdPath = pathIt.first;
+            auto pair = _flattenedDependenciesCacheMap.insert(std::make_pair(usdPath, SdfPathVector()));
+            if (!pair.second) {
+                // No insertion happened, path has been inserted
+                continue;
+            }
+            auto& affectedCachePaths = pair.first->second;
+            updatePathsCacheDispatcher.Run(
+                [this, &usdPath, &affectedCachePaths]() {
+                    _CacheDependencies(usdPath, &affectedCachePaths);
+            });
+        }
+        updatePathsCacheDispatcher.Wait();
+
         TF_FOR_ALL(pathIt, usdPathsToUpdate) {
             const SdfPath& usdPath = pathIt->first;
             const TfTokenVector& changedPrimInfoFields = pathIt->second;
@@ -1330,6 +1372,11 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
             TF_DEBUG(USDIMAGING_CHANGES).Msg("  (repopulating from root)\n");
             proxy->Repopulate(usdPath);
         } else {
+            // Build a TfHashSet of excluded prims for fast rejection.
+            TfHashSet<SdfPath, SdfPath::Hash> excludedSet;
+            TF_FOR_ALL(pathIt, _excludedPrimPaths) {
+                excludedSet.insert(*pathIt);
+            }
             // If we resynced prims individually, walk the subtree for new prims
             UsdPrimRange range(_stage->GetPrimAtPath(usdPath),
                 _GetDisplayPredicate());
@@ -1340,6 +1387,13 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
                 // If we've populated this subtree already, skip it.
                 if (depRange.first != depRange.second) {
                     iter.PruneChildren();
+                    continue;
+                }
+                if (excludedSet.find(iter->GetPath()) != excludedSet.end()) {
+                    iter.PruneChildren();
+                    TF_DEBUG(USDIMAGING_CHANGES).Msg("[Resync Prim] Pruned at <%s> "
+                                "due to exclusion list\n",
+                                iter->GetPath().GetText());
                     continue;
                 }
                 // Check if this prim (& subtree) should be pruned based on
@@ -1893,7 +1947,18 @@ UsdImagingDelegate::GetMeshTopology(SdfPath const& id)
             cachePath, 
             _time);
         if (topology.IsHolding<HdMeshTopology>()) {
-            return topology.Get<HdMeshTopology>();
+            HdMeshTopology meshTopology = topology.Get<HdMeshTopology>();
+            HdGeomSubsets geomSubsets;
+            for(const HdGeomSubset& subset : meshTopology.GetGeomSubsets()) {
+                geomSubsets.push_back(HdGeomSubset {
+                    subset.type,
+                    ConvertCachePathToIndexPath(subset.id),
+                    ConvertCachePathToIndexPath(subset.materialId),
+                    subset.indices
+                });
+            }
+            meshTopology.SetGeomSubsets(geomSubsets);
+            return meshTopology;
         }
     }
 
@@ -2546,7 +2611,19 @@ UsdImagingDelegate::GetCoordSysBindings(SdfPath const& id)
     if (!TF_VERIFY(primInfo) || !TF_VERIFY(primInfo->usdPrim)) {
         return nullptr;
     }
-    return _coordSysBindingCache.GetValue(primInfo->usdPrim).idVecPtr;
+
+    // CachePaths for the bindings are stored in the idVecPtr, convert 
+    // them into IndexPaths before returning.
+    HdIdVectorSharedPtr bindingPathVector =
+        _coordSysBindingCache.GetValue(primInfo->usdPrim).idVecPtr;
+    if (bindingPathVector) {
+        HdIdVectorSharedPtr indexVec = HdIdVectorSharedPtr(new SdfPathVector());
+        for (SdfPath bindingCachePath : *bindingPathVector) {
+            indexVec->push_back(ConvertCachePathToIndexPath(bindingCachePath));
+        }
+        return indexVec;
+    }
+    return bindingPathVector;
 }
 
 /*virtual*/

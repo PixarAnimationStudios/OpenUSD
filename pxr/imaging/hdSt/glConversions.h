@@ -28,8 +28,8 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/types.h"
-#include "pxr/imaging/hio/types.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/imaging/garch/glApi.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

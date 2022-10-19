@@ -57,6 +57,7 @@ class TestPcpLayerMuting(unittest.TestCase):
                     [layer.GetPrimAtPath('/Root'),
                      sublayer.GetPrimAtPath('/Root'),
                      anonymousSublayer.GetPrimAtPath('/Root')])
+        self.assertEqual(pi.rootNode.layerStack.mutedLayers, [])
 
         (pi2, err2) = pcp2.ComputePrimIndex('/Root')
         self.assertTrue(not err2)
@@ -64,6 +65,7 @@ class TestPcpLayerMuting(unittest.TestCase):
                     [layer.GetPrimAtPath('/Root'),
                      sublayer.GetPrimAtPath('/Root'),
                      anonymousSublayer.GetPrimAtPath('/Root')])
+        self.assertEqual(pi2.rootNode.layerStack.mutedLayers, [])
 
         # Muting the cache's root layer is explicitly disallowed.
         with self.assertRaises(Tf.ErrorException):
@@ -77,6 +79,8 @@ class TestPcpLayerMuting(unittest.TestCase):
         self.assertEqual(pi.primStack, 
                     [layer.GetPrimAtPath('/Root'),
                      anonymousSublayer.GetPrimAtPath('/Root')])
+        self.assertEqual(pi.rootNode.layerStack.mutedLayers, 
+                         [sublayer.identifier])
 
         (pi2, err2) = pcp2.ComputePrimIndex('/Root')
         self.assertTrue(not err2)
@@ -84,6 +88,7 @@ class TestPcpLayerMuting(unittest.TestCase):
                     [layer.GetPrimAtPath('/Root'),
                      sublayer.GetPrimAtPath('/Root'),
                      anonymousSublayer.GetPrimAtPath('/Root')])
+        self.assertEqual(pi2.rootNode.layerStack.mutedLayers, [])
 
         # Unmute sublayer and verify that it comes back into /Root's
         # prim stack.
@@ -94,6 +99,7 @@ class TestPcpLayerMuting(unittest.TestCase):
                     [layer.GetPrimAtPath('/Root'),
                      sublayer.GetPrimAtPath('/Root'),
                      anonymousSublayer.GetPrimAtPath('/Root')])
+        self.assertEqual(pi.rootNode.layerStack.mutedLayers, [])
 
         (pi2, err2) = pcp2.ComputePrimIndex('/Root')
         self.assertTrue(not err2)
@@ -101,6 +107,7 @@ class TestPcpLayerMuting(unittest.TestCase):
                     [layer.GetPrimAtPath('/Root'),
                      sublayer.GetPrimAtPath('/Root'),
                      anonymousSublayer.GetPrimAtPath('/Root')])
+        self.assertEqual(pi2.rootNode.layerStack.mutedLayers, [])
 
         # Mute sublayer and verify that change processing has occurred
         # and that it no longer appears in /Root's prim stack.
@@ -111,6 +118,8 @@ class TestPcpLayerMuting(unittest.TestCase):
                     [layer.GetPrimAtPath('/Root'),
                      sublayer.GetPrimAtPath('/Root')])
         self.assertTrue(anonymousSublayer)
+        self.assertEqual(pi.rootNode.layerStack.mutedLayers, 
+                         [anonymousSublayer.identifier])
 
         (pi2, err2) = pcp2.ComputePrimIndex('/Root')
         self.assertTrue(not err2)
@@ -118,6 +127,7 @@ class TestPcpLayerMuting(unittest.TestCase):
                     [layer.GetPrimAtPath('/Root'),
                      sublayer.GetPrimAtPath('/Root'),
                      anonymousSublayer.GetPrimAtPath('/Root')])
+        self.assertEqual(pi2.rootNode.layerStack.mutedLayers, [])
 
         # Unmute sublayer and verify that it comes back into /Root's
         # prim stack.
@@ -128,6 +138,7 @@ class TestPcpLayerMuting(unittest.TestCase):
                     [layer.GetPrimAtPath('/Root'),
                      sublayer.GetPrimAtPath('/Root'),
                      anonymousSublayer.GetPrimAtPath('/Root')])
+        self.assertEqual(pi.rootNode.layerStack.mutedLayers, [])
 
         (pi2, err2) = pcp2.ComputePrimIndex('/Root')
         self.assertTrue(not err2)
@@ -135,6 +146,7 @@ class TestPcpLayerMuting(unittest.TestCase):
                     [layer.GetPrimAtPath('/Root'),
                      sublayer.GetPrimAtPath('/Root'),
                      anonymousSublayer.GetPrimAtPath('/Root')])
+        self.assertEqual(pi2.rootNode.layerStack.mutedLayers, [])
         
     def test_MutingSessionLayer(self):
         """Tests ability to mute a cache's session layer."""
@@ -149,6 +161,7 @@ class TestPcpLayerMuting(unittest.TestCase):
         self.assertEqual(pi.primStack,
                     [sessionLayer.GetPrimAtPath('/Root'),
                      layer.GetPrimAtPath('/Root')])
+        self.assertEqual(pi.rootNode.layerStack.mutedLayers, [])
 
         pcp.RequestLayerMuting([sessionLayer.identifier], [])
 
@@ -156,6 +169,8 @@ class TestPcpLayerMuting(unittest.TestCase):
         self.assertTrue(not err)
         self.assertEqual(pi.primStack,
                     [layer.GetPrimAtPath('/Root')])
+        self.assertEqual(pi.rootNode.layerStack.mutedLayers, 
+                         [sessionLayer.identifier])
 
         pcp.RequestLayerMuting([], [sessionLayer.identifier])
 
@@ -164,6 +179,7 @@ class TestPcpLayerMuting(unittest.TestCase):
         self.assertEqual(pi.primStack,
                     [sessionLayer.GetPrimAtPath('/Root'),
                      layer.GetPrimAtPath('/Root')])
+        self.assertEqual(pi.rootNode.layerStack.mutedLayers, [])
 
     def test_MutingReferencedLayers(self):
         """Tests behavior when muting and unmuting the root layer of 

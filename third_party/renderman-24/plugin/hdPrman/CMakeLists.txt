@@ -53,6 +53,7 @@ pxr_plugin(${PXR_PACKAGE}
     LIBRARIES
         ar
         arch
+        js
         plug
         tf
         vt
@@ -86,6 +87,7 @@ pxr_plugin(${PXR_PACKAGE}
         material
         matfiltConvertPreviewMaterial
         matfiltFilterChain
+        matfiltResolveTerminals
         matfiltResolveVstructs
         mesh
         paramsSetter
@@ -106,6 +108,7 @@ pxr_plugin(${PXR_PACKAGE}
         framebuffer
         implicitSurfaceSceneIndexPlugin
         matfiltSceneIndexPlugins
+        pinnedCurveExpandingSceneIndexPlugin
         renderBuffer
         renderParam
         renderViewContext
