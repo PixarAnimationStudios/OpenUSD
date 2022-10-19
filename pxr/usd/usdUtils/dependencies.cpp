@@ -53,8 +53,6 @@
 #include <stack>
 #include <vector>
 
-#include <boost/get_pointer.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 using std::vector;
@@ -277,18 +275,13 @@ _FileAnalyzer::_UpdateAssetValue(const VtValue &val)
 void
 _FileAnalyzer::_ProcessSublayers()
 {
-    const std::vector<std::string> subLayerPaths = _layer->GetSubLayerPaths();
-
     if (_remapPathFunc) {
-        std::vector<std::string> newSubLayerPaths;
-        newSubLayerPaths.reserve(subLayerPaths.size());
-        for (auto &subLayer: subLayerPaths) {
-            newSubLayerPaths.push_back(
-                _ProcessDependency(subLayer, _DepType::Sublayer));
-        }
-        _layer->SetSubLayerPaths(newSubLayerPaths);
+        _layer->GetSubLayerPaths().ModifyItemEdits(
+            [this](const std::string& path) { 
+                return _ProcessDependency(path, _DepType::Sublayer); 
+            });
     } else {
-        for (auto &subLayer: subLayerPaths) {
+        for (const auto &subLayer: _layer->GetSubLayerPaths()) {
             _ProcessDependency(subLayer, _DepType::Sublayer);
         }
     }
@@ -306,10 +299,12 @@ _FileAnalyzer::_RemapRefOrPayload(const RefOrPayloadType &refOrPayload)
 
     std::string remappedPath = 
         _ProcessDependency(refOrPayload.GetAssetPath(), DEP_TYPE);
+
     // If the path was not remapped to a different path, then return the 
-    // incoming payload unmodifed.
-    if (remappedPath == refOrPayload.GetAssetPath())
+    // incoming payload unmodified.
+    if (remappedPath == refOrPayload.GetAssetPath()) {
         return refOrPayload;
+    }
 
     // The payload or reference path was remapped, hence construct a new 
     // SdfPayload or SdfReference object with the remapped path.
@@ -322,9 +317,11 @@ void
 _FileAnalyzer::_ProcessPayloads(const SdfPrimSpecHandle &primSpec)
 {
     if (_remapPathFunc) {
-        primSpec->GetPayloadList().ModifyItemEdits(std::bind(
-            &_FileAnalyzer::_RemapRefOrPayload<SdfPayload, _DepType::Payload>, 
-            this, std::placeholders::_1));
+        primSpec->GetPayloadList().ModifyItemEdits(
+            [this](const SdfPayload& payload) {
+                return _RemapRefOrPayload<SdfPayload, _DepType::Payload>(
+                    payload);
+            });
     } else {
         for (SdfPayload const& payload:
              primSpec->GetPayloadList().GetAddedOrExplicitItems()) {
@@ -524,9 +521,11 @@ void
 _FileAnalyzer::_ProcessReferences(const SdfPrimSpecHandle &primSpec)
 {
     if (_remapPathFunc) {
-        primSpec->GetReferenceList().ModifyItemEdits(std::bind(
-            &_FileAnalyzer::_RemapRefOrPayload<SdfReference,
-            _DepType::Reference>, this, std::placeholders::_1));
+        primSpec->GetReferenceList().ModifyItemEdits(
+            [this](const SdfReference& ref) {
+                return _RemapRefOrPayload<SdfReference, _DepType::Reference>(
+                    ref);
+            });
     } else {
         for (SdfReference const& ref:
             primSpec->GetReferenceList().GetAddedOrExplicitItems()) {

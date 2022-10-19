@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    subLayers = [
+        @baz.usd@
+    ]
+)
+
+def Xform "Model" (
+    assetInfo = {
+        asset identifier = @baz.usd@
+        asset[] payloadAssetDependencies = [@baz.usd@, @baz.usd@]
+    }
+    customData = {
+        dictionary d = {
+            asset[] bar = [@baz.usd@, @baz.usd@]
+            asset foo = @baz.usd@
+        }
+        asset foo = @baz.usd@
+    }
+    payload = [
+        @baz.usd@</foo>,
+        @baz.usd@
+    ]
+    references = [
+        @baz.usd@</foo>,
+        @baz.usd@
+    ]
+)
+{
+    asset[] bar = [@baz.usd@, @baz.usd@]
+    asset foo = @baz.usd@
+    asset[] varBar.timeSamples = {
+        1: [@baz.usd@, @baz.usd@],
+        2: [@baz.usd@, @baz.usd@],
+    }
+    asset varFoo.timeSamples = {
+        1: @baz.usd@,
+    }
+}
+
+def Xform "Variants" (
+    add variantSets = "standin"
+)
+{
+    variantSet "standin" = {
+        "render" {
+            asset foo = @baz.usd@
+
+        }
+    }
+}
+
