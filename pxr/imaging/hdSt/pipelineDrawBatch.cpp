@@ -122,7 +122,15 @@ HdSt_PipelineDrawBatch::_Init(HdStDrawItemInstance * drawItemInstance)
     HdSt_DrawBatch::_Init(drawItemInstance);
     drawItemInstance->SetBatchIndex(0);
     drawItemInstance->SetBatch(this);
-
+    HdSt_GeometricShaderPtr geomShader =
+        _drawItemInstances[0]->GetDrawItem()->GetGeometricShader();
+    
+    if (geomShader->IsPrimTypeBasisCurves() ||
+        geomShader->GetPrimitiveType() == HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BSPLINE ||
+        geomShader->GetPrimitiveType() == HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE
+        ) {
+        _allowIndirectCommandEncoding = false;
+    }
     // remember buffer arrays version for dispatch buffer updating
     HdStDrawItem const * drawItem = drawItemInstance->GetDrawItem();
     _bufferArraysHash = drawItem->GetBufferArraysHash();
