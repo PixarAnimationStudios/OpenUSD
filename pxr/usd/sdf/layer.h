@@ -1685,7 +1685,7 @@ private:
     template <class ScopedLock>
     static SdfLayerRefPtr
     _TryToFindLayer(const std::string &identifier,
-                    const std::string &resolvedPath,
+                    const ArResolvedPath &resolvedPath,
                     ScopedLock &lock, bool retryAsWriter);
 
     /// Returns true if the spec at the specified path has no effect on the 
@@ -1784,7 +1784,7 @@ private:
     // Reads contents of asset specified by \p identifier with resolved
     // path \p resolvedPath into this layer.
     bool _Read(const std::string& identifier, 
-               const std::string& resolvedPath, 
+               const ArResolvedPath& resolvedPath, 
                bool metadataOnly);
     
     // Saves this layer if it is dirty or the layer doesn't already exist
