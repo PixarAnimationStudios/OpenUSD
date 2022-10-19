@@ -91,8 +91,7 @@ private:
 };
 
 
-// If no prim type adapter is present, this will call use
-// UsdImagingDataSourcePrim
+// If no prim type adapter is present, this will use UsdImagingDataSourcePrim
 class _BasePrimAdapterAPISchemaAdapter : public UsdImagingAPISchemaAdapter
 {
 public:
@@ -504,6 +503,10 @@ UsdTimeCode UsdImagingStageSceneIndex::GetTime() const
 
 void UsdImagingStageSceneIndex::SetStage(UsdStageRefPtr stage)
 {
+    if (_stage == stage) {
+        return;
+    }
+
     TRACE_FUNCTION();
 
     if (_stage) {
