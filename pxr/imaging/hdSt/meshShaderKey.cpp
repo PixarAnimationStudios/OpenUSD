@@ -296,11 +296,12 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             hasCustomDisplacement ||
             ptvsSceneNormals ||
             ptvsGeometricNormals ||
-            !hasBuiltinBarycentrics;
+            !hasBuiltinBarycentrics ||
+            isAdaptiveMesh;
 
     // Determine if using actually using Metal PTVS.
     useMetalTessellation =
-        hasMetalTessellation && !isPrimTypePoints && usePTVSTechniques);
+        hasMetalTessellation && !isPrimTypePoints && usePTVSTechniques;
     
     // PTVS shaders can provide barycentric coords w/o GS.
     bool const hasFragmentShaderBarycentrics =
