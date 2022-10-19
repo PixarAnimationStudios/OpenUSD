@@ -93,7 +93,7 @@ protected:
 private:
     UsdImagingDataSourcePrimvarsAtomicHandle _primvars;
 
-    UsdImagingDataSourcePrimvars::CustomPrimvarMapping _customPrimvarMapping;
+    UsdImagingDataSourcePrimvars::CustomPrimvarMappings _customPrimvarMappings;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceGprim);

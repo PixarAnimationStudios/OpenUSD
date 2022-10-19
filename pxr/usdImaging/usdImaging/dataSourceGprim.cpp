@@ -54,7 +54,7 @@ void
 UsdImagingDataSourceGprim::_AddCustomPrimvar(
         const TfToken &primvarName, const TfToken &attrName)
 {
-    _customPrimvarMapping.emplace_back(primvarName, attrName);
+    _customPrimvarMappings.emplace_back(primvarName, attrName);
 }
 
 bool
@@ -96,7 +96,7 @@ UsdImagingDataSourceGprim::Get(const TfToken & name)
                 _GetSceneIndexPath(),
                 _GetUsdPrim(),
                 UsdGeomPrimvarsAPI(_GetUsdPrim()),
-                _customPrimvarMapping,
+                _customPrimvarMappings,
                 _GetStageGlobals());
             UsdImagingDataSourcePrimvars::AtomicStore(_primvars, primvars);
         }

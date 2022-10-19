@@ -28,6 +28,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#define HD_INSTANCED_BY_SCENE_INDEX_TOKENS \
+    (resetXformStackForPrototypes)
+
+TF_DECLARE_PUBLIC_TOKENS(HdInstancedBySceneIndexTokens,
+                         HD_API,
+                         HD_INSTANCED_BY_SCENE_INDEX_TOKENS);
+
 // This scene index gathers "prototypes" declarations from instancer prims,
 // and uses them to define a synthetic attribute "instancedBy/paths", answering
 // the question "Which instancers list me as a prototype?".
@@ -36,6 +43,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 // relationship of all instancers. That is, "instancedBy/paths" of a prim
 // returns the paths of all instancers that have one of the
 // "instancerTopology/prototypes" pointing to that prim.
+//
+// If resetXformStackForPrototype is set to true in the inputArgs, there
+// will be a datasource at xform/resetXformStack returning true for all
+// prims that are prototypes.
 //
 // Note that if an instancer points to a prototype prim, we expect that
 // instances all namespace descendants of the prototype prim (except for those
@@ -58,8 +69,10 @@ class HdInstancedBySceneIndex : public HdSingleInputFilteringSceneIndexBase
 public:
     HD_API
     static HdInstancedBySceneIndexRefPtr New(
-            const HdSceneIndexBaseRefPtr &inputScene) {
-        return TfCreateRefPtr(new HdInstancedBySceneIndex(inputScene));
+            HdSceneIndexBaseRefPtr const &inputScene,
+            HdContainerDataSourceHandle const &inputArgs) {
+        return TfCreateRefPtr(
+            new HdInstancedBySceneIndex(inputScene, inputArgs));
     }
 
     HD_API
@@ -75,7 +88,8 @@ public:
     using InstancerMappingSharedPtr = std::shared_ptr<InstancerMapping>;
 
 protected:
-    HdInstancedBySceneIndex(const HdSceneIndexBaseRefPtr &inputScene);
+    HdInstancedBySceneIndex(HdSceneIndexBaseRefPtr const &inputScene,
+                            HdContainerDataSourceHandle const &inputArgs);
 
     void _PrimsAdded(
         const HdSceneIndexBase &sender,
@@ -94,8 +108,11 @@ private:
     void _FillInstancerMapRecursively(const SdfPath &primPath);
 
     // Sends prims dirtied messages with data source locator instancedBy
-    // for all given prim paths to scene index observers.
-    void _SendInstancedByDirtied(const SdfPathSet &paths);
+    // and xform (if _resetXformStackForPrototypes is true) for all given
+    // prim paths to scene index observers.
+    void _SendLocatorsDirtied(const SdfPathSet &paths);
+
+    bool _resetXformStackForPrototypes;
     
     InstancerMappingSharedPtr const _instancerMapping;
 };

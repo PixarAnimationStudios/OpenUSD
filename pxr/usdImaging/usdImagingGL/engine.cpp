@@ -37,6 +37,7 @@
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/rendererPlugin.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/taskController.h"
 #include "pxr/imaging/hdx/tokens.h"
@@ -950,12 +951,18 @@ UsdImagingGLEngine::_SetRenderDelegate(
 
     // Create the new scene API
     if (_GetUseSceneIndices()) {
+        static const HdContainerDataSourceHandle instancedByInputArgs =
+            HdRetainedContainerDataSource::New(
+                HdInstancedBySceneIndexTokens->resetXformStackForPrototypes,
+                HdRetainedTypedSampledDataSource<bool>::New(true));
+
         _sceneIndex = UsdImagingStageSceneIndex::New();
         _renderIndex->InsertSceneIndex(
             UsdImagingGLDrawModeSceneIndex::New(
                 HdFlatteningSceneIndex::New(
                     HdInstancedBySceneIndex::New(
-                        _sceneIndex)),
+                        _sceneIndex,
+                        instancedByInputArgs)),
                 /* inputArgs = */ nullptr),
             _sceneDelegateId);
     } else {

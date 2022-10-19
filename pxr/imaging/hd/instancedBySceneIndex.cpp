@@ -28,9 +28,13 @@
 #include "pxr/imaging/hd/instancerTopologySchema.h"
 #include "pxr/imaging/hd/lazyContainerDataSource.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/xformSchema.h"
 #include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PUBLIC_TOKENS(HdInstancedBySceneIndexTokens,
+                        HD_INSTANCED_BY_SCENE_INDEX_TOKENS);
 
 namespace {
 
@@ -200,9 +204,27 @@ private:
 
 static
 HdContainerDataSourceHandle
+_XformDataSource(
+    const SdfPath &primPath,
+    HdInstancedBySceneIndex::InstancerMappingSharedPtr const &mapping)
+{
+    if (mapping->GetInstancersForPrim(primPath).empty()) {
+        return nullptr;
+    } else {
+        static HdContainerDataSourceHandle const ds =
+            HdXformSchema::Builder()
+                .SetResetXformStack(
+                    HdRetainedTypedSampledDataSource<bool>::New(true))
+                .Build();
+        return ds;
+    }
+}
+
+static
+HdContainerDataSourceHandle
 _InstancedByPathsDataSource(
     const SdfPath &primPath,
-    const HdInstancedBySceneIndex::InstancerMappingSharedPtr &mapping)
+    HdInstancedBySceneIndex::InstancerMappingSharedPtr const &mapping)
 {
     using PathsDataSource = HdRetainedTypedSampledDataSource<VtArray<SdfPath>>;
 
@@ -214,9 +236,31 @@ _InstancedByPathsDataSource(
             .Build();
 }
 
+static
+bool
+_GetBool(HdContainerDataSourceHandle const &inputArgs,
+         const TfToken &name)
+{
+    if (!inputArgs) {
+        return false;
+    }
+    HdBoolDataSourceHandle const ds =
+        HdBoolDataSource::Cast(
+            inputArgs->Get(name));
+    if (!ds) {
+        return false;
+    }
+    return ds->GetTypedValue(0.0f);
+}
+
 HdInstancedBySceneIndex::HdInstancedBySceneIndex(
-        const HdSceneIndexBaseRefPtr &inputScene)
+        HdSceneIndexBaseRefPtr const &inputScene,
+        HdContainerDataSourceHandle const &inputArgs)
   : HdSingleInputFilteringSceneIndexBase(inputScene)
+  , _resetXformStackForPrototypes(
+      _GetBool(
+          inputArgs,
+          HdInstancedBySceneIndexTokens->resetXformStackForPrototypes))
   , _instancerMapping(std::make_shared<InstancerMapping>())
 {
     _FillInstancerMapRecursively(SdfPath::AbsoluteRootPath());
@@ -248,20 +292,37 @@ HdInstancedBySceneIndex::GetPrim(
 {
     TRACE_FUNCTION();
 
-    HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
+    HdSceneIndexPrim const prim = _GetInputSceneIndex()->GetPrim(primPath);
 
-    if (prim.dataSource) {
-        prim.dataSource = 
-            HdOverlayContainerDataSource::New(
-                prim.dataSource,
-                HdRetainedContainerDataSource::New(
-                    HdInstancedBySchemaTokens->instancedBy,
-                    HdLazyContainerDataSource::New(
-                        std::bind(_InstancedByPathsDataSource,
-                                  primPath, _instancerMapping))));
+    if (!prim.dataSource) {
+        return prim;
     }
 
-    return prim;
+    TfToken names[2];
+    HdDataSourceBaseHandle sources[2];
+
+    size_t n = 0;
+
+    {
+        names[n]   = HdInstancedBySchemaTokens->instancedBy;
+        sources[n] = HdLazyContainerDataSource::New(
+            std::bind(_InstancedByPathsDataSource,
+                      primPath, _instancerMapping));
+        n++;
+    }
+
+    if (_resetXformStackForPrototypes) {
+        names[n]   = HdXformSchemaTokens->xform;
+        sources[n] = HdLazyContainerDataSource::New(
+            std::bind(_XformDataSource,
+                      primPath, _instancerMapping));
+        n++;
+    }
+    
+    return { prim.primType,
+             HdOverlayContainerDataSource::New(
+                 prim.dataSource,
+                 HdRetainedContainerDataSource::New(n, names, sources)) };
 }
 
 SdfPathVector
@@ -272,19 +333,27 @@ HdInstancedBySceneIndex::GetChildPrimPaths(
 }
 
 void
-HdInstancedBySceneIndex::_SendInstancedByDirtied(const SdfPathSet &paths)
+HdInstancedBySceneIndex::_SendLocatorsDirtied(const SdfPathSet &paths)
 {
     if (paths.empty()) {
         return;
     }
 
-    static const HdDataSourceLocatorSet instancedByLocator{
+    static const HdDataSourceLocatorSet instancedByLocators{
         HdInstancedBySchema::GetDefaultLocator()};
+    static const HdDataSourceLocatorSet instancedByAndXformLocators {
+        HdInstancedBySchema::GetDefaultLocator(),
+        HdXformSchema::GetDefaultLocator()};
+
+    const HdDataSourceLocatorSet &locators =
+        _resetXformStackForPrototypes
+        ? instancedByAndXformLocators
+        : instancedByLocators;
 
     HdSceneIndexObserver::DirtiedPrimEntries dirtyEntries;
     dirtyEntries.reserve(paths.size());
     for (const SdfPath &path : paths) {
-        dirtyEntries.emplace_back(path, instancedByLocator);
+        dirtyEntries.emplace_back(path, locators);
     }
     _SendPrimsDirtied(dirtyEntries);
 }
@@ -315,7 +384,7 @@ HdInstancedBySceneIndex::_PrimsAdded(
     }
 
     _SendPrimsAdded(entries);
-    _SendInstancedByDirtied(dirtiedPrims);
+    _SendLocatorsDirtied(dirtiedPrims);
 }
 
 void
@@ -347,7 +416,7 @@ HdInstancedBySceneIndex::_PrimsDirtied(
     // Pass along the dirty notification.
     _SendPrimsDirtied(entries);
 
-    _SendInstancedByDirtied(dirtiedPrims);
+    _SendLocatorsDirtied(dirtiedPrims);
 }
 
 void
@@ -374,7 +443,7 @@ HdInstancedBySceneIndex::_PrimsRemoved(
         return;
     }
 
-    // We do not send out dirtied messages for prims that w just removed.
+    // We do not send out dirtied messages for prims that we just removed.
     for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
         auto it = dirtiedPrims.lower_bound(entry.primPath);
         while (it != dirtiedPrims.end() && it->HasPrefix(entry.primPath)) {
@@ -382,7 +451,7 @@ HdInstancedBySceneIndex::_PrimsRemoved(
         }
     }
 
-    _SendInstancedByDirtied(dirtiedPrims);
+    _SendLocatorsDirtied(dirtiedPrims);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
