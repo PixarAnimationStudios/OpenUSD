@@ -909,9 +909,6 @@ _Walk(
     visitedSet->insert(nodePath);
 
     TfToken nodePathTk(nodePath.GetToken());
-    if (!nodesDS->Has(nodePathTk)){ 
-        return;
-    }
 
     HdDataSourceBaseHandle nodeDS = nodesDS->Get(nodePathTk);
     HdMaterialNodeSchema nodeSchema(HdContainerDataSource::Cast(nodeDS));
@@ -1612,12 +1609,10 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         if (HdContainerDataSourceHandle drawTarget =
                 HdContainerDataSource::Cast(
                     prim.dataSource->Get(HdPrimTypeTokens->drawTarget))) {
-            if (drawTarget->Has(key)) {
-                if (HdSampledDataSourceHandle valueDs =
-                        HdSampledDataSource::Cast(drawTarget->Get(key))) {
-                    return valueDs->GetValue(0.0f);
-                } 
-            }
+            if (HdSampledDataSourceHandle valueDs =
+                    HdSampledDataSource::Cast(drawTarget->Get(key))) {
+                return valueDs->GetValue(0.0f);
+            } 
         }
 
         return VtValue();
@@ -1648,11 +1643,9 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
                 HdContainerDataSource::Cast(
                     prim.dataSource->Get(
                         HdRenderBufferSchemaTokens->renderBuffer))) {
-            if (renderBuffer->Has(key)) {
-                if (HdSampledDataSourceHandle valueDs =
-                        HdSampledDataSource::Cast(renderBuffer->Get(key))) {
-                    return valueDs->GetValue(0);
-                }
+            if (HdSampledDataSourceHandle valueDs =
+                    HdSampledDataSource::Cast(renderBuffer->Get(key))) {
+                return valueDs->GetValue(0);
             }
         }
 
@@ -1676,11 +1669,9 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         if (HdContainerDataSourceHandle cubeSrc =
                 HdContainerDataSource::Cast(
                     prim.dataSource->Get(HdCubeSchemaTokens->cube))) {
-            if (cubeSrc->Has(key)) {
-                if (HdSampledDataSourceHandle valueSrc =
-                        HdSampledDataSource::Cast(cubeSrc->Get(key))) {
-                    return valueSrc->GetValue(0);
-                }
+            if (HdSampledDataSourceHandle valueSrc =
+                    HdSampledDataSource::Cast(cubeSrc->Get(key))) {
+                return valueSrc->GetValue(0);
             }
         }
     }
@@ -1689,11 +1680,9 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         if (HdContainerDataSourceHandle sphereSrc =
                 HdContainerDataSource::Cast(
                     prim.dataSource->Get(HdSphereSchemaTokens->sphere))) {
-            if (sphereSrc->Has(key)) {
-                if (HdSampledDataSourceHandle valueSrc =
-                        HdSampledDataSource::Cast(sphereSrc->Get(key))) {
-                    return valueSrc->GetValue(0);
-                }
+            if (HdSampledDataSourceHandle valueSrc =
+                    HdSampledDataSource::Cast(sphereSrc->Get(key))) {
+                return valueSrc->GetValue(0);
             }
         }
     }
@@ -1702,11 +1691,9 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         if (HdContainerDataSourceHandle cylinderSrc =
                 HdContainerDataSource::Cast(
                     prim.dataSource->Get(HdCylinderSchemaTokens->cylinder))) {
-            if (cylinderSrc->Has(key)) {
-                if (HdSampledDataSourceHandle valueSrc =
-                        HdSampledDataSource::Cast(cylinderSrc->Get(key))) {
-                    return valueSrc->GetValue(0);
-                }
+            if (HdSampledDataSourceHandle valueSrc =
+                    HdSampledDataSource::Cast(cylinderSrc->Get(key))) {
+                return valueSrc->GetValue(0);
             }
         }
     }
@@ -1715,11 +1702,9 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         if (HdContainerDataSourceHandle coneSrc =
                 HdContainerDataSource::Cast(
                     prim.dataSource->Get(HdConeSchemaTokens->cone))) {
-            if (coneSrc->Has(key)) {
-                if (HdSampledDataSourceHandle valueSrc =
-                        HdSampledDataSource::Cast(coneSrc->Get(key))) {
-                    return valueSrc->GetValue(0);
-                }
+            if (HdSampledDataSourceHandle valueSrc =
+                    HdSampledDataSource::Cast(coneSrc->Get(key))) {
+                return valueSrc->GetValue(0);
             }
         }
     }
@@ -1728,11 +1713,9 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         if (HdContainerDataSourceHandle capsuleSrc =
                 HdContainerDataSource::Cast(
                     prim.dataSource->Get(HdCapsuleSchemaTokens->capsule))) {
-            if (capsuleSrc->Has(key)) {
-                if (HdSampledDataSourceHandle valueSrc =
-                        HdSampledDataSource::Cast(capsuleSrc->Get(key))) {
-                    return valueSrc->GetValue(0);
-                }
+            if (HdSampledDataSourceHandle valueSrc =
+                    HdSampledDataSource::Cast(capsuleSrc->Get(key))) {
+                return valueSrc->GetValue(0);
             }
         }
     }
@@ -1897,7 +1880,7 @@ HdSceneIndexAdapterSceneDelegate::_SamplePrimvar(
     //
     // If the input prim is a datasource prim, we need some sensible default
     // here...  For now, we pass [0,0] to turn off multisampling.
-    if (prim.dataSource->Has(HdSceneIndexEmulationTokens->sceneDelegate)) {
+    if (prim.dataSource->Get(HdSceneIndexEmulationTokens->sceneDelegate)) {
         valueSource->GetContributingSampleTimesForInterval(
                 std::numeric_limits<float>::lowest(),
                 std::numeric_limits<float>::max(), &times);
@@ -2003,7 +1986,7 @@ HdSceneIndexAdapterSceneDelegate::SampleTransform(
     //
     // If the input prim is a datasource prim, we need some sensible default
     // here...  For now, we pass [0,0] to turn off multisampling.
-    if (prim.dataSource->Has(HdSceneIndexEmulationTokens->sceneDelegate)) {
+    if (prim.dataSource->Get(HdSceneIndexEmulationTokens->sceneDelegate)) {
         matrixSource->GetContributingSampleTimesForInterval(
                 std::numeric_limits<float>::lowest(),
                 std::numeric_limits<float>::max(), &times);
@@ -2237,7 +2220,7 @@ HdSceneIndexAdapterSceneDelegate::SampleExtComputationInput(
     //
     // If the input prim is a datasource prim, we need some sensible default
     // here...  For now, we pass [0,0] to turn off multisampling.
-    if (prim.dataSource->Has(HdSceneIndexEmulationTokens->sceneDelegate)) {
+    if (prim.dataSource->Get(HdSceneIndexEmulationTokens->sceneDelegate)) {
         valueDs->GetContributingSampleTimesForInterval(
                 std::numeric_limits<float>::lowest(),
                 std::numeric_limits<float>::max(), &times);

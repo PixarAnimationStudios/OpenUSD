@@ -78,7 +78,6 @@ class HdDataSourceLegacyPrim : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(HdDataSourceLegacyPrim);
 
-    bool Has(const TfToken &name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 

@@ -67,13 +67,6 @@ public:
 
     HD_DECLARE_DATASOURCE(This);
 
-    bool Has(const TfToken &name) override {
-        if (name == _GetLocatorToken()) {
-            return true;
-        }
-        
-        return UsdImagingDataSourceGprim::Has(name);
-    }
     TfTokenVector GetNames() override {
         TfTokenVector result = UsdImagingDataSourceGprim::GetNames();
         result.push_back(_GetLocatorToken());

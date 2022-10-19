@@ -50,13 +50,6 @@ public:
     : _mbApi(prim) {
     }
 
-    bool Has(const TfToken &name) override {
-        if (_mbApi.GetDirectBindingRel(name)) {
-            return true;
-        }
-        return false;
-    }
-
     TfTokenVector GetNames() override {
         return _mbApi.GetMaterialPurposes();
     }

@@ -39,12 +39,6 @@ UsdImagingDataSourceVolumeFieldBindings
 {
 }
 
-bool
-UsdImagingDataSourceVolumeFieldBindings::Has(const TfToken &name)
-{
-    return _usdVolume.HasFieldRelationship(name);
-}
-
 TfTokenVector
 UsdImagingDataSourceVolumeFieldBindings::GetNames()
 {
@@ -82,17 +76,6 @@ UsdImagingDataSourceVolumePrim::UsdImagingDataSourceVolumePrim(
         const UsdImagingDataSourceStageGlobals &stageGlobals)
     : UsdImagingDataSourceGprim(sceneIndexPath, usdPrim, stageGlobals)
 {
-}
-
-bool 
-UsdImagingDataSourceVolumePrim::Has(
-    const TfToken &name)
-{
-    if (name == HdVolumeFieldBindingSchemaTokens->volumeFieldBinding) {
-        return true;
-    }
-
-    return UsdImagingDataSourceGprim::Has(name);
 }
 
 TfTokenVector 

@@ -94,7 +94,6 @@ private:
         HD_DECLARE_DATASOURCE(_NodeContainerDataSource);
         _NodeContainerDataSource(_NodeSharedPtr node);
 
-        bool Has(const TfToken &name) override;
         TfTokenVector GetNames() override;
         HdDataSourceBaseHandle Get(const TfToken &name) override;
 

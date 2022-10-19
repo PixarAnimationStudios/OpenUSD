@@ -139,7 +139,6 @@ private:
 
         bool PrimDirtied(const HdDataSourceLocatorSet &locators);
 
-        bool Has(const TfToken &name) override;
         TfTokenVector GetNames() override;
         HdDataSourceBaseHandle Get(const TfToken &name) override;
 

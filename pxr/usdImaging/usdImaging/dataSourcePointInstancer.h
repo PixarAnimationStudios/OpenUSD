@@ -82,7 +82,6 @@ class UsdImagingDataSourcePointInstancerTopology : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourcePointInstancerTopology);
 
-    bool Has(const TfToken &name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
@@ -110,7 +109,6 @@ class UsdImagingDataSourcePointInstancerPrim
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourcePointInstancerPrim);
 
-    bool Has(const TfToken &name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 

@@ -322,12 +322,6 @@ class _EmptyContainerDataSource : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(_EmptyContainerDataSource);
 
-    bool
-    Has(const TfToken &name) override
-    {
-        return false;
-    }
-
     TfTokenVector
     GetNames() override
     {
@@ -370,12 +364,6 @@ public:
             _input = _EmptyContainerDataSource::New();
         }
         // _curveVaryingCounts is initialized when necessary in Get(..).
-    }
-
-    bool
-    Has(const TfToken &name) override
-    {
-        return _input->Has(name);
     }
 
     TfTokenVector
@@ -551,12 +539,6 @@ public:
         }
     }
 
-    bool
-    Has(const TfToken &name) override
-    {
-        return _input->Has(name);
-    }
-
     TfTokenVector
     GetNames() override
     {
@@ -606,12 +588,6 @@ public:
             TF_CODING_ERROR("Invalid container data source input provided.");
             _input = _EmptyContainerDataSource::New();
         }
-    }
-
-    bool
-    Has(const TfToken &name) override
-    {
-        return _input->Has(name);
     }
 
     TfTokenVector
@@ -695,12 +671,6 @@ public:
         }
     }
 
-    bool
-    Has(const TfToken &name) override
-    {
-        return _input->Has(name);
-    }
-
     TfTokenVector
     GetNames() override
     {
@@ -762,12 +732,6 @@ public:
             TF_CODING_ERROR("Invalid container data source input provided.");
             _input = _EmptyContainerDataSource::New();
         }
-    }
-
-    bool
-    Has(const TfToken &name) override
-    {
-        return _input->Has(name);
     }
 
     TfTokenVector

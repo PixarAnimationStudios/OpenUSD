@@ -32,15 +32,6 @@ HdLazyContainerDataSource::HdLazyContainerDataSource(const Thunk &thunk)
 
 HdLazyContainerDataSource::~HdLazyContainerDataSource() = default;
 
-bool
-HdLazyContainerDataSource::Has(const TfToken &name)
-{
-    if (HdContainerDataSourceHandle src = _GetSrc()) {
-        return src->Has(name);
-    }
-    return false;
-}
-
 TfTokenVector
 HdLazyContainerDataSource::GetNames()
 {

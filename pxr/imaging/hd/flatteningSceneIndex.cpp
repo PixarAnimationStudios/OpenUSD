@@ -412,40 +412,6 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::PrimDirtied(
     return anyDirtied;
 }
 
-bool
-HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::Has(
-    const TfToken &name)
-{
-    if (_sceneIndex._flattenXform &&
-        name == HdXformSchemaTokens->xform) {
-        return true;
-    }
-    if (_sceneIndex._flattenVisibility &&
-        name == HdVisibilitySchemaTokens->visibility) {
-        return true;
-    }
-    if (_sceneIndex._flattenPurpose &&
-        name == HdPurposeSchemaTokens->purpose) {
-        return true;
-    }
-    if (_sceneIndex._flattenModel &&
-        name == _tokens->model) {
-        return true;
-    }
-    if (_sceneIndex._flattenMaterialBinding &&
-        name == HdMaterialBindingSchemaTokens->materialBinding) {
-        return true;
-    }
-    if (_sceneIndex._flattenInstancedBy &&
-        name == HdInstancedBySchemaTokens->instancedBy) {
-        return true;
-    }
-    if (_inputDataSource) {
-        return _inputDataSource->Has(name);
-    }
-    return false;
-}
-
 static
 void
 _Insert(const TfTokenVector &vec,

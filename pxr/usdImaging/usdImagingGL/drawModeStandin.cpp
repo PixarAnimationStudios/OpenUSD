@@ -241,19 +241,6 @@ class _PrimvarDataSource final : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(_PrimvarDataSource);
 
-    bool Has(const TfToken &name) override {
-        if (name == HdPrimvarSchemaTokens->primvarValue) {
-            return true;
-        }
-        if (name == HdPrimvarSchemaTokens->interpolation) {
-            return true;
-        }
-        if (name == HdPrimvarSchemaTokens->role) {
-            return true;
-        }
-        return false;
-    }
-
     TfTokenVector GetNames() override {
         return {HdPrimvarSchemaTokens->primvarValue,
                 HdPrimvarSchemaTokens->interpolation,
@@ -305,18 +292,6 @@ private:
 class _PrimvarsDataSource : public HdContainerDataSource
 {
 public:
-    bool Has(const TfToken &name) override {
-        if (name == HdPrimvarsSchemaTokens->widths) {
-            return true;
-        }
-        if (name == HdTokens->displayColor) {
-            return true;
-        }
-        if (name == HdTokens->displayOpacity) {
-            return true;
-        }
-        return false;
-    }
 
     TfTokenVector GetNames() override {
         return {HdPrimvarsSchemaTokens->widths,
@@ -385,22 +360,7 @@ protected:
 class _PrimDataSource : public HdContainerDataSource
 {
 public:
-    bool Has(const TfToken &name) override {
-        if (name == HdXformSchemaTokens->xform) {
-            return true;
-        }
-        if (name == HdPurposeSchemaTokens->purpose) {
-            return true;
-        }
-        if (name == HdVisibilitySchemaTokens->visibility) {
-            return true;
-        }
-        if (name == HdLegacyDisplayStyleSchemaTokens->displayStyle) {
-            return true;
-        }
-        return false;
-    }
-    
+
     TfTokenVector GetNames() override {
         return {
             HdXformSchemaTokens->xform,
@@ -545,13 +505,6 @@ class _BoundsPrimvarsDataSource final : public _PrimvarsDataSource
 public:
     HD_DECLARE_DATASOURCE(_BoundsPrimvarsDataSource);
 
-    bool Has(const TfToken &name) override {
-        if (name == HdPrimvarsSchemaTokens->points) {
-            return true;
-        }
-        return _PrimvarsDataSource::Has(name);
-    }
-
     TfTokenVector GetNames() override {
         static const TfTokenVector result = _Concat(
             _PrimvarsDataSource::GetNames(),
@@ -620,19 +573,6 @@ class _BoundsPrimDataSource : public _PrimDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(_BoundsPrimDataSource);
-
-    bool Has(const TfToken &name) override {
-        if (name == HdBasisCurvesSchemaTokens->basisCurves) {
-            return true;
-        }
-        if (name == HdPrimvarsSchemaTokens->primvars) {
-            return true;
-        }
-        if (name == HdExtentSchemaTokens->extent) {
-            return true;
-        }
-        return _PrimDataSource::Has(name);
-    }
 
     TfTokenVector GetNames() override {
         static const TfTokenVector result = _Concat(
@@ -782,13 +722,6 @@ class _OriginPrimvarsDataSource : public _PrimvarsDataSource
 public:
     HD_DECLARE_DATASOURCE(_OriginPrimvarsDataSource);
 
-    bool Has(const TfToken &name) override {
-        if (name == HdPrimvarsSchemaTokens->points) {
-            return true;
-        }
-        return _PrimvarsDataSource::Has(name);
-    }
-
     TfTokenVector GetNames() override {
         static const TfTokenVector result = _Concat(
             _PrimvarsDataSource::GetNames(),
@@ -858,19 +791,6 @@ class _OriginPrimDataSource : public _PrimDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(_OriginPrimDataSource);
-
-    bool Has(const TfToken &name) override {
-        if (name == HdBasisCurvesSchemaTokens->basisCurves) {
-            return true;
-        }
-        if (name == HdPrimvarsSchemaTokens->primvars) {
-            return true;
-        }
-        if (name == HdExtentSchemaTokens->extent) {
-            return true;
-        }
-        return _PrimDataSource::Has(name);
-    }
 
     TfTokenVector GetNames() override {
         static const TfTokenVector result = _Concat(
@@ -1866,19 +1786,6 @@ class _CardsPrimvarsDataSource : public _PrimvarsDataSource
 public:
     HD_DECLARE_DATASOURCE(_CardsPrimvarsDataSource);
 
-    bool Has(const TfToken &name) override {
-        if (name == HdPrimvarsSchemaTokens->points) {
-            return true;
-        }
-        if (name == _primvarNameTokens->cardsUv) {
-            return true;
-        }
-        if (name == _primvarNameTokens->displayRoughness) {
-            return true;
-        }
-        return _PrimvarsDataSource::Has(name);
-    }
-
     TfTokenVector GetNames() override {
         static const TfTokenVector result = _Concat(
             _PrimvarsDataSource::GetNames(),
@@ -1933,19 +1840,6 @@ class _CardsPrimDataSource : public _PrimDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(_CardsPrimDataSource);
-
-    bool Has(const TfToken &name) override {
-        if (name == HdMeshSchemaTokens->mesh) {
-            return true;
-        }
-        if (name == HdPrimvarsSchemaTokens->primvars) {
-            return true;
-        }
-        if (name == HdExtentSchemaTokens->extent) {
-            return true;
-        }
-        return _PrimDataSource::Has(name);
-    }
 
     TfTokenVector GetNames() override {
         static const TfTokenVector result = _Concat(

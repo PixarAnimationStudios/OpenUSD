@@ -63,26 +63,6 @@ public:
     , _stageGlobals(stageGlobals){
     }
 
-    bool Has(const TfToken &name) override {
-        if (name == _tokens->expansionRule) {
-            return bool(_api.GetExpansionRuleAttr());
-        }
-
-        if (name == _tokens->includeRoot) {
-            return bool(_api.GetIncludeRootAttr());
-        }
-
-        if (name == _tokens->includes) {
-            return bool(_api.GetIncludesRel());
-        }
-
-        if (name == _tokens->excludes) {
-            return bool(_api.GetExcludesRel());
-        }
-
-        return false;
-    }
-
     TfTokenVector GetNames() override {
         TfTokenVector result;
         result.reserve(4);
@@ -165,10 +145,6 @@ public:
         const UsdImagingDataSourceStageGlobals &stageGlobals
     ) : _api(prim, name)
     , _stageGlobals(stageGlobals) {
-    }
-
-    bool Has(const TfToken &name) override {
-        return name == _api.GetName();
     }
 
     TfTokenVector GetNames() override {

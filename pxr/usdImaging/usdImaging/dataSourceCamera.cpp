@@ -138,19 +138,6 @@ UsdImagingDataSourceCamera::UsdImagingDataSourceCamera(
 {
 }
 
-bool
-UsdImagingDataSourceCamera::Has(const TfToken &name)
-{
-    static TfTokenVector usdNames = 
-        UsdGeomCamera::GetSchemaAttributeNames(/* includeInherited = */ false);
-    for (const TfToken &usdName : usdNames) {
-        if (name == usdName) {
-            return true;
-        }
-    }
-    return false;
-}
-
 TfTokenVector
 UsdImagingDataSourceCamera::GetNames()
 {
@@ -208,17 +195,6 @@ UsdImagingDataSourceCameraPrim::UsdImagingDataSourceCameraPrim(
         const UsdImagingDataSourceStageGlobals &stageGlobals)
     : UsdImagingDataSourcePrim(sceneIndexPath, usdPrim, stageGlobals)
 {
-}
-
-bool 
-UsdImagingDataSourceCameraPrim::UsdImagingDataSourceCameraPrim::Has(
-    const TfToken & name)
-{
-    if (name == HdCameraSchemaTokens->camera) {
-        return true;
-    }
-
-    return UsdImagingDataSourcePrim::Has(name);
 }
 
 TfTokenVector 

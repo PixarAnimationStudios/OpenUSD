@@ -77,17 +77,6 @@ class _LightDataSource final : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(_LightDataSource);
 
-    bool
-    Has(const TfToken & name) override
-    {
-        for (const TfToken &n : _GetNames()) {
-            if (name == n) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     TfTokenVector
     GetNames() override
     {

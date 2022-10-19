@@ -38,6 +38,8 @@
 
 #include "pxr/base/trace/trace.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
@@ -60,12 +62,6 @@ class _EmptyContainerDataSource : public HdContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(_EmptyContainerDataSource);
-
-    bool
-    Has(const TfToken &name) override
-    {
-        return false;
-    }
 
     TfTokenVector
     GetNames() override
@@ -543,14 +539,6 @@ public:
         }
     }
 
-    bool
-    Has(const TfToken &name) override
-    {
-        return name == HdPrimvarSchemaTokens->primvarValue ||
-               name == HdPrimvarSchemaTokens->interpolation ||
-               name == HdPrimvarSchemaTokens->role;
-    }
-
     TfTokenVector
     GetNames() override
     {
@@ -615,12 +603,6 @@ public:
                             "extComputationPrimvars.");
             _extCompPrimvarsDs = _EmptyContainerDataSource::New();
         }
-    }
-
-    bool
-    Has(const TfToken &name) override
-    {
-        return _primvarsDs->Has(name) || _extCompPrimvarsDs->Has(name);
     }
 
     TfTokenVector
@@ -694,39 +676,25 @@ public:
         }
     }
 
-    bool
-    Has(const TfToken &name) override
-    {
-        // Handle a less likely scenario wherein a prim has only computed
-        // primvars.
-        if (name == HdPrimvarsSchemaTokens->primvars) {
-            return _input->Has(name) ||
-                   _input->Has(HdExtComputationPrimvarsSchemaTokens->
-                                extComputationPrimvars);
-        }
-
-        return _input->Has(name);
-    }
-
     TfTokenVector
     GetNames() override
     {
+        TfTokenVector names = _input->GetNames();
+
         // Handle a less likely scenario wherein a prim has only computed
         // primvars.
         // We could remove extComputationPrimvars, but it might be cheaper to
         // return an empty data source in Get() instead.
         if (ARCH_UNLIKELY(
-                _input->Has(HdExtComputationPrimvarsSchemaTokens->
-                            extComputationPrimvars) &&
-                !_input->Has(HdPrimvarsSchemaTokens->primvars))) {
-
-            TfTokenVector names = _input->GetNames();
+                std::find(names.begin(), names.end(),
+                    HdExtComputationPrimvarsSchemaTokens->
+                        extComputationPrimvars) != names.end()
+                && std::find(names.begin(), names.end(),
+                    HdPrimvarsSchemaTokens->primvars) == names.end())) {
             names.push_back(HdPrimvarsSchemaTokens->primvars);
-            return names;
         }
 
-
-        return _input->GetNames();
+        return names;
     }
 
     HdDataSourceBaseHandle

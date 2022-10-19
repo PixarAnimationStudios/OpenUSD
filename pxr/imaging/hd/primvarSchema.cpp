@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/base/trace/trace.h"
+
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/visitValue.h"
 
@@ -44,9 +45,9 @@ bool
 HdPrimvarSchema::IsIndexed()
 {
     if (_container) {
-        return (_container->Has(HdPrimvarSchemaTokens->
+        return (_container->Get(HdPrimvarSchemaTokens->
                     indexedPrimvarValue) && 
-                _container->Has(HdPrimvarSchemaTokens->indices));
+                _container->Get(HdPrimvarSchemaTokens->indices));
     }
     return false;
 }
@@ -160,16 +161,22 @@ HdPrimvarSchema::GetPrimvarValue()
 {
     // overriden definition from primvarSchemaGetValue.template.cpp
     if (_container) {
-        if (_container->Has(HdPrimvarSchemaTokens->primvarValue)) {
-            return _GetTypedDataSource<HdSampledDataSource>(
-                HdPrimvarSchemaTokens->primvarValue);
-        } else if (_container->Has(HdPrimvarSchemaTokens->indexedPrimvarValue) && 
-                   _container->Has(HdPrimvarSchemaTokens->indices)) {
-            return _HdDataSourceFlattenedPrimvarValue::New(
+        if (HdSampledDataSourceHandle sds =
                 _GetTypedDataSource<HdSampledDataSource>(
-                    HdPrimvarSchemaTokens->indexedPrimvarValue),
+                    HdPrimvarSchemaTokens->primvarValue)) {
+            return sds;
+        } else {
+            HdSampledDataSourceHandle ivds =
+                _GetTypedDataSource<HdSampledDataSource>(
+                    HdPrimvarSchemaTokens->indexedPrimvarValue);
+
+            HdTypedSampledDataSource<VtIntArray>::Handle ids = 
                 _GetTypedDataSource<HdTypedSampledDataSource<VtIntArray>>(
-                    HdPrimvarSchemaTokens->indices));
+                    HdPrimvarSchemaTokens->indices);
+
+            if (ivds && ids) {
+                return _HdDataSourceFlattenedPrimvarValue::New(ivds, ids);
+            }
         }
     }
     return nullptr;

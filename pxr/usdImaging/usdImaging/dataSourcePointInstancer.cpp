@@ -86,19 +86,6 @@ UsdImagingDataSourcePointInstancerTopology(
   , _stageGlobals(stageGlobals)
 {}
 
-bool
-UsdImagingDataSourcePointInstancerTopology::Has(const TfToken &name)
-{
-    if (name == HdInstancerTopologySchemaTokens->prototypes ||
-        name == HdInstancerTopologySchemaTokens->instanceIndices ||
-        name == HdInstancerTopologySchemaTokens->mask)
-    {
-        return true;
-    }
-
-    return false;
-}
-
 TfTokenVector
 UsdImagingDataSourcePointInstancerTopology::GetNames()
 {
@@ -154,19 +141,6 @@ UsdImagingDataSourcePointInstancerPrim::UsdImagingDataSourcePointInstancerPrim(
         const UsdImagingDataSourceStageGlobals &stageGlobals)
   : UsdImagingDataSourcePrim(sceneIndexPath, usdPrim, stageGlobals)
 {
-}
-
-bool
-UsdImagingDataSourcePointInstancerPrim::Has(const TfToken &name)
-{
-    if (name == HdInstancerTopologySchemaTokens->instancerTopology) {
-        return true;
-    }
-    if (name == HdPrimvarsSchemaTokens->primvars) {
-        return true;
-    }
-
-    return UsdImagingDataSourcePrim::Has(name);
 }
 
 TfTokenVector

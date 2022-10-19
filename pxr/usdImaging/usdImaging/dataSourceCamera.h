@@ -44,7 +44,6 @@ class UsdImagingDataSourceCamera : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceCamera);
 
-    bool Has(const TfToken &name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
@@ -73,7 +72,6 @@ class UsdImagingDataSourceCameraPrim : public UsdImagingDataSourcePrim
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceCameraPrim);
 
-    bool Has(const TfToken &name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 

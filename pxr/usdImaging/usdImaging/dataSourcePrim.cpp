@@ -51,15 +51,6 @@ UsdImagingDataSourceVisibility::UsdImagingDataSourceVisibility(
     }
 }
 
-bool
-UsdImagingDataSourceVisibility::Has(const TfToken &name)
-{
-    if (name == HdVisibilitySchemaTokens->visibility) {
-        return true;
-    }
-    return false;
-}
-
 TfTokenVector
 UsdImagingDataSourceVisibility::GetNames()
 {
@@ -113,15 +104,6 @@ UsdImagingDataSourcePurpose::UsdImagingDataSourcePurpose(
     : _purposeQuery(purposeQuery)
     , _stageGlobals(stageGlobals)
 {
-}
-
-bool
-UsdImagingDataSourcePurpose::Has(const TfToken &name)
-{
-    if (name == HdPurposeSchemaTokens->purpose) {
-        return true;
-    }
-    return false;
 }
 
 TfTokenVector
@@ -205,17 +187,6 @@ UsdImagingDataSourceExtent::UsdImagingDataSourceExtent(
     _attrPath = extentQuery.GetAttribute().GetPath();
     _extentAttr = HdVec3fArrayDataSource::Cast(
             UsdImagingDataSourceAttributeNew(extentQuery, stageGlobals));
-}
-
-bool
-UsdImagingDataSourceExtent::Has(const TfToken &name)
-{
-    if (!_extentAttr) {
-        return false;
-    }
-
-    return (name == HdExtentSchemaTokens->min ||
-            name == HdExtentSchemaTokens->max);
 }
 
 TfTokenVector
@@ -359,18 +330,6 @@ UsdImagingDataSourceXform::UsdImagingDataSourceXform(
     }
 }
 
-bool
-UsdImagingDataSourceXform::Has(const TfToken & name)
-{
-    if (name == HdXformSchemaTokens->matrix) {
-        return true;
-    } else if (name == HdXformSchemaTokens->resetXformStack) {
-        return true;
-    }
-    
-    return false;
-}
-
 TfTokenVector
 UsdImagingDataSourceXform::GetNames()
 {
@@ -405,43 +364,6 @@ UsdImagingDataSourceModel::UsdImagingDataSourceModel(
   , _sceneIndexPath(sceneIndexPath)
   , _stageGlobals(stageGlobals)
 {
-}
-
-bool
-UsdImagingDataSourceModel::Has(const TfToken &name)
-{
-    if (name == UsdImagingModelSchemaTokens->drawMode) {
-        return true;
-    }
-    if (name == UsdImagingModelSchemaTokens->applyDrawMode) {
-        return true;
-    }
-    if (name == UsdImagingModelSchemaTokens->drawModeColor) {
-        return true;
-    }
-    if (name == UsdImagingModelSchemaTokens->cardGeometry) {
-        return true;
-    }
-    if (name == UsdImagingModelSchemaTokens->cardTextureXPos) {
-        return true;
-    }
-    if (name == UsdImagingModelSchemaTokens->cardTextureYPos) {
-        return true;
-    }
-    if (name == UsdImagingModelSchemaTokens->cardTextureZPos) {
-        return true;
-    }
-    if (name == UsdImagingModelSchemaTokens->cardTextureXNeg) {
-        return true;
-    }
-    if (name == UsdImagingModelSchemaTokens->cardTextureYNeg) {
-        return true;
-    }
-    if (name == UsdImagingModelSchemaTokens->cardTextureZNeg) {
-        return true;
-    }
-
-    return false;
 }
 
 TfTokenVector
@@ -585,28 +507,6 @@ UsdImagingDataSourcePrim::UsdImagingDataSourcePrim(
     , _usdPrim(usdPrim)
     , _stageGlobals(stageGlobals)
 {
-}
-
-bool 
-UsdImagingDataSourcePrim::Has(
-    const TfToken &name)
-{
-    if (!_sceneIndexPath.IsPrimPath()) {
-        return false;
-    }
-
-    if (name == HdVisibilitySchemaTokens->visibility ||
-        name == HdPurposeSchemaTokens->purpose) {
-        return _GetUsdPrim().IsA<UsdGeomImageable>();
-    } else if (name == HdXformSchemaTokens->xform) {
-        return _GetUsdPrim().IsA<UsdGeomXformable>();
-    } else if (name == HdExtentSchemaTokens->extent) {
-        return _GetUsdPrim().IsA<UsdGeomBoundable>();
-    } else if (name == UsdImagingModelSchemaTokens->model) {
-        return _GetUsdPrim().IsA<UsdGeomModelAPI>();
-    }
-
-    return false;
 }
 
 TfTokenVector

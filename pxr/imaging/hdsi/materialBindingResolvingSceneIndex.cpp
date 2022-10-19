@@ -24,6 +24,8 @@
 
 #include "pxr/imaging/hd/materialBindingSchema.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -41,15 +43,6 @@ public:
         , _purposePriorityOrder(purposePriorityOrder)
         , _dstPurpose(dstPurpose)
     {
-    }
-
-    bool Has(const TfToken& name) override
-    {
-        if (!_input) {
-            return false;
-        }
-
-        return name == _dstPurpose && _HasAny();
     }
 
     TfTokenVector GetNames() override
@@ -87,8 +80,9 @@ public:
 private:
     bool _HasAny() const
     {
+        TfTokenVector names = _input->GetNames();
         for (const TfToken& purpose : _purposePriorityOrder) {
-            if (_input->Has(purpose)) {
+            if (std::find(names.begin(), names.end(), purpose) != names.end()) {
                 return true;
             }
         }
@@ -113,14 +107,6 @@ public:
         , _purposePriorityOrder(purposePriorityOrder)
         , _dstPurpose(dstPurpose)
     {
-    }
-
-    bool Has(const TfToken& name) override
-    {
-        if (!_input) {
-            return false;
-        }
-        return _input->Has(name);
     }
 
     TfTokenVector GetNames() override

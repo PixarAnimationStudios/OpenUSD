@@ -56,8 +56,6 @@ public:
         const HdContainerDataSourceHandle &src3);
 
     HD_API
-    bool Has(const TfToken &name) override;
-    HD_API
     TfTokenVector GetNames() override;
     HD_API
     HdDataSourceBaseHandle Get(const TfToken &name) override;

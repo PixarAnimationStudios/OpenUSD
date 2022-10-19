@@ -57,17 +57,6 @@ UsdImagingDataSourceGprim::_AddCustomPrimvar(
     _customPrimvarMappings.emplace_back(primvarName, attrName);
 }
 
-bool
-UsdImagingDataSourceGprim::Has(const TfToken& name)
-{
-    if (name == HdPrimvarsSchemaTokens->primvars) {
-        return true;
-    }
-    // XXX: See "GetNames()" for some stuff we're missing...
-
-    return UsdImagingDataSourcePrim::Has(name);
-}
-
 TfTokenVector 
 UsdImagingDataSourceGprim::GetNames()
 {

@@ -44,12 +44,6 @@ class UsdImagingDataSourceGprim : public UsdImagingDataSourcePrim
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceGprim);
 
-    /// Returns whether or not this data source can return a meaningful 
-    /// data source for \p name.
-    ///
-    USDIMAGING_API
-    bool Has(const TfToken &name) override;
-
     /// Returns the names for which this data source can return meaningful
     /// results.
     ///

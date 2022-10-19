@@ -85,31 +85,6 @@ UsdImagingDataSourcePrimvars::_GetPrefixedName(const TfToken &name)
     return TfToken(("primvars:" + name.GetString()).c_str());
 }
 
-bool
-UsdImagingDataSourcePrimvars::Has(const TfToken & name)
-{
-    TRACE_FUNCTION();
-
-    _NamespacedPrimvarsMap::const_iterator nsIt = _namespacedPrimvars.find(name);
-    if (nsIt != _namespacedPrimvars.end()) {
-        return true;
-    }
-
-    _CustomPrimvarsMap::const_iterator cIt = _customPrimvars.find(name);
-    if (cIt != _customPrimvars.end()) {
-        return true;
-    }
-
-
-    if (UsdRelationship rel =
-            _usdPrim.GetRelationship(_GetPrefixedName(name))) {
-        return true;
-    }
-
-
-    return false;
-}
-
 TfTokenVector 
 UsdImagingDataSourcePrimvars::GetNames()
 {
@@ -232,25 +207,6 @@ UsdImagingDataSourcePrimvar::UsdImagingDataSourcePrimvar(
                         name,
                         HdPrimvarSchemaTokens->primvarValue));
         }
-    }
-}
-
-bool
-UsdImagingDataSourcePrimvar::Has(const TfToken & name)
-{
-    const bool indexed = _IsIndexed(_indicesQuery);
-
-    if (indexed) {
-        return
-            name == HdPrimvarSchemaTokens->indexedPrimvarValue ||
-            name == HdPrimvarSchemaTokens->indices ||
-            name == HdPrimvarSchemaTokens->interpolation ||
-            name == HdPrimvarSchemaTokens->role;
-    } else {
-        return
-            name == HdPrimvarSchemaTokens->primvarValue ||
-            name == HdPrimvarSchemaTokens->interpolation ||
-            name == HdPrimvarSchemaTokens->role;
     }
 }
 

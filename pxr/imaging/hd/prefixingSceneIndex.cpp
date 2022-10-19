@@ -158,15 +158,6 @@ public:
     {
     }
 
-    bool Has(const TfToken &name) override
-    {
-        if (_inputDataSource) {
-            return _inputDataSource->Has(name);
-        }
-
-        return false;
-    }
-
     TfTokenVector GetNames() override
     {
         if (_inputDataSource) {
