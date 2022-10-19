@@ -487,12 +487,8 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetPurpose()
     HdPurposeSchema inputPurpose =
         HdPurposeSchema::GetFromParent(_inputDataSource);
 
-    if (inputPurpose) {
-        if (inputPurpose.GetPurpose()) {
-            computedPurposeDataSource = inputPurpose.GetContainer();
-        } else {
-            computedPurposeDataSource = _sceneIndex._identityPurpose;
-        }
+    if (inputPurpose && inputPurpose.GetPurpose()) {
+        computedPurposeDataSource = inputPurpose.GetContainer();
     } else {
         HdPurposeSchema parentPurpose(nullptr);
         if (_primPath.GetPathElementCount()) {
@@ -529,12 +525,8 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetVis()
     HdVisibilitySchema inputVis =
         HdVisibilitySchema::GetFromParent(_inputDataSource);
 
-    if (inputVis) {
-        if (inputVis.GetVisibility()) {
-            computedVisDataSource = inputVis.GetContainer();
-        } else {
-            computedVisDataSource = _sceneIndex._identityVis;
-        }
+    if (inputVis && inputVis.GetVisibility()) {
+        computedVisDataSource = inputVis.GetContainer();
     } else {
         HdVisibilitySchema parentVis(nullptr);
         if (_primPath.GetPathElementCount()) {
