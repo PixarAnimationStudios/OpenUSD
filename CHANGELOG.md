@@ -1,6 +1,6 @@
 # Change Log
 
-## [22.11] - 2022-10-17
+## [22.11] - 2022-10-21
 
 ### Build
 - Updated Azure Pipelines configurations used for CI and PyPI
