@@ -226,6 +226,17 @@ HdSamplerParameters PTEX_SAMPLER_PARAMETERS(
     /*enableCompare*/false, 
     HdCmpFuncNever);
 
+static
+HdSamplerParameters LAYOUT_SAMPLER_PARAMETERS(
+    HdWrapRepeat,
+    HdWrapRepeat,
+    HdWrapRepeat,
+    HdMinFilterLinear,
+    HdMagFilterLinear,
+    HdBorderColorTransparentBlack, 
+    /*enableCompare*/false, 
+    HdCmpFuncNever);
+
 HdStPtexSamplerObject::HdStPtexSamplerObject(
     HdStPtexTextureObject const &ptexTexture,
     // samplerParameters are ignored are ptex
@@ -237,6 +248,11 @@ HdStPtexSamplerObject::HdStPtexSamplerObject(
           samplerObjectRegistry,
           PTEX_SAMPLER_PARAMETERS,
           ptexTexture.IsValid()))
+  , _layoutSampler(
+      _GenSampler(
+          samplerObjectRegistry,
+          LAYOUT_SAMPLER_PARAMETERS,
+          ptexTexture.IsValid()))
 {
 }
 
@@ -244,6 +260,7 @@ HdStPtexSamplerObject::~HdStPtexSamplerObject()
 {
     if (Hgi * hgi = _GetHgi()) {
         hgi->DestroySampler(&_texelsSampler);
+        hgi->DestroySampler(&_layoutSampler);
     }
 }
 
@@ -278,6 +295,11 @@ HdStUdimSamplerObject::HdStUdimSamplerObject(
           samplerObjectRegistry,
           UDIM_SAMPLER_PARAMETERS,
           udimTexture.IsValid()))
+  , _layoutSampler(
+      _GenSampler(
+          samplerObjectRegistry,
+          LAYOUT_SAMPLER_PARAMETERS,
+          udimTexture.IsValid()))
 {
 }
 
@@ -285,6 +307,7 @@ HdStUdimSamplerObject::~HdStUdimSamplerObject()
 {
     if (Hgi * hgi = _GetHgi()) {
         hgi->DestroySampler(&_texelsSampler);
+        hgi->DestroySampler(&_layoutSampler);
     }
 }
 

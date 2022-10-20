@@ -1124,7 +1124,7 @@ HdSt_ResourceBinder::GetTextureBindingDesc(
         HgiShaderStagePostTessellationVertex;
     texelDesc.textures = { texelTexture };
     texelDesc.samplers = { texelSampler };
-    texelDesc.resourceType = HgiBindResourceTypeSampledImage;
+    texelDesc.resourceType = HgiBindResourceTypeCombinedSamplerImage;
     texelDesc.bindingIndex = binding.GetTextureUnit();
     texelDesc.writable = false;
     bindingsDesc->textures.push_back(std::move(texelDesc));
@@ -1136,9 +1136,11 @@ HdSt_ResourceBinder::GetTextureWithLayoutBindingDesc(
     TfToken const & name,
     HgiSamplerHandle const & texelSampler,
     HgiTextureHandle const & texelTexture,
+    HgiSamplerHandle const & layoutSampler,
     HgiTextureHandle const & layoutTexture) const
 {
-    if (!texelSampler.Get() || !texelTexture.Get() || !layoutTexture.Get()) {
+    if (!texelSampler.Get() || !texelTexture.Get() || !layoutSampler.Get() ||
+        !layoutTexture.Get()) {
         return;
     }
 
@@ -1146,9 +1148,10 @@ HdSt_ResourceBinder::GetTextureWithLayoutBindingDesc(
 
     HdBinding const layoutBinding = GetBinding(_ConcatLayout(name));
     HgiTextureBindDesc layoutDesc;
+    layoutDesc.stageUsage = HgiShaderStageFragment;
     layoutDesc.textures = { layoutTexture };
-    layoutDesc.samplers = { };
-    layoutDesc.resourceType = HgiBindResourceTypeSampledImage;
+    layoutDesc.samplers = { layoutSampler };
+    layoutDesc.resourceType = HgiBindResourceTypeCombinedSamplerImage;
     layoutDesc.bindingIndex = layoutBinding.GetTextureUnit();
     layoutDesc.writable = false;
     bindingsDesc->textures.push_back(std::move(layoutDesc));
