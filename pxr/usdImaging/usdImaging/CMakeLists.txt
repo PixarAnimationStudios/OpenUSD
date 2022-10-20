@@ -86,6 +86,7 @@ pxr_library(usdImaging
         portalLightAdapter
         primAdapter
         primvarDescCache
+        prototypePruningSceneIndex
         rectLightAdapter
         renderSettingsAdapter
         sampleFilterAdapter

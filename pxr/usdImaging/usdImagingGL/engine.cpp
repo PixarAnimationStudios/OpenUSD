@@ -28,6 +28,7 @@
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/prototypePruningSceneIndex.h"
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
@@ -961,7 +962,8 @@ UsdImagingGLEngine::_SetRenderDelegate(
             UsdImagingGLDrawModeSceneIndex::New(
                 HdFlatteningSceneIndex::New(
                     HdInstancedBySceneIndex::New(
-                        _sceneIndex,
+                        UsdImagingPrototypePruningSceneIndex::New(
+                            _sceneIndex),
                         instancedByInputArgs)),
                 /* inputArgs = */ nullptr),
             _sceneDelegateId);

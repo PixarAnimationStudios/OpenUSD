@@ -62,7 +62,17 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((stageSceneIndexRepopulate,  "__usdStageSceneIndexRepopulate"))
 
 
-TF_DECLARE_PUBLIC_TOKENS(UsdImagingTokens, USDIMAGING_API, USDIMAGING_TOKENS);
+#define USDIMAGING_NATIVE_INSTANCING_TOKENS \
+    (usdPrototypePath)                      \
+    (isUsdPrototype)
+
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdImagingTokens,
+    USDIMAGING_API, USDIMAGING_TOKENS);
+
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdImagingNativeInstancingTokens,
+    USDIMAGING_API, USDIMAGING_NATIVE_INSTANCING_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

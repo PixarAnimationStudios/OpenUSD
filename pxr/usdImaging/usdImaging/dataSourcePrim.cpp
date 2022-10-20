@@ -24,6 +24,7 @@
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/dataSourceAttribute.h"
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
+#include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/extentSchema.h"
@@ -535,6 +536,14 @@ UsdImagingDataSourcePrim::GetNames()
         vec.push_back(UsdImagingModelSchemaTokens->model);
     }
 
+    if (_GetUsdPrim().IsInstance()) {
+        vec.push_back(UsdImagingNativeInstancingTokens->usdPrototypePath);
+    }
+
+    if (_GetUsdPrim().IsPrototype()) {
+        vec.push_back(UsdImagingNativeInstancingTokens->isUsdPrototype);
+    }
+
     return vec;
 }
 
@@ -607,7 +616,22 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         return UsdImagingDataSourceModel::New(
             model, _sceneIndexPath, _GetStageGlobals());
     }
-
+    else if (name == UsdImagingNativeInstancingTokens->usdPrototypePath) {
+        if (!_GetUsdPrim().IsInstance()) {
+            return nullptr;
+        }
+        const UsdPrim prototype(_GetUsdPrim().GetPrototype());
+        if (!prototype) {
+            return nullptr;
+        }
+        return HdRetainedTypedSampledDataSource<SdfPath>::New(
+            prototype.GetPath());
+    } else if (name == UsdImagingNativeInstancingTokens->isUsdPrototype) {
+        if (!_GetUsdPrim().IsPrototype()) {
+            return nullptr;
+        }
+        return HdRetainedTypedSampledDataSource<bool>::New(true);
+    }
     return nullptr;
 }
 

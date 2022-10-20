@@ -416,6 +416,9 @@ UsdImagingStageSceneIndex::GetPrim(const SdfPath &path) const
     if (!prim) {
         return s_emptyPrim;
     }
+    if (prim.IsInstanceProxy()) {
+        return s_emptyPrim;
+    }
 
     const TfToken subprim =
         path.IsPropertyPath() ? path.GetNameToken() : TfToken();
@@ -461,10 +464,6 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
     UsdPrimSiblingRange range =
         prim.GetFilteredChildren(_GetTraversalPredicate());
     for (UsdPrim child: range) {
-        if (child.IsInstance()) {
-            // XXX(USD-7119): Add native instancing support...
-            continue;
-        }
         result.push_back(child.GetPath());
     }
 
@@ -473,6 +472,12 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
             _GetImagingSubprims(prim, _AdapterSetLookup(prim))){
         if (!subprim.IsEmpty()) {
             result.push_back(primPath.AppendChild(subprim));
+        }
+    }
+
+    if (path.IsAbsoluteRootPath()) {
+        for (const UsdPrim &prim : _stage->GetPrototypes()) {
+            result.push_back(prim.GetPath());
         }
     }
 
@@ -535,6 +540,11 @@ void UsdImagingStageSceneIndex::Populate()
     }
 
     _Populate(_stage->GetPseudoRoot());
+
+    for (const UsdPrim &prim : _stage->GetPrototypes()) {
+        _Populate(prim);
+    }
+
 }
 
 void UsdImagingStageSceneIndex::_Populate(UsdPrim subtreeRoot)
@@ -550,11 +560,6 @@ void UsdImagingStageSceneIndex::_Populate(UsdPrim subtreeRoot)
     UsdPrimRange range(subtreeRoot, _GetTraversalPredicate());
     for (UsdPrim prim : range) {
         if (prim.IsPseudoRoot()) {
-            continue;
-        }
-
-        if (prim.IsInstance()) {
-            // XXX(USD-7119): Add native instancing support...
             continue;
         }
 
