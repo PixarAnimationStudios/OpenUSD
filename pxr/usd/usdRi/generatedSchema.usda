@@ -63,19 +63,3 @@ class "RiSplineAPI" (
 {
 }
 
-class "RiTextureAPI" (
-    doc = """
-    \\deprecated This API schema will be removed in a future release.
-
-    RiTextureAPI is an API schema that provides an interface
-    to add Renderman-specific attributes to adjust textures."""
-)
-{
-    float ri:texture:gamma (
-        doc = "Gamma-correct the texture"
-    )
-    float ri:texture:saturation (
-        doc = "Adjust the texture's saturation"
-    )
-}
-

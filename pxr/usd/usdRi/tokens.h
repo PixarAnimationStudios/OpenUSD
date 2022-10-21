@@ -102,14 +102,6 @@ struct UsdRiTokensType {
     /// 
     /// UsdShadeMaterial / Hydra render context token for UsdRi
     const TfToken renderContext;
-    /// \brief "ri:texture:gamma"
-    /// 
-    /// UsdRiTextureAPI
-    const TfToken riTextureGamma;
-    /// \brief "ri:texture:saturation"
-    /// 
-    /// UsdRiTextureAPI
-    const TfToken riTextureSaturation;
     /// \brief "spline"
     /// 
     /// UsdSplineAPI - Namespace for spline attributes
