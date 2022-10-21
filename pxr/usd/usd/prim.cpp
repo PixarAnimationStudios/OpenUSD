@@ -25,6 +25,7 @@
 #include "pxr/usd/usd/prim.h"
 
 #include "pxr/usd/usd/apiSchemaBase.h"
+#include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/inherits.h"
 #include "pxr/usd/usd/instanceCache.h"
 #include "pxr/usd/usd/payloads.h"
@@ -32,6 +33,7 @@
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/references.h"
 #include "pxr/usd/usd/resolver.h"
+#include "pxr/usd/usd/resolveTarget.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/specializes.h"
@@ -1409,20 +1411,13 @@ UsdPrim::GetInstances() const
 SdfPrimSpecHandleVector 
 UsdPrim::GetPrimStack() const
 {
-    SdfPrimSpecHandleVector primStack;
+    return UsdStage::_GetPrimStack(*this);
+}
 
-    for (Usd_Resolver resolver(&(_Prim()->GetPrimIndex())); 
-                      resolver.IsValid(); resolver.NextLayer()) {
-
-        auto primSpec = resolver.GetLayer()
-            ->GetPrimAtPath(resolver.GetLocalPath());
-
-        if (primSpec) { 
-            primStack.push_back(primSpec); 
-        }
-    }
-
-    return primStack;
+std::vector<std::pair<SdfPrimSpecHandle, SdfLayerOffset>> 
+UsdPrim::GetPrimStackWithLayerOffsets() const
+{
+    return UsdStage::_GetPrimStackWithLayerOffsets(*this);
 }
 
 PcpPrimIndex 
@@ -1451,6 +1446,86 @@ UsdPrim::ComputeExpandedPrimIndex() const
             "computing expanded prim index for <%s>", GetPath().GetText()));
     
     return outputs.primIndex;
+}
+
+static PcpNodeRef 
+_FindStrongestNodeMatchingEditTarget(
+    const PcpPrimIndex& index, const UsdEditTarget &editTarget)
+{
+    // Use the edit target to map the prim's path to the path we expect to find
+    // a node for.
+    const SdfPath &rootPath = index.GetRootNode().GetPath();
+    const SdfPath mappedPath = editTarget.MapToSpecPath(rootPath);
+
+    if (mappedPath.IsEmpty()) {
+        return PcpNodeRef();
+    }
+
+    // We're looking for the first (strongest) node that would be affected by
+    // an edit to the prim using the edit target which means we are looking for
+    // the following criteria to be met:
+    //  1. The node's path matches the prim path mapped through the edit target.
+    //  2. The edit target's layer is in the node's layer stack.
+    for (const PcpNodeRef &node : index.GetNodeRange()) {
+        if (node.GetPath() != mappedPath) {
+            continue;
+        }
+
+        if (node.GetLayerStack()->HasLayer(editTarget.GetLayer())) {
+            return node;
+        }
+    }
+
+    return PcpNodeRef();
+}
+
+UsdResolveTarget 
+UsdPrim::_MakeResolveTargetFromEditTarget(
+    const UsdEditTarget &editTarget,
+    bool makeAsStrongerThan) const
+{
+    // Need the expanded prim index to find nodes and layers that may have been 
+    // culled out in the cached prim index.
+    PcpPrimIndex expandedPrimIndex = ComputeExpandedPrimIndex();
+    if (!expandedPrimIndex.IsValid()) {
+        return UsdResolveTarget();
+    }
+
+    const PcpNodeRef node = _FindStrongestNodeMatchingEditTarget(
+        expandedPrimIndex, editTarget);
+    if (!node) {
+        return UsdResolveTarget();
+    }
+
+    // The resolve target needs to hold on to the expanded prim index.
+    std::shared_ptr<PcpPrimIndex> resolveIndex = 
+        std::make_shared<PcpPrimIndex>(std::move(expandedPrimIndex));
+
+    if (makeAsStrongerThan) {
+        // Return a resolve target starting at the root node and stopping at the
+        // edit node and layer.
+        return UsdResolveTarget(resolveIndex, 
+            node.GetRootNode(), nullptr, node, editTarget.GetLayer());
+    } else {
+        // Return a resolve target starting at the edit node and layer.
+        return UsdResolveTarget(resolveIndex, node, editTarget.GetLayer());
+    }
+}
+
+UsdResolveTarget 
+UsdPrim::MakeResolveTargetUpToEditTarget(
+    const UsdEditTarget &editTarget) const
+{
+    return _MakeResolveTargetFromEditTarget(
+        editTarget, /* makeAsStrongerThan = */ false);
+}
+
+UsdResolveTarget 
+UsdPrim::MakeResolveTargetStrongerThanEditTarget(
+    const UsdEditTarget &editTarget) const
+{
+    return _MakeResolveTargetFromEditTarget(
+        editTarget, /* makeAsStrongerThan = */ true);
 }
 
 UsdPrim

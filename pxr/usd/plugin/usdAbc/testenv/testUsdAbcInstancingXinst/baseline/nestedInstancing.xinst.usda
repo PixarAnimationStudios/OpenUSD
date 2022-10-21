@@ -10,43 +10,14 @@ def Xform "rootNode"
 {
     def Xform "instance0"
     {
-        def Mesh "a"
+        def Xform "a"
         {
-            float3[] extent.timeSamples = {
-                0: [(-1, -1, -1), (1, 1, 1)],
-            }
-            int[] faceVertexCounts.timeSamples = {
-                0: [4, 4, 4, 4, 4, 4],
-            }
-            int[] faceVertexIndices.timeSamples = {
-                0: [0, 4, 6, 2, 5, 1, 3, 7, 0, 1, 5, 4, 6, 7, 3, 2, 1, 0, 2, 3, 4, 5, 7, 6],
-            }
-            normal3f[] normals (
-                interpolation = "faceVarying"
-            )
-            normal3f[] normals.timeSamples = {
-                0: [(-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)],
-            }
-            uniform token orientation = "leftHanded"
-            point3f[] points (
-                interpolation = "vertex"
-            )
-            point3f[] points.timeSamples = {
-                0: [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (1, 1, -1), (-1, -1, 1), (1, -1, 1), (-1, 1, 1), (1, 1, 1)],
-            }
-            texCoord2f[] primvars:st (
-                interpolation = "faceVarying"
-            )
-            texCoord2f[] primvars:st.timeSamples = {
-                0: [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)],
-            }
-            uniform token subdivisionScheme = "none"
             matrix4d xformOp:transform.timeSamples = {
                 0: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-2, 0, 0, 1) ),
             }
             uniform token[] xformOpOrder = ["xformOp:transform"]
 
-            def Mesh "b"
+            def Mesh "aMesh"
             {
                 float3[] extent.timeSamples = {
                     0: [(-1, -1, -1), (1, 1, 1)],
@@ -77,10 +48,47 @@ def Xform "rootNode"
                     0: [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)],
                 }
                 uniform token subdivisionScheme = "none"
+            }
+
+            def Xform "b"
+            {
                 matrix4d xformOp:transform.timeSamples = {
                     0: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (2, 0, 0, 1) ),
                 }
                 uniform token[] xformOpOrder = ["xformOp:transform"]
+
+                def Mesh "bMesh"
+                {
+                    float3[] extent.timeSamples = {
+                        0: [(-1, -1, -1), (1, 1, 1)],
+                    }
+                    int[] faceVertexCounts.timeSamples = {
+                        0: [4, 4, 4, 4, 4, 4],
+                    }
+                    int[] faceVertexIndices.timeSamples = {
+                        0: [0, 4, 6, 2, 5, 1, 3, 7, 0, 1, 5, 4, 6, 7, 3, 2, 1, 0, 2, 3, 4, 5, 7, 6],
+                    }
+                    normal3f[] normals (
+                        interpolation = "faceVarying"
+                    )
+                    normal3f[] normals.timeSamples = {
+                        0: [(-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)],
+                    }
+                    uniform token orientation = "leftHanded"
+                    point3f[] points (
+                        interpolation = "vertex"
+                    )
+                    point3f[] points.timeSamples = {
+                        0: [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (1, 1, -1), (-1, -1, 1), (1, -1, 1), (-1, 1, 1), (1, 1, 1)],
+                    }
+                    texCoord2f[] primvars:st (
+                        interpolation = "faceVarying"
+                    )
+                    texCoord2f[] primvars:st.timeSamples = {
+                        0: [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)],
+                    }
+                    uniform token subdivisionScheme = "none"
+                }
 
                 def Mesh "c"
                 {
@@ -128,43 +136,14 @@ def Xform "rootNode"
             }
             uniform token[] xformOpOrder = ["xformOp:transform"]
 
-            def Mesh "g"
+            def Xform "g"
             {
-                float3[] extent.timeSamples = {
-                    0: [(-1, -1, -1), (1, 1, 1)],
-                }
-                int[] faceVertexCounts.timeSamples = {
-                    0: [4, 4, 4, 4, 4, 4],
-                }
-                int[] faceVertexIndices.timeSamples = {
-                    0: [0, 4, 6, 2, 5, 1, 3, 7, 0, 1, 5, 4, 6, 7, 3, 2, 1, 0, 2, 3, 4, 5, 7, 6],
-                }
-                normal3f[] normals (
-                    interpolation = "faceVarying"
-                )
-                normal3f[] normals.timeSamples = {
-                    0: [(-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)],
-                }
-                uniform token orientation = "leftHanded"
-                point3f[] points (
-                    interpolation = "vertex"
-                )
-                point3f[] points.timeSamples = {
-                    0: [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (1, 1, -1), (-1, -1, 1), (1, -1, 1), (-1, 1, 1), (1, 1, 1)],
-                }
-                texCoord2f[] primvars:st (
-                    interpolation = "faceVarying"
-                )
-                texCoord2f[] primvars:st.timeSamples = {
-                    0: [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)],
-                }
-                uniform token subdivisionScheme = "none"
                 matrix4d xformOp:transform.timeSamples = {
                     0: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-2, 0, 0, 1) ),
                 }
                 uniform token[] xformOpOrder = ["xformOp:transform"]
 
-                def Mesh "b"
+                def Mesh "aMesh"
                 {
                     float3[] extent.timeSamples = {
                         0: [(-1, -1, -1), (1, 1, 1)],
@@ -195,10 +174,47 @@ def Xform "rootNode"
                         0: [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)],
                     }
                     uniform token subdivisionScheme = "none"
+                }
+
+                def Xform "b"
+                {
                     matrix4d xformOp:transform.timeSamples = {
                         0: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (2, 0, 0, 1) ),
                     }
                     uniform token[] xformOpOrder = ["xformOp:transform"]
+
+                    def Mesh "bMesh"
+                    {
+                        float3[] extent.timeSamples = {
+                            0: [(-1, -1, -1), (1, 1, 1)],
+                        }
+                        int[] faceVertexCounts.timeSamples = {
+                            0: [4, 4, 4, 4, 4, 4],
+                        }
+                        int[] faceVertexIndices.timeSamples = {
+                            0: [0, 4, 6, 2, 5, 1, 3, 7, 0, 1, 5, 4, 6, 7, 3, 2, 1, 0, 2, 3, 4, 5, 7, 6],
+                        }
+                        normal3f[] normals (
+                            interpolation = "faceVarying"
+                        )
+                        normal3f[] normals.timeSamples = {
+                            0: [(-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)],
+                        }
+                        uniform token orientation = "leftHanded"
+                        point3f[] points (
+                            interpolation = "vertex"
+                        )
+                        point3f[] points.timeSamples = {
+                            0: [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (1, 1, -1), (-1, -1, 1), (1, -1, 1), (-1, 1, 1), (1, 1, 1)],
+                        }
+                        texCoord2f[] primvars:st (
+                            interpolation = "faceVarying"
+                        )
+                        texCoord2f[] primvars:st.timeSamples = {
+                            0: [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)],
+                        }
+                        uniform token subdivisionScheme = "none"
+                    }
 
                     def Mesh "c"
                     {
@@ -250,43 +266,14 @@ def Xform "rootNode"
 
         def Xform "instance1"
         {
-            def Mesh "a"
+            def Xform "a"
             {
-                float3[] extent.timeSamples = {
-                    0: [(-1, -1, -1), (1, 1, 1)],
-                }
-                int[] faceVertexCounts.timeSamples = {
-                    0: [4, 4, 4, 4, 4, 4],
-                }
-                int[] faceVertexIndices.timeSamples = {
-                    0: [0, 4, 6, 2, 5, 1, 3, 7, 0, 1, 5, 4, 6, 7, 3, 2, 1, 0, 2, 3, 4, 5, 7, 6],
-                }
-                normal3f[] normals (
-                    interpolation = "faceVarying"
-                )
-                normal3f[] normals.timeSamples = {
-                    0: [(-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)],
-                }
-                uniform token orientation = "leftHanded"
-                point3f[] points (
-                    interpolation = "vertex"
-                )
-                point3f[] points.timeSamples = {
-                    0: [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (1, 1, -1), (-1, -1, 1), (1, -1, 1), (-1, 1, 1), (1, 1, 1)],
-                }
-                texCoord2f[] primvars:st (
-                    interpolation = "faceVarying"
-                )
-                texCoord2f[] primvars:st.timeSamples = {
-                    0: [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)],
-                }
-                uniform token subdivisionScheme = "none"
                 matrix4d xformOp:transform.timeSamples = {
                     0: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-2, 0, 0, 1) ),
                 }
                 uniform token[] xformOpOrder = ["xformOp:transform"]
 
-                def Mesh "b"
+                def Mesh "aMesh"
                 {
                     float3[] extent.timeSamples = {
                         0: [(-1, -1, -1), (1, 1, 1)],
@@ -317,10 +304,47 @@ def Xform "rootNode"
                         0: [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)],
                     }
                     uniform token subdivisionScheme = "none"
+                }
+
+                def Xform "b"
+                {
                     matrix4d xformOp:transform.timeSamples = {
                         0: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (2, 0, 0, 1) ),
                     }
                     uniform token[] xformOpOrder = ["xformOp:transform"]
+
+                    def Mesh "bMesh"
+                    {
+                        float3[] extent.timeSamples = {
+                            0: [(-1, -1, -1), (1, 1, 1)],
+                        }
+                        int[] faceVertexCounts.timeSamples = {
+                            0: [4, 4, 4, 4, 4, 4],
+                        }
+                        int[] faceVertexIndices.timeSamples = {
+                            0: [0, 4, 6, 2, 5, 1, 3, 7, 0, 1, 5, 4, 6, 7, 3, 2, 1, 0, 2, 3, 4, 5, 7, 6],
+                        }
+                        normal3f[] normals (
+                            interpolation = "faceVarying"
+                        )
+                        normal3f[] normals.timeSamples = {
+                            0: [(-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)],
+                        }
+                        uniform token orientation = "leftHanded"
+                        point3f[] points (
+                            interpolation = "vertex"
+                        )
+                        point3f[] points.timeSamples = {
+                            0: [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (1, 1, -1), (-1, -1, 1), (1, -1, 1), (-1, 1, 1), (1, 1, 1)],
+                        }
+                        texCoord2f[] primvars:st (
+                            interpolation = "faceVarying"
+                        )
+                        texCoord2f[] primvars:st.timeSamples = {
+                            0: [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)],
+                        }
+                        uniform token subdivisionScheme = "none"
+                    }
 
                     def Mesh "c"
                     {
@@ -368,43 +392,14 @@ def Xform "rootNode"
                 }
                 uniform token[] xformOpOrder = ["xformOp:transform"]
 
-                def Mesh "g"
+                def Xform "g"
                 {
-                    float3[] extent.timeSamples = {
-                        0: [(-1, -1, -1), (1, 1, 1)],
-                    }
-                    int[] faceVertexCounts.timeSamples = {
-                        0: [4, 4, 4, 4, 4, 4],
-                    }
-                    int[] faceVertexIndices.timeSamples = {
-                        0: [0, 4, 6, 2, 5, 1, 3, 7, 0, 1, 5, 4, 6, 7, 3, 2, 1, 0, 2, 3, 4, 5, 7, 6],
-                    }
-                    normal3f[] normals (
-                        interpolation = "faceVarying"
-                    )
-                    normal3f[] normals.timeSamples = {
-                        0: [(-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)],
-                    }
-                    uniform token orientation = "leftHanded"
-                    point3f[] points (
-                        interpolation = "vertex"
-                    )
-                    point3f[] points.timeSamples = {
-                        0: [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (1, 1, -1), (-1, -1, 1), (1, -1, 1), (-1, 1, 1), (1, 1, 1)],
-                    }
-                    texCoord2f[] primvars:st (
-                        interpolation = "faceVarying"
-                    )
-                    texCoord2f[] primvars:st.timeSamples = {
-                        0: [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)],
-                    }
-                    uniform token subdivisionScheme = "none"
                     matrix4d xformOp:transform.timeSamples = {
                         0: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-2, 0, 0, 1) ),
                     }
                     uniform token[] xformOpOrder = ["xformOp:transform"]
 
-                    def Mesh "b"
+                    def Mesh "aMesh"
                     {
                         float3[] extent.timeSamples = {
                             0: [(-1, -1, -1), (1, 1, 1)],
@@ -435,10 +430,47 @@ def Xform "rootNode"
                             0: [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)],
                         }
                         uniform token subdivisionScheme = "none"
+                    }
+
+                    def Xform "b"
+                    {
                         matrix4d xformOp:transform.timeSamples = {
                             0: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (2, 0, 0, 1) ),
                         }
                         uniform token[] xformOpOrder = ["xformOp:transform"]
+
+                        def Mesh "bMesh"
+                        {
+                            float3[] extent.timeSamples = {
+                                0: [(-1, -1, -1), (1, 1, 1)],
+                            }
+                            int[] faceVertexCounts.timeSamples = {
+                                0: [4, 4, 4, 4, 4, 4],
+                            }
+                            int[] faceVertexIndices.timeSamples = {
+                                0: [0, 4, 6, 2, 5, 1, 3, 7, 0, 1, 5, 4, 6, 7, 3, 2, 1, 0, 2, 3, 4, 5, 7, 6],
+                            }
+                            normal3f[] normals (
+                                interpolation = "faceVarying"
+                            )
+                            normal3f[] normals.timeSamples = {
+                                0: [(-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)],
+                            }
+                            uniform token orientation = "leftHanded"
+                            point3f[] points (
+                                interpolation = "vertex"
+                            )
+                            point3f[] points.timeSamples = {
+                                0: [(-1, -1, -1), (1, -1, -1), (-1, 1, -1), (1, 1, -1), (-1, -1, 1), (1, -1, 1), (-1, 1, 1), (1, 1, 1)],
+                            }
+                            texCoord2f[] primvars:st (
+                                interpolation = "faceVarying"
+                            )
+                            texCoord2f[] primvars:st.timeSamples = {
+                                0: [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1), (0, 0), (1, 0), (1, 1), (0, 1)],
+                            }
+                            uniform token subdivisionScheme = "none"
+                        }
 
                         def Mesh "c"
                         {

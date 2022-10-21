@@ -160,7 +160,10 @@ def Scope "Scene" (
 
     def Scope "Geom"
     {
-        def Mesh "Plane1" {
+        def Mesh "Plane1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
             rel material:binding = </Scene/Looks/Mat1>
             uniform bool doubleSided = 1
             float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")
@@ -174,7 +177,10 @@ def Scope "Scene" (
             Vec3f xformOp:translate=(0,0,0)
         }
 
-        def Mesh "Plane2" {
+        def Mesh "Plane2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
             rel material:binding = </Scene/Looks/Mat2>
             uniform bool doubleSided = 1
             float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")
@@ -188,7 +194,10 @@ def Scope "Scene" (
             Vec3f xformOp:translate=(2.5,0,0)
         }
 
-        def Mesh "Plane3" {
+        def Mesh "Plane3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
             rel material:binding = </Scene/Looks/Mat3>
             uniform bool doubleSided = 1
             float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")
@@ -202,7 +211,10 @@ def Scope "Scene" (
             Vec3f xformOp:translate=(5,0,0)
         }
 
-         def Mesh "Plane4" {
+         def Mesh "Plane4" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
             rel material:binding = </Scene/Looks/Mat4>
             uniform bool doubleSided = 1
             float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")

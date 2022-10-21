@@ -844,12 +844,6 @@ protected:
     USDIMAGING_API
     bool _DoesDelegateSupportCoordSys() const;
 
-    // Conversion functions between usd and hydra enums.
-    USDIMAGING_API
-    static HdInterpolation _UsdToHdInterpolation(TfToken const& usdInterp);
-    USDIMAGING_API
-    static TfToken _UsdToHdRole(TfToken const& usdRole);
-
 private:
     UsdImagingDelegate* _delegate;
 };

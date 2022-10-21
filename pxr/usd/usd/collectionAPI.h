@@ -229,6 +229,12 @@ public:
     static UsdCollectionAPI
     Get(const UsdPrim &prim, const TfToken &name);
 
+    /// Return a vector of all named instances of UsdCollectionAPI on the 
+    /// given \p prim.
+    USD_API
+    static std::vector<UsdCollectionAPI>
+    GetAll(const UsdPrim &prim);
+
     /// Checks if the given name \p baseName is the base name of a property
     /// of CollectionAPI.
     USD_API
@@ -424,7 +430,8 @@ public:
     static UsdCollectionAPI GetCollection(const UsdPrim &prim, 
                                           const TfToken &name);
 
-    /// Returns all the named collections on the given USD prim. 
+    /// Returns all the named collections on the given USD prim.
+    /// \deprecated Use GetAll(prim) instead.
     USD_API
     static std::vector<UsdCollectionAPI> GetAllCollections(const UsdPrim &prim);
 

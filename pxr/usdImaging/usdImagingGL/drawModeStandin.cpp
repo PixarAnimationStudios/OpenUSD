@@ -1110,7 +1110,7 @@ private:
     /// Thread-safe way to get the cached cards data.
     std::shared_ptr<_CardsData> _GetCardsData() {
         if (auto cached = std::atomic_load(&_data)) {
-            return std::move(cached);
+            return cached;
         }
         auto data = std::make_shared<_CardsData>(
             _SchemaValues(
@@ -1118,7 +1118,7 @@ private:
                     _primSource)));
 
         std::atomic_store(&_data, data);
-        return std::move(data);
+        return data;
     }
 
     std::shared_ptr<_CardsData> _data;

@@ -54,6 +54,10 @@ namespace {
 template<typename T>
 VtValue 
 _ComputeFlattened(VtValue const &value, VtIntArray const &indices) {
+    if (indices.empty()) {
+        return value;
+    }
+
     VtArray<T> array = value.Get<VtArray<T>>();
     VtArray<T> result = VtArray<T>(indices.size());
 

@@ -23,6 +23,14 @@
 
 #include "pxr/imaging/hdsi/implicitSurfaceSceneIndex.h"
 
+#include "pxr/imaging/geomUtil/capsuleMeshGenerator.h"
+#include "pxr/imaging/geomUtil/coneMeshGenerator.h"
+#include "pxr/imaging/geomUtil/cuboidMeshGenerator.h"
+#include "pxr/imaging/geomUtil/cylinderMeshGenerator.h"
+#include "pxr/imaging/geomUtil/sphereMeshGenerator.h"
+
+#include "pxr/imaging/pxOsd/meshTopology.h"
+
 #include "pxr/imaging/hd/capsuleSchema.h"
 #include "pxr/imaging/hd/coneSchema.h"
 #include "pxr/imaging/hd/cubeSchema.h"
@@ -51,6 +59,9 @@ TF_DEFINE_PUBLIC_TOKENS(HdsiImplicitSurfaceSceneIndexTokens,
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    ((xAxis, "X"))
+    ((yAxis, "Y"))
+    ((zAxis, "Z"))
 
     (implicitToMesh)
     (implicitToXform)
@@ -60,29 +71,30 @@ namespace
 {
 
 GfMatrix4d
-_ConeAndCylinderTransform(const double height,
-                          const double radius,
-                          const TfToken &axis)
+_GetBasis(TfToken const &axis)
 {
-    const double diameter = 2.0 * radius;
-    if (axis == HdConeSchemaTokens->X) {
-        return GfMatrix4d(     0.0, diameter,      0.0, 0.0,
-                               0.0,      0.0, diameter, 0.0,
-                            height,      0.0,      0.0, 0.0,
-                               0.0,      0.0,      0.0, 1.0);
+    GfVec4d u, v, spine;
+    if (axis == _tokens->xAxis) {
+        u = GfVec4d::YAxis();
+        v = GfVec4d::ZAxis();
+        spine = GfVec4d::XAxis();
+    } else if (axis == _tokens->yAxis) {
+        u = GfVec4d::ZAxis();
+        v = GfVec4d::XAxis();
+        spine = GfVec4d::YAxis();
+    } else { // (axis == _tokens->zAxis)
+        u = GfVec4d::XAxis();
+        v = GfVec4d::YAxis();
+        spine = GfVec4d::ZAxis();
     }
-    else if (axis == HdConeSchemaTokens->Y) {
-        return GfMatrix4d(     0.0,      0.0, diameter, 0.0,
-                          diameter,      0.0,      0.0, 0.0,
-                               0.0,   height,      0.0, 0.0,
-                               0.0,      0.0,      0.0, 1.0);
-    }
-    else { // (axis == HdConeSchemaTokens->Z)
-        return GfMatrix4d(diameter,      0.0,      0.0, 0.0,
-                               0.0, diameter,      0.0, 0.0,
-                               0.0,      0.0,   height, 0.0,
-                               0.0,      0.0,      0.0, 1.0);
-    }
+
+    GfMatrix4d basis;
+    basis.SetRow(0, u);
+    basis.SetRow(1, v);
+    basis.SetRow(2, spine);
+    basis.SetRow(3, GfVec4d::WAxis());
+
+    return basis;
 }
 
 using Time = HdSampledDataSource::Time;
@@ -148,13 +160,8 @@ namespace _CubeToMesh
 HdContainerDataSourceHandle
 _ComputeMeshDataSource()
 {
-    static const VtIntArray numVerts{ 4, 4, 4, 4, 4, 4 };
-    static const VtIntArray verts{ 0, 1, 2, 3,
-                                   4, 5, 6, 7,
-                                   0, 6, 5, 1,
-                                   4, 7, 3, 2,
-                                   0, 3, 7, 6,
-                                   4, 2, 1, 5 };
+    static const PxOsdMeshTopology topology = 
+        GeomUtilCuboidMeshGenerator::GenerateTopology();
 
     return
         HdMeshSchema::Builder()
@@ -162,14 +169,17 @@ _ComputeMeshDataSource()
                 HdMeshTopologySchema::Builder()
                     .SetFaceVertexCounts(
                         HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                            numVerts))
+                            topology.GetFaceVertexCounts()))
                     .SetFaceVertexIndices(
                         HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                            verts))
+                            topology.GetFaceVertexIndices()))
                     .SetOrientation(
                         HdRetainedTypedSampledDataSource<TfToken>::New(
                             HdMeshTopologySchemaTokens->rightHanded))
                     .Build())
+            .SetSubdivisionScheme(
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    topology.GetScheme()))
             .SetDoubleSided(
                 HdRetainedTypedSampledDataSource<bool>::New(false))
             .Build();
@@ -185,26 +195,18 @@ public:
     }
 
     VtVec3fArray GetTypedValue(const Time shutterOffset) override {
-        static const VtVec3fArray points{
-            GfVec3f( 0.5f,  0.5f,  0.5f),
-            GfVec3f(-0.5f,  0.5f,  0.5f),
-            GfVec3f(-0.5f, -0.5f,  0.5f),
-            GfVec3f( 0.5f, -0.5f,  0.5f),
-            GfVec3f(-0.5f, -0.5f, -0.5f),
-            GfVec3f(-0.5f,  0.5f, -0.5f),
-            GfVec3f( 0.5f,  0.5f, -0.5f),
-            GfVec3f( 0.5f, -0.5f, -0.5f)
-        };
+        const size_t numPoints =
+            GeomUtilCuboidMeshGenerator::ComputeNumPoints();
+        VtVec3fArray points(numPoints);
 
         const double size = _GetSize(shutterOffset);
 
-        VtVec3fArray scaledPoints;
-        scaledPoints.resize(points.size());
-        for (size_t i = 0; i < points.size(); i++) {
-            scaledPoints[i] = size * points[i];
-        }
+        GeomUtilCuboidMeshGenerator::GeneratePoints(
+            points.begin(),
+            size, size, size
+        );
         
-        return scaledPoints;
+        return points;
     }
 
     bool GetContributingSampleTimesForInterval(
@@ -305,19 +307,13 @@ _ComputePrimDataSource(
 namespace _ConeToMesh
 {
 
+static constexpr size_t numRadial = 10;
+
 HdContainerDataSourceHandle
 _ComputeMeshDataSource()
 {
-    static const VtIntArray numVerts{ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-                                      4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
-    static const VtIntArray verts{
-        // Tris
-         2,  1,  0,    3,  2,  0,    4,  3,  0,    5,  4,  0,    6,  5,  0,
-         7,  6,  0,    8,  7,  0,    9,  8,  0,   10,  9,  0,    1, 10,  0,
-        // Quads
-        11, 12, 22, 21,   12, 13, 23, 22,   13, 14, 24, 23,   14, 15, 25, 24,
-        15, 16, 26, 25,   16, 17, 27, 26,   17, 18, 28, 27,   18, 19, 29, 28,
-        19, 20, 30, 29,   20, 11, 21, 30 };
+    static const PxOsdMeshTopology topology =
+        GeomUtilConeMeshGenerator::GenerateTopology(numRadial);
 
     return
         HdMeshSchema::Builder()
@@ -325,17 +321,17 @@ _ComputeMeshDataSource()
                 HdMeshTopologySchema::Builder()
                     .SetFaceVertexCounts(
                         HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                            numVerts))
+                            topology.GetFaceVertexCounts()))
                     .SetFaceVertexIndices(
                         HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                            verts))
+                            topology.GetFaceVertexIndices()))
                     .SetOrientation(
                         HdRetainedTypedSampledDataSource<TfToken>::New(
                             HdMeshTopologySchemaTokens->rightHanded))
                     .Build())
             .SetSubdivisionScheme(
                 HdRetainedTypedSampledDataSource<TfToken>::New(
-                    PxOsdOpenSubdivTokens->catmullClark))
+                    topology.GetScheme()))
             .SetDoubleSided(
                 HdRetainedTypedSampledDataSource<bool>::New(false))
             .Build();
@@ -351,51 +347,21 @@ public:
     }
 
     VtVec3fArray GetTypedValue(const Time shutterOffset) override {
-        static const VtVec3fArray points{
-            GfVec3f( 0.0000,  0.0000, -0.5000),
-            GfVec3f( 0.5000,  0.0000, -0.5000),
-            GfVec3f( 0.4045,  0.2939, -0.5000),
-            GfVec3f( 0.1545,  0.4755, -0.5000),
-            GfVec3f(-0.1545,  0.4755, -0.5000),
-            GfVec3f(-0.4045,  0.2939, -0.5000),
-            GfVec3f(-0.5000,  0.0000, -0.5000),
-            GfVec3f(-0.4045, -0.2939, -0.5000),
-            GfVec3f(-0.1545, -0.4755, -0.5000),
-            GfVec3f( 0.1545, -0.4755, -0.5000),
-            GfVec3f( 0.4045, -0.2939, -0.5000),
-            GfVec3f( 0.5000,  0.0000, -0.5000),
-            GfVec3f( 0.4045,  0.2939, -0.5000),
-            GfVec3f( 0.1545,  0.4755, -0.5000),
-            GfVec3f(-0.1545,  0.4755, -0.5000),
-            GfVec3f(-0.4045,  0.2939, -0.5000),
-            GfVec3f(-0.5000,  0.0000, -0.5000),
-            GfVec3f(-0.4045, -0.2939, -0.5000),
-            GfVec3f(-0.1545, -0.4755, -0.5000),
-            GfVec3f( 0.1545, -0.4755, -0.5000),
-            GfVec3f( 0.4045, -0.2939, -0.5000),
-            GfVec3f( 0.0000,  0.0000,  0.5000),
-            GfVec3f( 0.0000,  0.0000,  0.5000),
-            GfVec3f( 0.0000,  0.0000,  0.5000),
-            GfVec3f( 0.0000,  0.0000,  0.5000),
-            GfVec3f( 0.0000,  0.0000,  0.5000),
-            GfVec3f( 0.0000,  0.0000,  0.5000),
-            GfVec3f( 0.0000,  0.0000,  0.5000),
-            GfVec3f( 0.0000,  0.0000,  0.5000),
-            GfVec3f( 0.0000,  0.0000,  0.5000),
-            GfVec3f( 0.0000,  0.0000,  0.5000) };
+       
+        const GfMatrix4d basis = _GetBasis(_GetAxis(shutterOffset));
+        const size_t numPoints =
+            GeomUtilConeMeshGenerator::ComputeNumPoints(numRadial);
+        VtVec3fArray points(numPoints);
 
-        const GfMatrix4d t = _ConeAndCylinderTransform(
-            _GetHeight(shutterOffset),
+        GeomUtilConeMeshGenerator::GeneratePoints(
+            points.begin(),
+            numRadial,
             _GetRadius(shutterOffset),
-            _GetAxis(shutterOffset));
-
-        VtVec3fArray scaledPoints;
-        scaledPoints.resize(points.size());
-        for (size_t i = 0; i < points.size(); i++) {
-            scaledPoints[i] = t.Transform(points[i]);
-        }
-
-        return scaledPoints;
+            _GetHeight(shutterOffset),
+            &basis
+        );
+        
+        return points;
     }
 
     bool GetContributingSampleTimesForInterval(
@@ -523,23 +489,13 @@ _ComputePrimDataSource(
 namespace _CylinderToMesh
 {
 
+static constexpr size_t numRadial = 10;
+
 HdContainerDataSourceHandle
 _ComputeMeshDataSource()
 {
-    static const VtIntArray numVerts{ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-                                      4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-                                      3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
-    static const VtIntArray verts{
-        // Tris
-         2,  1,  0,    3,  2,  0,    4,  3,  0,    5,  4,  0,    6,  5,  0,
-         7,  6,  0,    8,  7,  0,    9,  8,  0,   10,  9,  0,    1, 10,  0,
-        // Quads
-        11, 12, 22, 21,   12, 13, 23, 22,   13, 14, 24, 23,   14, 15, 25, 24,
-        15, 16, 26, 25,   16, 17, 27, 26,   17, 18, 28, 27,   18, 19, 29, 28,
-        19, 20, 30, 29,   20, 11, 21, 30,
-        // Tris
-        31, 32, 41,   32, 33, 41,   33, 34, 41,   34, 35, 41,   35, 36, 41,
-        36, 37, 41,   37, 38, 41,   38, 39, 41,   39, 40, 41,   40, 31, 41 };
+    static const PxOsdMeshTopology topology =
+        GeomUtilCylinderMeshGenerator::GenerateTopology(numRadial);
 
     return
         HdMeshSchema::Builder()
@@ -547,17 +503,17 @@ _ComputeMeshDataSource()
                 HdMeshTopologySchema::Builder()
                     .SetFaceVertexCounts(
                         HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                            numVerts))
+                            topology.GetFaceVertexCounts()))
                     .SetFaceVertexIndices(
                         HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                            verts))
+                            topology.GetFaceVertexIndices()))
                     .SetOrientation(
                         HdRetainedTypedSampledDataSource<TfToken>::New(
                             HdMeshTopologySchemaTokens->rightHanded))
                     .Build())
             .SetSubdivisionScheme(
                 HdRetainedTypedSampledDataSource<TfToken>::New(
-                    PxOsdOpenSubdivTokens->catmullClark))
+                    topology.GetScheme()))
             .SetDoubleSided(
                 HdRetainedTypedSampledDataSource<bool>::New(false))
             .Build();
@@ -573,62 +529,20 @@ public:
     }
 
     VtVec3fArray GetTypedValue(const Time shutterOffset) override {
-        static const VtVec3fArray points{
-            GfVec3f( 0.0000,  0.0000, -0.5000),
-            GfVec3f( 0.5000,  0.0000, -0.5000),
-            GfVec3f( 0.4045,  0.2939, -0.5000),
-            GfVec3f( 0.1545,  0.4755, -0.5000),
-            GfVec3f(-0.1545,  0.4755, -0.5000),
-            GfVec3f(-0.4045,  0.2939, -0.5000),
-            GfVec3f(-0.5000,  0.0000, -0.5000),
-            GfVec3f(-0.4045, -0.2939, -0.5000),
-            GfVec3f(-0.1545, -0.4755, -0.5000),
-            GfVec3f( 0.1545, -0.4755, -0.5000),
-            GfVec3f( 0.4045, -0.2939, -0.5000),
-            GfVec3f( 0.5000,  0.0000, -0.5000),
-            GfVec3f( 0.4045,  0.2939, -0.5000),
-            GfVec3f( 0.1545,  0.4755, -0.5000),
-            GfVec3f(-0.1545,  0.4755, -0.5000),
-            GfVec3f(-0.4045,  0.2939, -0.5000),
-            GfVec3f(-0.5000,  0.0000, -0.5000),
-            GfVec3f(-0.4045, -0.2939, -0.5000),
-            GfVec3f(-0.1545, -0.4755, -0.5000),
-            GfVec3f( 0.1545, -0.4755, -0.5000),
-            GfVec3f( 0.4045, -0.2939, -0.5000),
-            GfVec3f( 0.5000,  0.0000,  0.5000),
-            GfVec3f( 0.4045,  0.2939,  0.5000),
-            GfVec3f( 0.1545,  0.4755,  0.5000),
-            GfVec3f(-0.1545,  0.4755,  0.5000),
-            GfVec3f(-0.4045,  0.2939,  0.5000),
-            GfVec3f(-0.5000,  0.0000,  0.5000),
-            GfVec3f(-0.4045, -0.2939,  0.5000),
-            GfVec3f(-0.1545, -0.4755,  0.5000),
-            GfVec3f( 0.1545, -0.4755,  0.5000),
-            GfVec3f( 0.4045, -0.2939,  0.5000),
-            GfVec3f( 0.5000,  0.0000,  0.5000),
-            GfVec3f( 0.4045,  0.2939,  0.5000),
-            GfVec3f( 0.1545,  0.4755,  0.5000),
-            GfVec3f(-0.1545,  0.4755,  0.5000),
-            GfVec3f(-0.4045,  0.2939,  0.5000),
-            GfVec3f(-0.5000,  0.0000,  0.5000),
-            GfVec3f(-0.4045, -0.2939,  0.5000),
-            GfVec3f(-0.1545, -0.4755,  0.5000),
-            GfVec3f( 0.1545, -0.4755,  0.5000),
-            GfVec3f( 0.4045, -0.2939,  0.5000),
-            GfVec3f( 0.0000,  0.0000,  0.5000)};   
+        const GfMatrix4d basis = _GetBasis(_GetAxis(shutterOffset));
+        const size_t numPoints =
+            GeomUtilCylinderMeshGenerator::ComputeNumPoints(numRadial);
+        VtVec3fArray points(numPoints);
 
-        const GfMatrix4d t = _ConeAndCylinderTransform(
-            _GetHeight(shutterOffset),
+        GeomUtilCylinderMeshGenerator::GeneratePoints(
+            points.begin(),
+            numRadial,
             _GetRadius(shutterOffset),
-            _GetAxis(shutterOffset));
-
-        VtVec3fArray scaledPoints;
-        scaledPoints.resize(points.size());
-        for (size_t i = 0; i < points.size(); i++) {
-            scaledPoints[i] = t.Transform(points[i]);
-        }
-
-        return scaledPoints;
+            _GetHeight(shutterOffset),
+            &basis
+        );
+        
+        return points;
     }
 
     bool GetContributingSampleTimesForInterval(
@@ -756,42 +670,14 @@ _ComputePrimDataSource(
 namespace _SphereToMesh
 {
 
+static constexpr size_t numRadial = 10;
+static constexpr size_t numAxial  = 10;
+
 HdContainerDataSourceHandle
 _ComputeMeshDataSource()
 {
-    static const VtIntArray numVerts{
-        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
-    static const VtIntArray verts{
-        // Quads
-         0,  1, 11, 10,    1,  2, 12, 11,    2,  3, 13, 12,    3,  4, 14, 13,
-         4,  5, 15, 14,    5,  6, 16, 15,    6,  7, 17, 16,    7,  8, 18, 17,
-         8,  9, 19, 18,    9,  0, 10, 19,   10, 11, 21, 20,   11, 12, 22, 21,
-        12, 13, 23, 22,   13, 14, 24, 23,   14, 15, 25, 24,   15, 16, 26, 25,
-        16, 17, 27, 26,   17, 18, 28, 27,   18, 19, 29, 28,   19, 10, 20, 29,
-        20, 21, 31, 30,   21, 22, 32, 31,   22, 23, 33, 32,   23, 24, 34, 33,
-        24, 25, 35, 34,   25, 26, 36, 35,   26, 27, 37, 36,   27, 28, 38, 37,
-        28, 29, 39, 38,   29, 20, 30, 39,   30, 31, 41, 40,   31, 32, 42, 41,
-        32, 33, 43, 42,   33, 34, 44, 43,   34, 35, 45, 44,   35, 36, 46, 45,
-        36, 37, 47, 46,   37, 38, 48, 47,   38, 39, 49, 48,   39, 30, 40, 49,
-        40, 41, 51, 50,   41, 42, 52, 51,   42, 43, 53, 52,   43, 44, 54, 53,
-        44, 45, 55, 54,   45, 46, 56, 55,   46, 47, 57, 56,   47, 48, 58, 57,
-        48, 49, 59, 58,   49, 40, 50, 59,   50, 51, 61, 60,   51, 52, 62, 61,
-        52, 53, 63, 62,   53, 54, 64, 63,   54, 55, 65, 64,   55, 56, 66, 65,
-        56, 57, 67, 66,   57, 58, 68, 67,   58, 59, 69, 68,   59, 50, 60, 69,
-        60, 61, 71, 70,   61, 62, 72, 71,   62, 63, 73, 72,   63, 64, 74, 73,
-        64, 65, 75, 74,   65, 66, 76, 75,   66, 67, 77, 76,   67, 68, 78, 77,
-        68, 69, 79, 78,   69, 60, 70, 79,   70, 71, 81, 80,   71, 72, 82, 81,
-        72, 73, 83, 82,   73, 74, 84, 83,   74, 75, 85, 84,   75, 76, 86, 85,
-        76, 77, 87, 86,   77, 78, 88, 87,   78, 79, 89, 88,   79, 70, 80, 89,
-        // Tris
-         1,  0, 90,    2,  1, 90,    3,  2, 90,    4,  3, 90,    5,  4, 90,
-         6,  5, 90,    7,  6, 90,    8,  7, 90,    9,  8, 90,    0,  9, 90,
-        80, 81, 91,   81, 82, 91,   82, 83, 91,   83, 84, 91,   84, 85, 91,
-        85, 86, 91,   86, 87, 91,   87, 88, 91,   88, 89, 91,   89, 80, 91 };
+    static const PxOsdMeshTopology topology =
+        GeomUtilSphereMeshGenerator::GenerateTopology(numRadial, numAxial);
 
     return
         HdMeshSchema::Builder()
@@ -799,17 +685,17 @@ _ComputeMeshDataSource()
                 HdMeshTopologySchema::Builder()
                     .SetFaceVertexCounts(
                         HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                            numVerts))
+                            topology.GetFaceVertexCounts()))
                     .SetFaceVertexIndices(
                         HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                            verts))
+                            topology.GetFaceVertexIndices()))
                     .SetOrientation(
                         HdRetainedTypedSampledDataSource<TfToken>::New(
                             HdMeshTopologySchemaTokens->rightHanded))
                     .Build())
             .SetSubdivisionScheme(
                 HdRetainedTypedSampledDataSource<TfToken>::New(
-                    PxOsdOpenSubdivTokens->catmullClark))
+                    topology.GetScheme()))
             .SetDoubleSided(
                 HdRetainedTypedSampledDataSource<bool>::New(false))
             .Build();
@@ -825,63 +711,19 @@ public:
     }
 
     VtVec3fArray GetTypedValue(const Time shutterOffset) override {
-    static const VtVec3fArray points{
-        GfVec3f( 0.1250,  0.0908, -0.4755), GfVec3f( 0.0477,  0.1469, -0.4755),
-        GfVec3f(-0.0477,  0.1469, -0.4755), GfVec3f(-0.1250,  0.0908, -0.4755),
-        GfVec3f(-0.1545, -0.0000, -0.4755), GfVec3f(-0.1250, -0.0908, -0.4755),
-        GfVec3f(-0.0477, -0.1469, -0.4755), GfVec3f( 0.0477, -0.1469, -0.4755),
-        GfVec3f( 0.1250, -0.0908, -0.4755), GfVec3f( 0.1545, -0.0000, -0.4755),
-        GfVec3f( 0.2378,  0.1727, -0.4045), GfVec3f( 0.0908,  0.2795, -0.4045),
-        GfVec3f(-0.0908,  0.2795, -0.4045), GfVec3f(-0.2378,  0.1727, -0.4045),
-        GfVec3f(-0.2939, -0.0000, -0.4045), GfVec3f(-0.2378, -0.1727, -0.4045),
-        GfVec3f(-0.0908, -0.2795, -0.4045), GfVec3f( 0.0908, -0.2795, -0.4045),
-        GfVec3f( 0.2378, -0.1727, -0.4045), GfVec3f( 0.2939, -0.0000, -0.4045),
-        GfVec3f( 0.3273,  0.2378, -0.2939), GfVec3f( 0.1250,  0.3847, -0.2939),
-        GfVec3f(-0.1250,  0.3847, -0.2939), GfVec3f(-0.3273,  0.2378, -0.2939),
-        GfVec3f(-0.4045, -0.0000, -0.2939), GfVec3f(-0.3273, -0.2378, -0.2939),
-        GfVec3f(-0.1250, -0.3847, -0.2939), GfVec3f( 0.1250, -0.3847, -0.2939),
-        GfVec3f( 0.3273, -0.2378, -0.2939), GfVec3f( 0.4045, -0.0000, -0.2939),
-        GfVec3f( 0.3847,  0.2795, -0.1545), GfVec3f( 0.1469,  0.4523, -0.1545),
-        GfVec3f(-0.1469,  0.4523, -0.1545), GfVec3f(-0.3847,  0.2795, -0.1545),
-        GfVec3f(-0.4755, -0.0000, -0.1545), GfVec3f(-0.3847, -0.2795, -0.1545),
-        GfVec3f(-0.1469, -0.4523, -0.1545), GfVec3f( 0.1469, -0.4523, -0.1545),
-        GfVec3f( 0.3847, -0.2795, -0.1545), GfVec3f( 0.4755, -0.0000, -0.1545),
-        GfVec3f( 0.4045,  0.2939, -0.0000), GfVec3f( 0.1545,  0.4755, -0.0000),
-        GfVec3f(-0.1545,  0.4755, -0.0000), GfVec3f(-0.4045,  0.2939, -0.0000),
-        GfVec3f(-0.5000, -0.0000,  0.0000), GfVec3f(-0.4045, -0.2939,  0.0000),
-        GfVec3f(-0.1545, -0.4755,  0.0000), GfVec3f( 0.1545, -0.4755,  0.0000),
-        GfVec3f( 0.4045, -0.2939,  0.0000), GfVec3f( 0.5000,  0.0000,  0.0000),
-        GfVec3f( 0.3847,  0.2795,  0.1545), GfVec3f( 0.1469,  0.4523,  0.1545),
-        GfVec3f(-0.1469,  0.4523,  0.1545), GfVec3f(-0.3847,  0.2795,  0.1545),
-        GfVec3f(-0.4755, -0.0000,  0.1545), GfVec3f(-0.3847, -0.2795,  0.1545),
-        GfVec3f(-0.1469, -0.4523,  0.1545), GfVec3f( 0.1469, -0.4523,  0.1545),
-        GfVec3f( 0.3847, -0.2795,  0.1545), GfVec3f( 0.4755,  0.0000,  0.1545),
-        GfVec3f( 0.3273,  0.2378,  0.2939), GfVec3f( 0.1250,  0.3847,  0.2939),
-        GfVec3f(-0.1250,  0.3847,  0.2939), GfVec3f(-0.3273,  0.2378,  0.2939),
-        GfVec3f(-0.4045, -0.0000,  0.2939), GfVec3f(-0.3273, -0.2378,  0.2939),
-        GfVec3f(-0.1250, -0.3847,  0.2939), GfVec3f( 0.1250, -0.3847,  0.2939),
-        GfVec3f( 0.3273, -0.2378,  0.2939), GfVec3f( 0.4045,  0.0000,  0.2939),
-        GfVec3f( 0.2378,  0.1727,  0.4045), GfVec3f( 0.0908,  0.2795,  0.4045),
-        GfVec3f(-0.0908,  0.2795,  0.4045), GfVec3f(-0.2378,  0.1727,  0.4045),
-        GfVec3f(-0.2939, -0.0000,  0.4045), GfVec3f(-0.2378, -0.1727,  0.4045),
-        GfVec3f(-0.0908, -0.2795,  0.4045), GfVec3f( 0.0908, -0.2795,  0.4045),
-        GfVec3f( 0.2378, -0.1727,  0.4045), GfVec3f( 0.2939,  0.0000,  0.4045),
-        GfVec3f( 0.1250,  0.0908,  0.4755), GfVec3f( 0.0477,  0.1469,  0.4755),
-        GfVec3f(-0.0477,  0.1469,  0.4755), GfVec3f(-0.1250,  0.0908,  0.4755),
-        GfVec3f(-0.1545, -0.0000,  0.4755), GfVec3f(-0.1250, -0.0908,  0.4755),
-        GfVec3f(-0.0477, -0.1469,  0.4755), GfVec3f( 0.0477, -0.1469,  0.4755),
-        GfVec3f( 0.1250, -0.0908,  0.4755), GfVec3f( 0.1545,  0.0000,  0.4755),
-        GfVec3f( 0.0000, -0.0000, -0.5000), GfVec3f( 0.0000,  0.0000,  0.5000)};
 
-        const double diameter = 2.0 * _GetRadius(shutterOffset);
+        const size_t numPoints =
+            GeomUtilSphereMeshGenerator::ComputeNumPoints(numRadial, numAxial);
+        VtVec3fArray points(numPoints);
 
-        VtVec3fArray scaledPoints;
-        scaledPoints.resize(points.size());
-        for (size_t i = 0; i < points.size(); i++) {
-            scaledPoints[i] = diameter * points[i];
-        }
-        
-        return scaledPoints;
+        GeomUtilSphereMeshGenerator::GeneratePoints(
+            points.begin(),
+            numRadial,
+            numAxial,
+            _GetRadius(shutterOffset)
+        );
+
+        return points;
     }
 
     bool GetContributingSampleTimesForInterval(
@@ -982,66 +824,16 @@ _ComputePrimDataSource(
 namespace _CapsuleToMesh
 {
 
-// slices are segments around the mesh
-static constexpr int _capsuleSlices = 10;
-
-// stacks are segments along the spine axis
-static constexpr int _capsuleStacks = 1;
-
-// capsules have additional stacks along the spine for each capping hemisphere
-static constexpr int _capsuleCapStacks = 4;
+// Number of radial segments (about the spine axis)
+static constexpr size_t numRadial = 10;
+// Number of axial divisions for each hemispherical cap (along the spine axis)
+static constexpr size_t numCapAxial = 4;
 
 HdContainerDataSourceHandle
 _ComputeMeshDataSource()
 {
-    const int numCounts =
-        _capsuleSlices * (_capsuleStacks + 2 * _capsuleCapStacks);
-    const int numIndices =
-        4 * _capsuleSlices * _capsuleStacks             // cylinder quads
-        + 4 * 2 * _capsuleSlices * (_capsuleCapStacks-1)  // hemisphere quads
-        + 3 * 2 * _capsuleSlices;                         // end cap tris
-    
-    VtIntArray numVerts(numCounts);
-    VtIntArray verts(numIndices);
-
-    // populate face counts and face indices
-    int face = 0, index = 0, p = 0;
-
-    // base hemisphere end cap triangles
-    int base = p++;
-    for (int i=0; i<_capsuleSlices; ++i) {
-        numVerts[face++] = 3;
-        verts[index++] = p + (i+1)%_capsuleSlices;
-        verts[index++] = p + i;
-        verts[index++] = base;
-    }
-
-    // middle and hemisphere quads
-    for (int i=0; i<_capsuleStacks+2*(_capsuleCapStacks-1); ++i) {
-        for (int j=0; j<_capsuleSlices; ++j) {
-            float x0 = 0;
-            float x1 = x0 + _capsuleSlices;
-            float y0 = j;
-            float y1 = (j + 1) % _capsuleSlices;
-            numVerts[face++] = 4;
-            verts[index++] = p + x0 + y0;
-            verts[index++] = p + x0 + y1;
-            verts[index++] = p + x1 + y1;
-            verts[index++] = p + x1 + y0;
-        }
-        p += _capsuleSlices;
-    }
-    
-    // top hemisphere end cap triangles
-    int top = p + _capsuleSlices;
-    for (int i=0; i<_capsuleSlices; ++i) {
-        numVerts[face++] = 3;
-        verts[index++] = p + i;
-        verts[index++] = p + (i+1)%_capsuleSlices;
-        verts[index++] = top;
-    }
-    
-    TF_VERIFY(face == numCounts && index == numIndices);
+    static const PxOsdMeshTopology topology =
+        GeomUtilCapsuleMeshGenerator::GenerateTopology(numRadial, numCapAxial);
 
     return
         HdMeshSchema::Builder()
@@ -1049,17 +841,17 @@ _ComputeMeshDataSource()
                 HdMeshTopologySchema::Builder()
                     .SetFaceVertexCounts(
                         HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                            numVerts))
+                            topology.GetFaceVertexCounts()))
                     .SetFaceVertexIndices(
                         HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                            verts))
+                            topology.GetFaceVertexIndices()))
                     .SetOrientation(
                         HdRetainedTypedSampledDataSource<TfToken>::New(
                             HdMeshTopologySchemaTokens->rightHanded))
                     .Build())
             .SetSubdivisionScheme(
                 HdRetainedTypedSampledDataSource<TfToken>::New(
-                    PxOsdOpenSubdivTokens->catmullClark))
+                    topology.GetScheme()))
             .SetDoubleSided(
                 HdRetainedTypedSampledDataSource<bool>::New(false))
             .Build();
@@ -1076,79 +868,21 @@ public:
 
     VtVec3fArray GetTypedValue(const Time shutterOffset) override {
 
-        const float heightf = _GetHeight(shutterOffset);
-        const float radiusf = _GetRadius(shutterOffset);
-        const TfToken &axis = _GetAxis(shutterOffset);
+        const GfMatrix4d basis = _GetBasis(_GetAxis(shutterOffset));
+        const size_t numPoints = GeomUtilCapsuleMeshGenerator::ComputeNumPoints(
+            numRadial, numCapAxial);
 
-            // choose basis vectors aligned with the spine axis
-        GfVec3f u, v, spine;
-        if (axis == HdCapsuleSchemaTokens->X) {
-            u = GfVec3f::YAxis();
-            v = GfVec3f::ZAxis();
-            spine = GfVec3f::XAxis();
-        } else if (axis == HdCapsuleSchemaTokens->Y) {
-            u = GfVec3f::ZAxis();
-            v = GfVec3f::XAxis();
-            spine = GfVec3f::YAxis();
-        } else { // (axis == HdCapsuleSchemaTokens->Z)
-            u = GfVec3f::XAxis();
-            v = GfVec3f::YAxis();
-            spine = GfVec3f::ZAxis();
-        }
-        
-        // compute a ring of points with unit radius in the uv plane
-        std::vector<GfVec3f> ring(_capsuleSlices);
-        for (int i=0; i<_capsuleSlices; ++i) {
-            float a = float(2 * M_PI * i) / _capsuleSlices;
-            ring[i] = u * cosf(a) + v * sinf(a);
-        }
-        
-        const int numPoints =
-            _capsuleSlices * (_capsuleStacks + 1)       // cylinder
-            + 2 * _capsuleSlices * (_capsuleCapStacks-1)  // hemispheres
-            + 2;                                          // end points
-        
-        // populate points
-        VtVec3fArray pointsArray(numPoints);
-        GfVec3f * p = pointsArray.data();
-        
-        // base hemisphere
-        *p++ = spine * (-heightf/2-radiusf);
-        for (int i=0; i<_capsuleCapStacks-1; ++i) {
-            float a = float(M_PI / 2) * (1.0f - float(i+1) / _capsuleCapStacks);
-            float r = radiusf * cosf(a);
-            float w = radiusf * sinf(a);
-            
-            for (int j=0; j<_capsuleSlices; ++j) {
-                *p++ = r * ring[j] + spine * (-heightf/2-w);
-            }
-        }
-        
-        // middle
-        for (int i=0; i<=_capsuleStacks; ++i) {
-            float t = float(i) / _capsuleStacks;
-            float w = heightf * (t - 0.5f);
-            
-            for (int j=0; j<_capsuleSlices; ++j) {
-                *p++ = radiusf * ring[j] + spine * w;
-            }
-        }
-        
-        // top hemisphere
-        for (int i=0; i<_capsuleCapStacks-1; ++i) {
-            float a = float(M_PI / 2) * (float(i+1) / _capsuleCapStacks);
-            float r = radiusf * cosf(a);
-            float w = radiusf * sinf(a);
-            
-            for (int j=0; j<_capsuleSlices; ++j) {
-                *p++ = r *  ring[j] + spine * (heightf/2+w);
-            }
-        }
-        *p++ = spine * (heightf/2.0f+radiusf);
-        
-        TF_VERIFY(p - pointsArray.data() == numPoints);
-        
-        return pointsArray;
+        VtVec3fArray points(numPoints);
+        GeomUtilCapsuleMeshGenerator::GeneratePoints(
+            points.begin(),
+            numRadial,
+            numCapAxial,
+            _GetRadius(shutterOffset),
+            _GetHeight(shutterOffset),
+            &basis
+        );
+
+        return points;
     }
 
     bool GetContributingSampleTimesForInterval(
@@ -1504,6 +1238,10 @@ _ComputePrimDataSource(
 
 } // namespace _AxisToTransform
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+// Scene index implementation
 
 TfToken
 _GetMode(const HdContainerDataSourceHandle &inputArgs,

@@ -31,13 +31,11 @@ pxr_library(vt
     PUBLIC_HEADERS
         api.h
         traits.h
-        operators.h
+        typeHeaders.h
+        visitValue.h
     
     PYTHON_PUBLIC_HEADERS
         pyOperators.h
-
-    PRIVATE_HEADERS
-        typeHeaders.h
 
     PYTHON_CPPFILES
         moduleDeps.cpp

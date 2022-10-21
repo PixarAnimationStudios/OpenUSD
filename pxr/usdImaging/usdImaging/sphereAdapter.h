@@ -45,6 +45,11 @@ class UsdImagingSphereAdapter : public UsdImagingGprimAdapter
 public:
     using BaseAdapter = UsdImagingGprimAdapter;
 
+    // Number of radial segments about the Z axis.
+    static constexpr size_t numRadial = 10;
+    // Number of divisions along the Z axis.
+    static constexpr size_t numAxial  = 10;
+
     UsdImagingSphereAdapter()
         : UsdImagingGprimAdapter()
     {}
@@ -118,15 +123,6 @@ public:
     VtValue GetPoints(
         UsdPrim const& prim,
         UsdTimeCode time) const override;
-
-    // Used by the legacyEngine.
-    USDIMAGING_API
-    static VtValue GetMeshPoints(UsdPrim const& prim, 
-                                 UsdTimeCode time);
-
-    // Used by the legacyEngine.
-    USDIMAGING_API
-    static VtValue GetMeshTopology();
 };
 
 

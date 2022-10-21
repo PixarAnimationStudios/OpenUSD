@@ -204,6 +204,9 @@ public:
                    HdInterpolation widthInterp=HdInterpolationConstant,
                    bool authoredNormals=false,
                    SdfPath const &instancerId=SdfPath());
+    
+    HD_API
+    void SetCurveWrapMode(SdfPath const &id, TfToken const &wrap);
 
     HD_API
     void AddPoints(SdfPath const &id,
@@ -463,15 +466,17 @@ private:
                 VtIntArray const &curveVertexCounts,
                 VtIntArray const &curveIndices,
                 TfToken const &type,
-                TfToken const &basis) :
+                TfToken const &basis,
+                TfToken const &wrap = HdTokens->nonperiodic) :
             points(points), curveVertexCounts(curveVertexCounts), 
-            curveIndices(curveIndices), type(type), basis(basis) { }
+            curveIndices(curveIndices), type(type), basis(basis), wrap(wrap) { }
 
         VtVec3fArray points;
         VtIntArray curveVertexCounts;
         VtIntArray curveIndices;
         TfToken type;
         TfToken basis;
+        TfToken wrap;
     };
     struct _Points {
         _Points() { }

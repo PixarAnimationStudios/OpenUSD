@@ -576,7 +576,27 @@ Specifically:
                              (NodeTypes.UsdUVTexture,
                               sourcePrim.GetPath(),
                               str(scale), str(bias)))
-             
+
+class MaterialBindingAPIAppliedChecker(BaseRuleChecker):
+    @staticmethod
+    def GetDescription():
+        return "A prim providing a material binding, must have "\
+                "MaterialBindingAPI applied on the prim."
+
+    def __init__(self, verbose, consumerLevelChecks, assetLevelChecks):
+        super(MaterialBindingAPIAppliedChecker, self).__init__(verbose, 
+                                                          consumerLevelChecks,
+                                                          assetLevelChecks)
+
+    def CheckPrim(self, prim):
+        from pxr import UsdShade
+        numMaterialBindings = len([rel for rel in prim.GetRelationships() \
+                if rel.GetName().startswith(UsdShade.Tokens.materialBinding)])
+        if ( (numMaterialBindings > 0) and 
+            not prim.HasAPI(UsdShade.MaterialBindingAPI)):
+                self._AddFailedCheck("Found material bindings but no " \
+                    "MaterialBindingAPI applied on the prim <%s>." \
+                    % prim.GetPath())
 
 class ARKitPackageEncapsulationChecker(BaseRuleChecker):
     @staticmethod
@@ -854,7 +874,8 @@ class ComplianceChecker(object):
     def GetBaseRules():
         return [ByteAlignmentChecker, CompressionChecker, 
                 MissingReferenceChecker, StageMetadataChecker, TextureChecker, 
-                PrimEncapsulationChecker, NormalMapTextureChecker]
+                PrimEncapsulationChecker, NormalMapTextureChecker,
+                MaterialBindingAPIAppliedChecker]
 
     @staticmethod
     def GetARKitRules(skipARKitRootLayerCheck=False):

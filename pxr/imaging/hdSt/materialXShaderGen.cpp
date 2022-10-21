@@ -124,10 +124,11 @@ R"(#if NUM_LIGHTS > 0
 )";
 
 HdStMaterialXShaderGen::HdStMaterialXShaderGen(
-    MxHdInfo const& mxHdInfo)
+    HdSt_MxShaderGenInfo const& mxHdInfo)
     : GlslShaderGenerator(), 
       _mxHdTextureMap(mxHdInfo.textureMap),
       _mxHdPrimvarMap(mxHdInfo.primvarMap),
+      _mxHdPrimvarDefaultValueMap(mxHdInfo.primvarDefaultValueMap),
       _materialTag(mxHdInfo.materialTag),
       _bindlessTexturesEnabled(mxHdInfo.bindlessTexturesEnabled),
       _emittingSurfaceNode(false)
@@ -254,7 +255,8 @@ _IsHardcodedPublicUniform(const mx::TypeDesc& varType)
     // _AddMaterialXParams function, the rest are hardcoded 
     // in the shader
     if (varType.getBaseType() != mx::TypeDesc::BASETYPE_FLOAT &&
-        varType.getBaseType() != mx::TypeDesc::BASETYPE_INTEGER) {
+        varType.getBaseType() != mx::TypeDesc::BASETYPE_INTEGER &&
+        varType.getBaseType() != mx::TypeDesc::BASETYPE_BOOLEAN) {
         return true;
     }
     if (varType.getSize() < 1 || varType.getSize() > 4) {
@@ -330,7 +332,7 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
                 if (texturePair.first == "domeLightFallback") {
                     continue;
                 }
-                emitLine(TfStringPrintf("#define %s_file HdGetSampler_%s()",
+                emitLine(TfStringPrintf("#define %s HdGetSampler_%s()",
                                         texturePair.first.c_str(),
                                         texturePair.second.c_str()),
                         mxStage, false);
@@ -626,7 +628,7 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
             if (texturePair.first == "domeLightFallback") {
                 continue;
             }
-            emitLine(texturePair.first + "_file = "
+            emitLine(texturePair.first + " = "
                     "HdGetSampler_" + texturePair.second + "()", mxStage);
         }
         emitLineBreak(mxStage);
@@ -719,15 +721,26 @@ HdStMaterialXShaderGen::_EmitMxVertexDataLine(
         // the geomprop primvar
         // Note: variable name format: 'T_IN_GEOMPROP_geomPropName';
         const std::string geompropName = mxVariableName.substr(
-                                            mx::HW::T_IN_GEOMPROP.size());
+                                            mx::HW::T_IN_GEOMPROP.size()+1);
+        
+        // Get the Default Value for the gromprop
+        std::string defaultValueString = 
+            _syntax->getDefaultValue(variable->getType());
+        auto defaultValueIt = _mxHdPrimvarDefaultValueMap.find(geompropName);
+        if (defaultValueIt != _mxHdPrimvarDefaultValueMap.end()) {
+            if (!defaultValueIt->second.empty()) {
+                defaultValueString = _syntax->getTypeName(variable->getType()) 
+                    + "(" + defaultValueIt->second + ")";
+            }
+        }
         hdVariableDef = TfStringPrintf("\n"
-                "    #ifdef HD_HAS%s\n"
-                "        HdGet%s(),\n"
+                "    #ifdef HD_HAS_%s\n"
+                "        HdGet_%s(),\n"
                 "    #else\n"
-                "        %s(0.0),\n"
+                "        %s,\n"
                 "    #endif\n        ", 
                 geompropName.c_str(), geompropName.c_str(),
-                _syntax->getTypeName(variable->getType()).c_str());
+                defaultValueString.c_str());
     }
     else {
         const std::string valueStr = variable->getValue() 

@@ -42,6 +42,7 @@ def Xform "Mesh" (
 
 def Xform "Curve" (
     active = false
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     def BasisCurves "Prim"
@@ -67,6 +68,7 @@ def Xform "Curve" (
 
 def Xform "Points" (
     active = false
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     def Points "Prim" (
@@ -89,6 +91,7 @@ def Xform "Points" (
 
 def Xform "Cube" (
     active = false
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     def Cube "Prim"
@@ -101,6 +104,7 @@ def Xform "Cube" (
 
 def Xform "Cone" (
     active = false
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     def Cone "Prim"
@@ -113,6 +117,7 @@ def Xform "Cone" (
 
 def Xform "Sphere" (
     active = false
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     def Sphere "Prim"
@@ -125,6 +130,7 @@ def Xform "Sphere" (
 
 def Xform "Capsule" (
     active = false
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     def Capsule "Prim"
@@ -137,6 +143,7 @@ def Xform "Capsule" (
 
 def Xform "Meshes" (
     active = false
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     def Mesh "Mesh_1" (

@@ -309,6 +309,15 @@ UsdImagingGLDrawModeAdapter::MarkDirty(UsdPrim const& prim,
         index->MarkSprimDirty(cachePath, dirty);
     } else {
         index->MarkRprimDirty(cachePath, dirty);
+        // Note: certain bits mean we need to recompute the primvar set.
+        HdDirtyBits bitsMask = HdChangeTracker::DirtyTopology |
+            HdChangeTracker::DirtyPoints |
+            HdChangeTracker::DirtyPrimvar |
+            HdChangeTracker::DirtyExtent |
+            HdChangeTracker::DirtyWidths;
+        if (dirty & bitsMask) {
+            index->RequestUpdateForTime(cachePath);
+        }
     }
 }
 
@@ -344,6 +353,7 @@ UsdImagingGLDrawModeAdapter::MarkMaterialDirty(UsdPrim const& prim,
         // changed Hydra doesn't currently manage detection and propagation of
         // these changes, so we must mark the rprim dirty.
         index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyMaterialId);
+        index->RequestUpdateForTime(cachePath);
     }
 }
 

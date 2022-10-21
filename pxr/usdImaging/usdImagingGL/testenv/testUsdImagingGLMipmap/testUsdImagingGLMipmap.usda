@@ -35,6 +35,7 @@ def Material "Material"
 
 over "Plane" (
     instancable = true
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     float3[] extent = [(-2, -2, -2), (2, 2, 2)]

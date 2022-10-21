@@ -48,6 +48,29 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+
+// For code that knows at compile time whether we need to apply a transform.
+// Such code is told through a template parameter TransformType whether to
+// apply a transform (TransformType = GfMatrix4d) or not (TransformType =
+// _IdentityTransform).
+class _IdentityTransform
+{
+};
+
+// Overloads to transform GfBBox3d.
+void
+_Transform(GfBBox3d * const bbox, const _IdentityTransform &m)
+{
+}
+
+void
+_Transform(GfBBox3d * const bbox, const GfMatrix4d &m)
+{
+    bbox->Transform(m);
+}
+
+}
 
 // Thread-local Xform cache.
 // This should be replaced with (TBD) multi-threaded XformCache::Prepopulate
@@ -386,10 +409,12 @@ UsdGeomBBoxCache::ComputeUntransformedBound(const UsdPrim& prim)
     return _GetCombinedBBoxForIncludedPurposes(bboxes);
 }
 
+template<typename TransformType>
 GfBBox3d
-UsdGeomBBoxCache::ComputeUntransformedBound(
+UsdGeomBBoxCache::_ComputeBoundWithOverridesHelper(
     const UsdPrim &prim,
     const SdfPathSet &pathsToSkip,
+    const TransformType &primOverride,
     const TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash> &ctmOverrides)
 {
     GfBBox3d empty;
@@ -461,13 +486,14 @@ UsdGeomBBoxCache::ComputeUntransformedBound(
         GfBBox3d bbox;
         if (!foundAncestorWithOverride) {
             bbox = ComputeRelativeBound(p, prim);
+            _Transform(&bbox, primOverride);
         } else {
             // Compute bound relative to the path for which we know the
             // corrected prim-relative CTM.
             bbox = ComputeRelativeBound(p,
                 prim.GetStage()->GetPrimAtPath(overrideIter->first));
 
-            // The override CTM is already relative to the given prim.
+            // Apply the override CTM.
             const GfMatrix4d &overrideXform = overrideIter->second;
             bbox.Transform(overrideXform);
         }
@@ -479,6 +505,32 @@ UsdGeomBBoxCache::ComputeUntransformedBound(
     return result;
 }
 
+GfBBox3d
+UsdGeomBBoxCache::ComputeUntransformedBound(
+    const UsdPrim &prim,
+    const SdfPathSet &pathsToSkip,
+    const TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash> &ctmOverrides)
+{
+    return _ComputeBoundWithOverridesHelper(
+        prim,
+        pathsToSkip,
+        _IdentityTransform(),
+        ctmOverrides);
+}
+
+GfBBox3d
+UsdGeomBBoxCache::ComputeWorldBoundWithOverrides(
+    const UsdPrim &prim,
+    const SdfPathSet &pathsToSkip,
+    const GfMatrix4d &primOverride,
+    const TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash> &ctmOverrides)
+{
+    return _ComputeBoundWithOverridesHelper(
+        prim,
+        pathsToSkip,
+        primOverride,
+        ctmOverrides);
+}
 
 bool
 UsdGeomBBoxCache::_ComputePointInstanceBoundsHelper(

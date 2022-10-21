@@ -5,7 +5,10 @@
     upAxis = "Z"
 )
 
-def Sphere "sphere" {
+def Sphere "sphere" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
     double3 xformOp:translate = (0,0,0)
     uniform token[] xformOpOrder = ["xformOp:translate"]
     rel material:binding = </Looks/Material_0>

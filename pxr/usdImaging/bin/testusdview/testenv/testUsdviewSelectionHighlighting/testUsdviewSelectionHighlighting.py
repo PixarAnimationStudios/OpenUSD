@@ -30,6 +30,8 @@ from pxr.Usdviewq.qt import QtWidgets
 def _modifySettings(appController):
     appController._dataModel.viewSettings.showBBoxes = False
     appController._dataModel.viewSettings.showHUD = False
+    # processEvents needed so gui can dynamically resize due to viewer menu bar
+    QtWidgets.QApplication.processEvents()
 
 # Make a single selection.
 def _testSingleSelection(appController):

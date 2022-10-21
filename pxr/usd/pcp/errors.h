@@ -318,38 +318,6 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 // Forward declarations:
-class PcpErrorInternalAssetPath;
-typedef std::shared_ptr<PcpErrorInternalAssetPath>
-    PcpErrorInternalAssetPathPtr;
-
-/// \class PcpErrorInternalAssetPath
-///
-/// Error about an arc that is prohibited due to being internal to an asset.
-///
-class PcpErrorInternalAssetPath : public PcpErrorBase {
-public:
-    /// Returns a new error object.
-    static PcpErrorInternalAssetPathPtr New();
-    /// Destructor.
-    PCP_API ~PcpErrorInternalAssetPath();
-    /// Converts error to string message.
-    PCP_API virtual std::string ToString() const;
-    
-    /// The site where the invalid arc was expressed.
-    PcpSite site;
-    SdfPath targetPath;
-    std::string assetPath;
-    std::string resolvedAssetPath;
-    PcpArcType arcType;
-
-private:
-    /// Constructor is private. Use New() instead.
-    PcpErrorInternalAssetPath();
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-// Forward declarations:
 class PcpErrorInvalidPrimPath;
 typedef std::shared_ptr<PcpErrorInvalidPrimPath>
     PcpErrorInvalidPrimPathPtr;
@@ -369,7 +337,14 @@ public:
 
     /// The site where the invalid arc was expressed.
     PcpSite site;
+
+    /// The target prim path of the arc that is invalid.
     SdfPath primPath;
+
+    /// The source layer of the spec that caused this arc to be introduced.
+    /// This may be a sublayer of the site.
+    SdfLayerHandle sourceLayer;
+
     PcpArcType arcType;
 
 private:
@@ -391,11 +366,23 @@ public:
     
     /// The site where the invalid arc was expressed.
     PcpSite site;
+
+    /// The target prim path of the arc.
     SdfPath targetPath;
+
+    /// The target asset path of the arc as authored.
     std::string assetPath;
+
+    /// The resolved target asset path of the arc.
     std::string resolvedAssetPath;
+
+    /// The source layer of the spec that caused this arc to be introduced.
+    /// This may be a sublayer of the site.
+    SdfLayerHandle sourceLayer;
+
     PcpArcType arcType;
-    SdfLayerHandle layer;
+
+    /// Additional provided error information.
     std::string messages;
 
 protected:
@@ -606,7 +593,7 @@ typedef std::shared_ptr<PcpErrorInvalidReferenceOffset>
 
 /// \class PcpErrorInvalidReferenceOffset
 ///
-/// Sublayers that use invalid layer offsets.
+/// References or payloads that use invalid layer offsets.
 ///
 class PcpErrorInvalidReferenceOffset : public PcpErrorBase {
 public:
@@ -617,11 +604,22 @@ public:
     /// Converts error to string message.
     PCP_API virtual std::string ToString() const;
     
-    SdfLayerHandle layer;
+    /// The source layer of the spec that caused this arc to be introduced.
+    SdfLayerHandle sourceLayer;
+
+    /// The source path of the spec that caused this arc to be introduced.
     SdfPath sourcePath;
+
+    /// Target asset path of the arc.
     std::string assetPath;
+
+    /// Target prim path of the arc.
     SdfPath targetPath;
+
+    /// The invalid layer offset expressed on the arc.
     SdfLayerOffset offset;
+
+    PcpArcType arcType;
 
 private:
     /// Constructor is private. Use New() instead.
@@ -684,35 +682,6 @@ public:
 private:
     /// Constructor is private. Use New() instead.
     PcpErrorInvalidSublayerPath();
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-// Forward declarations:
-class PcpErrorInvalidVariantSelection;
-typedef std::shared_ptr<PcpErrorInvalidVariantSelection>
-    PcpErrorInvalidVariantSelectionPtr;
-
-/// \class PcpErrorInvalidVariantSelection
-///
-/// Invalid variant selections.
-///
-class PcpErrorInvalidVariantSelection : public PcpErrorBase {
-public:
-    /// Returns a new error object.
-    static PcpErrorInvalidVariantSelectionPtr New();
-    /// Destructor.
-    PCP_API ~PcpErrorInvalidVariantSelection();
-    /// Converts error to string message.
-    PCP_API virtual std::string ToString() const;
-    
-    std::string siteAssetPath;
-    SdfPath sitePath;
-    std::string vset, vsel;
-
-private:
-    /// Constructor is private. Use New() instead.
-    PcpErrorInvalidVariantSelection();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -876,7 +845,17 @@ public:
     
     /// The site where the invalid arc was expressed.
     PcpSiteStr site;
+
+    /// The source layer of the spec that caused this arc to be introduced.
+    /// This may be a sublayer of the site.
+    SdfLayerHandle sourceLayer;
+    
+    /// The target layer of the arc.
+    SdfLayerHandle targetLayer;
+
+    /// The prim path that cannot be resolved on the target layer stack.
     SdfPath unresolvedPath;
+
     PcpArcType arcType;
 
 private:

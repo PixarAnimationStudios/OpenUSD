@@ -113,12 +113,14 @@ public:
                          UsdImagingPrimAdapterSharedPtr adapter =
                             UsdImagingPrimAdapterSharedPtr());
 
-    // Mark a prim as needing follow-up work by the delegate
-    // (e.g. TrackVariability); this is automatically called on Insert*, but
-    // needs to manually be called in some special cases like native
-    // instancer population.
+    // Mark a prim as needing follow-up work by the delegate, either
+    // TrackVariability or UpdateForTime.  Both of these are automatically
+    // called on Insert*, but sometimes need to be manually triggered as well.
     USDIMAGING_API
-    void Refresh(SdfPath const& cachePath);
+    void RequestTrackVariability(SdfPath const& cachePath);
+
+    USDIMAGING_API
+    void RequestUpdateForTime(SdfPath const& cachePath);
 
     //
     // All removals are deferred to avoid surprises during change processing.

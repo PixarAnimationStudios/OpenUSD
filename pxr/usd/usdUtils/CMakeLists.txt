@@ -56,7 +56,9 @@ pxr_library(usdUtils
         __init__.py
         complianceChecker.py
         constantsGroup.py
+        fixBrokenPixarSchemas.py
         updateSchemaWithSdrNode.py
+        usdzUtils.py
 
     DOXYGEN_FILES
         overview.dox

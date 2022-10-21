@@ -59,6 +59,8 @@ public:
     typedef typename TypePolicy::value_type  value_type;
     typedef std::vector<value_type>          value_vector_type;
 
+    virtual ~Sdf_ListEditor() = default;
+
     SdfLayerHandle GetLayer() const
     {
         return _owner ? _owner->GetLayer() : SdfLayerHandle();
@@ -204,8 +206,6 @@ protected:
           _typePolicy(typePolicy)
     {
     }
-
-    virtual ~Sdf_ListEditor() = default;
 
     const SdfSpecHandle& _GetOwner() const
     {

@@ -110,15 +110,25 @@ Usd_GenerateClipManifest(
                 if (!path.IsPropertyPath()) {
                     return;
                 }
-                SdfAttributeSpecHandle clipAttr = 
-                    clipLayer->GetAttributeAtPath(path);
-                if (clipAttr 
-                    && !manifestLayer->HasSpec(path)
+                // This code can be pretty hot so we want to 1, avoid the
+                // LayerHandle dereference cost more than once and 2, avoid the
+                // SdfSpec API (e.g. layer->GetAttributeAtPath()) since it has
+                // to take the layer's identity registry lock to produce the
+                // spec handle.
+                SdfLayer *layerPtr = get_pointer(clipLayer);
+                TfToken typeName;
+                SdfVariability variability;
+                if (!manifestLayer->HasSpec(path)
+                    && layerPtr->GetSpecType(path) == SdfSpecTypeAttribute
+                    && layerPtr->HasField(
+                        path, SdfFieldKeys->TypeName, &typeName)
+                    && layerPtr->HasField(
+                        path, SdfFieldKeys->Variability, &variability)
                     && clipLayer->GetNumTimeSamplesForPath(path) != 0) {
                     SdfJustCreatePrimAttributeInLayer(
-                        manifestLayer, path, 
-                        clipAttr->GetTypeName(),
-                        clipAttr->GetVariability());
+                        manifestLayer, path,
+                        layerPtr->GetSchema().FindType(typeName),
+                        variability);
                 }
             });
     }

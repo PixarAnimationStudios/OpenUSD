@@ -379,6 +379,12 @@ a bounding sphere. If an implementation does not support a particular kind of
 approximation, it is recommended that it falls back to the most similar 
 supported option.
 
+Note that use of the subdivision attribute (\ref
+UsdGeomMesh::GetSubdivisionSchemeAttr()) can cause features such as corners and
+edges to be removed from the graphical representation. In order to ensure the
+physics representation accurately matches the graphical representation, this
+attribute should be accounted for when generating physics colliders.
+
 Collision meshes may be specified explicitly (for example one that was 
 processed by a particular decimator) by adding the custom collider mesh as a 
 sibling to the original graphics mesh, UsdGeomImageable _purpose_ to "guide" so 
@@ -426,12 +432,41 @@ occurs often. One might need the sword of a game character to pass through an
 enemy rather than to bounce off, while wanting it to bounce off walls, for 
 example.
 
-We define a CollisionGroup as an IsA schema with a UsdCollectionAPI applied, 
-that defines the membership of colliders (objects with a 
-UsdPhysicsCollisionAPI) in the group. Each group also has a multi-target 
-relationship to other groups (potentially including itself) with which it needs 
-to not collide. Colliders not in any CollisionGroup collide with all other 
-colliders in the scene.
+We define a CollisionGroup as an IsA schema with a UsdCollectionAPI applied,
+that defines the membership of colliders (objects with a UsdPhysicsCollisionAPI)
+in the group. Each group also has a multi-target relationship to other groups
+(potentially including itself) with which it needs to not collide. Colliders not
+in any CollisionGroup collide with all other colliders in the scene, except for
+those colliders which have disabled collision by default.
+
+For behavioral or performance reasons, it is sometimes useful to configure a
+collider whose collision is disabled by default. To support this, the
+CollisionGroup has an invertFilteredGroups option; when this value is set, an
+implementation should disable collisions against all other colliders except for
+those in the referenced filteredGroups. Note that the collisions which were not
+disabled may still be further restricted by additional collision groups or pair
+filters.
+
+When composing a stage from multiple USD scenes, it may be desirable to merge
+CollisionGroups, particularly if the stage composition is not known ahead of
+time. For example, a stage composed of multiple characters, each with a ragdoll
+as well as a character "controller" - the character controllers should not
+collide with the ragdoll instances. A CollisionGroup contains an optional
+mergeGroupName, and all groups with matching name should be considered to be
+part of a single group, whose members and filter groups should be the union of
+the merged groups. This allows the character file to define a group which
+disables the controller-versus-ragdoll collisions; by assigning a
+mergeGroupName to this group, the controller can be filtered against ragdoll
+bodies in all other instances of the character.
+
+Care should be taken when merging groups with differing invertFilteredGroups
+options; merging of groups should only ever cause collision pairs to become
+disabled - i.e. a filter cannot re-enable a pair that has been disabled by any
+other group.  Consider an inverted group which references only GroupX (i.e.
+disables collisions with everything except those in GroupX).  When merging this
+group with a non-inverting group referencing the same GroupX (i.e.  disables
+collisions against GroupX) - the merged group will collide with nothing, since
+the combined rules of the merged groups will filter out any other body.
 
 \subsubsection usdPhysics_pairwise_filtering Pairwise Filtering
 

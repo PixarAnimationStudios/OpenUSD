@@ -25,10 +25,10 @@
 
 #include "pxr/usdImaging/usdImaging/dataSourceImplicits-Impl.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
-#include "pxr/usdImaging/usdImaging/implicitSurfaceMeshUtils.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
+#include "pxr/imaging/geomUtil/capsuleMeshGenerator.h"
 #include "pxr/imaging/hd/capsuleSchema.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
@@ -169,14 +169,9 @@ VtValue
 UsdImagingCapsuleAdapter::GetPoints(UsdPrim const& prim,
                                     UsdTimeCode time) const
 {
-    return GetMeshPoints(prim, time);
-}
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
-/*static*/
-VtValue
-UsdImagingCapsuleAdapter::GetMeshPoints(UsdPrim const& prim, 
-                                        UsdTimeCode time)
-{
     UsdGeomCapsule capsule(prim);
     double height = 1.0;
     double radius = 0.5;
@@ -185,15 +180,27 @@ UsdImagingCapsuleAdapter::GetMeshPoints(UsdPrim const& prim,
     TF_VERIFY(capsule.GetRadiusAttr().Get(&radius, time));
     TF_VERIFY(capsule.GetAxisAttr().Get(&axis, time));
 
-    return VtValue(UsdImagingGenerateCapsuleMeshPoints(height, radius, axis));
-}
+    // The capsule point generator computes points such that the "rings" of the
+    // capsule lie on a plane parallel to the XY plane, with the Z-axis being
+    // the "spine" of the capsule. These need to be transformed to the right
+    // basis when a different spine axis is used.
+    const GfMatrix4d basis = UsdImagingGprimAdapter::GetImplicitBasis(axis);
 
-/*static*/
-VtValue
-UsdImagingCapsuleAdapter::GetMeshTopology()
-{
-    // Topology is constant and identical for all capsules.
-    return VtValue(HdMeshTopology(UsdImagingGetCapsuleMeshTopology()));
+    const size_t numPoints =
+        GeomUtilCapsuleMeshGenerator::ComputeNumPoints(numRadial, numCapAxial);
+
+    VtVec3fArray points(numPoints);
+        
+    GeomUtilCapsuleMeshGenerator::GeneratePoints(
+        points.begin(),
+        numRadial,
+        numCapAxial,
+        radius,
+        height,
+        &basis
+    );
+
+    return VtValue(points);
 }
 
 /*virtual*/ 
@@ -204,7 +211,13 @@ UsdImagingCapsuleAdapter::GetTopology(UsdPrim const& prim,
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    return GetMeshTopology();
+
+    // All capsules share the same topology.
+    static const HdMeshTopology topology =
+        HdMeshTopology(GeomUtilCapsuleMeshGenerator::GenerateTopology(
+                            numRadial, numCapAxial));
+
+    return VtValue(topology);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

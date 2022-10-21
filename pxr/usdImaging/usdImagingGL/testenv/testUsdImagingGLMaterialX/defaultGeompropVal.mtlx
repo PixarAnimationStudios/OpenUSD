@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<!--
+  Testing the default texture coordinate value
+  Note that these are purposefully setting the texture coordinate name 
+  incorrectly to 'uv' instead of 'st' so we can verify that the default
+  texture coordinate values are getting propagated to the shaderGen.
+-->
+<materialx version="1.38" >
+  <nodegraph name="NG_test0">
+    <geompropvalue name="stcoords" type="vector2">
+      <input name="geomprop" type="string" value="uv" />
+      <!-- This should default to the default vector2 value: (0,0) -->
+    </geompropvalue>
+    <tiledimage name="image_color" type="color3">
+      <input name="file" type="filename" value="testSquare.png" />
+      <input name="texcoord" type="vector2" nodename="stcoords" />
+    </tiledimage>
+    <output name="out_color" type="color3" nodename="image_color" />
+  </nodegraph>
+  <UsdPreviewSurface name="SR_test0" type="surfaceshader">
+    <input name="diffuseColor" type="color3" nodegraph="NG_test0" output="out_color" />
+  </UsdPreviewSurface>
+  <surfacematerial name="TestMaterial0" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_test0" />
+  </surfacematerial>
+
+  <nodegraph name="NG_test1">
+    <geompropvalue name="stcoords" type="vector2">
+      <input name="geomprop" type="string" value="uv" />
+      <input name="default" type="vector2" value="0.25,0.25" />
+    </geompropvalue>
+    <tiledimage name="image_color" type="color3">
+      <input name="file" type="filename" value="testSquare.png" />
+      <input name="texcoord" type="vector2" nodename="stcoords" />
+    </tiledimage>
+    <output name="out_color" type="color3" nodename="image_color" />
+  </nodegraph>
+  <UsdPreviewSurface name="SR_test1" type="surfaceshader">
+    <input name="diffuseColor" type="color3" nodegraph="NG_test1" output="out_color" />
+  </UsdPreviewSurface>
+  <surfacematerial name="TestMaterial1" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_test1" />
+  </surfacematerial>
+
+  <nodegraph name="NG_test2">
+    <geompropvalue name="stcoords" type="vector2">
+      <input name="geomprop" type="string" value="uv" />
+      <input name="default" type="vector2" value="0.75,0.75" />
+    </geompropvalue>
+    <tiledimage name="image_color" type="color3">
+      <input name="file" type="filename" value="testSquare.png" />
+      <input name="texcoord" type="vector2" nodename="stcoords" />
+    </tiledimage>
+    <output name="out_color" type="color3" nodename="image_color" />
+  </nodegraph>
+  <UsdPreviewSurface name="SR_test2" type="surfaceshader">
+    <input name="diffuseColor" type="color3" nodegraph="NG_test2" output="out_color" />
+  </UsdPreviewSurface>
+  <surfacematerial name="TestMaterial2" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_test2" />
+  </surfacematerial>
+
+</materialx>

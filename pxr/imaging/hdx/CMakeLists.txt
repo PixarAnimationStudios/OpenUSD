@@ -38,6 +38,7 @@ pxr_library(hdx
 
     PUBLIC_CLASSES
         aovInputTask
+        boundingBoxTask
         colorizeSelectionTask
         colorChannelTask
         colorCorrectionTask
@@ -80,6 +81,7 @@ pxr_library(hdx
 
     RESOURCE_FILES
         plugInfo.json
+        shaders/boundingBox.glslfx
         shaders/colorChannel.glslfx
         shaders/colorCorrection.glslfx
         shaders/fullscreen.glslfx

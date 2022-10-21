@@ -234,6 +234,11 @@
            </column>
            <column>
             <property name="text">
+             <string>Guides</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
              <string>Draw Mode</string>
             </property>
            </column>
@@ -352,13 +357,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QFrame" name="glFrame">
-        <property name="minimumSize">
-         <size>
-          <width>200</width>
-          <height>0</height>
-         </size>
-        </property>
+       <widget class="QFrame" name="renderFrame">
         <property name="layoutDirection">
          <enum>Qt::LeftToRight</enum>
         </property>
@@ -371,6 +370,264 @@
         <property name="lineWidth">
          <number>0</number>
         </property>
+        <layout class="QVBoxLayout" name="verticalLayout_5">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QMenuBar" name="renderMenuBar">
+           <property name="layoutDirection">
+            <enum>Qt::LeftToRight</enum>
+           </property>
+           <property name="nativeMenuBar">
+            <bool>false</bool>
+           </property>
+           <widget class="QMenu" name="menuRender">
+            <property name="title">
+             <string>Renderer</string>
+            </property>
+            <widget class="QMenu" name="menuRendererSettings">
+             <property name="title">
+              <string>Hydra Settings</string>
+             </property>
+            </widget>
+            <widget class="QMenu" name="menuRendererAovs">
+             <property name="title">
+              <string>Hydra AOVs</string>
+             </property>
+            </widget>
+            <widget class="QMenu" name="menuRendererCommands">
+             <property name="title">
+              <string>Hydra Commands</string>
+             </property>
+            </widget>
+            <addaction name="separator"/>
+            <addaction name="menuRendererSettings"/>
+            <addaction name="menuRendererAovs"/>
+            <addaction name="menuRendererCommands"/>
+            <addaction name="separator"/>
+            <addaction name="actionPause"/>
+            <addaction name="actionStop"/>
+           </widget>
+           <widget class="QMenu" name="menuViewer">
+            <property name="title">
+             <string>Display</string>
+            </property>
+            <widget class="QMenu" name="menuShading_Mode">
+             <property name="title">
+              <string>Shading Mode</string>
+             </property>
+             <addaction name="actionWireframe"/>
+             <addaction name="actionWireframeOnSurface"/>
+             <addaction name="actionSmooth_Shaded"/>
+             <addaction name="actionFlat_Shaded"/>
+             <addaction name="actionPoints"/>
+             <addaction name="actionGeom_Only"/>
+             <addaction name="actionGeom_Smooth"/>
+             <addaction name="actionGeom_Flat"/>
+             <addaction name="actionHidden_Surface_Wireframe"/>
+            </widget>
+            <widget class="QMenu" name="menuColorCorrection">
+             <property name="title">
+              <string>Color Management</string>
+             </property>
+             <addaction name="actionNoColorCorrection"/>
+             <addaction name="actionSRGBColorCorrection"/>
+             <addaction name="actionOpenColorIO"/>
+            </widget>
+            <widget class="QMenu" name="menuComplexity">
+             <property name="title">
+              <string>Complexity</string>
+             </property>
+             <addaction name="actionLow"/>
+             <addaction name="actionMedium"/>
+             <addaction name="actionHigh"/>
+             <addaction name="actionVery_High"/>
+            </widget>
+            <widget class="QMenu" name="menuBBox">
+             <property name="title">
+              <string>Bounding Box</string>
+             </property>
+             <addaction name="showBBoxes"/>
+             <addaction name="separator"/>
+             <addaction name="showAABBox"/>
+             <addaction name="showOBBox"/>
+             <addaction name="showBBoxPlayback"/>
+             <addaction name="separator"/>
+             <addaction name="useExtentsHint"/>
+            </widget>
+            <widget class="QMenu" name="menuDisplay">
+             <property name="title">
+              <string>Display Purposes</string>
+             </property>
+             <addaction name="actionDisplay_Guide"/>
+             <addaction name="actionDisplay_Proxy"/>
+             <addaction name="actionDisplay_Render"/>
+            </widget>
+            <widget class="QMenu" name="menuHUD">
+             <property name="title">
+              <string>Heads-Up Display</string>
+             </property>
+             <addaction name="actionHUD"/>
+             <addaction name="separator"/>
+             <addaction name="actionHUD_Info"/>
+             <addaction name="actionHUD_Complexity"/>
+             <addaction name="actionHUD_Performance"/>
+             <addaction name="actionHUD_GPUstats"/>
+            </widget>
+            <widget class="QMenu" name="menuSelection_Highlighting">
+             <property name="title">
+              <string>Selection Highlighting</string>
+             </property>
+             <widget class="QMenu" name="menuHighlightColor">
+              <property name="title">
+               <string>Highlight Color</string>
+              </property>
+              <addaction name="actionSelYellow"/>
+              <addaction name="actionSelWhite"/>
+              <addaction name="actionSelCyan"/>
+             </widget>
+             <addaction name="actionNever"/>
+             <addaction name="actionOnly_when_paused"/>
+             <addaction name="actionAlways"/>
+             <addaction name="menuHighlightColor"/>
+            </widget>
+            <widget class="QMenu" name="menuBackground_Color">
+             <property name="title">
+              <string>Background Color</string>
+             </property>
+             <addaction name="actionBlack"/>
+             <addaction name="actionGrey_Dark"/>
+             <addaction name="actionGrey_Light"/>
+             <addaction name="actionWhite"/>
+            </widget>
+            <addaction name="menuShading_Mode"/>
+            <addaction name="menuComplexity"/>
+            <addaction name="menuBBox"/>
+            <addaction name="menuDisplay"/>
+            <addaction name="separator"/>
+            <addaction name="menuHUD"/>
+            <addaction name="menuSelection_Highlighting"/>
+            <addaction name="actionRollover_Prim_Info"/>
+            <addaction name="separator"/>
+            <addaction name="actionEnable_Scene_Materials"/>
+            <addaction name="actionAdjust_Default_Material"/>
+            <addaction name="separator"/>
+            <addaction name="menuColorCorrection"/>
+            <addaction name="separator"/>
+            <addaction name="menuBackground_Color"/>
+            <addaction name="actionCull_Backfaces"/>
+           </widget>
+           <widget class="QMenu" name="menuCamera">
+            <property name="title">
+             <string>Camera</string>
+            </property>
+            <widget class="QMenu" name="menuCameraSelect">
+             <property name="tearOffEnabled">
+              <bool>true</bool>
+             </property>
+             <property name="title">
+              <string>Select Camera</string>
+             </property>
+             <addaction name="actionFreeCam"/>
+            </widget>
+            <widget class="QMenu" name="menuCameraGuides">
+             <property name="tearOffEnabled">
+              <bool>true</bool>
+             </property>
+             <property name="title">
+              <string>Camera Guides</string>
+             </property>
+             <addaction name="actionCameraMask_Outline"/>
+             <addaction name="actionDisplay_Camera_Oracles"/>
+            </widget>
+            <widget class="QMenu" name="menuCamera_Masking">
+             <property name="title">
+              <string>Camera Masking</string>
+             </property>
+             <addaction name="actionCameraMask_Full"/>
+             <addaction name="actionCameraMask_Partial"/>
+             <addaction name="actionCameraMask_None"/>
+             <addaction name="separator"/>
+             <addaction name="actionCameraMask_Color"/>
+            </widget>
+            <widget class="QMenu" name="menuCamera_Reticles">
+             <property name="title">
+              <string>Camera Reticles</string>
+             </property>
+             <addaction name="actionCameraReticles_Inside"/>
+             <addaction name="actionCameraReticles_Outside"/>
+             <addaction name="separator"/>
+             <addaction name="actionCameraReticles_Color"/>
+            </widget>
+            <addaction name="menuCameraGuides"/>
+            <addaction name="menuCamera_Masking"/>
+            <addaction name="menuCamera_Reticles"/>
+            <addaction name="menuCameraSelect"/>
+            <addaction name="separator"/>
+            <addaction name="actionFrame_Selected"/>
+            <addaction name="actionToggle_Framed_View"/>
+            <addaction name="actionReset_View"/>
+            <addaction name="separator"/>
+            <addaction name="actionCopy_Viewer_Image"/>
+            <addaction name="actionSave_Viewer_Image"/>
+            <addaction name="separator"/>
+            <addaction name="actionAuto_Compute_Clipping_Planes"/>
+            <addaction name="actionAdjust_Free_Camera"/>
+           </widget>
+           <widget class="QMenu" name="menuPick">
+            <property name="title">
+             <string>Select</string>
+            </property>
+            <addaction name="actionPick_Prims"/>
+            <addaction name="actionPick_Models"/>
+            <addaction name="actionPick_Instances"/>
+            <addaction name="actionPick_Prototypes"/>
+           </widget>
+           <widget class="QMenu" name="menuLights">
+            <property name="title">
+             <string>Lights</string>
+            </property>
+            <addaction name="actionEnable_Scene_Lights"/>
+            <addaction name="actionAmbient_Only"/>
+            <addaction name="actionDomeLight"/>
+           </widget>
+           <addaction name="menuRender"/>
+           <addaction name="menuViewer"/>
+           <addaction name="menuPick"/>
+           <addaction name="menuCamera"/>
+           <addaction name="menuLights"/>
+          </widget>
+         </item>
+         <item>
+          <widget class="QFrame" name="glFrame">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Plain</enum>
+           </property>
+           <property name="lineWidth">
+            <number>0</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </widget>
       <widget class="QSplitter" name="attribBrowserInspectorSplitter">
@@ -807,7 +1064,7 @@
                       <enum>Qt::SolidLine</enum>
                      </property>
                      <property name="columnCount">
-                      <number>3</number>
+                      <number>4</number>
                      </property>
                      <attribute name="horizontalHeaderCascadingSectionResizes">
                       <bool>true</bool>
@@ -839,6 +1096,11 @@
                      <column>
                       <property name="text">
                        <string>Layer</string>
+                      </property>
+                     </column>
+                     <column>
+                      <property name="text">
+                       <string>Offset , Scale</string>
                       </property>
                      </column>
                      <column>
@@ -1388,7 +1650,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>25</height>
+     <height>20</height>
     </rect>
    </property>
    <property name="minimumSize">
@@ -1401,6 +1663,16 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <widget class="QMenu" name="menuSave_State_As">
+     <property name="title">
+      <string>Save State As</string>
+     </property>
+    </widget>
+    <widget class="QMenu" name="menuLoad_New_State">
+     <property name="title">
+      <string>Reopen With State</string>
+     </property>
+    </widget>
     <addaction name="actionOpen"/>
     <addaction name="actionReopen_Stage"/>
     <addaction name="actionReload_All_Layers"/>
@@ -1408,6 +1680,10 @@
     <addaction name="actionSave_Overrides_As"/>
     <addaction name="actionSave_Flattened_As"/>
     <addaction name="separator"/>
+    <addaction name="menuLoad_New_State"/>
+    <addaction name="actionSave_State_To"/>
+    <addaction name="menuSave_State_As"/>
+    <addaction name="actionSave_State_As_New_Config"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
@@ -1433,220 +1709,6 @@
     <addaction name="actionRemove_Session_Visibility"/>
     <addaction name="actionReset_All_Session_Visibility"/>
    </widget>
-   <widget class="QMenu" name="menuView">
-    <property name="title">
-     <string>&amp;View</string>
-    </property>
-    <property name="toolTipsVisible">
-     <bool>true</bool>
-    </property>
-    <widget class="QMenu" name="menuHUD">
-     <property name="title">
-      <string>Heads-Up Display</string>
-     </property>
-     <addaction name="actionHUD"/>
-     <addaction name="separator"/>
-     <addaction name="actionHUD_Info"/>
-     <addaction name="actionHUD_Complexity"/>
-     <addaction name="actionHUD_Performance"/>
-     <addaction name="actionHUD_GPUstats"/>
-    </widget>
-    <widget class="QMenu" name="menuPickMode">
-     <property name="title">
-      <string>Pick mode</string>
-     </property>
-     <addaction name="actionPick_Prims"/>
-     <addaction name="actionPick_Models"/>
-     <addaction name="actionPick_Instances"/>
-     <addaction name="actionPick_Prototypes"/>
-    </widget>
-    <widget class="QMenu" name="menuSelection_Highlighting">
-     <property name="title">
-      <string>Selection Highlighting</string>
-     </property>
-     <widget class="QMenu" name="menuHighlightColor">
-      <property name="title">
-       <string>Highlight Color</string>
-      </property>
-      <addaction name="actionSelYellow"/>
-      <addaction name="actionSelWhite"/>
-      <addaction name="actionSelCyan"/>
-     </widget>
-     <addaction name="actionNever"/>
-     <addaction name="actionOnly_when_paused"/>
-     <addaction name="actionAlways"/>
-     <addaction name="menuHighlightColor"/>
-    </widget>
-    <widget class="QMenu" name="menuLights">
-     <property name="enabled">
-      <bool>true</bool>
-     </property>
-     <property name="title">
-      <string>Lights</string>
-     </property>
-     <addaction name="actionAmbient_Only"/>
-     <addaction name="actionDomeLight"/>
-    </widget>
-    <widget class="QMenu" name="menuShading_Mode">
-     <property name="title">
-      <string>Shading Mode</string>
-     </property>
-     <addaction name="actionWireframe"/>
-     <addaction name="actionWireframeOnSurface"/>
-     <addaction name="actionSmooth_Shaded"/>
-     <addaction name="actionFlat_Shaded"/>
-     <addaction name="actionPoints"/>
-     <addaction name="actionGeom_Only"/>
-     <addaction name="actionGeom_Smooth"/>
-     <addaction name="actionGeom_Flat"/>
-     <addaction name="actionHidden_Surface_Wireframe"/>
-    </widget>
-    <widget class="QMenu" name="menuColorCorrection">
-     <property name="title">
-      <string>Color Management</string>
-     </property>
-     <addaction name="actionNoColorCorrection"/>
-     <addaction name="actionSRGBColorCorrection"/>
-     <addaction name="actionOpenColorIO"/>
-    </widget>
-    <widget class="QMenu" name="menuBackground_Color">
-     <property name="title">
-      <string>Background Color</string>
-     </property>
-     <addaction name="actionBlack"/>
-     <addaction name="actionGrey_Dark"/>
-     <addaction name="actionGrey_Light"/>
-     <addaction name="actionWhite"/>
-    </widget>
-    <widget class="QMenu" name="menuCamera">
-     <property name="tearOffEnabled">
-      <bool>true</bool>
-     </property>
-     <property name="title">
-      <string>Camera</string>
-     </property>
-     <addaction name="actionFreeCam"/>
-    </widget>
-    <widget class="QMenu" name="menuCameraGuides">
-     <property name="tearOffEnabled">
-      <bool>true</bool>
-     </property>
-     <property name="title">
-      <string>Camera Guides</string>
-     </property>
-     <widget class="QMenu" name="menuCamera_Masking">
-      <property name="title">
-       <string>Camera Masking</string>
-      </property>
-      <addaction name="actionCameraMask_Full"/>
-      <addaction name="actionCameraMask_Partial"/>
-      <addaction name="actionCameraMask_None"/>
-      <addaction name="separator"/>
-      <addaction name="actionCameraMask_Color"/>
-     </widget>
-     <widget class="QMenu" name="menuCamera_Reticles">
-      <property name="title">
-       <string>Camera Reticles</string>
-      </property>
-      <addaction name="actionCameraReticles_Inside"/>
-      <addaction name="actionCameraReticles_Outside"/>
-      <addaction name="separator"/>
-      <addaction name="actionCameraReticles_Color"/>
-     </widget>
-     <addaction name="actionCameraMask_Outline"/>
-     <addaction name="actionDisplay_Camera_Oracles"/>
-     <addaction name="menuCamera_Masking"/>
-     <addaction name="menuCamera_Reticles"/>
-    </widget>
-    <widget class="QMenu" name="menuDisplay">
-     <property name="title">
-      <string>Display Purposes</string>
-     </property>
-     <addaction name="actionDisplay_Guide"/>
-     <addaction name="actionDisplay_Proxy"/>
-     <addaction name="actionDisplay_Render"/>
-    </widget>
-    <widget class="QMenu" name="menuBBox">
-     <property name="title">
-      <string>Bounding Box</string>
-     </property>
-     <addaction name="showBBoxes"/>
-     <addaction name="separator"/>
-     <addaction name="showAABBox"/>
-     <addaction name="showOBBox"/>
-     <addaction name="showBBoxPlayback"/>
-     <addaction name="separator"/>
-     <addaction name="useExtentsHint"/>
-    </widget>
-    <widget class="QMenu" name="menuRendererPlugin">
-     <property name="title">
-      <string>Hydra Renderer</string>
-     </property>
-    </widget>
-    <widget class="QMenu" name="menuRendererSettings">
-     <property name="title">
-      <string>Hydra Settings</string>
-     </property>
-    </widget>
-    <widget class="QMenu" name="menuRendererAovs">
-     <property name="title">
-      <string>Hydra AOVs</string>
-     </property>
-    </widget>
-    <widget class="QMenu" name="menuRendererCommands">
-     <property name="title">
-      <string>Hydra Commands</string>
-     </property>
-    </widget>
-    <widget class="QMenu" name="menuComplexity">
-     <property name="title">
-      <string>Complexity</string>
-     </property>
-     <addaction name="actionLow"/>
-     <addaction name="actionMedium"/>
-     <addaction name="actionHigh"/>
-     <addaction name="actionVery_High"/>
-    </widget>
-    <addaction name="actionToggle_Viewer_Mode"/>
-    <addaction name="separator"/>
-    <addaction name="menuRendererPlugin"/>
-    <addaction name="menuRendererSettings"/>
-    <addaction name="menuRendererAovs"/>
-    <addaction name="menuRendererCommands"/>
-    <addaction name="actionPause"/>
-    <addaction name="actionStop"/>
-    <addaction name="separator"/>
-    <addaction name="actionReset_View"/>
-    <addaction name="actionAuto_Compute_Clipping_Planes"/>
-    <addaction name="actionAdjust_Free_Camera"/>
-    <addaction name="actionAdjust_Default_Material"/>
-    <addaction name="menuComplexity"/>
-    <addaction name="menuBBox"/>
-    <addaction name="separator"/>
-    <addaction name="actionToggle_Framed_View"/>
-    <addaction name="separator"/>
-    <addaction name="actionFrame_Forward"/>
-    <addaction name="actionFrame_Backwards"/>
-    <addaction name="separator"/>
-    <addaction name="menuShading_Mode"/>
-    <addaction name="menuColorCorrection"/>
-    <addaction name="menuLights"/>
-    <addaction name="menuBackground_Color"/>
-    <addaction name="menuCamera"/>
-    <addaction name="menuCameraGuides"/>
-    <addaction name="menuDisplay"/>
-    <addaction name="separator"/>
-    <addaction name="menuHUD"/>
-    <addaction name="separator"/>
-    <addaction name="menuPickMode"/>
-    <addaction name="menuSelection_Highlighting"/>
-    <addaction name="actionRollover_Prim_Info"/>
-    <addaction name="separator"/>
-    <addaction name="actionEnable_Scene_Materials"/>
-    <addaction name="actionEnable_Scene_Lights"/>
-    <addaction name="actionDisplay_PrimId"/>
-    <addaction name="actionCull_Backfaces"/>
-   </widget>
    <widget class="QMenu" name="menuWindow">
     <property name="minimumSize">
      <size>
@@ -1657,13 +1719,14 @@
     <property name="title">
      <string>Window</string>
     </property>
+    <addaction name="actionToggle_Viewer_Mode"/>
+    <addaction name="separator"/>
     <addaction name="showInterpreter"/>
     <addaction name="actionPreferences"/>
     <addaction name="showDebugFlags"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
-   <addaction name="menuView"/>
    <addaction name="menuWindow"/>
   </widget>
   <widget class="QStatusBar" name="statusbar">
@@ -1758,16 +1821,6 @@
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
-   </property>
-  </action>
-  <action name="actionFrame_Forward">
-   <property name="text">
-    <string>Frame Forward</string>
-   </property>
-  </action>
-  <action name="actionFrame_Backwards">
-   <property name="text">
-    <string>Frame Backward</string>
    </property>
   </action>
   <action name="actionReopen_Stage">
@@ -1865,7 +1918,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Camera Light</string>
+    <string>Enable Default Camera Light</string>
    </property>
   </action>
   <action name="actionDomeLight">
@@ -1876,7 +1929,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Dome Light</string>
+    <string>Enable Default Dome Light</string>
    </property>
   </action>
   <action name="actionLevel_6">
@@ -2201,6 +2254,34 @@
     <string>Save a flattened version of the current stage</string>
    </property>
   </action>
+  <action name="actionSave_Viewer_Image">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Save Viewer Image...</string>
+   </property>
+   <property name="iconText">
+    <string>Save Viewer Image...</string>
+   </property>
+   <property name="toolTip">
+    <string>Saves the viewer render of the current frame</string>
+   </property>
+  </action>
+  <action name="actionCopy_Viewer_Image">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Copy Viewer Image</string>
+   </property>
+   <property name="iconText">
+    <string>Copy Viewer Image</string>
+   </property>
+   <property name="toolTip">
+    <string>Copies the viewer render of the current frame to the clipboard</string>
+   </property>
+  </action>
   <action name="showInterpreter">
    <property name="checkable">
     <bool>false</bool>
@@ -2434,7 +2515,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Adjust Free Camera...</string>
+    <string>Free Camera Settings...</string>
    </property>
   </action>
   <action name="actionIncrementComplexity2">
@@ -2584,7 +2665,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Prims</string>
+    <string>Select Prims</string>
    </property>
   </action>
   <action name="actionPick_Models">
@@ -2592,7 +2673,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Models</string>
+    <string>Select Models</string>
    </property>
   </action>
   <action name="actionPick_Instances">
@@ -2600,7 +2681,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Instances</string>
+    <string>Select Instances</string>
    </property>
   </action>
   <action name="actionPick_Prototypes">
@@ -2608,12 +2689,12 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Prototypes</string>
+    <string>Select Prototypes</string>
    </property>
   </action>
   <action name="actionToggle_Viewer_Mode">
    <property name="text">
-    <string>Toggle Viewer Mode</string>
+    <string>Toggle Viewer-Only Mode</string>
    </property>
    <property name="shortcut">
     <string>F11</string>
@@ -2729,7 +2810,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Rollover Prim Info</string>
+    <string>Show Rollover Prim Info</string>
    </property>
    <property name="shortcut">
     <string>Shift+I</string>
@@ -2786,7 +2867,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Adjust Default Material...</string>
+    <string>Default Material Settings...</string>
    </property>
   </action>
   <action name="actionCameraReticles_Inside">
@@ -2869,6 +2950,34 @@
    </property>
    <property name="text">
     <string>Preferences</string>
+   </property>
+  </action>
+  <action name="actionSave_State_To">
+   <property name="text">
+    <string>Save State To </string>
+   </property>
+  </action>
+  <action name="actiond">
+   <property name="text">
+    <string>d </string>
+   </property>
+  </action>
+  <action name="actiond_2">
+   <property name="text">
+    <string>d</string>
+   </property>
+  </action>
+  <action name="actionSave_State_As_New_Config">
+   <property name="text">
+    <string>Save State As New Config...</string>
+   </property>
+  </action>
+  <action name="actionFrame_Selected">
+   <property name="text">
+    <string>Frame Selected</string>
+   </property>
+   <property name="shortcut">
+    <string>F</string>
    </property>
   </action>
   <actiongroup name="actionGroupCameraMask">

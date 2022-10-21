@@ -132,5 +132,9 @@ void wrapBBox3d()
         ;
     to_python_converter<std::vector<This>,
         TfPySequenceToPython<std::vector<This> > >();
-    
+
+    // Allow conversion of lists of GfBBox3d to std::vector<GfBBox3d>
+    TfPyContainerConversions::from_python_sequence<
+        std::vector<This>,
+        TfPyContainerConversions::variable_capacity_policy >();
 }

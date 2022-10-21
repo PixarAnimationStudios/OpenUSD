@@ -117,7 +117,11 @@ class AppEventFilter(QtCore.QObject):
         
         currFocusWidget = QtWidgets.QApplication.focusWidget()
 
-        if event.type() == QtCore.QEvent.KeyPress:
+        # Check for ShortcutOverride events to ensure we pick up keys that
+        # have been set as shortcuts for QActions. We still want to dispatch
+        # those to the focus widget as needed.
+        if (event.type() == QtCore.QEvent.KeyPress or
+            event.type() == QtCore.QEvent.ShortcutOverride):
             key = event.key()
 
             isNavKey = self.IsNavKey(key, event.modifiers())

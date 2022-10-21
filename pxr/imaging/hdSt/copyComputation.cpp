@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/diagnostic.h"
-
 #include "pxr/imaging/hdSt/copyComputation.h"
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/bufferResource.h"
@@ -118,8 +116,6 @@ HdStCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
         HgiBlitCmds* blitCmds = hdStResourceRegistry->GetGlobalBlitCmds();
         blitCmds->CopyBufferGpuToGpu(blitOp);
     }
-
-    GLF_POST_PENDING_GL_ERRORS();
 }
 
 int

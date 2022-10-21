@@ -147,7 +147,7 @@ HgiVulkanCommandBuffer::EndCommandBuffer()
 }
 
 bool
-HgiVulkanCommandBuffer::ResetIfConsumedByGPU()
+HgiVulkanCommandBuffer::ResetIfConsumedByGPU(HgiSubmitWaitType wait)
 {
     // Command buffer is already available (previously reset).
     // We do not have to test the fence or reset the cmd buffer.
@@ -166,7 +166,13 @@ HgiVulkanCommandBuffer::ResetIfConsumedByGPU()
     // Check the fence to see if the GPU has consumed the command buffer.
     // We cannnot reuse a command buffer until the GPU is finished with it.
     if (vkGetFenceStatus(vkDevice, _vkFence) == VK_NOT_READY){
-        return false;
+        if (wait == HgiSubmitWaitTypeWaitUntilCompleted) {
+            static const uint64_t timeOut = 100000000000;
+            TF_VERIFY(vkWaitForFences(
+                vkDevice, 1, &_vkFence, VK_TRUE, timeOut) == VK_SUCCESS);
+        } else {
+            return false;
+        }
     }
 
     // GPU is done with command buffer, execute the custom fns the client wants

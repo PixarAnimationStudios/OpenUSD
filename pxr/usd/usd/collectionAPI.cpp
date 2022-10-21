@@ -72,6 +72,20 @@ UsdCollectionAPI::Get(const UsdPrim &prim, const TfToken &name)
     return UsdCollectionAPI(prim, name);
 }
 
+/* static */
+std::vector<UsdCollectionAPI>
+UsdCollectionAPI::GetAll(const UsdPrim &prim)
+{
+    std::vector<UsdCollectionAPI> schemas;
+    
+    for (const auto &schemaName :
+         UsdAPISchemaBase::_GetMultipleApplyInstanceNames(prim, _GetStaticTfType())) {
+        schemas.emplace_back(prim, schemaName);
+    }
+
+    return schemas;
+}
+
 
 /* static */
 bool 

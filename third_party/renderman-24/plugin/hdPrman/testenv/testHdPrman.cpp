@@ -25,6 +25,7 @@
 
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/engine.h"
+#include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/renderPass.h"
@@ -41,7 +42,9 @@
 #include "pxr/usd/usdRender/spec.h"
 #include "pxr/usd/usdRender/var.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/trace/reporter.h"
@@ -62,6 +65,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Collection Names
     (testCollection)
 );
+
+TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_ENABLE_SCENE_INDEX, false,
+                      "Use Scene Index API for testHdPrman.");
 
 static TfStopwatch timer_prmanRender;
 
@@ -193,6 +199,32 @@ public:
     }
 };
 
+CameraUtilConformWindowPolicy
+_RenderSettingsTokenToConformWindowPolicy(const TfToken &usdToken)
+{
+    if (usdToken == UsdRenderTokens->adjustApertureWidth) {
+        return CameraUtilMatchVertically;
+    }
+    if (usdToken == UsdRenderTokens->adjustApertureHeight) {
+        return CameraUtilMatchHorizontally;
+    }
+    if (usdToken == UsdRenderTokens->expandAperture) {
+        return CameraUtilFit;
+    }
+    if (usdToken == UsdRenderTokens->cropAperture) {
+        return CameraUtilCrop;
+    }
+    if (usdToken == UsdRenderTokens->adjustPixelAspectRatio) {
+        return CameraUtilDontConform;
+    }
+
+    TF_WARN(
+        "Invalid aspectRatioConformPolicy value '%s', "
+        "falling back to expandAperture.", usdToken.GetText());
+    
+    return CameraUtilFit;
+}
+
 void
 PrintUsage(const char* cmd, const char *err=nullptr)
 {
@@ -202,16 +234,18 @@ PrintUsage(const char* cmd, const char *err=nullptr)
     fprintf(stderr, "Usage: %s INPUT.usd "
             "[--out OUTPUT] [--frame FRAME] "
             "[--sceneCamPath CAM_PATH] [--settings RENDERSETTINGS_PATH] "
-            "[--sceneCamAspect aspectRatio] "
+            "[--sceneCamAspect aspectRatio] [--cullStyle CULL_STYLE] "
             "[--visualize STYLE] [--perf PERF] [--trace TRACE]\n"
             "OUTPUT defaults to UsdRenderSettings if not specified.\n"
             "FRAME defaults to 0 if not specified.\n"
             "CAM_PATH defaults to empty path if not specified\n"
             "RENDERSETTINGS_PATH defaults to empty path is not specified\n"
             "STYLE indicates a PxrVisualizer style to use instead of "
-            "      the default integrator\n"
+            "the default integrator\n"
             "PERF indicates a json file to record performance measurements\n"
-            "TRACE indicates a text file to record trace measurements\n",
+            "TRACE indicates a text file to record trace measurements\n"
+            "CULL_STYLE selects the fallback cull style and may be one of: "
+            "none|back|front|backUnlessDoubleSided|frontUnlessDoubleSided\n",
             cmd);
 }
 
@@ -231,6 +265,7 @@ int main(int argc, char *argv[])
     std::string inputFilename(argv[1]);
     std::string outputFilename;
     std::string perfOutput, traceOutput;
+    std::string cullStyle;
 
     int frameNum = 0;
     SdfPath sceneCamPath, renderSettingsPath;
@@ -254,6 +289,8 @@ int main(int argc, char *argv[])
             perfOutput = argv[++i];
         } else if (std::string(argv[i]) == "--trace") {
             traceOutput = argv[++i];
+        } else if (std::string(argv[i]) == "--cullStyle") {
+            cullStyle = argv[++i];
         }
     }
 
@@ -307,7 +344,11 @@ int main(int argc, char *argv[])
                     GfVec2i(512,512),
                     1.0f,
                     // aspectRatioConformPolicy
-                    UsdRenderTokens->expandAperture,
+                    //
+                    // Match default value of
+                    // UsdImagingDelegate::_appWindowPolicy -
+                    // which was used to generate the baselines.
+                    UsdRenderTokens->adjustApertureWidth,
                     // aperture size
                     GfVec2f(2.0, 2.0),
                     // data window
@@ -522,13 +563,41 @@ int main(int argc, char *argv[])
         {
             std::unique_ptr<HdRenderIndex> const hdRenderIndex(
                 HdRenderIndex::New(renderDelegate.Get(), HdDriverVector()));
-            UsdImagingDelegate hdUsdFrontend(hdRenderIndex.get(),
-                                             SdfPath::AbsoluteRootPath());
-            hdUsdFrontend.Populate(stage->GetPseudoRoot());
-            hdUsdFrontend.SetTime(frameNum);
-            hdUsdFrontend.SetRefineLevelFallback(8); // max refinement
-            if (!product.cameraPath.IsEmpty()) {
-                hdUsdFrontend.SetCameraForSampling(product.cameraPath);
+            
+            UsdImagingStageSceneIndexRefPtr usdStageSceneIndex;
+            std::unique_ptr<UsdImagingDelegate> hdUsdFrontend;
+
+            if (TfGetEnvSetting(TEST_HD_PRMAN_ENABLE_SCENE_INDEX)) {
+                usdStageSceneIndex = UsdImagingStageSceneIndex::New();
+                hdRenderIndex->InsertSceneIndex(
+                    HdFlatteningSceneIndex::New(usdStageSceneIndex),
+                    SdfPath::AbsoluteRootPath());
+                usdStageSceneIndex->SetStage(stage);
+                usdStageSceneIndex->Populate();
+                usdStageSceneIndex->SetTime(frameNum);
+            } else {
+                hdUsdFrontend = std::make_unique<UsdImagingDelegate>(
+                    hdRenderIndex.get(),
+                    SdfPath::AbsoluteRootPath());
+                hdUsdFrontend->Populate(stage->GetPseudoRoot());
+                hdUsdFrontend->SetTime(frameNum);
+                hdUsdFrontend->SetRefineLevelFallback(8); // max refinement
+                if (!product.cameraPath.IsEmpty()) {
+                    hdUsdFrontend->SetCameraForSampling(product.cameraPath);
+                }
+            }
+            if (!cullStyle.empty()) {
+                if (cullStyle == "none") {
+                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleNothing);
+                } else if (cullStyle == "back") {
+                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleBack);
+                } else if (cullStyle == "front") {
+                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleFront);
+                } else if (cullStyle == "backUnlessDoubleSided") {
+                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleBackUnlessDoubleSided);
+                } else if (cullStyle == "frontUnlessDoubleSided") {
+                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleFrontUnlessDoubleSided);
+                }
             }
 
             const TfTokenVector renderTags{HdRenderTagTokens->geometry};
@@ -560,7 +629,8 @@ int main(int argc, char *argv[])
             hdRenderPassState->SetCameraAndFraming(
                 camera,
                 ComputeFraming(product),
-                { false, CameraUtilFit });
+                { true, _RenderSettingsTokenToConformWindowPolicy(
+                                        product.aspectRatioConformPolicy) });
 
             // The task execution graph and engine configuration is also simple.
             HdTaskSharedPtrVector tasks = {

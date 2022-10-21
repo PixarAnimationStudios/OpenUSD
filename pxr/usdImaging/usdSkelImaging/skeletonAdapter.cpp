@@ -475,12 +475,21 @@ UsdSkelImagingSkeletonAdapter::MarkDirty(const UsdPrim& prim,
     if (_IsCallbackForSkeleton(prim)) {
         // Mark the bone mesh dirty
         index->MarkRprimDirty(cachePath, dirty);
+        // Re-run UpdateForTime if needed.
+        if (dirty & HdChangeTracker::DirtyPrimvar) {
+            index->RequestUpdateForTime(cachePath);
+        }
     } else if (_IsSkinnedPrimPath(cachePath)) {
 
         // Since The SkeletonAdapter hijacks skinned prims (see SkelRootAdapter),
         // make sure to delegate to the actual adapter registered for the prim.
         UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(prim);
         adapter->MarkDirty(prim, cachePath, dirty, index);
+        // Re-run UpdateForTime if needed. Note that adapter->MarkDirty might
+        // request this as well, but the delegate will de-duplicate the calls.
+        if (dirty & HdChangeTracker::DirtyPrimvar) {
+            index->RequestUpdateForTime(cachePath);
+        }
 
         // Propagate dirtyness on the skinned prim to the computations.
         // Also see related comment in ProcessPropertyChange(..)

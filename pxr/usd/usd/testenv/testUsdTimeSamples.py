@@ -118,6 +118,16 @@ class TestUsdTimeSamples(unittest.TestCase):
             attr.Set(0)
             attr.Set(1, 1)
             attr.Set(2, 2)
+
+            # Verify resolve info source is time samples at numeric time.
+            self.assertEqual(attr.GetResolveInfo().GetSource(),
+                Usd.ResolveInfoSourceTimeSamples)
+            self.assertEqual(attr.GetResolveInfo(Usd.TimeCode(1.0)).GetSource(),
+                Usd.ResolveInfoSourceTimeSamples)
+            # Verify resolve info source is default at default time.
+            self.assertEqual(attr.GetResolveInfo(Usd.TimeCode.Default()).GetSource(),
+                Usd.ResolveInfoSourceDefault)
+
             sdVaryingAttr = l.GetAttributeAtPath(attr.GetPath())
             self.assertEqual(l.ListTimeSamplesForPath(attr.GetPath()), [1.0,2.0])
             self.assertEqual(attr.GetTimeSamples(), [1.0,2.0])
@@ -161,6 +171,15 @@ class TestUsdTimeSamples(unittest.TestCase):
 
             attr = prim.CreateAttribute("unvarying", Sdf.ValueTypeNames.Int)
             attr.Set(0)
+
+            # Verify resolve info source is default at all time.
+            self.assertEqual(attr.GetResolveInfo().GetSource(),
+                Usd.ResolveInfoSourceDefault)
+            self.assertEqual(attr.GetResolveInfo(Usd.TimeCode(1.0)).GetSource(),
+                Usd.ResolveInfoSourceDefault)
+            self.assertEqual(attr.GetResolveInfo(Usd.TimeCode.Default()).GetSource(),
+                Usd.ResolveInfoSourceDefault)
+
             sdUnvaryingAttr = l.GetAttributeAtPath(attr.GetPath())
             self.assertEqual(l.ListTimeSamplesForPath(attr.GetPath()), [])
             self.assertEqual(attr.GetTimeSamples(), [])

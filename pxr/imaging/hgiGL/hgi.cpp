@@ -260,6 +260,12 @@ HgiGL::GetCapabilities() const
     return _capabilities.get();
 }
 
+HgiIndirectCommandEncoder*
+HgiGL::GetIndirectCommandEncoder() const
+{
+    return nullptr;
+}
+
 void
 HgiGL::StartFrame()
 {

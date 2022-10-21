@@ -1,0 +1,21 @@
+#usda 1.0
+(
+)
+
+over "Parent"
+{
+    over "RefChild"
+    {
+        float foo = 4
+        float radius = 4
+        int var.timeSamples = {
+            1: 4,
+            4: 1
+        } 
+
+        int bar.timeSamples = {
+            1: 4,
+            4: 1
+        } 
+    }
+}

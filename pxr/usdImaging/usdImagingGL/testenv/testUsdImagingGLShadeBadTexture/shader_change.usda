@@ -20,6 +20,7 @@ def Mesh "Mesh" (
 
 def Xform "Meshes" (
     active = false
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     def Mesh "Mesh_1" (

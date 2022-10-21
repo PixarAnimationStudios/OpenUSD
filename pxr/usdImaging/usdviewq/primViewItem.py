@@ -25,6 +25,7 @@ from __future__ import print_function
 
 from .qt import QtCore, QtGui, QtWidgets
 from pxr import Sdf, Usd, UsdGeom
+from pxr.UsdUtils.constantsGroup import ConstantsGroup
 from ._usdviewq import Utils
 
 from .common import UIPrimTypeColors, UIFonts
@@ -34,6 +35,10 @@ HALF_DARKER = 150
 # Pulled out as a wrapper to facilitate cprofile tracking
 def _GetPrimInfo(prim, time):
     return Utils.GetPrimInfo(prim, time)
+
+
+class PrimViewColumnIndex(ConstantsGroup):
+    NAME, TYPE, VIS, GUIDES, DRAWMODE = range(5)
 
 # This class extends QTreeWidgetItem to also contain all the stage
 # prim data associated with it and populate itself with that data.
@@ -55,6 +60,7 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         # use them without worrying if _pull() has been called.
         self.imageable = False
         self.active = False
+        self.vis = False
 
         # True if this item is an ancestor of a selected item.
         self.ancestorOfSelected = False
@@ -130,6 +136,7 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
           self.abstract,
           self.isInPrototype,
           self.isInstance,
+          self.supportsGuides,
           self.supportsDrawMode,
           isVisibilityInherited,
           self.visVaries,
@@ -187,13 +194,19 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         # calls to set...() when the item hierarchy is attached to a view,
         # making thousands of calls to data().
         result = None
-        if column == 0:
+        if column == PrimViewColumnIndex.NAME:
             result = self._nameData(role)
-        elif column == 1:
+        elif column == PrimViewColumnIndex.TYPE:
             result = self._typeData(role)
-        elif column == 2:
+        elif column == PrimViewColumnIndex.VIS:
             result = self._visData(role)
-        elif column == 3 and self.supportsDrawMode:
+        elif column == PrimViewColumnIndex.GUIDES and self.supportsGuides:
+            # XXX Temp fix to prevent API calls from throwing an exception since
+            # this method is being called on shutdown, after the stage has
+            # closed, on expired prims
+            if self.prim:
+                result = self._guideData(role)
+        elif column == PrimViewColumnIndex.DRAWMODE and self.supportsDrawMode:
             result = self._drawModeData(role)
         if not result:
             result = super(PrimViewItem, self).data(column, role)
@@ -286,6 +299,41 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
             fgColor = self._GetForegroundColor()
             return fgColor.darker() if self._isVisInherited() \
                    else fgColor
+        elif role == QtCore.Qt.ToolTipRole:
+            if self.imageable and self.active:
+                if self.vis == UsdGeom.Tokens.invisible:
+                    return "Invisible Prim"
+                else:
+                    return "Visible Prim"
+        else:
+            return None
+
+    def _guideData(self, role):
+        if role == QtCore.Qt.DisplayRole:
+            if (UsdGeom.VisibilityAPI(self.prim).GetGuideVisibilityAttr().Get()
+                == UsdGeom.Tokens.visible):
+                return "V"
+            else:
+                return "I"
+        elif role == QtCore.Qt.TextAlignmentRole:
+            return QtCore.Qt.AlignCenter
+        elif role == QtCore.Qt.FontRole:
+            if self._isVisInherited() or self.vis == UsdGeom.Tokens.invisible:
+                return UIFonts.BOLD_ITALIC
+            else:
+                return UIFonts.BOLD
+        elif role == QtCore.Qt.ForegroundRole:
+            fgColor = self._GetForegroundColor()
+            if self._isVisInherited() or self.vis == UsdGeom.Tokens.invisible:
+                return fgColor.darker()
+            else:
+                return fgColor
+        elif role == QtCore.Qt.ToolTipRole:
+            if (UsdGeom.VisibilityAPI(self.prim).GetGuideVisibilityAttr().Get()
+                == UsdGeom.Tokens.visible):
+                return "Visible Guides"
+            else:
+                return "Invisible Guides"
         else:
             return None
 
@@ -427,5 +475,15 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         """Return True if the the prim's visibility state was toggled. """
         if self.imageable and self.active:
             self.setVisible(self.vis == UsdGeom.Tokens.invisible)
+            PrimViewItem.propagateVis(self)
             return True
         return False
+
+    def toggleGuides(self):
+        """Return True if the the prim's guide visibility state was toggled."""
+        if not self.supportsGuides:
+            return False
+        attr = (
+            UsdGeom.VisibilityAPI.Apply(self.prim).CreateGuideVisibilityAttr())
+        return attr.Set(UsdGeom.Tokens.invisible
+            if attr.Get() == UsdGeom.Tokens.visible else UsdGeom.Tokens.visible)

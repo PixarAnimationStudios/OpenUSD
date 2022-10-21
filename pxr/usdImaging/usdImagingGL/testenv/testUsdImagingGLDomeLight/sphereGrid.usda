@@ -2090,7 +2090,9 @@ def Xform "Scene" (kind = "component")
 
 def Scope "Prototypes"(active=false)
 {
-    def Sphere "Sphere"
+    def Sphere "Sphere" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1, -1, -1), (1, 1, 1)]
         color3f[] primvars:displayColor = [(0.0, 1.0, 0.0)]

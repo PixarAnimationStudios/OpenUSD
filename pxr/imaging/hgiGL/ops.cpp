@@ -103,6 +103,7 @@ HgiGLOps::CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp)
         } else {
             HgiGLConversions::GetFormat(
                 texDesc.format,
+                texDesc.usage,
                 &glFormat,
                 &glPixelType);
         }
@@ -140,11 +141,10 @@ HgiGLOps::CopyTextureCpuToGpu(HgiTextureCpuToGpuOp const& copyOp)
         HgiTextureDesc const& desc =
             copyOp.gpuDestinationTexture->GetDescriptor();
 
-        GLenum internalFormat = 0;
         GLenum format = 0;
         GLenum type = 0;
 
-        HgiGLConversions::GetFormat(desc.format,&format,&type,&internalFormat);
+        HgiGLConversions::GetFormat(desc.format,desc.usage,&format,&type);
 
         const bool isCompressed = HgiIsCompressed(desc.format);
         GfVec3i const& offsets = copyOp.destinationTexelOffset;
@@ -361,7 +361,10 @@ HgiGLOps::CopyTextureToBuffer(HgiTextureToBufferOp const& copyOp)
         } else {
             GLenum format = 0;
             GLenum type = 0;
-            HgiGLConversions::GetFormat(texDesc.format, &format, &type);
+            HgiGLConversions::GetFormat(texDesc.format,
+                                        texDesc.usage,
+                                        &format,
+                                        &type);
             glGetTextureImage(srcTexture->GetTextureId(),
                               copyOp.mipLevel,
                               format,
@@ -404,14 +407,13 @@ HgiGLOps::CopyBufferToTexture(HgiBufferToTextureOp const& copyOp)
 
         HgiTextureDesc const& texDesc = dstTexture->GetDescriptor();
 
-        GLenum internalFormat = 0;
         GLenum format = 0;
         GLenum type = 0;
 
         HgiGLConversions::GetFormat(texDesc.format,
+                                    texDesc.usage,
                                     &format,
-                                    &type,
-                                    &internalFormat);
+                                    &type);
 
         const bool isCompressed = HgiIsCompressed(texDesc.format);
         GfVec3i const& offsets = copyOp.destinationTexelOffset;

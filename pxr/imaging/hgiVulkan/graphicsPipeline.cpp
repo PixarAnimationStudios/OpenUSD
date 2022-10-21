@@ -530,7 +530,8 @@ _ProcessAttachment(
     VkAttachmentDescription2* vkAttachDesc,
     VkAttachmentReference2* vkRef)
 {
-    bool isDepthAttachment = attachment.usage & HgiTextureUsageBitsDepthTarget;
+    bool const isDepthAttachment = 
+        attachment.usage & HgiTextureUsageBitsDepthTarget;
     //
     // Reference
     //
@@ -558,7 +559,8 @@ _ProcessAttachment(
     vkAttachDesc->pNext = nullptr;
     vkAttachDesc->finalLayout = layout;
     vkAttachDesc->flags = 0;
-    vkAttachDesc->format = HgiVulkanConversions::GetFormat(attachment.format);
+    vkAttachDesc->format = HgiVulkanConversions::GetFormat(
+        attachment.format, isDepthAttachment);
     vkAttachDesc->initialLayout = layout;
     vkAttachDesc->loadOp = HgiVulkanConversions::GetLoadOp(attachment.loadOp);
     vkAttachDesc->samples = HgiVulkanConversions::GetSampleCount(sampleCount);

@@ -8,8 +8,8 @@
 def MfScope "foo"
 {
     custom string s0 = " \" \' ' "
-    custom string s1 = " \\" \\' \" \' ' "
-    custom string s2 = ' \\" \\' \" \' " '
+    custom string s1 = " \\\" \\' \" \' ' "
+    custom string s2 = ' \\" \\\' \" \' " '
     custom string s3 = "a b \\"
     custom string s4 = 'a b \\'
     custom string s5 = "'a'"

@@ -94,6 +94,20 @@ TF_DEFINE_PRIVATE_TOKENS(
     return {{ cls.cppClassName }}(prim, name);
 }
 
+/* static */
+std::vector<{{ cls.cppClassName }}>
+{{ cls.cppClassName }}::GetAll(const UsdPrim &prim)
+{
+    std::vector<{{ cls.cppClassName }}> schemas;
+    
+    for (const auto &schemaName :
+         UsdAPISchemaBase::_GetMultipleApplyInstanceNames(prim, _GetStaticTfType())) {
+        schemas.emplace_back(prim, schemaName);
+    }
+
+    return schemas;
+}
+
 {% endif %}
 {% endif %}
 {% if cls.isConcrete %}

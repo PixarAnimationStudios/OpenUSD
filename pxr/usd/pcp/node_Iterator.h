@@ -59,18 +59,18 @@ public:
     PcpNodeRef_PrivateChildrenConstIterator(const PcpNodeRef& node,
                                             bool end = false) :
         _node(node),
-        _nodes(&_node._graph->_data->nodes[0])
+        _nodes(&_node._graph->_GetNode(0))
     {
         _node._nodeIdx = end
             ? PcpPrimIndex_Graph::_Node::_invalidNodeIndex
-            : _nodes[_node._nodeIdx].smallInts.firstChildIndex;
+            : _nodes[_node._nodeIdx].indexes.firstChildIndex;
     }
 
 private:
     friend class boost::iterator_core_access;
     void increment()
     {
-        _node._nodeIdx = _nodes[_node._nodeIdx].smallInts.nextSiblingIndex;
+        _node._nodeIdx = _nodes[_node._nodeIdx].indexes.nextSiblingIndex;
     }
 
     bool equal(const PcpNodeRef_PrivateChildrenConstIterator& other) const
@@ -110,18 +110,18 @@ public:
     PcpNodeRef_PrivateChildrenConstReverseIterator(const PcpNodeRef& node,
                                                    bool end = false) :
         _node(node),
-        _nodes(&_node._graph->_data->nodes[0])
+        _nodes(&_node._graph->_GetNode(0))
     {
         _node._nodeIdx = end
             ? PcpPrimIndex_Graph::_Node::_invalidNodeIndex
-            : _nodes[_node._nodeIdx].smallInts.lastChildIndex;
+            : _nodes[_node._nodeIdx].indexes.lastChildIndex;
     }
 
 private:
     friend class boost::iterator_core_access;
     void increment()
     {
-        _node._nodeIdx = _nodes[_node._nodeIdx].smallInts.prevSiblingIndex;
+        _node._nodeIdx = _nodes[_node._nodeIdx].indexes.prevSiblingIndex;
     }
 
     bool equal(const PcpNodeRef_PrivateChildrenConstReverseIterator& other)const

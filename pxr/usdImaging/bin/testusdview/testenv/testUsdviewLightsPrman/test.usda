@@ -13,13 +13,19 @@ def Xform "Implicits" (
     }
 }
 
-def Sphere "frontSphere" {
+def Sphere "frontSphere" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
     double3 xformOp:translate = (2, 2, 2)
     uniform token[] xformOpOrder = ["xformOp:translate"]
     rel material:binding = </Looks/Material_0>
 }
 
-def Sphere "backSphere" {
+def Sphere "backSphere" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
     double3 xformOp:translate = (3, 4, 3)
     uniform token[] xformOpOrder = ["xformOp:translate"]
     rel material:binding = </Looks/Material_0>

@@ -72,6 +72,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///    Binding location for the buffer(s).</li>
 /// <li>stageUsage:
 ///    What shader stage(s) the buffer will be used in.</li>
+/// <li>writable:
+///    Whether the buffer binding should be non-const.</li>
 /// </ul>
 ///
 struct HgiBufferBindDesc
@@ -85,6 +87,7 @@ struct HgiBufferBindDesc
     HgiBindResourceType resourceType;
     uint32_t bindingIndex;
     HgiShaderStage stageUsage;
+    bool writable;
 };
 using HgiBufferBindDescVector = std::vector<HgiBufferBindDesc>;
 
@@ -118,6 +121,8 @@ inline bool operator!=(
 ///    Binding location for the texture</li>
 /// <li>stageUsage:
 ///    What shader stage(s) the texture will be used in.</li>
+/// <li>writable:
+///    Whether the texture binding should be non-const.</li>
 /// </ul>
 ///
 struct HgiTextureBindDesc
@@ -130,6 +135,7 @@ struct HgiTextureBindDesc
     HgiBindResourceType resourceType;
     uint32_t bindingIndex;
     HgiShaderStage stageUsage;
+    bool writable;
 };
 using HgiTextureBindDescVector = std::vector<HgiTextureBindDesc>;
 

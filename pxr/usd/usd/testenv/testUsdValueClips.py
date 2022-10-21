@@ -544,6 +544,15 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckTimeSamples(attr2)
         self.CheckTimeSamples(attr3)
 
+        # Verify GetPropertyStackWithLayerOffsets run on an attribute with 
+        # clips returns the clip spec's layer offset matching the source spec's
+        # layer offset.
+        self.assertEqual(attr3.GetPropertyStackWithLayerOffsets(40),
+            [(Sdf.Find('layerOffsets/clip.usda', '/Model.size'), 
+                Sdf.LayerOffset(20)), 
+             (Sdf.Find('layerOffsets/ref.usda', '/Model.size'), 
+                Sdf.LayerOffset(20))])
+
     def test_TimeCodeClipsWithLayerOffsets(self):
         """Tests behavior of clips when layer offsets are involved and the
         attributes are SdfTimeCode values. This test is almost identical to 

@@ -43,6 +43,9 @@ class UsdImagingCylinderAdapter : public UsdImagingGprimAdapter {
 public:
     typedef UsdImagingGprimAdapter BaseAdapter;
 
+    // Number of radial segments on a circular cross-section of the cylinder.
+    static constexpr size_t numRadial = 10;
+
     UsdImagingCylinderAdapter()
         : UsdImagingGprimAdapter()
     {}
@@ -116,15 +119,6 @@ public:
     VtValue GetPoints(
         UsdPrim const& prim,
         UsdTimeCode time) const override;
-
-    // Used by the legacyEngine.
-    USDIMAGING_API
-    static VtValue GetMeshPoints(UsdPrim const& prim,
-                                 UsdTimeCode time);
-
-    // Used by the legacyEngine.
-    USDIMAGING_API
-    static VtValue GetMeshTopology();
 };
 
 

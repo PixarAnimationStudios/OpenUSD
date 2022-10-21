@@ -33,7 +33,9 @@ def Xform "Scene" (
     {
         def Xform "Geom0"
         {
-            def Sphere "pSphere0"
+            def Sphere "pSphere0" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 float3[] extent = [(-1, -1, -1), (1, 1, 1)]
                 rel material:binding = </Scene/Looks/Material_0>

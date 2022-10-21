@@ -146,6 +146,11 @@ class RenderSettings "RenderSettings" (
         resolving material bindings in the scene.  The empty string
         indicates the "allPurpose" binding."""
     )
+    uniform token renderingColorSpace (
+        doc = """Describes a renderer's working (linear) colorSpace where all
+        the renderer/shader math is expected to happen. When no
+        renderingColorSpace is provided, renderer should use its own default."""
+    )
 }
 
 class RenderVar "RenderVar" (

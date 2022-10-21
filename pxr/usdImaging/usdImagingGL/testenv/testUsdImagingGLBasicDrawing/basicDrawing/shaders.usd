@@ -100,7 +100,9 @@ def Xform "Parent"
     {
         def Scope "Primvars"
         {
-            def Mesh "MeshTest_primvar1"
+            def Mesh "MeshTest_primvar1" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 float3[] extent = [(-2, -2, -2), (2, 2, 2)]
                 token faceVaryingInterpolateBoundary = "alwaysSharp"
@@ -115,7 +117,9 @@ def Xform "Parent"
                 uniform token subdivisionScheme = "catmullClark"
             }
 
-            def Mesh "MeshTest_primvar2"
+            def Mesh "MeshTest_primvar2" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 float3[] extent = [(-2, -2, -2), (2, 2, 2)]
                 token faceVaryingInterpolateBoundary = "alwaysSharp"
@@ -138,7 +142,9 @@ def Xform "Parent"
 
         def Scope "UV"
         {
-            def Mesh "MeshTest_Uv1"
+            def Mesh "MeshTest_Uv1" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 float3[] extent = [(-2, -2, -2), (2, 2, 2)]
                 token faceVaryingInterpolateBoundary = "alwaysSharp"
@@ -161,7 +167,9 @@ def Xform "Parent"
                 uniform token[] xformOpOrder = ["xformOp:translate"]
             }
 
-            def Mesh "MeshTest_Uv2"
+            def Mesh "MeshTest_Uv2" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 float3[] extent = [(-2, -2, -2), (2, 2, 2)]
                 token faceVaryingInterpolateBoundary = "alwaysSharp"
@@ -181,7 +189,9 @@ def Xform "Parent"
 
         def Scope "Fallback"
         {
-            def Mesh "MeshTest_Fallback"
+            def Mesh "MeshTest_Fallback" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 float3[] extent = [(-2, -2, -2), (2, 2, 2)]
                 token faceVaryingInterpolateBoundary = "alwaysSharp"
@@ -198,7 +208,9 @@ def Xform "Parent"
 
         def Scope "PTex"
         {
-            def Mesh "MeshTest_Ptex1"
+            def Mesh "MeshTest_Ptex1" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 float3[] extent = [(-2, -2, -2), (2, 2, 2)]
                 token faceVaryingInterpolateBoundary = "alwaysSharp"
@@ -218,7 +230,9 @@ def Xform "Parent"
                 uniform token[] xformOpOrder = ["xformOp:translate"]
             }
 
-            def Mesh "MeshTest_Ptex2"
+            def Mesh "MeshTest_Ptex2" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 float3[] extent = [(-2, -2, -2), (2, 2, 2)]
                 token faceVaryingInterpolateBoundary = "alwaysSharp"
@@ -242,7 +256,9 @@ def Xform "Parent"
 
     def Scope "Curves"
     {
-        def BasisCurves "Loop"
+        def BasisCurves "Loop" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             uniform token basis = "bspline"
             int[] curveVertexCounts = [10]
@@ -271,6 +287,7 @@ def Xform "Parent"
     def Scope "Points"
     {
         def Points "Points_Primvar" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
             customData = {
                 bool zUp = 1
             }
@@ -301,6 +318,7 @@ def Xform "Parent"
         }
 
         def Points "Points_Uv" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
             customData = {
                 bool zUp = 1
             }
@@ -338,7 +356,9 @@ def Xform "Parent"
     {
         def Scope "Cube"
         {
-            def Cube "Cube_Fallback"
+            def Cube "Cube_Fallback" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 rel material:binding = </Materials/FallbackMat>
                 color3f[] primvars:displayColor2 = [(1, 0, 0), (1, 1, 0), (1, 0, 1), (0, 1, 0), (0, 0, 1)] (
@@ -349,7 +369,9 @@ def Xform "Parent"
                 uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
             }
 
-            def Cube "Cube_PrimvarVertex"
+            def Cube "Cube_PrimvarVertex" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 rel material:binding = </Materials/PrimvarMat>
                 color3f[] primvars:displayColor2 = [(1, 0, 0), (1, 1, 0), (1, 0, 1), (0, 1, 0), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
@@ -363,7 +385,9 @@ def Xform "Parent"
 
         def Scope "Cone"
         {
-            def Cone "Cone_Fallback"
+            def Cone "Cone_Fallback" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 rel material:binding = </Materials/FallbackMat>
                 custom double3 xformOp:scale = (2, 2, 2)
@@ -371,7 +395,9 @@ def Xform "Parent"
                 uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
             }
 
-            def Cone "Cone_PrimvarUniform"
+            def Cone "Cone_PrimvarUniform" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 rel material:binding = </Materials/PrimvarMat>
                 color3f[] primvars:displayColor2 = [(1, 0, 0)] (
@@ -385,7 +411,9 @@ def Xform "Parent"
 
         def Scope "Sphere"
         {
-            def Sphere "Sphere_Fallback"
+            def Sphere "Sphere_Fallback" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 rel material:binding = </Materials/FallbackMat>
                 custom double3 xformOp:scale = (2, 2, 2)
@@ -393,7 +421,9 @@ def Xform "Parent"
                 uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
             }
 
-            def Sphere "Sphere_PrimvarUniform"
+            def Sphere "Sphere_PrimvarUniform" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 rel material:binding = </Materials/PrimvarMat>
                 color3f[] primvars:displayColor2 = [(1, 0, 0)] (
@@ -407,7 +437,9 @@ def Xform "Parent"
 
         def Scope "Capsule"
         {
-            def Capsule "Capsule_Fallback"
+            def Capsule "Capsule_Fallback" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 rel material:binding = </Materials/FallbackMat>
                 custom double3 xformOp:scale = (2, 2, 2)
@@ -415,7 +447,9 @@ def Xform "Parent"
                 uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
             }
 
-            def Capsule "Capsule_PrimvarUniform"
+            def Capsule "Capsule_PrimvarUniform" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 rel material:binding = </Materials/PrimvarMat>
                 color3f[] primvars:displayColor2 = [(1, 0, 0)] (

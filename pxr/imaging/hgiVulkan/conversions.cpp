@@ -81,7 +81,7 @@ _FormatTable[HgiFormatCount][2] =
     {HgiFormatInt32Vec2,      VK_FORMAT_R32G32_SINT},
     {HgiFormatInt32Vec3,      VK_FORMAT_R32G32B32_SINT},
     {HgiFormatInt32Vec4,      VK_FORMAT_R32G32B32A32_SINT},
-    {HgiFormatUNorm8Vec4srgb, VK_FORMAT_R8G8B8_SRGB},
+    {HgiFormatUNorm8Vec4srgb, VK_FORMAT_R8G8B8A8_SRGB},
     {HgiFormatBC6FloatVec3,   VK_FORMAT_BC6H_SFLOAT_BLOCK},
     {HgiFormatBC6UFloatVec3,  VK_FORMAT_BC6H_UFLOAT_BLOCK},
     {HgiFormatBC7UNorm8Vec4,  VK_FORMAT_BC7_UNORM_BLOCK},
@@ -258,7 +258,7 @@ _textureTypeTable[HgiTextureTypeCount][2] =
     {HgiTextureType1D,      VK_IMAGE_TYPE_1D},
     {HgiTextureType2D,      VK_IMAGE_TYPE_2D},
     {HgiTextureType3D,      VK_IMAGE_TYPE_3D},
-    {HgiTextureType1DArray, VK_IMAGE_TYPE_2D},
+    {HgiTextureType1DArray, VK_IMAGE_TYPE_1D},
     {HgiTextureType2DArray, VK_IMAGE_TYPE_2D}
 };
 static_assert(HgiTextureTypeCount==5, "");
@@ -377,12 +377,21 @@ _imageLayoutFormatTable[HgiFormatCount][2] =
 };
 
 VkFormat
-HgiVulkanConversions::GetFormat(HgiFormat inFormat)
+HgiVulkanConversions::GetFormat(HgiFormat inFormat, bool depthFormat)
 {
     if (!TF_VERIFY(inFormat!=HgiFormatInvalid)) {
         return VK_FORMAT_UNDEFINED;
     }
-    return VkFormat(_FormatTable[inFormat][1]);
+
+    VkFormat vkFormat = VkFormat(_FormatTable[inFormat][1]);
+
+    // Special case for float32 depth format not properly handled by
+    // _FormatTable
+    if (depthFormat && inFormat == HgiFormatFloat32) {
+        vkFormat = VK_FORMAT_D32_SFLOAT;
+    }
+
+    return vkFormat;
 }
 
 HgiFormat
@@ -409,14 +418,18 @@ HgiVulkanConversions::GetFormat(VkFormat inFormat)
 VkImageAspectFlags
 HgiVulkanConversions::GetImageAspectFlag(HgiTextureUsage usage)
 {
-    if (usage & HgiTextureUsageBitsDepthTarget) {
-        if (usage & HgiTextureUsageBitsStencilTarget) {
-            return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-        }
-        return VK_IMAGE_ASPECT_DEPTH_BIT;
+    VkImageAspectFlags result = VK_IMAGE_ASPECT_COLOR_BIT;
+
+    if (usage & HgiTextureUsageBitsDepthTarget && 
+        usage & HgiTextureUsageBitsStencilTarget) {
+        result = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    } else if (usage & HgiTextureUsageBitsDepthTarget) {
+        result = VK_IMAGE_ASPECT_DEPTH_BIT;
+    } else if (usage & HgiTextureUsageBitsStencilTarget) {
+        result = VK_IMAGE_ASPECT_STENCIL_BIT;
     }
 
-    return VK_IMAGE_ASPECT_COLOR_BIT;
+    return result;
 }
 
 VkImageUsageFlags

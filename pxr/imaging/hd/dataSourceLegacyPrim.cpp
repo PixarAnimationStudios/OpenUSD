@@ -1851,12 +1851,9 @@ public:
     HD_DECLARE_DATASOURCE(Hd_DataSourceLegacyExtComputationPrimvarsContainer);
 
     Hd_DataSourceLegacyExtComputationPrimvarsContainer(
-        const SdfPath &primId,
-        HdSceneDelegate *sceneDelegate)
+        const SdfPath &primId)
     : _primId(primId)
-    , _sceneDelegate(sceneDelegate)
     {
-        TF_VERIFY(_sceneDelegate);
     }
 
     void AddDesc(const TfToken &name, const TfToken &interpolation,
@@ -1918,7 +1915,6 @@ private:
 
     _EntryMap _entries;
     SdfPath _primId;
-    HdSceneDelegate *_sceneDelegate;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(
@@ -2638,7 +2634,8 @@ _ConvertHdMaterialNetworkToHdDataSources(
                         cNames.data(),
                         cValues.data()),
                     HdRetainedTypedSampledDataSource<TfToken>::New(
-                        node.identifier)));
+                        node.identifier),
+                    nullptr /*renderContextNodeIdentifiers*/));
         }
 
         terminalsValues.push_back(
@@ -2699,7 +2696,8 @@ _ConvertSampleFilterNodeToHdDataSources(
             paramsValues.data()),
         HdRetainedContainerDataSource::New(),// SampleFilter has no connections
         HdRetainedTypedSampledDataSource<TfToken>::New(
-            hdNode.nodeTypeId));
+            hdNode.nodeTypeId),
+            nullptr /*renderContextNodeIdentifiers*/);
 
     *result = HdSampleFilterSchema::BuildRetained(nodeDS);
 
@@ -2767,7 +2765,7 @@ HdDataSourceLegacyPrim::_GetExtComputationPrimvarsDataSource()
             if (!primvarsDs) {
                 primvarsDs =
                     Hd_DataSourceLegacyExtComputationPrimvarsContainer::New(
-                        _id, _sceneDelegate);
+                        _id);
             }
             primvarsDs->AddDesc(
                 primvarDesc.name, interpolationToken, primvarDesc.role,

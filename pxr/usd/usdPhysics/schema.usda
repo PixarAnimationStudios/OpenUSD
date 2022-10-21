@@ -414,6 +414,30 @@ class PhysicsCollisionGroup "PhysicsCollisionGroup"
         doc = """References a list of PhysicsCollisionGroups with which 
         collisions should be ignored."""
     )
+
+    string physics:mergeGroup (
+        customData = {
+            string apiName = "mergeGroupName"
+        }
+
+        displayName = "Merge With Groups"
+        doc = """If non-empty, any collision groups in a stage with a matching
+        mergeGroup should be considered to refer to the same collection. Matching
+        collision groups should behave as if there were a single group containing
+        referenced colliders and filter groups from both collections."""
+    )
+
+    bool physics:invertFilteredGroups (
+        customData = {
+            string apiName = "invertFilteredGroups"
+        }
+
+        displayName = "Invert Filtered Groups"
+        doc = """Normally, the filter will disable collisions against the selected
+        filter groups. However, if this option is set, the filter will disable
+        collisions against all colliders except for those in the selected filter
+        groups."""
+    )
 }
 
 class "PhysicsFilteredPairsAPI"

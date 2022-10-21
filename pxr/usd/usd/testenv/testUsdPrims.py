@@ -134,18 +134,31 @@ class TestUsdPrim(unittest.TestCase):
 
         stage = Usd.Stage.Open(payload)
         over = stage.OverridePrim(primPath)
-        over.GetReferences().AddReference(Sdf.Reference(basicOver.identifier, primPath))
+        over.GetReferences().AddReference(
+            Sdf.Reference(basicOver.identifier, primPath, 
+                          Sdf.LayerOffset(0.0, 2.0)))
 
         stage = Usd.Stage.Open(base)
         prim = stage.DefinePrim(primPath)
-        prim.GetPayloads().AddPayload(payload.identifier, primPath)
+        prim.GetPayloads().AddPayload(
+            Sdf.Payload(payload.identifier, primPath, Sdf.LayerOffset(10.0)))
         stage.GetRootLayer().subLayerPaths.append(sublayer.identifier) 
+        stage.GetRootLayer().subLayerOffsets[0] = Sdf.LayerOffset(20.0)
 
         expectedPrimStack = [layer.GetPrimAtPath(primPath) for layer in layers]
         stage = Usd.Stage.Open(base)
         prim = stage.GetPrimAtPath(primPath)
 
         assert prim.GetPrimStack() == expectedPrimStack
+
+        expectedPrimStackWithLayerOffsets = [
+            (expectedPrimStack[0], Sdf.LayerOffset()),
+            (expectedPrimStack[1], Sdf.LayerOffset(20.0)),
+            (expectedPrimStack[2], Sdf.LayerOffset(10.0)),
+            (expectedPrimStack[3], Sdf.LayerOffset(10.0, 2.0)),
+        ]
+        assert (prim.GetPrimStackWithLayerOffsets() == 
+                    expectedPrimStackWithLayerOffsets)
 
     def test_GetCachedPrimBits(self):
         layerFile = 'test.usda'

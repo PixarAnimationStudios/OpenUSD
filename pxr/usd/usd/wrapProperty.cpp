@@ -65,6 +65,10 @@ void wrapUsdProperty()
 
         .def("GetPropertyStack", &UsdProperty::GetPropertyStack,
              arg("time"))
+        .def("GetPropertyStackWithLayerOffsets", 
+             &UsdProperty::GetPropertyStackWithLayerOffsets,
+             arg("time"),
+             return_value_policy<TfPySequenceToList>())
 
         .def("IsCustom", &UsdProperty::IsCustom)
         .def("SetCustom", &UsdProperty::SetCustom, arg("isCustom"))
@@ -88,4 +92,6 @@ void wrapUsdProperty()
         ;
 
     TfPyRegisterStlSequencesFromPython<UsdProperty>();
+    TfPyContainerConversions::tuple_mapping_pair<
+        std::pair<SdfPropertySpecHandle, SdfLayerOffset>>();
 }

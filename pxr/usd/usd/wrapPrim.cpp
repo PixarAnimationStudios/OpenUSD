@@ -27,6 +27,7 @@
 #include "pxr/usd/usd/payloads.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/references.h"
+#include "pxr/usd/usd/resolveTarget.h"
 #include "pxr/usd/usd/inherits.h"
 #include "pxr/usd/usd/specializes.h"
 #include "pxr/usd/usd/variantSets.h"
@@ -201,6 +202,9 @@ void wrapUsdPrim()
         .def("GetPrimDefinition", &UsdPrim::GetPrimDefinition,
              return_internal_reference<>())
         .def("GetPrimStack", &UsdPrim::GetPrimStack)
+        .def("GetPrimStackWithLayerOffsets", 
+             &UsdPrim::GetPrimStackWithLayerOffsets,
+             return_value_policy<TfPySequenceToList>())
 
         .def("GetSpecifier", &UsdPrim::GetSpecifier)
         .def("SetSpecifier", &UsdPrim::SetSpecifier, arg("specifier"))
@@ -449,6 +453,11 @@ void wrapUsdPrim()
         .def("GetInstances", &UsdPrim::GetInstances,
                 return_value_policy<TfPySequenceToList>())
 
+        .def("MakeResolveTargetUpToEditTarget", 
+            &UsdPrim::MakeResolveTargetUpToEditTarget)
+        .def("MakeResolveTargetStrongerThanEditTarget", 
+            &UsdPrim::MakeResolveTargetStrongerThanEditTarget)
+        
         // Exposed only for testing and debugging.
         .def("_GetSourcePrimIndex", &Usd_PrimGetSourcePrimIndex,
              return_value_policy<return_by_value>())
@@ -458,6 +467,8 @@ void wrapUsdPrim()
                         TfPySequenceToPython<std::vector<UsdPrim>>>();
 
     TfPyRegisterStlSequencesFromPython<UsdPrim>();
+    TfPyContainerConversions::tuple_mapping_pair<
+        std::pair<SdfPrimSpecHandle, SdfLayerOffset>>();
 
     // This is wrapped in order to let python call an API that will get through
     // our usual Python API guards to access an invalid prim and throw an

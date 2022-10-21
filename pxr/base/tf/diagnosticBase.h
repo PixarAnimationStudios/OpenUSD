@@ -27,6 +27,7 @@
 /// \file tf/diagnosticBase.h
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/callContext.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/refBase.h"
@@ -178,17 +179,17 @@ public:
         return _quiet;
     }
 
-    /// Return the commentary string.
-    std::string GetPrettyPrintString() const;
-
     /// Return true if this diagnostic's code is a fatal code.
+    TF_API
     bool IsFatal() const;
 
     /// Return true if this diagnostic's code is either a fatal or nonfatal
     /// coding error.
+    TF_API
     bool IsCodingError() const;
     
     /// Construct an instance.
+    TF_API
     TfDiagnosticBase(TfEnum code, char const *codeString,
                      TfCallContext const &context,
                      const std::string& commentary,

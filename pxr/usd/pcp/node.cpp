@@ -129,35 +129,65 @@ PCP_DEFINE_GET_API(const PcpMapExpression&, GetMapToRoot, mapToRoot);
 
 PCP_DEFINE_API(bool, HasSymmetry, SetHasSymmetry, smallInts.hasSymmetry);
 PCP_DEFINE_API(SdfPermission, GetPermission, SetPermission, smallInts.permission);
-PCP_DEFINE_API(bool, IsCulled, SetCulled, smallInts.culled);
 PCP_DEFINE_API(bool, IsRestricted, SetRestricted, smallInts.permissionDenied);
 
 PCP_DEFINE_SET_API(bool, SetInert, smallInts.inert);
 
-PCP_DEFINE_GET_NODE_API(size_t, _GetParentIndex, smallInts.arcParentIndex);
-PCP_DEFINE_GET_NODE_API(size_t, _GetOriginIndex, smallInts.arcOriginIndex);
+PCP_DEFINE_GET_NODE_API(size_t, _GetParentIndex, indexes.arcParentIndex);
+PCP_DEFINE_GET_NODE_API(size_t, _GetOriginIndex, indexes.arcOriginIndex);
 PCP_DEFINE_GET_API(const PcpLayerStackRefPtr&, GetLayerStack, layerStack);
+
+bool
+PcpNodeRef::IsCulled() const
+{
+    TF_DEV_AXIOM(_nodeIdx < _graph->_unshared.size());
+    return _graph->_unshared[_nodeIdx].culled;
+}
+
+void
+PcpNodeRef::SetCulled(bool culled)
+{
+    // Have to set finalized to false if we cull anything.
+    TF_DEV_AXIOM(_nodeIdx < _graph->_unshared.size());
+    if (culled && !_graph->_unshared[_nodeIdx].culled) {
+        _graph->_finalized = false;
+    }
+    _graph->_unshared[_nodeIdx].culled = culled;
+}
+
+bool
+PcpNodeRef::IsDueToAncestor() const
+{
+    TF_DEV_AXIOM(_nodeIdx < _graph->_unshared.size());
+    return _graph->_unshared[_nodeIdx].isDueToAncestor;
+}
+
+void
+PcpNodeRef::SetIsDueToAncestor(bool isDueToAncestor)
+{
+    TF_DEV_AXIOM(_nodeIdx < _graph->_unshared.size());
+    _graph->_unshared[_nodeIdx].isDueToAncestor = isDueToAncestor;
+}
 
 bool
 PcpNodeRef::HasSpecs() const
 {
-    // XXX: This VERIFY is too expensive here.
-    //TF_VERIFY(_nodeIdx < _graph->_nodeHasSpecs.size());
-    return _graph->_nodeHasSpecs[_nodeIdx];
+    TF_DEV_AXIOM(_nodeIdx < _graph->_unshared.size());
+    return _graph->_unshared[_nodeIdx].hasSpecs;
 }
 
 void
 PcpNodeRef::SetHasSpecs(bool hasSpecs)
 {
-    TF_VERIFY(_nodeIdx < _graph->_nodeHasSpecs.size());
-    _graph->_nodeHasSpecs[_nodeIdx] = hasSpecs;
+    TF_DEV_AXIOM(_nodeIdx < _graph->_unshared.size());
+    _graph->_unshared[_nodeIdx].hasSpecs = hasSpecs;
 }
 
 const SdfPath& 
 PcpNodeRef::GetPath() const
 {
-    TF_VERIFY(_nodeIdx < _graph->_nodeSitePaths.size());
-    return _graph->_nodeSitePaths[_nodeIdx];
+    TF_DEV_AXIOM(_nodeIdx < _graph->_unshared.size());
+    return _graph->_unshared[_nodeIdx].sitePath;
 }
 
 PcpLayerStackSite
@@ -176,8 +206,7 @@ bool
 PcpNodeRef::IsInert() const
 {
     const PcpPrimIndex_Graph::_Node& node = _graph->_GetNode(_nodeIdx);
-    bool inert = node.smallInts.inert, culled = node.smallInts.culled;
-    return inert || culled;
+    return node.smallInts.inert || _graph->_unshared[_nodeIdx].culled;
 }
 
 bool 
@@ -193,8 +222,8 @@ PcpNodeRef::CanContributeSpecs() const
     // so avoiding that overhead for the slight obfuscation is justified.
 
     const PcpPrimIndex_Graph::_Node& node = _graph->_GetNode(_nodeIdx);
-    return !(node.smallInts.inert || node.smallInts.culled) &&
-        (!node.smallInts.permissionDenied || _graph->_data->usd);
+    return !(node.smallInts.inert || _graph->_unshared[_nodeIdx].culled) &&
+        (!node.smallInts.permissionDenied || _graph->IsUsd());
 }
 
 int
@@ -206,12 +235,6 @@ PcpNodeRef::GetDepthBelowIntroduction() const
 
     return _GetNonVariantPathElementCount(parent.GetPath())
         - GetNamespaceDepth();
-}
-
-bool
-PcpNodeRef::IsDueToAncestor() const
-{
-    return GetDepthBelowIntroduction() > 0;
 }
 
 SdfPath
@@ -294,7 +317,7 @@ PcpNodeRef_ChildrenIterator::PcpNodeRef_ChildrenIterator(
     const PcpNodeRef& node, bool end) :
     _node(node),
     _index(!end ?
-            _node._graph->_GetNode(_node).smallInts.firstChildIndex :
+            _node._graph->_GetNode(_node).indexes.firstChildIndex :
             PcpPrimIndex_Graph::_Node::_invalidNodeIndex)
 {
     // Do nothing
@@ -303,7 +326,7 @@ PcpNodeRef_ChildrenIterator::PcpNodeRef_ChildrenIterator(
 void 
 PcpNodeRef_ChildrenIterator::increment()
 {
-    _index = _node._graph->_GetNode(_index).smallInts.nextSiblingIndex;
+    _index = _node._graph->_GetNode(_index).indexes.nextSiblingIndex;
 }
 
 PcpNodeRef_ChildrenReverseIterator::PcpNodeRef_ChildrenReverseIterator() :
@@ -318,7 +341,7 @@ PcpNodeRef_ChildrenReverseIterator::PcpNodeRef_ChildrenReverseIterator(
     _index(i._index)
 {
     if (_index == PcpPrimIndex_Graph::_Node::_invalidNodeIndex) {
-        _index = _node._graph->_GetNode(_node).smallInts.lastChildIndex;
+        _index = _node._graph->_GetNode(_node).indexes.lastChildIndex;
     }
     else {
         increment();
@@ -329,7 +352,7 @@ PcpNodeRef_ChildrenReverseIterator::PcpNodeRef_ChildrenReverseIterator(
     const PcpNodeRef& node, bool end) :
     _node(node),
     _index(!end ?
-            _node._graph->_GetNode(_node).smallInts.lastChildIndex :
+            _node._graph->_GetNode(_node).indexes.lastChildIndex :
             PcpPrimIndex_Graph::_Node::_invalidNodeIndex)
 {
     // Do nothing
@@ -338,7 +361,7 @@ PcpNodeRef_ChildrenReverseIterator::PcpNodeRef_ChildrenReverseIterator(
 void 
 PcpNodeRef_ChildrenReverseIterator::increment()
 {
-    _index = _node._graph->_GetNode(_index).smallInts.prevSiblingIndex;
+    _index = _node._graph->_GetNode(_index).indexes.prevSiblingIndex;
 }
 
 int
@@ -350,17 +373,26 @@ PcpNode_GetNonVariantPathElementCount(const SdfPath &path)
 static inline int
 _GetNonVariantPathElementCount(const SdfPath &path)
 {
-    //return path.StripAllVariantSelections().GetPathElementCount();
-    if (ARCH_UNLIKELY(path.ContainsPrimVariantSelection())) {
+    // The following code is equivalent to but more performant than:
+    //
+    // return path.StripAllVariantSelections().GetPathElementCount();
+
+    int count = static_cast<int>(path.GetPathElementCount());
+    if (path.ContainsPrimVariantSelection()) {
         SdfPath cur(path);
-        int result = (!cur.IsPrimVariantSelectionPath());
-        cur = cur.GetParentPath();
-        for (; cur.ContainsPrimVariantSelection(); cur = cur.GetParentPath())
-            result += (!cur.IsPrimVariantSelectionPath());
-        return result + static_cast<int>(cur.GetPathElementCount());
-    } else {
-        return static_cast<int>(path.GetPathElementCount());
+
+        // Walk up until we hit a variant selection node, then decrement count,
+        // and keep going if there are more.
+        do {
+            while (!cur.IsPrimVariantSelectionPath()) {
+                cur = cur.GetParentPath();
+            }
+            --count;
+            cur = cur.GetParentPath();
+        } while (cur.ContainsPrimVariantSelection());
     }
+
+    return count;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

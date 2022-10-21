@@ -21,6 +21,4 @@ install(FILES
   DESTINATION "${CMAKE_INSTALL_PREFIX}"
 )
 
-if (NOT PXR_BUILD_MONOLITHIC)
-    install(EXPORT pxrTargets DESTINATION "cmake")
-endif()
+install(EXPORT pxrTargets DESTINATION "cmake")

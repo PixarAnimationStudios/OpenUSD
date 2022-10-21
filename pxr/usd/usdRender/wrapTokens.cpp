@@ -96,6 +96,7 @@ void wrapUsdRenderTokens()
     _AddToken(cls, "productType", UsdRenderTokens->productType);
     _AddToken(cls, "raster", UsdRenderTokens->raster);
     _AddToken(cls, "raw", UsdRenderTokens->raw);
+    _AddToken(cls, "renderingColorSpace", UsdRenderTokens->renderingColorSpace);
     _AddToken(cls, "renderSettingsPrimPath", UsdRenderTokens->renderSettingsPrimPath);
     _AddToken(cls, "renderSource", UsdRenderTokens->renderSource);
     _AddToken(cls, "resolution", UsdRenderTokens->resolution);

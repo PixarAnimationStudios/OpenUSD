@@ -43,6 +43,8 @@
 #include <boost/type_traits/remove_cv.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class SdfListProxy
@@ -211,7 +213,7 @@ public:
 
     /// Create a new proxy wrapping the list operation vector specified by
     /// \p op in the underlying \p listEditor.
-    SdfListProxy(const boost::shared_ptr<Sdf_ListEditor<TypePolicy> >& editor,
+    SdfListProxy(const std::shared_ptr<Sdf_ListEditor<TypePolicy> >& editor,
                 SdfListOpType op) :
         _listEditor(editor),
         _op(op)
@@ -599,7 +601,7 @@ private:
     }
 
 private:
-    boost::shared_ptr<Sdf_ListEditor<TypePolicy> > _listEditor;
+    std::shared_ptr<Sdf_ListEditor<TypePolicy> > _listEditor;
     SdfListOpType _op;
 
     template <class> friend class SdfPyWrapListProxy;

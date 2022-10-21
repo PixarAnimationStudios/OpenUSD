@@ -3,7 +3,9 @@
     upAxis = "Z"
 )
 
-def Mesh "TestSphere"
+def Mesh "TestSphere" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
 {
     rel material:binding = </MaterialX/Materials/TextureTest>
 

@@ -42,6 +42,22 @@ UsdImagingPluginLightAdapter::~UsdImagingPluginLightAdapter()
 {
 }
 
+TfTokenVector
+UsdImagingPluginLightAdapter::GetImagingSubprims()
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingPluginLightAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->pluginLight;
+    }
+
+    return TfToken();
+}
+
 bool
 UsdImagingPluginLightAdapter::IsSupported(
         UsdImagingIndexProxy const* index) const

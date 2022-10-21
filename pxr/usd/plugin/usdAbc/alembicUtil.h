@@ -40,7 +40,6 @@
 #include <boost/call_traits.hpp>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
-#include <boost/shared_array.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_const.hpp>
 #include <boost/type_traits/remove_reference.hpp>
@@ -396,13 +395,12 @@ public:
         TF_VERIFY(value);
     }
 
-    /// A sample using raw data from a shared pointer to a T[].
+    /// A sample using raw data from a unique pointer to a T[].
     template <class T>
-    _SampleForAlembic(const boost::shared_array<T>& values, size_t count) :
+    _SampleForAlembic(std::unique_ptr<T[]>&& value, size_t count) :
         _numSamples(count),
-        _value(_HolderValue(new _ArrayHolder<T>(values)))
+        _value(_HolderValue(new _ArrayHolder<T>(std::move(value))))
     {
-        TF_VERIFY(values);
     }
 
     bool IsError(std::string* message) const
@@ -523,16 +521,15 @@ private:
         std::shared_ptr<T> _ptr;
     };
 
-    // Hold a shared_array.
+    // Hold an array.
     template <class T>
     class _ArrayHolder : public _Holder {
     public:
-        _ArrayHolder(const boost::shared_array<T>& ptr) : _ptr(ptr) { }
+        _ArrayHolder(std::unique_ptr<T[]>&& arr) : _array(std::move(arr)) { }
         virtual ~_ArrayHolder() { }
-        virtual const void* Get() const { return _ptr.get(); }
-
+        virtual const void* Get() const { return _array.get(); }
     private:
-        boost::shared_array<T> _ptr;
+        std::unique_ptr<T[]> _array;
     };
 
     // Hold a _Holder as a value type.
@@ -550,9 +547,9 @@ private:
     template <class T>
     static _HolderValue _MakeRawArrayHolder(const std::vector<T>& value)
     {
-        boost::shared_array<T> copy(new T[value.size()]);
+        std::unique_ptr<T[]> copy(new T[value.size()]);
         std::copy(value.begin(), value.end(), copy.get());
-        return _HolderValue(new _ArrayHolder<T>(copy));
+        return _HolderValue(new _ArrayHolder<T>(std::move(copy)));
     }
 
 private:
@@ -844,10 +841,10 @@ template <class UsdType, class AlembicType, size_t extent>
 struct _ConvertPODFromUsdScalar {
     _SampleForAlembic operator()(const VtValue& src) const
     {
-        boost::shared_array<AlembicType> dst(new AlembicType[extent]);
+        std::unique_ptr<AlembicType[]> dst(new AlembicType[extent]);
         _ConvertPODFromUsd<UsdType, AlembicType, extent>()(
                 src.UncheckedGet<UsdType>(), dst.get());
-        return _SampleForAlembic(dst, extent);
+        return _SampleForAlembic(std::move(dst), extent);
     }
 };
 
@@ -870,12 +867,12 @@ struct _ConvertPODFromUsdArray {
     {
         const VtArray<UsdType>& data = src.UncheckedGet<VtArray<UsdType> >();
         const size_t size = data.size();
-        boost::shared_array<AlembicType> array(new AlembicType[size * extent]);
+        std::unique_ptr<AlembicType[]> array(new AlembicType[size * extent]);
         AlembicType* ptr = array.get();
         for (size_t i = 0, n = size; i != n; ptr += extent, ++i) {
             _ConvertPODFromUsd<UsdType, AlembicType, extent>()(data[i], ptr);
         }
-        return _SampleForAlembic(array, size * extent);
+        return _SampleForAlembic(std::move(array), size * extent);
     }
 };
 

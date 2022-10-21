@@ -105,9 +105,9 @@ class Usd_CrateDataImpl
 
 public:
 
-    Usd_CrateDataImpl() 
+    Usd_CrateDataImpl(bool detached) 
         : _lastSet(_data.end())
-        , _crateFile(CrateFile::CreateNew()) {}
+        , _crateFile(CrateFile::CreateNew(detached)) {}
     
     ~Usd_CrateDataImpl() {
         // Close file synchronously.  We don't want a race condition
@@ -187,7 +187,7 @@ public:
     }
 
     inline bool StreamsData() const {
-        return true;
+        return _crateFile && !_crateFile->IsDetached();
     }
 
     // Return either TargetPaths or ConnectionPaths as a VtValue.  If
@@ -1061,7 +1061,8 @@ private:
 ////////////////////////////////////////////////////////////////////////
 // Usd_CrateData
 
-Usd_CrateData::Usd_CrateData() : _impl(new Usd_CrateDataImpl)
+Usd_CrateData::Usd_CrateData(bool detached) 
+    : _impl(new Usd_CrateDataImpl(detached))
 {
 }
 
@@ -1104,23 +1105,30 @@ Usd_CrateData::Save(string const &fileName)
     }
     else {
         // We copy to a temporary data and save that.
-        Usd_CrateData tmp;
+        //
+        // Usd_CrateData currently reloads the underlying asset to reinitialize
+        // its internal members after a save. We use a non-detached
+        // Usd_CrateData here to avoid any expense associated with detaching
+        // from the asset.
+        Usd_CrateData tmp(/* detached = */ false);
         tmp.CopyFrom(SdfAbstractDataConstPtr(this));
         return tmp.Save(fileName);
     }
 }
 
 bool
-Usd_CrateData::Open(const std::string &assetPath)
+Usd_CrateData::Open(const std::string &assetPath,
+                    bool detached)
 {
-    return _impl->Open(assetPath);
+    return _impl->Open(assetPath, detached);
 }
 
 bool
 Usd_CrateData::Open(const std::string &assetPath,
-                    const std::shared_ptr<ArAsset> &asset)
+                    const std::shared_ptr<ArAsset> &asset,
+                    bool detached)
 {
-    return _impl->Open(assetPath, asset);
+    return _impl->Open(assetPath, asset, detached);
 }
 
 // ------------------------------------------------------------------------- //

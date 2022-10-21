@@ -158,7 +158,10 @@ def Scope "Prototypes"(
         uniform token[] xformOpOrder = [ "xformOp:translate" ]
     }
 
-    def Mesh "Plane" {
+    def Mesh "Plane" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
         uniform bool doubleSided = 1
         float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")
         color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]

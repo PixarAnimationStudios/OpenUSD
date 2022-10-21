@@ -128,6 +128,25 @@ public:
     USDGEOM_API
     GfBBox3d ComputeWorldBound(const UsdPrim& prim);
 
+    /// Computes the bound of the prim's descendents in world space while
+    /// excluding the subtrees rooted at the paths in \p pathsToSkip.
+    ///
+    /// Additionally, the parameter \p primOverride overrides the local-to-world
+    /// transform of the prim and \p ctmOverrides is used to specify overrides
+    /// the local-to-world transforms of certain paths underneath the prim.
+    ///
+    /// This leverages any pre-existing, cached bounds, but does not include the
+    /// transform (if any) authored on the prim itself.
+    ///
+    /// See ComputeWorldBound() for notes on performance and error handling.
+    USDGEOM_API
+    GfBBox3d ComputeWorldBoundWithOverrides(
+        const UsdPrim &prim,
+        const SdfPathSet &pathsToSkip,
+        const GfMatrix4d &primOverride,
+        const TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash> &ctmOverrides);
+
+
     /// Compute the bound of the given prim in the space of an ancestor prim,
     /// \p relativeToAncestorPrim, leveraging any pre-existing cached bounds.
     ///
@@ -415,6 +434,13 @@ private:
         // Convenience stringify for debugging.
         std::string ToString() const;
     };
+
+    template<typename TransformType>
+    GfBBox3d _ComputeBoundWithOverridesHelper(
+        const UsdPrim &prim,
+        const SdfPathSet &pathsToSkip,
+        const TransformType &primOverride,
+        const TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash> &ctmOverrides);
 
     bool
     _ComputePointInstanceBoundsHelper(

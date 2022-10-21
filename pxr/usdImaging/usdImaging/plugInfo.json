@@ -179,6 +179,13 @@
                         "primTypeName": "LightAPI",
                         "includeDerivedPrimTypes" : true 
                     },
+                    "UsdImagingLightAPIAdapter": {
+                        "bases": [
+                            "UsdImagingAPISchemaAdapter"
+                        ],
+                        "isInternal": true,
+                        "apiSchemaName": "LightAPI"
+                    },
                     "UsdImagingLightFilterAdapter": {
                         "bases": [
                             "UsdImagingPrimAdapter"

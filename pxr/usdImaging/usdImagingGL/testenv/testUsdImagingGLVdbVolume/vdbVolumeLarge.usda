@@ -74,7 +74,9 @@ def Xform "World" (
         doc = "Checkerboard pattern"
     )
     {
-        def Mesh "Checkerboard"
+        def Mesh "Checkerboard" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             rel material:binding = </World/Background/CheckerboardMaterial>
             int[] faceVertexCounts = [4]
@@ -131,7 +133,9 @@ def Xform "World" (
         }
     }
 
-    def Volume "VdbVolume"
+    def Volume "VdbVolume" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         rel material:binding:preview = </VolumeDensityField>
 

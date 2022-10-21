@@ -73,6 +73,7 @@ _CreateResourceBindings(
         bufBind0.bindingIndex = BufferBinding_Primvar;
         bufBind0.resourceType = HgiBindResourceTypeStorageBuffer;
         bufBind0.stageUsage = HgiShaderStageCompute;
+        bufBind0.writable = true;
         bufBind0.offsets.push_back(0);
         bufBind0.buffers.push_back(primvar);
         resourceDesc.buffers.push_back(std::move(bufBind0));
@@ -83,6 +84,7 @@ _CreateResourceBindings(
         bufBind1.bindingIndex = BufferBinding_Quadinfo;
         bufBind1.resourceType = HgiBindResourceTypeStorageBuffer;
         bufBind1.stageUsage = HgiShaderStageCompute;
+        bufBind1.writable = true;
         bufBind1.offsets.push_back(0);
         bufBind1.buffers.push_back(quadrangulateTable);
         resourceDesc.buffers.push_back(std::move(bufBind1));
@@ -626,9 +628,9 @@ HdSt_QuadrangulateComputationGPU::Execute(
         resourceBindingsInstance.SetValue(rb);
     }
 
-    HgiResourceBindingsSharedPtr const& resourceBindindsPtr =
+    HgiResourceBindingsSharedPtr const& resourceBindingsPtr =
         resourceBindingsInstance.GetValue();
-    HgiResourceBindingsHandle resourceBindings = *resourceBindindsPtr.get();
+    HgiResourceBindingsHandle resourceBindings = *resourceBindingsPtr.get();
 
     // Get or add pipeline in registry.
     HdInstance<HgiComputePipelineSharedPtr> computePipelineInstance =

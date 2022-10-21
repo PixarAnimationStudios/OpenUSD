@@ -439,11 +439,21 @@ public:
     bool Get(VtValue* value, UsdTimeCode time = UsdTimeCode::Default()) const;
 
     /// Perform value resolution to determine the source of the resolved
-    /// value of this attribute at the requested UsdTimeCode \p time,
-    /// which defaults to \em default.
+    /// value of this attribute at the requested UsdTimeCode \p time.
     USD_API
     UsdResolveInfo
-    GetResolveInfo(UsdTimeCode time = UsdTimeCode::Default()) const;
+    GetResolveInfo(UsdTimeCode time) const;
+
+    /// Perform value resolution to determine the source of the resolved
+    /// value of this attribute at any non-default time. 
+    ///
+    /// Often (i.e. unless the attribute is affected by 
+    /// \ref Usd_Page_ValueClips "Value Clips") the source of the resolved value
+    /// does not vary over time. See UsdAttributeQuery as an example that takes
+    /// advantage of this quality of value resolution.
+    USD_API
+    UsdResolveInfo
+    GetResolveInfo() const;
 
     /// Set the value of this attribute in the current UsdEditTarget to
     /// \p value at UsdTimeCode \p time, which defaults to \em default.

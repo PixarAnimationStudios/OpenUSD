@@ -181,55 +181,36 @@ HdSt_VolumeShader::GetBufferSourcesForBBoxAndSampleDistance(
     const GfRange3d &range = bbox.GetRange();
 
     {
-        VtValue matrixVal;
-        if (doublesSupported) {
-            matrixVal = VtValue(bbox.GetInverseMatrix());
-
-        } else {
-            GfMatrix4d dmatrix = bbox.GetInverseMatrix();
-            GfMatrix4f fmatrix(
-                dmatrix[0][0], dmatrix[0][1], dmatrix[0][2], dmatrix[0][3],
-                dmatrix[1][0], dmatrix[1][1], dmatrix[1][2], dmatrix[1][3],
-                dmatrix[2][0], dmatrix[2][1], dmatrix[2][2], dmatrix[2][3],
-                dmatrix[3][0], dmatrix[3][1], dmatrix[3][2], dmatrix[3][3]);
-            matrixVal = VtValue(fmatrix);
-        }
         static const TfToken sourceName(
             _ConcatFallback(_tokens->volumeBBoxInverseTransform));
         sources->push_back(
             std::make_shared<HdVtBufferSource>(
                 sourceName,
-                matrixVal));
+                VtValue(bbox.GetInverseMatrix()),
+                1,
+                doublesSupported));
     }
 
     {
-        VtValue vecVal;
-        if (doublesSupported) {
-            vecVal = GetSafeMin(range);
-        } else {
-            vecVal = GfVec3f(GetSafeMin(range));
-        }
         static const TfToken sourceName(
             _ConcatFallback(_tokens->volumeBBoxLocalMin));
         sources->push_back(
             std::make_shared<HdVtBufferSource>(
                 sourceName,
-                vecVal));
+                VtValue(GetSafeMin(range)),
+                1,
+                doublesSupported));
     }
 
     {
-        VtValue vecVal;
-        if (doublesSupported) {
-            vecVal = GetSafeMax(range);
-        } else {
-            vecVal = GfVec3f(GetSafeMax(range));
-        }
         static const TfToken sourceName(
             _ConcatFallback(_tokens->volumeBBoxLocalMax));
         sources->push_back(
             std::make_shared<HdVtBufferSource>(
                 sourceName,
-                vecVal));
+                VtValue(GetSafeMax(range)),
+                1,
+                doublesSupported));
     }
 
     {

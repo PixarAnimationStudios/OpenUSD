@@ -40,6 +40,7 @@
 #include <boost/python.hpp>
 #include <boost/python/detail/api_placeholder.hpp>
 
+#include <mutex>
 #include <functional>
 #include <vector>
 

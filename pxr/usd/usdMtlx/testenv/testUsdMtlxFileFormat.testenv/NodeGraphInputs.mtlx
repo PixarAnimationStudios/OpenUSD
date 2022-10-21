@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+  <nodegraph name="test_nodegraph">
+    <input name="scale" type="vector2" value="24, 12" />
+    <geompropvalue name="texcoord1" type="vector2">
+      <input name="geomprop" type="string" value="st" />
+    </geompropvalue>
+    <multiply name="mult1" type="vector2">
+      <input name="in1" type="vector2" nodename="texcoord1" />
+      <input name="in2" type="vector2" interfacename="scale" />
+    </multiply>
+    <swizzle name="swizz_x" type="float">
+      <input name="in" type="vector2" nodename="mult1" />
+      <input name="channels" type="string" value="x" />
+    </swizzle>
+    <swizzle name="swizz_y" type="float">
+      <input name="in" type="vector2" nodename="mult1" />
+      <input name="channels" type="string" value="y" />
+    </swizzle>
+    <floor name="floor1" type="float">
+      <input name="in" type="float" nodename="swizz_x" />
+    </floor>
+    <floor name="floor2" type="float">
+      <input name="in" type="float" nodename="swizz_y" />
+    </floor>
+    <add name="add1" type="float">
+      <input name="in1" type="float" nodename="floor1" />
+      <input name="in2" type="float" nodename="floor2" />
+    </add>
+    <modulo name="mod1" type="float">
+      <input name="in1" type="float" nodename="add1" />
+      <input name="in2" type="float" value="2.0" />
+    </modulo>
+    <swizzle name="swizz_xxx" type="color3">
+      <input name="in" type="float" nodename="mod1" />
+      <input name="channels" type="string" value="xxx" />
+    </swizzle>  
+    <output name="diffuse_output" type="color3" nodename="swizz_xxx" />
+  </nodegraph>
+
+  <UsdPreviewSurface name="test_surface_shader" type="surfaceshader">
+    <input name="diffuseColor" type="color3" output="diffuse_output" nodegraph="test_nodegraph" />
+    <input name="useSpecularWorkflow" type="integer" value="0" />
+    <input name="specularColor" type="color3" value=".9, .9, .9" />
+    <input name="roughness" type="float" value="0.25" />
+    <input name="ior" type="float" value=".9" />
+  </UsdPreviewSurface>
+  <surfacematerial name="test_material" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="test_surface_shader" />
+  </surfacematerial>
+</materialx>

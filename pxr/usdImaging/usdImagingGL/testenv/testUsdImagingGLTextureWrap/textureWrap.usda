@@ -10,6 +10,7 @@ def Scope "Defs"
     def Mesh "MeshDef" (
         active = false
         instanceable = false
+        prepend apiSchemas = ["MaterialBindingAPI"]
     )
     {
         float3[] extent = [(-1, -1, 0), (2, 2, 0)]

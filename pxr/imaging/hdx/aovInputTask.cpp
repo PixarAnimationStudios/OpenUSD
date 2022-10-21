@@ -177,13 +177,15 @@ HdxAovInputTask::Execute(HdTaskContext* ctx)
     // in the shared task context.
     // The lifetime of this new HgiTexture is managed by this task. 
 
-    _UpdateTexture(ctx, _aovTexture, _aovBuffer);
+    _UpdateTexture(ctx, _aovTexture, _aovBuffer,
+        HgiTextureUsageBitsColorTarget);
     if (_aovTexture) {
         (*ctx)[HdAovTokens->color] = VtValue(_aovTexture);
     }
 
     if (_depthBuffer) {
-        _UpdateTexture(ctx, _depthTexture, _depthBuffer);
+        _UpdateTexture(ctx, _depthTexture, _depthBuffer,
+            HgiTextureUsageBitsDepthTarget);
         if (_depthTexture) {
             (*ctx)[HdAovTokens->depth] = VtValue(_depthTexture);
         }
@@ -194,7 +196,8 @@ void
 HdxAovInputTask::_UpdateTexture(
     HdTaskContext* ctx,
     HgiTextureHandle& texture,
-    HdRenderBuffer* buffer)
+    HdRenderBuffer* buffer,
+    HgiTextureUsageBits usage)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -238,8 +241,7 @@ HdxAovInputTask::_UpdateTexture(
         texDesc.mipLevels = 1;
         texDesc.pixelsByteSize = dataByteSize;
         texDesc.sampleCount = HgiSampleCount1;
-        texDesc.usage = HgiTextureUsageBitsColorTarget | 
-                        HgiTextureUsageBitsShaderRead;
+        texDesc.usage = usage | HgiTextureUsageBitsShaderRead;
 
         texture = _GetHgi()->CreateTexture(texDesc);
 

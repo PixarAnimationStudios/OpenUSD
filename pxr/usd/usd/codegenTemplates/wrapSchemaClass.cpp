@@ -169,6 +169,15 @@ void wrap{{ cls.cppClassName }}()
 {% endif %}
         .staticmethod("Get")
 {% endif %}
+{% if cls.isMultipleApply %}
+
+        .def("GetAll",
+            (std::vector<{{ cls.cppClassName }}>(*)(const UsdPrim &prim))
+                &This::GetAll,
+            arg("prim"),
+            return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetAll")
+{% endif %}
 {% if cls.isConcrete %}
 
         .def("Define", &This::Define, (arg("stage"), arg("path")))

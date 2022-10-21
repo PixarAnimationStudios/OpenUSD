@@ -63,7 +63,7 @@ HgiVulkanTexture::HgiVulkanTexture(
     , _cpuStagingAddress(nullptr)
 {
     GfVec3i const& dimensions = desc.dimensions;
-    bool isDepthBuffer = desc.usage & HgiTextureUsageBitsDepthTarget;
+    bool const isDepthBuffer = desc.usage & HgiTextureUsageBitsDepthTarget;
 
     //
     // Gather image create info
@@ -72,7 +72,8 @@ HgiVulkanTexture::HgiVulkanTexture(
     VkImageCreateInfo imageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
 
     imageCreateInfo.imageType = HgiVulkanConversions::GetTextureType(desc.type);
-    imageCreateInfo.format = HgiVulkanConversions::GetFormat(desc.format);
+    imageCreateInfo.format = HgiVulkanConversions::GetFormat(
+        desc.format, isDepthBuffer);
     imageCreateInfo.mipLevels = desc.mipLevels;
     imageCreateInfo.arrayLayers = desc.layerCount;
     imageCreateInfo.samples = 
@@ -243,6 +244,7 @@ HgiVulkanTexture::HgiVulkanTexture(
         TransitionImageBarrier(
             cb,
             this,
+            VK_IMAGE_LAYOUT_UNDEFINED,
             layout,
             NO_PENDING_WRITES,
             GetDefaultAccessFlags(desc.usage),
@@ -277,14 +279,15 @@ HgiVulkanTexture::HgiVulkanTexture(
     HgiVulkanTexture* srcTexture =
         static_cast<HgiVulkanTexture*>(desc.sourceTexture.Get());
     HgiTextureDesc const& srcTexDesc = desc.sourceTexture->GetDescriptor();
-    bool isDepthBuffer = srcTexDesc.usage & HgiTextureUsageBitsDepthTarget;
+    bool const isDepthBuffer = 
+        srcTexDesc.usage & HgiTextureUsageBitsDepthTarget;
 
     _vkImage = srcTexture->GetImage();
     _vkImageLayout = srcTexture->GetImageLayout();
 
     VkImageViewCreateInfo view = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
     view.viewType = HgiVulkanConversions::GetTextureViewType(srcTexDesc.type);
-    view.format = HgiVulkanConversions::GetFormat(desc.format);
+    view.format = HgiVulkanConversions::GetFormat(desc.format, isDepthBuffer);
     view.components.r = HgiVulkanConversions::GetComponentSwizzle(
         srcTexDesc.componentMapping.r);
     view.components.g = HgiVulkanConversions::GetComponentSwizzle(
@@ -479,6 +482,7 @@ HgiVulkanTexture::CopyBufferToTexture(
     TransitionImageBarrier(
         cb,
         this,
+        GetImageLayout(),
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // Transition tex to this layout
         NO_PENDING_WRITES,                    // No pending writes
         VK_ACCESS_TRANSFER_WRITE_BIT,         // Write access to image
@@ -501,6 +505,7 @@ HgiVulkanTexture::CopyBufferToTexture(
     TransitionImageBarrier(
         cb,
         this,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         layout,                              // Transition tex to this
         VK_ACCESS_TRANSFER_WRITE_BIT,        // Pending vkCmdCopyBufferToImage
         access,                              // Shader read access
@@ -512,6 +517,7 @@ void
 HgiVulkanTexture::TransitionImageBarrier(
     HgiVulkanCommandBuffer* cb,
     HgiVulkanTexture* tex,
+    VkImageLayout oldLayout,
     VkImageLayout newLayout,
     VkAccessFlags producerAccess,
     VkAccessFlags consumerAccess,
@@ -520,7 +526,6 @@ HgiVulkanTexture::TransitionImageBarrier(
     int32_t mipLevel)
 {
     HgiTextureDesc const& desc = tex->GetDescriptor();
-    bool isDepthBuffer = desc.usage & HgiTextureUsageBitsDepthTarget;
 
     uint32_t firstMip = mipLevel < 0 ? 0 : (uint32_t)mipLevel;
     uint32_t mipCnt = mipLevel < 0 ? desc.mipLevels : 1;
@@ -529,14 +534,13 @@ HgiVulkanTexture::TransitionImageBarrier(
     barrier[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier[0].srcAccessMask = producerAccess; // what producer does / changes.
     barrier[0].dstAccessMask = consumerAccess; // what consumer does / changes.
-    barrier[0].oldLayout = tex->GetImageLayout();
+    barrier[0].oldLayout = oldLayout;
     barrier[0].newLayout = newLayout;
     barrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier[0].image = tex->GetImage();
-    barrier[0].subresourceRange.aspectMask = isDepthBuffer ?
-        VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT :
-        VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier[0].subresourceRange.aspectMask = 
+        HgiVulkanConversions::GetImageAspectFlag(desc.usage);
     barrier[0].subresourceRange.baseMipLevel = firstMip;
     barrier[0].subresourceRange.levelCount = mipCnt;
     barrier[0].subresourceRange.layerCount = desc.layerCount;

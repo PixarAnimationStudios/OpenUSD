@@ -67,7 +67,9 @@ public:
     static PcpPrimIndex_GraphRefPtr New(const PcpPrimIndex_GraphPtr& rhs);
 
     /// Returns true if this graph was created in USD mode.
-    bool IsUsd() const;
+    bool IsUsd() const {
+        return _usd;
+    }
 
     /// Get/set whether this prim index has an authored payload.
     /// Note that it does not necessarily mean that the payload has been
@@ -90,6 +92,13 @@ public:
     /// By default, this returns a range encompassing the entire graph.
     std::pair<size_t, size_t> 
     GetNodeIndexesForRange(PcpRangeType rangeType = PcpRangeTypeAll) const;
+
+    /// Returns the node index of the given \p node in this graph.
+    ///
+    /// If the node is not in this graph, this returns the end index of the 
+    /// graph.
+    size_t 
+    GetNodeIndexForNode(const PcpNodeRef &node) const;
 
     /// Returns a node from the graph that uses the given site and can
     /// contribute specs, if one exists. If multiple nodes in the graph 
@@ -129,22 +138,24 @@ public:
     void Finalize();
     
     /// Return true if the graph is in a finalized state.
-    bool IsFinalized() const;
+    bool IsFinalized() const {
+        return _finalized;
+    }
 
     /// Get the SdSite from compressed site \p site.
     SdfSite GetSdSite(const Pcp_CompressedSdSite& site) const
     {
         return SdfSite(_GetNode(site.nodeIndex).
-                                 layerStack->GetLayers()[site.layerIndex],
-                             _nodeSitePaths[site.nodeIndex]);
+                       layerStack->GetLayers()[site.layerIndex],
+                       _unshared[site.nodeIndex].sitePath);
     }
 
     /// Make an uncompressed site reference from compressed site \p site.
     Pcp_SdSiteRef GetSiteRef(const Pcp_CompressedSdSite& site) const
     {
         return Pcp_SdSiteRef(_GetNode(site.nodeIndex).
-                                 layerStack->GetLayers()[site.layerIndex],
-                             _nodeSitePaths[site.nodeIndex]);
+                             layerStack->GetLayers()[site.layerIndex],
+                             _unshared[site.nodeIndex].sitePath);
     }
 
     /// Get a node from compressed site \p site.
@@ -162,7 +173,7 @@ private:
 
     // Private constructors -- use New instead.
     PcpPrimIndex_Graph(const PcpLayerStackSite& rootSite, bool usd);
-    PcpPrimIndex_Graph(const PcpPrimIndex_Graph& rhs);
+    PcpPrimIndex_Graph(const PcpPrimIndex_Graph& rhs) = default;
 
     size_t _CreateNode(
         const PcpLayerStackSite& site, const PcpArc& arc);
@@ -173,6 +184,7 @@ private:
         size_t parentNodeIdx, size_t childNodeIdx);
 
     void _DetachSharedNodePool();
+    void _DetachSharedNodePoolForNewNodes(size_t numAddedNodes = -1);
 
     // Iterates through the immediate children of the root node looking
     // for the first node for which p(node) is true and the first subsequent
@@ -228,13 +240,13 @@ private:
 
     size_t _GetNumNodes() const
     {
-        return _data->nodes.size();
+        return _nodes->size();
     }
 
     const _Node& _GetNode(size_t idx) const
     {
         TF_DEV_AXIOM(idx < _GetNumNodes());
-        return _data->nodes[idx];
+        return (*_nodes)[idx];
     }
     const _Node& _GetNode(const PcpNodeRef& node) const
     {
@@ -246,39 +258,37 @@ private:
     friend class Pcp_Statistics;
 
     struct _Node {
-        static const size_t _nodeIndexSize = 15;
-        static const size_t _childrenSize  = 10;
-        static const size_t _depthSize     = 10;
+        static const size_t _nodeIndexSize = 16;
+        static const size_t _depthSize     = 16;
         // These types should be just large enough to hold the above sizes.
         // This allows this structure to be packed into less space.
-        typedef unsigned short _NodeIndexType;
-        typedef unsigned short _ChildrenSizeType;
-        typedef unsigned short _DepthSizeType;
+        using _NodeIndexType = uint16_t;
+        using _DepthSizeType = uint16_t;
 
         // Index used to represent an invalid node.
-        static const size_t _invalidNodeIndex = (1lu << _nodeIndexSize) - 1lu;
+        static const size_t _invalidNodeIndex =
+            static_cast<size_t>(_NodeIndexType(~0));
 
         _Node() noexcept
-            /* The equivalent initializations to the memset().
+        /* The equivalent initializations to the ctor body -- gcc emits much
+         * better code for the memset calls.
+            , arcSiblingNumAtOrigin(0)
+            , arcNamespaceDepth(0)
+            , arcParentIndex(_invalidNodeIndex)
+            , arcOriginIndex(_invalidNodeIndex)
+            , firstChildIndex(_invalidNodeIndex)
+            , lastChildIndex(_invalidNodeIndex)
+            , prevSiblingIndex(_invalidNodeIndex)
+            , nextSiblingIndex(_invalidNodeIndex)
+            , arcType(PcpArcTypeRoot)
             , permission(SdfPermissionPublic)
             , hasSymmetry(false)
             , inert(false)
-            , culled(false)
             , permissionDenied(false)
-            , arcType(PcpArcTypeRoot)
-            , arcSiblingNumAtOrigin(0)
-            , arcNamespaceDepth(0)
-            , arcParentIndex(0)
-            , arcOriginIndex(0)
-            */
+        */
         {
             memset(&smallInts, 0, sizeof(smallInts));
-            smallInts.arcParentIndex   = _invalidNodeIndex;
-            smallInts.arcOriginIndex   = _invalidNodeIndex;
-            smallInts.firstChildIndex  = _invalidNodeIndex;
-            smallInts.lastChildIndex   = _invalidNodeIndex;
-            smallInts.prevSiblingIndex = _invalidNodeIndex;
-            smallInts.nextSiblingIndex = _invalidNodeIndex;
+            memset(&indexes, ~0, sizeof(indexes));
         }
 
         void Swap(_Node& rhs) noexcept
@@ -286,6 +296,7 @@ private:
             std::swap(layerStack, rhs.layerStack);
             mapToRoot.Swap(rhs.mapToRoot);
             mapToParent.Swap(rhs.mapToParent);
+            std::swap(indexes, rhs.indexes);
             std::swap(smallInts, rhs.smallInts);
         }
 
@@ -305,14 +316,45 @@ private:
         // The value-mapping function used to map values from this arc's source
         // node to its parent node.
         PcpMapExpression mapToParent;
+
+        struct _Indexes {
+            // The index of the parent (or target) node of this arc.
+            _NodeIndexType arcParentIndex;
+            // The index of the origin node of this arc.
+            _NodeIndexType arcOriginIndex;
+            
+            // The indexes of the first/last child, previous/next sibling.
+            // The previous sibling index of a first child and the next
+            // sibling index of a last child are _invalidNodeIndex (i.e.
+            // they form a list, not a ring).
+            _NodeIndexType firstChildIndex;
+            _NodeIndexType lastChildIndex;
+            _NodeIndexType prevSiblingIndex;
+            _NodeIndexType nextSiblingIndex;
+        };
+        _Indexes indexes;
+
         // Pack the non-byte sized integers into an unnamed structure.
         // This allows us to initialize them all at once.  g++ will,
         // surprisingly, initialize each individually in the default
         // copy constructor if they're direct members of _Node.
         struct _SmallInts {
+            // Index among sibling arcs at origin; lower is stronger
+            _NodeIndexType arcSiblingNumAtOrigin;
+            // Absolute depth in namespace of node that introduced this
+            // node.  Note that this does *not* count any variant
+            // selections.
+            _DepthSizeType arcNamespaceDepth;
+
+            // Some of the following fields use 8 bits when they could use fewer
+            // because the compiler can often avoid shift & mask operations when
+            // working with whole bytes.
+            
+            // The type of the arc to the parent node.
+            PcpArcType arcType:8;
             // The permissions for this node (whether specs on this node 
             // can be accessed from other nodes).
-            SdfPermission permission:2;
+            SdfPermission permission:8;
             // Whether this node contributes symmetry information to
             // composition. This implies that prims at this node's site 
             // or at any of its namespace ancestors contain symmetry 
@@ -322,102 +364,76 @@ private:
             // where a node is needed to represent a structural dependency
             // but no opinions are allowed to be added.
             bool inert:1;
-            // Whether this node was culled. This implies that no opinions
-            // exist at this node and all child nodes. Because of this,
-            // prim indexing does not need to expand this node to look for
-            // other arcs.
-            bool culled:1;
             // Whether this node is in violation of permission settings.
             // This is set to true when: we arrive at this node from a
             // node that was marked \c SdfPermissionPrivate, or we arrive
             // at this node from  another node that was denied permission.
             bool permissionDenied:1;
-            // The type of the arc to the parent node.  We only need 4
-            // bits but we use 5 to avoid signed/unsigned issues.
-            PcpArcType arcType:5;
-            // Index among sibling arcs at origin; lower is stronger
-            _ChildrenSizeType arcSiblingNumAtOrigin:_childrenSize;
-            // Absolute depth in namespace of node that introduced this
-            // node.  Note that this does *not* count any variant
-            // selections.
-            _DepthSizeType arcNamespaceDepth:_depthSize;
-
-            // The following are padded to word size to avoid needing to
-            // bit shift for read/write access and having to access two
-            // words to read a value that straddles two machine words.
-            // Note that bitfield layout should be examined when any
-            // field is added, removed, or resized.
-
-            // The index of the parent (or target) node of this arc.
-            _NodeIndexType:0;
-            _NodeIndexType arcParentIndex:_nodeIndexSize;
-            // The index of the origin node of this arc.
-            _NodeIndexType:0;
-            _NodeIndexType arcOriginIndex:_nodeIndexSize;
-
-            // The indexes of the first/last child, previous/next sibling.
-            // The previous sibling index of a first child and the next
-            // sibling index of a last child are _invalidNodeIndex (i.e.
-            // they form a list, not a ring).
-            _NodeIndexType:0;
-            _NodeIndexType firstChildIndex:_nodeIndexSize;
-            _NodeIndexType:0;
-            _NodeIndexType lastChildIndex:_nodeIndexSize;
-            _NodeIndexType:0;
-            _NodeIndexType prevSiblingIndex:_nodeIndexSize;
-            _NodeIndexType:0;
-            _NodeIndexType nextSiblingIndex:_nodeIndexSize;
-        }
-        // Make this structure as small as possible.
-#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
-        __attribute__((packed))
-#endif
-        ;
+        };
         _SmallInts smallInts;
     };
 
-    typedef std::vector<_Node> _NodePool;
-
-    struct _SharedData {
-        _SharedData(bool usd_) 
-            : finalized(false)
-            , usd(usd_)
-            , hasPayloads(false)
-            , instanceable(false)
-        { }
-
-        // Pool of nodes for this graph. 
-        _NodePool nodes;
-
-        // Whether this node pool has been finalized.
-        bool finalized:1;
-        // Whether this prim index is composed in USD mode.
-        bool usd:1;
-        // Whether this prim index has authored payloads.
-        bool hasPayloads:1;
-        // Whether this prim index is instanceable.
-        bool instanceable:1;
-    };
+    // Pool of nodes for this graph. 
+    using _NodePool = std::vector<_Node>;
 
     // Container of graph data. PcpPrimIndex_Graph implements a 
     // copy-on-write scheme, so this data may be shared among multiple graph
     // instances.
-    std::shared_ptr<_SharedData> _data;
+    std::shared_ptr<_NodePool> _nodes;
 
-    // The following data is not included in the shared data object above
-    // because they will typically differ between graph instances. Including
-    // them in the shared data object would cause more graph instances to
-    // be created.
+    // The following unshared data are not included in the shared data object
+    // above because they will typically differ between graph
+    // instances. Including them in the shared data object would cause more
+    // graph instances to be created.
+    struct _UnsharedData {
+        _UnsharedData()
+            : hasSpecs(false), culled(false), isDueToAncestor(false) {}
+        explicit _UnsharedData(SdfPath const &p)
+            : sitePath(p)
+            , hasSpecs(false)
+            , culled(false)
+            , isDueToAncestor(false) {}
+        explicit _UnsharedData(SdfPath &&p)
+            : sitePath(std::move(p))
+            , hasSpecs(false)
+            , culled(false)
+            , isDueToAncestor(false) {}
 
-    // Site paths for each node. Elements in this vector correspond to nodes
-    // in the shared node pool. Together, _data->nodes[i].layerStack and 
-    // _nodeSitePaths[i] form a node's site.
-    std::vector<SdfPath> _nodeSitePaths;
+        // The site path for a particular node.
+        SdfPath sitePath;
 
-    // Flags indicating whether a particular node has any specs to contribute
-    // to the composed prim. Elements in this vector correspond to nodes in
-    // the shared node pool.
-    std::vector<bool> _nodeHasSpecs;
+        // Whether or not a particular node has any specs to contribute to the
+        // composed prim.
+        bool hasSpecs:1;
+
+        // Whether this node was culled. This implies that no opinions
+        // exist at this node and all child nodes. Because of this,
+        // prim indexing does not need to expand this node to look for
+        // other arcs.
+        bool culled:1;
+
+        // Whether this node is copied from the namespace ancestor prim
+        // index (true) or introduced here due to a direct arc (false)
+        bool isDueToAncestor:1;
+    };
+    
+    // Elements in this vector correspond to nodes in the shared node
+    // pool. Together, (*_nodes)[i].layerStack and _unshared[i].sitePath form a
+    // node's site.
+    std::vector<_UnsharedData> _unshared;
+
+    // Whether or not this graph reached any specs with authored payloads.
+    bool _hasPayloads:1;
+
+    // Whether or not this graph is considered 'instanceable'.
+    bool _instanceable:1;
+
+    // Whether or not this graph's node pool has been finalized.
+    bool _finalized:1;
+
+    // Whether or not this graph was composed in 'usd'-mode, which disables
+    // certain features such as permissions, symmetry, etc.
+    bool _usd:1;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

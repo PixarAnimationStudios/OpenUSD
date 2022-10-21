@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+
+    <constant name="redClorVal" type="color3">
+      <input name="value" type="color3" value="1,0,0" />
+    </constant>
+    <constant name="blueColorVal" type="color3">
+      <input name="value" type="color3" value="0,0,1" />
+    </constant>
+    <multiply name="multi1" type="color3">
+      <input name="in1" type="color3" nodename="redClorVal" />
+      <input name="in2" type="float" value="0.5" />
+    </multiply>
+    <add name="myDiffColor" type="color3">
+      <input name="in1" type="color3" nodename="multi1" />
+      <input name="in2" type="color3" nodename="blueColorVal" />
+    </add>
+    <constant name="mySpecColor" type="color3">
+      <input name="value" type="color3" value="0,1,0" />
+    </constant>
+
+  <UsdPreviewSurface name="surface_shader_node" type="surfaceshader">
+    <input name="diffuseColor" type="color3" nodename="myDiffColor" />
+    <input name="useSpecularWorkflow" type="integer" value="1" />
+    <input name="specularColor" type="color3" nodename="mySpecColor" />
+    <input name="roughness" type="float" value="0.25" />
+    <input name="ior" type="float" value=".9" />
+  </UsdPreviewSurface>
+  <surfacematerial name="surface_material_node" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_shader_node" />
+  </surfacematerial>
+</materialx>
