@@ -246,15 +246,16 @@ Tf_MallocTagStringMatchTable::Match(const char* s) const
 struct Tf_MallocCallSite
 {
     Tf_MallocCallSite(const string& name)
-        : _name(name)
+        : _name(std::make_unique<char []>(strlen(name.c_str()) + 1))
         , _totalBytes(0)
         , _flags(
             (Tf_MatchesMallocTagDebugName(name) ? _DebugFlag : 0) |
             (Tf_MatchesMallocTagTraceName(name) ? _TraceFlag : 0))
-        {}
+        {
+            strcpy(_name.get(), name.c_str());
+        }
     
-    // Note: _name needs to be const since we call c_str() on it.
-    const string _name;
+    std::unique_ptr<char []> _name;
     
     std::atomic<int64_t> _totalBytes;
 
@@ -304,7 +305,7 @@ Tf_GetOrCreateCallSite(Tf_MallocCallSiteTable* table,
     auto newSite = std::make_unique<Tf_MallocCallSite>(name);
 
     Tf_MallocCallSiteTable::accessor acc;
-    if (table->emplace(acc, name, newSite.get())) {
+    if (table->emplace(acc, newSite->_name.get(), newSite.get())) {
         // We emplaced the new site, so release it from the unique_ptr.
         return newSite.release();
     }
@@ -543,15 +544,13 @@ struct TfMallocTag::_ThreadData {
         // If _nodeStack is not empty check to see if there's a nullptr.  If so,
         // this is a repeated node, so just pop the nullptr.  Otherwise we need
         // to erase this node's site from _callSitesOnStack.
-        if (!_nodeStack.empty()) {
-            if (_nodeStack.back()) {
-                // Remove from _callSitesOnStack.
-                _callSitesOnStack.erase(node->_callSite);
-            }
-            else {
+        if (!_nodeStack.empty() && !_nodeStack.back()) {
                 // Pop the nullptr, leave the repeated node in _callSitesOnStack.
                 _nodeStack.pop_back();
             }
+        else {
+            // Remove from _callSitesOnStack.
+            _callSitesOnStack.erase(node->_callSite);
         }
     }
 
@@ -691,7 +690,7 @@ Tf_MallocGlobalData::_SetTraceNames(const std::string& matchList)
 
     // Update trace flag on every existing call site.
     TF_FOR_ALL(i, _callSiteTable) {
-        if (_traceMatchTable.Match(i->second->_name.c_str())) {
+        if (_traceMatchTable.Match(i->second->_name.get())) {
             i->second->_flags |= Tf_MallocCallSite::_TraceFlag;
         }
         else {
@@ -767,7 +766,7 @@ Tf_MallocGlobalData::_SetDebugNames(const std::string& matchList)
 
     // Update debug flag on every existing call site.
     TF_FOR_ALL(i, _callSiteTable) {
-        if (_debugMatchTable.Match(i->second->_name.c_str())) {
+        if (_debugMatchTable.Match(i->second->_name.get())) {
             i->second->_flags |= Tf_MallocCallSite::_DebugFlag;
         }
         else {
@@ -879,7 +878,7 @@ Tf_PathNodeChildrenTable
 Tf_MallocGlobalData::_BuildPathNodeChildrenTable() const
 {
     Tf_PathNodeChildrenTable result;
-    // Walk all of _allPathNodes and populate result.
+    // Walk all of _pathNodeTable and populate result.
     for (auto const &item: _pathNodeTable) {
         result[item.first.first].push_back(item.second);
     }
@@ -898,7 +897,7 @@ Tf_MallocPathNode::_BuildTree(Tf_PathNodeChildrenTable const &nodeChildren,
     node->children.reserve(children.size());
     node->nBytes = node->nBytesDirect = _totalBytes;
     node->nAllocations = _numAllocations;
-    node->siteName = _callSite->_name;
+    node->siteName = _callSite->_name.get();
 
     for (Tf_MallocPathNode const *child: children) {
         // The tree is built in a special way, if the repeated allocations
@@ -1129,7 +1128,7 @@ TfMallocTag::GetCallTree(CallTree* tree, bool skipRepeated)
         tree->callSites.reserve(callSiteTable.size());
         TF_FOR_ALL(csi, callSiteTable) {
             CallTree::CallSite cs = {
-                csi->second->_name,
+                csi->second->_name.get(),
                 static_cast<size_t>(csi->second->_totalBytes)
             };
             tree->callSites.push_back(cs);
