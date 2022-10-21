@@ -83,10 +83,6 @@ public:
     VtArray<TfToken>
     ComputeCollectionsContainingPath(SdfPath const& path) const;
 
-    /// Return the cached MembershipQuery for a given id
-    void
-    GetMembershipQuery(TfToken const& id, const Query** query) const;
-
     /// Returns a set of dirty paths
     /// Should only be used if AreAllPathsDirty returned false
     SdfPathSet const&
@@ -113,7 +109,9 @@ private:
     std::unordered_map<Query, SdfPathSet, Query::Hash> _pathsForQuery;
 
     void
-    _MarkCollectionContentDirty(UsdStageWeakPtr const& stage, UsdCollectionAPI::MembershipQuery const& query);
+    _MarkCollectionContentDirty(
+        UsdStageWeakPtr const& stage, 
+        UsdCollectionAPI::MembershipQuery const& query);
 
     SdfPathSet _dirtyPaths;
 
