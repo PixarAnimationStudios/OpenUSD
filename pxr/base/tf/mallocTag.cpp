@@ -545,9 +545,9 @@ struct TfMallocTag::_ThreadData {
         // this is a repeated node, so just pop the nullptr.  Otherwise we need
         // to erase this node's site from _callSitesOnStack.
         if (!_nodeStack.empty() && !_nodeStack.back()) {
-                // Pop the nullptr, leave the repeated node in _callSitesOnStack.
-                _nodeStack.pop_back();
-            }
+            // Pop the nullptr, leave the repeated node in _callSitesOnStack.
+            _nodeStack.pop_back();
+        }
         else {
             // Remove from _callSitesOnStack.
             _callSitesOnStack.erase(node->_callSite);
