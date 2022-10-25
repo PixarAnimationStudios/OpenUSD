@@ -433,7 +433,7 @@ HgiMetalGraphicsCmds::SetViewport(GfVec4i const& vp)
     // being inverted.
     // This combination allows us to emulate the OpenGL coordinate space on
     // Metal
-    _CachedEncState.viewport = (MTLViewport){x, h-y, w, -h, 0.0, 1.0};
+    _CachedEncState.viewport = (MTLViewport){x, y+h, w, -h, 0.0, 1.0};
     
     for (auto& encoder : _encoders) {
         [encoder setViewport:_CachedEncState.viewport];

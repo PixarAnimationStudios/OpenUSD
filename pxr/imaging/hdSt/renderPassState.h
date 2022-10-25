@@ -175,12 +175,11 @@ public:
     /// clip planes specified by SetCameraFramingState.
     HDST_API ClipPlanesVector const & GetClipPlanes() const override;
 
-    /// Helper to compute and get the Viewport
+    /// Helper to compute and get the y-up Viewport
     /// This is either using the modern camera framing, which is always y-down,
     /// or the legacy viewport.
-    /// Note that flipping is always necessary for OpenGL.
     HDST_API
-    GfVec4i ComputeViewport(const HgiGraphicsCmdsDesc &desc, const bool flip);
+    GfVec4i ComputeViewport(const HgiGraphicsCmdsDesc &desc);
 
     // Helper to get graphics cmds descriptor describing textures
     // we render into and the blend state, constructed from
