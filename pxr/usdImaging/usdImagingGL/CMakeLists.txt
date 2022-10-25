@@ -1294,7 +1294,7 @@ pxr_register_test(testUsdImagingGLFramingBBox_proxy_render
 )
 
 pxr_register_test(testUsdImagingGLInstancing_instancedCubes
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage instancedCubes.usda -write testUsdImagingGLInstancing_instancedCubes.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage instancedCubes.usda -write testUsdImagingGLInstancing_instancedCubes.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInstancing_instancedCubes.png
     FAIL 0.01
