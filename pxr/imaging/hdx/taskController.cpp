@@ -595,7 +595,6 @@ HdxTaskController::_CreateBoundingBoxTask()
         _tokens->boundingBoxTask);
 
     HdxBoundingBoxTaskParams taskParams;
-    taskParams.cameraId = _freeCameraSceneDelegate->GetCameraId();
 
     GetRenderIndex()->InsertTask<HdxBoundingBoxTask>(&_delegate,
         _boundingBoxTaskId);
@@ -2055,17 +2054,6 @@ HdxTaskController::_SetCameraParamForTasks(SdfPath const& id)
             GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
                 _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
         }
-
-        if (!_boundingBoxTaskId.IsEmpty()) {
-            HdxBoundingBoxTaskParams params =
-                _delegate.GetParameter<HdxBoundingBoxTaskParams>(
-                    _boundingBoxTaskId, HdTokens->params);
-            params.cameraId = _activeCameraId;
-            _delegate.SetParameter(
-                _boundingBoxTaskId, HdTokens->params, params);
-            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-                _boundingBoxTaskId, HdChangeTracker::DirtyParams);
-        }
     }
 }
 
@@ -2123,24 +2111,6 @@ HdxTaskController::_SetCameraFramingForTasks()
                 _pickFromRenderBufferTaskId, HdTokens->params, params);
             changeTracker.MarkTaskDirty(
                 _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
-        }
-    }
-
-    if (!_boundingBoxTaskId.IsEmpty()) {
-        HdxBoundingBoxTaskParams params =
-            _delegate.GetParameter<HdxBoundingBoxTaskParams>(
-                _boundingBoxTaskId, HdTokens->params);
-        if (params.viewport != adjustedViewport ||
-            params.framing != _framing ||
-            params.overrideWindowPolicy != _overrideWindowPolicy) {
-
-            params.framing = _framing;
-            params.overrideWindowPolicy = _overrideWindowPolicy;
-            params.viewport = adjustedViewport;
-            _delegate.SetParameter(
-                _boundingBoxTaskId, HdTokens->params, params);
-            changeTracker.MarkTaskDirty(
-                _boundingBoxTaskId, HdChangeTracker::DirtyParams);
         }
     }
 

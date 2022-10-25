@@ -149,7 +149,7 @@ _ComputeViewport(const GfRect2i &dataWindow, const GfVec3i &framebufferSize)
 }
 
 GfVec4i
-HdStRenderPassState::ComputeViewport(const HgiGraphicsCmdsDesc &desc)
+HdStRenderPassState::ComputeViewport(const HgiGraphicsCmdsDesc &desc) const
 {
     const CameraUtilFraming &framing = GetFraming();
     // Use data window for clients using the new camera framing API.
