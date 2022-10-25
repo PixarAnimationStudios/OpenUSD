@@ -234,6 +234,15 @@ pxr_build_test(testHdDataSourceLocator
        testenv/testHdDataSourceLocator.cpp
 )
 
+pxr_build_test(testHdDirtyBitsTranslator
+   LIBRARIES
+       hd
+       tf
+
+   CPPFILES
+       testenv/testHdDirtyBitsTranslator.cpp
+)
+
 pxr_build_test(testHdDirtyList
    LIBRARIES
        hd
@@ -352,6 +361,10 @@ pxr_register_test(testHdCommand
 
 pxr_register_test(testHdDataSourceLocator
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDataSourceLocator"
+)
+
+pxr_register_test(testHdDirtyBitsTranslator
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDirtyBitsTranslator"
 )
 
 pxr_register_test(testHdDirtyList
