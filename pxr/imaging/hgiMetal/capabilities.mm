@@ -81,6 +81,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     if (!TfGetEnvSetting(HGIMETAL_ENABLE_INDIRECT_COMMAND_BUFFER)) {
         icbSupported = false;
     }
+    icbSupported = false;
 
     _SetFlag(HgiDeviceCapabilitiesBitsUnifiedMemory, unifiedMemory);
 

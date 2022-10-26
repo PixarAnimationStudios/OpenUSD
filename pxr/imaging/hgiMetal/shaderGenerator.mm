@@ -76,6 +76,10 @@ public:
     HgiMetalShaderSectionPtrVector AccumulateTextureBindings(
         const HgiShaderFunctionTextureDescVector &textures,
         HgiMetalShaderGenerator *generator);
+    HgiMetalShaderSectionPtrVector AccumulatePayload(
+        const HgiShaderFunctionParamDescVector &params,
+        HgiMetalShaderGenerator *generator,
+        HgiShaderStage stage);
 
     const HgiMetalShaderSectionPtrVector& GetConstantParams() const;
     const HgiMetalShaderSectionPtrVector& GetInputs() const;
@@ -83,6 +87,7 @@ public:
     const HgiMetalShaderSectionPtrVector& GetBufferBindings() const;
     const HgiMetalShaderSectionPtrVector& GetSamplerBindings() const;
     const HgiMetalShaderSectionPtrVector& GetTextureBindings() const;
+    const HgiMetalShaderSectionPtrVector& GetPayload() const;
 
     const std::string inputsGenericWrapper;
     const std::string inputsGenericParameters;
@@ -97,6 +102,7 @@ private:
     const HgiMetalInterstageBlockShaderSectionPtrVector _outputBlocks;
     const HgiMetalShaderSectionPtrVector _inputs;
     const HgiMetalShaderSectionPtrVector _outputs;
+    const HgiMetalShaderSectionPtrVector _payload;
     const HgiMetalShaderSectionPtrVector _bufferBindings;
     HgiMetalShaderSectionPtrVector _samplerBindings;
     HgiMetalShaderSectionPtrVector _textureBindings;
@@ -143,11 +149,14 @@ _GetBuiltinKeyword(HgiShaderFunctionParamDesc const &param,
     //possible metal attributes on shader inputs.
     // Map from descriptor to Metal
     const static std::unordered_map<std::string, std::string> roleIndexM {
+       {HgiShaderKeywordTokens->emptyAttribute, " "},
        {HgiShaderKeywordTokens->hdVertexID, "vertex_id"},
        {HgiShaderKeywordTokens->hdInstanceID, "instance_id"},
        {HgiShaderKeywordTokens->hdBaseVertex, "base_vertex"},
        {HgiShaderKeywordTokens->hdBaseInstance, "base_instance"},
        {HgiShaderKeywordTokens->hdGlobalInvocationID, "thread_position_in_grid"},
+       {HgiShaderKeywordTokens->hdLocalInvocationID, "threadgroup_position_in_grid"},
+       {HgiShaderKeywordTokens->hdLocalIndexID, "thread_index_in_threadgroup"},
        {HgiShaderKeywordTokens->hdPatchID, "patch_id"},
        {HgiShaderKeywordTokens->hdPositionInPatch, "position_in_patch"},
        {HgiShaderKeywordTokens->hdPrimitiveID, "primitive_id"},
@@ -230,6 +239,7 @@ private:
         const HgiMetalShaderSectionPtrVector &stageBufferBindings,
         const HgiMetalShaderSectionPtrVector &stageSamplerBindings,
         const HgiMetalShaderSectionPtrVector &stageTextureBindings,
+        const HgiMetalShaderSectionPtrVector &payload,
         HgiMetalShaderGenerator *generator);
 
     HgiMetalShaderStageEntryPoint & operator=(
@@ -241,6 +251,7 @@ private:
     HgiMetalParameterInputShaderSection* _parameters;
     HgiMetalParameterInputShaderSection* _inputs;
     HgiMetalStageOutputShaderSection* _outputs;
+    HgiMetalPayloadShaderSection* _payload;
     HgiMetalArgumentBufferInputShaderSection* _bufferBindings;
     HgiMetalArgumentBufferInputShaderSection* _samplerBindings;
     HgiMetalArgumentBufferInputShaderSection* _textureBindings;
@@ -595,6 +606,12 @@ ShaderStageData::ShaderStageData(
             generator,
             descriptor.shaderStage,
             false))
+
+    , _payload(
+       AccumulatePayload(
+           descriptor.payloadMembers,
+           generator,
+           descriptor.shaderStage))
     , _inputBlocks(
         AccumulateParamBlocks(
             descriptor.stageInputBlocks,
@@ -772,6 +789,36 @@ ShaderStageData::AccumulateParamBlocks(
 }
 
 HgiMetalShaderSectionPtrVector
+ShaderStageData::AccumulatePayload(
+    const HgiShaderFunctionParamDescVector &params,
+    HgiMetalShaderGenerator *generator,
+    HgiShaderStage stage)
+{
+    const HgiShaderSectionAttributeVector attributes;
+    HgiMetalShaderSectionPtrVector members;
+    for (const HgiShaderFunctionParamDesc &p : params) {
+        //members.push_back(generator->GetShaderSections()->back().get());
+        HgiMetalShaderSection *section =
+        generator->CreateShaderSection<HgiMetalRawShaderSection>(p.nameInShader, p.type, attributes, p.arraySize, std::string());
+        members.push_back(section);
+    }
+    /*
+    HgiMetalStructTypeDeclarationShaderSection * const payloadStruct =
+        generator->CreateShaderSection<
+            HgiMetalStructTypeDeclarationShaderSection>(
+                "Payload",
+                members);
+    
+    HgiMetalStructInstanceShaderSection * const payloadStructInstance =
+    generator->CreateShaderSection<HgiMetalStructInstanceShaderSection>
+        ("hdPayload", attributes, payloadStruct);
+     */
+    
+    //TODO note don't return members
+    return members;
+}
+
+HgiMetalShaderSectionPtrVector
 ShaderStageData::AccumulateBufferBindings(
     const HgiShaderFunctionBufferDescVector &buffers,
     HgiMetalShaderGenerator *generator)
@@ -901,6 +948,12 @@ ShaderStageData::GetTextureBindings() const
     return _textureBindings;
 }
 
+const HgiMetalShaderSectionPtrVector&
+ShaderStageData::GetPayload() const
+{
+    return _payload;
+}
+
 std::string _BuildOutputTypeName(const HgiMetalShaderStageEntryPoint &ep)
 {
     const std::string &shortHandPrefix = ep.GetOutputShortHandPrefix();
@@ -939,6 +992,7 @@ HgiMetalShaderStageEntryPoint::HgiMetalShaderStageEntryPoint(
         stageData.GetBufferBindings(),
         stageData.GetSamplerBindings(),
         stageData.GetTextureBindings(),
+        stageData.GetPayload(),
         generator);
 }
 
@@ -955,7 +1009,8 @@ HgiMetalShaderStageEntryPoint::HgiMetalShaderStageEntryPoint(
     _scopePostfix(scopePostfix),
     _entryPointStageName(entryPointStageName),
     _outputTypeName(outputTypeName),
-    _entryPointFunctionName(entryPointFunctionName)
+    _entryPointFunctionName(entryPointFunctionName),
+    _entryPointAttributes(entryPointAttributes)
 {
     _Init(
         stageData.GetConstantParams(),
@@ -964,6 +1019,7 @@ HgiMetalShaderStageEntryPoint::HgiMetalShaderStageEntryPoint(
         stageData.GetBufferBindings(),
         stageData.GetSamplerBindings(),
         stageData.GetTextureBindings(),
+        stageData.GetPayload(),
         generator);
 }
 
@@ -1109,6 +1165,7 @@ HgiMetalShaderStageEntryPoint::_Init(
     const HgiMetalShaderSectionPtrVector &stageBufferBindings,
     const HgiMetalShaderSectionPtrVector &stageSamplerBindings,
     const HgiMetalShaderSectionPtrVector &stageTextureBindings,
+    const HgiMetalShaderSectionPtrVector &payload,
     HgiMetalShaderGenerator *generator)
 {
     static const std::string constIndex =
@@ -1129,27 +1186,63 @@ HgiMetalShaderStageEntryPoint::_Init(
         /* isPointer = */ true,
         /* members = */ stageConstantBuffers,
         generator);
-
-    _inputs =
-        _BuildStructInstance<HgiMetalParameterInputShaderSection>(
-        GetInputsTypeName(),
-        GetInputsInstanceName(),
-        /* attribute = */ "stage_in",
-        /* addressSpace = */ std::string(),
-        /* isPointer = */ false,
-        /* members = */ stageInputs,
-        generator,
-        _inputsGenericWrapper);
-
-    _outputs =
+    //TODO THOR THIS IS A BIG HACK PLEASE FIX THIS WORKAROUND THIS IS JUST
+    //TO REMOVE STAGE_IN FOR MESH OBJECTS
+    if (generator->_descriptor.shaderStage != HgiShaderStageMeshObject) {
+        _inputs =
+            _BuildStructInstance<HgiMetalParameterInputShaderSection>(
+            GetInputsTypeName(),
+            GetInputsInstanceName(),
+            /* attribute = */ "stage_in",
+            /* addressSpace = */ std::string(),
+            /* isPointer = */ false,
+            /* members = */ stageInputs,
+            generator,
+            _inputsGenericWrapper);
+    } else {
+        _inputs =
+            _BuildStructInstance<HgiMetalParameterInputShaderSection>(
+            GetInputsTypeName(),
+            GetInputsInstanceName(),
+            /* attribute = */ "",
+            /* addressSpace = */ std::string(),
+            /* isPointer = */ false,
+                                                                      /* members = */ {},
+            generator,
+            _inputsGenericWrapper);
+    }
+    
+    if (generator->_descriptor.shaderStage == HgiShaderStageMeshObject) {
+        _outputs = nullptr;
+    } else {
+        _outputs =
         _BuildStructInstance<HgiMetalStageOutputShaderSection>(
-        GetOutputTypeName(),
-        GetOutputInstanceName(),
-        /* attribute = */ std::string(),
-        /* addressSpace = */ std::string(),
-        /* isPointer = */ false,
-        /* members = */ stageOutputs,
-        generator);
+           GetOutputTypeName(),
+           GetOutputInstanceName(),
+           /* attribute = */ std::string(),
+           /* addressSpace = */ std::string(),
+           /* isPointer = */ false,
+           /* members = */ stageOutputs,
+           generator);
+    }
+    if (!payload.empty()){
+        HgiMetalStructTypeDeclarationShaderSection * const section =
+        generator->CreateShaderSection<
+        HgiMetalStructTypeDeclarationShaderSection>(
+                    "Payload",
+                    payload);
+        
+        const HgiShaderSectionAttributeVector attributes = {
+            HgiShaderSectionAttribute{"payload", ""}};
+        
+        _payload = generator->CreateShaderSection<HgiMetalPayloadShaderSection>(
+                    "payload",
+                    attributes,
+                    "object_data",
+                    false,
+                    generator->_descriptor.shaderStage == HgiShaderStageMeshlet,
+                    section);
+    }
     
     _bufferBindings =
         _BuildStructInstance<HgiMetalArgumentBufferInputShaderSection>(
@@ -1209,7 +1302,8 @@ void HgiMetalShaderGenerator::_BuildKeywordInputShaderSections(
             CreateShaderSection<HgiMetalKeywordInputShaderSection>(
                 keywordName,
                 p.type,
-                attributes);
+                attributes,
+                p.isPointerToValue);
         }
     }
 }
@@ -1232,6 +1326,28 @@ _BuildTessAttribute(
             break;
     }
     ss << tessDesc.numVertsPerPatchIn << ")]]";
+}
+
+void
+_BuildMeshObjectAttribute(
+        std::stringstream &ss,
+        const HgiShaderFunctionMeshDesc &meshDesc)
+{
+    ss << "[[object,";
+    ss << "max_total_threads_per_threadgroup(";
+    ss << meshDesc.maxTotalThreadsPerThreadgroup << "),";
+    ss << "max_total_threadgroups_per_mesh_grid(";
+    ss << meshDesc.maxTotalThreadgroupsPerMeshGrid << ")]]";
+}
+
+void
+_BuildMeshletAttribute(
+        std::stringstream &ss,
+        const HgiShaderFunctionMeshDesc &meshDesc)
+{
+    ss << "[[mesh,";
+    ss << "max_total_threads_per_threadgroup(";
+    ss << meshDesc.maxTotalThreadsPerThreadgroup << ")]]";
 }
 
 void
@@ -1325,6 +1441,37 @@ HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
                             "tvInput",
                             functionAttributesSS.str());
         }
+            
+        case HgiShaderStageMeshObject: {
+            _BuildMeshObjectAttribute(functionAttributesSS,
+                                descriptor.meshDescriptor);
+
+            return std::make_unique
+                    <HgiMetalShaderStageEntryPoint>(
+                            stageData,
+                            this,
+                            "mo",
+                            "Mesh",
+                            "",
+                            "void", //no stage definer for MOS
+                            "meshObjectEntryPoint",
+                            functionAttributesSS.str());
+        }
+        case HgiShaderStageMeshlet: {
+            _BuildMeshletAttribute(functionAttributesSS,
+                                descriptor.meshDescriptor);
+
+            return std::make_unique
+                    <HgiMetalShaderStageEntryPoint>(
+                            stageData,
+                            this,
+                            "ms",
+                            "Mesh",
+                            "",
+                            "meshlet", //no stage definer for MS
+                            "meshletEntryPoint",
+                            functionAttributesSS.str());
+        }
         default: {
             TF_CODING_ERROR("Unknown shader stage");
             return nullptr;
@@ -1358,6 +1505,9 @@ HgiMetalShaderGenerator::HgiMetalShaderGenerator(
     CreateShaderSection<HgiMetalMacroShaderSection>(
         macroSection.str(),
         "Headers");
+    if (_descriptor.shaderStage == HgiShaderStageMeshlet) {
+        CreateShaderSection<HgiMetalMeshShaderSection>("mesh", "MeshType");
+    }
 
 }
 
@@ -1366,27 +1516,42 @@ HgiMetalShaderGenerator::~HgiMetalShaderGenerator() = default;
 void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
 {
     HgiMetalShaderSectionUniquePtrVector * const shaderSections =
-        GetShaderSections();
-
+    GetShaderSections();
+    
     ss << "\n// //////// Global Macros ////////\n";
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         section->VisitGlobalMacros(ss);
     }
-
+    
     ss << _GetShaderCodeDeclarations();
-
+    
     ss << "\n// //////// Global Member Declarations ////////\n";
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         section->VisitGlobalMemberDeclarations(ss);
     }
-
+    
+    // MESH declaration
+    if (_descriptor.shaderStage == HgiShaderStageMeshlet) {
+        
+        ss << "\n// //////// Mesh Declaration ////////\n";
+        ss << "//For the time being we use no primout\n";
+        ss << "struct PrimOut\n";
+        ss << "{};\n\n";
+        ss << "struct VertexOut\n";
+        ss << "{vec4 position[[position]];};\n\n";
+        ss << "using MeshType = metal::mesh<VertexOut, PrimOut,\n";
+        ss << _descriptor.meshDescriptor.maxMeshletVertexCount << ", ";
+        ss << _descriptor.meshDescriptor.maxPrimitiveCount;
+        ss << ", metal::topology::triangle>;\n";
+    }
+    
     //generate scope area in metal.
     //We create a class that wraps the main shader function, and to simulate
     //global space in metal which it has not by default, we put all
     //glslfx global members into a Scope struct, and host the global members
     //as members of that instance
     ss << "struct " << _generatorShaderSections->GetScopeTypeName() << " { \n";
-
+    
     // Metal extends the global scope into a "scope" embedder,
     // which simulates a global scope for some member variables
     ss << "\n// //////// Scope Structs ////////\n";
@@ -1401,7 +1566,7 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         section->VisitScopeFunctionDefinitions(ss);
     }
-
+    
     //constructor
     ss << _generatorShaderSections->GetScopeTypeName() << "(\n";
     bool firstParam = true;
@@ -1443,26 +1608,28 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
     
     ss << _GetShaderCode();
     ss << "};\n\n";
-
+    
     //write out the entry point signature
     HgiMetalStageOutputShaderSection* const outputs =
-        _generatorShaderSections->GetOutputs();
+    _generatorShaderSections->GetOutputs();
     std::stringstream returnSS;
-    if (outputs) {
+    
+    if (outputs && _descriptor.shaderStage != HgiShaderStageMeshObject
+        && _descriptor.shaderStage != HgiShaderStageMeshlet) {
         const HgiMetalStructTypeDeclarationShaderSection* const decl =
-            outputs->GetStructTypeDeclaration();
+        outputs->GetStructTypeDeclaration();
         decl->WriteIdentifier(returnSS);
     }
     else {
         //handle compute
         returnSS << "void";
     }
-
+    
     ss << _generatorShaderSections->GetEntryPointAttributes();
-
+    
     ss << _generatorShaderSections->GetEntryPointStageName();
     ss << " " << returnSS.str() << " "
-       << _generatorShaderSections->GetEntryPointFunctionName() << "(\n";
+    << _generatorShaderSections->GetEntryPointFunctionName() << "(\n";
 
     // Pass in all parameters declared by interested code sections into the
     // entry point of the shader
@@ -1513,13 +1680,17 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
         }
     }
     //return the instance of the shader entrypoint output type
-    if(outputs)
+    if(outputs && _descriptor.shaderStage != HgiShaderStageMeshObject
+       && _descriptor.shaderStage != HgiShaderStageMeshlet)
     {
         const std::string outputInstanceName =
                 _generatorShaderSections->GetOutputInstanceName();
         ss << "return " << outputInstanceName << ";\n";
     }
-    else {
+    else if (_descriptor.shaderStage == HgiShaderStageMeshObject
+             || _descriptor.shaderStage == HgiShaderStageMeshlet) {
+        
+    } else {
         ss << _generatorShaderSections->GetScopeInstanceName() << ".main();\n";
     }
     ss << "}\n";

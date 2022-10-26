@@ -112,6 +112,8 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     TfToken const *GetTES() const override { return TES; }
     TfToken const *GetPTCS()  const override { return PTCS; }
     TfToken const *GetPTVS()  const override { return PTVS; }
+    TfToken const *GetMOS()  const override { return MOS; }
+    TfToken const *GetMS()  const override { return MS; }
     TfToken const *GetGS()  const override { return GS; }
     TfToken const *GetFS()  const override { return FS; }
 
@@ -121,6 +123,8 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     TfToken TES[4];
     TfToken PTCS[3];
     TfToken PTVS[11];
+    TfToken MOS[3];
+    TfToken MS[8];
     TfToken GS[10];
     TfToken FS[22];
 };

@@ -86,6 +86,16 @@ public:
         return _postTessControlFunction;
     }
 
+    HGIMETAL_API
+            id<MTLFunction> GetMeshObjectFunction() const {
+        return _meshObjectFunction;
+    }
+
+    HGIMETAL_API
+            id<MTLFunction> GetMeshletFunction() const {
+        return _meshletFunction;
+    }
+
 protected:
     friend class HgiMetal;
 
@@ -105,6 +115,8 @@ private:
     id<MTLFunction> _computeFunction;
     id<MTLFunction> _postTessVertexFunction;
     id<MTLFunction> _postTessControlFunction;
+    id<MTLFunction> _meshObjectFunction;
+    id<MTLFunction> _meshletFunction;
 };
 
 

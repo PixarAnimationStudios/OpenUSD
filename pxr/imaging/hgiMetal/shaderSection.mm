@@ -28,6 +28,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiMetalShaderSection::~HgiMetalShaderSection() = default;
 
+HgiMetalShaderSection::HgiMetalShaderSection(
+    const std::string &identifier,
+    const HgiShaderSectionAttributeVector& attributes,
+    const std::string &defaultValue,
+    const std::string &arraySize,
+    const std::string &blockInstanceIdentifier)
+  : HgiShaderSection(identifier
+  , attributes
+  , defaultValue
+  , arraySize
+  , blockInstanceIdentifier)
+{
+}
+
 bool
 HgiMetalShaderSection::VisitScopeStructs(std::ostream &ss)
 {
@@ -129,6 +143,95 @@ HgiMetalMemberShaderSection::VisitScopeMemberDeclarations(std::ostream &ss)
         WriteDeclaration(ss);
         ss << std::endl;
     }
+    return true;
+}
+
+HgiMetalRawShaderSection::HgiMetalRawShaderSection(
+    const std::string &identifier,
+    const std::string &type,
+    const HgiShaderSectionAttributeVector &attributes,
+    const std::string arraySize,
+    const std::string &blockInstanceIdentifier)
+  : HgiMetalShaderSection(identifier, attributes,
+                          std::string(), arraySize,
+                          blockInstanceIdentifier)
+  , _type{type}
+{
+}
+
+HgiMetalRawShaderSection::~HgiMetalRawShaderSection() = default;
+
+void
+HgiMetalRawShaderSection::WriteType(std::ostream &ss) const
+{
+    ss << _type;
+}
+
+HgiMetalMeshShaderSection::HgiMetalMeshShaderSection(
+    const std::string &identifier,
+    const std::string &type)
+  : HgiMetalShaderSection(identifier, {},
+                          std::string(), std::string(),
+                          std::string())
+  , _type{type}
+{
+}
+
+HgiMetalMeshShaderSection::~HgiMetalMeshShaderSection() = default;
+
+void
+HgiMetalMeshShaderSection::WriteType(std::ostream &ss) const
+{
+    ss << _type;
+}
+
+
+bool
+HgiMetalMeshShaderSection::VisitScopeConstructorDeclarations(
+    std::ostream &ss)
+{
+    ss << "thread ";
+    WriteType(ss);
+    ss << " &_";
+    WriteIdentifier(ss);
+    return true;
+}
+
+bool
+HgiMetalMeshShaderSection::VisitScopeConstructorInitialization(
+    std::ostream &ss)
+{
+    WriteIdentifier(ss);
+    ss << "(_";
+    WriteIdentifier(ss);
+    ss << ")";
+    return true;
+}
+
+bool
+HgiMetalMeshShaderSection::VisitScopeConstructorInstantiation(
+    std::ostream &ss)
+{
+    WriteIdentifier(ss);
+    return true;
+}
+
+bool
+HgiMetalMeshShaderSection::VisitScopeMemberDeclarations(std::ostream &ss)
+{
+    ss << "thread ";
+    WriteType(ss);
+    ss << " &";
+    WriteIdentifier(ss);
+    ss << ";\n";
+    return true;
+}
+
+bool
+HgiMetalMeshShaderSection::VisitEntryPointParameterDeclarations(
+    std::ostream &ss)
+{
+    WriteParameter(ss);
     return true;
 }
 
@@ -814,7 +917,10 @@ HgiMetalStructTypeDeclarationShaderSection::WriteDeclaration(
         member->WriteParameter(ss);
         if (!member->HasBlockInstanceIdentifier()) {
             member->WriteAttributesWithIndex(ss);
+        } else {
+            
         }
+        member->WriteArraySize(ss);
         ss << ";\n";
     }
     ss << "};\n";
@@ -1011,15 +1117,114 @@ HgiMetalArgumentBufferInputShaderSection::VisitGlobalMemberDeclarations(
     return true;
 }
 
+HgiMetalPayloadShaderSection::HgiMetalPayloadShaderSection(
+    const std::string &identifier,
+    const HgiShaderSectionAttributeVector &attributes,
+    const std::string &addressSpace,
+    const bool isPointer,
+    const bool isConstParameter,
+    HgiMetalStructTypeDeclarationShaderSection *structTypeDeclaration)
+  : HgiMetalStructInstanceShaderSection(
+      identifier,
+      attributes,
+      structTypeDeclaration)
+  , _addressSpace(addressSpace)
+  , _isConstParameter(isConstParameter)
+{
+}
+
+void
+HgiMetalPayloadShaderSection::WriteParameter(std::ostream& ss) const
+{
+    WriteType(ss);
+    ss << " &";
+    WriteIdentifier(ss);
+}
+
+bool
+HgiMetalPayloadShaderSection::VisitEntryPointParameterDeclarations(
+    std::ostream &ss)
+{
+    if(!_addressSpace.empty()) {
+        if (_isConstParameter) {
+            ss << "const ";
+        }
+        ss << _addressSpace << " ";
+    }
+    
+    WriteParameter(ss);
+    WriteAttributesWithIndex(ss);
+    return true;
+}
+
+bool
+HgiMetalPayloadShaderSection::VisitGlobalMemberDeclarations(
+    std::ostream &ss)
+{
+    GetStructTypeDeclaration()->WriteDeclaration(ss);
+    ss << "\n";
+    return true;
+}
+
+bool
+HgiMetalPayloadShaderSection::VisitScopeMemberDeclarations(
+    std::ostream &ss)
+{
+    if (_isConstParameter) {
+        ss << "const ";
+    }
+    ss << "object_data ";
+    WriteType(ss);
+    ss << "& ";
+    WriteIdentifier(ss);
+    ss << ";\n";
+    return true;
+}
+
+bool
+HgiMetalPayloadShaderSection::VisitScopeConstructorDeclarations(
+    std::ostream &ss)
+{
+    if (_isConstParameter) {
+        ss << "const ";
+    }
+    ss << "object_data ";
+        WriteType(ss);
+        ss << "& _";
+    WriteIdentifier(ss);
+    return true;
+}
+
+bool
+HgiMetalPayloadShaderSection::VisitScopeConstructorInitialization(
+    std::ostream &ss)
+{
+    WriteIdentifier(ss);
+    ss << "(_";
+    WriteIdentifier(ss);
+    ss << ")";
+    return true;
+}
+
+bool
+HgiMetalPayloadShaderSection::VisitScopeConstructorInstantiation(
+    std::ostream &ss)
+{
+    WriteIdentifier(ss);
+    return true;
+}
+
 HgiMetalKeywordInputShaderSection::HgiMetalKeywordInputShaderSection(
     const std::string &identifier,
     const std::string &type,
-    const HgiShaderSectionAttributeVector &attributes)
+    const HgiShaderSectionAttributeVector &attributes,
+    const bool isPointerToValue)
   : HgiMetalShaderSection(
       identifier,
       attributes,
       "")
   , _type(type)
+  , _isPointerToValue(isPointerToValue)
 {
 }
 
@@ -1032,9 +1237,14 @@ HgiMetalKeywordInputShaderSection::WriteType(std::ostream& ss) const
 bool
 HgiMetalKeywordInputShaderSection::VisitScopeMemberDeclarations(
     std::ostream &ss)
-{
+{   if (_isPointerToValue) {
+        ss << "thread ";
+    }
     WriteType(ss);
     ss << " ";
+    if (_isPointerToValue) {
+        ss << "* ";
+    }
     WriteIdentifier(ss);
     ss << ";\n";
     return true;
@@ -1060,6 +1270,9 @@ HgiMetalKeywordInputShaderSection::VisitEntryPointFunctionExecutions(
     ss << scopeInstanceName << ".";
     WriteIdentifier(ss);
     ss << " = ";
+    if (_isPointerToValue) {
+        ss << "&";
+    }
     WriteIdentifier(ss);
     ss << ";";
     return true;

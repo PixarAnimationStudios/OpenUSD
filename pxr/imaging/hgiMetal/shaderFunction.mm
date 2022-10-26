@@ -30,10 +30,14 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/diagnostic.h"
 
+#include <fstream>
+#include <string>
+#include <iostream>
+
 #include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
+static int counter = 0;
 HgiMetalShaderFunction::HgiMetalShaderFunction(
     HgiMetal *hgi,
     HgiShaderFunctionDesc const& desc)
@@ -51,7 +55,7 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
         options.fastMathEnabled = YES;
 
         if (@available(macOS 10.15, ios 13.0, *)) {
-            options.languageVersion = MTLLanguageVersion2_2;
+            options.languageVersion = MTLLanguageVersion3_0;
         } else {
             options.languageVersion = MTLLanguageVersion2_1;
         }
@@ -59,6 +63,12 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
         options.preprocessorMacros = @{
                 @"ARCH_GFX_METAL": @1,
         };
+        
+        std::string input = std::string(shaderCode);
+        std::ofstream out("/Users/ingthorhjalmarsson/shaders/" + std::to_string(desc.shaderStage) + "_" + std::to_string(counter));
+        out << input;
+        out.close();
+                          counter++;
 
         NSError *error = NULL;
         id<MTLLibrary> library =
@@ -79,6 +89,12 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
                 break;
             case HgiShaderStagePostTessellationVertex:
                 entryPoint = @"vertexEntryPoint";
+                break;
+            case HgiShaderStageMeshObject:
+                entryPoint = @"meshObjectEntryPoint";
+                break;
+            case HgiShaderStageMeshlet:
+                entryPoint = @"meshletEntryPoint";
                 break;
             case HgiShaderStageTessellationControl:
             case HgiShaderStageTessellationEval:

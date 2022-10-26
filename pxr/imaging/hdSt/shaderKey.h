@@ -76,6 +76,10 @@ struct HdSt_ShaderKey {
     HDST_API
     virtual TfToken const *GetPTVS() const;
     HDST_API
+    virtual TfToken const *GetMOS() const;
+    HDST_API
+    virtual TfToken const *GetMS() const;
+    HDST_API
     virtual TfToken const *GetGS() const;
     HDST_API
     virtual TfToken const *GetFS() const;

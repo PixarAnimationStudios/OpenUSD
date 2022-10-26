@@ -124,6 +124,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainQuadPTVS,                "Mesh.PostTessVertex.Quad"))
     ((mainTriQuadPTVS,             "Mesh.PostTessVertex.TriQuad"))
     ((mainVaryingInterpPTVS,       "Mesh.PostTessVertex.VaryingInterpolation"))
+    ((mainMOS,                     "Mesh.MeshObject.Main"))
+    ((mainTriangleMS,              "Mesh.Meshlet.Triangle"))
     ((mainTriangleTessGS,          "Mesh.Geometry.TriangleTess"))
     ((mainTriangleGS,              "Mesh.Geometry.Triangle"))
     ((mainTriQuadGS,               "Mesh.Geometry.TriQuad"))
@@ -297,9 +299,21 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     useMetalTessellation =
         hasMetalTessellation && !isPrimTypePoints && usePTVSTechniques;
 
+    useMetalTessellation = false;
+
+    bool useMeshShading = true;
+
     // PTVS shaders can provide barycentric coords w/o GS.
     bool const hasFragmentShaderBarycentrics =
         hasBuiltinBarycentrics || useMetalTessellation;
+
+    uint8_t mosIndex = 0;
+    uint8_t msIndex = 0;
+
+    if (useMeshShading) {
+        MOS[mosIndex++] = _tokens->mainMOS;
+        MS[msIndex++] = _tokens->mainTriangleMS;
+    }
 
     // post tess vertex shader vertex steps
     uint8_t ptvsIndex = 0;

@@ -1292,8 +1292,7 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
         // Drawing can be either direct or indirect. For either case,
         // the drawing batch and drawing program are prepared to resolve
         // drawing coordinate state indirectly, i.e. from buffer data.
-        bool const drawIndirect =
-            capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
+        bool const drawIndirect = false;
 
         if (drawIndirect) {
             _ExecuteDrawIndirect(gfxCmds, state.indexBar);

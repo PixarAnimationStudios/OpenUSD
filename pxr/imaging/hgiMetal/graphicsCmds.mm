@@ -656,7 +656,13 @@ HgiMetalGraphicsCmds::DrawIndexed(
     id<MTLRenderCommandEncoder> encoder = GetEncoder();
         
     _stepFunctions.SetVertexBufferOffsets(encoder, baseInstance);
-
+    
+    int numObjectsX = 1;
+    int numObjectsY = 1;
+    int numObjectsZ = 1;
+    [encoder drawMeshThreadgroups:MTLSizeMake(numObjectsX, numObjectsY, numObjectsZ) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(8, 1, 1)];
+    
+    /*
     if (_primitiveType == HgiPrimitiveTypePatchList) {
         const NSUInteger controlPointCount = _primitiveIndexSize;
 
@@ -683,6 +689,7 @@ HgiMetalGraphicsCmds::DrawIndexed(
                             baseVertex:baseVertex
                           baseInstance:baseInstance];
     }
+     */
 
     _hasWork = true;
 }

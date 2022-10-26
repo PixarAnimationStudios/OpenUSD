@@ -165,6 +165,7 @@ struct HgiShaderFunctionParamDesc
     HgiInterpolationType interpolation;
     std::string role;
     std::string arraySize;
+    bool isPointerToValue = false;
 };
 
 using HgiShaderFunctionParamDescVector =
@@ -307,6 +308,28 @@ bool operator!=(
         const HgiShaderFunctionTessellationDesc& lhs,
         const HgiShaderFunctionTessellationDesc& rhs);
 
+//TODO Thor add comments
+struct HgiShaderFunctionMeshDesc
+{
+    enum class MeshTopology { Point, Line, Triangle };
+    MeshTopology meshTopology = MeshTopology::Triangle;
+    uint32_t maxMeshletVertexCount = 64;
+    uint32_t maxPrimitiveCount = 64;
+    uint32_t maxTotalThreadsPerThreadgroup;
+    uint32_t maxTotalThreadgroupsPerMeshGrid;
+    uint32_t targetPrimitiveCount;
+};
+
+HGI_API
+bool operator==(
+        const HgiShaderFunctionMeshDesc& lhs,
+        const HgiShaderFunctionMeshDesc& rhs);
+
+HGI_API
+bool operator!=(
+        const HgiShaderFunctionMeshDesc& lhs,
+        const HgiShaderFunctionMeshDesc& rhs);
+
 ///
 /// Describes a fragment function's description
 ///
@@ -379,7 +402,8 @@ struct HgiShaderFunctionDesc
     HGI_API
     HgiShaderFunctionDesc();
     std::string debugName;
-    HgiShaderStage shaderStage;
+    HgiShaderStage
+    shaderStage;
     const char *shaderCodeDeclarations;
     const char *shaderCode;
     std::string *generatedShaderCodeOut;
@@ -388,9 +412,12 @@ struct HgiShaderFunctionDesc
     std::vector<HgiShaderFunctionParamDesc> constantParams;
     std::vector<HgiShaderFunctionParamDesc> stageGlobalMembers;
     std::vector<HgiShaderFunctionParamDesc> stageInputs;
+    std::vector<HgiShaderFunctionParamDesc> stagePayload;
     std::vector<HgiShaderFunctionParamDesc> stageOutputs;
+    std::vector<HgiShaderFunctionParamDesc> payloadMembers;
     std::vector<HgiShaderFunctionParamBlockDesc> stageInputBlocks;
     std::vector<HgiShaderFunctionParamBlockDesc> stageOutputBlocks;
+    HgiShaderFunctionMeshDesc meshDescriptor;
     HgiShaderFunctionTessellationDesc tessellationDescriptor;
     HgiShaderFunctionComputeDesc computeDescriptor;
     HgiShaderFunctionFragmentDesc fragmentDescriptor;
@@ -449,6 +476,15 @@ HgiShaderFunctionAddBuffer(
     const std::string &type,
     const uint32_t bindIndex,
     HgiBindingType binding,
+    const uint32_t arraySize = 0);
+
+/// Adds a member to descriptor to given shader function payload's descriptor.
+HGI_API
+void
+HgiShaderFunctionAddPayloadMember(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    const std::string &type,
     const uint32_t arraySize = 0);
 
 /// Adds buffer descriptor to given shader function descriptor.
