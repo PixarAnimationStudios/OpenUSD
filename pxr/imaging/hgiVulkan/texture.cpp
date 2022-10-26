@@ -301,8 +301,8 @@ HgiVulkanTexture::HgiVulkanTexture(
         VK_IMAGE_ASPECT_DEPTH_BIT /*| VK_IMAGE_ASPECT_STENCIL_BIT*/ :
         VK_IMAGE_ASPECT_COLOR_BIT;
 
-    view.subresourceRange.baseMipLevel = 0;
-    view.subresourceRange.baseArrayLayer = 0;
+    view.subresourceRange.baseMipLevel = desc.sourceFirstMip;
+    view.subresourceRange.baseArrayLayer = desc.sourceFirstLayer;
     view.subresourceRange.layerCount = desc.layerCount;
     view.subresourceRange.levelCount = desc.mipLevels;
     view.image = srcTexture->GetImage();
