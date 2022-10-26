@@ -101,7 +101,7 @@ HgiVulkanGraphicsCmds::SetViewport(GfVec4i const& vp)
 
             VkViewport viewport;
             viewport.x = offsetX;
-            viewport.y = height - offsetY;
+            viewport.y = offsetY + height;
             viewport.width = width;
             viewport.height = -height;
             viewport.minDepth = 0.0f;
