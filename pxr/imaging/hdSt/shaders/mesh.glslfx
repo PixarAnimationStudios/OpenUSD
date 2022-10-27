@@ -803,23 +803,18 @@ void main(void)
     OsdComputeTessLevelsTriangle(tessOuterLo, tessOuterHi,
                          tessLevelOuter, tessLevelInner);
 
-    device half* tessAsHalf = (device half*)tessFactors + patch_id * 6;
+    device half* tessAsHalf = (device half*)tessFactors + patch_id * 4;
 
     half outer0 = clamp(half(tessLevelOuter[0]), 2.0h, 32.0h);
     half outer1 = clamp(half(tessLevelOuter[1]), 2.0h, 32.0h);
     half outer2 = clamp(half(tessLevelOuter[2]), 2.0h, 32.0h);
-    half outer3 = clamp(half(tessLevelOuter[3]), 2.0h, 32.0h);
 
     half inner0 = clamp(half(tessLevelInner[0]), 2.0h, 32.0h);
-    half inner1 = clamp(half(tessLevelInner[1]), 2.0h, 32.0h);
 
     tessAsHalf[0] = outer0;
     tessAsHalf[1] = outer1;
     tessAsHalf[2] = outer2;
-    tessAsHalf[3] = outer3;
-
-    tessAsHalf[4] = inner0;
-    tessAsHalf[5] = inner1;
+    tessAsHalf[3] = inner0;
 }
 
 --- --------------------------------------------------------------------------
