@@ -86,6 +86,9 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     bool UseMetalTessellation() const override {
         return useMetalTessellation;
     }
+    bool UseMeshShaders() const override {
+        return true;
+    }
 
     HdPolygonMode GetPolygonMode() const override { return polygonMode; }
     float GetLineWidth() const override { return lineWidth; }

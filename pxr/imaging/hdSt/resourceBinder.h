@@ -311,6 +311,7 @@ public:
         BindingDeclaration primitiveParamBinding;
         BindingDeclaration edgeIndexBinding;
         BindingDeclaration coarseFaceIndexBinding;
+        BindingDeclaration indexBinding;
         std::vector<BindingDeclaration> fvarPatchParamBindings;
         std::vector<BindingDeclaration> fvarIndicesBindings;
 

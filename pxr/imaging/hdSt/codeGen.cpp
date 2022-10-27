@@ -205,7 +205,8 @@ static void _EmitDeclaration(HdSt_ResourceLayout::ElementVector *elements,
                              TfToken const &type,
                              HdBinding const &binding,
                              bool isWritable=false,
-                             int arraySize=0);
+                             int arraySize=0,
+                             bool hasMOS=false);
 
 static void _EmitStructAccessor(std::stringstream &str,
                                 TfToken const &structName,
@@ -1442,6 +1443,9 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _hasTES = (!tessEvalShader.empty());
     _hasMOS = (!meshObjectShader.empty()) && metalTessellationEnabled;
     _hasMS = (!meshletShader.empty()) && metalTessellationEnabled;
+    if (_hasMOS) {
+        _hasVS = false;
+    }
     _hasPTCS = (!postTessControlShader.empty()) && metalTessellationEnabled;
     _hasPTVS = (!postTessVertexShader.empty()) && metalTessellationEnabled;
     _hasGS  = (!geometryShader.empty()) && !metalTessellationEnabled;
@@ -2742,7 +2746,8 @@ static void _EmitDeclaration(
     TfToken const &type,
     HdBinding const &binding,
     bool isWritable,
-    int arraySize)
+    int arraySize,
+    bool hasMOS)
 {
     /*
       [vertex attribute]
@@ -2784,10 +2789,18 @@ static void _EmitDeclaration(
         case HdBinding::VERTEX_ATTR:
         case HdBinding::DRAW_INDEX:
         case HdBinding::DRAW_INDEX_INSTANCE:
-            _AddVertexAttribElement(elements,
-                                    /*name=*/name,
-                                    /*dataType=*/_GetPackedType(type, false),
-                                    location);
+            
+            //if (hasMOS) {
+            //    _AddBufferElement(elements,
+            //                      /*name=*/name,
+            //                      /*dataType=*/_GetPackedType(type, true),
+            //                      location);
+            //} else {
+                _AddVertexAttribElement(elements,
+                                        /*name=*/name,
+                                        /*dataType=*/_GetPackedType(type, false),
+                                        location);
+            //}
 
             break;
         case HdBinding::DRAW_INDEX_INSTANCE_ARRAY:
@@ -2855,14 +2868,15 @@ static void _EmitDeclaration(
 static void _EmitDeclaration(
     HdSt_ResourceLayout::ElementVector *elements,
     HdSt_ResourceBinder::MetaData::BindingDeclaration const &bindingDeclaration,
-    int arraySize=0)
+    int arraySize=0, bool hasMOS=false)
 {
     _EmitDeclaration(elements,
                      bindingDeclaration.name,
                      bindingDeclaration.dataType,
                      bindingDeclaration.binding,
                      bindingDeclaration.isWritable,
-                     arraySize);
+                     arraySize,
+                     hasMOS);
 }
 
 static void _EmitStageAccessor(std::stringstream &str,
@@ -3908,14 +3922,14 @@ HdSt_CodeGen::_GenerateDrawingCoord(
 
     //TODO Thor -> this should only be relevant to if it's culling or not
     if (!_hasCS) {
-        _EmitDeclaration(&_resAttrib, _metaData.drawingCoord0Binding);
-        _EmitDeclaration(&_resAttrib, _metaData.drawingCoord1Binding);
-        _EmitDeclaration(&_resAttrib, _metaData.drawingCoord2Binding);
+        _EmitDeclaration(&_resAttrib, _metaData.drawingCoord0Binding, -1, _hasMOS);
+        _EmitDeclaration(&_resAttrib, _metaData.drawingCoord1Binding, -1, _hasMOS);
+        _EmitDeclaration(&_resAttrib, _metaData.drawingCoord2Binding, -1, _hasMOS);
 
 
         if (_metaData.drawingCoordIBinding.binding.IsValid()) {
             _EmitDeclaration(&_resAttrib, _metaData.drawingCoordIBinding,
-                /*arraySize=*/std::max(1, _metaData.instancerNumLevels));
+                /*arraySize=*/std::max(1, _metaData.instancerNumLevels), _hasMOS);
         }
     }
 
@@ -4818,6 +4832,17 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                     _metaData.edgeIndexBinding.dataType, binding,
                     "GetDrawingCoord().primitiveCoord");
     }
+    
+    if (_metaData.indexBinding.binding.IsValid()) {
+        HdBinding binding = _metaData.indexBinding.binding;
+
+        _EmitDeclaration(&_resCommon, _metaData.indexBinding);
+        //TODO Thor consider an accessor
+        //TODO Thor maybe not bind to fragment stage?
+        //_EmitAccessor(accessors, _metaData.indexBinding.name,
+        //            _metaData.indexBinding.dataType, binding,
+        //            "indices[localIndex]");
+    }
 
     if (_metaData.coarseFaceIndexBinding.binding.IsValid()) {
         _genDefines << "#define HD_HAS_" 
@@ -5007,12 +5032,14 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
         // with ARB_enhanced_layouts extention, it's possible
         // to use "component" qualifier to declare offsetted primvars
         // in interleaved buffer.
-        _EmitDeclaration(&_resAttrib, name, dataType, binding);
+        _EmitDeclaration(&_resAttrib, name, dataType, binding, false, -1, _hasMOS);
 
         interstagePrimvar.emplace_back(_GetPackedType(dataType, false), name);
 
         // primvar accessors
-        _EmitAccessor(accessorsVS, name, dataType, binding);
+        if (!_hasMOS) {
+            _EmitAccessor(accessorsVS, name, dataType, binding);
+        }
 
         _EmitStructAccessor(accessorsTCS, _tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1, "gl_InvocationID");

@@ -1211,11 +1211,12 @@ _GetDrawPipeline(
 
     if (pipelineInstance.IsFirstInstance()) {
         HgiGraphicsPipelineDesc pipeDesc;
-
         renderPassState->InitGraphicsPipelineDesc(&pipeDesc,      
                                                   state.geometricShader);
-
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
+        pipeDesc.meshState.useMeshShader = state.geometricShader->GetUseMeshShaders();
+        pipeDesc.meshState.maxTotalThreadsPerMeshThreadgroup = 1;
+        pipeDesc.meshState.maxTotalThreadsPerObjectThreadgroup = 1;
         pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
 
         Hgi* hgi = resourceRegistry->GetHgi();
@@ -1249,6 +1250,7 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
     // If an indirect command buffer was created in the Prepare phase then
     // execute it here.  Otherwise render with the normal graphicsCmd path.
     //
+
     if (_indirectCommands) {
         HgiIndirectCommandEncoder *encoder = hgi->GetIndirectCommandEncoder();
         encoder->ExecuteDraw(gfxCmds, _indirectCommands.get());
@@ -1372,6 +1374,9 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
         bool const useMetalTessellation =
             _drawItemInstances[0]->GetDrawItem()->
                     GetGeometricShader()->GetUseMetalTessellation();
+        bool const useMeshShaders =
+        _drawItemInstances[0]->GetDrawItem()->
+                GetGeometricShader()->GetUseMeshShaders();
 
         for (uint32_t i = 0; i < drawCount; ++i) {
             _DrawIndexedCommand const * cmd =
@@ -1382,22 +1387,32 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
                 static_cast<uint32_t>(cmd->common.baseIndex * sizeof(uint32_t));
 
             if (cmd->common.count && cmd->common.instanceCount) {
-                if (useMetalTessellation) {
-                    gfxCmds->DrawIndexed(
+                if (useMeshShaders) {
+                    gfxCmds->DrawIndexedMesh(
                         indexBuffer->GetHandle(),
-                        cmd->metalPatch.patchCount,
+                        cmd->common.count,
                         indexBufferByteOffset,
                         cmd->metalPatch.baseVertex,
                         cmd->metalPatch.instanceCount,
                         cmd->metalPatch.baseInstance);
                 } else {
-                    gfxCmds->DrawIndexed(
-                        indexBuffer->GetHandle(),
-                        cmd->common.count,
-                        indexBufferByteOffset,
-                        cmd->common.baseVertex,
-                        cmd->common.instanceCount,
-                        cmd->common.baseInstance);
+                    if (useMetalTessellation) {
+                        gfxCmds->DrawIndexed(
+                            indexBuffer->GetHandle(),
+                            cmd->metalPatch.patchCount,
+                            indexBufferByteOffset,
+                            cmd->metalPatch.baseVertex,
+                            cmd->metalPatch.instanceCount,
+                            cmd->metalPatch.baseInstance);
+                    } else {
+                        gfxCmds->DrawIndexed(
+                            indexBuffer->GetHandle(),
+                            cmd->common.count,
+                            indexBufferByteOffset,
+                            cmd->common.baseVertex,
+                            cmd->common.instanceCount,
+                            cmd->common.baseInstance);
+                    }
                 }
             }
         }

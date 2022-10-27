@@ -68,6 +68,17 @@ _SetVertexBindings(id<MTLRenderCommandEncoder> encoder,
             [encoder setVertexBuffer:mtlBuffer->GetBufferId()
                               offset:binding.byteOffset
                              atIndex:binding.index];
+            //TODO Thor maybe not need all
+            /*
+            [encoder
+                setObjectBuffer:mtlBuffer->GetBufferId()
+             offset:binding.byteOffset
+            atIndex:binding.index];
+            [encoder
+                setMeshBuffer:mtlBuffer->GetBufferId()
+             offset:binding.byteOffset
+            atIndex:binding.index];
+             */
         }
     }
 }
@@ -657,12 +668,7 @@ HgiMetalGraphicsCmds::DrawIndexed(
         
     _stepFunctions.SetVertexBufferOffsets(encoder, baseInstance);
     
-    int numObjectsX = 1;
-    int numObjectsY = 1;
-    int numObjectsZ = 1;
-    [encoder drawMeshThreadgroups:MTLSizeMake(numObjectsX, numObjectsY, numObjectsZ) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(8, 1, 1)];
     
-    /*
     if (_primitiveType == HgiPrimitiveTypePatchList) {
         const NSUInteger controlPointCount = _primitiveIndexSize;
 
@@ -689,8 +695,36 @@ HgiMetalGraphicsCmds::DrawIndexed(
                             baseVertex:baseVertex
                           baseInstance:baseInstance];
     }
-     */
 
+    _hasWork = true;
+}
+
+void
+HgiMetalGraphicsCmds::DrawIndexedMesh(
+    HgiBufferHandle const& indexBuffer,
+    uint32_t indexCount,
+    uint32_t indexBufferByteOffset,
+    uint32_t baseVertex,
+    uint32_t instanceCount,
+    uint32_t baseInstance)
+{
+    _SyncArgumentBuffer();
+
+    HgiMetalBuffer* indexBuf = static_cast<HgiMetalBuffer*>(indexBuffer.Get());
+
+    MTLPrimitiveType mtlType =
+        HgiMetalConversions::GetPrimitiveType(_primitiveType);
+
+    id<MTLRenderCommandEncoder> encoder = GetEncoder();
+        
+    _stepFunctions.SetVertexBufferOffsets(encoder, baseInstance);
+    
+    int numObjectsX = 1;
+    int numObjectsY = 1;
+    int numObjectsZ = 1;
+    [encoder drawMeshThreadgroups:MTLSizeMake(numObjectsX, numObjectsY, numObjectsZ) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(8, 1, 1)];
+    
+    
     _hasWork = true;
 }
 

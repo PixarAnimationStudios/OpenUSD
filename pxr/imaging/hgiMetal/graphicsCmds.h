@@ -95,6 +95,15 @@ public:
         uint32_t baseVertex,
         uint32_t instanceCount,
         uint32_t baseInstance) override;
+    
+    HGIMETAL_API
+    void DrawIndexedMesh(
+        HgiBufferHandle const& indexBuffer,
+        uint32_t indexCount,
+        uint32_t indexBufferByteOffset,
+        uint32_t baseVertex,
+        uint32_t instanceCount,
+        uint32_t baseInstance) override;
 
     HGIMETAL_API
     void DrawIndexedIndirect(

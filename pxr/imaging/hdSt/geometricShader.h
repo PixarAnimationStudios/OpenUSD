@@ -153,6 +153,7 @@ public:
                        bool hasMirroredTransform,
                        bool doubleSided,
                        bool useMetalTessellation,
+                       bool useMeshShaders,
                        HdPolygonMode polygonMode,
                        bool cullingPass,
                        FvarPatchType fvarPatchType,
@@ -204,6 +205,10 @@ public:
 
     bool GetUseMetalTessellation() const {
         return _useMetalTessellation;
+    }
+    
+    bool GetUseMeshShaders() const {
+        return _useMeshShaders;
     }
 
     float GetLineWidth() const {
@@ -282,6 +287,7 @@ private:
     bool _hasMirroredTransform;
     bool _doubleSided;
     bool _useMetalTessellation;
+    bool _useMeshShaders;
     HdPolygonMode _polygonMode;
     float _lineWidth;
 

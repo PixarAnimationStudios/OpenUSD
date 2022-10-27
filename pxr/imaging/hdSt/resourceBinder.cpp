@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
@@ -197,7 +198,11 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-
+    bool useMeshShaders = false;
+    if (drawItem->GetGeometricShader()->GetUseMeshShaders()) {
+        useMeshShaders = true;
+    }
+    
     if (!TF_VERIFY(metaDataOut)) return;
 
     const bool bindlessBuffersEnabled = 
@@ -215,6 +220,11 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         structBufferBindingType = HdBinding::BINDLESS_UNIFORM; // EXT
     } else {
         structBufferBindingType = HdBinding::SSBO;             // 4.3
+    }
+    
+    HdBinding::Type vertexAttrBindingType = HdBinding::VERTEX_ATTR;
+    if (useMeshShaders) {
+        vertexAttrBindingType = HdBinding::SSBO;
     }
 
     HdBinding::Type drawingCoordBindingType =
@@ -321,7 +331,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             TfToken const& name = it->first;
             TfToken glName =  HdStGLConversions::GetGLSLIdentifier(name);
             HdBinding vertexPrimvarBinding =
-                locator.GetBinding(HdBinding::VERTEX_ATTR, name);
+                locator.GetBinding(vertexAttrBindingType, name);
             _bindingMap[name] = vertexPrimvarBinding;
 
             HdTupleType valueType = it->second->GetTupleType();
@@ -377,8 +387,26 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             HdStBufferResourceSharedPtr const& resource = it->second;
 
             if (name == HdTokens->indices) {
-                // IBO. no need for codegen
-                _bindingMap[name] = HdBinding(HdBinding::INDEX_ATTR, 0);
+                if (drawItem->GetGeometricShader()->GetUseMeshShaders()) {
+                    HdBinding binding =
+                        locator.GetBinding(arrayBufferBindingType, name);
+                    _bindingMap[name] = binding;
+
+                    HdTupleType valueType = resource->GetTupleType();
+                    TfToken glType =
+                        HdStGLConversions::GetGLSLTypename(valueType.type);
+
+                    auto bindingDecl = MetaData::BindingDeclaration(
+                                         /*name=*/name,
+                                         /*type=*/glType,
+                                         /*binding=*/binding);
+                    
+                    metaDataOut->indexBinding = bindingDecl;
+
+                } else {
+                    // IBO. no need for codegen
+                    _bindingMap[name] = HdBinding(HdBinding::INDEX_ATTR, 0);
+                }
             } else {
                 // We expect the following additional topology based info:
                 // - primitive parameter (for all tris, quads and patches)
@@ -1622,6 +1650,8 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     boost::hash_combine(hash, primitiveParamBinding.dataType);
     boost::hash_combine(hash, edgeIndexBinding.binding.GetValue());
     boost::hash_combine(hash, edgeIndexBinding.dataType);
+    boost::hash_combine(hash, indexBinding.binding.GetValue());
+    boost::hash_combine(hash, indexBinding.dataType);
     boost::hash_combine(hash, coarseFaceIndexBinding.binding.GetValue());
     boost::hash_combine(hash, coarseFaceIndexBinding.dataType);
 

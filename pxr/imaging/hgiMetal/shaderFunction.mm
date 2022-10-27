@@ -75,6 +75,10 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
             [hgi->GetPrimaryDevice() newLibraryWithSource:@(shaderCode)
                                                         options:options
                                                         error:&error];
+        if (error) {
+            NSString *err = [error localizedDescription];
+            _errors = [err UTF8String];
+        }
 
         NSString *entryPoint = nullptr;
         switch (_descriptor.shaderStage) {
@@ -111,6 +115,11 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
         }
         else {
             HGIMETAL_DEBUG_LABEL(_shaderId, _descriptor.debugName.c_str());
+        }
+        
+        if (error) {
+            NSString *err = [error localizedDescription];
+            _errors = [err UTF8String];
         }
         
         [library release];

@@ -158,6 +158,15 @@ public:
         uint32_t baseVertex,
         uint32_t instanceCount,
         uint32_t baseInstance) = 0;
+    
+    HGI_API
+    virtual void DrawIndexedMesh(
+        HgiBufferHandle const& indexBuffer,
+        uint32_t indexCount,
+        uint32_t indexBufferByteOffset,
+        uint32_t baseVertex,
+        uint32_t instanceCount,
+        uint32_t baseInstance) = 0;
 
     /// Records a indexed multi-draw command that reads the draw parameters
     /// from a provided drawParameterBuffer, and indices from indexBuffer.
