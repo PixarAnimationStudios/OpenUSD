@@ -22,14 +22,21 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr import Tf
-Tf.PreparePythonModule()
-del Tf
+def AddCmdlineArgs(argsParser, defaultValue='shaded_smooth', altHelpText=''):
+    """
+    Adds output shadingMode command line arguments to argsParser.
 
-from . import cameraArgs
-from . import colorArgs
-from . import aovArgs
-from . import shadingModeArgs
-from . import complexityArgs
-from . import framesArgs
-from . import rendererArgs
+    The resulting 'shadingMode' argument will be a Python string.
+    """
+    helpText = altHelpText
+    if not helpText:
+        helpText = (
+            'the shading mode to use (default=%(default)s)')
+
+    shadingModeChoices = [ 'points', 'wireframe', 'wireframe_on_surface', 
+                        'shaded_flat', 'shaded_smooth', 'geom_only',
+                        'geom_flat', 'geom_smooth']
+    
+    argsParser.add_argument('--shadingMode','-sm', action='store',
+                            type=str, choices=shadingModeChoices, 
+                            default=defaultValue, help=helpText)

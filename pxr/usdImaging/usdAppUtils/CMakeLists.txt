@@ -41,6 +41,8 @@ pxr_library(usdAppUtils
         __init__.py
         cameraArgs.py
         colorArgs.py
+        aovArgs.py
+        shadingModeArgs.py
         complexityArgs.py
         framesArgs.py
         rendererArgs.py

@@ -44,7 +44,6 @@
 
 #include <string>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -52,6 +51,8 @@ UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder() :
     _imageWidth(960u),
     _complexity(1.0f),
     _colorCorrectionMode("disabled"),
+    _aov(HdAovTokens->color),
+    _shadingMode(UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH),
     _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy})
 {
     GarchGLApiLoad();
@@ -82,6 +83,29 @@ UsdAppUtilsFrameRecorder::SetIncludedPurposes(const TfTokenVector& purposes)
                             p.GetText());
         }
     }
+}
+
+void 
+UsdAppUtilsFrameRecorder::SetShadingMode(const TfToken& shadingMode)
+{
+    if (shadingMode == "shaded_smooth")
+        _shadingMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
+    else if(shadingMode == "geom_smooth")
+        _shadingMode = UsdImagingGLDrawMode::DRAW_GEOM_SMOOTH;
+    else if(shadingMode == "points")
+        _shadingMode = UsdImagingGLDrawMode::DRAW_POINTS;
+    else if(shadingMode == "wireframe")
+        _shadingMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
+    else if (shadingMode == "wireframe_on_surface")
+        _shadingMode = UsdImagingGLDrawMode::DRAW_WIREFRAME_ON_SURFACE;
+    else if (shadingMode == "shaded_flat")
+        _shadingMode = UsdImagingGLDrawMode::DRAW_SHADED_FLAT;
+    else if (shadingMode == "geom_only")
+        _shadingMode = UsdImagingGLDrawMode::DRAW_GEOM_ONLY;
+    else if (shadingMode == "geom_flat")
+        _shadingMode = UsdImagingGLDrawMode::DRAW_GEOM_FLAT;
+    else
+        TF_CODING_ERROR("Unrecognized shadingMode value '%s'", shadingMode.GetText());
 }
 
 static GfCamera
@@ -213,7 +237,7 @@ UsdAppUtilsFrameRecorder::Record(
     const GfFrustum frustum = gfCamera.GetFrustum();
     const GfVec3d cameraPos = frustum.GetPosition();
 
-    _imagingEngine.SetRendererAov(HdAovTokens->color);
+    _imagingEngine.SetRendererAov(_aov);
 
     _imagingEngine.SetCameraState(
         frustum.ComputeViewMatrix(),
@@ -248,6 +272,7 @@ UsdAppUtilsFrameRecorder::Record(
     renderParams.showProxy = _HasPurpose(_purposes, UsdGeomTokens->proxy);
     renderParams.showRender = _HasPurpose(_purposes, UsdGeomTokens->render);
     renderParams.showGuides = _HasPurpose(_purposes, UsdGeomTokens->guide);
+    renderParams.drawMode = _shadingMode;
 
     glEnable(GL_DEPTH_TEST);
     glViewport(0, 0, _imageWidth, imageHeight);

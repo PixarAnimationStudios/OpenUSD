@@ -22,14 +22,17 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr import Tf
-Tf.PreparePythonModule()
-del Tf
+def AddCmdlineArgs(argsParser, defaultValue='color', altHelpText=''):
+    """
+    Adds output aov command line arguments to argsParser.
 
-from . import cameraArgs
-from . import colorArgs
-from . import aovArgs
-from . import shadingModeArgs
-from . import complexityArgs
-from . import framesArgs
-from . import rendererArgs
+    The resulting 'aov' argument will be a Python string.
+    """
+    helpText = altHelpText
+    if not helpText:
+        helpText = (
+            'the aov mode to use (default=%(default)s)')
+
+    aovChoices = ['color', 'depth', 'primId']
+    argsParser.add_argument('--aov', action='store',
+                            type=str, choices=aovChoices, default=defaultValue, help=helpText)
