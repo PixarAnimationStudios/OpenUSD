@@ -1655,6 +1655,10 @@ def InstallUSD(context, force, buildArgs):
 
         extraArgs.append('-DPXR_PREFER_SAFETY_OVER_SPEED={}'
                          .format('ON' if context.safetyFirst else 'OFF'))
+        #Enable optimisation flags on Metal (MSL side, host side not using fast math)
+        if MacOS and not context.buildDebug:
+            extraArgs.append('-DCMAKE_XCODE_ATTRIBUTE_MTL_FAST_MATH=YES')
+            extraArgs.append('-DCMAKE_XCODE_ATTRIBUTE_MTL_OPTIMIZATION_LEVEL=O3')
 
         if context.buildPython:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=ON')
