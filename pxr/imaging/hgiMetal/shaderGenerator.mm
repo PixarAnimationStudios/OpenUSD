@@ -226,7 +226,7 @@ public:
     std::string GetBindingsSamplerTypeName() const;
     std::string GetBindingsTextureTypeName() const;
     HgiMetalParameterInputShaderSection* GetParameters();
-    HgiMetalParameterInputShaderSection* GetInputs();
+    HgiMetalShaderSection* GetInputs();
     HgiMetalStageOutputShaderSection* GetOutputs();
     HgiMetalArgumentBufferInputShaderSection* GetBufferBindings();
     HgiMetalArgumentBufferInputShaderSection* GetTextureBindings();
@@ -249,7 +249,7 @@ private:
 
     //Owned by and stored in shadersections
     HgiMetalParameterInputShaderSection* _parameters;
-    HgiMetalParameterInputShaderSection* _inputs;
+    HgiMetalShaderSection* _inputs;
     HgiMetalStageOutputShaderSection* _outputs;
     HgiMetalPayloadShaderSection* _payload;
     HgiMetalArgumentBufferInputShaderSection* _bufferBindings;
@@ -1145,7 +1145,7 @@ HgiMetalShaderStageEntryPoint::GetParameters()
     return _parameters;
 }
 
-HgiMetalParameterInputShaderSection*
+HgiMetalShaderSection*
 HgiMetalShaderStageEntryPoint::GetInputs()
 {
     return _inputs;
@@ -1188,17 +1188,31 @@ HgiMetalShaderStageEntryPoint::_Init(
         generator);
     //TODO THOR THIS IS A BIG HACK PLEASE FIX THIS WORKAROUND THIS IS JUST
     //TO REMOVE STAGE_IN FOR MESH OBJECTS
-    if (generator->_descriptor.shaderStage != HgiShaderStageMeshObject) {
-        _inputs =
+    if (generator->_descriptor.shaderStage != HgiShaderStageMeshObject && generator->_descriptor.shaderStage != HgiShaderStageMeshlet) {
+        bool isMeshFragment = generator->_descriptor.meshDescriptor.meshTopology != HgiShaderFunctionMeshDesc::MeshTopology::None;
+        if (!isMeshFragment) {
+            _inputs =
             _BuildStructInstance<HgiMetalParameterInputShaderSection>(
-            GetInputsTypeName(),
-            GetInputsInstanceName(),
-            /* attribute = */ "stage_in",
-            /* addressSpace = */ std::string(),
-            /* isPointer = */ false,
-            /* members = */ stageInputs,
-            generator,
-            _inputsGenericWrapper);
+                      GetInputsTypeName(),
+                      GetInputsInstanceName(),
+                      /* attribute = */ "stage_in",
+                      /* addressSpace = */ std::string(),
+                      /* isPointer = */ false,
+                      /* members = */ stageInputs,
+                      generator,
+                      _inputsGenericWrapper);
+        } else {
+            _inputs =
+            _BuildStructInstance<HgiMetalParameterMeshInputShaderSection>(
+                      GetInputsTypeName(),
+                      GetInputsInstanceName(),
+                      /* attribute = */ "stage_in",
+                      /* addressSpace = */ std::string(),
+                      /* isPointer = */ false,
+                      /* members = */ stageInputs,
+                      generator,
+                      _inputsGenericWrapper);
+        }
     } else {
         _inputs =
             _BuildStructInstance<HgiMetalParameterInputShaderSection>(
@@ -1207,7 +1221,7 @@ HgiMetalShaderStageEntryPoint::_Init(
             /* attribute = */ "",
             /* addressSpace = */ std::string(),
             /* isPointer = */ false,
-                                                                      /* members = */ {},
+            /* members = */ {},
             generator,
             _inputsGenericWrapper);
     }
@@ -1538,7 +1552,12 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
         ss << "struct PrimOut\n";
         ss << "{};\n\n";
         ss << "struct VertexOut\n";
-        ss << "{vec4 position[[position]];};\n\n";
+        ss << "{vec4 position[[position]];\n";
+        ss << "vec4 Peye;\n";
+        ss << "vec3 Neye;\n";
+        ss << "vec3 points;\n";
+        ss << "vec4 packedSmoothNormals;\n";
+        ss << "};\n\n";
         ss << "using MeshType = metal::mesh<VertexOut, PrimOut,\n";
         ss << _descriptor.meshDescriptor.maxMeshletVertexCount << ", ";
         ss << _descriptor.meshDescriptor.maxPrimitiveCount;

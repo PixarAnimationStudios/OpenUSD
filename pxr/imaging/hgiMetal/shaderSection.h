@@ -450,6 +450,41 @@ private:
     const bool _isPointer;
 };
 
+/// \class HgiMetalParameterInputShaderSection
+///
+/// An input struct to a shader stage
+///
+class HgiMetalParameterMeshInputShaderSection final
+        : public HgiMetalStructInstanceShaderSection
+{
+public:
+    HGIMETAL_API
+    explicit HgiMetalParameterMeshInputShaderSection(
+        const std::string &identifier,
+        const HgiShaderSectionAttributeVector &attributes,
+        const std::string &addressSpace,
+        const bool isPointer,
+        HgiMetalStructTypeDeclarationShaderSection *structTypeDeclaration);
+
+    HGIMETAL_API
+    bool VisitEntryPointParameterDeclarations(std::ostream &ss) override;
+
+    HGIMETAL_API
+    bool VisitEntryPointFunctionExecutions(
+        std::ostream& ss,
+        const std::string &scopeInstanceName) override;
+
+    HGIMETAL_API
+    bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
+
+    HGIMETAL_API
+    void WriteParameter(std::ostream& ss) const override;
+
+private:
+    const std::string _addressSpace;
+    const bool _isPointer;
+};
+
 /// \class HgiMetalArgumentBufferInputShaderSection
 ///
 /// An argument buffer for all bindless buffer bindings to a shader stage

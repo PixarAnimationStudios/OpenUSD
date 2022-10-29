@@ -311,13 +311,13 @@ bool operator!=(
 //TODO Thor add comments
 struct HgiShaderFunctionMeshDesc
 {
-    enum class MeshTopology { Point, Line, Triangle };
-    MeshTopology meshTopology = MeshTopology::Triangle;
+    enum class MeshTopology { Point, Line, Triangle, None };
+    MeshTopology meshTopology = MeshTopology::None;
     uint32_t maxMeshletVertexCount = 64;
     uint32_t maxPrimitiveCount = 64;
-    uint32_t maxTotalThreadsPerThreadgroup;
-    uint32_t maxTotalThreadgroupsPerMeshGrid;
-    uint32_t targetPrimitiveCount;
+    uint32_t maxTotalThreadsPerThreadgroup = 1;
+    uint32_t maxTotalThreadgroupsPerMeshGrid = 1;
+    uint32_t targetPrimitiveCount = 1;
 };
 
 HGI_API

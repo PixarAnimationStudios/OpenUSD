@@ -2324,6 +2324,10 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
     if (_hasFS) {
         HgiShaderFunctionDesc fsDesc;
         fsDesc.shaderStage = HgiShaderStageFragment;
+        
+        if (_hasMS) {
+            fsDesc.meshDescriptor.meshTopology = HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
+        }
 
         resourceGen._GenerateHgiResources(&fsDesc,
             HdShaderTokens->fragmentShader, _resCommon, _metaData);
@@ -2578,6 +2582,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         
         //TODO Thor something better than this
         mosDesc.meshDescriptor.maxTotalThreadsPerThreadgroup = 1;
+        mosDesc.meshDescriptor.meshTopology = HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
         
         if (!glslProgram->CompileShader(mosDesc)) {
             return nullptr;
@@ -2600,6 +2605,8 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                 HgiShaderFunctionTessellationDesc::PatchType::Triangle :
                 HgiShaderFunctionTessellationDesc::PatchType::Quad;
                 */
+        msDesc.meshDescriptor.maxTotalThreadsPerThreadgroup = 1;
+        msDesc.meshDescriptor.meshTopology = HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
         HgiShaderFunctionAddPayloadMember(&msDesc, "index", "uint2", 2);
         resourceGen._GenerateHgiResources(&msDesc,
                                           HdShaderTokens->meshletShader, _resAttrib, _metaData);
