@@ -132,6 +132,20 @@ HgiMetalResourceBindings::BindResources(
     [renderEncoder setFragmentBuffer:argBuffer
                               offset:HgiMetalArgumentOffsetTextureFS
                              atIndex:HgiMetalArgumentIndexTextures];
+    
+    [renderEncoder setMeshBuffer:argBuffer
+                            offset:HgiMetalArgumentOffsetSamplerVS
+                           atIndex:HgiMetalArgumentIndexSamplers];
+    [renderEncoder setMeshBuffer:argBuffer
+                            offset:HgiMetalArgumentOffsetTextureVS
+                           atIndex:HgiMetalArgumentIndexTextures];
+    
+    [renderEncoder setObjectBuffer:argBuffer
+                            offset:HgiMetalArgumentOffsetSamplerVS
+                           atIndex:HgiMetalArgumentIndexSamplers];
+    [renderEncoder setObjectBuffer:argBuffer
+                            offset:HgiMetalArgumentOffsetTextureVS
+                           atIndex:HgiMetalArgumentIndexTextures];
 
     //
     // Bind Buffers
@@ -182,6 +196,14 @@ HgiMetalResourceBindings::BindResources(
     [renderEncoder setFragmentBuffer:argBuffer
                               offset:HgiMetalArgumentOffsetBufferFS
                              atIndex:HgiMetalArgumentIndexBuffers];
+    
+    [renderEncoder setObjectBuffer:argBuffer
+                            offset:HgiMetalArgumentOffsetBufferVS
+                           atIndex:HgiMetalArgumentIndexBuffers];
+    
+    [renderEncoder setMeshBuffer:argBuffer
+                            offset:HgiMetalArgumentOffsetBufferVS
+                           atIndex:HgiMetalArgumentIndexBuffers];
 
     // Bind constants
 
@@ -196,6 +218,12 @@ HgiMetalResourceBindings::BindResources(
     [renderEncoder setFragmentBuffer:argBuffer
                               offset:HgiMetalArgumentOffsetConstants
                              atIndex:HgiMetalArgumentIndexConstants];
+    [renderEncoder setMeshBuffer:argBuffer
+                            offset:HgiMetalArgumentOffsetConstants
+                           atIndex:HgiMetalArgumentIndexConstants];
+    [renderEncoder setObjectBuffer:argBuffer
+                            offset:HgiMetalArgumentOffsetConstants
+                           atIndex:HgiMetalArgumentIndexConstants];
 }
 
 void

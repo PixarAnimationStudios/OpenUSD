@@ -69,7 +69,7 @@ _SetVertexBindings(id<MTLRenderCommandEncoder> encoder,
                               offset:binding.byteOffset
                              atIndex:binding.index];
             //TODO Thor maybe not need all
-            /*
+            
             [encoder
                 setObjectBuffer:mtlBuffer->GetBufferId()
              offset:binding.byteOffset
@@ -78,7 +78,7 @@ _SetVertexBindings(id<MTLRenderCommandEncoder> encoder,
                 setMeshBuffer:mtlBuffer->GetBufferId()
              offset:binding.byteOffset
             atIndex:binding.index];
-             */
+             
         }
     }
 }
