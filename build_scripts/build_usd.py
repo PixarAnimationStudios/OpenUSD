@@ -1702,8 +1702,10 @@ def InstallUSD(context, force, buildArgs):
 
         if context.buildDebug:
             extraArgs.append('-DTBB_USE_DEBUG_BUILD=ON')
+            extraArgs.append('-DPXR_USE_DEBUG_BUILD=ON')
         else:
             extraArgs.append('-DTBB_USE_DEBUG_BUILD=OFF')
+            extraArgs.append('-DPXR_USE_DEBUG_BUILD=OFF')
 
         if context.buildDocs:
             extraArgs.append('-DPXR_BUILD_DOCUMENTATION=ON')
