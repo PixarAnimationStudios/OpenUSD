@@ -39,16 +39,31 @@ endif()
 
 # This has to be defined after Packages is included, because it relies on the
 # discovered path to the python executable.
-if (DEFINED PYTHON_EXE_BASENAME)
-    set(PYTHON_SHEBANG_EXECUTABLE ${PYTHON_EXE_BASENAME})
-else()
-    set(PYTHON_SHEBANG_EXECUTABLE ${PYTHON_EXECUTABLE})
+if (NOT PXR_PYTHON_SHEBANG)
+    if (DEFINED PYTHON_EXE_BASENAME)
+        set(PYTHON_SHEBANG_EXECUTABLE ${PYTHON_EXE_BASENAME})
+    else()
+        set(PYTHON_SHEBANG_EXECUTABLE ${PYTHON_EXECUTABLE})
+    endif()
+    set(PXR_PYTHON_SHEBANG "${PYTHON_SHEBANG_EXECUTABLE}" 
+        CACHE 
+        STRING
+        "Replacement path for Python #! line."
+    )
 endif()
-set(PXR_PYTHON_SHEBANG "${PYTHON_SHEBANG_EXECUTABLE}" 
-    CACHE 
-    STRING
-    "Replacement path for Python #! line."
-)
+
+if (NOT PYTHON_COMMAND_NAME)
+    if (DEFINED PYTHON_EXE_BASENAME)
+        set(PYTHON_COMMAND_EXECUTABLE ${PYTHON_EXE_BASENAME})
+    else()
+        set(PYTHON_COMMAND_EXECUTABLE ${PYTHON_EXECUTABLE})
+    endif()
+    set(PYTHON_COMMAND_NAME "${PYTHON_COMMAND_EXECUTABLE}"
+        CACHE
+        STRING
+        "Python command to launch usd tools (e.g. usdview) with."
+    )
+endif()
 
 # CXXDefaults will set a variety of variables for the project.
 # Consume them here. This is an effort to keep the most common
