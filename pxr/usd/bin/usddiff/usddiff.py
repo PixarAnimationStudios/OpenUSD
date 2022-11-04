@@ -25,6 +25,7 @@
 from __future__ import print_function
 import difflib, os, sys
 from subprocess import call
+from pxr.UsdUtils.toolPaths import FindUsdBinary
 
 import platform
 isWindows = (platform.system() == 'Windows')
@@ -51,34 +52,9 @@ def _generateCatCommand(usdcatCmd, inPath, outPath, flatten=None, fmt=None):
 
     return command
 
-def _findExe(name):
-    from distutils.spawn import find_executable
-    cmd = find_executable(name)
-    
-    if cmd:
-        return cmd
-    else:
-        cmd = find_executable(name, path=os.path.abspath(os.path.dirname(sys.argv[0])))
-        if cmd:
-            return cmd
-
-    if isWindows:
-        # find_executable under Windows only returns *.EXE files
-        # so we need to traverse PATH.
-        for path in os.environ['PATH'].split(os.pathsep):
-            base = os.path.join(path, name)
-            # We need to test for name.cmd first because on Windows, the USD
-            # executables are wrapped due to lack of N*IX style shebang support
-            # on Windows.
-            for ext in ['.cmd', '']:
-                cmd = base + ext
-                if os.access(cmd, os.X_OK):
-                    return cmd
-    return None
-
 # looks up a suitable diff tool, and locates usdcat
 def _findDiffTools():
-    usdcatCmd = _findExe("usdcat")
+    usdcatCmd = FindUsdBinary("usdcat")
     if not usdcatCmd:
         _exit("Error: Could not find 'usdcat'. Expected it to be in PATH", 
               ERROR_EXIT_CODE)
@@ -91,7 +67,7 @@ def _findDiffTools():
         diffCmd = diffCmdList[0]
         if diffCmdList[1:]:
             diffCmdArgs = diffCmdList[1:]
-    if diffCmd and not _findExe(diffCmd):
+    if diffCmd and not FindUsdBinary(diffCmd):
         _exit("Error: Failed to find diff tool %s." % (diffCmd, ),
               ERROR_EXIT_CODE)
 

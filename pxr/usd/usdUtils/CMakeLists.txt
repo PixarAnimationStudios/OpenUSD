@@ -57,6 +57,7 @@ pxr_library(usdUtils
         complianceChecker.py
         constantsGroup.py
         fixBrokenPixarSchemas.py
+        toolPaths.py
         updateSchemaWithSdrNode.py
         usdzUtils.py
 
