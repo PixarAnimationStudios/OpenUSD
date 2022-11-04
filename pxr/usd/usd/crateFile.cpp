@@ -472,13 +472,9 @@ CrateFile::_FileRange::~_FileRange()
     }
 }
 
-CrateFile::_FileMapping::~_FileMapping()
-{
-    _DetachReferencedRanges();
-}
-
-CrateFile::_FileMapping::ZeroCopySource *
-CrateFile::_FileMapping::AddRangeReference(void const *addr, size_t numBytes)
+Vt_ArrayForeignDataSource *
+CrateFile::_FileMapping::_Impl
+::_AddRangeReference(void const *addr, size_t numBytes)
 {
     auto iresult = _outstandingRanges.emplace(this, addr, numBytes);
     // If we take the source's count from 0 -> 1, add a reference to the
@@ -506,7 +502,7 @@ TouchPages(char volatile *start, size_t numPages)
 }
 
 void
-CrateFile::_FileMapping::_DetachReferencedRanges()
+CrateFile::_FileMapping::_Impl::_DetachReferencedRanges()
 {
     // At this moment, we're guaranteed that no ZeroCopySource objects'
     // reference counts will increase (and in particular go from 0 to 1) since
@@ -541,21 +537,21 @@ CrateFile::_FileMapping::_DetachReferencedRanges()
     }
 }
 
-CrateFile::_FileMapping::ZeroCopySource::ZeroCopySource(
-    CrateFile::_FileMapping *m,
+CrateFile::_FileMapping::_Impl::ZeroCopySource::ZeroCopySource(
+    CrateFile::_FileMapping::_Impl *m,
     void const *addr, size_t numBytes)
     : Vt_ArrayForeignDataSource(_Detached)
     , _mapping(m)
     , _addr(addr)
     , _numBytes(numBytes) {}
 
-bool CrateFile::_FileMapping::ZeroCopySource::operator==(
+bool CrateFile::_FileMapping::_Impl::ZeroCopySource::operator==(
     ZeroCopySource const &other) const {
     return _mapping == other._mapping &&
         _addr == other._addr && _numBytes == other._numBytes;
 }
 
-void CrateFile::_FileMapping::ZeroCopySource::_Detached(
+void CrateFile::_FileMapping::_Impl::ZeroCopySource::_Detached(
     Vt_ArrayForeignDataSource *selfBase) {
     auto *self = static_cast<ZeroCopySource *>(selfBase);
     intrusive_ptr_release(self->_mapping);
@@ -2136,36 +2132,34 @@ CrateFile::CreateNew(bool detached)
 }
 
 /* static */
-CrateFile::_FileMappingIPtr
+CrateFile::_FileMapping
 CrateFile::_MmapAsset(char const *assetPath, ArAssetSharedPtr const &asset)
 {
     FILE *file; size_t offset;
     std::tie(file, offset) = asset->GetFileUnsafe();
     std::string errMsg;
-    auto mapping = _FileMappingIPtr(
-        new _FileMapping(ArchMapFileReadOnly(file, &errMsg),
-                         offset, asset->GetSize()));
-    if (!mapping->GetMapStart()) {
+    auto mapping = _FileMapping(ArchMapFileReadOnly(file, &errMsg),
+                                offset, asset->GetSize());
+    if (!mapping.GetMapStart()) {
         TF_RUNTIME_ERROR("Couldn't map asset '%s'%s%s", assetPath,
                          !errMsg.empty() ? ": " : "",
                          errMsg.c_str());
-        mapping.reset();
+        mapping.Reset();
     }
     return mapping;
 }
 
 /* static */
-CrateFile::_FileMappingIPtr
+CrateFile::_FileMapping
 CrateFile::_MmapFile(char const *fileName, FILE *file)
 {
     std::string errMsg;
-    auto mapping = _FileMappingIPtr(
-        new _FileMapping(ArchMapFileReadOnly(file, &errMsg)));
-    if (!mapping->GetMapStart()) {
+    auto mapping = _FileMapping(ArchMapFileReadOnly(file, &errMsg));
+    if (!mapping.GetMapStart()) {
         TF_RUNTIME_ERROR("Couldn't map file '%s'%s%s", fileName,
                          !errMsg.empty() ? ": " : "",
                          errMsg.c_str());
-        mapping.reset();
+        mapping.Reset();
     }
     return mapping;
 }
@@ -2271,7 +2265,7 @@ CrateFile::CrateFile(Options opt)
 }
 
 CrateFile::CrateFile(string const &assetPath, string const &fileName,
-                     _FileMappingIPtr mapping, ArAssetSharedPtr const &asset)
+                     _FileMapping &&mapping, ArAssetSharedPtr const &asset)
     : _mmapSrc(std::move(mapping))
     , _detached(false)
     , _assetPath(assetPath)
@@ -2287,12 +2281,12 @@ CrateFile::CrateFile(string const &assetPath, string const &fileName,
 void
 CrateFile::_InitMMap() {
     if (_mmapSrc) {
-        int64_t mapSize = _mmapSrc->GetLength();
+        int64_t mapSize = _mmapSrc.GetLength();
         
         // Mark the whole file as random access to start to avoid large NFS
         // prefetch.  We explicitly prefetch the structural sections later.
         ArchMemAdvise(
-            _mmapSrc->GetMapStart(), mapSize, ArchMemAdviceRandomAccess);
+            _mmapSrc.GetMapStart(), mapSize, ArchMemAdviceRandomAccess);
 
         // If we're debugging access, allocate a debug page map. 
         static string debugPageMapPattern = TfGetenv("USDC_DUMP_PAGE_MAPS");
@@ -2302,8 +2296,8 @@ CrateFile::_InitMMap() {
              ArchRegex(debugPageMapPattern,
                        ArchRegex::GLOB).Match(_assetPath))) {
             auto pageAlignedMapSize =
-                (_mmapSrc->GetMapStart() + mapSize) -
-                RoundToPageAddr(_mmapSrc->GetMapStart());
+                (_mmapSrc.GetMapStart() + mapSize) -
+                RoundToPageAddr(_mmapSrc.GetMapStart());
             int64_t npages =
                 (pageAlignedMapSize + CRATE_PAGESIZE-1) / CRATE_PAGESIZE;
             _debugPageMap.reset(new char[npages]);
@@ -2313,10 +2307,8 @@ CrateFile::_InitMMap() {
         // Make an mmap stream but disable auto prefetching -- the
         // _ReadStructuralSections() call manages prefetching itself using
         // higher-level knowledge.
-        auto reader =
-            _MakeReader(
-                _MakeMmapStream(
-                    _mmapSrc.get(), _debugPageMap.get()).DisablePrefetch());
+        auto reader = _MakeReader(
+            _MakeMmapStream(&_mmapSrc, _debugPageMap.get()).DisablePrefetch());
         TfErrorMark m;
         _ReadStructuralSections(reader, mapSize);
         if (!m.IsClean())
@@ -2325,7 +2317,7 @@ CrateFile::_InitMMap() {
         // Restore default prefetch behavior if we're not doing custom prefetch.
         if (!_GetMMapPrefetchKB()) {
             ArchMemAdvise(
-                _mmapSrc->GetMapStart(), mapSize, ArchMemAdviceNormal);
+                _mmapSrc.GetMapStart(), mapSize, ArchMemAdviceNormal);
         }
     } else {
         _assetPath.clear();
@@ -2395,9 +2387,9 @@ CrateFile::~CrateFile()
 
     // Dump a debug page map if requested.
     if (_useMmap && _mmapSrc && _debugPageMap) {
-        auto mapStart = _mmapSrc->GetMapStart();
+        auto mapStart = _mmapSrc.GetMapStart();
         int64_t startPage = GetPageNumber(mapStart);
-        int64_t endPage = GetPageNumber(mapStart + _mmapSrc->GetLength() - 1);
+        int64_t endPage = GetPageNumber(mapStart + _mmapSrc.GetLength() - 1);
         int64_t npages = 1 + endPage - startPage;
         std::unique_ptr<unsigned char []> mincoreMap(new unsigned char[npages]);
         void const *p = static_cast<void const *>(RoundToPageAddr(mapStart));
@@ -2458,7 +2450,7 @@ CrateFile::~CrateFile()
 
     // If we have zero copy ranges to detach, do it now.
     if (_useMmap && _mmapSrc) {
-        _mmapSrc.reset();
+        _mmapSrc.Reset();
     }
 
     WorkMoveDestroyAsync(_paths);
@@ -2579,7 +2571,7 @@ CrateFile::Packer::Close()
         }
     }
 
-    _crate->_mmapSrc.reset();
+    _crate->_mmapSrc.Reset();
     _crate->_preadSrc = _FileRange();
     _crate->_assetSrc = asset;
     _crate->_InitAsset();
@@ -2602,8 +2594,9 @@ CrateFile::Packer::operator=(Packer &&other)
 
 CrateFile::Packer::~Packer()
 {
-    if (_crate)
+    if (_crate) {
         _crate->_packCtx.reset();
+    }
 }
 
 vector<tuple<string, int64_t, int64_t>>
@@ -2796,8 +2789,8 @@ CrateFile::_GetTimeSampleValueImpl(TimeSamples const &ts, size_t i) const
     // Need to read the rep from the file for index i.
     auto offset = ts.valuesFileOffset + i * sizeof(ValueRep);
     if (_useMmap) {
-        auto reader = _MakeReader(
-            _MakeMmapStream(_mmapSrc.get(), _debugPageMap.get()));
+        auto reader =
+            _MakeReader(_MakeMmapStream(&_mmapSrc, _debugPageMap.get()));
         reader.Seek(offset);
         return VtValue(reader.Read<ValueRep>());
     } else if (_preadSrc) {
@@ -2817,8 +2810,8 @@ CrateFile::_MakeTimeSampleValuesMutableImpl(TimeSamples &ts) const
     // Read out the reps into the vector.
     ts.values.resize(ts.times.Get().size());
     if (_useMmap) {
-        auto reader = _MakeReader(
-            _MakeMmapStream(_mmapSrc.get(), _debugPageMap.get()));
+        auto reader =
+            _MakeReader(_MakeMmapStream(&_mmapSrc, _debugPageMap.get()));
         reader.Seek(ts.valuesFileOffset);
         for (size_t i = 0, n = ts.times.Get().size(); i != n; ++i)
             ts.values[i] = reader.Read<ValueRep>();
@@ -3761,8 +3754,8 @@ void
 CrateFile::_ReadRawBytes(int64_t start, int64_t size, char *buf) const
 {
     if (_useMmap) {
-        auto reader = _MakeReader(
-            _MakeMmapStream(_mmapSrc.get(), _debugPageMap.get()));
+        auto reader =
+            _MakeReader(_MakeMmapStream(&_mmapSrc, _debugPageMap.get()));
         reader.Seek(start);
         reader.template ReadContiguous<char>(buf, size);
     } else if (_preadSrc) {
@@ -3942,9 +3935,8 @@ CrateFile::_UnpackValue(ValueRep rep, T *out) const
 {
     auto const &h = _GetValueHandler<T>();
     if (_useMmap) {
-        h.Unpack(
-            _MakeReader(
-                _MakeMmapStream(_mmapSrc.get(), _debugPageMap.get())), rep, out);
+        h.Unpack(_MakeReader(_MakeMmapStream(
+                                 &_mmapSrc, _debugPageMap.get())), rep, out);
     } else if (_preadSrc) {
         h.Unpack(_MakeReader(_PreadStream(_preadSrc)), rep, out);
     } else {
@@ -3957,9 +3949,9 @@ void
 CrateFile::_UnpackValue(ValueRep rep, VtArray<T> *out) const {
     auto const &h = _GetValueHandler<T>();
     if (_useMmap) {
-        h.UnpackArray(
-            _MakeReader(
-                _MakeMmapStream(_mmapSrc.get(), _debugPageMap.get())), rep, out);
+        h.UnpackArray(_MakeReader(
+                          _MakeMmapStream(
+                              &_mmapSrc, _debugPageMap.get())), rep, out);
     } else if (_preadSrc) {
         h.UnpackArray(_MakeReader(_PreadStream(_preadSrc)), rep, out);
     } else {
@@ -4044,8 +4036,8 @@ CrateFile::_DoTypeRegistration() {
     _unpackValueFunctionsMmap[typeEnumIndex] =
         [this, valueHandler](ValueRep rep, VtValue *out) {
             valueHandler->UnpackVtValue(
-                _MakeReader(_MakeMmapStream(_mmapSrc.get(),
-                                            _debugPageMap.get())), rep, out);
+                _MakeReader(_MakeMmapStream(
+                                &_mmapSrc, _debugPageMap.get())), rep, out);
         };
 
     _unpackValueFunctionsAsset[typeEnumIndex] =
