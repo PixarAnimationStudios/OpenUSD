@@ -923,10 +923,6 @@ class TestUsdPrim(unittest.TestCase):
             self.assertTrue(prim.ComputeExpandedPrimIndex().IsValid())
             self.assertTrue(prim.ComputeExpandedPrimIndex().DumpToString())
 
-        def _ValidateNoPrimIndexes(prim):
-            self.assertFalse(prim.GetPrimIndex().IsValid())
-            self.assertFalse(prim.GetPrimIndex().DumpToString())
-
         for fmt in allFormats:
             s = _CreateTestStage(fmt)
 
@@ -934,9 +930,14 @@ class TestUsdPrim(unittest.TestCase):
             _ValidatePrimIndexes(s.GetPrimAtPath('/Ref'))
             _ValidatePrimIndexes(s.GetPrimAtPath('/Ref/Child'))
 
-            # Prototype prims do not expose a valid prim index.
+            # Prototype prims do not expose a valid prim index, but can still 
+            # be used to compute an expanded prim index which is necessary for
+            # composition queries.
             prototype = s.GetPrototypes()[0]
-            _ValidateNoPrimIndexes(prototype)
+            self.assertFalse(prototype.GetPrimIndex().IsValid())
+            self.assertFalse(prototype.GetPrimIndex().DumpToString())
+            self.assertTrue(prototype.ComputeExpandedPrimIndex().IsValid())
+            self.assertTrue(prototype.ComputeExpandedPrimIndex().DumpToString())
 
             # However, prims beneath prototypes do expose a valid prim index.
             # Note this prim index may change from run to run depending on
