@@ -70,6 +70,14 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         set(PYTHON_VERSION_MAJOR "${${package}_VERSION_MAJOR}")
         set(PYTHON_VERSION_MINOR "${${package}_VERSION_MINOR}")
 
+        # Convert paths to CMake path format on Windows to avoid string parsing
+        # issues when we pass PYTHON_EXECUTABLE or PYTHON_INCLUDE_DIRS to
+        # pxr_library or other functions.
+        if(WIN32)
+            file(TO_CMAKE_PATH ${PYTHON_EXECUTABLE} PYTHON_EXECUTABLE)
+            file(TO_CMAKE_PATH ${PYTHON_INCLUDE_DIRS} PYTHON_INCLUDE_DIRS)
+        endif()
+
         # This option indicates that we don't want to explicitly link to the
         # python libraries. See BUILDING.md for details.
         if(PXR_PY_UNDEFINED_DYNAMIC_LOOKUP AND NOT WIN32)
