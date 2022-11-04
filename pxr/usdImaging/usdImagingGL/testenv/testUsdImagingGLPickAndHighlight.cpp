@@ -262,12 +262,15 @@ My_TestGLDrawing::Draw(bool render)
     _engine->SetCameraState(_viewMatrix, projMatrix);
     _engine->SetRenderViewport(viewport);
 
+    _engine->SetRendererAov(GetRendererAov());
+
     UsdImagingGLRenderParams params;
     params.drawMode = GetDrawMode();
     params.enableLighting =  IsEnabledTestLighting();
     params.complexity = _GetComplexity();
     params.cullStyle = GetCullStyle();
     params.highlight = true;
+    params.clearColor = GetClearColor();
 
     glViewport(0, 0, width, height);
 

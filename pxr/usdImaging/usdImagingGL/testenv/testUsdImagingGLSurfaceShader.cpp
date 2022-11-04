@@ -198,6 +198,8 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     _engine->SetCameraState(modelViewMatrix, projMatrix);
     _engine->SetRenderViewport(viewport);
 
+    _engine->SetRendererAov(GetRendererAov());
+
     glViewport(0, 0, width, height);
     glClearBufferfv(GL_COLOR, 0, clearColor);
     glClearBufferfv(GL_DEPTH, 0, clearDepth);
@@ -209,6 +211,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     params.enableLighting =  IsEnabledTestLighting();
     params.complexity = _GetComplexity();
     params.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK;
+    params.clearColor = GetClearColor();
 
     _engine->SetLightingState(_lightingContext);
     _engine->Render(_stage->GetPseudoRoot(), params);
