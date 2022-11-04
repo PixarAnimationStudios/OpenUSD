@@ -353,9 +353,20 @@ UsdAppUtilsFrameRecorder::Record(
 
     const UsdPrim& pseudoRoot = stage->GetPseudoRoot();
 
-    do {
+    unsigned int sleepTime = 10; // Initial wait time of 10 ms
+
+    while (true) {
         _imagingEngine.Render(pseudoRoot, renderParams);
-    } while (!_imagingEngine.IsConverged());
+
+        if (_imagingEngine.IsConverged()) {
+            break;
+        } else {
+            // Allow render thread to progress before invoking Render again.
+            std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime));
+            // Increase the sleep time up to a max of 100 ms
+            sleepTime = std::min(100u, sleepTime + 5);
+        }
+    };
 
     TextureBufferWriter writer(&_imagingEngine);
     return writer.Write(outputImagePath);
