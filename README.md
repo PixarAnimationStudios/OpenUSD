@@ -86,13 +86,13 @@ The following dependencies are required:
 Getting and Building the Code
 -----------------------------
 
-The simplest way to build USD is to run the supplied ```build_usd.py``` 
+The simplest way to build USD is to run the supplied `build_usd.py`
 script. This script will download required dependencies and build 
 and install them along with USD in a given directory. 
 
 Follow the instructions below to run the script with its default behavior, 
 which will build the USD core libraries, Imaging, and USD Imaging components.
-For more options and documentation, run the script with the ```--help```
+For more options and documentation, run the script with the `--help`
 parameter.
 
 See [Advanced Build Configuration](BUILDING.md) for examples and
@@ -114,7 +114,7 @@ additional documentation for running cmake directly.
 
 #### 2. Download the USD source code
 
-You can download source code archives from [GitHub](https://www.github.com/PixarAnimationStudios/USD) or use ```git``` to clone the repository.
+You can download source code archives from [GitHub](https://www.github.com/PixarAnimationStudios/USD) or use `git` to clone the repository.
 
 ```
 > git clone https://github.com/PixarAnimationStudios/USD
@@ -126,7 +126,7 @@ Cloning into 'USD'...
 ##### Linux:
 
 For example, the following will download, build, and install USD's dependencies,
-then build and install USD into ```/usr/local/USD```.
+then build and install USD into `/usr/local/USD`.
 
 ```
 > python USD/build_scripts/build_usd.py /usr/local/USD
@@ -134,11 +134,11 @@ then build and install USD into ```/usr/local/USD```.
 
 ##### MacOS:
 
-In a terminal, run ```xcode-select``` to ensure command line developer tools are 
+In a terminal, run `xcode-select` to ensure command line developer tools are
 installed. Then run the script.
 
 For example, the following will download, build, and install USD's dependencies,
-then build and install USD into ```/opt/local/USD```.
+then build and install USD into `/opt/local/USD`.
 
 ```
 > python USD/build_scripts/build_usd.py /opt/local/USD
@@ -153,7 +153,7 @@ command prompt and not the 32-bit (x86) command prompt.
 See https://docs.microsoft.com/en-us/cpp/build/how-to-enable-a-64-bit-visual-cpp-toolset-on-the-command-line for more details.
 
 For example, the following will download, build, and install USD's dependencies,
-then build and install USD into ```C:\Program Files\USD```.
+then build and install USD into `C:\Program Files\USD`.
 
 ```
 C:\> python USD\build_scripts\build_usd.py "C:\Program Files\USD"
@@ -162,7 +162,7 @@ C:\> python USD\build_scripts\build_usd.py "C:\Program Files\USD"
 #### 4. Try it out
 
 Set the environment variables specified by the script when it finishes and 
-launch ```usdview``` with a sample asset.
+launch `usdview` with a sample asset.
 
 ```
 > usdview USD/extras/usd/tutorials/convertingLayerFormats/Sphere.usda
