@@ -1012,20 +1012,6 @@ def InstallTBB_MacOS(context, force, buildArgs):
                 PrintWarning(
                     "TBB debug libraries are not available on this platform.")
 
-        # Output paths that are of interest
-        with open(os.path.join(context.usdInstDir, 'tbbBuild.txt'), 'wt') as file:
-            file.write('ARCHIVE:' + TBB_URL.split("/")[-1] + '\n')
-            file.write('BUILDFOLDER:' + os.path.split(os.getcwd())[1] + '\n')
-            file.write('MAKEPRIMARY:' + makeTBBCmdPrimary + '\n')
-
-            if context.targetUniversal:
-                file.write('MAKESECONDARY:' + makeTBBCmdSecondary + '\n')
-                file.write('LIPO_RELEASE:' + ','.join(
-                        lipoCommandsRelease) + '\n')
-                if lipoCommandsDebug:
-                    file.write('LIPO_DEBUG:' + ','.join(
-                        lipoCommandsDebug) + '\n')
-
         CopyDirectory(context, "include/serial", "include/serial")
         CopyDirectory(context, "include/tbb", "include/tbb")
 
