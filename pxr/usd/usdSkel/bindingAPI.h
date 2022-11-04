@@ -64,6 +64,11 @@ class SdfAssetPath;
 /// documentation for more about bindings and how they apply in a scene graph.
 /// 
 ///
+/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
+/// that are text/tokens, the actual token is published and defined in \ref UsdSkelTokens.
+/// So to set an attribute to the value "rightHanded", use UsdSkelTokens->rightHanded
+/// as the value.
+///
 class UsdSkelBindingAPI : public UsdAPISchemaBase
 {
 public:
@@ -171,6 +176,30 @@ private:
     // override SchemaBase virtuals.
     USDSKEL_API
     const TfType &_GetTfType() const override;
+
+public:
+    // --------------------------------------------------------------------- //
+    // SKINNINGMETHOD 
+    // --------------------------------------------------------------------- //
+    /// The skinningMethod specifies the skinning method for the prim.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token primvars:skel:skinningMethod = "classicLinear"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdSkelTokens "Allowed Values" | classicLinear, dualQuaternion |
+    USDSKEL_API
+    UsdAttribute GetSkinningMethodAttr() const;
+
+    /// See GetSkinningMethodAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSKEL_API
+    UsdAttribute CreateSkinningMethodAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //

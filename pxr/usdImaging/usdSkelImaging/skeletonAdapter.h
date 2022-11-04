@@ -331,11 +331,14 @@ private:
 
     // Static helper methods
     static
-    std::string _LoadSkinningComputeKernel();
+    std::string _LoadSkinningComputeKernel(const TfToken& kernelKey);
 
     static
-    const std::string& _GetSkinningComputeKernel();
- 
+    const std::string& _GetLBSSkinningComputeKernel();
+
+    static
+    const std::string& _GetDQSSkinningComputeKernel();
+
     // ---------------------------------------------------------------------- //
     /// Handlers for the skinned prim
     // ---------------------------------------------------------------------- //

@@ -74,6 +74,14 @@ struct UsdSkelTokensType {
     /// 
     /// UsdSkelAnimation
     const TfToken blendShapeWeights;
+    /// \brief "classicLinear"
+    /// 
+    /// Possible value for UsdSkelBindingAPI::GetSkinningMethodAttr(), Default value for UsdSkelBindingAPI::GetSkinningMethodAttr()
+    const TfToken classicLinear;
+    /// \brief "dualQuaternion"
+    /// 
+    /// Possible value for UsdSkelBindingAPI::GetSkinningMethodAttr()
+    const TfToken dualQuaternion;
     /// \brief "jointNames"
     /// 
     /// UsdSkelSkeleton
@@ -106,6 +114,10 @@ struct UsdSkelTokensType {
     /// 
     /// UsdSkelBindingAPI
     const TfToken primvarsSkelJointWeights;
+    /// \brief "primvars:skel:skinningMethod"
+    /// 
+    /// UsdSkelBindingAPI
+    const TfToken primvarsSkelSkinningMethod;
     /// \brief "restTransforms"
     /// 
     /// UsdSkelSkeleton
