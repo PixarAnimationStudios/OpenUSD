@@ -996,7 +996,7 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                 TfStringStartsWith(primvar.name.GetString(), userAttrPrefix);
             bool hasRiAttributesPrefix =
                 TfStringStartsWith(primvar.name.GetString(), riAttrPrefix);
-            bool hasPrimvarRiAttributesPrefix =
+            const bool hasPrimvarRiAttributesPrefix =
                     TfStringStartsWith(primvar.name.GetString(),primvarsPrefix);
 
             // Strip "primvars:" from the name
@@ -1050,6 +1050,16 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                 name = _GetPrmanPrimvarName(TfToken(strippedName), detail);
             } else {
                 name = _GetPrmanPrimvarName(primvarName, detail);
+            }
+
+            // ri:attributes and primvars:ri:attributes primvars end up having
+            // the same name, potentially causing collisions in the primvar list.
+            // When both ri:attributes and primvar:ri:attributes versions of 
+            // the same primvars exist, the primvar:ri:attributes version should
+            // win out.
+            if (hasRiAttributesPrefix && !hasPrimvarRiAttributesPrefix &&
+                params.HasParam(name)) {
+                continue;
             }
         } else {
             name = _GetPrmanPrimvarName(primvar.name, detail);
