@@ -241,32 +241,37 @@ _FileAnalyzer::_UpdateAssetValue(const VtValue &val)
 {
     if (val.IsHolding<SdfAssetPath>()) {
         auto assetPath = val.UncheckedGet<SdfAssetPath>();
-        std::string rawAssetPath = assetPath.GetAssetPath();
+        const std::string& rawAssetPath = assetPath.GetAssetPath();
         if (!rawAssetPath.empty()) {
-            return VtValue(SdfAssetPath(
-                    _ProcessDependency(rawAssetPath, _DepType::Reference)));
+            const std::string remappedPath =
+                _ProcessDependency(rawAssetPath, _DepType::Reference);
+            return remappedPath.empty() ? 
+                VtValue() : VtValue(SdfAssetPath(remappedPath));
         }
     } else if (val.IsHolding<VtArray<SdfAssetPath>>()) {
-        VtArray<SdfAssetPath> updatedVal;
+        VtArray<SdfAssetPath> updatedArray;
         for (const SdfAssetPath& assetPath :
             val.UncheckedGet< VtArray<SdfAssetPath> >()) {                
-            std::string rawAssetPath = assetPath.GetAssetPath();
+            const std::string& rawAssetPath = assetPath.GetAssetPath();
             if (!rawAssetPath.empty()) {
-                updatedVal.push_back(SdfAssetPath(
-                        _ProcessDependency(rawAssetPath, _DepType::Reference)));
-            } else {
-                // Retain empty paths in the array.
-                updatedVal.push_back(assetPath);
+                const std::string remappedPath =
+                    _ProcessDependency(rawAssetPath, _DepType::Reference);
+                if (!remappedPath.empty()) {
+                    updatedArray.push_back(SdfAssetPath(remappedPath));
+                }
             }
         }
-        return VtValue(updatedVal);
+        return updatedArray.empty() ? VtValue() : VtValue::Take(updatedArray);
     }
     else if (val.IsHolding<VtDictionary>()) {
-        VtDictionary updatedVal;
+        VtDictionary updatedDict;
         for (const auto& p : val.UncheckedGet<VtDictionary>()) {
-            updatedVal[p.first] = _UpdateAssetValue(p.second);
+            VtValue updatedVal = _UpdateAssetValue(p.second);
+            if (!updatedVal.IsEmpty()) {
+                updatedDict[p.first] = std::move(updatedVal);
+            }
         }
-        return VtValue(updatedVal);
+        return updatedDict.empty() ? VtValue() : VtValue::Take(updatedDict);
     }
 
     return val;
@@ -277,8 +282,12 @@ _FileAnalyzer::_ProcessSublayers()
 {
     if (_remapPathFunc) {
         _layer->GetSubLayerPaths().ModifyItemEdits(
-            [this](const std::string& path) { 
-                return _ProcessDependency(path, _DepType::Sublayer); 
+            [this](const std::string& path) {
+                std::string remappedPath =
+                    _ProcessDependency(path, _DepType::Sublayer); 
+                return remappedPath.empty() ? 
+                    boost::optional<std::string>() : 
+                    boost::optional<std::string>(std::move(remappedPath));
             });
     } else {
         for (const auto &subLayer: _layer->GetSubLayerPaths()) {
@@ -299,6 +308,12 @@ _FileAnalyzer::_RemapRefOrPayload(const RefOrPayloadType &refOrPayload)
 
     std::string remappedPath = 
         _ProcessDependency(refOrPayload.GetAssetPath(), DEP_TYPE);
+
+    // If the remapped path was empty, return none to indicate this reference
+    // or payload should be removed.
+    if (remappedPath.empty()) {
+        return boost::none;
+    }
 
     // If the path was not remapped to a different path, then return the 
     // incoming payload unmodified.
@@ -353,58 +368,58 @@ _FileAnalyzer::_ProcessProperties(const SdfPrimSpecHandle &primSpec)
     const VtValue propertyNames =
         primSpec->GetField(SdfChildrenKeys->PropertyChildren);
 
-    if (propertyNames.IsHolding<vector<TfToken>>()) {
-        for (const auto& name :
-                propertyNames.UncheckedGet<vector<TfToken>>()) {
-            // For every property
-            // Build an SdfPath to the property
-            const SdfPath path = primSpec->GetPath().AppendProperty(name);
+    if (!propertyNames.IsHolding<vector<TfToken>>()) {
+        return;
+    }
 
-            // Check property metadata
-            for (const TfToken& infoKey : _layer->ListFields(path)) {
-                if (infoKey != SdfFieldKeys->Default &&
-                    infoKey != SdfFieldKeys->TimeSamples) {
+    for (const auto& name : propertyNames.UncheckedGet<vector<TfToken>>()) {
+        // For every property
+        // Build an SdfPath to the property
+        const SdfPath path = primSpec->GetPath().AppendProperty(name);
+
+        // Check property metadata
+        for (const TfToken& infoKey : _layer->ListFields(path)) {
+            if (infoKey != SdfFieldKeys->Default &&
+                infoKey != SdfFieldKeys->TimeSamples) {
                         
-                    VtValue value = _layer->GetField(path, infoKey);
-                    VtValue updatedValue = _UpdateAssetValue(value);
-                    if (_remapPathFunc && value != updatedValue) {
-                        _layer->SetField(path, infoKey, updatedValue);
-                    }
+                VtValue value = _layer->GetField(path, infoKey);
+                VtValue updatedValue = _UpdateAssetValue(value);
+                if (_remapPathFunc && value != updatedValue) {
+                    _layer->SetField(path, infoKey, updatedValue);
                 }
             }
+        }
 
-            // Check property existence
-            const VtValue vtTypeName =
-                _layer->GetField(path, SdfFieldKeys->TypeName);
-            if (!vtTypeName.IsHolding<TfToken>())
-                continue;
+        // Check property existence
+        const VtValue vtTypeName =
+            _layer->GetField(path, SdfFieldKeys->TypeName);
+        if (!vtTypeName.IsHolding<TfToken>()) {
+            continue;
+        }
 
-            const TfToken typeName =
-                vtTypeName.UncheckedGet<TfToken>();
-            if (typeName == SdfValueTypeNames->Asset ||
-                typeName == SdfValueTypeNames->AssetArray) {
+        const TfToken typeName = vtTypeName.UncheckedGet<TfToken>();
+        if (typeName == SdfValueTypeNames->Asset ||
+            typeName == SdfValueTypeNames->AssetArray) {
 
-                // Check default value
-                VtValue defValue = _layer->GetField(path, 
-                        SdfFieldKeys->Default);
-                VtValue updatedDefValue = _UpdateAssetValue(defValue);
-                if (_remapPathFunc && defValue != updatedDefValue) {
-                    _layer->SetField(path, SdfFieldKeys->Default, 
-                            updatedDefValue);
-                }
+            // Check default value
+            VtValue defValue = _layer->GetField(path, SdfFieldKeys->Default);
+            VtValue updatedDefValue = _UpdateAssetValue(defValue);
+            if (_remapPathFunc && defValue != updatedDefValue) {
+                _layer->SetField(path, SdfFieldKeys->Default, updatedDefValue);
+            }
 
-                // Check timeSample values
-                for (double t : _layer->ListTimeSamplesForPath(path)) {
-                    VtValue timeSampleVal;
-                    if (_layer->QueryTimeSample(path,
-                        t, &timeSampleVal)) {
+            // Check timeSample values
+            for (double t : _layer->ListTimeSamplesForPath(path)) {
+                VtValue timeSampleVal;
+                if (_layer->QueryTimeSample(path, t, &timeSampleVal)) {
+                    VtValue updatedVal = _UpdateAssetValue(timeSampleVal);
+                    if (_remapPathFunc && timeSampleVal != updatedVal) {
 
-                        VtValue updatedTimeSampleVal = 
-                            _UpdateAssetValue(timeSampleVal);
-                        if (_remapPathFunc && 
-                            timeSampleVal != updatedTimeSampleVal) {
-                            _layer->SetTimeSample(path, t, 
-                                    updatedTimeSampleVal);
+                        if (updatedVal.IsEmpty()) {
+                            _layer->EraseTimeSample(path, t);
+                        }
+                        else {
+                            _layer->SetTimeSample(path, t, updatedVal);
                         }
                     }
                 }
@@ -421,7 +436,12 @@ _FileAnalyzer::_ProcessMetadata(const SdfPrimSpecHandle &primSpec)
             VtValue value = primSpec->GetInfo(infoKey);
             VtValue updatedValue = _UpdateAssetValue(value);
             if (_remapPathFunc && value != updatedValue) {
-                primSpec->SetInfo(infoKey, updatedValue);
+                if (updatedValue.IsEmpty()) {
+                    primSpec->ClearInfo(infoKey);
+                }
+                else {
+                    primSpec->SetInfo(infoKey, updatedValue);
+                }
             }
         }
     }

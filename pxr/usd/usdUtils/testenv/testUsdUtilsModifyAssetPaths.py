@@ -47,3 +47,13 @@ def TestDuplicates():
     Test('layer.usda', 'duplicates.usda', fn)
 
 TestDuplicates()
+
+def TestRemoval():
+    # Tests behavior when modify callback returns empty asset
+    # paths.
+    def fn(s):
+        return ''
+        
+    Test('layer.usda', 'removal.usda', fn)
+
+TestRemoval()
