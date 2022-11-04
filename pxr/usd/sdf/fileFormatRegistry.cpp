@@ -35,6 +35,8 @@
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/staticTokens.h"
 
+#include <algorithm>
+
 using std::string;
 using std::vector;
 
@@ -46,6 +48,19 @@ TF_DEFINE_PRIVATE_TOKENS(_PlugInfoKeyTokens,
     ((Target,     "target"))
     ((Primary,    "primary"))
     );
+
+// Locale-independent tolower only for ascii/utf-8 A-Z.
+static inline std::string
+_ToLower(std::string const &str)
+{
+    std::string lowered;
+    lowered.resize(str.size());
+    std::transform(str.begin(), str.end(), lowered.begin(),
+                   [](char ch) {
+                       return ('A' <= ch && ch <= 'Z') ? ch - 'A' + 'a' : ch;
+                   });
+    return lowered;
+}
 
 SdfFileFormatRefPtr
 Sdf_FileFormatRegistry::_Info::GetFileFormat() const
@@ -110,7 +125,8 @@ Sdf_FileFormatRegistry::FindByExtension(
         return TfNullPtr;
     }
 
-    string ext = SdfFileFormat::GetFileExtension(s);
+    // Convert to lowercase for lookup.
+    string ext = _ToLower(SdfFileFormat::GetFileExtension(s));
     if (ext.empty()) {
         TF_CODING_ERROR("Unable to determine extension for '%s'", s.c_str());
         return TfNullPtr;
@@ -158,7 +174,8 @@ Sdf_FileFormatRegistry::GetPrimaryFormatForExtension(
 {
     _RegisterFormatPlugins();
 
-    _ExtensionIndex::const_iterator it = _extensionIndex.find(ext);
+    // Convert to lowercase for lookup.
+    _ExtensionIndex::const_iterator it = _extensionIndex.find(_ToLower(ext));
     if (it != _extensionIndex.end()) {
         return it->second->formatId;
     }
@@ -246,13 +263,18 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             continue;
         }
 
-        const vector<string>& extensions = aExtensions.GetArrayOf<string>();
+        vector<string> extensions = aExtensions.GetArrayOf<string>();
         if (extensions.empty()) {
             TF_CODING_ERROR("File format '%s' plugin meta data '%s' is empty",
                 formatType.GetTypeName().c_str(),
                 _PlugInfoKeyTokens->Extensions.GetText());
             continue;
         }
+
+        // Convert 'extensions' to be all lower-case.
+        std::transform(extensions.begin(), extensions.end(),
+                       extensions.begin(),
+                       [](std::string const &ext) { return _ToLower(ext); });
 
         // The 'target' entry does not need to be specified in every
         // file format's plugin info. If it is not, then the value will be
