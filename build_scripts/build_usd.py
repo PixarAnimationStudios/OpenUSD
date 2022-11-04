@@ -704,11 +704,13 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 if MacOS():
     # This version of boost resolves Python3 compatibilty issues on Big Sur and Monterey and is
     # compatible with Python 2.7 through Python 3.10
-    BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.tar.gz"
+    #BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.tar.gz"
+    BOOST_URL = "https://art-bobcat.autodesk.com:443/artifactory/team-mayausd-dev-generic/staging/ecg-usd-build/3rd-party/boost_1_76_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif Linux():
     #BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
-    BOOST_URL = "https://art-bobcat.autodesk.com:443/artifactory/oss-prd-generic/boost/1.70/boost_1_70_0.tar.gz"
+    # Autodesk: updated to boost v1.76 on all platforms for the Python 3.10 support.
+    BOOST_URL = "https://art-bobcat.autodesk.com:443/artifactory/team-mayausd-dev-generic/staging/ecg-usd-build/3rd-party/boost_1_76_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif Windows():
     # The default installation of boost on Windows puts headers in a versioned 
@@ -719,8 +721,10 @@ elif Windows():
     # boost 1.70 is required for Visual Studio 2019. For simplicity, we use
     # this version for all older Visual Studio versions as well.
     #BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
-    BOOST_URL = "https://art-bobcat.autodesk.com:443/artifactory/oss-prd-generic/boost/1.70/boost_1_70_0.tar.gz"
-    BOOST_VERSION_FILE = "include/boost-1_70/boost/version.hpp"
+    #BOOST_VERSION_FILE = "include/boost-1_70/boost/version.hpp"
+    # Autodesk: updated to boost v1.76 on all platforms for the Python 3.10 support.
+    BOOST_URL = "https://art-bobcat.autodesk.com:443/artifactory/team-mayausd-dev-generic/staging/ecg-usd-build/3rd-party/boost_1_76_0.tar.gz"
+    BOOST_VERSION_FILE = "include/boost-1_76/boost/version.hpp"
 
 def InstallBoost_Helper(context, force, buildArgs):
     # Documentation files in the boost archive can have exceptionally
