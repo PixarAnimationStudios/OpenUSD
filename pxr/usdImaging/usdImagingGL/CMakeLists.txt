@@ -1344,7 +1344,7 @@ pxr_register_test(testUsdImagingGLInstancing_nestedInstancedCubes
 pxr_register_test(testUsdImagingGLInstancing_nestedInstance
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage nestedInstance.usda -write testUsdImagingGLInstancing_nestedInstance.png"
     IMAGE_DIFF_COMPARE
-        testUsdImagingGLInstancing_instance3.png
+        testUsdImagingGLInstancing_nestedInstance.png
     FAIL 0.02
     FAIL_PERCENT 0.005
     WARN 0.02
@@ -4467,7 +4467,7 @@ if (OPENVDB_FOUND AND ${PXR_ENABLE_OPENVDB_SUPPORT})
     pxr_register_test(testUsdImagingGLVdbVolume_TargetMemory
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -rendererAov color -offscreen -stage vdbVolumeTargetMemory.usda -times 2 -clear 0 0 0 1 -lighting -camera /main_cam -write testUsdImagingGLVdbVolumeTargetMemory.png"
         IMAGE_DIFF_COMPARE
-            testUsdImagingGLVdbVolumeTargetMemory.png
+            testUsdImagingGLVdbVolumeTargetMemory_002.png
         FAIL 1
         FAIL_PERCENT 1
         PERCEPTUAL
@@ -4594,7 +4594,7 @@ if (OPENVDB_FOUND AND ${PXR_ENABLE_OPENVDB_SUPPORT})
     pxr_register_test(testUsdImagingGLVdbVolumeNonBindless_TargetMemory
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -rendererAov color -offscreen -stage vdbVolumeTargetMemory.usda -times 2 -clear 0 0 0 1 -lighting -camera /main_cam -write testUsdImagingGLVdbVolumeTargetMemory.png"
         IMAGE_DIFF_COMPARE
-            testUsdImagingGLVdbVolumeTargetMemory.png
+            testUsdImagingGLVdbVolumeTargetMemory_002.png
         FAIL 1
         FAIL_PERCENT 1
         PERCEPTUAL
