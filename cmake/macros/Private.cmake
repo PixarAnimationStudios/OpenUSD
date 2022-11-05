@@ -1301,13 +1301,8 @@ function(_pxr_library NAME)
             SUFFIX "${args_SUFFIX}"
     )
 
-    set(pythonEnabled "PXR_PYTHON_ENABLED=1")
-    if(TARGET shared_libs)
-        set(pythonModulesEnabled "PXR_PYTHON_MODULES_ENABLED=1")
-    endif()
     target_compile_definitions(${NAME}
         PUBLIC
-            ${pythonEnabled}
             ${apiPublic}
         PRIVATE
             MFB_PACKAGE_NAME=${PXR_PACKAGE}
@@ -1316,7 +1311,6 @@ function(_pxr_library NAME)
             PXR_BUILD_LOCATION=usd
             PXR_PLUGIN_BUILD_LOCATION=../plugin/usd
             ${pxrInstallLocation}
-            ${pythonModulesEnabled}
             ${apiPrivate}
     )
 
