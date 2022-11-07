@@ -118,7 +118,7 @@ PcpPrimIndex_Graph::New(const PcpLayerStackSite& rootSite, bool usd)
 }
 
 PcpPrimIndex_GraphRefPtr 
-PcpPrimIndex_Graph::New(const PcpPrimIndex_GraphPtr& copy)
+PcpPrimIndex_Graph::New(const PcpPrimIndex_GraphRefPtr& copy)
 {
     TfAutoMallocTag2 tag("Pcp", "PcpPrimIndex_Graph");
 
@@ -288,8 +288,9 @@ PcpPrimIndex_Graph::GetNodeIndexesForRange(PcpRangeType rangeType) const
 size_t 
 PcpPrimIndex_Graph::GetNodeIndexForNode(const PcpNodeRef &node) const
 {
-    return get_pointer(node.GetOwningGraph()) == this ? 
-        node._GetNodeIndex() : _GetNumNodes();
+    return node.GetOwningGraph() == this
+        ? node._GetNodeIndex()
+        : _GetNumNodes();
 }
 
 void
@@ -512,7 +513,7 @@ PcpPrimIndex_Graph::InsertChildNode(
 PcpNodeRef
 PcpPrimIndex_Graph::InsertChildSubgraph(
     const PcpNodeRef& parent,
-    const PcpPrimIndex_GraphPtr& subgraph, const PcpArc& arc,
+    const PcpPrimIndex_GraphRefPtr& subgraph, const PcpArc& arc,
     PcpErrorBasePtr *error)
 {
     TfAutoMallocTag2 tag("Pcp", "PcpPrimIndex_Graph");

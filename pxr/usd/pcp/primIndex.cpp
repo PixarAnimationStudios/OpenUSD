@@ -91,18 +91,6 @@ PcpPrimIndex::PcpPrimIndex()
 {
 }
 
-void 
-PcpPrimIndex::SetGraph(const PcpPrimIndex_GraphRefPtr& graph)
-{
-    _graph = graph;
-}
-
-PcpPrimIndex_GraphPtr
-PcpPrimIndex::GetGraph() const
-{
-    return _graph;
-}
-
 PcpNodeRef
 PcpPrimIndex::GetRootNode() const
 {
@@ -1436,7 +1424,7 @@ _AddArc(
         for (PcpPrimIndex_StackFrameIterator it(parent, indexer->previousFrame);
              it.node; it.NextFrame()) {
 
-            PcpPrimIndex_GraphPtr currentGraph = it.node.GetOwningGraph();
+            PcpPrimIndex_Graph *currentGraph = it.node.GetOwningGraph();
             if (currentGraph->GetNodeUsingSite(siteToAddInCurrentGraph)) {
                 foundDuplicateNode = true;
                 break;
@@ -4485,7 +4473,7 @@ _BuildInitialPrimIndexFromAncestor(
     }
 
     // Adjust the parent graph for this child.
-    PcpPrimIndex_GraphPtr graph = outputs->primIndex.GetGraph();
+    const PcpPrimIndex_GraphRefPtr &graph = outputs->primIndex.GetGraph();
     graph->AppendChildNameToAllSites(site.path);
 
     // Reset the 'has payload' flag on this prim index.
