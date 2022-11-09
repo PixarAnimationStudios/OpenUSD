@@ -81,6 +81,9 @@ public:
     HDST_API
     TfTokenVector const & GetBuiltinPrimvarNames() const override;
 
+    HD_API
+    bool NeedUpdateEachFrame(HdSceneDelegate* sceneDelegate) const override;
+
 protected:
     HDST_API
     void _InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits) override;
@@ -122,8 +125,8 @@ private:
     };
 
     enum DirtyBits : HdDirtyBits {
-        DirtyIndices        = HdChangeTracker::CustomBitsBegin,
-        DirtyHullIndices    = (DirtyIndices       << 1),
+        DirtyBase           = HdBasisCurves::DirtyCamera,
+        DirtyHullIndices    = (DirtyBase          << 1),
         DirtyPointsIndices  = (DirtyHullIndices   << 1)
     };
 
@@ -157,6 +160,14 @@ private:
 
     void _UpdateMaterialTagsForAllReprs(HdSceneDelegate *sceneDelegate,
                                         HdRenderParam *renderParam);
+
+    void _CalculateAccumulatedLength(HdSceneDelegate* sceneDelegate, const VtVec3fArray& points,
+        const VtIntArray& curveVertexCounts, bool screenSpaced, VtVec2fArray& accumulatedLengths);
+
+    void _CalculateVertexInfo(const VtVec3fArray& points, const VtIntArray& curveVertexCounts,
+        VtVec3fArray& styleCurvePoints, VtVec3fArray& styleCurveAdjPoints1,
+        VtVec3fArray& styleCurveAdjPoints2, VtVec3fArray& styleCurveAdjPoints3,
+        VtFloatArray& styleCurveExtrude);
 
     HdSt_BasisCurvesTopologySharedPtr _topology;
     HdTopology::ID _topologyId;

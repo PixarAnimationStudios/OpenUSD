@@ -246,6 +246,9 @@ public:
     HDX_API
     void SetEnablePresentation(bool enabled);
 
+    /// Get the cameraID of free camera.
+    HDX_API
+    SdfPath GetFreeCameraID() const;
 private:
     ///
     /// This class is not intended to be copied.

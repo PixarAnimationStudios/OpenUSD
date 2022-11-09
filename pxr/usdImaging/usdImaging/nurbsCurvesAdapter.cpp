@@ -258,9 +258,10 @@ UsdImagingNurbsCurvesAdapter::GetTopology(UsdPrim const& prim,
     const TfToken& topoCurveBasis = HdTokens->linear;
     const TfToken& topoCurveType = HdTokens->linear;
     const TfToken& topoCurveWrap = HdTokens->nonperiodic;
+    const TfToken& topoCurveStyle = HdTokens->none;
 
     HdBasisCurvesTopology topology(
-        topoCurveType, topoCurveBasis, topoCurveWrap,
+        topoCurveType, topoCurveBasis, topoCurveWrap, topoCurveStyle,
         _Get<VtIntArray>(prim, UsdGeomTokens->curveVertexCounts, time),
         VtIntArray());
     return VtValue(topology);

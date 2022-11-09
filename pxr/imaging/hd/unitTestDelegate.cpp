@@ -242,6 +242,7 @@ HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
                                     VtVec3fArray const &normals,
                                     TfToken const &type,
                                     TfToken const &basis,
+                                    TfToken const &style,
                                     VtValue const &color,
                                     HdInterpolation colorInterpolation,
                                     VtValue const &opacity,
@@ -257,7 +258,9 @@ HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
 
     _curves[id] = _Curves(points, curveVertexCounts, curveIndices,
                           type,
-                          basis);
+                          basis,
+                          HdTokens->nonperiodic,
+                          style);
 
     _primvars[id] = {
         _Primvar(HdTokens->displayColor,
@@ -765,6 +768,7 @@ HdUnitTestDelegate::GetBasisCurvesTopology(SdfPath const& id)
     return HdBasisCurvesTopology(curve.type,
                                  curve.basis,
                                  curve.wrap,
+                                 curve.style,
                                  curve.curveVertexCounts,
                                  curve.curveIndices);
 }
@@ -1569,7 +1573,8 @@ HdUnitTestDelegate::AddGridWithFaceVaryingColor(SdfPath const &id, int nx, int n
 void
 HdUnitTestDelegate::AddCurves(
     SdfPath const &id, TfToken const &type, 
-    TfToken const &basis, GfMatrix4f const &transform,
+    TfToken const &basis, TfToken const &style,
+    GfMatrix4f const &transform,
     HdInterpolation colorInterp,
     HdInterpolation widthInterp,
     bool authoredNormals,
@@ -1654,7 +1659,7 @@ HdUnitTestDelegate::AddCurves(
         /*curveIndices=*/VtIntArray(),
         authNormals,
         type,
-        basis,
+        basis, style,
         color, colorInterp,
         VtValue(1.0f), HdInterpolationConstant,
         width, widthInterp,
@@ -1981,20 +1986,20 @@ HdUnitTestDelegate::PopulateBasicTestSet()
     // curves
     {
         dmat.SetTranslate(GfVec3d(xPos, -3.0, 0.0));
-        AddCurves(SdfPath("/curve1"), HdTokens->linear, TfToken(), GfMatrix4f(dmat),
-                           HdInterpolationVertex, HdInterpolationVertex);
+        AddCurves(SdfPath("/curve1"), HdTokens->linear, TfToken(), HdTokens->none,
+            GfMatrix4f(dmat), HdInterpolationVertex, HdInterpolationVertex);
 
         dmat.SetTranslate(GfVec3d(xPos, 0.0, 0.0));
-        AddCurves(SdfPath("/curve2"), HdTokens->cubic, HdTokens->bezier, GfMatrix4f(dmat),
-                           HdInterpolationVertex, HdInterpolationVertex);
+        AddCurves(SdfPath("/curve2"), HdTokens->cubic, HdTokens->bezier, HdTokens->none,
+            GfMatrix4f(dmat), HdInterpolationVertex, HdInterpolationVertex);
 
         dmat.SetTranslate(GfVec3d(xPos, 3.0, 0.0));
-        AddCurves(SdfPath("/curve3"), HdTokens->cubic, HdTokens->bspline, GfMatrix4f(dmat),
-                           HdInterpolationVertex, HdInterpolationConstant);
+        AddCurves(SdfPath("/curve3"), HdTokens->cubic, HdTokens->bspline, HdTokens->none,
+            GfMatrix4f(dmat), HdInterpolationVertex, HdInterpolationConstant);
 
         dmat.SetTranslate(GfVec3d(xPos, 6.0, 0.0));
-        AddCurves(SdfPath("/curve4"), HdTokens->cubic, HdTokens->catmullRom, GfMatrix4f(dmat),
-                           HdInterpolationVertex, HdInterpolationConstant);
+        AddCurves(SdfPath("/curve4"), HdTokens->cubic, HdTokens->catmullRom, HdTokens->none,
+            GfMatrix4f(dmat), HdInterpolationVertex, HdInterpolationConstant);
 
         xPos += 3.0;
     }
@@ -2031,6 +2036,7 @@ HdUnitTestDelegate::PopulateInvalidPrimsSet()
                             VtVec3fArray(),
                             HdTokens->linear,
                             TfToken(),
+                            HdTokens->none,
                             VtValue(GfVec3f(1)), HdInterpolationConstant,
                             VtValue(1.0f), HdInterpolationConstant,
                             VtValue(1.0f), HdInterpolationConstant);

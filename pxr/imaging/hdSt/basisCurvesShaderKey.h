@@ -42,7 +42,9 @@ struct HdSt_BasisCurvesShaderKey : public HdSt_ShaderKey
         POINTS,       // Draws only the control vertices.
         WIRE,         // Draws as lines or isolines, tessellated along length
         RIBBON,       // Draws as patch, tessellated along length only
-        HALFTUBE      // Draws as patch, displaced into a half tube shape
+        HALFTUBE,     // Draws as patch, displaced into a half tube shape
+        DASHDOT,      // Draws as a dash doted style curve.
+        DASHDOTSS     // Draws as a screen-spaced dash doted style curve.
     };
 
     enum NormalStyle{
@@ -68,6 +70,7 @@ struct HdSt_BasisCurvesShaderKey : public HdSt_ShaderKey
     TfToken const *GetTES() const override { return TES; }
     TfToken const *GetPTCS() const override { return PTCS; }
     TfToken const *GetPTVS() const override { return PTVS; }
+    TfToken const* GetGS() const override { return GS; }
     TfToken const *GetFS() const override { return FS; }
 
     HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const override { 
@@ -81,11 +84,12 @@ struct HdSt_BasisCurvesShaderKey : public HdSt_ShaderKey
     HdSt_GeometricShader::PrimitiveType primType;
     bool useMetalTessellation;
     TfToken glslfx;
-    TfToken VS[7];
+    TfToken VS[8];
     TfToken TCS[7];
     TfToken TES[12];
     TfToken PTCS[9];
     TfToken PTVS[14];
+    TfToken GS[2];
     TfToken FS[8];
 };
 

@@ -17,7 +17,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_TOKENS                               \
     (accelerations)                             \
+    (accumulatedLength)                         \
     (adjacency)                                 \
+    (adjPoints1)                                \
+    (adjPoints2)                                \
+    (adjPoints3)                                \
     (angularVelocities)                         \
     (bboxLocalMin)                              \
     (bboxLocalMax)                              \
@@ -33,6 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (coordSysBindings)                          \
     (cubic)                                     \
     (cullStyle)                                 \
+    (dashDot)                                   \
     (doubleSided)                               \
     (dispatchCount)                             \
     (displayColor)                              \
@@ -48,7 +53,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (edgeIndices)                               \
     (elementCount)                              \
     (elementsVisibility)                        \
+    (endCapType)                                \
     (extent)                                    \
+    (extrude)                                   \
     (faceColors)                                \
     (filters)                                   \
     (full)                                      \
@@ -68,11 +75,16 @@ PXR_NAMESPACE_OPEN_SCOPE
     (meshLight)                                 \
     (materialParams)                            \
     (materialSyncMode)                          \
+    (none)                                      \
     (nonlinearSampleCount)                      \
     (nonperiodic)                               \
     (normals)                                   \
     (params)                                    \
     (patchParam)                                \
+    (pattern)                                   \
+    (patternPartCount)                          \
+    (patternPeriod)                             \
+    (patternScale)                              \
     (periodic)                                  \
     (pinned)                                    \
     (points)                                    \
@@ -86,10 +98,17 @@ PXR_NAMESPACE_OPEN_SCOPE
     (primitiveParam)                            \
     (tessFactors)                               \
     (quadInfo)                                  \
+    (renderPassState)                           \
     (renderTags)                                \
     (rightHanded)                               \
+    (round)                                     \
+    (square)                                    \
+    (screenSpacePattern)                        \
+    (screenSpaceDashDot)                        \
     (segmented)                                 \
     (shadowLink)                                \
+    (startCapType)                              \
+    (style)                                     \
     (subdivTags)                                \
     (taskState)                                 \
     (taskParams)                                \
@@ -98,6 +117,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (totalItemCount)                            \
     (transform)                                 \
     (transformInverse)                          \
+    (triangle)                                  \
+    (type)                                      \
     (velocities)                                \
     (visibility)                                \
     (widths)                                    \

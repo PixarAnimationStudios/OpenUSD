@@ -7,6 +7,7 @@
 #include "pxr/imaging/hd/renderIndex.h"
 
 #include "pxr/imaging/hd/basisCurves.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/dataSourceLegacyPrim.h"
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/dirtyList.h"
@@ -22,6 +23,7 @@
 #include "pxr/imaging/hd/prefixingSceneIndex.h"
 #include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/rprim.h"
@@ -337,6 +339,13 @@ HdRenderIndex::_InsertRprim(TfToken const& typeId,
       rprim
     };
     _rprimMap[rprimId] = std::move(info);
+
+    // If the rprim is a basisCurves, put it in _basisCurvesList.
+    HdBasisCurves* basisCurves = dynamic_cast<HdBasisCurves*>(rprim);
+    if (basisCurves) 
+    {
+        _basisCurvesList.push_back(info);
+    }
 }
 
 void 
@@ -372,6 +381,21 @@ void HdRenderIndex::_RemoveRprim(SdfPath const &id)
     }
 
     _tracker.RprimRemoved(id);
+
+    // If the rprim is a basisCurves, and it is in _basisCurvesList,
+    // remove it from _basisCurvesList.
+    HdBasisCurves* basisCurves = dynamic_cast<HdBasisCurves*>(rprimInfo.rprim);
+    if (basisCurves)
+    {
+        for (auto it = _basisCurvesList.begin(); it != _basisCurvesList.end(); ++it)
+        {
+            if (it->rprim == rprimInfo.rprim)
+            {
+                _basisCurvesList.erase(it);
+                break;
+            }
+        }
+    }
 
     // Ask delegate to actually delete the rprim
     rprimInfo.rprim->Finalize(_renderDelegate->GetRenderParam());
@@ -432,7 +456,22 @@ HdRenderIndex::_RemoveRprimSubtree(const SdfPath &root,
                     _tracker.RemoveInstancerRprimDependency(instancerId, id);
                 }
 
-                _tracker.RprimRemoved(id);
+                _tracker.RprimRemoved(id);    
+                
+                // If the rprim is a basisCurves, and it is in _basisCurvesList,
+                // remove it from _basisCurvesList.
+                HdBasisCurves* basisCurves = dynamic_cast<HdBasisCurves*>(rprimInfo.rprim);
+                if (basisCurves)
+                {
+                    for (auto it = _basisCurvesList.begin(); it != _basisCurvesList.end(); ++it)
+                    {
+                        if (it->rprim == rprimInfo.rprim)
+                        {
+                            _basisCurvesList.erase(it);
+                            break;
+                        }
+                    }
+                }
 
                 // Ask delegate to actually delete the rprim
                 rprimInfo.rprim->Finalize(_renderDelegate->GetRenderParam());
@@ -511,6 +550,9 @@ HdRenderIndex::_Clear()
     _rprimMap.clear();
     _rprimIds.Clear();
     _rprimPrimIdMap.clear();
+
+    // Clear the _basisCurvesList.
+    _basisCurvesList.clear();
 
     // Clear S & B prims
     _sprimIndex.Clear(_tracker, _renderDelegate);
@@ -1378,6 +1420,125 @@ HdRenderIndex::EnqueueCollectionToSync(HdRprimCollection const &col)
 }
 
 void
+HdRenderIndex::_SyncBasisCurves(TfTokenVector const& renderTags)
+{
+    if (!_basisCurvesList.empty())
+    {
+        // Find the basisCurves that we need to update the camera information.
+        std::vector<HdBasisCurves*> basisCurvesInSyncList;
+        for (auto const& rprimInfo : _basisCurvesList)
+        {
+            // Check if the basisCurves' renderTag is within the renderTags. If not, this curve will
+            // not be synced.
+            HdRprim* rprim = rprimInfo.rprim;
+            SdfPath const& rprimID = rprim->GetId();
+            const HdDirtyBits bits = _tracker.GetRprimDirtyBits(rprimID);
+            TfToken primRenderTag = rprim->GetRenderTag();
+            if(bits & HdChangeTracker::DirtyRenderTag)
+                // Update the render tag if needed.
+                primRenderTag = UpdateRenderTag(rprimID, bits);
+            // If the renderTag of the basisCurves is not in the list of renderTags, it means in the current
+            // sync we will not sync the basisCurves, so we don't need to update its camera information.
+            if (std::find(renderTags.begin(), renderTags.end(), primRenderTag) == renderTags.end())
+                continue;
+            HdBasisCurves* basisCurves = dynamic_cast<HdBasisCurves*>(rprim);
+            // Check if the curve requires update each frame.
+            if (basisCurves->NeedUpdateEachFrame(rprimInfo.sceneDelegate))
+            {
+                basisCurvesInSyncList.push_back(basisCurves);
+                // Mark the curve as DirtyCamera.
+                _tracker.MarkRprimDirty(rprimInfo.rprim->GetId(), HdBasisCurves::DirtyCamera);
+            }
+        }
+
+        if (!basisCurvesInSyncList.empty())
+        {
+            // Get the WVP matrix and the viewport.
+            GfMatrix4d projectionMatrix;
+            GfMatrix4d worldViewMatrix;
+            GfVec4f viewport;
+            HdCamera* camera = nullptr;
+            if (IsSprimTypeSupported(HdTokens->camera)) {
+                camera = static_cast<HdCamera*>(GetSprim(HdPrimTypeTokens->camera, _activeCameraId));
+            }
+            // If there is camera, get the matrix and viewport from the camera.
+            if (camera) {
+                // Initialize the cached render pass state.
+                // NOTE: Constructing and destroying HdRenderPassState will resulting processing glslfx
+                // redundantly, which is time-consuming.
+                static HdRenderPassStateSharedPtr renderPassState;
+                if (!renderPassState)
+                {
+                    renderPassState = _renderDelegate->CreateRenderPassState();
+                }
+                else
+                {
+                    // Reset the renderPassState.
+                    renderPassState->SetCamera(nullptr);
+                    renderPassState->SetFraming({});
+                    renderPassState->SetOverrideWindowPolicy({});
+                    static const GfVec4d& initialViewport = { 0, 0, 1, 1 };
+                    renderPassState->SetViewport(initialViewport);
+                }
+
+                if (renderPassState)
+                {
+                    // Set the camera and viewport for render pass state.
+                    if (_framing.IsValid()) {
+                        renderPassState->SetCamera(camera);
+                        renderPassState->SetFraming(_framing);
+                        renderPassState->SetOverrideWindowPolicy(_overrideWindowPolicy);
+                    }
+                    else {
+                        renderPassState->SetCamera(camera);
+                        renderPassState->SetViewport(_viewport);
+                    }
+                    projectionMatrix = renderPassState->GetProjectionMatrix();
+                    worldViewMatrix = renderPassState->GetWorldToViewMatrix();
+                    const CameraUtilFraming& framing = renderPassState->GetFraming();
+                    viewport = renderPassState->GetViewport();
+                    if (framing.IsValid()) {
+                        const GfRect2i& dataWindow = framing.dataWindow;
+                        viewport = GfVec4f(
+                            dataWindow.GetMinX(),
+                            dataWindow.GetMinY(),
+                            dataWindow.GetWidth(),
+                            dataWindow.GetHeight());
+                    }
+                }
+            }
+            else
+            {
+                // If there is no camera, use the matrix and viewport which is set to the renderIndex.
+                projectionMatrix = _projectionMatrix;
+                worldViewMatrix = _worldToViewMatrix;
+                viewport = GfVec4f(_viewport.data()[0],
+                    _viewport.data()[1],
+                    _viewport.data()[2],
+                    _viewport.data()[3]);
+                if (_framing.IsValid()) {
+                    const GfRect2i& dataWindow = _framing.dataWindow;
+                    viewport = GfVec4f(
+                        dataWindow.GetMinX(),
+                        dataWindow.GetMinY(),
+                        dataWindow.GetWidth(),
+                        dataWindow.GetHeight());
+                }
+            }
+
+            GfMatrix4d wvpMatrix = worldViewMatrix * projectionMatrix;
+            for (HdBasisCurves* basisCurves : basisCurvesInSyncList)
+            {
+                // We need to set the WVP matrix and the viewport size to the BasisCurves. They
+                // are used when we calculate screenSpaced accumulated length.
+                basisCurves->UpdateWVPMatrix(wvpMatrix);
+                basisCurves->UpdateViewport(viewport);
+            }
+        }
+    }
+}
+
+void
 HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
                        HdTaskContext *taskContext)
 {
@@ -1481,6 +1642,10 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
     // and get dirty rprim ids
     _rprimDirtyList.UpdateRenderTagsAndReprSelectors(taskRenderTags,
                                                      reprSelectors);
+
+    // If the basiscurves has screenspaced style, we need to update the screenspaced accumulated
+    // length per frame. 
+    _SyncBasisCurves(taskRenderTags);
 
     // NOTE: GetDirtyRprims relies on up-to-date render tags; if render tags
     // are dirty, this call will sync render tags before compiling the dirty
@@ -1976,6 +2141,47 @@ HdRenderIndex::IsBprimTypeSupported(TfToken const& typeId) const
 {
     TfTokenVector const& supported = _renderDelegate->GetSupportedBprimTypes();
     return (std::find(supported.begin(), supported.end(), typeId) != supported.end());
+}
+
+void
+HdRenderIndex::SetFraming(const CameraUtilFraming& framing)
+{
+    _framing = framing;
+}
+
+void
+HdRenderIndex::SetOverrideWindowPolicy(
+    const std::optional<CameraUtilConformWindowPolicy>& policy)
+{
+    _overrideWindowPolicy = policy;
+}
+
+void
+HdRenderIndex::SetRenderViewport(GfVec4d const& viewport)
+{
+    _viewport = viewport;
+}
+
+void
+HdRenderIndex::SetCameraPath(SdfPath const& id)
+{
+    _activeCameraId = id;
+}
+
+void
+HdRenderIndex::SetCameraFramingState(GfMatrix4d const& worldToViewMatrix,
+    GfMatrix4d const& projectionMatrix,
+    GfVec4d const& viewport)
+{
+    if (!_activeCameraId.IsEmpty()) {
+        // If a camera handle was set, reset it.
+        _activeCameraId = SdfPath();
+    }
+
+    _worldToViewMatrix = worldToViewMatrix;
+    _projectionMatrix = projectionMatrix;
+    _viewport = viewport;
+
 }
 
 void

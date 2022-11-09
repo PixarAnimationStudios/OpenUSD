@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -83,6 +83,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "edgeOnly", UsdGeomTokens->edgeOnly);
     _AddToken(cls, "elementSize", UsdGeomTokens->elementSize);
     _AddToken(cls, "elementType", UsdGeomTokens->elementType);
+    _AddToken(cls, "endCapType", UsdGeomTokens->endCapType);
     _AddToken(cls, "exposure", UsdGeomTokens->exposure);
     _AddToken(cls, "extent", UsdGeomTokens->extent);
     _AddToken(cls, "extentsHint", UsdGeomTokens->extentsHint);
@@ -144,6 +145,9 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "origin", UsdGeomTokens->origin);
     _AddToken(cls, "orthographic", UsdGeomTokens->orthographic);
     _AddToken(cls, "partition", UsdGeomTokens->partition);
+    _AddToken(cls, "pattern", UsdGeomTokens->pattern);
+    _AddToken(cls, "patternPeriod", UsdGeomTokens->patternPeriod);
+    _AddToken(cls, "patternScale", UsdGeomTokens->patternScale);
     _AddToken(cls, "periodic", UsdGeomTokens->periodic);
     _AddToken(cls, "perspective", UsdGeomTokens->perspective);
     _AddToken(cls, "pinned", UsdGeomTokens->pinned);
@@ -170,17 +174,22 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "renderVisibility", UsdGeomTokens->renderVisibility);
     _AddToken(cls, "right", UsdGeomTokens->right);
     _AddToken(cls, "rightHanded", UsdGeomTokens->rightHanded);
+    _AddToken(cls, "round", UsdGeomTokens->round);
     _AddToken(cls, "scales", UsdGeomTokens->scales);
+    _AddToken(cls, "screenSpacePattern", UsdGeomTokens->screenSpacePattern);
     _AddToken(cls, "shutterClose", UsdGeomTokens->shutterClose);
     _AddToken(cls, "shutterOpen", UsdGeomTokens->shutterOpen);
     _AddToken(cls, "size", UsdGeomTokens->size);
     _AddToken(cls, "smooth", UsdGeomTokens->smooth);
+    _AddToken(cls, "square", UsdGeomTokens->square);
+    _AddToken(cls, "startCapType", UsdGeomTokens->startCapType);
     _AddToken(cls, "stereoRole", UsdGeomTokens->stereoRole);
     _AddToken(cls, "subdivisionScheme", UsdGeomTokens->subdivisionScheme);
     _AddToken(cls, "surfaceFaceVertexIndices", UsdGeomTokens->surfaceFaceVertexIndices);
     _AddToken(cls, "tangents", UsdGeomTokens->tangents);
     _AddToken(cls, "tetrahedron", UsdGeomTokens->tetrahedron);
     _AddToken(cls, "tetVertexIndices", UsdGeomTokens->tetVertexIndices);
+    _AddToken(cls, "triangle", UsdGeomTokens->triangle);
     _AddToken(cls, "triangleSubdivisionRule", UsdGeomTokens->triangleSubdivisionRule);
     _AddToken(cls, "trimCurveCounts", UsdGeomTokens->trimCurveCounts);
     _AddToken(cls, "trimCurveKnots", UsdGeomTokens->trimCurveKnots);
@@ -227,6 +236,8 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "Curves", UsdGeomTokens->Curves);
     _AddToken(cls, "Cylinder", UsdGeomTokens->Cylinder);
     _AddToken(cls, "Cylinder_1", UsdGeomTokens->Cylinder_1);
+    _AddToken(cls, "DashDotLines", UsdGeomTokens->DashDotLines);
+    _AddToken(cls, "DashDotPatternAPI", UsdGeomTokens->DashDotPatternAPI);
     _AddToken(cls, "GeomModelAPI", UsdGeomTokens->GeomModelAPI);
     _AddToken(cls, "GeomSubset", UsdGeomTokens->GeomSubset);
     _AddToken(cls, "Gprim", UsdGeomTokens->Gprim);

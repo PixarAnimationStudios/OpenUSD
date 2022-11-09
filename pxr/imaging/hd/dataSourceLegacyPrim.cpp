@@ -818,6 +818,8 @@ public:
     DEFINE_BASISCURVES_TOPOLOGY_ACCESSOR_DATASOURCE(
         CurveBasisDataSource, TfToken, GetCurveBasis);
     DEFINE_BASISCURVES_TOPOLOGY_ACCESSOR_DATASOURCE(
+        CurveStyleDataSource, TfToken, GetCurveStyle);
+    DEFINE_BASISCURVES_TOPOLOGY_ACCESSOR_DATASOURCE(
         CurveVertexCountsDataSource, VtArray<int>, GetCurveVertexCounts);
     DEFINE_BASISCURVES_TOPOLOGY_ACCESSOR_DATASOURCE(
         CurveIndicesDataSource, VtArray<int>, GetCurveIndices);
@@ -847,6 +849,7 @@ public:
             HdBasisCurvesTopologySchemaTokens->basis,
             HdBasisCurvesTopologySchemaTokens->type,
             HdBasisCurvesTopologySchemaTokens->wrap,
+            HdBasisCurvesTopologySchemaTokens->style,
         };
     }
 
@@ -871,6 +874,10 @@ public:
         if (name == HdBasisCurvesTopologySchemaTokens->wrap) {
             return Hd_BasisCurvesTopologyStore::
                 CurveWrapDataSource::New(_bcts);
+        }
+        if (name == HdBasisCurvesTopologySchemaTokens->style) {
+            return Hd_BasisCurvesTopologyStore::
+                CurveStyleDataSource::New(_bcts);
         }
         return nullptr;
     }

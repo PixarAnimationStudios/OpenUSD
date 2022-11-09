@@ -19,6 +19,7 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_REFINED_CURVES, 0,
 
 HdBasisCurves::HdBasisCurves(SdfPath const& id)
     : HdRprim(id)
+    , _wvpMatrix(1)
 {
     /*NOTHING*/
 }
@@ -32,7 +33,18 @@ HdBasisCurves::GetBuiltinPrimvarNames() const
     static const TfTokenVector primvarNames = {
         HdTokens->points,
         HdTokens->normals,
-        HdTokens->widths
+        HdTokens->widths,
+        HdTokens->accumulatedLength,
+        HdTokens->adjPoints1,
+        HdTokens->adjPoints2,
+        HdTokens->adjPoints3,
+        HdTokens->extrude,
+        HdTokens->pattern,
+        HdTokens->patternPartCount,
+        HdTokens->patternPeriod,
+        HdTokens->patternScale,
+        HdTokens->startCapType,
+        HdTokens->endCapType
     };
     return primvarNames;
 }

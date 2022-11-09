@@ -39,6 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (basis) \
     (type) \
     (wrap) \
+    (style) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdBasisCurvesTopologySchemaTokens, HD_API,
     HD_BASIS_CURVES_TOPOLOGY_SCHEMA_TOKENS);
@@ -85,7 +86,10 @@ public:
     HdTokenDataSourceHandle GetType() const;
 
     HD_API
-    HdTokenDataSourceHandle GetWrap() const; 
+    HdTokenDataSourceHandle GetWrap() const;
+
+    HD_API
+    HdTokenDataSourceHandle GetStyle() const;
 
     /// @}
 
@@ -121,7 +125,8 @@ public:
         const HdIntArrayDataSourceHandle &curveIndices,
         const HdTokenDataSourceHandle &basis,
         const HdTokenDataSourceHandle &type,
-        const HdTokenDataSourceHandle &wrap
+        const HdTokenDataSourceHandle &wrap,
+        const HdTokenDataSourceHandle &style
     );
 
     /// \class HdBasisCurvesTopologySchema::Builder
@@ -148,6 +153,9 @@ public:
         HD_API
         Builder &SetWrap(
             const HdTokenDataSourceHandle &wrap);
+        HD_API
+        Builder &SetStyle(
+            const HdTokenDataSourceHandle &style);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -159,6 +167,7 @@ public:
         HdTokenDataSourceHandle _basis;
         HdTokenDataSourceHandle _type;
         HdTokenDataSourceHandle _wrap;
+        HdTokenDataSourceHandle _style;
 
     };
 

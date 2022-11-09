@@ -2176,6 +2176,11 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                     << "  vec2 localST = tessST;\n";
             break;
         }
+        case HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINES_HAS_STYLE:
+        {
+            _procGS << "void ProcessPrimvarsOut(int index) {\n";
+            break;
+        }
         default: // points, basis curves
             // do nothing. no additional code needs to be generated.
             ;

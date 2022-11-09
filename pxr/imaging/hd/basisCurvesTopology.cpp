@@ -19,13 +19,27 @@ namespace {
 static size_t
 _ComputeNumPoints(
     VtIntArray const &curveVertexCounts,
-    VtIntArray const &indices)
+    VtIntArray const &indices,
+    bool needAdjInfo)
 {
     // Make absolutely sure the iterator is constant
     // (so we don't detach the array while multi-threaded)
     if (indices.empty()) {
-        return std::accumulate(
-            curveVertexCounts.cbegin(), curveVertexCounts.cend(), size_t {0} );
+        if (needAdjInfo)
+        {
+            // Calculate the count of line segments.
+            size_t countOfLineSegmemt = 0;
+            for (auto count : curveVertexCounts)
+            {
+                countOfLineSegmemt += (count - 1);
+            }
+            // For each line segment, we need four vertices: each line segment will
+            // be converted to a quad.
+            return countOfLineSegmemt * 4;
+        }
+        else
+            return std::accumulate(
+                curveVertexCounts.cbegin(), curveVertexCounts.cend(), size_t {0} );
     } else {
         return 1 + *std::max_element(indices.cbegin(), indices.cend());
     }
@@ -38,6 +52,7 @@ HdBasisCurvesTopology::HdBasisCurvesTopology()
   , _curveType(HdTokens->linear)
   , _curveBasis(TfToken())
   , _curveWrap(HdTokens->nonperiodic)
+  , _curveStyle(HdTokens->none)
   , _curveVertexCounts()
   , _curveIndices()
   , _invisiblePoints()
@@ -52,24 +67,28 @@ HdBasisCurvesTopology::HdBasisCurvesTopology(const HdBasisCurvesTopology& src)
   , _curveType(src._curveType)
   , _curveBasis(src._curveBasis)
   , _curveWrap(src._curveWrap)
+  , _curveStyle(src._curveStyle)
   , _curveVertexCounts(src._curveVertexCounts)
   , _curveIndices(src._curveIndices)
   , _invisiblePoints(src._invisiblePoints)
   , _invisibleCurves(src._invisibleCurves)
 {
     HD_PERF_COUNTER_INCR(HdPerfTokens->basisCurvesTopology);
-    _numPoints = _ComputeNumPoints(_curveVertexCounts, _curveIndices);
+    _numPoints = _ComputeNumPoints(_curveVertexCounts, _curveIndices,
+        _curveStyle != HdTokens->none);
 }
 
 HdBasisCurvesTopology::HdBasisCurvesTopology(const TfToken &curveType,
                                              const TfToken &curveBasis,
                                              const TfToken &curveWrap,
+                                             const TfToken &curveStyle,
                                              const VtIntArray &curveVertexCounts,
                                              const VtIntArray &curveIndices)
   : HdTopology()
   , _curveType(curveType)
   , _curveBasis(curveBasis)
   , _curveWrap(curveWrap)
+  , _curveStyle(curveStyle)
   , _curveVertexCounts(curveVertexCounts)
   , _curveIndices(curveIndices)
   , _invisiblePoints()
@@ -86,7 +105,8 @@ HdBasisCurvesTopology::HdBasisCurvesTopology(const TfToken &curveType,
         _curveBasis = TfToken();
     }
     HD_PERF_COUNTER_INCR(HdPerfTokens->basisCurvesTopology);
-    _numPoints = _ComputeNumPoints(_curveVertexCounts, _curveIndices);
+    _numPoints = _ComputeNumPoints(_curveVertexCounts, _curveIndices,
+        _curveStyle != HdTokens->none);
 }
 
 HdBasisCurvesTopology::~HdBasisCurvesTopology()
@@ -103,6 +123,7 @@ HdBasisCurvesTopology::operator==(HdBasisCurvesTopology const &other) const
     return (_curveType == other._curveType                  &&
             _curveBasis == other._curveBasis                &&
             _curveWrap == other._curveWrap                  &&
+            _curveStyle == other._curveStyle                &&
             _curveVertexCounts == other._curveVertexCounts  &&
             _curveIndices == other._curveIndices            &&
             _invisiblePoints == other._invisiblePoints      &&
@@ -124,11 +145,12 @@ HdBasisCurvesTopology::ComputeHash() const
     hash = ArchHash64((const char*)&_curveBasis, sizeof(TfToken), hash);
     hash = ArchHash64((const char*)&_curveType, sizeof(TfToken), hash);
     hash = ArchHash64((const char*)&_curveWrap, sizeof(TfToken), hash);
+    hash = ArchHash64((const char*)&_curveStyle, sizeof(TfToken), hash);
     hash = ArchHash64((const char*)_curveVertexCounts.cdata(),
                       _curveVertexCounts.size() * sizeof(int), hash);
     hash = ArchHash64((const char*)_curveIndices.cdata(),
                       _curveIndices.size() * sizeof(int), hash);
-    
+
     // Note: We don't hash topological visibility, because it is treated as a
     // per-prim opinion, and hence, shouldn't break topology sharing.
     return hash;
@@ -140,6 +162,7 @@ operator << (std::ostream &out, HdBasisCurvesTopology const &topo)
     out << "(" << topo.GetCurveBasis().GetString() << ", " <<
         topo.GetCurveType().GetString() << ", " <<
         topo.GetCurveWrap().GetString() << ", (" <<
+        topo.GetCurveStyle().GetString() << ", (" <<
         topo.GetCurveVertexCounts() << "), (" <<
         topo.GetCurveIndices() << "), (" <<
         topo.GetInvisiblePoints() << "), (" <<

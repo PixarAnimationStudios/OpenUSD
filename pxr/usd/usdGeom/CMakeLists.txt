@@ -35,6 +35,8 @@ pxr_library(usdGeom
         curves
         cylinder
         cylinder_1
+        dashDotLines
+        dashDotPatternAPI
         hermiteCurves
         imageable
         gprim
@@ -83,6 +85,8 @@ pxr_library(usdGeom
         wrapCurves.cpp
         wrapCylinder.cpp
         wrapCylinder_1.cpp
+        wrapDashDotLines.cpp
+        wrapDashDotPatternAPI.cpp
         wrapGprim.cpp
         wrapHermiteCurves.cpp
         wrapImageable.cpp
@@ -137,6 +141,7 @@ pxr_test_scripts(
     testenv/testUsdGeomConstraintTarget.py
     testenv/testUsdGeomConsts.py
     testenv/testUsdGeomCurves.py
+    testenv/testUsdGeomDashDotLines.py
     testenv/testUsdGeomExtentFromPlugins.py
     testenv/testUsdGeomExtentTransform.py
     testenv/testUsdGeomHermiteCurves.py
@@ -191,6 +196,11 @@ pxr_build_test(testUsdGeomHasAPI
 pxr_install_test_dir(
     SRC testenv/testUsdGeomBasisCurves
     DEST testUsdGeomBasisCurves
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomDashDotLines
+    DEST testUsdGeomDashDotLines
 )
 
 pxr_install_test_dir(
@@ -255,6 +265,12 @@ pxr_install_test_dir(
 pxr_register_test(testUsdGeomBasisCurves
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomBasisCurves"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomDashDotLines
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomDashDotLines"
     EXPECTED_RETURN_CODE 0
 )
 

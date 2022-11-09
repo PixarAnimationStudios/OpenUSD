@@ -115,7 +115,7 @@ UsdImagingHermiteCurvesAdapter::GetTopology(UsdPrim const& prim,
     HF_MALLOC_TAG_FUNCTION();
 
     HdBasisCurvesTopology topology(
-        HdTokens->linear, HdTokens->bezier, HdTokens->nonperiodic,
+        HdTokens->linear, HdTokens->bezier, HdTokens->nonperiodic, HdTokens->none,
         _Get<VtIntArray>(prim, UsdGeomTokens->curveVertexCounts, time),
         VtIntArray());
     return VtValue(topology);
