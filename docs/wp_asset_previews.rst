@@ -50,14 +50,14 @@ environment.
 
 All of these use-cases suggest instead **associating previews with prims**,
 rather than layers.  How, then, do we facilitate the *base-level* need to
-“specify the preview for the scene”?  It is already accepted practice in USD
-content creation to specify an asset’s **defaultPrim** in layer metadata,
+"specify the preview for the scene"?  It is already accepted practice in USD
+content creation to specify an asset's **defaultPrim** in layer metadata,
 which names a root prim that represents the default reference target for the
 scene. We propose to leverage this pattern, stipulating that the preview for
 a stage is the preview specified on the stage’s defaultPrim.  To ensure the
 specification is robust in the face of common manipulations like overriding a
 scene by creating a new, initially empty layer that sublayers an existing
-scene (which is what :mono:`usdview`’s “Save Overrides” does), we require
+scene (which is what :mono:`usdview`'s "Save Overrides" does), we require
 that the defaultPrim be **composed** in order to extract the previews, and we
 will discuss below how we can ensure that process requires minimal
 computation.
@@ -65,8 +65,8 @@ computation.
 Relationship to UsdGeomModel Texture Cards
 ==========================================
 
-Associating images or other “lightweight previews” with prims sounds very
-similar to what we already encode in `UsdGeomModel’s “cards” DrawMode
+Associating images or other "lightweight previews" with prims sounds very
+similar to what we already encode in `UsdGeomModel's "cards" DrawMode
 <api/class_usd_geom_model_a_p_i.html#UsdGeomModelAPI_drawMode>`_?  The
 GeomModel feature was designed to address targeted needs of 3D rendering of
 very large scenes.  It is therefore limited in two important ways that
@@ -78,7 +78,7 @@ Hydra or other 3D rendering:
    at the beginning of this section, we want to be able to encode previews on
    Material, Camera, or other prims that are not part of the model hierarchy.
 #. Texture cards are tied to specific orthographic views, which serves their
-   embedding as “2.x dimension” objects in a 3D space, but for, e.g. 2D
+   embedding as "2.x dimension" objects in a 3D space, but for, e.g. 2D
    catalog and preview needs, more artistically crafted views may be more
    appropriate.  
 
@@ -94,10 +94,10 @@ with assets, we propose to encode previews as an extension of the existing
 :ref:`assetInfo dictionary <glossary:AssetInfo>`. Leveraging assetInfo has
 the additional benefit of making the proposed data backwards and forwards
 compatible with essentially all versions of USD; one can interact with
-assetInfo using generic API’s in applications using old versions of USD to
+assetInfo using generic API's in applications using old versions of USD to
 process assets with previews.
 
-The initial recognized/supported structure for a “default” thumbnail would
+The initial recognized/supported structure for a "default" thumbnail would
 look like the following in usda serialization: 
 
 .. code-block:: usda
@@ -122,7 +122,7 @@ overkill, but it allows us room to grow:
   USD representations)
 * Alternative sets of thumbnails (per-renderer, variations, etc)
 * More than one fidelity, size, turntable, lenticular, etc view of a given
-  “thumbnail” 
+  "thumbnail" 
 
 However, all of these extensions require design and debate, and our initial
 goal is to serve basic needs on an accelerated schedule.  We will explore
