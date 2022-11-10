@@ -61,8 +61,8 @@ TfSingleton<T>::_CreateInstance()
         TfSingleton<T>::_mutex = new std::mutex;
     });
 
-    TfAutoMallocTag2 tag2("Tf", "TfSingleton::_CreateInstance");
-    TfAutoMallocTag tag("Create Singleton " + ArchGetDemangled<T>());
+    TfAutoMallocTag tag("Tf", "TfSingleton::_CreateInstance",
+                        "Create Singleton " + ArchGetDemangled<T>());
 
     std::lock_guard<std::mutex> lock(*TfSingleton<T>::_mutex);
     if (!TfSingleton<T>::_instance) {
