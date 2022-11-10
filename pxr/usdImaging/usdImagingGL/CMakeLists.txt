@@ -1330,7 +1330,7 @@ pxr_register_test(testUsdImagingGLInstancing_instancedCubes2NoInstancing
 )
 
 pxr_register_test(testUsdImagingGLInstancing_nestedInstancedCubes
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage nestedInstancedCubes.usda -write testUsdImagingGLInstancing_nestedInstancedCubes.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -frameAll -stage nestedInstancedCubes.usda -write testUsdImagingGLInstancing_nestedInstancedCubes.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInstancing_nestedInstancedCubes.png
     FAIL 0.01
