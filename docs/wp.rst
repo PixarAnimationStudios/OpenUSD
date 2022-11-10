@@ -8,6 +8,7 @@ Proposals
 
    wp_usdlux_for_geometry_lights
    wp_usdlux_for_renderers
+   wp_asset_previews
    wp_ar2
    wp_coordsys
    wp_connectable_nodes
