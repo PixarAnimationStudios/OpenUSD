@@ -47,7 +47,8 @@ public:
         const HgiShaderSectionAttributeVector &attributes = {},
         const std::string &storageQualifier = std::string(),
         const std::string &defaultValue = std::string(),
-        const std::string &arraySize = std::string());
+        const std::string &arraySize = std::string(),
+        const std::string &blockInstanceIdentifier = std::string());
 
     HGIVULKAN_API
     ~HgiVulkanShaderSection() override;
@@ -77,6 +78,9 @@ private:
     HgiVulkanShaderSection & operator=(const HgiVulkanShaderSection&) = delete;
     HgiVulkanShaderSection(const HgiVulkanShaderSection&) = delete;
 };
+
+using HgiVulkanShaderSectionPtrVector = 
+    std::vector<HgiVulkanShaderSection*>;
 
 /// \class HgiVulkanMacroShaderSection
 ///
@@ -120,7 +124,9 @@ public:
         const std::string &typeName,
         const HgiShaderSectionAttributeVector &attributes,
         const std::string &storageQualifier,
-        const std::string &defaultValue = std::string());
+        const std::string &defaultValue = std::string(),
+        const std::string &arraySize = std::string(),
+        const std::string &blockInstanceIdentifier = std::string());
 
     HGIVULKAN_API
     ~HgiVulkanMemberShaderSection() override;
@@ -221,6 +227,9 @@ public:
         const std::string &identifier,
         const uint32_t layoutIndex,
         const std::string &type,
+        const HgiBindingType binding,
+        const std::string arraySize,
+        const bool writable,
         const HgiShaderSectionAttributeVector &attributes);
 
     HGIVULKAN_API
@@ -239,6 +248,9 @@ private:
     HgiVulkanBufferShaderSection(const HgiVulkanBufferShaderSection&) = delete;
 
     const std::string _type;
+    const HgiBindingType _binding;
+    const std::string _arraySize;
+    const bool _writable;
 };
 
 /// \class HgiVulkanKeywordShaderSection

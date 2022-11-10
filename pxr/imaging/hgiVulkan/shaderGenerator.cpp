@@ -203,19 +203,50 @@ void
 HgiVulkanShaderGenerator::_WriteBuffers(
     const HgiShaderFunctionBufferDescVector &buffers)
 {
-    //Extract buffer descriptors and add appropriate buffer sections
-    for(size_t i=0; i<buffers.size(); i++) {
+    // Extract buffer descriptors and add appropriate buffer sections
+    for (size_t i=0; i<buffers.size(); i++) {
         const HgiShaderFunctionBufferDesc &bufferDescription = buffers[i];
-        const HgiShaderSectionAttributeVector attrs = {
-            HgiShaderSectionAttribute{"binding", std::to_string(_bindIndex)}};
+        
+        const bool isUniformBufferBinding =
+            (bufferDescription.binding == HgiBindingTypeUniformValue) ||
+            (bufferDescription.binding == HgiBindingTypeUniformArray);
 
-        CreateShaderSection<HgiVulkanBufferShaderSection>(
-            bufferDescription.nameInShader,
-            _bindIndex,
-            bufferDescription.type,
-            attrs);
+        const std::string arraySize =
+            (bufferDescription.arraySize > 0)
+                ? std::to_string(bufferDescription.arraySize)
+                : std::string();
+        
+        if (isUniformBufferBinding) {
+            const HgiShaderSectionAttributeVector attrs = {
+                HgiShaderSectionAttribute{"std140", ""},
+                HgiShaderSectionAttribute{"binding", 
+                    std::to_string(_bindIndex)}};
+
+            CreateShaderSection<HgiVulkanBufferShaderSection>(
+                bufferDescription.nameInShader,
+                _bindIndex,
+                bufferDescription.type,
+                bufferDescription.binding,
+                arraySize,
+                false,
+                attrs);
+        } else {
+            const HgiShaderSectionAttributeVector attrs = {
+                HgiShaderSectionAttribute{"std430", ""},
+                HgiShaderSectionAttribute{"binding", 
+                    std::to_string(_bindIndex)}};
+
+            CreateShaderSection<HgiVulkanBufferShaderSection>(
+                bufferDescription.nameInShader,
+                _bindIndex,
+                bufferDescription.type,
+                bufferDescription.binding,
+                arraySize,
+                bufferDescription.writable,
+                attrs);
+        }
 				
-        // In Vulkan buffers and textures cannot have the same binding index.
+        // In Vulkan, buffers and textures cannot have the same binding index.
         _bindIndex++;
     }
 }
