@@ -437,7 +437,7 @@ struct _IsBitwiseReadWrite<_PathItemHeader> : std::true_type {};
  * In order, from least to most significant bit:
  *
  *  * **IsExplicit** : Removes all items and changes the list to be explicit
- *  * **HasExcplicitItems** : Fills the list with the items included in this ListOp
+ *  * **HasExplicitItems** : Fills the list with the items included in this ListOp
  *  * **HasAddedItems** : Adds the items included in this ListOp
  *  * **HasDeletedItems** : Removes the items specified in this ListOp
  *  * **HasOrderedItems** : Reorder the list based on the item order in this ListOp
@@ -1228,7 +1228,7 @@ public:
      * A layer offset represents a time offset and scale between layers.
      * It is represented by two doubles.
      *
-     * The first represents the time offset to be used , and the second the scale.
+     * The first represents the time offset to be used, and the second the scale.
      * Scale should always be applied before the offset.
      *
      * <usdbytelayout layer_offset_layout>
@@ -2015,7 +2015,7 @@ _ReadPossiblyCompressedArray(
 struct _CompressedIntsReader
 {
     /* usddoc compressed_int
-     *  Compressed integers are stored as a contiguous , homogenous array of
+     *  Compressed integers are stored as a contiguous, homogenous array of
      *  either 32-bit or 64-bit integers.
      *
      *  Once read, the array of integers can be decompressed using the LZ4 algorithm.
@@ -2117,7 +2117,7 @@ _ReadPossiblyCompressedArray(
  * * **i** for integer compression (follow the compressed integer array logic)
  * * **t** for lookup tables (described below)
  *
- * The size of the lookup table (LUT) is a 32bit unsigned integer.
+ * The size of the lookup table (LUT) is a 32 bit unsigned integer.
  * The LUT data is read as a contiguous array of the given type.
  * Following that is a compressed array of integers representing the indexes that should be used
  * to populate the output array by looking up the LUT indices in order.
@@ -3454,7 +3454,7 @@ CrateFile::_ReadStructuralSections(Reader reader, int64_t fileSize)
  * Files must start with an identifier (PXR-USDC), the version number and the offset to the Table of Contents.
  * There is additional reserved space at the end of the bootstrap for future use.
  *
- * Version numbers are stored as Major , Minor and Patch followed by unused bytes.
+ * Version numbers are stored as 3 unsigned 8-bit integers denoting Major, Minor and Patch followed by 5 unused bytes.
  *
  * <usdbytelayout bootstrap>
  */

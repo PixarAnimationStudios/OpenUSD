@@ -81,10 +81,10 @@ enum class TypeEnum : int32_t;
 
 /* usddoc value_rep
  * Crate stores Value Representations as data blobs that are read on demand.
- * This allows large USD scenes to be read incredibly quickly by deferring all
+ * This allows large USD scenes to be read as quickly as possible by deferring all
  * data reads to the latest point possible.
  *
- * Value reps are stored as an unsigned 64 bit integer.
+ * Value representations are stored as an unsigned 64 bit integer.
  *
  * The first byte refers to the type enum value.
  * The second byte has bit flags to represent characteristics of the type:

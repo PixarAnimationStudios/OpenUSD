@@ -67,7 +67,7 @@ Value types are parsed on demand from there on out.
 Integers
 --------
 
-Integers are stored with the least significant bit first to allow for fast loading on `Little Endian <https://en.wikipedia.org/wiki/Endianness>`_ systems.
+Integers are stored with the least significant byte first to allow for fast loading on `Little Endian <https://en.wikipedia.org/wiki/Endianness>`_ systems.
 
 Index
 -----
@@ -170,9 +170,9 @@ Spec Type            Key  Description
 Unknown               0    An unknown type
 Attribute             1    Attributes under a Prim Spec
 Connection            2    Connections between rel attributes
-Expression            3    Scripted Expressions or named plugin expressions (Internal to Pixar)
-Mapper                4    Used to modify the value flowing through a connection (Internal to Pixar)
-MapperArg             5    Arguments for a mapper (Internal to Pixar)
+Expression            3    **(Internal to Pixar)** Scripted Expressions or named plugin expressions
+Mapper                4    **(Internal to Pixar)** Used to modify the value flowing through a connection
+MapperArg             5    **(Internal to Pixar)** Arguments for a mapper
 Prim                  6    A Prim specifier
 PseudoRoot            7    The Pseudo Root that exists for all Sdf Layers
 Relationship          8    A relationship description
@@ -341,10 +341,11 @@ For types of a single dimension, you can simply cast the data bytes to the given
 For single dimensioned types like **Vec2i** , elements are stored as signed 8 bit integers and cast to the native type
 of the container.
 
-For multidimensional type like **Matrix2D**, the data is stored as the diagonal signed 8 bit integers and then cast to
-the native type of the type.
+For multidimensional inlined type like **Matrix2D**, the data is contiguously stored as signed 8 bit integers
+that make up the diagonal values of the matrix, and then cast to the native type of the type.
 
-E.g a **Matrix3D** is stored as ::
+
+E.g a **Matrix3D** is stored as the following row major matrix::
 
     1 - -
     - 1 -
@@ -383,7 +384,7 @@ The following types are foundational types that are used to compose other types.
 Bool
 ^^^^
 
-The **Bool** type is a basic Binary boolean that can be checked by taking any non-zero number as True.
+The **Bool** type is a basic Binary boolean that can be checked by taking any non-zero number as True, and 0 as False.
 
 UChar
 ^^^^^

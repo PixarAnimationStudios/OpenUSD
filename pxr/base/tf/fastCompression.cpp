@@ -102,7 +102,7 @@ TfFastCompression::CompressToBuffer(
 }    
 
 /* usddoc lz4
- * The first byte of any buffer passed to be decrypted stores the number of chunks used.
+ * The first byte of any buffer passed to be decompressed stores the number of chunks used.
  *
  * If the number of chunks is 0, then the buffer is decompressed as a whole.
  *
