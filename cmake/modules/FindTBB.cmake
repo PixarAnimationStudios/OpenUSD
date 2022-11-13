@@ -164,15 +164,15 @@ if(NOT TBB_FOUND)
     endif()
   elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     # Linux
-    set(TBB_DEFAULT_SEARCH_DIR "/opt/intel/tbb")
+    set(TBB_DEFAULT_SEARCH_DIR "/opt/intel/oneapi/tbb/latest")
     
     # TODO: Check compiler version to see the suffix should be <arch>/gcc4.1 or
     #       <arch>/gcc4.1. For now, assume that the compiler is more recent than
     #       gcc 4.4.x or later.
     if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-      set(TBB_LIB_PATH_SUFFIX "lib/intel64/gcc4.4")
+      set(TBB_LIB_PATH_SUFFIX "lib/intel64/gcc4.8")
     elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^i.86$")
-      set(TBB_LIB_PATH_SUFFIX "lib/ia32/gcc4.4")
+      set(TBB_LIB_PATH_SUFFIX "lib/ia32/gcc4.8")
     endif()
   endif()
   
@@ -197,7 +197,7 @@ if(NOT TBB_FOUND)
   ##################################
 
   if(TBB_INCLUDE_DIRS)
-    file(READ "${TBB_INCLUDE_DIRS}/tbb/tbb_stddef.h" _tbb_version_file)
+    file(READ "${TBB_INCLUDE_DIRS}/tbb/version.h" _tbb_version_file)
     string(REGEX REPLACE ".*#define TBB_VERSION_MAJOR ([0-9]+).*" "\\1"
         TBB_VERSION_MAJOR "${_tbb_version_file}")
     string(REGEX REPLACE ".*#define TBB_VERSION_MINOR ([0-9]+).*" "\\1"
