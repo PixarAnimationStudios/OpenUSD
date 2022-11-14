@@ -62,6 +62,8 @@ HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
   : HgiShaderGenerator(descriptor)
   , _hgi(hgi)
   , _bindIndex(0)
+  , _inLocationIndex(0)
+  , _outLocationIndex(0)
 {
     // Write out all GL shaders and add to shader sections
 
@@ -92,7 +94,9 @@ HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
     _WriteTextures(descriptor.textures);
     _WriteBuffers(descriptor.buffers);
     _WriteInOuts(descriptor.stageInputs, "in");
+    _WriteInOutBlocks(descriptor.stageInputBlocks, "in");
     _WriteInOuts(descriptor.stageOutputs, "out");
+    _WriteInOutBlocks(descriptor.stageOutputBlocks, "out");
 }
 
 void
@@ -256,11 +260,9 @@ HgiVulkanShaderGenerator::_WriteInOuts(
     const HgiShaderFunctionParamDescVector &parameters,
     const std::string &qualifier) 
 {
-    uint32_t counter = 0;
-
-    //To unify glslfx across different apis, other apis
-    //may want these to be defined, but since they are
-    //taken in opengl we ignore them
+    // To unify glslfx across different apis, other apis
+    // may want these to be defined, but since they are
+    // taken in opengl we ignore them
     const static std::set<std::string> takenOutParams {
         "gl_Position",
         "gl_FragColor",
@@ -273,8 +275,8 @@ HgiVulkanShaderGenerator::_WriteInOuts(
 
     const bool in_qualifier = qualifier == "in";
     const bool out_qualifier = qualifier == "out";
-    for(const HgiShaderFunctionParamDesc &param : parameters) {
-        //Skip writing out taken parameter names
+    for (const HgiShaderFunctionParamDesc &param : parameters) {
+        // Skip writing out taken parameter names
         const std::string &paramName = param.nameInShader;
         if (out_qualifier &&
                 takenOutParams.find(paramName) != takenOutParams.end()) {
@@ -292,9 +294,12 @@ HgiVulkanShaderGenerator::_WriteInOuts(
             }
         }
 
+        const int locationIndex = in_qualifier ? _inLocationIndex++ :
+            _outLocationIndex++;
+
         const HgiShaderSectionAttributeVector attrs {
             HgiShaderSectionAttribute{
-                "location", std::to_string(counter) }
+                "location", std::to_string(locationIndex) }
         };
 
         CreateShaderSection<HgiVulkanMemberShaderSection>(
@@ -302,7 +307,54 @@ HgiVulkanShaderGenerator::_WriteInOuts(
             param.type,
             attrs,
             qualifier);
-        counter++;
+    }
+}
+
+void
+HgiVulkanShaderGenerator::_WriteInOutBlocks(
+    const HgiShaderFunctionParamBlockDescVector &parameterBlocks,
+    const std::string &qualifier)
+{
+    const bool in_qualifier = qualifier == "in";
+    const bool out_qualifier = qualifier == "out";
+
+    for (const HgiShaderFunctionParamBlockDesc &p : parameterBlocks) {
+        const uint32_t locationIndex = in_qualifier ? 
+            _inLocationIndex : _outLocationIndex;
+
+        HgiVulkanShaderSectionPtrVector members;
+        for(const HgiShaderFunctionParamBlockDesc::Member &member : p.members) {
+
+            HgiVulkanMemberShaderSection *memberSection =
+                CreateShaderSection<HgiVulkanMemberShaderSection>(
+                    member.name,
+                    member.type,
+                    HgiShaderSectionAttributeVector(),
+                    qualifier,
+                    std::string(),
+                    std::string(),
+                    p.instanceName);
+            members.push_back(memberSection);
+
+            if (in_qualifier) {
+                _inLocationIndex++;
+            } else if (out_qualifier) {
+                _outLocationIndex++;
+            }
+        }
+
+        const HgiShaderSectionAttributeVector attrs {
+            HgiShaderSectionAttribute{
+                "location", std::to_string(locationIndex) }
+        };
+
+        CreateShaderSection<HgiVulkanInterstageBlockShaderSection>(
+            p.blockName,
+            p.instanceName,
+            attrs,
+            qualifier,
+            p.arraySize,
+            members);
     }
 }
 

@@ -285,6 +285,36 @@ private:
     const std::string _keyword;
 };
 
+/// \class HgiVulkanInterstageBlockShaderSection
+///
+/// Defines and writes out an interstage interface block
+///
+class HgiVulkanInterstageBlockShaderSection final: public HgiVulkanShaderSection
+{
+public:
+    HGIVULKAN_API
+    explicit HgiVulkanInterstageBlockShaderSection(
+        const std::string &blockIdentifier,
+        const std::string &blockInstanceIdentifier,
+        const HgiShaderSectionAttributeVector &attributes,
+        const std::string &qualifier,
+        const std::string &arraySize,
+        const HgiVulkanShaderSectionPtrVector &members);
+
+    HGIVULKAN_API
+    bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
+
+private:
+    HgiVulkanInterstageBlockShaderSection() = delete;
+    HgiVulkanInterstageBlockShaderSection & operator=(
+        const HgiVulkanInterstageBlockShaderSection&) = delete;
+    HgiVulkanInterstageBlockShaderSection(
+        const HgiVulkanInterstageBlockShaderSection&) = delete;
+
+    const std::string _qualifier;
+    const HgiVulkanShaderSectionPtrVector _members;
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

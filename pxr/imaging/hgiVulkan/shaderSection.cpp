@@ -507,4 +507,62 @@ HgiVulkanKeywordShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
     return true;
 }
 
+HgiVulkanInterstageBlockShaderSection::HgiVulkanInterstageBlockShaderSection(
+    const std::string &blockIdentifier,
+    const std::string &blockInstanceIdentifier,
+    const HgiShaderSectionAttributeVector &attributes,
+    const std::string &qualifier,
+    const std::string &arraySize,
+    const HgiVulkanShaderSectionPtrVector &members)
+    : HgiVulkanShaderSection(blockIdentifier,
+                             attributes,
+                             qualifier,
+                             std::string(),
+                             arraySize,
+                             blockInstanceIdentifier)
+    , _qualifier(qualifier)
+    , _members(members)
+{
+}
+
+bool
+HgiVulkanInterstageBlockShaderSection::VisitGlobalMemberDeclarations(
+    std::ostream &ss)
+{
+    // If it has attributes, write them with corresponding layout
+    // identifiers and indices
+    const HgiShaderSectionAttributeVector &attributes = GetAttributes();
+
+    if (!attributes.empty()) {
+        ss << "layout(";
+        for (size_t i = 0; i < attributes.size(); ++i) {
+            const HgiShaderSectionAttribute &a = attributes[i];
+            if (i > 0) {
+                ss << ", ";
+            }
+            ss << a.identifier;
+            if(!a.index.empty()) {
+                ss << " = " << a.index;
+            }
+        }
+        ss << ") ";
+    }
+
+    ss << _qualifier << " ";
+    WriteIdentifier(ss);
+    ss << " {\n";
+    for (const HgiVulkanShaderSection* member : _members) {
+        ss << "  ";
+        member->WriteType(ss);
+        ss << " ";
+        member->WriteIdentifier(ss);
+        ss << ";\n";
+    }
+    ss << "} ";
+    WriteBlockInstanceIdentifier(ss);
+    WriteArraySize(ss);
+    ss << ";\n";
+    return true;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
