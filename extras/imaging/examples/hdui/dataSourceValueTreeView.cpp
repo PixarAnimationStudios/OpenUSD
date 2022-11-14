@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdui/dataSourceValueTreeView.h"
+#include "dataSourceValueTreeView.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 
 #include <QAbstractItemModel>

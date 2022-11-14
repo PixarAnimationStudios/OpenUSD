@@ -21,12 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdui/sceneIndexDebuggerWidget.h"
-
-#include "pxr/imaging/hdui/sceneIndexObserverLoggingWidget.h"
+#include "sceneIndexDebuggerWidget.h"
+#include "dataSourceTreeWidget.h"
+#include "dataSourceValueTreeView.h"
+#include "sceneIndexTreeWidget.h"
+#include "registeredSceneIndexChooser.h"
+#include "sceneIndexObserverLoggingWidget.h"
+#include "sceneIndexObserverLoggingTreeView.h"
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
-
 
 #include "pxr/base/tf/stringUtils.h"
 

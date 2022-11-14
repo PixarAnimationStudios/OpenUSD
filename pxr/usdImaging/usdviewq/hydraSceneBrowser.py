@@ -26,7 +26,7 @@
 Module that implements python version of HydraSceneBrowser.
 
 NOTE: Source code for a C++ version of this widget is available (without open
-      source build support) in pxr/imaging/hdui.
+      source build support) in extras/imaging/examples/hdui.
 
       That version (even wrapped in python as a whole) is strongly recommended
       as the basis for any application integration as it is higher performance.

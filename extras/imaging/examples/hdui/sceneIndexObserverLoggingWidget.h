@@ -21,47 +21,36 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HDUI_SCENE_INDEX_DEBUGGING_WIDGET_H
-#define PXR_IMAGING_HDUI_SCENE_INDEX_DEBUGGING_WIDGET_H
+#ifndef PXR_IMAGING_HDUI_SCENE_INDEX_OBSERVER_LOGGING_WIDGET_H
+#define PXR_IMAGING_HDUI_SCENE_INDEX_OBSERVER_LOGGING_WIDGET_H
 
-#include "pxr/imaging/hdui/dataSourceTreeWidget.h"
-#include "pxr/imaging/hdui/dataSourceValueTreeView.h"
-#include "pxr/imaging/hdui/sceneIndexTreeWidget.h"
-#include "pxr/imaging/hdui/registeredSceneIndexChooser.h"
+#include "pxr/pxr.h"
 
-#include <QLabel>
 #include <QPushButton>
-#include <QMenu>
+#include <QLabel>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HduiSceneIndexDebuggerWidget : public QWidget, public TfWeakBase
+class HduiSceneIndexObserverLoggingTreeView;
+
+class HduiSceneIndexObserverLoggingWidget : public QWidget
 {
     Q_OBJECT;
 public:
+    HduiSceneIndexObserverLoggingWidget(QWidget *parent = Q_NULLPTR);
 
-    HduiSceneIndexDebuggerWidget(QWidget *parent = Q_NULLPTR);
+    HduiSceneIndexObserverLoggingTreeView * GetTreeView();
 
-    void SetSceneIndex(const std::string &displayName,
-        HdSceneIndexBaseRefPtr sceneIndex, bool pullRoot);
-
-private Q_SLOTS:
-    void _FillGoToInputMenu();
-    void _AddSceneIndexToTreeMenu(QTreeWidgetItem *parentItem,
-            HdSceneIndexBaseRefPtr sceneIndex, bool includeSelf);
+    void SetLabel(const std::string &labelText);
 
 private:
-    HduiSceneIndexTreeWidget *_siTreeWidget;
-    HduiDataSourceTreeWidget *_dsTreeWidget;
-    HduiRegisteredSceneIndexChooser *_siChooser;
-    HduiDataSourceValueTreeView *_valueTreeView;
-    QLabel *_nameLabel;
-    QPushButton *_goToInputButton;
-    QMenu *_goToInputButtonMenu;
+    QPushButton *_startStopButton;
+    QPushButton *_clearButton;
+    HduiSceneIndexObserverLoggingTreeView *_treeView;
 
-    HdSceneIndexBasePtr _currentSceneIndex;
+    QLabel *_label;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif
+#endif //PXR_IMAGING_HDUI_SCENE_INDEX_OBSERVER_LOGGING_WIDGET_H
