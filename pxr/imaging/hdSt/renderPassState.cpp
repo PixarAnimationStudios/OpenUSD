@@ -453,32 +453,19 @@ _ResolveCullMode(
         return HgiCullModeNone;
     }
 
-    HgiCullMode resolvedCullMode = HgiCullModeNone;
 
-    // renderPass culling opinions
-    switch (rsCullStyle) {
-        case HdCullStyleFront:
-        case HdCullStyleFrontUnlessDoubleSided:
-            resolvedCullMode = HgiCullModeFront;
-            break;
-        case HdCullStyleBack:
-        case HdCullStyleBackUnlessDoubleSided:
-            resolvedCullMode = HgiCullModeBack;
-            break;
-        case HdCullStyleNothing:
-        case HdCullStyleDontCare:
-        default:
-            // disable culling
-            resolvedCullMode = HgiCullModeNone;
-            break;
-    }
-
-    // geometricShader culling opinions
+    // If the Rprim has an opinion, that wins. Else use the render pass.
+    HdCullStyle const gsCullStyle = geometricShader->GetCullStyle();
+    HdCullStyle const resolvedCullStyle =
+        gsCullStyle == HdCullStyleDontCare? rsCullStyle : gsCullStyle;
+    
     bool const hasMirroredTransform =
                         geometricShader->GetHasMirroredTransform();
     bool const doubleSided = geometricShader->GetDoubleSided();
 
-    switch (geometricShader->GetCullStyle()) {
+    HgiCullMode resolvedCullMode = HgiCullModeNone;
+
+    switch (resolvedCullStyle) {
         case HdCullStyleFront:
             if (hasMirroredTransform) {
                 resolvedCullMode = HgiCullModeBack;
@@ -512,25 +499,8 @@ _ResolveCullMode(
             }
             break;
         case HdCullStyleNothing:
-            resolvedCullMode = HgiCullModeNone;
-            break;
-        case HdCullStyleDontCare:
         default:
-            // Fallback to the renderPass opinion, but account for
-            // combinations of parameters that require extra handling
-            if (doubleSided &&
-               (rsCullStyle == HdCullStyleBackUnlessDoubleSided ||
-                rsCullStyle == HdCullStyleFrontUnlessDoubleSided)) {
-                resolvedCullMode = HgiCullModeNone;
-            } else if (hasMirroredTransform &&
-                (rsCullStyle == HdCullStyleBack ||
-                 rsCullStyle == HdCullStyleBackUnlessDoubleSided)) {
-                resolvedCullMode = HgiCullModeFront;
-            } else if (hasMirroredTransform &&
-                (rsCullStyle == HdCullStyleFront ||
-                 rsCullStyle == HdCullStyleFrontUnlessDoubleSided)) {
-                resolvedCullMode = HgiCullModeBack;
-            }
+            resolvedCullMode = HgiCullModeNone;
             break;
     }
 
