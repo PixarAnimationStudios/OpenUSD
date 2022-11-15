@@ -1680,6 +1680,9 @@ def InstallUSD(context, force, buildArgs):
                 extraArgs.append('-D{prefix}_INCLUDE_DIR="{pyIncPath}"'
                                  .format(prefix=prefix,
                                          pyIncPath=pythonInfo[2]))
+                extraArgs.append('-D{prefix}_VERSION="{pyVersion}"'
+                                 .format(prefix=prefix,
+                                         pyVersion=pythonInfo[3]))
         else:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
 
