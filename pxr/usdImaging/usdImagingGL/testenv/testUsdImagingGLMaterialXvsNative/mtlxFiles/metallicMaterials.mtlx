@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<!-- 
+  Metallic Gold UsdPreviewSurface with varying roughness 
+-->
+<materialx version="1.38">
+
+  <UsdPreviewSurface name="SR_gold_01" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.944, 0.776, 0.373" />
+    <input name="metallic" type="float" value="1" />
+    <input name="roughness" type="float" value="0.0" />
+    <input name="ior" type="float" value="50" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Gold_01" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_gold_01" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_gold_02" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.944, 0.776, 0.373" />
+    <input name="metallic" type="float" value="1" />
+    <input name="roughness" type="float" value="0.25" />
+    <input name="ior" type="float" value="50" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Gold_02" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_gold_02" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_gold_03" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.944, 0.776, 0.373" />
+    <input name="metallic" type="float" value="1" />
+    <input name="roughness" type="float" value="0.5" />
+    <input name="ior" type="float" value="50" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Gold_03" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_gold_03" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_gold_04" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.944, 0.776, 0.373" />
+    <input name="metallic" type="float" value="1" />
+    <input name="roughness" type="float" value="0.75" />
+    <input name="ior" type="float" value="50" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Gold_04" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_gold_04" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_gold_05" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.944, 0.776, 0.373" />
+    <input name="metallic" type="float" value="1" />
+    <input name="roughness" type="float" value="1.0" />
+    <input name="ior" type="float" value="50" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Gold_05" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_gold_05" />
+  </surfacematerial>
+
+</materialx>

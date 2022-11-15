@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<!-- 
+  Clearcoat Materials UsdPreviewSurface with varying clearcoat roughness 
+-->
+<materialx version="1.38">
+
+  <!-- Changing ClearcoatRoughness -->
+  <UsdPreviewSurface name="SR_clearcoat_01" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.1, 0.6, 0.85"/>
+    <input name="clearcoat" type="float" value="1" />
+    <input name="clearcoatRoughness" type="float" value="0.0" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Clearcoat_01" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_clearcoat_01" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_clearcoat_02" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.1, 0.6, 0.85"/>
+    <input name="clearcoat" type="float" value="1" />
+    <input name="clearcoatRoughness" type="float" value="0.25" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Clearcoat_02" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_clearcoat_02" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_clearcoat_03" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.1, 0.6, 0.85"/>
+    <input name="clearcoat" type="float" value="1" />
+    <input name="clearcoatRoughness" type="float" value="0.5" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Clearcoat_03" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_clearcoat_03" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_clearcoat_04" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.1, 0.6, 0.85"/>
+    <input name="clearcoat" type="float" value="1" />
+    <input name="clearcoatRoughness" type="float" value="0.75" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Clearcoat_04" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_clearcoat_04" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_clearcoat_05" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.1, 0.6, 0.85"/>
+    <input name="clearcoat" type="float" value="1" />
+    <input name="clearcoatRoughness" type="float" value="1.0" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Clearcoat_05" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_clearcoat_05" />
+  </surfacematerial>
+
+  <!-- Changing IOR -->
+  <UsdPreviewSurface name="SR_clearcoat_06" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.1, 0.6, 0.85"/>
+    <input name="clearcoat" type="float" value="1" />
+    <input name="clearcoatRoughness" type="float" value="1.0" />
+    <input name="ior" type="float" value="0.5" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Clearcoat_06" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_clearcoat_06" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_clearcoat_07" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.1, 0.6, 0.85"/>
+    <input name="clearcoat" type="float" value="1" />
+    <input name="clearcoatRoughness" type="float" value="1.0" />
+    <input name="ior" type="float" value="5.0" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Clearcoat_07" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_clearcoat_07" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_clearcoat_08" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.1, 0.6, 0.85"/>
+    <input name="clearcoat" type="float" value="1" />
+    <input name="clearcoatRoughness" type="float" value="1.0" />
+    <input name="ior" type="float" value="25.0" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Clearcoat_08" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_clearcoat_08" />
+  </surfacematerial>
+
+
+</materialx>
