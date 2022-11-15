@@ -13,6 +13,12 @@ Copyright |copy| 2018, Pixar Animation Studios,  *version 1.2*
 
 .. contents:: :local:
 
+3Delight
+========
+
+`3Delight <https://www.3delight.com>`_ is a path-traced renderer that supports USD and has
+a `Hydra Delegate <https://gitlab.com/3Delight/HydraNSI>`_.
+
 Adobe
 =====
 
@@ -36,6 +42,12 @@ Substance 3D Stager
 `Substance 3D Stager <https://www.adobe.com/products/substance3d-stager.html>`_ is a 3D package to build and assemble
 3D scenes.
 
+AMD ProRender
+=============
+
+`AMD ProRender <https://www.amd.com/en/technologies/radeon-prorender>`_ is a GPU and CPU path-traced renderer.
+There is an `open source Hydra delegate <https://github.com/GPUOpen-LibrariesAndSDKs/RadeonProRenderUSD>`_.
+
 Apple
 ======
 
@@ -53,8 +65,11 @@ AR QuickLook
 AR Creation Tools
 -----------------
 
-Apple has several `AR Creation Tools <https://developer.apple.com/augmented-reality/tools/>`_ , including
-Reality Converter and the USDZ Tools that helps convert other file formats to USDZ.
+Apple has several `AR Creation Tools <https://developer.apple.com/augmented-reality/tools/>`_ , including:
+
+* Reality Composer : An application for creating augmented reality applications
+* Reality Converter : An application for converting popular 3D formats to USDZ
+* USDZTools : Command line tools for converting other 3D formats to USD
 
 Rendering Engines
 -----------------
@@ -72,6 +87,16 @@ ModelIO
 
 `ModelIO <https://developer.apple.com/documentation/modelio>`_ is a framework for importing, exporting and manipulating
 common 3D formats.
+
+AnimVR
+======
+
+`AnimVR <https://nvrmind.io/features>`_ is a virtual reality animation tool.
+
+ArcGIS CityEngine
+=================
+
+`ArcGIS CityEngine <https://www.esri.com/en-us/arcgis/products/arcgis-cityengine/overview>`_ is a city design application.
 
 Autodesk
 ========
@@ -94,6 +119,11 @@ Arnold
 
 `Arnold USD Documentation <https://docs.arnoldrenderer.com/display/A5ARP/Introduction+to+Arnold+USD>`_
 
+Fusion 360
+----------
+
+`Fusion 360 <https://www.autodesk.com/products/fusion-360/overview>`_ is a CAD, CAM, CAE and PCB software.
+
 
 Maya
 ----
@@ -113,6 +143,12 @@ Multiverse for Maya
 `Multiverse <https://j-cube.jp/solutions/multiverse/>`_ is another USD plugin for Maya that adds other pipeline features
 to Maya as well.
 
+Revit
+-----
+
+`Revit <https://www.autodesk.com/products/revit/overview>`_ is a BIM software for designers and builders
+with a `third party USD extension <https://apps.autodesk.com/RVT/en/Detail/Index?id=127804203175527993&appLang=en&os=Win64>`_.
+
 Blender
 =======
 
@@ -120,6 +156,31 @@ Blender
 
 `Blender USD Documentation <https://docs.blender.org/manual/en/latest/files/import_export/usd.html>`_
 
+Blender also has a `Hydra addon <https://github.com/GPUOpen-LibrariesAndSDKs/BlenderUSDHydraAddon>`_ courtesy of AMD.
+
+Chaos V-Ray
+===========
+
+`V-Ray <https://www.chaos.com>`_ is a 3D path-traced renderer
+that supports USD and has a Hydra delegate.
+
+`V-Ray Documentation <https://www.chaos.com/blog/getting-started-with-usd-and-hydra-in-v-ray>`_
+
+Gaffer
+======
+
+`Gaffer <https://www.gafferhq.org>`_ is an `open source <https://github.com/GafferHQ/gaffer>`_ , node based application for lighting and compositing.
+
+Golaem
+======
+
+`Golaem <https://golaem.com>`_ is a crowd simulation program with an `open source, USD plugin <https://github.com/Golaem/GolaemForUSD>`_
+that allows viewing Golaem crowd caches within USD.
+
+Guerilla Render
+===============
+
+`Guerilla Render <http://guerillarender.com>`_ is a 3D renderer.
 
 Foundry
 =======
@@ -134,6 +195,11 @@ Katana
 Katana has `open source USD plugins <https://learn.foundry.com/katana/dev-guide/Plugins/KatanaUSDPlugins/index.html>`_ as
 well as a support for `Hydra render delegates <https://learn.foundry.com/katana/dev-guide/Plugins/HydraRenderDelegates/index.html>`_.
 
+Mari
+----
+
+`Mari <https://github.com/Golaem/GolaemForUSD>`_ is a 3D texture painting application.
+
 Modo
 ----
 
@@ -146,22 +212,11 @@ Nuke
 
 `Nuke documentation <https://learn.foundry.com/nuke/content/comp_environment/3d_compositing/usd.html>`_
 
-ZBrush
-------
 
-`ZBrush <https://www.maxon.net/en/zbrush>`_ is a 3D sculpting and painting application.
+Isotropix Clarisse
+==================
 
-`ZBrush USD documenation <http://docs.pixologic.com/user-guide/zbrush-other-programs/usd-format/>`_
-
-Houdini
-=======
-
-`Houdini <https://www.sidefx.com/products/houdini/>`_ is a 3D package with a focus on procedural content and effects.
-
-Houdini includes `Solar <https://www.sidefx.com/products/houdini/solaris/>`_ to create composed USD content.
-
-`SideFX USD Documentation <https://www.sidefx.com/docs/houdini/solaris/usd.html>`_
-
+`Clarisse <https://www.isotropix.com/products/clarisse/ifx>`_ is a 3D application for look development, lighting and rendering.
 
 Maxon
 =====
@@ -180,14 +235,64 @@ Redshift
 
 Redshift supports USD and is also available as a Hydra delegate for rendering integration.
 
+ZBrush
+------
 
-Omniverse
-=========
+`ZBrush <https://www.maxon.net/en/zbrush>`_ is a 3D sculpting and painting application.
+
+`ZBrush USD documenation <http://docs.pixologic.com/user-guide/zbrush-other-programs/usd-format/>`_
+
+
+NVIDIA Omniverse
+=================
 
 `NVIDIA Omniverse <https://www.nvidia.com/en-us/omniverse/>`_ is a platform for creating and operating metaverse applications.
 It is based on USD.
 
 `NVIDIA USD Documentation <https://www.nvidia.com/en-us/omniverse/usd/>`_
+
+Omniverse also adds their own USD support to the following applications:
+
+* 3ds Max
+* Archicad
+* Character Creator
+* Creo
+* iClone
+* ParaViw
+* PlantCatalog
+* PlantFactory
+* Revit
+* Rhino
+* SketchUp
+* Substance 3D Painter
+* Substance 3D Designer
+* Vue
+
+
+Shapr3D
+=======
+
+`Shapr3D <https://www.shapr3d.com>`_ is a CAD application that supports USD export on iPads, Mac and Windows.
+
+
+SideFX Houdini
+==============
+
+`Houdini <https://www.sidefx.com/products/houdini/>`_ is a 3D package with a focus on procedural content and effects.
+
+Houdini includes `Solar <https://www.sidefx.com/products/houdini/solaris/>`_ to create composed USD content.
+
+`SideFX USD Documentation <https://www.sidefx.com/docs/houdini/solaris/usd.html>`_
+
+SynthEyes
+=========
+
+`SynthEyes <https://www.ssontech.com>`_ is a match move application.
+
+Tilt Brush
+==========
+
+`Tilt Brush <https://www.tiltbrush.com>`_ is a VR painting application.
 
 Unity
 =====
@@ -195,7 +300,7 @@ Unity
 `Unity <https://unity.com>`_ is a real time 3D engine and editor.
 It includes an `open source USD Package <https://github.com/Unity-Technologies/usd-unity-sdk>`_.
 
-`Unity USD Documentation <https://docs.unity3d.com/2020.1/Documentation/Manual/com.unity.formats.usd.html>`_
+`Unity USD Documentation <https://docs.unity3d.com/Packages/com.unity.formats.usd@3.0/manual/index.html>`_
 
 Unreal Engine
 =============
@@ -204,4 +309,8 @@ Unreal Engine
 
 `Unreal USD Documentation <https://docs.unrealengine.com/5.0/en-US/universal-scene-description-usd-in-unreal-engine/>`_
 
+Vicon Shogun
+============
+
+`Vicon Shogun <https://www.vicon.com/software/shogun/>`_ is a motion capture application.
 
