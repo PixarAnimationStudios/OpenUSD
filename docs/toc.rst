@@ -7,6 +7,7 @@
    :caption: Learn
 
    intro
+   support
    Terms and Concepts <glossary>
    Tutorials <tut_usd_tutorials>
    dl_downloads
