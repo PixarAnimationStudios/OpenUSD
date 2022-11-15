@@ -1673,13 +1673,13 @@ def InstallUSD(context, force, buildArgs):
                 prefix = "Python3" if Python3() else "Python2"
                 extraArgs.append('-D{prefix}_EXECUTABLE="{pyExecPath}"'
                                  .format(prefix=prefix, 
-                                         pyExecPath=pythonInfo[0]))
+                                         pyExecPath=pythonInfo[0].replace('\\', '/')))
                 extraArgs.append('-D{prefix}_LIBRARY="{pyLibPath}"'
                                  .format(prefix=prefix,
-                                         pyLibPath=pythonInfo[1]))
+                                         pyLibPath=pythonInfo[1].replace('\\', '/')))
                 extraArgs.append('-D{prefix}_INCLUDE_DIR="{pyIncPath}"'
                                  .format(prefix=prefix,
-                                         pyIncPath=pythonInfo[2]))
+                                         pyIncPath=pythonInfo[2].replace('\\', '/')))
         else:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
 
