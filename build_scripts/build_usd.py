@@ -240,6 +240,13 @@ def GetPythonInfo(context):
     else:
         raise RuntimeError("Platform not supported")
 
+    if Windows():
+        # Replace backslashes with forward slashes in paths. CMake could
+        # fail to parse the strings otherwise.
+        pythonExecPath = pythonExecPath.replace('\\', '/')
+        pythonLibPath = pythonLibPath.replace('\\', '/')
+        pythonIncludeDir = pythonIncludeDir.replace('\\', '/')
+
     return (pythonExecPath, pythonLibPath, pythonIncludeDir, pythonVersion)
 
 def GetCPUCount():
@@ -794,14 +801,12 @@ def InstallBoost_Helper(context, force, buildArgs):
             # take the following approach:
             projectPath = 'python-config.jam'
             with open(projectPath, 'w') as projectFile:
-                # Note that we must escape any special characters, like 
-                # backslashes for jam, hence the mods below for the path 
-                # arguments. Also, if the path contains spaces jam will not
-                # handle them well. Surround the path parameters in quotes.
+                # If the path contains spaces jam will not handle them well.
+                # Surround the path parameters in quotes.
                 projectFile.write('using python : %s\n' % pythonInfo[3])
-                projectFile.write('  : "%s"\n' % pythonInfo[0].replace("\\","/"))
-                projectFile.write('  : "%s"\n' % pythonInfo[2].replace("\\","/"))
-                projectFile.write('  : "%s"\n' % os.path.dirname(pythonInfo[1]).replace("\\","/"))
+                projectFile.write('  : "%s"\n' % pythonInfo[0])
+                projectFile.write('  : "%s"\n' % pythonInfo[2])
+                projectFile.write('  : "%s"\n' % os.path.dirname(pythonInfo[1]))
                 if context.buildDebug and context.debugPython:
                     projectFile.write('  : <python-debugging>on\n')
                 projectFile.write('  ;\n')
@@ -1673,13 +1678,13 @@ def InstallUSD(context, force, buildArgs):
                 prefix = "Python3" if Python3() else "Python2"
                 extraArgs.append('-D{prefix}_EXECUTABLE="{pyExecPath}"'
                                  .format(prefix=prefix, 
-                                         pyExecPath=pythonInfo[0].replace('\\', '/')))
+                                         pyExecPath=pythonInfo[0]))
                 extraArgs.append('-D{prefix}_LIBRARY="{pyLibPath}"'
                                  .format(prefix=prefix,
-                                         pyLibPath=pythonInfo[1].replace('\\', '/')))
+                                         pyLibPath=pythonInfo[1]))
                 extraArgs.append('-D{prefix}_INCLUDE_DIR="{pyIncPath}"'
                                  .format(prefix=prefix,
-                                         pyIncPath=pythonInfo[2].replace('\\', '/')))
+                                         pyIncPath=pythonInfo[2]))
         else:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
 
