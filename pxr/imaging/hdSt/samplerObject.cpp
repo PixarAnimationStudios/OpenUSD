@@ -93,17 +93,12 @@ _ToHgiSamplerDesc(HdSamplerParameters const &samplerParameters)
     return desc;
 }
 
-// Generate GL sampler
+// Generate sampler
 static
 HgiSamplerHandle
 _GenSampler(HdSt_SamplerObjectRegistry * const samplerObjectRegistry,
-            HdSamplerParameters const &samplerParameters,
-            const bool createSampler)
+            HdSamplerParameters const &samplerParameters)
 {
-    if (!createSampler) {
-        return HgiSamplerHandle();
-    }
-
     HdStResourceRegistry * const registry =
         samplerObjectRegistry->GetResourceRegistry();
     if (!TF_VERIFY(registry)) {
@@ -174,8 +169,7 @@ HdStUvSamplerObject::HdStUvSamplerObject(
       _GenSampler(
           samplerObjectRegistry,
           _ResolveUvSamplerParameters(
-              texture, samplerParameters),
-          texture.IsValid()))
+              texture, samplerParameters)))
 {
 }
 
@@ -197,8 +191,7 @@ HdStFieldSamplerObject::HdStFieldSamplerObject(
   , _sampler(
       _GenSampler(
           samplerObjectRegistry,
-          samplerParameters,
-          texture.IsValid()))
+          samplerParameters))
 {
 }
 
@@ -246,13 +239,11 @@ HdStPtexSamplerObject::HdStPtexSamplerObject(
   , _texelsSampler(
       _GenSampler(
           samplerObjectRegistry,
-          PTEX_SAMPLER_PARAMETERS,
-          ptexTexture.IsValid()))
+          PTEX_SAMPLER_PARAMETERS))
   , _layoutSampler(
       _GenSampler(
           samplerObjectRegistry,
-          LAYOUT_SAMPLER_PARAMETERS,
-          ptexTexture.IsValid()))
+          LAYOUT_SAMPLER_PARAMETERS))
 {
 }
 
@@ -293,13 +284,11 @@ HdStUdimSamplerObject::HdStUdimSamplerObject(
   , _texelsSampler(
       _GenSampler(
           samplerObjectRegistry,
-          UDIM_SAMPLER_PARAMETERS,
-          udimTexture.IsValid()))
+          UDIM_SAMPLER_PARAMETERS))
   , _layoutSampler(
       _GenSampler(
           samplerObjectRegistry,
-          LAYOUT_SAMPLER_PARAMETERS,
-          udimTexture.IsValid()))
+          LAYOUT_SAMPLER_PARAMETERS))
 {
 }
 

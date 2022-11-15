@@ -669,8 +669,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                             shaderFallbackLocation++)]
                     = MetaData::ShaderParameterAccessor(glName, 
                                                         /*type=*/glType);
-            }
-            else if (param.IsTexture()) {
+            } else if (param.IsTexture()) {
                 if (param.textureType == HdTextureType::Ptex) {
                     // ptex texture
                     HdBinding texelBinding = bindless
@@ -686,7 +685,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                             /*type=*/glType,
                             /*swizzle=*/glSwizzle,
                             /*inPrimvars=*/param.samplerCoords,
-                            /*isPremultiplied=*/param.isPremultiplied);
+                            /*isPremultiplied=*/param.isPremultiplied,
+                            /*processTextureFallbackValue=*/isMaterialShader);
                     _bindingMap[name] = texelBinding; // used for non-bindless
 
                     HdBinding layoutBinding = bindless
@@ -722,7 +722,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                             /*type=*/glType,
                             /*swizzle=*/glSwizzle,
                             /*inPrimvars=*/param.samplerCoords,
-                            /*isPremultiplied=*/param.isPremultiplied);
+                            /*isPremultiplied=*/param.isPremultiplied,
+                            /*processTextureFallbackValue=*/isMaterialShader);
                     // used for non-bindless
                     _bindingMap[param.name] = textureBinding;
 
