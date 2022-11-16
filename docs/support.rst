@@ -166,6 +166,24 @@ that supports USD and has a Hydra delegate.
 
 `V-Ray Documentation <https://www.chaos.com/blog/getting-started-with-usd-and-hydra-in-v-ray>`_
 
+E-on
+====
+
+E-on are a software developer of world building 3D software.
+
+`E-on Documentation for USD Export <https://info.e-onsoftware.com/learning-center/usd_export_in_vue_plantfactory>`_
+
+Plant Factory
+-------------
+
+`Plant Factory <https://info.e-onsoftware.com/plantfactory/overview>`_ is a vegetation generation software.
+
+Vue
+---
+
+`Vue <https://info.e-onsoftware.com/vue/overview>`_ is world building application.
+
+
 Gaffer
 ======
 
@@ -251,22 +269,17 @@ It is based on USD.
 
 `NVIDIA USD Documentation <https://www.nvidia.com/en-us/omniverse/usd/>`_
 
-Omniverse also adds their own USD support to the following applications:
+Omniverse also adds USD connectors to many application, `listed here <https://docs.omniverse.nvidia.com/con_connect/con_connect/connecting-to-omniverse.html>`_.
+Some of the applications are:
 
-* 3ds Max
 * Archicad
 * Character Creator
 * Creo
 * iClone
 * ParaViw
-* PlantCatalog
-* PlantFactory
 * Revit
 * Rhino
 * SketchUp
-* Substance 3D Painter
-* Substance 3D Designer
-* Vue
 
 
 Shapr3D
