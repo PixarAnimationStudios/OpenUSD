@@ -281,6 +281,8 @@ Some of the applications are:
 * Rhino
 * SketchUp
 
+Please see the `list <https://docs.omniverse.nvidia.com/con_connect/con_connect/connecting-to-omniverse.html>`_  for a
+fuller range of connectors, as there are more than listed here.
 
 Shapr3D
 =======
