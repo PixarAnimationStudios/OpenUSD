@@ -51,7 +51,7 @@ There is an `open source Hydra delegate <https://github.com/GPUOpen-LibrariesAnd
 Apple
 ======
 
-Apple use USD as the primary format for their 3D renderers. USDZ is their format of choice for Augmented Reality content.
+Apple uses USD as the primary format for their 3D renderers. USDZ is their format of choice for Augmented Reality content.
 
 
 `Creating USD files for Apple devices <https://developer.apple.com/documentation/realitykit/creating-usd-files-for-apple-devices?changes=_1>`_
