@@ -218,7 +218,8 @@ well as a support for `Hydra render delegates <https://learn.foundry.com/katana/
 Mari
 ----
 
-`Mari <https://github.com/Golaem/GolaemForUSD>`_ is a 3D texture painting application.
+`Mari <https://www.foundry.com/products/mari>`_ is a 3D texture painting application.
+Mari has `open source USD plugins <https://github.com/TheFoundryVisionmongers/MariUsdPlugins>`_.
 
 Modo
 ----
@@ -238,6 +239,12 @@ Isotropix Clarisse
 
 `Clarisse <https://www.isotropix.com/products/clarisse/ifx>`_ is a 3D application for look development, lighting and rendering.
 
+Dreamworks Moonray
+==================
+
+`Moonray <https://openmoonray.org/>`_ is an open-source renderer that comes with a USD Hydra render delegate.
+
+
 J Cube
 ======
 
@@ -252,6 +259,11 @@ Muse
 ----
 
 `Muse <https://j-cube.jp/solutions/muse/>`_ is a standalone USD Editor
+
+Left Angle Autograph
+=====
+
+`Autograph <https://www.left-angle.com/#page=95>`_ is a compositing and motion design package that comes with a 3d system based on USD.
 
 Maxon
 =====
@@ -301,6 +313,12 @@ Some of the applications are:
 Please see the `list <https://docs.omniverse.nvidia.com/con_connect/con_connect/connecting-to-omniverse.html>`_  for a
 fuller range of connectors, as there are more than listed here.
 
+Procreate
+=========
+
+`Procreate <https://procreate.art>`_ is a 2D and 3D painting application for the iPad that
+supports `import of USDZ models <https://procreate.art/handbook/procreate/3d-painting/import/>`_ .
+
 Shapr3D
 =======
 
@@ -341,6 +359,12 @@ Unreal Engine
 
 `Unreal USD Documentation <https://docs.unrealengine.com/5.0/en-US/universal-scene-description-usd-in-unreal-engine/>`_
 
+Usdtweak
+=============
+
+`usdtweak <https://github.com/cpichard/usdtweak>`_ is a free and open source editor for USD.
+
+
 Vicon Shogun
 ============
 
@@ -349,4 +373,4 @@ Vicon Shogun
 Wizart
 ======
 
-`Wizart <https://wizanim.com/technology/>`_ is a USD based general purpose 3D application.
+`Wizart DCC Platform <https://wizartsoft.com/>`_ is a USD based general purpose 3D application.
