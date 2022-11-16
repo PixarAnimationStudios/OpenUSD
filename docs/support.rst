@@ -57,10 +57,13 @@ Apple use USD as the primary format for their 3D renderers. USDZ is their format
 `Creating USD files for Apple devices <https://developer.apple.com/documentation/realitykit/creating-usd-files-for-apple-devices?changes=_1>`_
 outlines creating content that works on their platforms. macOS, iOS and iPadOS ship with USD integrations.
 
-AR QuickLook
-------------
+Preview and QuickLook
+---------------------
 
-`AR QuickLook <https://developer.apple.com/augmented-reality/quick-look/>`_ is a component of iOS and iPadOS that allows you to view USDZ content in augmented reality.
+iOS and iPadOS ship with `AR QuickLook <https://developer.apple.com/augmented-reality/quick-look/>`_ , an augmented reality
+USD viewer.
+
+macOS provides Preview and QuickLook in Finder, allowing you to directly preview files.
 
 AR Creation Tools
 -----------------
@@ -87,6 +90,11 @@ ModelIO
 
 `ModelIO <https://developer.apple.com/documentation/modelio>`_ is a framework for importing, exporting and manipulating
 common 3D formats.
+
+Motion
+------
+
+`Motion <https://www.apple.com/final-cut-pro/motion/>`_ is a motion graphics application.
 
 AnimVR
 ======
@@ -130,18 +138,12 @@ Maya
 
 `Maya <https://www.autodesk.com/products/maya/overview>`_ is a general purpose 3D package
 
-Maya USD
-^^^^^^^^
 
 Maya comes bundled with an `open source plugin <https://github.com/Autodesk/maya-usd>`_ .
 
 `Maya USD Documentation <https://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2022/ENU/Maya-USD/files/GUID-9E9D45F2-4DA9-497B-8D69-1573ED6B2BA8-html.html>`_
 
-Multiverse for Maya
-^^^^^^^^^^^^^^^^^^^
-
-`Multiverse <https://j-cube.jp/solutions/multiverse/>`_ is another USD plugin for Maya that adds other pipeline features
-to Maya as well.
+There are also plug-ins from other Developers. See the J Cube Multiverse section as an alternative.
 
 Revit
 -----
@@ -236,6 +238,21 @@ Isotropix Clarisse
 
 `Clarisse <https://www.isotropix.com/products/clarisse/ifx>`_ is a 3D application for look development, lighting and rendering.
 
+J Cube
+======
+
+J Cube are a developer of 3D software and cloud services.
+
+Multiverse for Maya
+-------------------
+
+`Multiverse <https://j-cube.jp/solutions/multiverse/>`_ is a USD plugin for Maya with a range of pipeline features.
+
+Muse
+----
+
+`Muse <https://j-cube.jp/solutions/muse/>`_ is a standalone USD Editor
+
 Maxon
 =====
 
@@ -276,7 +293,7 @@ Some of the applications are:
 * Character Creator
 * Creo
 * iClone
-* ParaViw
+* ParaView
 * Revit
 * Rhino
 * SketchUp
@@ -329,3 +346,7 @@ Vicon Shogun
 
 `Vicon Shogun <https://www.vicon.com/software/shogun/>`_ is a motion capture application.
 
+Wizart
+======
+
+`Wizart <https://wizanim.com/technology/>`_ is a USD based general purpose 3D application.
