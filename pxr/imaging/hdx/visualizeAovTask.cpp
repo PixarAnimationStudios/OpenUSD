@@ -216,7 +216,7 @@ HdxVisualizeAovTask::_CreateShaderResources(
 
         HgiShaderFunctionAddTexture(
             &fragDesc, _GetTextureIdentifierForShader().GetString(),
-            /*dimensions*/2, inputAovTextureDesc.format);
+            /*bindIndex = */0, /*dimensions = */2, inputAovTextureDesc.format);
 
         HgiShaderFunctionAddStageOutput(
             &fragDesc, "hd_FragColor", "vec4", "color");

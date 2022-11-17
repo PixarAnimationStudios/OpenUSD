@@ -61,7 +61,7 @@ HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
     const HgiShaderFunctionDesc &descriptor)
   : HgiShaderGenerator(descriptor)
   , _hgi(hgi)
-  , _bindIndex(0)
+  , _textureBindIndexStart(0)
   , _inLocationIndex(0)
   , _outLocationIndex(0)
 {
@@ -91,8 +91,8 @@ HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
     // as HgiVulkanResourceBindings.
     // In Vulkan buffers and textures cannot have the same binding index.
     _WriteConstantParams(descriptor.constantParams);
-    _WriteTextures(descriptor.textures);
     _WriteBuffers(descriptor.buffers);
+    _WriteTextures(descriptor.textures);
     _WriteInOuts(descriptor.stageInputs, "in");
     _WriteInOutBlocks(descriptor.stageInputBlocks, "in");
     _WriteInOuts(descriptor.stageOutputs, "out");
@@ -179,7 +179,7 @@ HgiVulkanShaderGenerator::_WriteTextures(
         HgiShaderSectionAttributeVector attrs = {
             HgiShaderSectionAttribute{
                 "binding",
-                std::to_string(_bindIndex)}};
+                std::to_string(_textureBindIndexStart + desc.bindIndex)}};
 
         if (desc.writable) {
             attrs.insert(attrs.begin(), HgiShaderSectionAttribute{
@@ -190,16 +190,13 @@ HgiVulkanShaderGenerator::_WriteTextures(
 
         CreateShaderSection<HgiVulkanTextureShaderSection>(
             desc.nameInShader,
-            _bindIndex,
+            _textureBindIndexStart + desc.bindIndex,
             desc.dimensions,
             desc.format,
             desc.textureType,
             desc.arraySize,
             desc.writable,
             attrs);
-
-        // In Vulkan buffers and textures cannot have the same binding index.
-        _bindIndex++;
     }
 }
 
@@ -219,16 +216,18 @@ HgiVulkanShaderGenerator::_WriteBuffers(
             (bufferDescription.arraySize > 0)
                 ? std::to_string(bufferDescription.arraySize)
                 : std::string();
+
+        const uint32_t bindIndex = bufferDescription.bindIndex;
         
         if (isUniformBufferBinding) {
             const HgiShaderSectionAttributeVector attrs = {
                 HgiShaderSectionAttribute{"std140", ""},
                 HgiShaderSectionAttribute{"binding", 
-                    std::to_string(_bindIndex)}};
+                    std::to_string(bindIndex)}};
 
             CreateShaderSection<HgiVulkanBufferShaderSection>(
                 bufferDescription.nameInShader,
-                _bindIndex,
+                bindIndex,
                 bufferDescription.type,
                 bufferDescription.binding,
                 arraySize,
@@ -238,11 +237,11 @@ HgiVulkanShaderGenerator::_WriteBuffers(
             const HgiShaderSectionAttributeVector attrs = {
                 HgiShaderSectionAttribute{"std430", ""},
                 HgiShaderSectionAttribute{"binding", 
-                    std::to_string(_bindIndex)}};
+                    std::to_string(bindIndex)}};
 
             CreateShaderSection<HgiVulkanBufferShaderSection>(
                 bufferDescription.nameInShader,
-                _bindIndex,
+                bindIndex,
                 bufferDescription.type,
                 bufferDescription.binding,
                 arraySize,
@@ -251,7 +250,10 @@ HgiVulkanShaderGenerator::_WriteBuffers(
         }
 				
         // In Vulkan, buffers and textures cannot have the same binding index.
-        _bindIndex++;
+        // Start textures right after the last buffer. 
+        // See HgiVulkanResourceBindings for details.
+        _textureBindIndexStart =
+            std::max(_textureBindIndexStart, bindIndex + 1);
     }
 }
 

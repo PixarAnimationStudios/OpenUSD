@@ -29,6 +29,7 @@ HgiShaderFunctionTextureDesc::HgiShaderFunctionTextureDesc()
   : dimensions(2)
   , format(HgiFormatInvalid)
   , textureType(HgiShaderTextureTypeTexture)
+  , bindIndex(0)
   , arraySize(0)
   , writable(false)
 {
@@ -248,12 +249,14 @@ void
 HgiShaderFunctionAddTexture(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
+    const uint32_t bindIndex /* = 0 */,
     const uint32_t dimensions /* = 2 */,
     const HgiFormat &format /* = HgiFormatFloat32Vec4*/,
     const HgiShaderTextureType textureType /* = HgiShaderTextureTypeTexture */)
 {
     HgiShaderFunctionTextureDesc texDesc;
     texDesc.nameInShader = nameInShader;
+    texDesc.bindIndex = bindIndex;
     texDesc.dimensions = dimensions;
     texDesc.format = format;
     texDesc.textureType = textureType;
@@ -268,12 +271,14 @@ HgiShaderFunctionAddArrayOfTextures(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const uint32_t arraySize,
+    const uint32_t bindIndex /* = 0 */,
     const uint32_t dimensions /* = 2 */,
     const HgiFormat &format /* = HgiFormatFloat32Vec4*/,
     const HgiShaderTextureType textureType /* = HgiShaderTextureTypeTexture */)
 {
     HgiShaderFunctionTextureDesc texDesc;
     texDesc.nameInShader = nameInShader;
+    texDesc.bindIndex = bindIndex;
     texDesc.dimensions = dimensions;
     texDesc.format = format;
     texDesc.textureType = textureType;
@@ -287,12 +292,14 @@ void
 HgiShaderFunctionAddWritableTexture(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
+    const uint32_t bindIndex /* = 0 */,
     const uint32_t dimensions /* = 2 */,
     const HgiFormat &format /* = HgiFormatFloat32Vec4*/,
     const HgiShaderTextureType textureType /* = HgiShaderTextureTypeTexture */)
 {
     HgiShaderFunctionTextureDesc texDesc;
     texDesc.nameInShader = nameInShader;
+    texDesc.bindIndex = bindIndex;
     texDesc.dimensions = dimensions;
     texDesc.format = format;
     texDesc.textureType = textureType;

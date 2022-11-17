@@ -50,6 +50,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   on the texture (e.g., GL) </li>
 /// <li>textureType:
 ///   Type of the texture (e.g. array texture, shadow, etc.).</li>
+/// <li>bindIndex:
+///   The index of the resource.</li>
 /// <li>arraySize:
 ///   If arraySize > 0, indicates the size of the array. Note that textureType 
 ///   = HgiTextureTypeTexture and arraySize = 2 would create an array with two 
@@ -69,6 +71,7 @@ struct HgiShaderFunctionTextureDesc
     uint32_t dimensions;
     HgiFormat format;
     HgiShaderTextureType textureType;
+    uint32_t bindIndex;
     size_t arraySize;
     bool writable;
 };
@@ -112,7 +115,7 @@ struct HgiShaderFunctionBufferDesc
 
     std::string nameInShader;
     std::string type;
-    int32_t bindIndex;
+    uint32_t bindIndex;
     uint32_t arraySize;
     HgiBindingType binding;
     bool writable;
@@ -415,6 +418,7 @@ void
 HgiShaderFunctionAddTexture(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
+    const uint32_t bindIndex = 0,
     uint32_t dimensions = 2,
     const HgiFormat &format = HgiFormatFloat32Vec4,
     const HgiShaderTextureType textureType = HgiShaderTextureTypeTexture);
@@ -426,6 +430,7 @@ HgiShaderFunctionAddArrayOfTextures(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const uint32_t arraySize,
+    const uint32_t bindIndex = 0,
     const uint32_t dimensions = 2,
     const HgiFormat &format = HgiFormatFloat32Vec4,
     const HgiShaderTextureType textureType = HgiShaderTextureTypeTexture);
@@ -436,6 +441,7 @@ void
 HgiShaderFunctionAddWritableTexture(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
+    const uint32_t bindIndex = 0,
     const uint32_t dimensions = 2,
     const HgiFormat &format = HgiFormatFloat32Vec4,
     const HgiShaderTextureType textureType = HgiShaderTextureTypeTexture);
