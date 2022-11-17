@@ -39,7 +39,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// HdSceneIndexObserver. It exists solely in service of the python
 /// implementation of Hydra Scene Browser present in usdview.
 /// 
-/// See pxr/imaging/hdui for an example of a C++ direct implementation
+/// See extras/imaging/examples/hdui for an example of a C++ direct
+/// implementation.
 /// 
 class UsdviewqHydraObserver
 {
