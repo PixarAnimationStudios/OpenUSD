@@ -58,6 +58,7 @@ public:
 
 private:
     UsdImagingDataSourcePointInstancerMask(
+        const SdfPath &sceneIndexPath,
         const UsdGeomPointInstancer &usdPI,
         const UsdImagingDataSourceStageGlobals &stageGlobals);
 
@@ -87,10 +88,13 @@ public:
 
 private:
     // Private constructor, use static New() instead.
-    UsdImagingDataSourcePointInstancerTopology(UsdGeomPointInstancer usdPI,
+    UsdImagingDataSourcePointInstancerTopology(
+        const SdfPath &sceneIndexPath,
+        UsdGeomPointInstancer usdPI,
         const UsdImagingDataSourceStageGlobals &stageGlobals);
 
 private:
+    const SdfPath _sceneIndexPath;
     UsdGeomPointInstancer _usdPI;
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
 };

@@ -40,11 +40,21 @@ PXR_NAMESPACE_OPEN_SCOPE
 // ----------------------------------------------------------------------------
 
 UsdImagingDataSourcePointInstancerMask::UsdImagingDataSourcePointInstancerMask(
+        const SdfPath &sceneIndexPath,
         const UsdGeomPointInstancer &usdPI,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
   : _usdPI(usdPI)
   , _stageGlobals(stageGlobals)
-{}
+{
+    if (UsdAttribute attr = usdPI.GetInvisibleIdsAttr()) {
+        if (attr.ValueMightBeTimeVarying()) {
+            static const HdDataSourceLocator locator =
+                HdInstancerTopologySchema::GetDefaultLocator()
+                .Append(HdInstancerTopologySchemaTokens->mask);
+            _stageGlobals.FlagAsTimeVarying(sceneIndexPath, locator);
+        }
+    }
+}
 
 VtValue
 UsdImagingDataSourcePointInstancerMask::GetValue(
@@ -80,9 +90,11 @@ UsdImagingDataSourcePointInstancerMask::GetContributingSampleTimesForInterval(
 
 UsdImagingDataSourcePointInstancerTopology::
 UsdImagingDataSourcePointInstancerTopology(
+        const SdfPath &sceneIndexPath,
         UsdGeomPointInstancer usdPI,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
-  : _usdPI(usdPI)
+  : _sceneIndexPath(sceneIndexPath)
+  , _usdPI(usdPI)
   , _stageGlobals(stageGlobals)
 {}
 
@@ -127,7 +139,7 @@ UsdImagingDataSourcePointInstancerTopology::Get(const TfToken &name)
             indicesVec.size(), indicesVec.data());
     } else if (name == HdInstancerTopologySchemaTokens->mask) {
         return UsdImagingDataSourcePointInstancerMask::New(
-                _usdPI, _stageGlobals);
+                _sceneIndexPath, _usdPI, _stageGlobals);
     }
 
     return nullptr;
@@ -157,7 +169,9 @@ UsdImagingDataSourcePointInstancerPrim::Get(const TfToken &name)
 {
     if (name == HdInstancerTopologySchemaTokens->instancerTopology) {
         return UsdImagingDataSourcePointInstancerTopology::New(
-                UsdGeomPointInstancer(_GetUsdPrim()), _GetStageGlobals());
+                _GetSceneIndexPath(),
+                UsdGeomPointInstancer(_GetUsdPrim()),
+                _GetStageGlobals());
     } else if (name == HdPrimvarsSchemaTokens->primvars) {
         // Note that we are not yet handling velocities, accelerations
         // and angularVelocities.
