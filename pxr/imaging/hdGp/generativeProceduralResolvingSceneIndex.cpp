@@ -28,6 +28,7 @@
 
 #include "pxr/base/tf/denseHashSet.h"
 #include "pxr/base/work/loops.h"
+#include "pxr/base/work/withScopedParallelism.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -218,12 +219,17 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
                 ++i;
             }
 
+            {
+            TF_PY_ALLOW_THREADS_IN_SCOPE();
+            WorkWithScopedParallelism([&]() {
             WorkParallelForEach(cookEntries.begin(), cookEntries.end(),
                     [this](const _CookEntry &e) {
                 this->_UpdateProcedural(e.first, true, const_cast<
                     HdGpGenerativeProceduralResolvingSceneIndex::_Notices *>(
                         &e.second));
             });
+            });
+            }
 
             // combine all of the resulting notices following parallel cook
             for (const _CookEntry &e : cookEntries) {
@@ -371,12 +377,17 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsRemoved(
                 ++i;
             }
 
+            {
+            TF_PY_ALLOW_THREADS_IN_SCOPE();
+            WorkWithScopedParallelism([&]() {
             WorkParallelForEach(cookEntries.begin(), cookEntries.end(),
                     [this](const _CookEntry &e) {
                 this->_UpdateProcedural(e.first, true, const_cast<
                     HdGpGenerativeProceduralResolvingSceneIndex::_Notices *>(
                         &e.second));
             });
+            });
+            }
 
             // combine all of the resulting notices following parallel cook
             for (const _CookEntry &e : cookEntries) {
@@ -390,9 +401,7 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsRemoved(
 
         } else {
             for (const SdfPath &invalidatedProcPath : invalidatedProcedurals) {
-                // XXX Procedurals here are cooked serially
-                //     TODO: Do this loop in parallel and gather the generated
-                //           notices.
+                // Procedurals here are cooked serially
                 _UpdateProcedural(invalidatedProcPath, true, &notices);
             }
         }
@@ -480,12 +489,17 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsDirtied(
                 ++i;
             }
 
+            {
+            TF_PY_ALLOW_THREADS_IN_SCOPE();
+            WorkWithScopedParallelism([&]() {
             WorkParallelForEach(cookEntries.begin(), cookEntries.end(),
                     [this](const _CookEntry &e) {
                 this->_UpdateProcedural(e.path, true, const_cast<
                     HdGpGenerativeProceduralResolvingSceneIndex::_Notices *>(
                         &e.notices), e.deps);
             });
+            });
+            }
 
             // combine all of the resulting notices following parallel cook
             for (const _CookEntry &e : cookEntries) {
