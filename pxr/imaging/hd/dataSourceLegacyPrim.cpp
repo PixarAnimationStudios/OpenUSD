@@ -2586,9 +2586,12 @@ HdDataSourceLegacyPrim::_GetInstancedByDataSource()
     if (instancerId.IsEmpty()) {
         return nullptr;
     }
-    return HdInstancedBySchema::BuildRetained(
-        HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
-            VtArray<SdfPath>({instancerId})));
+    return
+        HdInstancedBySchema::Builder()
+            .SetPaths(
+                HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
+                    VtArray<SdfPath>({instancerId})))
+            .Build();
 }
 
 HdDataSourceBaseHandle
