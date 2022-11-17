@@ -583,14 +583,14 @@ HdGpGenerativeProceduralResolvingSceneIndex::_UpdateProceduralDependencies(
 
         // compare old and new dependency maps
         _PathSet dependencesToRemove;
-        for (const auto pathLocatorsPair : procEntry.dependencies) {
+        for (const auto& pathLocatorsPair : procEntry.dependencies) {
             const SdfPath &dependencyPath = pathLocatorsPair.first;
             if (newDependencies.find(dependencyPath) == newDependencies.end()) {
                 dependencesToRemove.insert(dependencyPath);
             }
         }
 
-        for (const auto pathLocatorsPair : newDependencies) {
+        for (const auto& pathLocatorsPair : newDependencies) {
             const SdfPath &dependencyPath = pathLocatorsPair.first;
             if (procEntry.dependencies.find(dependencyPath)
                     == procEntry.dependencies.end()) {
@@ -684,7 +684,7 @@ HdGpGenerativeProceduralResolvingSceneIndex::_UpdateProcedural(
             // if there are no previous cooks, we can directly add all
             // without comparison
             if (procEntry.childTypes.empty()) {
-                for (const auto pathTypePair : newChildTypes) {
+                for (const auto& pathTypePair : newChildTypes) {
                     const SdfPath &childPrimPath = pathTypePair.first;
                     outputNotices->added.emplace_back(
                         childPrimPath, pathTypePair. second);
@@ -713,7 +713,7 @@ HdGpGenerativeProceduralResolvingSceneIndex::_UpdateProcedural(
                 _ProcEntry::_PathSetMap newChildHierarchy;
 
                 // add new entries (or entries whose types have changed)
-                for (const auto pathTypePair : newChildTypes) {
+                for (const auto& pathTypePair : newChildTypes) {
                     const SdfPath &childPrimPath = pathTypePair.first;
 
                     if (childPrimPath.HasPrefix(proceduralPrimPath)) {
@@ -741,7 +741,7 @@ HdGpGenerativeProceduralResolvingSceneIndex::_UpdateProcedural(
                 }
 
                 // remove entries not present in new cook
-                for (const auto pathTypePair : procEntry.childTypes) {
+                for (const auto& pathTypePair : procEntry.childTypes) {
                     if (newChildTypes.find(pathTypePair.first) ==
                             newChildTypes.end()) {
                         if (newChildHierarchy.find(pathTypePair.first)
@@ -867,7 +867,7 @@ HdGpGenerativeProceduralResolvingSceneIndex::_RemoveProcedural(
 
         _MapLock depsLock(_dependenciesMutex);
 
-        for (const auto pathLocatorsPair : procEntry.dependencies) {
+        for (const auto& pathLocatorsPair : procEntry.dependencies) {
             _DependencyMap::iterator dIt =
                 _dependencies.find(pathLocatorsPair.first);
 
@@ -884,7 +884,7 @@ HdGpGenerativeProceduralResolvingSceneIndex::_RemoveProcedural(
     // 2) remove record of generated prims
     if (!procEntry.childTypes.empty()) {
 
-        for (const auto pathTypePair : procEntry.childTypes) {
+        for (const auto& pathTypePair : procEntry.childTypes) {
             const auto gpIt = _generatedPrims.find(pathTypePair.first);
             if (gpIt != _generatedPrims.end()) {
                 gpIt->second.responsibleProc.store(nullptr);
@@ -893,7 +893,7 @@ HdGpGenerativeProceduralResolvingSceneIndex::_RemoveProcedural(
 
         // childHierarchy may contain intermediate prims not directly
         // specified
-        for (const auto pathPathSetPair : procEntry.childHierarchy) {
+        for (const auto& pathPathSetPair : procEntry.childHierarchy) {
             const auto gpIt = _generatedPrims.find(pathPathSetPair.first);
             if (gpIt != _generatedPrims.end()) {
                 gpIt->second.responsibleProc.store(nullptr);
