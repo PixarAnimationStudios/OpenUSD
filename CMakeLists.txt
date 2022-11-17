@@ -33,7 +33,7 @@ if (NOT PXR_PYTHON_SHEBANG)
 endif()
 
 if (NOT PYTHON_COMMAND_NAME)
-    set(PYTHON_COMMAND_NAME "${PYTHON_EXECUTABLE}"
+    set(PYTHON_COMMAND_NAME  "python"
         CACHE
         STRING
         "Python command to launch usd tools (e.g. usdview) with."
