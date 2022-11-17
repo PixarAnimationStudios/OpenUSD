@@ -319,7 +319,10 @@ endif()
 # Use ImathConfig.cmake, 
 # Refer: https://github.com/AcademySoftwareFoundation/Imath/blob/main/docs/PortingGuide2-3.md#openexrimath-3x-only
 if(REQUIRES_Imath)
-    find_package(Imath CONFIG)
+    # Autodesk - for the Jenkins USD builds we do not want to ever use any system
+    #            Imath package - always use OpenEXR that USD builds.
+    #find_package(Imath CONFIG)
+    set(Imath_FOUND FALSE)
     if (NOT Imath_FOUND)
         MESSAGE(STATUS "Imath not found. Looking for OpenEXR instead.")
         find_package(OpenEXR REQUIRED)
