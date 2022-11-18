@@ -79,6 +79,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdLegacyPrimTypeTokens, HD_LEGACY_PRIMTYPE_TOKENS);
 //      define this convention.
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (coordSys)
     (prmanParams)
     ((prmanParamsNames, ""))
 
@@ -2654,7 +2655,8 @@ HdDataSourceLegacyPrim::_GetCoordSysBindingDataSource()
         // form /path/to/object.coordSys:foo, where "foo" is the name the
         // shader gets to access.  We pull these names out to store in the
         // schema.
-        names.push_back(TfToken(SdfPath::StripNamespace(path.GetName())));
+        names.push_back(TfToken(SdfPath::StripPrefixNamespace(
+                        path.GetName(), _tokens->coordSys).first));
         paths.push_back(HdRetainedTypedSampledDataSource<SdfPath>::New(
             path));
     }

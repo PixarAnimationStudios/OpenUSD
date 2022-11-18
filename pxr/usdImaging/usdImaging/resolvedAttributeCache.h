@@ -952,9 +952,7 @@ struct UsdImaging_CoordSysBindingStrategy
         IdVecPtr idVecPtr;
         UsdBindingVecPtr usdBindingVecPtr;
     };
-    struct query_type {
-        UsdShadeCoordSysAPI coordSysAPI;
-    };
+    typedef int query_type;
 
     static
     bool ValueMightBeTimeVarying() { return false; }
@@ -966,7 +964,7 @@ struct UsdImaging_CoordSysBindingStrategy
 
     static
     query_type MakeQuery(UsdPrim const& prim, bool *) {
-        return query_type( {UsdShadeCoordSysAPI(prim)} );
+        return 0;
     }
 
     static
@@ -976,52 +974,67 @@ struct UsdImaging_CoordSysBindingStrategy
             query_type const* query)
     {
         value_type v;
-        if (query->coordSysAPI) {
-            // Pull inherited bindings first.
-            if (UsdPrim parentPrim = prim.GetParent()) {
-                v = *owner->_GetValue(parentPrim);
-            }
-            // Merge any local bindings.
-            if (query->coordSysAPI.HasLocalBindings()) {
-                SdfPathVector hdIds;
-                UsdBindingVec usdBindings;
-                if (v.idVecPtr) {
-                    hdIds = *v.idVecPtr;
-                }
-                if (v.usdBindingVecPtr) {
-                    usdBindings = *v.usdBindingVecPtr;
-                }
-                for (auto const& binding :
-                     query->coordSysAPI.GetLocalBindings()) {
-                    if (!prim.GetStage()->GetPrimAtPath(
-                        binding.coordSysPrimPath).IsValid()) {
-                        // The target xform prim does not exist, so ignore
-                        // this coord sys binding.
-                        TF_WARN("UsdImaging: Ignoring coordinate system "
-                                "binding to non-existent prim <%s>\n",
-                                binding.coordSysPrimPath.GetText());
-                        continue;
-                    }
-                    bool found = false;
-                    for (size_t id = 0, n = hdIds.size(); id < n; ++id) {
-                        if (usdBindings[id].name == binding.name) {
-                            // Found an override -- replace this binding.
-                            usdBindings[id] = binding;
-                            hdIds[id] = binding.bindingRelPath;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        // New binding, so append.
-                        usdBindings.push_back(binding);
-                        hdIds.push_back(binding.bindingRelPath);
-                    }
-                }
-                v.idVecPtr.reset(new SdfPathVector(hdIds));
-                v.usdBindingVecPtr.reset(new UsdBindingVec(usdBindings));
-            }
+
+        // Pull inherited bindings first.
+        if (UsdPrim parentPrim = prim.GetParent()) {
+            v = *owner->_GetValue(parentPrim);
         }
+
+        auto _IterateLocalBindings = [&prim](const UsdBindingVec &localBindings,
+                SdfPathVector &hdIds, UsdBindingVec &usdBindings) {
+            for (const UsdShadeCoordSysAPI::Binding &binding : localBindings) {
+                if (!prim.GetStage()->GetPrimAtPath(
+                            binding.coordSysPrimPath).IsValid()) {
+                    // The target xform prim does not exist, so ignore this
+                    // coord sys binding.
+                    TF_WARN("UsdImaging: Ignore coordinate system binding to "
+                            "non-existent prim <%s>\n", 
+                            binding.coordSysPrimPath.GetText());
+                    continue;
+                }
+                bool found = false;
+                for (size_t id = 0, n = hdIds.size(); id < n; ++id) {
+                    if (usdBindings[id].name == binding.name) {
+                        // Found an override -- replace this binding.
+                        usdBindings[id] = binding;
+                        hdIds[id] = binding.bindingRelPath;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    // New binding, so append.
+                    usdBindings.push_back(binding);
+                    hdIds.push_back(binding.bindingRelPath);
+                }
+            }
+        };
+
+        const std::string usdShadeCoordSysMultApply = 
+            TfGetEnvSetting(USD_SHADE_COORD_SYS_IS_MULTI_APPLY);
+
+        // XXX: Make sure to update the following code when
+        // UsdShadeCoordSysAPI's old non-applied mode is completely removed.
+        UsdShadeCoordSysAPI coordSysAPI = UsdShadeCoordSysAPI(prim, 
+                TfToken("noop"));
+        bool hasLocalBindings = coordSysAPI.HasLocalBindings();
+        UsdBindingVec localBindings = coordSysAPI.GetLocalBindings();
+
+        //Merge any local bindings.
+        if (hasLocalBindings && !localBindings.empty()) {
+            SdfPathVector hdIds;
+            UsdBindingVec usdBindings;
+            if (v.idVecPtr) {
+                hdIds = *v.idVecPtr;
+            }
+            if (v.usdBindingVecPtr) {
+                usdBindings = *v.usdBindingVecPtr;
+            }
+            _IterateLocalBindings(localBindings, hdIds, usdBindings);
+            v.idVecPtr.reset(new SdfPathVector(std::move(hdIds)));
+            v.usdBindingVecPtr.reset(new UsdBindingVec(std::move(usdBindings)));
+        }
+
         return v;
     }
 };
