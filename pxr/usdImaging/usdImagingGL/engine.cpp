@@ -29,12 +29,12 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/prototypePruningSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/camera.h"
 
-#include "pxr/imaging/hd/instancedBySceneIndex.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/rendererPlugin.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
@@ -952,19 +952,13 @@ UsdImagingGLEngine::_SetRenderDelegate(
 
     // Create the new scene API
     if (_GetUseSceneIndices()) {
-        static const HdContainerDataSourceHandle instancedByInputArgs =
-            HdRetainedContainerDataSource::New(
-                HdInstancedBySceneIndexTokens->resetXformStackForPrototypes,
-                HdRetainedTypedSampledDataSource<bool>::New(true));
-
         _sceneIndex = UsdImagingStageSceneIndex::New();
         _renderIndex->InsertSceneIndex(
             UsdImagingGLDrawModeSceneIndex::New(
                 HdFlatteningSceneIndex::New(
-                    HdInstancedBySceneIndex::New(
+                    UsdImagingPiPrototypePropagatingSceneIndex::New(
                         UsdImagingPrototypePruningSceneIndex::New(
-                            _sceneIndex),
-                        instancedByInputArgs)),
+                            _sceneIndex))),
                 /* inputArgs = */ nullptr),
             _sceneDelegateId);
     } else {

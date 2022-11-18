@@ -544,7 +544,44 @@ UsdImagingDataSourcePrim::GetNames()
         vec.push_back(UsdImagingNativeInstancingTokens->isUsdPrototype);
     }
 
+    vec.push_back(UsdImagingSpecifierTokens->usdSpecifier);
+
     return vec;
+}
+
+static
+HdDataSourceBaseHandle
+_SpecifierToDataSource(const SdfSpecifier specifier)
+{
+    struct DataSources {
+        using DataSource = HdRetainedTypedSampledDataSource<TfToken>;
+
+        DataSources()
+          : def(DataSource::New(UsdImagingSpecifierTokens->def))
+          , over(DataSource::New(UsdImagingSpecifierTokens->over))
+          , class_(DataSource::New(UsdImagingSpecifierTokens->class_))
+        {
+        }
+
+        HdDataSourceBaseHandle def;
+        HdDataSourceBaseHandle over;
+        HdDataSourceBaseHandle class_;
+    };
+
+    static const DataSources dataSources;
+
+    switch(specifier) {
+    case SdfSpecifierDef:
+        return dataSources.def;
+    case SdfSpecifierOver:
+        return dataSources.over;
+    case SdfSpecifierClass:
+        return dataSources.class_;
+    case SdfNumSpecifiers:
+        break;
+    }
+    
+    return nullptr;
 }
 
 HdDataSourceBaseHandle
@@ -631,6 +668,8 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
             return nullptr;
         }
         return HdRetainedTypedSampledDataSource<bool>::New(true);
+    } else if (name == UsdImagingSpecifierTokens->usdSpecifier) {
+        return _SpecifierToDataSource(_GetUsdPrim().GetSpecifier());
     }
     return nullptr;
 }

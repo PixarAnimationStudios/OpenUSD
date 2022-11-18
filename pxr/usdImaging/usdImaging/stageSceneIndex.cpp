@@ -598,16 +598,18 @@ void UsdImagingStageSceneIndex::_Populate(UsdPrim subtreeRoot)
 Usd_PrimFlagsConjunction
 UsdImagingStageSceneIndex::_GetTraversalPredicate() const
 {
-    // XXX:(USD-7120) UsdImagingDelegate does a lot of really weird things
-    // with traversal; traversal rules are different for point instancer
-    // prototypes, or for display-cards-as-unloaded.  We prune non-imageable
-    // typed prims, which prunes all materials in the scene, but then add
-    // the materials back by following relationships.
+    // Note that it differs from the UsdPrimDefaultPredicate by not requiring
+    // UsdPrimIsDefined. This way, we pick up instance and over's and their
+    // namespace descendants which might include prototypes instanced by a
+    // point instancer.
     //
-    // Ideally, going forward we can parse these features out so that the
-    // UsdPrimRange traversal isn't impossible to follow.  For now we'll go
-    // with the default predicate, and resolve special cases as they come up.
-    return UsdPrimDefaultPredicate;
+    // Over's and their namespace descendants are made unrenderable by changing
+    // their prim type to empty by UsdImaging_PiPrototypeSceneIndex.
+    //
+    // The UsdImaging_NiPrototypeSceneIndex is doing something similar for
+    // native instances.
+    //
+    return UsdPrimIsActive && UsdPrimIsLoaded && !UsdPrimIsAbstract;
 }
 
 // ---------------------------------------------------------------------------
