@@ -386,6 +386,8 @@ Bool
 
 The **Bool** type is a basic Binary boolean that can be checked by taking any non-zero number as True, and 0 as False.
 
+Booleans in an array are stored as an array of bytes (8 bits per entry).
+
 UChar
 ^^^^^
 
