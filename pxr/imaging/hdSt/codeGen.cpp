@@ -119,6 +119,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((ptexTextureSampler, "ptexTextureSampler"))
     (isamplerBuffer)
     (samplerBuffer)
+    (gl_MaxPatchVertices)
+    (HD_NUM_PATCH_EVAL_VERTS)
+    (HD_NUM_PRIMITIVE_VERTS)
 );
 
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_HGI_RESOURCE_GENERATION, false,
@@ -852,7 +855,7 @@ _ResourceGenerator::_GenerateGLSLResources(
                 if (element.arraySize.IsEmpty()) {
                     str << ";\n";
                 } else {
-                    str << element.arraySize << ";\n";
+                    str << "[" << element.arraySize << "];\n";
                 }
                 break;
             case HdSt_ResourceLayout::Kind::BLOCK:
@@ -868,7 +871,7 @@ _ResourceGenerator::_GenerateGLSLResources(
                     if (member.arraySize.IsEmpty()) {
                         str << ";\n";
                     } else {
-                        str << member.arraySize << ";\n";
+                        str << "[" << member.arraySize << "];\n";
                     }
                 }
                 str << "} " << element.name;
@@ -1285,14 +1288,14 @@ HdSt_CodeGen::_PlumbInterstageElements(
 
     if (_hasTCS) {
         _resTCS.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                vs_outName, TfToken("[gl_MaxPatchVertices]"), qualifier);
+                vs_outName, _tokens->gl_MaxPatchVertices, qualifier);
         _resTCS.emplace_back(InOut::STAGE_OUT, Kind::VALUE, dataType,
-                tcs_outName, TfToken("[HD_NUM_PATCH_EVAL_VERTS]"), qualifier);
+                tcs_outName, _tokens->HD_NUM_PATCH_EVAL_VERTS, qualifier);
     }
 
     if (_hasTES) {
         _resTES.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                tcs_outName, TfToken("[gl_MaxPatchVertices]"), qualifier);
+                tcs_outName, _tokens->gl_MaxPatchVertices, qualifier);
         _resTES.emplace_back(InOut::STAGE_OUT, Kind::VALUE, dataType,
                 tes_outName, noArraySize, qualifier);
     }
@@ -1300,12 +1303,12 @@ HdSt_CodeGen::_PlumbInterstageElements(
     // Geometry shader inputs come from previous active stage
     if (_hasGS && _hasTES) {
         _resGS.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                tes_outName, TfToken("[HD_NUM_PRIMITIVE_VERTS]"), qualifier);
+                tes_outName, _tokens->HD_NUM_PRIMITIVE_VERTS, qualifier);
         _resGS.emplace_back(InOut::STAGE_OUT, Kind::VALUE, dataType,
                 gs_outName, noArraySize, qualifier);
     } else if (_hasGS) {
         _resGS.emplace_back(InOut::STAGE_IN, Kind::VALUE, dataType,
-                vs_outName, TfToken("[HD_NUM_PRIMITIVE_VERTS]"), qualifier);
+                vs_outName, _tokens->HD_NUM_PRIMITIVE_VERTS, qualifier);
         _resGS.emplace_back(InOut::STAGE_OUT, Kind::VALUE, dataType,
                 gs_outName, noArraySize, qualifier);
     }
@@ -4955,17 +4958,17 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
         _AddInterstageBlockElement(
             &_resTCS, HdSt_ResourceLayout::InOut::STAGE_IN,
             _tokens->PrimvarData, _tokens->inPrimvars, interstagePrimvar,
-            TfToken("gl_MaxPatchVertices"));
+            _tokens->gl_MaxPatchVertices);
         _AddInterstageBlockElement(
             &_resTCS, HdSt_ResourceLayout::InOut::STAGE_OUT,
             _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar,
-            TfToken("HD_NUM_PATCH_EVAL_VERTS"));
+            _tokens->HD_NUM_PATCH_EVAL_VERTS);
 
         // TES in/out
         _AddInterstageBlockElement(
             &_resTES, HdSt_ResourceLayout::InOut::STAGE_IN,
             _tokens->PrimvarData, _tokens->inPrimvars, interstagePrimvar,
-            TfToken("gl_MaxPatchVertices"));
+            _tokens->gl_MaxPatchVertices);
         _AddInterstageBlockElement(
             &_resTES, HdSt_ResourceLayout::InOut::STAGE_OUT,
             _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar);
@@ -4974,7 +4977,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
         _AddInterstageBlockElement(
             &_resGS, HdSt_ResourceLayout::InOut::STAGE_IN,
             _tokens->PrimvarData, _tokens->inPrimvars, interstagePrimvar,
-            TfToken("HD_NUM_PRIMITIVE_VERTS"));
+            _tokens->HD_NUM_PRIMITIVE_VERTS);
     }
 
     if (!interstagePrimvar.empty() || !interstagePrimvarFVar.empty()) {

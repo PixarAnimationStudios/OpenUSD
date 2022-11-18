@@ -70,9 +70,7 @@ HgiVulkanShaderSection::WriteDeclaration(std::ostream &ss) const
     WriteType(ss);
     ss << " ";
     WriteIdentifier(ss);
-    if (!_arraySize.empty()) {
-        ss << _arraySize;
-    }
+    WriteArraySize(ss);
     ss << ";\n";
 }
 
