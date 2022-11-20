@@ -911,6 +911,17 @@ BOOST = Dependency("boost", InstallBoost,
                    "include/boost-1_78/boost/version.hpp")
 
 ############################################################
+# IOS toolchain
+IOS_TOOLCHAIN_URL = "https://github.com/leetal/ios-cmake/archive/refs/tags/4.3.0.tar.gz"
+def InstallIosToolchain(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(IOS_TOOLCHAIN_URL, context, force)):
+        os.mkdir('{instDir}/cmake'.format(instDir=context.instDir))
+        shutil.copyfile('ios.toolchain.cmake',
+            '{instDir}/cmake/iOSToolchain.cmake'.format(instDir=context.instDir))
+
+IOS_TOOLCHAIN = Dependency("iosToolchain", InstallIosToolchain, "cmake/iOSToolchain.cmake")
+
+############################################################
 # Intel TBB
 
 if Windows():
@@ -2284,7 +2295,11 @@ if extraPythonPaths:
 
 # Determine list of dependencies that are required based on options
 # user has selected.
-requiredDependencies = [ZLIB, BOOST, TBB]
+requiredDependencies = []
+if context.targetIos:
+    requiredDependencies += [IOS_TOOLCHAIN]
+
+requiredDependencies += [ZLIB, BOOST, TBB]
 
 if context.buildAlembic:
     if context.enableHDF5:
