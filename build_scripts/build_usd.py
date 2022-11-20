@@ -2219,7 +2219,8 @@ class InstallContext:
         # Optional components
         self.buildTests = args.build_tests
         self.buildDocs = args.build_docs
-        self.buildPython = args.build_python
+        self.buildPython = args.build_python and \
+            not args.build_target == apple_utils.TARGET_IOS
         self.buildExamples = args.build_examples
         self.buildTutorials = args.build_tutorials
         self.buildTools = args.build_tools
