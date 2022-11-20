@@ -40,12 +40,14 @@ TARGET_NATIVE = "native"
 TARGET_X86 = "x86_64"
 TARGET_ARM64 = "arm64"
 TARGET_UNIVERSAL = "universal"
+TARGET_IOS = "ios"
 
 def GetBuildTargets():
     return [TARGET_NATIVE,
             TARGET_X86,
             TARGET_ARM64,
-            TARGET_UNIVERSAL]
+            TARGET_UNIVERSAL,
+            TARGET_IOS]
 
 def GetBuildTargetDefault():
     return TARGET_NATIVE;
