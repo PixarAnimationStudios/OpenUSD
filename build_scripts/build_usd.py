@@ -1767,6 +1767,9 @@ def InstallUSD(context, force, buildArgs):
         else:
             extraArgs.append('-DPXR_BUILD_IMAGING=OFF')
 
+        if context.targetIos:
+            extraArgs.append('-DPXR_ENABLE_GL_SUPPORT=OFF')
+
         if context.buildUsdImaging:
             extraArgs.append('-DPXR_BUILD_USD_IMAGING=ON')
         else:
