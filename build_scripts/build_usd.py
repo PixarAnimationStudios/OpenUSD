@@ -26,6 +26,7 @@ from __future__ import print_function
 import argparse
 import codecs
 import contextlib
+import copy
 import ctypes
 import datetime
 import distutils
@@ -247,7 +248,7 @@ def GetCPUCount():
     except NotImplementedError:
         return 1
 
-def Run(cmd, logCommandOutput = True):
+def Run(cmd, logCommandOutput = True, envOverride = None):
     """Run the specified command in a subprocess."""
     PrintInfo('Running "{cmd}"'.format(cmd=cmd))
 
@@ -261,7 +262,7 @@ def Run(cmd, logCommandOutput = True):
         # code will handle them.
         if logCommandOutput:
             p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, 
-                                 stderr=subprocess.STDOUT)
+                                 stderr=subprocess.STDOUT, env=envOverride)
             while True:
                 l = p.stdout.readline().decode(GetLocale(), 'replace')
                 if l:
@@ -270,7 +271,7 @@ def Run(cmd, logCommandOutput = True):
                 elif p.poll() is not None:
                     break
         else:
-            p = subprocess.Popen(shlex.split(cmd))
+            p = subprocess.Popen(shlex.split(cmd), env=envOverride)
             p.wait()
 
     if p.returncode != 0:
@@ -355,7 +356,7 @@ def FormatMultiProcs(numJobs, generator):
 
     return "{tag}{procs}".format(tag=tag, procs=numJobs)
 
-def RunCMake(context, force, extraArgs = None):
+def RunCMake(context, force, extraArgs = None, envOverride = None, hostPlatform = False):
     """Invoke CMake to configure, build, and install a library whose 
     source code is located in the current working directory."""
     # Create a directory for out-of-source builds in the build directory
@@ -395,18 +396,60 @@ def RunCMake(context, force, extraArgs = None):
 
     # On MacOS, enable the use of @rpath for relocatable builds.
     osx_rpath = None
-    if MacOS():
+    if MacOS() or hostplatform:
         osx_rpath = "-DCMAKE_MACOSX_RPATH=ON"
 
         # For macOS cross compilation, set the Xcode architecture flags.
         targetArch = apple_utils.GetTargetArch(context)
 
-        if context.targetNative or targetArch == apple_utils.GetHostArch():
+        if context.targetNative or targetArch == apple_utils.GetTargetArch(context) \
+                and not context.targetIos:
             extraArgs.append('-DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=YES')
         else:
             extraArgs.append('-DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO')
 
         extraArgs.append('-DCMAKE_OSX_ARCHITECTURES={0}'.format(targetArch))
+
+    if context.targetIos:
+        extraArgs.append('-DCMAKE_IGNORE_PATH="/usr/lib;/usr/local/lib;/lib" ')
+    if context.targetIos and not hostPlatform:
+        sdkPath = GetCommandOutput('xcrun --sdk iphoneos --show-sdk-path').strip()
+        extraArgs.append('-DCMAKE_OSX_SYSROOT="' + sdkPath + '" ')
+        # Add the default iOS toolchain file if one isn't aready specified
+        if not any("-DCMAKE_TOOLCHAIN_FILE=" in s for s in extraArgs):
+            extraArgs.append(
+                '-DCMAKE_TOOLCHAIN_FILE={usdInstDir}'
+                '/src/ios-cmake-4.3.0/ios.toolchain.cmake '
+                .format(usdInstDir=context.usdInstDir))
+            extraArgs.append("-DPLATFORM=\'OS64\' ")
+            extraArgs.append("-DENABLE_BITCODE=False")
+            extraArgs.append("-DENABLE_VISIBILITY=True")
+            extraArgs.append("-DNAMED_LANGUAGE_SUPPORT=False")
+
+        CODE_SIGN_ID = apple_utils.GetCodeSignID()
+        DEVELOPMENT_TEAM = apple_utils.GetDevelopmentTeamID()
+        # Edge case for iOS
+        if CODE_SIGN_ID == "-":
+            CODE_SIGN_ID = ""
+        frameWorkRoot = apple_utils.GetFrameworkRoot()
+        pyVers = ".".join(platform.python_version().split()[0:1])
+        extraArgs.append(
+            '-DENABLE_BITCODE=False '
+            '-DNAMED_LANGUAGE_SUPPORT=False '
+            '-DENABLE_VISIBILITY=1 '
+            '-DAPPLEIOS=1 '
+            '-DENABLE_ARC=0 '
+            '-DDEPLOYMENT_TARGET=16.0 '
+            '-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="{codesignid}" '
+            '-DCMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM={developmentTeam} '
+            '-DPYTHON_INCLUDE_DIR={framework}/include/python{version}  '
+            '-DPYTHON_LIBRARY={framework}/lib '
+            '-DPYTHON_EXECUTABLE:FILEPATH={executable} '.format(
+                codesignid=CODE_SIGN_ID,
+                developmentTeam=DEVELOPMENT_TEAM,
+                version=pyVers,
+                framework=frameWorkRoot,
+                executable=sys.executable))
 
     # We use -DCMAKE_BUILD_TYPE for single-configuration generators 
     # (Ninja, make), and --config for multi-configuration generators 
@@ -440,10 +483,12 @@ def RunCMake(context, force, extraArgs = None):
                     osx_rpath=(osx_rpath or ""),
                     generator=(generator or ""),
                     toolset=(toolset or ""),
-                    extraArgs=(" ".join(extraArgs) if extraArgs else "")))
+                    extraArgs=(" ".join(extraArgs) if extraArgs else "")),
+                    envOverride=envOverride)
         Run("cmake --build . --config {config} --target install -- {multiproc}"
             .format(config=config,
-                    multiproc=FormatMultiProcs(context.numJobs, generator)))
+                    multiproc=FormatMultiProcs(context.numJobs, generator)),
+                    envOverride=envOverride)
 
 def GetCMakeVersion():
     """
