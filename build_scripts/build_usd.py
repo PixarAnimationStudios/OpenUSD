@@ -2153,6 +2153,10 @@ class InstallContext:
 
         # CMake generator and toolset
         self.cmakeGenerator = args.generator
+        if args.build_target == apple_utils.TARGET_IOS:
+            self.cmakeGenerator = "Xcode"
+            if args.generator != "Xcode":
+                print("Automatically switched to Xcode as generator as building for iOS")
         self.cmakeToolset = args.toolset
 
         # Number of jobs
