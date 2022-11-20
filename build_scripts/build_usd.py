@@ -716,6 +716,14 @@ ZLIB_URL = "https://github.com/madler/zlib/archive/v1.2.11.zip"
 
 def InstallZlib(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ZLIB_URL, context, force)):
+        if context.targetIos:
+            # Replace test executables with static
+            # libraries to avoid issues with code signing.
+            PatchFile("CMakeLists.txt",
+                      [("add_executable(example test/example.c)",
+                        "add_library(example STATIC test/example.c)"),
+                       ("add_executable(minigzip test/minigzip.c)",
+                        "add_library(minigzip STATIC test/minigzip.c)")])
         RunCMake(context, force, buildArgs)
 
 ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
