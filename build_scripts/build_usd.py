@@ -1485,7 +1485,8 @@ OPENCOLORIO = Dependency("OpenColorIO", InstallOpenColorIO,
 OPENSUBDIV_URL = "https://github.com/PixarAnimationStudios/OpenSubdiv/archive/v3_5_0.zip"
 
 def InstallOpenSubdiv(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(OPENSUBDIV_URL, context, force)):
+    srcOSDDir = DownloadURL(OPENSUBDIV_URL, context, force)
+    with CurrentWorkingDirectory(srcOSDDir):
         extraArgs = [
             '-DNO_EXAMPLES=ON',
             '-DNO_TUTORIALS=ON',
@@ -1516,6 +1517,9 @@ def InstallOpenSubdiv(context, force, buildArgs):
 
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
+        sdkroot = None
+        if context.targetIos:
+            sdkroot = os.environ.get('SDKROOT')
 
         # OpenSubdiv seems to error when building on windows w/ Ninja...
         # ...so just use the default generator (ie, Visual Studio on Windows)
@@ -1529,14 +1533,64 @@ def InstallOpenSubdiv(context, force, buildArgs):
         # just 1 job for now. See:
         # https://github.com/PixarAnimationStudios/OpenSubdiv/issues/1194
         oldNumJobs = context.numJobs
+        extraEnv = os.environ.copy()
+        buildDirmacOS = ""
         if MacOS():
             context.numJobs = 1
 
+        if context.targetIos:
+            PatchFile(srcOSDDir + "/cmake/iOSToolchain.cmake",
+                      [("set(SDKROOT $ENV{SDKROOT})",
+                        "set(CMAKE_TRY_COMPILE_TARGET_TYPE \"STATIC_LIBRARY\")\n"
+                        "set(SDKROOT $ENV{SDKROOT})"),
+                       ("set(CMAKE_SYSTEM_PROCESSOR arm)",
+                        "set(CMAKE_SYSTEM_PROCESSOR arm64)\n"
+                        "set(NAMED_LANGUAGE_SUPPORT OFF)\n"
+                        "set(PLATFORM \"OS64\")\n"
+                        "set(ENABLE_BITCODE OFF)"),
+                       ])
+            PatchFile(srcOSDDir + "/opensubdiv/CMakeLists.txt",
+                      [("if (BUILD_SHARED_LIBS AND NOT WIN32 AND NOT IOS)",
+                        "if (BUILD_SHARED_LIBS AND NOT WIN32)")])
+
+            # We build for macOS in order to leverage the STRINGIFY binary built
+            srcOSDmacOSDir = srcOSDDir + "_macOS"
+            if os.path.isdir(srcOSDmacOSDir):
+                shutil.rmtree(srcOSDmacOSDir)
+            shutil.copytree(srcOSDDir, srcOSDmacOSDir)
+
+            # Install macOS dependencies into a temporary directory, to avoid iOS space polution
+            tempContext = copy.copy(context)
+            tempContext.instDir = tempContext.instDir + "/macOS"
+            with CurrentWorkingDirectory(srcOSDmacOSDir):
+                RunCMake(tempContext, force, extraArgs, hostPlatform=True)
+            shutil.rmtree(tempContext.instDir)
+
+            buildDirmacOS = os.path.join(context.buildDir, os.path.split(srcOSDmacOSDir)[1])
+
+            extraArgs.append('-DNO_CLEW=ON')
+            extraArgs.append('-DNO_OPENGL=ON')
+            extraArgs.append('-DSTRINGIFY_LOCATION={buildDirmacOS}/bin/{variant}/stringify'
+                             .format(buildDirmacOS=buildDirmacOS,
+                                     variant="Debug" if context.buildDebug else "Release"))
+            extraArgs.append(
+                '-DCMAKE_TOOLCHAIN_FILE={srcOSDDir}/cmake/iOSToolchain.cmake -DPLATFORM=\'OS64\''
+                             .format(srcOSDDir=srcOSDDir))
+            extraArgs.append('-DCMAKE_OSX_ARCHITECTURES=arm64')
+            os.environ['SDKROOT'] = GetCommandOutput(
+                'xcrun --sdk iphoneos --show-sdk-path').strip()
+            extraEnv = os.environ.copy()
         try:
-            RunCMake(context, force, extraArgs)
+            RunCMake(context, force, extraArgs, extraEnv)
         finally:
             context.cmakeGenerator = oldGenerator
             context.numJobs = oldNumJobs
+        if sdkroot is None:
+            os.unsetenv('SDKROOT')
+        else:
+            os.environ['SDKROOT'] = sdkroot
+        if buildDirmacOS != "":
+            shutil.rmtree(buildDirmacOS)
 
 OPENSUBDIV = Dependency("OpenSubdiv", InstallOpenSubdiv, 
                         "include/opensubdiv/version.h")
