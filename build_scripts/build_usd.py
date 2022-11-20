@@ -779,24 +779,31 @@ def InstallBoost_Helper(context, force, buildArgs):
             Run('chmod +x ' + bootstrap)
             Run('chmod +x ./tools/build/src/engine/build.sh')
 
+        if context.targetIos:
+            os.environ['SDKROOT'] = GetCommandOutput(
+                'xcrun --sdk macosx --show-sdk-path').strip()
         # For cross-compilation on macOS we need to specify the architecture
         # for both the bootstrap and the b2 phase of building boost.
         bootstrapCmd = '{bootstrap} --prefix="{instDir}"'.format(
             bootstrap=bootstrap, instDir=context.instDir)
 
+        macOSArchitecture = ""
         macOSArch = ""
 
         if MacOS():
             if apple_utils.GetTargetArch(context) == \
                         apple_utils.TARGET_X86:
+                macOSArchitecture = "architecture=x86"
                 macOSArch = "-arch {0}".format(apple_utils.TARGET_X86)
             elif apple_utils.GetTargetArch(context) == \
                         apple_utils.GetTargetArmArch():
+                macOSArchitecture = "architecture=arm"
                 macOSArch = "-arch {0}".format(
                         apple_utils.GetTargetArmArch())
             elif context.targetUniversal:
                 (primaryArch, secondaryArch) = \
                         apple_utils.GetTargetArchPair(context)
+                macOSArchitecture = "architecture=combined"
                 macOSArch="-arch {0} -arch {1}".format(
                         primaryArch, secondaryArch)
 
@@ -825,13 +832,14 @@ def InstallBoost_Helper(context, force, buildArgs):
             '--build-dir="{buildDir}"'.format(buildDir=context.buildDir),
             '-j{procs}'.format(procs=num_procs),
             'address-model=64',
-            'link=shared',
-            'runtime-link=shared',
             'threading=multi', 
             'variant={variant}'.format(variant=boostBuildVariant),
             '--with-atomic',
             '--with-regex'
         ]
+        if not context.targetIos:
+            b2_settings.append('link=shared')
+            b2_settings.append('runtime-link=shared')
 
         if context.buildPython:
             b2_settings.append("--with-python")
@@ -907,12 +915,58 @@ def InstallBoost_Helper(context, force, buildArgs):
         if MacOS():
             # Must specify toolset=clang to ensure install_name for boost
             # libraries includes @rpath
-            b2_settings.append("toolset=clang")
+            if context.targetIos:
+                sdkPath = ''
+                xcodeRoot = GetCommandOutput('xcode-select --print-path').strip()
+                if not context.targetIos:
+                    sdkPath = GetCommandOutput('xcrun --sdk macosx --show-sdk-path').strip()
+                else:
+                    sdkPath = GetCommandOutput('xcrun --sdk iphoneos --show-sdk-path').strip()
+                b2_settings.append("toolset=darwin-iphone")
+                b2_settings.append("target-os=iphone")
+                b2_settings.append("define=_LITTLE_ENDIAN")
+                b2_settings.append("link=static")
+                iOSVersion = 16.0
+                newLines = [
+                    'using darwin : iphone\n',
+                    ': {XCODE_ROOT}/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++'
+                    .format(XCODE_ROOT=xcodeRoot),
+                    ' -arch arm64 -mios-version-min=10.0 -fembed-bitcode -Wno-unused-local-typedef'
+                    ' -Wno-nullability-completeness -DBOOST_AC_USE_PTHREADS'
+                    ' -DBOOST_SP_USE_PTHREADS -g -DNDEBUG\n',
+                    ': <striper> <root>{XCODE_ROOT}/Platforms/iPhoneOS.platform/Developer\n'
+                    .format(XCODE_ROOT=xcodeRoot),
+                    ': <architecture>arm <target-os>iphone <address-model>64\n',
+                    ';'
+                ]
+                projectPath = 'user-config.jam'
+                b2_settings.append("--user-config=user-config.jam")
+                b2_settings.append("macosx-version=iphone-{IOS_SDK_VERSION}".format(
+                    IOS_SDK_VERSION=iOSVersion))
+                if os.path.exists(projectPath):
+                    os.remove(projectPath)
+                with open(projectPath, 'w') as projectFile:
+                    projectFile.write('\n')
+                    projectFile.writelines(newLines)
+            else:
+                b2_settings.append("toolset=clang")
+
+            # Specify target for macOS cross-compilation.
+            if macOSArchitecture:
+                b2_settings.append(macOSArchitecture)
 
             if macOSArch:
-                b2_settings.append("cxxflags=\"{0}\"".format(macOSArch))
+                cxxFlags = ""
+                linkFlags = ""
+                if context.targetIos:
+                    cxxFlags = "{0} -std=c++14 -stdlib=libc++".format(macOSArch)
+                    linkFlags = "{0} -stdlib=libc++".format(macOSArch)
+                else:
+                    cxxFlags = "{0}".format(macOSArch)
+                    linkFlags = "{0}".format(macOSArch)
+                b2_settings.append("cxxflags=\"{0}\"".format(cxxFlags))
                 b2_settings.append("cflags=\"{0}\"".format(macOSArch))
-                b2_settings.append("linkflags=\"{0}\"".format(macOSArch))
+                b2_settings.append("linkflags=\"{0}\"".format(linkFlags))
 
         if context.buildDebug:
             b2_settings.append("--debug-configuration")
