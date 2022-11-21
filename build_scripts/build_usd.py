@@ -1068,6 +1068,10 @@ def InstallTBB_MacOS(context, force, buildArgs):
         if (secondaryArch == apple_utils.TARGET_X86):
             secondaryArch = "intel64"
 
+        if context.targetIos:
+            primaryArch = "arm64"
+            buildArgs.append('compiler=clang target=ios arch=arm64 extra_inc=big_iron.inc ')
+
         makeTBBCmdPrimary = 'make -j{procs} arch={arch} {buildArgs}'.format(
                                 arch=primaryArch,
                                 procs=context.numJobs,
