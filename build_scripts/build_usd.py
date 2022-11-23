@@ -1572,6 +1572,17 @@ def InstallOpenVDB(context, force, buildArgs):
             '-DOPENVDB_BUILD_BINARIES=OFF',
             '-DOPENVDB_BUILD_UNITTESTS=OFF'
         ]
+        if context.targetIos:
+            extraArgs.append('Boost_USE_STATIC_LIBS=ON')
+            PatchFile("openvdb/cmd/CMakeLists.txt",
+                      [(("Boost_USE_STATIC_LIBS OFF"),
+                       ("Boost_USE_STATIC_LIBS ON"))])
+            PatchFile("openvdb/CMakeLists.txt",
+                      [(("if(OPENVDB_CORE_SHARED AND NOT Boost_USE_STATIC_LIBS)"),
+                        ("if(OPENVDB_CORE_SHARED)"))])
+            PatchFile("openvdb/CMakeLists.txt",
+                      [(("  set(Boost_USE_STATIC_LIBS OFF)"),
+                        ("  set(Boost_USE_STATIC_LIBS ON)"))])
 
         # Make sure to use boost installed by the build script and not any
         # system installed boost
@@ -1584,6 +1595,9 @@ def InstallOpenVDB(context, force, buildArgs):
                          .format(instDir=context.instDir))
         # OpenVDB needs Half type from IlmBase
         extraArgs.append('-DILMBASE_ROOT="{instDir}"'
+                         .format(instDir=context.instDir))
+
+        extraArgs.append('-DBOOST_ROOT="{instDir}"'
                          .format(instDir=context.instDir))
 
         # Add on any user-specified extra arguments.
