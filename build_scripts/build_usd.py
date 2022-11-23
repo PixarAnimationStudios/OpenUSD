@@ -1550,6 +1550,11 @@ def InstallPtex_Windows(context, force, buildArgs):
 
 def InstallPtex_LinuxOrMacOS(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(PTEX_URL, context, force)):
+        if context.targetIos:
+            # Skip utils and tests to avoid issues with code signing.
+            PatchFile("CMakeLists.txt",
+                [("add_subdirectory(src/utils)", "# add_subdirectory(src/utils)"),
+                 ("add_subdirectory(src/tests)", "# add_subdirectory(src/tests)")])
         cmakeOptions = [
             '-DPTEX_BUILD_STATIC_LIBS=OFF',
             # We must tell the Ptex build system what version we're building
