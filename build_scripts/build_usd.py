@@ -1654,6 +1654,24 @@ def InstallOpenImageIO(context, force, buildArgs):
                      '-DOIIO_BUILD_TESTS=OFF',
                      '-DUSE_PYTHON=OFF',
                      '-DSTOP_ON_WARNING=OFF']
+        if context.targetIos:
+            PatchFile("src/libutil/sysutil.cpp",
+                   [("if (system(newcmd.c_str()) != -1)", "if (true)")])
+            PatchFile("CMakeLists.txt",
+                    [("set (CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)",
+                      "set  (CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)\n"
+                      "cmake_policy (SET CMP0008 NEW)")])
+            PatchFile("src/cmake/externalpackages.cmake",
+                    [("find_package (Git REQUIRED)",
+                      "find_host_package (Git REQUIRED)")])
+            PatchFile("src/cmake/compiler.cmake",
+                    [("# Find out if it's safe for us to use std::regex or if we need boost.regex.",
+                      "# Find out if it's safe for us to use std::regex or if we need boost.regex.\n"
+                        "if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)"),
+                     ("add_definitions (-DUSE_BOOST_REGEX)",
+                      "add_definitions (-DUSE_BOOST_REGEX)\n"
+                        "endif()")])
+            extraArgs.append("-DBoost_USE_STATIC_LIBS=ON")
 
         # OIIO's FindOpenEXR module circumvents CMake's normal library 
         # search order, which causes versions of OpenEXR installed in
