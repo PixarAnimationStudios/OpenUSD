@@ -1341,13 +1341,160 @@ if Windows():
     OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v2.5.2.zip"
 else:
     OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v2.4.3.zip"
+    
+def updateOpenEXRIOS(context, srcDir):
+    # IlmBase
+    destDir = srcDir + "/IlmBase/Half"
+
+    f = context.usdSrcDir + "/third_party/IlmBase/eLut.h"
+    PrintCommandOutput("Copying {file} to {destDir}\n"
+                           .format(file=f, destDir=destDir))
+    shutil.copy(f, destDir)
+
+    f = context.usdSrcDir + "/third_party/IlmBase/toFloat.h"
+    PrintCommandOutput("Copying {file} to {destDir}\n"
+                           .format(file=f, destDir=destDir))
+    shutil.copy(f, destDir)
+
+    PatchFile(destDir + "/CMakeLists.txt",
+              [("eLut >",
+                "cp ${CMAKE_CURRENT_SOURCE_DIR}/eLut.h"),
+               ("toFloat >",
+                "cp ${CMAKE_CURRENT_SOURCE_DIR}/toFloat.h")])
+
+    # OpenEXR
+    destDir = srcDir + "/OpenEXR/IlmImf"
+
+    f = context.usdSrcDir + "/third_party/OpenEXR/b44ExpLogTable.h"
+    PrintCommandOutput("Copying {file} to {destDir}\n"
+                           .format(file=f, destDir=destDir))
+    shutil.copy(f, destDir)
+
+    f = context.usdSrcDir + "/third_party/OpenEXR/dwaLookups.h"
+    PrintCommandOutput("Copying {file} to {destDir}\n"
+                           .format(file=f, destDir=destDir))
+    shutil.copy(f, destDir)
+
+    PatchFile(destDir + "/CMakeLists.txt",
+              [("${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/b44ExpLogTable >",
+                "cp ${CMAKE_CURRENT_SOURCE_DIR}/b44ExpLogTable.h"),
+               ("${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/dwaLookups >",
+                "cp ${CMAKE_CURRENT_SOURCE_DIR}/dwaLookups.h")])
 
 def InstallOpenEXR(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(OPENEXR_URL, context, force)):
-        RunCMake(context, force, 
-                 ['-DPYILMBASE_ENABLE=OFF',
-                  '-DOPENEXR_VIEWERS_ENABLE=OFF',
-                  '-DBUILD_TESTING=OFF'] + buildArgs)
+    if not context.targetIos:
+        with CurrentWorkingDirectory(DownloadURL(OPENEXR_URL, context, force)):
+            RunCMake(context, force, 
+                     ['-DPYILMBASE_ENABLE=OFF',
+                      '-DOPENEXR_VIEWERS_ENABLE=OFF',
+                      '-DBUILD_TESTING=OFF'] + buildArgs)
+    else:
+        srcDir = DownloadURL(OPENEXR_URL, context, force)
+        with CurrentWorkingDirectory(srcDir):
+            PatchFile(srcDir + "/OpenEXR/CMakeLists.txt",
+                [("SET (OPENEXR_LIBSUFFIX \"\")",
+                  "SET (OPENEXR_LIBSUFFIX \"\")\n"
+                  "FILE ( APPEND ${CMAKE_CURRENT_BINARY_DIR}/config/OpenEXRConfig.h \"\n"
+                  "#undef OPENEXR_IMF_HAVE_GCC_INLINE_ASM_AVX\n"
+                  "#ifndef __aarch64__\n"
+                  "#define OPENEXR_IMF_HAVE_GCC_INLINE_ASM_AVX 1\n"
+                  "#endif\n\")\n")])
+
+            extraEnv = None
+            extraArgs = []
+            sdkroot = None
+
+            if context.targetIos:
+                sdkroot = os.environ.get('SDKROOT')
+                srcDir = os.getcwd()
+                updateOpenEXRIOS(context, srcDir)
+                # Skip utils, examples, and tests to avoid issues with code signing.
+                # Replace utility executables with static libraries to avoid issues with code signing.
+                PatchFile(srcDir + "/IlmBase/CMakeLists.txt",
+                          [("ADD_SUBDIRECTORY ( HalfTest )", "# ADD_SUBDIRECTORY ( HalfTest )"),
+                           ("ADD_SUBDIRECTORY ( IexTest )", "# ADD_SUBDIRECTORY ( IexTest )"),
+                           ("ADD_SUBDIRECTORY ( ImathTest )", "# ADD_SUBDIRECTORY ( ImathTest )")])
+
+                PatchFile(srcDir + "/IlmBase/Half/CMakeLists.txt",
+                          [("add_executable(eLut eLut.cpp)",
+                            "ADD_LIBRARY (eLut STATIC eLut.cpp )"),
+                           ("add_executable(toFloat toFloat.cpp)",
+                            "ADD_LIBRARY (toFloat STATIC toFloat.cpp )"),
+                           ("$<TARGET_FILE:toFloat> ARGS >",
+                            "cp ${CMAKE_CURRENT_SOURCE_DIR}/toFloat.h"),
+                           ("$<TARGET_FILE:eLut> ARGS >",
+                            "cp ${CMAKE_CURRENT_SOURCE_DIR}/eLut.h")
+                           ])
+
+                PatchFile(srcDir + "/OpenEXR/CMakeLists.txt",
+                          [("ADD_SUBDIRECTORY ( IlmImfExamples )", "# ADD_SUBDIRECTORY ( IlmImfExamples )"),
+                           ("ADD_SUBDIRECTORY ( IlmImfTest )", "# ADD_SUBDIRECTORY ( IlmImfTest )"),
+                           ("ADD_SUBDIRECTORY ( IlmImfUtilTest )", "# ADD_SUBDIRECTORY ( IlmImfUtilTest )"),
+                           ("ADD_SUBDIRECTORY ( IlmImfFuzzTest )", "# ADD_SUBDIRECTORY ( IlmImfFuzzTest )"),
+                           ("ADD_SUBDIRECTORY ( exrheader )", "# ADD_SUBDIRECTORY ( exrheader )"),
+                           ("ADD_SUBDIRECTORY ( exrmaketiled )", "# ADD_SUBDIRECTORY ( exrmaketiled )"),
+                           ("ADD_SUBDIRECTORY ( exrstdattr )", "# ADD_SUBDIRECTORY ( exrstdattr )"),
+                           ("ADD_SUBDIRECTORY ( exrmakepreview )", "# ADD_SUBDIRECTORY ( exrmakepreview )"),
+                           ("ADD_SUBDIRECTORY ( exrenvmap )", "# ADD_SUBDIRECTORY ( exrenvmap )"),
+                           ("ADD_SUBDIRECTORY ( exrmultiview )", "# ADD_SUBDIRECTORY ( exrmultiview )"),
+                           ("ADD_SUBDIRECTORY ( exrmultipart )", "# ADD_SUBDIRECTORY ( exrmultipart )")])
+
+                PatchFile(srcDir + "/OpenEXR/exrheader/CMakeLists.txt",
+                          [("add_executable(exrheader",
+                            "ADD_LIBRARY ( exrheader STATIC")])
+                PatchFile(srcDir + "/OpenEXR/exrmaketiled/CMakeLists.txt",
+                          [("add_executable(exrmaketiled",
+                            "ADD_LIBRARY ( exrmaketiled STATIC")])
+                PatchFile(srcDir + "/OpenEXR/exrstdattr/CMakeLists.txt",
+                          [("add_executable(exrstdattr",
+                            "ADD_LIBRARY ( exrstdattr STATIC")])
+                PatchFile(srcDir + "/OpenEXR/exrenvmap/CMakeLists.txt",
+                          [("add_executable( exrenvmap",
+                            "ADD_LIBRARY ( exrenvmap STATIC")])
+                PatchFile(srcDir + "/OpenEXR/exrmultiview/CMakeLists.txt",
+                          [("add_executable(exrmultiview",
+                            "ADD_LIBRARY ( exrmultiview STATIC")])
+                PatchFile(srcDir + "/OpenEXR/exrmultipart/CMakeLists.txt",
+                          [("add_executable(exrmultipart",
+                            "ADD_LIBRARY ( exrmultipart STATIC")])
+                PatchFile(srcDir + "/OpenEXR/exrmakepreview/CMakeLists.txt",
+                          [("add_executable(exrmakepreview",
+                            "ADD_LIBRARY ( exrmakepreview STATIC")])
+                PatchFile(srcDir + "/OpenEXR/exr2aces/CMakeLists.txt",
+                          [("add_executable(exr2aces",
+                            "ADD_LIBRARY ( exr2aces STATIC")])
+                PatchFile(srcDir + "/OpenEXR/IlmImfExamples/CMakeLists.txt",
+                          [("add_executable(IlmImfExamples",
+                            "ADD_LIBRARY ( IlmImfExamples STATIC")])
+                PatchFile(srcDir + "/OpenEXR/exrmaketiled/CMakeLists.txt",
+                          [("add_executable(exrmaketiled ",
+                            "ADD_LIBRARY ( exrmaketiled STATIC")])
+                PatchFile(srcDir + "/OpenEXR/IlmImf/CMakeLists.txt",
+                          [("add_executable(dwaLookups",
+                            "ADD_LIBRARY ( dwaLookups STATIC"),
+                           ("add_executable(b44ExpLogTable",
+                            "ADD_LIBRARY ( b44ExpLogTable STATIC"),
+                           ("add_executable(toFloat",
+                            "ADD_LIBRARY ( toFloat STATIC"),
+                           ("$<TARGET_FILE:b44ExpLogTable> >",
+                            "cp ${CMAKE_CURRENT_SOURCE_DIR}/b44ExpLogTable.h"),
+                           ("$<TARGET_FILE:dwaLookups> >",
+                            "cp ${CMAKE_CURRENT_SOURCE_DIR}/dwaLookups.h")
+                           ])
+                extraArgs.append('-DOPENEXR_BUILD_PYTHON_LIBS=OFF ')
+                extraArgs.append('-DCMAKE_OSX_ARCHITECTURES=arm64' )
+                extraArgs.append('-DCMAKE_SYSTEM_NAME=iOS ')
+
+                os.environ['SDKROOT'] = GetCommandOutput('xcrun --sdk iphoneos --show-sdk-path').strip()
+                if not context.targetIos:
+                    extraArgs.append('-DPYILMBASE_ENABLE=OFF')
+            RunCMake(context, force,
+                     ['-DOPENEXR_VIEWERS_ENABLE=OFF',
+                      '-DBUILD_TESTING=OFF'] + buildArgs, extraEnv)
+            if sdkroot is None:
+                os.unsetenv('SDKROOT')
+            else:
+                os.environ['SDKROOT'] = sdkroot
 
 OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
 
