@@ -1297,6 +1297,24 @@ PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.29.tar.gz"
 def InstallPNG(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(PNG_URL, context, force)):
         macArgs = []
+        if context.targetIos:
+            PatchFile("CMakeLists.txt",
+                      [('add_custom_target(gensym DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/libpng.sym")',
+                        'add_custom_target(gensym DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/libpng.sym" genvers)'),
+                       ("add_custom_target(genfiles DEPENDS",
+                        "add_custom_target(genfiles DEPENDS gensym symbol-check")])
+            macArgs.append('-DCMAKE_SYSTEM_PROCESSOR=aarch64')
+            macArgs.append('-DPNG_ARM_NEON=off')
+
+            # Skip tests to avoid issues with code signing.
+            # Replace utility executables with static libraries to avoid issues with code signing.
+            PatchFile("CMakeLists.txt",
+                [("option(PNG_TESTS  \"Build libpng tests\" ON)",
+                  "option(PNG_TESTS  \"Build libpng tests\" OFF)"),
+                 ("add_executable(pngfix ${pngfix_sources})",
+                  "add_library(pngfix STATIC ${pngfix_sources})"),
+                 ("add_executable(png-fix-itxt ${png_fix_itxt_sources})",
+                  "add_library(png-fix-itxt STATIC ${png_fix_itxt_sources})")])
         if MacOS() and apple_utils.IsTargetArm(context):
             # Ensure libpng's build doesn't erroneously activate inappropriate
             # Neon extensions
