@@ -1556,6 +1556,13 @@ def InstallBLOSC(context, force, buildArgs):
         if MacOS() and apple_utils.IsTargetArm(context):
             # Need to disable SSE for macOS ARM targets.
             macArgs = ["-DDEACTIVATE_SSE2=ON"]
+        if context.targetIos:
+            PatchFile("tests/fuzz/CMakeLists.txt",
+                      [(("add_executable(${target} ${source} ${FUZZER_SRC})"),
+                       ("add_library(${target} ${source} ${FUZZER_SRC})"))])
+            macArgs.append('-DBUILD_TESTS=OFF ')
+            macArgs.append('-DBUILD_SHARED=OFF ')
+            macArgs.append('-DBUILD_BENCHMARKS=OFF ')
         RunCMake(context, force, buildArgs + macArgs)
 
 BLOSC = Dependency("Blosc", InstallBLOSC, "include/blosc.h")
