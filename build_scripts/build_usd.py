@@ -1180,6 +1180,41 @@ def InstallJPEG_Turbo(context, force, buildArgs):
         extraJPEGArgs = buildArgs
         if MacOS():
             extraJPEGArgs.append("-DWITH_SIMD=FALSE")
+        if context.targetIos:
+            extraJPEGArgs.append('-DCMAKE_SYSTEM_PROCESSOR=aarch64')
+            extraJPEGArgs.append("-DENABLE_STATIC=TRUE")
+
+            # Replace test and utility executables with static libraries to avoid issues with code signing.
+            PatchFile("CMakeLists.txt",
+                      [("add_executable(tjunittest tjunittest.c tjutil.c md5/md5.c md5/md5hl.c)",
+                        "add_library(tjunittest STATIC tjunittest.c tjutil.c md5/md5.c md5/md5hl.c)"),
+                       ("add_executable(tjbench tjbench.c tjutil.c)",
+                        "add_library(tjbench STATIC tjbench.c tjutil.c)"),
+                       ("add_executable(tjexample tjexample.c)",
+                        "add_library(tjexample STATIC tjexample.c)"),
+                       ("add_executable(tjunittest-static tjunittest.c tjutil.c md5/md5.c",
+                        "add_library(tjunittest-static STATIC tjunittest.c tjutil.c md5/md5.c"),
+                       ("add_executable(tjbench-static tjbench.c tjutil.c)",
+                        "add_library(tjbench-static STATIC tjbench.c tjutil.c)"),
+                       ("add_executable(cjpeg-static cjpeg.c cdjpeg.c rdgif.c rdppm.c rdswitch.c",
+                        "add_library(cjpeg-static STATIC cjpeg.c cdjpeg.c rdgif.c rdppm.c rdswitch.c"),
+                       ("add_executable(djpeg-static djpeg.c cdjpeg.c rdcolmap.c rdswitch.c wrgif.c",
+                        "add_library(djpeg-static STATIC djpeg.c cdjpeg.c rdcolmap.c rdswitch.c wrgif.c"),
+                       ("add_executable(jpegtran-static jpegtran.c cdjpeg.c rdswitch.c transupp.c)",
+                        "add_library(jpegtran-static STATIC jpegtran.c cdjpeg.c rdswitch.c transupp.c)"),
+                       ("add_executable(rdjpgcom rdjpgcom.c)", "add_library(rdjpgcom STATIC rdjpgcom.c)"),
+                       ("add_executable(wrjpgcom wrjpgcom.c)", "add_library(wrjpgcom STATIC wrjpgcom.c)"),
+                       ("add_subdirectory(md5)", "# add_subdirectory(md5)")])
+
+            PatchFile("sharedlib/CMakeLists.txt",
+                      [("add_executable(cjpeg ../cjpeg.c ../cdjpeg.c ../rdgif.c ../rdppm.c",
+                        "add_library(cjpeg STATIC ../cjpeg.c ../cdjpeg.c ../rdgif.c ../rdppm.c"),
+                       ("add_executable(djpeg ../djpeg.c ../cdjpeg.c ../rdcolmap.c ../rdswitch.c",
+                        "add_library(djpeg STATIC ../djpeg.c ../cdjpeg.c ../rdcolmap.c ../rdswitch.c"),
+                       ("add_executable(jpegtran ../jpegtran.c ../cdjpeg.c ../rdswitch.c ../transupp.c)",
+                        "add_library(jpegtran STATIC ../jpegtran.c ../cdjpeg.c ../rdswitch.c ../transupp.c)"),
+                       ("add_executable(jcstest ../jcstest.c)",
+                        "add_library(jcstest STATIC ../jcstest.c)")])
 
         RunCMake(context, force, extraJPEGArgs)
         return os.getcwd()
