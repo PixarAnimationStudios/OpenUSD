@@ -1251,6 +1251,11 @@ def InstallTIFF(context, force, buildArgs):
                    [("add_subdirectory(tools)", "# add_subdirectory(tools)"),
                     ("add_subdirectory(test)", "# add_subdirectory(test)")])
 
+        if context.targetIos:
+            # Skip contrib to avoid issues with code signing.
+            PatchFile("CMakeLists.txt",
+                    [("add_subdirectory(contrib)", "# add_subdirectory(contrib)")])
+
         # The libTIFF CMakeScript says the ld-version-script 
         # functionality is only for compilers using GNU ld on 
         # ELF systems or systems which provide an emulation; therefore
