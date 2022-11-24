@@ -777,11 +777,12 @@ HgiMetalBufferShaderSection::WriteType(std::ostream& ss) const
 void
 HgiMetalBufferShaderSection::WriteParameter(std::ostream& ss) const
 {
-    if (!_writable) {
-        ss << "constant ";
-    } else {
+    //TODO resolve -> meshlet shader buffers can't be declared in constant space
+    //if (!_writable) {
+    //    ss << "constant ";
+    //} else {
         ss << "device ";
-    }
+    //}
     WriteType(ss);
     
     switch (_binding) {
@@ -804,11 +805,11 @@ HgiMetalBufferShaderSection::VisitScopeMemberDeclarations(std::ostream &ss)
 {
     if (_unused) return false;
 
-    if (!_writable) {
-        ss << "constant ";
-    } else {
+    //if (!_writable) {
+    //    ss << "constant ";
+    //} else {
         ss << "device ";
-    }
+    //}
     WriteType(ss);
 
     switch (_binding) {
@@ -833,13 +834,14 @@ HgiMetalBufferShaderSection::VisitScopeConstructorDeclarations(
     std::ostream &ss)
 {
     if (_unused) return false;
-
-    if (!_writable) {
-        ss << "const ";
-        ss << "constant ";
-    } else {
+    
+    //TODO resolve -> meshlet shader buffers can't be declared in constant space
+    //if (!_writable) {
+    //    ss << "const ";
+    //    ss << "constant ";
+    //} else {
         ss << "device ";
-    }
+    //}
     WriteType(ss);
     ss << "* _";
     WriteIdentifier(ss);
@@ -1451,6 +1453,23 @@ HgiMetalStageOutputShaderSection::VisitGlobalMemberDeclarations(
     std::ostream &ss)
 {
     GetStructTypeDeclaration()->WriteDeclaration(ss);
+    ss << "\n";
+    return true;
+}
+
+HgiMetalStageOutputMeshShaderSection::HgiMetalStageOutputMeshShaderSection(
+    HgiMetalStructTypeDeclarationShaderSection * const structTypeDeclaration)
+  : HgiMetalShaderSection("")
+, _structTypeDeclaration(structTypeDeclaration)
+{
+}
+
+bool
+HgiMetalStageOutputMeshShaderSection::VisitGlobalMemberDeclarations(
+    std::ostream &ss)
+{
+    ss << "struct PrimOut {};\n";
+    _structTypeDeclaration->WriteDeclaration(ss);
     ss << "\n";
     return true;
 }

@@ -595,7 +595,7 @@ private:
 ///
 /// Defines and writes out shader stage outputs
 ///
-class HgiMetalStageOutputShaderSection final
+class HgiMetalStageOutputShaderSection
     : public HgiMetalStructInstanceShaderSection
 {
 public:
@@ -619,6 +619,23 @@ public:
 
     HGIMETAL_API
     bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
+};
+
+/// \class HgiMetalStageOutputShaderSection
+///
+/// Defines and writes out shader stage outputs
+///
+class HgiMetalStageOutputMeshShaderSection : public HgiMetalShaderSection
+{
+public:
+    HGIMETAL_API
+    explicit HgiMetalStageOutputMeshShaderSection(
+        HgiMetalStructTypeDeclarationShaderSection * const structTypeDeclaration);
+
+    HGIMETAL_API
+    bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
+private:
+    const HgiMetalStructTypeDeclarationShaderSection *_structTypeDeclaration;
 };
 
 /// \class HgiMetalInterstageBlockShaderSection

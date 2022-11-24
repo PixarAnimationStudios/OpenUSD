@@ -1228,7 +1228,16 @@ HgiMetalShaderStageEntryPoint::_Init(
     
     if (generator->_descriptor.shaderStage == HgiShaderStageMeshObject) {
         _outputs = nullptr;
-    } else {
+    } else if (generator->_descriptor.shaderStage == HgiShaderStageMeshlet) {
+
+        HgiMetalStructTypeDeclarationShaderSection * const structTypeSection =
+        generator->CreateShaderSection<
+        HgiMetalStructTypeDeclarationShaderSection>(
+                    "VertexOut",
+                    stageOutputs);
+        generator->CreateShaderSection<HgiMetalStageOutputMeshShaderSection>(structTypeSection);
+    }
+    else {
         _outputs =
         _BuildStructInstance<HgiMetalStageOutputShaderSection>(
            GetOutputTypeName(),
@@ -1548,16 +1557,7 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
     if (_descriptor.shaderStage == HgiShaderStageMeshlet) {
         
         ss << "\n// //////// Mesh Declaration ////////\n";
-        ss << "//For the time being we use no primout\n";
-        ss << "struct PrimOut\n";
-        ss << "{};\n\n";
-        ss << "struct VertexOut\n";
-        ss << "{vec4 position[[position]];\n";
-        ss << "vec4 Peye;\n";
-        ss << "vec3 Neye;\n";
-        ss << "vec3 points;\n";
-        ss << "vec4 packedSmoothNormals;\n";
-        ss << "};\n\n";
+
         ss << "using MeshType = metal::mesh<VertexOut, PrimOut,\n";
         ss << _descriptor.meshDescriptor.maxMeshletVertexCount << ", ";
         ss << _descriptor.meshDescriptor.maxPrimitiveCount;
@@ -1689,6 +1689,49 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
         ss << ")";
     }
     ss << ";\n";
+    const char *longString = R""""(
+    const float3 box[8] = {
+                {-0.5, -0.5, -0.5}, {0.5, -0.5, -0.5}, {-0.5, 0.5, -0.5}, {0.5, 0.5, -0.5}, {-0.5, -0.5, 0.5}, {0.5, -0.5, 0.5}, {-0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}
+            };
+            
+            const int indices[36] = {0, 4, 6, 0, 6, 2, 0, 1, 5, 0, 5, 4, 4, 5, 7, 4, 7, 6, 3, 7, 5, 3, 5, 1, 6, 7, 3, 6, 3, 2, 2, 3, 1, 2, 1, 0};
+
+        uint32_t vertexCount = 8;
+        uint32_t primitiveCount = 12;
+        if (hd_LocalIndexID < 8) {
+            mesh.set_primitive_count(12);
+
+            //MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+            //MAT4 transform = HdGet_transform();
+
+            VertexOut vertexOut;
+            PrimOut primOut;
+            float3 point = box[hd_LocalIndexID];
+            //vec3 point = vec3(1.0, 1.0, 1.0);
+                matrix_float4x4 mat2 = matrix_float4x4(
+                {0.513, 0.0, 0.0, 0.0},
+                {0.000, 0.866, 0.0, 0.0},
+                {0.0, 0.0, -0.5, -0.5},
+                {0.0, 0.0, 0.543, 1.543});
+        
+            mat4 mat = mat4(bufferBindings->renderPassState.worldToViewMatrix);
+            vertexOut.position = mat * vec4(point.x, point.y, point.z, 1.0);
+            mesh.set_vertex(hd_LocalIndexID, vertexOut);
+        }
+
+        if (hd_LocalIndexID < primitiveCount) {
+            PrimOut primOut;
+            //p.color = payload.color;
+            mesh.set_primitive(hd_LocalIndexID, primOut);
+
+            // Set the output indices.
+            uint i = (hd_LocalIndexID) * 3;
+            mesh.set_index(i+0, indices[i]);
+            mesh.set_index(i+1, indices[i+1]);
+            mesh.set_index(i+2, indices[i+2]);
+        })"""";
+    if (_descriptor.shaderStage == HgiShaderStageMeshlet)
+        //ss << longString;
 
     // Execute all code that hooks into the entry point function
     ss << "\n// //////// Entry Point Function Executions ////////\n";
@@ -1705,10 +1748,6 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
         const std::string outputInstanceName =
                 _generatorShaderSections->GetOutputInstanceName();
         ss << "return " << outputInstanceName << ";\n";
-    }
-    else if (_descriptor.shaderStage == HgiShaderStageMeshObject
-             || _descriptor.shaderStage == HgiShaderStageMeshlet) {
-        
     } else {
         ss << _generatorShaderSections->GetScopeInstanceName() << ".main();\n";
     }

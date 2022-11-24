@@ -78,7 +78,7 @@ public:
     /// Usually you call this right after BindPipeline() and the resources bound
     /// must be compatible with the bound pipeline.
     HGI_API
-    virtual void BindResources(HgiResourceBindingsHandle resources) = 0;
+    virtual void BindResources(HgiResourceBindingsHandle resources, bool useMeshShaders = false) = 0;
 
     /// Set Push / Function constants.
     /// `pipeline` is the pipeline that you are binding before the draw call. It

@@ -43,7 +43,8 @@ void
 HgiMetalResourceBindings::BindResources(
     HgiMetal *hgi,
     id<MTLRenderCommandEncoder> renderEncoder,
-    id<MTLBuffer> argBuffer)
+    id<MTLBuffer> argBuffer,
+    bool useMeshShaders)
 {
     id<MTLArgumentEncoder> argEncoderBuffer = hgi->GetBufferArgumentEncoder();
     id<MTLArgumentEncoder> argEncoderSampler = hgi->GetSamplerArgumentEncoder();
@@ -75,7 +76,8 @@ HgiMetalResourceBindings::BindResources(
         }
         
         if ((texDesc.stageUsage & HgiShaderStageVertex) ||
-                texDesc.stageUsage & HgiShaderStagePostTessellationVertex) {
+            (texDesc.stageUsage & HgiShaderStagePostTessellationVertex) ||
+            (texDesc.stageUsage & HgiShaderStageMeshlet)) {
             size_t offsetSampler = HgiMetalArgumentOffsetSamplerVS
                                  + (texDesc.bindingIndex * sizeof(void*));
             [argEncoderSampler setArgumentBuffer:argBuffer
@@ -118,13 +120,14 @@ HgiMetalResourceBindings::BindResources(
                                  usage:usageFlags];
         }
     }
-
-    [renderEncoder setVertexBuffer:argBuffer
-                            offset:HgiMetalArgumentOffsetSamplerVS
-                           atIndex:HgiMetalArgumentIndexSamplers];
-    [renderEncoder setVertexBuffer:argBuffer
-                            offset:HgiMetalArgumentOffsetTextureVS
-                           atIndex:HgiMetalArgumentIndexTextures];
+    if (!useMeshShaders) {
+        [renderEncoder setVertexBuffer:argBuffer
+                                offset:HgiMetalArgumentOffsetSamplerVS
+                               atIndex:HgiMetalArgumentIndexSamplers];
+        [renderEncoder setVertexBuffer:argBuffer
+                                offset:HgiMetalArgumentOffsetTextureVS
+                               atIndex:HgiMetalArgumentIndexTextures];
+    }
 
     [renderEncoder setFragmentBuffer:argBuffer
                               offset:HgiMetalArgumentOffsetSamplerFS
@@ -132,20 +135,22 @@ HgiMetalResourceBindings::BindResources(
     [renderEncoder setFragmentBuffer:argBuffer
                               offset:HgiMetalArgumentOffsetTextureFS
                              atIndex:HgiMetalArgumentIndexTextures];
-    
-    [renderEncoder setMeshBuffer:argBuffer
-                            offset:HgiMetalArgumentOffsetSamplerVS
-                           atIndex:HgiMetalArgumentIndexSamplers];
-    [renderEncoder setMeshBuffer:argBuffer
-                            offset:HgiMetalArgumentOffsetTextureVS
-                           atIndex:HgiMetalArgumentIndexTextures];
-    
-    [renderEncoder setObjectBuffer:argBuffer
-                            offset:HgiMetalArgumentOffsetSamplerVS
-                           atIndex:HgiMetalArgumentIndexSamplers];
-    [renderEncoder setObjectBuffer:argBuffer
-                            offset:HgiMetalArgumentOffsetTextureVS
-                           atIndex:HgiMetalArgumentIndexTextures];
+    //TODO Thor only set stages which are needed
+    if (useMeshShaders) {
+        [renderEncoder setMeshBuffer:argBuffer
+                              offset:HgiMetalArgumentOffsetSamplerVS
+                             atIndex:HgiMetalArgumentIndexSamplers];
+        [renderEncoder setMeshBuffer:argBuffer
+                              offset:HgiMetalArgumentOffsetTextureVS
+                             atIndex:HgiMetalArgumentIndexTextures];
+        
+        [renderEncoder setObjectBuffer:argBuffer
+                                offset:HgiMetalArgumentOffsetSamplerVS
+                               atIndex:HgiMetalArgumentIndexSamplers];
+        [renderEncoder setObjectBuffer:argBuffer
+                                offset:HgiMetalArgumentOffsetTextureVS
+                               atIndex:HgiMetalArgumentIndexTextures];
+    }
 
     //
     // Bind Buffers
@@ -165,7 +170,9 @@ HgiMetalResourceBindings::BindResources(
         NSUInteger offset = bufDesc.offsets.front();
 
         if ((bufDesc.stageUsage & HgiShaderStageVertex) ||
-            (bufDesc.stageUsage & HgiShaderStagePostTessellationVertex)) {
+            (bufDesc.stageUsage & HgiShaderStagePostTessellationVertex) ||
+            (bufDesc.stageUsage & HgiShaderStageMeshObject) ||
+            (bufDesc.stageUsage & HgiShaderStageMeshlet)) {
             NSUInteger argBufferOffset = HgiMetalArgumentOffsetBufferVS
                                        + bufDesc.bindingIndex * sizeof(void*);
             [argEncoderBuffer setArgumentBuffer:argBuffer
@@ -189,21 +196,23 @@ HgiMetalResourceBindings::BindResources(
                              usage:usageFlags];
     }
     
-
-    [renderEncoder setVertexBuffer:argBuffer
-                            offset:HgiMetalArgumentOffsetBufferVS
-                           atIndex:HgiMetalArgumentIndexBuffers];
+    if (!useMeshShaders) {
+        [renderEncoder setVertexBuffer:argBuffer
+                                offset:HgiMetalArgumentOffsetBufferVS
+                               atIndex:HgiMetalArgumentIndexBuffers];
+    }
     [renderEncoder setFragmentBuffer:argBuffer
                               offset:HgiMetalArgumentOffsetBufferFS
                              atIndex:HgiMetalArgumentIndexBuffers];
-    
-    [renderEncoder setObjectBuffer:argBuffer
-                            offset:HgiMetalArgumentOffsetBufferVS
-                           atIndex:HgiMetalArgumentIndexBuffers];
-    
-    [renderEncoder setMeshBuffer:argBuffer
-                            offset:HgiMetalArgumentOffsetBufferVS
-                           atIndex:HgiMetalArgumentIndexBuffers];
+    if (useMeshShaders) {
+        [renderEncoder setObjectBuffer:argBuffer
+                                offset:HgiMetalArgumentOffsetBufferVS
+                               atIndex:HgiMetalArgumentIndexBuffers];
+        
+        [renderEncoder setMeshBuffer:argBuffer
+                              offset:HgiMetalArgumentOffsetBufferVS
+                             atIndex:HgiMetalArgumentIndexBuffers];
+    }
 
     // Bind constants
 
@@ -211,19 +220,24 @@ HgiMetalResourceBindings::BindResources(
         [argEncoderBuffer setArgumentBuffer:argBuffer
                                      offset:HgiMetalArgumentOffsetConstants];
     }
-
-    [renderEncoder setVertexBuffer:argBuffer
-                            offset:HgiMetalArgumentOffsetConstants
-                           atIndex:HgiMetalArgumentIndexConstants];
+    
+    if (!useMeshShaders) {
+        [renderEncoder setVertexBuffer:argBuffer
+                                offset:HgiMetalArgumentOffsetConstants
+                               atIndex:HgiMetalArgumentIndexConstants];
+    }
     [renderEncoder setFragmentBuffer:argBuffer
                               offset:HgiMetalArgumentOffsetConstants
                              atIndex:HgiMetalArgumentIndexConstants];
-    [renderEncoder setMeshBuffer:argBuffer
-                            offset:HgiMetalArgumentOffsetConstants
-                           atIndex:HgiMetalArgumentIndexConstants];
-    [renderEncoder setObjectBuffer:argBuffer
-                            offset:HgiMetalArgumentOffsetConstants
-                           atIndex:HgiMetalArgumentIndexConstants];
+    
+    if (useMeshShaders) {
+        [renderEncoder setMeshBuffer:argBuffer
+                              offset:HgiMetalArgumentOffsetConstants
+                             atIndex:HgiMetalArgumentIndexConstants];
+        [renderEncoder setObjectBuffer:argBuffer
+                                offset:HgiMetalArgumentOffsetConstants
+                               atIndex:HgiMetalArgumentIndexConstants];
+    }
 }
 
 void

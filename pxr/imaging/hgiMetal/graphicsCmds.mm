@@ -64,12 +64,11 @@ _SetVertexBindings(id<MTLRenderCommandEncoder> encoder,
         if (binding.buffer) {
             HgiMetalBuffer* mtlBuffer =
                 static_cast<HgiMetalBuffer*>(binding.buffer.Get());
-
             [encoder setVertexBuffer:mtlBuffer->GetBufferId()
                               offset:binding.byteOffset
                              atIndex:binding.index];
             //TODO Thor maybe not need all
-            
+            /*
             [encoder
                 setObjectBuffer:mtlBuffer->GetBufferId()
              offset:binding.byteOffset
@@ -78,6 +77,7 @@ _SetVertexBindings(id<MTLRenderCommandEncoder> encoder,
                 setMeshBuffer:mtlBuffer->GetBufferId()
              offset:binding.byteOffset
             atIndex:binding.index];
+             */
              
         }
     }
@@ -322,10 +322,12 @@ HgiMetalGraphicsCmds::_SetCachedEncoderState(id<MTLRenderCommandEncoder> encoder
     if (_CachedEncState.resourceBindings) {
         _CachedEncState.resourceBindings->BindResources(_hgi,
                                                         encoder,
-                                                        _CachedEncState.argumentBuffer);
+                                                        _CachedEncState.argumentBuffer,
+                                                        _CachedEncState.useMeshShaders);
     }
-
-    _SetVertexBindings(encoder, _CachedEncState.vertexBindings);
+    if (!_CachedEncState.useMeshShaders) {
+        _SetVertexBindings(encoder, _CachedEncState.vertexBindings);
+    }
 }
 
 void
@@ -493,8 +495,9 @@ HgiMetalGraphicsCmds::BindPipeline(HgiGraphicsPipelineHandle pipeline)
 }
 
 void
-HgiMetalGraphicsCmds::BindResources(HgiResourceBindingsHandle r)
+HgiMetalGraphicsCmds::BindResources(HgiResourceBindingsHandle r, bool useMeshShaders)
 {
+    _CachedEncState.useMeshShaders = useMeshShaders;
     _CreateArgumentBuffer();
 
     _CachedEncState.resourceBindings =
@@ -505,7 +508,8 @@ HgiMetalGraphicsCmds::BindResources(HgiResourceBindingsHandle r)
         for (auto& encoder : _encoders) {
             _CachedEncState.resourceBindings->BindResources(_hgi,
                                                             encoder,
-                                                            _argumentBuffer);
+                                                            _argumentBuffer,
+                                                            useMeshShaders);
         }
     }
 }
@@ -528,6 +532,9 @@ void
 HgiMetalGraphicsCmds::BindVertexBuffers(
     HgiVertexBufferBindingVector const &bindings)
 {
+    if (_CachedEncState.useMeshShaders) {
+        return;
+    }
     _stepFunctions.Bind(bindings);
 
     _CachedEncState.vertexBindings.insert(
@@ -717,11 +724,11 @@ HgiMetalGraphicsCmds::DrawIndexedMesh(
 
     id<MTLRenderCommandEncoder> encoder = GetEncoder();
         
-    _stepFunctions.SetVertexBufferOffsets(encoder, baseInstance);
     
     int numObjectsX = 1;
     int numObjectsY = 1;
     int numObjectsZ = 1;
+    _CachedEncState.useMeshShaders = true;
     [encoder drawMeshThreadgroups:MTLSizeMake(numObjectsX, numObjectsY, numObjectsZ) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(8, 1, 1)];
     
     

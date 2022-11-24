@@ -1134,7 +1134,7 @@ TIFF = Dependency("TIFF", InstallTIFF, "include/tiff.h")
 ############################################################
 # PNG
 
-PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.29.tar.gz"
+PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.38.tar.gz"
 
 def InstallPNG(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(PNG_URL, context, force)):

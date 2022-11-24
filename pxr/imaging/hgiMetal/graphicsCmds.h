@@ -59,7 +59,7 @@ public:
     void BindPipeline(HgiGraphicsPipelineHandle pipeline) override;
 
     HGIMETAL_API
-    void BindResources(HgiResourceBindingsHandle resources) override;
+    void BindResources(HgiResourceBindingsHandle resources, bool useMeshShaders) override;
 
     HGIMETAL_API
     void SetConstantValues(
@@ -163,6 +163,7 @@ private:
         MTLViewport viewport;
         MTLScissorRect scissorRect;
         
+        bool useMeshShaders = false;
         HgiMetalResourceBindings* resourceBindings;
         HgiMetalGraphicsPipeline* graphicsPipeline;
         id<MTLBuffer> argumentBuffer;

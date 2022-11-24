@@ -69,8 +69,8 @@ public:
     HGIGL_API
     void BindPipeline(HgiGraphicsPipelineHandle pipeline) override;
 
-    HGIGL_API
-    void BindResources(HgiResourceBindingsHandle resources) override;
+    HGI_API
+    void BindResources(HgiResourceBindingsHandle resources, bool useMeshShaders = false) override;
 
     HGIGL_API
     void SetConstantValues(

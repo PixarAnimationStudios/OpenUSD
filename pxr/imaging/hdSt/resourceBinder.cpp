@@ -1020,7 +1020,7 @@ HdSt_ResourceBinder::GetBufferBindingDesc(
 
     HgiShaderStage stageUsage =
         HgiShaderStageVertex | HgiShaderStageFragment |
-        HgiShaderStagePostTessellationVertex;
+        HgiShaderStagePostTessellationVertex | HgiShaderStageMeshObject | HgiShaderStageMeshlet;
     HgiBufferBindDesc desc;
     desc.writable = true;
 
@@ -1149,7 +1149,7 @@ HdSt_ResourceBinder::GetTextureBindingDesc(
     HgiTextureBindDesc texelDesc;
     texelDesc.stageUsage =
         HgiShaderStageGeometry | HgiShaderStageFragment |
-        HgiShaderStagePostTessellationVertex;
+        HgiShaderStagePostTessellationVertex | HgiShaderStageMeshlet;
     texelDesc.textures = { texelTexture };
     texelDesc.samplers = { texelSampler };
     texelDesc.resourceType = HgiBindResourceTypeSampledImage;

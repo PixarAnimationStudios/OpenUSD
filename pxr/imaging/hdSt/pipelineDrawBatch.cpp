@@ -1215,7 +1215,7 @@ _GetDrawPipeline(
                                                   state.geometricShader);
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
         pipeDesc.meshState.useMeshShader = state.geometricShader->GetUseMeshShaders();
-        pipeDesc.meshState.maxTotalThreadsPerMeshThreadgroup = 1;
+        pipeDesc.meshState.maxTotalThreadsPerMeshThreadgroup = 126;
         pipeDesc.meshState.maxTotalThreadsPerObjectThreadgroup = 1;
         pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
 
@@ -1282,10 +1282,12 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
 
         HgiResourceBindingsDesc bindingsDesc;
         state.GetBindingsForDrawing(&bindingsDesc);
-
+        bool const useMeshShaders =
+        _drawItemInstances[0]->GetDrawItem()->
+                GetGeometricShader()->GetUseMeshShaders();
         HgiResourceBindingsHandle resourceBindings =
                 hgi->CreateResourceBindings(bindingsDesc);
-        gfxCmds->BindResources(resourceBindings);
+        gfxCmds->BindResources(resourceBindings, useMeshShaders);
 
         HgiVertexBufferBindingVector bindings;
         _GetVertexBufferBindingsForDrawing(&bindings, state);

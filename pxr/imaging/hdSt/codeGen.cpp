@@ -673,15 +673,17 @@ _ResourceGenerator::_GenerateHgiResources(
                     }
                     HgiShaderFunctionAddStageInput(funcDesc, param);
                 } else {
-                    HgiShaderFunctionParamDesc param;
+                    if (shaderStage != HdShaderTokens->fragmentShader) {
+                        HgiShaderFunctionParamDesc param;
                         param.nameInShader = element.name;
                         param.type = element.dataType;
                         param.interstageSlot = _GetSlot(element.name);
                         param.interpolation =
-                            _GetInterpolation(element.qualifiers);
+                        _GetInterpolation(element.qualifiers);
                         param.arraySize = element.arraySize;
                         param.isPointerToValue = false;
-                    HgiShaderFunctionAddStageInput(funcDesc, param);
+                        HgiShaderFunctionAddStageInput(funcDesc, param);
+                    }
                 }
             } else if (element.inOut == InOut::STAGE_OUT) {
                 if (shaderStage == HdShaderTokens->fragmentShader) {
@@ -2360,9 +2362,11 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionAddStageInput(
             &fsDesc, "gl_FrontFacing", "bool",
             HgiShaderKeywordTokens->hdFrontFacing);
-        HgiShaderFunctionAddStageInput(
-            &fsDesc, "gl_FragCoord", "vec4",
-            HgiShaderKeywordTokens->hdPosition);
+        if (!_hasMS) {
+            HgiShaderFunctionAddStageInput(
+                                           &fsDesc, "gl_FragCoord", "vec4",
+                                           HgiShaderKeywordTokens->hdPosition);
+        }
 
         if (!glslProgram->CompileShader(fsDesc)) {
             return nullptr;
@@ -2605,7 +2609,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                 HgiShaderFunctionTessellationDesc::PatchType::Triangle :
                 HgiShaderFunctionTessellationDesc::PatchType::Quad;
                 */
-        msDesc.meshDescriptor.maxTotalThreadsPerThreadgroup = 1;
+        msDesc.meshDescriptor.maxTotalThreadsPerThreadgroup = 126;
         msDesc.meshDescriptor.meshTopology = HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
         HgiShaderFunctionAddPayloadMember(&msDesc, "index", "uint2", 2);
         resourceGen._GenerateHgiResources(&msDesc,
@@ -2642,6 +2646,9 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionAddStageInput(
             &msDesc, "hd_LocalIndexID", "uint",
             HgiShaderKeywordTokens->hdLocalIndexID);
+        HgiShaderFunctionAddStageOutput(
+                &msDesc, "position", "vec4",
+                "position");
         /*
 
         HgiShaderFunctionAddStageInput(
@@ -3725,26 +3732,26 @@ _GetDrawingCoord(std::stringstream &ss,
 {
     ss << "hd_drawingCoord GetDrawingCoord() { \n"
        << "  hd_drawingCoord dc; \n";
-
-    for (std::string const & param : drawingCoordParams) {
-        ss << "  dc." << param
-           << " = " << inputPrefix << param << inArraySize << ";\n";
+    if (!drawingCoordParams.empty()) {
+        for (std::string const & param : drawingCoordParams) {
+            ss << "  dc." << param
+            << " = " << inputPrefix << param << inArraySize << ";\n";
+        }
+        for(int i = 0; i < instanceIndexWidth; ++i) {
+            ss << "  dc.instanceIndex[" << std::to_string(i) << "]"
+            << " = " << inputPrefix
+            << "instanceIndexI" << std::to_string(i) << inArraySize << ";\n";
+        }
+        for(int i = 0; i < instanceIndexWidth-1; ++i) {
+            ss << "  dc.instanceCoords[" << std::to_string(i) << "]"
+            << " = " << inputPrefix
+            << "instanceCoordsI" << std::to_string(i) << inArraySize << ";\n";
+        }
+        if (primitiveCoordOffset) {
+            ss << "  dc.primitiveCoord"
+            << primitiveCoordOffset << ";\n";
+        }
     }
-    for(int i = 0; i < instanceIndexWidth; ++i) {
-        ss << "  dc.instanceIndex[" << std::to_string(i) << "]"
-           << " = " << inputPrefix
-           << "instanceIndexI" << std::to_string(i) << inArraySize << ";\n";
-    }
-    for(int i = 0; i < instanceIndexWidth-1; ++i) {
-        ss << "  dc.instanceCoords[" << std::to_string(i) << "]"
-           << " = " << inputPrefix
-           << "instanceCoordsI" << std::to_string(i) << inArraySize << ";\n";
-    }
-    if (primitiveCoordOffset) {
-        ss << "  dc.primitiveCoord"
-           << primitiveCoordOffset << ";\n";
-    }
-
     ss << "  return dc; \n"
        << "}\n";
 }
@@ -4333,7 +4340,9 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                 "tes_dc_", "", " += GetPrimitiveID()");
     } else {
         // from VS/PTVS
-        _GetDrawingCoord(_genFS, drawingCoordParams, instanceIndexWidth,
+        //TODO Thor revert
+        std::vector<std::string> mockParams = std::vector<std::string>();
+        _GetDrawingCoord(_genFS, mockParams, instanceIndexWidth,
                 "vs_dc_", "", " += GetPrimitiveID()");
     }
 }

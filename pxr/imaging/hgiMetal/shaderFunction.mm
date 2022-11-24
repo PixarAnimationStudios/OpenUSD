@@ -36,6 +36,10 @@
 
 #include <unordered_map>
 
+#include <fstream>
+#include <string>
+#include <iostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 static int counter = 0;
 HgiMetalShaderFunction::HgiMetalShaderFunction(
@@ -65,10 +69,10 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
         };
         
         std::string input = std::string(shaderCode);
-        std::ofstream out("/Users/ingthorhjalmarsson/shaders/" + std::to_string(desc.shaderStage) + "_" + std::to_string(counter));
+        std::ofstream out("/Users/thor/shaders/" + std::to_string(desc.shaderStage) + "_" + std::to_string(counter));
         out << input;
         out.close();
-                          counter++;
+        counter++;
 
         NSError *error = NULL;
         id<MTLLibrary> library =
