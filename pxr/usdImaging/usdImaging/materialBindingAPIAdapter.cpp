@@ -50,13 +50,6 @@ public:
     : _mbApi(prim) {
     }
 
-    bool Has(const TfToken &name) override {
-        if (_mbApi.GetDirectBindingRel(name)) {
-            return true;
-        }
-        return false;
-    }
-
     TfTokenVector GetNames() override {
         return _mbApi.GetMaterialPurposes();
     }
@@ -83,8 +76,8 @@ HD_DECLARE_DATASOURCE_HANDLES(_MaterialBindingContainerDataSource);
 
 HdContainerDataSourceHandle
 UsdImagingMaterialBindingAPIAdapter::GetImagingSubprimData(
-    TfToken const& subprim,
     UsdPrim const& prim,
+    TfToken const& subprim,
     TfToken const& appliedInstanceName,
     const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
@@ -100,6 +93,7 @@ UsdImagingMaterialBindingAPIAdapter::GetImagingSubprimData(
 
 HdDataSourceLocatorSet
 UsdImagingMaterialBindingAPIAdapter::InvalidateImagingSubprim(
+    UsdPrim const& prim,
     TfToken const& subprim,
     TfToken const& appliedInstanceName,
     TfTokenVector const& properties)

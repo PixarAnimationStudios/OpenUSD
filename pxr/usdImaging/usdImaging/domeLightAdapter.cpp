@@ -43,13 +43,14 @@ UsdImagingDomeLightAdapter::~UsdImagingDomeLightAdapter()
 }
 
 TfTokenVector
-UsdImagingDomeLightAdapter::GetImagingSubprims()
+UsdImagingDomeLightAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdImagingDomeLightAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingDomeLightAdapter::GetImagingSubprimType(
+    UsdPrim const& prim, TfToken const& subprim)
 {
     if (subprim.IsEmpty()) {
         return HdPrimTypeTokens->domeLight;

@@ -74,8 +74,6 @@ void wrapUsdRiTokens()
     _AddToken(cls, "outputsRiVolume", UsdRiTokens->outputsRiVolume);
     _AddToken(cls, "positions", UsdRiTokens->positions);
     _AddToken(cls, "renderContext", UsdRiTokens->renderContext);
-    _AddToken(cls, "riTextureGamma", UsdRiTokens->riTextureGamma);
-    _AddToken(cls, "riTextureSaturation", UsdRiTokens->riTextureSaturation);
     _AddToken(cls, "spline", UsdRiTokens->spline);
     _AddToken(cls, "values", UsdRiTokens->values);
 }

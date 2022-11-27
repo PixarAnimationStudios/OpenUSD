@@ -28,6 +28,7 @@
 #include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/base/tf/denseHashSet.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/registryManager.h"
@@ -594,21 +595,29 @@ template <typename T>
 static inline
 bool
 _ModifyCallbackHelper(const typename SdfListOp<T>::ModifyCallback& cb,
-                      std::vector<T>* itemVector)
+                      std::vector<T>* itemVector, bool removeDuplicates)
 {
     bool didModify = false;
 
     std::vector<T> modifiedVector;
-    TF_FOR_ALL(item, *itemVector) {
-        boost::optional<T> modifiedItem = cb(*item);
+    TfDenseHashSet<T, TfHash> existingSet;
+
+    for (const T& item : *itemVector) {
+        boost::optional<T> modifiedItem = cb(item);
+        if (removeDuplicates && modifiedItem) {
+            if (!existingSet.insert(*modifiedItem).second) {
+                modifiedItem = boost::none;
+            }
+        }
+
         if (!modifiedItem) {
             didModify = true;
         }
-        else if (*modifiedItem != *item) {
-            modifiedVector.push_back(*modifiedItem);
+        else if (*modifiedItem != item) {
+            modifiedVector.push_back(std::move(*modifiedItem));
             didModify = true;
         } else {
-            modifiedVector.push_back(*item);
+            modifiedVector.push_back(item);
         }
     }
 
@@ -621,17 +630,24 @@ _ModifyCallbackHelper(const typename SdfListOp<T>::ModifyCallback& cb,
 
 template <typename T>
 bool 
-SdfListOp<T>::ModifyOperations(const ModifyCallback& callback)
+SdfListOp<T>::ModifyOperations(const ModifyCallback& callback,
+                               bool removeDuplicates)
 {
     bool didModify = false;
 
     if (callback) {
-        didModify |= _ModifyCallbackHelper(callback, &_explicitItems);
-        didModify |= _ModifyCallbackHelper(callback, &_addedItems);
-        didModify |= _ModifyCallbackHelper(callback, &_prependedItems);
-        didModify |= _ModifyCallbackHelper(callback, &_appendedItems);
-        didModify |= _ModifyCallbackHelper(callback, &_deletedItems);
-        didModify |= _ModifyCallbackHelper(callback, &_orderedItems);
+        didModify |= _ModifyCallbackHelper(
+            callback, &_explicitItems, removeDuplicates);
+        didModify |= _ModifyCallbackHelper(
+            callback, &_addedItems, removeDuplicates);
+        didModify |= _ModifyCallbackHelper(
+            callback, &_prependedItems, removeDuplicates);
+        didModify |= _ModifyCallbackHelper(
+            callback, &_appendedItems, removeDuplicates);
+        didModify |= _ModifyCallbackHelper(
+            callback, &_deletedItems, removeDuplicates);
+        didModify |= _ModifyCallbackHelper(
+            callback, &_orderedItems, removeDuplicates);
     }
 
     return didModify;

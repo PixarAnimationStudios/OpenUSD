@@ -260,10 +260,17 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         _capabilities->vkDeviceFeatures.shaderClipDistance;
     features.features.tessellationShader =
         _capabilities->vkDeviceFeatures.tessellationShader;
+    features.features.depthClamp =
+        _capabilities->vkDeviceFeatures.depthClamp;
+    features.features.shaderFloat64 =
+        _capabilities->vkDeviceFeatures.shaderFloat64;
 
     // Needed to write to storage buffers from vertex shader (eg. GPU culling).
     features.features.vertexPipelineStoresAndAtomics =
         _capabilities->vkDeviceFeatures.vertexPipelineStoresAndAtomics;
+    // Needed to write to storage buffers from fragment shader (eg. OIT).
+    features.features.fragmentStoresAndAtomics =
+        _capabilities->vkDeviceFeatures.fragmentStoresAndAtomics;
 
     #if !defined(VK_USE_PLATFORM_MACOS_MVK)
         // Needed for buffer address feature

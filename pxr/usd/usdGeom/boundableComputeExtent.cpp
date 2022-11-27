@@ -249,7 +249,20 @@ _ComputeExtentFromPlugins(
 
     const UsdGeomComputeExtentFunction fn = _FunctionRegistry::GetInstance()
         .GetComputeFunction(boundable.GetPrim());
-    return fn && (*fn)(boundable, time, transform, extent);
+    VtVec3fArray tmpExt;
+    if (fn && (*fn)(boundable, time, transform, &tmpExt)) {
+        if (tmpExt.size() == 2) {
+            *extent = std::move(tmpExt);
+            return true;
+        }
+        else {
+            TF_CODING_ERROR("Plugin compute extent function produced an extent "
+                            "with %zu elements instead of 2 for %s",
+                            tmpExt.size(),
+                            UsdDescribe(boundable.GetPrim()).c_str());
+        }
+    }
+    return false;
 }
 
 bool

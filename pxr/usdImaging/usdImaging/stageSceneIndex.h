@@ -119,20 +119,23 @@ private:
             const TfToken &adapterKey) const;
 
     TfTokenVector _GetImagingSubprims(
-            const _APISchemaAdapters &adapters) const;
+            UsdPrim const& prim, const _APISchemaAdapters &adapters) const;
     
     TfToken _GetImagingSubprimType(
             const _APISchemaAdapters &adapters,
+            UsdPrim const& prim,
             const TfToken &subprim) const;
 
     HdContainerDataSourceHandle _GetImagingSubprimData(
             const _APISchemaAdapters &adapters,
-            UsdPrim prim, const TfToken& subprim) const;
+            UsdPrim const& prim, const TfToken& subprim) const;
 
     HdDataSourceLocatorSet _InvalidateImagingSubprim(
             const _APISchemaAdapters &adapters,
+            UsdPrim const& prim,
             TfToken const& subprim, TfTokenVector const& properties) const;
 
+    void _ApplyPendingResyncs();
 
     class _StageGlobals : public UsdImagingDataSourceStageGlobals
     {

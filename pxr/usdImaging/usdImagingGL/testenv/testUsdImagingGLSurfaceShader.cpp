@@ -94,10 +94,6 @@ My_TestGLDrawing::InitTest()
     _stage = UsdStage::Open(GetStageFilePath());
     SdfPathVector excludedPaths;
 
-    if (!UsdImagingGLEngine::IsHydraEnabled()) {
-        std::cerr << "Couldn't initialize hydra" << std::endl;
-        exit(-1);
-    }
     _engine.reset(
         new UsdImagingGLEngine(_stage->GetPseudoRoot().GetPath(), 
                 excludedPaths));
@@ -107,32 +103,25 @@ My_TestGLDrawing::InitTest()
     std::cout << glGetString(GL_VERSION) << "\n";
 
     if(IsEnabledTestLighting()) {
-        if(UsdImagingGLEngine::IsHydraEnabled()) {
-            // set same parameter as 
-            // GlfSimpleLightingContext::SetStateFromOpenGL OpenGL defaults
-            _lightingContext = GlfSimpleLightingContext::New();
-            GlfSimpleLight light;
-            light.SetPosition(GfVec4f(0, -.5, .5, 0));
-            light.SetDiffuse(GfVec4f(1,1,1,1));
-            light.SetAmbient(GfVec4f(0,0,0,1));
-            light.SetSpecular(GfVec4f(1,1,1,1));
-            GlfSimpleLightVector lights;
-            lights.push_back(light);
-            _lightingContext->SetLights(lights);
+        // set same parameter as 
+        // GlfSimpleLightingContext::SetStateFromOpenGL OpenGL defaults
+        _lightingContext = GlfSimpleLightingContext::New();
+        GlfSimpleLight light;
+        light.SetPosition(GfVec4f(0, -.5, .5, 0));
+        light.SetDiffuse(GfVec4f(1,1,1,1));
+        light.SetAmbient(GfVec4f(0,0,0,1));
+        light.SetSpecular(GfVec4f(1,1,1,1));
+        GlfSimpleLightVector lights;
+        lights.push_back(light);
+        _lightingContext->SetLights(lights);
 
-            GlfSimpleMaterial material;
-            material.SetAmbient(GfVec4f(0.2, 0.2, 0.2, 1.0));
-            material.SetDiffuse(GfVec4f(0.8, 0.8, 0.8, 1.0));
-            material.SetSpecular(GfVec4f(0,0,0,1));
-            material.SetShininess(0.0001f);
-            _lightingContext->SetMaterial(material);
-            _lightingContext->SetSceneAmbient(GfVec4f(0.2,0.2,0.2,1.0));
-        } else {
-            glEnable(GL_LIGHTING);
-            glEnable(GL_LIGHT0);
-            float position[4] = {0,-.5,.5,0};
-            glLightfv(GL_LIGHT0, GL_POSITION, position);
-        }
+        GlfSimpleMaterial material;
+        material.SetAmbient(GfVec4f(0.2, 0.2, 0.2, 1.0));
+        material.SetDiffuse(GfVec4f(0.8, 0.8, 0.8, 1.0));
+        material.SetSpecular(GfVec4f(0,0,0,1));
+        material.SetShininess(0.0001f);
+        _lightingContext->SetMaterial(material);
+        _lightingContext->SetSceneAmbient(GfVec4f(0.2,0.2,0.2,1.0));
     }
 
     if (_ShouldFrameAll()) {
@@ -209,6 +198,8 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     _engine->SetCameraState(modelViewMatrix, projMatrix);
     _engine->SetRenderViewport(viewport);
 
+    _engine->SetRendererAov(GetRendererAov());
+
     glViewport(0, 0, width, height);
     glClearBufferfv(GL_COLOR, 0, clearColor);
     glClearBufferfv(GL_DEPTH, 0, clearDepth);
@@ -220,6 +211,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     params.enableLighting =  IsEnabledTestLighting();
     params.complexity = _GetComplexity();
     params.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK;
+    params.clearColor = GetClearColor();
 
     _engine->SetLightingState(_lightingContext);
     _engine->Render(_stage->GetPseudoRoot(), params);

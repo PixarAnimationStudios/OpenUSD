@@ -128,8 +128,16 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
         const TfToken primTypeName(it->second.Get<std::string>());
 
         TF_DEBUG(USDIMAGING_PLUGINS).Msg("[PluginDiscover] Plugin discovered "
-                        "'%s'\n", 
-                        typeIt->GetTypeName().c_str());
+                        "'%s' for primType '%s'\n", 
+                        typeIt->GetTypeName().c_str(), primTypeName.GetText());
+        if (_typeMap.count(primTypeName) != 0) {
+            TF_CODING_ERROR("[PluginDiscover] A prim adapter for primType '%s' "
+                "already exists! Overriding prim adapters at runtime is not "
+                "supported. The last discovered adapter (%s) will be used. The "
+                "previously discovered adapter (%s) will be discarded.",
+                primTypeName.GetText(), typeIt->GetTypeName().c_str(),
+                _typeMap[primTypeName].GetTypeName().c_str());
+        }
         _typeMap[primTypeName] = *typeIt;
 
         // Adapters can opt in to being used as the adapter for any derived

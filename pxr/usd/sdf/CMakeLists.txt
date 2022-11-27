@@ -46,6 +46,7 @@ pxr_library(sdf
         mapEditor
         namespaceEdit
         notice
+        opaqueValue
         path
         pathNode
         pathTable
@@ -139,6 +140,7 @@ pxr_library(sdf
         wrapLayerTree.cpp
         wrapNamespaceEdit.cpp
         wrapNotice.cpp
+        wrapOpaqueValue.cpp
         wrapPath.cpp
         wrapPayload.cpp
         wrapPrimSpec.cpp

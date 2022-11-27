@@ -36,7 +36,6 @@
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refBase.h"
-#include "pxr/base/tf/weakBase.h"
 
 #include <memory>
 #include <utility>
@@ -47,16 +46,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 class PcpArc;
 class PcpLayerStackSite;
 
-TF_DECLARE_WEAK_AND_REF_PTRS(PcpPrimIndex_Graph);
+TF_DECLARE_REF_PTRS(PcpPrimIndex_Graph);
 
 /// \class PcpPrimIndex_Graph
 ///
 /// Internal representation of the graph used to represent sources of
 /// opinions in the prim index.
 ///
-class PcpPrimIndex_Graph 
-    : public TfSimpleRefBase
-    , public TfWeakBase
+class PcpPrimIndex_Graph : public TfSimpleRefBase
 {
 public:
     /// Creates a new graph with a root node for site \p rootSite.
@@ -64,7 +61,7 @@ public:
                                         bool usd);
 
     /// Creates a new graph that is a clone of \p rhs.
-    static PcpPrimIndex_GraphRefPtr New(const PcpPrimIndex_GraphPtr& rhs);
+    static PcpPrimIndex_GraphRefPtr New(const PcpPrimIndex_GraphRefPtr& rhs);
 
     /// Returns true if this graph was created in USD mode.
     bool IsUsd() const {
@@ -130,7 +127,7 @@ public:
     /// PcpNodeRef is returned.
     PcpNodeRef InsertChildSubgraph(
         const PcpNodeRef& parentNode,
-        const PcpPrimIndex_GraphPtr& subgraph, const PcpArc& arc,
+        const PcpPrimIndex_GraphRefPtr& subgraph, const PcpArc& arc,
         PcpErrorBasePtr *error);
 
     /// Finalizes the graph. This optimizes internal data structures and

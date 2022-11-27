@@ -5,6 +5,7 @@
 (
     subLayers = [
         @foo.usd@,
+        @bar.usd@
     ]
 )
 
@@ -13,15 +14,21 @@ def Xform "Model" (
         asset identifier = @foo.usd@
         asset[] payloadAssetDependencies = [@foo.usd@, @bar.usd@]
     }
-    payload = @foo.usd@</foo>
+    payload = [
+        @foo.usd@</foo>,
+        @bar.usd@,
+        @baz.usd@
+    ]
     references = [
         @foo.usd@</foo>, 
-        @bar.usd@
+        @bar.usd@,
+        @baz.usd@
     ]
     customData = {
         asset foo = @foo.usd@
         dictionary d = {
             asset foo = @foo.usd@
+            asset[] bar = [@foo.usd@, @bar.usd@]
         }
     }
 )

@@ -1724,6 +1724,7 @@
     <addaction name="showInterpreter"/>
     <addaction name="actionPreferences"/>
     <addaction name="showDebugFlags"/>
+    <addaction name="showHydraSceneBrowser"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -2978,6 +2979,11 @@
    </property>
    <property name="shortcut">
     <string>F</string>
+   </property>
+  </action>
+  <action name="showHydraSceneBrowser">
+   <property name="text">
+    <string>Hydra Scene Browser</string>
    </property>
   </action>
   <actiongroup name="actionGroupCameraMask">

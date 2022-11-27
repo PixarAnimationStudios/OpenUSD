@@ -67,13 +67,6 @@ public:
 
     HD_DECLARE_DATASOURCE(This);
 
-    bool Has(const TfToken &name) override {
-        if (name == _GetLocatorToken()) {
-            return true;
-        }
-        
-        return UsdImagingDataSourceGprim::Has(name);
-    }
     TfTokenVector GetNames() override {
         TfTokenVector result = UsdImagingDataSourceGprim::GetNames();
         result.push_back(_GetLocatorToken());
@@ -94,13 +87,14 @@ public:
 
     static
     HdDataSourceLocatorSet
-    Invalidate(const TfToken &subprim, const TfTokenVector &properties) {
+    Invalidate(UsdPrim const& prim, const TfToken &subprim,
+            const TfTokenVector &properties) {
         HdDataSourceLocatorSet locators =
             _DataSource::Invalidate(
                 subprim, properties);
 
         locators.insert(
-            UsdImagingDataSourceGprim::Invalidate(subprim, properties));
+            UsdImagingDataSourceGprim::Invalidate(prim, subprim, properties));
 
         return locators;
     }

@@ -1,0 +1,98 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Camera "MainCamera"
+{
+    float focalLength = 18.0
+    float horizontalAperture = 23.0
+    float verticalAperture = 14.0
+    token projection = "perspective"
+    matrix4d xformOp:transform = (( 0.906308,  0.422618, 0.000000, 0.0 ),
+                                  (-0.254338,  0.545430, 0.798636, 0.0 ),
+                                  ( 0.337518, -0.723810, 0.601815, 0.0 ),
+                                  ( 3.078854, -6.602625, 5.489785, 1.0 ))
+    token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Xform "World" (
+    kind = "group"
+)
+{
+    def Xform "Group1" (
+        kind = "group"
+    )
+    {
+        def Sphere "SphereAsBox" (
+            kind = "component"
+            prepend apiSchemas = ["GeomModelAPI"]
+        )
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            uniform token model:drawMode = "cards"
+            uniform token model:cardGeometry = "box"
+            uniform float3 model:drawModeColor = (0, 1, 1)
+            uniform asset model:cardTextureXPos = @WoodPlanks.jpg@
+            uniform asset model:cardTextureYPos = @WoodPlanks.jpg@
+            custom double3 xformOp:translate = (-3, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Sphere "SphereAsCross" (
+            kind = "component"
+            prepend apiSchemas = ["GeomModelAPI"]
+        )
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            uniform token model:drawMode = "cards"
+            uniform token model:cardGeometry = "cross"
+            uniform asset model:cardTextureXPos = @WoodPlanks.jpg@
+            uniform asset model:cardTextureYPos = @WoodPlanks.jpg@
+            custom double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Sphere "SphereFromTexture" (
+            kind = "component"
+            prepend apiSchemas = ["GeomModelAPI"]
+        )
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            uniform token model:drawMode = "cards"
+            uniform token model:cardGeometry = "fromTexture"
+            uniform asset model:cardTextureXPos = @WoodPlanksDonut.exr@
+            custom double3 xformOp:translate = (3, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Xform "Group2" (
+        kind = "group"
+    )
+    {
+
+        def PointInstancer "Instance" (
+            prepend apiSchemas = ["GeomModelAPI"]
+        )
+        {
+            uniform token model:drawMode = "cards"
+            double3 xformOp:translate = (0, 3, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+            point3f[] positions = [(0, 0, 0)]
+            int[] protoIndices = [0]
+            rel prototypes = [ </World/Group2/Instance/Prototypes/Foo> ]
+
+            def "Prototypes" (
+                kind = "group"
+            )
+            {
+                def "Foo" (
+                    references = [</World/Group1>]
+                    kind = "component"
+                    instanceable = true
+                ) {}
+            }
+        }
+    }
+}

@@ -28,15 +28,17 @@
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/prototypePruningSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/camera.h"
 
-#include "pxr/imaging/hd/instancedBySceneIndex.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/rendererPlugin.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/taskController.h"
 #include "pxr/imaging/hdx/tokens.h"
@@ -86,17 +88,6 @@ _GetUseSceneIndices()
     return useSceneIndices;
 }
 
-
-bool
-_IsHydraEnabled()
-{
-    // Check to see if we have a default plugin for the renderer
-    TfToken defaultPlugin = 
-        HdRendererPluginRegistry::GetInstance().GetDefaultPluginId();
-
-    return !defaultPlugin.IsEmpty();
-}
-
 std::string
 _GetPlatformDependentRendererDisplayName(HfPluginDesc const &pluginDescriptor)
 {
@@ -117,27 +108,20 @@ _GetPlatformDependentRendererDisplayName(HfPluginDesc const &pluginDescriptor)
 } // anonymous namespace
 
 //----------------------------------------------------------------------------
-// Global State
-//----------------------------------------------------------------------------
-
-/*static*/
-bool
-UsdImagingGLEngine::IsHydraEnabled()
-{
-    static bool isHydraEnabled = _IsHydraEnabled();
-    return isHydraEnabled;
-}
-
-//----------------------------------------------------------------------------
 // Construction
 //----------------------------------------------------------------------------
 
-UsdImagingGLEngine::UsdImagingGLEngine(const HdDriver& driver)
+UsdImagingGLEngine::UsdImagingGLEngine(
+    const HdDriver& driver,
+    const TfToken& rendererPluginId,
+    bool gpuEnabled)
     : UsdImagingGLEngine(SdfPath::AbsoluteRootPath(),
             {},
             {},
             _GetUsdImagingDelegateId(),
-            driver
+            driver,
+            rendererPluginId,
+            gpuEnabled
         )
 {
 }
@@ -147,9 +131,12 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     const SdfPathVector& excludedPaths,
     const SdfPathVector& invisedPaths,
     const SdfPath& sceneDelegateID,
-    const HdDriver& driver)
+    const HdDriver& driver,
+    const TfToken& rendererPluginId,
+    bool gpuEnabled)
     : _hgi()
     , _hgiDriver(driver)
+    , _gpuEnabled(gpuEnabled)
     , _sceneDelegateId(sceneDelegateID)
     , _selTracker(std::make_shared<HdxSelectionTracker>())
     , _selectionColor(1.0f, 1.0f, 0.0f, 1.0f)
@@ -161,14 +148,16 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     , _sceneIndex(nullptr)
     , _sceneDelegate(nullptr)
 {
-
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
-        return;
+    if (!_gpuEnabled && _hgiDriver.name == HgiTokens->renderDriver &&
+        _hgiDriver.driver.IsHolding<Hgi*>()) {
+        TF_WARN("Trying to share GPU resources while disabling the GPU.");
+        _gpuEnabled = true;
     }
 
     // _renderIndex, _taskController, and _sceneDelegate/_sceneIndex
     // are initialized by the plugin system.
-    if (!SetRendererPlugin(_GetDefaultRendererPluginId())) {
+    if (!SetRendererPlugin(!rendererPluginId.IsEmpty() ?
+            rendererPluginId : _GetDefaultRendererPluginId())) {
         TF_CODING_ERROR("No renderer plugins found!");
     }
 }
@@ -207,7 +196,7 @@ UsdImagingGLEngine::PrepareBatch(
     const UsdPrim& root, 
     const UsdImagingGLRenderParams& params)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -313,7 +302,7 @@ UsdImagingGLEngine::_SetBBoxParams(
     const GfVec4f& bboxLineColor,
     float bboxLineDashSize)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -330,7 +319,7 @@ UsdImagingGLEngine::RenderBatch(
     const SdfPathVector& paths, 
     const UsdImagingGLRenderParams& params)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -369,7 +358,7 @@ UsdImagingGLEngine::Render(
     const UsdPrim& root, 
     const UsdImagingGLRenderParams &params)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -392,7 +381,7 @@ UsdImagingGLEngine::Render(
 bool
 UsdImagingGLEngine::IsConverged() const
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return true;
     }
 
@@ -406,7 +395,7 @@ UsdImagingGLEngine::IsConverged() const
 void
 UsdImagingGLEngine::SetRootTransform(GfMatrix4d const& xf)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -420,7 +409,7 @@ UsdImagingGLEngine::SetRootTransform(GfMatrix4d const& xf)
 void
 UsdImagingGLEngine::SetRootVisibility(bool isVisible)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -438,7 +427,7 @@ UsdImagingGLEngine::SetRootVisibility(bool isVisible)
 void
 UsdImagingGLEngine::SetRenderViewport(GfVec4d const& viewport)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -448,7 +437,7 @@ UsdImagingGLEngine::SetRenderViewport(GfVec4d const& viewport)
 void
 UsdImagingGLEngine::SetFraming(CameraUtilFraming const& framing)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -459,7 +448,7 @@ void
 UsdImagingGLEngine::SetOverrideWindowPolicy(
     const std::pair<bool, CameraUtilConformWindowPolicy> &policy)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -469,7 +458,7 @@ UsdImagingGLEngine::SetOverrideWindowPolicy(
 void
 UsdImagingGLEngine::SetRenderBufferSize(GfVec2i const& size)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -479,7 +468,7 @@ UsdImagingGLEngine::SetRenderBufferSize(GfVec2i const& size)
 void
 UsdImagingGLEngine::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -497,7 +486,7 @@ UsdImagingGLEngine::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
 void
 UsdImagingGLEngine::SetCameraPath(SdfPath const& id)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -515,7 +504,7 @@ void
 UsdImagingGLEngine::SetCameraState(const GfMatrix4d& viewMatrix,
                                    const GfMatrix4d& projectionMatrix)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -525,7 +514,7 @@ UsdImagingGLEngine::SetCameraState(const GfMatrix4d& viewMatrix,
 void
 UsdImagingGLEngine::SetLightingState(GlfSimpleLightingContextPtr const &src)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -538,7 +527,7 @@ UsdImagingGLEngine::SetLightingState(
     GlfSimpleMaterial const &material,
     GfVec4f const &sceneAmbient)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -562,7 +551,7 @@ UsdImagingGLEngine::SetLightingState(
 void
 UsdImagingGLEngine::SetSelected(SdfPathVector const& paths)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -593,7 +582,7 @@ UsdImagingGLEngine::SetSelected(SdfPathVector const& paths)
 void
 UsdImagingGLEngine::ClearSelected()
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -615,7 +604,7 @@ UsdImagingGLEngine::_GetSelection() const
 void
 UsdImagingGLEngine::AddSelected(SdfPath const &path, int instanceIndex)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -641,7 +630,7 @@ UsdImagingGLEngine::AddSelected(SdfPath const &path, int instanceIndex)
 void
 UsdImagingGLEngine::SetSelectionColor(GfVec4f const& color)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -666,7 +655,7 @@ UsdImagingGLEngine::TestIntersection(
     int *outHitInstanceIndex,
     HdInstancerContext *outInstancerContext)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return false;
     }
 
@@ -746,7 +735,7 @@ UsdImagingGLEngine::DecodeIntersection(
     int *outHitInstanceIndex,
     HdInstancerContext *outInstancerContext)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return false;
     }
 
@@ -821,10 +810,16 @@ UsdImagingGLEngine::GetRendererDisplayName(TfToken const &id)
     return _GetPlatformDependentRendererDisplayName(pluginDescriptor);
 }
 
+bool
+UsdImagingGLEngine::GetGPUEnabled() const
+{
+    return _gpuEnabled;
+}
+
 TfToken
 UsdImagingGLEngine::GetCurrentRendererId() const
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return TfToken();
     }
 
@@ -839,7 +834,7 @@ UsdImagingGLEngine::_InitializeHgiIfNecessary()
     // The cleanest pattern is for the client app to provide this since you
     // may have multiple UsdImagingGLEngines in one app that ideally all use
     // the same HdDriver and Hgi to share GPU resources.
-    if (_hgiDriver.driver.IsEmpty()) {
+    if (_gpuEnabled && _hgiDriver.driver.IsEmpty()) {
         _hgi = Hgi::CreatePlatformDefaultHgi();
         _hgiDriver.name = HgiTokens->renderDriver;
         _hgiDriver.driver = VtValue(_hgi.get());
@@ -849,20 +844,28 @@ UsdImagingGLEngine::_InitializeHgiIfNecessary()
 bool
 UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
-        return false;
-    }
-
     _InitializeHgiIfNecessary();
 
     HdRendererPluginRegistry &registry =
         HdRendererPluginRegistry::GetInstance();
 
-    // Special case: id = TfToken() selects the first plugin in the list.
-    const TfToken resolvedId =
-        id.IsEmpty() ? registry.GetDefaultPluginId() : id;
+    TfToken resolvedId;
+    if (id.IsEmpty()) {
+        // Special case: id == TfToken() selects the first supported plugin in
+        // the list.
+        resolvedId = registry.GetDefaultPluginId(_gpuEnabled);
+    } else {
+        HdRendererPluginHandle plugin = registry.GetOrCreateRendererPlugin(id);
+        if (plugin && plugin->IsSupported(_gpuEnabled)) {
+            resolvedId = id;
+        } else {
+            TF_CODING_ERROR("Invalid plugin id or plugin is unsupported: %s",
+                            id.GetText());
+            return false;
+        }
+    }
 
-    if ( _renderDelegate && _renderDelegate.GetPluginId() == resolvedId) {
+    if (_renderDelegate && _renderDelegate.GetPluginId() == resolvedId) {
         return true;
     }
 
@@ -870,7 +873,7 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
 
     HdPluginRenderDelegateUniqueHandle renderDelegate =
         registry.CreateRenderDelegate(resolvedId);
-    if(!renderDelegate) {
+    if (!renderDelegate) {
         return false;
     }
 
@@ -953,8 +956,9 @@ UsdImagingGLEngine::_SetRenderDelegate(
         _renderIndex->InsertSceneIndex(
             UsdImagingGLDrawModeSceneIndex::New(
                 HdFlatteningSceneIndex::New(
-                    HdInstancedBySceneIndex::New(
-                        _sceneIndex)),
+                    UsdImagingPiPrototypePropagatingSceneIndex::New(
+                        UsdImagingPrototypePruningSceneIndex::New(
+                            _sceneIndex))),
                 /* inputArgs = */ nullptr),
             _sceneDelegateId);
     } else {
@@ -965,7 +969,8 @@ UsdImagingGLEngine::_SetRenderDelegate(
     // Create the new task controller
     _taskController = std::make_unique<HdxTaskController>(
         _renderIndex.get(),
-        _ComputeControllerPath(_renderDelegate));
+        _ComputeControllerPath(_renderDelegate),
+        _gpuEnabled);
 
     // The task context holds on to resources in the render
     // deletegate, so we want to destroy it first and thus
@@ -980,7 +985,7 @@ UsdImagingGLEngine::_SetRenderDelegate(
 TfTokenVector
 UsdImagingGLEngine::GetRendererAovs() const
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return {};
     }
 
@@ -1007,7 +1012,7 @@ UsdImagingGLEngine::GetRendererAovs() const
 bool
 UsdImagingGLEngine::SetRendererAov(TfToken const &id)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return false;
     }
 
@@ -1022,7 +1027,7 @@ HgiTextureHandle
 UsdImagingGLEngine::GetAovTexture(
     TfToken const& name) const
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return HgiTextureHandle();
     }
 
@@ -1041,7 +1046,7 @@ UsdImagingGLEngine::GetAovTexture(
 HdRenderBuffer*
 UsdImagingGLEngine::GetAovRenderBuffer(TfToken const& name) const
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return nullptr;
     }
 
@@ -1051,11 +1056,9 @@ UsdImagingGLEngine::GetAovRenderBuffer(TfToken const& name) const
 UsdImagingGLRendererSettingsList
 UsdImagingGLEngine::GetRendererSettingsList() const
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return {};
     }
-
-    TF_VERIFY(_renderDelegate);
 
     const HdRenderSettingDescriptorList descriptors =
         _renderDelegate->GetRenderSettingDescriptors();
@@ -1094,29 +1097,27 @@ UsdImagingGLEngine::GetRendererSettingsList() const
 VtValue
 UsdImagingGLEngine::GetRendererSetting(TfToken const& id) const
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return VtValue();
     }
 
-    TF_VERIFY(_renderDelegate);
     return _renderDelegate->GetRenderSetting(id);
 }
 
 void
 UsdImagingGLEngine::SetRendererSetting(TfToken const& id, VtValue const& value)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
-    TF_VERIFY(_renderDelegate);
     _renderDelegate->SetRenderSetting(id, value);
 }
 
 void
 UsdImagingGLEngine::SetEnablePresentation(bool enabled)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -1128,7 +1129,7 @@ UsdImagingGLEngine::SetPresentationOutput(
     TfToken const &api,
     VtValue const &framebuffer)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
@@ -1143,7 +1144,7 @@ UsdImagingGLEngine::SetPresentationOutput(
 HdCommandDescriptors 
 UsdImagingGLEngine::GetRendererCommandDescriptors() const
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return HdCommandDescriptors();
     }
 
@@ -1154,7 +1155,7 @@ bool
 UsdImagingGLEngine::InvokeRendererCommand(
     const TfToken &command, const HdCommandArgs &args) const
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return false;
     }
 
@@ -1167,7 +1168,7 @@ UsdImagingGLEngine::InvokeRendererCommand(
 bool
 UsdImagingGLEngine::IsPauseRendererSupported() const
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return false;
     }
 
@@ -1177,7 +1178,7 @@ UsdImagingGLEngine::IsPauseRendererSupported() const
 bool
 UsdImagingGLEngine::PauseRenderer()
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return false;
     }
 
@@ -1189,7 +1190,7 @@ UsdImagingGLEngine::PauseRenderer()
 bool
 UsdImagingGLEngine::ResumeRenderer()
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return false;
     }
 
@@ -1201,37 +1202,34 @@ UsdImagingGLEngine::ResumeRenderer()
 bool
 UsdImagingGLEngine::IsStopRendererSupported() const
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return false;
     }
 
-    TF_VERIFY(_renderDelegate);
     return _renderDelegate->IsStopSupported();
 }
 
 bool
 UsdImagingGLEngine::StopRenderer()
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return false;
     }
 
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
-    TF_VERIFY(_renderDelegate);
     return _renderDelegate->Stop();
 }
 
 bool
 UsdImagingGLEngine::RestartRenderer()
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return false;
     }
 
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
-    TF_VERIFY(_renderDelegate);
     return _renderDelegate->Restart();
 }
 
@@ -1246,7 +1244,7 @@ UsdImagingGLEngine::SetColorCorrectionSettings(
     TfToken const& ocioColorSpace,
     TfToken const& ocioLook)
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled()) ||
+    if (ARCH_UNLIKELY(!_renderDelegate) ||
         !IsColorCorrectionCapable()) {
         return;
     }
@@ -1273,18 +1271,17 @@ UsdImagingGLEngine::IsColorCorrectionCapable()
 VtDictionary
 UsdImagingGLEngine::GetRenderStats() const
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return VtDictionary();
     }
 
-    TF_VERIFY(_renderDelegate);
     return _renderDelegate->GetRenderStats();
 }
 
 Hgi*
 UsdImagingGLEngine::GetHgi()
 {
-    if (ARCH_UNLIKELY(!IsHydraEnabled())) {
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
         return nullptr;
     }
 

@@ -259,10 +259,10 @@ HdxColorCorrectionTask::_CreateShaderResources()
     HgiShaderFunctionAddStageInput(
         &fragDesc, "uvOut", "vec2");
     HgiShaderFunctionAddTexture(
-        &fragDesc, "colorIn");
+        &fragDesc, "colorIn", /*bindIndex = */0);
     if (useOCIO) {
         HgiShaderFunctionAddTexture(
-            &fragDesc, "Lut3DIn", 3);
+            &fragDesc, "Lut3DIn", /*bindIndex = */1, /*dimensions = */3);
     }
     HgiShaderFunctionAddStageOutput(
         &fragDesc, "hd_FragColor", "vec4", "color");

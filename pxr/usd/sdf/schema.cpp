@@ -449,6 +449,9 @@ _AddStandardTypesToRegistry(Sdf_ValueTypeRegistry* r)
     r->AddType(T("string", std::string()).CPPTypeName("std::string"));
     r->AddType(T("token",  TfToken()));
     r->AddType(T("asset",  SdfAssetPath()));
+    r->AddType(T("opaque", SdfOpaqueValue()).NoArrays());
+    r->AddType(T("group",  SdfOpaqueValue())
+               .NoArrays().Role(SdfValueRoleNames->Group));
 
     // Compound types.
     r->AddType(T("double2",  GfVec2d(0.0)).Dimensions(2));
@@ -1823,6 +1826,8 @@ Sdf_InitializeValueTypeNames()
     n->String        = r.FindType("string");
     n->Token         = r.FindType("token");
     n->Asset         = r.FindType("asset");
+    n->Opaque        = r.FindType("opaque");
+    n->Group         = r.FindType("group");
     n->Int2          = r.FindType("int2");
     n->Int3          = r.FindType("int3");
     n->Int4          = r.FindType("int4");

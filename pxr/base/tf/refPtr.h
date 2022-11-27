@@ -436,11 +436,6 @@
 #include "pxr/base/arch/hints.h"
 
 #include <boost/functional/hash_fwd.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_convertible.hpp>
-#include <boost/type_traits/is_same.hpp>
-#include <boost/utility/enable_if.hpp>
 
 #include <typeinfo>
 #include <type_traits>
@@ -580,11 +575,11 @@ Tf_PostNullSmartPtrDereferenceFatalError(const TfCallContext &, const char *);
 template <class T>
 class TfRefPtr {
     // Select the counter based on whether T supports unique changed listeners.
-    typedef typename boost::mpl::if_c<
+    using _Counter = typename std::conditional<
         Tf_SupportsUniqueChanged<T>::Value &&
-        !boost::is_convertible<T*, TfSimpleRefBase*>::value,
+        !std::is_convertible<T*, TfSimpleRefBase*>::value,
         Tf_RefPtr_UniqueChangedCounter,
-        Tf_RefPtr_Counter>::type _Counter;
+        Tf_RefPtr_Counter>::type;
     
 public:
     /// Convenience type accessor to underlying type \c T for template code.
@@ -630,9 +625,9 @@ public:
     /// Increments \p gp's object's reference count.
     template <template <class> class X, class U>
     inline TfRefPtr(const TfWeakPtrFacade<X, U>& p,
-                    typename boost::enable_if<
-                        boost::is_convertible<U*, T*>
-                    >::type *dummy = 0);
+                    typename std::enable_if<
+                        std::is_convertible<U*, T*>::value
+                    >::type * = 0);
 
     /// Transfer a raw pointer to a reference-counted pointer.
     ///
@@ -771,24 +766,6 @@ public:
         _RemoveRef(_refBase);
     }
 
-private:
-    
-    // Compile error if a U* cannot be assigned to a T*.
-    template <class U>
-    static void _CheckTypeAssignability() {
-        T* unused = (U*)0;
-        if (unused) unused = 0;
-    }
-
-    // Compile error if a T* and U* cannot be compared.
-    template <class U>
-    static void _CheckTypeComparability() {
-        bool unused = ((T*)0 == (U*)0);
-        if (unused) unused = false;
-    }
-
-public:
-    
     /// Initializes to point at \c p's object, and increments reference count.
     ///
     /// This initialization is legal only if
@@ -801,11 +778,7 @@ public:
     template <class U>
 #endif
     TfRefPtr(const TfRefPtr<U>& p) : _refBase(p._refBase) {
-        if (!boost::is_same<T,U>::value) {
-            if (false)
-                _CheckTypeAssignability<U>();
-        }
-
+        static_assert(std::is_convertible<U*, T*>::value, "");
         _AddRef();
         Tf_RefPtrTracker_New(this, _GetObjectForTracking());
     }
@@ -824,11 +797,7 @@ public:
     template <class U>
 #endif
     TfRefPtr(TfRefPtr<U>&& p) : _refBase(p._refBase) {
-        if (!boost::is_same<T,U>::value) {
-            if (false)
-                _CheckTypeAssignability<U>();
-        }
-
+        static_assert(std::is_convertible<U*, T*>::value, "");
         p._refBase = nullptr;
         Tf_RefPtrTracker_New(this, _GetObjectForTracking());
         Tf_RefPtrTracker_Assign(&p, p._GetObjectForTracking(),
@@ -849,10 +818,7 @@ public:
     template <class U>
 #endif
     TfRefPtr<T>& operator=(const TfRefPtr<U>& p) {
-        if (!boost::is_same<T,U>::value) {
-            if (false)
-                _CheckTypeAssignability<U>();
-        }
+        static_assert(std::is_convertible<U*, T*>::value, "");
 
         Tf_RefPtrTracker_Assign(this,
                                 reinterpret_cast<T*>(p._GetObjectForTracking()),
@@ -879,10 +845,7 @@ public:
     template <class U>
 #endif
     TfRefPtr<T>& operator=(TfRefPtr<U>&& p) {
-        if (!boost::is_same<T,U>::value) {
-            if (false)
-                _CheckTypeAssignability<U>();
-        }
+        static_assert(std::is_convertible<U*, T*>::value, "");
 
         Tf_RefPtrTracker_Assign(this,
                                 reinterpret_cast<T*>(p._GetObjectForTracking()),
@@ -904,11 +867,20 @@ public:
 #if !defined(doxygen)
     template <class U>
 #endif
-    bool operator== (const TfRefPtr<U>& p) const {
-        if (false)
-            _CheckTypeComparability<U>();
-
+    auto operator==(const TfRefPtr<U>& p) const 
+        -> decltype(std::declval<T *>() == std::declval<U *>(), bool()) {
         return _refBase == p._refBase;
+    }
+
+    /// Returns true if \c *this and \c p do not point to the same object.
+    ///
+    /// The comparison is legal only if a \c T* and a \c U* are comparable.
+#if !defined(doxygen)
+    template <class U>
+#endif
+    auto operator!=(const TfRefPtr<U>& p) const
+        -> decltype(std::declval<T *>() != std::declval<U *>(), bool()) {
+        return _refBase != p._refBase;
     }
 
     /// Returns true if the address of the object pointed to by \c *this
@@ -918,58 +890,37 @@ public:
 #if !defined(doxygen)
     template <class U>
 #endif
-    bool operator< (const TfRefPtr<U>& p) const {
-        if (false)
-            _CheckTypeComparability<U>();
-
+    auto operator<(const TfRefPtr<U>& p) const
+        -> decltype(std::declval<T *>() < std::declval<U *>(), bool()) {
         return _refBase < p._refBase;
     }
 
 #if !defined(doxygen)
     template <class U>
 #endif
-    bool operator> (const TfRefPtr<U>& p) const {
-        if (false)
-            _CheckTypeComparability<U>();
-
+    auto operator>(const TfRefPtr<U>& p) const
+        -> decltype(std::declval<T *>() > std::declval<U *>(), bool()) {
         return _refBase > p._refBase;
     }
 
 #if !defined(doxygen)
     template <class U>
 #endif
-    bool operator<= (const TfRefPtr<U>& p) const {
-        if (false)
-            _CheckTypeComparability<U>();
-
+    auto operator<=(const TfRefPtr<U>& p) const
+        -> decltype(std::declval<T *>() <= std::declval<U *>(), bool()) {
         return _refBase <= p._refBase;
     }
 
 #if !defined(doxygen)
     template <class U>
 #endif
-    bool operator>= (const TfRefPtr<U>& p) const {
-        if (false)
-            _CheckTypeComparability<U>();
-
+    auto operator>=(const TfRefPtr<U>& p) const
+        -> decltype(std::declval<T *>() >= std::declval<U *>(), bool()) {
         return _refBase >= p._refBase;
     }
 
-    /// Returns true if \c *this and \c p do not point to the same object.
-    ///
-    /// The comparison is legal only if a \c T* and a \c U* are comparable.
-#if !defined(doxygen)
-    template <class U>
-#endif
-    bool operator!= (const TfRefPtr<U>& p) const {
-        if (false)
-            _CheckTypeComparability<U>();
-
-        return _refBase != p._refBase;
-    }
-
     /// Accessor to \c T's public members.
-    T* operator ->() const {
+    T* operator->() const {
         if (_refBase) {
             return static_cast<T*>(const_cast<TfRefBase*>(_refBase));
         }
@@ -1059,7 +1010,7 @@ private:
 #if defined(doxygen)
     // Sanitized for documentation:
     template <class D>
-    friend inline TfRef<D> TfDynamic_cast(const TfRefPtr<T>&);
+    friend inline TfRefPtr<D> TfDynamic_cast(const TfRefPtr<T>&);
 #else
     template <class D, class B>
     friend TfRefPtr<typename D::DataType>
@@ -1394,7 +1345,7 @@ TfHashAppend(HashState &h, const TfRefPtr<T> &ptr)
 
 #endif // !doxygen
 
-#define TF_SUPPORTS_REFPTR(T)   boost::is_base_of<TfRefBase, T >::value
+#define TF_SUPPORTS_REFPTR(T) std::is_base_of<TfRefBase, T>::value
 
 #if defined(ARCH_COMPILER_MSVC) 
 // There is a bug in the compiler which means we have to provide this

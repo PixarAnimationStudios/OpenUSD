@@ -1,0 +1,42 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Xform "World_old"
+{
+    rel coordSys:worldSpace = </World_old/Space>
+    double3 xformOp:translate = (5, 0, 0)
+    token[] xformOpOrder = ["xformOp:translate"]
+
+    def Xform "Model"
+    {
+        rel coordSys:instanceSpace = </World_old/Model>
+        rel coordSys:modelSpace = </World_old/Model/Geom>
+        rel coordSys:paintSpace = </World_old/Model/Place3dTexture>
+        double3 xformOp:translate = (2, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "Place3dTexture"
+        {
+            double3 xformOp:translate = (0, -10, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "Geom"
+        {
+            def Cube "Box"
+            {
+                double3 xformOp:translate = (0, 0, 3)
+                token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+    }
+
+    def Xform "Space"
+    {
+    }
+}
+

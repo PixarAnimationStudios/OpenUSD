@@ -109,6 +109,16 @@ def main():
             'more than one extra purpose, either use commas with no spaces or '
             'quote the argument and separate purposes by commas and/or spaces.'))
 
+    # Note: The argument passed via the command line (disableGpu) is inverted
+    # from the variable in which it is stored (gpuEnabled).
+    parser.add_argument('--disableGpu', action='store_false',
+        dest='gpuEnabled',
+        help=(
+            'Indicates if the GPU should not be used for rendering. If set '
+            'this not only restricts renderers to those which only run on '
+            'the CPU, but additionally it will prevent any tasks that require '
+            'the GPU from being invoked.'))
+
     UsdAppUtils.cameraArgs.AddCmdlineArgs(parser)
     UsdAppUtils.framesArgs.AddCmdlineArgs(parser)
     UsdAppUtils.complexityArgs.AddCmdlineArgs(parser)
@@ -149,16 +159,18 @@ def main():
     # Get the camera at the given path (or with the given name).
     usdCamera = UsdAppUtils.GetCameraAtPath(usdStage, args.camera)
 
-    # Frame-independent initialization.
-    # Note that the size of the widget doesn't actually affect the size of the
-    # output image. We just pass it along for cleanliness.
-    glWidget = _SetupOpenGLContext(args.imageWidth, args.imageWidth)
+    if args.gpuEnabled:
+        # UsdAppUtils.FrameRecorder will expect that an OpenGL context has
+        # been created and made current if the GPU is enabled.
+        #
+        # Frame-independent initialization.
+        # Note that the size of the widget doesn't actually affect the size of
+        # the output image. We just pass it along for cleanliness.
+        glWidget = _SetupOpenGLContext(args.imageWidth, args.imageWidth)
 
-    frameRecorder = UsdAppUtils.FrameRecorder()
-    if args.rendererPlugin:
-        frameRecorder.SetRendererPlugin(
-            UsdAppUtils.rendererArgs.GetPluginIdFromArgument(
-                args.rendererPlugin))
+    rendererPluginId = UsdAppUtils.rendererArgs.GetPluginIdFromArgument(
+        args.rendererPlugin) or ''
+    frameRecorder = UsdAppUtils.FrameRecorder(rendererPluginId, args.gpuEnabled)
     frameRecorder.SetImageWidth(args.imageWidth)
     frameRecorder.SetComplexity(args.complexity.value)
     frameRecorder.SetColorCorrectionMode(args.colorCorrectionMode)

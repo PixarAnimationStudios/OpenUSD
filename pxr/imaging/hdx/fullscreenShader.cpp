@@ -659,11 +659,11 @@ HdxFullscreenShader::_Draw(
         HgiShaderFunctionAddStageOutput(
             &fragDesc, "hd_FragDepth", "float", "depth(any)");
         HgiShaderFunctionAddTexture(
-            &fragDesc, "colorIn");
+            &fragDesc, "colorIn", /*bindIndex = */0);
 
         if(depthAware) {
             HgiShaderFunctionAddTexture(
-                &fragDesc, "depth");
+                &fragDesc, "depth", /*bindIndex = */1);
         }
         
         SetProgram(HdxPackageFullscreenShader(),

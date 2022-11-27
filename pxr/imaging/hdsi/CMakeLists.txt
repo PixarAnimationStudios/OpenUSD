@@ -16,6 +16,7 @@ pxr_library(hdsi
         pxOsd
 
     PUBLIC_CLASSES
+        extComputationPrimvarPruningSceneIndex
         implicitSurfaceSceneIndex
         materialBindingResolvingSceneIndex
         pinnedCurveExpandingSceneIndex

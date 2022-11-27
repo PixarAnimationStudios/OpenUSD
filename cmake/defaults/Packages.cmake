@@ -60,22 +60,41 @@ endif()
 
 if(PXR_ENABLE_PYTHON_SUPPORT)
     # --Python.
+    macro(setup_python_package package)
+        find_package(${package} COMPONENTS Interpreter Development REQUIRED)
+
+        # Set up versionless variables so that downstream libraries don't
+        # have to worry about which Python version is being used.
+        set(PYTHON_EXECUTABLE "${${package}_EXECUTABLE}")
+        set(PYTHON_INCLUDE_DIRS "${${package}_INCLUDE_DIRS}")
+        set(PYTHON_VERSION_MAJOR "${${package}_VERSION_MAJOR}")
+        set(PYTHON_VERSION_MINOR "${${package}_VERSION_MINOR}")
+
+        # Convert paths to CMake path format on Windows to avoid string parsing
+        # issues when we pass PYTHON_EXECUTABLE or PYTHON_INCLUDE_DIRS to
+        # pxr_library or other functions.
+        if(WIN32)
+            file(TO_CMAKE_PATH ${PYTHON_EXECUTABLE} PYTHON_EXECUTABLE)
+            file(TO_CMAKE_PATH ${PYTHON_INCLUDE_DIRS} PYTHON_INCLUDE_DIRS)
+        endif()
+
+        # This option indicates that we don't want to explicitly link to the
+        # python libraries. See BUILDING.md for details.
+        if(PXR_PY_UNDEFINED_DYNAMIC_LOOKUP AND NOT WIN32)
+            set(PYTHON_LIBRARIES "")
+        else()
+            set(PYTHON_LIBRARIES "${package}::Python")
+        endif()
+    endmacro()
+
     if(PXR_USE_PYTHON_3)
-        find_package(PythonInterp 3.0 REQUIRED)
-        find_package(PythonLibs 3.0 REQUIRED)
+        setup_python_package(Python3)
     else()
-        find_package(PythonInterp 2.7 REQUIRED)
-        find_package(PythonLibs 2.7 REQUIRED)
+        setup_python_package(Python2)
     endif()
 
     if(WIN32 AND PXR_USE_DEBUG_PYTHON)
         set(Boost_USE_DEBUG_PYTHON ON)
-    endif()
-
-    # This option indicates that we don't want to explicitly link to the python
-    # libraries. See BUILDING.md for details.
-    if(PXR_PY_UNDEFINED_DYNAMIC_LOOKUP AND NOT WIN32 )
-        set(PYTHON_LIBRARIES "")
     endif()
 
     if (${Boost_VERSION_STRING} VERSION_GREATER_EQUAL "1.67")
@@ -112,9 +131,11 @@ else()
         OR PXR_VALIDATE_GENERATED_CODE)
 
         if(PXR_USE_PYTHON_3)
-            find_package(PythonInterp 3.0 REQUIRED)
+            find_package(Python3 COMPONENTS Interpreter)
+            set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
         else()
-            find_package(PythonInterp 2.7 REQUIRED)
+            find_package(Python2 COMPONENTS Interpreter)
+            set(PYTHON_EXECUTABLE ${Python2_EXECUTABLE})
         endif()
     endif()
 endif()

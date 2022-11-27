@@ -76,7 +76,20 @@
 #include "pxr/imaging/hd/volumeFieldSchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
 
+#include "pxr/base/tf/staticData.h"
+
+#include <unordered_map>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+using _SToBMap = std::unordered_map<TfToken,
+    HdDirtyBitsTranslator::LocatorSetToDirtyBitsFnc, TfHash>;
+
+using _BToSMap = std::unordered_map<TfToken,
+    HdDirtyBitsTranslator::DirtyBitsToLocatorSetFnc, TfHash>;
+
+static TfStaticData<_SToBMap> Hd_SPrimSToBFncs;
+static TfStaticData<_BToSMap> Hd_SPrimBToSFncs;
 
 /*static*/
 void
@@ -298,9 +311,15 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
             set->append(HdVisibilitySchema::GetDefaultLocator());
         }
     } else {
-        // unknown prim type, use AllDirty for anything
-        if (bits) {
-            set->append(HdDataSourceLocator());
+        const auto fncIt = Hd_SPrimBToSFncs->find(primType);
+        if (fncIt == Hd_SPrimBToSFncs->end()) {
+            // unknown prim type, use AllDirty for anything
+            if (bits) {
+                set->append(HdDataSourceLocator());
+            }
+        } else {
+            // call custom handler registered for this type
+            fncIt->second(bits, set);
         }
     }
 }
@@ -770,9 +789,15 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
             bits |= HdChangeTracker::DirtyVisibility;
         }
     } else {
-        // unknown prim type, use AllDirty for anything
-        if (_FindLocator(HdDataSourceLocator(), end, &it)) {
-            bits |= HdChangeTracker::AllDirty;
+        const auto fncIt = Hd_SPrimSToBFncs->find(primType);
+        if (fncIt == Hd_SPrimSToBFncs->end()) {
+            // unknown prim type, use AllDirty for anything
+            if (_FindLocator(HdDataSourceLocator(), end, &it)) {
+                bits |= HdChangeTracker::AllDirty;
+            }
+        } else {
+            // call custom handler registered for this type
+            fncIt->second(set, &bits);
         }
     }
 
@@ -854,6 +879,17 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
     }
 
     return bits;
+}
+
+/*static*/
+void
+HdDirtyBitsTranslator::RegisterTranslatorsForCustomSprimType(
+    TfToken const& primType,
+    LocatorSetToDirtyBitsFnc sToBFnc,
+    DirtyBitsToLocatorSetFnc bToSFnc)
+{
+    Hd_SPrimSToBFncs->insert({primType, sToBFnc});
+    Hd_SPrimBToSFncs->insert({primType, bToSFnc});
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

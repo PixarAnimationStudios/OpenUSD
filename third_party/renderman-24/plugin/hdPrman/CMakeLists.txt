@@ -105,6 +105,7 @@ pxr_plugin(${PXR_PACKAGE}
     PRIVATE_CLASSES
         cameraContext
         renderPass
+        extComputationPrimvarPruningSceneIndexPlugin
         framebuffer
         implicitSurfaceSceneIndexPlugin
         matfiltSceneIndexPlugins

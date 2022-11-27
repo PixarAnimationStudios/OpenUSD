@@ -130,7 +130,7 @@ HdExtComputationUtils::_InvokeComputation(
     TF_DEV_AXIOM(compOutputValues.size() == compOutputs.size());
 
     // Populate the context with all the inputs (scene, computed).
-    Hd_ExtComputationContextInternal context;
+    HdExtComputationContextInternal context;
     for (size_t i = 0; i < sceneInputValues.size(); ++i) {
         context.SetInputValue(sceneInputNames[i], sceneInputValues[i]);
     }
@@ -188,7 +188,7 @@ _ExecuteComputations(HdExtComputationConstPtrVector computations,
 
         // Populate the context with all the inputs (scene, computed) from
         // the value store.
-        Hd_ExtComputationContextInternal context;
+        HdExtComputationContextInternal context;
         for (auto const& sceneInput : comp->GetSceneInputNames()) {
             auto const it = valueStore.find(sceneInput);
             if (it != valueStore.end()) {

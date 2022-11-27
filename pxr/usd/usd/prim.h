@@ -1667,6 +1667,13 @@ public:
     /// generate a list of sites where clients could make edits to affect this 
     /// prim, or for debugging purposes.
     ///
+    /// For all prims in prototypes, including the prototype prim itself, this
+    /// is the expanded version of the prim index that was chosen to be shared
+    /// with all other instances. Thus, the prim index's path will not be the
+    /// same as the prim's path. Note that this behavior deviates slightly from
+    /// UsdPrim::GetPrimIndex which always returns an empty prim index for the
+    /// prototype prim itself.
+    ///
     /// This function may be relatively slow, since it will recompute the prim
     /// index on every call. Clients should prefer UsdPrim::GetPrimIndex unless 
     /// the additional site information is truly needed.

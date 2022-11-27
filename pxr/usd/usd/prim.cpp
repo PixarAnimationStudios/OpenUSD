@@ -1426,7 +1426,7 @@ UsdPrim::ComputeExpandedPrimIndex() const
     // Get the prim index path to compute from the index stored in the prim
     // data. This ensures we get consistent behavior when dealing with 
     // instancing and instance proxies.
-    const PcpPrimIndex& cachedPrimIndex = _Prim()->GetPrimIndex();
+    const PcpPrimIndex& cachedPrimIndex = _Prim()->GetSourcePrimIndex();
     if (!cachedPrimIndex.IsValid()) {
         return PcpPrimIndex();
     }

@@ -160,14 +160,14 @@ public:
         const TfToken &interpolation);
     /// Returns token data source for use as role value.
     /// Values of...
-    /// - HdPrimvarSchemaTokens->Point
-    /// - HdPrimvarSchemaTokens->Normal
-    /// - HdPrimvarSchemaTokens->Vector
-    /// - HdPrimvarSchemaTokens->Color
-    /// - HdPrimvarSchemaTokens->PointIndex
-    /// - HdPrimvarSchemaTokens->EdgeIndex
-    /// - HdPrimvarSchemaTokens->FaceIndex
-    /// - HdPrimvarSchemaTokens->TextureCoordinate
+    /// - HdPrimvarSchemaTokens->point
+    /// - HdPrimvarSchemaTokens->normal
+    /// - HdPrimvarSchemaTokens->vector
+    /// - HdPrimvarSchemaTokens->color
+    /// - HdPrimvarSchemaTokens->pointIndex
+    /// - HdPrimvarSchemaTokens->edgeIndex
+    /// - HdPrimvarSchemaTokens->faceIndex
+    /// - HdPrimvarSchemaTokens->textureCoordinate
     ///     ...will be stored statically and reused for future calls.
     HD_API
     static HdTokenDataSourceHandle BuildRoleDataSource(

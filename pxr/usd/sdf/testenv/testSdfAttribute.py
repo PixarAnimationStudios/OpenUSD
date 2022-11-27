@@ -482,5 +482,29 @@ def Scope "Scope"
         self.assertEqual(prim.attributes['desc'].GetInfo('timeSamples'),
                          {1.23: 'foo', 3.23: 'bar', 6: 'baz'})
 
+    def test_OpaqueNoAuthoredDefault(self):
+        """
+        Attempting to set the default value of an opaque attribute should fail.
+        """
+        layer = Sdf.Layer.CreateAnonymous()
+        prim = Sdf.PrimSpec(layer, "Test", Sdf.SpecifierDef, "TestType")
+        attr = Sdf.AttributeSpec(prim, "Attr", Sdf.ValueTypeNames.Opaque)
+        self.assertEqual(attr.default, None)
+        with self.assertRaises(Tf.ErrorException):
+            attr.default = Sdf.OpaqueValue()
+        self.assertEqual(attr.default, None)
+
+    def test_GroupNoAuthoredDefault(self):
+        """
+        Attempting to set the default value of a group attribute should fail.
+        """
+        layer = Sdf.Layer.CreateAnonymous()
+        prim = Sdf.PrimSpec(layer, "Test", Sdf.SpecifierDef, "TestType")
+        attr = Sdf.AttributeSpec(prim, "Attr", Sdf.ValueTypeNames.Group)
+        self.assertEqual(attr.default, None)
+        with self.assertRaises(Tf.ErrorException):
+            attr.default = Sdf.OpaqueValue()
+        self.assertEqual(attr.default, None)
+
 if __name__ == '__main__':
     unittest.main()

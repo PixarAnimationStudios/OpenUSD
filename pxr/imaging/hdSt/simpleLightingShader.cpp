@@ -657,11 +657,11 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
     const GfVec3i srcDim = srcTexture->GetDescriptor().dimensions;
 
     const unsigned int numPrefilterLevels = 
-        (unsigned int) std::log2(std::max(srcDim[0], srcDim[1]));
+        std::max((unsigned int)(std::log2(std::max(srcDim[0], srcDim[1]))), 1u);
 
     // Prefilter map computations. mipLevel = 0 allocates texture.
     for (unsigned int mipLevel = 0; mipLevel < numPrefilterLevels; ++mipLevel) {
-        const float roughness =
+        const float roughness = (numPrefilterLevels == 1) ? 0.f :
             (float)mipLevel / (float)(numPrefilterLevels - 1);
 
         ctx.AddComputation(

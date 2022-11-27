@@ -103,11 +103,8 @@
 /// to the sole instance of the registry.
 
 #include "pxr/pxr.h"
-#include "pxr/base/arch/hints.h"
-#include "pxr/base/arch/pragmas.h"
-#include "pxr/base/tf/diagnosticLite.h"
 
-#include <mutex>
+#include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -135,20 +132,19 @@ public:
     /// (for example, letting only one thread at a time call a member
     /// function) are the responsibility of the class author.
     inline static T& GetInstance() {
-        ARCH_PRAGMA_PUSH
-        // Suppress warnings from clang. TfSingletons are explicitly
-        // instantiated, so the warning around this usage is a false positive.
-        ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
-        return ARCH_LIKELY(_instance) ? *_instance : _CreateInstance();
-        ARCH_PRAGMA_POP
+        T *p = _instance.load();
+        if (!p) {
+            p = _CreateInstance(_instance);
+        }
+        return *p;
     }
 
     /// Return whether or not the single object of type \c T is currently in
     /// existence.
     ///
     /// This call tests whether or not the singleton currently exists.
-    static bool CurrentlyExists() {
-        return _instance ? true : false;
+    inline static bool CurrentlyExists() {
+        return static_cast<bool>(_instance.load());
     }
 
     /// Indicate that the sole instance object has already been created.
@@ -169,12 +165,7 @@ public:
     /// Be sure that \c T has been constructed (enough) before calling this
     /// function. Calling this function anyplace but within the call chain of
     /// \c T's constructor will generate a fatal coding error.
-    static void SetInstanceConstructed(T& instance) {
-        if (_instance)
-            TF_FATAL_ERROR("this function may not be called after "
-                           "GetInstance() has completed");
-        _instance = &instance;
-    }
+    inline static void SetInstanceConstructed(T& instance);
      
     /// Destroy the sole instance object of type \c T, if it exists.
     ///
@@ -184,18 +175,12 @@ public:
     /// that the instance is not being used in one thread during an attempt to
     /// delete the instance from another thread.  After being destroyed, a
     /// call to \c GetInstance() will create a new instance.
-    static void DeleteInstance() {
-        if (_instance)
-            _DestroyInstance();
-    }
+    inline static void DeleteInstance();
+    
 private:
-    static T& _CreateInstance();
-    static void _DestroyInstance();
-    static T* _instance;
-    ARCH_PRAGMA_PUSH
-    ARCH_PRAGMA_NEEDS_EXPORT_INTERFACE
-    static std::mutex* _mutex;
-    ARCH_PRAGMA_POP
+    static T *_CreateInstance(std::atomic<T *> &instance);
+    
+    static std::atomic<T *> _instance;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

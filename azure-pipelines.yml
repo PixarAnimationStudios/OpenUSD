@@ -29,7 +29,7 @@ jobs:
   steps:
   - script: |
       # Update PATH to ensure that pyside2-uic can be found
-      export PATH=/Library/Frameworks/Python.framework/Versions/3.10/bin:$PATH
+      export PATH=/Library/Frameworks/Python.framework/Versions/3.11/bin:$PATH
       sudo xcode-select -s /Applications/Xcode_13.2.app/Contents/Developer
       # Set SYSTEM_VERSION_COMPAT while installing Python packages to
       # accommodate the macOS version numbering change from 10.x to 11

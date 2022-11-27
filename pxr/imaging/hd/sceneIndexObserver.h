@@ -115,6 +115,7 @@ public:
     /// for prims that already exist; in that case, observers should be sure to
     /// update the prim type, in case it changed, and resync the prim. This
     /// function is not expected to be threadsafe.
+    HD_API
     virtual void PrimsAdded(
             const HdSceneIndexBase &sender,
             const AddedPrimEntries &entries) = 0;
@@ -123,6 +124,7 @@ public:
     /// Note that this message is considered hierarchical; if \p /Path is
     /// removed, \p /Path/child is considered removed as well. This function is
     /// not expected to be threadsafe.
+    HD_API
     virtual void PrimsRemoved(
             const HdSceneIndexBase &sender,
             const RemovedPrimEntries &entries) = 0;
@@ -133,6 +135,7 @@ public:
     /// datasource locators are considered hierarchical: if \p primvars is
     /// dirtied on a prim, \p primvars/color is considered dirtied as well.
     /// This function is not expected to be threadsafe.
+    HD_API
     virtual void PrimsDirtied(
             const HdSceneIndexBase &sender,
             const DirtiedPrimEntries &entries) = 0;

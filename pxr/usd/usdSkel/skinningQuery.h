@@ -63,6 +63,7 @@ public:
                          const VtTokenArray& blendShapeOrder,
                          const UsdAttribute& jointIndices,
                          const UsdAttribute& jointWeights,
+                         const UsdAttribute& skinningMethod,
                          const UsdAttribute& geomBindTransform,
                          const UsdAttribute& joints,
                          const UsdAttribute& blendShapes,
@@ -99,6 +100,10 @@ public:
     /// across all points, or false otherwise.
     USDSKEL_API
     bool IsRigidlyDeformed() const;
+
+    const UsdAttribute& GetSkinningMethodAttr() const {
+        return _skinningMethodAttr;
+    }
 
     const UsdAttribute& GetGeomBindTransformAttr() const {
         return _geomBindTransformAttr;
@@ -190,7 +195,8 @@ public:
              VtFloatArray* weights,
              UsdTimeCode time=UsdTimeCode::Default()) const;
 
-    /// Compute skinned points using linear blend skinning.
+    /// Compute skinned points using specified skinning method attr
+    /// (fallback to linear blend skinning if not specified)
     /// Both \p xforms and \p points are given in _skeleton space_,
     /// using the joint order of the bound skeleton.
     /// Joint influences and the (optional) binding transform are computed
@@ -203,7 +209,8 @@ public:
                               VtVec3fArray* points,
                               UsdTimeCode time=UsdTimeCode::Default()) const;
 
-    /// Compute skinned normals using linear blend skinning.
+    /// Compute skinned normals using specified skinning method attr
+    /// (fallback to linear blend skinning if not specified)
     /// Both \p xforms and \p points are given in _skeleton space_,
     /// using the joint order of the bound skeleton.
     /// Joint influences and the (optional) binding transform are computed
@@ -216,7 +223,8 @@ public:
                               VtVec3fArray* points,
                               UsdTimeCode time=UsdTimeCode::Default()) const;
 
-    /// Compute a skinning transform using linear blend skinning.
+    /// Compute a skinning transform using specified skinning method attr
+    /// (fallback to linear blend skinning if not specified)
     /// The \p xforms are given in _skeleton space_, using the joint order of
     /// the bound skeleton.
     /// Joint influences and the (optional) binding transform are computed
@@ -243,6 +251,9 @@ public:
                                 const UsdGeomBoundable& boundable) const;
 
     USDSKEL_API
+    TfToken GetSkinningMethod() const;
+
+    USDSKEL_API
     GfMatrix4d
     GetGeomBindTransform(UsdTimeCode time=UsdTimeCode::Default()) const;
 
@@ -266,6 +277,7 @@ private:
 
     UsdGeomPrimvar _jointIndicesPrimvar;
     UsdGeomPrimvar _jointWeightsPrimvar;
+    UsdAttribute _skinningMethodAttr;
     UsdAttribute _geomBindTransformAttr;
     UsdAttribute _blendShapes;
     UsdRelationship _blendShapeTargets;

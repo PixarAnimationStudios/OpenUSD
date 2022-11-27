@@ -291,13 +291,12 @@ HdPrman_VirtualStructResolvingSceneIndexPlugin::_AppendSceneIndex(
         const HdContainerDataSourceHandle &inputArgs)
 {
     bool applyConditionals = false;
-    if (!inputArgs->Has(_tokens->applyConditionals)) {
+    if (HdBoolDataSourceHandle val = HdBoolDataSource::Cast(
+            inputArgs->Get(_tokens->applyConditionals))) {
+        applyConditionals = val->GetTypedValue(0.0f);
+    } else {
         TF_CODING_ERROR("Missing argument to plugin %s",
                         _tokens->vstructPluginName.GetText());
-    } else {
-        HdBoolDataSourceHandle val =
-            HdBoolDataSource::Cast(inputArgs->Get(_tokens->applyConditionals));
-        applyConditionals = val->GetTypedValue(0.0f);
     }
     return HdPrman_VirtualStructResolvingSceneIndex::New(
                 inputScene, applyConditionals);

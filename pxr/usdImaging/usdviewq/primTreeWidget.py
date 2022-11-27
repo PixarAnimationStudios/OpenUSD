@@ -381,7 +381,7 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
             col != PrimViewColumnIndex.DRAWMODE
 
     def ExpandItemRecursively(self, item):
-        if (item.parent() != None):        
+        if item.parent() is not None:
             item = item.parent()
             while item.parent():
                 if not item.isExpanded():

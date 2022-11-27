@@ -42,16 +42,6 @@ UsdImagingDataSourceBasisCurvesTopology
 {
 }
 
-bool
-UsdImagingDataSourceBasisCurvesTopology::Has(const TfToken &name)
-{
-    return
-        name == HdBasisCurvesTopologySchemaTokens->curveVertexCounts ||
-        name == HdBasisCurvesTopologySchemaTokens->basis ||
-        name == HdBasisCurvesTopologySchemaTokens->type ||
-        name == HdBasisCurvesTopologySchemaTokens->wrap;
-}
-
 TfTokenVector
 UsdImagingDataSourceBasisCurvesTopology::GetNames()
 {
@@ -97,14 +87,6 @@ UsdImagingDataSourceBasisCurves::UsdImagingDataSourceBasisCurves(
 {
 }
 
-bool
-UsdImagingDataSourceBasisCurves::Has(const TfToken &name)
-{
-    return
-        name == HdBasisCurvesSchemaTokens->topology;
-    // XXX: TODO geomsubsets
-}
-
 TfTokenVector
 UsdImagingDataSourceBasisCurves::GetNames()
 {
@@ -134,17 +116,6 @@ UsdImagingDataSourceBasisCurvesPrim::UsdImagingDataSourceBasisCurvesPrim(
     // Note: DataSourceGprim handles the special PointBased primvars for us,
     // but we need to add "widths" which is defined on UsdGeomCurves.
     _AddCustomPrimvar(HdTokens->widths, UsdGeomTokens->widths);
-}
-
-bool 
-UsdImagingDataSourceBasisCurvesPrim::Has(
-    const TfToken &name)
-{
-    if (name == HdBasisCurvesSchemaTokens->basisCurves) {
-        return true;
-    }
-
-    return UsdImagingDataSourceGprim::Has(name);
 }
 
 TfTokenVector 

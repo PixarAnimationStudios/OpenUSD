@@ -1013,20 +1013,6 @@ def InstallTBB_MacOS(context, force, buildArgs):
                 PrintWarning(
                     "TBB debug libraries are not available on this platform.")
 
-        # Output paths that are of interest
-        with open(os.path.join(context.usdInstDir, 'tbbBuild.txt'), 'wt') as file:
-            file.write('ARCHIVE:' + TBB_URL.split("/")[-1] + '\n')
-            file.write('BUILDFOLDER:' + os.path.split(os.getcwd())[1] + '\n')
-            file.write('MAKEPRIMARY:' + makeTBBCmdPrimary + '\n')
-
-            if context.targetUniversal:
-                file.write('MAKESECONDARY:' + makeTBBCmdSecondary + '\n')
-                file.write('LIPO_RELEASE:' + ','.join(
-                        lipoCommandsRelease) + '\n')
-                if lipoCommandsDebug:
-                    file.write('LIPO_DEBUG:' + ','.join(
-                        lipoCommandsDebug) + '\n')
-
         CopyDirectory(context, "include/serial", "include/serial")
         CopyDirectory(context, "include/tbb", "include/tbb")
 
@@ -1689,14 +1675,16 @@ def InstallUSD(context, force, buildArgs):
             # itself rather than rely on CMake's heuristics.
             pythonInfo = GetPythonInfo(context)
             if pythonInfo:
-                # According to FindPythonLibs.cmake these are the variables
-                # to set to specify which Python installation to use.
-                extraArgs.append('-DPYTHON_EXECUTABLE="{pyExecPath}"'
-                                 .format(pyExecPath=pythonInfo[0]))
-                extraArgs.append('-DPYTHON_LIBRARY="{pyLibPath}"'
-                                 .format(pyLibPath=pythonInfo[1]))
-                extraArgs.append('-DPYTHON_INCLUDE_DIR="{pyIncPath}"'
-                                 .format(pyIncPath=pythonInfo[2]))
+                prefix = "Python3" if Python3() else "Python2"
+                extraArgs.append('-D{prefix}_EXECUTABLE="{pyExecPath}"'
+                                 .format(prefix=prefix, 
+                                         pyExecPath=pythonInfo[0]))
+                extraArgs.append('-D{prefix}_LIBRARY="{pyLibPath}"'
+                                 .format(prefix=prefix,
+                                         pyLibPath=pythonInfo[1]))
+                extraArgs.append('-D{prefix}_INCLUDE_DIR="{pyIncPath}"'
+                                 .format(prefix=prefix,
+                                         pyIncPath=pythonInfo[2]))
         else:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
 

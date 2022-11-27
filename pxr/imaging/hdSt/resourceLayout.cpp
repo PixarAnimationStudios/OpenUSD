@@ -123,7 +123,7 @@ _ParseValue(InputValueVector const & input, Element *element)
     return false;
 }
 
-// e.g. ["in array", "vec3", "color", "[NUM_VERTS]"]
+// e.g. ["in array", "vec3", "color", "NUM_VERTS"]
 bool
 _ParseValueArray(InputValueVector const & input, Element *element)
 {
@@ -170,7 +170,7 @@ _ParseBlock(InputValueVector const & input, Element *element)
     return false;
 }
 
-// e.g. ["in block array", "VertexData", "inData", "[NUM_VERTS]",
+// e.g. ["in block array", "VertexData", "inData", "NUM_VERTS",
 //          ["vec3", "Peye"],
 //          ["vec3", "Neye"]
 //      ]

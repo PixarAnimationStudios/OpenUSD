@@ -229,6 +229,7 @@ pxr_test_scripts(
     testenv/testUsdMetadata.py
     testenv/testUsdModel.py
     testenv/testUsdNotices.py
+    testenv/testUsdOpaqueAttributes.py
     testenv/testUsdPayloads.py
     testenv/testUsdPrimCompositionQuery.py
     testenv/testUsdPrimFlagsPredicate.py
@@ -1170,5 +1171,11 @@ pxr_register_test(testUsdZipFile_CPP
 
 pxr_register_test(testUsdUsdzResolver
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUsdzResolver"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdOpaqueAttributes
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdOpaqueAttributes"
     EXPECTED_RETURN_CODE 0
 )

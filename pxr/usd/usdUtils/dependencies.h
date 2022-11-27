@@ -161,7 +161,8 @@ UsdUtilsComputeAllDependencies(const SdfAssetPath &assetPath,
 
 /// Callback that is used to modify asset paths in a layer.  The \c assetPath
 /// will contain the string value that's authored.  The returned value is the
-/// new value that should be authored in the layer.
+/// new value that should be authored in the layer.  If the function returns
+/// an empty string, that value will be removed from the layer.
 using UsdUtilsModifyAssetPathFn = std::function<std::string(
         const std::string& assetPath)>;
 

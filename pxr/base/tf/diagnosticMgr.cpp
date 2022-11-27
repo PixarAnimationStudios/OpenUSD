@@ -124,6 +124,7 @@ TF_REGISTRY_FUNCTION(TfDebug)
 // Abort without logging.  This is meant for use by things like TF_FATAL_ERROR,
 // which already log (more extensive) session information before doing the
 // abort.
+[[noreturn]]
 static
 void
 Tf_UnhandledAbort()
@@ -381,14 +382,16 @@ void TfDiagnosticMgr::PostFatal(TfCallContext const &context,
 {
     _ReentrancyGuard guard(&_reentrantGuard.local());
     if (guard.ScopeWasReentered()) {
-        return;
+        TfLogCrash("RECURSIVE FATAL ERROR",
+                   msg, std::string() /*additionalInfo*/,
+                   context, true /*logToDB*/);
     }
 
     if (TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_ERROR) ||
-        TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_FATAL_ERROR))
+        TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_FATAL_ERROR)) {
         ArchDebuggerTrap();
+    }
 
-    bool dispatchedToDelegate = false;
     {
         tbb::spin_rw_mutex::scoped_lock lock(_delegatesMutex, /*writer=*/false);
         for (auto const& delegate : _delegates) {
@@ -396,30 +399,27 @@ void TfDiagnosticMgr::PostFatal(TfCallContext const &context,
                 delegate->IssueFatalError(context, msg);
             }
         }
-        dispatchedToDelegate = !_delegates.empty();
+    }
+
+    if (statusCode == TF_DIAGNOSTIC_CODING_ERROR_TYPE) {
+        fprintf(stderr, "Fatal coding error: %s [%s], in %s(), %s:%zu\n",
+                msg.c_str(), ArchGetProgramNameForErrors(),
+                context.GetFunction(), context.GetFile(), context.GetLine());
+    }
+    else if (statusCode == TF_DIAGNOSTIC_RUNTIME_ERROR_TYPE) {
+        fprintf(stderr, "Fatal error: %s [%s].\n",
+                msg.c_str(), ArchGetProgramNameForErrors());
+        exit(1);
+    }
+    else {
+        // Report and log information about the fatal error
+        TfLogCrash("FATAL ERROR", msg, std::string() /*additionalInfo*/,
+                   context, true /*logToDB*/);
     }
     
-    if (!dispatchedToDelegate) {
-        if (statusCode == TF_DIAGNOSTIC_CODING_ERROR_TYPE) {
-            fprintf(stderr, "Fatal coding error: %s [%s], in %s(), %s:%zu\n",
-                    msg.c_str(), ArchGetProgramNameForErrors(),
-                    context.GetFunction(), context.GetFile(), context.GetLine());
-        }
-        else if (statusCode == TF_DIAGNOSTIC_RUNTIME_ERROR_TYPE) {
-            fprintf(stderr, "Fatal error: %s [%s].\n",
-                    msg.c_str(), ArchGetProgramNameForErrors());
-            exit(1);
-        }
-        else {
-            // Report and log information about the fatal error
-            TfLogCrash("FATAL ERROR", msg, std::string() /*additionalInfo*/,
-                       context, true /*logToDB*/);
-        }
-
-        // Abort, but avoid the signal handler, since we've already logged the
-        // session info in TfLogStackTrace.
-        Tf_UnhandledAbort();
-    }
+    // Abort, but avoid the signal handler, since we've already logged the
+    // session info in TfLogStackTrace.
+    Tf_UnhandledAbort();
 }
 
 TfDiagnosticMgr::ErrorIterator

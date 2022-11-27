@@ -428,17 +428,13 @@ HdStCanSkipBARAllocationOrUpdate(
 }
 
 HdBufferSpecVector
-HdStGetRemovedPrimvarBufferSpecs(
-    HdBufferArrayRangeSharedPtr const& curRange,
+_GetRemovedPrimvarBufferSpecs(
+    HdBufferSpecVector const& curBarSpecs,
     HdPrimvarDescriptorVector const& newPrimvarDescs,
     HdExtComputationPrimvarDescriptorVector const& newCompPrimvarDescs,
     TfTokenVector const& internallyGeneratedPrimvarNames,
     SdfPath const& rprimId)
 {
-    if (!HdStIsValidBAR(curRange)) {
-        return HdBufferSpecVector();
-    }
-
     HdBufferSpecVector removedPrimvarSpecs;
     // Get the new list of primvar sources for the BAR. We need to use both
     // the primvar descriptor list (that we get via the scene delegate), as
@@ -454,12 +450,8 @@ HdStGetRemovedPrimvarBufferSpecs(
         newPrimvarNames.emplace_back(desc.name);
     }
 
-    // Get the buffer specs for the existing BAR...
-    HdBufferSpecVector curBarSpecs;
-    curRange->GetBufferSpecs(&curBarSpecs);
-
-    // ... and check if it has buffers that are neither in the new source list
-    // nor are internally generated.
+    // Check if the existing BAR has buffers that are neither in the new source
+    // list nor are internally generated.
     for (auto const& spec : curBarSpecs) {
 
         bool isInNewList =
@@ -490,12 +482,96 @@ HdBufferSpecVector
 HdStGetRemovedPrimvarBufferSpecs(
     HdBufferArrayRangeSharedPtr const& curRange,
     HdPrimvarDescriptorVector const& newPrimvarDescs,
+    HdExtComputationPrimvarDescriptorVector const& newCompPrimvarDescs,
+    TfTokenVector const& internallyGeneratedPrimvarNames,
+    SdfPath const& rprimId)
+{
+    if (!HdStIsValidBAR(curRange)) {
+        return HdBufferSpecVector();
+    }
+
+    HdBufferSpecVector curBarSpecs;
+    curRange->GetBufferSpecs(&curBarSpecs);
+
+    return _GetRemovedPrimvarBufferSpecs(curBarSpecs, newPrimvarDescs,
+        newCompPrimvarDescs, internallyGeneratedPrimvarNames, rprimId);
+}
+
+HdBufferSpecVector
+HdStGetRemovedPrimvarBufferSpecs(
+    HdBufferArrayRangeSharedPtr const& curRange,
+    HdPrimvarDescriptorVector const& newPrimvarDescs,
     TfTokenVector const& internallyGeneratedPrimvarNames,
     SdfPath const& rprimId)
 {
     return HdStGetRemovedPrimvarBufferSpecs(curRange, newPrimvarDescs,
         HdExtComputationPrimvarDescriptorVector(),
         internallyGeneratedPrimvarNames, rprimId);
+}
+
+// XXX: Not currently exported; does anyone else need it?
+HdBufferSpecVector
+HdStGetRemovedOrReplacedPrimvarBufferSpecs(
+    HdBufferArrayRangeSharedPtr const& curRange,
+    HdPrimvarDescriptorVector const& newPrimvarDescs,
+    HdExtComputationPrimvarDescriptorVector const& newCompPrimvarDescs,
+    TfTokenVector const& internallyGeneratedPrimvarNames,
+    HdBufferSpecVector const& updatedSpecs,
+    SdfPath const& rprimId)
+{
+    if (!HdStIsValidBAR(curRange)) {
+        return HdBufferSpecVector();
+    }
+
+    HdBufferSpecVector curBarSpecs;
+    curRange->GetBufferSpecs(&curBarSpecs);
+
+    HdBufferSpecVector removedOrReplacedSpecs = _GetRemovedPrimvarBufferSpecs(
+        curBarSpecs, newPrimvarDescs, newCompPrimvarDescs,
+        internallyGeneratedPrimvarNames, rprimId);
+
+    // Sometimes the buffer spec for a given named primvar has changed, e.g.,
+    // when an array-valued primvar has changed size. Such specs are not
+    // in removedSpecs at this point, so we need to add them to ensure that
+    // the old spec gets removed. Otherwise we will get shader compilation
+    // errors after the new spec has been added because the primvar variable
+    // will be defined twice.
+
+    for (const auto& curSpec : curBarSpecs) {
+        const auto newSpec = std::find_if(updatedSpecs.begin(),
+            updatedSpecs.end(), 
+            [&](const auto& spec) { return spec.name == curSpec.name; });
+        // If we find a new spec that matches by name, we check if it is
+        // different from the old spec. If it is, it needs to be removed.
+        // The call to UpdateShaderStorageBufferArrayRange below will add
+        // the new spec regardless, but will only remove the old one if it
+        // is in removedSpecs. This fixes the case where resized array-valued
+        // constant primvars were being declared multiple times causing
+        // shader compilation failures.
+        if (newSpec != updatedSpecs.end() && 
+            curSpec != *newSpec) {
+                TF_DEBUG(HD_RPRIM_UPDATED).Msg(
+                    "%s: Found primvar %s that has been replaced\n",
+                    rprimId.GetText(), curSpec.name.GetText());
+                removedOrReplacedSpecs.push_back(curSpec);
+        }
+    }
+    return removedOrReplacedSpecs;
+}
+
+// XXX: Not currently exported; does anyone else need it?
+HdBufferSpecVector
+HdStGetRemovedOrReplacedPrimvarBufferSpecs(
+    HdBufferArrayRangeSharedPtr const& curRange,
+    HdPrimvarDescriptorVector const& newPrimvarDescs,
+    TfTokenVector const& internallyGeneratedPrimvarNames,
+    HdBufferSpecVector const& updatedSpecs,
+    SdfPath const& rprimId)
+{
+    return HdStGetRemovedOrReplacedPrimvarBufferSpecs(
+        curRange, newPrimvarDescs,
+        HdExtComputationPrimvarDescriptorVector(),
+        internallyGeneratedPrimvarNames, updatedSpecs, rprimId);
 }
 
 void
@@ -815,6 +891,9 @@ HdStPopulateConstantPrimvars(
         return;
     }
 
+    HdBufferSpecVector bufferSpecs;
+    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+
     // XXX: This should be based off the DirtyPrimvarDesc bit.
     bool hasDirtyPrimvarDesc = (*dirtyBits & HdChangeTracker::DirtyPrimvar);
     HdBufferSpecVector removedSpecs;
@@ -830,12 +909,9 @@ HdStPopulateConstantPrimvars(
             HdTokens->bboxLocalMax,
             HdTokens->primID
         };
-        removedSpecs = HdStGetRemovedPrimvarBufferSpecs(bar, constantPrimvars, 
-            internallyGeneratedPrimvars, id);
+        removedSpecs = HdStGetRemovedOrReplacedPrimvarBufferSpecs(bar,
+            constantPrimvars, internallyGeneratedPrimvars, bufferSpecs, id);
     }
-
-    HdBufferSpecVector bufferSpecs;
-    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
     HdBufferArrayRangeSharedPtr range =
         hdStResourceRegistry->UpdateShaderStorageBufferArrayRange(

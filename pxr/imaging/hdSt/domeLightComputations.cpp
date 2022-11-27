@@ -151,9 +151,11 @@ HdSt_DomeLightComputationGPU::Execute(
                 computeDesc.computeDescriptor.localSize = 
                     GfVec3i(localSize, localSize, 1);
 
-                HgiShaderFunctionAddTexture(&computeDesc, "inTexture");
+                HgiShaderFunctionAddTexture(&computeDesc, "inTexture",
+                    /*bindIndex = */0);
                 HgiShaderFunctionAddWritableTexture(&computeDesc, "outTexture",
-                    2, HgiFormatFloat16Vec4);
+                    /*bindIndex = */1, /*dimensions = */2, 
+                    HgiFormatFloat16Vec4);
                 if (hasUniforms) {
                     HgiShaderFunctionAddConstantParam(
                         &computeDesc, "inRoughness", HdStTokens->_float);

@@ -66,6 +66,7 @@ pxr_library(hd
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
+        extComputationContextInternal
         extComputationInputComputationSchema
         extComputationOutputSchema
         extComputationPrimvarSchema
@@ -179,7 +180,6 @@ pxr_library(hd
         version.h
 
     PRIVATE_CLASSES
-        extComputationContextInternal
         ${optionalPrivateClasses}
 
     RESOURCE_FILES
@@ -232,6 +232,15 @@ pxr_build_test(testHdDataSourceLocator
 
    CPPFILES
        testenv/testHdDataSourceLocator.cpp
+)
+
+pxr_build_test(testHdDirtyBitsTranslator
+   LIBRARIES
+       hd
+       tf
+
+   CPPFILES
+       testenv/testHdDirtyBitsTranslator.cpp
 )
 
 pxr_build_test(testHdDirtyList
@@ -352,6 +361,10 @@ pxr_register_test(testHdCommand
 
 pxr_register_test(testHdDataSourceLocator
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDataSourceLocator"
+)
+
+pxr_register_test(testHdDirtyBitsTranslator
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDirtyBitsTranslator"
 )
 
 pxr_register_test(testHdDirtyList

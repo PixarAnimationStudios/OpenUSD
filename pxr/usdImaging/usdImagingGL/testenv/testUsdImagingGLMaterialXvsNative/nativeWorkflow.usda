@@ -1,0 +1,154 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Scope "UsdNative" {
+    def Sphere "UsdMetallicWorkflow_01" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/USD_MetallicWorkflow_01>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (-4.0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "UsdMetallicWorkflow_02" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/USD_MetallicWorkflow_02>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (-1.5, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "UsdSpecWorkflow_03" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/USD_SpecWorkflow_01>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (1.5, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "UsdSpecWorkflow_04" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/USD_SpecWorkflow_02>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (4.0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Scope "Materials" {
+    def Material "USD_MetallicWorkflow_01" {
+        token outputs:surface.connect = </Materials/USD_MetallicWorkflow_01/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (1.0, 0.0, 0.0)
+            color3f inputs:emissiveColor = (0.0, 0.0, 0.0)
+            int inputs:useSpecularWorkflow = 0
+            color3f inputs:specularColor = (0.0, 0.0, 1.0)
+            float inputs:metallic = 0.0
+            float inputs:roughness = 0.15
+            float inputs:clearcoat = 0.0
+            float inputs:clearcoatRoughness = 0.01
+            float inputs:opacity = 1
+            float inputs:opacityThreshold = 0
+            float inputs:ior = 1.5
+
+            token outputs:surface
+        }
+    }
+    def Material "USD_MetallicWorkflow_02" {
+        token outputs:surface.connect = </Materials/USD_MetallicWorkflow_02/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (1.0, 0.0, 0.0)
+            color3f inputs:emissiveColor = (0.0, 0.0, 0.0)
+            int inputs:useSpecularWorkflow = 0
+            color3f inputs:specularColor = (0.0, 0.0, 1.0)
+            float inputs:metallic = 0.0
+            float inputs:roughness = 0.75
+            float inputs:clearcoat = 0.0
+            float inputs:clearcoatRoughness = 0.01
+            float inputs:opacity = 1
+            float inputs:opacityThreshold = 0
+            float inputs:ior = 1.5
+
+            token outputs:surface
+        }
+    }
+    def Material "USD_SpecWorkflow_01" {
+        token outputs:surface.connect = </Materials/USD_SpecWorkflow_01/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (1.0, 0.0, 0.0)
+            color3f inputs:emissiveColor = (0.0, 0.0, 0.0)
+            int inputs:useSpecularWorkflow = 1
+            color3f inputs:specularColor = (0.0, 0.0, 1.0)
+            float inputs:roughness = 0.5
+            float inputs:metallic = 0.0
+            float inputs:roughness = 0.15
+            float inputs:clearcoat = 0.0
+            float inputs:clearcoatRoughness = 0.01
+            float inputs:opacity = 1
+            float inputs:opacityThreshold = 0
+            float inputs:ior = 1.5
+
+            token outputs:surface
+        }
+    }
+    def Material "USD_SpecWorkflow_02" {
+        token outputs:surface.connect = </Materials/USD_SpecWorkflow_02/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (1.0, 0.0, 0.0)
+            color3f inputs:emissiveColor = (0.0, 0.0, 0.0)
+            int inputs:useSpecularWorkflow = 1
+            color3f inputs:specularColor = (0.0, 0.0, 1.0)
+            float inputs:roughness = 0.75
+            float inputs:metallic = 0.0
+            float inputs:roughness = 0.75
+            float inputs:clearcoat = 0.0
+            float inputs:clearcoatRoughness = 0.01
+            float inputs:opacity = 1
+            float inputs:opacityThreshold = 0
+            float inputs:ior = 1.5
+
+            token outputs:surface
+        }
+    }
+}
+
+def Xform "lights" {
+    def DomeLight "DomeLight"
+    {
+        asset inputs:texture:file = @./StinsonBeach.hdr@
+        float xformOp:rotateX:Zup = 90
+        uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
+    }
+    def SphereLight "Light"
+    {
+        float inputs:radius = 25
+        float inputs:intensity = 5
+        Vec3f xformOp:translate = (0, -50, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Camera "Camera" {
+    double3 xformOp:translate = (0, 0, 30)
+    float xformOp:rotateX:Zup = 90
+    uniform token[] xformOpOrder = ["xformOp:rotateX:Zup","xformOp:translate"]
+}

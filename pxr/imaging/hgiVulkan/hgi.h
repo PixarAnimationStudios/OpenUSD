@@ -173,10 +173,13 @@ public:
     void TrashObject(H* handle, std::vector<T*>* collector)
     {
         T* object = static_cast<T*>(handle->Get());
-        HgiVulkanDevice* device = object->GetDevice();
-        HgiVulkanCommandQueue* queue = device->GetCommandQueue();
-        object->GetInflightBits() = queue->GetInflightCommandBuffersBits();
-        collector->push_back(object);
+        if (object) {
+            HgiVulkanDevice* device = object->GetDevice();
+            HgiVulkanCommandQueue* queue = device->GetCommandQueue();
+            object->GetInflightBits() = queue->GetInflightCommandBuffersBits();
+            collector->push_back(object);
+        }
+
         *handle = H();
     }
 

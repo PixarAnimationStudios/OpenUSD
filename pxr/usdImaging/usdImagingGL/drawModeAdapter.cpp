@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdImagingGL/drawModeAdapter.h"
-#include "pxr/usdImaging/usdImagingGL/package.h"
 
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
@@ -47,41 +46,40 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    (material)
+    (cardSurface)
+    (cardTexture)
+    (cardUvCoords)
 
     (cardsUv)
-    (cardsTexAssign)
 
-    (textureXPosColor)
-    (textureYPosColor)
-    (textureZPosColor)
-    (textureXNegColor)
-    (textureYNegColor)
-    (textureZNegColor)
-    (textureXPosOpacity)
-    (textureYPosOpacity)
-    (textureZPosOpacity)
-    (textureXNegOpacity)
-    (textureYNegOpacity)
-    (textureZNegOpacity)
+    (subsetXPos)
+    (subsetYPos)
+    (subsetZPos)
+    (subsetXNeg)
+    (subsetYNeg)
+    (subsetZNeg)
+
+    (subsetMaterialXPos)
+    (subsetMaterialYPos)
+    (subsetMaterialZPos)
+    (subsetMaterialXNeg)
+    (subsetMaterialYNeg)
+    (subsetMaterialZNeg)
 
     (worldtoscreen)
 
     (displayRoughness)
+    (diffuseColor)
+    (opacity)
 
     (file)
     (st)
     (rgb)
     (a)
     (fallback)
-    (minFilter)
-    (magFilter)
-    (linear)
-    (linearMipmapLinear)
 
     (varname)
     (result)
-    (activeTexCard)
 );
 
 namespace {
@@ -105,11 +103,72 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-static SdfPath
-_GetMaterialPath(UsdPrim const& prim)
-{
-    const SdfPath matPath = SdfPath(_tokens->material.GetString());
-    return prim.GetPath().AppendPath(matPath);
+static AxesMask
+_GetOppositeFace(AxesMask face) {
+    switch (face) {
+        case xPos: return xNeg;
+        case xNeg: return xPos;
+        case yPos: return yNeg;
+        case yNeg: return yPos;
+        case zPos: return zNeg;
+        case zNeg: return zPos;
+        default: return face;
+    }
+}
+
+static TfToken
+_GetSubsetTokenForFace(AxesMask axis) {
+    switch (axis) {
+        case xPos: return _tokens->subsetXPos;
+        case yPos: return _tokens->subsetYPos;
+        case zPos: return _tokens->subsetZPos;
+        case xNeg: return _tokens->subsetXNeg;
+        case yNeg: return _tokens->subsetYNeg;
+        case zNeg: return _tokens->subsetZNeg;
+        default: return TfToken(); // multiple axes not supported
+    }
+}
+
+static TfToken
+_GetSubsetMaterialTokenForFace(AxesMask axis) {
+    switch (axis) {
+        case xPos: return _tokens->subsetMaterialXPos;
+        case yPos: return _tokens->subsetMaterialYPos;
+        case zPos: return _tokens->subsetMaterialZPos;
+        case xNeg: return _tokens->subsetMaterialXNeg;
+        case yNeg: return _tokens->subsetMaterialYNeg;
+        case zNeg: return _tokens->subsetMaterialZNeg;
+        default: return TfToken(); // multiple axes not supported
+    }
+}
+
+static uint8_t
+_GetAxesMask(UsdPrim const& prim, UsdTimeCode time) {
+    // Generate mask for suppressing axes with no textures
+    uint8_t axes_mask = 0;
+    UsdGeomModelAPI model(prim);
+    if (model) {
+        const TfToken textureAttrs[6] = {
+            UsdGeomTokens->modelCardTextureXPos,
+            UsdGeomTokens->modelCardTextureYPos,
+            UsdGeomTokens->modelCardTextureZPos,
+            UsdGeomTokens->modelCardTextureXNeg,
+            UsdGeomTokens->modelCardTextureYNeg,
+            UsdGeomTokens->modelCardTextureZNeg,
+        };
+        const uint8_t mask[6] = {
+            xPos, yPos, zPos, xNeg, yNeg, zNeg,
+        };
+        for (int i = 0; i < 6; ++i) {
+            SdfAssetPath asset;
+            prim.GetAttribute(textureAttrs[i]).Get(&asset, time);
+            if (!asset.GetAssetPath().empty()) {
+                axes_mask |= mask[i];
+            }
+        }
+    }
+
+    return axes_mask;
 }
 
 UsdImagingGLDrawModeAdapter::UsdImagingGLDrawModeAdapter()
@@ -226,20 +285,59 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
         index->AddDependency(cachePath, prim);
     }
 
+    // When instancing, cachePath may have a proto prop part on the end.
+    // This will strip the prop part, leaving primPath as the instancer's path.
+    SdfPath primPath = cachePath.GetAbsoluteRootOrPrimPath();
+
     // Additionally, insert the material.
-    SdfPath materialPath = _GetMaterialPath(prim);
-    if (index->IsSprimTypeSupported(HdPrimTypeTokens->material) &&
-        !index->IsPopulated(materialPath)) {
-        index->InsertSprim(HdPrimTypeTokens->material,
-            materialPath, prim, shared_from_this());
-        HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
+    if (drawMode == UsdGeomTokens->cards) {
+
+        // Note that because population happens only once, any faces that need
+        // time-varying textures should begin with some texture applied, and
+        // no face should ever transition between textured and untextured 
+        // states. The addition or subtraction of an entire face texture over 
+        // time is not supported.
+        uint8_t mask = _GetAxesMask(prim, UsdTimeCode::EarliestTime());
+
+        // If no face on any axis has a texture assigned to it, no face-
+        // specific materials will be inserted. Only the prim-level fallback
+        // material needs to be added. It is always added, just in case.
+
+        // If neither face of a given axis has a texture assigned to it,
+        // no geometry for that axis will be generated, and no materials
+        // created for either face.
+
+        // If only one face of a given axis has a texture assigned to it,
+        // both faces of that axis will use the same material and the UVs
+        // on the untextured face will be mirrored.
+
+        // If both faces of a given axis have textures assigned to them,
+        // each face will receive its own material and no adjustments will
+        // be made to the UVs of either face.
+
+        const AxesMask faces[6] = { xPos, xNeg, yPos, yNeg, zPos, zNeg };
+        for (const AxesMask face : faces) {
+            if (mask & face) {
+                SdfPath materialPath = prim.GetPath()
+                    .AppendChild(_GetSubsetMaterialTokenForFace(face));
+                if (index->IsSprimTypeSupported(HdPrimTypeTokens->material) &&
+                    !index->IsPopulated(materialPath)) {
+                    index->InsertSprim(
+                        HdPrimTypeTokens->material,
+                        materialPath, 
+                        prim, 
+                        shared_from_this()
+                    );
+                    HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
+                }
+                // Record the material(s) for use in remove/resync.
+                _materialMap[cachePath].insert(materialPath);
+            }
+        }
     }
 
     // Record the drawmode for use in UpdateForTime().
     _drawModeMap.insert(std::make_pair(cachePath, drawMode));
-
-    // Record the material for use in remove/resync.
-    _materialMap.insert(std::make_pair(cachePath, materialPath));
 
     return cachePath;
 }
@@ -247,7 +345,13 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
 bool
 UsdImagingGLDrawModeAdapter::_IsMaterialPath(SdfPath const& path) const
 {
-    return path.GetNameToken() == _tokens->material;
+    TfToken nameToken = path.GetNameToken();
+    return nameToken == _tokens->subsetMaterialXPos ||
+        nameToken == _tokens->subsetMaterialYPos ||
+        nameToken == _tokens->subsetMaterialZPos ||
+        nameToken == _tokens->subsetMaterialXNeg ||
+        nameToken == _tokens->subsetMaterialYNeg ||
+        nameToken == _tokens->subsetMaterialZNeg;
 }
 
 void
@@ -255,7 +359,7 @@ UsdImagingGLDrawModeAdapter::ProcessPrimResync(SdfPath const& cachePath,
         UsdImagingIndexProxy* index)
 
 {
-    if (cachePath.GetNameToken() == _tokens->material) {
+    if (_IsMaterialPath(cachePath)) {
         // Ignore a resync of the material on the theory that the rprim resync
         // will take care of it.
         return;
@@ -274,16 +378,18 @@ void
 UsdImagingGLDrawModeAdapter::ProcessPrimRemoval(SdfPath const& cachePath,
         UsdImagingIndexProxy* index)
 {
-    if (cachePath.GetNameToken() == _tokens->material) {
+    if (_IsMaterialPath(cachePath)) {
         // Ignore a removal of the material on the theory that the rprim removal
         // will take care of it.
         return;
     }
 
-    // Remove the material
+    // Remove the materials for this rprim
     _MaterialMap::const_iterator it = _materialMap.find(cachePath);
     if (it != _materialMap.end()) {
-        index->RemoveSprim(HdPrimTypeTokens->material, it->second);
+        for (SdfPath path : it->second) {
+            index->RemoveSprim(HdPrimTypeTokens->material, path);
+        }
         _materialMap.erase(it);
     }
 
@@ -382,17 +488,20 @@ UsdImagingGLDrawModeAdapter::_ComputeGeometryData(
     VtValue* topology, 
     VtValue* points, 
     GfRange3d* extent,
-    VtValue* uv,
-    VtValue* assign) const
+    VtValue* uv) const
 {
     if (drawMode == UsdGeomTokens->origin) {
-        *extent = _ComputeExtent(prim,
-            _HasVaryingExtent(prim) ? time : UsdTimeCode::EarliestTime());
+        *extent = _ComputeExtent(
+            prim,
+            _HasVaryingExtent(prim) ? time : UsdTimeCode::EarliestTime()
+        );
         _GenerateOriginGeometry(topology, points, *extent);
 
     } else if (drawMode == UsdGeomTokens->bounds) {
-        *extent = _ComputeExtent(prim,
-            _HasVaryingExtent(prim) ? time : UsdTimeCode::EarliestTime());
+        *extent = _ComputeExtent(
+            prim,
+            _HasVaryingExtent(prim) ? time : UsdTimeCode::EarliestTime()
+        );
         _GenerateBoundsGeometry(topology, points, *extent);
 
     } else if (drawMode == UsdGeomTokens->cards) {
@@ -405,51 +514,37 @@ UsdImagingGLDrawModeAdapter::_ComputeGeometryData(
         if (cardGeometry == UsdGeomTokens->fromTexture) {
             // In "fromTexture" mode, read all the geometry data in from
             // the textures.
-            _GenerateCardsFromTextureGeometry(topology, points,
-                    uv, assign, extent, prim);
+            _GenerateCardsFromTextureGeometry(topology, points, uv, extent, prim);
 
         } else {
             // First compute the extents.
-            *extent = _ComputeExtent(prim,
-                _HasVaryingExtent(prim) ? time : UsdTimeCode::EarliestTime());
+            *extent = _ComputeExtent(
+                prim,
+                _HasVaryingExtent(prim) ? time : UsdTimeCode::EarliestTime()
+            );
 
             // Generate mask for suppressing axes with no textures
-            uint8_t axes_mask = 0;
-
-            if (model) {
-                const TfToken textureAttrs[6] = {
-                    UsdGeomTokens->modelCardTextureXPos,
-                    UsdGeomTokens->modelCardTextureYPos,
-                    UsdGeomTokens->modelCardTextureZPos,
-                    UsdGeomTokens->modelCardTextureXNeg,
-                    UsdGeomTokens->modelCardTextureYNeg,
-                    UsdGeomTokens->modelCardTextureZNeg,
-                };
-                const uint8_t mask[6] = {
-                    xPos, yPos, zPos, xNeg, yNeg, zNeg,
-                };
-                for (int i = 0; i < 6; ++i) {
-                    SdfAssetPath asset;
-                    prim.GetAttribute(textureAttrs[i]).Get(&asset, time);
-                    if (!asset.GetAssetPath().empty()) {
-                        axes_mask |= mask[i];
-                    }
-                }
+            uint8_t axes_mask = _GetAxesMask(prim, time);
+            bool generateSubsets = true;
+            if (axes_mask == 0) {
+                // If no face of any axis has a texture, build full geometry.
+                // In this case, no face-specific materials were populated.
+                // All faces will use the prim-level fallback. No subsets
+                // need be generated.
+                axes_mask = xAxis | yAxis | zAxis;
+                // generateSubsets = false;
             }
-
-            // If no textures are bound, generate the full geometry.
-            if (axes_mask == 0) { axes_mask = xAxis | yAxis | zAxis; }
     
             // Generate UVs.
-            _GenerateTextureCoordinates(uv, assign, axes_mask);
+            _GenerateTextureCoordinates(uv, axes_mask);
 
             // Generate geometry based on card type.
-            if (cardGeometry == UsdGeomTokens->cross) {
-                _GenerateCardsCrossGeometry(topology, points, *extent,
-                    axes_mask);
-            } else if (cardGeometry == UsdGeomTokens->box) {
-                _GenerateCardsBoxGeometry(topology, points, *extent,
-                    axes_mask);
+            if (cardGeometry == UsdGeomTokens->cross ||
+                cardGeometry == UsdGeomTokens->box) {
+                _GenerateCardsGeometry(
+                    topology, points, *extent,
+                    axes_mask, cardGeometry, generateSubsets, prim
+                );
             } else {
                 TF_CODING_ERROR("<%s> Unexpected card geometry mode %s",
                     cachePath.GetText(), cardGeometry.GetText());
@@ -483,10 +578,11 @@ UsdImagingGLDrawModeAdapter::GetTopology(UsdPrim const& prim,
     VtValue topology;
     VtValue points;
     VtValue uv;
-    VtValue assign;
     GfRange3d extent;
-    _ComputeGeometryData(prim, cachePath, time, drawMode, &topology, 
-        &points, &extent, &uv, &assign);
+    _ComputeGeometryData(
+        prim, cachePath, time, drawMode, &topology, 
+        &points, &extent, &uv
+    );
     return topology;
 }
 
@@ -508,13 +604,13 @@ UsdImagingGLDrawModeAdapter::GetExtent(UsdPrim const& prim,
     VtValue topology;
     VtValue points;
     VtValue uv;
-    VtValue assign;
     GfRange3d extent;
-    _ComputeGeometryData(prim, cachePath, time, drawMode, &topology, 
-        &points, &extent, &uv, &assign);
+    _ComputeGeometryData(
+        prim, cachePath, time, drawMode, &topology, 
+        &points, &extent, &uv
+    );
     return extent;
 }
-
 
 /*virtual*/
 bool
@@ -549,7 +645,6 @@ UsdImagingGLDrawModeAdapter::Get(UsdPrim const& prim,
 
         color[0] = drawModeColor;
         value = color;
-
     } else if (key == HdTokens->displayOpacity) {
         VtFloatArray opacity = VtFloatArray(1);
 
@@ -573,10 +668,11 @@ UsdImagingGLDrawModeAdapter::Get(UsdPrim const& prim,
         VtValue topology;
         VtValue points;
         VtValue uv;
-        VtValue assign;
         GfRange3d extent;
-        _ComputeGeometryData(prim, cachePath, time, drawMode, &topology, 
-            &points, &extent, &uv, &assign);
+        _ComputeGeometryData(
+            prim, cachePath, time, drawMode, &topology, 
+            &points, &extent, &uv
+        );
         return points;
 
     } else if (key == _tokens->cardsUv) {
@@ -590,28 +686,12 @@ UsdImagingGLDrawModeAdapter::Get(UsdPrim const& prim,
         VtValue topology;
         VtValue points;
         VtValue uv;
-        VtValue assign;
         GfRange3d extent;
-        _ComputeGeometryData(prim, cachePath, time, drawMode, &topology, 
-            &points, &extent, &uv, &assign);
+        _ComputeGeometryData(
+            prim, cachePath, time, drawMode, &topology, 
+            &points, &extent, &uv
+        );
         return uv;
-
-    } else if (key == _tokens->cardsTexAssign) {
-        TRACE_FUNCTION_SCOPE("cardsTexAssign");
-        TfToken drawMode = UsdGeomTokens->default_;
-        _DrawModeMap::const_iterator it = _drawModeMap.find(cachePath);
-        if (TF_VERIFY(it != _drawModeMap.end())) {
-            drawMode = it->second;
-        }
-
-        VtValue topology;
-        VtValue points;
-        VtValue uv;
-        VtValue assign;
-        GfRange3d extent;
-        _ComputeGeometryData(prim, cachePath, time, drawMode, &topology, 
-            &points, &extent, &uv, &assign);
-        return assign;
 
     } else if (key == _tokens->displayRoughness) {
         return VtValue(1.0f);
@@ -626,10 +706,9 @@ UsdImagingGLDrawModeAdapter::GetMaterialId(UsdPrim const& prim,
                                            SdfPath const& cachePath, 
                                            UsdTimeCode time) const
 {
-    _MaterialMap::const_iterator it = _materialMap.find(cachePath);
-    if (it != _materialMap.end()) {
-        return it->second;
-    }
+    // Because there may be many materials associated with a single prim,
+    // this method will return an empty path. Consumers interested in material
+    // ids for individual subsets must get those from the topology themselves.
     return SdfPath();
 }
 
@@ -645,133 +724,92 @@ UsdImagingGLDrawModeAdapter::GetMaterialResource(UsdPrim const& prim,
 
     UsdGeomModelAPI model(prim);
 
-    SdfAssetPath path(UsdImagingGLPackageDrawModeShader());
-
-    SdrRegistry &shaderReg = SdrRegistry::GetInstance();
-    SdrShaderNodeConstPtr sdrNode = 
-        shaderReg.GetShaderNodeFromAsset(
-            path, 
-            NdrTokenMap(), 
-            TfToken(), 
-            HioGlslfxTokens->glslfx);
-
-    // An sdr node representing the drawCards.glslfx should be added
-    // to the registry, so we don't expect this to fail.
-    if (!TF_VERIFY(sdrNode)) {
-        return VtValue();
-    }
-
-    // Generate material network with a terminal that points to
-    // the DrawMode glslfx shader.
+    // Generate material network with a UsdPreviewSurface terminal.
     TfToken const& terminalType = HdMaterialTerminalTokens->surface;
     HdMaterialNetworkMap networkMap;
     HdMaterialNetwork& network = networkMap.map[terminalType];
     HdMaterialNode terminal;
-    terminal.path = cachePath;
-    terminal.identifier = sdrNode->GetIdentifier();
-
-    const TfToken textureNames[12] = {
-        _tokens->textureXPosColor,
-        _tokens->textureYPosColor,
-        _tokens->textureZPosColor,
-        _tokens->textureXNegColor,
-        _tokens->textureYNegColor,
-        _tokens->textureZNegColor,
-        _tokens->textureXPosOpacity,
-        _tokens->textureYPosOpacity,
-        _tokens->textureZPosOpacity,
-        _tokens->textureXNegOpacity,
-        _tokens->textureYNegOpacity,
-        _tokens->textureZNegOpacity
-    };
+    terminal.path = SdfPath(_tokens->cardSurface);
+    terminal.identifier = UsdImagingTokens->UsdPreviewSurface;
 
     if (model) {
-        const TfToken textureAttrs[6] = {
-            UsdGeomTokens->modelCardTextureXPos,
-            UsdGeomTokens->modelCardTextureYPos,
-            UsdGeomTokens->modelCardTextureZPos,
-            UsdGeomTokens->modelCardTextureXNeg,
-            UsdGeomTokens->modelCardTextureYNeg,
-            UsdGeomTokens->modelCardTextureZNeg,
-        };
-
         GfVec3f drawModeColor;
         model.GetModelDrawModeColorAttr().Get(&drawModeColor);
         VtValue fallback = VtValue(GfVec4f(
-            drawModeColor[0], drawModeColor[1], drawModeColor[2],
-            1.0f));
+            drawModeColor[0], drawModeColor[1], drawModeColor[2], 1.0f
+        ));
 
-        for (int i = 0; i < 6; ++i) {
-            SdfAssetPath textureFile;
-            prim.GetAttribute(textureAttrs[i]).Get(&textureFile, time);
-            if (!textureFile.GetAssetPath().empty()) {
-                SdfPath textureNodePath = _GetMaterialPath(prim)
-                    .AppendProperty(textureAttrs[i]);
+        TfToken textureAttr;
+        TfToken materialName = cachePath.GetNameToken();
 
-                // Make texture node
-                HdMaterialNode textureNode;
-                textureNode.path = textureNodePath;
-                textureNode.identifier = UsdImagingTokens->UsdUVTexture;
-                textureNode.parameters[_tokens->st] = _tokens->cardsUv;
-                textureNode.parameters[_tokens->fallback] = fallback;
-                textureNode.parameters[_tokens->file] = textureFile;
-                textureNode.parameters[_tokens->minFilter] =
-                    _tokens->linearMipmapLinear;
-                textureNode.parameters[_tokens->magFilter] =
-                    _tokens->linear;
+        if (materialName == _tokens->subsetMaterialXPos) {
+            textureAttr = UsdGeomTokens->modelCardTextureXPos;
+        } else if (materialName == _tokens->subsetMaterialYPos) {
+            textureAttr = UsdGeomTokens->modelCardTextureYPos;
+        } else if (materialName == _tokens->subsetMaterialZPos) {
+            textureAttr = UsdGeomTokens->modelCardTextureZPos;
+        } else if (materialName == _tokens->subsetMaterialXNeg) {
+            textureAttr = UsdGeomTokens->modelCardTextureXNeg;
+        } else if (materialName == _tokens->subsetMaterialYNeg) {
+            textureAttr = UsdGeomTokens->modelCardTextureYNeg;
+        } else if (materialName == _tokens->subsetMaterialZNeg) {
+            textureAttr = UsdGeomTokens->modelCardTextureZNeg;
+        }
 
-                // Insert connection between texture node and terminal color
-                // input
-                HdMaterialRelationship colorRel;
-                colorRel.inputId = textureNode.path;
-                colorRel.inputName = _tokens->rgb;
-                colorRel.outputId = terminal.path;
-                colorRel.outputName = textureNames[i];
-                network.relationships.emplace_back(std::move(colorRel));
+        SdfAssetPath textureFile;
+        prim.GetAttribute(textureAttr).Get(&textureFile, time);
+        if (!textureFile.GetAssetPath().empty()) {
+            SdfPath textureNodePath = SdfPath(_tokens->cardTexture);
 
-                // Insert connection between texture node and terminal 
-                // opacity input
-                HdMaterialRelationship opacityRel;
-                opacityRel.inputId = textureNode.path;
-                opacityRel.inputName = _tokens->a;
-                opacityRel.outputId = terminal.path;
-                opacityRel.outputName = textureNames[i + 6];
-                network.relationships.emplace_back(std::move(opacityRel));
+            // Create the texture node
+            HdMaterialNode textureNode;
+            textureNode.path = textureNodePath;
+            textureNode.identifier = UsdImagingTokens->UsdUVTexture;
+            textureNode.parameters[_tokens->st] = _tokens->cardsUv;
+            textureNode.parameters[_tokens->fallback] = fallback;
+            textureNode.parameters[_tokens->file] = textureFile;
+            network.nodes.emplace_back(std::move(textureNode));
 
-                // Insert texture node
-                network.nodes.emplace_back(std::move(textureNode));
-            } else {
-                terminal.parameters[textureNames[i]] = drawModeColor;
-                terminal.parameters[textureNames[i + 6]] = VtValue(1.f);
-            }
+            // Insert connection between texture node and terminal color input
+            HdMaterialRelationship colorRel;
+            colorRel.inputId = textureNodePath;
+            colorRel.inputName = _tokens->rgb;
+            colorRel.outputId = terminal.path;
+            colorRel.outputName = _tokens->diffuseColor;
+            network.relationships.emplace_back(std::move(colorRel));
+
+            // Insert connection between texture node and terminal opacity input
+            HdMaterialRelationship opacityRel;
+            opacityRel.inputId = textureNodePath;
+            opacityRel.inputName = _tokens->a;
+            opacityRel.outputId = terminal.path;
+            opacityRel.outputName = _tokens->opacity;
+            network.relationships.emplace_back(std::move(opacityRel));
+
+            // Create the UV primvar reader node
+            SdfPath uvPrimvarNodePath = SdfPath(_tokens->cardUvCoords);
+            HdMaterialNode uvPrimvarNode;
+            uvPrimvarNode.path = uvPrimvarNodePath;
+            uvPrimvarNode.identifier = UsdImagingTokens->UsdPrimvarReader_float2;
+            uvPrimvarNode.parameters[_tokens->varname] = _tokens->cardsUv;
+            network.nodes.emplace_back(std::move(uvPrimvarNode));
+
+            // Insert connection between UV primvar reader node 
+            // and texture st input
+            HdMaterialRelationship uvPrimvarRel;
+            uvPrimvarRel.inputId = uvPrimvarNodePath;
+            uvPrimvarRel.inputName = _tokens->result;
+            uvPrimvarRel.outputId = textureNodePath;
+            uvPrimvarRel.outputName = _tokens->st;
+            network.relationships.emplace_back(std::move(uvPrimvarRel));
+        } else {
+            terminal.parameters[_tokens->diffuseColor] = drawModeColor;
+            terminal.parameters[_tokens->opacity] = VtValue(1.f);
         }
     } else {
-        for (int i = 0; i < 6; ++i) {
-            terminal.parameters[textureNames[i]] = _schemaColor;
-            terminal.parameters[textureNames[i + 6]] = VtValue(1.f);
-        }
+        terminal.parameters[_tokens->diffuseColor] = _schemaColor;
+        terminal.parameters[_tokens->opacity] = VtValue(1.f);
     }
-
-    // Adding a primvar reader for the card assignment
-    // Make primvar reader node
-    SdfPath primvarNodePath = _GetMaterialPath(prim)
-        .AppendProperty(_tokens->cardsTexAssign);
-    HdMaterialNode primvarNode;
-    primvarNode.path = primvarNodePath;
-    primvarNode.identifier = UsdImagingTokens->UsdPrimvarReader_int;
-    primvarNode.parameters[_tokens->varname] = _tokens->cardsTexAssign;
-    primvarNode.parameters[_tokens->fallback] = VtValue(0);
-
-    // Insert connection between primvar reader node and terminal
-    HdMaterialRelationship relPrimvar;
-    relPrimvar.inputId = primvarNode.path;
-    relPrimvar.inputName = _tokens->result;
-    relPrimvar.outputId = terminal.path;
-    relPrimvar.outputName = _tokens->activeTexCard;
-    network.relationships.emplace_back(std::move(relPrimvar));
-
-    // Insert primvar reader node
-    network.nodes.emplace_back(std::move(primvarNode));
 
     // Insert terminal and update material network
     networkMap.terminals.push_back(terminal.path);
@@ -900,16 +938,13 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
         GfRange3d extent;
         VtValue points;
         VtValue uv;
-        VtValue assign;
         _ComputeGeometryData(prim, cachePath, time, drawMode, &topology, 
-            &points, &extent, &uv, &assign);
+            &points, &extent, &uv);
 
         if (drawMode == UsdGeomTokens->cards) {
-            // Merge "cardsUv" and "cardsTexAssign" primvars
+            // Merge "cardsUv" primvar
             _MergePrimvar(&primvars, _tokens->cardsUv,
                 HdInterpolationVertex);
-            _MergePrimvar(&primvars, _tokens->cardsTexAssign,
-                HdInterpolationUniform);
 
             // XXX: backdoor into the material system.
             _MergePrimvar(&primvars, _tokens->displayRoughness, 
@@ -1038,66 +1073,112 @@ UsdImagingGLDrawModeAdapter::_GenerateBoundsGeometry(
 }
 
 void
-UsdImagingGLDrawModeAdapter::_GenerateCardsCrossGeometry(
+UsdImagingGLDrawModeAdapter::_GenerateCardsGeometry(
         VtValue *topo, VtValue *points, GfRange3d const& extents,
-        uint8_t axes_mask) const
+        uint8_t axes_mask, TfToken cardGeometry, bool generateSubsets, 
+        UsdPrim const& prim) const
 {
     // Generate one face per axis direction, for included axes.
     const int numFaces = ((axes_mask & xAxis) ? 2 : 0) +
                          ((axes_mask & yAxis) ? 2 : 0) +
                          ((axes_mask & zAxis) ? 2 : 0);
 
-    // Cards (Cross) vertices:
-    // - +/-X vertices (CCW wrt +X)
-    // - +/-Y vertices (CCW wrt +Y)
-    // - +/-Z vertices (CCW wrt +Z)
+    // cardGeometry is either "cross" or "box", enforced in _ComputeGeometryData()
+    bool cross = cardGeometry == UsdGeomTokens->cross;
+
     GfVec3f min = GfVec3f(extents.GetMin()),
             max = GfVec3f(extents.GetMax()),
             mid = (min+max)/2.0f;
 
     VtVec3fArray pt = VtVec3fArray(numFaces * 4);
     int ptIdx = 0;
+    int faceIndex = 0;
+
+    HdGeomSubsets geomSubsets;
+
+    SdfPath primPath = prim.GetPath();
+
+    auto generateSubset = [&](AxesMask face) {
+        TfToken subset = _GetSubsetTokenForFace(face);
+        TfToken material = _GetSubsetMaterialTokenForFace(
+            axes_mask & face ? face : _GetOppositeFace(face)
+        );
+        if (!subset.IsEmpty() && !material.IsEmpty()) {
+            geomSubsets.emplace_back(HdGeomSubset {
+                HdGeomSubset::TypeFaceSet,
+                SdfPath(subset),
+                // materialBinding path must be absolute!
+                primPath
+                    .AppendChild(material),
+                VtIntArray { faceIndex++ }
+            });
+        }
+    };
 
     if (axes_mask & xAxis) {
         // +X
-        pt[ptIdx++] = GfVec3f(mid[0], max[1], max[2]);
-        pt[ptIdx++] = GfVec3f(mid[0], min[1], max[2]);
-        pt[ptIdx++] = GfVec3f(mid[0], min[1], min[2]);
-        pt[ptIdx++] = GfVec3f(mid[0], max[1], min[2]);
+        float x = cross ? mid[0] : max[0];
+        pt[ptIdx++] = GfVec3f(x, max[1], max[2]);
+        pt[ptIdx++] = GfVec3f(x, min[1], max[2]);
+        pt[ptIdx++] = GfVec3f(x, min[1], min[2]);
+        pt[ptIdx++] = GfVec3f(x, max[1], min[2]);
+        if (generateSubsets) {
+            generateSubset(xPos);
+        }
 
         // -X
-        pt[ptIdx++] = GfVec3f(mid[0], min[1], max[2]);
-        pt[ptIdx++] = GfVec3f(mid[0], max[1], max[2]);
-        pt[ptIdx++] = GfVec3f(mid[0], max[1], min[2]);
-        pt[ptIdx++] = GfVec3f(mid[0], min[1], min[2]);
+        x = cross ? mid[0] : min[0];
+        pt[ptIdx++] = GfVec3f(x, min[1], max[2]);
+        pt[ptIdx++] = GfVec3f(x, max[1], max[2]);
+        pt[ptIdx++] = GfVec3f(x, max[1], min[2]);
+        pt[ptIdx++] = GfVec3f(x, min[1], min[2]);
+        if (generateSubsets) {
+            generateSubset(xNeg);
+        }
     }
 
     if (axes_mask & yAxis) {
         // +Y
-        pt[ptIdx++] = GfVec3f(min[0], mid[1], max[2]);
-        pt[ptIdx++] = GfVec3f(max[0], mid[1], max[2]);
-        pt[ptIdx++] = GfVec3f(max[0], mid[1], min[2]);
-        pt[ptIdx++] = GfVec3f(min[0], mid[1], min[2]);
+        float y = cross ? mid[1] : max[1];
+        pt[ptIdx++] = GfVec3f(min[0], y, max[2]);
+        pt[ptIdx++] = GfVec3f(max[0], y, max[2]);
+        pt[ptIdx++] = GfVec3f(max[0], y, min[2]);
+        pt[ptIdx++] = GfVec3f(min[0], y, min[2]);
+        if (generateSubsets) {
+            generateSubset(yPos);
+        }
 
         // -Y
-        pt[ptIdx++] = GfVec3f(max[0], mid[1], max[2]);
-        pt[ptIdx++] = GfVec3f(min[0], mid[1], max[2]);
-        pt[ptIdx++] = GfVec3f(min[0], mid[1], min[2]);
-        pt[ptIdx++] = GfVec3f(max[0], mid[1], min[2]);
+        y = cross ? mid[1] : min[1];
+        pt[ptIdx++] = GfVec3f(max[0], y, max[2]);
+        pt[ptIdx++] = GfVec3f(min[0], y, max[2]);
+        pt[ptIdx++] = GfVec3f(min[0], y, min[2]);
+        pt[ptIdx++] = GfVec3f(max[0], y, min[2]);
+        if (generateSubsets) {
+            generateSubset(yNeg);
+        }
     }
 
     if (axes_mask & zAxis) {
         // +Z
-        pt[ptIdx++] = GfVec3f(max[0], max[1], mid[2]);
-        pt[ptIdx++] = GfVec3f(min[0], max[1], mid[2]);
-        pt[ptIdx++] = GfVec3f(min[0], min[1], mid[2]);
-        pt[ptIdx++] = GfVec3f(max[0], min[1], mid[2]);
+        float z = cross ? mid[2] : max[2];
+        pt[ptIdx++] = GfVec3f(max[0], max[1], z);
+        pt[ptIdx++] = GfVec3f(min[0], max[1], z);
+        pt[ptIdx++] = GfVec3f(min[0], min[1], z);
+        pt[ptIdx++] = GfVec3f(max[0], min[1], z);
+        if (generateSubsets) {
+            generateSubset(zPos);
+        }
 
         // -Z
-        pt[ptIdx++] = GfVec3f(min[0], max[1], mid[2]);
-        pt[ptIdx++] = GfVec3f(max[0], max[1], mid[2]);
-        pt[ptIdx++] = GfVec3f(max[0], min[1], mid[2]);
-        pt[ptIdx++] = GfVec3f(min[0], min[1], mid[2]);
+        z = cross ? mid[2] : min[2];
+        pt[ptIdx++] = GfVec3f(min[0], max[1], z);
+        pt[ptIdx++] = GfVec3f(max[0], max[1], z);
+        pt[ptIdx++] = GfVec3f(max[0], min[1], z);
+        pt[ptIdx++] = GfVec3f(min[0], min[1], z);
+        if (generateSubsets) {
+            generateSubset(zNeg);
+        }
     }
 
     VtIntArray faceCounts = VtIntArray(numFaces);
@@ -1113,8 +1194,13 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsCrossGeometry(
     VtIntArray holeIndices(0);
 
     HdMeshTopology topology(
-        PxOsdOpenSubdivTokens->none, PxOsdOpenSubdivTokens->rightHanded,
-        faceCounts, faceIndices, holeIndices);
+        UsdGeomTokens->none, UsdGeomTokens->rightHanded,
+        faceCounts, faceIndices, holeIndices
+    );
+
+    if (!geomSubsets.empty()) {
+        topology.SetGeomSubsets(geomSubsets);
+    }
 
     *points = VtValue(pt);
     *topo = VtValue(topology);
@@ -1148,106 +1234,15 @@ UsdImagingGLDrawModeAdapter::_SanityCheckFaceSizes(SdfPath const& cachePath,
 }
 
 void
-UsdImagingGLDrawModeAdapter::_GenerateCardsBoxGeometry(
-        VtValue *topo, VtValue *points, GfRange3d const& extents,
-        uint8_t axes_mask) const
-{
-    // Generate one face per axis direction, for included axes.
-    const int numFaces = ((axes_mask & xAxis) ? 2 : 0) +
-                         ((axes_mask & yAxis) ? 2 : 0) +
-                         ((axes_mask & zAxis) ? 2 : 0);
-
-    // Bounding box: vertices are for(i: 0 -> 7) {
-    //   ((i & 1) ? z : -z) +
-    //   ((i & 2) ? y : -y) +
-    //   ((i & 4) ? x : -x)
-    // } ... where x is extents[1].x, -x is extents[0].x
-    GfVec3f min = GfVec3f(extents.GetMin()),
-            max = GfVec3f(extents.GetMax());
-
-    VtVec3fArray pt = VtVec3fArray(numFaces * 4);
-    int ptIdx = 0;
-
-    VtVec3fArray corners = VtVec3fArray(8);
-    for(int i = 0; i < 8; ++i) {
-        corners[i] = GfVec3f((i & 4) ? max[0] : min[0],
-                             (i & 2) ? max[1] : min[1],
-                             (i & 1) ? max[2] : min[2]);
-    }
-
-    if (axes_mask & xAxis) {
-        // +X
-        pt[ptIdx++] = corners[7];
-        pt[ptIdx++] = corners[5];
-        pt[ptIdx++] = corners[4];
-        pt[ptIdx++] = corners[6];
-
-        // -X
-        pt[ptIdx++] = corners[1];
-        pt[ptIdx++] = corners[3];
-        pt[ptIdx++] = corners[2];
-        pt[ptIdx++] = corners[0];
-    }
-
-    if (axes_mask & yAxis) {
-        // +Y
-        pt[ptIdx++] = corners[3];
-        pt[ptIdx++] = corners[7];
-        pt[ptIdx++] = corners[6];
-        pt[ptIdx++] = corners[2];
-
-        // -Y
-        pt[ptIdx++] = corners[5];
-        pt[ptIdx++] = corners[1];
-        pt[ptIdx++] = corners[0];
-        pt[ptIdx++] = corners[4];
-    }
-
-    if (axes_mask & zAxis) {
-        // +Z
-        pt[ptIdx++] = corners[7];
-        pt[ptIdx++] = corners[3];
-        pt[ptIdx++] = corners[1];
-        pt[ptIdx++] = corners[5];
-
-        // -Z
-        pt[ptIdx++] = corners[2];
-        pt[ptIdx++] = corners[6];
-        pt[ptIdx++] = corners[4];
-        pt[ptIdx++] = corners[0];
-    }
-
-    *points = VtValue(pt);
-
-    VtIntArray faceCounts = VtIntArray(numFaces);
-    VtIntArray faceIndices = VtIntArray(numFaces * 4);
-    for (int i = 0; i < numFaces; ++i) {
-        faceCounts[i] = 4;
-        faceIndices[i*4+0] = i*4+0;
-        faceIndices[i*4+1] = i*4+1;
-        faceIndices[i*4+2] = i*4+2;
-        faceIndices[i*4+3] = i*4+3;
-    }
-
-    VtIntArray holeIndices(0);
-
-    HdMeshTopology topology(
-        UsdGeomTokens->none, UsdGeomTokens->rightHanded,
-        faceCounts, faceIndices, holeIndices);
-
-    *points = VtValue(pt);
-    *topo = VtValue(topology);
-}
-
-void
 UsdImagingGLDrawModeAdapter::_GenerateCardsFromTextureGeometry(
-        VtValue *topo, VtValue *points, VtValue *uv, VtValue *assign,
+        VtValue *topo, VtValue *points, VtValue *uv,
         GfRange3d *extents, UsdPrim const& prim) const
 {
     UsdGeomModelAPI model(prim);
+    SdfPath primPath = prim.GetPath();
     if (!model) {
         TF_CODING_ERROR("Prim <%s> has model:cardGeometry = fromTexture,"
-                " but GeomModelAPI is not applied!", prim.GetPath().GetText());
+                " but GeomModelAPI is not applied!", primPath.GetText());
         return;
     }
 
@@ -1288,6 +1283,7 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsFromTextureGeometry(
         std::array<GfVec2f, 4>(
             {GfVec2f(0,1), GfVec2f(0,0), GfVec2f(1,0), GfVec2f(1,1) });
 
+    HdGeomSubsets geomSubsets;
     for(size_t i = 0; i < faces.size(); ++i) {
         GfMatrix4d screenToWorld = faces[i].first.GetInverse();
         faceCounts[i] = 4;
@@ -1296,19 +1292,38 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsFromTextureGeometry(
             faceIndices[i*4+j] = i*4+j;
             arr_pt[i*4+j] = screenToWorld.Transform(corners[j]);
             arr_uv[i*4+j] = std_uvs[j];
-        }    
+        }
+
+        // generate the subset
+        TfToken subset = _GetSubsetTokenForFace(AxesMask(faces[i].second));
+        TfToken material = _GetSubsetMaterialTokenForFace(
+            AxesMask(faces[i].second));
+        if (!subset.IsEmpty() && !material.IsEmpty()) {
+            geomSubsets.emplace_back(HdGeomSubset {
+                HdGeomSubset::TypeFaceSet,
+                SdfPath(subset),
+                // materialBinding path must be absolute!
+                primPath
+                    .AppendChild(material),
+                VtIntArray { int(i) }
+            });
+        }
     }
 
     // Create the topology object, and put our buffers in the out-values.
     VtIntArray holeIndices(0);
     HdMeshTopology topology(
         UsdGeomTokens->none, UsdGeomTokens->rightHanded,
-        faceCounts, faceIndices, holeIndices);
+        faceCounts, faceIndices, holeIndices
+    );
+
+    if (!geomSubsets.empty()) {
+        topology.SetGeomSubsets(geomSubsets);
+    }
 
     *topo = VtValue(topology);
     *points = VtValue(arr_pt);
     *uv = VtValue(arr_uv);
-    *assign = VtValue(arr_assign);
 
     // Compute extents from points.
     extents->SetEmpty();
@@ -1412,11 +1427,10 @@ _GetUVsForQuad(const bool flipU, bool flipV)
 
 void
 UsdImagingGLDrawModeAdapter::_GenerateTextureCoordinates(
-        VtValue *uv, VtValue *assign, uint8_t axes_mask) const
+        VtValue *uv, uint8_t axes_mask) const
 {
-    // This function generates a UV quad per face, with the correct orientation,
-    // and also uniform indices for each face specifying which texture to
-    // sample.  The order is [X+, X-, Y+, Y-, Z+, Z-], possibly with some of
+    // This function generates a UV quad per face, with the correct orientation.
+    // The order is [X+, X-, Y+, Y-, Z+, Z-], possibly with some of
     // the axes omitted.
 
     static const std::array<GfVec2f, 4> uv_normal =
@@ -1433,28 +1447,22 @@ UsdImagingGLDrawModeAdapter::_GenerateTextureCoordinates(
     if (axes_mask & xAxis) {
         uv_faces.push_back(
             (axes_mask & xPos) ? uv_normal.data() : uv_flipped_s.data());
-        face_assign.push_back((axes_mask & xPos) ? xPos : xNeg);
         uv_faces.push_back(
             (axes_mask & xNeg) ? uv_normal.data() : uv_flipped_s.data());
-        face_assign.push_back((axes_mask & xNeg) ? xNeg : xPos);
     }
     if (axes_mask & yAxis) {
         uv_faces.push_back(
             (axes_mask & yPos) ? uv_normal.data() : uv_flipped_s.data());
-        face_assign.push_back((axes_mask & yPos) ? yPos : yNeg);
         uv_faces.push_back(
             (axes_mask & yNeg) ? uv_normal.data() : uv_flipped_s.data());
-        face_assign.push_back((axes_mask & yNeg) ? yNeg : yPos);
     }
     if (axes_mask & zAxis) {
         // (Z+) and (Z-) need to be flipped on the (t) axis instead of the (s)
         // axis when we're borrowing a texture from the other side of the axis.
         uv_faces.push_back(
             (axes_mask & zPos) ? uv_normal.data() : uv_flipped_t.data());
-        face_assign.push_back((axes_mask & zPos) ? zPos : zNeg);
         uv_faces.push_back(
             (axes_mask & zNeg) ? uv_flipped_st.data() : uv_flipped_s.data());
-        face_assign.push_back((axes_mask & zNeg) ? zNeg : zPos);
     }
 
     VtVec2fArray faceUV = VtVec2fArray(uv_faces.size() * 4);
@@ -1462,12 +1470,6 @@ UsdImagingGLDrawModeAdapter::_GenerateTextureCoordinates(
         memcpy(&faceUV[i*4], uv_faces[i], 4 * sizeof(GfVec2f));
     }
     *uv = VtValue(faceUV);
-
-    VtIntArray faceAssign = VtIntArray(face_assign.size());
-    for (size_t i = 0; i < face_assign.size(); ++i) {
-        faceAssign[i] = face_assign[i];
-    }
-    *assign = VtValue(faceAssign);
 }
 
 GfRange3d

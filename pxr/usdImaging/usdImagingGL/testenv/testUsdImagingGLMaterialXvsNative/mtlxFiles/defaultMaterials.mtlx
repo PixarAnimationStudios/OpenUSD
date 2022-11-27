@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<!-- 
+  Default UsdPreviewSurface with varying roughness 
+-->
+<materialx version="1.38">
+
+  <UsdPreviewSurface name="SR_default_01" type="surfaceshader">
+    <input name="roughness" type="float" value="0.0" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Default_01" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_default_01" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_default_02" type="surfaceshader">
+    <input name="roughness" type="float" value="0.25" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Default_02" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_default_02" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_default_03" type="surfaceshader">
+    <input name="roughness" type="float" value="0.5" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Default_03" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_default_03" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_default_04" type="surfaceshader">
+    <input name="roughness" type="float" value="0.75" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Default_04" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_default_04" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_default_05" type="surfaceshader">
+    <input name="roughness" type="float" value="1.0" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Default_05" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_default_05" />
+  </surfacematerial>
+
+</materialx>

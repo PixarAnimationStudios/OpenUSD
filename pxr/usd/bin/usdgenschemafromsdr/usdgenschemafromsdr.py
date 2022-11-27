@@ -51,6 +51,7 @@ import os, sys, json
 from subprocess import call
 from pxr import Sdf, Tf, UsdUtils, Sdr
 from pxr.UsdUtils.constantsGroup import ConstantsGroup
+from pxr.UsdUtils.toolPaths import FindUsdBinary
 
 class SchemaConfigConstants(ConstantsGroup):
     SDR_NODES = "sdrNodes"
@@ -67,41 +68,7 @@ class SchemaLayerConstants(ConstantsGroup):
 
 class MiscConstants(ConstantsGroup):
     USD_GEN_SCHEMA = "usdGenSchema"
-    WINDOWS = "Windows"
-    PATH = "PATH"
-    CMD_EXTENSION = ".cmd"
     README_FILE_NAME = "README.md"
-
-def _GetUsdGenSchemaCmd():
-    # Adopting logic from usddiff.py
-    from distutils.spawn import find_executable
-    import platform
-
-    cmd = find_executable(MiscConstants.USD_GEN_SCHEMA)
-    
-    # usdGenSchema is found in PATH
-    if cmd:
-        return cmd
-    else:
-        # try to find usdGenSchema from installed directory of this script
-        cmd = find_executable(USD_GEN_SCHEMA, 
-                path=os.path.abspath(os.path.dirname(sys.argv[0])))
-        if cmd:
-            return cmd
-
-    if (platform.system() == 'Windows'):
-        # find_executable under Windows only returns *.EXE files
-        # so we need to traverse PATH.
-        for path in os.environ['PATH'].split(os.pathsep):
-            base = os.path.join(path, USD_GEN_SCHEMA)
-            # We need to test for usdGenSchema.cmd first because on Windows, 
-            # the USD executables are wrapped due to lack of N*IX style shebang 
-            # support on Windows.
-            for ext in [MiscConstants.CMD_EXTENSION, '']:
-                cmd = base + ext
-                if os.access(cmd, os.X_OK):
-                    return cmd
-    return None
 
 def _ConfigureSchemaLayer(schemaLayer, schemaSubLayers, skipCodeGeneration,
         useLiteralIdentifier):
@@ -347,11 +314,11 @@ if __name__ == '__main__':
         UsdUtils.UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext,
                 assetPathIdentifier)
 
-    usdGenSchemaCmd = _GetUsdGenSchemaCmd()
+    usdGenSchemaCmd = FindUsdBinary(MiscConstants.USD_GEN_SCHEMA)
     usdGenSchemaArgs = ["--validate"] if validate else []
     if not usdGenSchemaCmd:
         Tf.RaiseRuntimeError("%s not found. Make sure %s is in the PATH." \
-                %(USD_GEN_SCHEMA))
+                %(MiscConstants.USD_GEN_SCHEMA))
 
     call([usdGenSchemaCmd] + usdGenSchemaArgs, cwd=schemaGenerationPath)
 

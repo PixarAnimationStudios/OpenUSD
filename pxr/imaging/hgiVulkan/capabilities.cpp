@@ -96,6 +96,7 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne, false);
     _SetFlag(HgiDeviceCapabilitiesBitsStencilReadback, true);
     _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect, true);
+    _SetFlag(HgiDeviceCapabilitiesBitsShaderDoublePrecision, true);
     _SetFlag(HgiDeviceCapabilitiesBitsConservativeRaster, 
         conservativeRasterEnabled);
     _SetFlag(HgiDeviceCapabilitiesBitsBuiltinBarycentrics, 

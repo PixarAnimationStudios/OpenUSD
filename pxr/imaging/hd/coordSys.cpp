@@ -25,9 +25,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (coordSys) 
+);
+
 HdCoordSys::HdCoordSys(SdfPath const &id)
  : HdSprim(id)
- , _name(SdfPath::StripNamespace(id.GetName()))
+ , _name(SdfPath::StripPrefixNamespace(id.GetName(), _tokens->coordSys).first)
 {
 }
 

@@ -236,14 +236,9 @@ class UsdzAssetIterator(object):
                     "exception was thrown: (%s)" %(",".join(filesToAdd), \
                             self.usdzFile, e))
         finally:
-            if self._tmpDir:
-                # Make sure context is not on the directory being removed
-                os.chdir(os.path.dirname(self._tmpDir))
-                shutil.rmtree(self._tmpDir)
-            else:
-                # Make sure context is not on the directory being removed
-                os.chdir(os.path.dirname(self.extractDir))
-                shutil.rmtree(self.extractDir)
+            # Make sure context is not on the directory being removed
+            os.chdir(os.path.dirname(self.extractDir))
+            shutil.rmtree(self.extractDir)
 
     def UsdAssets(self):
         """

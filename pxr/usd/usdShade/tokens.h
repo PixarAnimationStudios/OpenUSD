@@ -70,10 +70,14 @@ struct UsdShadeTokensType {
     /// 
     /// Token valued metadata key authored on a material  binding relationship to indicate the strength of the binding  relative to bindings authored on descendants. 
     const TfToken bindMaterialAs;
-    /// \brief "coordSys:"
+    /// \brief "coordSys"
     /// 
-    /// Namespace prefix for relationships that bind coordinate systems.
+    /// Property namespace prefix for the UsdShadeCoordSysAPI schema.
     const TfToken coordSys;
+    /// \brief "coordSys:__INSTANCE_NAME__:binding"
+    /// 
+    /// UsdShadeCoordSysAPI
+    const TfToken coordSys_MultipleApplyTemplate_Binding;
     /// \brief "displacement"
     /// 
     /// Describes the <i>displacement</i> output  terminal on a UsdShadeMaterial. It is used to define the  terminal UsdShadeShader describing the displacement of a  UsdShadeMaterial. 

@@ -97,10 +97,6 @@ int main(int argc, char *argv[])
 
     // Initialize UsdImagingGLEnging
     UsdImagingGLEngineSharedPtr engine;
-    if (!UsdImagingGLEngine::IsHydraEnabled()) {
-        std::cerr << "Couldn't initialize hydra" << std::endl;
-        exit(-1);
-    }
     SdfPathVector excludedPaths;
     engine.reset(new UsdImagingGLEngine(
         stage->GetPseudoRoot().GetPath(), excludedPaths));

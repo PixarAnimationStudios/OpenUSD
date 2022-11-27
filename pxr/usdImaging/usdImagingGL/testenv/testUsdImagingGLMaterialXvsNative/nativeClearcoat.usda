@@ -1,0 +1,221 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Scope "UsdNative" {
+    def Sphere "UsdClearcoat_01" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/USD_Clearcoat_01>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (-5.0, 0, 1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "UsdClearcoat_02" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/USD_Clearcoat_02>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (-2.5, 0, 1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "UsdClearcoat_03" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/USD_Clearcoat_03>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (0, 0, 1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "UsdClearcoat_04" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/USD_Clearcoat_04>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (2.5, 0, 1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "UsdClearcoat_05" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/USD_Clearcoat_05>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (5.0, 0, 1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "UsdClearcoat_06" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/USD_Clearcoat_06>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (-2.5, 0, -1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "UsdClearcoat_07" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/USD_Clearcoat_07>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (0, 0, -1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "UsdClearcoat_08" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/USD_Clearcoat_08>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (2.5, 0, -1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Scope "Materials" {
+    def Material "USD_Clearcoat_01" {
+        token outputs:surface.connect = </Materials/USD_Clearcoat_01/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.1, 0.6, 0.85)
+            float inputs:roughness = 0.5
+            float inputs:clearcoat = 1.0
+            float inputs:clearcoatRoughness = 0.0
+
+            token outputs:surface
+        }
+    }
+    def Material "USD_Clearcoat_02" {
+        token outputs:surface.connect = </Materials/USD_Clearcoat_02/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.1, 0.6, 0.85)
+            float inputs:roughness = 0.5
+            float inputs:clearcoat = 1.0
+            float inputs:clearcoatRoughness = 0.25
+
+            token outputs:surface
+        }
+    }
+    def Material "USD_Clearcoat_03" {
+        token outputs:surface.connect = </Materials/USD_Clearcoat_03/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.1, 0.6, 0.85)
+            float inputs:roughness = 0.5
+            float inputs:clearcoat = 1.0
+            float inputs:clearcoatRoughness = 0.5
+
+            token outputs:surface
+        }
+    }
+    def Material "USD_Clearcoat_04" {
+        token outputs:surface.connect = </Materials/USD_Clearcoat_04/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.1, 0.6, 0.85)
+            float inputs:roughness = 0.5
+            float inputs:clearcoat = 1.0
+            float inputs:clearcoatRoughness = 0.75
+
+            token outputs:surface
+        }
+    }
+    def Material "USD_Clearcoat_05" {
+        token outputs:surface.connect = </Materials/USD_Clearcoat_05/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.1, 0.6, 0.85)
+            float inputs:roughness = 0.5
+            float inputs:clearcoat = 1.0
+            float inputs:clearcoatRoughness = 1.0
+
+            token outputs:surface
+        }
+    }
+
+    # Changing IOR 
+    def Material "USD_Clearcoat_06" {
+        token outputs:surface.connect = </Materials/USD_Clearcoat_06/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.1, 0.6, 0.85)
+            float inputs:roughness = 0.5
+            float inputs:clearcoat = 1.0
+            float inputs:clearcoatRoughness = 0.01
+            float inputs:ior = 0.5
+
+            token outputs:surface
+        }
+    }
+    def Material "USD_Clearcoat_07" {
+        token outputs:surface.connect = </Materials/USD_Clearcoat_07/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.1, 0.6, 0.85)
+            float inputs:roughness = 0.5
+            float inputs:clearcoat = 1.0
+            float inputs:clearcoatRoughness = 0.01
+            float inputs:ior = 5.0
+
+            token outputs:surface
+        }
+    }
+    def Material "USD_Clearcoat_08" {
+        token outputs:surface.connect = </Materials/USD_Clearcoat_08/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.1, 0.6, 0.85)
+            float inputs:roughness = 0.5
+            float inputs:clearcoat = 1.0
+            float inputs:clearcoatRoughness = 0.01
+            float inputs:ior = 25.0
+
+            token outputs:surface
+        }
+    }
+}
+
+def Xform "lights" {
+    def DomeLight "DomeLight"
+    {
+        asset inputs:texture:file = @./StinsonBeach.hdr@
+        float xformOp:rotateX:Zup = 90
+        uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
+    }
+    def SphereLight "Light"
+    {
+        float inputs:radius = 25
+        float inputs:intensity = 5
+        Vec3f xformOp:translate = (0, -50, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Camera "Camera" {
+    double3 xformOp:translate = (0, 0, 35)
+    float xformOp:rotateX:Zup = 90
+    uniform token[] xformOpOrder = ["xformOp:rotateX:Zup","xformOp:translate"]
+}

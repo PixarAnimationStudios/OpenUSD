@@ -198,9 +198,11 @@ _ViewportToAovDimensions(const GfVec4d& viewport)
 }
 
 HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
-                                     SdfPath const& controllerId)
+                                     SdfPath const& controllerId,
+                                     bool gpuEnabled)
     : _index(renderIndex)
     , _controllerId(controllerId)
+    , _gpuEnabled(gpuEnabled)
     , _delegate(renderIndex, controllerId)
     , _freeCameraSceneDelegate(
         std::make_unique<HdxFreeCameraSceneDelegate>(
@@ -258,6 +260,11 @@ HdxTaskController::_CreateRenderGraph()
     // delegate capabilities evolve, we'll need a more complicated switch
     // than this...
     if (_IsStormRenderingBackend(GetRenderIndex())) {
+        if (!_gpuEnabled) {
+            TF_WARN("Trying to use Storm while disabling the GPU.");
+            _gpuEnabled = true;
+        }
+
         _CreateLightingTask();
         _CreateShadowTask();
         _renderTaskIds.push_back(_CreateSkydomeTask());
@@ -294,13 +301,15 @@ HdxTaskController::_CreateRenderGraph()
         _renderTaskIds.push_back(_CreateRenderTask(TfToken()));
 
         if (_AovsSupported()) {
-            _CreateAovInputTask();
-            _CreateColorizeSelectionTask();
-            _CreateColorCorrectionTask();
-            _CreateVisualizeAovTask();
-            _CreatePresentTask();
-            _CreatePickFromRenderBufferTask();
-            _CreateBoundingBoxTask();
+            if (_gpuEnabled) {
+                _CreateAovInputTask();
+                _CreateColorizeSelectionTask();
+                _CreateColorCorrectionTask();
+                _CreateVisualizeAovTask();
+                _CreatePresentTask();
+                _CreatePickFromRenderBufferTask();
+                _CreateBoundingBoxTask();
+            }
             // Initialize the AOV system to render color. Note:
             // SetRenderOutputs special-cases color to include support for
             // depth-compositing and selection highlighting/picking.
@@ -586,7 +595,6 @@ HdxTaskController::_CreateBoundingBoxTask()
         _tokens->boundingBoxTask);
 
     HdxBoundingBoxTaskParams taskParams;
-    taskParams.cameraId = _freeCameraSceneDelegate->GetCameraId();
 
     GetRenderIndex()->InsertTask<HdxBoundingBoxTask>(&_delegate,
         _boundingBoxTaskId);
@@ -2046,17 +2054,6 @@ HdxTaskController::_SetCameraParamForTasks(SdfPath const& id)
             GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
                 _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
         }
-
-        if (!_boundingBoxTaskId.IsEmpty()) {
-            HdxBoundingBoxTaskParams params =
-                _delegate.GetParameter<HdxBoundingBoxTaskParams>(
-                    _boundingBoxTaskId, HdTokens->params);
-            params.cameraId = _activeCameraId;
-            _delegate.SetParameter(
-                _boundingBoxTaskId, HdTokens->params, params);
-            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-                _boundingBoxTaskId, HdChangeTracker::DirtyParams);
-        }
     }
 }
 
@@ -2114,24 +2111,6 @@ HdxTaskController::_SetCameraFramingForTasks()
                 _pickFromRenderBufferTaskId, HdTokens->params, params);
             changeTracker.MarkTaskDirty(
                 _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
-        }
-    }
-
-    if (!_boundingBoxTaskId.IsEmpty()) {
-        HdxBoundingBoxTaskParams params =
-            _delegate.GetParameter<HdxBoundingBoxTaskParams>(
-                _boundingBoxTaskId, HdTokens->params);
-        if (params.viewport != adjustedViewport ||
-            params.framing != _framing ||
-            params.overrideWindowPolicy != _overrideWindowPolicy) {
-
-            params.framing = _framing;
-            params.overrideWindowPolicy = _overrideWindowPolicy;
-            params.viewport = adjustedViewport;
-            _delegate.SetParameter(
-                _boundingBoxTaskId, HdTokens->params, params);
-            changeTracker.MarkTaskDirty(
-                _boundingBoxTaskId, HdChangeTracker::DirtyParams);
         }
     }
 

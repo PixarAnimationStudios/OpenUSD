@@ -64,13 +64,15 @@ UsdImagingBasisCurvesAdapter::~UsdImagingBasisCurvesAdapter()
 }
 
 TfTokenVector
-UsdImagingBasisCurvesAdapter::GetImagingSubprims()
+UsdImagingBasisCurvesAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdImagingBasisCurvesAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingBasisCurvesAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
 {
     if (subprim.IsEmpty()) {
         return HdPrimTypeTokens->basisCurves;
@@ -80,8 +82,8 @@ UsdImagingBasisCurvesAdapter::GetImagingSubprimType(TfToken const& subprim)
 
 HdContainerDataSourceHandle
 UsdImagingBasisCurvesAdapter::GetImagingSubprimData(
-        TfToken const& subprim,
         UsdPrim const& prim,
+        TfToken const& subprim,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {

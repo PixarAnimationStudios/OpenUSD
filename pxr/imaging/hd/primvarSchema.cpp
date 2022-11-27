@@ -30,6 +30,9 @@
 
 #include "pxr/base/trace/trace.h"
 
+#include "pxr/base/vt/typeHeaders.h"
+#include "pxr/base/vt/visitValue.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -42,9 +45,9 @@ bool
 HdPrimvarSchema::IsIndexed()
 {
     if (_container) {
-        return (_container->Has(HdPrimvarSchemaTokens->
+        return (_container->Get(HdPrimvarSchemaTokens->
                     indexedPrimvarValue) && 
-                _container->Has(HdPrimvarSchemaTokens->indices));
+                _container->Get(HdPrimvarSchemaTokens->indices));
     }
     return false;
 }
@@ -53,12 +56,11 @@ namespace {
 
 template<typename T>
 VtValue 
-_ComputeFlattened(VtValue const &value, VtIntArray const &indices) {
+_ComputeFlattened(VtArray<T> const &array, VtIntArray const &indices) {
     if (indices.empty()) {
-        return value;
+        return VtValue(array);
     }
 
-    VtArray<T> array = value.Get<VtArray<T>>();
     VtArray<T> result = VtArray<T>(indices.size());
 
     bool invalidIndices = false;
@@ -78,51 +80,24 @@ _ComputeFlattened(VtValue const &value, VtIntArray const &indices) {
     return VtValue(result);
 }
 
-VtValue 
-_ComputeFlattenedValue(VtValue const &value, VtIntArray const &indices) {
-    if (value.IsHolding<VtVec2fArray>()) {
-        return _ComputeFlattened<GfVec2f>(value, indices);
-    } else if (value.IsHolding<VtVec2dArray>()) {
-        return _ComputeFlattened<GfVec2d>(value, indices);
-    } else if (value.IsHolding<VtVec2iArray>()) {
-        return _ComputeFlattened<GfVec2i>(value, indices);
-    } else if (value.IsHolding<VtVec2hArray>()) {
-        return _ComputeFlattened<GfVec2h>(value, indices);             
-    } else if (value.IsHolding<VtVec3fArray>()) {
-        return _ComputeFlattened<GfVec3f>(value, indices);   
-    } else if (value.IsHolding<VtVec3dArray>()) {
-        return _ComputeFlattened<GfVec3d>(value, indices); 
-     } else if (value.IsHolding<VtVec3iArray>()) {
-        return _ComputeFlattened<GfVec3i>(value, indices);
-    } else if (value.IsHolding<VtVec3hArray>()) {
-        return _ComputeFlattened<GfVec3h>(value, indices);           
-    } else if (value.IsHolding<VtVec4fArray>()) {
-        return _ComputeFlattened<GfVec4f>(value, indices);
-    } else if (value.IsHolding<VtVec4dArray>()) {
-        return _ComputeFlattened<GfVec4d>(value, indices);                
-    } else if (value.IsHolding<VtVec4iArray>()) {
-        return _ComputeFlattened<GfVec4i>(value, indices);
-    } else if (value.IsHolding<VtVec4hArray>()) {
-        return _ComputeFlattened<GfVec4h>(value, indices); 
-    } else if (value.IsHolding<VtMatrix4dArray>()) {
-        return _ComputeFlattened<GfMatrix4d>(value, indices);  
-    } else if (value.IsHolding<VtStringArray>()) {
-        return _ComputeFlattened<std::string>(value, indices);  
-    } else if (value.IsHolding<VtDoubleArray>()) {
-        return _ComputeFlattened<double>(value, indices);  
-    } else if (value.IsHolding<VtIntArray>()) {
-        return _ComputeFlattened<int>(value, indices); 
-    } else if (value.IsHolding<VtUIntArray>()) {
-        return _ComputeFlattened<unsigned int>(value, indices); 
-    } else if (value.IsHolding<VtFloatArray>()) {
-        return _ComputeFlattened<float>(value, indices);
-    } else if (value.IsHolding<VtHalfArray>()) {
-        return _ComputeFlattened<GfHalf>(value, indices); 
-    } else {
-        TF_WARN("Unsupported indexed primvar type");
+
+struct _ComputeFlattenedValue
+{
+    _ComputeFlattenedValue(VtIntArray const &indices)
+    : _indices(indices) {}
+
+    template <typename T>
+    VtValue operator()(VtArray<T> const &array) {
+        return _ComputeFlattened<T>(array, _indices);
     }
-    return value;
-}
+
+    VtValue operator()(VtValue const &value) {
+        TF_WARN("Unsupported indexed primvar type");
+        return value;
+    }
+
+    VtIntArray _indices;
+};
 
 class _HdDataSourceFlattenedPrimvarValue : public HdSampledDataSource
 {
@@ -141,7 +116,7 @@ public:
     {
         VtValue indexedValue = _indexedValue->GetValue(shutterOffset);
         VtIntArray indices = _indices->GetTypedValue(shutterOffset);
-        return _ComputeFlattenedValue(indexedValue, indices);
+        return VtVisitValue(indexedValue, _ComputeFlattenedValue(indices));
     }
 
     bool GetContributingSampleTimesForInterval(
@@ -186,16 +161,22 @@ HdPrimvarSchema::GetPrimvarValue()
 {
     // overriden definition from primvarSchemaGetValue.template.cpp
     if (_container) {
-        if (_container->Has(HdPrimvarSchemaTokens->primvarValue)) {
-            return _GetTypedDataSource<HdSampledDataSource>(
-                HdPrimvarSchemaTokens->primvarValue);
-        } else if (_container->Has(HdPrimvarSchemaTokens->indexedPrimvarValue) && 
-                   _container->Has(HdPrimvarSchemaTokens->indices)) {
-            return _HdDataSourceFlattenedPrimvarValue::New(
+        if (HdSampledDataSourceHandle sds =
                 _GetTypedDataSource<HdSampledDataSource>(
-                    HdPrimvarSchemaTokens->indexedPrimvarValue),
+                    HdPrimvarSchemaTokens->primvarValue)) {
+            return sds;
+        } else {
+            HdSampledDataSourceHandle ivds =
+                _GetTypedDataSource<HdSampledDataSource>(
+                    HdPrimvarSchemaTokens->indexedPrimvarValue);
+
+            HdTypedSampledDataSource<VtIntArray>::Handle ids = 
                 _GetTypedDataSource<HdTypedSampledDataSource<VtIntArray>>(
-                    HdPrimvarSchemaTokens->indices));
+                    HdPrimvarSchemaTokens->indices);
+
+            if (ivds && ids) {
+                return _HdDataSourceFlattenedPrimvarValue::New(ivds, ids);
+            }
         }
     }
     return nullptr;

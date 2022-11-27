@@ -35,15 +35,6 @@ HdMapContainerDataSource::HdMapContainerDataSource(
 
 HdMapContainerDataSource::~HdMapContainerDataSource() = default;
 
-bool
-HdMapContainerDataSource::Has(const TfToken &name)
-{
-    if (!_src) {
-        return false;
-    }
-    return _src->Has(name);
-}
-
 TfTokenVector
 HdMapContainerDataSource::GetNames()
 {

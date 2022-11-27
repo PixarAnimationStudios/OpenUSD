@@ -700,8 +700,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     if (bits & DirtyParams) {
         if (!_lightFilterPaths.empty()) {
             for (SdfPath const & filterPath : _lightFilterPaths) {
-                changeTracker.RemoveSprimSprimDependency(
-                    filterPath, id);
+                changeTracker.RemoveSprimSprimDependency(filterPath, id);
             }
         }
         clearFilterPaths = true;
@@ -757,7 +756,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         if (val.IsHolding<TfToken>()) {
             _lightLink = val.UncheckedGet<TfToken>();
         }
-        
+
         if (!_lightLink.IsEmpty()) {
             param->IncrementLightLinkCount(_lightLink);
             // For lights to link geometry, the lights must
@@ -767,7 +766,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
                             RtUString(_lightLink.GetText()));
             TF_DEBUG(HDPRMAN_LIGHT_LINKING)
                 .Msg("HdPrman: Light <%s> grouping membership \"%s\"\n",
-                        id.GetText(), _lightLink.GetText());
+                     id.GetText(), _lightLink.GetText());
         } else {
             // Default light group
             attrs.SetString(RixStr.k_grouping_membership, us_default);

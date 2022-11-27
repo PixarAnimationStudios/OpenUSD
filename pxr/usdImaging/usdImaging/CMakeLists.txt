@@ -78,6 +78,7 @@ pxr_library(usdImaging
         meshAdapter
         nurbsCurvesAdapter
         nurbsPatchAdapter
+        piPrototypePropagatingSceneIndex
         planeAdapter
         pluginLightAdapter
         pluginLightFilterAdapter
@@ -86,13 +87,19 @@ pxr_library(usdImaging
         portalLightAdapter
         primAdapter
         primvarDescCache
+        prototypePruningSceneIndex
         rectLightAdapter
         renderSettingsAdapter
+        rerootingSceneIndex
         sampleFilterAdapter
         sphereAdapter
         sphereLightAdapter
         textureUtils
         volumeAdapter
+
+    PRIVATE_CLASSES
+        sceneIndexPrimView
+        piPrototypeSceneIndex
 
     PUBLIC_HEADERS
         api.h

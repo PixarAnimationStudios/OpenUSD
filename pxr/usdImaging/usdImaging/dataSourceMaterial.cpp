@@ -62,11 +62,6 @@ class _UsdImagingDataSourceShadingNodeParameters : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(_UsdImagingDataSourceShadingNodeParameters);
 
-    bool Has(const TfToken &name) override
-    {
-        return Get(name) != nullptr;
-    }
-
     TfTokenVector GetNames() override
     {
         TfTokenVector result;
@@ -124,11 +119,6 @@ class _UsdImagingDataSourceShadingNodeInputs : public HdContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(_UsdImagingDataSourceShadingNodeInputs);
-
-    bool Has(const TfToken &name) override
-    {
-        return Get(name) != nullptr;
-    }
 
     TfTokenVector GetNames() override
     {
@@ -193,11 +183,6 @@ class _UsdImagingDataSourceRenderContextIdentifiers
 {
 public:
     HD_DECLARE_DATASOURCE(_UsdImagingDataSourceRenderContextIdentifiers);
-
-    bool Has(const TfToken &name) override
-    {
-        return bool(_t.GetShaderIdAttrForRenderContext(name));
-    }
 
     TfTokenVector GetNames() override
     {
@@ -269,31 +254,6 @@ class _UsdImagingRenderContextNodeIdentifiersForSourceAsset
 public:
     HD_DECLARE_DATASOURCE(
         _UsdImagingRenderContextNodeIdentifiersForSourceAsset);
-
-    bool Has(const TfToken& name) override
-    {
-        if (name == _tokens->infoSdrMetadata) {
-            return _shaderNode.GetPrim().HasMetadata(
-                UsdShadeTokens->sdrMetadata);
-        }
-
-        TfToken sourceType, leafName;
-        if (!_ParseInfoName(name, &sourceType, &leafName)) {
-            return false;
-        }
-
-        if (leafName == _tokens->subIdentifier) {
-            UsdShadeNodeDefAPI nodeDef(_shaderNode);
-            return nodeDef
-                && nodeDef.GetSourceAssetSubIdentifier(nullptr, sourceType);
-        }
-
-        if (leafName == _tokens->sourceAsset) {
-            return bool(_shaderNode.GetPrim().GetAttribute(name));
-        }
-
-        return false;
-    }
 
     TfTokenVector GetNames() override
     {
@@ -416,15 +376,6 @@ class _UsdImagingDataSourceShadingNode : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(_UsdImagingDataSourceShadingNode);
 
-    bool Has(const TfToken &name) override
-    {
-        return std::find(
-            HdMaterialNodeSchemaTokens->allTokens.begin(),
-            HdMaterialNodeSchemaTokens->allTokens.end(),
-            name)
-                != HdMaterialNodeSchemaTokens->allTokens.end();
-    }
-
     TfTokenVector GetNames() override
     {
         return HdMaterialNodeSchemaTokens->allTokens;
@@ -514,17 +465,6 @@ UsdImagingDataSourceMaterial::UsdImagingDataSourceMaterial(
 UsdImagingDataSourceMaterial::~UsdImagingDataSourceMaterial()
 {
     WorkMoveDestroyAsync(_networks);
-}
-
-bool 
-UsdImagingDataSourceMaterial::Has(const TfToken & name)
-{
-    // The only way to tell if a protocol is present is to compute it. We
-    // cache the networks so that we won't do the work again when we call Get().
-    if (Get(name) != nullptr) {
-        return true;
-    }
-    return false;
 }
 
 TfTokenVector 

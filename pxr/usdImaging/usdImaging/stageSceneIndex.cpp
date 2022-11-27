@@ -29,6 +29,7 @@
 #include "pxr/usdImaging/usdImaging/apiSchemaAdapter.h"
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
+#include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 
@@ -54,31 +55,35 @@ public:
     {}
 
     TfTokenVector GetImagingSubprims(
+            UsdPrim const& prim,
             TfToken const& appliedInstanceName) override {
-        return _primAdapter->GetImagingSubprims();
+        return _primAdapter->GetImagingSubprims(prim);
     }
 
     TfToken GetImagingSubprimType(
+            UsdPrim const& prim,
             TfToken const& subprim,
             TfToken const& appliedInstanceName) override {
 
-        return _primAdapter->GetImagingSubprimType(subprim);
+        return _primAdapter->GetImagingSubprimType(prim, subprim);
     }
 
     HdContainerDataSourceHandle GetImagingSubprimData(
-            TfToken const& subprim,
             UsdPrim const& prim,
+            TfToken const& subprim,
             TfToken const& appliedInstanceName,
             const UsdImagingDataSourceStageGlobals &stageGlobals) override {
-        return _primAdapter->GetImagingSubprimData(subprim, prim, stageGlobals);
+        return _primAdapter->GetImagingSubprimData(prim, subprim, stageGlobals);
     }
 
     HdDataSourceLocatorSet InvalidateImagingSubprim(
+            UsdPrim const& prim,
             TfToken const& subprim,
             TfToken const& appliedInstanceName,
             TfTokenVector const& properties) override {
 
-        return _primAdapter->InvalidateImagingSubprim(subprim, properties);
+        return _primAdapter->InvalidateImagingSubprim(
+            prim, subprim, properties);
     }
 
 private:
@@ -86,8 +91,7 @@ private:
 };
 
 
-// If no prim type adapter is present, this will call use
-// UsdImagingDataSourcePrim
+// If no prim type adapter is present, this will use UsdImagingDataSourcePrim
 class _BasePrimAdapterAPISchemaAdapter : public UsdImagingAPISchemaAdapter
 {
 public:
@@ -96,8 +100,8 @@ public:
     {}
 
     HdContainerDataSourceHandle GetImagingSubprimData(
-            TfToken const& subprim,
             UsdPrim const& prim,
+            TfToken const& subprim,
             TfToken const& appliedInstanceName,
             const UsdImagingDataSourceStageGlobals &stageGlobals) override {
 
@@ -109,11 +113,12 @@ public:
     }
 
     HdDataSourceLocatorSet InvalidateImagingSubprim(
+            UsdPrim const& prim,
             TfToken const& subprim,
             TfToken const& appliedInstanceName,
             TfTokenVector const& properties) override {
 
-        return UsdImagingDataSourcePrim::Invalidate(subprim, properties);
+        return UsdImagingDataSourcePrim::Invalidate(prim, subprim,properties);
     }
 };
 
@@ -129,7 +134,7 @@ public:
 
 TfTokenVector
 UsdImagingStageSceneIndex::_GetImagingSubprims(
-        const _APISchemaAdapters &adapters) const
+        UsdPrim const& prim, const _APISchemaAdapters &adapters) const
 {
     TfTokenVector subprims;
 
@@ -138,7 +143,8 @@ UsdImagingStageSceneIndex::_GetImagingSubprims(
     case 0:
         break;
     case 1:
-        subprims = adapters[0].first->GetImagingSubprims(adapters[0].second);
+        subprims = adapters[0].first->GetImagingSubprims(
+            prim, adapters[0].second);
         break;
 
     default:
@@ -154,7 +160,7 @@ UsdImagingStageSceneIndex::_GetImagingSubprims(
                 }
                 const TfToken &instanceName = entry.second;
                 for (const TfToken &subPrimName :
-                        apiAdapter->GetImagingSubprims(instanceName)) {
+                        apiAdapter->GetImagingSubprims(prim, instanceName)) {
                     if (!subPrimName.IsEmpty()
                             && subPrimNames.find(subPrimName)
                                 == subPrimNames.end()) {
@@ -191,12 +197,13 @@ UsdImagingStageSceneIndex::_GetImagingSubprims(
 TfToken
 UsdImagingStageSceneIndex::_GetImagingSubprimType(
         const _APISchemaAdapters &adapters,
+        UsdPrim const& prim,
         const TfToken &subprim) const
 {
     // strongest non-empty opinion wins
     for (const _APISchemaEntry &entry : adapters) {
         TfToken result =
-            entry.first->GetImagingSubprimType(subprim, entry.second);
+            entry.first->GetImagingSubprimType(prim, subprim, entry.second);
 
         if (!result.IsEmpty()) {
             return result;
@@ -209,7 +216,7 @@ UsdImagingStageSceneIndex::_GetImagingSubprimType(
 HdContainerDataSourceHandle
 UsdImagingStageSceneIndex::_GetImagingSubprimData(
         const _APISchemaAdapters &adapters,
-        UsdPrim prim, const TfToken &subprim) const
+        UsdPrim const& prim, const TfToken &subprim) const
 {
     if (adapters.empty()) {
         return nullptr;
@@ -217,7 +224,7 @@ UsdImagingStageSceneIndex::_GetImagingSubprimData(
 
     if (adapters.size() == 1) {
         return adapters[0].first->GetImagingSubprimData(
-            subprim, prim, adapters[0].second, _stageGlobals);
+            prim, subprim, adapters[0].second, _stageGlobals);
     }
 
     TfSmallVector<HdContainerDataSourceHandle, 8> containers;
@@ -226,7 +233,7 @@ UsdImagingStageSceneIndex::_GetImagingSubprimData(
     for (const _APISchemaEntry &entry : adapters) {
         if (HdContainerDataSourceHandle ds =
                 entry.first->GetImagingSubprimData(
-                    subprim, prim, entry.second, _stageGlobals)) {
+                    prim, subprim, entry.second, _stageGlobals)) {
             containers.push_back(ds);
         }
     }
@@ -246,6 +253,7 @@ UsdImagingStageSceneIndex::_GetImagingSubprimData(
 HdDataSourceLocatorSet
 UsdImagingStageSceneIndex::_InvalidateImagingSubprim(
         const _APISchemaAdapters &adapters,
+        UsdPrim const& prim,
         TfToken const& subprim, TfTokenVector const& properties) const
 {
     if (adapters.empty()) {
@@ -254,14 +262,14 @@ UsdImagingStageSceneIndex::_InvalidateImagingSubprim(
 
     if (adapters.size() == 1) {
         return adapters[0].first->InvalidateImagingSubprim(
-            subprim, adapters[0].second, properties);
+            prim, subprim, adapters[0].second, properties);
     }
 
     HdDataSourceLocatorSet result;
 
     for (const _APISchemaEntry &entry : adapters) {
         result.insert(entry.first->InvalidateImagingSubprim(
-                    subprim, entry.second, properties));
+                    prim, subprim, entry.second, properties));
     }
 
     return result;
@@ -408,6 +416,9 @@ UsdImagingStageSceneIndex::GetPrim(const SdfPath &path) const
     if (!prim) {
         return s_emptyPrim;
     }
+    if (prim.IsInstanceProxy()) {
+        return s_emptyPrim;
+    }
 
     const TfToken subprim =
         path.IsPropertyPath() ? path.GetNameToken() : TfToken();
@@ -415,7 +426,7 @@ UsdImagingStageSceneIndex::GetPrim(const SdfPath &path) const
     _APISchemaAdapters adapters = _AdapterSetLookup(prim);
 
     const TfToken imagingType =
-        _GetImagingSubprimType(adapters, subprim);
+        _GetImagingSubprimType(adapters, prim, subprim);
 
     return {imagingType, _GetImagingSubprimData(adapters, prim, subprim)};
 }
@@ -453,17 +464,20 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
     UsdPrimSiblingRange range =
         prim.GetFilteredChildren(_GetTraversalPredicate());
     for (UsdPrim child: range) {
-        if (child.IsInstance()) {
-            // XXX(USD-7119): Add native instancing support...
-            continue;
-        }
         result.push_back(child.GetPath());
     }
 
     const SdfPath primPath = prim.GetPath();
-    for (const TfToken &subprim : _GetImagingSubprims(_AdapterSetLookup(prim))){
+    for (const TfToken &subprim :
+            _GetImagingSubprims(prim, _AdapterSetLookup(prim))){
         if (!subprim.IsEmpty()) {
             result.push_back(primPath.AppendChild(subprim));
+        }
+    }
+
+    if (path.IsAbsoluteRootPath()) {
+        for (const UsdPrim &prim : _stage->GetPrototypes()) {
+            result.push_back(prim.GetPath());
         }
     }
 
@@ -494,6 +508,10 @@ UsdTimeCode UsdImagingStageSceneIndex::GetTime() const
 
 void UsdImagingStageSceneIndex::SetStage(UsdStageRefPtr stage)
 {
+    if (_stage == stage) {
+        return;
+    }
+
     TRACE_FUNCTION();
 
     if (_stage) {
@@ -522,6 +540,11 @@ void UsdImagingStageSceneIndex::Populate()
     }
 
     _Populate(_stage->GetPseudoRoot());
+
+    for (const UsdPrim &prim : _stage->GetPrototypes()) {
+        _Populate(prim);
+    }
+
 }
 
 void UsdImagingStageSceneIndex::_Populate(UsdPrim subtreeRoot)
@@ -540,24 +563,19 @@ void UsdImagingStageSceneIndex::_Populate(UsdPrim subtreeRoot)
             continue;
         }
 
-        if (prim.IsInstance()) {
-            // XXX(USD-7119): Add native instancing support...
-            continue;
-        }
-
         _APISchemaAdapters adapters = _AdapterSetLookup(prim);
 
         // Enumerate the imaging sub-prims.
         const SdfPath primPath = prim.GetPath();
         const TfTokenVector subprims =
-            _GetImagingSubprims(adapters);
+            _GetImagingSubprims(prim, adapters);
 
         for (TfToken const& subprim : subprims) {
             const SdfPath subpath =
                 subprim.IsEmpty() ? primPath : primPath.AppendChild(subprim);
 
             addedPrims.emplace_back(subpath,
-                _GetImagingSubprimType(adapters, subprim));
+                _GetImagingSubprimType(adapters, prim, subprim));
         }
 
         if (TfDebug::IsEnabled(USDIMAGING_POPULATION)) {
@@ -580,16 +598,18 @@ void UsdImagingStageSceneIndex::_Populate(UsdPrim subtreeRoot)
 Usd_PrimFlagsConjunction
 UsdImagingStageSceneIndex::_GetTraversalPredicate() const
 {
-    // XXX:(USD-7120) UsdImagingDelegate does a lot of really weird things
-    // with traversal; traversal rules are different for point instancer
-    // prototypes, or for display-cards-as-unloaded.  We prune non-imageable
-    // typed prims, which prunes all materials in the scene, but then add
-    // the materials back by following relationships.
+    // Note that it differs from the UsdPrimDefaultPredicate by not requiring
+    // UsdPrimIsDefined. This way, we pick up instance and over's and their
+    // namespace descendants which might include prototypes instanced by a
+    // point instancer.
     //
-    // Ideally, going forward we can parse these features out so that the
-    // UsdPrimRange traversal isn't impossible to follow.  For now we'll go
-    // with the default predicate, and resolve special cases as they come up.
-    return UsdPrimDefaultPredicate;
+    // Over's and their namespace descendants are made unrenderable by changing
+    // their prim type to empty by UsdImaging_PiPrototypeSceneIndex.
+    //
+    // The UsdImaging_NiPrototypeSceneIndex is doing something similar for
+    // native instances.
+    //
+    return UsdPrimIsActive && UsdPrimIsLoaded && !UsdPrimIsAbstract;
 }
 
 // ---------------------------------------------------------------------------
@@ -666,16 +686,12 @@ UsdImagingStageSceneIndex::_OnUsdObjectsChanged(
 }
 
 void
-UsdImagingStageSceneIndex::ApplyPendingUpdates()
+UsdImagingStageSceneIndex::_ApplyPendingResyncs()
 {
-    if (!_stage ||
-        (_usdPrimsToResync.empty() && _usdPropertiesToUpdate.empty())) {
+    if (!_stage || _usdPrimsToResync.empty()) {
         return;
     }
 
-    TRACE_FUNCTION();
-
-    // Resync first...
     std::sort(_usdPrimsToResync.begin(), _usdPrimsToResync.end());
     size_t lastResynced = 0;
     for (size_t i = 0; i < _usdPrimsToResync.size(); ++i) {
@@ -708,6 +724,21 @@ UsdImagingStageSceneIndex::ApplyPendingUpdates()
         }
     }
 
+    _usdPrimsToResync.clear();
+}
+
+void
+UsdImagingStageSceneIndex::ApplyPendingUpdates()
+{
+    if (!_stage ||
+        (_usdPrimsToResync.empty() && _usdPropertiesToUpdate.empty())) {
+        return;
+    }
+
+    TRACE_FUNCTION();
+
+    _ApplyPendingResyncs();
+
     // Changed properties...
     HdSceneIndexObserver::DirtiedPrimEntries dirtiedPrims;
     for (auto const& pair : _usdPropertiesToUpdate) {
@@ -718,26 +749,40 @@ UsdImagingStageSceneIndex::ApplyPendingUpdates()
         const UsdPrim prim = _stage->GetPrimAtPath(primPath);
 
         _APISchemaAdapters adapters = _AdapterSetLookup(prim);
-        const TfTokenVector subprims = _GetImagingSubprims(adapters);
+        const TfTokenVector subprims = _GetImagingSubprims(prim, adapters);
 
         for (TfToken const& subprim : subprims) {
             HdDataSourceLocatorSet dirtyLocators;
 
             for (const _APISchemaEntry &entry : adapters) {
                 dirtyLocators.insert(entry.first->InvalidateImagingSubprim(
-                    subprim, entry.second, properties));
+                    prim, subprim, entry.second, properties));
             }
 
             if (!dirtyLocators.IsEmpty()) {
-                SdfPath const subpath = subprim.IsEmpty()
-                    ? primPath : primPath.AppendChild(subprim);
-                dirtiedPrims.emplace_back(subpath, dirtyLocators);
+
+                const static HdDataSourceLocator repopulateLocator(
+                    UsdImagingTokens->stageSceneIndexRepopulate);
+
+                if (dirtyLocators.Contains(repopulateLocator)) {
+                    _usdPrimsToResync.push_back(primPath);
+                } else {
+                    SdfPath const subpath = subprim.IsEmpty()
+                        ? primPath : primPath.AppendChild(subprim);
+                    dirtiedPrims.emplace_back(subpath, dirtyLocators);
+                }
+
             }
         }
     }
 
-    _usdPrimsToResync.clear();
     _usdPropertiesToUpdate.clear();
+
+    // Resync any prims whose property invalidation indicated repopulation
+    // was necessary
+    if (!_usdPrimsToResync.empty()) {
+        _ApplyPendingResyncs();
+    }
 
     if (dirtiedPrims.size() > 0) {
         _SendPrimsDirtied(dirtiedPrims);

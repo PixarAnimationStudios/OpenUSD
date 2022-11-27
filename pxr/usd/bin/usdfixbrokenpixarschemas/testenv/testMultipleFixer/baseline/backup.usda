@@ -31,3 +31,23 @@ def Mesh "mesh"
 {
     rel skel:animationSource = None
 }
+
+def Xform "coord1"
+{
+}
+
+def Xform "coord2"
+{
+}
+
+def Xform "coord3"
+{
+}
+
+def Mesh "coordSysApply"
+{
+    rel coordSys:coord1 = </coord1>
+    rel coordSys:coord2 = </coord2>
+    rel coordSys:binding = </coord3>
+    rel coordSys:coordMissing:binding
+}
