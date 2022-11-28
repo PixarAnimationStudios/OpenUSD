@@ -49,11 +49,23 @@ _WrapBuildComposedPrimDefinition(const UsdSchemaRegistry &self,
 
 void wrapUsdSchemaRegistry()
 {
-    typedef UsdSchemaRegistry This;
-    typedef TfWeakPtr<UsdSchemaRegistry> ThisPtr;
+    using SchemaInfoConstPtr = const UsdSchemaRegistry::SchemaInfo *;
 
-    class_<This, ThisPtr, boost::noncopyable>("SchemaRegistry", no_init)
+    using This = UsdSchemaRegistry;
+    using ThisPtr = TfWeakPtr<UsdSchemaRegistry>;
+
+    scope s = class_<This, ThisPtr, boost::noncopyable>("SchemaRegistry", no_init)
         .def(TfPySingleton())
+
+        .def("FindSchemaInfo", 
+             (SchemaInfoConstPtr(*)(const TfType &)) &This::FindSchemaInfo,
+             (arg("schemaType")),
+             return_internal_reference<>())
+        .def("FindSchemaInfo", 
+             (SchemaInfoConstPtr(*)(const TfToken &)) &This::FindSchemaInfo,
+             (arg("schemaIdentifier")),
+             return_internal_reference<>())
+        .staticmethod("FindSchemaInfo")
 
         .def("GetSchemaTypeName",
              (TfToken (*)(const TfType &)) &This::GetSchemaTypeName,
@@ -196,5 +208,17 @@ void wrapUsdSchemaRegistry()
 
         .def("GetFallbackPrimTypes", &This::GetFallbackPrimTypes, 
              return_value_policy<return_by_value>())
+        ;
+
+    // Need to convert TfToken properties of SchemaInfo to string
+    // to wrap them to python
+    auto wrapIdentifier = +[](const This::SchemaInfo &schemaInfo) {
+        return schemaInfo.identifier.GetString();
+    };
+
+    class_<This::SchemaInfo>("SchemaInfo", no_init)
+        .add_property("identifier", wrapIdentifier)
+        .def_readonly("type", &This::SchemaInfo::type)
+        .def_readonly("kind", &This::SchemaInfo::kind)
         ;
 }

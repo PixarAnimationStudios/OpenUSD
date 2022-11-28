@@ -64,10 +64,42 @@ class UsdPrimDefinition;
 ///
 class UsdSchemaRegistry : public TfWeakBase, boost::noncopyable {
 public:
+    /// Structure that holds the information about a schema that is registered
+    /// with the schema registry.
+    struct SchemaInfo {
+
+        /// The schema's identifier which is how the schema type is referred to
+        /// in scene description and is also the key used to look up the 
+        /// schema's prim definition.
+        TfToken identifier;
+
+        /// The schema's type as registered with the TfType registry. This will
+        /// correspond to the C++ class of the schema if a class was generated
+        /// for it.
+        TfType type;
+
+        /// The schema's kind: ConcreteTyped, SingleApplyAPI, etc.
+        UsdSchemaKind kind;
+    };
+
     USD_API
     static UsdSchemaRegistry& GetInstance() {
         return TfSingleton<UsdSchemaRegistry>::GetInstance();
     }
+
+    /// Finds and returns the schema info for a registered schema with the 
+    /// given \p schemaType. Returns null if no registered schema with the 
+    /// schema type exists.
+    USD_API
+    static const SchemaInfo *
+    FindSchemaInfo(const TfType &schemaType);
+
+    /// Finds and returns the schema info for a registered schema with the 
+    /// given \p schemaIdentifier. Returns null if no registered schema with the 
+    /// schema identifier exists.
+    USD_API
+    static const SchemaInfo *
+    FindSchemaInfo(const TfToken &schemaIdentifier);
 
     /// Return the type name in the USD schema for prims or API schemas of the 
     /// given registered \p schemaType.
