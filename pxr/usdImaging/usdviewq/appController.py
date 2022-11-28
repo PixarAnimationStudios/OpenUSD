@@ -2188,12 +2188,14 @@ class AppController(QtCore.QObject):
             pattern = pattern.lower()
             isMatch = lambda x: pattern in x.lower()
 
+        matches = []
         if self._dataModel.viewSettings.showPrimDisplayNames:
-                matches = [prim.GetPath() for prim
-                    in Usd.PrimRange.Stage(self._dataModel.stage,
-                                                self._displayPredicate)
-                    if (prim.HasAuthoredDisplayName() and 
-                    isMatch(prim.GetDisplayName()))]
+            for prim in Usd.PrimRange.Stage(self._dataModel.stage, self._displayPredicate):
+                if prim.HasAuthoredDisplayName():
+                    if isMatch(prim.GetDisplayName()):
+                        matches.append(prim.GetPath())
+                elif isMatch(prim.GetName()):
+                    matches.append(prim.GetPath())
         else:
             matches = [prim.GetPath() for prim
                     in Usd.PrimRange.Stage(self._dataModel.stage,
@@ -2203,10 +2205,12 @@ class AppController(QtCore.QObject):
         if self._dataModel.viewSettings.showAllPrototypePrims:
             if self._dataModel.viewSettings.showPrimDisplayNames:
                 for prototype in self._dataModel.stage.GetPrototypes():
-                    matches += [prim.GetPath() for prim
-                                in Usd.PrimRange(prototype, self._displayPredicate)
-                                if (prim.HasAuthoredDisplayName() and 
-                                isMatch(prim.GetDisplayName()))]
+                    for prim in Usd.PrimRange(prototype, self._displayPredicate):
+                        if prim.HasAuthoredDisplayName():
+                            if isMatch(prim.GetDisplayName()):
+                                matches.append(prim.GetPath())
+                        elif isMatch(prim.GetName()):
+                            matches.append(prim.GetPath())
             else:
                 for prototype in self._dataModel.stage.GetPrototypes():
                     matches += [prim.GetPath() for prim

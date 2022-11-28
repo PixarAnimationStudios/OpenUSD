@@ -50,9 +50,8 @@ def _search(appController, searchTerm, expectedItems):
 def _testSearchBasic(appController):
     # by default the prim display name option is on
     # so since neither 'f' nor 'foo' have authored
-    # display names, and prim names aren't searched
-    # when the option is on, this should return nothing
-    _search(appController, 'f', [])
+    # display names, it will search the prim name
+    _search(appController, 'f', ['f', 'foo'])
 
     # with the prim display name option on, search 
     # is only searching the display name value
@@ -66,9 +65,9 @@ def _testSearchBasic(appController):
     _search(appController, 'xxx', [])
 
     # Do a regex based search - again, this is
-    # not looking at prim names, so nothing should
-    # be returned
-    _search(appController, 'f.*', [])
+    # not looking at prim names here not display names
+    # since they aren't authored
+    _search(appController, 'f.*', ['f', 'foo'])
 
     # search based on display name
     _search(appController, 'test', ['testDisplayName'])

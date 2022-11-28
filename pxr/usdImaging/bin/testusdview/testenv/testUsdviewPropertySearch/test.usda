@@ -1,7 +1,6 @@
 #usda 1.0
 
 def Xform "f" (
-    displayName = "f"
 )
 {
     int a = 5
