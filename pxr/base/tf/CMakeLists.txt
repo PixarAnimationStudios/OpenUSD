@@ -141,6 +141,7 @@ pxr_library(tf
         staticTokens.h
         typeInfoMap.h
         type_Impl.h
+        pxrCLI11/CLI11.h
 
     PYTHON_PUBLIC_HEADERS
         py3Compat.h
