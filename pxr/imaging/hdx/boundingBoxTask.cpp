@@ -133,7 +133,7 @@ HdxBoundingBoxTask::_CreateShaderResources()
     HgiShaderFunctionAddStageInput(
         &vertDesc, "position", "vec3");
     HgiShaderFunctionAddStageInput(
-        &vertDesc, "gl_InstanceID", "uint",
+        &vertDesc, "hd_InstanceID", "uint",
         HgiShaderKeywordTokens->hdInstanceID);
     HgiShaderFunctionAddStageOutput(
         &vertDesc, "gl_Position", "vec4", "position");

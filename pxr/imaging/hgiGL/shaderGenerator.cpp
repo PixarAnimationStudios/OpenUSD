@@ -390,6 +390,16 @@ HgiGLShaderGenerator::_WriteInOuts(
                         paramName,
                         param.type,
                         keyword->second);
+                } else if (role == HgiShaderKeywordTokens->hdVertexID) {
+                    CreateShaderSection<HgiGLKeywordShaderSection>(
+                        paramName,
+                        param.type,
+                        keyword->second);
+                } else if (role == HgiShaderKeywordTokens->hdInstanceID) {
+                    CreateShaderSection<HgiGLKeywordShaderSection>(
+                        paramName,
+                        param.type,
+                        keyword->second);
                 }
                 continue;
             }

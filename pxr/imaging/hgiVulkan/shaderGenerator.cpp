@@ -306,17 +306,35 @@ HgiVulkanShaderGenerator::_WriteInOuts(
     const HgiShaderFunctionParamDescVector &parameters,
     const std::string &qualifier) 
 {
-    // To unify glslfx across different apis, other apis
-    // may want these to be defined, but since they are
-    // taken in opengl we ignore them
+    // To unify glslfx across different apis, other apis may want these to be 
+    // defined, but since they are taken in opengl we ignore them.
     const static std::set<std::string> takenOutParams {
         "gl_Position",
         "gl_FragColor",
-        "gl_FragDepth"
+        "gl_FragDepth",
+        "gl_PointSize",
+        "gl_ClipDistance",
+        "gl_CullDistance",
     };
-    const static std::map<std::string, std::string> takenInParams {
+
+    const static std::unordered_map<std::string, std::string> takenInParams {
         { HgiShaderKeywordTokens->hdPosition, "gl_Position"},
-        { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"}
+        { HgiShaderKeywordTokens->hdPointCoord, "gl_PointCoord"},
+        { HgiShaderKeywordTokens->hdClipDistance, "gl_ClipDistance"},
+        { HgiShaderKeywordTokens->hdCullDistance, "gl_CullDistance"},
+        { HgiShaderKeywordTokens->hdVertexID, "gl_VertexIndex"},
+        { HgiShaderKeywordTokens->hdInstanceID, "gl_InstanceIndex"},
+        { HgiShaderKeywordTokens->hdPrimitiveID, "gl_PrimitiveID"},
+        { HgiShaderKeywordTokens->hdSampleID, "gl_SampleID"},
+        { HgiShaderKeywordTokens->hdSamplePosition, "gl_SamplePosition"},
+        { HgiShaderKeywordTokens->hdFragCoord, "gl_FragCoord"},
+        { HgiShaderKeywordTokens->hdBaseVertex, "gl_BaseVertex"},
+        { HgiShaderKeywordTokens->hdBaseInstance, "gl_BaseInstance"},
+        { HgiShaderKeywordTokens->hdFrontFacing, "gl_FrontFacing"},
+        { HgiShaderKeywordTokens->hdLayer, "gl_Layer"},
+        { HgiShaderKeywordTokens->hdViewportIndex, "gl_ViewportIndex"},
+        { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"},
+        { HgiShaderKeywordTokens->hdBaryCoordNoPerspNV, "gl_BaryCoordNoPerspNV"},
     };
 
     const bool in_qualifier = qualifier == "in";
@@ -332,10 +350,22 @@ HgiVulkanShaderGenerator::_WriteInOuts(
             const std::string &role = param.role;
             auto const& keyword = takenInParams.find(role);
             if (keyword != takenInParams.end()) {
-                CreateShaderSection<HgiVulkanKeywordShaderSection>(
-                    paramName,
-                    param.type,
-                    keyword->second);
+                if (role == HgiShaderKeywordTokens->hdGlobalInvocationID) {
+                    CreateShaderSection<HgiVulkanKeywordShaderSection>(
+                        paramName,
+                        param.type,
+                        keyword->second);
+                } else if (role == HgiShaderKeywordTokens->hdVertexID) {
+                    CreateShaderSection<HgiVulkanKeywordShaderSection>(
+                        paramName,
+                        param.type,
+                        keyword->second);
+                } else if (role == HgiShaderKeywordTokens->hdInstanceID) {
+                    CreateShaderSection<HgiVulkanKeywordShaderSection>(
+                        paramName,
+                        param.type,
+                        keyword->second);
+                }
                 continue;
             }
         }
@@ -353,7 +383,9 @@ HgiVulkanShaderGenerator::_WriteInOuts(
             param.type,
             param.interpolation,
             attrs,
-            qualifier);
+            qualifier,
+            std::string(),
+            param.arraySize);
     }
 }
 
