@@ -64,6 +64,8 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     std::vector<VkPipelineShaderStageCreateInfo> stages;
     stages.reserve(sfv.size());
 
+    bool useTessellation = false;
+
     for (HgiShaderFunctionHandle const& sf : sfv) {
         HgiVulkanShaderFunction const* s =
             static_cast<HgiVulkanShaderFunction const*>(sf.Get());
@@ -73,6 +75,10 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
         VkPipelineShaderStageCreateInfo stage =
             {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
         stage.stage = s->GetShaderStage();
+        if (stage.stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT || 
+            stage.stage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) {
+            useTessellation = true;
+        }
         stage.module = s->GetShaderModule();
         stage.pName = s->GetShaderFunctionName();
         stage.pNext = nullptr;
@@ -127,6 +133,17 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     inputAssembly.topology =
         HgiVulkanConversions::GetPrimitiveType(desc.primitiveType);
     pipeCreateInfo.pInputAssemblyState = &inputAssembly;
+
+    //
+    // Tessellation State
+    //
+    VkPipelineTessellationStateCreateInfo tessellationState = 
+        { VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO};
+    if (useTessellation) {
+        tessellationState.patchControlPoints =
+            desc.tessellationState.primitiveIndexSize;
+        pipeCreateInfo.pTessellationState = &tessellationState;
+    }
 
     //
     // Viewport and Scissor state
