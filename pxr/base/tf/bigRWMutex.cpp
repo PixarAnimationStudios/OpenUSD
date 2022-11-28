@@ -31,76 +31,63 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TfBigRWMutex::TfBigRWMutex()
     : _states(std::make_unique<_LockState []>(NumStates))
-    , _writerWaiting(false)
+    , _writerActive(false)
 {
 }
 
-int
+void
 TfBigRWMutex::_AcquireReadContended(int stateIndex)
 {
-  retry:
-    // First check _writerWaiting and wait until we see that set to false if
-    // need be.
-    while (_writerWaiting == true) {
-        std::this_thread::yield();
-    }
-    
-    // Now try to bump the reader count on our state index.  If we see a write
-    // lock state, go back to waiting for any pending writer.  If we fail to
-    // bump the count, move to the next slot (and wrap around).
-    for (int i = (stateIndex + 1) % NumStates; ; i = (i + 1) % NumStates) {
-        _LockState &lockState = _states[i];
-        
-        int stateVal = lockState.state;
-        if (stateVal == WriteLocked) {
+    // First check _writerActive and wait until we see that set to false.
+    while (true) {
+        if (_writerActive) {
             std::this_thread::yield();
-            goto retry;
         }
-        
-        // Otherwise try to increment the count.
-        if (lockState.state.compare_exchange_strong(stateVal, stateVal+1)) {
-            // Success!  Record the state we used to mark this lock as
-            // acquired.
-            return i;
+        else if (_states[stateIndex].mutex.TryAcquireRead()) {
+            break;
         }
-        // Otherwise we advance to the next state index and try there.
     }
 }
 
 void
 TfBigRWMutex::_AcquireWrite()
 {
-    // First, we need to take _writerWaiting from false -> true.
-    bool writerWaits = false;
-    while (!_writerWaiting.compare_exchange_weak(writerWaits, true)) {
-        std::this_thread::yield();
-        writerWaits = false;
-    }
-    
-    // Now, we need to wait for all pending readers to finish and lock out any
-    // new ones.
-    for (_LockState *lockState = _states.get(),
-             *end = _states.get() + NumStates; lockState != end;
-         ++lockState) {
-        
-        int expected = NotLocked;
-        while (!lockState->state.compare_exchange_weak(expected, WriteLocked)) {
+    while (_writerActive.exchange(true) == true) {
+        // Another writer is active, wait to see false and retry.
+        do {
             std::this_thread::yield();
-            expected = NotLocked;
-        }
+        } while (_writerActive);
     }
+
+    // Use the staged-acquire API that TfSpinRWMutex supplies so that we can
+    // acquire the write locks while simultaneously waiting for readers on the
+    // other locks to complete.  Otherwise we'd have to wait for all pending
+    // readers on the Nth lock before beginning to take the N+1th lock.
+    TfSpinRWMutex::_StagedAcquireWriteState
+        stageStates[NumStates] { TfSpinRWMutex::_StageNotAcquired };
+
+    bool allAcquired;
+    do {
+        allAcquired = true;
+        for (int i = 0; i != NumStates; ++i) {
+            stageStates[i] =
+                _states[i].mutex._StagedAcquireWriteStep(stageStates[i]);
+            allAcquired &= (stageStates[i] == TfSpinRWMutex::_StageAcquired);
+        }
+    } while (!allAcquired);
 }
 
 void
 TfBigRWMutex::_ReleaseWrite()
 {
-    // Restore all the read lock states to 0 and set writerWaits to false.
+    _writerActive = false;
+    
+    // Release all the write locks.
     for (_LockState *lockState = _states.get(),
              *end = _states.get() + NumStates; lockState != end;
          ++lockState) {
-        lockState->state = NotLocked;
+        lockState->mutex.ReleaseWrite();
     }
-    _writerWaiting = false;
 }
     
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -31,6 +31,7 @@
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/spinRWMutex.h"
 
 #include <atomic>
 #include <memory>
@@ -152,12 +153,6 @@ public:
         void AcquireRead() {
             TF_AXIOM(_acqState == NotAcquired);
             _acqState = _mutex->_AcquireRead(_GetSeed());
-            // Inform the compiler that the value of _acqState must be >=0 now.
-            // Without this hint, the compiler must generate code to handle
-            // releasing from the WriteAcquired state and the NotAcquired state
-            // in the subsequent Release() call, since it does not know that
-            // _AcquireRead() can only return values >=0.
-            ARCH_GUARANTEE_TO_COMPILER(_acqState >= 0);
         }
 
         /// Acquire a write lock on this lock's associated mutex.  This lock
@@ -196,8 +191,7 @@ public:
         }
 
         // Helper for returning a seed value associated with this lock object.
-        // This used to help determine which lock state a read-locking scope
-        // should start with.
+        // This helps determine which lock state a read-lock should use.
         inline int _GetSeed() const {
             return static_cast<int>(
                 static_cast<unsigned>(TfHash()(this)) >> 8);
@@ -213,45 +207,35 @@ private:
 
     // Optimistic read-lock case inlined.
     inline int _AcquireRead(int seed) {
-        // Determine an initial lock state index to use.
+        // Determine a lock state index to use.
         int stateIndex = seed % NumStates;
-        
-        // Optimistic path:
-        {
-            _LockState &lockState = _states[stateIndex];
-            int state = lockState.state.load();
-            if (state != WriteLocked && !_writerWaiting &&
-                lockState.state.compare_exchange_strong(state, state + 1)) {
-                // Success!
-                return stateIndex;
-            }
+        if (ARCH_UNLIKELY(_writerActive) ||
+            !_states[stateIndex].mutex.TryAcquireRead()) {
+            _AcquireReadContended(stateIndex);
         }
-        // Contended case out-of-line:
-        return _AcquireReadContended(stateIndex);
+        return stateIndex;
     }
 
     // Contended read-lock helper.
-    TF_API int _AcquireReadContended(int stateIndex);
+    TF_API void _AcquireReadContended(int stateIndex);
 
     void _ReleaseRead(int stateIndex) {
-        // Just decrement the read count on the state we hold.
-        --_states[stateIndex].state;
+        _states[stateIndex].mutex.ReleaseRead();
     }
 
     TF_API void _AcquireWrite();
     TF_API void _ReleaseWrite();
     
     struct _LockState {
-        _LockState() : state(0) {}
-        std::atomic<int> state;
+        TfSpinRWMutex mutex;
         // This padding ensures that \p state instances sit on different cache
         // lines.
         char _unused_padding[
-            ARCH_CACHE_LINE_SIZE-(sizeof(state) % ARCH_CACHE_LINE_SIZE)];
+            ARCH_CACHE_LINE_SIZE-(sizeof(mutex) % ARCH_CACHE_LINE_SIZE)];
     };
 
     std::unique_ptr<_LockState []> _states;
-    std::atomic<bool> _writerWaiting;
+    std::atomic<bool> _writerActive;
     
 };
 

@@ -70,6 +70,7 @@ pxr_library(tf
         setenv
         singleton
         smallVector
+        spinRWMutex
         stackTrace
         stacked
         status
