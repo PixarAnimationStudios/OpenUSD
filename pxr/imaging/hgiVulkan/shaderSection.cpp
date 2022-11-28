@@ -132,6 +132,7 @@ HgiVulkanMacroShaderSection::VisitGlobalMacros(std::ostream &ss)
 HgiVulkanMemberShaderSection::HgiVulkanMemberShaderSection(
     const std::string &identifier,
     const std::string &typeName,
+    const HgiInterpolationType interpolation,
     const HgiShaderSectionAttributeVector &attributes,
     const std::string &storageQualifier,
     const std::string &defaultValue,
@@ -144,6 +145,7 @@ HgiVulkanMemberShaderSection::HgiVulkanMemberShaderSection(
                            arraySize,
                            blockInstanceIdentifier)
   , _typeName(typeName)
+  , _interpolation(interpolation)
 {
 }
 
@@ -156,6 +158,16 @@ HgiVulkanMemberShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
         return true;
     }
 
+    switch (_interpolation) {
+    case HgiInterpolationDefault:
+        break;
+    case HgiInterpolationFlat:
+        ss << "flat ";
+        break;
+    case HgiInterpolationNoPerspective:
+        ss << "noperspective ";
+        break;
+    }
     WriteDeclaration(ss);
     return true;
 }

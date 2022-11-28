@@ -122,6 +122,7 @@ public:
     explicit HgiVulkanMemberShaderSection(
         const std::string &identifier,
         const std::string &typeName,
+        const HgiInterpolationType interpolation,
         const HgiShaderSectionAttributeVector &attributes,
         const std::string &storageQualifier,
         const std::string &defaultValue = std::string(),
@@ -144,6 +145,7 @@ private:
     HgiVulkanMemberShaderSection(const HgiVulkanMemberShaderSection&) = delete;
 
     std::string _typeName;
+    HgiInterpolationType _interpolation;
 };
 
 /// \class HgiVulkanBlockShaderSection

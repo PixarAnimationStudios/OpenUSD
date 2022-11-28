@@ -351,6 +351,7 @@ HgiVulkanShaderGenerator::_WriteInOuts(
         CreateShaderSection<HgiVulkanMemberShaderSection>(
             paramName,
             param.type,
+            param.interpolation,
             attrs,
             qualifier);
     }
@@ -375,6 +376,7 @@ HgiVulkanShaderGenerator::_WriteInOutBlocks(
                 CreateShaderSection<HgiVulkanMemberShaderSection>(
                     member.name,
                     member.type,
+                    HgiInterpolationDefault,
                     HgiShaderSectionAttributeVector(),
                     qualifier,
                     std::string(),

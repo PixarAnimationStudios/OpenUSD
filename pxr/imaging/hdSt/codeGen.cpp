@@ -73,6 +73,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((_atomic_uint, "atomic_uint"))
     ((_default, "default"))
     (flat)
+    (noperspective)
     (hd_vec3)
     (hd_vec3_get)
     (hd_vec3_set)
@@ -631,6 +632,8 @@ private:
     {
         if (qualifiers == _tokens->flat) {
             return HgiInterpolationFlat;
+        } else if (qualifiers == _tokens->noperspective) {
+            return HgiInterpolationNoPerspective;
         } else {
             return HgiInterpolationDefault;
         }
@@ -903,6 +906,8 @@ _ResourceGenerator::_GenerateGLSLResources(
                 }
                 if (element.qualifiers == _tokens->flat) {
                     str << "flat ";
+                } else if (element.qualifiers == _tokens->noperspective) {
+                    str << "noperspective ";
                 }
                 str << element.dataType << " "
                     << element.name;
@@ -1168,13 +1173,14 @@ _AddVertexAttribElement(
 static void
 _AddInterstageElement(
     HdSt_ResourceLayout::ElementVector *elements,
+    HdSt_ResourceLayout::InOut inOut,
     TfToken const &name,
     TfToken const &dataType,
     TfToken const &arraySize = TfToken(),
     TfToken const &qualifier = TfToken())
 {
     elements->emplace_back(
-        HdSt_ResourceLayout::InOut::NONE,
+        inOut,
         HdSt_ResourceLayout::Kind::VALUE,
         dataType, name, arraySize, qualifier);
 }
@@ -1771,9 +1777,20 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                   "}\n";
     } else {
         if (_hasGS) {
-            _genGS << "noperspective out vec3 hd_barycentricCoord;\n";
-            _genFS << "noperspective in vec3 hd_barycentricCoord;\n"
-                      "vec3 GetBarycentricCoord() {\n"
+            _AddInterstageElement(&_resGS,
+                HdSt_ResourceLayout::InOut::STAGE_OUT,
+                /*name=*/TfToken("hd_barycentricCoord"),
+                /*dataType=*/_tokens->vec3,
+                TfToken(),
+                TfToken("noperspective"));
+            _AddInterstageElement(&_resFS,
+                HdSt_ResourceLayout::InOut::STAGE_IN,
+                /*name=*/TfToken("hd_barycentricCoord"),
+                /*dataType=*/_tokens->vec3,
+                TfToken(),
+                TfToken("noperspective"));
+
+            _genFS << "vec3 GetBarycentricCoord() {\n"
                       "  return hd_barycentricCoord;\n"
                       "}\n";
         } else {
@@ -3960,18 +3977,21 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     for (std::string const & param : drawingCoordParams) {
         TfToken const drawingCoordParamName("dc_" + param);
         _AddInterstageElement(&_resInterstage,
+                              HdSt_ResourceLayout::InOut::NONE,
                               /*name=*/drawingCoordParamName,
                               /*dataType=*/_tokens->_int);
     }
     for (int i = 0; i < instanceIndexWidth; ++i) {
         TfToken const name(TfStringPrintf("dc_instanceIndexI%d", i));
         _AddInterstageElement(&_resInterstage,
+                              HdSt_ResourceLayout::InOut::NONE,
                               /*name=*/name,
                               /*dataType=*/_tokens->_int);
     }
     for (int i = 0; i < instanceIndexWidth; ++i) {
         TfToken const name(TfStringPrintf("dc_instanceCoordsI%d", i));
         _AddInterstageElement(&_resInterstage,
+                              HdSt_ResourceLayout::InOut::NONE,
                               /*name=*/name,
                               /*dataType=*/_tokens->_int);
     }
