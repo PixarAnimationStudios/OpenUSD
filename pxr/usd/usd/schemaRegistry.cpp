@@ -51,6 +51,7 @@
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/withScopedParallelism.h"
 
+#include <cctype>
 #include <set>
 #include <utility>
 #include <vector>
@@ -169,12 +170,17 @@ struct _TypeMapCache {
             // Generate all the components of the schema info.
             const TfToken schemaIdentifier(aliases.front(), TfToken::Immortal);
             const UsdSchemaKind schemaKind = _GetSchemaKindFromPlugin(type);
+            const std::pair<TfToken, UsdSchemaVersion> familyAndVersion = 
+                UsdSchemaRegistry::ParseSchemaFamilyAndVersionFromIdentifier(
+                    schemaIdentifier);
 
             // Add primary mapping of schema info by type.
             auto inserted = schemaInfoByType.emplace(type, 
                 UsdSchemaRegistry::SchemaInfo{
                     schemaIdentifier, 
                     type, 
+                    familyAndVersion.first, 
+                    familyAndVersion.second, 
                     schemaKind});
 
             // Add secondary mapping of schema info pointer by identifier.
@@ -287,6 +293,93 @@ _IsMultipleApplySchemaKind(const UsdSchemaKind schemaKind)
     return schemaKind == UsdSchemaKind::MultipleApplyAPI;
 }
 
+/* static */
+TfToken
+UsdSchemaRegistry::MakeSchemaIdentifierForFamilyAndVersion(
+    const TfToken &schemaFamily, 
+    UsdSchemaVersion schemaVersion)
+{
+    // Version 0, the family is the identifier.
+    if (schemaVersion == 0) {
+        return schemaFamily;
+    }
+
+    // All other versions, append the version suffix and find by identifier.
+    std::string idStr = schemaFamily.GetString();
+    idStr.append("_");
+    idStr.append(TfStringify(schemaVersion));
+    return TfToken(idStr);
+}
+
+// Search from the end of the string for an underscore character that is ONLY
+// followed by one or more digits. This is beginning of the version suffix if
+// found.
+static size_t
+_FindVersionDelimiter(const std::string &idString) 
+{
+    static const char versionDelimiter = '_';
+
+    // A version suffix is at least 2 characters long (underscore and 1+ digits)
+    const size_t idLen =  idString.size();
+    if (idLen < 2) {
+        return std::string::npos;
+    }
+
+    size_t delim = idLen - 1;
+    if (!std::isdigit(idString[delim])) {
+        return std::string::npos;
+    }
+    while (--delim >= 0) {
+        if (idString[delim] == versionDelimiter) {
+            return delim;
+        }
+        if (!std::isdigit(idString[delim])) {
+            return std::string::npos;
+        }
+    }
+    return std::string::npos;
+}
+
+/* static */
+std::pair<TfToken, UsdSchemaVersion> 
+UsdSchemaRegistry::ParseSchemaFamilyAndVersionFromIdentifier(
+    const TfToken &schemaIdentifier)
+{
+    const std::string &idString = schemaIdentifier.GetString();
+
+    const size_t delim = _FindVersionDelimiter(idString);
+
+    if (delim == std::string::npos) {
+        // If the identifier has no version suffix, the family is the identifier
+        // and the version is zero.
+        return std::make_pair(schemaIdentifier, 0);
+    }
+
+    // Successfully parsed a family and version. Return them.
+    return std::make_pair(
+        TfToken(idString.substr(0, delim)), 
+        TfUnstringify<UsdSchemaVersion>(idString.substr(delim + 1)));
+}
+
+/* static */
+bool
+UsdSchemaRegistry::IsAllowedSchemaFamily(const TfToken &schemaFamily)
+{
+    return TfIsValidIdentifier(schemaFamily) &&
+        _FindVersionDelimiter(schemaFamily) == std::string::npos;
+}
+
+/* static */
+bool
+UsdSchemaRegistry::IsAllowedSchemaIdentifier(const TfToken &schemaIdentifier)
+{
+    const auto familyAndVersion =
+        ParseSchemaFamilyAndVersionFromIdentifier(schemaIdentifier);
+    return IsAllowedSchemaFamily(familyAndVersion.first) &&
+        MakeSchemaIdentifierForFamilyAndVersion(
+            familyAndVersion.first, familyAndVersion.second) == schemaIdentifier;
+}
+
 /*static*/
 const UsdSchemaRegistry::SchemaInfo *
 UsdSchemaRegistry::FindSchemaInfo(const TfType &schemaType)
@@ -303,6 +396,151 @@ UsdSchemaRegistry::FindSchemaInfo(const TfToken &schemaIdentifier)
     const auto it = typeMapCache.schemaInfoByIdentifier.find(schemaIdentifier);
     return it != typeMapCache.schemaInfoByIdentifier.end() ?
         it->second : nullptr;
+}
+
+/*static*/
+const UsdSchemaRegistry::SchemaInfo *
+UsdSchemaRegistry::FindSchemaInfo(
+    const TfToken &schemaFamily, UsdSchemaVersion schemaVersion)
+{
+    // It is possible to pass an invalid schema family with version 0 that 
+    // produces a registered schema's valid identifier. An example would be 
+    // FindSchemaInfo("Foo_1", 0) would be able to find schema info for a 
+    // schema named "Foo_1" if it exists even though "Foo_1" is family "Foo"
+    // version 1. This check is to prevent returning the schema info in this
+    // case as it wouldn't represent the passed in family and version.
+    if (ARCH_UNLIKELY(!IsAllowedSchemaFamily(schemaFamily))) {
+        return nullptr;
+    }
+
+    return FindSchemaInfo(
+        MakeSchemaIdentifierForFamilyAndVersion(schemaFamily, schemaVersion));
+}
+
+namespace {
+
+// Helper class for storing and retrieving a vector of schema info pointers
+// sorted from highest version to lowest. One of these will be created for each
+// schema family.
+class _VersionOrderedSchemas 
+{
+public:
+    using SchemaInfoConstPtr = const UsdSchemaRegistry::SchemaInfo *;
+    using SchemaInfoConstPtrVector = std::vector<SchemaInfoConstPtr>;
+
+    // Insert schema info, maintaining highest to lowest order
+    void Insert(const UsdSchemaRegistry::SchemaInfo * schemaInfo)
+    {
+        _orderedSchemas.insert(_LowerBound(schemaInfo->version), schemaInfo);
+    }
+
+    // Get the entire vector of ordered schemas.
+    const SchemaInfoConstPtrVector &
+    GetSchemaInfos() const
+    {
+        return _orderedSchemas;
+    }
+
+    // Get a copy of the subrange of schemas that match the version predicate.
+    SchemaInfoConstPtrVector
+    GetFilteredSchemaInfos(
+        UsdSchemaVersion schemaVersion,
+        UsdSchemaRegistry::VersionPolicy versionPolicy) const
+    {
+        // Note again that the schemas are ordered highest version to lowest, 
+        // thus the backwards seeming subranges.
+        switch (versionPolicy) {
+        case UsdSchemaRegistry::VersionPolicy::All:
+            return _orderedSchemas;
+        case UsdSchemaRegistry::VersionPolicy::GreaterThan:
+            return {_orderedSchemas.cbegin(), _LowerBound(schemaVersion)};
+        case UsdSchemaRegistry::VersionPolicy::GreaterThanOrEqual:
+            return {_orderedSchemas.cbegin(), _UpperBound(schemaVersion)};
+        case UsdSchemaRegistry::VersionPolicy::LessThan:
+            return {_UpperBound(schemaVersion), _orderedSchemas.cend()};
+        case UsdSchemaRegistry::VersionPolicy::LessThanOrEqual:
+            return {_LowerBound(schemaVersion), _orderedSchemas.cend()};
+        };
+        return {};
+    }
+
+private:
+    // Lower bound for highest to lowest version order.
+    SchemaInfoConstPtrVector::const_iterator
+    _LowerBound(UsdSchemaVersion schemaVersion) const
+    {
+        return std::lower_bound(_orderedSchemas.begin(), _orderedSchemas.end(), 
+            schemaVersion, 
+            [](SchemaInfoConstPtr lhs, UsdSchemaVersion schemaVersion) {
+                return lhs->version > schemaVersion;
+            });
+    }
+
+    // Upper bound for highest to lowest version order.
+    SchemaInfoConstPtrVector::const_iterator
+    _UpperBound(UsdSchemaVersion schemaVersion) const
+    {
+        return std::upper_bound(_orderedSchemas.begin(), _orderedSchemas.end(), 
+            schemaVersion, 
+            [](UsdSchemaVersion schemaVersion, SchemaInfoConstPtr rhs) {
+                return schemaVersion > rhs->version;
+            });
+    }
+
+    // Highest to lowest ordered vector.
+    SchemaInfoConstPtrVector _orderedSchemas;
+};
+
+};
+
+// Map of schema family token to schema info ordered from highest to lowest 
+// version.
+using _SchemasByFamilyCache = 
+    std::unordered_map<TfToken, _VersionOrderedSchemas, TfHash>;
+
+static const _SchemasByFamilyCache &
+_GetSchemasByFamilyCache()
+{
+    // Create the schemas by family singleton from the registered schema types.
+    static const _SchemasByFamilyCache schemaFamilyCache = [](){
+        const _TypeMapCache &typeCache = _GetTypeMapCache();
+        _SchemasByFamilyCache result;
+        for (const auto& keyValPair : typeCache.schemaInfoByType) {
+            const UsdSchemaRegistry::SchemaInfo &schemaInfo = keyValPair.second;
+            result[schemaInfo.family].Insert(&schemaInfo);
+        }
+        return result;
+    }();
+    return schemaFamilyCache;
+}
+
+/*static*/
+const std::vector<const UsdSchemaRegistry::SchemaInfo *> &
+UsdSchemaRegistry::FindSchemaInfosInFamily(
+    const TfToken &schemaFamily)
+{
+    const _SchemasByFamilyCache &schemaFamilyCache = _GetSchemasByFamilyCache();
+    auto it = schemaFamilyCache.find(schemaFamily);
+    if (it == schemaFamilyCache.end()) {
+        static const std::vector<const UsdSchemaRegistry::SchemaInfo *> empty;
+        return empty;
+    }
+    return it->second.GetSchemaInfos();
+}    
+
+/*static*/
+std::vector<const UsdSchemaRegistry::SchemaInfo *>
+UsdSchemaRegistry::FindSchemaInfosInFamily(
+    const TfToken &schemaFamily, 
+    UsdSchemaVersion schemaVersion, 
+    VersionPolicy versionPolicy)
+{
+    const _SchemasByFamilyCache &schemaFamilyCache = _GetSchemasByFamilyCache();
+    auto it = schemaFamilyCache.find(schemaFamily);
+    if (it == schemaFamilyCache.end()) {
+        return {};
+    }
+    return it->second.GetFilteredSchemaInfos(schemaVersion, versionPolicy);
 }
 
 /*static*/
