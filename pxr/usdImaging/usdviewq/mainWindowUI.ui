@@ -159,7 +159,7 @@
             <addaction name="actionShow_All_Prototype_Prims"/>
             <addaction name="actionShow_Undefined_Prims"/>
             <addaction name="actionShow_Abstract_Prims"/>
-            <addaction name="actionShow_Prim_DisplayName" />
+            <addaction name="actionShow_Prim_DisplayName"/>
            </widget>
            <addaction name="menuNavigation"/>
            <addaction name="menuShow"/>
@@ -1651,7 +1651,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>20</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="minimumSize">
