@@ -27,19 +27,29 @@
 #include "pxr/base/trace/eventTree.h"
 #include "pxr/base/tf/stringUtils.h"
 
+#include <chrono>
 #include <iostream>
+#include <thread>
+
+using namespace std::chrono_literals;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 static void
 TestMarkerMacro() {
-    TRACE_MARKER("Static Marker A")
-    TRACE_MARKER("Static Marker B")
-    TRACE_MARKER("Static Marker C")
+    TRACE_MARKER("Static Marker A");
+    std::this_thread::sleep_for(1us);
+    TRACE_MARKER("Static Marker B");
+    std::this_thread::sleep_for(1us);
+    TRACE_MARKER("Static Marker C");
+    std::this_thread::sleep_for(1us);
 
     TRACE_MARKER_DYNAMIC(TfStringPrintf("Dynamic Marker %s", "A"));
+    std::this_thread::sleep_for(1us);
     TRACE_MARKER_DYNAMIC(TfStringPrintf("Dynamic Marker %s", "B"));
+    std::this_thread::sleep_for(1us);
     TRACE_MARKER_DYNAMIC(TfStringPrintf("Dynamic Marker %s", "C"));
+    std::this_thread::sleep_for(1us);
 }
 
 
