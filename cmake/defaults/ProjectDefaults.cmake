@@ -28,7 +28,6 @@ if(APPLE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
     set(CMAKE_DYLIB_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE STRING "install_name path for dylib.")
     list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
-    message(WARNING "Building USD on Mac OSX is currently experimental.")
 
     # Workaround for code signing issues that show up as warnings at the end
     # of the build like:
@@ -43,10 +42,6 @@ if(APPLE)
     if (CMAKE_HOST_SYSTEM_VERSION VERSION_GREATER_EQUAL 20)
         set(CMAKE_XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "-o linker-signed")
     endif()
-
-elseif(WIN32)
-    # Windows specific set up
-    message(WARNING "Building USD on Windows is currently experimental.")
 endif()
 
 # Allow local includes from source directory.

@@ -35,14 +35,10 @@ If you are experiencing undocumented problems with the software, please
 Supported Platforms
 -------------------
 
-USD is currently supported on Linux platforms and has been built and tested
-on CentOS 7 and RHEL 7.
+USD is primarily developed on Linux platforms (CentOS 7), but is built, tested 
+and supported on macOS and Windows.
 
-We are actively working on porting USD to both Windows and Mac platforms (Please 
-see [VERSIONS.md](VERSIONS.md) for explicitly tested versions). Support for both
-platforms should be considered experimental at this time. Currently, the tree 
-will build on Mac and Windows, but only limited testing has been done on these 
-platforms.
+Please see [VERSIONS.md](VERSIONS.md) for explicitly tested versions. 
 
 Dependencies
 ------------
