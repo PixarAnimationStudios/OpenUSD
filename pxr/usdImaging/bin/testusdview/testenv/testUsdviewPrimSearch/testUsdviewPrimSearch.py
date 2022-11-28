@@ -48,20 +48,30 @@ def _search(appController, searchTerm, expectedItems):
         _assertSelectedPrim(appController, item)
 
 def _testSearchBasic(appController):
-    _search(appController, 'f', ['f', 'foo'])
+    # by default the prim display name option is on
+    # so since neither 'f' nor 'foo' have authored
+    # display names, and prim names aren't searched
+    # when the option is on, this should return nothing
+    _search(appController, 'f', [])
 
-    # with the prim display name option on, the text
-    # will be the display name, not the prim name
-    _search(appController, 'g', ['testDisplayName'])
+    # with the prim display name option on, search 
+    # is only searching the display name value
+    # so a search that is targeting the prim name
+    # won't produce the prim name as a result
+    _search(appController, 'g', [])
 
-    # On an invalid search, the old term will remain
-    _search(appController, 'xxx', ['testDisplayName'])
+    # On an invalid search, the results will be
+    # equivalent to what was previously there (which in
+    # this case is nothing...)
+    _search(appController, 'xxx', [])
 
-    # Do a regex based search
-    _search(appController, 'f.*', ['f', 'foo'])
+    # Do a regex based search - again, this is
+    # not looking at prim names, so nothing should
+    # be returned
+    _search(appController, 'f.*', [])
 
     # search based on display name
-    _search(appController, "test", ['testDisplayName'])
+    _search(appController, 'test', ['testDisplayName'])
 
 def _testSearchNoPrimDisplayName(appController):
     """
@@ -89,7 +99,7 @@ def _testSearchNoPrimDisplayName(appController):
     _search(appController, 'f.*', ['f', 'foo'])
 
     appController._dataModel.viewSettings.showPrimDisplayNames = True
-    _search(appController, 'g', ['testDisplayName'])
+    _search(appController, 'test', ['testDisplayName'])
 
 def testUsdviewInputFunction(appController):
     _testSearchBasic(appController)

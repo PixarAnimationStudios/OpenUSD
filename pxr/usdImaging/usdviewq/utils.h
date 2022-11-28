@@ -59,10 +59,7 @@ public:
         bool visVaries;
         std::string name;
         std::string typeName;
-
-        // nv begin #prim-display-name
         std::string displayName;
-        // nv end
     };
 
     /// For the given \p stage and \p schemaType, return all active, defined

@@ -262,7 +262,9 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
                 toolTip = 'Instanced ' + toolTip
         
             # tooltip should always show both name and display name
-            toolTip = toolTip + "<br>Name: " + self.name + "<br>Display Name: " + self.displayName
+            toolTip = toolTip + "<br>Name: " + self.name
+            if self.displayName != "":
+                toolTip = toolTip + "<br>Display Name: " + self.displayName
 
             if self.hasArcs:
                 toolTip = toolTip + "<br>Has composition arcs"

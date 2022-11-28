@@ -285,11 +285,16 @@ class TestUsdMetadata(unittest.TestCase):
             rel = foo.CreateRelationship("rel")
 
             # verify display name metadata on prim
-            self.assertEqual(foo.GetMetadata("displayName"), None)
-            self.assertEqual(foo.HasAuthoredMetadata("displayName"), False)
-            self.assertEqual(foo.SetMetadata("displayName", "foo"), True)
+            self.assertEqual(foo.GetDisplayName(), "")
+            self.assertFalse(foo.HasAuthoredDisplayName())
+            self.assertEqual(foo.SetDisplayName("foo"), True)
+            self.assertEqual(foo.GetDisplayName(), "foo")
+            self.assertTrue(foo.HasAuthoredDisplayName())
             self.assertEqual(foo.GetMetadata("displayName"), "foo")
-            self.assertEqual(foo.HasAuthoredMetadata("displayName"), True)
+            self.assertEqual(foo.ClearDisplayName(), True)
+            self.assertEqual(foo.GetDisplayName(), "")
+            self.assertFalse(foo.HasAuthoredDisplayName())
+            self.assertEqual(foo.GetMetadata("displayName"), None)
 
             for prop in [attr, rel]:
                 self.assertEqual(prop.GetDisplayName(), "")

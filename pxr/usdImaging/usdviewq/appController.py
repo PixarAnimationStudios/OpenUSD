@@ -2189,10 +2189,11 @@ class AppController(QtCore.QObject):
             isMatch = lambda x: pattern in x.lower()
 
         if self._dataModel.viewSettings.showPrimDisplayNames:
-            matches = [prim.GetPath() for prim
+                matches = [prim.GetPath() for prim
                     in Usd.PrimRange.Stage(self._dataModel.stage,
                                                 self._displayPredicate)
-                    if ((prim.HasAuthoredMetadata("displayName") and isMatch(prim.GetMetadata("displayName"))) or isMatch(prim.GetName()))]
+                    if (prim.HasAuthoredDisplayName() and 
+                    isMatch(prim.GetDisplayName()))]
         else:
             matches = [prim.GetPath() for prim
                     in Usd.PrimRange.Stage(self._dataModel.stage,
@@ -2204,7 +2205,8 @@ class AppController(QtCore.QObject):
                 for prototype in self._dataModel.stage.GetPrototypes():
                     matches += [prim.GetPath() for prim
                                 in Usd.PrimRange(prototype, self._displayPredicate)
-                                if ((prim.HasAuthoredMetadata("displayName") and isMatch(prim.GetMetadata("displayName"))) or isMatch(prim.GetName()))]
+                                if (prim.HasAuthoredDisplayName() and 
+                                isMatch(prim.GetDisplayName()))]
             else:
                 for prototype in self._dataModel.stage.GetPrototypes():
                     matches += [prim.GetPath() for prim

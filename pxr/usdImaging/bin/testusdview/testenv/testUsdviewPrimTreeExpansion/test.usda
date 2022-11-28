@@ -2,6 +2,7 @@
 
 def Xform "Shapes" (
     add variantSets = ["a_shapeVariant", "b_shapeVariant"]
+    displayName = "Shapes"
 )
 {
     variantSet "a_shapeVariant" = {

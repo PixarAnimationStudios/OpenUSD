@@ -339,6 +339,36 @@ UsdObject::HasAuthoredDocumentation() const
     return HasAuthoredMetadata(SdfFieldKeys->Documentation);
 }
 
+// ------------------------------------------------------------------------- //
+// 'DisplayName' Metadata
+// ------------------------------------------------------------------------- //
+
+std::string
+UsdObject::GetDisplayName() const
+{
+    std::string result;
+    GetMetadata(SdfFieldKeys->DisplayName, &result);
+    return result;
+}
+
+bool
+UsdObject::SetDisplayName(const std::string& newDisplayName) const
+{
+    return SetMetadata(SdfFieldKeys->DisplayName, newDisplayName);
+}
+
+bool
+UsdObject::ClearDisplayName() const
+{
+    return ClearMetadata(SdfFieldKeys->DisplayName);
+}
+
+bool
+UsdObject::HasAuthoredDisplayName() const
+{
+    return HasAuthoredMetadata(SdfFieldKeys->DisplayName);
+}
+
 SdfSpecType
 UsdObject::_GetDefiningSpecType() const
 {

@@ -24,6 +24,9 @@
 #
 
 # positions and names of our variants
+# special case entry for 0, which represents a non-selection
+# in the variant selection combo box
+EMPTY = (0, '')
 CAPSULE = (1, 'capsule')
 CONE = (2, 'cone')
 CUBE = (3, 'cube')
@@ -135,7 +138,7 @@ def _testAllExpanded(appController):
     assert item._nameData(QtCore.Qt.DisplayRole) == "CapsuleDisplayName"
 
     # clear the a-variant and just select the b-variant
-    _selectVariant(appController, 0, FIRST_VARIANT)
+    _selectVariant(appController, EMPTY[VARIANT_INFO_POS], FIRST_VARIANT)
     _selectVariant(appController, CAPSULE[VARIANT_INFO_POS], SECOND_VARIANT)
     prim = appController._dataModel.stage.GetPrimAtPath("/Shapes/Pill")
     item = appController._primToItemMap.get(prim)
