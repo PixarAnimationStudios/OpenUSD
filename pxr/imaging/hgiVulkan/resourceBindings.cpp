@@ -113,6 +113,18 @@ HgiVulkanResourceBindings::HgiVulkanResourceBindings(
     // UBO1: 0, SSBO1: 1, SSB02: 2, TEX1: 3, TEX2: 4.
 
     uint32_t textureBindIndexStart = 0;
+    
+    // XXX We need to overspecify the stage usage here so we can match the 
+    // VkDescriptorSetLayout that is created with spirv-reflect for the 
+    // graphics and compute pipelines.
+    VkShaderStageFlags const bufferShaderStageFlags =
+        HgiVulkanConversions::GetShaderStages(
+            HgiShaderStageVertex | HgiShaderStageTessellationControl |
+            HgiShaderStageTessellationEval | HgiShaderStageGeometry |
+            HgiShaderStageFragment);
+    VkShaderStageFlags const textureShaderStageFlags =
+        HgiVulkanConversions::GetShaderStages(
+            HgiShaderStageGeometry | HgiShaderStageFragment);
 
     // Create DescriptorSetLayout to describe resource bindings.
     //
@@ -126,7 +138,9 @@ HgiVulkanResourceBindings::HgiVulkanResourceBindings(
             HgiVulkanConversions::GetDescriptorType(b.resourceType);
         poolSizes[b.resourceType].descriptorCount++;
         d.descriptorCount = (uint32_t) b.buffers.size();
-        d.stageFlags = HgiVulkanConversions::GetShaderStages(b.stageUsage);
+        d.stageFlags = (b.stageUsage == HgiShaderStageCompute) ?
+            HgiVulkanConversions::GetShaderStages(b.stageUsage) :
+            bufferShaderStageFlags;
         d.pImmutableSamplers = nullptr;
         bindings.push_back(std::move(d));
 
@@ -142,7 +156,9 @@ HgiVulkanResourceBindings::HgiVulkanResourceBindings(
             HgiVulkanConversions::GetDescriptorType(t.resourceType);
         poolSizes[t.resourceType].descriptorCount++;
         d.descriptorCount = (uint32_t) t.textures.size();
-        d.stageFlags = HgiVulkanConversions::GetShaderStages(t.stageUsage);
+        d.stageFlags = (t.stageUsage == HgiShaderStageCompute) ?
+            HgiVulkanConversions::GetShaderStages(t.stageUsage) :
+            textureShaderStageFlags;
         d.pImmutableSamplers = nullptr;
         bindings.push_back(std::move(d));
     }

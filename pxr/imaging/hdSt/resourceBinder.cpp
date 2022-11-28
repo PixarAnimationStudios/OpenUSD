@@ -992,8 +992,9 @@ HdSt_ResourceBinder::GetBufferBindingDesc(
     HdBinding binding = GetBinding(name, level);
 
     HgiShaderStage stageUsage =
-        HgiShaderStageVertex | HgiShaderStageFragment |
-        HgiShaderStagePostTessellationVertex;
+        HgiShaderStageVertex | HgiShaderStagePostTessellationVertex |
+        HgiShaderStageTessellationControl | HgiShaderStageTessellationEval |
+        HgiShaderStageGeometry | HgiShaderStageFragment;
     HgiBufferBindDesc desc;
     desc.writable = true;
 
@@ -1149,7 +1150,7 @@ HdSt_ResourceBinder::GetTextureWithLayoutBindingDesc(
 
     HdBinding const layoutBinding = GetBinding(_ConcatLayout(name));
     HgiTextureBindDesc layoutDesc;
-    layoutDesc.stageUsage = HgiShaderStageFragment;
+    layoutDesc.stageUsage = HgiShaderStageGeometry | HgiShaderStageFragment;
     layoutDesc.textures = { layoutTexture };
     layoutDesc.samplers = { layoutSampler };
     layoutDesc.resourceType = HgiBindResourceTypeCombinedSamplerImage;
