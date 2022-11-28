@@ -4045,9 +4045,8 @@ HdSt_CodeGen::_GenerateConstantPrimvar()
         }
         _genDecl << "};\n";
 
-        // XXX: passing arraySize=2 to cheat driver to not tell actual size.
-        //      we should compute the actual size or maximum size if possible.
-        _EmitDeclaration(&_resCommon, varName, typeName, binding, /*arraySize=*/1);
+        _EmitDeclaration(&_resCommon, varName, typeName, binding, 
+            /*writable=*/false, /*arraySize=*/1);
     }
 }
 
