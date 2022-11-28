@@ -82,7 +82,6 @@ pxr_library(hd
         geomSubsetSchema
         geomSubsetsSchema
         instanceCategoriesSchema
-        instancedBySceneIndex
         instancedBySchema
         instancer
         instanceRegistry
