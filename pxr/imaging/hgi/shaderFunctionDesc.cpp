@@ -72,8 +72,10 @@ HgiShaderFunctionDesc::HgiShaderFunctionDesc()
   , constantParams()
   , stageInputs()
   , stageOutputs()
-  , tessellationDescriptor()
   , computeDescriptor()
+  , tessellationDescriptor()
+  , geometryDescriptor()
+  , fragmentDescriptor()
 {
 }
 
@@ -96,6 +98,28 @@ bool operator!=(
     return !(lhs == rhs);
 }
 
+HgiShaderFunctionGeometryDesc::HgiShaderFunctionGeometryDesc() 
+  : inPrimitiveType(InPrimitiveType::Triangles)
+  , outPrimitiveType(OutPrimitiveType::TriangleStrip)
+  , outMaxVertices("3")
+{
+}
+
+bool operator==(
+    const HgiShaderFunctionGeometryDesc& lhs,
+    const HgiShaderFunctionGeometryDesc& rhs)
+{
+    return lhs.inPrimitiveType == rhs.inPrimitiveType &&
+           lhs.outPrimitiveType == rhs.outPrimitiveType &&
+           lhs.outMaxVertices == rhs.outMaxVertices;
+}
+
+bool operator!=(
+    const HgiShaderFunctionGeometryDesc& lhs,
+    const HgiShaderFunctionGeometryDesc& rhs)
+{
+    return !(lhs == rhs);
+}
 
 HgiShaderFunctionFragmentDesc::HgiShaderFunctionFragmentDesc()
     : earlyFragmentTests(false)
@@ -235,6 +259,7 @@ bool operator==(
            lhs.stageOutputs == rhs.stageOutputs &&
            lhs.computeDescriptor == rhs.computeDescriptor &&
            lhs.tessellationDescriptor == rhs.tessellationDescriptor &&
+           lhs.geometryDescriptor == rhs.geometryDescriptor &&
            lhs.fragmentDescriptor == rhs.fragmentDescriptor;
 }
 

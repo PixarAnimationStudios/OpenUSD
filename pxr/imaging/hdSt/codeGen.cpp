@@ -122,6 +122,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     (gl_MaxPatchVertices)
     (HD_NUM_PATCH_EVAL_VERTS)
     (HD_NUM_PRIMITIVE_VERTS)
+    (points)
+    (lines)
+    (lines_adjacency)
+    (triangles)
+    (triangles_adjacency)
+    (line_strip)
+    (triangle_strip)
+    (early_fragment_tests)
 );
 
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_HGI_RESOURCE_GENERATION, false,
@@ -551,6 +559,7 @@ public:
         HdSt_ResourceBinder::MetaData const & metaData);
 
     void _GenerateGLSLResources(
+        HgiShaderFunctionDesc *funcDesc,
         std::stringstream &str,
         TfToken const &shaderStage,
         HdSt_ResourceLayout::ElementVector const & elements,
@@ -720,7 +729,51 @@ _ResourceGenerator::_GenerateHgiResources(
                 funcDesc->stageOutputBlocks.push_back(paramBlock);
             }
         } else if (element.kind == Kind::QUALIFIER) {
-            if (element.qualifiers == TfToken("early_fragment_tests")) {
+            if (shaderStage == HdShaderTokens->geometryShader) {
+                if (element.inOut == InOut::STAGE_IN) {
+                    if (element.qualifiers == _tokens->points) {
+                        funcDesc->geometryDescriptor.inPrimitiveType =
+                            HgiShaderFunctionGeometryDesc::InPrimitiveType::
+                            Points;
+                    } else if (element.qualifiers == _tokens->lines) {
+                        funcDesc->geometryDescriptor.inPrimitiveType =
+                            HgiShaderFunctionGeometryDesc::InPrimitiveType::
+                            Lines;
+                    } else if (element.qualifiers == _tokens->lines_adjacency) {
+                        funcDesc->geometryDescriptor.inPrimitiveType =
+                            HgiShaderFunctionGeometryDesc::InPrimitiveType::
+                            LinesAdjacency;
+                    } else if (element.qualifiers == _tokens->triangles) {
+                        funcDesc->geometryDescriptor.inPrimitiveType =
+                            HgiShaderFunctionGeometryDesc::InPrimitiveType::
+                            Triangles;
+                    } else if (element.qualifiers ==
+                        _tokens->triangles_adjacency) {
+                        funcDesc->geometryDescriptor.inPrimitiveType =
+                            HgiShaderFunctionGeometryDesc::InPrimitiveType::
+                            TrianglesAdjacency;
+                    }
+                } else if (element.inOut == InOut::STAGE_OUT) {
+                    if (element.qualifiers == _tokens->points) {
+                        funcDesc->geometryDescriptor.outPrimitiveType =
+                            HgiShaderFunctionGeometryDesc::OutPrimitiveType::
+                            Points;
+                    } else if (element.qualifiers == _tokens->line_strip) {
+                        funcDesc->geometryDescriptor.outPrimitiveType =
+                            HgiShaderFunctionGeometryDesc::OutPrimitiveType::
+                            LineStrip;
+                    } else if (element.qualifiers == _tokens->triangle_strip) {
+                        funcDesc->geometryDescriptor.outPrimitiveType =
+                            HgiShaderFunctionGeometryDesc::OutPrimitiveType::
+                            TriangleStrip;
+                    } else {
+                        // Assume any other GS stage out qualifier will be the
+                        // number of max vertices.
+                        funcDesc->geometryDescriptor.outMaxVertices = 
+                            element.qualifiers.GetString();
+                    }
+                }
+            } else if (element.qualifiers == _tokens->early_fragment_tests) {
                 //   GLSL: "layout (early_fragment_tests) in;"
                 //   MSL: "[[early_fragment_tests]]"
                 funcDesc->fragmentDescriptor.earlyFragmentTests = true;
@@ -819,6 +872,7 @@ _ResourceGenerator::_GenerateHgiTextureResources(
 
 void
 _ResourceGenerator::_GenerateGLSLResources(
+    HgiShaderFunctionDesc *funcDesc,
     std::stringstream &str,
     TfToken const &shaderStage,
     HdSt_ResourceLayout::ElementVector const & elements,
@@ -882,8 +936,56 @@ _ResourceGenerator::_GenerateGLSLResources(
                 }
                 break;
             case HdSt_ResourceLayout::Kind::QUALIFIER:
-                if (element.qualifiers == TfToken("early_fragment_tests")) {
-                    str << "layout(early_fragment_tests) in;\n";
+                if (shaderStage == HdShaderTokens->geometryShader) {
+                    if (element.inOut == InOut::STAGE_IN) {
+                        if (element.qualifiers == _tokens->points) {
+                            funcDesc->geometryDescriptor.inPrimitiveType =
+                                HgiShaderFunctionGeometryDesc::InPrimitiveType::
+                                Points;
+                        } else if (element.qualifiers == _tokens->lines) {
+                            funcDesc->geometryDescriptor.inPrimitiveType =
+                                HgiShaderFunctionGeometryDesc::InPrimitiveType::
+                                Lines;
+                        } else if (element.qualifiers ==
+                            _tokens->lines_adjacency) {
+                            funcDesc->geometryDescriptor.inPrimitiveType =
+                                HgiShaderFunctionGeometryDesc::InPrimitiveType::
+                                LinesAdjacency;
+                        } else if (element.qualifiers == _tokens->triangles) {
+                            funcDesc->geometryDescriptor.inPrimitiveType =
+                                HgiShaderFunctionGeometryDesc::InPrimitiveType::
+                                Triangles;
+                        } else if (element.qualifiers ==
+                            _tokens->triangles_adjacency) {
+                            funcDesc->geometryDescriptor.inPrimitiveType =
+                                HgiShaderFunctionGeometryDesc::InPrimitiveType::
+                                TrianglesAdjacency;
+                        }
+                    } else if (element.inOut == InOut::STAGE_OUT) {
+                        if (element.qualifiers == _tokens->points) {
+                            funcDesc->geometryDescriptor.outPrimitiveType =
+                                HgiShaderFunctionGeometryDesc::
+                                OutPrimitiveType::Points;
+                        } else if (element.qualifiers == _tokens->line_strip) {
+                            funcDesc->geometryDescriptor.outPrimitiveType =
+                                HgiShaderFunctionGeometryDesc::
+                                OutPrimitiveType::LineStrip;
+                        } else if (element.qualifiers ==
+                            _tokens->triangle_strip) {
+                            funcDesc->geometryDescriptor.outPrimitiveType =
+                                HgiShaderFunctionGeometryDesc::
+                                OutPrimitiveType::TriangleStrip;
+                        } else {
+                            // Assume any other GS stage out qualifier will be 
+                            // the number of max vertices.
+                            funcDesc->geometryDescriptor.outMaxVertices = 
+                                element.qualifiers.GetString();
+                        }
+                    }
+                } else if (element.qualifiers == _tokens->early_fragment_tests){
+                    //   GLSL: "layout (early_fragment_tests) in;"
+                    //   MSL: "[[early_fragment_tests]]"
+                    funcDesc->fragmentDescriptor.earlyFragmentTests = true;
                 }
                 break;
             case HdSt_ResourceLayout::Kind::UNIFORM_VALUE:
@@ -2073,19 +2175,19 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
     // compile shaders
     // note: _vsSource, _fsSource etc are used for diagnostics (see header)
     if (_hasVS) {
+        HgiShaderFunctionDesc desc;
         std::stringstream resDecl;
-        resourceGen._GenerateGLSLResources(
-            resDecl, HdShaderTokens->vertexShader, _resAttrib, _metaData);
-        resourceGen._GenerateGLSLResources(
-            resDecl, HdShaderTokens->vertexShader, _resCommon, _metaData);
-        resourceGen._GenerateGLSLResources(
-            resDecl, HdShaderTokens->vertexShader, _resVS, _metaData);
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->vertexShader, _resAttrib, _metaData);
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->vertexShader, _resCommon, _metaData);
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->vertexShader, _resVS, _metaData);
 
         std::string const source =
             _genDefines.str() + _genDecl.str() + resDecl.str() +
             _genAccessors.str() + _genVS.str();
 
-        HgiShaderFunctionDesc desc;
         desc.shaderStage = HgiShaderStageVertex;
         desc.shaderCode = source.c_str();
         desc.generatedShaderCodeOut = &_vsSource;
@@ -2096,23 +2198,23 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         shaderCompiled = true;
     }
     if (_hasFS) {
+        HgiShaderFunctionDesc desc;
         std::stringstream resDecl;
-        resourceGen._GenerateGLSLResources(
-            resDecl, HdShaderTokens->fragmentShader, _resCommon, _metaData);
-        resourceGen._GenerateGLSLResources(
-            resDecl, HdShaderTokens->fragmentShader, _resFS, _metaData);
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->fragmentShader, _resCommon, _metaData);
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->fragmentShader, _resFS, _metaData);
 
         // material in FS
-        resourceGen._GenerateGLSLResources(
-            resDecl, HdShaderTokens->fragmentShader, _resMaterial, _metaData);
-        resourceGen._GenerateGLSLTextureResources(
-            resDecl, HdShaderTokens->fragmentShader, _resTextures, _metaData);
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->fragmentShader, _resMaterial, _metaData);
+        resourceGen._GenerateGLSLTextureResources(resDecl,
+            HdShaderTokens->fragmentShader, _resTextures, _metaData);
 
         std::string const source =
             _genDefines.str() + _genDecl.str() + resDecl.str() + _osdFS.str() +
             _genAccessors.str() + _genFS.str();
 
-        HgiShaderFunctionDesc desc;
         desc.shaderStage = HgiShaderStageFragment;
         desc.shaderCode = source.c_str();
         desc.generatedShaderCodeOut = &_fsSource;
@@ -2123,17 +2225,17 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         shaderCompiled = true;
     }
     if (_hasTCS) {
+        HgiShaderFunctionDesc desc;
         std::stringstream resDecl;
-        resourceGen._GenerateGLSLResources(
-            resDecl, HdShaderTokens->tessControlShader, _resCommon, _metaData);
-        resourceGen._GenerateGLSLResources(
-            resDecl, HdShaderTokens->tessControlShader, _resTCS, _metaData);
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->tessControlShader, _resCommon, _metaData);
+        resourceGen._GenerateGLSLResources(&desc, resDecl, 
+            HdShaderTokens->tessControlShader, _resTCS, _metaData);
 
         std::string const source =
             _genDefines.str() + _genDecl.str() + resDecl.str() +
             _genAccessors.str() + _genTCS.str();
 
-        HgiShaderFunctionDesc desc;
         desc.shaderStage = HgiShaderStageTessellationControl;
         desc.shaderCode = source.c_str();
         desc.generatedShaderCodeOut = &_tcsSource;
@@ -2144,17 +2246,17 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         shaderCompiled = true;
     }
     if (_hasTES) {
+        HgiShaderFunctionDesc desc;
         std::stringstream resDecl;
-        resourceGen._GenerateGLSLResources(
-            resDecl, HdShaderTokens->tessControlShader, _resCommon, _metaData);
-        resourceGen._GenerateGLSLResources(
-            resDecl, HdShaderTokens->tessControlShader, _resTES, _metaData);
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->tessControlShader, _resCommon, _metaData);
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->tessControlShader, _resTES, _metaData);
 
         std::string const source =
             _genDefines.str() + _genDecl.str() + resDecl.str() +
             _genAccessors.str() + _genTES.str();
 
-        HgiShaderFunctionDesc desc;
         desc.shaderStage = HgiShaderStageTessellationEval;
         desc.shaderCode = source.c_str();
         desc.generatedShaderCodeOut = &_tesSource;
@@ -2165,23 +2267,23 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         shaderCompiled = true;
     }
     if (_hasGS) {
+        HgiShaderFunctionDesc desc;
         std::stringstream resDecl;
-        resourceGen._GenerateGLSLResources(
-            resDecl, HdShaderTokens->geometryShader, _resCommon, _metaData);
-        resourceGen._GenerateGLSLResources(
-            resDecl, HdShaderTokens->geometryShader, _resGS, _metaData);
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->geometryShader, _resCommon, _metaData);
+        resourceGen._GenerateGLSLResources(&desc, resDecl,
+            HdShaderTokens->geometryShader, _resGS, _metaData);
 
         // material in GS
-        resourceGen._GenerateGLSLResources(
-            resDecl, HdShaderTokens->geometryShader, _resMaterial, _metaData);
-        resourceGen._GenerateGLSLTextureResources(
-            resDecl, HdShaderTokens->geometryShader, _resTextures, _metaData);
+        resourceGen._GenerateGLSLResources(&desc, resDecl, 
+            HdShaderTokens->geometryShader, _resMaterial, _metaData);
+        resourceGen._GenerateGLSLTextureResources(resDecl, 
+            HdShaderTokens->geometryShader, _resTextures, _metaData);
 
         std::string const source =
             _genDefines.str() + _genDecl.str() + resDecl.str() +
             _genAccessors.str() + _genGS.str();
 
-        HgiShaderFunctionDesc desc;
         desc.shaderStage = HgiShaderStageGeometry;
         desc.shaderCode = source.c_str();
         desc.generatedShaderCodeOut = &_gsSource;

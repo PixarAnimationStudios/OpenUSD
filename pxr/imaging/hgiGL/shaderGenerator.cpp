@@ -68,13 +68,6 @@ HgiGLShaderGenerator::HgiGLShaderGenerator(
 {
     // Write out all GL shaders and add to shader sections
 
-    if (descriptor.shaderStage == HgiShaderStageFragment) {
-        if (descriptor.fragmentDescriptor.earlyFragmentTests) {
-            _shaderLayoutAttributes.emplace_back(
-                "layout (early_fragment_tests) in;\n");
-        }
-    }
-
     if (descriptor.shaderStage == HgiShaderStageCompute) {
 
         int workSizeX = descriptor.computeDescriptor.localSize[0];
@@ -115,6 +108,50 @@ HgiGLShaderGenerator::HgiGLShaderGenerator(
             "local_size_y = " + std::to_string(workSizeY) + ", "
             "local_size_z = " + std::to_string(workSizeZ) + ") in;\n"
         );
+    } else if (descriptor.shaderStage == HgiShaderStageGeometry) {
+        if (descriptor.geometryDescriptor.inPrimitiveType ==
+            HgiShaderFunctionGeometryDesc::InPrimitiveType::Points) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (points) in;\n");
+        } else if (descriptor.geometryDescriptor.inPrimitiveType ==
+            HgiShaderFunctionGeometryDesc::InPrimitiveType::Lines) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (lines) in;\n");
+        } else if (descriptor.geometryDescriptor.inPrimitiveType ==
+            HgiShaderFunctionGeometryDesc::InPrimitiveType::LinesAdjacency) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (lines_adjacency) in;\n");
+        } else if (descriptor.geometryDescriptor.inPrimitiveType ==
+            HgiShaderFunctionGeometryDesc::InPrimitiveType::Triangles) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (triangles) in;\n");
+        } else if (descriptor.geometryDescriptor.inPrimitiveType ==
+            HgiShaderFunctionGeometryDesc::InPrimitiveType::TrianglesAdjacency){
+            _shaderLayoutAttributes.emplace_back(
+                "layout (triangles_adjacency) in;\n");
+        }
+
+        if (descriptor.geometryDescriptor.outPrimitiveType ==
+            HgiShaderFunctionGeometryDesc::OutPrimitiveType::Points) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (points, max_vertices = " +
+                descriptor.geometryDescriptor.outMaxVertices + ") out;\n");
+        } else if (descriptor.geometryDescriptor.outPrimitiveType ==
+            HgiShaderFunctionGeometryDesc::OutPrimitiveType::LineStrip) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (line_strip, max_vertices = " +
+                descriptor.geometryDescriptor.outMaxVertices + ") out;\n");
+        } else if (descriptor.geometryDescriptor.outPrimitiveType ==
+            HgiShaderFunctionGeometryDesc::OutPrimitiveType::TriangleStrip) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (triangle_strip, max_vertices = " +
+                descriptor.geometryDescriptor.outMaxVertices + ") out;\n");
+        }
+    } else if (descriptor.shaderStage == HgiShaderStageFragment) {
+        if (descriptor.fragmentDescriptor.earlyFragmentTests) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (early_fragment_tests) in;\n");
+        }
     }
 
     _WriteTextures(descriptor.textures);

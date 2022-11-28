@@ -310,6 +310,45 @@ bool operator!=(
         const HgiShaderFunctionTessellationDesc& lhs,
         const HgiShaderFunctionTessellationDesc& rhs);
 
+/// \struct HgiShaderFunctionGeometryDesc
+///
+/// Describes a geometry function's description
+///
+/// <ul>
+/// <li>inPrimitiveType:
+///   The input primitive type.</li>
+/// <li>outPrimitiveType:
+///   The output primitive type.</li>
+/// <li>outMaxVertices:
+///   The maximum number of vertices written by a single invovation of the 
+///   geometry shader.</li>
+/// </ul>
+///
+struct HgiShaderFunctionGeometryDesc
+{
+    enum class InPrimitiveType { 
+        Points, Lines, LinesAdjacency, Triangles, TrianglesAdjacency };
+    enum class OutPrimitiveType { 
+        Points, LineStrip, TriangleStrip };
+
+    HGI_API
+    HgiShaderFunctionGeometryDesc();
+
+    InPrimitiveType inPrimitiveType;
+    OutPrimitiveType outPrimitiveType;
+    std::string outMaxVertices;
+};
+
+HGI_API
+bool operator==(
+        const HgiShaderFunctionGeometryDesc& lhs,
+        const HgiShaderFunctionGeometryDesc& rhs);
+
+HGI_API
+bool operator!=(
+        const HgiShaderFunctionGeometryDesc& lhs,
+        const HgiShaderFunctionGeometryDesc& rhs);
+
 ///
 /// Describes a fragment function's description
 ///
@@ -371,10 +410,14 @@ bool operator!=(
 ///   List of descriptions of the input blocks of the shader.</li>
 /// <li>stageOutputsBlocks:
 ///   List of descriptions of the output blocks of the shader.</li>
-/// <li>tessellationDesc:
-///   Description of tessellation shader function.</li>
 /// <li>computeDescriptor:
 ///   Description of compute shader function.</li>
+/// <li>tessellationDescriptor:
+///   Description of tessellation shader function.</li>
+/// <li>geometryDescriptor:
+///   Description of geometry shader function.</li>
+/// <li>fragmentDescriptor:
+///   Description of fragment shader function.</li>
 /// </ul>
 ///
 struct HgiShaderFunctionDesc
@@ -394,8 +437,9 @@ struct HgiShaderFunctionDesc
     std::vector<HgiShaderFunctionParamDesc> stageOutputs;
     std::vector<HgiShaderFunctionParamBlockDesc> stageInputBlocks;
     std::vector<HgiShaderFunctionParamBlockDesc> stageOutputBlocks;
-    HgiShaderFunctionTessellationDesc tessellationDescriptor;
     HgiShaderFunctionComputeDesc computeDescriptor;
+    HgiShaderFunctionTessellationDesc tessellationDescriptor;
+    HgiShaderFunctionGeometryDesc geometryDescriptor;
     HgiShaderFunctionFragmentDesc fragmentDescriptor;
 };
 

@@ -525,27 +525,27 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Mesh.Geometry.TriangleTess
+
+[
+    ["in", "triangles"],
+    ["out", "triangle_strip"],
+    ["out", "3"],
+    ["in block array", "VertexData", "inData", "3",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["in array", "vec4", "tesPatchCoord", "3"],
+    ["in array", "vec2", "tesTessCoord", "3"],
+    ["out block", "VertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out", "vec4", "gsPatchCoord"]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.Geometry.TriangleTess
-
-layout(triangles) in;
-layout(triangle_strip, max_vertices = 3) out;
-
-in VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} inData[3];
-
-in vec4 tesPatchCoord[3];
-in vec2 tesTessCoord[3];
-
-out VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} outData;
-
-out vec4 gsPatchCoord;
 
 vec4 GetPatchCoord(int index)
 {
@@ -648,24 +648,25 @@ vec4 InterpolatePrimvar(vec4 inPv0, vec4 inPv1, vec4 inPv2, vec4 inPv3,
 }
 
 --- --------------------------------------------------------------------------
+-- layout Mesh.Geometry.Triangle
+
+[
+    ["in", "triangles"],
+    ["out", "triangle_strip"],
+    ["out", "3"],
+    ["in block array", "VertexData", "inData", "3",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out block", "VertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out", "vec4", "gsPatchCoord"]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.Geometry.Triangle
-
-layout(triangles) in;
-layout(triangle_strip, max_vertices = 3) out;
-
-in VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} inData[3];
-
-out VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} outData;
-
-out vec4 gsPatchCoord;
 
 vec4 GetPatchCoord(int index)
 {
@@ -734,22 +735,24 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Mesh.Geometry.TriQuad
+
+[
+    ["in", "triangles"],
+    ["out", "triangle_strip"],
+    ["out", "3"],
+    ["in block array", "VertexData", "inData", "3",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out block", "VertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.Geometry.TriQuad
-
-layout(triangles) in;
-layout(triangle_strip, max_vertices = 3) out;
-
-in VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} inData[3];
-
-out VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} outData;
 
 vec4 GetPatchCoord(int index)
 {
@@ -816,24 +819,25 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Mesh.Geometry.Quad
+
+[
+    ["in", "lines_adjacency"],
+    ["out", "triangle_strip"],
+    ["out", "6"],
+    ["in block array", "VertexData", "inData", "4",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out block", "VertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out", "vec4", "gsPatchCoord"]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.Geometry.Quad
-
-layout(lines_adjacency) in;
-layout(triangle_strip, max_vertices = 6) out;
-
-in VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} inData[4];
-
-out VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} outData;
-
-out vec4 gsPatchCoord;
 
 vec4 GetPatchCoord(int index)
 {
