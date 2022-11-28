@@ -197,7 +197,7 @@ void GetPrimLabel(const PrimType &prim, std::string &label) {
     }
 
     if (!shortMetadata.empty()) {
-        label += "(" + TfStringJoin(shortMetadata, ", ") + ")";
+        label += " (" + TfStringJoin(shortMetadata, ", ") + ")";
     }
 }
 
@@ -292,6 +292,7 @@ int PrintStage(Args &args, UsdStageRefPtr stage) {
 }
 
 int PrintLayer(Args &args, SdfLayerRefPtr layer) {
+    std::cout << "/" << std::endl;
     auto root = layer->GetPseudoRoot();
     PrintChildren(args, root, "");
     return 0;
