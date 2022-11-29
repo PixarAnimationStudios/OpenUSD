@@ -108,16 +108,17 @@ if(NOT TBB_FOUND)
   
   if(NOT DEFINED TBB_USE_DEBUG_BUILD)
     if(CMAKE_BUILD_TYPE MATCHES "(Debug|DEBUG|debug|RelWithDebInfo|RELWITHDEBINFO|relwithdebinfo)")
-      set(TBB_BUILD_TYPE DEBUG)
+      set(_TBB_BUILD_TYPE DEBUG)
     else()
-      set(TBB_BUILD_TYPE RELEASE)
+      set(_TBB_BUILD_TYPE RELEASE)
     endif()
   elseif(TBB_USE_DEBUG_BUILD)
-    set(TBB_BUILD_TYPE DEBUG)
+    set(_TBB_BUILD_TYPE DEBUG)
   else()
-    set(TBB_BUILD_TYPE RELEASE)
+    set(_TBB_BUILD_TYPE RELEASE)
   endif()
-  
+
+  set(TBB_BUILD_TYPE ${_TBB_BUILD_TYPE} CACHE STRING "Set TBB to specific build type (RELEASE or DEBUG)")
   ##################################
   # Set the TBB search directories
   ##################################
