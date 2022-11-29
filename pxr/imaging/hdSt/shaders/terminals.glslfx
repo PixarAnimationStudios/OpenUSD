@@ -38,14 +38,6 @@ vec4 DisplacementTerminal(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
     return displacementShader(index, Peye, Neye, patchCoord);
 }
 
-FORWARD_DECL(
-        vec4 displacementShader(vec4 Peye, vec3 Neye, vec2 samplePosition));
-
-vec4 DisplacementTerminal(vec4 Peye, vec3 Neye, vec2 samplePosition)
-{
-    return displacementShader(Peye, Neye, samplePosition);
-}
-
 --- --------------------------------------------------------------------------
 -- glsl Geometry.NoCustomDisplacement
 
