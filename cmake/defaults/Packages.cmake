@@ -43,7 +43,7 @@ find_package(Boost REQUIRED)
 
 # Boost provided cmake files (introduced in boost version 1.70) result in 
 # inconsistent build failures on different platforms, when trying to find boost 
-# component dependencies like python, program options, etc. Refer some related 
+# component dependencies like python, etc. Refer some related
 # discussions:
 # https://github.com/boostorg/python/issues/262#issuecomment-483069294
 # https://github.com/boostorg/boost_install/issues/12#issuecomment-508683006
@@ -140,14 +140,6 @@ else()
     endif()
 endif()
 
-# --USD tools
-if(PXR_BUILD_USD_TOOLS OR PXR_BUILD_TESTS)
-    find_package(Boost
-    COMPONENTS
-        program_options
-    REQUIRED
-    )
-endif()
 
 # --TBB
 find_package(TBB REQUIRED COMPONENTS tbb)
