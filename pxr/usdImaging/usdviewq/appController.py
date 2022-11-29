@@ -2175,6 +2175,47 @@ class AppController(QtCore.QObject):
 
     # Prim/Attribute search functionality =====================================
 
+    def _isMatch(self, pattern, isRegex, prim, useDisplayName):
+        """
+        Determines if the given prim has a name that matches the
+        given pattern.  If useDisplayName is True, the match
+        will be performed on the prim's display name (if authored)
+        and on the prim's name (if not).  When useDisplayName is False,
+        the match is always performed against the prim's name.
+
+        Args:
+            pattern (str): The pattern to use to match the name.  Pattern
+                           is either a sequence of characters or a regex
+                           expression.  If it is a regex expression, the
+                           isRegex parameter should be set to True.
+            isRegex (bool): True if the given pattern is a regex expression
+                            or False if just a sequence of characters.
+            prim (object): A python facing UsdPrim object on whos properties
+                           should be matched by pattern.
+            useDisplayName (bool): True if the pattern match should be against
+                                   the displayName of the prim or False if
+                                   against the name of the prim.  If this value is True
+                                   displayName will only be matched if it is authored,
+                                   otherwise the name of the prim will be used.
+
+        Returns:
+            True if the pattern matches the specified prim content, False otherwise. 
+        """
+        if isRegex:
+            matchLambda = re.compile(pattern, re.IGNORECASE).search
+        else:
+            pattern = pattern.lower()
+            matchLambda = lambda x: pattern in x.lower()
+
+        if useDisplayName:
+            if prim.HasAuthoredDisplayName():
+                return matchLambda(prim.GetDisplayName())
+            else:
+                return matchLambda(prim.GetName())
+        else:
+            return matchLambda(prim.GetName())
+
+
     def _findPrims(self, pattern, useRegex=True):
         """Search the Usd Stage for matching prims
         """
@@ -2182,40 +2223,18 @@ class AppController(QtCore.QObject):
         # down to simple search, as it's faster
         if useRegex and re.match("^[0-9_A-Za-z]+$", pattern):
             useRegex = False
-        if useRegex:
-            isMatch = re.compile(pattern, re.IGNORECASE).search
-        else:
-            pattern = pattern.lower()
-            isMatch = lambda x: pattern in x.lower()
 
-        matches = []
-        if self._dataModel.viewSettings.showPrimDisplayNames:
-            for prim in Usd.PrimRange.Stage(self._dataModel.stage, self._displayPredicate):
-                if prim.HasAuthoredDisplayName():
-                    if isMatch(prim.GetDisplayName()):
-                        matches.append(prim.GetPath())
-                elif isMatch(prim.GetName()):
-                    matches.append(prim.GetPath())
-        else:
-            matches = [prim.GetPath() for prim
-                    in Usd.PrimRange.Stage(self._dataModel.stage,
-                                                self._displayPredicate)
-                    if isMatch(prim.GetName())]
+        matches = [prim.GetPath() for prim
+                    in Usd.PrimRange.Stage(self._dataModel.stage, self._displayPredicate)
+                    if self._isMatch(pattern, useRegex, prim, 
+                    self._dataModel.viewSettings.showPrimDisplayNames)]
 
         if self._dataModel.viewSettings.showAllPrototypePrims:
-            if self._dataModel.viewSettings.showPrimDisplayNames:
-                for prototype in self._dataModel.stage.GetPrototypes():
-                    for prim in Usd.PrimRange(prototype, self._displayPredicate):
-                        if prim.HasAuthoredDisplayName():
-                            if isMatch(prim.GetDisplayName()):
-                                matches.append(prim.GetPath())
-                        elif isMatch(prim.GetName()):
-                            matches.append(prim.GetPath())
-            else:
-                for prototype in self._dataModel.stage.GetPrototypes():
-                    matches += [prim.GetPath() for prim
-                                in Usd.PrimRange(prototype, self._displayPredicate)
-                                if isMatch(prim.GetName())]
+            for prototype in self._dataModel.stage.GetPrototypes():
+                matches += [prim.GetPath() for prim
+                        in Usd.PrimRange(prototype, self._displayPredicate)
+                        if self._isMatch(pattern, useRegex, prim,
+                        self._dataModel.viewSettings.showPrimDisplayNames)]
 
         return matches
 

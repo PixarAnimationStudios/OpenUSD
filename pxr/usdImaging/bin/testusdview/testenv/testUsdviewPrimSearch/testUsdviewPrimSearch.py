@@ -65,7 +65,7 @@ def _testSearchBasic(appController):
     _search(appController, 'xxx', [])
 
     # Do a regex based search - again, this is
-    # not looking at prim names here not display names
+    # looking at prim names here not display names
     # since they aren't authored
     _search(appController, 'f.*', ['f', 'foo'])
 
