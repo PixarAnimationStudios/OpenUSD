@@ -31,9 +31,9 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/pxrCLI11/CLI11.h"
 #include "pxr/usd/sdf/layer.h"
 
-#include <boost/program_options.hpp>
 
 #include <cstdio>
 #include <cstdarg>
@@ -94,18 +94,6 @@ struct SortKey {
 };
 ostream &operator<<(ostream &os, SortKey const &sk) { return os << sk.key; }
 
-// boost::program_options calls validate() for custom argument types.
-void validate(boost::any& v, const vector<string> &values, SortKey*, int) {
-    using namespace boost::program_options;
-    validators::check_first_occurrence(v);
-    string const &s = validators::get_single_string(values);
-    if (s == "path" || s == "field") {
-        v = SortKey(s);
-    } else {
-        throw validation_error(validation_error::invalid_option_value);
-    }
-}
-
 // Parse times and time ranges in timeSpecs, throw an exception if something
 // goes wrong.
 void
@@ -122,14 +110,17 @@ ParseTimes(vector<string> const &timeSpecs,
                         TfStringPrintf("invalid time syntax '%s'",
                                        spec.c_str()));
                 }
-                timeRanges->emplace_back(boost::lexical_cast<double>(elts[0]),
-                                         boost::lexical_cast<double>(elts[1]));
+                timeRanges->emplace_back(std::stod(elts[0]),
+                                         std::stod(elts[1]));
             } else {
-                literalTimes->emplace_back(boost::lexical_cast<double>(spec));
+                literalTimes->emplace_back(std::stod(spec));
             }
-        } catch (boost::bad_lexical_cast const &) {
+        } catch (std::invalid_argument const &) {
             throw std::invalid_argument(
                 TfStringPrintf("invalid time syntax '%s'", spec.c_str()));
+        } catch (std::out_of_range const &) {
+            throw std::invalid_argument(
+                    TfStringPrintf("time out of range '%s'", spec.c_str()));
         }
     }
     sort(literalTimes->begin(), literalTimes->end());
@@ -429,10 +420,10 @@ PXR_NAMESPACE_CLOSE_SCOPE
 int
 main(int argc, char const *argv[])
 {
-    namespace po = boost::program_options;
     PXR_NAMESPACE_USING_DIRECTIVE
 
     progName = TfGetBaseName(argv[0]);
+    CLI::App app("Provides information on Sdf Layers", progName);
 
     bool showSummary = false, validate = false,
         fullArrays = false, noValues = false;
@@ -443,57 +434,23 @@ main(int argc, char const *argv[])
     vector<pair<double, double>> timeRanges;
     double timeTolerance = 1.25e-4; // ugh -- chosen to print well in help.
 
-    po::options_description argOpts("Options");
-    argOpts.add_options()
-        ("help,h", "Show help message.")
-        ("summary,s", po::bool_switch(&showSummary),
-         "Report a high-level summary.")
-        ("validate", po::bool_switch(&validate),
-         "Check validity by trying to read all data values.")
-        ("path,p", po::value<string>(&pathRegex)->value_name("regex"),
-         "Report only paths matching this regex.")
-        ("field,f", po::value<string>(&fieldRegex)->value_name("regex"),
-         "Report only fields matching this regex.")
-        ("time,t", po::value<vector<string>>(&timeSpecs)->
-         multitoken()->value_name("n or ff..lf"),
-         "Report only these times or time ranges for 'timeSamples' fields.")
-        ("timeTolerance", po::value<double>(&timeTolerance)->
-         default_value(timeTolerance)->value_name("tol"),
-         "Report times that are close to those requested within this "
-         "relative tolerance.")
-        ("sortBy", po::value<SortKey>(&sortKey)->default_value(sortKey)->
-         value_name("path|field"),
-         "Group output by either path or field.")
-        ("noValues", po::bool_switch(&noValues),
-         "Do not report field values.")
-        ("fullArrays", po::bool_switch(&fullArrays),
-         "Report full array contents rather than number of elements.")
-        ;
+    app.add_option("inputFiles", inputFiles, "The input files to dump.")->required(true);
+    app.add_flag("-s,--summary", showSummary, "Report a high-level summary.");
+    app.add_flag("--validate", validate, "Check validity by trying to read all data values.");
+    app.add_option("-p,--path", pathRegex, "Report only paths matching this regex.");
+    app.add_option("-f,--field", fieldRegex, "Report only fields matching this regex.");
+    app.add_option("-t,--time", timeSpecs, "Report only these times (n) or time ranges (ff..lf) for 'timeSamples' fields");
+    app.add_option("--timeTolerance", timeTolerance, "Report times that are close to those requested within this "
+                                                   "relative tolerance.")->default_val(timeTolerance);
+    app.add_option("--sortBy", sortKey.key, "Group output by either path or field.")
+            ->default_val(sortKey.key)
+            ->check(CLI::IsMember({"field", "path"}));
+    app.add_flag("--noValues", noValues, "Do not report field values.");
+    app.add_flag("--fullArrays", fullArrays, "Report full array contents rather than number of elements");
 
-    po::options_description inputFile("Input");
-    inputFile.add_options()
-        ("input-file", po::value<vector<string>>(&inputFiles), "input files");
+    CLI11_PARSE(app, argc, argv);
 
-    po::options_description allOpts;
-    allOpts.add(argOpts).add(inputFile);
-
-    po::variables_map vm;
-    try {
-        po::positional_options_description p;
-        p.add("input-file", -1);
-        po::store(po::command_line_parser(argc, argv).
-                  options(allOpts).positional(p).run(), vm);
-        po::notify(vm);
-        ParseTimes(timeSpecs, &literalTimes, &timeRanges);
-    } catch (std::exception const &e) {
-        ErrExit("%s", e.what());
-    }
-
-    if (vm.count("help") || inputFiles.empty()) {
-        fprintf(stderr, "Usage: %s [options] <input file>\n", progName.c_str());
-        fprintf(stderr, "%s\n", TfStringify(argOpts).c_str());
-        exit(1);
-    }
+    ParseTimes(timeSpecs, &literalTimes, &timeRanges);
 
     TfPatternMatcher pathMatcher(pathRegex);
     if (!pathMatcher.IsValid()) {
