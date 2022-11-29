@@ -153,31 +153,31 @@ HgiMetalResourceBindings::BindResources(
         if (bufDesc.resourceType == HgiBindResourceTypeTessFactors) {
             [renderEncoder setTessellationFactorBuffer:bufferId offset:offset instanceStride:0];
         } else {
-        if ((bufDesc.stageUsage & HgiShaderStageVertex) ||
-                (bufDesc.stageUsage & HgiShaderStagePostTessellationVertex) ||
-                (bufDesc.stageUsage & HgiShaderStagePostTessellationControl)) {
-            NSUInteger argBufferOffset = HgiMetalArgumentOffsetBufferVS
-                                       + bufDesc.bindingIndex * sizeof(void*);
-            [argEncoderBuffer setArgumentBuffer:argBuffer
-                                         offset:argBufferOffset];
-            [argEncoderBuffer setBuffer:bufferId offset:offset atIndex:0];
-        }
-        
-        if (bufDesc.stageUsage & HgiShaderStageFragment) {
-            NSUInteger argBufferOffset = HgiMetalArgumentOffsetBufferFS
-                                       + bufDesc.bindingIndex * sizeof(void*);
-            [argEncoderBuffer setArgumentBuffer:argBuffer
-                                         offset:argBufferOffset];
-            [argEncoderBuffer setBuffer:bufferId offset:offset atIndex:0];
-        }
-        MTLResourceUsage usageFlags = MTLResourceUsageRead;
-        if (bufDesc.writable) {
-            usageFlags |= MTLResourceUsageWrite;
-        }
+            if ((bufDesc.stageUsage & HgiShaderStageVertex) ||
+                    (bufDesc.stageUsage & HgiShaderStagePostTessellationVertex) ||
+                    (bufDesc.stageUsage & HgiShaderStagePostTessellationControl)) {
+                NSUInteger argBufferOffset = HgiMetalArgumentOffsetBufferVS
+                                           + bufDesc.bindingIndex * sizeof(void*);
+                [argEncoderBuffer setArgumentBuffer:argBuffer
+                                             offset:argBufferOffset];
+                [argEncoderBuffer setBuffer:bufferId offset:offset atIndex:0];
+            }
 
-        [renderEncoder useResource:bufferId
-                             usage:usageFlags];
-    }
+            if (bufDesc.stageUsage & HgiShaderStageFragment) {
+                NSUInteger argBufferOffset = HgiMetalArgumentOffsetBufferFS
+                                           + bufDesc.bindingIndex * sizeof(void*);
+                [argEncoderBuffer setArgumentBuffer:argBuffer
+                                             offset:argBufferOffset];
+                [argEncoderBuffer setBuffer:bufferId offset:offset atIndex:0];
+            }
+            MTLResourceUsage usageFlags = MTLResourceUsageRead;
+            if (bufDesc.writable) {
+                usageFlags |= MTLResourceUsageWrite;
+            }
+
+            [renderEncoder useResource:bufferId
+                                 usage:usageFlags];
+        }
     }
     
 
@@ -247,7 +247,7 @@ HgiMetalResourceBindings::BindResources(
             if (metalSmp) {
                 usage |= MTLResourceUsageSample;
             }
-                [computeEncoder useResource:metalTexture->GetTextureId()
+            [computeEncoder useResource:metalTexture->GetTextureId()
                                   usage:usage];
         }
     }
