@@ -99,10 +99,6 @@ void Configure(CLI::App *app, Args &args) {
     app->add_flag("--layerMetadata", args.layerMetadata,
                   "Load only layer metadata in the USD file. \n"\
                   "This option cannot be combined with either --flatten or --flattenLayerStack.");
-    app->add_flag("--version", args.version,
-                  "Print the usdcat version");
-
-
 }
 
 int Quarantine(std::string &filepath) {
