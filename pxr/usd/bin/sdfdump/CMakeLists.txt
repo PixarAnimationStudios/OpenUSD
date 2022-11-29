@@ -10,5 +10,4 @@ pxr_cpp_bin(sdfdump
         plug
         tf
         sdf
-        ${Boost_PROGRAM_OPTIONS_LIBRARY}
 )
