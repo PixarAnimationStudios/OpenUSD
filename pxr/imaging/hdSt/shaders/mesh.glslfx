@@ -565,18 +565,25 @@ void main(void)
 -- glsl Mesh.PostTessVertex.BezierQuad
 // OsdPerPatchVertexBezier - used to trigger codegen
 
+float GetTessLevelQuad() {
+    ivec3 patchParam = GetPatchParam();
+    int refinementLevel = OsdGetPatchRefinementLevel(patchParam);
+    float tessLevel = min(renderPassState.tessLevel, (float)OSD_MAX_TESS_LEVEL) /
+                      exp2((float)refinementLevel - 1);
+    return tessLevel;
+}
 
-//TODO Thor verify this
 vec4 GetPatchCoord(int index)
 {
-    vec2 uv[4];
-    uv[0] = vec2(0, 0);
-    uv[1] = vec2(1, 0);
-    uv[2] = vec2(1, 1);
-    uv[3] = vec2(0, 1);
-
+    float4 tessOuterLo(0), tessOuterHi(0);
     ivec3 patchParam = GetPatchParam();
-    return OsdInterpolatePatchCoord(uv[index], patchParam);
+    float tessLevel = GetTessLevelQuad();
+    OsdGetTessLevelsUniform(tessLevel, patchParam, tessOuterLo, tessOuterHi);
+    vec2 UV = OsdGetTessParameterization(gl_TessCoord.xy,
+                                         tessOuterLo,
+                                         tessOuterHi);
+
+    return OsdInterpolatePatchCoord(UV, patchParam);
 }
 
 void main(void)
@@ -590,17 +597,9 @@ void main(void)
 
     ivec3 patchParam = GetPatchParam();
 
-
-    //TODO may want to know cv and patch param
     float4 tessOuterLo(0), tessOuterHi(0);
-    //TODO HIGHLY LIKELY THAT we need
-    int refinementLevel = OsdGetPatchRefinementLevel(patchParam);
-    //float tessLevel = min(frameConsts.TessLevel, (float)OSD_MAX_TESS_LEVEL) /
-    //                  exp2((float)refinementLevel - 1);
-    float tessLevel = min(renderPassState.tessLevel, (float)OSD_MAX_TESS_LEVEL) /
-                      exp2((float)refinementLevel - 1);
+    float tessLevel = GetTessLevelQuad();
     OsdGetTessLevelsUniform(tessLevel, patchParam, tessOuterLo, tessOuterHi);
-    //TODO Thor move tess outer lo and hi from ptcs
     vec2 UV = OsdGetTessParameterization(gl_TessCoord.xy,
                                          tessOuterLo,
                                          tessOuterHi);
@@ -614,7 +613,6 @@ void main(void)
     float wDss[HD_NUM_PATCH_VERTS];
     float wDst[HD_NUM_PATCH_VERTS];
     float wDtt[HD_NUM_PATCH_VERTS];
-    //int boundaryMask = OsdPatchParamGetBoundary(patchParam);
     OsdPatchParam osdParam = OsdPatchParamInit(patchParam.x, patchParam.y, 0);
     OsdEvaluatePatchBasisNormalized(OSD_PATCH_DESCRIPTOR_REGULAR, osdParam, UV.x, UV.y, &(wP[0]), &(wDs[0]), &(wDt[0]), &(wDss[0]), &(wDst[0]), &(wDtt[0]));
    
@@ -643,17 +641,14 @@ void main(void)
     if (length(N) > 0.0)
         N = normalize(N);
 
+    tesPatchCoord = OsdInterpolatePatchCoord(UV, patchParam);
     P = (GetWorldToViewMatrix() * transform * vec4(P,1.0)).xyz;
-    float localUV[2];
-    localUV[0] = UV.x;
-    localUV[1] = UV.y;
-    OsdPatchParamNormalize(osdParam, localUV);
-    P = (DisplacementTerminal(vec4(P,1.0), N, vec2(localUV[0], localUV[1]))).xyz;
+    P = (DisplacementTerminal(0, vec4(P,1.0), N, tesPatchCoord)).xyz;
 
     outData.Peye = vec4(P, 1);
     outData.Neye = N; // normalized
 
-    tesPatchCoord = OsdInterpolatePatchCoord(UV, patchParam);
+
     // Bilinear basis
     vec4 basis = vec4(
             (1.0-UV.x) * (1.0-UV.y), UV.x * (1.0-UV.y),
@@ -811,10 +806,10 @@ void main(void)
 
     half inner0 = clamp(half(tessLevelInner[0]), 2.0h, 32.0h);
 
-    tessAsHalf[0] = outer0;
-    tessAsHalf[1] = outer1;
-    tessAsHalf[2] = outer2;
-    tessAsHalf[3] = inner0;
+    tessAsHalf[0] = half(tessLevelOuter[0]);
+    tessAsHalf[1] = half(tessLevelOuter[1]);
+    tessAsHalf[2] = half(tessLevelOuter[2]);
+    tessAsHalf[3] = half(tessLevelInner[0]);
 }
 
 --- --------------------------------------------------------------------------
@@ -879,14 +874,36 @@ void main(void)
     ],
     ["out", "vec3", "ptvsBarycentricCoord"],
     ["out", "vec4", "tesPatchCoord"],
-    ["out", "vec2", "tesTessCoord"]
+    ["out", "vec2", "tesTessCoord"],
+    ["out", "vec4", "gsPatchCoord"]
 ]
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.PostTessVertex.BezierTriangle
 // OsdPerPatchVertexBezier - used to trigger codegen
 
+float GetTessLevelTri() {
+    ivec3 patchParam = GetPatchParam();
+    int refinementLevel = OsdGetPatchRefinementLevel(patchParam);
+    float tessLevel = min(renderPassState.tessLevel, (float)OSD_MAX_TESS_LEVEL) /
+                      exp2((float)refinementLevel - 1);
+    return tessLevel;
+}
 
+vec4 GetPatchCoord(int index)
+{
+    float4 tessOuterLo(0), tessOuterHi(0);
+    ivec3 patchParam = GetPatchParam();
+    float tessLevel = GetTessLevelTri();
+    OsdGetTessLevelsUniform(tessLevel, patchParam, tessOuterLo, tessOuterHi);
+    vec2 UV = OsdGetTessParameterizationTriangle(gl_TessCoord.xyz,
+                                                 tessOuterLo,
+                                                 tessOuterHi);
+
+    return OsdInterpolatePatchCoord(UV, patchParam);
+}
+
+/*
 vec4 GetPatchCoord(int index)
 {
     vec2 uv[3];
@@ -897,6 +914,7 @@ vec4 GetPatchCoord(int index)
     ivec3 patchParam = GetPatchParam();
     return OsdInterpolatePatchCoordTriangle(uv[index], patchParam);
 }
+*/
 
 
 void main(void)
@@ -911,14 +929,8 @@ void main(void)
     ivec3 patchParam = GetPatchParam();
 
     float4 tessOuterLo(0), tessOuterHi(0);
-    //TODO HIGHLY LIKELY THAT we need
-    int refinementLevel = OsdGetPatchRefinementLevel(patchParam);
-    //float tessLevel = min(frameConsts.TessLevel, (float)OSD_MAX_TESS_LEVEL) /
-    //                  exp2((float)refinementLevel - 1);
-    float tessLevel = min(renderPassState.tessLevel, (float)OSD_MAX_TESS_LEVEL) /
-                      exp2((float)refinementLevel - 1);
+    float tessLevel = GetTessLevelTri();
     OsdGetTessLevelsUniformTriangle(tessLevel, patchParam, tessOuterLo, tessOuterHi);
-    //TODO Thor move tess outer lo and hi from ptcs
 
     vec2 UV = OsdGetTessParameterizationTriangle(gl_TessCoord.xyz,
                                                  tessOuterLo,
@@ -961,21 +973,14 @@ void main(void)
     if (length(N) > 0.0)
         N = normalize(N);
 
-    float localUV[2];
-    localUV[0] = UV.x;
-    localUV[1] = UV.y;
-    OsdPatchParamNormalize(osdParam, localUV);
-    P = (DisplacementTerminal(vec4(P,1.0), N, vec2(localUV[0], localUV[1]))).xyz;
-    //maybe this has to be in eye space
+    tesPatchCoord = OsdInterpolatePatchCoordTriangle(UV, patchParam);
+    gsPatchCoord = tesPatchCoord;
     P = (GetWorldToViewMatrix() * transform * vec4(P,1.0)).xyz;
+    P = (DisplacementTerminal(0, vec4(P,1.0), N, tesPatchCoord)).xyz;
+    //maybe this has to be in eye space
 
     outData.Peye = vec4(P, 1);
     outData.Neye = N; // normalized
-
-    //TODO THOR -> Maybe this is the issue
-    tesPatchCoord = OsdInterpolatePatchCoordTriangle(UV, patchParam);
-    //outData.Peye = DisplacementTerminal(
-    //    0, outData.Peye, outData.Neye, tesPatchCoord);
 
     tesTessCoord = UV;
     gl_Position =  vec4(GetProjectionMatrix() * outData.Peye);
@@ -1489,9 +1494,15 @@ vec4 GetInterpolatedPatchCoord()
 }
 
 --- --------------------------------------------------------------------------
--- glsl Mesh.Fragment.PatchCoord
+-- layout Mesh.Fragment.PatchCoord
 
-in vec4 gsPatchCoord;
+[
+    ["in", "vec4", "gsPatchCoord"]
+]
+
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Fragment.PatchCoord
 
 vec4 GetInterpolatedPatchCoord()
 {
