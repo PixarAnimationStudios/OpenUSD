@@ -490,49 +490,49 @@ public:
     bool HasProperty(const TfToken &propName) const;
 
 private:
-    // The non-templated implementation of UsdPrim::IsA using the
-    // TfType system. \p validateSchemaType is provided for python clients
-    // because they can't use compile time assertions on the input type.
+    // Helper functions for the public schema query and API schema
+    // authoring functions.
     USD_API
-    bool _IsA(const TfType& schemaType, bool validateSchemaType) const;
-
-    // Separate implementations for UsdPrim::HasAPI for single and multiple
-    // apply API schema TfTypes.
-    USD_API
-    bool _HasSingleApplyAPI(const TfType& schemaType) const;
+    bool _IsA(
+        const TfType& schemaType) const;
 
     USD_API
-    bool _HasMultiApplyAPI(const TfType& schemaType, 
-                           const TfToken &instanceName) const;
-
-    // Private implementation for all ApplyAPI, CanApplyAPI, and RemoveAPI 
-    // methods for both single apply and multiple apply APIs. The multiple 
-    // apply API methods validate that the instance name is non-empty, but 
-    // otherwise all of these methods do no other input validation as the 
-    // public methods are expected to have already done either compile time or 
-    // runtime validation already.
-    USD_API
-    bool _CanApplyAPI(const TfType& schemaType, 
-                      std::string *whyNot) const;
+    bool _HasAPI(
+        const TfType& schemaType) const;
 
     USD_API
-    bool _CanApplyAPI(const TfType& schemaType, 
-                      const TfToken& instanceName,
-                      std::string *whyNot) const;
+    bool _HasAPIInstance(
+        const TfToken &instanceName, 
+        const TfType &schemaType) const;
 
     USD_API
-    bool _ApplyAPI(const TfType& schemaType) const;
+    bool _CanApplySingleApplyAPI(
+        std::string *whyNot, 
+        const TfType &schemaType) const;
 
     USD_API
-    bool _ApplyAPI(const TfType& schemaType, 
-                   const TfToken& instanceName) const;
+    bool _CanApplyMultipleApplyAPI(
+        const TfToken& instanceName, 
+        std::string *whyNot, 
+        const TfType &schemaType) const;
 
     USD_API
-    bool _RemoveAPI(const TfType& schemaType) const;
+    bool _ApplySingleApplyAPI(
+        const TfType& schemaType) const;
 
     USD_API
-    bool _RemoveAPI(const TfType& schemaType,
-                    const TfToken& instanceName) const;
+    bool _ApplyMultipleApplyAPI(
+        const TfToken &instanceName, 
+        const TfType &schemaType) const;
+
+    USD_API
+    bool _RemoveSingleApplyAPI(
+        const TfType& schemaType) const;
+
+    USD_API
+    bool _RemoveMultipleApplyAPI(
+        const TfToken &instanceName, 
+        const TfType &schemaType) const;
 
 public:
     /// Return true if the prim's schema type, is or inherits schema type T.
@@ -543,9 +543,9 @@ public:
     bool IsA() const {
         static_assert(std::is_base_of<UsdSchemaBase, T>::value,
                       "Provided type must derive UsdSchemaBase.");
-        return _IsA(TfType::Find<T>(), /*validateSchemaType=*/false);
+        return IsA(TfType::Find<T>());
     };
-    
+
     /// Return true if the prim's schema type is or inherits \p schemaType.
     /// \sa GetPrimTypeInfo 
     /// \sa UsdPrimTypeInfo::GetSchemaType
@@ -566,9 +566,7 @@ public:
     /// \endcode
     /// 
     /// The python version of this method takes as an argument the TfType
-    /// of the API schema class. Similar validation of the schema type is 
-    /// performed in python at run-time and a coding error is issued if 
-    /// the given type is not a valid applied API schema.
+    /// of the API schema class.
     /// 
     /// __Using HasAPI in Python__
     /// \code{.py}
@@ -582,41 +580,44 @@ public:
     /// \endcode
     /// @{
 
-    /// Return true if the UsdPrim has had a single API schema represented by 
-    /// the C++ class type __T__ applied to it through the Apply() method 
-    /// provided on the API schema class. 
+    /// Return true if the UsdPrim has had an applied API schema represented by 
+    /// the C++ class type __T__ applied to it. 
     /// 
+    /// This function works for both single-apply and multiple-apply API schema
+    /// types. If the schema is a multiple-apply API schema this will return
+    /// true if any instance of the multiple-apply API has been applied.
     template <typename T>
-    typename std::enable_if<T::schemaKind != UsdSchemaKind::MultipleApplyAPI, 
-        bool>::type
+    bool
     HasAPI() const {
         static_assert(std::is_base_of<UsdAPISchemaBase, T>::value,
                       "Provided type must derive UsdAPISchemaBase.");
         static_assert(!std::is_same<UsdAPISchemaBase, T>::value,
                       "Provided type must not be UsdAPISchemaBase.");
-        // Note that this function template is enabled for any schema kind, 
-        // other than MultipleApplyAPI, but is only valid for SingleApplyAPI. 
-        // This static assert provides better error information for calling 
-        // HasAPI with an invalid template type than if we limited HasAPI 
-        // substitution matching to just the two valid schema kinds.
-        static_assert(T::schemaKind == UsdSchemaKind::SingleApplyAPI,
-            "Provided schema type must be a single apply API schema.");
+        static_assert(
+            T::schemaKind == UsdSchemaKind::SingleApplyAPI ||
+            T::schemaKind == UsdSchemaKind::MultipleApplyAPI,
+            "Provided schema type must be an applied API schema.");
 
-        return _HasSingleApplyAPI(TfType::Find<T>());
+        return HasAPI(TfType::Find<T>());
     }
 
-    /// Return true if the UsdPrim has had a multiple-apply API schema 
-    /// represented by the C++ class type __T__ applied to it through the 
-    /// Apply() method provided on the API schema class. 
+    /// Return true if a prim has an API schema with TfType \p schemaType 
+    /// applied to it.
     /// 
-    /// \p instanceName, if non-empty is used to determine if a particular 
-    /// instance of a multiple-apply API schema (eg. UsdCollectionAPI) has been 
-    /// applied to the prim, otherwise this returns true if any instance of
-    /// the multiple-apply API has been applied.
+    /// This function works for both single-apply and multiple-apply API schema
+    /// types. If the schema is a multiple-apply API schema this will return
+    /// true if any instance of the multiple-apply API has been applied.
+    USD_API
+    bool HasAPI(const TfType& schemaType) const;
+
+    /// Return true if the UsdPrim has the specific instance, \p instanceName,
+    /// of the multiple-apply API schema represented by the C++ class type __T__
+    /// applied to it. 
+    /// 
+    /// \p instanceName must be non-empty, otherwise it is a coding error.
     template <typename T>
-    typename std::enable_if<T::schemaKind == UsdSchemaKind::MultipleApplyAPI, 
-        bool>::type 
-    HasAPI(const TfToken &instanceName = TfToken()) const {
+    bool
+    HasAPI(const TfToken &instanceName) const {
         static_assert(std::is_base_of<UsdAPISchemaBase, T>::value,
                       "Provided type must derive UsdAPISchemaBase.");
         static_assert(!std::is_same<UsdAPISchemaBase, T>::value,
@@ -624,24 +625,17 @@ public:
         static_assert(T::schemaKind == UsdSchemaKind::MultipleApplyAPI,
             "Provided schema type must be a multi apply API schema.");
 
-        return _HasMultiApplyAPI(TfType::Find<T>(), instanceName);
+        return HasAPI(TfType::Find<T>(), instanceName);
     }
         
-    /// Return true if a prim has an API schema with TfType \p schemaType.
-    ///
-    /// \p instanceName, if non-empty is used to determine if a particular 
-    /// instance of a multiple-apply API schema (eg. UsdCollectionAPI) has been 
-    /// applied to the prim. A coding error is issued if a non-empty 
-    /// \p instanceName is passed in and __T__ represents a single-apply API 
-    /// schema.
-    ///
-    /// This function behaves exactly like the templated HasAPI functions
-    /// except for the runtime schemaType validation which happens at compile 
-    /// time in the templated versions. This method is provided for python 
-    /// clients. Use of the templated HasAPI functions are preferred.
+    /// Return true if the UsdPrim has the specific instance, \p instanceName,
+    /// of the multiple-apply API schema with TfType \p schemaType applied to
+    /// it. 
+    /// 
+    /// \p instanceName must be non-empty, otherwise it is a coding error.
     USD_API
     bool HasAPI(const TfType& schemaType,
-                const TfToken& instanceName=TfToken()) const;
+                const TfToken& instanceName) const;
 
     /// }@
 
@@ -667,15 +661,14 @@ public:
             "Provided schema type must be a single apply API schema.");
 
         static const TfType schemaType = TfType::Find<SchemaType>();
-        return _CanApplyAPI(schemaType, whyNot);
+        return CanApplyAPI(schemaType, whyNot);
     }
 
     /// Non-templated overload of the templated CanApplyAPI above.
     ///
     /// This function behaves exactly like the templated CanApplyAPI  
-    /// except for the runtime schemaType validation which happens at compile 
-    /// time in the templated version. This method is provided for python 
-    /// clients. Use of the templated CanApplyAPI is preferred.
+    /// but lacks the compile time type checking provided in the templated
+    /// version.
     USD_API
     bool CanApplyAPI(const TfType& schemaType,
                      std::string *whyNot = nullptr) const;
@@ -704,15 +697,14 @@ public:
             "Provided schema type must be a multiple apply API schema.");
 
         static const TfType schemaType = TfType::Find<SchemaType>();
-        return _CanApplyAPI(schemaType, instanceName, whyNot);
+        return CanApplyAPI(schemaType, instanceName, whyNot);
     }
 
     /// Non-templated overload of the templated CanApplyAPI above.
     ///
     /// This function behaves exactly like the templated CanApplyAPI  
-    /// except for the runtime schemaType validation which happens at compile 
-    /// time in the templated version. This method is provided for python 
-    /// clients. Use of the templated CanApplyAPI is preferred.
+    /// but lacks the compile time type checking provided in the templated
+    /// version.
     USD_API
     bool CanApplyAPI(const TfType& schemaType,
                      const TfToken& instanceName,
@@ -743,15 +735,14 @@ public:
             "Provided schema type must be a single apply API schema.");
 
         static const TfType schemaType = TfType::Find<SchemaType>();
-        return _ApplyAPI(schemaType);
+        return ApplyAPI(schemaType);
     }
 
     /// Non-templated overload of the templated ApplyAPI above.
     ///
     /// This function behaves exactly like the templated ApplyAPI  
-    /// except for the runtime schemaType validation which happens at compile 
-    /// time in the templated version. This method is provided for python 
-    /// clients. Use of the templated ApplyAPI is preferred.
+    /// but lacks the compile time type checking provided in the templated
+    /// version.
     USD_API
     bool ApplyAPI(const TfType& schemaType) const;
 
@@ -785,15 +776,14 @@ public:
             "Provided schema type must be a multiple apply API schema.");
 
         static const TfType schemaType = TfType::Find<SchemaType>();
-        return _ApplyAPI(schemaType, instanceName);
+        return ApplyAPI(schemaType, instanceName);
     }
 
     /// Non-templated overload of the templated ApplyAPI above.
     ///
     /// This function behaves exactly like the templated ApplyAPI  
-    /// except for the runtime schemaType validation which happens at compile 
-    /// time in the templated version. This method is provided for python 
-    /// clients. Use of the templated ApplyAPI is preferred.
+    /// but lacks the compile time type checking provided in the templated
+    /// version.
     USD_API
     bool ApplyAPI(const TfType& schemaType, const TfToken& instanceName) const;
 
@@ -823,15 +813,14 @@ public:
             "Provided schema type must be a single apply API schema.");
 
         static const TfType schemaType = TfType::Find<SchemaType>();
-        return _RemoveAPI(schemaType);
+        return RemoveAPI(schemaType);
     }
 
     /// Non-templated overload of the templated RemoveAPI above.
     ///
     /// This function behaves exactly like the templated RemoveAPI  
-    /// except for the runtime schemaType validation which happens at compile 
-    /// time in the templated version. This method is provided for python 
-    /// clients. Use of the templated RemoveAPI is preferred.
+    /// but lacks the compile time type checking provided in the templated
+    /// version.
     USD_API
     bool RemoveAPI(const TfType& schemaType) const;
 
@@ -866,15 +855,14 @@ public:
             "Provided schema type must be a multiple apply API schema.");
 
         static const TfType schemaType = TfType::Find<SchemaType>();
-        return _RemoveAPI(schemaType, instanceName);
+        return RemoveAPI(schemaType, instanceName);
     }
 
     /// Non-templated overload of the templated RemoveAPI above.
     ///
     /// This function behaves exactly like the templated RemoveAPI  
-    /// except for the runtime schemaType validation which happens at compile 
-    /// time in the templated version. This method is provided for python 
-    /// clients. Use of the templated RemoveAPI is preferred.
+    /// but lacks the compile time type checking provided in the templated
+    /// version.
     USD_API
     bool RemoveAPI(const TfType& schemaType,
                    const TfToken& instanceName) const;

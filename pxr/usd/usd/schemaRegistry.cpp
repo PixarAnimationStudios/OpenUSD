@@ -158,6 +158,7 @@ struct _TypeMapCache {
 
         set<TfType> types;
         PlugRegistry::GetAllDerivedTypes(schemaBaseType, &types);
+        types.insert(schemaBaseType);
 
         for (const TfType &type : types) {
             // The schema's identifier is the type's alias under UsdSchemaBase. 

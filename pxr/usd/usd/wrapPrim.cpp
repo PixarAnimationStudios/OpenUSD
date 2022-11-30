@@ -278,9 +278,13 @@ void wrapUsdPrim()
             (bool (UsdPrim::*)(const TfType&) const)&UsdPrim::IsA, 
             arg("schemaType"))
         .def("HasAPI", 
+            (bool (UsdPrim::*)(const TfType&) const)
+            &UsdPrim::HasAPI,
+            (arg("schemaType")))
+        .def("HasAPI", 
             (bool (UsdPrim::*)(const TfType&, const TfToken&) const)
             &UsdPrim::HasAPI,
-            (arg("schemaType"), arg("instanceName")=TfToken()))
+            (arg("schemaType"), arg("instanceName")))
         .def("CanApplyAPI", 
             &_WrapCanApplyAPI,
             (arg("schemaType")))
