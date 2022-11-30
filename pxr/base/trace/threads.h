@@ -33,7 +33,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////////////////////////
-/// \class ThraceThreadId
+/// \class TraceThreadId
 ///
 /// This class represents an identifier for a thread.
 ///
