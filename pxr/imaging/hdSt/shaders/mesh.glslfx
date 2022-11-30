@@ -928,6 +928,7 @@ void main(void)
     EndPrimitive();
 
     // triangle 1: vertices (1,2,0)
+    gl_PrimitiveID = gl_PrimitiveIDIn;
     emit(1, Peye1, Neye1);
     emit(2, Peye2, Neye2);
     emit(0, Peye0, Neye0);
