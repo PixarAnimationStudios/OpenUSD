@@ -233,6 +233,11 @@ Nuke
 
 `Nuke documentation <https://learn.foundry.com/nuke/content/comp_environment/3d_compositing/usd.html>`_
 
+Intel OSPRay
+============
+
+`Intel's OSPRay renderer <https://www.ospray.org/>`_ is a path-traced renderer with an `open source Hydra delegate <https://github.com/ospray/hdospray>`_.
+
 
 Isotropix Clarisse
 ==================
@@ -261,7 +266,7 @@ Muse
 `Muse <https://j-cube.jp/solutions/muse/>`_ is a standalone USD Editor
 
 Left Angle Autograph
-=====
+====================
 
 `Autograph <https://www.left-angle.com/#page=95>`_ is a compositing and motion design package that comes with a 3d system based on USD.
 
