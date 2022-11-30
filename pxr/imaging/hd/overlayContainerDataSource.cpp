@@ -28,6 +28,12 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdOverlayContainerDataSource::HdOverlayContainerDataSource(
+    std::initializer_list<HdContainerDataSourceHandle> sources)
+    : _containers(sources.begin(), sources.end())
+{
+}
+
+HdOverlayContainerDataSource::HdOverlayContainerDataSource(
     size_t count,
     HdContainerDataSourceHandle *containers)
 {
