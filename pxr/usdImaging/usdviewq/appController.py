@@ -2190,7 +2190,7 @@ class AppController(QtCore.QObject):
                            isRegex parameter should be set to True.
             isRegex (bool): True if the given pattern is a regex expression
                             or False if just a sequence of characters.
-            prim (object): A python facing UsdPrim object on whos properties
+            prim (object): A python facing UsdPrim object on whose properties
                            should be matched by pattern.
             useDisplayName (bool): True if the pattern match should be against
                                    the displayName of the prim or False if
@@ -2208,8 +2208,16 @@ class AppController(QtCore.QObject):
             matchLambda = lambda x: pattern in x.lower()
 
         if useDisplayName:
-            if prim.HasAuthoredDisplayName():
-                return matchLambda(prim.GetDisplayName())
+            # typically we would check prim.HasAuthoredDisplayName()
+            # rather than getting the display name and checking
+            # against the empty string, but HasAuthoredDisplayName
+            # does about the same amount of work of GetDisplayName
+            # so we'd be paying twice the price for each prim
+            # search, which on large scenes would be a big performance
+            # hit, so we do it this way instead
+            displayName = prim.GetDisplayName()
+            if displayName is not None and displayName != "":
+                return matchLambda(displayName)
             else:
                 return matchLambda(prim.GetName())
         else:
