@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2022 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,26 +21,55 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+
+#include "pxr/usd/ar/assetInfo.h"
+
+#include <boost/python/class.hpp>
+#include <boost/python/operators.hpp>
+
+using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+static VtValue
+_GetResolverInfo(const ArAssetInfo& info)
 {
-    TF_WRAP(AssetInfo);
-    TF_WRAP(ResolvedPath);
-    TF_WRAP(Timestamp);
+    return info.resolverInfo;
+}
 
-    TF_WRAP(Resolver);
-    TF_WRAP(ResolverContext);
-    TF_WRAP(ResolverContextBinder);
-    TF_WRAP(ResolverScopedCache);
+static void
+_SetResolverInfo(ArAssetInfo& info, const VtValue& resolverInfo)
+{
+    info.resolverInfo = resolverInfo;
+}
 
-    TF_WRAP(DefaultResolver);
-    TF_WRAP(DefaultResolverContext);
+static size_t
+_GetHash(const ArAssetInfo& info)
+{
+    return hash_value(info);
+}
 
-    TF_WRAP(PackageUtils);
-    TF_WRAP(Notice);
+void
+wrapAssetInfo()
+{
+    using This = ArAssetInfo;
+
+    class_<This>("AssetInfo")
+        .def(init<>())
+
+        .def(self == self)
+        .def(self != self)
+
+        .def("__hash__", &_GetHash)
+
+        .def_readwrite("version", &This::version)
+        .def_readwrite("assetName", &This::assetName)
+
+        // Using .def_readwrite for resolverInfo gives this error on access:
+        // "No python class registered for C++ class VtValue"
+        //
+        // Using .add_property works as expected.
+        .add_property("resolverInfo", &_GetResolverInfo, &_SetResolverInfo)
+        ;
 }
