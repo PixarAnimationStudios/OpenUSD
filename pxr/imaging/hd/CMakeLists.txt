@@ -154,6 +154,7 @@ pxr_library(hd
         sprim
         strategyBase
         subdivisionTagsSchema
+        systemSchema
         task
         timeSampleArray
         tokens
