@@ -151,14 +151,27 @@ Revit
 `Revit <https://www.autodesk.com/products/revit/overview>`_ is a BIM software for designers and builders
 with a `third party USD extension <https://apps.autodesk.com/RVT/en/Detail/Index?id=127804203175527993&appLang=en&os=Win64>`_.
 
+Blender Foundation
+==================
+
+The `Blender Foundation <https://www.blender.org/about/foundation/>`_ are a public benefit
+organization that develop 3D software.
+
 Blender
-=======
+-------
 
 `Blender <https://www.blender.org>`_ is a free and open source 3D creation suite.
 
 `Blender USD Documentation <https://docs.blender.org/manual/en/latest/files/import_export/usd.html>`_
 
 Blender also has a `Hydra addon <https://github.com/GPUOpen-LibrariesAndSDKs/BlenderUSDHydraAddon>`_ courtesy of AMD.
+
+Cycles
+------
+
+The `Cycles Renderer <https://www.cycles-renderer.org>`_ is an open source, path-traced renderer.
+
+It has a `Hydra Delegate <https://wiki.blender.org/wiki/Building_Blender/CyclesHydra>`_ , originally developed by Tangent Animation.
 
 Chaos V-Ray
 ===========
