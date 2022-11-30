@@ -164,7 +164,7 @@ def Xform "Meshes" (
     prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
-    def Mesh "Mesh_1" (
+    def "Mesh_1" (
         active = true
         references = </Mesh>
     )
@@ -174,7 +174,7 @@ def Xform "Meshes" (
         )
     }
 
-    def Mesh "Mesh_2" (
+    def "Mesh_2" (
         active = true
         references = </Mesh>
     )
