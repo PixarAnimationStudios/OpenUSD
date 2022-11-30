@@ -52,8 +52,7 @@ template <class T>
 void
 TfSingleton<T>::SetInstanceConstructed(T &instance)
 {
-    T *n = nullptr;
-    if (!_instance.compare_exchange_strong(n, &instance)) {
+    if (_instance.exchange(&instance) != nullptr) {
         TF_FATAL_ERROR("this function may not be called after "
                        "GetInstance() or another SetInstanceConstructed() "
                        "has completed");
@@ -72,8 +71,7 @@ TfSingleton<T>::_CreateInstance(std::atomic<T *> &instance)
     // Try to take isInitializing false -> true.  If we do it, then check to see
     // if we don't yet have an instance.  If we don't, then we get to create it.
     // Otherwise we just wait until the instance shows up.
-    bool f = false;
-    if (isInitializing.compare_exchange_strong(f, true)) {
+    if (isInitializing.exchange(true) == false) {
         // Do we not yet have an instance?
         if (!instance) {
             // Create it.  The constructor may set instance via
@@ -87,16 +85,17 @@ TfSingleton<T>::_CreateInstance(std::atomic<T *> &instance)
                 }
             }
             else {
-                TF_AXIOM(instance.compare_exchange_strong(curInst, newInst));
+                TF_AXIOM(instance.exchange(newInst) == nullptr);
             }                
         }
         isInitializing = false;
     }
-
-    while (!instance) {
-        std::this_thread::yield();
-    }    
-
+    else {
+        while (!instance) {
+            std::this_thread::yield();
+        }
+    }
+    
     return instance.load();
 }
 
