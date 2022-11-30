@@ -50,11 +50,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((baseGLSLFX,                      "basisCurves.glslfx"))
 
     //Set tess factors
-    ((setTessFactorsGLSL,    "Curves.JointTessControl.SetTessFactorGLSL"))
+    ((setTessFactorsGLSL,     "Curves.JointTessControl.SetTessFactorGLSL"))
     ((setTessFactorsMSL,      "Curves.JointTessControl.SetTessFactorMSL"))
     ((invertNormal,           "Curves.InvertNormal"))
     ((noInvertNormal,         "Curves.NoInvertNormal"))
-    ((postTessellationShared,  "Curves.PostTessellation.Shared"))
+    ((postTessellationShared, "Curves.PostTessellation.Shared"))
 
     // normal related mixins
     ((curvesVertexNormalOriented,      "Curves.Vertex.Normal.Oriented"))
@@ -174,31 +174,29 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
         // even in wire mode.
         if (drawStyle == DrawStyle::WIRE) {
             primType =
-            HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_CUBIC_WIRE_PATCHES;
+                HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_CUBIC_WIRE_PATCHES;
         } else {
             primType =
-            HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES;
+                HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES;
         }
     } else if (drawThick){
         primType =
-        HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES;
+            HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES;
     } else {
         primType =
-        HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINES;
+            HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINES;
     }
 
     bool isPrimTypePoints = HdSt_GeometricShader::IsPrimTypePoints(primType);
 
     bool oriented = normalStyle == HdSt_BasisCurvesShaderKey::ORIENTED;
 
-    bool skipTessLinear = (linear && (drawStyle == HdSt_BasisCurvesShaderKey::POINTS ||
-                    drawStyle == HdSt_BasisCurvesShaderKey::WIRE));
-    bool skipTessCubic = false;
-        //(cubic && (drawStyle == HdSt_BasisCurvesShaderKey::POINTS));
-
+    bool skipTessLinear = (linear && (drawStyle ==
+            HdSt_BasisCurvesShaderKey::POINTS ||
+                drawStyle == HdSt_BasisCurvesShaderKey::WIRE));
     //Cubic wire on metal needs improvements, not enabled
     bool demandPostTessVertexShader = hasPostTessVertexSupport &&
-        !(skipTessLinear || skipTessCubic);
+        !(skipTessLinear);
     useMetalTessellation = demandPostTessVertexShader;
 
     uint8_t vsIndex = 0;

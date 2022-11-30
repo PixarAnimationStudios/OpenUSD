@@ -138,9 +138,10 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
     HgiMetalShaderProgram const *metalProgram =
         static_cast<HgiMetalShaderProgram*>(_descriptor.shaderProgram.Get());
     auto tessVertexFunc = metalProgram->GetPostTessVertexFunction();
-    if (_descriptor.primitiveType == HgiPrimitiveTypePatchList
-        || tessVertexFunc != nullptr
-        || _descriptor.tessellationState.isPostTessControl) {
+    const bool usePTVSPath = _descriptor.primitiveType == HgiPrimitiveTypePatchList
+                             || tessVertexFunc != nullptr
+                             || _descriptor.tessellationState.isPostTessControl;
+    if (usePTVSPath) {
         stateDesc.vertexFunction = _descriptor.tessellationState.isPostTessControl ?
             metalProgram->GetPostTessControlFunction() :
             metalProgram->GetPostTessVertexFunction();

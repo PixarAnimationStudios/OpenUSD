@@ -835,13 +835,13 @@ _ResourceGenerator::_GenerateHgiTextureResources(
 
         if (texture.arraySize > 0) {
             HgiShaderFunctionAddArrayOfTextures(
-              funcDesc,
-              texture.name,
-              texture.arraySize,
+                funcDesc,
+                texture.name,
+                texture.arraySize,
                 texture.bindingIndex,
-              texture.dim,
-              HdStHgiConversions::GetHgiFormat(texture.format),
-              textureType);
+                texture.dim,
+                HdStHgiConversions::GetHgiFormat(texture.format),
+                textureType);
         } else {
             HgiShaderFunctionAddTexture(
                 funcDesc,

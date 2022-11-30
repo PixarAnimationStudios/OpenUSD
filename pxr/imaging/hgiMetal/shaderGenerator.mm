@@ -1365,10 +1365,11 @@ HgiMetalShaderGenerator::HgiMetalShaderGenerator(
     }
     std::stringstream macroSection;
     macroSection << _GetHeader(device, descriptor.shaderStage);
-    if (descriptor.shaderStage
-        == HgiShaderStagePostTessellationVertex
-    || descriptor.shaderStage
-        == HgiShaderStagePostTessellationControl) {
+    bool isTessFunc = descriptor.shaderStage
+                      == HgiShaderStagePostTessellationVertex
+                      || descriptor.shaderStage
+                         == HgiShaderStagePostTessellationControl;
+    if (isTessFunc) {
         macroSection << "#define VERTEX_CONTROL_POINTS_PER_PATCH "
         << descriptor.tessellationDescriptor.numVertsPerPatchIn
         << "\n";
