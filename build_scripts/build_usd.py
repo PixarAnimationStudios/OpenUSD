@@ -781,7 +781,8 @@ def InstallBoost_Helper(context, force, buildArgs):
             'variant={variant}'.format(variant=boostBuildVariant),
             '--with-atomic',
             '--with-program_options',
-            '--with-regex'
+            '--with-regex',
+            '--ignore-site-config'
         ]
 
         if context.buildPython:
