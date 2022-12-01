@@ -124,13 +124,6 @@ Usd_Resolver::_SkipEmptyNodes()
     }
 }
 
-size_t 
-Usd_Resolver::GetLayerStackIndex() const 
-{
-    return std::distance(
-        _curNode->GetLayerStack()->GetLayers().begin(), _curLayer);
-}
-
 void 
 Usd_Resolver::NextNode()
 {

@@ -7599,10 +7599,9 @@ struct UsdStage::_PropertyStackResolver {
                 if (_withLayerOffsets) {
                     // The layer offset for the clip is the layer offset of the
                     // source layer of the clip set.
-                    const auto layer = clipSet->sourceLayerStack->GetLayers()[
-                        clipSet->sourceLayerIndex];
                     propertyStackWithLayerOffsets.emplace_back(
-                        propertySpec, _GetLayerToStageOffset(node, layer)); 
+                        propertySpec,
+                        _GetLayerToStageOffset(node, clipSet->sourceLayer)); 
                 } else {
                     propertyStack.push_back(propertySpec);
                 }
@@ -7979,11 +7978,10 @@ _GetResolvedValueAtTimeWithClipsImpl(
             }
         }
 
-        const size_t layerStackIndex = res->GetLayerStackIndex();
         for (const Usd_ClipSetRefPtr& clipSet : clips) {
             // We only care about clips that were introduced at this
             // position within the LayerStack.
-            if (clipSet->sourceLayerIndex == layerStackIndex) {
+            if (clipSet->sourceLayer == res->GetLayer()) {
                 // Look through clips to see if they have a time sample for
                 // this attribute. If a time is given, examine just the clips
                 // that are active at that time.

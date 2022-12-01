@@ -1,0 +1,19 @@
+#usda 1.0
+
+over "SingleClip" (
+    clips = {
+        dictionary default = {
+            double2[] active = [(0, 0)]
+            asset[] assetPaths = [@./clip.usda@]
+            asset manifestAssetPath = @./clip_manifest.usda@
+            string primPath = "/Model"
+        }
+    }
+    references = @./ref.usda@</Model>
+)
+{
+    float attr_1.timeSamples = {
+        0: 100,
+    }
+}
+

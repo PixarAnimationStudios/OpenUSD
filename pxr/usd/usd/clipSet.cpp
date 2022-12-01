@@ -30,6 +30,8 @@
 #include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/usd/usd/valueUtils.h"
 
+#include "pxr/usd/pcp/layerStack.h"
+
 #include "pxr/base/tf/staticTokens.h"
 
 #include <algorithm>
@@ -336,7 +338,9 @@ Usd_ClipSet::Usd_ClipSet(
     : name(name_)
     , sourceLayerStack(clipDef.sourceLayerStack)
     , sourcePrimPath(clipDef.sourcePrimPath)
-    , sourceLayerIndex(clipDef.indexOfLayerWhereAssetPathsFound)
+    , sourceLayer(
+        clipDef.sourceLayerStack->GetLayers()[
+            clipDef.indexOfLayerWhereAssetPathsFound])
     , clipPrimPath(SdfPath(*clipDef.clipPrimPath))
     , interpolateMissingClipValues(false)
 {

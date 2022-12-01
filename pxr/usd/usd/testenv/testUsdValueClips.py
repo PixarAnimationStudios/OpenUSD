@@ -2530,5 +2530,98 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertTrue(layer)
         self.assertEqual(layer.GetFileFormatArguments(), {'a': '1', 'b': 'str'})
 
+    def test_SublayerChanges(self):
+        """Test that clip layers are loaded successfully when sublayers
+        are added or removed before the clip layers are pulled on."""
+
+        def _test(stage):
+            # Query our test attribute's property stack and verify that it
+            # contains the opinions we expect. This will open the clip layer.
+            a = stage.GetAttributeAtPath('/SingleClip.attr_1')
+            propertyStack = a.GetPropertyStack(0)
+
+            rootLayer = stage.GetRootLayer()
+            sublayerWithClip = Sdf.Layer.FindRelativeToLayer(
+                rootLayer, 'layers/sublayer.usda')
+            self.assertTrue(sublayerWithClip)
+
+            clipLayer = Sdf.Layer.FindRelativeToLayer(
+                sublayerWithClip, 'clip.usda')
+            self.assertTrue(clipLayer)
+
+            refLayer = Sdf.Layer.FindRelativeToLayer(
+                rootLayer, 'layers/ref.usda')
+            self.assertTrue(refLayer)
+
+            self.assertEqual(
+                propertyStack,
+                [sublayerWithClip.GetAttributeAtPath('/SingleClip.attr_1'),
+                 clipLayer.GetAttributeAtPath('/Model.attr_1'),
+                 refLayer.GetAttributeAtPath('/Model.attr_1')])
+
+        # Test combinations of inserting and removing sublayers prior to
+        # pulling on attributes and opening clip layers. Clip layers are
+        # opened the first time the _test function is called, so these
+        # tests are separated into insert-first and remove-first to cover
+        # both cases. Empty and non-empty sublayers are also tested 
+        # separately since there's an optimization that avoids significant
+        # resyncs in the former case.
+
+        def _TestInsertAndRemoveEmptySublayer():
+            dummySublayer = Sdf.Layer.CreateAnonymous('.usda')
+            rootLayer = Sdf.Layer.FindOrOpen('sublayerChanges/root.usda')
+
+            stage = Usd.Stage.Open(rootLayer)
+            rootLayer.subLayerPaths.insert(0, dummySublayer.identifier)
+            _test(stage)
+
+            del rootLayer.subLayerPaths[0]
+            _test(stage)
+
+        def _TestRemoveAndInsertEmptySublayer():
+            dummySublayer = Sdf.Layer.CreateAnonymous('.usda')
+
+            rootLayer = Sdf.Layer.FindOrOpen('sublayerChanges/root.usda')
+            rootLayer.subLayerPaths.insert(0, dummySublayer.identifier)
+
+            stage = Usd.Stage.Open(rootLayer)
+            del rootLayer.subLayerPaths[0]
+            _test(stage)
+
+            rootLayer.subLayerPaths.insert(0, dummySublayer.identifier)
+            _test(stage)
+
+        def _TestInsertAndRemoveNonEmptySublayer():
+            dummySublayer = Sdf.Layer.CreateAnonymous('.usda')
+            Sdf.CreatePrimInLayer(dummySublayer, '/Dummy')
+
+            rootLayer = Sdf.Layer.FindOrOpen('sublayerChanges/root.usda')
+
+            stage = Usd.Stage.Open(rootLayer)
+            rootLayer.subLayerPaths.insert(0, dummySublayer.identifier)
+            _test(stage)
+
+            del rootLayer.subLayerPaths[0]
+            _test(stage)
+
+        def _TestRemoveAndInsertNonEmptySublayer():
+            dummySublayer = Sdf.Layer.CreateAnonymous('.usda')
+            Sdf.CreatePrimInLayer(dummySublayer, '/Dummy')
+
+            rootLayer = Sdf.Layer.FindOrOpen('sublayerChanges/root.usda')
+            rootLayer.subLayerPaths.insert(0, dummySublayer.identifier)
+
+            stage = Usd.Stage.Open(rootLayer)
+            del rootLayer.subLayerPaths[0]
+            _test(stage)
+
+            rootLayer.subLayerPaths.insert(0, dummySublayer.identifier)
+            _test(stage)
+            
+        _TestInsertAndRemoveNonEmptySublayer()
+        _TestRemoveAndInsertNonEmptySublayer()
+        _TestInsertAndRemoveEmptySublayer()
+        _TestRemoveAndInsertEmptySublayer()
+
 if __name__ == "__main__":
     unittest.main()
