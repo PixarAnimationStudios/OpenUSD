@@ -158,10 +158,6 @@ private:
         HgiMetalGraphicsPipeline* graphicsPipeline;
         id<MTLBuffer> argumentBuffer;
         HgiVertexBufferBindingVector vertexBindings;
-        bool bindPTCS = false;
-        HgiBufferHandle tessFactorBuffer;
-        uint32_t tessFactorOffset = 0;
-        uint32_t tessFactorStride = 0;
     } _CachedEncState;
     
     HgiMetal* _hgi;
@@ -179,7 +175,6 @@ private:
     bool _scissorRectSet;
     bool _enableParallelEncoder;
     bool _primitiveTypeChanged;
-    bool _bindPTCS;
     uint32 _maxNumEncoders;
     HgiMetalStepFunctions _stepFunctions;
 };

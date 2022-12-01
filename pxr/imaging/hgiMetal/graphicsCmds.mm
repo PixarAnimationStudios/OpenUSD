@@ -90,7 +90,6 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
     , _scissorRectSet(false)
     , _enableParallelEncoder(false)
     , _primitiveTypeChanged(false)
-    , _bindPTCS(false)
     , _maxNumEncoders(1)
 {
     TF_VERIFY(desc.colorTextures.size() == desc.colorAttachmentDescs.size());

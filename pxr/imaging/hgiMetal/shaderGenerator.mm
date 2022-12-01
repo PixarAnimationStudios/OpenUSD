@@ -1231,7 +1231,7 @@ _BuildTessAttribute(
             ss << "quad, ";
             break;
         default:
-            ss << "quad, ";
+            TF_CODING_ERROR("Unknown patch type");
             break;
     }
     ss << tessDesc.numVertsPerPatchIn << ")]]";
@@ -1365,7 +1365,7 @@ HgiMetalShaderGenerator::HgiMetalShaderGenerator(
     }
     std::stringstream macroSection;
     macroSection << _GetHeader(device, descriptor.shaderStage);
-    bool isTessFunc = descriptor.shaderStage
+    const bool isTessFunc = descriptor.shaderStage
                       == HgiShaderStagePostTessellationVertex
                       || descriptor.shaderStage
                          == HgiShaderStagePostTessellationControl;
@@ -1468,7 +1468,8 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
     HgiMetalStageOutputShaderSection* const outputs =
         _generatorShaderSections->GetOutputs();
     std::stringstream returnSS;
-    if (outputs && (_stage != HgiShaderStagePostTessellationControl)) {
+    if (outputs && (_GetShaderStage() !=
+        HgiShaderStagePostTessellationControl)) {
         const HgiMetalStructTypeDeclarationShaderSection* const decl =
             outputs->GetStructTypeDeclaration();
         decl->WriteIdentifier(returnSS);
@@ -1533,7 +1534,8 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
         }
     }
     //return the instance of the shader entrypoint output type
-    if (outputs && (_stage != HgiShaderStagePostTessellationControl)) {
+    if (outputs &&
+        (_GetShaderStage() != HgiShaderStagePostTessellationControl)) {
         const std::string outputInstanceName =
                 _generatorShaderSections->GetOutputInstanceName();
         ss << "return " << outputInstanceName << ";\n";

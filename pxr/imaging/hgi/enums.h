@@ -787,28 +787,6 @@ enum HgiShaderTextureType
      HgiTessellationSpacingFractionalEven
  };
 
- /// \enum HgiState
- ///
- /// Trinarian value that lets you distinguish between false and uninitialized
- ///
- /// <ul>
- /// <li>Unset:
- ///   It has not been explicitly set
- /// <li>Diasbled:
- ///   It has been explicitly disabled
- /// <li>Enabled:
- ///   It has been explicitly enabled
- /// </ul>
- ///
-/*
-enum HgiState {
-    Unset,
-    Disabled,
-    Enabled
-};
- */
-typedef bool HgiState;
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

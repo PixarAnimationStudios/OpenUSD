@@ -137,7 +137,8 @@ HgiGLMemberShaderSection::HgiGLMemberShaderSection(
     const std::string &storageQualifier,
     const std::string &defaultValue,
     const std::string &arraySize,
-    const std::string &blockInstanceIdentifier)
+    const std::string &blockInstanceIdentifier,
+    const HgiShaderFunctionParamDesc::SamplingFlag samplingFlags)
     : HgiGLShaderSection(identifier,
                          attributes,
                          storageQualifier,
@@ -146,6 +147,7 @@ HgiGLMemberShaderSection::HgiGLMemberShaderSection(
                          blockInstanceIdentifier)
     , _typeName(typeName)
     , _interpolation(interpolation)
+    , _samplingFlags(samplingFlags)
 {
 }
 
@@ -185,11 +187,6 @@ void
 HgiGLMemberShaderSection::WriteType(std::ostream& ss) const
 {
     ss << _typeName;
-}
-
-void HgiGLMemberShaderSection::SetSamplingFlags(
-    HgiShaderFunctionParamDesc::SamplingFlag samplingFlags) {
-    _samplingFlags = samplingFlags;
 }
 
 HgiGLBlockShaderSection::HgiGLBlockShaderSection(

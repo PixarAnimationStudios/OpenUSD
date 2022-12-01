@@ -46,11 +46,6 @@ vec4 DisplacementTerminal(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
     return Peye;
 }
 
-vec4 DisplacementTerminal(vec4 Peye, vec3 Neye, vec2 samplePosition)
-{
-    return Peye;
-}
-
 --- --------------------------------------------------------------------------
 -- glsl Fragment.CommonTerminals
 

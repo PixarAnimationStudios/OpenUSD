@@ -370,18 +370,17 @@ HgiGLShaderGenerator::_WriteInOuts(
             // For interstage parameters use the interstageSlot for location.
             attrs.push_back({"location", std::to_string(param.interstageSlot)});
         }
-        
-        std::unique_ptr<HgiGLMemberShaderSection> p =
-            std::make_unique<HgiGLMemberShaderSection>(paramName,
-                                          param.type,
-                                          param.interpolation,
-                                          attrs,
-                                          qualifier,
-                                          std::string(),
-                                          param.arraySize);
-        HgiGLMemberShaderSection * const result = p.get();
-        result->SetSamplingFlags(param.samplingFlag);
-        GetShaderSections()->push_back(std::move(p));
+
+        CreateShaderSection<HgiGLMemberShaderSection>(
+          paramName,
+          param.type,
+          param.interpolation,
+          attrs,
+          qualifier,
+          std::string(),
+          param.arraySize,
+          std::string(),
+          param.samplingFlag);
     }
 }
 

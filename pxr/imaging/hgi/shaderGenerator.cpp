@@ -31,8 +31,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HgiShaderGenerator::HgiShaderGenerator(const HgiShaderFunctionDesc &descriptor)
-    : _descriptor(descriptor),
-      _stage(descriptor.shaderStage)
+    : _descriptor(descriptor)
 {
 }
 

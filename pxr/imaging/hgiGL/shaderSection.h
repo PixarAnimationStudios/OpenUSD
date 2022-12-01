@@ -126,7 +126,8 @@ public:
         const std::string &storageQualifier = std::string(),
         const std::string &defaultValue = std::string(),
         const std::string &arraySize = std::string(),
-        const std::string &blockInstanceIdentifier = std::string());
+        const std::string &blockInstanceIdentifier = std::string(),
+        const HgiShaderFunctionParamDesc::SamplingFlag samplingFlags = static_cast<HgiShaderFunctionParamDesc::SamplingFlag>(0));
 
     HGIGL_API
     ~HgiGLMemberShaderSection() override;
@@ -136,9 +137,6 @@ public:
 
     HGIGL_API
     void WriteType(std::ostream& ss) const override;
-    
-    HGIGL_API
-    void SetSamplingFlags(HgiShaderFunctionParamDesc::SamplingFlag samplingFlags);
 
 private:
     HgiGLMemberShaderSection() = delete;
