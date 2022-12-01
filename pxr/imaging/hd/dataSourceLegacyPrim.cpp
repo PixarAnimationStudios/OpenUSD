@@ -69,6 +69,8 @@
 #include "pxr/imaging/hd/volumeFieldSchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
 
+#include "pxr/base/tf/stringUtils.h"
+
 #include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -79,6 +81,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdLegacyPrimTypeTokens, HD_LEGACY_PRIMTYPE_TOKENS);
 //      define this convention.
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (binding)
     (coordSys)
     (prmanParams)
     ((prmanParamsNames, ""))
@@ -2652,11 +2655,23 @@ HdDataSourceLegacyPrim::_GetCoordSysBindingDataSource()
     for (SdfPath const &path : *coordSysBindings) {
         // Note: the scene delegate API just binds prims to unnamed
         // coord sys objects.  These coord sys objects have paths of the
-        // form /path/to/object.coordSys:foo, where "foo" is the name the
-        // shader gets to access.  We pull these names out to store in the
+        // form /path/to/object.coordSys:foo:binding, where "foo" is the name 
+        // the shader gets to access.  We pull these names out to store in the
         // schema.
-        names.push_back(TfToken(SdfPath::StripPrefixNamespace(
-                        path.GetName(), _tokens->coordSys).first));
+        // XXX: Note that for backward compatibility of non-applied
+        // UsdShadeCoordSysAPI api schema, a form like 
+        // /path/to/object.coordSys:foo is supporterd!
+        const std::string &attrName = path.GetName();
+        const std::string &nameSpacedCoordSysName =
+            TfStringEndsWith(attrName, _tokens->binding.GetString())
+            ? TfStringGetBeforeSuffix(
+                    attrName, *SdfPathTokens->namespaceDelimiter.GetText())
+            : attrName;
+        names.push_back(
+                TfToken(
+                    SdfPath::StripPrefixNamespace(
+                        nameSpacedCoordSysName, _tokens->coordSys).first));
+
         paths.push_back(HdRetainedTypedSampledDataSource<SdfPath>::New(
             path));
     }
