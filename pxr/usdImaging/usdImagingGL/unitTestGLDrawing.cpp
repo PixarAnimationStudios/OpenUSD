@@ -31,6 +31,11 @@
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/garch/glDebugWindow.h"
 
+#include "pxr/imaging/hdSt/textureUtils.h"
+#include "pxr/imaging/hio/image.h"
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/texture.h"
+
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/trace/collector.h"
@@ -85,19 +90,37 @@ public:
     virtual void OnMouseMove(int x, int y, int modKeys);
 
 private:
+    void _ClearPresentationOutput();
+
     UsdImagingGL_UnitTestGLDrawing *_unitTest;
     GlfDrawTargetRefPtr _drawTarget;
+    bool _clearedOnce;
 };
 
 UsdImagingGL_UnitTestWindow::UsdImagingGL_UnitTestWindow(
     UsdImagingGL_UnitTestGLDrawing * unitTest, int w, int h)
     : GarchGLDebugWindow("UsdImagingGL Test", w, h)
     , _unitTest(unitTest)
+    , _clearedOnce(false)
 {
 }
 
 UsdImagingGL_UnitTestWindow::~UsdImagingGL_UnitTestWindow()
 {
+}
+
+void
+UsdImagingGL_UnitTestWindow::_ClearPresentationOutput()
+{
+    if (!_unitTest->PresentComposite() || !_clearedOnce) {
+        GLfloat clearColor[4] = { 0, 0, 0, 0 };
+        GLfloat clearDepth[1] = { 1 };
+
+        glClearBufferfv(GL_COLOR, 0, clearColor);
+        glClearBufferfv(GL_DEPTH, 0, clearDepth);
+
+        _clearedOnce = true;
+    }
 }
 
 /* virtual */
@@ -108,27 +131,32 @@ UsdImagingGL_UnitTestWindow::OnInitializeGL()
     GlfRegisterDefaultDebugOutputMessageCallback();
     GlfContextCaps::InitInstance();
 
-
-    //
-    // Create an offscreen draw target which is the same size as this
-    // widget and initialize the unit test with the draw target bound.
-    //
-    _drawTarget = GlfDrawTarget::New(GfVec2i(GetWidth(), GetHeight()));
-    _drawTarget->Bind();
-    _drawTarget->AddAttachment("color", GL_RGBA, GL_FLOAT, GL_RGBA);
-    _drawTarget->AddAttachment("depth", GL_DEPTH_COMPONENT, GL_FLOAT,
-                                        GL_DEPTH_COMPONENT);
+    if (_unitTest->IsEnabledTestPresentOutput()) {
+        //
+        // Create an offscreen draw target which is the same size as this
+        // widget and initialize the unit test with the draw target bound.
+        //
+        _drawTarget = GlfDrawTarget::New(GfVec2i(GetWidth(), GetHeight()));
+        _drawTarget->Bind();
+        _drawTarget->AddAttachment("color", GL_RGBA, GL_FLOAT, GL_RGBA);
+        _drawTarget->AddAttachment("depth", GL_DEPTH_COMPONENT, GL_FLOAT,
+                                            GL_DEPTH_COMPONENT);
+    }
 
     _unitTest->InitTest();
 
-    _drawTarget->Unbind();
+    if (_unitTest->IsEnabledTestPresentOutput()) {
+        _drawTarget->Unbind();
+    }
 }
 
 /* virtual */
 void
 UsdImagingGL_UnitTestWindow::OnUninitializeGL()
 {
-    _drawTarget = GlfDrawTargetRefPtr();
+    if (_unitTest->IsEnabledTestPresentOutput()) {
+        _drawTarget = GlfDrawTargetRefPtr();
+    }
 
     _unitTest->ShutdownTest();
 }
@@ -143,38 +171,51 @@ UsdImagingGL_UnitTestWindow::OnPaintGL()
     //
     int width = GetWidth();
     int height = GetHeight();
-    _drawTarget->Bind();
-    _drawTarget->SetSize(GfVec2i(width, height));
+
+    if (_unitTest->IsEnabledTestPresentOutput()) {
+        _drawTarget->Bind();
+        _drawTarget->SetSize(GfVec2i(width, height));
+    }
+
+    _ClearPresentationOutput();
 
     _unitTest->DrawTest(false);
 
-    _drawTarget->Unbind();
+    if (_unitTest->IsEnabledTestPresentOutput()) {
+        _drawTarget->Unbind();
 
-    //
-    // Blit the resulting color buffer to the window (this is a noop
-    // if we're drawing offscreen).
-    //
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, _drawTarget->GetFramebufferId());
+        //
+        // Blit the resulting color buffer to the window (this is a noop
+        // if we're drawing offscreen).
+        //
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, _drawTarget->GetFramebufferId());
 
-    glBlitFramebuffer(0, 0, width, height,
-                      0, 0, width, height,
-                      GL_COLOR_BUFFER_BIT,
-                      GL_NEAREST);
+        glBlitFramebuffer(0, 0, width, height,
+                          0, 0, width, height,
+                          GL_COLOR_BUFFER_BIT,
+                          GL_NEAREST);
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    }
 }
 
 void
 UsdImagingGL_UnitTestWindow::DrawOffscreen()
 {
-    _drawTarget->Bind();
-    _drawTarget->SetSize(GfVec2i(GetWidth(), GetHeight()));
+    if (_unitTest->IsEnabledTestPresentOutput()) {
+        _drawTarget->Bind();
+        _drawTarget->SetSize(GfVec2i(GetWidth(), GetHeight()));
+    }
+
+    _ClearPresentationOutput();
 
     _unitTest->DrawTest(true);
 
-    _drawTarget->Unbind();
+    if (_unitTest->IsEnabledTestPresentOutput()) {
+        _drawTarget->Unbind();
+    }
 }
 
 bool
@@ -247,7 +288,7 @@ UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
     , _showGuides(UsdImagingGLRenderParams().showGuides)
     , _showRender(UsdImagingGLRenderParams().showRender)
     , _showProxy(UsdImagingGLRenderParams().showProxy)
-    , _clearOnce(false)
+    , _presentComposite(false)
     , _presentDisabled(false)
 {
 }
@@ -269,10 +310,71 @@ UsdImagingGL_UnitTestGLDrawing::GetHeight() const
 }
 
 bool
-UsdImagingGL_UnitTestGLDrawing::WriteToFile(std::string const & attachment,
-        std::string const & filename) const
+UsdImagingGL_UnitTestGLDrawing::WriteToFile(
+    UsdImagingGLEngine *engine,
+    TfToken const &aovName,
+    std::string const & filename)
 {
-    return _widget->WriteToFile(attachment, filename);
+    if (IsEnabledTestPresentOutput()) {
+        // Write an image from the specified client drawTarget attachment.
+        return _widget->WriteToFile(aovName, filename);
+    } else {
+        // Write an image from the specified engine AOV.
+        return UsdImagingGL_UnitTestGLDrawing::WriteAovToFile(
+                engine, aovName, filename);
+    }
+}
+
+bool
+UsdImagingGL_UnitTestGLDrawing::WriteAovToFile(
+    UsdImagingGLEngine *engine,
+    TfToken const &aovName,
+    std::string const & filename)
+{
+    Hgi *hgi = engine->GetHgi();
+    HgiTextureHandle const &texture = engine->GetAovTexture(aovName);
+
+    size_t bufferSize = 0;
+
+    using TextureBuffer = HdStTextureUtils::AlignedBuffer<uint16_t>;
+    TextureBuffer buffer =
+        HdStTextureUtils::HgiTextureReadback<uint16_t>(
+            hgi, texture, &bufferSize);
+
+    HgiTextureDesc const textureDesc = texture.Get()->GetDescriptor();
+
+    HioImage::StorageSpec storage;
+    storage.width = textureDesc.dimensions[0];
+    storage.height = textureDesc.dimensions[1];
+    storage.flipped = true;
+    storage.data = buffer.get();
+
+    if (textureDesc.format == HgiFormatUNorm8Vec4) {
+        storage.format = HioFormatUNorm8Vec4;
+    } else if (textureDesc.format == HgiFormatFloat16Vec3) {
+        storage.format = HioFormatFloat16Vec3;
+    } else if (textureDesc.format == HgiFormatFloat16Vec4) {
+        storage.format = HioFormatFloat16Vec4;
+    } else if (textureDesc.format == HgiFormatFloat32Vec3) {
+        storage.format = HioFormatFloat32Vec3;
+    } else if (textureDesc.format == HgiFormatFloat32Vec4) {
+        storage.format = HioFormatFloat32Vec4;
+    } else {
+        TF_CODING_ERROR("Unsupported texture format: %s", filename.c_str());
+        return false;
+    }
+
+    {
+        HioImageSharedPtr const image = HioImage::OpenForWriting(filename);
+        bool const writeSuccess = image && image->Write(storage);
+
+        if (!writeSuccess) {
+            TF_RUNTIME_ERROR("Failed to write image to %s", filename.c_str());
+            return false;
+        }
+    }
+
+    return true;
 }
 
 struct UsdImagingGL_UnitTestGLDrawing::_Args {
@@ -341,7 +443,8 @@ static void Usage(int argc, char *argv[])
 "                           [-clipPlane clipPlane1 ... clipPlane4]\n"
 "                           [-complexities complexities1 complexities2 ...]\n"
 "                           [-times times1 times2 ...] [-cullStyle cullStyle]\n"
-"                           [-clear r g b a] [-clearOnce] [-translate x y z]\n"
+"                           [-clear r g b a] [-translate x y z]\n"
+"                           [-presentComposite] [-presentDisabled]\n"
 "                           [-renderSetting name type value]\n"
 "                           [-rendererAov name]\n"
 "                           [-perfStatsFile path]\n"
@@ -378,9 +481,9 @@ static void Usage(int argc, char *argv[])
 "                      an image [()]\n"
 "  -cullStyle          Set face cull style\n"
 "  -clear r g b a      clear color\n"
-"  -clearOnce          Clear the framebuffer only once at the start \n"
-"                      instead of before each render.\n"
 "  -translate x y z    default camera translation\n"
+"  -presentComposite   Use a client framebuffer that is cleared once only\n"
+"  -presentDisabled    Use a client framebuffer with present disabled\n"
 "  -rendererAov name   Name of AOV to display or write out\n"
 "  -perfStatsFile path Path to file performance stats are written to\n"
 "  -traceFile path     Path to trace file to write\n"
@@ -648,8 +751,8 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         else if (strcmp(argv[i], "-proxyPurpose") == 0) {
             ParseShowHide(i, argc, argv, &_showProxy);
         }
-        else if (strcmp(argv[i], "-clearOnce") == 0) {
-            _clearOnce = true;
+        else if (strcmp(argv[i], "-presentComposite") == 0) {
+            _presentComposite = true;
         }
         else if (strcmp(argv[i], "-presentDisabled") == 0) {
             _presentDisabled = true;

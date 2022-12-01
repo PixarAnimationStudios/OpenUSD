@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
 
@@ -85,8 +84,6 @@ private:
     bool _mouseButton[3];
 };
 
-GLuint vao;
-
 void
 My_TestGLDrawing::InitTest()
 {
@@ -97,10 +94,6 @@ My_TestGLDrawing::InitTest()
     _engine.reset(
         new UsdImagingGLEngine(_stage->GetPseudoRoot().GetPath(), 
                 excludedPaths));
-
-    std::cout << glGetString(GL_VENDOR) << "\n";
-    std::cout << glGetString(GL_RENDERER) << "\n";
-    std::cout << glGetString(GL_VERSION) << "\n";
 
     if(IsEnabledTestLighting()) {
         // set same parameter as 
@@ -192,18 +185,11 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     }
 
     GfVec4d viewport(0, 0, width, height);
-    GLfloat clearColor[4] = { 1.0f, .5f, 0.1f, 1.0f };
-    GLfloat clearDepth[1] = { 1.0f };
 
     _engine->SetCameraState(modelViewMatrix, projMatrix);
     _engine->SetRenderViewport(viewport);
 
     _engine->SetRendererAov(GetRendererAov());
-
-    glViewport(0, 0, width, height);
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-    glEnable(GL_DEPTH_TEST);
 
     // Render #1
     UsdImagingGLRenderParams params;
@@ -216,46 +202,34 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     _engine->SetLightingState(_lightingContext);
     _engine->Render(_stage->GetPseudoRoot(), params);
 
-    WriteToFile("color", "out1.png");
+    WriteToFile(_engine.get(), HdAovTokens->color, "out1.png");
 
     // Render #2
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
     params.drawMode = UsdImagingGLDrawMode::DRAW_SHADED_FLAT;
     _engine->Render(_stage->GetPseudoRoot(), params);
 
-    WriteToFile("color", "out2.png");
+    WriteToFile(_engine.get(), HdAovTokens->color, "out2.png");
 
     // Render #3
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
     params.drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
     _engine->Render(_stage->GetPseudoRoot(), params);
 
-    WriteToFile("color", "out3.png");
+    WriteToFile(_engine.get(), HdAovTokens->color, "out3.png");
 
     // Render #4
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
     params.complexity = 1.1;
     _engine->Render(_stage->GetPseudoRoot(), params);
 
-    WriteToFile("color", "out4.png");
+    WriteToFile(_engine.get(), HdAovTokens->color, "out4.png");
 
     // Render #5
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
     params.drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
     params.complexity = _GetComplexity();
     params.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK;
 
     _engine->Render(_stage->GetPseudoRoot(), params);
 
-    WriteToFile("color", "out5.png");
+    WriteToFile(_engine.get(), HdAovTokens->color, "out5.png");
 }
 
 void
