@@ -53,12 +53,10 @@ HdSystemSchema::GetFromPath(
 
     const HdDataSourceLocator locator(HdSystemSchemaTokens->system, key);
 
-    for (const SdfPath& currPath : fromPath.GetAncestorsRange()) {
+    for (SdfPath currPath = fromPath;
+            !currPath.IsEmpty();
+            currPath = currPath.GetParentPath()) {
         const HdSceneIndexPrim currPrim = inputScene->GetPrim(currPath);
-        if (!currPrim.dataSource) {
-            continue;
-        }
-
         if (HdDataSourceBaseHandle dataSource
             = HdContainerDataSource::Get(currPrim.dataSource, locator)) {
             if (foundAtPath) {
@@ -85,7 +83,9 @@ HdSystemSchema::Compose(
     TfSmallVector<HdContainerDataSourceHandle, 4> systemContainers;
 
     SdfPath lastFound;
-    for (const SdfPath& currPath : fromPath.GetAncestorsRange()) {
+    for (SdfPath currPath = fromPath;
+            !currPath.IsEmpty();
+            currPath = currPath.GetParentPath()) {
         const HdSceneIndexPrim currPrim = inputScene->GetPrim(currPath);
         if (HdContainerDataSourceHandle systemContainer
             = HdSystemSchema::GetFromParent(currPrim.dataSource)
