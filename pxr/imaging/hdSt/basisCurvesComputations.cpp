@@ -111,6 +111,7 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLinesIndexArray()
         }
     }
 
+    VtVec3iArray finalTessFactors(finalIndices.size());
     VtIntArray finalPrimIndices(primIndices.size());
     std::copy(  primIndices.begin(), 
                 primIndices.end(), 
