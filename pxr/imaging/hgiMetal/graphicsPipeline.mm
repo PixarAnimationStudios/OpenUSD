@@ -137,14 +137,64 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
 
     HgiMetalShaderProgram const *metalProgram =
         static_cast<HgiMetalShaderProgram*>(_descriptor.shaderProgram.Get());
-    auto tessVertexFunc = metalProgram->GetPostTessVertexFunction();
-    const bool usePTVSPath = _descriptor.primitiveType == HgiPrimitiveTypePatchList
-                             || tessVertexFunc != nullptr
-                             || _descriptor.tessellationState.isPostTessControl;
+    const bool usePTVSPath = _descriptor.tessellationState.tessFactorMode != HgiTessellationState::TessFactorMode::None;
+    //TODO Code review - this might be dangerous, maybe we want more checks in case not set?
     if (usePTVSPath) {
-        stateDesc.vertexFunction = _descriptor.tessellationState.isPostTessControl ?
-            metalProgram->GetPostTessControlFunction() :
-            metalProgram->GetPostTessVertexFunction();
+        switch (_descriptor.tessellationState.tessFactorMode) {
+            case HgiTessellationState::Constant:
+                stateDesc.vertexFunction = metalProgram->GetPostTessVertexFunction();
+                stateDesc.tessellationFactorStepFunction = MTLTessellationFactorStepFunctionConstant;
+                break;
+            case HgiTessellationState::TessControl:
+                stateDesc.vertexFunction = metalProgram->GetPostTessControlFunction();
+                stateDesc.tessellationFactorStepFunction = MTLTessellationFactorStepFunctionConstant;
+                stateDesc.tessellationPartitionMode = MTLTessellationPartitionModePow2;
+                break;
+            case HgiTessellationState::TessVertex:
+            {
+                stateDesc.vertexFunction = metalProgram->GetPostTessVertexFunction();
+                stateDesc.tessellationFactorStepFunction = MTLTessellationFactorStepFunctionPerPatch;
+                
+                const HgiShaderFunctionHandleVector & shaderFuncs =
+                metalProgram->GetShaderFunctions();
+                const HgiShaderFunctionHandle *postTessVertexFunc = nullptr;
+                for (const HgiShaderFunctionHandle &handle : shaderFuncs) {
+                    if (handle->GetDescriptor().shaderStage == HgiShaderStagePostTessellationVertex) {
+                        postTessVertexFunc = &handle;
+                    }
+                }
+                if (postTessVertexFunc == nullptr) {
+                    TF_CODING_ERROR("Did not find a post tess vertex function");
+                }
+                
+                switch (postTessVertexFunc->Get()->GetDescriptor()
+                        .tessellationDescriptor.spacing) {
+                                //default to integer
+                            case HgiTessellationSpacingNone:
+                            case HgiTessellationSpacingEven:
+                                stateDesc.tessellationPartitionMode =
+                                MTLTessellationPartitionModeInteger;
+                                break;
+                            case HgiTessellationSpacingFractionalOdd:
+                                stateDesc.tessellationPartitionMode =
+                                MTLTessellationPartitionModeFractionalOdd;
+                                break;
+                            case HgiTessellationSpacingFractionalEven:
+                                stateDesc.tessellationPartitionMode =
+                                MTLTessellationPartitionModeFractionalEven;
+                                break;
+                            default:
+                                stateDesc.tessellationPartitionMode =
+                                MTLTessellationPartitionModeInteger;
+                                break;
+                        }
+                break;
+            }
+            default:
+                TF_CODING_ERROR("Unexpected tess factor mode");
+        }
+        
+        //Basis curves should be treated as tris because we don't have isoline emulation
         if (stateDesc.inputPrimitiveTopology
                 == MTLPrimitiveTopologyClassLine) {
             stateDesc.inputPrimitiveTopology = MTLPrimitiveTopologyClassTriangle;
@@ -158,44 +208,7 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
 
         stateDesc.tessellationControlPointIndexType =
             MTLTessellationControlPointIndexTypeUInt32;
-        bool useConstantStepFunction =
-            (static_cast<HgiMetalShaderProgram*>(
-            _descriptor.shaderProgram.Get())
-            ->GetPostTessControlFunction() == nullptr) ||
-        _descriptor.tessellationState.isPostTessControl;
-        stateDesc.tessellationFactorStepFunction =
-            useConstantStepFunction ?
-            MTLTessellationFactorStepFunctionConstant :
-            MTLTessellationFactorStepFunctionPerPatch;
         stateDesc.tessellationFactorScaleEnabled = NO;
-        HgiShaderFunctionHandle tessFunc =
-            metalProgram->GetShaderFunction(
-                HgiShaderStagePostTessellationVertex);
-        if (tessFunc) {
-            switch (tessFunc->GetDescriptor().tessellationDescriptor.spacing) {
-                 //default to integer
-               case HgiTessellationSpacingNone:
-               case HgiTessellationSpacingEven:
-                   stateDesc.tessellationPartitionMode =
-                       MTLTessellationPartitionModeInteger;
-                   break;
-               case HgiTessellationSpacingFractionalOdd:
-                   stateDesc.tessellationPartitionMode =
-                       MTLTessellationPartitionModeFractionalOdd;
-                 break;
-               case HgiTessellationSpacingFractionalEven:
-                   stateDesc.tessellationPartitionMode =
-                       MTLTessellationPartitionModeFractionalEven;
-                 break;
-               default:
-                   stateDesc.tessellationPartitionMode =
-                       MTLTessellationPartitionModeInteger;
-                 break;
-            }
-        }
-        if (_descriptor.tessellationState.isPostTessControl) {
-            stateDesc.tessellationPartitionMode = MTLTessellationPartitionModePow2;
-        }
         if (_descriptor.tessellationState.patchType == HgiTessellationState::Isoline) {
              _descriptor.rasterizationState.polygonMode = HgiPolygonModeLine;
          }

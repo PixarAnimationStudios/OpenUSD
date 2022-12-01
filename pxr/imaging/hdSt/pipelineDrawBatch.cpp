@@ -1280,7 +1280,6 @@ _GetDrawPipeline(
     // pipeline state are the same.
     HgiShaderProgramHandle const & programHandle =
                                         state.glslProgram->GetProgram();
-
     uint64_t const hash = TfHash::Combine(
         programHandle.Get(),
         renderPassState->GetGraphicsPipelineHash());
@@ -1339,14 +1338,14 @@ _GetTessControlPipeline(
         pipeDesc.depthState.depthWriteEnabled = false;
         pipeDesc.depthState.depthTestEnabled = false;
         pipeDesc.depthState.stencilTestEnabled = false;
-        pipeDesc.tessellationState.useConstantTessFactors = true;
         pipeDesc.primitiveType = HgiPrimitiveTypePatchList;
         pipeDesc.multiSampleState.multiSampleEnable = false;
         renderPassState->InitPrimitiveState(&pipeDesc, state.geometricShader);
 
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
         pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
-        pipeDesc.tessellationState.isPostTessControl = true;
+        pipeDesc.tessellationState.tessFactorMode =
+            HgiTessellationState::TessControl;
 
         Hgi* hgi = resourceRegistry->GetHgi();
         HgiGraphicsPipelineHandle pso = hgi->CreateGraphicsPipeline(pipeDesc);

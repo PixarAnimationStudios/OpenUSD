@@ -55,10 +55,6 @@ public:
     HgiShaderFunctionHandleVector const& GetShaderFunctions() const override;
 
     HGIGL_API
-    HgiShaderFunctionHandle const
-        GetShaderFunction(HgiShaderStage shaderStage) const override;
-
-    HGIGL_API
     size_t GetByteSizeOfResource() const override;
 
     HGIGL_API

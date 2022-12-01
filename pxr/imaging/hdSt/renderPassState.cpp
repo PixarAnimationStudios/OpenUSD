@@ -1028,7 +1028,7 @@ HdStRenderPassState::InitPrimitiveState(
     HdSt_GeometricShaderSharedPtr const & geometricShader) const
 {
     pipeDesc->primitiveType = geometricShader->GetHgiPrimitiveType();
-
+    pipeDesc->tessellationState.tessFactorMode = HgiTessellationState::None;
     if (pipeDesc->primitiveType == HgiPrimitiveTypePatchList) {
         pipeDesc->tessellationState.primitiveIndexSize =
                             geometricShader->GetPrimitiveIndexSize();
@@ -1042,6 +1042,13 @@ HdStRenderPassState::InitPrimitiveState(
                 pipeDesc->tessellationState.patchType = HgiTessellationState::Isoline;
             }
         }
+        const bool hasVariableTessFactors = geometricShader->IsPrimTypeBasisCurves() ||
+        geometricShader->GetPrimitiveType() == HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BSPLINE ||
+        geometricShader->GetPrimitiveType() == HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE;
+        pipeDesc->tessellationState.tessFactorMode =
+            hasVariableTessFactors ?
+                HgiTessellationState::TessVertex :
+                HgiTessellationState::Constant;
     }
     if (geometricShader->GetUseMetalTessellation()) {
         if (geometricShader->GetHgiPrimitiveType() ==

@@ -370,14 +370,20 @@ struct HgiTessellationState
         Isoline
     };
 
+    enum TessFactorMode {
+        None,
+        Constant,
+        TessControl,
+        TessVertex
+    };
+
     HGI_API
     HgiTessellationState();
 
     PatchType patchType;
     int primitiveIndexSize;
     int numVertsOut;
-    bool useConstantTessFactors;
-    bool isPostTessControl = false;
+    TessFactorMode tessFactorMode = TessFactorMode::None;
     HgiTessellationLevel tessellationLevel;
 };
 

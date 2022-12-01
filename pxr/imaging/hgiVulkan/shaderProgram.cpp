@@ -71,18 +71,6 @@ HgiVulkanShaderProgram::GetShaderFunctions() const
     return _descriptor.shaderFunctions;
 }
 
-HgiShaderFunctionHandle const
-HgiVulkanShaderProgram::GetShaderFunction(HgiShaderStage shaderStage) const
-{
-    for (const HgiShaderFunctionHandle &handle : _descriptor.shaderFunctions) {
-        if (handle->GetDescriptor().shaderStage == shaderStage) {
-            return handle;
-        }
-    }
-    const HgiShaderFunctionHandle handle = HgiShaderFunctionHandle();
-    return handle;
-}
-
 HgiVulkanDevice*
 HgiVulkanShaderProgram::GetDevice() const
 {
