@@ -405,7 +405,6 @@ HdSt_GetTessLevelsFromPatchBoundaries4(
 }
 
 vec3 GetPosAtUv(vec2 uv, OsdPatchParam param, thread vec3 *cv) {
-    //TODO THOR we really want an alternative to all the data being passed in here
     float wP[HD_NUM_PATCH_VERTS];
     float wDs[HD_NUM_PATCH_VERTS];
     float wDt[HD_NUM_PATCH_VERTS];
@@ -420,17 +419,6 @@ vec3 GetPosAtUv(vec2 uv, OsdPatchParam param, thread vec3 *cv) {
     }
     return pos;
 }
-
-struct PositionWrapper
-{
-    vec3 pos;
-    vec3 GetPosition() thread {
-        return pos;
-    }
-    vec3 SetPosition(vec3 newPos) thread {
-        pos = newPos;
-    }
-};
 
 vec4 GetPatchCoord(int index)
 {
@@ -453,14 +441,12 @@ void main(void)
 
     ivec3 patchParam = GetPatchParam();
 
-    //Consider if we are doing the work multiple times
     const vec2 corner0Uv = vec2(0.0, 0.0);
     const vec2 corner1Uv = vec2(1.0, 0.0);
     const vec2 corner2Uv = vec2(1.0, 1.0);
     const vec2 corner3Uv = vec2(0.0, 1.0);
     OsdPatchParam osdParam = OsdPatchParamInit(patchParam.x, patchParam.y, 0);
     vec3 corners[4];
-    //TODO Thor reconsider this - maybe the arrays don't need to be recreated inside the function
     corners[0] = GetPosAtUv(corner0Uv, osdParam, &(points[0]));
     corners[1] = GetPosAtUv(corner1Uv, osdParam, &(points[0]));
     corners[2] = GetPosAtUv(corner2Uv, osdParam, &(points[0]));
@@ -562,7 +548,7 @@ void main(void)
 ]
 
 --- --------------------------------------------------------------------------
--- glsl Mesh.PostTessVertex.BezierQuad
+-- glsl Mesh.PostTessVertex.BSplineQuad
 // OsdPerPatchVertexBezier - used to trigger codegen
 
 float GetTessLevelQuad() {
@@ -615,7 +601,6 @@ void main(void)
     float wDtt[HD_NUM_PATCH_VERTS];
     OsdPatchParam osdParam = OsdPatchParamInit(patchParam.x, patchParam.y, 0);
     OsdEvaluatePatchBasisNormalized(OSD_PATCH_DESCRIPTOR_REGULAR, osdParam, UV.x, UV.y, &(wP[0]), &(wDs[0]), &(wDt[0]), &(wDss[0]), &(wDst[0]), &(wDtt[0]));
-   
 
     vec3 pDS = vec3(0.0);
     vec3 pDt = vec3(0.0);
@@ -654,18 +639,12 @@ void main(void)
             (1.0-UV.x) * (1.0-UV.y), UV.x * (1.0-UV.y),
             (1.0-UV.x) * UV.y, UV.x * UV.y );
     
-    
     tesTessCoord = UV;
 
-    
-
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
-    //ptvsBarycentricCoord = gl_TessCoord;
     ptvsBarycentricCoord = UV;
     ProcessPrimvarsOut(basis, 5, 6, 9, 10, UV);
     ApplyClipPlanes(outData.Peye);
-
-    //ProcessPrimvarsOut(basis, 0, 1, 2, 3);
 }
 
 --- --------------------------------------------------------------------------
@@ -864,7 +843,7 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
--- layout Mesh.PostTessVertex.BezierTriangle
+-- layout Mesh.PostTessVertex.BoxSplineTriangle
 
 [
     ["in", "equal_spacing"],
@@ -879,7 +858,7 @@ void main(void)
 ]
 
 --- --------------------------------------------------------------------------
--- glsl Mesh.PostTessVertex.BezierTriangle
+-- glsl Mesh.PostTessVertex.BoxSplineTriangle
 // OsdPerPatchVertexBezier - used to trigger codegen
 
 float GetTessLevelTri() {

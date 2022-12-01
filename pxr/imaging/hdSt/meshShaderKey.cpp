@@ -124,9 +124,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainQuadPTVS,                "Mesh.PostTessVertex.Quad"))
     ((mainTriQuadPTVS,             "Mesh.PostTessVertex.TriQuad"))
     ((mainBSplineQuadPTCS,         "Mesh.PostTessControl.BSplineQuad"))
-    ((mainBezierQuadPTVS,          "Mesh.PostTessVertex.BezierQuad"))
+    ((mainBSplineQuadPTVS,         "Mesh.PostTessVertex.BSplineQuad"))
     ((mainBoxSplineTrianglePTCS,   "Mesh.PostTessControl.BoxSplineTriangle"))
-    ((mainBezierTrianglePTVS,      "Mesh.PostTessVertex.BezierTriangle"))
+    ((mainBoxSplineTrianglePTVS,   "Mesh.PostTessVertex.BoxSplineTriangle"))
     ((mainVaryingInterpPTVS,       "Mesh.PostTessVertex.VaryingInterpolation"))
     ((mainTriangleTessGS,          "Mesh.Geometry.TriangleTess"))
     ((mainTriangleGS,              "Mesh.Geometry.Triangle"))
@@ -363,11 +363,11 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         } else if (isPrimTypePatchesBSpline) {
             PTCS[ptcsIndex++] = _tokens->instancing;
             PTCS[ptcsIndex++] = _tokens->mainBSplineQuadPTCS;
-            PTVS[ptvsIndex++] = _tokens->mainBezierQuadPTVS;
+            PTVS[ptvsIndex++] = _tokens->mainBSplineQuadPTVS;
         } else if (isPrimTypePatchesBoxSplineTriangle) {
             PTCS[ptcsIndex++] = _tokens->instancing;
             PTCS[ptcsIndex++] = _tokens->mainBoxSplineTrianglePTCS;
-            PTVS[ptvsIndex++] = _tokens->mainBezierTrianglePTVS;
+            PTVS[ptvsIndex++] = _tokens->mainBoxSplineTrianglePTVS;
         }
         
         if (isPrimTypeTris) {
