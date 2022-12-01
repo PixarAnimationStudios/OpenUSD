@@ -35,30 +35,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//Utility methods
-int32_t GetOneOnePacked() {
-    int32_t one = 0;
-    uint16_t const oneHalf =
-        reinterpret_cast<uint16_t>(GfHalf(1.0f).bits());
-    one |= oneHalf;
-    int32_t oneScaled = 0;
-    oneScaled |= (one << 16);
-    int32_t oneone = 0;
-    oneone |= (one | oneScaled);
-    return oneone;
-}
-
-int32_t GetZeroZeroPacked() {
-    int32_t zero = 0;
-    uint16_t const zeroHalf =
-        reinterpret_cast<uint16_t>(GfHalf(0.0f).bits());
-    zero |= zeroHalf;
-    int32_t zerozero = 0;
-    zerozero |= (zero << 16) | zero;
-    return zerozero;
-}
-
-
 HdSt_BasisCurvesIndexBuilderComputation::HdSt_BasisCurvesIndexBuilderComputation(
     HdBasisCurvesTopology *topology, bool forceLines)
     : _topology(topology),
@@ -134,16 +110,6 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLinesIndexArray()
             finalIndices[lineNum].Set(v0, v1);
         }
     }
-
-    VtVec3iArray finalTessFactors(finalIndices.size());
-    int32_t oneone = GetOneOnePacked();
-    int32_t zerozero = GetZeroZeroPacked();
-    for (size_t i = 0; i < indices.size(); i++) {
-        finalTessFactors[i][0] = oneone;
-        finalTessFactors[i][1] = oneone;
-        finalTessFactors[i][2] = zerozero;
-    }
-
 
     VtIntArray finalPrimIndices(primIndices.size());
     std::copy(  primIndices.begin(), 
@@ -221,15 +187,6 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
     }
 
     VtVec3iArray finalTessFactors(finalIndices.size());
-    int32_t oneone = GetOneOnePacked();
-    int32_t zerozero = GetZeroZeroPacked();
-    for (size_t i = 0; i < indices.size(); i++) {
-        finalTessFactors[i][0] = oneone;
-        finalTessFactors[i][1] = oneone;
-        finalTessFactors[i][2] = zerozero;
-    }
-
-
     VtIntArray finalPrimIndices(primIndices.size());
     std::copy(  primIndices.begin(),
                 primIndices.end(),
@@ -443,14 +400,6 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildCubicIndexArray()
     }
 
     VtVec3iArray finalTessFactors(finalIndices.size());
-    int32_t oneone = GetOneOnePacked();
-    int32_t zerozero = GetZeroZeroPacked();
-    for (size_t i = 0; i < indices.size(); i++) {
-        finalTessFactors[i][0] = oneone;
-        finalTessFactors[i][1] = oneone;
-        finalTessFactors[i][2] = zerozero;
-    }
-
     VtIntArray finalPrimIndices(primIndices.size());
     std::copy(primIndices.begin(), primIndices.end(), finalPrimIndices.begin());
 

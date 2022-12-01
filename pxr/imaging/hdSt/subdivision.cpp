@@ -78,18 +78,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (refinedFaceCounts)
 );
 
-int32_t GetOneOne() {
-    int32_t one = 0;
-    uint16_t const oneHalf =
-        reinterpret_cast<uint16_t>(GfHalf(1.0f).bits());
-    one |= oneHalf;
-    int32_t oneScaled = 0;
-    oneScaled |= (one << 16);
-    int32_t oneone = 0;
-    oneone |= (one | oneScaled);
-    return oneone;
-}
-
 // The stencil table data is managed using two buffer array ranges
 // the first containing the sizes and offsets which are perPoint for
 // each refined point, and the second containing the indices and weights
@@ -497,8 +485,6 @@ HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
                             HdTupleType {HdTypeInt32Vec4, 1});
         specs->emplace_back(HdTokens->edgeIndices,
                             HdTupleType {HdTypeInt32Vec2, 1});
-        //should we only add this if adaptive?
-        //should we only add this if adaptive?
         specs->emplace_back(HdTokens->tessFactors,
                             HdTupleType{HdTypeInt32Vec3, 1});
         
@@ -512,7 +498,6 @@ HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
         // int will suffice, but this unifies it for all the cases
         specs->emplace_back(HdTokens->edgeIndices,
                             HdTupleType {HdTypeInt32Vec2, 1});
-        //should we only add this if adaptive?
         specs->emplace_back(HdTokens->tessFactors,
                             HdTupleType{HdTypeInt32Vec3, 1});
     } else if (HdSt_Subdivision::RefinesToTriangles(_topology->GetScheme())) {
@@ -541,8 +526,6 @@ HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
                             HdTupleType {HdTypeInt32Vec2, 1});
         specs->emplace_back(HdTokens->tessFactors,
                             HdTupleType{HdTypeInt32Vec3, 1});
-        //specs->emplace_back(HdTokens->tessPoints,
-        //                    HdTupleType{HdTypeInt32Vec3, 16});
     }
 }
 
@@ -1372,10 +1355,6 @@ HdSt_OsdIndexComputation::_PopulateUniformPrimitiveBuffer(
     VtVec2iArray edgeIndices(numPatches);
     VtVec3iArray tessFactors(numPatches);
     
-    float oneFloat = 1.0f;
-    uint32_t one = 0;
-    std::memcpy(&one, &oneFloat, sizeof(oneFloat));
-    
     for (size_t i = 0; i < numPatches; ++i) {
         OpenSubdiv::Far::PatchParam const &patchParam =
             patchTable->GetPatchParamTable()[i];
@@ -1390,13 +1369,6 @@ HdSt_OsdIndexComputation::_PopulateUniformPrimitiveBuffer(
         primitiveParam[i][2] = *((int*)&field1);
 
         edgeIndices[i] = info.baseFaceEdgeIndices;
-        
-        int32_t oneone = GetOneOne();
-        for (size_t i = 0; i < numPatches; i++) {
-            tessFactors[i][0] = oneone;
-            tessFactors[i][1] = oneone;
-            tessFactors[i][2] = oneone;
-        }
     }
 
     _primitiveBuffer.reset(new HdVtBufferSource(
@@ -1429,10 +1401,6 @@ HdSt_OsdIndexComputation::_PopulatePatchPrimitiveBuffer(
     VtVec4iArray primitiveParam(numPatches);
     VtVec2iArray edgeIndices(numPatches);
     VtVec3iArray tessFactors(numPatches);
-    
-    float oneFloat = 1.0f;
-    uint32_t one = 0;
-    std::memcpy(&one, &oneFloat, sizeof(oneFloat));
 
     for (size_t i = 0; i < numPatches; ++i) {
         OpenSubdiv::Far::PatchParam const &patchParam =
@@ -1459,14 +1427,6 @@ HdSt_OsdIndexComputation::_PopulatePatchPrimitiveBuffer(
         primitiveParam[i][3] = sharpnessAsInt;
 
         edgeIndices[i] = info.baseFaceEdgeIndices;
-
-        
-        int32_t oneone = GetOneOne();
-        for (size_t i = 0; i < numPatches; i++) {
-            tessFactors[i][0] = oneone;
-            tessFactors[i][1] = oneone;
-            tessFactors[i][2] = oneone;
-        }
     }
     _primitiveBuffer.reset(new HdVtBufferSource(
                                HdTokens->primitiveParam,
