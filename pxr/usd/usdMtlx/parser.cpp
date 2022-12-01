@@ -49,14 +49,25 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((discoveryType, "mtlx"))
     ((sourceType, ""))
 
-    (uimin)
+    (colorspace)
+    (defaultgeomprop)
+    (defaultinput)
+    (doc)
+    (enum)
+    (enumvalues)
+    (nodecategory)
+    (nodegroup)
+    (target)
+    (uifolder)
     (uimax)
-    (uisoftmin)
+    (uimin)
+    (uiname)
     (uisoftmax)
+    (uisoftmin)
     (uistep)
     (unit)
     (unittype)
-    (defaultgeomprop)
+    (UV0)
 );
 
 // This environment variable lets users override the name of the primary
@@ -69,7 +80,7 @@ static const std::string _GetPrimaryUvSetName()
 {
     static const std::string env = TfGetEnvSetting(USDMTLX_PRIMARY_UV_NAME);
     if (env.empty()) {
-        return UsdUtilsGetPrimaryUVSetName().GetString();
+        return UsdUtilsGetPrimaryUVSetName();
     }
     return env;
 }
@@ -154,7 +165,7 @@ ParseMetadata(
     const TfToken& key,
     const mx::ConstElementPtr& element)
 {
-    const auto& value = element->getAttribute(key.GetString());
+    const auto& value = element->getAttribute(key);
     if (!value.empty()) {
         metadata.emplace(key, value);
     }
@@ -167,12 +178,12 @@ ParseOptions(
     const mx::ConstElementPtr& element
 )
 {
-    const auto& enumLabels = element->getAttribute("enum");
+    const auto& enumLabels = element->getAttribute(_tokens->enum);
     if (enumLabels.empty()) {
         return;
     }
 
-    const auto& enumValues = element->getAttribute("enumvalues");
+    const auto& enumValues = element->getAttribute(_tokens->enumvalues);
     std::vector<std::string> allLabels = UsdMtlxSplitStringArray(enumLabels);
     std::vector<std::string> allValues = UsdMtlxSplitStringArray(enumValues);
 
@@ -266,27 +277,24 @@ ShaderBuilder::AddProperty(
     }
 
     // If this is an output then save the defaultinput, if any.
-    static const std::string defaultinputName("defaultinput");
     if (isOutput) {
-        const auto& defaultinput = element->getAttribute(defaultinputName);
+        const auto& defaultinput = element->getAttribute(_tokens->defaultinput);
         if (!defaultinput.empty()) {
             metadata.emplace(SdrPropertyMetadata->DefaultInput, defaultinput);
         }
     }
 
     // Record the targets on inputs.
-    static const std::string targetName("target");
     if (!isOutput) {
-        const auto& target = element->getAttribute(targetName);
+        const auto& target = element->getAttribute(_tokens->target);
         if (!target.empty()) {
             metadata.emplace(SdrPropertyMetadata->Target, target);
         }
     }
 
     // Record the colorspace on inputs and outputs.
-    static const std::string colorspaceName("colorspace");
     if (isOutput || element->isA<mx::Input>()) {
-        const auto& colorspace = element->getAttribute(colorspaceName);
+        const auto& colorspace = element->getAttribute(_tokens->colorspace);
         if (!colorspace.empty() &&
                 colorspace != element->getParent()->getActiveColorSpace()) {
             metadata.emplace(SdrPropertyMetadata->Colorspace, colorspace);
@@ -303,11 +311,11 @@ ShaderBuilder::AddProperty(
         // primvar specified unless connected. We mark these in Sdr as
         // always-required primvars; note that this means we might overestimate
         // which primvars are referenced in a material.
-        const auto& defaultgeomprop = element->getAttribute(_tokens->defaultgeomprop.GetString());
+        const auto& defaultgeomprop = element->getAttribute(_tokens->defaultgeomprop);
         if (!defaultgeomprop.empty()) {
             // Note: MaterialX uses a default texcoord of "UV0", which we
             // inline replace with the configured default.
-            if (defaultgeomprop == "UV0") {
+            if (defaultgeomprop == _tokens->UV0) {
                 if (!addedTexcoordPrimvar) {
                     primvars->push_back(_GetPrimaryUvSetName());
                 }
@@ -321,7 +329,7 @@ ShaderBuilder::AddProperty(
     // multiple outputs.  The default name would be the name of the
     // nodedef itself, which seems wrong.  We pick a different name.
     if (auto nodeDef = element->asA<mx::NodeDef>()) {
-        name = UsdMtlxTokens->DefaultOutputName.GetString();
+        name = UsdMtlxTokens->DefaultOutputName;
     }
 
     // Remap property name.
@@ -331,9 +339,9 @@ ShaderBuilder::AddProperty(
     }
 
     if (!isOutput) {
-        ParseMetadata(metadata, SdrPropertyMetadata->Label, element, "uiname");
-        ParseMetadata(metadata, SdrPropertyMetadata->Help, element, "doc");
-        ParseMetadata(metadata, SdrPropertyMetadata->Page, element, "uifolder");
+        ParseMetadata(metadata, SdrPropertyMetadata->Label, element, _tokens->uiname);
+        ParseMetadata(metadata, SdrPropertyMetadata->Help, element, _tokens->doc);
+        ParseMetadata(metadata, SdrPropertyMetadata->Page, element, _tokens->uifolder);
 
         ParseMetadata(metadata, _tokens->uimin, element);
         ParseMetadata(metadata, _tokens->uimax, element);
@@ -348,7 +356,8 @@ ShaderBuilder::AddProperty(
              metadata.count(_tokens->unit)) {
             // The unit can be helpful if there is no documentation.
             metadata.emplace(SdrPropertyMetadata->Help,
-                             TfStringPrintf("Unit is %s.",
+                             TfStringPrintf("Unit is %s. Please note that this MaterialX"
+                                            " unit can diverge from USD norms.",
                                             metadata[_tokens->unit].c_str()));
         }
 
@@ -446,10 +455,10 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
 
     // Metadata
     builder->metadata[SdrNodeMetadata->Label] = nodeDef->getNodeString();
-    ParseMetadata(builder, SdrNodeMetadata->Category, nodeDef, "nodecategory");
-    ParseMetadata(builder, SdrNodeMetadata->Help, nodeDef, "doc");
-    ParseMetadata(builder, SdrNodeMetadata->Target, nodeDef, "target");
-    ParseMetadata(builder, SdrNodeMetadata->Role, nodeDef, "nodegroup");
+    ParseMetadata(builder, SdrNodeMetadata->Category, nodeDef, _tokens->nodecategory);
+    ParseMetadata(builder, SdrNodeMetadata->Help, nodeDef, _tokens->doc);
+    ParseMetadata(builder, SdrNodeMetadata->Target, nodeDef, _tokens->target);
+    ParseMetadata(builder, SdrNodeMetadata->Role, nodeDef, _tokens->nodegroup);
 
     // XXX -- version
 
@@ -512,7 +521,7 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
         // Note: MaterialX uses a default texcoord of "UV0", which we
         // inline replace with the configured default.
         for (auto& name : split) {
-            if (name == "UV0") {
+            if (name == _tokens->UV0) {
                 name = _GetPrimaryUvSetName();
             }
         }
@@ -571,7 +580,7 @@ UsdMtlxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
         return GetInvalidNode(discoveryResult);
     }
 
-    auto nodeDef = document->getNodeDef(discoveryResult.identifier.GetString());
+    auto nodeDef = document->getNodeDef(discoveryResult.identifier);
     if (!nodeDef) {
         TF_WARN("Invalid MaterialX NodeDef; unknown node name ' %s '",
             discoveryResult.identifier.GetText());
