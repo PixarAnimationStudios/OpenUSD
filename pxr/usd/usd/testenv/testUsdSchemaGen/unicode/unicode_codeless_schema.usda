@@ -1,0 +1,28 @@
+#usda 1.0
+(
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName   = "testUsdSchemaGen"
+        string libraryPath   = "pxr/usd/usdContrived"
+        bool skipCodeGeneration = true
+    }
+) {
+}
+
+class "SansCodeSchémaAPI" (
+    inherits = </APISchemaBase>
+    doc = "Testing documentation metadata"
+    customData = {
+        token apiSchemaType = "singleApply"
+    }
+)
+{
+    uniform int verstümmeln:混淆:الشعيرة = 46 (
+        
+    )
+}

@@ -294,6 +294,7 @@ public:
     static SdfAllowed IsValidAttributeConnectionPath(const SdfPath& path);
     static SdfAllowed IsValidIdentifier(const std::string& name);
     static SdfAllowed IsValidNamespacedIdentifier(const std::string& name);
+    static SdfAllowed IsValidPrimName(const std::string& name);
     static SdfAllowed IsValidInheritPath(const SdfPath& path);
     static SdfAllowed IsValidPayload(const SdfPayload& payload);
     static SdfAllowed IsValidReference(const SdfReference& ref);

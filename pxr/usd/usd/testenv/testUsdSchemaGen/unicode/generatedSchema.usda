@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+)
+
+class "SansCodeSchémaAPI" (
+    doc = "Testing documentation metadata"
+)
+{
+    uniform int verstümmeln:混淆:الشعيرة = 46
+}
+

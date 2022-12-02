@@ -1258,26 +1258,74 @@ SdfSchemaBase::IsValidNamespacedIdentifier(const std::string& identifier)
 SdfAllowed
 SdfSchemaBase::IsValidVariantIdentifier(const std::string& identifier)
 {
-    // Allow [[:alnum:]_|\-]+ with an optional leading dot.
+    // duplicated logic from SdfPath::IsValidVariantIdentifier
+    // to not break current workflow using SdfAllowed as a return value
+    if (UseUTF8Identifiers())
+    {
+        std::string::const_iterator begin = identifier.begin();
+        std::string::const_iterator end = identifier.end();
 
-    std::string::const_iterator first = identifier.begin();
-    std::string::const_iterator last = identifier.end();
-
-    // Allow optional leading dot.
-    if (first != last && *first == '.') {
-        ++first;
-    }
-
-    for (; first != last; ++first) {
-        char c = *first;
-        if (!(isalnum(c) || (c == '_') || (c == '|') || (c == '-'))) {
-            return SdfAllowed(TfStringPrintf(
-                    "\"%s\" is not a valid variant "
-                    "name due to '%c' at index %d",
-                    identifier.c_str(),
-                    c,
-                    (int)(first - identifier.begin())));
+        // allow optional loading dot
+        if (begin != end && *begin == '.')
+        {
+            begin++;
         }
+
+        TfUnicodeUtils::utf8_const_iterator iterator(begin, end);
+        for(; iterator != end; iterator++)
+        {
+            // valid variant identifier characters are '|' or '-'
+            // in addition to standard identifier characters
+            if (!TfUnicodeUtils::IsUTF8CharXIDContinue(identifier,
+                iterator.Wrapped()) || *(iterator.Wrapped()) == '|' ||
+                *(iterator.Wrapped()) == '-')
+                {
+                    return SdfAllowed(TfStringPrintf(
+                        "\"%s\" is not a valid variant "
+                        "name due to '%c' at index %d",
+                        identifier.c_str(),
+                        *(iterator.Wrapped()),
+                        (int)(iterator.Wrapped() - identifier.begin())));
+                }
+        }
+
+        return true;
+    }
+    else
+    {
+        // Allow [[:alnum:]_|\-]+ with an optional leading dot.
+
+        std::string::const_iterator first = identifier.begin();
+        std::string::const_iterator last = identifier.end();
+
+        // Allow optional leading dot.
+        if (first != last && *first == '.') {
+            ++first;
+        }
+
+        for (; first != last; ++first) {
+            char c = *first;
+            if (!(isalnum(c) || (c == '_') || (c == '|') || (c == '-'))) {
+                return SdfAllowed(TfStringPrintf(
+                        "\"%s\" is not a valid variant "
+                        "name due to '%c' at index %d",
+                        identifier.c_str(),
+                        c,
+                        (int)(first - identifier.begin())));
+            }
+        }
+
+        return true;
+    }
+}
+
+SdfAllowed
+SdfSchemaBase::IsValidPrimName(const std::string& primName)
+{
+    if (!SdfPath::IsValidPrimName(primName))
+    {
+        return SdfAllowed("\"" + primName +
+            "\" is not a valid prim name");
     }
 
     return true;

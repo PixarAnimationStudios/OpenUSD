@@ -22,28 +22,57 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/pathParser.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 int SdfPathYyparse(Sdf_PathParserContext *context)
 {
-    return pathYyparse(context);
+    if (UseUTF8Identifiers())
+    {
+        return pathUtf8Yyparse(context);
+    }
+    else
+    {
+        return pathYyparse(context);
+    }
 }
 
 int SdfPathYylex_init(yyscan_t *yyscanner)
 {
-    return pathYylex_init(yyscanner);
+    if (UseUTF8Identifiers())
+    {
+        return pathUtf8Yylex_init(yyscanner);
+    }
+    else
+    {
+        return pathYylex_init(yyscanner);
+    }
 }
 
 int SdfPathYylex_destroy(yyscan_t yyscanner)
 {
-    return pathYylex_destroy(yyscanner);
+    if (UseUTF8Identifiers())
+    {
+        return pathUtf8Yylex_destroy(yyscanner);
+    }
+    else
+    {
+        return pathYylex_destroy(yyscanner);
+    }
 }
 
 yy_buffer_state *SdfPathYy_scan_string(const char* str, yyscan_t yyscanner)
 {
-    return pathYy_scan_string(str, yyscanner);
+    if (UseUTF8Identifiers())
+    {
+        return pathUtf8Yy_scan_string(str, yyscanner);
+    }
+    else
+    {
+        return pathYy_scan_string(str, yyscanner);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

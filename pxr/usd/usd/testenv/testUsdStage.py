@@ -527,23 +527,40 @@ class TestUsdStage(unittest.TestCase):
                          sessionAnonLayer, sessionRefLayer]])
             assert not any([l.dirty for l in [sessionLayer, sessionSubLayer]])
 
-            # Check saving with UTF-8 characters
-            (rootLayer, rootSubLayer, rootAnonLayer, rootRefLayer) = \
-                _CreateLayers('root_utf8_umlaute_ß_3')
-            (sessionLayer, sessionSubLayer,
-             sessionAnonLayer, sessionRefLayer) = \
-                _CreateLayers('session_utf8_bigA_Ä_3')
+            # creating layers with identifiers containing UTF-8 characters
+            # isn't supported as a valid SdfPath (so creating the reference
+            # Sdf.Reference above will appear to work, but actually error out
+            # in such a way that the prim name will be `root_utf8_umlaute_`)
+            # once the lexer encounters the UTF-8 character it will error out
+            # so this appears to work, but it's actually a semantic failure
+            # so before we run this test we ensure that we get what we expect
+            # when we create a SdfPath with the given identifier - this prepares
+            # the test for later when Unicode identifiers are added
+            utf8_containing_path = str(Sdf.Path('root_utf8_umlaute_ß_3'))
+            if utf8_containing_path == 'root_utf8_umlaute_ß_3':
+                # passing this if means that the string value of what was
+                # computed for Sdf.Path is exactly the same as the string
+                # we expected, so we have full Unicode identifier support
 
-            stage = Usd.Stage.Open(rootLayer, sessionLayer)
-            assert all([l.dirty for l in 
-                        [rootLayer, rootSubLayer, rootAnonLayer, rootRefLayer,
-                         sessionLayer, sessionSubLayer, sessionAnonLayer,
-                         sessionRefLayer]])
-            stage.SaveSessionLayers()
-            assert all([l.dirty for l in 
-                        [rootLayer, rootSubLayer, rootAnonLayer, rootRefLayer,
-                         sessionAnonLayer, sessionRefLayer]])
-            assert not any([l.dirty for l in [sessionLayer, sessionSubLayer]])
+                # Check saving with UTF-8 characters
+                (rootLayer, rootSubLayer, rootAnonLayer, rootRefLayer) = \
+                    _CreateLayers('root_utf8_umlaute_ß_3')
+                (sessionLayer, sessionSubLayer,
+                sessionAnonLayer, sessionRefLayer) = \
+                    _CreateLayers('session_utf8_bigA_Ä_3')
+
+                stage = Usd.Stage.Open(rootLayer, sessionLayer)
+                assert all([l.dirty for l in 
+                            [rootLayer, rootSubLayer, rootAnonLayer, rootRefLayer,
+                            sessionLayer, sessionSubLayer, sessionAnonLayer,
+                            sessionRefLayer]])
+                stage.SaveSessionLayers()
+                assert all([l.dirty for l in 
+                            [rootLayer, rootSubLayer, rootAnonLayer, rootRefLayer,
+                            sessionAnonLayer, sessionRefLayer]])
+                assert not any([l.dirty for l in [sessionLayer, sessionSubLayer]])
+            else:
+                print('\tUTF-8 layer names not yet supported, test skipped...')
 
 
 if __name__ == "__main__":

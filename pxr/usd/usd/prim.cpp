@@ -803,7 +803,7 @@ UsdPrim::_GetPropertyNames(
         // Sort and uniquify the names.
         namesVec.resize(names.size());
         std::copy(names.begin(), names.end(), namesVec.begin());
-        sort(namesVec.begin(), namesVec.end(), TfDictionaryLessThan());
+        sort(namesVec.begin(), namesVec.end(), TfCollationOrder());
         if (applyOrder) {
             _ApplyOrdering(GetPropertyOrder(), &namesVec);
         }

@@ -81,6 +81,7 @@ pxr_library(tf
         type
         typeFunctions
         typeNotice
+        unicodeUtils
         warning
         weakBase
         weakPtr
@@ -172,6 +173,9 @@ pxr_library(tf
     CPPFILES
         initConfig.cpp
         preprocessorUtils.cpp
+        unicodeCharacterClasses.cpp
+        unicodeDucetMapping.cpp
+        unicodeDucetMultiMapping.cpp
         pxrDoubleConversion/double-conversion.cc
         pxrDoubleConversion/bignum-dtoa.cc
         pxrDoubleConversion/bignum.cc
@@ -422,6 +426,10 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/baseline/testTfScriptModuleLoader
     DEST testTfScriptModuleLoader/baseline
+)
+pxr_install_test_dir(
+        SRC testenv/TfStringUtils_Python
+        DEST TfStringUtils_Python
 )
 
 pxr_register_test(TfAnyUniquePtr

@@ -63,6 +63,10 @@ using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_ENV_SETTING(TF_UTF8_IDENTIFIERS, 
+    false, 
+    "Allow UTF8 strings as identifiers and prim names");
+
 string
 TfVStringPrintf(const std::string& fmt, va_list ap)
 {
@@ -241,29 +245,43 @@ TfStringContains(const string &s, const TfToken &substring)
 string
 TfStringToLower(const string &source)
 {
-    string lower;
-    size_t length = source.length();
-    
-    lower.reserve(length);
-    for (size_t i = 0; i < length; i++) {
-        lower += tolower(source[i]);
+    if (UseUTF8Identifiers())
+    {
+        return TfUnicodeUtils::UTF8StringToLower(source);
     }
+    else
+    {
+        string lower;
+        size_t length = source.length();
+        
+        lower.reserve(length);
+        for (size_t i = 0; i < length; i++) {
+            lower += tolower(source[i]);
+        }
 
-    return lower;
+        return lower;
+    }
 }
 
 string
 TfStringToUpper(const string &source)
 {
-    string upper;
-    size_t length = source.length();
-    
-    upper.reserve(length);
-    for (size_t i = 0; i < length; i++) {
-        upper += toupper(source[i]);
+    if (UseUTF8Identifiers())
+    {
+        return TfUnicodeUtils::UTF8StringToUpper(source);
     }
+    else
+    {
+        string upper;
+        size_t length = source.length();
+        
+        upper.reserve(length);
+        for (size_t i = 0; i < length; i++) {
+            upper += toupper(source[i]);
+        }
 
-    return upper;
+        return upper;
+    }
 }
 
 string
@@ -273,10 +291,17 @@ TfStringCapitalize(const string& source)
         return source;
     }
 
-    string result(source);
-    result[0] = toupper(result[0]);
+    if (UseUTF8Identifiers())
+    {
+        return TfUnicodeUtils::UTF8StringCapitalize(source);
+    }
+    else
+    {
+        string result(source);
+        result[0] = toupper(result[0]);
 
-    return result;
+        return result;
+    }
 }
 
 string
@@ -912,6 +937,18 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
 
 }
 
+bool TfCollationOrder::operator()(const string& lhs, const string& rhs) const
+{
+    if (UseUTF8Identifiers())
+    {
+        return TfUnicodeUtils::TfUTF8UCALessThan()(lhs, rhs);
+    }
+    else
+    {
+        return TfDictionaryLessThan()(lhs, rhs);
+    }
+}
+
 std::string
 TfStringify(bool v)
 {
@@ -1150,37 +1187,58 @@ TfStringCatPaths( const string &prefix, const string &suffix )
     return TfNormPath(prefix + "/" + suffix);
 }
 
+bool UseUTF8Identifiers()
+{
+    static bool useUtf8Identifiers = 
+        (TfGetEnvSetting(TF_UTF8_IDENTIFIERS) == true);
+    
+    return useUtf8Identifiers;
+}
+
 std::string
 TfMakeValidIdentifier(const std::string &in)
 {
-    std::string result;
-
-    if (in.empty()) {
-        result.push_back('_');
-        return result;
+    if (UseUTF8Identifiers())
+    {
+        return TfUnicodeUtils::MakeValidUTF8Identifier(in);
     }
+    else
+    {
+        std::string result;
 
-    result.reserve(in.size());
-    char const *p = in.c_str();
-    if (!(('a' <= *p && *p <= 'z') || 
-          ('A' <= *p && *p <= 'Z') || 
-          *p == '_')) {
-        result.push_back('_');
-    } else {
-        result.push_back(*p);
-    }
+        if (in.empty()) {
+            result.push_back('_');
+            return result;
+        }
 
-    for (++p; *p; ++p) {
-        if (!(('a' <= *p && *p <= 'z') ||    
-              ('A' <= *p && *p <= 'Z') ||  
-              ('0' <= *p && *p <= '9') ||  
-              *p == '_')) {
+        result.reserve(in.size());
+        char const *p = in.c_str();
+        if (!(('a' <= *p && *p <= 'z') || 
+            ('A' <= *p && *p <= 'Z') || 
+            *p == '_')) {
             result.push_back('_');
         } else {
             result.push_back(*p);
         }
+
+        for (++p; *p; ++p) {
+            if (!(('a' <= *p && *p <= 'z') ||    
+                ('A' <= *p && *p <= 'Z') ||  
+                ('0' <= *p && *p <= '9') ||  
+                *p == '_')) {
+                result.push_back('_');
+            } else {
+                result.push_back(*p);
+            }
+        }
+        return result;
     }
-    return result;
+}
+
+std::string
+TfMakeValidPrimName(const std::string& in)
+{
+    return (UseUTF8Identifiers() ? TfUnicodeUtils::MakeValidUTF8PrimName(in) : TfMakeValidIdentifier(in));
 }
 
 std::string

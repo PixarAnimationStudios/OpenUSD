@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/unicodeUtils.h"
 
 #include <boost/python/def.hpp>
 #include <boost/python/extract.hpp>
@@ -47,8 +48,16 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 static int DictionaryStrcmp(string const &l, string const &r) {
-    TfDictionaryLessThan lt;
-    return lt(l, r) ? -1 : (lt(r, l) ? 1 : 0);
+    if (UseUTF8Identifiers())
+    {
+        TfUnicodeUtils::TfUTF8UCALessThan lt;
+        return lt(l, r) ? -1 : (lt(r, l) ? 1 : 0);
+    }
+    else
+    {
+        TfDictionaryLessThan lt;
+        return lt(l, r) ? -1 : (lt(r, l) ? 1 : 0);
+    }
 }
 
 // Register a from-python conversion that lets clients pass python unicode
@@ -116,7 +125,9 @@ void wrapStringUtils() {
     def("DictionaryStrcmp", DictionaryStrcmp);
 
     def("IsValidIdentifier", TfIsValidIdentifier);
+    def("IsValidPrmName", (bool (*)(const std::string&))TfIsValidPrimName);
     def("MakeValidIdentifier", TfMakeValidIdentifier);
+    def("MakeValidPrimName", TfMakeValidPrimName);
 
     def("StringToDouble",
         (double (*)(const std::string &))TfStringToDouble);

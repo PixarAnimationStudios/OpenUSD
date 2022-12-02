@@ -87,6 +87,10 @@ public:
     static TfToken GetChildrenToken(const SdfPath& parentPath) {
         return SdfChildrenKeys->PrimChildren;
     }
+
+    static bool IsValidIdentifier(const std::string& name) {
+        return SdfSchema::IsValidPrimName(name);
+    }
 };
 
 class Sdf_PropertyChildPolicy :

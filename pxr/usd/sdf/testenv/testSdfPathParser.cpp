@@ -217,7 +217,6 @@ int main()
         "foo{,}",
         "foo{a=x,}",
         "foo{a=x}{}",
-        "foo{1=x}",
         "foo{,a=x}",
         "foo{}{a=x}",
         "foo{,a=x,}",
@@ -233,10 +232,26 @@ int main()
         NULL
     };
 
+    char const* goodUtf8[] = {
+        "foo{1=x}",
+        NULL
+    };
+
     testPaths(good, 0);
 
     printf("Testing bad paths: errors expected\n");
     testPaths(bad, 1);
+
+    printf("Testing path depending on TF_UTF8_IDENTIFIERS\n");
+    if (TfGetEnvSetting(TF_UTF8_IDENTIFIERS))
+    {
+        // the test foo{1=x} is not valid under original
+        // rules, even though the test case passed
+        // it is however valid under UTF8 rules
+        // so it was moved to a separate area and
+        // tested only when the environment setting is on
+        testPaths(goodUtf8, 0);
+    }
 
     printf("Done expecting errors\n");
 

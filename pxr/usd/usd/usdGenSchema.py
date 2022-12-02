@@ -981,8 +981,10 @@ def _WriteFile(filePath, content, validate):
     existingContent = '\n'
     content = (content + '\n'
                if content and not content.endswith('\n') else content)
+
+    content = content.encode('utf-8')
     if os.path.exists(filePath):
-        with open(filePath, 'r') as fp:
+        with open(filePath, 'rb') as fp:
             existingContent = fp.read()
         if existingContent == content:
             Print('\tunchanged %s' % filePath)
@@ -1008,7 +1010,7 @@ def _WriteFile(filePath, content, validate):
 
     # Otherwise attempt to write to file.
     try:
-        with open(filePath, 'w') as curfile:
+        with open(filePath, 'wb') as curfile:
             curfile.write(content)
             Print('\t    wrote %s' % filePath)
     except IOError as ioe:
