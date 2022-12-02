@@ -79,6 +79,7 @@
 #include "pxr/imaging/hd/renderBufferSchema.h"
 #include "pxr/imaging/hd/renderSettingsSchema.h"
 #include "pxr/imaging/hd/sampleFilterSchema.h"
+#include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/sphereSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
@@ -100,6 +101,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((prmanParamsNames, ""))
 
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
+    ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
 );
 
 
@@ -1303,40 +1305,34 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
         return VtValue();
     }
 
-    if (key == _tokens->outputsRiSampleFilters) {
-        HdSampledDataSourceHandle valueDs =
-            HdSampledDataSource::Cast(renderSettingsDs->Get(
-                HdRenderSettingsSchemaTokens->sampleFilters));
-        if (!valueDs) {
-            return VtValue();
-        }
+    const std::pair<TfToken, TfToken> outputFilterTokens[] = {
+        {_tokens->outputsRiSampleFilters, HdRenderSettingsSchemaTokens->sampleFilters},
+        {_tokens->outputsRiDisplayFilters, HdRenderSettingsSchemaTokens->displayFilters}
+    };
 
-        VtValue pathArrayValue = valueDs->GetValue(0);
-        if (pathArrayValue.IsHolding<VtArray<SdfPath>>()) {
-            VtArray<SdfPath> pathArray =
-                pathArrayValue.UncheckedGet<VtArray<SdfPath>>();
-            SdfPathVector pathVector(pathArray.cbegin(), pathArray.cend());
-            return VtValue(pathVector);
+    for (const auto tokens : outputFilterTokens) {
+        if (key == tokens.first) {
+            HdSampledDataSourceHandle valueDs =
+                HdSampledDataSource::Cast(renderSettingsDs->Get(tokens.second));
+            if (!valueDs) {
+                return VtValue();
+            }
+
+            VtValue pathArrayValue = valueDs->GetValue(0);
+            if (pathArrayValue.IsHolding<VtArray<SdfPath>>()) {
+                VtArray<SdfPath> pathArray =
+                    pathArrayValue.UncheckedGet<VtArray<SdfPath>>();
+                SdfPathVector pathVector(pathArray.cbegin(), pathArray.cend());
+                return VtValue(pathVector);
+            }
         }
     }
+
     return VtValue();
 }
 
 static VtValue
-_GetSampleFilterResource(HdSceneIndexPrim prim)
-{
-    TRACE_FUNCTION();
-
-    HdSampleFilterSchema filterSchema =
-        HdSampleFilterSchema::GetFromParent(prim.dataSource);
-    if (!filterSchema.IsDefined()) {
-        return VtValue();
-    }
-    HdMaterialNodeSchema nodeSchema = filterSchema.GetSampleFilterResource();
-    if (!nodeSchema.IsDefined()) {
-        return VtValue();
-    }
-
+_BuildOutputFilterResource(HdMaterialNodeSchema &nodeSchema) {
     // Convert HdDataSource with material node data to a HdMaterialNode2
     HdMaterialNode2 hdNode2;
     HdTokenDataSourceHandle nodeTypeDS = nodeSchema.GetNodeIdentifier();
@@ -1361,6 +1357,43 @@ _GetSampleFilterResource(HdSceneIndexPrim prim)
     hdNode2.parameters = hdParams;
 
     return VtValue(hdNode2);
+}
+
+static VtValue
+_GetSampleFilterResource(HdSceneIndexPrim prim)
+{
+    TRACE_FUNCTION();
+
+    HdSampleFilterSchema filterSchema = 
+        HdSampleFilterSchema::GetFromParent(prim.dataSource);
+    if (!filterSchema.IsDefined()) {
+        return VtValue();
+    }
+    HdMaterialNodeSchema nodeSchema = filterSchema.GetSampleFilterResource();
+    if (!nodeSchema.IsDefined()) {
+        return VtValue();
+    }
+
+    return _BuildOutputFilterResource(nodeSchema);
+}
+
+
+static VtValue
+_GetDisplayFilterResource(HdSceneIndexPrim prim)
+{
+    TRACE_FUNCTION();
+
+    HdDisplayFilterSchema filterSchema =
+        HdDisplayFilterSchema::GetFromParent(prim.dataSource);
+    if (!filterSchema.IsDefined()) {
+        return VtValue();
+    }
+    HdMaterialNodeSchema nodeSchema = filterSchema.GetDisplayFilterResource();
+    if (!nodeSchema.IsDefined()) {
+        return VtValue();
+    }
+
+    return _BuildOutputFilterResource(nodeSchema);
 }
 
 static
@@ -1661,6 +1694,13 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
     if (prim.primType == HdPrimTypeTokens->sampleFilter) {
         if (key == HdSampleFilterSchemaTokens->sampleFilterResource) {
             return _GetSampleFilterResource(prim);
+        }
+        return VtValue();
+    }
+
+    if (prim.primType == HdPrimTypeTokens->displayFilter) {
+        if (key == HdDisplayFilterSchemaTokens->displayFilterResource) {
+            return _GetDisplayFilterResource(prim);
         }
         return VtValue();
     }

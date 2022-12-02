@@ -28,7 +28,7 @@
 /* ** defs.py or the (*)Schema.template.cpp files to make changes.         ** */
 /* ************************************************************************** */
 
-#include "pxr/imaging/hd/renderSettingsSchema.h"
+#include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/base/trace/trace.h"
@@ -36,92 +36,70 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(HdRenderSettingsSchemaTokens,
-    HDRENDERSETTINGS_SCHEMA_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HdDisplayFilterSchemaTokens,
+    HDDISPLAYFILTER_SCHEMA_TOKENS);
 
 
 
-HdPathArrayDataSourceHandle
-HdRenderSettingsSchema::GetSampleFilters()
+HdMaterialNodeSchema
+HdDisplayFilterSchema::GetDisplayFilterResource()
 {
-    return _GetTypedDataSource<HdPathArrayDataSource>(
-        HdRenderSettingsSchemaTokens->sampleFilters);
-}
-
-HdPathArrayDataSourceHandle
-HdRenderSettingsSchema::GetDisplayFilters()
-{
-    return _GetTypedDataSource<HdPathArrayDataSource>(
-        HdRenderSettingsSchemaTokens->displayFilters);
+    return HdMaterialNodeSchema(_GetTypedDataSource<HdContainerDataSource>(
+        HdDisplayFilterSchemaTokens->displayFilterResource));
 }
 
 /*static*/
 HdContainerDataSourceHandle
-HdRenderSettingsSchema::BuildRetained(
-        const HdPathArrayDataSourceHandle &sampleFilters,
-        const HdPathArrayDataSourceHandle &displayFilters
+HdDisplayFilterSchema::BuildRetained(
+        const HdContainerDataSourceHandle &displayFilterResource
 )
 {
-    TfToken names[2];
-    HdDataSourceBaseHandle values[2];
+    TfToken names[1];
+    HdDataSourceBaseHandle values[1];
 
     size_t count = 0;
-    if (sampleFilters) {
-        names[count] = HdRenderSettingsSchemaTokens->sampleFilters;
-        values[count++] = sampleFilters;
-    }
-
-    if (displayFilters) {
-        names[count] = HdRenderSettingsSchemaTokens->displayFilters;
-        values[count++] = displayFilters;
+    if (displayFilterResource) {
+        names[count] = HdDisplayFilterSchemaTokens->displayFilterResource;
+        values[count++] = displayFilterResource;
     }
 
     return HdRetainedContainerDataSource::New(count, names, values);
 }
 
 /*static*/
-HdRenderSettingsSchema
-HdRenderSettingsSchema::GetFromParent(
+HdDisplayFilterSchema
+HdDisplayFilterSchema::GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer)
 {
-    return HdRenderSettingsSchema(
+    return HdDisplayFilterSchema(
         fromParentContainer
         ? HdContainerDataSource::Cast(fromParentContainer->Get(
-                HdRenderSettingsSchemaTokens->renderSettings))
+                HdDisplayFilterSchemaTokens->displayFilter))
         : nullptr);
 }
 
 /*static*/
 const HdDataSourceLocator &
-HdRenderSettingsSchema::GetDefaultLocator()
+HdDisplayFilterSchema::GetDefaultLocator()
 {
     static const HdDataSourceLocator locator(
-        HdRenderSettingsSchemaTokens->renderSettings
+        HdDisplayFilterSchemaTokens->displayFilter
     );
     return locator;
 } 
-HdRenderSettingsSchema::Builder &
-HdRenderSettingsSchema::Builder::SetSampleFilters(
-    const HdPathArrayDataSourceHandle &sampleFilters)
+HdDisplayFilterSchema::Builder &
+HdDisplayFilterSchema::Builder::SetDisplayFilterResource(
+    const HdContainerDataSourceHandle &displayFilterResource)
 {
-    _sampleFilters = sampleFilters;
-    return *this;
-}
-
-HdRenderSettingsSchema::Builder &
-HdRenderSettingsSchema::Builder::SetDisplayFilters(
-    const HdPathArrayDataSourceHandle &displayFilters)
-{
-    _displayFilters = displayFilters;
+    _displayFilterResource = displayFilterResource;
     return *this;
 }
 
 HdContainerDataSourceHandle
-HdRenderSettingsSchema::Builder::Build()
+HdDisplayFilterSchema::Builder::Build()
 {
-    return HdRenderSettingsSchema::BuildRetained(
-        _sampleFilters,
-        _displayFilters
+    return HdDisplayFilterSchema::BuildRetained(
+        _displayFilterResource
     );
 }
 

@@ -62,6 +62,7 @@ pxr_library(usdImaging
         cylinderAdapter
         cylinderLightAdapter
         diskLightAdapter
+        displayFilterAdapter
         distantLightAdapter
         domeLightAdapter
         fieldAdapter

@@ -28,39 +28,37 @@
 /* ** defs.py or the (*)Schema.template.h files to make changes.           ** */
 /* ************************************************************************** */
 
-#ifndef PXR_IMAGING_HD_RENDER_SETTINGS_SCHEMA_H
-#define PXR_IMAGING_HD_RENDER_SETTINGS_SCHEMA_H
+#ifndef PXR_IMAGING_HD_DISPLAY_FILTER_SCHEMA_H
+#define PXR_IMAGING_HD_DISPLAY_FILTER_SCHEMA_H
 
 #include "pxr/imaging/hd/api.h"
 
-#include "pxr/imaging/hd/schema.h" 
+#include "pxr/imaging/hd/materialNodeSchema.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
 
-#define HDRENDERSETTINGS_SCHEMA_TOKENS \
-    (renderSettings) \
-    (sampleFilters) \
-    (displayFilters) \
+#define HDDISPLAYFILTER_SCHEMA_TOKENS \
+    (displayFilter) \
+    (displayFilterResource) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsSchemaTokens, HD_API,
-    HDRENDERSETTINGS_SCHEMA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdDisplayFilterSchemaTokens, HD_API,
+    HDDISPLAYFILTER_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
 
-class HdRenderSettingsSchema : public HdSchema
+class HdDisplayFilterSchema : public HdSchema
 {
 public:
-    HdRenderSettingsSchema(HdContainerDataSourceHandle container)
+    HdDisplayFilterSchema(HdContainerDataSourceHandle container)
     : HdSchema(container) {}
 
     //ACCESSORS
 
     HD_API
-    HdPathArrayDataSourceHandle GetSampleFilters();
-    HD_API
-    HdPathArrayDataSourceHandle GetDisplayFilters();
+    HdMaterialNodeSchema GetDisplayFilterResource();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -72,11 +70,10 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdPathArrayDataSourceHandle &sampleFilters,
-        const HdPathArrayDataSourceHandle &displayFilters
+        const HdContainerDataSourceHandle &displayFilterResource
     );
 
-    /// \class HdRenderSettingsSchema::Builder
+    /// \class HdDisplayFilterSchema::Builder
     /// 
     /// Utility class for setting sparse sets of child data source fields to be
     /// filled as arguments into BuildRetained. Because all setter methods
@@ -86,28 +83,24 @@ public:
     {
     public:
         HD_API
-        Builder &SetSampleFilters(
-            const HdPathArrayDataSourceHandle &sampleFilters);
-        HD_API
-        Builder &SetDisplayFilters(
-            const HdPathArrayDataSourceHandle &displayFilters);
+        Builder &SetDisplayFilterResource(
+            const HdContainerDataSourceHandle &displayFilterResource);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
         HdContainerDataSourceHandle Build();
 
     private:
-        HdPathArrayDataSourceHandle _sampleFilters;
-        HdPathArrayDataSourceHandle _displayFilters;
+        HdContainerDataSourceHandle _displayFilterResource;
     };
 
     /// Retrieves a container data source with the schema's default name token
-    /// "renderSettings" from the parent container and constructs a
-    /// HdRenderSettingsSchema instance.
+    /// "displayFilter" from the parent container and constructs a
+    /// HdDisplayFilterSchema instance.
     /// Because the requested container data source may not exist, the result
     /// should be checked with IsDefined() or a bool comparison before use.
     HD_API
-    static HdRenderSettingsSchema GetFromParent(
+    static HdDisplayFilterSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
     /// Returns an HdDataSourceLocator (relative to the prim-level data source)

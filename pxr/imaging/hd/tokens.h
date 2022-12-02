@@ -267,6 +267,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (instancer)                                 \
     (instance)                                  \
     (sampleFilter)                              \
+    (displayFilter)                             \
     /* Sprims Lights */                         \
     (simpleLight)                               \
     (cylinderLight)                             \

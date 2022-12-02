@@ -164,6 +164,14 @@
                         "primTypeName": "PxrSampleFilterPluginBase",
                         "includeDerivedPrimTypes" : true 
                     },
+                    "UsdImagingDisplayFilterAdapter": {
+                        "bases": [
+                            "UsdImagingPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "PxrDisplayFilterPluginBase",
+                        "includeDerivedPrimTypes": true
+                    },
                     "UsdImagingVolumeAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"

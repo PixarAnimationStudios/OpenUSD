@@ -33,6 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
+    ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
 );
 
 HdPrman_RenderSettings::HdPrman_RenderSettings(
@@ -53,17 +54,19 @@ void HdPrman_RenderSettings::Sync(
     HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(renderParam);
 
     if (*dirtyBits & HdChangeTracker::DirtyParams) {
+        {
+            const VtValue filterPaths = sceneDelegate->Get(GetId(),
+                _tokens->outputsRiSampleFilters);
 
-        VtValue filterPathValue =
-            sceneDelegate->Get(GetId(), _tokens->outputsRiSampleFilters);
-
-        if (filterPathValue.IsHolding<SdfPathVector>()) {
-            const SdfPathVector filterPaths =
-                filterPathValue.UncheckedGet<SdfPathVector>();
-            param->SetConnectedSampleFilterPaths(sceneDelegate, filterPaths);
+            param->SetConnectedSampleFilterPaths(sceneDelegate,
+                filterPaths.GetWithDefault<SdfPathVector>());
         }
-        if (filterPathValue.IsEmpty()) {
-            param->SetConnectedSampleFilterPaths(sceneDelegate, SdfPathVector());
+        {
+            const VtValue filterPaths = sceneDelegate->Get(GetId(), 
+                _tokens->outputsRiDisplayFilters);
+
+            param->SetConnectedDisplayFilterPaths(sceneDelegate, 
+                filterPaths.GetWithDefault<SdfPathVector>());
         }
     }
 

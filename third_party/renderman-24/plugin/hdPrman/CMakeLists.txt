@@ -78,6 +78,7 @@ pxr_plugin(${PXR_PACKAGE}
         coordSys
         debugCodes
         dependencyForwardingSceneIndexPlugin
+        displayFilter
         gprim
         gprimbase
         instancer
@@ -90,13 +91,13 @@ pxr_plugin(${PXR_PACKAGE}
         matfiltResolveTerminals
         matfiltResolveVstructs
         mesh
+        outputFilterInvalidatingSceneIndexPlugin
         paramsSetter
         points
         renderDelegate
         renderSettings
         rixStrings
         sampleFilter
-        sampleFilterInvalidatingSceneIndexPlugin
         sphere
         volume
         xcpt

@@ -21,11 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usdImaging/usdImaging/renderSettingsAdapter.h"
+#include "pxr/usdImaging/usdImaging/displayFilterAdapter.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/gf/vec4f.h"
 
@@ -33,83 +34,65 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
-    ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
+    (inputs)
+    ((displayFilterShaderId, "ri:displayfilter:shaderId"))
+    (displayFilterResource)
 );
 
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    typedef UsdImagingRenderSettingsAdapter Adapter;
+    typedef UsdImagingDisplayFilterAdapter Adapter;
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdImagingRenderSettingsAdapter::~UsdImagingRenderSettingsAdapter() 
+UsdImagingDisplayFilterAdapter::~UsdImagingDisplayFilterAdapter()
 {
 }
 
 bool
-UsdImagingRenderSettingsAdapter::IsSupported(
+UsdImagingDisplayFilterAdapter::IsSupported(
     UsdImagingIndexProxy const* index) const
 {
-    bool supported = index->IsBprimTypeSupported(HdPrimTypeTokens->renderSettings);
+    bool supported = index->IsSprimTypeSupported(HdPrimTypeTokens->displayFilter);
     return supported;
 }
 
 SdfPath
-UsdImagingRenderSettingsAdapter::Populate(
+UsdImagingDisplayFilterAdapter::Populate(
     UsdPrim const& prim, 
     UsdImagingIndexProxy* index,
     UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertBprim(HdPrimTypeTokens->renderSettings, prim.GetPath(), prim);
-    HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
-
-    // Check for Sample and Display Filter Connections
-
-    const TfToken outputFilterTokens[] = {
-        _tokens->outputsRiSampleFilters,
-        _tokens->outputsRiDisplayFilters
-    };
-
-    for (const auto token : outputFilterTokens) {
-        SdfPathVector connections;
-        prim.GetAttribute(token)
-            .GetConnections(&connections);
-        for (auto const& connPath : connections) {
-            const UsdPrim &connPrim = prim.GetStage()->GetPrimAtPath(
-                connPath.GetPrimPath());
-            if (connPrim) {
-                UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(connPrim);
-                if (adapter) {
-                    index->AddDependency(prim.GetPath(), connPrim);
-                    adapter->Populate(connPrim, index, nullptr);
-                }
-            }
-        }
+    SdfPath cachePath = prim.GetPath();
+    if (index->IsPopulated(cachePath)) {
+        return cachePath;
     }
 
-    return prim.GetPath();
+    index->InsertSprim(HdPrimTypeTokens->displayFilter, cachePath, prim);
+    HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
+
+    return cachePath;
 }
 
 void
-UsdImagingRenderSettingsAdapter::_RemovePrim(
+UsdImagingDisplayFilterAdapter::_RemovePrim(
     SdfPath const& cachePath,
     UsdImagingIndexProxy* index)
 {
-    index->RemoveBprim(HdPrimTypeTokens->renderSettings, cachePath);
+    index->RemoveSprim(HdPrimTypeTokens->displayFilter, cachePath);
 }
 
 void 
-UsdImagingRenderSettingsAdapter::TrackVariability(
+UsdImagingDisplayFilterAdapter::TrackVariability(
     UsdPrim const& prim,
     SdfPath const& cachePath,
     HdDirtyBits* timeVaryingBits,
     UsdImagingInstancerContext const* instancerContext) const
 {
-    // If any of the RenderSettings attributes are time varying 
-    // we will assume all RenderSetting params are time-varying.
+    // If any of the DisplayFilter attributes are time varying 
+    // we will assume all DisplayFilter params are time-varying.
     const std::vector<UsdAttribute> &attrs = prim.GetAttributes();
     TF_FOR_ALL(attrIter, attrs) {
         const UsdAttribute& attr = *attrIter;
@@ -122,7 +105,7 @@ UsdImagingRenderSettingsAdapter::TrackVariability(
 // Thread safe.
 //  * Populate dirty bits for the given \p time.
 void 
-UsdImagingRenderSettingsAdapter::UpdateForTime(
+UsdImagingDisplayFilterAdapter::UpdateForTime(
     UsdPrim const& prim,
     SdfPath const& cachePath, 
     UsdTimeCode time,
@@ -133,7 +116,7 @@ UsdImagingRenderSettingsAdapter::UpdateForTime(
 }
 
 HdDirtyBits
-UsdImagingRenderSettingsAdapter::ProcessPropertyChange(
+UsdImagingDisplayFilterAdapter::ProcessPropertyChange(
     UsdPrim const& prim,
     SdfPath const& cachePath, 
     TfToken const& propertyName)
@@ -142,47 +125,67 @@ UsdImagingRenderSettingsAdapter::ProcessPropertyChange(
 }
 
 void
-UsdImagingRenderSettingsAdapter::MarkDirty(
+UsdImagingDisplayFilterAdapter::MarkDirty(
     UsdPrim const& prim,
     SdfPath const& cachePath,
     HdDirtyBits dirty,
     UsdImagingIndexProxy* index)
 {
-    index->MarkBprimDirty(cachePath, dirty);
+    index->MarkSprimDirty(cachePath, dirty);
+}
+
+static TfToken
+_RemoveInputsPrefix(UsdAttribute const& attr)
+{
+    return TfToken(
+        SdfPath::StripPrefixNamespace(attr.GetName(), _tokens->inputs).first);
+}
+
+static TfToken
+_GetNodeTypeId(UsdPrim const& prim)
+{
+    UsdAttribute attr = prim.GetAttribute(_tokens->displayFilterShaderId);
+    if (attr) {
+        VtValue value;
+        if (attr.Get(&value)) {
+            if (value.IsHolding<TfToken>()) {
+                return value.UncheckedGet<TfToken>();
+            }
+        }
+    }
+    return HdPrimTypeTokens->displayFilter;
+}
+
+static HdMaterialNode2
+_CreateDisplayFilterAsHdMaterialNode2(UsdPrim const& prim)
+{
+    HdMaterialNode2 displayFilterNode;
+    displayFilterNode.nodeTypeId = _GetNodeTypeId(prim);
+
+    UsdAttributeVector attrs = prim.GetAuthoredAttributes();
+    for (const auto& attr : attrs) {
+        VtValue value;
+        if (attr.Get(&value)) {
+            displayFilterNode.parameters[_RemoveInputsPrefix(attr)] = value;
+        }
+    }
+    return displayFilterNode;
 }
 
 VtValue
-UsdImagingRenderSettingsAdapter::Get(
+UsdImagingDisplayFilterAdapter::Get(
     UsdPrim const& prim,
     SdfPath const& cachePath,
     TfToken const& key,
     UsdTimeCode time,
     VtIntArray *outIndices) const
 {
-    if (prim.HasAttribute(key)) {
-        UsdAttribute const &attr = prim.GetAttribute(key);
-
-        // Only return authored attribute values and UsdShadeConnectableAPI
-        // connections
-        VtValue value;
-        if (attr.HasAuthoredValue() && attr.Get(&value, time)) {
-            return value;
-        }
-        if (UsdShadeOutput::IsOutput(attr)) {
-            UsdShadeAttributeVector targets =
-                UsdShadeUtils::GetValueProducingAttributes(
-                    UsdShadeOutput(attr));
-            SdfPathVector outputs;
-            for (auto const& output : targets) {
-                outputs.push_back(output.GetPrimPath());
-            }
-            return VtValue(outputs);
-        }
-        return value;
+    if (key == _tokens->displayFilterResource) {
+        return VtValue(_CreateDisplayFilterAsHdMaterialNode2(prim));
     }
 
     TF_CODING_ERROR(
-        "Property %s not supported for RenderSettings by UsdImaging, path: %s",
+        "Property %s not supported for DisplayFilter by UsdImaging, path: %s",
         key.GetText(), cachePath.GetText());
     return VtValue();
 }

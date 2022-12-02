@@ -21,20 +21,22 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 
-#include "hdPrman/sampleFilterInvalidatingSceneIndexPlugin.h"
+#include "hdPrman/outputFilterInvalidatingSceneIndexPlugin.h"
+#include "hdPrman/debugCodes.h"
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderSettingsSchema.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/sampleFilterSchema.h"
+#include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((sceneIndexPluginName, "HdPrman_SampleFilterInvalidatingSceneIndexPlugin"))
+    ((sceneIndexPluginName, "HdPrman_OutputFilterInvalidatingSceneIndexPlugin"))
 );
 
 static const char * const _pluginDisplayName = "Prman";
@@ -42,7 +44,7 @@ static const char * const _pluginDisplayName = "Prman";
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdSceneIndexPluginRegistry::Define<
-        HdPrman_SampleFilterInvalidatingSceneIndexPlugin>();
+        HdPrman_OutputFilterInvalidatingSceneIndexPlugin>();
 }
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
@@ -57,55 +59,65 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
         HdSceneIndexPluginRegistry::InsertionOrderAtEnd);
 }
 
-HdPrman_SampleFilterInvalidatingSceneIndexPlugin::
-HdPrman_SampleFilterInvalidatingSceneIndexPlugin() = default;
+HdPrman_OutputFilterInvalidatingSceneIndexPlugin::
+HdPrman_OutputFilterInvalidatingSceneIndexPlugin() = default;
 
 
 namespace
 {
 
 VtArray<SdfPath>
-_GetConnectedSampleFilters(const HdSceneIndexPrim &prim)
+_GetConnectedOutputFilters(const HdSceneIndexPrim &prim)
 {
-    HdContainerDataSourceHandle renderSettingsDs =
+    const HdContainerDataSourceHandle renderSettingsDs =
         HdContainerDataSource::Cast(prim.dataSource->Get(
             HdRenderSettingsSchemaTokens->renderSettings));
     if (!renderSettingsDs) {
         return VtArray<SdfPath>();
     }
-    
-    HdSampledDataSourceHandle valueDs =
-        HdSampledDataSource::Cast(renderSettingsDs->Get(
-            HdRenderSettingsSchemaTokens->sampleFilters));
-    if (!valueDs) {
-        return VtArray<SdfPath>();
-    }
 
-    VtValue pathArrayValue = valueDs->GetValue(0);
-    if (pathArrayValue.IsHolding<VtArray<SdfPath>>()) {
-        return pathArrayValue.UncheckedGet<VtArray<SdfPath>>();
+    const TfToken filterTokens[] = {
+        HdRenderSettingsSchemaTokens->sampleFilters,
+        HdRenderSettingsSchemaTokens->displayFilters
+    };
+
+    VtArray<SdfPath> filters;
+
+    for (const auto& filterToken : filterTokens) {
+        const HdSampledDataSourceHandle valueDs =
+            HdSampledDataSource::Cast(renderSettingsDs->Get(filterToken));
+        if (!valueDs) {
+            continue;
+        }
+        const VtValue pathArrayValue = valueDs->GetValue(0);
+        const VtArray<SdfPath> paths = 
+            pathArrayValue.GetWithDefault<VtArray<SdfPath>>();
+        for (const auto& path : paths) {
+            filters.push_back(path);
+        }
     }
-    return VtArray<SdfPath>();
+    
+    return filters;
 }
 
-TF_DECLARE_REF_PTRS(_HdPrmanSampleFilterInvalidatingSceneIndex);
+TF_DECLARE_REF_PTRS(_HdPrmanOutputFilterInvalidatingSceneIndex);
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-/// \class _HdPrmanSampleFilterInvalidatingSceneIndex
+/// \class _HdPrmanOutputFilterInvalidatingSceneIndex
 ///
 /// The scene index feeding into HdDependencyForwardingSceneIndex and
-/// constructed by the HdPrman_SampleFilterInvalidatingSceneIndexPlugin.
+/// constructed by the HdPrman_OutputFilterInvalidatingSceneIndexPlugin.
 ///
-class _HdPrmanSampleFilterInvalidatingSceneIndex
+class _HdPrmanOutputFilterInvalidatingSceneIndex
     : public HdSingleInputFilteringSceneIndexBase
 {
 public:
-    static _HdPrmanSampleFilterInvalidatingSceneIndexRefPtr
+    static _HdPrmanOutputFilterInvalidatingSceneIndexRefPtr
         New(const HdSceneIndexBaseRefPtr &inputSceneIndex)
     {
         return TfCreateRefPtr(
-            new _HdPrmanSampleFilterInvalidatingSceneIndex(inputSceneIndex));
+            new _HdPrmanOutputFilterInvalidatingSceneIndex(inputSceneIndex));
     }
 
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override
@@ -119,7 +131,7 @@ public:
     }
 
 protected:
-    _HdPrmanSampleFilterInvalidatingSceneIndex(
+    _HdPrmanOutputFilterInvalidatingSceneIndex(
         const HdSceneIndexBaseRefPtr &inputSceneIndex)
       : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
     {
@@ -133,21 +145,28 @@ protected:
             return;
         }
         
-        // RenderSettings are added when the connected SampleFilters change,
-        // dirty these sampleFilters to make sure we get the correct visual
-        HdSceneIndexObserver::DirtiedPrimEntries sampleFiltersToDirty;
+        // RenderSettings are added when the connected filters change,
+        // dirty these filters to make sure we get the correct visual
+        HdSceneIndexObserver::DirtiedPrimEntries filtersToDirty;
         for(auto const& entry : entries) {
             if (entry.primType == HdPrimTypeTokens->renderSettings) {
                 const HdSceneIndexPrim prim =
                     _GetInputSceneIndex()->GetPrim(entry.primPath);
-                for (auto const& path : _GetConnectedSampleFilters(prim)) {
-                    sampleFiltersToDirty.emplace_back(
-                        path, HdSampleFilterSchema::GetDefaultLocator());
+                for (auto const& path : _GetConnectedOutputFilters(prim)) {
+                    const TfToken filterType = 
+                        _GetInputSceneIndex()->GetPrim(path).primType;
+                    if (filterType == HdPrimTypeTokens->sampleFilter) {
+                        filtersToDirty.emplace_back(path, 
+                            HdSampleFilterSchema::GetDefaultLocator());
+                    } else if (filterType == HdPrimTypeTokens->displayFilter) {
+                        filtersToDirty.emplace_back(path,
+                            HdDisplayFilterSchema::GetDefaultLocator());
+                    }                    
                 }
             }
         }
         _SendPrimsAdded(entries);
-        _SendPrimsDirtied(sampleFiltersToDirty);
+        _SendPrimsDirtied(filtersToDirty);
     }
 
     void _PrimsRemoved(
@@ -172,33 +191,40 @@ protected:
         }
 
         // When the RenderSettings prim is dirtied make sure to dirty the
-        // connected sampleFilters as well.
-        HdSceneIndexObserver::DirtiedPrimEntries sampleFiltersToDirty;
+        // connected filters as well.
+        HdSceneIndexObserver::DirtiedPrimEntries filtersToDirty;
         for(auto const &entry : entries) {
             if (entry.dirtyLocators.Intersects(
                     HdRenderSettingsSchema::GetDefaultLocator())) {
                 const HdSceneIndexPrim prim =
                     _GetInputSceneIndex()->GetPrim(entry.primPath);
-                for (auto const& path : _GetConnectedSampleFilters(prim)) {
-                    sampleFiltersToDirty.emplace_back(
-                        path, HdSampleFilterSchema::GetDefaultLocator());
+                for (auto const& path : _GetConnectedOutputFilters(prim)) {
+                    const HdSceneIndexPrim prim =
+                        _GetInputSceneIndex()->GetPrim(path);
+                    if (prim.primType == HdPrimTypeTokens->sampleFilter) {
+                        filtersToDirty.emplace_back(path,
+                            HdSampleFilterSchema::GetDefaultLocator());
+                    } else if (prim.primType == HdPrimTypeTokens->displayFilter) {
+                        filtersToDirty.emplace_back(path,
+                            HdDisplayFilterSchema::GetDefaultLocator());
+                    }
                 }
             }
 
         }
         _SendPrimsDirtied(entries);
-        _SendPrimsDirtied(sampleFiltersToDirty);
+        _SendPrimsDirtied(filtersToDirty);
     }
 };
 
 }
 
 HdSceneIndexBaseRefPtr
-HdPrman_SampleFilterInvalidatingSceneIndexPlugin::_AppendSceneIndex(
+HdPrman_OutputFilterInvalidatingSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {
-    return _HdPrmanSampleFilterInvalidatingSceneIndex::New(inputScene);
+    return _HdPrmanOutputFilterInvalidatingSceneIndex::New(inputScene);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

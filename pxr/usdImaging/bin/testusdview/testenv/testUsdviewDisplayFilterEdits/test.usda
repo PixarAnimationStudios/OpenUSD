@@ -141,23 +141,18 @@ def Scope "Render"
 {
     def RenderSettings "RenderSettings"
     {
-        token outputs:ri:sampleFilters.connect = </Render/MurkFilter1.outputs:result>
+        token outputs:ri:displayFilters.connect = </Render/DisplayFilter1.outputs:result>
     }
 
-    def PxrMurkFilter "MurkFilter1"
+    def PxrColorTransformDisplayFilter "DisplayFilter1"
     {
-        float inputs:ri:tintFarDist = 50
-        float inputs:ri:tintNearDist = 3
-        color3f[] inputs:ri:tintRamp_Colors = [(0.42, 0, 1), (0.42, 0, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
+        float[] inputs:ri:transform = [ 0, 0, 1, 1, 0, 0, 0, 1, 0 ]
         token outputs:result
     }
 
-    def PxrMurkFilter "MurkFilter2"
+    def PxrBackgroundDisplayFilter "DisplayFilter2"
     {
-        float inputs:ri:conFarDist = 50
-        float inputs:ri:tintFarDist = 50
-        float inputs:ri:tintNearDist = 3
-        color3f[] inputs:ri:tintRamp_Colors = [(0, 1, 0.42), (0, 1, 0.42), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
+        color3f inputs:ri:backgroundColor = (1, 0, 1)
         token outputs:result
     }
 }

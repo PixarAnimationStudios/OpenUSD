@@ -31,6 +31,7 @@
 #include "hdPrman/renderBuffer.h"
 #include "hdPrman/renderSettings.h"
 #include "hdPrman/sampleFilter.h"
+#include "hdPrman/displayFilter.h"
 #include "hdPrman/coordSys.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/renderParam.h"
@@ -103,6 +104,7 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->extComputation,
     HdPrimTypeTokens->coordSys,
     HdPrimTypeTokens->sampleFilter,
+    HdPrimTypeTokens->displayFilter,
     _tokens->prmanParams,
 };
 
@@ -364,6 +366,8 @@ HdPrmanRenderDelegate::CreateSprim(TfToken const& typeId,
         sprim = new HdPrmanParamsSetter(sprimId);
     } else if (typeId == HdPrimTypeTokens->sampleFilter) {
         sprim = new HdPrman_SampleFilter(sprimId);
+    } else if (typeId == HdPrimTypeTokens->displayFilter) {
+        sprim = new HdPrman_DisplayFilter(sprimId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -399,6 +403,8 @@ HdPrmanRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
         return new HdPrmanParamsSetter(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->sampleFilter) {
         return new HdPrman_SampleFilter(SdfPath::EmptyPath());
+    } else if (typeId == HdPrimTypeTokens->displayFilter) {
+        return new HdPrman_DisplayFilter(SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
