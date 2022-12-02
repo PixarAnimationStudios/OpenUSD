@@ -34,3 +34,66 @@ class TestBasicVersioned_2 "TestBasicVersioned_2" (
 {
 }
 
+class "TestVersionedSingleApplyAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token[] apiSchemaCanOnlyApplyTo = ["TestBasicVersioned"]
+    }
+)
+{
+
+}
+
+class "TestVersionedSingleApplyAPI_1" (
+    inherits = </APISchemaBase>
+    customData = {
+        token[] apiSchemaCanOnlyApplyTo = ["TestBasicVersioned_1"]
+    }
+)
+{
+
+}
+
+class "TestVersionedSingleApplyAPI_2" (
+    inherits = </APISchemaBase>
+    customData = {
+        token[] apiSchemaCanOnlyApplyTo = ["TestBasicVersioned_2"]
+    }
+)
+{
+
+}
+
+class "TestVersionedMultiApplyAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["TestBasicVersioned"]
+    }
+)
+{
+
+}
+
+class "TestVersionedMultiApplyAPI_1" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["TestBasicVersioned", "TestBasicVersioned_1"]
+    }
+)
+{
+
+}
+
+class "TestVersionedMultiApplyAPI_2" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["TestBasicVersioned_1", "TestBasicVersioned_2"]
+    }
+)
+{
+
+}
+

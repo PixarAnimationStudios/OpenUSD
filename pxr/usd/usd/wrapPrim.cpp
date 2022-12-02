@@ -149,24 +149,12 @@ struct Usd_PrimCanApplyAPIResult : public TfPyAnnotatedBoolResult<string>
         TfPyAnnotatedBoolResult<string>(val, msg) {}
 };
 
-static Usd_PrimCanApplyAPIResult
-_WrapCanApplyAPI(
-    const UsdPrim &prim,
-    const TfType& schemaType)
+template <class... Args>
+Usd_PrimCanApplyAPIResult
+_WrapCanApply(const UsdPrim &prim, const Args &... args) 
 {
     std::string whyNot;
-    bool result = prim.CanApplyAPI(schemaType, &whyNot);
-    return Usd_PrimCanApplyAPIResult(result, whyNot);
-}
-
-static Usd_PrimCanApplyAPIResult
-_WrapCanApplyAPI_2(
-    const UsdPrim &prim,
-    const TfType& schemaType,
-    const TfToken& instanceName)
-{
-    std::string whyNot;
-    bool result = prim.CanApplyAPI(schemaType, instanceName, &whyNot);
+    bool result = prim.CanApplyAPI(args..., &whyNot);
     return Usd_PrimCanApplyAPIResult(result, whyNot);
 }
 
@@ -275,8 +263,20 @@ void wrapUsdPrim()
         .def("ClearPropertyOrder", &UsdPrim::ClearPropertyOrder)
 
         .def("IsA",
-            (bool (UsdPrim::*)(const TfType&) const)&UsdPrim::IsA, 
-            arg("schemaType"))
+            (bool (UsdPrim::*)(const TfType&) const)
+            &UsdPrim::IsA, 
+            (arg("schemaType")))
+        .def("IsA",
+            (bool (UsdPrim::*)(const TfToken&) const)
+            &UsdPrim::IsA, 
+            (arg("schemaIdentifier")))
+        .def("IsA",
+            (bool (UsdPrim::*)(const TfToken&, 
+                               UsdSchemaVersion) const)
+            &UsdPrim::IsA, 
+            (arg("schemaFamily"),
+             arg("version")))
+
         .def("HasAPI", 
             (bool (UsdPrim::*)(const TfType&) const)
             &UsdPrim::HasAPI,
@@ -285,12 +285,59 @@ void wrapUsdPrim()
             (bool (UsdPrim::*)(const TfType&, const TfToken&) const)
             &UsdPrim::HasAPI,
             (arg("schemaType"), arg("instanceName")))
+        .def("HasAPI", 
+            (bool (UsdPrim::*)(const TfToken&) const)
+            &UsdPrim::HasAPI,
+            (arg("schemaIdentifier")))
+        .def("HasAPI", 
+            (bool (UsdPrim::*)(const TfToken&, const TfToken&) const)
+            &UsdPrim::HasAPI,
+            (arg("schemaIdentifier"), arg("instanceName")))
+        .def("HasAPI", 
+            (bool (UsdPrim::*)(const TfToken&, UsdSchemaVersion) const)
+            &UsdPrim::HasAPI,
+            (arg("schemaFamily"), arg("schemaVersion")))
+        .def("HasAPI", 
+            (bool (UsdPrim::*)(const TfToken&, UsdSchemaVersion, 
+                               const TfToken&) const)
+            &UsdPrim::HasAPI,
+            (arg("schemaFamily"), arg("schemaVersion"), arg("instanceName")))
+
         .def("CanApplyAPI", 
-            &_WrapCanApplyAPI,
+            +[](const UsdPrim& prim, const TfType &schemaType) {
+                return _WrapCanApply(prim, schemaType);
+            },
             (arg("schemaType")))
         .def("CanApplyAPI", 
-            &_WrapCanApplyAPI_2,
+            +[](const UsdPrim& prim, const TfType &schemaType, 
+                const TfToken &instanceName) {
+                return _WrapCanApply(prim, schemaType, instanceName);
+            },
             (arg("schemaType"), arg("instanceName")))
+        .def("CanApplyAPI", 
+            +[](const UsdPrim& prim, const TfToken &schemaIdentifier) {
+                return _WrapCanApply(prim, schemaIdentifier);
+            },
+            (arg("schemaIdentifier")))
+        .def("CanApplyAPI", 
+            +[](const UsdPrim& prim, const TfToken &schemaIdentifier, 
+                const TfToken &instanceName) {
+                return _WrapCanApply(prim, schemaIdentifier, instanceName);
+            },
+            (arg("schemaIdentifier"), arg("instanceName")))
+        .def("CanApplyAPI", 
+            +[](const UsdPrim& prim, const TfToken &schemaFamily, 
+                UsdSchemaVersion version) {
+                return _WrapCanApply(prim, schemaFamily, version);
+            },
+            (arg("schemaFamily"), arg("schemaVersion")))
+        .def("CanApplyAPI", 
+            +[](const UsdPrim& prim, const TfToken &schemaFamily, 
+                UsdSchemaVersion version, const TfToken &instanceName) {
+                return _WrapCanApply(prim, schemaFamily, version, instanceName);
+            },
+            (arg("schemaFamily"), arg("schemaVersion"), arg("instanceName")))
+
         .def("ApplyAPI", 
             (bool (UsdPrim::*)(const TfType&) const)
             &UsdPrim::ApplyAPI,
@@ -299,6 +346,24 @@ void wrapUsdPrim()
             (bool (UsdPrim::*)(const TfType&, const TfToken&) const)
             &UsdPrim::ApplyAPI,
             (arg("schemaType"), arg("instanceName")))
+        .def("ApplyAPI", 
+            (bool (UsdPrim::*)(const TfToken&) const)
+            &UsdPrim::ApplyAPI,
+            (arg("schemaIdentifier")))
+        .def("ApplyAPI", 
+            (bool (UsdPrim::*)(const TfToken&, const TfToken&) const)
+            &UsdPrim::ApplyAPI,
+            (arg("schemaIdentifier"), arg("instanceName")))
+        .def("ApplyAPI", 
+            (bool (UsdPrim::*)(const TfToken&, UsdSchemaVersion) const)
+            &UsdPrim::ApplyAPI,
+            (arg("schemaFamily"), arg("schemaVersion")))
+        .def("ApplyAPI", 
+            (bool (UsdPrim::*)(const TfToken&, UsdSchemaVersion, 
+                               const TfToken&) const)
+            &UsdPrim::ApplyAPI,
+            (arg("schemaFamily"), arg("schemaVersion"), arg("instanceName")))
+
         .def("RemoveAPI", 
             (bool (UsdPrim::*)(const TfType&) const)
             &UsdPrim::RemoveAPI,
@@ -307,6 +372,23 @@ void wrapUsdPrim()
             (bool (UsdPrim::*)(const TfType&, const TfToken&) const)
             &UsdPrim::RemoveAPI,
             (arg("schemaType"), arg("instanceName")))
+        .def("RemoveAPI", 
+            (bool (UsdPrim::*)(const TfToken&) const)
+            &UsdPrim::RemoveAPI,
+            (arg("schemaIdentifier")))
+        .def("RemoveAPI", 
+            (bool (UsdPrim::*)(const TfToken&, const TfToken&) const)
+            &UsdPrim::RemoveAPI,
+            (arg("schemaIdentifier"), arg("instanceName")))
+        .def("RemoveAPI", 
+            (bool (UsdPrim::*)(const TfToken&, UsdSchemaVersion) const)
+            &UsdPrim::RemoveAPI,
+            (arg("schemaFamily"), arg("schemaVersion")))
+        .def("RemoveAPI", 
+            (bool (UsdPrim::*)(const TfToken&, UsdSchemaVersion, 
+                               const TfToken&) const)
+            &UsdPrim::RemoveAPI,
+            (arg("schemaFamily"), arg("schemaVersion"), arg("instanceName")))
 
         .def("AddAppliedSchema", &UsdPrim::AddAppliedSchema)
         .def("RemoveAppliedSchema", &UsdPrim::RemoveAppliedSchema)

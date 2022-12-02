@@ -15,3 +15,27 @@ class TestBasicVersioned_2 "TestBasicVersioned_2"
 {
 }
 
+class "TestVersionedSingleApplyAPI"
+{
+}
+
+class "TestVersionedSingleApplyAPI_1"
+{
+}
+
+class "TestVersionedSingleApplyAPI_2"
+{
+}
+
+class "TestVersionedMultiApplyAPI"
+{
+}
+
+class "TestVersionedMultiApplyAPI_1"
+{
+}
+
+class "TestVersionedMultiApplyAPI_2"
+{
+}
+

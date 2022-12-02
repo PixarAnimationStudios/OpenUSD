@@ -490,79 +490,108 @@ public:
     bool HasProperty(const TfToken &propName) const;
 
 private:
-    // Helper functions for the public schema query and API schema
-    // authoring functions.
-    USD_API
+    // Templated helper functions for the public schema query and API schema
+    // authoring functions. The public functions have overloads that take 
+    // a type, an identifier, or a family and version and these helpers handle
+    // all three of these types of input.
+    template<class... SchemaArgs>
     bool _IsA(
-        const TfType& schemaType) const;
+        const SchemaArgs & ...schemaArgs) const;
 
-    USD_API
+    template<class... SchemaArgs>
     bool _HasAPI(
-        const TfType& schemaType) const;
+        const SchemaArgs & ...schemaArgs) const;
 
-    USD_API
+    template<class... SchemaArgs>
     bool _HasAPIInstance(
         const TfToken &instanceName, 
-        const TfType &schemaType) const;
+        const SchemaArgs & ...schemaArgs) const;
 
-    USD_API
+    template <class... SchemaArgs>
     bool _CanApplySingleApplyAPI(
         std::string *whyNot, 
-        const TfType &schemaType) const;
+        const SchemaArgs &... schemaArgs) const;
 
-    USD_API
+    template <class... SchemaArgs>
     bool _CanApplyMultipleApplyAPI(
         const TfToken& instanceName, 
         std::string *whyNot, 
-        const TfType &schemaType) const;
+        const SchemaArgs &... schemaArgs) const;
 
-    USD_API
+    template <class... SchemaArgs>
     bool _ApplySingleApplyAPI(
-        const TfType& schemaType) const;
+        const SchemaArgs &... schemaArgs) const;
 
-    USD_API
+    template <class... SchemaArgs>
     bool _ApplyMultipleApplyAPI(
         const TfToken &instanceName, 
-        const TfType &schemaType) const;
+        const SchemaArgs &... schemaArgs) const;
 
-    USD_API
+    template <class... SchemaArgs>
     bool _RemoveSingleApplyAPI(
-        const TfType& schemaType) const;
+        const SchemaArgs &... schemaArgs) const;
 
-    USD_API
+    template <class... SchemaArgs>
     bool _RemoveMultipleApplyAPI(
         const TfToken &instanceName, 
-        const TfType &schemaType) const;
+        const SchemaArgs &... schemaArgs) const;
 
 public:
-    /// Return true if the prim's schema type, is or inherits schema type T.
+    /// \name IsA
+    ///
+    /// @{
+
+    /// Return true if the prim's schema type, is or inherits from the TfType
+    /// of the schema class type \p SchemaType.
+    ///
     /// \sa GetPrimTypeInfo 
     /// \sa UsdPrimTypeInfo::GetSchemaType
     /// \sa \ref Usd_OM_FallbackPrimTypes
-    template <typename T>
+    template <typename SchemaType>
     bool IsA() const {
-        static_assert(std::is_base_of<UsdSchemaBase, T>::value,
+        static_assert(std::is_base_of<UsdSchemaBase, SchemaType>::value,
                       "Provided type must derive UsdSchemaBase.");
-        return IsA(TfType::Find<T>());
+        return IsA(TfType::Find<SchemaType>());
     };
 
-    /// Return true if the prim's schema type is or inherits \p schemaType.
-    /// \sa GetPrimTypeInfo 
-    /// \sa UsdPrimTypeInfo::GetSchemaType
-    /// \sa \ref Usd_OM_FallbackPrimTypes
+    /// This is an overload of \ref IsA that takes a TfType \p schemaType . 
     USD_API
     bool IsA(const TfType& schemaType) const;
 
+    /// This is an overload of \ref IsA that takes a \p schemaIdentifier to 
+    /// determine the schema type. 
+    USD_API
+    bool IsA(const TfToken& schemaIdentifier) const;
+
+    /// This is an overload of \ref IsA that takes a \p schemaFamily and 
+    /// \p schemaVersion to determine the schema type. 
+    USD_API
+    bool IsA(const TfToken& schemaFamily,
+             UsdSchemaVersion schemaVersion) const;
+
+    /// @}
+
+    /// \name HasAPI
+    ///
     /// __Using HasAPI in C++__
     /// \code 
     /// UsdPrim prim = stage->OverridePrim("/path/to/prim");
     /// MyDomainBozAPI = MyDomainBozAPI::Apply(prim);
     /// assert(prim.HasAPI<MyDomainBozAPI>());
+    /// assert(prim.HasAPI(TfToken("BozAPI")));
+    /// assert(prim.HasAPI(TfToken("BozAPI"), /*schemaVersion*/ 0));
     /// 
     /// UsdCollectionAPI collAPI = UsdCollectionAPI::Apply(prim, 
-    ///         /*instanceName*/ TfToken("geom"))
-    /// assert(prim.HasAPI<UsdCollectionAPI>()
+    ///         /*instanceName*/ TfToken("geom"));
+    /// assert(prim.HasAPI<UsdCollectionAPI>();
+    /// assert(prim.HasAPI(TfToken("CollectionAPI"));
+    /// assert(prim.HasAPI(TfToken("CollectionAPI"), /*schemaVersion*/ 0);
+    ///
     /// assert(prim.HasAPI<UsdCollectionAPI>(/*instanceName*/ TfToken("geom")))
+    /// assert(prim.HasAPI(TfToken("CollectionAPI", 
+    ///                    /*instanceName*/ TfToken("geom")));
+    /// assert(prim.HasAPI(TfToken("CollectionAPI"), /*schemaVersion*/ 0, 
+    ///                    /*instanceName*/ TfToken("geom"));
     /// \endcode
     /// 
     /// The python version of this method takes as an argument the TfType
@@ -572,75 +601,105 @@ public:
     /// \code{.py}
     /// prim = stage.OverridePrim("/path/to/prim")
     /// bozAPI = MyDomain.BozAPI.Apply(prim)
-    /// assert prim.HasAPI(MyDomain.BozAPI)
+    /// assert(prim.HasAPI(MyDomain.BozAPI))
+    /// assert(prim.HasAPI("BozAPI"))
+    /// assert(prim.HasAPI("BozAPI", 0))
     /// 
     /// collAPI = Usd.CollectionAPI.Apply(prim, "geom")
     /// assert(prim.HasAPI(Usd.CollectionAPI))
+    /// assert(prim.HasAPI("CollectionAPI"))
+    /// assert(prim.HasAPI("CollectionAPI", 0))
+    ///
     /// assert(prim.HasAPI(Usd.CollectionAPI, instanceName="geom"))
+    /// assert(prim.HasAPI("CollectionAPI", instanceName="geom"))
+    /// assert(prim.HasAPI("CollectionAPI", 0, instanceName="geom"))
     /// \endcode
+    ///
     /// @{
 
     /// Return true if the UsdPrim has had an applied API schema represented by 
-    /// the C++ class type __T__ applied to it. 
+    /// the C++ class type \p SchemaType applied to it. 
     /// 
     /// This function works for both single-apply and multiple-apply API schema
     /// types. If the schema is a multiple-apply API schema this will return
     /// true if any instance of the multiple-apply API has been applied.
-    template <typename T>
+    template <typename SchemaType>
     bool
     HasAPI() const {
-        static_assert(std::is_base_of<UsdAPISchemaBase, T>::value,
+        static_assert(std::is_base_of<UsdAPISchemaBase, SchemaType>::value,
                       "Provided type must derive UsdAPISchemaBase.");
-        static_assert(!std::is_same<UsdAPISchemaBase, T>::value,
+        static_assert(!std::is_same<UsdAPISchemaBase, SchemaType>::value,
                       "Provided type must not be UsdAPISchemaBase.");
         static_assert(
-            T::schemaKind == UsdSchemaKind::SingleApplyAPI ||
-            T::schemaKind == UsdSchemaKind::MultipleApplyAPI,
+            SchemaType::schemaKind == UsdSchemaKind::SingleApplyAPI ||
+            SchemaType::schemaKind == UsdSchemaKind::MultipleApplyAPI,
             "Provided schema type must be an applied API schema.");
 
-        return HasAPI(TfType::Find<T>());
+        return HasAPI(TfType::Find<SchemaType>());
     }
 
-    /// Return true if a prim has an API schema with TfType \p schemaType 
-    /// applied to it.
+    /// Return true if the UsdPrim has the specific instance, \p instanceName,
+    /// of the multiple-apply API schema represented by the C++ class type 
+    /// \p SchemaType applied to it. 
     /// 
-    /// This function works for both single-apply and multiple-apply API schema
-    /// types. If the schema is a multiple-apply API schema this will return
-    /// true if any instance of the multiple-apply API has been applied.
+    /// \p instanceName must be non-empty, otherwise it is a coding error.
+    template <typename SchemaType>
+    bool
+    HasAPI(const TfToken &instanceName) const {
+        static_assert(std::is_base_of<UsdAPISchemaBase, SchemaType>::value,
+                      "Provided type must derive UsdAPISchemaBase.");
+        static_assert(!std::is_same<UsdAPISchemaBase, SchemaType>::value,
+                      "Provided type must not be UsdAPISchemaBase.");
+        static_assert(SchemaType::schemaKind == UsdSchemaKind::MultipleApplyAPI,
+            "Provided schema type must be a multi apply API schema.");
+
+        return HasAPI(TfType::Find<SchemaType>(), instanceName);
+    }
+
+    /// This is an overload of \ref HasAPI that takes a TfType \p schemaType . 
     USD_API
     bool HasAPI(const TfType& schemaType) const;
 
-    /// Return true if the UsdPrim has the specific instance, \p instanceName,
-    /// of the multiple-apply API schema represented by the C++ class type __T__
-    /// applied to it. 
-    /// 
-    /// \p instanceName must be non-empty, otherwise it is a coding error.
-    template <typename T>
-    bool
-    HasAPI(const TfToken &instanceName) const {
-        static_assert(std::is_base_of<UsdAPISchemaBase, T>::value,
-                      "Provided type must derive UsdAPISchemaBase.");
-        static_assert(!std::is_same<UsdAPISchemaBase, T>::value,
-                      "Provided type must not be UsdAPISchemaBase.");
-        static_assert(T::schemaKind == UsdSchemaKind::MultipleApplyAPI,
-            "Provided schema type must be a multi apply API schema.");
-
-        return HasAPI(TfType::Find<T>(), instanceName);
-    }
-        
-    /// Return true if the UsdPrim has the specific instance, \p instanceName,
-    /// of the multiple-apply API schema with TfType \p schemaType applied to
-    /// it. 
-    /// 
-    /// \p instanceName must be non-empty, otherwise it is a coding error.
+    /// This is an overload of \ref HasAPI(const TfToken &) const "HasAPI" with
+    /// \p instanceName that takes a TfType \p schemaType . 
     USD_API
     bool HasAPI(const TfType& schemaType,
                 const TfToken& instanceName) const;
 
-    /// }@
+    /// This is an overload of \ref HasAPI that takes a \p schemaIdentifier to 
+    /// determine the schema type. 
+    USD_API
+    bool HasAPI(const TfToken& schemaIdentifier) const;
+
+    /// This is an overload of \ref HasAPI(const TfToken &) const "HasAPI" with
+    /// \p instanceName that takes a \p schemaIdentifier to determine the schema
+    /// type. 
+    USD_API
+    bool HasAPI(const TfToken& schemaIdentifier,
+                const TfToken& instanceName) const;
+
+    /// This is an overload of \ref HasAPI that takes a \p schemaFamily and 
+    /// \p schemaVersion to determine the schema type. 
+    USD_API
+    bool HasAPI(const TfToken& schemaFamily,
+                UsdSchemaVersion schemaVersion) const;
+
+    /// This is an overload of \ref HasAPI(const TfToken &) const "HasAPI" with
+    /// \p instanceName that takes a \p schemaFamily and \p schemaVersion to 
+    /// determine the schema type. 
+    USD_API
+    bool HasAPI(const TfToken& schemaFamily,
+                UsdSchemaVersion schemaVersion,
+                const TfToken& instanceName) const;
+
+    /// @}
+
+    /// \name CanApplyAPI
+    ///
+    /// @{
 
     /// Returns whether a __single-apply__ API schema with the given C++ type 
-    /// 'SchemaType' can be applied to this prim. If the return value is false, 
+    /// \p SchemaType can be applied to this prim. If the return value is false, 
     /// and \p whyNot is provided, the reason the schema cannot be applied is 
     /// written to whyNot.
     /// 
@@ -664,17 +723,8 @@ public:
         return CanApplyAPI(schemaType, whyNot);
     }
 
-    /// Non-templated overload of the templated CanApplyAPI above.
-    ///
-    /// This function behaves exactly like the templated CanApplyAPI  
-    /// but lacks the compile time type checking provided in the templated
-    /// version.
-    USD_API
-    bool CanApplyAPI(const TfType& schemaType,
-                     std::string *whyNot = nullptr) const;
-
     /// Returns whether a __multiple-apply__ API schema with the given C++ 
-    /// type 'SchemaType' can be applied to this prim with the given 
+    /// type \p SchemaType can be applied to this prim with the given 
     /// \p instanceName. If the return value is false, and \p whyNot is 
     /// provided, the reason the schema cannot be applied is written to whyNot.
     /// 
@@ -700,18 +750,60 @@ public:
         return CanApplyAPI(schemaType, instanceName, whyNot);
     }
 
-    /// Non-templated overload of the templated CanApplyAPI above.
-    ///
-    /// This function behaves exactly like the templated CanApplyAPI  
-    /// but lacks the compile time type checking provided in the templated
-    /// version.
+    /// This is an overload of \ref CanApplyAPI that takes a TfType 
+    /// \p schemaType . 
+    USD_API
+    bool CanApplyAPI(const TfType& schemaType,
+                     std::string *whyNot = nullptr) const;
+
+    /// This is an overload of 
+    /// \ref CanApplyAPI(const TfToken &, std::string *) const "CanApplyAPI" 
+    /// with \p instanceName that takes a TfType \p schemaType . 
     USD_API
     bool CanApplyAPI(const TfType& schemaType,
                      const TfToken& instanceName,
                      std::string *whyNot = nullptr) const;
 
+    /// This is an overload of \ref CanApplyAPI that takes a \p schemaIdentifier
+    /// to determine the schema type. 
+    USD_API
+    bool CanApplyAPI(const TfToken& schemaIdentifier,
+                     std::string *whyNot = nullptr) const;
+
+    /// This is an overload of 
+    /// \ref CanApplyAPI(const TfToken &, std::string *) const "CanApplyAPI" 
+    /// with \p instanceName that takes a \p schemaIdentifier to determine the
+    /// schema type. 
+    USD_API
+    bool CanApplyAPI(const TfToken& schemaIdentifier,
+                     const TfToken& instanceName,
+                     std::string *whyNot = nullptr) const;
+
+    /// This is an overload of \ref CanApplyAPI that takes a \p schemaFamily and 
+    /// \p schemaVersion to determine the schema type. 
+    USD_API
+    bool CanApplyAPI(const TfToken& schemaFamily,
+                     UsdSchemaVersion schemaVersion,
+                     std::string *whyNot = nullptr) const;
+
+    /// This is an overload of 
+    /// \ref CanApplyAPI(const TfToken &, std::string *) const "CanApplyAPI" 
+    /// with \p instanceName that takes a \p schemaFamily and \p schemaVersion 
+    /// to determine the schema type. 
+    USD_API
+    bool CanApplyAPI(const TfToken& schemaFamily,
+                     UsdSchemaVersion schemaVersion,
+                     const TfToken& instanceName,
+                     std::string *whyNot = nullptr) const;
+
+    /// @}
+
+    /// \name ApplyAPI
+    ///
+    /// @{
+
     /// Applies a __single-apply__ API schema with the given C++ type 
-    /// 'SchemaType' to this prim in the current edit target. 
+    /// \p SchemaType to this prim in the current edit target. 
     /// 
     /// This information is stored by adding the API schema's name token to the 
     /// token-valued, listOp metadata \em apiSchemas on this prim.
@@ -738,16 +830,8 @@ public:
         return ApplyAPI(schemaType);
     }
 
-    /// Non-templated overload of the templated ApplyAPI above.
-    ///
-    /// This function behaves exactly like the templated ApplyAPI  
-    /// but lacks the compile time type checking provided in the templated
-    /// version.
-    USD_API
-    bool ApplyAPI(const TfType& schemaType) const;
-
     /// Applies a __multiple-apply__ API schema with the given C++ type 
-    /// 'SchemaType' and instance name \p instanceName to this prim in the 
+    /// \p SchemaType and instance name \p instanceName to this prim in the 
     /// current edit target. 
     /// 
     /// This information is stored in the token-valued, listOp metadata
@@ -779,16 +863,50 @@ public:
         return ApplyAPI(schemaType, instanceName);
     }
 
-    /// Non-templated overload of the templated ApplyAPI above.
-    ///
-    /// This function behaves exactly like the templated ApplyAPI  
-    /// but lacks the compile time type checking provided in the templated
-    /// version.
+    /// This is an overload of \ref ApplyAPI that takes a TfType \p schemaType . 
     USD_API
-    bool ApplyAPI(const TfType& schemaType, const TfToken& instanceName) const;
+    bool ApplyAPI(const TfType& schemaType) const;
+
+    /// This is an overload of \ref ApplyAPI(const TfToken &) const "ApplyAPI" 
+    /// with \p instanceName that takes a TfType \p schemaType . 
+    USD_API
+    bool ApplyAPI(const TfType& schemaType,
+                  const TfToken& instanceName) const;
+
+    /// This is an overload of \ref ApplyAPI that takes a \p schemaIdentifier
+    /// to determine the schema type. 
+    USD_API
+    bool ApplyAPI(const TfToken& schemaIdentifier) const;
+
+    /// This is an overload of \ref ApplyAPI(const TfToken &) const "ApplyAPI" 
+    /// with \p instanceName that takes a \p schemaIdentifier to determine the
+    /// schema type. 
+    USD_API
+    bool ApplyAPI(const TfToken& schemaIdentifier,
+                  const TfToken& instanceName) const;
+
+    /// This is an overload of \ref ApplyAPI that takes a \p schemaFamily and 
+    /// \p schemaVersion to determine the schema type. 
+    USD_API
+    bool ApplyAPI(const TfToken& schemaFamily,
+                  UsdSchemaVersion schemaVersion) const;
+
+    /// This is an overload of \ref ApplyAPI(const TfToken &) const "ApplyAPI" 
+    /// with \p instanceName that takes a \p schemaFamily and \p schemaVersion 
+    /// to determine the schema type. 
+    USD_API
+    bool ApplyAPI(const TfToken& schemaFamily,
+                  UsdSchemaVersion schemaVersion,
+                  const TfToken& instanceName) const;
+
+    /// @}
+
+    /// \name RemoveAPI
+    ///
+    /// @{
 
     /// Removes a __single-apply__ API schema with the given C++ type 
-    /// 'SchemaType' from this prim in the current edit target. 
+    /// \p SchemaType from this prim in the current edit target. 
     /// 
     /// This is done by removing the API schema's name token from the 
     /// token-valued, listOp metadata \em apiSchemas on this prim as well as 
@@ -815,14 +933,6 @@ public:
         static const TfType schemaType = TfType::Find<SchemaType>();
         return RemoveAPI(schemaType);
     }
-
-    /// Non-templated overload of the templated RemoveAPI above.
-    ///
-    /// This function behaves exactly like the templated RemoveAPI  
-    /// but lacks the compile time type checking provided in the templated
-    /// version.
-    USD_API
-    bool RemoveAPI(const TfType& schemaType) const;
 
     /// Removes a __multiple-apply__ API schema with the given C++ type 
     /// 'SchemaType' and instance name \p instanceName from this prim in the 
@@ -858,14 +968,43 @@ public:
         return RemoveAPI(schemaType, instanceName);
     }
 
-    /// Non-templated overload of the templated RemoveAPI above.
-    ///
-    /// This function behaves exactly like the templated RemoveAPI  
-    /// but lacks the compile time type checking provided in the templated
-    /// version.
+    /// This is an overload of \ref RemoveAPI that takes a TfType \p schemaType . 
+    USD_API
+    bool RemoveAPI(const TfType& schemaType) const;
+
+    /// This is an overload of \ref RemoveAPI(const TfToken &) const "RemoveAPI" 
+    /// with \p instanceName that takes a TfType \p schemaType . 
     USD_API
     bool RemoveAPI(const TfType& schemaType,
-                   const TfToken& instanceName) const;
+                  const TfToken& instanceName) const;
+
+    /// This is an overload of \ref RemoveAPI that takes a \p schemaIdentifier
+    /// to determine the schema type. 
+    USD_API
+    bool RemoveAPI(const TfToken& schemaIdentifier) const;
+
+    /// This is an overload of \ref RemoveAPI(const TfToken &) const "RemoveAPI" 
+    /// with \p instanceName that takes a \p schemaIdentifier to determine the
+    /// schema type. 
+    USD_API
+    bool RemoveAPI(const TfToken& schemaIdentifier,
+                  const TfToken& instanceName) const;
+
+    /// This is an overload of \ref RemoveAPI that takes a \p schemaFamily and 
+    /// \p schemaVersion to determine the schema type. 
+    USD_API
+    bool RemoveAPI(const TfToken& schemaFamily,
+                  UsdSchemaVersion schemaVersion) const;
+
+    /// This is an overload of \ref RemoveAPI(const TfToken &) const "RemoveAPI" 
+    /// with \p instanceName that takes a \p schemaFamily and \p schemaVersion 
+    /// to determine the schema type. 
+    USD_API
+    bool RemoveAPI(const TfToken& schemaFamily,
+                  UsdSchemaVersion schemaVersion,
+                  const TfToken& instanceName) const;
+
+    /// @}
 
     /// Adds the applied API schema name token \p appliedSchemaName to the 
     /// \em apiSchemas metadata for this prim at the current edit target. For
