@@ -66,6 +66,9 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
                                                         options:options
                                                         error:&error];
 
+        [options release];
+        options = nil;
+
         NSString *entryPoint = nullptr;
         switch (_descriptor.shaderStage) {
             case HgiShaderStageVertex:
