@@ -239,6 +239,12 @@ class UsdviewApi(object):
         stageView = self.__appController._stageView
         return stageView.GetRendererPlugins() if stageView else []
 
+    def GetViewportCurrentRendererId(self):
+        stageView = self.__appController._stageView
+        if stageView:
+            return stageView.GetCurrentRendererId()
+        return None
+
     def _ExportSession(self, stagePath, defcamName='usdviewCam', imgWidth=None,
             imgHeight=None):
         """Export the free camera (if currently active) and session layer to a
