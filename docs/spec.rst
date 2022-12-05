@@ -8,4 +8,4 @@ Specifications
 
    spec_usdpreviewsurface
    spec_usdz
-
+   spec_usda

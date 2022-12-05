@@ -1,0 +1,84 @@
+# Top Level Parsing Element
+layer = format
+        whitespace
+        (whitespace_newline metadata_block?)?
+        (whitespace_newline prim_spec*)?
+        whitespace
+
+
+# Base Components
+space = ~"([ \s])"
+any_space = (space/"\t")
+newline = "\n"/"\r\n"/"\r"/ "\u2028"/"\u2029"
+whitespace = (any_space/newline/comment)*
+whitespace_newline = whitespace # Indicates requiring a newline
+comment_start = "#"
+comment = comment_start ~"[^\n]*"
+boolean = "true"/"false"
+digits = ~"\d+"
+integer = "-"? digits
+exponent = "e" digits
+float = (integer ("." digits exponent?)?)/("." (digits exponent?)?)
+numerical = float
+identifier = ascii_identifier/unicode_identifier
+unicode_identifier = ~"^(?:((?!\d)\w+(?:\.(?!\d)\w+)*)\.)?((?!\d)\w+)"
+ascii_identifier = ~"[a-zA-Z_]+[a-zA-Z_0-9]*"
+string = string_double_quotes/string_single_quotes/string_triple_quotes
+string_double_quotes = ~"\".*\""
+string_single_quotes = ~"'.*'"
+string_triple_quotes = ~"\"\"\".*\"\"\""
+
+tuple = "(" any_space* (value any_space* "," any_space*)* value any_space*")"
+assignment = any_space* "=" any_space*
+value = (boolean/numerical/string/tuple/array/reference/dictionary/timesamples)
+array = "[" (whitespace (value any_space* "," whitespace*)* value (whitespace* ",")?)? whitespace*  "]"
+list_modifier = "prepend"/"add"/"append"/"delete"
+dictionary = "{" whitespace property* whitespace "}"
+timesamples = "{" (whitespace (sample any_space* "," whitespace*)* sample)? whitespace*"}"
+sample = numerical any_space* ":" any_space* value
+
+
+# Header Components
+format = comment_start filetype space version
+version = digits "." digits
+filetype = "usda"/"sdf"
+
+# Reference Components
+reference = (external_reference stage_reference)/external_reference/stage_reference
+stage_reference = "<" stage_path ">"
+stage_path = (identifier/~"[/\.:]")*
+external_reference = "@" external_path "@"
+external_path = ~"[^@]*"
+
+# Metadata Components
+metadata_block = metadata_start whitespace_newline*  metadata*  whitespace_newline* metadata_end
+metadata_start = "("
+metadata_end = ")"
+metadata = (list_modifier any_space)? identifier assignment value whitespace_newline+
+
+# Prim Spec Components
+prim_spec = specifier space (prim_type space)? prim_name (whitespace metadata_block)? whitespace
+            prim_block whitespace_newline
+specifier = "def"/"over"/"class"
+prim_type = identifier
+prim_name = "\"" identifier "\""
+prim_block = "{" whitespace (prim_spec/property/variant_set)* whitespace "}"
+
+# Property Components
+property = (property_specifiers any_space)* property_type any_space property_name
+            ("." property_field)?
+            (assignment value)?
+            (any_space* metadata_block)?
+            whitespace_newline*
+property_type = identifier is_array?
+property_name = namespace identifier
+property_field = identifier
+property_specifiers = "uniform"/"custom"/list_modifier
+namespace = (identifier ":")*
+is_array = "[]"
+
+# Variant Components
+variant_set = "variantSet" any_space* variant_set_name assignment "{" whitespace_newline variant* whitespace_newline "}"
+variant_set_name = "\"" identifier "\""
+variant = variant_name any_space prim_block
+variant_name = "\"" identifier "\""
